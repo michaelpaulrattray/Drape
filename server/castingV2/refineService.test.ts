@@ -2067,6 +2067,64 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
   });
 
   /**
+   * D-244 LINE 2 AT THE WIRE — the second edit of a slot the library already
+   * holds a crop for.
+   *
+   * `assembleRecipe` refuses `carriesItsOwnEdit` when a slot is both edited and
+   * carrying, calling that branch "the defect the law makes unreachable". It was
+   * entirely reachable: this service passed the derived library through whole,
+   * and every live production row is a carry row. Driven on the founder's own
+   * library, *"wear her hair down"* was REFUSED and refunded on both his faces
+   * (opus-238).
+   *
+   * The fixture that hid it for a whole campaign is one word: every existing
+   * case here carries a `lips` crop while the ask is `hair`, and every case in
+   * `repaintAsks.test.ts` passes `library: []`. Two suites proving the guard
+   * fires and the asks assemble, and no test ever putting a real crop and its
+   * own slot's ask in one room.
+   */
+  const hairCarryRow = () => carryRow({
+    slot: "hair", tier: "anatomy", noun: "hair",
+    words: ["tight curls piled into a high bun"],
+    storageKey: "casting-v2/library/hair.png",
+  });
+
+  it("PAINTS the second edit of a carried slot, without sending that slot its own crop", async () => {
+    lineageReferences = [hairCarryRow()];
+
+    await refineCandidate(hairDown, { ...input, instruction: "wear her hair down" });
+
+    /* It painted at all — the assertion the refusal would have failed. */
+    expect(painted).toHaveLength(1);
+    const request = painted[0]!;
+    /* The master alone: her hair's own crop did NOT ride in her hair's edit. */
+    expect(request.references.map((reference) => reference.bytes)).toEqual([TINY_MASTER_PNG]);
+    expect(request.prompt).not.toContain("Reference 2");
+    /*
+      AND THE WORDS SURVIVED THE CROP BEING DROPPED. Without this the fix and
+      "drop the whole entry" are indistinguishable, and the second would silently
+      throw away everything ever said about her hair — the stack an edit
+      regenerates from.
+    */
+    expect(request.prompt).toContain("tight curls piled into a high bun");
+  });
+
+  it("and the OTHER slots' crops still carry — the over-correction, driven", async () => {
+    lineageReferences = [hairCarryRow(), carryRow({ id: 2, publicId: "ref-2" })];
+
+    await refineCandidate(hairDown, { ...input, instruction: "wear her hair down" });
+
+    const request = painted[0]!;
+    /* Exactly one crop rides: the lips, which nobody edited. Dropping every
+       carry on an edited render would pass the test above and lose her face. */
+    expect(request.references.map((reference) => reference.bytes)).toEqual([
+      TINY_MASTER_PNG,
+      Buffer.from("crop:casting-v2/library/lips.png"),
+    ]);
+    expect(request.prompt).toContain("Reference 2 is the exact lips she has");
+  });
+
+  /**
    * A harvest that DOES hand back the compositor's working.
    *
    * Both assertions below are about an ABSENCE — no evidence, no `applied` —

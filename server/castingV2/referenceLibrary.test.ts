@@ -11,7 +11,9 @@
  */
 import { describe, expect, it } from "vitest";
 
-import { deriveLibrary, liveReferences, type StoredReference } from "./referenceLibrary";
+import {
+  deriveLibrary, libraryWithoutEditedCrops, liveReferences, type StoredReference,
+} from "./referenceLibrary";
 import { assembleRecipe } from "./recipeAssembler";
 
 let nextId = 1;
@@ -320,6 +322,63 @@ describe("the library the assembler is handed", () => {
     expect(recipe.prompt).toContain("Reference 2 is the exact hair she has");
     expect(recipe.prompt).toContain("Keep her skin exactly: a warm even tan.");
     expect(recipe.carried).toEqual(["hair", "skin"]);
+  });
+
+  /*
+    D-244 line 2 — the crop an edited slot must not be sent, dropped where both
+    the asks and the library are in hand. The assembler refuses such a recipe
+    rather than repairing it, and until opus-238 nothing removed the crop, so
+    the SECOND edit of any slot refused and refunded on the founder's own face.
+  */
+  it("drops an EDITED slot's crop and keeps everything else about it", () => {
+    const library = deriveLibrary([
+      row({ slot: "hair", role: "carry", tier: "anatomy", noun: "hair",
+        words: ["tight curls piled into a high bun"], storageKey: "hair-crop.png" }),
+      row({ slot: "lips", role: "carry", tier: "anatomy", noun: "lips",
+        words: ["a fuller cupid's bow"], storageKey: "lips-crop.png" }),
+    ]);
+
+    const forRender = libraryWithoutEditedCrops(library, new Set(["hair"] as never));
+
+    const hair = forRender.find((entry) => entry.slot === "hair")!;
+    expect(hair.carry).toBeUndefined();
+    /* The words are the stack the edit regenerates FROM; losing them with the
+       crop would be the same defect wearing the fix's clothes. */
+    expect(hair.words).toEqual(["tight curls piled into a high bun"]);
+    /* And an untouched slot is not collateral. */
+    expect(forRender.find((entry) => entry.slot === "lips")!.carry?.key)
+      .toBe("lips-crop.png");
+  });
+
+  it("keeps an edited item's ANCHOR — a tattoo regenerates from its flash sheet", () => {
+    /* D-244 line 3. Only the minted crop is forbidden in its own edit; the
+       frozen introduction reference is the very thing the edit paints from, and
+       dropping it would repaint an introduced item from a master that never
+       held it. */
+    const library = deriveLibrary([
+      row({ slot: "tattoo@forearm", role: "anchor", tier: "item", noun: "forearm tattoo",
+        words: ["a fine-line swallow"], storageKey: "flash-swallow.png" }),
+      row({ slot: "tattoo@forearm", role: "carry", tier: "item", noun: "forearm tattoo",
+        words: ["a fine-line swallow"], storageKey: "tattoo-crop.png", version: 2 }),
+    ]);
+
+    const forRender = libraryWithoutEditedCrops(library, new Set(["tattoo@forearm"] as never));
+
+    const tattoo = forRender[0]!;
+    expect(tattoo.carry).toBeUndefined();
+    expect(tattoo.anchor?.key).toBe("flash-swallow.png");
+  });
+
+  it("is a no-op when nothing is edited, and when the edited slot never carried", () => {
+    /* The control that makes the two above mean something: the same function on
+       the same library, changing nothing. */
+    const library = deriveLibrary([
+      row({ slot: "hair", role: "carry", tier: "anatomy", noun: "hair",
+        words: ["copper"], storageKey: "hair-crop.png" }),
+    ]);
+
+    expect(libraryWithoutEditedCrops(library, new Set())).toEqual(library);
+    expect(libraryWithoutEditedCrops(library, new Set(["lips"] as never))).toEqual(library);
   });
 
   /*

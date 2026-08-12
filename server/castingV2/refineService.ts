@@ -142,7 +142,7 @@ import { makeupRegionFor } from "./makeupPlacement";
 import { keepSegmentsFromRender } from "./segmentPersistence";
 import { mintReferencesForRender } from "./referenceMint";
 import { mintedSlotsForRender } from "./mintedSlots";
-import { deriveLibrary, liveReferences } from "./referenceLibrary";
+import { deriveLibrary, libraryWithoutEditedCrops, liveReferences } from "./referenceLibrary";
 import { listLineageReferences } from "../db/castingV2ReferenceLibrary";
 import type { RegionReader as MintRegionReader } from "./referenceCompleteness";
 import { assembleRecipe } from "./recipeAssembler";
@@ -2194,11 +2194,34 @@ export async function refineCandidate(
         — which is the same anchor the mint's duplicate check uses below, and
         for the same reason.
       */
-      const library = deriveLibrary(await listLineageReferences({
-        userId: input.userId,
-        candidateId: variant.candidateId,
-        anchorVariantId: variant.id,
-      }));
+      /*
+        AND THE EDITED SLOTS GIVE UP THEIR CROPS BEFORE THE RECIPE SEES THEM.
+
+        D-244 line 2: a feature's own crop never rides in its own edit. The
+        assembler REFUSES such a recipe (`carriesItsOwnEdit`) rather than
+        quietly dropping the crop, and its comment calls that branch "the defect
+        the law makes unreachable" — but nothing was making it unreachable. This
+        line passed the derived library through whole, `deriveLibrary` sets
+        `carry` for any slot whose newest live row has a crop, and every one of
+        the founder's production rows is a carry row. So the SECOND edit of any
+        slot refused and refunded: driven on his own library, *"wear her hair
+        down"* was refused on both faces (opus-238).
+
+        The crop goes; the WORDS and the ANCHOR stay. An edit regenerates from
+        its anchor plus the feature's full word stack, and that stack is what the
+        library holds — dropping the entry entirely would lose everything ever
+        said about the feature, which is the same over-correction
+        `deriveLibrary` warns about one layer down.
+      */
+      const editedSlots = new Set(asks.asks.map((ask) => ask.slot));
+      const library = libraryWithoutEditedCrops(
+        deriveLibrary(await listLineageReferences({
+          userId: input.userId,
+          candidateId: variant.candidateId,
+          anchorVariantId: variant.id,
+        })),
+        editedSlots,
+      );
       const recipe = assembleRecipe({
         /* The master is the base this render is anchored on, by key. Every
            render is `edit(original, …)` and `claimVariant` proved that base

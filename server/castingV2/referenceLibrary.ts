@@ -163,6 +163,39 @@ function imageOf(row: StoredReference): ReferenceImage | undefined {
  * into standing sentences, and dropping them here would silently lose
  * everything ever said about her tan.
  */
+/**
+ * The library a RENDER may see: the derived library with the edited slots'
+ * minted crops removed.
+ *
+ * D-244 line 2 — a feature's own crop never rides in its own edit. The recipe
+ * assembler refuses such a recipe outright (`carriesItsOwnEdit`) rather than
+ * dropping the crop for the caller, on the stated grounds that a caller
+ * building one is a defect. Nothing was stopping the caller: `refineService`
+ * passed `deriveLibrary`'s output through whole, and every live production row
+ * is a carry row, so the SECOND edit of any slot refused and refunded — the
+ * founder's own *"wear her hair down"*, on both his faces (opus-238).
+ *
+ * ONLY the crop goes. The WORDS stay, because an edit regenerates from its
+ * anchor plus the feature's FULL word stack and the stack lives here; the
+ * ANCHOR stays, because an introduced item regenerates FROM its frozen
+ * introduction reference (D-244 line 3) — that is the reference the edit needs
+ * most, and dropping it would repaint a tattoo from the master that never had
+ * one. Dropping the entry entirely would lose both.
+ *
+ * The assembler's refusal stays where it is, as the backstop that says so if
+ * this is ever removed.
+ */
+export function libraryWithoutEditedCrops(
+  library: readonly LibraryEntry[],
+  editedSlots: ReadonlySet<FeatureSlot>,
+): LibraryEntry[] {
+  return library.map((entry) => {
+    if (!editedSlots.has(entry.slot) || entry.carry === undefined) return entry;
+    const { carry: _dropped, ...kept } = entry;
+    return kept;
+  });
+}
+
 export function deriveLibrary(rows: readonly StoredReference[]): LibraryEntry[] {
   const live = liveReferences(rows);
   const order: FeatureSlot[] = [];
