@@ -26,6 +26,12 @@ let chargeSucceeds = true;
 let candidateRow: Record<string, unknown>;
 let variantRows: Array<Record<string, unknown>>;
 let landedVariant: Record<string, unknown> | null = null;
+/**
+ * The two carry stores, counted AS the landing runs — one entry per landing.
+ *
+ * Written by the `landVariant` mock below and asserted by "the 42-second race".
+ */
+const atLanding: Array<{ mints: number; segments: number }> = [];
 /** What the BRIEF said she wears — the base-worn inventory (D-206). */
 let briefWorn: string[] | null = null;
 let failedVariant: Record<string, unknown> | null = null;
@@ -101,6 +107,18 @@ vi.mock("../db/castingV2Variants", () => ({
   }),
   VariantLandingError: class extends Error {},
   landVariant: vi.fn(async (input: Record<string, unknown>) => {
+    /*
+      WHAT THE STORES HELD AT THE INSTANT THE PICTURE BECAME VISIBLE.
+
+      Read here rather than after the call returns, because that is the whole
+      question the 42-second race asks: `landVariant` flips the row to `ready`
+      and selects it in one transaction, so this is the first moment anyone can
+      submit the next ask. See "the 42-second race" below.
+    */
+    atLanding.push({
+      mints: journal.filter((entry) => entry === "mint").length,
+      segments: journal.filter((entry) => entry === "keep-segments").length,
+    });
     journal.push("land");
     landedVariant = input;
   }),
@@ -287,6 +305,10 @@ vi.mock("./segmentPersistence", () => ({
     verdict?: string | null;
     image?: { evidence?: unknown };
   }) => {
+    /* Journalled for its POSITION, not only its arguments: both stores are read
+       by the next ask, so when they are written relative to the landing is the
+       whole of the 42-second race (fable-307). */
+    journal.push("keep-segments");
     keptAsks.push({
       facets: ask.facets,
       verdict: ask.verdict ?? null,
@@ -332,6 +354,7 @@ vi.mock("./referenceMint", () => ({
     deliveredSideRegions?: ReadonlyMap<string, unknown> | null;
     dependencies?: { read?: MintAsk["read"]; readGround?: MintAsk["readGround"] };
   }) => {
+    journal.push("mint");
     mintAsks.push({
       slots: ask.slots,
       variantId: ask.variantId,
@@ -408,6 +431,7 @@ beforeEach(() => {
   engineThrows = null;
   renderFault = false;
   landedVariant = null;
+  atLanding.length = 0;
   failedVariant = null;
   dispatchRecords.length = 0;
   briefWorn = null;
@@ -1844,10 +1868,19 @@ describe("how many refinements one face can carry", () => {
 });
 
 describe("the order, and the money", () => {
-  it("claims, runs, charges, generates, lands — in that order", async () => {
+  it("claims, runs, charges, generates, keeps, lands — in that order", async () => {
     await refineCandidate(greenEyes, input);
+    /*
+      THE LANDING IS LAST, AND THAT IS THE FIX FOR THE 42-SECOND RACE (fable-307).
+
+      Everything the NEXT ask reads is written before the row becomes selectable
+      — see "the 42-second race" in the library describe below. `keep-segments`
+      appears here and `mint` does not because this render's flag is dark for the
+      library and the segment store is called on every road.
+    */
     expect(journal).toEqual([
-      "read", "begin", "claim", "running", "deduct", "generate", "manifest", "land", "seal:success",
+      "read", "begin", "claim", "running", "deduct", "generate", "manifest",
+      "keep-segments", "land", "seal:success",
     ]);
     expect(ledger.charges).toEqual([
       { amount: 25, reference: "op:11111111-1111-4111-8111-111111111111:charge" },
@@ -3806,9 +3839,87 @@ describe("the render tells the library what it made of her", () => {
     );
 
     /* The render landed and was charged for. A bookkeeping failure that
-       refunded a delivered picture is the exact shape this try/catch exists
-       for, and it is a synchronous throw that would walk past a `.catch()`. */
+       refunded a picture the engine had already painted is the exact shape this
+       try/catch exists for, and it is a synchronous throw that would walk past a
+       `.catch()`. It matters more now than it did: this block runs BEFORE the
+       landing, so the outer catch is one `throw` away from the whole render. */
     expect(result.kind).toBe("rendered");
     expect(ledger.refunds).toHaveLength(0);
+    /* And it landed anyway — the ordering did not make the library a gate. */
+    expect(journal).toContain("land");
+  });
+
+  /**
+   * THE 42-SECOND RACE, DRIVEN OFF THE ORDER RATHER THAN THE CLOCK (fable-307).
+   *
+   * The live walk's finding: step 2 paid for cross charms, step 3 was claimed 42
+   * seconds before step 2's library rows existed, and the repaint carried the
+   * OLDER crop — an unrelated ask silently taking back the edit the customer had
+   * just paid for. The fold picked newest-by-version correctly; the library it
+   * was handed did not yet hold the newer row.
+   *
+   * The moment that matters is `landVariant`: it flips the row to `ready` and
+   * selects it in one transaction, so it is the first instant anyone — a person
+   * or the walk's driver — can submit the next ask. The contract is therefore
+   * not "the mint happens" but **"the mint has already happened by then"**, and
+   * that is what these two observe: the state of the stores AS the landing runs,
+   * captured inside the landing itself rather than read off the end.
+   */
+  it("the library already knows what this render made when the picture becomes visible", async () => {
+    captionsRead = { statedAccessories: "Dangly gold cross earrings, one in each lobe" };
+
+    await refineCandidate(
+      {
+        ...onFlag,
+        harvest: unmasked,
+        verifier: readerSees("dangly gold crosses at both lobes"),
+        interpret: async () => ({
+          ok: true as const,
+          delta: { free: { statedAccessories: ["dangly cross earrings"] } },
+        }),
+      },
+      { ...input, instruction: "give her dangly cross earrings" },
+    );
+
+    expect(atLanding, "the picture landed once").toHaveLength(1);
+    /* Read INSIDE the landing: both stores had already been written when the
+       row became selectable. An ask submitted in the very next millisecond
+       assembles from a library that holds this render's crops. */
+    expect(atLanding[0]!.mints).toBe(1);
+    expect(atLanding[0]!.segments).toBe(1);
+    /* The same fact said the other way, so a future reorder trips on both. */
+    expect(journal.indexOf("mint")).toBeLessThan(journal.indexOf("land"));
+    expect(journal.indexOf("keep-segments")).toBeLessThan(journal.indexOf("land"));
+    /* And the render is still a render — nothing about the ordering changed
+       what the customer got. */
+    expect(ledger.refunds).toHaveLength(0);
+  });
+
+  it("CONTROL — the observer reads the moment, not the end of the run", async () => {
+    /*
+      The negative control this assertion cannot do without. An observer that
+      quietly reported the FINAL state would pass the test above no matter where
+      the mint sat, so it has to be shown counting zero somewhere. With the flag
+      dark nothing is ever minted, and the count at the landing is 0 — the same
+      instrument, the same instant, a different answer.
+    */
+    captionsRead = { statedAccessories: "Dangly gold cross earrings, one in each lobe" };
+
+    await refineCandidate(
+      {
+        /* No `referenceLibraryEnabled` — production's shape today. */
+        harvest: unmasked,
+        verifier: readerSees("dangly gold crosses at both lobes"),
+        interpret: async () => ({
+          ok: true as const,
+          delta: { free: { statedAccessories: ["dangly cross earrings"] } },
+        }),
+      },
+      { ...input, instruction: "give her dangly cross earrings" },
+    );
+
+    expect(atLanding).toHaveLength(1);
+    expect(atLanding[0]!.mints).toBe(0);
+    expect(mintAsks).toHaveLength(0);
   });
 });

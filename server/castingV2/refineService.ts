@@ -2995,104 +2995,61 @@ export async function refineCandidate(
     */
     const carriedFacets = new Set(image.carried ?? []);
 
-    const baseIdentity = readResolvedIdentity(variant.baseInternalPrompt);
-    await landVariant({
-      userId: input.userId,
-      cleanupBatchId,
-      // The sweep fence's subject: this landing only commits while the
-      // operation it belongs to is still `running`.
-      operationId,
-      variantId: variant.id,
-      imageKey: stored.key,
-      internalPrompt: {
-        prompt,
-        /* Same source as the prompt, for the same reason. */
-        resolved: baseIdentity ? applyDelta(baseIdentity, filed) : null,
-        ...(presentationOf(filed) ? { presentation: presentationOf(filed) } : {}),
-        /*
-          THE CAPTIONS, WRITTEN DOWN — and until now they never were.
-
-          Recipe v3 shipped complete except for this key. `capturedCaptions` was
-          built, paid for in vision calls, and dropped on the floor; `readCaptions`
-          read a field with no writer, so `captionClause` was empty on every
-          render and the whole memory half of v3 was inert from the day it landed.
-          It passed its own gauntlet because the quality half is real and the
-          facets were being carried by the deltas — an instrument measuring a
-          genuine improvement and a dead feature at once, unable to tell them
-          apart. Persisting them is the fix; keying them by facet is what stops
-          the fix becoming the bug the founder described.
-        */
-        captions: capturedCaptions,
-        /*
-          WHAT THE COMPOSITE DID, so a carried fact can be adjudicated later
-          (fable-109). Absent when nothing was carried — an ordinary render has
-          no assembly to describe.
-        */
-        ...(image.assembly ? { assembly: image.assembly } : {}),
-        /*
-          THE SEAM VERDICT, ON EVERY LANDED RENDER (fable-119). Absent only when
-          nothing was composited — a flag-off or no-region render has no
-          boundary to have an opinion about.
-        */
-        ...(image.seam ? { seam: image.seam } : {}),
-        /*
-          AND THE RECIPE, ON A REPAINTED ROW ONLY — see `repaintOnce`. Absent on
-          every other road, which is what makes its presence the mark of this
-          one rather than one more field a reader has to interpret.
-        */
-        ...(image.repaint ? { repaint: image.repaint } : {}),
-        /*
-          THE NET'S VERDICT, RECORDED (D-185).
-
-          Telemetry is part of the build rather than an afterthought: these rows
-          are the measuring instrument for the two-reference trial, and they are
-          also how a READER defect becomes visible — repeated failures on one
-          facet class whose renders look correct is a reading problem, not a
-          rendering one.
-        */
-        verification: {
-          attempts,
-          /* How many readings the verdict took — 1 clean, 2 confirmed, 3 split
-             (D-194). The reader's own reliability, recorded per render. */
-          readings: verification.readings ?? 1,
-          /*
-            WHICH FACTS WERE CARRIED RATHER THAN PAINTED — the two-column
-            report's only writer.
-
-            Marked here, on the row, because the report is derived from stored
-            rows and nothing else knows this: by the time a reader looks at the
-            frame, a pasted segment and a fresh paint are indistinguishable —
-            which is the point of the store and exactly why the honesty column
-            cannot be inferred later.
-
-            The check keeps its verdict either way. A carried fact that the
-            reader cannot find is still a false pass, because the product
-            promised to keep it.
-          */
-          checks: carriedFacets.size === 0
-            ? verification.checks
-            : verification.checks.map((check) => (
-              carriedFacets.has(check.facet) ? { ...check, carried: true } : check
-            )),
-          ...(verification.unavailable ? { unavailable: true } : {}),
-        },
-      },
-      provider: image.provenance?.provider ?? null,
-      providerModel: image.provenance?.model ?? null,
-      providerRef: image.provenance?.providerRef ?? null,
-    });
-
     /*
-      KEEP THE PIXELS THIS RENDER EARNED (segment permanence, slice 1).
+      EVERYTHING THE NEXT ASK WILL READ IS WRITTEN BEFORE THE LANDING (fable-307).
 
-      After the landing, deliberately: a segment is evidence of a DELIVERED
-      render, and filing one for a picture that then failed to land would put
-      pixels in her face's record that she never received.
+      The landing is not bookkeeping — it is the moment the picture becomes
+      VISIBLE: `landVariant` flips the row to `ready` and selects it in one
+      transaction, and the next ask can be submitted the instant it does. Both
+      stores below are read by that next ask through the same lineage walk, so
+      anything written after the landing is written into a window where a fresh
+      ask has already been assembled from the older rows.
+
+      That window was 42 seconds wide on a live dev walk. Step 2 paid for cross
+      charms; step 3 — an unrelated hair ask — was claimed 42 s before step 2's
+      library rows existed, so the repaint re-fetched step 1's plain hoops and
+      **took back the edit the customer had just paid for.** On the paste road
+      the earlier pixels were already in the frame; on the repaint road the
+      feature is carried by a CROP that has to be re-fetched, so the freshness of
+      the library IS the carry promise. True by construction beats true by
+      timing, which is why this is an ordering rather than a barrier: a second
+      mechanism guarding the first has its own window.
+
+      # Why the landing may safely be last
+
+      The order that stood here until today had a reason, and it survives: a
+      store is evidence of a DELIVERED render, and filing one for a picture that
+      then failed to land would keep pixels she never received. What makes the
+      move safe is that such rows are UNREACHABLE, not merely unlikely. Both
+      stores are keyed on this variant, both are read by walking `parentVariantId`
+      from a variant the user is refining, and `refineCandidate` refines the
+      SELECTED face — which only a landed variant ever becomes, in `landVariant`'s
+      own transaction. A variant that never lands is never selected, so it is
+      never any later render's ancestor, so nothing can ever read what it filed.
+      The crops are still swept with the candidate.
+
+      Neither store may fail this render: the segment store never throws, and the
+      library block below is wrapped. That property is what the old order got for
+      free and this one has to state — a bookkeeping failure before the landing
+      would reach the outer catch and refund a render that is about to be
+      perfectly good.
+
+      Cost, declared to the latency programme: the mint's vision calls (~40 s)
+      now sit before the picture appears rather than after, on a step the user is
+      already watching. The barrier shape — making the next ask's assembly wait
+      for its ancestors' pending mints — is filed as the optimisation that buys
+      that time back, not built.
+
+      # The segment store, unchanged in everything but position
 
       Dark until `CASTING_SEGMENTS_SCOPE` names her, and silent in both
       directions — it never throws, and a failure costs this render nothing at
       all. The facet simply keeps no pixels, and the next render carries it the
-      way every render does today: with words.
+      way every render does today: with words. It moved with the mint because it
+      has the same exposure for the same reason (working law 7): it is read by
+      the next ask through the same lineage walk, and on the paste road a missing
+      newest segment carries an OLDER version of the facet — the same take-back,
+      one road over, and that road is the one production is running today.
     */
     /*
       AND ONLY WHAT THIS RENDER ACTUALLY EARNED — D-235 at permanence's front
@@ -3199,15 +3156,19 @@ export async function refineCandidate(
       is a reading that happened.
 
       # The whole thing is wrapped, because a bookkeeping failure must never
-      # take back a delivered picture
+      # take back a picture that is about to be delivered
 
       `mintReferencesForRender` catches its own failures and returns `failed`,
       but everything BEFORE it — the flag read, the digest query, the slot
       composition — is this function's own code running inside the request's
-      outer try, whose catch refunds. A throw here would hand back a render the
-      user is already looking at. That is the exact shape the satisfaction
-      ledger's try/catch below was written for, and it is a synchronous throw
-      rather than a rejected promise that walks past a `.catch()`.
+      outer try, whose catch refunds. This block now runs BEFORE the landing, so
+      a throw here would refund a render nobody has seen rather than take back
+      one somebody is looking at — the gentler of the two failures, and still
+      the wrong one: the picture in `image.bytes` is good, it is paid for, and a
+      failed digest query is no reason to lose it. That is the exact shape the
+      satisfaction ledger's try/catch below was written for, and it is a
+      synchronous throw rather than a rejected promise that walks past a
+      `.catch()`.
     */
     const libraryEnabled = dependencies.referenceLibraryEnabled
       ?? captureCastingReferenceLibraryEnabled;
@@ -3384,6 +3345,93 @@ export async function refineCandidate(
         );
       }
     }
+
+    const baseIdentity = readResolvedIdentity(variant.baseInternalPrompt);
+    await landVariant({
+      userId: input.userId,
+      cleanupBatchId,
+      // The sweep fence's subject: this landing only commits while the
+      // operation it belongs to is still `running`.
+      operationId,
+      variantId: variant.id,
+      imageKey: stored.key,
+      internalPrompt: {
+        prompt,
+        /* Same source as the prompt, for the same reason. */
+        resolved: baseIdentity ? applyDelta(baseIdentity, filed) : null,
+        ...(presentationOf(filed) ? { presentation: presentationOf(filed) } : {}),
+        /*
+          THE CAPTIONS, WRITTEN DOWN — and until now they never were.
+
+          Recipe v3 shipped complete except for this key. `capturedCaptions` was
+          built, paid for in vision calls, and dropped on the floor; `readCaptions`
+          read a field with no writer, so `captionClause` was empty on every
+          render and the whole memory half of v3 was inert from the day it landed.
+          It passed its own gauntlet because the quality half is real and the
+          facets were being carried by the deltas — an instrument measuring a
+          genuine improvement and a dead feature at once, unable to tell them
+          apart. Persisting them is the fix; keying them by facet is what stops
+          the fix becoming the bug the founder described.
+        */
+        captions: capturedCaptions,
+        /*
+          WHAT THE COMPOSITE DID, so a carried fact can be adjudicated later
+          (fable-109). Absent when nothing was carried — an ordinary render has
+          no assembly to describe.
+        */
+        ...(image.assembly ? { assembly: image.assembly } : {}),
+        /*
+          THE SEAM VERDICT, ON EVERY LANDED RENDER (fable-119). Absent only when
+          nothing was composited — a flag-off or no-region render has no
+          boundary to have an opinion about.
+        */
+        ...(image.seam ? { seam: image.seam } : {}),
+        /*
+          AND THE RECIPE, ON A REPAINTED ROW ONLY — see `repaintOnce`. Absent on
+          every other road, which is what makes its presence the mark of this
+          one rather than one more field a reader has to interpret.
+        */
+        ...(image.repaint ? { repaint: image.repaint } : {}),
+        /*
+          THE NET'S VERDICT, RECORDED (D-185).
+
+          Telemetry is part of the build rather than an afterthought: these rows
+          are the measuring instrument for the two-reference trial, and they are
+          also how a READER defect becomes visible — repeated failures on one
+          facet class whose renders look correct is a reading problem, not a
+          rendering one.
+        */
+        verification: {
+          attempts,
+          /* How many readings the verdict took — 1 clean, 2 confirmed, 3 split
+             (D-194). The reader's own reliability, recorded per render. */
+          readings: verification.readings ?? 1,
+          /*
+            WHICH FACTS WERE CARRIED RATHER THAN PAINTED — the two-column
+            report's only writer.
+
+            Marked here, on the row, because the report is derived from stored
+            rows and nothing else knows this: by the time a reader looks at the
+            frame, a pasted segment and a fresh paint are indistinguishable —
+            which is the point of the store and exactly why the honesty column
+            cannot be inferred later.
+
+            The check keeps its verdict either way. A carried fact that the
+            reader cannot find is still a false pass, because the product
+            promised to keep it.
+          */
+          checks: carriedFacets.size === 0
+            ? verification.checks
+            : verification.checks.map((check) => (
+              carriedFacets.has(check.facet) ? { ...check, carried: true } : check
+            )),
+          ...(verification.unavailable ? { unavailable: true } : {}),
+        },
+      },
+      provider: image.provenance?.provider ?? null,
+      providerModel: image.provenance?.model ?? null,
+      providerRef: image.provenance?.providerRef ?? null,
+    });
 
     /*
       THE LEDGER'S OTHER TWO EVENTS (D-175), written once the render has landed.
