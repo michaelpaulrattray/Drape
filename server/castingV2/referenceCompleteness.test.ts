@@ -348,42 +348,44 @@ describe("what one pixel of boundary is worth", () => {
     return hoop;
   };
 
-  it("THE CEILING CORNER: a perfect hoop is judged by the LENGTH bar, and the row says so", () => {
+  it("THE CEILING CORNER: a perfect hoop is ACCEPTED, and the row says it was policy", () => {
     /*
-      The corner that cost the first repaint-road walk its earrings (fable-305).
-      This test asserted `noSpecimen` here for a year — pinning the defect,
-      because the crop that reads 100% of its own region is the BEST crop the
-      instrument can see and it was the one refusal the library could not
-      overturn. It now takes the centreline path, and the verdict names the
-      instrument that produced it: "passed" and "passed by the bar that can see
-      breaks" have to be different sentences on the row.
+      The corner that cost the first repaint-road walk its earrings (fable-305,
+      as revised by fable-306). This test asserted `noSpecimen` here for a year —
+      pinning the defect, because the crop that reads 100% of its own region is
+      the BEST crop the instrument can see and it was the one refusal the library
+      could not overturn.
+
+      It is accepted now, and the verdict says WHY in the only terms that are
+      true: the area instrument read it, the bar it cleared is the ceiling
+      itself, and `ceilingAccepted` marks it so no later count of bar-measured
+      specimens can quietly include a crop no bar ever divided.
     */
     const verdict = guardReference({
       kind: "earring", crop: crop({ x: 8, y: 8, width: 25, height: 25 }), digest: "aa", guardRead: ringRegion(),
     });
     expect(verdict.reading!.coverage).toBe(1);
     expect(verdict.ok).toBe(true);
-    expect(verdict.judged?.instrument).toBe("centreline");
-    expect(verdict.judged?.threshold).toBe(CENTRELINE_SPECIMENS.earring!.positive);
+    if (!verdict.ok) return;
+    expect(verdict.ceilingAccepted).toBe(true);
+    expect(verdict.judged).toEqual({ instrument: "area", coverage: 1, threshold: 1 });
+    /* And explicitly NOT the length family's bar: a check that cannot fail here
+       must not wear a measured bar's name (the test below is why). */
+    expect(verdict.judged.threshold).not.toBe(CENTRELINE_SPECIMENS.earring!.positive);
   });
 
-  it("AND THE BAR IT ROUTES TO CANNOT FAIL AT THE CEILING — said out loud, not discovered later", () => {
+  it("THE CEILING IMPLIES THE BAR — which is why the bar is not cited", () => {
     /*
-      A CHECK THAT CANNOT FAIL IS NOT A CHECK, AND THIS ONE CANNOT.
+      The arithmetic behind the policy, driven rather than asserted in prose.
 
       Coverage is `|crop ∩ region| / |region|`, so a reading of exactly 1.0 means
       every region pixel is inside the crop. The centreline is thinned FROM that
       same region, so its spine is a subset of those pixels and is covered before
-      the dilation is even applied. **At the ceiling the length bar is a
-      formality by arithmetic**, and the routing's real effect is to ACCEPT.
-
-      That is worth having, and it is worth being honest about. What the clause
-      buys is not a second opinion: it is (a) a scope — only kinds that own a
-      measured length bar are accepted at the ceiling, and a kind with no
-      specimen anywhere still refuses — and (b) a row that records WHICH
-      instrument passed it. Anyone reading the clause later must not mistake a
-      formality for an opinion, so the implication is driven here rather than
-      assumed: over the shapes this door sees, area 1.0 implies centreline 1.0.
+      the dilation is even applied. A ceiling crop therefore passes the length
+      bar unconditionally — which is exactly why the verdict above does not claim
+      the length bar decided anything. An affirmative with no possible negative,
+      reported under a measured bar's name, is the shape this program kills
+      wherever it finds it.
     */
     for (const shape of [ringRegion(), region(41, 41, { x: 10, y: 10, width: 20, height: 20 })]) {
       const whole = crop({ x: 0, y: 0, width: 41, height: 41 });

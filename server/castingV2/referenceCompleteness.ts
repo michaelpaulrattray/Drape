@@ -357,6 +357,23 @@ export type GuardPass = {
   reading: CoverageReading;
   /** What actually decided. Persist from here; never re-derive it. */
   judged: Adjudication;
+  /**
+   * ACCEPTED AT THE CEILING BY POLICY, not passed by a bar (fable-306).
+   *
+   * A crop reading exactly 1.0 covers every pixel of an independent second read
+   * of its own region, so there is no shortfall left for any threshold to
+   * divide. The first build of this routed such a crop to the centreline family
+   * and reported `instrument: centreline, threshold 0.976` — and that check
+   * CANNOT FAIL at the ceiling (`thin(region) ⊆ region ⊆ crop`, driven in the
+   * test), so the row would have worn a measured bar's name over an affirmative
+   * with no possible negative.
+   *
+   * The true sentence is the policy: **accepted because a second read agreed
+   * with the crop on every pixel, on a kind whose completeness family is
+   * measured.** The flag is what keeps these rows out of any later count of
+   * bar-measured specimens — they are not evidence about where a bar should sit.
+   */
+  ceilingAccepted?: true;
 };
 
 /**
@@ -613,34 +630,42 @@ export function guardReference(input: GuardInput): GuardVerdict {
     and why two later steps refused for a missing pair. A dismissal survived a
     year because nobody wrote its test.
 
-    So the ceiling gets its own clause, and it ROUTES rather than accepts:
+    So the ceiling gets its own clause, and it is stated as the POLICY it is
+    rather than dressed as a second measurement (fable-306).
 
-      - it invents no number. 0.976 is measured (fable-228, n=1 positive), and a
-        ceiling crop still has to prove its own centreline runs within a pixel of
-        itself — the bar that can see a break in a ring.
-      - accepting a ceiling reading outright was considered and rejected: it is
-        policy wearing a routing change, and it would wave through the solid blob
-        the shell-fraction test exists to keep away from a length instrument.
+    The first build of this routed a ceiling reading to the centreline family, on
+    the argument that the crop "still has to prove its spine runs within a pixel
+    of itself". It does not: `thin(region) ⊆ region ⊆ crop` when coverage is 1,
+    so the length bar passes before its dilation is applied. A verdict reporting
+    `instrument: centreline, threshold 0.976` about a check that cannot fail
+    would be an affirmative with no possible negative wearing a measured bar's
+    name — the class this campaign exists to kill. So:
+
+      - it ACCEPTS, and says so. `ceilingAccepted` marks the row, so a later
+        count of bar-measured specimens cannot silently include crops no bar
+        ever divided.
+      - it invents no number. The bar it reports is the ceiling itself — 1.0
+        against a reading of 1.0 — which is the comparison that actually
+        happened.
+      - **the SCOPE is the whole difference from accepting everything**: only a
+        kind whose completeness family is MEASURED is accepted here. A kind with
+        no specimen anywhere still refuses `noSpecimen` at 100%, driven, because
+        for that kind we cannot yet say what complete means at all.
       - the sliver trap stays dead by arithmetic rather than by care: a thin
         sliver through a disc scores high by LENGTH and cannot read 1.0 by AREA,
         so it can never arrive here.
-      - it is reachable ONLY for a kind that owns a centreline family. Everything
-        else falls through to the area path exactly as before, and a kind with no
-        specimen anywhere still refuses `noSpecimen`.
   */
   if (reading.coverage >= 1 && CENTRELINE_SPECIMENS[input.kind]) {
-    const family = CENTRELINE_SPECIMENS[input.kind]!;
-    const length = measureCentreline(input.crop, input.guardRead);
-    const judged: Adjudication = {
-      instrument: "centreline", coverage: length.coverage, threshold: family.positive,
+    return {
+      ok: true,
+      kind: input.kind,
+      reading,
+      /* The area instrument is what read it, and the bar it cleared is the
+         ceiling. Reporting the centreline's 0.976 here would attribute the pass
+         to a family that did not decide it. */
+      judged: { instrument: "area", coverage: reading.coverage, threshold: 1 },
+      ceilingAccepted: true,
     };
-    if (length.coverage < family.positive) {
-      return {
-        ok: false, reason: "brokenOutline", kind: input.kind, reading, judged,
-        detail: `this ${input.kind} crop reads 100% of its own region by area, so the length bar judges it — and ${(length.coverage * 100).toFixed(1)}% of its centreline runs within a pixel of the crop, under the ${(family.positive * 100).toFixed(1)}% of the one crop proven complete (n=${family.positives}, ${length.spinePixels} px of spine); this bar is blind to ${CENTRELINE_BLIND_TO}, so an eye that calls this crop complete overturns it`,
-      };
-    }
-    return { ok: true, kind: input.kind, reading, judged };
   }
 
   if (reading.coverage < 1 && resolution >= gap) {
@@ -671,15 +696,18 @@ export function guardReference(input: GuardInput): GuardVerdict {
       with `noSpecimen` where the length instrument would have judged it. This
       comment said that required "two independent vision reads to agree on every
       pixel of a hoop", called it "a synthetic case rather than a reachable one",
-      and left it.
+      and left it. Two vision reads agreeing on every pixel of a 19×66 hoop is
+      not the coincidence it sounds like — both reads are asked about the same
+      small, high-contrast object, and agreement is the ordinary outcome.
 
       **It is the corner every mint on the repaint road lands in.** The first
       real walk of that road hit it 4 times out of 4, and because a repaint
       carries features by crop rather than by paste, those refusals cost that
       walk its earrings and two later steps their delivery. The clause above now
-      routes a ceiling reading to the length bar (fable-305), and the corner has
-      the test it never had. `noSpecimen` keeping its crop is what made the
-      finding cheap to prove — the pixels were still there to look at.
+      ACCEPTS a ceiling reading on a kind with a measured family, marked
+      `ceilingAccepted` (fable-305, revised by fable-306), and the corner has the
+      test it never had. `noSpecimen` keeping its crop is what made the finding
+      cheap to prove — the pixels were still there to look at.
     */
     const family = CENTRELINE_SPECIMENS[input.kind];
     if (!family) {
