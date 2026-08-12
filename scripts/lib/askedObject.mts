@@ -6,6 +6,17 @@ export type EarReading = {
   read: boolean;
   verified: boolean;
   absent: boolean | null;
+  /**
+   * THE SITE COULD NOT BE SEEN — hair over the lobe, the head turned.
+   *
+   * Carried out of this helper rather than swallowed, because `wearing` is
+   * derived from `absent` and an ear nobody could see is not an ear wearing
+   * something. Shift 64's copper-hair arm delivered a longer cut that fell over
+   * one lobe, and the reader said so plainly ("visible ear is covered by hair")
+   * while `absent` stayed false — which reads as WEARING and would have been a
+   * false pass. An occluded site is a silence: never a pass, never a miss.
+   */
+  occluded: boolean;
   /** Whether this ear is wearing the asked object. See the note on `absent`. */
   wearing: boolean;
   saw: string;
@@ -73,6 +84,7 @@ export async function askedObjectOnEachEar(
       read: check?.read === true,
       verified: check?.verified === true,
       absent: typeof check?.absent === "boolean" ? check.absent : null,
+      occluded: check?.occluded === true,
       /* THE VERDICT, and it is the absence rather than the affirmation — see
          the note above. An ear the reader will not call empty is an ear wearing
          the thing she asked for. */
