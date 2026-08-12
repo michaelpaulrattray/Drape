@@ -162,6 +162,7 @@ import { createFalMaskedEditEngine } from "../providers/falImages";
 import {
   captionClause,
   captionRealization,
+  captionSlot,
   captionWording,
   dropFacets,
   evidencesDelivery,
@@ -3239,6 +3240,31 @@ export async function refineCandidate(
                 calls on a live path that never asked for them.
               */
               ...(repaintEnabled ? { readGround: read } : {}),
+              /*
+                THE LIBRARY'S OWN READ OF WHAT THIS SLOT NOW IS.
+
+                Not gated on any flag, and that is deliberate: this is a fix to
+                what the live mint WRITES, not a road behind a door. Eight
+                production earring rows named her glasses because a slot's words
+                were its facets' whole-frame captions, and D-244 re-says a
+                slot's whole stack on every edit — so those sentences would ask
+                a paid render to put them back on.
+
+                `captionSlot` is handed the slot's own CUT wherever there is
+                one, which is what makes the defect unreachable rather than
+                merely avoided: a crop of her left earlobe cannot be described
+                as glasses, because the glasses are not in the bytes.
+
+                Wired HERE and asserted here — a control nothing invokes is not
+                a control (invariant 7), and this program has already paid twice
+                for a store that was inert while two benches passed.
+              */
+              readWords: ({ bytes, contentType, noun, view }) => captionSlot({
+                bytes,
+                contentType,
+                noun,
+                view,
+              }),
               enabledFor: libraryEnabled,
             },
           });

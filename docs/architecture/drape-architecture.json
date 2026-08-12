@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "d15ad39ed9a6a30b"
+    "sourceFingerprint": "a0db0e29c6083571"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 91
+      "moduleCount": 92
     },
     {
       "id": "domain:castingV2",
@@ -3701,6 +3701,12 @@
     {
       "id": "module:server/castingV2/signService.ts",
       "path": "server/castingV2/signService.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/slotWordShape.ts",
+      "path": "server/castingV2/slotWordShape.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -8718,6 +8724,10 @@
       "path": "server/castingV2/promptGuards.test.ts"
     },
     {
+      "id": "test:server/castingV2/promptShape.test.ts",
+      "path": "server/castingV2/promptShape.test.ts"
+    },
+    {
       "id": "test:server/castingV2/realizationCaption.test.ts",
       "path": "server/castingV2/realizationCaption.test.ts"
     },
@@ -8876,6 +8886,10 @@
     {
       "id": "test:server/castingV2/signService.test.ts",
       "path": "server/castingV2/signService.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/slotWordShape.test.ts",
+      "path": "server/castingV2/slotWordShape.test.ts"
     },
     {
       "id": "test:server/castingV2/spokenSentences.test.ts",
@@ -18292,6 +18306,11 @@
     },
     {
       "from": "module:server/castingV2/referenceMint.ts",
+      "to": "module:server/castingV2/slotWordShape.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/referenceMint.ts",
       "to": "module:server/db/castingV2ReferenceLibrary.ts",
       "kind": "imports"
     },
@@ -19391,6 +19410,16 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/castingV2/slotWordShape.ts",
+      "to": "module:server/castingV2/accessoryKinds.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/slotWordShape.ts",
+      "to": "module:server/castingV2/referenceSlots.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/castingV2/spendGuards.ts",
       "to": "module:drizzle/schema.ts",
       "kind": "imports"
@@ -19673,6 +19702,11 @@
     {
       "from": "module:server/db/castingV2ReferenceLibrary.ts",
       "to": "module:server/castingV2/referenceSlots.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/castingV2ReferenceLibrary.ts",
+      "to": "module:server/castingV2/slotWordShape.ts",
       "kind": "imports"
     },
     {
@@ -25443,10 +25477,10 @@
       "message": "Names 3 of Raster's 3 fields (server/castingV2/maskedComposite.ts), 3 of Mask's 3 fields (server/castingV2/maskedComposite.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/referenceMint.ts:392",
+      "id": "finding:redeclared-shape:server/castingV2/referenceMint.ts:454",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/referenceMint.ts:392",
+      "subject": "server/castingV2/referenceMint.ts:454",
       "message": "Names 2 of RecipeRefusal's 4 fields (server/castingV2/recipeAssembler.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {

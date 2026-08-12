@@ -64,6 +64,7 @@ import {
    difference between the library's key space and the ledger's is that
    `makeup@face skin` does not parse, and the place to catch that is the write. */
 import { parseSlot } from "../castingV2/referenceSlots";
+import { slotWordsRefusal } from "../castingV2/slotWordShape";
 /* The row shape and the live-rows rule both live next door, and this file
    imports them rather than restating them: a second copy of "which version is
    live" is the drift working law 4 is about, and it would be invisible until a
@@ -130,7 +131,12 @@ export class ReferenceLibraryShapeError extends Error {
       | "refusedCropWithoutMask"
       | "refusedCropIsNotAdoptable"
       | "anchorIsNotGuarded"
-      | "surfaceWasNeverCut",
+      | "surfaceWasNeverCut"
+      /* What the words SAY, which nothing checked until eight production
+         earring rows were found naming her glasses (`slotWordShape`). */
+      | "wordsNameAnotherKind"
+      | "wordsClaimThePair"
+      | "wordCarriesTerminator",
     detail: string,
   ) {
     super(detail);
@@ -361,6 +367,20 @@ export function assertReferenceRowShape(row: ReferenceRowToRecord): void {
       `${row.slot} is a surface and is carried by words alone; a minted crop must not be stored for it`,
     );
   }
+  /*
+    AND WHAT THE WORDS SAY, which is a shape rule like any other.
+
+    Every rule above this line asks whether the row's PARTS agree — a crop with
+    no mask, an anchor with a bbox. None of them looked at the prose, and the
+    prose is what a paying render carries: `describe()` re-says a slot's whole
+    stack on every edit (D-244), so an earring row naming her glasses is an
+    instruction to put them back on. The refusal lives beside the other shape
+    rules because it is the same kind of promise — a row that cannot be true is
+    not written — and it is here rather than in the mint because the mint is one
+    caller and this is the door.
+  */
+  const words = slotWordsRefusal(row.slot, row.words);
+  if (words !== null) throw new ReferenceLibraryShapeError(words.reason, words.detail);
   assertRefusalShape(row);
   if (!row.image) return;
   if (row.image.digest.trim() === "" || row.image.storageKey.trim() === "") {

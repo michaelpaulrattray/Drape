@@ -870,3 +870,155 @@ describe("the ground read, for a render that brought no regions", () => {
     expect(JSON.stringify(result.slots)).not.toContain("coverage");
   });
 });
+
+/**
+ * THE LIBRARY'S OWN READ OF WHAT A SLOT NOW IS.
+ *
+ * Until this existed a slot's words were its FACETS' captions, each read against
+ * the whole frame — so an earring slot's words were a sentence about everything
+ * she was wearing, and eight production rows named her GLASSES. D-244 re-says a
+ * slot's whole stack on every edit, so those sentences would have asked a paid
+ * render to put them back on.
+ *
+ * These drive the reader at the wire: what it is HANDED (the cut, not the
+ * frame), when it is not asked at all, and what happens when it comes back
+ * empty. A reader that is merely present is the inert-store defect this program
+ * has already paid for twice.
+ */
+describe("the words read", () => {
+  const HER_LEFT = { x: 26, y: 10, width: 6, height: 6 };
+  const HER_RIGHT = { x: 8, y: 10, width: 6, height: 6 };
+
+  async function texturedFrame(size = 40): Promise<Buffer> {
+    const data = Buffer.alloc(size * size * 3);
+    for (let y = 0; y < size; y += 1) {
+      for (let x = 0; x < size; x += 1) {
+        const at = (y * size + x) * 3;
+        data[at] = (x * 7 + y * 3) % 256;
+        data[at + 1] = (x * 3 + y * 11) % 256;
+        data[at + 2] = (x * 13 + y * 5) % 256;
+      }
+    }
+    return sharp(data, { raw: { width: size, height: size, channels: 3 } }).png().toBuffer();
+  }
+
+  /** Records every call, and answers with a sentence naming the view it got. */
+  function wordsReader(answer: (noun: string, view: string) => string | null) {
+    const calls: Array<{ noun: string; view: string; bytes: number }> = [];
+    const readWords = async (input: { noun: string; view: string; bytes: Buffer }) => {
+      calls.push({ noun: input.noun, view: input.view, bytes: input.bytes.length });
+      return answer(input.noun, input.view);
+    };
+    return { calls, readWords };
+  }
+
+  const earringSlot = (instance: "left" | "right"): SlotSpec => ({
+    slot: `earring@${instance}`,
+    tier: "item",
+    noun: `${instance} earring`,
+    /* The words the slot ARRIVES with — the frame-wide caption that caused all
+       of this. Every assertion below is that these do not reach a row. */
+    words: ["gold hoops and dark tortoiseshell glasses"],
+    question: "earring",
+    guardKind: "hair",
+    frame: "ownSide",
+  });
+
+  it("files what the read says about THE CUT, never the words the slot arrived with", async () => {
+    const bench = harness({ guardRead: rect(HER_LEFT) });
+    const reader = wordsReader((noun) => `a slim gold hoop at the ${noun}.`);
+    await mintReferencesForRender({
+      userId: 1,
+      variantId: 11,
+      frame: { bytes: await texturedFrame() },
+      applied: rect({ x: 0, y: 0, width: 40, height: 40 }),
+      masterRegions: new Map([["earring", rect(HER_LEFT)]]),
+      masterSideRegions: new Map([["earring", { left: rect(HER_LEFT), right: rect(HER_RIGHT) }]]),
+      slots: [earringSlot("left")],
+      dependencies: { ...bench.dependencies, readWords: reader.readWords } as never,
+    });
+
+    /* Handed the CUT — the whole point. A crop of her left earlobe cannot be
+       described as glasses, because the glasses are not in the bytes. */
+    expect(reader.calls).toHaveLength(1);
+    expect(reader.calls[0]!.view).toBe("cut");
+    expect(reader.calls[0]!.noun).toBe("left earring");
+    expect(bench.rows[0]!.words).toEqual(["a slim gold hoop at the left earring"]);
+    /* And the terminator the join would have doubled is gone. */
+    expect(bench.rows[0]!.words[0]).not.toMatch(/\.$/);
+  });
+
+  it("NEVER asks about an accessory against the frame, and files no row at all", async () => {
+    /*
+      No side map and no ground, so there is no cut. Reading the whole frame for
+      "her left earring" is exactly the read that wrote her glasses into an
+      earring row four times, so it is not made — and the slot files nothing, so
+      its newest existing row keeps carrying rather than being superseded by
+      silence.
+    */
+    const bench = harness();
+    const reader = wordsReader(() => "gold hoops and dark tortoiseshell glasses");
+    const result = await mintReferencesForRender({
+      userId: 1,
+      variantId: 11,
+      frame: { bytes: await texturedFrame() },
+      applied: null,
+      masterRegions: new Map(),
+      slots: [earringSlot("left")],
+      dependencies: { ...bench.dependencies, readWords: reader.readWords } as never,
+    });
+
+    expect(reader.calls).toEqual([]);
+    expect(result.slots[0]).toMatchObject({ slot: "earring@left", outcome: "unread", reason: "noCut" });
+    expect(bench.rows).toEqual([]);
+  });
+
+  it("reads the FRAME for an anatomy slot the region vocabulary cannot name", async () => {
+    /* "Her jaw" names one thing a face has one of, so the frame is honest for
+       it — and there is no question to cut it with anyway. */
+    const bench = harness();
+    const reader = wordsReader(() => "a soft rounded jawline");
+    await mintReferencesForRender({
+      userId: 1,
+      variantId: 11,
+      frame: { bytes: await texturedFrame() },
+      applied: null,
+      masterRegions: new Map(),
+      slots: [hairSlot({ slot: "jaw", noun: "jaw", question: null, guardKind: null })],
+      dependencies: { ...bench.dependencies, readWords: reader.readWords } as never,
+    });
+
+    expect(reader.calls).toMatchObject([{ noun: "jaw", view: "frame" }]);
+    expect(bench.rows[0]!.words).toEqual(["a soft rounded jawline"]);
+  });
+
+  it("keeps the crop with an EMPTY stack when the read comes back empty", async () => {
+    /*
+      The crop is the carrier and the assembler says "the same hair, unchanged"
+      for an empty stack. Dropping the row would strand bytes already planned
+      for storage and forget a picture the guard had passed.
+    */
+    const bench = harness();
+    const reader = wordsReader(() => null);
+    const result = await mintReferencesForRender({
+      userId: 1,
+      variantId: 11,
+      frame: { bytes: await texturedFrame() },
+      applied: rect({ x: 0, y: 0, width: 40, height: 40 }),
+      masterRegions: new Map([["hair", rect(HAIR)]]),
+      slots: [hairSlot()],
+      dependencies: { ...bench.dependencies, readWords: reader.readWords } as never,
+    });
+
+    expect(result.slots[0]).toMatchObject({ slot: "hair", outcome: "stored" });
+    expect(bench.rows[0]!.words).toEqual([]);
+    expect(bench.rows[0]!.image).toBeDefined();
+  });
+
+  it("changes nothing at all when no reader is wired", async () => {
+    /* The old road, byte for byte: the slot files the words it arrived with. */
+    const bench = harness();
+    await mint([hairSlot()], bench);
+    expect(bench.rows[0]!.words).toEqual(["a blunt shoulder-length bob"]);
+  });
+});

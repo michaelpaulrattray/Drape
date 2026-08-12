@@ -95,6 +95,7 @@ import {
   type RegionReader,
 } from "./referenceCompleteness";
 import { parseSlot, type Instance, type SlotFrame } from "./referenceSlots";
+import { accessoryKindOfSlot, tidyStackWord } from "./slotWordShape";
 import type { FeatureSlot, FeatureTier } from "./recipeAssembler";
 
 const log = createModuleLogger("castingV2/referenceMint");
@@ -166,6 +167,22 @@ export type SlotSpec = {
   disputed?: boolean;
 };
 
+/**
+ * The library's own read: what is at this site, in one sentence.
+ *
+ * `view` says what the bytes ARE, because the two are read differently and only
+ * one of them is safe for an accessory: a `cut` is the slot's own pixels and
+ * cannot contain a neighbouring kind, where a `frame` is the whole picture and
+ * the reader has to be trusted to stay inside a name.
+ */
+export type SlotWordsReader = (input: {
+  bytes: Buffer;
+  contentType: string;
+  /** The stylist's word for the thing: `left earring`, `hair`, `jaw`. */
+  noun: string;
+  view: "cut" | "frame";
+}) => Promise<string | null>;
+
 /** Why a disputed slot kept no pixels: the guard's own refusal, or the reason
  *  no crop was ever cut for it. */
 export type DisputedNothingKept =
@@ -207,7 +224,24 @@ export type MintedSlot =
     kept: false;
     reason: DisputedNothingKept;
     detail?: string;
-  };
+  }
+  /**
+   * NOTHING COULD BE SAID ABOUT THIS SLOT, so nothing was filed.
+   *
+   * The library's words come from a read of the slot's own cut, and this is
+   * what happens when there is no view to read: an accessory slot with no cut
+   * (`noCut`), or a read that failed soft (`readFailedSoft`).
+   *
+   * **No row is written, and that is the point.** The slot's newest existing
+   * row keeps carrying, which is what a version history is for. A row with an
+   * empty stack and no crop would supersede a true sentence with silence — the
+   * mint would be forgetting what it knows because one call did not come back.
+   *
+   * An accessory slot is never read against the frame, however cheap that would
+   * be: "her left earring" asked of a whole picture is exactly the read that
+   * wrote her glasses into an earring row eight times.
+   */
+  | { slot: FeatureSlot; outcome: "unread"; reason: "noCut" | "readFailedSoft" };
 
 export type MintResult = {
   outcome: "stored" | "off" | "nothing-to-keep" | "failed";
@@ -247,6 +281,34 @@ export type MintDependencies = {
    * existing one, and the log line says how many were spent.
    */
   readGround?: RegionReader;
+  /**
+   * WHAT THIS SLOT NOW IS, IN WORDS — read from the slot's own cut.
+   *
+   * Until this existed, a slot's words were its FACETS' captions, each read
+   * against the whole frame and each carried forward from earlier renders. Two
+   * defects fell out of that and both were live in production:
+   *
+   *   an earring slot's words named her GLASSES — `statedAccessories` is one
+   *   facet over every object a face can wear, so its caption is a sentence
+   *   about everything she has on, and D-244 re-says the stack every edit
+   *
+   *   one hair row held "warm reddish-copper" and "auburn-brown" at once — the
+   *   colour caption carried from an earlier render, the cut caption fresh from
+   *   this one, contradicting each other in a single prompt
+   *
+   * So the words are ONE read of ONE view, and the newest read REPLACES rather
+   * than joining a pile (fable-286 ruling 2). A slot's words are the current
+   * state of the object at that site; its history is the versioned rows, and a
+   * pile inside one row is a second history that argues with itself.
+   *
+   * **Absent, nothing changes**: the slot files the words it arrived with,
+   * which is exactly today's behaviour. Wired in `refineService`, and asserted
+   * there rather than only here — a control nothing invokes is not a control.
+   *
+   * Costed honestly: one call per filed slot, counted as `wordReads` in the log
+   * line beside `groundReads` and `disputedReads`.
+   */
+  readWords?: SlotWordsReader;
   store?: (input: { key: string; bytes: Buffer; contentType: string }) => Promise<{ key: string }>;
   record?: typeof recordReferenceRows;
   manifest?: (input: {
@@ -481,6 +543,93 @@ export async function mintReferencesForRender(input: MintInput): Promise<MintRes
       cuttable.push({ ...slot, question, guardKind, regionKey: key, side });
     }
     /*
+      THE CUTS, TAKEN BEFORE ANY ROW IS FILED.
+
+      They used to be taken after the words-only loops, which was fine while a
+      slot's words arrived with it. Now the words are READ FROM THE CUT, so
+      every row — including the ones that will never store a crop — has to know
+      whether this render produced a view of its slot. Nothing else moved: the
+      rows are pushed in the same order, by the same loops, on the same rules.
+    */
+    const frame = await readRaster(input.frame.bytes);
+    const cuts = cuttable.length === 0 ? [] : cutSegments({
+      composite: frame,
+      applied: input.applied ?? wholeFrame(frame.width, frame.height),
+      facetRegions: new Map(cuttable.map((slot) => [slot.slot, slot.regionKey])),
+      regionMasks: regionsToCut,
+      deliveredMasks: deliveredToCut.size > 0 ? deliveredToCut : null,
+    });
+    const cutBySlot = new Map(cuts.map((cut) => [cut.facet, cut]));
+
+    /* Encoded once per cut and remembered: the words read these bytes and the
+       digest hashes them, and encoding a crop twice to answer one question
+       about it twice is the copy law 4 warns about wearing a performance
+       costume. */
+    const encodedCuts = new Map<string, Awaited<ReturnType<typeof encodeCut>>>();
+    const encodedFor = async (cut: SegmentCut) => {
+      const held = encodedCuts.get(cut.facet);
+      if (held) return held;
+      const encoded = await encodeCut(cut);
+      encodedCuts.set(cut.facet, encoded);
+      return encoded;
+    };
+
+    /*
+      WHAT THIS SLOT NOW IS, IN WORDS — one read, of the narrowest view there is.
+
+      `null` is a real answer and it means *nothing could be said about this
+      slot*: an accessory with no cut, or a read that failed soft. A slot with a
+      cut still files its row — the crop is the carrier and `describe()` already
+      says "the same left earring, unchanged" for an empty stack — but a slot
+      with NEITHER writes nothing at all, so its newest existing row keeps
+      carrying rather than being superseded by silence.
+    */
+    let wordReads = 0;
+    const readWords = input.dependencies?.readWords;
+    const wordsFor = async (slot: SlotSpec): Promise<readonly string[] | null> => {
+      /* Not wired: the slot files the words it arrived with, byte for byte
+         today's behaviour. */
+      if (!readWords) return slot.words;
+      const cut = cutBySlot.get(slot.slot);
+      if (!cut) {
+        /*
+          AN ACCESSORY IS NEVER READ AGAINST THE FRAME, however cheap that would
+          be. "Her left earring" asked of a whole picture is the read that wrote
+          "plus dark tortoiseshell cat-eye glasses" into an earring row four
+          times. An anatomy noun with no question — her jaw, her skin — names
+          one thing a face has one of, so the frame is honest for it.
+        */
+        if (accessoryKindOfSlot(slot.slot) !== null) return null;
+        wordReads += 1;
+        const said = await readWords({
+          bytes: input.frame.bytes,
+          contentType: "image/png",
+          noun: slot.noun,
+          view: "frame",
+        });
+        return said === null ? null : [tidyStackWord(said)];
+      }
+      wordReads += 1;
+      const encoded = await encodedFor(cut);
+      const said = await readWords({
+        bytes: encoded.content,
+        contentType: "image/png",
+        noun: slot.noun,
+        view: "cut",
+      });
+      return said === null ? null : [tidyStackWord(said)];
+    };
+
+    /** Nothing could be said about this slot, so no row is written for it. */
+    const unread = (slot: SlotSpec) => {
+      outcomes.push({
+        slot: slot.slot,
+        outcome: "unread",
+        reason: cutBySlot.has(slot.slot) ? "readFailedSoft" : "noCut",
+      });
+    };
+
+    /*
       A DISPUTED SLOT NEVER FILES WORDS — the three loops below all skip one, and
       each skip is the same sentence: this slot is in the list for its pixels, and
       a words-only row for it would be a version bump asserting a delivery its own
@@ -504,7 +653,9 @@ export async function mintReferencesForRender(input: MintInput): Promise<MintRes
         disputedNothingKept(slot, "surface");
         continue;
       }
-      rows.push({ role: "carry", slot: slot.slot, tier: slot.tier, noun: slot.noun, words: slot.words });
+      const said = await wordsFor(slot);
+      if (said === null) { unread(slot); continue; }
+      rows.push({ role: "carry", slot: slot.slot, tier: slot.tier, noun: slot.noun, words: said });
       outcomes.push({ slot: slot.slot, outcome: "words-only", reason: "surface" });
     }
     /*
@@ -527,7 +678,9 @@ export async function mintReferencesForRender(input: MintInput): Promise<MintRes
         );
         continue;
       }
-      rows.push({ role: "carry", slot: slot.slot, tier: slot.tier, noun: slot.noun, words: slot.words });
+      const said = await wordsFor(slot);
+      if (said === null) { unread(slot); continue; }
+      rows.push({ role: "carry", slot: slot.slot, tier: slot.tier, noun: slot.noun, words: said });
       outcomes.push({
         slot: slot.slot,
         outcome: "words-only",
@@ -540,19 +693,11 @@ export async function mintReferencesForRender(input: MintInput): Promise<MintRes
         disputedNothingKept(slot, "noSide", detail);
         continue;
       }
-      rows.push({ role: "carry", slot: slot.slot, tier: slot.tier, noun: slot.noun, words: slot.words });
+      const said = await wordsFor(slot);
+      if (said === null) { unread(slot); continue; }
+      rows.push({ role: "carry", slot: slot.slot, tier: slot.tier, noun: slot.noun, words: said });
       outcomes.push({ slot: slot.slot, outcome: "words-only", reason: "noSide", detail });
     }
-
-    const frame = await readRaster(input.frame.bytes);
-    const cuts = cuttable.length === 0 ? [] : cutSegments({
-      composite: frame,
-      applied: input.applied ?? wholeFrame(frame.width, frame.height),
-      facetRegions: new Map(cuttable.map((slot) => [slot.slot, slot.regionKey])),
-      regionMasks: regionsToCut,
-      deliveredMasks: deliveredToCut.size > 0 ? deliveredToCut : null,
-    });
-    const cutBySlot = new Map(cuts.map((cut) => [cut.facet, cut]));
 
     /* Digests already spoken for, so a byte-identical crop is caught whether it
        arrived this render or three renders ago. */
@@ -572,12 +717,21 @@ export async function mintReferencesForRender(input: MintInput): Promise<MintRes
           disputedNothingKept(slot, "noRegion");
           continue;
         }
-        rows.push({ role: "carry", slot: slot.slot, tier: slot.tier, noun: slot.noun, words: slot.words });
+        const said = await wordsFor(slot);
+        if (said === null) { unread(slot); continue; }
+        rows.push({ role: "carry", slot: slot.slot, tier: slot.tier, noun: slot.noun, words: said });
         outcomes.push({ slot: slot.slot, outcome: "words-only", reason: "noRegion" });
         continue;
       }
 
-      const encoded = await encodeCut(cut);
+      /*
+        THE WORDS ARE READ FROM THIS CUT, and a slot with a cut always files its
+        row. An empty stack beside a crop is honest — the crop is the carrier and
+        the assembler says "the same left earring, unchanged" for one — where an
+        empty stack with NO crop would supersede a true sentence with silence.
+      */
+      const said = (await wordsFor(slot)) ?? [];
+      const encoded = await encodedFor(cut);
       const digest = digestOf(encoded.content);
       if (!read) throw new Error("the completeness guard has no reader, and a crop may not enter the library unread");
       const verdict = await mintGuardedReference({
@@ -693,7 +847,7 @@ export async function mintReferencesForRender(input: MintInput): Promise<MintRes
           slot: slot.slot,
           tier: slot.tier,
           noun: slot.noun,
-          words: slot.words,
+          words: said,
           refusal,
         });
         outcomes.push(slot.disputed
@@ -738,7 +892,7 @@ export async function mintReferencesForRender(input: MintInput): Promise<MintRes
         slot: slot.slot,
         tier: slot.tier,
         noun: slot.noun,
-        words: slot.words,
+        words: said,
         image: {
           storageKey: contentKey,
           maskKey,
@@ -778,7 +932,7 @@ export async function mintReferencesForRender(input: MintInput): Promise<MintRes
         storageKeys: planned.flatMap(({ contentKey, maskKey }) => [contentKey, maskKey]),
       });
       for (const { cut, contentKey, maskKey } of planned) {
-        const encoded = await encodeCut(cut);
+        const encoded = await encodedFor(cut);
         await store({ key: contentKey, bytes: encoded.content, contentType: "image/png" });
         await store({ key: maskKey, bytes: encoded.mask, contentType: "image/png" });
       }
@@ -814,6 +968,16 @@ export async function mintReferencesForRender(input: MintInput): Promise<MintRes
            Zero on every render that did — which is every render on the old road
            — so a non-zero here is the repaint paying its declared price. */
         groundReads,
+        /* AND WHAT THE WORDS COST — one read per filed slot, the declared price
+           of a slot's words describing the object at that site rather than a
+           sentence about her whole face. Zero when nothing wired a reader. */
+        wordReads,
+        /* The slots nothing could be said about, so nothing was filed and their
+           newest existing row keeps carrying. An accessory with no cut is
+           `noCut`; a read that came back empty is `readFailedSoft`. */
+        unread: outcomes
+          .filter((slot): slot is Extract<MintedSlot, { outcome: "unread" }> => slot.outcome === "unread")
+          .map((slot) => `${slot.slot}:${slot.reason}`),
         disputedKept: outcomes
           .filter((slot) => slot.outcome === "disputed" && slot.kept)
           .map((slot) => slot.slot),

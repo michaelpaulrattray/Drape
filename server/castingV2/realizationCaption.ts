@@ -241,6 +241,75 @@ export async function captionRealization(input: {
 }
 
 /**
+ * READ ONE SLOT, FROM THE NARROWEST VIEW THAT CONTAINS IT.
+ *
+ * `captionRealization` reads a FACET against the whole frame, which is right for
+ * the already-true lane and wrong for the library. `statedAccessories` is one
+ * facet over every object a face can wear, so its whole-frame caption is a
+ * sentence about everything she has on — and filed as the state of one earring
+ * it named her GLASSES on eight production rows, twice describing both ears.
+ *
+ * This is the library's own read: one call, one slot, and the pixels are the
+ * slot's own CUT wherever there is one. A crop of her left earlobe cannot be
+ * described as glasses, because the glasses are not in the bytes handed over —
+ * structural rather than remembered. Only a slot the region vocabulary has no
+ * question for (her jaw, her skin) is read against the frame, and only because
+ * such a noun names one thing on a face that there is no second of.
+ *
+ * Fails SOFT, like every read-back: a missing sentence costs later precision,
+ * and the render in hand is already correct and already paid for.
+ */
+export async function captionSlot(input: {
+  /** The stylist's word for what to describe: `left earring`, `hair`, `jaw`. */
+  noun: string;
+  /** `cut` — these bytes are the slot's own crop. `frame` — the whole picture. */
+  view: "cut" | "frame";
+  bytes: Buffer;
+  contentType: string;
+  engine?: TextEngine;
+  signal?: AbortSignal;
+}): Promise<string | null> {
+  const engine = input.engine ?? interpreterEngine();
+  if (!engine) return null;
+  try {
+    const reply = await engine.complete({
+      system: SYSTEM_PROMPT,
+      user: [
+        input.view === "cut"
+          ? `This picture is a CUTOUT of one thing: this person's ${input.noun}. `
+            + "Describe only the thing itself — never anything around it, and"
+            + " never anything you cannot see in this cutout."
+          : `Describe this person's ${input.noun}.`,
+        /*
+          THE OTHER INSTANCE IS NOT THIS SLOT'S BUSINESS. Mismatched pairs are a
+          ruled feature, and the words were being filed identically under both
+          sides — so a sentence claiming the pair matches was not even evidence
+          of itself. The write door refuses these; saying so here is what keeps
+          the refusal rare.
+        */
+        "If this person has two of these, describe ONLY this one. Never say"
+        + " \"both\", \"each\" or \"a matching pair\" of the other side.",
+      ].join("\n"),
+      images: [{ bytes: input.bytes, contentType: input.contentType }],
+      json: true,
+      temperature: 0.1,
+      maxOutputTokens: 300,
+      signal: input.signal,
+    });
+    const parsed = JSON.parse(reply.text.trim().replace(/^```[a-z]*\s*/i, "").replace(/```\s*$/, ""));
+    const caption = typeof parsed?.caption === "string" ? parsed.caption.trim() : "";
+    if (!caption) return null;
+    /* Model-authored free text entering a paid prompt, scrubbed like the rest. */
+    const cleaned = scrubBrands(caption)?.trim() ?? "";
+    if (!cleaned) return null;
+    return tidy(cleaned) || null;
+  } catch (error) {
+    log.warn({ err: error, noun: input.noun }, "[realizationCaption] could not read a slot back");
+    return null;
+  }
+}
+
+/**
  * Ink is asked WHERE, not just what.
  *
  * D-145 says a stated placement is never relocated, and a caption that
