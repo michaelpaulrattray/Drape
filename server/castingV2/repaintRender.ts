@@ -75,6 +75,22 @@ export type RepaintInput = {
   width: number;
   height: number;
   signal?: AbortSignal;
+  /**
+   * CALLED WITH THE REQUEST AT THE MOMENT IT GOES OUT, AND BEFORE IT DOES.
+   *
+   * `sent` is returned to the caller on success, which is the record of every
+   * render that LANDED — and therefore of no render that failed. The five-ask
+   * proof met that hole from the wrong side: two refused renders left no account
+   * of what they had sent, and those were precisely the two anybody would want
+   * to inspect. A hook here is the only place the true sent request exists
+   * before the outcome is known: the bytes are loaded, the digests are taken,
+   * and the engine has not been asked yet.
+   *
+   * It is awaited, so a caller can persist. A throw from it aborts the render
+   * rather than being swallowed — a record we could not write is a render we
+   * should not be able to deny making.
+   */
+  onDispatch?: (sent: SentRequest) => void | Promise<void>;
 };
 
 /**
@@ -158,6 +174,11 @@ export async function repaint(input: RepaintInput): Promise<RepaintResult> {
     digests.push(digest);
   }
 
+  const sent: SentRequest = {
+    prompt: input.recipe.prompt, keys, digests, engineId: input.engine.id,
+  };
+  await input.onDispatch?.(sent);
+
   const frame = await input.engine.edit({
     /* The recipe's own prompt and the recipe's own order. Rebuilding either
        here would be the second list, and its drift is invisible in every
@@ -169,9 +190,7 @@ export async function repaint(input: RepaintInput): Promise<RepaintResult> {
     signal: input.signal,
   });
 
-  return {
-    ok: true,
-    frame,
-    sent: { prompt: input.recipe.prompt, keys, digests, engineId: input.engine.id },
-  };
+  /* The same object the hook was handed — one record, two readers, so the
+     landing cannot describe a different request from the one it announced. */
+  return { ok: true, frame, sent };
 }

@@ -590,6 +590,59 @@ export function guardReference(input: GuardInput): GuardVerdict {
   */
   const resolution = shellFraction(input.guardRead);
   const gap = adjudicatedGapFor(input.kind, reading.coverage);
+
+  /*
+    ================== AT THE CEILING, THE LENGTH BAR JUDGES ==================
+    (fable-305, from the five-ask proof's four refusals — 2026-08-12.)
+
+    The clause below reads `coverage < 1` because §2.4b's ceiling exemption has
+    already answered the not-scorable question for a perfect reading. But that
+    same `< 1` also carried a crop AT the ceiling straight past the centreline
+    instrument and into the area path, where `earring` has no specimen — so a
+    hoop crop holding 100% of its own region was refused `noSpecimen`, while a
+    hoop crop holding 97% could be judged and passed.
+
+    **The better the cut, the more certainly the library refused to carry it.**
+
+    The corner was written down where it happens and dismissed as "a synthetic
+    case rather than a reachable one". It is not: **the first real walk on the
+    repaint road landed in it 4 times out of 4** (dev cand 358, v#147 and v#148,
+    both earring slots, every reading exactly 1.0000, every crop a whole hoop
+    with its cross drop intact) — and because a repaint carries features by
+    CROP, those four refusals are why that walk's recipes sent the master alone
+    and why two later steps refused for a missing pair. A dismissal survived a
+    year because nobody wrote its test.
+
+    So the ceiling gets its own clause, and it ROUTES rather than accepts:
+
+      - it invents no number. 0.976 is measured (fable-228, n=1 positive), and a
+        ceiling crop still has to prove its own centreline runs within a pixel of
+        itself — the bar that can see a break in a ring.
+      - accepting a ceiling reading outright was considered and rejected: it is
+        policy wearing a routing change, and it would wave through the solid blob
+        the shell-fraction test exists to keep away from a length instrument.
+      - the sliver trap stays dead by arithmetic rather than by care: a thin
+        sliver through a disc scores high by LENGTH and cannot read 1.0 by AREA,
+        so it can never arrive here.
+      - it is reachable ONLY for a kind that owns a centreline family. Everything
+        else falls through to the area path exactly as before, and a kind with no
+        specimen anywhere still refuses `noSpecimen`.
+  */
+  if (reading.coverage >= 1 && CENTRELINE_SPECIMENS[input.kind]) {
+    const family = CENTRELINE_SPECIMENS[input.kind]!;
+    const length = measureCentreline(input.crop, input.guardRead);
+    const judged: Adjudication = {
+      instrument: "centreline", coverage: length.coverage, threshold: family.positive,
+    };
+    if (length.coverage < family.positive) {
+      return {
+        ok: false, reason: "brokenOutline", kind: input.kind, reading, judged,
+        detail: `this ${input.kind} crop reads 100% of its own region by area, so the length bar judges it — and ${(length.coverage * 100).toFixed(1)}% of its centreline runs within a pixel of the crop, under the ${(family.positive * 100).toFixed(1)}% of the one crop proven complete (n=${family.positives}, ${length.spinePixels} px of spine); this bar is blind to ${CENTRELINE_BLIND_TO}, so an eye that calls this crop complete overturns it`,
+      };
+    }
+    return { ok: true, kind: input.kind, reading, judged };
+  }
+
   if (reading.coverage < 1 && resolution >= gap) {
     /*
       AND HERE THE SECOND INSTRUMENT GETS ITS TURN — §2.4c, ruled in fable-228.
@@ -611,13 +664,22 @@ export function guardReference(input: GuardInput): GuardVerdict {
       fraction is what keeps blobs out, and it is measured on the region the guard
       already holds, per crop, at no cost.
 
-      ONE DEGENERATE CORNER, deliberate and left alone: a crop whose AREA reading
-      is exactly 1.0 takes §2.4b's ceiling exemption above and never reaches here,
-      so on a hoop it refuses with `noSpecimen` where the length instrument would
-      have passed it at 100%. It requires two independent vision reads to agree on
-      every pixel of a hoop, so it is a synthetic case rather than a reachable
-      one; the exemption is fable-224's standing law and is not moved to tidy a
-      corner. `noSpecimen` keeps its crop, so nothing is lost when it happens.
+      THE CORNER THIS USED TO CALL SYNTHETIC — closed above, 2026-08-12.
+
+      A crop whose AREA reading is exactly 1.0 takes §2.4b's ceiling exemption
+      and cannot satisfy `coverage < 1`, so it never reached here and refused
+      with `noSpecimen` where the length instrument would have judged it. This
+      comment said that required "two independent vision reads to agree on every
+      pixel of a hoop", called it "a synthetic case rather than a reachable one",
+      and left it.
+
+      **It is the corner every mint on the repaint road lands in.** The first
+      real walk of that road hit it 4 times out of 4, and because a repaint
+      carries features by crop rather than by paste, those refusals cost that
+      walk its earrings and two later steps their delivery. The clause above now
+      routes a ceiling reading to the length bar (fable-305), and the corner has
+      the test it never had. `noSpecimen` keeping its crop is what made the
+      finding cheap to prove — the pixels were still there to look at.
     */
     const family = CENTRELINE_SPECIMENS[input.kind];
     if (!family) {

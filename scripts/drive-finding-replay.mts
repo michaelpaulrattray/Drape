@@ -713,16 +713,31 @@ const candidateRowId = async (): Promise<number> => (await walkFace()).id;
  * The money, from the ledger rather than from the run's account of itself
  * (measurement 5). Signed the way the ledger stores it: charges negative.
  */
-async function creditsSpentSince(since: Date): Promise<{ rows: number; gross: number; refunded: number }> {
+async function creditsSpentSince(since: Date): Promise<{
+  rows: number; gross: number; refunded: number; other: number;
+}> {
   const [rows] = await connection.query<any[]>(
-    `SELECT amount FROM point_transactions WHERE userId = ? AND createdAt >= ?`,
+    `SELECT amount, type FROM point_transactions WHERE userId = ? AND createdAt >= ?`,
     [await walkUserId(), since],
   );
-  const amounts = (rows as any[]).map((row) => Number(row.amount));
+  const ledgerRows = rows as Array<{ amount: number; type: string }>;
+  /*
+    SIGN IS NOT THE SAME QUESTION AS TYPE, and reading one for the other is how a
+    ledger reader lies. A positive row is a refund OR a purchase OR a bonus OR an
+    admin grant; summing every positive as "refunded" would have this walk report
+    a top-up as its own money coming back. Within a walk's window that is
+    unlikely and unlikely is not a proof, so the types are named and anything
+    else is counted separately and shown.
+  */
   return {
-    rows: amounts.length,
-    gross: -amounts.filter((amount) => amount < 0).reduce((total, amount) => total + amount, 0),
-    refunded: amounts.filter((amount) => amount > 0).reduce((total, amount) => total + amount, 0),
+    rows: ledgerRows.length,
+    gross: -ledgerRows.filter((row) => Number(row.amount) < 0 && row.type === "generation")
+      .reduce((total, row) => total + Number(row.amount), 0),
+    refunded: ledgerRows.filter((row) => Number(row.amount) > 0 && row.type === "refund")
+      .reduce((total, row) => total + Number(row.amount), 0),
+    other: ledgerRows.filter((row) =>
+      !(Number(row.amount) < 0 && row.type === "generation")
+      && !(Number(row.amount) > 0 && row.type === "refund")).length,
   };
 }
 
@@ -1129,9 +1144,10 @@ async function runDevControls(): Promise<void> {
 
   const spentBefore = await creditsSpentSince(new Date("1970-01-01T00:00:00Z"));
   check(
-    spentBefore.rows > 0,
+    spentBefore.rows > 0 && spentBefore.gross > 0,
     "DEV 3: the ledger reader can see this world's transactions",
-    `${spentBefore.rows} row(s), gross ${spentBefore.gross}, refunded ${spentBefore.refunded}`,
+    `${spentBefore.rows} row(s) all-time, generation charges ${spentBefore.gross}, refunds `
+    + `${spentBefore.refunded}, other ${spentBefore.other} (grants and purchases — named, not summed)`,
   );
   /* NEGATIVE — a window that closed before this world existed. Zero here is the
      reader declining; a non-zero would mean the window is not being applied. */
@@ -1272,6 +1288,25 @@ async function readKeptPanel(page: any): Promise<{
     viewer renders is the vacuous-pass hazard that has already scored four steps
     `delivered` that had refused. Two identical counts a second apart, then read.
   */
+  /*
+    FIRST WAIT FOR THE PANEL TO EXIST, THEN WAIT FOR IT TO SETTLE — and the two
+    are different waits, which is the whole defect.
+
+    The settle test asks for two identical counts a second apart. A panel that
+    has not mounted yet counts as -1, and -1 twice in a row satisfies "settled"
+    on the first two polls — so a read taken immediately after re-opening the
+    viewer returns "no panel" with total confidence, roughly a second before the
+    panel appears. That is what run 2 recorded on all five steps, and it reads
+    identically to a face that is genuinely keeping nothing.
+
+    A panel that never appears within the timeout IS absent, and the caller
+    still gets `surface: null` for it — the difference is that the absence now
+    costs 20 seconds of looking rather than two polls of not.
+  */
+  await page.waitForFunction(
+    () => Boolean(document.querySelector(".dpc-face") ?? document.querySelector(".dpc-kept")),
+    { timeout: 20_000, polling: 500 },
+  ).catch(() => undefined);
   await page.waitForFunction(
     () => {
       /* Settled on WHICHEVER panel is on screen — counting only the retired
@@ -1447,6 +1482,8 @@ async function runWalk(): Promise<boolean> {
     page, base: APP_BASE, sessionId, rollLabel, currentFaceKey, indexLabelForError: indexLabel,
   });
   const steps: StepRecord[] = [];
+  /** Set by the stop-rule below; a walk that stopped is not a walk that passed. */
+  let stoppedAt: { position: string; instruction: string; said: string | null } | null = null;
 
   try {
     /*
@@ -1530,9 +1567,50 @@ async function runWalk(): Promise<boolean> {
       const panel = await readKeptPanel(page);
       const rows = await segmentsNow();
       await page.screenshot({ path: `${OUT}/rehearsal.png` });
-      if (panel.rows === null) {
+      console.log(`  the panel on screen: ${panel.surface ?? "none"} · ${panel.rows ?? 0} thumbnail(s)`);
+      /*
+        AND THE REHEARSAL PROVES WHICHEVER JOIN THE WALK WILL MAKE.
+
+        The whole value of this step is that E's join is exercised before any
+        credit is spent, so it has to be the join E will actually make. On a v2
+        sheet that is the LIBRARY, keyed by `storageKey`; rehearsing the segment
+        join there would prove a table the walk is not going to read.
+      */
+      if (panel.surface === "face") {
+        const library = await liveLibraryRows(await candidateRowId());
+        const held = new Set(library.map((row) => row.storageKey).filter(Boolean) as string[]);
+        const mapped = panel.keys.filter((key) => held.has(key));
+        if (held.size === 0) {
+          /*
+            NOTHING TO JOIN IS NOT AGREEMENT AND IT IS NOT A DEFECT.
+
+            A library whose rows are all words-only — the tier boundary, or a
+            mint that refused every specimen — puts no thumbnail on the panel,
+            so zero rows matching zero keys would "pass" while proving nothing.
+            The rehearsal exists to ARM this join; say plainly that it could not
+            be armed here, and on which face it could.
+          */
+          absent(
+            "[rehearsal] every panel thumbnail joins to a LIVE library row by its own storage key",
+            `this face holds ${library.length} live library row(s) and NOT ONE carries a crop `
+            + `(${library.filter((row) => row.refusedReason).map((row) => `${row.slot}:${row.refusedReason}`).join(", ") || "words-only rows"}), `
+            + "so the panel has no thumbnail and the join has nothing to be proved on. "
+            + "Rehearse a face whose library holds at least one crop",
+          );
+        } else {
+        check(
+          (panel.rows ?? 0) > 0 && mapped.length === panel.keys.length,
+          "[rehearsal] every panel thumbnail joins to a LIVE library row by its own storage key",
+          `${mapped.length}/${panel.keys.length} of the panel's ${panel.rows} thumbnail(s) matched a live `
+          + `casting_reference_library.storageKey — slots [${[...new Set(panel.keys
+            .map((key) => library.find((row) => row.storageKey === key)?.slot)
+            .filter(Boolean))].join(", ")}] · she holds ${library.length} live library row(s), `
+          + `${held.size} of them with a crop`,
+        );
+        }
+      } else if (panel.rows === null) {
         absent(
-          "[rehearsal] the kept panel's thumbnails join to segment rows",
+          "[rehearsal] the panel's thumbnails join to their own store",
           `no panel on this face — she keeps nothing (${rows.length} segment row(s) on her). `
           + "E's join is unproven on her; rehearse a face that keeps something",
         );
@@ -1620,6 +1698,36 @@ async function runWalk(): Promise<boolean> {
         } catch (error) {
           console.log(`     (could not fetch the delivered image: ${String(error).slice(0, 80)})`);
         }
+      }
+
+      /*
+        THE STOP-RULE, IN THE DRIVER (fable-304 ruling 3).
+
+        The five-ask plan's own rule — *"any step refusing for a reason not in
+        this plan is a finding, and the walk stops rather than spending the next
+        25 credits to see whether it happens twice"* — was written as an
+        instruction to whoever was watching the log. On its first outing nobody
+        was: step 3 refused, the loop had already submitted step 4 by the time
+        the line was read, and 25 credits bought a second copy of a finding we
+        already had. Applying it by hand also meant choosing between killing a
+        running paid operation and overspending, which is not a choice a rule
+        should leave to the person reading the output.
+
+        Only the LAST step is allowed to refuse, and only because the plan says
+        so: step 5 is a designed refusal (`repaintCannotRemove`), and whether it
+        refunded is decided below with the money rather than here. Any earlier
+        refusal stops the walk where it stands, names the rule, and leaves the
+        assertions to run over what was actually bought.
+      */
+      const plannedRefusal = index === STEP.removeGlasses;
+      if (seen.outcome === "refused" && !plannedRefusal) {
+        stoppedAt = { position, instruction: step.instruction, said: seen.said };
+        console.log(
+          `\n■ STOPPED BY THE WALK'S OWN STOP-RULE at ${position}. "${step.instruction}" refused, `
+          + "and an unplanned refusal is a finding rather than something to buy twice. "
+          + `${(WALK.length - index - 1) * COST_PER_STEP} credits not spent.`,
+        );
+        break;
       }
     }
   } finally {
@@ -1745,10 +1853,11 @@ async function runWalk(): Promise<boolean> {
   */
   const ledger = await creditsSpentSince(startedAt);
   check(
-    ledger.gross === charged && ledger.refunded === refunded,
+    ledger.gross === charged && ledger.refunded === refunded && ledger.other === 0,
     "[money] the LEDGER agrees with the rows, charge for charge",
-    `ledger: ${ledger.rows} row(s), gross ${ledger.gross}, refunded ${ledger.refunded} · `
-    + `rows: charged ${charged}, refunded ${refunded}`,
+    `ledger: ${ledger.rows} row(s), gross ${ledger.gross}, refunded ${ledger.refunded}`
+    + (ledger.other ? `, and ${ledger.other} row(s) that are NEITHER a generation charge nor a refund` : "")
+    + ` · rows: charged ${charged}, refunded ${refunded}`,
   );
 
   /* ------------- R1. THE RECIPE AT THE WIRE, with every reference measured */
@@ -1787,8 +1896,22 @@ async function runWalk(): Promise<boolean> {
     }
   };
 
+  /*
+    A STEP THE STOP-RULE NEVER BOUGHT IS NOT A STEP THAT FAILED. Said once, here,
+    so the assertions below can say "no row" and mean it.
+  */
+  if (stoppedAt) {
+    absent(
+      "[stop] the walk was ended early by its own rule",
+      `${stoppedAt.position} "${stoppedAt.instruction}" refused, which this plan does not allow for, `
+      + `so steps ${steps.length + 1}–${WALK.length} were never walked and their assertions have `
+      + "nothing to read. This is a finding, not a pass",
+    );
+  }
+
   for (const [index, entry] of walkRows.entries()) {
     const position = `${index + 1}/${WALK.length}`;
+    if (index >= steps.length) continue;
     const recipe = recipeOf(entry.row);
     if (!recipe) {
       absent(
@@ -1850,10 +1973,7 @@ async function runWalk(): Promise<boolean> {
   for (const [index, entry] of walkRows.entries()) {
     const position = `${index + 1}/${WALK.length}`;
     const step = steps[index];
-    if (!step) {
-      absent(`[R2] ${position} the library after this step`, "this step produced no record");
-      continue;
-    }
+    if (!step) continue;
     const rows = step.libraryAtPanelRead;
     const refused = rows.filter((row) => row.refusedReason !== null);
     const withCrops = rows.filter((row) => row.storageKey !== null);
@@ -2503,6 +2623,7 @@ async function runWalk(): Promise<boolean> {
     const position = `${index + 1}/${WALK.length}`;
     const row = entry.row;
     const step = steps[index];
+    if (index >= steps.length) continue;
     if (!row || !step) {
       absent(`[E] ${position} the panel agrees with the assembly`, "this step produced no row to compare against");
       continue;
@@ -2627,7 +2748,7 @@ async function runWalk(): Promise<boolean> {
     path.join(OUT, "walk.json"),
     `${JSON.stringify({
       startedAt, candidate: CANDIDATE, sessionId, steps,
-      world: WORLD, road,
+      world: WORLD, road, stoppedAt,
       money: { charged, refunded, delivered, ledger },
       accessorySegments, carriedVerdicts,
       recipes: walkRows.map((entry) => recipeOf(entry.row)),
@@ -2662,7 +2783,7 @@ async function runWalk(): Promise<boolean> {
         : "no `statedAccessories` segment on this face"),
     );
   }
-  return failures().length === 0 && collisions === 0 && accessoryCarriers > 0;
+  return failures().length === 0 && collisions === 0 && accessoryCarriers > 0 && stoppedAt === null;
 }
 
 /* ==========================================================================

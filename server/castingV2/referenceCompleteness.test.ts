@@ -336,11 +336,8 @@ describe("what one pixel of boundary is worth", () => {
     expect(refusalKeepsItsCrop(verdict.reason)).toBe(true);
   });
 
-  it("a reading at the CEILING is always scorable — there is no shortfall to be unsure about", () => {
-    /* The degenerate arm, driven so it stays deliberate: a crop holding all of
-       an independent read of its own region is as complete as this instrument
-       can certify, and refusing it for having a zero gap would be reading the
-       rule instead of applying it. */
+  /** A ring, the shape the whole ceiling corner is about. */
+  const ringRegion = (): Mask => {
     const hoop = { data: Buffer.alloc(41 * 41, 0), width: 41, height: 41 };
     for (let y = 0; y < 41; y += 1) {
       for (let x = 0; x < 41; x += 1) {
@@ -348,8 +345,61 @@ describe("what one pixel of boundary is worth", () => {
         if (radius <= 12 && radius >= 9) hoop.data[y * 41 + x] = 255;
       }
     }
+    return hoop;
+  };
+
+  it("THE CEILING CORNER: a perfect hoop is judged by the LENGTH bar, and the row says so", () => {
+    /*
+      The corner that cost the first repaint-road walk its earrings (fable-305).
+      This test asserted `noSpecimen` here for a year — pinning the defect,
+      because the crop that reads 100% of its own region is the BEST crop the
+      instrument can see and it was the one refusal the library could not
+      overturn. It now takes the centreline path, and the verdict names the
+      instrument that produced it: "passed" and "passed by the bar that can see
+      breaks" have to be different sentences on the row.
+    */
     const verdict = guardReference({
-      kind: "earring", crop: crop({ x: 8, y: 8, width: 25, height: 25 }), digest: "aa", guardRead: hoop,
+      kind: "earring", crop: crop({ x: 8, y: 8, width: 25, height: 25 }), digest: "aa", guardRead: ringRegion(),
+    });
+    expect(verdict.reading!.coverage).toBe(1);
+    expect(verdict.ok).toBe(true);
+    expect(verdict.judged?.instrument).toBe("centreline");
+    expect(verdict.judged?.threshold).toBe(CENTRELINE_SPECIMENS.earring!.positive);
+  });
+
+  it("AND THE BAR IT ROUTES TO CANNOT FAIL AT THE CEILING — said out loud, not discovered later", () => {
+    /*
+      A CHECK THAT CANNOT FAIL IS NOT A CHECK, AND THIS ONE CANNOT.
+
+      Coverage is `|crop ∩ region| / |region|`, so a reading of exactly 1.0 means
+      every region pixel is inside the crop. The centreline is thinned FROM that
+      same region, so its spine is a subset of those pixels and is covered before
+      the dilation is even applied. **At the ceiling the length bar is a
+      formality by arithmetic**, and the routing's real effect is to ACCEPT.
+
+      That is worth having, and it is worth being honest about. What the clause
+      buys is not a second opinion: it is (a) a scope — only kinds that own a
+      measured length bar are accepted at the ceiling, and a kind with no
+      specimen anywhere still refuses — and (b) a row that records WHICH
+      instrument passed it. Anyone reading the clause later must not mistake a
+      formality for an opinion, so the implication is driven here rather than
+      assumed: over the shapes this door sees, area 1.0 implies centreline 1.0.
+    */
+    for (const shape of [ringRegion(), region(41, 41, { x: 10, y: 10, width: 20, height: 20 })]) {
+      const whole = crop({ x: 0, y: 0, width: 41, height: 41 });
+      expect(measureCoverage(whole, shape).coverage).toBe(1);
+      expect(measureCentreline(whole, shape).coverage).toBe(1);
+    }
+  });
+
+  it("AND A KIND WITH NO LENGTH BAR STILL REFUSES AT THE CEILING", () => {
+    /* The scope, driven: the clause routes, it does not open the ceiling to
+       every kind. `lips` owns no centreline family, so a perfect lip crop is
+       still `noSpecimen` — the refusal that says "measure one and we will have
+       a bar" rather than inventing one. */
+    expect(CENTRELINE_SPECIMENS.lips).toBeUndefined();
+    const verdict = guardReference({
+      kind: "lips", crop: crop({ x: 8, y: 8, width: 25, height: 25 }), digest: "aa", guardRead: ringRegion(),
     });
     expect(verdict.ok).toBe(false);
     if (verdict.ok) return;

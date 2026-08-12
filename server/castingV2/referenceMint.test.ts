@@ -612,8 +612,19 @@ describe("what the mint never cuts", () => {
   it("scores a per-side crop against that side alone, not against the pair", async () => {
     const bench = harness();
     const perSide = await mintPair(bench, sideAwareGuard(bench).dependencies, "earring");
-    expect(perSide.slots[0]).toMatchObject({ outcome: "words-only", reason: "guardRefused" });
-    expect((perSide.slots[0] as { detail: string }).detail).toContain("100.0%");
+    /*
+      SCORED AGAINST HER OWN SIDE — 100.0% of it, against 50.0% for the union
+      below. That contrast is this test's subject and it is unchanged.
+
+      What changed underneath it (fable-305, 2026-08-12) is the OUTCOME: a
+      reading at the ceiling on a kind with a length bar is now judged by that
+      bar and adopted, where it used to fall through to the area path and refuse
+      `noSpecimen`. This test previously asserted the refusal, which made it one
+      of the pins holding the inverted gate in place — the first real walk on the
+      repaint road lost all four of its earring crops to exactly this.
+    */
+    expect(perSide.slots[0]).toMatchObject({ slot: "earring@left", outcome: "stored" });
+    expect((perSide.slots[0] as { coverage: number }).coverage).toBe(1);
 
     /* The control: the same crop, scored the way it would have been before. */
     const union = { left: rect(HER_LEFT), right: rect(HER_RIGHT) };

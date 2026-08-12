@@ -235,6 +235,45 @@ export async function claimVariant(input: ClaimVariantInput): Promise<ClaimedVar
   });
 }
 
+/**
+ * WHAT THIS RENDER SENT, WRITTEN BEFORE ANYONE KNOWS WHETHER IT WORKED.
+ *
+ * `landVariant` records the repaint recipe on the row it lands, which covers
+ * every render that succeeded and no render that did not. The five-ask proof met
+ * the other half: two renders refused, both refunded correctly, and neither left
+ * any account of what it had actually dispatched — so "did the recipe carry her
+ * earrings, or did it send the master alone?" was unanswerable about exactly the
+ * two renders where it mattered.
+ *
+ * This writes the same record at the moment of dispatch. On success the landing
+ * overwrites `internalPrompt` wholesale with the full record — which contains
+ * this same key, built from the same object — so a delivered row is unchanged by
+ * this existing. On failure it is the only thing left, and it is the truth.
+ *
+ * SCOPED TO A ROW THAT HAS NOT LANDED. A `ready` variant's `internalPrompt` is
+ * its whole record — the prompt, the resolved identity, the captions, the
+ * verification — and a stray write here must not be able to reduce one to a
+ * recipe. The status predicate is in the same statement as the write, per
+ * invariant 1, along with the owner.
+ */
+export async function recordVariantDispatch(input: {
+  userId: number;
+  variantId: number;
+  repaint: unknown;
+}): Promise<boolean> {
+  assertPositiveId(input.userId, "userId");
+  const db = await requireDb();
+  const result = await db
+    .update(castingCandidateVariants)
+    .set({ internalPrompt: { repaint: input.repaint } })
+    .where(and(
+      eq(castingCandidateVariants.id, input.variantId),
+      eq(castingCandidateVariants.userId, input.userId),
+      inArray(castingCandidateVariants.status, ["queued", "dispatched"]),
+    ));
+  return affectedRows(result) === 1;
+}
+
 /* -------------------------------------------------------------- landing */
 
 export async function markVariantDispatched(input: {

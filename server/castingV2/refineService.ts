@@ -53,6 +53,7 @@ import {
   landVariant,
   listCandidateVariants,
   markVariantDispatched,
+  recordVariantDispatch,
   recordVariantOutcome,
   selectVariant,
   VariantOwnershipError,
@@ -146,7 +147,7 @@ import { deriveLibrary, libraryWithoutEditedCrops, liveReferences } from "./refe
 import { listLineageReferences } from "../db/castingV2ReferenceLibrary";
 import type { RegionReader as MintRegionReader } from "./referenceCompleteness";
 import { assembleRecipe } from "./recipeAssembler";
-import { repaint, type RepaintEngine } from "./repaintRender";
+import { repaint, type RepaintEngine, type SentRequest } from "./repaintRender";
 import { repaintAsksFor, repaintCannotRemove } from "./repaintAsks";
 import { pronounsForSex } from "./castPronouns";
 import {
@@ -358,6 +359,8 @@ export type RefineServiceDependencies = {
    * the caller's decision and the flag's answer must never be two things.
    */
   repaintEnabled?: (userId: number) => boolean;
+  /** Writes the sent recipe onto the variant at dispatch — see `recordVariantDispatch`. */
+  recordDispatch?: typeof recordVariantDispatch;
 };
 
 async function defaultStoreImage(input: { key: string; bytes: Buffer; contentType: string }) {
@@ -2241,9 +2244,46 @@ export async function refineCandidate(
         );
         throw new Error(`the repaint recipe was refused: ${recipe.detail}`);
       }
+      /*
+        ONE DEFINITION OF THE RECORD, written at two moments.
+
+        At DISPATCH it is the only account a refused render will ever leave; at
+        the LANDING it rides the row beside the verification. Building it twice
+        would let the two describe different requests, which is the drift law 4
+        exists for — so the shape is here, once, and both callers pass the same
+        `sent` object through it.
+      */
+      const recordOf = (sent: SentRequest) => ({
+        engineId: sent.engineId,
+        references: sent.keys.map((key, at) => {
+          const role = recipe.references[at]?.role;
+          return {
+            key,
+            digest: sent.digests[at] ?? null,
+            kind: role?.kind ?? null,
+            slot: role && role.kind !== "master" ? role.slot : null,
+          };
+        }),
+        edited: recipe.edited,
+        carried: recipe.carried,
+        standing: recipe.standing.map((entry) => entry.slot),
+      });
+
       const painted = await repaint({
         recipe,
         engine: (dependencies.repaintEngine ?? defaultMaskedEditEngine)(),
+        /*
+          BEFORE THE ENGINE IS ASKED, so a render that never comes back still
+          says what it sent. `repaint()` hands over the same object it will
+          return, with the digests of the bytes it has already loaded.
+        */
+        onDispatch: async (sent) => {
+          await (dependencies.recordDispatch ?? recordVariantDispatch)({
+            userId: input.userId,
+            variantId: variant.id,
+            repaint: recordOf(sent),
+          });
+        },
         /* The master's bytes are already in hand and are the bytes the rest of
            this request used; everything else is a library crop at its own key. */
         load: async (image) => (image.key === variant.baseImageKey
@@ -2308,21 +2348,7 @@ export async function refineCandidate(
           object. Recording a second copy of it would be the mirror law 4
           forbids.
         */
-        repaint: {
-          engineId: painted.sent.engineId,
-          references: painted.sent.keys.map((key, at) => {
-            const role = recipe.references[at]?.role;
-            return {
-              key,
-              digest: painted.sent.digests[at] ?? null,
-              kind: role?.kind ?? null,
-              slot: role && role.kind !== "master" ? role.slot : null,
-            };
-          }),
-          edited: recipe.edited,
-          carried: recipe.carried,
-          standing: recipe.standing.map((entry) => entry.slot),
-        },
+        repaint: recordOf(painted.sent),
       };
     };
 

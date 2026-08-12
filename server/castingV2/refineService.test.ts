@@ -29,6 +29,8 @@ let landedVariant: Record<string, unknown> | null = null;
 /** What the BRIEF said she wears — the base-worn inventory (D-206). */
 let briefWorn: string[] | null = null;
 let failedVariant: Record<string, unknown> | null = null;
+/** Every dispatch-time recipe record written — the failing render's only account. */
+const dispatchRecords: Array<Record<string, unknown>> = [];
 let engineThrows: Error | null = null;
 /**
  * EVERY STRING THE PAINTER WAS ACTUALLY SENT.
@@ -92,6 +94,11 @@ vi.mock("../db/castingV2Variants", () => ({
     };
   }),
   markVariantDispatched: vi.fn(async () => true),
+  recordVariantDispatch: vi.fn(async (input: Record<string, unknown>) => {
+    journal.push("record-dispatch");
+    dispatchRecords.push(input);
+    return true;
+  }),
   VariantLandingError: class extends Error {},
   landVariant: vi.fn(async (input: Record<string, unknown>) => {
     journal.push("land");
@@ -402,6 +409,7 @@ beforeEach(() => {
   renderFault = false;
   landedVariant = null;
   failedVariant = null;
+  dispatchRecords.length = 0;
   briefWorn = null;
   variantRows = [];
   candidateRow = {
@@ -2295,6 +2303,56 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
     });
     expect(record!.edited).toEqual(["hair"]);
     expect(record!.carried).toEqual(["lips"]);
+  });
+
+  it("records what it sent BEFORE the engine answers, so a REFUSED render still says", async () => {
+    /*
+      The five-ask proof's own hole: two renders refused, both refunded
+      correctly, and neither left any account of what it had dispatched — which
+      were exactly the two anybody needed to inspect. The record is written from
+      inside the dispatch now, so the engine falling over cannot take it with it.
+    */
+    lineageReferences = [carryRow()];
+    engineThrows = new Error("the provider fell over");
+
+    await expect(refineCandidate(hairDown, { ...input, instruction: "wear her hair down" }))
+      .rejects.toThrow();
+
+    /* No landing happened at all — this is the failing half, by construction. */
+    expect(landedVariant).toBeNull();
+    expect(dispatchRecords).toHaveLength(1);
+    const record = dispatchRecords[0]!.repaint as {
+      engineId: string;
+      references: Array<{ key: string; kind: string | null; slot: string | null }>;
+      edited: string[]; carried: string[];
+    };
+    expect(record.engineId).toBe("test:repaint");
+    expect(record.references.map((reference) => [reference.kind, reference.slot])).toEqual([
+      ["master", null],
+      ["carry", "lips"],
+    ]);
+    expect(record.edited).toEqual(["hair"]);
+    /* And it says the thing the proof could not answer: whether the recipe
+       carried her features or sent the master alone. */
+    expect(record.carried).toEqual(["lips"]);
+    /* Ordered before the engine, not after it: the journal is the proof. */
+    expect(journal.indexOf("record-dispatch")).toBeLessThan(journal.indexOf("repaint"));
+    /* The money is untouched by any of this — the refusal still refunds. */
+    expect(ledger.refunds).toHaveLength(1);
+  });
+
+  it("CONTROL — the OLD road writes no dispatch record either, so the key means one road", async () => {
+    lineageReferences = [carryRow()];
+    engineThrows = new Error("the provider fell over");
+
+    await expect(refineCandidate({ ...hairDown, repaintEnabled: () => false, harvest: compositing },
+      { ...input, instruction: "wear her hair down" })).rejects.toThrow();
+
+    expect(dispatchRecords).toHaveLength(0);
+    /* And the run really did reach an engine and fail there, rather than
+       stopping somewhere earlier where nothing would have been written anyway. */
+    expect(journal).toContain("generate");
+    expect(ledger.refunds).toHaveLength(1);
   });
 
   it("CONTROL — the same ask on the old road leaves no repaint record at all", async () => {
