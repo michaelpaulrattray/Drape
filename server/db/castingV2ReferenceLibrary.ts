@@ -136,6 +136,7 @@ export class ReferenceLibraryShapeError extends Error {
          earring rows were found naming her glasses (`slotWordShape`). */
       | "wordsNameAnotherKind"
       | "wordsClaimThePair"
+      | "wordsDescribeTheArtifact"
       | "wordCarriesTerminator",
     detail: string,
   ) {

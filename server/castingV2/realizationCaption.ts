@@ -289,6 +289,24 @@ export async function captionSlot(input: {
         */
         "If this person has two of these, describe ONLY this one. Never say"
         + " \"both\", \"each\" or \"a matching pair\" of the other side.",
+        /*
+          AND IT MUST BE ABLE TO SAY IT CANNOT SEE.
+
+          The dev supersession's own receipt caught this: two earring cutouts
+          came back as *"Cutout too dark to distinguish any earring details"*
+          and *"appears as a solid black silhouette with no visible features"*.
+          Those are descriptions of THE CUTOUT, and filed as a slot's words they
+          are the very class this whole change exists to end — a caption written
+          about one thing, filed as the state of another — arriving through the
+          fix's own front door.
+        */
+        "",
+        "If you cannot actually SEE the thing — the picture is too dark, too small,",
+        "or does not contain it — answer visible:false and leave the caption empty.",
+        "Never describe the picture itself. A note about the cutout would be filed",
+        "as a description of the person.",
+        "",
+        'Reply with JSON: {"caption": "...", "visible": true|false} and nothing else.',
       ].join("\n"),
       images: [{ bytes: input.bytes, contentType: input.contentType }],
       json: true,
@@ -299,6 +317,22 @@ export async function captionSlot(input: {
     const parsed = JSON.parse(reply.text.trim().replace(/^```[a-z]*\s*/i, "").replace(/```\s*$/, ""));
     const caption = typeof parsed?.caption === "string" ? parsed.caption.trim() : "";
     if (!caption) return null;
+    /*
+      NOTHING SEEN IS A REAL ANSWER, and it is not the same as no answer.
+
+      Conservative on purpose, exactly like D-183's corroboration gate: an
+      unread slot files nothing and its previous row keeps carrying, which costs
+      the precision this read exists to add. Writing the model's apology instead
+      would cost a sentence about a cutout being handed to a painter as a fact
+      about a person's face, forever.
+    */
+    if (parsed?.visible === false) {
+      log.info(
+        { noun: input.noun, view: input.view, said: caption },
+        "[realizationCaption] the reader could not see the thing — filing nothing rather than its note about the picture",
+      );
+      return null;
+    }
     /* Model-authored free text entering a paid prompt, scrubbed like the rest. */
     const cleaned = scrubBrands(caption)?.trim() ?? "";
     if (!cleaned) return null;

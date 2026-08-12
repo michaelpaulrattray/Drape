@@ -125,9 +125,44 @@ export function wordCarriesTerminator(word: string): boolean {
   return word !== tidyStackWord(word);
 }
 
+/**
+ * WORDS THAT DESCRIBE THE PICTURE INSTEAD OF THE PERSON.
+ *
+ * Found by the dev supersession's own receipt: two earring cutouts came back as
+ * *"Cutout too dark to distinguish any earring details"* and *"appears as a
+ * solid black silhouette with no visible features"*. Filed as a slot's words,
+ * those are the class this module exists to end — a caption written about one
+ * thing, filed as the state of another — arriving through the fix's own door.
+ *
+ * The real repair is at the read (`captionSlot` can now answer *I cannot see
+ * it*). This is the backstop, because a reader that stops honouring its
+ * contract must not be able to refile the class silently.
+ *
+ * **Narrow on purpose.** Only words that can ONLY be about the artifact are
+ * here. "Silhouette" is not: a jaw or a nose is legitimately described by its
+ * silhouette, and refusing that would cost a true sentence to catch a false one.
+ */
+const ARTIFACT_WORDS: readonly RegExp[] = [
+  /\bcut ?out\b/i,
+  /\bthe crop\b/i,
+  /\bthis (?:image|picture|photo|photograph)\b/i,
+  /\bno visible (?:features|details|jewelry|jewellery)\b/i,
+  /\btoo (?:dark|small|blurry|indistinct) to\b/i,
+];
+
+/** The artifact phrase this text uses, or null. */
+export function artifactPhraseIn(described: string): string | null {
+  for (const word of ARTIFACT_WORDS) {
+    const found = word.exec(described ?? "");
+    if (found) return found[0];
+  }
+  return null;
+}
+
 export type SlotWordsRefusal =
   | { reason: "wordsNameAnotherKind"; detail: string }
   | { reason: "wordsClaimThePair"; detail: string }
+  | { reason: "wordsDescribeTheArtifact"; detail: string }
   | { reason: "wordCarriesTerminator"; detail: string };
 
 /**
@@ -143,6 +178,21 @@ export function slotWordsRefusal(slot: string, words: readonly string[]): SlotWo
       return {
         reason: "wordCarriesTerminator",
         detail: `${slot}'s stack entry "${word}" ends in punctuation, and the stack is joined with ", " — it would reach the painter and the panel as "…${tidyStackWord(word).slice(-8)}., "`,
+      };
+    }
+  }
+
+  /*
+    APPLIED TO EVERY SLOT, not only the accessories. A note about the cutout is
+    just as wrong filed as her jaw as it is filed as her earring, and the read
+    that produces it is the same read.
+  */
+  for (const word of words) {
+    const artifact = artifactPhraseIn(word);
+    if (artifact !== null) {
+      return {
+        reason: "wordsDescribeTheArtifact",
+        detail: `${slot}'s words say "${artifact}" — that describes the PICTURE, and filed here it becomes a fact about a person's face handed to a painter on every later render`,
       };
     }
   }

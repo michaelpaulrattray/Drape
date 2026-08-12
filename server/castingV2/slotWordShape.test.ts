@@ -169,3 +169,41 @@ describe("slotWordsRefusal — the positive controls are production rows too", (
     expect(slotWordsRefusal("earring@left", [])).toBeNull();
   });
 });
+
+/**
+ * WORDS ABOUT THE PICTURE, NOT THE PERSON.
+ *
+ * These specimens are verbatim from the DEV supersession dry run of 2026-08-12
+ * — the fix's own first run on real frames, which produced them. They are the
+ * class arriving through the fix's own front door, caught by reading the
+ * receipt rather than by trusting the run.
+ */
+describe("slotWordsRefusal — a caption about the cutout is not a caption about her", () => {
+  const ABOUT_THE_PICTURE = [
+    "Cutout too dark to distinguish any earring details; no visible jewelry shape or texture discernible",
+    "Cutout too dark/indistinct to discern any earring shape or detail; appears as a solid black silhouette with no visible features",
+  ];
+
+  it.each(ABOUT_THE_PICTURE)("refuses it on an accessory slot: %s", (words) => {
+    expect(slotWordsRefusal("earring@left", [tidyStackWord(words)])?.reason)
+      .toBe("wordsDescribeTheArtifact");
+  });
+
+  it.each(ABOUT_THE_PICTURE)("refuses it on an ANATOMY slot too: %s", (words) => {
+    /* The same read produces both, so the same refusal has to cover both — a
+       note about the cutout is no more true filed as her jaw. */
+    expect(slotWordsRefusal("jaw", [tidyStackWord(words)])?.reason)
+      .toBe("wordsDescribeTheArtifact");
+  });
+
+  it("leaves a real description that happens to mention a silhouette", () => {
+    /* Narrow on purpose: a jaw IS legitimately described by its silhouette, and
+       refusing that would cost a true sentence to catch a false one. */
+    expect(slotWordsRefusal("jaw", ["a soft rounded silhouette, tapering to a narrow chin"]))
+      .toBeNull();
+  });
+
+  it("leaves a dark-coloured thing alone — 'dark' is not 'too dark to'", () => {
+    expect(slotWordsRefusal("earring@left", ["a dark oxidised silver hoop, matte"])).toBeNull();
+  });
+});
