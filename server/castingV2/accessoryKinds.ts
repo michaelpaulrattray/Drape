@@ -85,6 +85,28 @@ export const LANDMARK_OF_ACCESSORY: {
    * nowhere to diverge to.
    */
   vacantPhrase: string;
+  /**
+   * THE SAME ABSENCE, SAID ABOUT ONE INSTANCE — required in practice for every
+   * `pair: true` kind, and pinned by a test rather than by the type because a
+   * kind worn singly has no instance to name.
+   *
+   * The library is keyed per side (`earring@left`), and `slotWordsRefusal`
+   * refuses a per-side row whose words claim the pair — that rule exists
+   * because "both earlobes bare" was once filed identically under each ear. So
+   * a pair kind cannot RECORD its own vacancy in the pair's words, and until
+   * this existed an earring removal refused into the refund rather than
+   * delivering an absence the library could not hold.
+   *
+   * `{side}` is filled from the SLOT's own instance, never from a caller's
+   * opinion (fable-195). It is a record of which lobe is empty; it is not a
+   * steering instruction, and the mirror bench of 2026-08-12 is why that
+   * distinction is written here rather than assumed: told "no earring on her
+   * left ear", the painter clears the ear in the image's RIGHT half whichever
+   * ear that is — six paints, both framings. A both-sides vacancy therefore
+   * speaks with the PAIR phrase (the assembler collapses it), and a one-sided
+   * one is not offered at all.
+   */
+  vacantPhrasePerInstance?: string;
 }[] = [
   {
     words: ["earring", "stud", "hoop", "dangle", "drop"],
@@ -96,6 +118,7 @@ export const LANDMARK_OF_ACCESSORY: {
     /* Both lobes named, for the same reason `bothSides` exists: a pair is the
        one kind here that can be half-removed by a painter reading loosely. */
     vacantPhrase: "no earrings — both earlobes bare, nothing hanging from either ear",
+    vacantPhrasePerInstance: "no earring on her {side} ear — that earlobe bare, nothing hanging from it",
   },
   {
     words: ["glasses", "spectacles", "frames", "sunglasses", "eyewear"],
@@ -185,7 +208,20 @@ export function accessoryKindOf(described: string): string | null {
  * Open-vocabulary removals arrive with their own vocabulary (roadmap §5), never
  * by loosening this door.
  */
-export function vacantPhraseFor(kind: string | null | undefined): string | null {
+export function vacantPhraseFor(
+  kind: string | null | undefined,
+  /**
+   * WHICH INSTANCE IS EMPTY, when the slot is one of a pair — passed from the
+   * slot's own `instance`, never authored beside the call. With no instance
+   * this is the same function it has always been.
+   */
+  instance?: "left" | "right" | null,
+): string | null {
   if (!kind) return null;
-  return LANDMARK_OF_ACCESSORY.find((entry) => entry.region === kind)?.vacantPhrase ?? null;
+  const entry = LANDMARK_OF_ACCESSORY.find((candidate) => candidate.region === kind);
+  if (!entry) return null;
+  if (instance && entry.vacantPhrasePerInstance) {
+    return entry.vacantPhrasePerInstance.replace("{side}", instance);
+  }
+  return entry.vacantPhrase;
 }

@@ -3219,7 +3219,23 @@ export async function refineCandidate(
           must read, and both must be written before the landing makes that ask
           possible.
         */
-        const phrase = vacantPhraseFor(definition.guardKind);
+        /*
+          THE SLOT'S OWN INSTANCE DECIDES THE WORDS (fable-332).
+
+          A per-side slot may not file a claim about both sides, so the pair
+          phrase ("both earlobes bare") could not be recorded under `earring@left`
+          and an earring removal refused into the refund rather than delivering
+          an absence the library could not hold. The kind now carries a
+          per-instance form and the SIDE comes from the slot definition, never
+          from anything authored here.
+
+          What the row is FOR is worth saying, because the mirror bench says the
+          words do not steer the painter: this is the record that the lobe is
+          empty. When both lobes are empty the assembler collapses the two rows
+          back into the pair sentence — the measured one — for what actually
+          goes on the wire.
+        */
+        const phrase = vacantPhraseFor(definition.guardKind, definition.instance);
         if (phrase === null) {
           throw new Error(`the removal of ${slot} cannot be remembered — its kind has no vacant phrase to file`);
         }

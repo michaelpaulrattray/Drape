@@ -13,6 +13,7 @@ import { describe, expect, it } from "vitest";
 
 import { LANDMARK_OF_ACCESSORY, accessoryKindOf, vacantPhraseFor } from "./accessoryKinds";
 import { imperativeOpenerIn } from "./declarativeState";
+import { slotWordsRefusal } from "./slotWordShape";
 
 describe("every kind the product can place can also say it is gone", () => {
   it("has a phrase for every entry in the table", () => {
@@ -60,5 +61,59 @@ describe("every kind the product can place can also say it is gone", () => {
     expect(vacantPhraseFor(accessoryKindOf("her tiara"))).toBeNull();
     expect(vacantPhraseFor(null)).toBeNull();
     expect(vacantPhraseFor("hair")).toBeNull();
+  });
+});
+
+/**
+ * THE PER-INSTANCE FORM — what a pair's own lobe records when it goes empty
+ * (fable-332).
+ *
+ * The library is keyed per side and `slotWordsRefusal` refuses a per-side row
+ * whose words claim the pair. Until this form existed, an earring removal
+ * LANDED and could not be recorded, so it refused into the refund — never
+ * charge for a fact the product is about to forget.
+ */
+describe("a pair records its empty lobe in words that lobe may file", () => {
+  it("every pair kind has a per-instance form, and every single kind may skip it", () => {
+    /* The type cannot say "required when `pair` is true"; this can. */
+    const pairsWithout = LANDMARK_OF_ACCESSORY
+      .filter((entry) => entry.pair && !entry.vacantPhrasePerInstance)
+      .map((entry) => entry.region);
+    expect(pairsWithout).toEqual([]);
+  });
+
+  it("fills the side from the instance it was handed, and never invents one", () => {
+    expect(vacantPhraseFor("earring", "left")).toBe(
+      "no earring on her left ear — that earlobe bare, nothing hanging from it");
+    expect(vacantPhraseFor("earring", "right")).toContain("her right ear");
+    /* No instance, same table, the pair sentence — the call every existing
+       caller makes is untouched. */
+    expect(vacantPhraseFor("earring")).toContain("both earlobes bare");
+    expect(vacantPhraseFor("earring", null)).toContain("both earlobes bare");
+    /* A kind worn singly ignores the instance rather than growing a side. */
+    expect(vacantPhraseFor("glasses", "left")).toBe(vacantPhraseFor("glasses"));
+  });
+
+  it("THE POINT: the per-instance form may be FILED on its own slot and the pair form may not", () => {
+    /*
+      The refusal this whole form exists to clear, driven through the door
+      itself rather than described. Both directions, because a form that only
+      ever passes proves nothing about the rule it is passing.
+    */
+    for (const side of ["left", "right"] as const) {
+      const slot = `earring@${side}`;
+      expect(slotWordsRefusal(slot, [vacantPhraseFor("earring", side)!]), slot).toBeNull();
+      expect(slotWordsRefusal(slot, [vacantPhraseFor("earring")!])?.reason, slot)
+        .toBe("wordsClaimThePair");
+    }
+  });
+
+  it("and it is still a STATE that names the site", () => {
+    for (const side of ["left", "right"] as const) {
+      const phrase = vacantPhraseFor("earring", side)!;
+      expect(imperativeOpenerIn(phrase)).toBeNull();
+      expect(phrase).toMatch(/—/);
+      expect(phrase.split("—")[1]!.trim().length).toBeGreaterThan(10);
+    }
   });
 });

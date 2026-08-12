@@ -771,3 +771,103 @@ describe("a slot declared vacant", () => {
     expect(refusal.reason).toBe("carriesItsOwnEdit");
   });
 });
+
+/**
+ * A PAIR THAT IS WHOLLY EMPTY SPEAKS AS A PAIR (fable-332).
+ *
+ * The library is keyed per side, so "take her earrings off" leaves two
+ * vacancies. Each row records its own lobe — it must, because a per-side row
+ * may not file a claim about both sides — but the PROMPT should say what a
+ * stylist says, once, in the wording the removal bench actually measured.
+ */
+describe("two empty lobes are one sentence", () => {
+  const vacantLobe = (side: "left" | "right"): LibraryEntry => ({
+    slot: `earring@${side}`, tier: "item", noun: `${side} earring`, vacant: true,
+    words: [`no earring on her ${side} ear — that earlobe bare, nothing hanging from it`],
+  });
+  const PAIR = "no earrings — both earlobes bare, nothing hanging from either ear";
+  const hair = { slot: "hair", tier: "anatomy", noun: "hair", words: ["a copper crop"] } as LibraryEntry;
+
+  it("says the PAIR phrase once when both lobes are empty", () => {
+    const recipe = assembleRecipe({
+      master: MASTER, pronouns: SHE,
+      library: [vacantLobe("left"), vacantLobe("right"), hair],
+      asks: [{ slot: "hair", noun: "hair", words: "a copper crop" }],
+    });
+
+    expect(recipe.ok).toBe(true);
+    if (!recipe.ok) return;
+    expect(recipe.prompt).toContain(PAIR);
+    /* Once — the whole point. Two instructions about one fact is what this
+       assembler refuses everywhere else. */
+    expect(recipe.prompt.split(PAIR)).toHaveLength(2);
+    /* And neither lobe's own sentence rides beside it. */
+    expect(recipe.prompt).not.toContain("her left ear");
+    expect(recipe.prompt).not.toContain("her right ear");
+    expect(recipe.standing.map((entry) => entry.sentence)).toEqual([`${PAIR}.`]);
+  });
+
+  it("CONTROL — ONE empty lobe still speaks for itself, and never for the pair", () => {
+    /*
+      The fixture that makes the arm above mean something: change only the
+      number of empty lobes and the sentence changes with it. This state is not
+      reachable from any ask the product offers today — deliberately, since the
+      mirror bench found "her right ear" clearing BOTH ears five times in six —
+      but the assembler must not invent a claim about a lobe still wearing one.
+    */
+    const recipe = assembleRecipe({
+      master: MASTER, pronouns: SHE,
+      library: [vacantLobe("left"), hair],
+      asks: [{ slot: "hair", noun: "hair", words: "a copper crop" }],
+    });
+
+    expect(recipe.ok).toBe(true);
+    if (!recipe.ok) return;
+    expect(recipe.prompt).toContain("no earring on her left ear");
+    expect(recipe.prompt).not.toContain(PAIR);
+  });
+
+  it("CONTROL — an empty pair of a kind with no pair phrase keeps its own words", () => {
+    /* The fall-through, driven: a slot whose kind the accessory table cannot
+       name has no pair sentence to collapse into, and going silent about an
+       empty site is the one-frame removal all over again. */
+    const recipe = assembleRecipe({
+      master: MASTER, pronouns: SHE,
+      library: [
+        { slot: "cufflink@left", tier: "item", noun: "left cufflink", vacant: true, words: ["that cuff bare"] },
+        { slot: "cufflink@right", tier: "item", noun: "right cufflink", vacant: true, words: ["that cuff bare too"] },
+        hair,
+      ],
+      asks: [{ slot: "hair", noun: "hair", words: "a copper crop" }],
+    });
+
+    expect(recipe.ok).toBe(true);
+    if (!recipe.ok) return;
+    expect(recipe.prompt).toContain("that cuff bare");
+    expect(recipe.prompt).toContain("that cuff bare too");
+  });
+
+  it("says a vacate ONCE in the change clause, however many slots the kind vacates", () => {
+    /*
+      The duplication as it shipped: a pair vacates two slots and each ask
+      carries the kind's phrase, so the change clause said it twice —
+      "Change only no earrings — …; no earrings — …". Read off the outgoing
+      prompt, which is where the claim is about.
+    */
+    const recipe = assembleRecipe({
+      master: MASTER, pronouns: SHE, library: [],
+      asks: [
+        { slot: "earring@left", noun: "left earring", vacate: { says: PAIR } },
+        { slot: "earring@right", noun: "right earring", vacate: { says: PAIR } },
+      ],
+    });
+
+    expect(recipe.ok).toBe(true);
+    if (!recipe.ok) return;
+    expect(recipe.prompt.split(PAIR)).toHaveLength(2);
+    expect(recipe.ask).toBe(`Change only ${PAIR}.`);
+    /* Both slots are still VACATED — the sentence was deduplicated, not the
+       fact. The library must retire and record both lobes. */
+    expect(recipe.vacated).toEqual(["earring@left", "earring@right"]);
+  });
+});

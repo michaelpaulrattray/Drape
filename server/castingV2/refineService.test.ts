@@ -411,6 +411,9 @@ vi.mock("./signEngine", () => ({
 }));
 
 const { refineCandidate } = await import("./refineService");
+/* The door itself, so the pair-vacancy rows below are checked against the rule
+   that used to refuse them rather than against a copy of it. */
+const { slotWordsRefusal } = await import("./slotWordShape");
 const { claimVariant } = await import("../db/castingV2Variants");
 const { listLineageReferences } = await import("../db/castingV2ReferenceLibrary");
 const { arrangementWording } = await import("./hairArrangement");
@@ -2771,6 +2774,48 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
     /* Written against THIS render, so it belongs to this branch and no other. */
     expect(recorded[0]!.userId).toBe(1);
     expect(recorded[0]!.variantId).toBeTruthy();
+  });
+
+  /*
+    AND A PAIR CAN NOW BE RECORDED AT ALL (fable-332).
+
+    An earring removal LANDED and could not be filed: the kind's phrase claims
+    both sides, `slotWordsRefusal` refuses that under a per-side slot, and the
+    service refused into the refund rather than deliver an absence the library
+    would forget one frame later. Each lobe now records its own side.
+  */
+  it("files a vacancy under EACH lobe, in words that lobe is allowed to say", async () => {
+    await refineCandidate({
+      ...removing(false),
+      interpret: async () => ({
+        ok: true as const,
+        delta: { absent: { statedAccessories: ["earrings"] } },
+      }),
+    }, { ...input, instruction: "take her earrings off" });
+
+    expect(retired.map((ask) => ask.slot)).toEqual(["earring@left", "earring@right"]);
+    const rows = recorded.flatMap((write) => write.rows as Array<Record<string, unknown>>);
+    expect(rows.map((row) => row.slot)).toEqual(["earring@left", "earring@right"]);
+    expect(rows.map((row) => row.role)).toEqual(["vacancy", "vacancy"]);
+    expect(rows.map((row) => (row.words as string[])[0])).toEqual([
+      "no earring on her left ear — that earlobe bare, nothing hanging from it",
+      "no earring on her right ear — that earlobe bare, nothing hanging from it",
+    ]);
+    /* The door, asked of what was actually written rather than of a constant:
+       these are the rows, and the rule that used to refuse them is the rule
+       they now pass. */
+    for (const row of rows) {
+      expect(slotWordsRefusal(String(row.slot), row.words as string[])).toBeNull();
+    }
+    /* THE CHANGE CLAUSE IS THE PAIR'S, SAID ONCE — the measured sentence on the
+       measured path, read off the prompt that left the building. */
+    const pair = "no earrings — both earlobes bare, nothing hanging from either ear";
+    expect(painted[0]!.prompt).toContain(pair);
+    expect(painted[0]!.prompt.split(pair)).toHaveLength(2);
+    expect(painted[0]!.prompt).not.toContain("her left ear");
+    /* And it is a delivered render, charged once. */
+    expect(journal).toContain("land");
+    expect(ledger.refunds).toHaveLength(0);
   });
 
   it("does NOT file one when the removal did not land", async () => {

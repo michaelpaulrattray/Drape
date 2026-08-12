@@ -76,8 +76,10 @@
  * only kind of dark a pure function needs.
  */
 
+import { vacantPhraseFor } from "./accessoryKinds";
 import type { CastPronouns } from "./castPronouns";
 import { IMPERATIVE_OPENER } from "./declarativeState";
+import { accessoryKindOfSlot } from "./slotWordShape";
 
 /** A library key is a PANEL SLOT — the stylist's ontology, never `facet@region`
  *  (fable-173). Bilateral features are stored per instance and spoken as pairs
@@ -347,7 +349,16 @@ function askSentence(
         the same lesson `HAIR_ARRANGEMENTS` paid for: a wording that tells the
         reader WHERE beats one that tells it what to conclude.
       */
-      clauses.push(ask.vacate.says);
+      /*
+        AND SAID ONCE (fable-332). A pair vacates two slots in one breath, and
+        each of them carries the kind's phrase — which put the same sentence in
+        the change clause twice: *"Change only no earrings — both earlobes bare,
+        nothing hanging from either ear; no earrings — both earlobes bare,
+        nothing hanging from either ear."* Two instructions about one fact is
+        the thing this assembler refuses everywhere else; the second copy adds
+        no fact and is dropped rather than deduplicated downstream.
+      */
+      if (!clauses.includes(ask.vacate.says)) clauses.push(ask.vacate.says);
       continue;
     }
     const entry = bySlot.get(ask.slot);
@@ -607,6 +618,41 @@ export function assembleRecipe(input: AssembleInput): AssembleResult {
   /* ---- the carry contract's WORD half: what rides without being edited ---- */
 
   const standing: StandingWords[] = [];
+  /*
+    A PAIR THAT IS WHOLLY EMPTY SPEAKS AS A PAIR (fable-332).
+
+    The library is keyed per side, so "she took her earrings off" leaves TWO
+    vacancies, and saying each one's sentence puts two instructions about one
+    fact in the prompt: *"no earring on her left ear …. no earring on her right
+    ear …."* The stylist's sentence for that state is "no earrings" — the
+    kind's own pair phrase, which is also the wording the removal bench
+    measured. So when both instances of a pair are vacant, the FIRST of them
+    says the pair phrase and the second says nothing.
+
+    Derived here from the two entries rather than authored anywhere: the rows
+    keep recording which lobe is empty, and how that state is SAID is the
+    assembler's job. One sided sentence still stands alone when only one lobe
+    is empty — a state nothing can currently reach, and deliberately so: the
+    mirror bench of 2026-08-12 found "her right ear" clearing BOTH ears in five
+    attempts out of six, so a one-sided promise is not one the product can keep.
+  */
+  const vacantSlots = input.library
+    .filter((entry) => entry.vacant === true && !editedSet.has(entry.slot))
+    .map((entry) => entry.slot);
+  const pairFeature = (slot: FeatureSlot): string | null => {
+    const at = slot.lastIndexOf("@");
+    return at === -1 ? null : slot.slice(0, at);
+  };
+  const whollyVacantPairs = new Set(
+    vacantSlots
+      .map(pairFeature)
+      .filter((feature): feature is string => feature !== null)
+      .filter((feature) => (
+        vacantSlots.filter((slot) => pairFeature(slot) === feature).length > 1
+      )),
+  );
+  const pairAlreadySaid = new Set<string>();
+
   for (const entry of input.library) {
     if (editedSet.has(entry.slot)) continue;
     /*
@@ -627,6 +673,28 @@ export function assembleRecipe(input: AssembleInput): AssembleResult {
     */
     if (entry.vacant === true) {
       if (entry.words.length === 0) continue;
+      const feature = pairFeature(entry.slot);
+      if (feature !== null && whollyVacantPairs.has(feature)) {
+        if (pairAlreadySaid.has(feature)) continue;
+        const pairWords = vacantPhraseFor(accessoryKindOfSlot(entry.slot));
+        if (pairWords !== null) {
+          /* Marked only once the collapse has actually happened. Marking it
+             before would silence the SECOND lobe of a kind that has no pair
+             sentence to collapse into — an empty site going quiet, which is
+             the one-frame removal wearing a tidier hat. Its own control found
+             this. */
+          pairAlreadySaid.add(feature);
+          standing.push({
+            slot: entry.slot,
+            noun: entry.noun,
+            words: [pairWords],
+            sentence: `${pairWords}.`,
+          });
+          continue;
+        }
+        /* No pair phrase for this kind — fall through and let the instance
+           speak for itself rather than going silent about an empty site. */
+      }
       standing.push({
         slot: entry.slot,
         noun: entry.noun,
