@@ -28,13 +28,14 @@
  * shape of a reader saying *the thing you asked for is not here* while its
  * verdict says otherwise.
  *
- * # One thing it cannot do alone, named rather than hidden
+ * # The one thing it could not do alone — CLOSED, by the fix it shipped beside
  *
- * While the ask ACCUMULATES a set — the defect fable-312 §3 fix 1 closes — the
- * asked string carries superseded items too, so a `saw` honestly reporting *"no
- * plain hoops"* after a replacement would look like a contradiction of the ask.
- * The two ship together for that reason: once the ask states the CURRENT set,
- * every asked term is a term the picture is supposed to contain.
+ * While the ask ACCUMULATED a set, the asked string carried superseded items
+ * too, so a `saw` honestly reporting *"no plain hoops"* after a replacement
+ * looked like a contradiction of the ask. That was named here rather than hidden
+ * and it is now discharged: the ask supersedes (`supersedeWithinSet`, shift 60),
+ * so every asked term is a term the picture is supposed to contain — and the
+ * last NEGATIVE below is that sentence as a control.
  *
  *   npx tsx scripts/lib/verdictContradiction.mts --prove
  */
@@ -188,6 +189,22 @@ const CASES: Array<{ kind: "POSITIVE" | "NEGATIVE"; why: string; asked: string; 
     why: "an empty saw is a no-read, and a no-read is not a contradiction",
     asked: "gold hoop earrings",
     saw: "",
+  },
+  {
+    kind: "NEGATIVE",
+    why: "THE ONE THE ACCUMULATING ASK BLOCKED — a replacement's honest reading. "
+      + "The hoops were replaced, so a reader reporting their absence is agreeing; "
+      + "under the old accumulating ask this exact row would have cried wolf",
+    asked: "dangly cross earrings, one on each ear, a matching pair",
+    saw: "dangly cross earrings on both ears, no plain hoops",
+  },
+  {
+    kind: "POSITIVE",
+    why: "a LIVE reading of the walk's own step-2 frame, per item "
+      + "(prove-per-item-question-disposable.mts, 5/5, 2026-08-13) — the words a "
+      + "real reader used once the question was asked about one thing",
+    asked: "dangly cross earrings, one on each ear, a matching pair",
+    saw: "gold hoop earrings on both ears, not dangly cross earrings",
   },
 ];
 

@@ -581,6 +581,104 @@ describe("ink renders only where the anchor is the document", () => {
  * a zero-false-pass bar because the check it would have failed was never
  * written down.
  */
+/**
+ * THE ASK SUPERSEDES — a replacement files the CURRENT set, not the accumulation.
+ *
+ * The specimen is the five-ask walk's own step 2, paid for on 2026-08-12: a face
+ * wearing hoops, an ask for **dangly cross earrings**, and a delta that came back
+ * holding both because that is precisely what the interpreter is instructed to
+ * do. The recipe then asked one pair of ears for hoops AND crosses; the painter
+ * kept the hoops; the presence gate found earrings and passed it. 25 credits for
+ * a picture nobody asked for, with the shortfall written into the verdict's own
+ * `saw`.
+ *
+ * The negative controls are the load-bearing half, because a supersession rule
+ * that fires too eagerly DELETES something a person asked for — the annihilation
+ * D-171 was written to end. Three of them are below, and each names the ask it
+ * protects.
+ */
+describe("a replacement within a set supersedes rather than accumulates", () => {
+  const check = (instruction: string, prior?: Record<string, string[]>): FreeLaneCheck => ({
+    instruction,
+    prior: prior as FreeLaneCheck["prior"],
+  });
+
+  it("files the crosses ALONE when the hoops were only restated (the walk's step 2)", () => {
+    const c = check("dangly cross earrings", { statedAccessories: ["gold hoop earrings"] });
+    const delta = readDelta(
+      { free: { statedAccessories: ["gold hoop earrings", "dangly cross earrings"] } },
+      c,
+    );
+    expect(delta?.free?.statedAccessories).toEqual(["dangly cross earrings"]);
+    expect(c.wall).toBeUndefined();
+  });
+
+  it("keeps a DIFFERENT kind of thing, which is what the restatement is for", () => {
+    /* The ask is about her ears. Superseding the glasses here would take them
+       off her face — D-238's own counterexample, one lane over. */
+    const c = check("small gold hoops", { statedAccessories: ["thin wire glasses"] });
+    const delta = readDelta(
+      { free: { statedAccessories: ["thin wire glasses", "small gold hoops"] } },
+      c,
+    );
+    expect(delta?.free?.statedAccessories).toEqual(["thin wire glasses", "small gold hoops"]);
+  });
+
+  it("keeps a mismatched pair the person asked for IN ONE BREATH", () => {
+    /* Their own sentence warrants both, so neither is a restatement and neither
+       supersedes the other. The founder's mismatched freedom, protected by the
+       source of the warrant rather than by a special case. */
+    const c = check("keep the gold hoops and add dangly cross earrings", {
+      statedAccessories: ["gold hoops"],
+    });
+    const delta = readDelta(
+      { free: { statedAccessories: ["gold hoops", "dangly cross earrings"] } },
+      c,
+    );
+    expect(delta?.free?.statedAccessories).toEqual(["gold hoops", "dangly cross earrings"]);
+  });
+
+  it("leaves marks accumulating, because a scar does not name freckles", () => {
+    /* The plural class is wider than accessories and only accessories have a
+       kind table. Containment answers the rest, and its answer here is "these
+       are different things" — so "add freckles" keeps the scar. */
+    const c = check("add freckles", { marks: ["a scar on her cheek"] });
+    const delta = readDelta({ free: { marks: ["a scar on her cheek", "freckles"] } }, c);
+    expect(delta?.free?.marks).toEqual(["a scar on her cheek", "freckles"]);
+  });
+
+  it("supersedes nothing when the whole set is a restatement", () => {
+    /* No fresh item, nothing to replace. This delta is the absorbed shape and
+       `saysNothingNew` is the guard that owns it — this rule must not quietly
+       turn it into something that looks like an edit. */
+    const c = check("make them nicer", { statedAccessories: ["gold hoop earrings"] });
+    const delta = readDelta({ free: { statedAccessories: ["gold hoop earrings"] } }, c);
+    expect(delta?.free?.statedAccessories).toEqual(["gold hoop earrings"]);
+  });
+
+  it("supersedes nothing when there is no prior to have restated from", () => {
+    /* Both items are theirs, first time. A set asked for in one sentence is the
+       set they wanted. */
+    const c = check("give her gold hoops and a tiny nose stud");
+    const delta = readDelta(
+      { free: { statedAccessories: ["gold hoops", "a tiny nose stud"] } },
+      c,
+    );
+    expect(delta?.free?.statedAccessories).toEqual(["gold hoops", "a tiny nose stud"]);
+  });
+
+  it("re-describing the same thing replaces it — 'make the hoops silver'", () => {
+    /* The shape D-171 named as the reason composition stays restate-absolutely.
+       One pair of ears cannot wear the gold pair and the silver pair. */
+    const c = check("make the hoops silver", { statedAccessories: ["small gold hoops"] });
+    const delta = readDelta(
+      { free: { statedAccessories: ["small gold hoops", "silver hoops"] } },
+      c,
+    );
+    expect(delta?.free?.statedAccessories).toEqual(["silver hoops"]);
+  });
+});
+
 describe("an ask absorbed into a restatement is refused before the charge", () => {
   const FRECKLED = {
     ...ORIGINAL,

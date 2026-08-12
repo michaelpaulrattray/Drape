@@ -95,6 +95,7 @@ import {
   facetsWrittenBy,
   itemsOf,
   missingFromPrompt,
+  presenceItemsOfFacet,
   withoutFacets,
   presentationOf,
   readDelta,
@@ -2664,12 +2665,61 @@ export async function refineCandidate(
           is about saying what the condition IS rather than about what it
           currently computes.
         */
-        const lateral = facet === facetOfSubject("statedAccessories") ? pairClauseFor(asked) : "";
-        return [{
+        const lateralOf = (value: string) => (
+          facet === facetOfSubject("statedAccessories") ? pairClauseFor(value) : ""
+        );
+        /*
+          A SET IS ASKED ONE ITEM AT A TIME (fable-312 ruling 2).
+
+          The walk's step 2 asked for dangly cross earrings on a face wearing
+          hoops and the whole set went to the reader as one line — so the only
+          question the gate could put was *"are there hoops and crosses on her"*,
+          which a picture of plain hoops answers YES to, honestly. The verdict
+          came back `present: true` with its own `saw` reading *"plain hoops, no
+          dangly crosses"*: the gate had no shape in which to fail.
+
+          Split, each item is a question a photograph can settle, and each gets
+          the laterality of the thing IT names rather than of the joined string —
+          which is also the pair clause finally being right about a set holding a
+          nose stud beside a pair of hoops.
+
+          # THE NEWEST ASK BINDS; WHAT LEGITIMATELY REMAINS IS A CARRIED FACT
+
+          Under the ask-supersedes rule a replaced item is no longer in the set
+          at all, so what is left beside a fresh item is a DIFFERENT thing that
+          survives on purpose — her glasses while she is asking about her ears.
+          Those are carried facts, and the carried rule already says what may
+          bind them: evidence they were ever delivered, which is a realization
+          caption. Binding them as though this sentence had asked for them again
+          would let one undeliverable carried item brick every later edit — the
+          same trap the facet-level rule above was written to avoid, one
+          granularity down.
+
+          **What is new to the SET is the ask**, and `priorItems` is what says
+          so — the same prior source containment measures against at the parse,
+          read here for the second question it can answer. The step's own delta
+          cannot: a plural subject restates its whole set by instruction, so the
+          glasses she is still wearing sit in this step's delta too.
+        */
+        const plural = presenceItemsOfFacet(composed, facet);
+        if (plural === null) {
+          return [{
+            facet,
+            asked: `${asked}${lateralOf(asked)}`,
+            binding: guaranteedFacets.has(facet) || presence,
+          }];
+        }
+        const before = new Set(
+          (priorItems[plural.subject] ?? []).map((item) => item.toLowerCase()),
+        );
+        const carriedEvidence = evidencesDelivery(carriedCaptions[facet]);
+        return plural.items.map((item) => ({
           facet,
-          asked: `${asked}${lateral}`,
-          binding: guaranteedFacets.has(facet) || presence,
-        }];
+          asked: `${item}${lateralOf(item)}`,
+          binding: guaranteedFacets.has(facet)
+            || (facetBindsOnPresence(facet)
+              && (!before.has(item.toLowerCase()) || carriedEvidence)),
+        }));
       });
     /*
       AND THE PINNED PRESENTATION (D-186), which is the fourth symptom.
@@ -3168,16 +3218,33 @@ export async function refineCandidate(
       already asks about, reused rather than recomputed: a second derivation of
       "what did this ask write" is the parallel copy that drifts.
     */
-    const earned = verification.unavailable
+    /*
+      # AND A FACET IS DELIVERED ONLY IF EVERY ITEM ASKED OF IT WAS DELIVERED
+
+      Since a set is asked one item at a time, one facet can carry several
+      checks — *"dangly cross earrings"* beside the glasses she is still
+      wearing. Read per CHECK, a facet whose crosses were missed and whose
+      glasses were found would appear in this list AND in the library's disputed
+      list on the same render: the same facet earning permanent pixels and being
+      refused a crop, from one reading. So the facet is the unit here, and its
+      verdict is the AND of its own checks.
+
+      Derived once and consumed twice, because two filters over one array with
+      opposite polarity are exactly the parallel copy that drifts (law 4).
+    */
+    const readChecks = verification.unavailable
       ? []
-      : verification.checks
-        .filter((check) => (
-          check.read
-          && check.verified
-          && writtenFacets.has(check.facet)
-          && !carriedFacets.has(check.facet)
-        ))
-        .map((check) => check.facet);
+      : verification.checks.filter((check) => (
+        check.read && writtenFacets.has(check.facet) && !carriedFacets.has(check.facet)
+      ));
+    const missedFacets = new Set(
+      readChecks.filter((check) => !check.verified).map((check) => check.facet),
+    );
+    const earned = Array.from(new Set(
+      readChecks
+        .filter((check) => check.verified && !missedFacets.has(check.facet))
+        .map((check) => check.facet),
+    ));
     await keepSegmentsFromRender({
       userId: input.userId,
       variantId: variant.id,
@@ -3251,16 +3318,11 @@ export async function refineCandidate(
       ?? captureCastingReferenceLibraryEnabled;
     if (libraryEnabled(input.userId)) {
       try {
-        const disputed = verification.unavailable
-          ? []
-          : verification.checks
-            .filter((check) => (
-              check.read
-              && !check.verified
-              && writtenFacets.has(check.facet)
-              && !carriedFacets.has(check.facet)
-            ))
-            .map((check) => check.facet);
+        /* The other half of the same derivation, and the reason it is a `Set`
+           computed once above: any missed item disputes its facet, so the two
+           lists are complements by construction rather than by two filters
+           happening to agree. */
+        const disputed = Array.from(missedFacets);
         const { slots, unfiled } = mintedSlotsForRender({
           earned,
           disputed,

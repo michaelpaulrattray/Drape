@@ -47,6 +47,7 @@ import { tokensComeFromBrief } from "./castingIntent";
 import {
   FREE_SUBJECT_KEYS,
   FREE_SUBJECTS,
+  bindsOnPresence,
   isPluralSubject,
   isPresentationSubject,
   type FreeSubject,
@@ -603,7 +604,9 @@ export function readDelta(value: unknown, check?: FreeLaneCheck): RefineDelta | 
       const rawItems = Array.isArray(entry) ? entry : [entry];
       if (!plural && rawItems.length > 1) return null;
       if (rawItems.length > MAX_ITEMS) return null;
-      const kept: string[] = [];
+      /* Each item carries WHERE ITS WARRANT CAME FROM, because that is what
+         tells a replacement from an addition below (`supersedeWithinSet`). */
+      const kept: SetItem[] = [];
       let promotedAway = false;
 
       for (const rawItem of rawItems) {
@@ -611,6 +614,10 @@ export function readDelta(value: unknown, check?: FreeLaneCheck): RefineDelta | 
 
       const scrubbed = scrubBrands(rawItem.trim())?.trim() ?? "";
       if (!scrubbed || scrubbed.length > MAX_FREE_LENGTH) return null;
+      /* False without a `check`: with no instruction and no prior to read,
+         nothing here is known to be a restatement, and a set that supersedes on
+         a guess is worse than one that accumulates. */
+      let carriedRestatement = false;
 
       /*
         THE GUARANTEE LANE STAYS GUARANTEED. A value that an engineered
@@ -708,13 +715,24 @@ export function readDelta(value: unknown, check?: FreeLaneCheck): RefineDelta | 
         */
         const alreadyStated = (check.prior?.[subject as FreeSubject] ?? [])
           .some((item) => strip(item).toLowerCase() === strip(scrubbed).toLowerCase());
-        if (!alreadyStated
-          && !stemmedContainment(strip(scrubbed), strip(check.instruction))) {
+        const fromInstruction = stemmedContainment(strip(scrubbed), strip(check.instruction));
+        if (!alreadyStated && !fromInstruction) {
           check.wall = { reason: "wall_unfileable", asked: subject, value: scrubbed };
           return null;
         }
+        /*
+          AND THE SAME TWO SOURCES SAY WHICH ITEMS THIS SENTENCE ASKED FOR.
+
+          An item warranted ONLY by the prior is the restatement we instructed
+          the model to make; an item their sentence contains is what they said
+          this time — even when it also happens to be filed already ("keep the
+          gold hoops, add crosses" states both, deliberately). Nothing new is
+          measured for this: it is the two halves of containment, read for the
+          second question they can answer.
+        */
+        carriedRestatement = alreadyStated && !fromInstruction;
       }
-      kept.push(scrubbed);
+      kept.push({ value: scrubbed, carried: carriedRestatement });
       }
 
       if (kept.length === 0) {
@@ -723,9 +741,13 @@ export function readDelta(value: unknown, check?: FreeLaneCheck): RefineDelta | 
         if (promotedAway) continue;
         return null;
       }
+      /* THE ASK SUPERSEDES — the current set, never the accumulation. */
+      const current = plural ? supersedeWithinSet(kept) : kept;
       /* An empty list is not "a subject with no items" — it is no subject, and
          `[]` being truthy would otherwise reach every reader downstream. */
-      free[subject as FreeSubject] = plural ? kept : kept[0]!;
+      free[subject as FreeSubject] = plural
+        ? current.map((item) => item.value)
+        : current[0]!.value;
     }
     if (Object.keys(free).length > 0) delta.free = free;
     /*
@@ -990,6 +1012,68 @@ function namesSameThing(departed: string, answer: string): boolean {
   return stemmedContainment(departed, answer);
 }
 
+/** One item of a plural subject, beside the source that warranted it. */
+type SetItem = {
+  value: string;
+  /**
+   * True when the ONLY warrant for this item is the prior — i.e. it is the
+   * restatement the interpreter was instructed to make, rather than something
+   * this sentence says.
+   */
+  carried: boolean;
+};
+
+/**
+ * THE ASK SUPERSEDES: a replacement within a set files the CURRENT set rather
+ * than the accumulation (fable-312 ruling 1, D-244's doctrine one module over).
+ *
+ * # The picture that was paid for and not delivered
+ *
+ * Step 2 of the five-ask walk asked for **dangly cross earrings** on a face
+ * already wearing hoops. The interpreter did exactly as instructed — plural
+ * subjects "restate ALL of them including ones stated earlier" — so the delta
+ * came back `["gold hoop earrings", "dangly cross earrings"]`, and the recipe
+ * asked the painter for hoops AND crosses *"one on each ear, a matching pair"*.
+ * That is not a picture that exists. The engine resolved the contradiction by
+ * keeping the hoops; the gate found earrings and passed it; 25 credits.
+ *
+ * **On the old rule every replacement-of-an-item-in-a-set could false-pass by
+ * construction**, because the item being replaced still satisfies the question
+ * the new one was supposed to change.
+ *
+ * # Why this is subtraction and not a new instruction to the model
+ *
+ * D-244 already ruled the same thing for the library's words — a feature's
+ * stack is its CURRENT state, one sentence, replacing — and the ask lane was
+ * simply never brought under it. The restatement instruction stays exactly as
+ * it is, because it is still what keeps a DIFFERENT kind of thing alive: the
+ * glasses have to survive an ask about her ears. What changes is that the code,
+ * which knows which items the sentence asked for and which were merely restated,
+ * drops a restated item once this sentence names its own version of it.
+ *
+ * Deterministic knowledge, no paid-prompt change, and the same
+ * {@link namesSameThing} the departure lane uses — a second answer to "are
+ * these the same thing" is how the two would come to disagree (law 4).
+ *
+ * # What it deliberately does NOT do
+ *
+ * - **An item the user typed this time never supersedes another one they typed
+ *   in the same breath.** "Keep the gold hoops, add crosses" is a mismatched
+ *   pair asked for on purpose, and both are warranted by their own sentence.
+ * - **Nothing is superseded by a set with no fresh item in it.** A pure
+ *   restatement changes nothing here; `saysNothingNew` is the guard for that.
+ * - **A kind the table cannot name falls back to containment**, so `marks` and
+ *   `ink` keep accumulating exactly as D-171 designed — a scar does not name
+ *   freckles, and adding one retires nothing.
+ */
+function supersedeWithinSet(items: readonly SetItem[]): SetItem[] {
+  const asked = items.filter((item) => !item.carried);
+  if (asked.length === 0) return [...items];
+  return items.filter((item) => (
+    !item.carried || !asked.some((fresh) => namesSameThing(item.value, fresh.value))
+  ));
+}
+
 /**
  * Retire the departures a new answer has overtaken — scoped to the THING.
  *
@@ -1134,6 +1218,44 @@ export function composeDeltas(deltas: readonly RefineDelta[]): RefineDelta {
     }
   }
   return composed;
+}
+
+/**
+ * THE ITEMS A FACET'S VALUE IS MADE OF, when that value is a SET the gate binds
+ * on — and null for every other shape (fable-312 ruling 2).
+ *
+ * # The question the old shape could not be asked
+ *
+ * `statedAccessories` is one facet over a whole set of worn things, and the
+ * verification net asked ONE question per facet: *"gold hoop earrings, dangly
+ * cross earrings, one on each ear, a matching pair"*. A reader looking at a face
+ * wearing hoops answers `present: true` to that, correctly — there are earrings
+ * on her — and the gate that decides whether a render is delivered or refunded
+ * had no way to fail. **"Are there dangly cross earrings on her" is answerable;
+ * "are there hoops and crosses" is not.**
+ *
+ * # Derived from the same read `asked` comes from
+ *
+ * The subject is chosen by `subjectsOfFacet` order and the first stated one
+ * wins — the identical walk {@link currentValueOfFacet} makes — so the items
+ * returned here are exactly the pieces of the string that call site produces,
+ * joined. A second walk over the same facet is how the question and the answer
+ * would come to be about different things.
+ *
+ * Null unless the subject is BOTH plural and presence-shaped: a degree subject
+ * has no teeth to sharpen, and a singular subject is already one question.
+ */
+export function presenceItemsOfFacet(
+  delta: RefineDelta,
+  facet: Facet,
+): { subject: FreeSubject; items: string[] } | null {
+  for (const subject of subjectsOfFacet(facet)) {
+    const items = itemsOf(delta.free?.[subject]);
+    if (items.length === 0) continue;
+    if (!isPluralSubject(subject) || !bindsOnPresence(subject)) return null;
+    return { subject, items };
+  }
+  return null;
 }
 
 /**

@@ -1542,6 +1542,195 @@ describe("the render is checked against the record before it is delivered", () =
     expect(ledger.refunds.at(-1)?.amount).toBe(25);
   });
 
+  /*
+    AND A SET IS ASKED ONE ITEM AT A TIME, so the gate can fail (fable-312).
+
+    The five-ask walk's step 2, paid for on 2026-08-12: hoops on her ears, an ask
+    for dangly cross earrings, and the whole set sent to the reader as ONE line.
+    The verdict came back `verified: true` with its own `saw` reading *"gold hoop
+    earrings on both ears, plain hoops, no dangly crosses"* — an honest answer to
+    a question that could not fail, because a picture of plain hoops does contain
+    earrings.
+
+    The reader below is not invented: it is the MEASURED one, reproduced from a
+    live reading of that very frame (`prove-per-item-question-disposable.mts`,
+    2026-08-13, five readings per question). One rule produces both halves of
+    what was measured — **a line is present when anything actually in the picture
+    satisfies it** — and that is what makes this a control rather than a mirror
+    of the outcome:
+
+      joined "gold hoop earrings, dangly cross earrings"  → present 5/5
+      split  "dangly cross earrings"                      → MISSING 5/5
+      split  "gold hoop earrings"                         → present 5/5
+      control: her glasses, plainly there                 → present 5/5
+      control: a septum ring, plainly not                 → absent  5/5
+
+    A fake that answered "no" to any line containing the word `cross` would fail
+    the joined line too, and would prove nothing about the split.
+  */
+  const measuredReader = (...inThePicture: string[]) => {
+    const asked: string[] = [];
+    return {
+      asked,
+      engine: {
+        id: "verifier",
+        complete: async (request: { system: string; user: string }) => {
+          if (request.system.includes("how they")) {
+            return { text: JSON.stringify({ hairWorn: "unclear" }), truncated: false, latencyMs: 1 };
+          }
+          asked.push(request.user);
+          const results = request.user.split("\n").filter(Boolean).map((line, index) => {
+            const satisfied = inThePicture.find((thing) => line.toLowerCase().includes(thing));
+            return {
+              id: index + 1,
+              present: satisfied !== undefined,
+              ...(satisfied !== undefined
+                ? { saw: `${satisfied} on her` }
+                /*
+                  `absent: false`, and it is the measured answer rather than a
+                  convenience: with hoops on her ears the reader calls a missing
+                  cross a matter of how it was done, 5 readings out of 5. What
+                  that costs is the finding filed in opus-256 §3.
+                */
+                : { absent: false, saw: "something else is at that place" }),
+            };
+          });
+          return { text: JSON.stringify({ results }), truncated: false, latencyMs: 1 };
+        },
+      } as never,
+    };
+  };
+
+  const twoThings = ["thin wire glasses", "dangly cross earrings"];
+
+  it("asks the reader about EACH thing she is wearing, with its own laterality", async () => {
+    const reader = measuredReader("glasses", "earrings");
+    await refineCandidate(
+      {
+        harvest: unmasked,
+        verifier: reader.engine,
+        interpret: async () => ({ ok: true as const, delta: { free: { statedAccessories: twoThings } } }),
+      },
+      { ...input, instruction: "thin wire glasses and dangly cross earrings" },
+    );
+    const lines = reader.asked.join("\n").split("\n").filter((line) => /glasses|earrings/.test(line));
+    expect(lines).toHaveLength(2);
+    /* A pair means both sides — and only for the thing that comes in a pair.
+       Joined, the clause landed once on a line that also named her glasses. */
+    expect(lines.find((line) => line.includes("cross"))).toContain("one on each ear");
+    expect(lines.find((line) => line.includes("glasses"))).not.toContain("one on each ear");
+  });
+
+  it("records the MISS the joined question could only answer yes to", async () => {
+    /*
+      The walk's own false pass, driven against the measured reader. She is
+      wearing hoops; the crosses are not there. Asked as one line the answer is
+      an honest YES — there are earrings on her — and that is the verdict that
+      was stored beside a green tick. Asked as its own line the same reader says
+      the crosses are missing, and the row says so.
+    */
+    const reader = measuredReader("hoop");
+    await refineCandidate(
+      {
+        harvest: unmasked,
+        verifier: reader.engine,
+        interpret: async () => ({
+          ok: true as const,
+          delta: { free: { statedAccessories: ["gold hoop earrings", "dangly cross earrings"] } },
+        }),
+      },
+      { ...input, instruction: "dangly cross earrings" },
+    );
+    const stored = (landedVariant?.internalPrompt as {
+      verification?: { checks?: Array<{ asked: string; verified: boolean }> };
+    }).verification?.checks ?? [];
+    const crosses = stored.find((check) => check.asked.includes("cross"));
+    const hoops = stored.find((check) => check.asked.startsWith("gold hoop"));
+    expect(crosses?.verified).toBe(false);
+    expect(hoops?.verified).toBe(true);
+  });
+
+  it("refuses and refunds when the reader says the site is BARE", async () => {
+    /*
+      And the gate can now fail, which is the whole point of splitting it. This
+      reader finds nothing on her ears at all — the answer that carries
+      `absent`, and the only kind of miss D-246 lets spend her refusal. Joined
+      with the glasses she is still wearing, this same reading was a pass.
+    */
+    const reader = measuredReader("glasses");
+    await expect(refineCandidate(
+      {
+        harvest: unmasked,
+        verifier: {
+          id: "verifier",
+          complete: async (request: { system: string; user: string }) => {
+            if (request.system.includes("how they")) {
+              return { text: JSON.stringify({ hairWorn: "unclear" }), truncated: false, latencyMs: 1 };
+            }
+            reader.asked.push(request.user);
+            const results = request.user.split("\n").filter(Boolean).map((line, index) => {
+              const here = line.toLowerCase().includes("glasses");
+              return {
+                id: index + 1,
+                present: here,
+                ...(here
+                  ? { saw: "thin wire glasses on her face" }
+                  : { absent: true, saw: "both earlobes bare, nothing hanging from either ear" }),
+              };
+            });
+            return { text: JSON.stringify({ results }), truncated: false, latencyMs: 1 };
+          },
+        } as never,
+        interpret: async () => ({ ok: true as const, delta: { free: { statedAccessories: twoThings } } }),
+      },
+      { ...input, instruction: "thin wire glasses and dangly cross earrings" },
+    )).rejects.toThrow();
+    expect(ledger.charges.at(-1)?.amount).toBe(25);
+    expect(ledger.refunds.at(-1)?.amount).toBe(25);
+  });
+
+  it("still delivers when the thing that is missing was nobody's ask this time", async () => {
+    /*
+      THE OTHER HALF, and it is what stops this from bricking a chain. A carried
+      item with no realization caption behind it is recorded and never binding —
+      the same rule the facet already had, now applied per item, so one
+      undeliverable thing cannot refuse every later edit she pays for.
+
+      The glasses are in the SET ALREADY, which is the fact that makes them a
+      carried item rather than this sentence's ask.
+    */
+    variantRows = [{
+      id: 505,
+      publicId: "variant-wearing-glasses",
+      candidateId: 1,
+      imageKey: "casting-v2/variants/old.png",
+      internalPrompt: candidateRow.internalPrompt,
+      instructions: ["thin wire glasses"],
+      deltas: { free: { statedAccessories: ["thin wire glasses"] } },
+      stepDeltas: null,
+      status: "ready",
+    }];
+    candidateRow.selectedVariantPublicId = "variant-wearing-glasses";
+    /* The crosses she asked for ARE painted; the glasses she was wearing are
+       not in this frame. Under a per-item gate with no carried rule, that
+       missing carried item would refuse the render she actually asked for. */
+    const reader = measuredReader("cross");
+    await refineCandidate(
+      {
+        harvest: unmasked,
+        verifier: reader.engine,
+        interpret: async () => ({ ok: true as const, delta: { free: { statedAccessories: twoThings } } }),
+      },
+      /* Her sentence asks for the crosses; the glasses ride along as a
+         restatement, so they are a carried fact rather than this ask. */
+      { ...input, instruction: "dangly cross earrings" },
+    );
+    expect(ledger.charges.at(-1)?.amount).toBe(25);
+    expect(ledger.refunds).toHaveLength(0);
+    /* Recorded, never lost: the honesty column still shows the glasses gone. */
+    expect(JSON.stringify(landedVariant ?? {})).toContain("something else is at that place");
+  });
+
   it("still only WATCHES a shade nobody has defined", async () => {
     /* The other half of the scoping, and the reason this ruling is narrow: six
        legitimate renders were refunded in eighteen when a reader was asked to
