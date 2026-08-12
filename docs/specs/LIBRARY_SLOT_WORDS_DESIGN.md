@@ -171,6 +171,51 @@ describes two objects and a third kind.
 a completeness specimen, it starts cutting, and this rule's table already routes
 it to its own cut. Open-vocabulary regions (roadmap §5) is the same trigger.
 
+## What this hands chunk 3 — one problem dissolved, one created
+
+Chunk 3 is removal under the library, and D-244 describes it as *strike matching
+words from the stack*. `stackFor` implements that literally
+(`recipeAssembler.ts:328`): `survived.indexOf(strike)`, an exact match against
+one array element. Removal refuses outright today
+(`repaintCannotRemove`), which is why none of this has bitten yet.
+
+**The current-state ruling dissolves most of the problem before chunk 3 starts.**
+The immortal bun — production row #5's *"tight curls piled into a high bun"*,
+carried forever — was immortal because the stack ACCUMULATED. It cannot be now:
+a later render's read of the hair slot returns one sentence about the hair on
+the frame that landed, and that sentence REPLACES. The dev receipt shows it
+working (`["auburn","worn up in a loose bun","a soft fringe"]` → one current
+sentence). There is nothing left to strike, because nothing accumulates.
+
+So a removal does not need string surgery at all. It needs the slot to stop
+carrying: the glasses come off, the next read of the `glasses` slot finds no
+glasses, the slot files nothing and its crop stops riding. **Removal proved by
+the same read that files everything else**, rather than by matching prose — and
+prose-matching was always going to over-strike, which is the specific worry
+fable-284 raised.
+
+**And here is the edge this design creates, which chunk 3 must settle.**
+`captionSlot` now answers `visible: false`, and that one answer currently means
+two different things:
+
+| what happened | what the reader says |
+|---|---|
+| the thing is GONE — she took the glasses off | `visible: false` |
+| the crop is too dark to read — production earring cutouts | `visible: false` |
+
+Both file nothing, which is right for now and wrong for a removal: a departure
+must retire the slot's crop, and an unreadable crop must leave it exactly where
+it is. Told apart wrongly, a dark crop reads as a removal (her earrings vanish
+from the library) or a removal reads as a dark crop (the thing she paid to take
+off keeps riding — finding 4 again).
+
+The distinction is available and is not being asked for: the reader is looking at
+a crop cut from a REGION the segmenter found. *No region found at all* is a
+different signal from *a region found whose pixels are unreadable*, and the mint
+already has the first (`noCut`). Chunk 3's design should state which of those
+carries a departure, and prove it both ways — an unreadable crop that must NOT
+retire, and a real removal that must.
+
 ## Order of work
 
 1. This design ratified.
