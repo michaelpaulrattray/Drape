@@ -2279,6 +2279,25 @@ export async function refineCandidate(
       */
       const recordOf = (sent: SentRequest) => ({
         engineId: sent.engineId,
+        /*
+          THE SENTENCE, TAKEN FROM THE DISPATCH AND NOT FROM THE RECIPE BESIDE IT
+          (fable-320 §4).
+
+          The record already answered "what did we actually send" for every
+          reference, by key and by digest, and it was silent about the only
+          other thing in the request. Shift 62 is what that costs: a removal
+          refused twice on the paid path, the same recipe removing her glasses
+          eight times out of eight off it, and no way to compare the two
+          because the sentence the painter read was nowhere. Getting it back
+          took three attempts at a reconstruction and a control to know which
+          attempt to believe.
+
+          `sent.prompt` is the string `repaint()` hands to the transport, in the
+          same object it hands over the keys and digests — so this is the wire
+          value rather than a variable near it (law 5), and it is written on
+          DISPATCH, which is the only moment a refused render has.
+        */
+        prompt: sent.prompt,
         references: sent.keys.map((key, at) => {
           const role = recipe.references[at]?.role;
           return {

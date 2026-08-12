@@ -65,6 +65,40 @@ describe("staff image boundary", () => {
     });
   });
 
+  it("keeps the repaint's own SENTENCE out of every staff surface", () => {
+    /*
+      fable-320 §4 condition 2. The repaint dispatch record now carries
+      `prompt` — the composed recipe in sentence form, which is what the painter
+      was told: every carried feature's words, the ask, and the identity clause.
+      That is the cast's recipe in prose and belongs in the same sensitivity
+      class as `masterPrompt`, not in the class of a timestamp.
+
+      It lives inside `internalPrompt` on the variant row, which no staff
+      projection reads today. This is the guard that says so by name, because
+      "no staff surface selects it" is a fact about source rather than about
+      behaviour — the same reason `resultUrl` is guarded here rather than by a
+      request.
+    */
+    for (const file of ["db/moderatorQueries.ts", "routes/moderatorExports.ts"]) {
+      const text = source(file);
+      /* POSITIVE CONTROL, first: this really is the staff surface, read and
+         non-empty. Without it a renamed file would pass every line below. */
+      expect(text, `${file} is the staff surface this guard is about`).toContain("hasResult");
+      expect(
+        text,
+        `${file} must not read internalPrompt — the repaint prompt is the cast's recipe in sentences`,
+      ).not.toContain("internalPrompt");
+      expect(text, `${file} must not read a repaint record`).not.toContain("repaint");
+    }
+
+    /* And the field really exists, so this is a guard on a live thing rather
+       than a sentence about a phantom. */
+    expect(
+      source("castingV2/refineService.ts"),
+      "the dispatch record is where the prompt is written",
+    ).toContain("prompt: sent.prompt");
+  });
+
   it("leaves non-evidence rows alone apart from the boundary", () => {
     const row = {
       type: "castingImage",

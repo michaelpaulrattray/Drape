@@ -180,10 +180,18 @@ export async function repaint(input: RepaintInput): Promise<RepaintResult> {
   await input.onDispatch?.(sent);
 
   const frame = await input.engine.edit({
-    /* The recipe's own prompt and the recipe's own order. Rebuilding either
-       here would be the second list, and its drift is invisible in every
-       output except the picture. */
-    prompt: input.recipe.prompt,
+    /*
+      The recipe's own prompt and the recipe's own order. Rebuilding either
+      here would be the second list, and its drift is invisible in every output
+      except the picture.
+
+      Read off `sent` rather than off the recipe a second time (fable-320 §4):
+      that object is what the dispatch record is written from, so the string
+      that is RECORDED and the string that is SENT are now one read of one
+      field. Two reads would be a second list of exactly the kind this comment
+      warns about, one line down from it.
+    */
+    prompt: sent.prompt,
     references: loaded,
     width: input.width,
     height: input.height,

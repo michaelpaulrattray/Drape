@@ -2563,6 +2563,51 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
     expect(ledger.refunds).toHaveLength(1);
   });
 
+  it("records the SENTENCE it sent, and the wire is what proves it", async () => {
+    /*
+      fable-320 §4, and shift 62 is what it cost to be without it: a removal
+      refused twice on the paid path while the same recipe took her glasses off
+      eight times out of eight off it — and no way to compare the two, because
+      the record kept every reference by key and digest and was silent about the
+      only other thing in the request. Reconstructing the sentence afterwards
+      took three attempts and a control to know which one to believe.
+
+      ASSERTED AT THE WIRE (law 5): the string on the record is compared against
+      the string the ENGINE received, captured in the engine double, not against
+      the recipe variable that produced both. A record built from a second read
+      of the recipe would pass a comparison against the recipe and could still
+      be a different string from the one that was painted.
+    */
+    lineageReferences = [carryRow()];
+
+    await refineCandidate(hairDown, { ...input, instruction: "wear her hair down" });
+
+    const record = dispatchRecords[0]!.repaint as { prompt: string };
+    expect(painted).toHaveLength(1);
+    expect(record.prompt).toBe(painted[0]!.prompt);
+    /* And it is the real thing rather than an empty string agreeing with an
+       empty string — the recipe's own sentences are in it. */
+    expect(record.prompt).toContain("Reference 1 is the photograph of this person");
+    expect(record.prompt).toContain("Change only her hair");
+  });
+
+  it("records the sentence on a REFUSED render too — the case it exists for", async () => {
+    /*
+      A field written only on success is inert for its one caller. Step 5 is the
+      specimen: nothing landed, so a landing-time write would have kept nothing
+      about the render nobody could explain.
+    */
+    lineageReferences = [carryRow()];
+    engineThrows = new Error("the provider fell over");
+
+    await expect(refineCandidate(hairDown, { ...input, instruction: "wear her hair down" }))
+      .rejects.toThrow();
+
+    expect(landedVariant).toBeNull();
+    const record = dispatchRecords[0]!.repaint as { prompt: string };
+    expect(record.prompt).toContain("Change only her hair");
+  });
+
   it("CONTROL — the OLD road writes no dispatch record either, so the key means one road", async () => {
     lineageReferences = [carryRow()];
     engineThrows = new Error("the provider fell over");
