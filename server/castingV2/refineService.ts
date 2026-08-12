@@ -153,7 +153,7 @@ import type { RegionReader as MintRegionReader } from "./referenceCompleteness";
 import { assembleRecipe, type FeatureSlot } from "./recipeAssembler";
 import { slotDefinition } from "./referenceSlotCatalogue";
 import { repaint, type RepaintEngine, type SentRequest } from "./repaintRender";
-import { repaintAsksFor, repaintCannotRemove } from "./repaintAsks";
+import { RepaintCannotSayError, repaintAsksFor, repaintCannotRemove } from "./repaintAsks";
 import { pronounsForSex } from "./castPronouns";
 import {
   captureCastingReferenceLibraryEnabled,
@@ -2332,7 +2332,18 @@ export async function refineCandidate(
           { operationId, variant: variant.publicId, reason: asks.reason, facet: asks.facet },
           "[refineService] the repaint cannot say this ask declaratively — refusing rather than painting a recipe that never mentions it",
         );
-        throw new Error(`the repaint cannot express this ask: ${asks.detail}`);
+        throw new RepaintCannotSayError(asks, {
+          /*
+            THE ASK'S OWN WORDS, for the sentence the settlement writes.
+
+            Only the makeup door has ruled copy (fable-354), and `makeup` is the
+            facet whose delta value IS the phrase she asked about — "lip gloss",
+            "a red lip". Every other reason carries no words and falls to the
+            generic line, which is the control the tests pin: a door that starts
+            answering for everything is how the generic line stops being generic.
+          */
+          words: asks.facet === "makeup" ? editDelta?.makeup ?? null : null,
+        });
       }
       /*
         The library as it stood when this render started. The anchor is this
@@ -3987,6 +3998,40 @@ export async function refineCandidate(
  */
 function failedFactsMessage(error: unknown): string | null {
   /*
+    A DOOR THIS ROAD CANNOT YET WALK THROUGH — the founder's own sentence,
+    ruled in chat (fable-354, "im happy with that").
+
+    He asked for a lip gloss twice, because the refusal never said why. The
+    earring door already models the fix: a door that KNOWS the reason should say
+    it, in a sentence that names the gap instead of implying a malfunction.
+
+    "Nothing was charged" is true here rather than merely kind, and the caller is
+    what makes it true: this branch is only reached when `refund.recorded` is
+    set, so a refund that did NOT land takes the support sentence one line down
+    instead. Her balance really is where she left it.
+
+    HONESTY CONDITION, and it is load-bearing prose rather than decoration:
+    "it's coming" is a promise, and it is honest only while the makeup
+    vocabulary is genuinely queued. It sits behind the auto-scan prefill today
+    (fable-352). **If makeup ever leaves the roadmap, or is ruled out rather
+    than ordered behind something, this sentence has to change with it** — a
+    promise living inside a refusal is the easiest line in the product to leave
+    rotting, because nothing fails when it goes stale.
+  */
+  if (error instanceof RepaintCannotSayError && error.facet === "makeup") {
+    /* The leading noun adapts to the ask; the founder approved the voice, not
+       only the literal string for gloss. Bare `words` and not a re-derivation:
+       the phrase came off the delta the refusal was raised about. */
+    const noun = error.words?.trim();
+    return noun
+      ? `${noun.charAt(0).toUpperCase()}${noun.slice(1)} is makeup, and makeup isn't something `
+        + "I can place yet — it's coming. Nothing was charged."
+      /* No words to quote, so the sentence says the class instead of inventing a
+         noun she never used. */
+      : "That's makeup, and makeup isn't something I can place yet — it's coming. "
+        + "Nothing was charged.";
+  }
+  /*
     A REMOVAL THAT WOULD NOT TAKE, in its own words.
 
     The sentence below is right about a verification refusal and wrong about
@@ -4069,6 +4114,22 @@ function refundDescriptionFor(error: unknown): string {
     return thing
       ? `Refine refunded — the render still showed the ${thing}`
       : "Refine refunded — the render still showed what she asked to remove";
+  }
+  /*
+    NOT A FAILURE AT ALL, and the receipt has to stop calling it one.
+
+    Beyond fable-355's letter and squarely inside the class the four splits above
+    were made for: nothing was rendered and no provider was ever contacted — the
+    road refused before the call, because the recipe has no way to state the ask.
+    "The generation failed" sends support hunting an outage that never happened,
+    on the one door whose whole point is that it knows exactly what went wrong.
+
+    Class-wide rather than makeup-only on purpose: the CUSTOMER sentence is
+    ruled copy and stays scoped to the door the founder ruled, but every reason
+    in this taxonomy shares the fact this line states — no render was attempted.
+  */
+  if (error instanceof RepaintCannotSayError) {
+    return "Refine refunded — we cannot yet place what this asked for, so nothing was rendered";
   }
   return "Refine refunded — the generation failed";
 }

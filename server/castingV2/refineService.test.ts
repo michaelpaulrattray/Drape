@@ -2539,9 +2539,69 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
     }, { ...input, instruction: "give her a red lip" })).rejects.toThrow();
 
     expect(painted).toHaveLength(0);
+    /*
+      AND THE RECEIPT STOPPED CALLING IT A FAILURE. Nothing was rendered and no
+      provider was contacted, so "the generation failed" sent support hunting an
+      outage that never happened — the misdescribing-receipt class the render/
+      composite/segment/removal splits were all made to stop.
+    */
     expect(ledger.refunds).toEqual([
-      { amount: 25, description: "Refine refunded — the generation failed" },
+      {
+        amount: 25,
+        description: "Refine refunded — we cannot yet place what this asked for, so nothing was rendered",
+      },
     ]);
+    expect(ledger.charges.at(-1)?.amount).toBe(ledger.refunds.at(-1)?.amount);
+  });
+
+  it("tells her WHY the makeup door refused, in the founder's ruled words", async () => {
+    /*
+      He asked for a lip gloss TWICE, because the refusal never said why — the
+      generic "didn't come through" reads as a malfunction and invites the exact
+      retry it cannot serve. The sentence is founder-ruled verbatim (fable-354);
+      the leading noun adapts to the ask, and the ask's own words are on the
+      delta the refusal was raised about.
+
+      Asserted on the sentence the CUSTOMER receives, thrown out of the service,
+      rather than on the helper that composes it — the message only matters if it
+      survives the settlement it travels through.
+    */
+    await expect(refineCandidate({
+      ...repainting,
+      interpret: async () => ({ ok: true as const, delta: { makeup: "lip gloss" } }),
+    }, { ...input, instruction: "give her a lip gloss" }))
+      .rejects.toThrow(
+        "Lip gloss is makeup, and makeup isn't something I can place yet — "
+        + "it's coming. Nothing was charged.",
+      );
+
+    /* "Nothing was charged" has to be TRUE, not merely kind. */
+    expect(painted).toHaveLength(0);
+    expect(ledger.charges.at(-1)?.amount).toBe(ledger.refunds.at(-1)?.amount);
+  });
+
+  it("CONTROL — the door next to it still gets the generic line", async () => {
+    /*
+      THE ONE THAT MATTERS. `ink` refuses through the SAME error class and the
+      same `notASlot` reason as makeup — a different facet is the only thing
+      separating them — so this is what proves the sentence is scoped to the door
+      the founder ruled rather than to the error type.
+
+      Without it, a `failedFactsMessage` that starts answering for everything is
+      how the generic line quietly stops being generic, and every future road
+      refusal would tell a tattoo customer her ask was makeup. That is the
+      misaimed-guard class wearing copy clothes.
+    */
+    await expect(refineCandidate({
+      ...repainting,
+      interpret: async () => ({
+        ok: true as const,
+        delta: { free: { ink: "a small star tattoo behind her ear" } },
+      }),
+    }, { ...input, instruction: "give her a small star tattoo behind her ear" }))
+      .rejects.toThrow("That refinement didn't come through. Your credits have been returned.");
+
+    expect(painted).toHaveLength(0);
     expect(ledger.charges.at(-1)?.amount).toBe(ledger.refunds.at(-1)?.amount);
   });
 

@@ -145,6 +145,50 @@ export type RepaintAsksResult =
   | RepaintAsksRefusal;
 
 /**
+ * THE ROAD COULD NOT SAY IT — the refusal above, thrown, so the settlement can
+ * tell the customer WHY instead of handing them the generic line.
+ *
+ * Deliberately NOT a {@link ProviderError}. That taxonomy answers *"did the
+ * provider fail"*, and every member of it is a verdict about a call we actually
+ * made; this answers *"can our road state this ask declaratively"*, which is
+ * decided before any provider is contacted. Borrowing its `capability` class
+ * would blame an engine that was never asked (fable-355 §1).
+ *
+ * **Non-retryable by construction**, and by two independent mechanisms rather
+ * than by a flag anyone has to remember:
+ *
+ *  - the free re-render in `refineService` branches on a RETURNED verdict
+ *    (`!verification.ok`), never on a throw, so this escapes past it — there is
+ *    no `catch` between the throw site and that branch; and
+ *  - the provider queue retries only `isRetryable` classes of `ProviderError`,
+ *    which this is not; an unrecognised error there classes as `unknown`, which
+ *    that taxonomy makes terminal on purpose so unknowns fail closed.
+ *
+ * Both matter: retrying a door that refuses on identical inputs would charge a
+ * customer latency to arrive at the identical answer.
+ *
+ * Built from the refusal itself rather than from a second copy of its fields —
+ * the reason and facet the log line prints are the ones the sentence reads.
+ */
+export class RepaintCannotSayError extends Error {
+  readonly reason: RepaintAsksRefusal["reason"];
+  readonly facet: Facet | null;
+  /**
+   * The ask's own words, when the door has a sentence that quotes them.
+   * `null` everywhere else, which is the generic line's cue.
+   */
+  readonly words: string | null;
+
+  constructor(refusal: RepaintAsksRefusal, options: { words?: string | null } = {}) {
+    super(`the repaint cannot express this ask: ${refusal.detail}`);
+    this.name = "RepaintCannotSayError";
+    this.reason = refusal.reason;
+    this.facet = refusal.facet;
+    this.words = options.words ?? null;
+  }
+}
+
+/**
  * A written facet's state phrase — the delta's own value, said as a state.
  *
  * Returns `null` for a facet this delta does not write, which is not a refusal:
