@@ -2393,8 +2393,22 @@ async function runWalk(): Promise<boolean> {
       failure here: it is the absence of a boundary. Failing it would book the
       whole reason the compositor was replaced as a defect in the replacement.
     */
-    const hairDownRepainted = recipeOf(row) !== null;
-    if (hairDownRepainted) {
+    /*
+      A STEP THAT NEVER LANDED HAS NO SEAM TO CARRY, AND SAYING SO IS NOT A PASS.
+
+      The road test reads the row's repaint record, and a refused render lands no
+      row at all — so a refusal used to fall through to the paste branch and fail
+      for "no seam key", which reads as a compositor defect and is really a step
+      that was refunded before any pixel existed. The road of the walk decides it
+      instead, which is a fact about the run rather than about this one row.
+    */
+    if (!row || row.status !== "ready") {
+      absent(
+        "[C] step 4's row (\"wear her hair down\") carries a seam verdict, torn or clean",
+        `step 4 ${row ? `did not land (${row.status})` : "wrote no row"}, so there is no delivered frame `
+        + "and no boundary to have an opinion about",
+      );
+    } else if (recipeOf(row) !== null || road === "repaint") {
       absent(
         "[C] step 4's row carries a seam verdict, torn or clean",
         "step 4 was REPAINTED — the engine's own frame IS the delivered frame, nothing was "
@@ -2581,6 +2595,10 @@ async function runWalk(): Promise<boolean> {
     );
   }
 
+  /* The library once every attempt has settled — the end state, read once and
+     used by [E]'s second half and by the verdict's decisive clause. */
+  const libraryAtClose = await liveLibraryRows(await candidateRowId());
+
   /* ------------- E. The panel agrees with the assembly (new, free) */
 
   /*
@@ -2660,6 +2678,20 @@ async function runWalk(): Promise<boolean> {
     */
     if (step.panelSurface === "face" || repainted !== null) {
       const live = step.libraryAtPanelRead;
+      /*
+        TWO MOMENTS, AND THE ASSERTIONS BELOW NEED DIFFERENT ONES.
+
+        The panel was photographed seconds after the landing, and the mint writes
+        its rows AFTER the picture is delivered and paid for — deliberately, it
+        is the least important thing left in the request. So `libraryAtPanelRead`
+        is the right partner for the panel (both are that moment, and comparing a
+        fresh table against a stale projection would book a disagreement about
+        time) and the WRONG partner for "did this render's slots reach the
+        library at all", which is a question about the end state. Asked of the
+        panel-time read it failed step 1 of a walk whose rows landed perfectly a
+        second later — a false failure, and the more dangerous direction.
+      */
+      const settled = libraryAtClose;
       const owedSlots = [...new Set([...(repainted?.edited ?? []), ...(repainted?.carried ?? [])])].sort();
       const heldKeys = new Set(live.map((libraryRow) => libraryRow.storageKey).filter(Boolean) as string[]);
       const orphanedThumbs = step.panelContentKeys.filter((key) => !heldKeys.has(key));
@@ -2670,9 +2702,8 @@ async function runWalk(): Promise<boolean> {
       );
       /* A slot carried by WORDS has no thumb by design (the tier boundary), so
          the panel holds it as a row without a picture. Its presence is proved
-         from the library rather than from the DOM, which is the same store the
-         panel drew from a second earlier. */
-      const heldSlots = new Set(live.map((libraryRow) => libraryRow.slot));
+         from the library at close — see the note above on the two moments. */
+      const heldSlots = new Set(settled.map((libraryRow) => libraryRow.slot));
 
       if (step.panelSurface === null && owedSlots.length === 0) {
         absent(
@@ -2753,7 +2784,7 @@ async function runWalk(): Promise<boolean> {
       accessorySegments, carriedVerdicts,
       recipes: walkRows.map((entry) => recipeOf(entry.row)),
       referenceSizes: Object.fromEntries(referenceSizes),
-      libraryAtClose: await liveLibraryRows(await candidateRowId()),
+      libraryAtClose,
       checks: records,
     }, null, 2)}\n`,
     "utf8",
@@ -2772,7 +2803,7 @@ async function runWalk(): Promise<boolean> {
     mistake one table over from the one [E] just made.
   */
   const accessoryCarriers = road === "repaint"
-    ? (await liveLibraryRows(await candidateRowId()))
+    ? libraryAtClose
       .filter((libraryRow) => libraryRow.slot.startsWith("earring")).length
     : accessorySegments;
   if (accessoryCarriers === 0) {
