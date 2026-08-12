@@ -77,6 +77,7 @@
  */
 
 import type { CastPronouns } from "./castPronouns";
+import { IMPERATIVE_OPENER } from "./declarativeState";
 
 /** A library key is a PANEL SLOT — the stylist's ontology, never `facet@region`
  *  (fable-173). Bilateral features are stored per instance and spoken as pairs
@@ -250,18 +251,12 @@ const LEADING_DETERMINER = /^(?:a|an|the|her|his|their|its)\s+/i;
  * THE DECLARATIVE-STATE CONTRACT (fable-195), and it is a contract with our own
  * interpreter rather than a detector judging a picture.
  *
- * The stack is *everything ever said about this feature*, and it is re-said in
- * full on every edit. Imperatives do not accumulate: `"make it bigger"` twice
- * says nothing coherent, while `"a wide gold hoop"` then `"noticeably bigger"`
- * describes a state that can be painted. So the interpreter owns converting an
- * ask into a state phrase, and this is the marker that keeps it honest.
- *
- * Deliberately a SHORT list of unambiguous imperatives. It is a spelling check
- * on our own module boundary, not a judgment about language — a long list would
- * start refusing legitimate participles ("set in a low bun", "painted nails").
+ * The marker and its reasoning now live in `declarativeState`, imported rather
+ * than restated: the interpreter's prompt names the same openers to the model
+ * that this refuses on the way in, and two copies of that list would drift the
+ * day one of them grew a word (working law 4). This module keeps the REFUSAL;
+ * that one keeps the rule.
  */
-const IMPERATIVE_OPENER =
-  /^(?:make|add|give|remove|change|turn|put|apply|draw|paint|swap|replace|use|lose|delete|erase|increase|decrease|take|wear)\b/i;
 
 /**
  * THE ASK, kept small on purpose.

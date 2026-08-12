@@ -309,6 +309,12 @@ export const GOLDEN_REFINEMENTS: readonly GoldenRefinement[] = [
       "THE THIRD ONE THAT MOVED, and the one that shows what the free lane is FOR. It was the sharpest refusal on the list under the closed tier — structural features being real in a brief but not a refinement axis. D-131 opened the lane and it became a parse case, in the user's own words.",
   },
   {
+    instruction: "wear her hair down",
+    delta: { free: { hairWorn: "hair down" } },
+    because:
+      "THE FOUNDER'S OWN MOST-USED SENTENCE, and the one the repaint road could not say. On the first live walk that reached it the interpreter handed the assembler the imperative verbatim and it refused at the door — `wordsNotDeclarative`, 31.9 seconds, no render, 25 credits back (opus-251 §3). The assembler was right: D-244 re-says a feature's whole stack on every later edit and instructions do not accumulate. The fix is at the interpreter, where fable-195 ruled it belongs, and the conversion is a SUBTRACTION — drop the command, keep their words — because a rewritten phrase like 'worn down' fails the free lane's own source containment and refuses harder than the defect did. This golden is what keeps it fixed, and the driver checks the STATE separately: containment alone cannot tell 'hair down' from 'wear her hair down'.",
+  },
+  {
     instruction: "put her in a red coat",
     delta: null,
     because:

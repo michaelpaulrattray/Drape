@@ -22,6 +22,7 @@
 import "dotenv/config";
 
 import { GOLDEN_REFINEMENTS } from "../server/castingV2/goldenBriefs";
+import { imperativeOpenerIn } from "../server/castingV2/declarativeState";
 import { interpretRefinement, refusalMessage } from "../server/castingV2/refineInterpreter";
 
 const RUNS = Number(process.env.RUNS ?? 1);
@@ -78,6 +79,25 @@ for (const golden of GOLDEN_REFINEMENTS) {
       continue;
     }
     /*
+      A NAVIGATE OR A REMOVE IS A DISAGREEMENT, NOT A CRASH.
+
+      An `ok` parse does not always carry a delta: `intent: "remove"` and
+      `intent: "navigate"` are legitimate shapes with no `delta` field at all,
+      and this harness read `parsed.delta` unconditionally — so a golden the
+      model classified as a removal took the whole run down with a
+      TypeError at instruction 15 of 20, hiding every case after it.
+      A driver that dies on a real answer measures the corpus it reached.
+    */
+    if ("intent" in parsed && parsed.intent !== "edit") {
+      failures.push({
+        instruction: golden.instruction,
+        run,
+        problem: `expected ${JSON.stringify(golden.delta)}, got intent "${parsed.intent}"`
+          + ("match" in parsed ? ` (subject ${parsed.subject}, match "${parsed.match}")` : ""),
+      });
+      continue;
+    }
+    /*
       Key ORDER is not meaning. Comparing raw JSON strings failed a correct
       two-axis parse purely because the model named the cut before the colour —
       a harness bug that reads exactly like a product bug, which is the worst
@@ -122,6 +142,31 @@ for (const golden of GOLDEN_REFINEMENTS) {
     const structuralMatch = structural.every((k) => gotObj[k] === wantObj[k]);
     if (!structuralMatch || !freeish(wantObj, gotObj)) {
       failures.push({ instruction: golden.instruction, run, problem: `expected ${want}, got ${got}` });
+      continue;
+    }
+    /*
+      AND EVERY FREE-LANE VALUE MUST BE A STATE (fable-195, fable-307).
+
+      Checked on every golden rather than on the one that caused it, because the
+      contract is the lane's and not one sentence's. Containment cannot do this
+      job: "wear her hair down" contains "down", so the golden above passes on a
+      value the assembler will refuse at the door — which is exactly how the
+      founder's most-used sentence reached a paid render and cost 31.9 seconds
+      and a refund. The marker is imported from the module the assembler refuses
+      with, so this driver and that door can never disagree about the list.
+    */
+    const instructions = Object.entries((gotObj.free ?? {}) as Record<string, unknown>)
+      .flatMap(([subject, value]) => (Array.isArray(value) ? value : [value])
+        .map((item) => ({ subject, item: String(item), opener: imperativeOpenerIn(String(item)) }))
+        .filter((entry) => entry.opener !== null));
+    if (instructions.length > 0) {
+      failures.push({
+        instruction: golden.instruction,
+        run,
+        problem: instructions
+          .map((entry) => `free.${entry.subject} = "${entry.item}" opens with "${entry.opener}" — an instruction, not a state`)
+          .join("; "),
+      });
       continue;
     }
     console.log(`PASS  parsed      "${golden.instruction}" → ${got}`);

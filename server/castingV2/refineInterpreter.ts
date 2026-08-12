@@ -31,6 +31,7 @@ import { REFINABLE_CUT_NAMES } from "./hairStyles";
 import { createModuleLogger } from "../logging/logger";
 import type { TextEngine } from "../providers/types";
 import { interpreterEngine } from "./interpreter";
+import { declarativeStateRule } from "./declarativeState";
 import { readDelta, type FreeLaneCheck, type RefineParse } from "./refineDelta";
 import { freeSubjectGuidance } from "./refineSubjects";
 import { INK_NEEDS_DOCUMENT_MESSAGE } from "./inkPlacement";
@@ -150,6 +151,7 @@ const BASE_PROMPT = [
   "FREE-LANE RULES, and they are strict:",
   "  - Use the user's OWN WORDS. Never elaborate, never add detail they did not give.",
   '    "a scar on her cheek" stays that. It does NOT become "a long knife scar".',
+  ...declarativeStateRule(),
   "  - One entry per subject, holding the WHOLE current answer for that subject.",
   "  - marks, ink and statedAccessories hold a SET. Give them as a JSON ARRAY of separate",
   '    items — ["small gold hoops", "thin wire glasses"] — never one run-on sentence, and',

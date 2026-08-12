@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "8a9c6d6a3b559539"
+    "sourceFingerprint": "58d9efc3c4c1e120"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 93
+      "moduleCount": 94
     },
     {
       "id": "domain:castingV2",
@@ -3335,6 +3335,12 @@
     {
       "id": "module:server/castingV2/compositeIntegrity.ts",
       "path": "server/castingV2/compositeIntegrity.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/declarativeState.ts",
+      "path": "server/castingV2/declarativeState.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -8616,6 +8622,10 @@
     {
       "id": "test:server/castingV2/d246VerificationBar.test.ts",
       "path": "server/castingV2/d246VerificationBar.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/declarativeState.test.ts",
+      "path": "server/castingV2/declarativeState.test.ts"
     },
     {
       "id": "test:server/castingV2/deployCollision.test.ts",
@@ -18240,6 +18250,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/castingV2/recipeAssembler.ts",
+      "to": "module:server/castingV2/declarativeState.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/castingV2/referenceCentreline.ts",
       "to": "module:server/castingV2/maskedComposite.ts",
       "kind": "imports"
@@ -18472,6 +18487,11 @@
     {
       "from": "module:server/castingV2/refineFacets.ts",
       "to": "module:server/castingV2/refineSubjects.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/refineInterpreter.ts",
+      "to": "module:server/castingV2/declarativeState.ts",
       "kind": "imports"
     },
     {
