@@ -47,6 +47,13 @@ vi.mock("../db/connection", () => ({
 }));
 
 vi.mock("../db/generationOperations", () => ({
+  /* Not this suite's subject: the storage-cleanup module derives a born-held
+     manifest's grace from the operation lease, so anything that reaches
+     `storageCleanup` through this double needs the constant to EXIST. Nothing
+     in this suite reads its value, so this is a stand-in rather than a second
+     copy of the answer; the real one is proved in
+     `server/db/storageCleanupHold.test.ts`. */
+  DEFAULT_GENERATION_OPERATION_LEASE_MS: 5 * 60 * 1000,
   fenceCastingV2SignOperationIn: vi.fn(async () => {
     journal.push("fence");
     return fenceWins;

@@ -38,6 +38,7 @@ import {
   type CastingSegmentProvenance,
 } from "../../drizzle/schema";
 import { getDb, withTransaction, type TransactionHandle } from "./connection";
+import { undischargedStorageCleanupBatchWhere } from "./storageCleanup";
 
 function assertPositiveId(value: number, name: string): void {
   if (!Number.isSafeInteger(value) || value <= 0) {
@@ -256,7 +257,11 @@ export async function recordEditPatchSegments(
     const removedBatch = await tx.delete(storageCleanupBatches).where(and(
       eq(storageCleanupBatches.id, input.cleanupBatchId),
       eq(storageCleanupBatches.userId, input.userId),
-      eq(storageCleanupBatches.status, "pending"),
+      /* The writer's manifest is BORN HELD, so "as its writer left it" is now
+         two states rather than one — and never a state the worker has claimed.
+         That distinction is the whole guard: it must still refuse a batch whose
+         hold lapsed and was swept. */
+      undischargedStorageCleanupBatchWhere(),
     ));
     if (affectedRows(removedBatch) !== 1) throw new SegmentOwnershipError("segment");
 
@@ -357,7 +362,9 @@ export async function recordDetectedSegments(
     const removedBatch = await tx.delete(storageCleanupBatches).where(and(
       eq(storageCleanupBatches.id, input.cleanupBatchId),
       eq(storageCleanupBatches.userId, input.userId),
-      eq(storageCleanupBatches.status, "pending"),
+      /* Born held, discharged the same way the patch writer's is, one function
+         up — and for the same reason. */
+      undischargedStorageCleanupBatchWhere(),
     ));
     if (affectedRows(removedBatch) !== 1) throw new SegmentOwnershipError("segment");
 

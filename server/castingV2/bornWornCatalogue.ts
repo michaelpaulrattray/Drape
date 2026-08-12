@@ -28,7 +28,10 @@
  */
 import { randomUUID } from "node:crypto";
 
-import { createStorageCleanupManifestIn } from "../db/storageCleanup";
+import {
+  createStorageCleanupManifestIn,
+  storageCleanupManifestHeldUntil,
+} from "../db/storageCleanup";
 import { withTransaction } from "../db/connection";
 import {
   listLiveSegments,
@@ -211,6 +214,11 @@ export async function catalogueBornWorn(input: {
       /* A synthetic operation id: cataloguing is not a user operation, and the
          real operation's own batch must not be collided with. */
       operationId: randomUUID(),
+      /* BORN HELD, and the synthetic id above is exactly why: the worker's
+         in-flight fence tests this batch against a live operation row, and a
+         synthetic id matches none — so without a hold this manifest is
+         claimable while the catalogue is still storing the crops it names. */
+      heldUntil: storageCleanupManifestHeldUntil(),
       kind: "casting_candidate_cleanup",
       storageItems: planned.flatMap(({ maskKey, contentKey }) => [
         { storageKey: maskKey, storageBackend: "public_r2" as const },

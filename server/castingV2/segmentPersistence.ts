@@ -27,7 +27,10 @@
 import { randomUUID } from "node:crypto";
 
 import { withTransaction } from "../db/connection";
-import { createStorageCleanupManifestIn } from "../db/storageCleanup";
+import {
+  createStorageCleanupManifestIn,
+  storageCleanupManifestHeldUntil,
+} from "../db/storageCleanup";
 import { recordEditPatchSegments, type RecordedSegment } from "../db/castingV2Segments";
 import { storagePut } from "../storage";
 import { createModuleLogger } from "../logging/logger";
@@ -224,6 +227,12 @@ export async function persistSegmentsForVariant(input: {
       id: cleanupBatchId,
       userId: input.userId,
       operationId: randomUUID(),
+      /* BORN HELD, and the synthetic id above is exactly why: the worker's
+         in-flight fence tests this batch against a live operation row, and a
+         synthetic id matches none — so without a hold this manifest is
+         claimable while this function is still storing the pixels it names.
+         The same race, one road over, cost a delivered feature in the library. */
+      heldUntil: storageCleanupManifestHeldUntil(),
       kind: "casting_candidate_cleanup",
       storageItems: planned.flatMap(({ maskKey, contentKey }) => [
         { storageKey: maskKey, storageBackend: "public_r2" as const },

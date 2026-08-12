@@ -22,11 +22,17 @@ vi.mock("../db/connection", () => ({
   withTransaction: async (fn: (tx: unknown) => Promise<unknown>) => fn({}),
 }));
 
+/* The hold is stubbed with a sentinel so the writer's test can prove it passes
+   THE SHARED DERIVATION rather than a number of its own. What that derivation
+   is worth is proved where it lives, in `server/db/storageCleanupHold.test.ts`. */
+const HELD_UNTIL = new Date("2031-01-01T00:00:00.000Z");
+
 vi.mock("../db/storageCleanup", () => ({
   createStorageCleanupManifestIn: (_tx: unknown, input: unknown) => {
     events.push("manifest");
     return calls.manifest(input);
   },
+  storageCleanupManifestHeldUntil: () => HELD_UNTIL,
 }));
 
 const { persistSegmentsForVariant, keepSegmentsFromRender, SEGMENT_KEY_PREFIX } = await import("./segmentPersistence");
@@ -84,9 +90,18 @@ describe("persisting a render's segments", () => {
     expect(events).toEqual(["manifest", "store:mask", "store:content", "record"]);
 
     const [manifest] = calls.manifest.mock.calls[0] as [
-      { kind: string; storageItems: Array<{ storageKey: string }> },
+      { kind: string; heldUntil?: Date; storageItems: Array<{ storageKey: string }> },
     ];
     expect(manifest.kind).toBe("casting_candidate_cleanup");
+    /*
+      BORN HELD. Registering first is only safe while something holds the
+      manifest: this batch carries a synthetic operation id, so the worker's
+      in-flight fence matches no operation and passes trivially, and an unheld
+      manifest is claimable in the window between these two lines. The identity
+      check is the point — a hold invented here instead of derived would be a
+      second answer to a question the operation lease already answers.
+    */
+    expect(manifest.heldUntil).toBe(HELD_UNTIL);
     expect(manifest.storageItems.map((item) => item.storageKey)).toEqual(
       calls.store.mock.calls.map(([input]) => (input as { key: string }).key),
     );

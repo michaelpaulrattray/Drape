@@ -77,7 +77,10 @@
 import { createHash, randomUUID } from "node:crypto";
 
 import { withTransaction } from "../db/connection";
-import { createStorageCleanupManifestIn } from "../db/storageCleanup";
+import {
+  createStorageCleanupManifestIn,
+  storageCleanupManifestHeldUntil,
+} from "../db/storageCleanup";
 import {
   recordReferenceRows,
   type ReferenceRowToRecord,
@@ -383,6 +386,12 @@ async function defaultManifest(input: {
        sweep's: the column is unique and NOT NULL, and the real operation's own
        batch already exists. This work is not a user operation. */
     operationId: randomUUID(),
+    /* BORN HELD, and the synthetic id above is exactly why: the worker's
+       in-flight fence tests this batch against a live operation row, and a
+       synthetic id matches none — so without a hold this manifest is claimable
+       while the mint is still storing the crops it names. It was: a sweep took
+       step 4's hair mid-mint, and the render carried a superseded version. */
+    heldUntil: storageCleanupManifestHeldUntil(),
     kind: "casting_candidate_cleanup",
     storageItems: input.storageKeys.map((storageKey) => ({
       storageKey,

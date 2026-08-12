@@ -16,6 +16,7 @@ import {
 } from "../../drizzle/schema";
 import type { TransactionHandle } from "./connection";
 import { getDb, withTransaction } from "./connection";
+import { DEFAULT_GENERATION_OPERATION_LEASE_MS } from "./generationOperations";
 import {
   buildStorageCleanupManifest,
   assertStorageCleanupCounts,
@@ -32,17 +33,78 @@ function affectedRows(result: unknown): number {
   return Number((result as { affectedRows?: unknown })?.affectedRows ?? 0);
 }
 
+/**
+ * How long a manifest holds itself while its writer is still writing.
+ *
+ * DERIVED, not chosen: it is the same lease an in-flight generation operation
+ * holds, which is already this program's sized answer to "how long may a unit in
+ * flight keep its claim". One constant, one meaning — a writer that outlives it
+ * is a latency finding, not an argument for a longer hold.
+ */
+export const STORAGE_CLEANUP_MANIFEST_HOLD_MS = DEFAULT_GENERATION_OPERATION_LEASE_MS;
+
+/** The instant a manifest born now stops holding itself. */
+export function storageCleanupManifestHeldUntil(now: Date = new Date()): Date {
+  return new Date(now.getTime() + STORAGE_CLEANUP_MANIFEST_HOLD_MS);
+}
+
+/**
+ * The batch is still exactly as its writer left it — nothing has swept it.
+ *
+ * `pending` is the plain case: born unheld, never claimed. `processing` with NO
+ * lease token AND NO `attemptedAt` is a BORN HELD manifest the worker has never
+ * touched — `claimNextStorageCleanupBatch` stamps both on every claim, and
+ * `finalizeStorageCleanupBatch` can leave a batch `processing` with a null token
+ * but never with a null `attemptedAt`. So the null attempt is the claim's own
+ * absence, and not a state any swept batch can return to.
+ *
+ * Shared rather than restated at each discharge: three writers hold their
+ * manifests this way, and three copies of this predicate would be three chances
+ * for one of them to drift into accepting a batch the worker is deleting.
+ */
+export function undischargedStorageCleanupBatchWhere() {
+  return or(
+    eq(storageCleanupBatches.status, "pending"),
+    and(
+      eq(storageCleanupBatches.status, "processing"),
+      isNull(storageCleanupBatches.leaseToken),
+      isNull(storageCleanupBatches.attemptedAt),
+    ),
+  );
+}
+
 export async function createStorageCleanupManifestIn(
   tx: TransactionHandle,
-  input: Parameters<typeof buildStorageCleanupManifest>[0],
+  input: Parameters<typeof buildStorageCleanupManifest>[0] & {
+    /**
+     * BORN HELD — the instant this manifest stops holding itself.
+     *
+     * A writer that registers a manifest BEFORE writing the bytes it names is
+     * protected from its own cleanup worker only by the in-flight fence, and
+     * that fence tests the batch's `operationId` against a live operation row.
+     * The writers that carry a SYNTHETIC operation id match no operation, so the
+     * fence passes trivially and the manifest is claimable the instant it is
+     * written — while the writer is still encoding and storing. That race really
+     * fired: it deleted a delivered feature's crop mid-mint, and the render's
+     * rows were then correctly refused because their bytes were being deleted.
+     *
+     * Passing a hold makes the batch unclaimable until it expires, in the state
+     * machine the worker already speaks — no schema change, no new worker rule.
+     * If the writer dies, the hold lapses and the worker collects it exactly as
+     * it does today, so the failure path still collects itself.
+     */
+    heldUntil?: Date | null;
+  },
 ): Promise<StorageCleanupManifest> {
   const manifest = buildStorageCleanupManifest(input);
+  const heldUntil = input.heldUntil ?? null;
   await tx.insert(storageCleanupBatches).values({
     id: manifest.id,
     userId: manifest.userId,
     operationId: manifest.operationId,
     kind: manifest.kind,
-    status: "pending",
+    status: heldUntil ? "processing" : "pending",
+    leaseExpiresAt: heldUntil,
     expectedCount: manifest.expectedCount,
     deletedCount: 0,
     failedCount: 0,

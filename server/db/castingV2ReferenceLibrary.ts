@@ -86,6 +86,7 @@ import {
   type GuardRefusalReason,
 } from "../castingV2/referenceCompleteness";
 import { withTransaction, getDb, type TransactionHandle } from "./connection";
+import { undischargedStorageCleanupBatchWhere } from "./storageCleanup";
 
 export type { ReferenceGeometry, ReferenceGuardReading, ReferenceRefusal, StoredReference };
 
@@ -607,7 +608,11 @@ export async function recordReferenceRows(
       const removedBatch = await tx.delete(storageCleanupBatches).where(and(
         eq(storageCleanupBatches.id, input.cleanupBatchId),
         eq(storageCleanupBatches.userId, input.userId),
-        eq(storageCleanupBatches.status, "pending"),
+        /* The mint's manifest is BORN HELD, so "as its writer left it" is now
+           two states rather than one — and never a state the worker has
+           claimed. That distinction is the whole guard: it must still refuse a
+           batch whose hold lapsed and was swept. */
+        undischargedStorageCleanupBatchWhere(),
       ));
       if (affectedRows(removedBatch) !== 1) {
         throw new ReferenceLibraryOwnershipError("reference");

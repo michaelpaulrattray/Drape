@@ -22,11 +22,17 @@ vi.mock("../db/connection", () => ({
   withTransaction: async (fn: (tx: unknown) => Promise<unknown>) => fn({}),
 }));
 
+/* Stubbed with a sentinel so this suite proves the catalogue passes THE SHARED
+   derivation rather than a number of its own; what the derivation is worth is
+   proved in `server/db/storageCleanupHold.test.ts`. */
+const HELD_UNTIL = new Date("2031-01-01T00:00:00.000Z");
+
 vi.mock("../db/storageCleanup", () => ({
   createStorageCleanupManifestIn: (_tx: unknown, input: unknown) => {
     events.push("manifest");
     return calls.manifest(input);
   },
+  storageCleanupManifestHeldUntil: () => HELD_UNTIL,
 }));
 
 const { catalogueBornWorn } = await import("./bornWornCatalogue");
@@ -138,6 +144,15 @@ describe("cataloguing a master", () => {
     });
 
     expect(events).toEqual(["read", "manifest", "store:mask", "store:content", "record"]);
+
+    /*
+      BORN HELD — registering first is only safe while something holds the
+      manifest. This batch carries a synthetic operation id, so the worker's
+      in-flight fence matches no operation and passes trivially; unheld, the
+      manifest is claimable in the window between the manifest and the record.
+    */
+    const [manifest] = calls.manifest.mock.calls[0] as [{ heldUntil?: Date }];
+    expect(manifest.heldUntil).toBe(HELD_UNTIL);
   });
 
   /*

@@ -9,6 +9,11 @@ vi.mock("../db/connection", () => ({
 }));
 vi.mock("../db/storageCleanup", () => ({
   createStorageCleanupManifestIn: async () => undefined,
+  /* The manifest is BORN HELD, so the writer asks this module for the hold as
+     well. A double that omits it does not make the writer fail loudly — it
+     throws inside the writer's own catch and reports `failed`, which is how it
+     read here: as a segment that was silently not kept. */
+  storageCleanupManifestHeldUntil: () => new Date("2031-01-01T00:00:00.000Z"),
 }));
 
 import { harvestRefinement, regionNameOf, type RegionReader } from "./maskedRefine";
