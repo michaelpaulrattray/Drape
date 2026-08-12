@@ -157,6 +157,40 @@ bring the dev proof and ask for an explicit go.
 still present in storage. A missing frame means that row cannot be superseded
 and is stated rather than skipped silently.
 
+### What the dev run actually produced, and the two things it changed
+
+Run 2026-08-12, `scripts/supersede-library-words-disposable.mts`, dev world
+(`:52008`), 11 rows, reads only. Outcome: no row named a kind outside its slot,
+no pair claim, no doubled terminator. Five of six earring rows on candidate 359
+came back **honestly empty** — a real crop with no legible earring in it — which
+fable-289 ruling 1 ruled a correct outcome and re-worded the bar accordingly:
+
+> "correct words on every row" means **accurate, or honestly empty where nothing
+> is legible.** An empty stack beside a real crop is the reader declining to
+> invent. The receipt reports empties as empties, never as misses.
+
+It also rewrote facts the panel shows — `["auburn","worn up in a loose bun","a
+soft fringe"]` became one current sentence naming copper-red hair. That is the
+current-state ruling working (the newest delivered frame is what she looks like);
+the row had been carrying a stale fact and the panel had been showing it.
+
+### The ordering constraint nobody had written down
+
+**Deploy the fix before superseding.** A supersession run while the live mint is
+still the old one is undone by the very next refine, which writes the old shape
+back over the new. A write the next render overwrites is not a fix; it is churn
+wearing one.
+
+### The reading spans two stores, so it declares two worlds
+
+The first production run reported all sixteen frames missing, which reads exactly
+like *the frames are gone*. It was *the wrong bucket*: `railway run --service
+MySQL` injects the database URL and nothing else, so dotenv's dev `R2_BUCKET` sat
+in front of the production database. The script now prints both worlds and
+refuses a `.railway.internal` database host outright. Adopted as standing law
+(fable-289 ruling 4): **a reader spanning two stores declares both, or it is
+worthless.**
+
 ## 6. Filed with a trigger: the per-side anatomy instance half
 
 `lashes`, `cheekbone`, `brow` are per-side slots the region vocabulary has no
