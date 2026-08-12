@@ -79,6 +79,31 @@ const WORN_CLOTHING_WORDS = [
 ] as const;
 
 /**
+ * Does this text name worn clothing?
+ *
+ * The predicate the list above was written for, exported so the ACCESSORY
+ * carve-out can share it rather than reach for `mentionsGarments` — the reuse
+ * this file's own header warns against, and which shipped anyway.
+ *
+ * It cost the founder a measurement to find: a brief stating *"small gold hoop
+ * earrings"* reached `parseStatedAccessories` intact, from a model that had
+ * filed it perfectly, and was deleted because `GARMENT_WORDS` bans the word
+ * "earrings" — correctly, for a composed direction, and catastrophically for
+ * the one field whose whole purpose is to carry it. Same brief, same reply:
+ * *"a bold red lip and heavy makeup"* kept the lip and lost the makeup, on a
+ * field whose description says "Makeup counts" in that word. (opus-280,
+ * fable-337.)
+ *
+ * One list, two callers, no second copy to drift — the boundary is defined
+ * once, here, beside the reasoning for where it falls.
+ */
+export function mentionsWornClothing(text: string | null): boolean {
+  if (!text) return false;
+  const words = new Set(text.toLowerCase().split(/[^a-z]+/));
+  return WORN_CLOTHING_WORDS.some((word) => words.has(word));
+}
+
+/**
  * Did this brief state what they are wearing?
  *
  * Reads the USER'S OWN SENTENCE, never the interpreter's output — the same
@@ -88,9 +113,7 @@ const WORN_CLOTHING_WORDS = [
  * wrong. The raw brief cannot be wrong about what it says.
  */
 export function statesWardrobe(briefText: string | null): boolean {
-  if (!briefText) return false;
-  const words = new Set(briefText.toLowerCase().split(/[^a-z]+/));
-  return WORN_CLOTHING_WORDS.some((word) => words.has(word));
+  return mentionsWornClothing(briefText);
 }
 
 /**

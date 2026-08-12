@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "23dd14861758c1e9"
+    "sourceFingerprint": "847e224fddc3c0a2"
   },
   "domains": [
     {
@@ -17650,6 +17650,11 @@
     {
       "from": "module:server/castingV2/castingIntent.ts",
       "to": "module:server/castingV2/poolTendencies.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/castingIntent.ts",
+      "to": "module:server/castingV2/statedWardrobe.ts",
       "kind": "imports"
     },
     {

@@ -331,10 +331,14 @@ WHAT TO EXTRACT
   have had. Filling this field is never a reason to leave another one empty.
 - "statedAccessories": the worn things the brief NAMED, in the user's own words,
   as short phrases — ["chunky glasses"], ["a nose stud", "a wedding ring"],
-  ["a red lip"]. Makeup counts.
-  This exists so the sheet can say back what it was told. It does not change
-  the picture: "characterNotes" is what reaches the image model, and this is
-  read only by the sentence shown above the sheet.
+  ["a red lip"]. Makeup counts. So do earrings, a necklace and any other
+  jewellery: they are worn things the brief named, and they belong here.
+  This does not change the picture — "characterNotes" is what reaches the image
+  model. But it is READ TWICE, and the second reader matters: the sheet says
+  back what it was told, AND the editing gate later treats this as the record of
+  what she is wearing, which is what decides whether "take her earrings off" is
+  something the product can do. A worn thing you leave out here is a thing she
+  can never be asked to take off.
   USE ONLY WORDS THAT APPEAR IN THE BRIEF, the same rule as "statedHair" —
   anything containing a word the user did not type is dropped, so a paraphrase
   is worse than an empty list.

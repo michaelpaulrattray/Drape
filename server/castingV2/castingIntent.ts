@@ -105,6 +105,7 @@ import {
 export { FACIAL_HAIR_LEANS, LEAN_STRENGTHS, NO_TENDENCIES };
 export type { FacialHairLean, LeanStrength, PoolTendencies };
 import { mentionsGarments, scrubBrands } from "./brandScrub";
+import { mentionsWornClothing } from "./statedWardrobe";
 
 /* ------------------------------------------------------------ vocabularies */
 
@@ -726,15 +727,40 @@ const STATED_ACCESSORY_LIMIT = 3;
  * The worn things the brief named, in the user's own words.
  *
  * Mirrors `parseStatedHair` deliberately, down to the containment: every phrase
- * is scrubbed, refused if it carries a digit or a garment word, and then
+ * is scrubbed, refused if it carries a digit or a CLOTHING word, and then
  * checked TOKEN BY TOKEN against the user's own sentence. A phrase containing a
  * word they did not type is dropped rather than repaired — the closed-SOURCE
  * rule (D-89), which is what makes a free-text field safe to read back without
  * a closed vocabulary. "Chunky glasses" is in no enum and never will be.
  *
- * **This never reaches the image model.** `characterNotes` is what the picture
- * is composed from; this exists so the sentence above the sheet can say what it
- * was told, and it is read only there.
+ * # Two readers, and the second is newer than this comment used to admit
+ *
+ * This does not reach the image model — `characterNotes` composes the picture.
+ * But it is no longer read only by the sentence above the sheet: **the
+ * departure gate consults it as the record of what she is wearing**, which is
+ * what decides whether a removal is expressible, and therefore whether money
+ * moves. A field specified as a caption became load-bearing and nothing at this
+ * site said so. Both readers are named here now, deliberately — the next author
+ * reaching for a convenient word list needs to see what depends on where this
+ * boundary falls. (fable-337, condition 3.)
+ *
+ * # Why the guard is NOT `mentionsGarments`
+ *
+ * It was, and that was the defect. `brandScrub`'s `GARMENT_WORDS` guards
+ * composed DIRECTIONS, where naming any accessory means the model answered
+ * about the wrong thing — so it bans "earring", "necklace", "jewellery" and
+ * "makeup" on purpose. Applied HERE it deleted precisely the category this
+ * field exists to carry: a brief stating *"small gold hoop earrings"* produced
+ * an empty list from a model that had extracted the phrase perfectly, and the
+ * departure gate then told the founder her brief had never asked for earrings
+ * while she wore them in the photograph. One reply — *"a bold red lip and heavy
+ * makeup"* — kept the lip and lost the makeup, on a field whose own description
+ * says "Makeup counts" in that word.
+ *
+ * `statedWardrobe.ts` had already argued this in prose, under a heading reading
+ * *"Why this is NOT `mentionsGarments`"*, and had written the correct list: the
+ * clothing the sheet genuinely does not render, and nothing else. The list was
+ * right and the parser never got it. Now they share one. (opus-280, fable-337.)
  */
 export function parseStatedAccessories(raw: unknown, briefText: string): string[] {
   if (!Array.isArray(raw)) return [];
@@ -742,11 +768,11 @@ export function parseStatedAccessories(raw: unknown, briefText: string): string[
   for (const entry of raw) {
     const cleaned = scrubBrands(cleanFreeText(entry, STATED_ACCESSORY_MAX));
     if (!cleaned) continue;
-    // Same three refusals as stated hair, for the same three reasons: digits
-    // become text artefacts, a garment word means the model answered about
-    // clothes, and a word the user never typed is an invention.
+    // Three refusals: digits become text artefacts, a CLOTHING word means the
+    // model answered about the outfit the sheet replaces with its studio tee,
+    // and a word the user never typed is an invention.
     if (/[0-9]/.test(cleaned)) continue;
-    if (mentionsGarments(cleaned)) continue;
+    if (mentionsWornClothing(cleaned)) continue;
     if (!tokensComeFromBrief(cleaned, briefText)) continue;
     if (kept.some((existing) => existing.toLowerCase() === cleaned.toLowerCase())) continue;
     kept.push(cleaned);
