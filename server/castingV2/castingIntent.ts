@@ -694,6 +694,32 @@ export function tokensComeFromBrief(value: string, briefText: string): boolean {
  * shape. A rejected field falls back to suppression, which is today's shipped
  * behaviour, so the cost of the model misbehaving is that the feature does not
  * apply rather than that a paid roll dies.
+ *
+ * # What a drop here actually costs, which is more than "a detail"
+ *
+ * **This feeds the SUBJECT block of a paid prompt, which the prompt's own
+ * priority line declares absolute** — so the stakes are not a caption's. And
+ * the cost of a wrong drop does not stop at the field: losing ONE part with the
+ * others null leaves the interpreter having named nothing, and
+ * `hairDeferenceFor` reads "named nothing" as "the interpreter failed" and
+ * defers the WHOLE axis (`cohortPhotorealHuman.ts:1779`). A spoken part is
+ * never authored, so colour and texture go silent beside the lost cut,
+ * `describePartialHair` returns the empty string, and **no HAIR sentence is
+ * composed at all on any of the eight tiles.**
+ *
+ * That degrade is correct when the interpreter genuinely failed. It is not
+ * correct when the parse deleted a good answer, which is what the guard below
+ * used to do.
+ *
+ * # Why the guard is NOT `mentionsGarments`
+ *
+ * It was. `GARMENT_WORDS` contains "collar" — for a composed direction, where a
+ * collar is clothing and has no business being named. In a HAIR field
+ * "collar-length" is an ordinary haircut, and the brief *"a woman in her 30s
+ * with collar-length hair"* lost its entire hair axis on all eight tiles of a
+ * paid roll while "shoulder-length" and "chin-length bob", measured in the same
+ * run, were honoured in her own words. One word on a list written for another
+ * field. (opus-281 §2, fable-338.)
  */
 export function parseStatedHair(raw: unknown, briefText: string): StatedHair {
   if (!raw || typeof raw !== "object") return EMPTY_STATED_HAIR;
@@ -702,10 +728,10 @@ export function parseStatedHair(raw: unknown, briefText: string): StatedHair {
   const field = (key: "cutLength" | "colour" | "texture"): string | null => {
     const cleaned = scrubBrands(cleanFreeText(wire[key], STATED_HAIR_MAX));
     if (!cleaned) return null;
-    // Digits render as text artefacts in the picture, and a garment word means
-    // the model answered about clothes. Both are drops, never edits.
+    // Digits render as text artefacts in the picture, and a CLOTHING word means
+    // the model answered about the outfit. Both are drops, never edits.
     if (/[0-9]/.test(cleaned)) return null;
-    if (mentionsGarments(cleaned)) return null;
+    if (mentionsWornClothing(cleaned)) return null;
     if (!tokensComeFromBrief(cleaned, briefText)) return null;
     return cleaned;
   };

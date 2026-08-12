@@ -295,3 +295,99 @@ describe("the hair resolver states its own precedence", () => {
     expect(out.tiers.facialHair).not.toBe("suppressed");
   });
 });
+
+/* --------------------------------------------------- the clothing guard */
+
+/**
+ * THE GUARD THAT ATE A HAIRCUT.
+ *
+ * `parseStatedHair`'s containment used `mentionsGarments`, whose word list is
+ * written for composed DIRECTIONS and contains "collar" — because a collar is
+ * clothing and a direction has no business naming one. In a hair field
+ * "collar-length" is an ordinary cut, and the whole axis went silent for it.
+ *
+ * The escalation is why this sits in THIS file rather than beside a parser
+ * unit test. Losing one part with the others null leaves the interpreter
+ * having named nothing; `hairDeferenceFor` reads that as the interpreter
+ * having FAILED and defers the whole axis; a spoken part is never authored;
+ * and `describePartialHair` returns the empty string. **One word on a list,
+ * and eight paid tiles get no hair sentence at all** — while the same brief
+ * one word over is honoured in the user's own words.
+ *
+ * Driven at the compiler, not the parser, for the reason at the top of this
+ * file: a test that supplies the input the bug corrupts cannot see the bug.
+ * The interpreter here returns what the REAL one returned when measured
+ * (opus-281 §2) — the phrase, correctly extracted.
+ */
+describe("a clothing guard must not eat a haircut", () => {
+  /* Every brief CONTAINS its phrase, so containment can never be the cause. */
+  const cuts: Array<[brief: string, cut: string]> = [
+    ["a woman in her 30s with collar-length hair", "collar-length"],
+    ["a woman in her 30s with shoulder-length hair", "shoulder-length"],
+    ["a woman in her 30s with a chin-length bob", "chin-length bob"],
+  ];
+
+  it.each(cuts)("keeps the cut the brief stated: %s", async (brief, cut) => {
+    const parsed = parseCastingIntent(
+      JSON.stringify({
+        cohort: "photoreal_human",
+        statedHair: { cutLength: cut, colour: null, texture: null, greying: false },
+      }),
+      brief,
+    );
+    expect(parsed.ok).toBe(true);
+    expect(parsed.ok && parsed.intent.statedHair.cutLength).toBe(cut);
+  });
+
+  it.each(cuts)("composes a hair sentence carrying it: %s", async (brief, cut) => {
+    const out = await sheet(brief, {
+      statedHair: { cutLength: cut, colour: null, texture: null, greying: false },
+    });
+    for (const candidate of out.candidates) {
+      const line = hairLine(candidate.prompt);
+      /*
+        The failure this catches is not "the wrong length" — it is NO HAIR
+        SENTENCE AT ALL, which is what a swallowed cut produces. Assert the
+        sentence exists and carries her word, in that order, because an empty
+        string passing a `toContain` on an empty needle is how this would hide.
+      */
+      expect(line, `${brief} — no hair sentence was composed`).not.toBe("");
+      expect(line.toLowerCase()).toContain(cut.toLowerCase());
+    }
+  });
+
+  /*
+    THE NEGATIVE CONTROL, and it is the guard's real job. A model answering
+    about CLOTHES in a hair field is still refused — that is what the guard was
+    for, and swapping the list must not cost it.
+  */
+  it("still refuses a garment answered into a hair field", () => {
+    const brief = "a musician in a red leather jacket";
+    const parsed = parseCastingIntent(
+      JSON.stringify({
+        cohort: "photoreal_human",
+        statedHair: { cutLength: "a red leather jacket", colour: null, texture: null, greying: false },
+      }),
+      brief,
+    );
+    expect(parsed.ok).toBe(true);
+    expect(parsed.ok && parsed.intent.statedHair.cutLength).toBeNull();
+  });
+
+  /* And the trousers the OLD list never blocked, in the same field. */
+  it("refuses the clothing words the old guard let through", () => {
+    for (const [brief, phrase] of [
+      ["a woman in black jeans", "black jeans"],
+      ["a woman in a grey hoodie", "a grey hoodie"],
+    ] as const) {
+      const parsed = parseCastingIntent(
+        JSON.stringify({
+          cohort: "photoreal_human",
+          statedHair: { cutLength: phrase, colour: null, texture: null, greying: false },
+        }),
+        brief,
+      );
+      expect(parsed.ok && parsed.intent.statedHair.cutLength, phrase).toBeNull();
+    }
+  });
+});
