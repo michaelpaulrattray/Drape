@@ -161,6 +161,32 @@ export type Ask = {
    * must match a word already in the slot's stack.
    */
   remove?: readonly string[];
+  /**
+   * THE SLOT GOES VACANT for this render (chunk 3,
+   * `LIBRARY_REMOVAL_DESIGN.md` §3).
+   *
+   * Neither asked nor carried: an empty word stack, no crop (the carry loop
+   * already skips edited slots), and no anchor — sending the frozen
+   * introduction reference of the thing being taken off would hand the painter
+   * a picture of it.
+   *
+   * **The sentence is required, and that is the whole point.** Dropping the
+   * words and the crop leaves the recipe SILENT about the feature, and the
+   * master is reference 1 — so a born-worn item (her own glasses, in the master
+   * by definition) gets painted straight back on by the render that was meant
+   * to remove it. Carrying the sentence in the type rather than checking for it
+   * at runtime is deliberate: a vacate that cannot say the absence should not
+   * be constructible, because the corner where one exists is a paid render that
+   * quietly does nothing.
+   *
+   * `says` is DERIVED by the caller from the slot catalogue
+   * (`vacantPhraseFor`), never authored per ask — fable-195's rule about
+   * descriptions, and the same reason: a sentence generated from the record has
+   * nowhere to diverge to. The assembler cannot reach the catalogue itself
+   * (the catalogue imports this module's types), so the derivation belongs one
+   * layer out, exactly as `accessoryKind` already does.
+   */
+  vacate?: { says: string };
 };
 
 export type AssembleInput = {
@@ -205,7 +231,18 @@ export type Recipe = {
    *  anatomy slot carries by crop, a surface by words alone; all three are
    *  promises, so all three are verified. */
   carried: readonly FeatureSlot[];
-  /** Per edited slot, the full word stack that regenerates it. */
+  /**
+   * The slots this render declared VACANT — a subset of `edited`.
+   *
+   * The mint's only licence to retire a crop. A departure is carried by this
+   * list and never by the reader's silence: `noCut` on an untouched slot has at
+   * least three causes with no departure among them, and a library that retired
+   * on that signal would delete her earrings because a render came out shadowy
+   * (`LIBRARY_REMOVAL_DESIGN.md` §4).
+   */
+  vacated: readonly FeatureSlot[];
+  /** Per edited slot, the full word stack that regenerates it. A vacated slot
+   *  appears here holding nothing — present and empty, never absent. */
   wordStacks: ReadonlyMap<FeatureSlot, readonly string[]>;
   /** The reference sentences, in ordinal order, ready to join with the ask. */
   sentences: readonly string[];
@@ -237,7 +274,11 @@ export type RecipeRefusal = {
     | "surfaceCarriesCrop"
     | "nounNotBare"
     | "slotNotNamed"
-    | "wordsNotDeclarative";
+    | "wordsNotDeclarative"
+    /** A vacate carrying words as well — see `Ask.vacate`. */
+    | "vacateAlsoAsks"
+    /** A vacate whose sentence is empty; the recipe would go silent. */
+    | "vacateSaysNothing";
   slot: FeatureSlot;
   detail: string;
 };
@@ -279,6 +320,21 @@ function askSentence(
 ): string | { unnamed: FeatureSlot } {
   const clauses: string[] = [];
   for (const ask of asks) {
+    if (ask.vacate) {
+      /*
+        THE ABSENCE IS SAID IN THE SAME BREATH AS EVERY OTHER CHANGE.
+
+        It rides the "Change only …" sentence rather than getting a sentence of
+        its own, because a removal IS one of this render's changes and a second
+        sentence about it would be a second instruction about one feature — the
+        thing this assembler refuses everywhere else. The phrase names the SITE
+        as well as the absence ("bare earlobes", "her face uncovered"), which is
+        the same lesson `HAIR_ARRANGEMENTS` paid for: a wording that tells the
+        reader WHERE beats one that tells it what to conclude.
+      */
+      clauses.push(ask.vacate.says);
+      continue;
+    }
     const entry = bySlot.get(ask.slot);
     const noun = entry?.noun ?? ask.noun;
     if (noun === undefined || noun.trim() === "") return { unnamed: ask.slot };
@@ -365,6 +421,10 @@ export function assembleRecipe(input: AssembleInput): AssembleResult {
   /** Which reference each carried slot ended up at, so a standing sentence can
    *  point at it by the ordinal it actually occupies. */
   const ordinalOf = new Map<FeatureSlot, number>();
+  /** The slots this render declared vacant, in ask order. The mint reads this
+   *  to decide what may be retired, and NOTHING else may originate a departure
+   *  (`LIBRARY_REMOVAL_DESIGN.md` §4). */
+  const vacated: FeatureSlot[] = [];
 
   /** Ordinal in the sent array: the master is 1, so the next is length + 1. */
   const nextOrdinal = () => references.length + 1;
@@ -395,6 +455,38 @@ export function assembleRecipe(input: AssembleInput): AssembleResult {
 
   for (const ask of input.asks) {
     const entry = bySlot.get(ask.slot);
+    if (ask.vacate) {
+      /*
+        A VACATE IS THE WHOLE ASK FOR ITS SLOT, and the two refusals below say
+        so rather than letting a half-formed one through.
+
+        Words beside a vacate would be a render told to remove the earrings and
+        describe them in the same clause; an empty sentence would leave the slot
+        silent, which is the exact failure the sentence exists to prevent — the
+        master is reference 1 and silence is an instruction to keep what is in
+        it.
+      */
+      if (ask.words !== undefined && ask.words.trim() !== "") {
+        return {
+          ok: false, reason: "vacateAlsoAsks", slot: ask.slot,
+          detail: `${ask.slot} is being vacated and also given words ("${ask.words}"); a slot cannot be taken off and described in one render`,
+        };
+      }
+      if (ask.vacate.says.trim() === "") {
+        return {
+          ok: false, reason: "vacateSaysNothing", slot: ask.slot,
+          detail: `${ask.slot} is being vacated with no sentence, so the recipe would go silent about it and the master would paint it back on`,
+        };
+      }
+      /* Empty by construction, and RECORDED: `wordStacks` is what the record
+         and the panel read, so a vacated slot must appear there holding
+         nothing rather than be absent from it. */
+      wordStacks.set(ask.slot, []);
+      vacated.push(ask.slot);
+      /* No anchor, deliberately — see `Ask.vacate`. The carry loop below skips
+         it too, because a vacate puts the slot in `editedSet`. */
+      continue;
+    }
     if (ask.words !== undefined && IMPERATIVE_OPENER.test(ask.words.trim())) {
       /* The interpreter's own output, checked at the boundary it crosses. */
       return {
@@ -549,7 +641,7 @@ export function assembleRecipe(input: AssembleInput): AssembleResult {
   }
 
   return {
-    ok: true, references, edited, carried, wordStacks, sentences, standing, ask,
+    ok: true, references, edited, carried, vacated, wordStacks, sentences, standing, ask,
     prompt: [...sentences, ...standing.map((entry) => entry.sentence), ask]
       .filter((line) => line !== "")
       .join(" "),

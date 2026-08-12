@@ -41,6 +41,18 @@ const MAY_REFUSE_A_PAID_RENDER: Record<string, string> = {
   capability: "d — the request asked for something this provider cannot do",
   content_policy: "d — the provider refused the content",
   not_one_person: "b — the provider succeeded and it is not a photograph of one person",
+  /*
+    (c) THE ASKED THING COMPLETELY ABSENT, read in the mirror.
+
+    A removal's asked thing is an ABSENCE, and the render came back with the
+    glasses still on her face. That is (c) exactly — not a shade, not a degree,
+    not a quibble about how well the thing was done: the whole of what she paid
+    for is not in the picture. It is adjudicated by the same presence read the
+    mint already pays for, on the same binary question the founder's ruling
+    calls answerable, and it happens before the landing so the render she never
+    sees is the one that is refunded.
+  */
+  removal_not_delivered: "c — she asked for it to be gone and it is still in the picture",
 };
 
 /** Source files whose `new ProviderError(...)` sites are on the render path. */

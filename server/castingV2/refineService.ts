@@ -144,9 +144,10 @@ import { keepSegmentsFromRender } from "./segmentPersistence";
 import { mintReferencesForRender } from "./referenceMint";
 import { mintedSlotsForRender } from "./mintedSlots";
 import { deriveLibrary, libraryWithoutEditedCrops, liveReferences } from "./referenceLibrary";
-import { listLineageReferences } from "../db/castingV2ReferenceLibrary";
+import { listLineageReferences, retireReferenceSlot } from "../db/castingV2ReferenceLibrary";
 import type { RegionReader as MintRegionReader } from "./referenceCompleteness";
-import { assembleRecipe } from "./recipeAssembler";
+import { assembleRecipe, type FeatureSlot } from "./recipeAssembler";
+import { slotDefinition } from "./referenceSlotCatalogue";
 import { repaint, type RepaintEngine, type SentRequest } from "./repaintRender";
 import { repaintAsksFor, repaintCannotRemove } from "./repaintAsks";
 import { pronounsForSex } from "./castPronouns";
@@ -341,6 +342,9 @@ export type RefineServiceDependencies = {
    * database round trip, and a dark deploy must not pay for one.
    */
   referenceLibraryEnabled?: (userId: number) => boolean;
+  /** The library's retirement, injectable so the removal's two arms can be
+   *  driven without a database (chunk 3). */
+  retireSlot?: typeof retireReferenceSlot;
   /**
    * The engine the REPAINT dispatches its one paint to.
    *
@@ -2266,6 +2270,10 @@ export async function refineCandidate(
         }),
         edited: recipe.edited,
         carried: recipe.carried,
+        /* WHAT THIS RENDER ASKED TO TAKE OFF. On the record because it is a
+           fact about the request — and read back below, where it is the only
+           licence the library has to retire a crop. */
+        vacated: recipe.vacated,
         standing: recipe.standing.map((entry) => entry.slot),
       });
 
@@ -2996,6 +3004,75 @@ export async function refineCandidate(
     const carriedFacets = new Set(image.carried ?? []);
 
     /*
+      A REMOVAL IS ADJUDICATED BEFORE THE PICTURE LANDS (chunk 3,
+      `LIBRARY_REMOVAL_DESIGN.md` §4).
+
+      Two things happen here and they are the same reading:
+
+        the thing is GONE      retire the slot's carry, so the next recipe stops
+                               fetching a crop of something she took off
+        the thing is STILL ON  the removal did not land. D-246 (c) read in the
+                               mirror — the asked thing is completely un-done —
+                               so this refuses into the refund and the library is
+                               left exactly as it was
+
+      **Deliberately OUTSIDE the swallow-everything wrapper below, and the two
+      failures are not the same size.** A mint that fails means the library did
+      not learn something new; the picture is still exactly what was asked for,
+      so it must not cost the render. A RETIREMENT that fails means the library
+      actively contradicts the picture — it still holds a crop of the glasses
+      she just paid to remove, and the next unrelated ask would fetch that crop
+      and put them back on her face. Refunding a render nobody has seen is the
+      cheaper of those two, and it is only available because the landing now
+      comes last.
+
+      Nothing but `vacated` may retire anything. A reader's silence about an
+      untouched slot has at least three causes with no departure among them
+      (the segmenter missed, the slot has no question, the crop is dark), and a
+      library that retired on that signal would delete her earrings because a
+      render came out shadowy.
+    */
+    const vacatedSlots = (image.repaint?.vacated ?? []) as readonly FeatureSlot[];
+    if (vacatedSlots.length > 0) {
+      const reader = dependencies.regions ?? defaultRegionReader();
+      for (const slot of vacatedSlots) {
+        const definition = slotDefinition(slot);
+        if (definition?.question == null) {
+          /* A slot with no question cannot be confirmed either way, and an
+             unconfirmed retirement is the library asserting something about a
+             picture nobody read. `repaintAsksFor` only builds a vacate for a
+             catalogued accessory, so this is a guard rather than a path. */
+          throw new Error(`the removal of ${slot} cannot be confirmed — that slot has no question to ask the frame`);
+        }
+        const still = await reader.region({
+          image: image.bytes,
+          name: definition.question,
+          /* Nothing found means the thing is not there, which is the answer
+             this is asking for — a refusal to answer would arrive as null and
+             is treated as "still on" below, the conservative direction. */
+          absentIsAnswer: true,
+        });
+        if (still !== null) {
+          log.warn(
+            { operationId, variant: variant.publicId, slot, question: definition.question },
+            "[refineService] the removal did not land — the thing is still in the frame, so the render is refused rather than delivered",
+          );
+          throw new ProviderError("removal_not_delivered", definition.noun);
+        }
+        const retired = await (dependencies.retireSlot ?? retireReferenceSlot)({
+          userId: input.userId,
+          candidateId: variant.candidateId,
+          anchorVariantId: variant.id,
+          slot,
+        });
+        log.info(
+          { operationId, variant: variant.publicId, slot, retired },
+          "[refineService] the slot is vacant and its references are retired — the library stops carrying it",
+        );
+      }
+    }
+
+    /*
       EVERYTHING THE NEXT ASK WILL READ IS WRITTEN BEFORE THE LANDING (fable-307).
 
       The landing is not bookkeeping — it is the moment the picture becomes
@@ -3583,6 +3660,26 @@ export async function refineCandidate(
  * Null for every other failure, so the generic line keeps its job.
  */
 function failedFactsMessage(error: unknown): string | null {
+  /*
+    A REMOVAL THAT WOULD NOT TAKE, in its own words.
+
+    The sentence below is right about a verification refusal and wrong about
+    this in both halves: nothing came back "twice" (a removal is adjudicated
+    once, before the landing) and nothing is missing (the thing is still there).
+    Borrowing it would put a receipt on her account describing a different
+    event.
+  */
+  if (error instanceof ProviderError && error.failureClass === "removal_not_delivered") {
+    const thing = error.message.trim();
+    /* One form for a plural noun and a singular one alike — "the glasses are"
+       and "the nose stud are" cannot both come out of one template, so the
+       template does not try (the same rule the standing sentences follow). */
+    return thing
+      ? `That one came back with the ${thing} still in the picture, so it wasn't delivered `
+        + "and your credits have been returned. Try saying it a different way."
+      : "That one came back with the thing you asked to remove still in it, so it wasn't "
+        + "delivered and your credits have been returned.";
+  }
   if (!(error instanceof ProviderError) || error.failureClass !== "facts_missing") return null;
   const missing = error.message.trim();
   return missing
@@ -3634,6 +3731,18 @@ function refundDescriptionFor(error: unknown): string {
     return missing
       ? `Refine refunded — the render came back ${missing}`
       : "Refine refunded — the render came back without what you asked for";
+  }
+  /*
+    AND THE REMOVAL'S OWN LINE. Without it this falls through to "the
+    generation failed", which is the misdescribing receipt the four classes
+    above were split out to stop — the generation did not fail at all, it came
+    back with the thing she was paying to take off.
+  */
+  if (error instanceof ProviderError && error.failureClass === "removal_not_delivered") {
+    const thing = error.message.trim();
+    return thing
+      ? `Refine refunded — the render still showed the ${thing}`
+      : "Refine refunded — the render still showed what she asked to remove";
   }
   return "Refine refunded — the generation failed";
 }

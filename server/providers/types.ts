@@ -121,6 +121,22 @@ export type ProviderFailureClass =
    * database.
    */
   | "segment_store"
+  /**
+   * THE THING SHE ASKED US TO TAKE OFF IS STILL IN THE PICTURE (chunk 3).
+   *
+   * Fifth split, same law: the receipt is the record. `facts_missing` is the
+   * mirror of this and reads *"came back twice without what you asked for"* —
+   * true of a verification refusal, which has already re-rendered once for
+   * free, and false here in both halves. A removal is adjudicated once, before
+   * the landing, and its shortfall is not an absence at all: the render came
+   * back WITH the thing that was supposed to go.
+   *
+   * Non-retryable. The recipe already said the absence in the plainest words
+   * the catalogue has; asking the same engine the same question is not a
+   * different request, and the honest answer to a removal that will not take is
+   * the money back rather than a second charge-shaped attempt.
+   */
+  | "removal_not_delivered"
   /** Unmapped. Treated as non-retryable so unknowns fail closed. */
   | "unknown";
 

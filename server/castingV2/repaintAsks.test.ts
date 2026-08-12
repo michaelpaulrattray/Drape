@@ -131,19 +131,88 @@ describe("one step's delta becomes the recipe's asks", () => {
   });
 });
 
-describe("what it refuses rather than paints", () => {
-  it("refuses a departure — a negative fact is not a state to regenerate from", () => {
+/**
+ * A DEPARTURE IS A SLOT GOING VACANT (chunk 3, `LIBRARY_REMOVAL_DESIGN.md`).
+ *
+ * This described a refusal until today, and the refusal's reason was true of
+ * the recipe as it then was: a departure has no state phrase to regenerate a
+ * FEATURE from. There is one about the SITE, it lives in the placement table,
+ * and the slot simply stops carrying.
+ *
+ * The specimen is the founder's own step 5 — *"remove her glasses"* — which
+ * refused in 33.2 s and refunded on the shift-59 walk.
+ */
+describe("a departure vacates the slot and says so", () => {
+  it("turns her own glasses leaving into a vacate ask that names the bare site", () => {
     const result = repaintAsksFor({
       delta: { free: { statedAccessories: [] }, absent: { statedAccessories: ["glasses"] } },
       prose,
       accessoryKind: "glasses",
     });
 
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.asks).toHaveLength(1);
+    expect(result.asks[0]!.slot).toBe("glasses");
+    /* The sentence comes from the catalogue, so it names the SITE rather than
+       telling the reader what to conclude — and it carries no words. */
+    expect(result.asks[0]!.vacate?.says).toContain("no glasses");
+    expect(result.asks[0]!.vacate?.says).toContain("uncovered");
+    expect(result.asks[0]!.words).toBeUndefined();
+  });
+
+  it("vacates BOTH lobes when a pair leaves, because a pair is two slots", () => {
+    const result = repaintAsksFor({
+      delta: { free: { statedAccessories: [] }, absent: { statedAccessories: ["gold hoop earrings"] } },
+      prose,
+      accessoryKind: "earring",
+    });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.asks.map((ask) => ask.slot)).toEqual(["earring@left", "earring@right"]);
+    for (const ask of result.asks) expect(ask.vacate?.says).toContain("bare");
+  });
+
+  it("CONTROL — a departure of something the table cannot name still refuses", () => {
+    /* The honest answer, and the same one the mint gives. An absence sentence
+       improvised at the call site is the free-floating prose fable-195 ruled
+       against, and the price of getting it wrong is a paid render that says
+       something untrue about her face. */
+    const result = repaintAsksFor({
+      delta: { free: { statedAccessories: [] }, absent: { statedAccessories: ["her tiara"] } },
+      prose,
+      accessoryKind: null,
+    });
+
     expect(result.ok).toBe(false);
     if (result.ok) return;
-    expect(result.reason).toBe("departure");
-    expect(result.detail).toContain("glasses");
+    expect(result.reason).toBe("unnamedObject");
+    expect(result.detail).toContain("tiara");
   });
+
+  it("CONTROL — survivors are still stated, so a partial removal is not a vacate", () => {
+    /* "Take the hoops off" against hoops AND glasses leaves the glasses on her,
+       and the surviving item has to keep being said or the next render drops
+       it. The empty-value skip above is narrow for exactly this reason. */
+    const result = repaintAsksFor({
+      delta: {
+        free: { statedAccessories: ["thin wire glasses"] },
+        absent: { statedAccessories: ["gold hoop earrings"] },
+      },
+      prose,
+      accessoryKind: "glasses",
+    });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.asks.map((ask) => ask.slot)).toEqual(["earring@left", "earring@right", "glasses"]);
+    expect(result.asks.at(-1)!.words).toBe("thin wire glasses");
+    expect(result.asks.at(-1)!.vacate).toBeUndefined();
+  });
+});
+
+describe("what it refuses rather than paints", () => {
 
   it("refuses an ask whose facet has no slot, rather than dropping it", () => {
     /* THE DEFECT CLASS THIS EXISTS TO CLOSE. A dropped ask is a paid picture

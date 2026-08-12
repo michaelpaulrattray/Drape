@@ -631,3 +631,143 @@ describe("a surface's UPLOADED reference is an anchor, and anchors are legal (fa
     expect(refusal.reason).toBe("surfaceCarriesCrop");
   });
 });
+
+/**
+ * A VACATED SLOT — the recipe's half of chunk 3 (`LIBRARY_REMOVAL_DESIGN.md` §3).
+ *
+ * Driven straight at the assembler, never through the removal arithmetic that
+ * produces the ask: the whole point of the shape is that a slot can be taken
+ * off, and the guard for it must be exercisable without a model or a chain.
+ *
+ * The founder's own step 5 is the specimen — "remove her glasses", refused and
+ * refunded on the shift-59 walk in 33.2 seconds.
+ */
+describe("a slot declared vacant", () => {
+  /*
+    NO  on the vacated slot's own entry, and that is the production
+    shape rather than a convenience:  strips the
+    crop of every edited slot before the recipe is assembled, and a vacate is an
+    edit. The control at the foot of this block drives what happens when it is
+    not stripped.
+  */
+  /*
+    NO `carry` on the vacated slot's own entry, and that is the PRODUCTION shape
+    rather than a convenience: `libraryWithoutEditedCrops` strips the crop of
+    every edited slot before the recipe is assembled, and a vacate is an edit.
+    The last control in this block drives what happens when it is not stripped.
+  */
+  const glasses: LibraryEntry = {
+    slot: "glasses", tier: "item", noun: "glasses",
+    words: ["thin gold wire frames"],
+  };
+  const GONE = "no glasses — her face uncovered, no frames, no lenses and no rim shadow";
+
+  it("SAYS THE ABSENCE at the wire, because silence would repaint them", () => {
+    /*
+      The master is reference 1 and her glasses are IN it. A recipe that merely
+      drops the words and the crop is a recipe that says nothing about her
+      glasses to a painter looking at a photograph of her wearing them.
+      Asserted on the OUTGOING prompt, not on a constant near it.
+    */
+    const recipe = assembleRecipe({
+      master: MASTER, pronouns: SHE, library: [glasses],
+      asks: [{ slot: "glasses", noun: "glasses", vacate: { says: GONE } }],
+    });
+
+    expect(recipe.ok).toBe(true);
+    if (!recipe.ok) return;
+    expect(recipe.prompt).toContain(GONE);
+    expect(recipe.ask).toContain(GONE);
+    expect(recipe.vacated).toEqual(["glasses"]);
+    expect(recipe.edited).toEqual(["glasses"]);
+  });
+
+  it("carries NO crop for its own slot, and no anchor either", () => {
+    /* Sending the crop would hand the painter a picture of the thing it is
+       being asked to take off. A vacate is in `editedSet`, so the carry loop
+       skips it — pinned here against the new shape. */
+    const recipe = assembleRecipe({
+      master: MASTER, pronouns: SHE,
+      library: [{ ...glasses, anchor: { key: "library/the-frames-she-uploaded.png" } }],
+      asks: [{ slot: "glasses", noun: "glasses", vacate: { says: GONE } }],
+    });
+
+    expect(recipe.ok).toBe(true);
+    if (!recipe.ok) return;
+    expect(recipe.references).toHaveLength(1);
+    expect(recipe.references[0]!.role).toEqual({ kind: "master" });
+    expect(recipe.carried).toEqual([]);
+    /* Present and empty, never absent — the record and the panel read this. */
+    expect(recipe.wordStacks.get("glasses")).toEqual([]);
+  });
+
+  it("does not silence the OTHER slots — everything else still carries", () => {
+    const recipe = assembleRecipe({
+      master: MASTER, pronouns: SHE,
+      library: [glasses, lips({ carry: { key: "mint/lips.png" } })],
+      asks: [{ slot: "glasses", noun: "glasses", vacate: { says: GONE } }],
+    });
+
+    expect(recipe.ok).toBe(true);
+    if (!recipe.ok) return;
+    expect(recipe.carried).toEqual(["lips"]);
+    expect(recipe.vacated).toEqual(["glasses"]);
+  });
+
+  it("CONTROL — a vacate with words is refused, not merged", () => {
+    const refusal = assembleRecipe({
+      master: MASTER, pronouns: SHE, library: [glasses],
+      asks: [{ slot: "glasses", noun: "glasses", words: "thin gold wire frames", vacate: { says: GONE } }],
+    });
+    expect(refusal.ok).toBe(false);
+    if (refusal.ok) return;
+    expect(refusal.reason).toBe("vacateAlsoAsks");
+  });
+
+  it("CONTROL — a vacate that says nothing is refused, because silence is the defect", () => {
+    const refusal = assembleRecipe({
+      master: MASTER, pronouns: SHE, library: [glasses],
+      asks: [{ slot: "glasses", noun: "glasses", vacate: { says: "   " } }],
+    });
+    expect(refusal.ok).toBe(false);
+    if (refusal.ok) return;
+    expect(refusal.reason).toBe("vacateSaysNothing");
+  });
+
+  it("CONTROL — an EMPTY ordinary ask still refuses, so the new door opened nothing else", () => {
+    /* `emptyWordStack` is right about every other caller: a slot regenerating
+       from the master with nothing said is a revert wearing an edit's clothes.
+       A vacate is the one legitimate empty stack, and it is legitimate because
+       it speaks. */
+    const refusal = assembleRecipe({
+      /* Nothing said before and nothing said now — the shape `emptyWordStack`
+         was written for. (With a library entry the stack is not empty at all;
+         the entry's own words survive, which is a different case and a legal
+         one.) */
+      master: MASTER, pronouns: SHE, library: [],
+      asks: [{ slot: "glasses", noun: "glasses", words: "" }],
+    });
+    expect(refusal.ok).toBe(false);
+    if (refusal.ok) return;
+    expect(refusal.reason).toBe("emptyWordStack");
+  });
+
+  it("CONTROL — a vacate handed its own crop is still refused by D-244 line 2", () => {
+    /*
+      The one structural guard that must NOT relax for a vacate. Reaching it
+      means a caller assembled a recipe that hands a feature its own crop while
+      taking that feature off — the picture of the thing, sent to the render
+      that removes it. It is unreachable in production because the caller
+      strips edited slots' crops, and it is driven here because "unreachable"
+      is what the last corner said about itself before it cost a walk.
+    */
+    const refusal = assembleRecipe({
+      master: MASTER, pronouns: SHE,
+      library: [{ ...glasses, carry: { key: "mint/glasses.png" } }],
+      asks: [{ slot: "glasses", noun: "glasses", vacate: { says: GONE } }],
+    });
+    expect(refusal.ok).toBe(false);
+    if (refusal.ok) return;
+    expect(refusal.reason).toBe("carriesItsOwnEdit");
+  });
+});

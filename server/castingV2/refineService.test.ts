@@ -2422,6 +2422,87 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
     expect(painted).toHaveLength(0);
     expect(journal).toContain("generate");
   });
+
+  /*
+    A REMOVAL, BOTH ARMS, DRIVEN DIRECTLY (chunk 3,
+    `LIBRARY_REMOVAL_DESIGN.md` §4 and §5).
+
+    The founder's own step 5 — "remove her glasses" — refused and refunded on
+    the shift-59 walk in 33.2 seconds. Every claim below is a null result in one
+    direction, so every one gets a fixture that could have produced the other:
+    a reader that finds the thing and a reader that does not, with nothing else
+    changed between the arms.
+  */
+  const removing = (finds: boolean) => ({
+    ...repainting,
+    /* The base-worn departure D-238 authors in the service, handed straight in
+       so the removal arithmetic is not the subject of these tests. */
+    interpret: async () => ({
+      ok: true as const,
+      delta: { absent: { statedAccessories: ["glasses"] } },
+    }),
+    regions: {
+      region: async () => (finds ? { data: Buffer.alloc(1), width: 1, height: 1 } : null),
+      subject: async () => null,
+      landmark: async () => [],
+    } as never,
+    retireSlot: async (ask: Record<string, unknown>) => {
+      retired.push(ask);
+      return 1;
+    },
+  });
+  const retired: Array<Record<string, unknown>> = [];
+  beforeEach(() => { retired.length = 0; });
+
+  it("says the absence at the wire, and retires the slot the frame agrees is empty", async () => {
+    await refineCandidate(removing(false), { ...input, instruction: "remove her glasses" });
+
+    /* THE SENTENCE. Silence would be an instruction to keep them: the master is
+       reference 1 and her glasses are in it. Asserted on the prompt that left
+       the building, never on a constant near it. */
+    expect(painted).toHaveLength(1);
+    expect(painted[0]!.prompt).toContain("no glasses — her face uncovered");
+    /* THE RETIREMENT, scoped to this branch rather than to every fork. */
+    expect(retired).toHaveLength(1);
+    expect(retired[0]!.slot).toBe("glasses");
+    expect(retired[0]!.userId).toBe(1);
+    /* And the render is a render: delivered, landed, charged once. */
+    expect(journal).toContain("land");
+    expect(ledger.refunds).toHaveLength(0);
+  });
+
+  it("REFUSES when the thing is still in the frame — a removal that did not land", async () => {
+    /* D-246 (c) read in the mirror. The only thing changed from the test above
+       is the reader's answer; if both arms did not move, one of them would be a
+       constant. */
+    await expect(refineCandidate(removing(true), { ...input, instruction: "remove her glasses" }))
+      .rejects.toThrow(/still in the picture/);
+
+    /* The money comes back whole, and the library is untouched — retiring the
+       crop of a thing still on her face would file a lie about the picture she
+       was charged for, on the very render that failed her. */
+    expect(ledger.refunds).toEqual([{ amount: 25, description: expect.stringContaining("glasses") }]);
+    expect(retired).toEqual([]);
+    /* And it never landed: the adjudication runs before the landing, so this
+       refunds a render nobody has seen rather than taking back one she has. */
+    expect(journal).not.toContain("land");
+  });
+
+  it("CONTROL — an ordinary edit retires nothing, however the reader answers", async () => {
+    /* Nothing but a vacate may originate a departure. A reader that finds
+       nothing on an untouched slot has at least three innocent causes, and a
+       library that retired on that signal would delete her earrings because a
+       render came out shadowy. Same silent reader as the first arm. */
+    await refineCandidate({
+      ...hairDown,
+      regions: { region: async () => null, subject: async () => null, landmark: async () => [] } as never,
+    }, { ...input, instruction: "wear her hair down" });
+
+    expect(painted).toHaveLength(1);
+    expect(retired).toEqual([]);
+    expect(journal).toContain("land");
+  });
+
 });
 
 describe("the record and the picture come from the same place", () => {

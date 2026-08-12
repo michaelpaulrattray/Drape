@@ -64,6 +64,27 @@ export const LANDMARK_OF_ACCESSORY: {
   pair: boolean;
   /** How to name both sides, in the painter's clause and the reader's. */
   bothSides?: string;
+  /**
+   * WHAT THE SITE LOOKS LIKE WITH THE THING GONE (chunk 3,
+   * `LIBRARY_REMOVAL_DESIGN.md` §3).
+   *
+   * A removal on the repaint road is a slot declared vacant, and dropping its
+   * words and its crop is not enough: the MASTER is reference 1, so a born-worn
+   * item — her own glasses, in the master by definition — is painted straight
+   * back on by the very render that was meant to take it off. The recipe has to
+   * SAY the absence.
+   *
+   * Required, not optional, so a new kind cannot land without one — the
+   * compiler asks the question a reviewer would forget to.
+   *
+   * Written as a STATE and never as an instruction ("no earrings — bare
+   * earlobes", never "remove the earrings"), which is what makes it pass
+   * `IMPERATIVE_OPENER` by construction rather than by care. And derived from
+   * this table at emission rather than authored beside each ask, for the reason
+   * fable-195 gave about descriptions: a sentence generated from the record has
+   * nowhere to diverge to.
+   */
+  vacantPhrase: string;
 }[] = [
   {
     words: ["earring", "stud", "hoop", "dangle", "drop"],
@@ -72,6 +93,9 @@ export const LANDMARK_OF_ACCESSORY: {
     region: "earring",
     pair: true,
     bothSides: "one on each ear, a matching pair",
+    /* Both lobes named, for the same reason `bothSides` exists: a pair is the
+       one kind here that can be half-removed by a painter reading loosely. */
+    vacantPhrase: "no earrings — both earlobes bare, nothing hanging from either ear",
   },
   {
     words: ["glasses", "spectacles", "frames", "sunglasses", "eyewear"],
@@ -79,6 +103,10 @@ export const LANDMARK_OF_ACCESSORY: {
     drops: false,
     region: "glasses",
     pair: false,
+    /* The specimen this whole clause exists for. Her glasses are IN the master,
+       so silence about them is an instruction to keep them — and the founder's
+       "ghost rim" is what a half-hearted removal leaves behind. */
+    vacantPhrase: "no glasses — her face uncovered, no frames, no lenses and no rim shadow on her cheeks or brows",
   },
   {
     words: ["nose ring", "nose stud", "septum", "nostril"],
@@ -86,6 +114,7 @@ export const LANDMARK_OF_ACCESSORY: {
     drops: false,
     region: "nose stud",
     pair: false,
+    vacantPhrase: "no nose jewellery — her nose and septum bare, with no piercing visible",
   },
 ];
 
@@ -138,4 +167,25 @@ export function accessoryEntry(described?: string) {
 /** The kind id alone — null when nothing in the table names this thing. */
 export function accessoryKindOf(described: string): string | null {
   return accessoryEntry(described)?.region ?? null;
+}
+
+/**
+ * THE SENTENCE A VACATED SLOT SAYS, by kind id.
+ *
+ * Keyed on the REGION rather than on the words, because by the time a recipe is
+ * being assembled the object has already been identified — re-reading the
+ * user's phrase here would be a second answer to "what kind of thing is this",
+ * and `pairClauseFor` has the scar from the first time that was done (a nose
+ * stud told it was worn one on each ear).
+ *
+ * Null for a kind this table does not hold, and the caller must refuse rather
+ * than improvise: an absence sentence invented at the call site is exactly the
+ * free-floating parallel prose fable-195 ruled against, and the price of
+ * getting it wrong is a paid render that says something untrue about her face.
+ * Open-vocabulary removals arrive with their own vocabulary (roadmap §5), never
+ * by loosening this door.
+ */
+export function vacantPhraseFor(kind: string | null | undefined): string | null {
+  if (!kind) return null;
+  return LANDMARK_OF_ACCESSORY.find((entry) => entry.region === kind)?.vacantPhrase ?? null;
 }

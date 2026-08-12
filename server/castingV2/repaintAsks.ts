@@ -31,13 +31,28 @@
  *
  * | | |
  * |---|---|
- * | `removal` | a step being taken back. Under D-244 removal STRIKES matching words from the stack, and the stack is the library's captions rather than the chain's steps — so the words to strike have to be matched against what the library actually holds. Not guessed here. |
- * | `departure` | the same thing from the other side (D-238's `absent`): the negative fact has no declarative state phrase, and `no glasses` is a sentence about the picture rather than about a feature. |
+ * | `removal` | a step being taken back. Under D-244 removal STRIKES matching words from the stack, and the stack is the library's captions rather than the chain's steps — so the words to strike have to be matched against what the library actually holds. Not guessed here. **Chunk 3 opened the DEPARTURE half of removal, not this half** — see below. |
  * | `notASlot` | makeup, ink and expression. The catalogue's reasons are decided ones (fable-168/201, D-133/D-136) and each is written there; what is missing is where a surface's words ride, not whether they should. |
  * | `unnamedObject` | she is visibly wearing something the placement table cannot name. The honest answer, and the same one the mint gives. |
  *
  * Every refusal names its facet, so the log line says which ask the product
  * could not express rather than that "the repaint refused".
+ *
+ * # A DEPARTURE IS NOW AN ASK, and it is the half of removal that matters most
+ *
+ * `departure` used to be on that list, and its stated reason was true of the
+ * recipe as it then was: *the negative fact has no declarative state phrase*.
+ * The mistake was looking for a phrase about the FEATURE. There is none — but
+ * there is one about the SITE, it lives in the placement table beside every
+ * other fact about the object (`vacantPhrase`), and the slot simply stops
+ * carrying. So `delta.absent` now produces a `vacate` ask.
+ *
+ * **Declared, because it is half of a thing:** this opens the BASE-WORN
+ * departure (D-238's `absent` — her own glasses, in the master, no step to
+ * prune). The chain-prune removal still arrives with no `editDelta` at all and
+ * still meets `repaintCannotRemove` below. That path needs the pruned chain's
+ * own arithmetic to say which slots went vacant, and it is the next slice
+ * rather than a forgotten one.
  */
 import type { EyeColour, EyeShape, HairTexture } from "../../shared/castingRealization";
 import type { HairColour } from "../../shared/castingVocabularies";
@@ -46,6 +61,7 @@ import { facetOfAxis, facetOfSubject, type Facet } from "./refineFacets";
 import { itemsOf, facetsWrittenBy, type RefineDelta } from "./refineDelta";
 import type { FreeSubject } from "./refineSubjects";
 import { FACET_SLOTS, slotDefinition, slotsForFacet } from "./referenceSlotCatalogue";
+import { accessoryKindOf, vacantPhraseFor } from "./accessoryKinds";
 import type { Ask, FeatureSlot } from "./recipeAssembler";
 
 /**
@@ -151,19 +167,86 @@ function statePhrase(
  * one feature.
  */
 export function repaintAsksFor(input: RepaintAsksInput): RepaintAsksResult {
-  const departed = Object.values(input.delta.absent ?? {}).flatMap((items) => items ?? []);
-  if (departed.length > 0) {
-    return {
-      ok: false, reason: "departure", facet: null,
-      detail: `this render says ${departed.join(", ")} has left her, and a departure has no declarative state phrase to regenerate a feature from`,
-    };
-  }
-
   const order: FeatureSlot[] = [];
   const wordsBySlot = new Map<FeatureSlot, string[]>();
   const nounBySlot = new Map<FeatureSlot, string>();
+  const vacateBySlot = new Map<FeatureSlot, string>();
+  /** Which facets the departure loop below spoke for — read once, by the
+   *  written loop, so one fact is not asked twice. */
+  const vacatedFacets = new Set<Facet>();
+
+  /*
+    A DEPARTURE IS A SLOT GOING VACANT (chunk 3, `LIBRARY_REMOVAL_DESIGN.md`).
+
+    This used to refuse outright, with a reason that was true of the recipe as
+    it then was: a departure has no declarative state phrase to regenerate a
+    feature FROM. The answer was never a phrase about the feature — it is a
+    phrase about the SITE, said by the slot catalogue, and the slot carrying
+    nothing at all.
+
+    `delta.absent` is the base-worn departure D-238 authors in the service: the
+    thing is in the master, no step put it there, and no subtraction can remove
+    it. It is exactly the case that must SAY the absence out loud, because the
+    master is reference 1 and silence about her glasses is an instruction to
+    paint them back on.
+
+    The kind is derived HERE from the departed noun rather than taken from
+    `input.accessoryKind`. That is not a second copy of the caller's
+    derivation — it is a different question about a different string: the
+    caller's kind describes what the edit ADDS, and a removal has no such
+    words. Same function, same table, one definition of what an earring is.
+  */
+  for (const [subject, items] of Object.entries(input.delta.absent ?? {})) {
+    const facet = facetOfSubject(subject as FreeSubject);
+    for (const noun of items ?? []) {
+      const definitions = slotsForFacet(facet, { accessoryKind: accessoryKindOf(noun) });
+      if (definitions.length === 0) {
+        return {
+          ok: false, reason: "unnamedObject", facet,
+          detail: `this render says ${noun} has left her and the placement table cannot name what that is, so the recipe has no slot to vacate`,
+        };
+      }
+      for (const definition of definitions) {
+        const says = vacantPhraseFor(definition.guardKind);
+        if (says === null) {
+          /*
+            An absence sentence is never improvised at the call site — a
+            sentence authored beside an ask is the free-floating parallel prose
+            fable-195 ruled against, and the cost of getting this one wrong is
+            a paid render that says something untrue about her face. A kind with
+            no phrase refuses, and opens with its own vocabulary later
+            (roadmap §5) rather than by loosening this door.
+          */
+          return {
+            ok: false, reason: "uncatalogued", facet,
+            detail: `${definition.slot} has no vacant phrase in the placement table, so the recipe could not say that ${noun} is gone`,
+          };
+        }
+        order.push(definition.slot);
+        vacateBySlot.set(definition.slot, says);
+        vacatedFacets.add(facet);
+        nounBySlot.set(definition.slot, definition.noun);
+      }
+    }
+  }
 
   for (const facet of Array.from(facetsWrittenBy(input.delta))) {
+    /*
+      A FACET THE DEPARTURE ALREADY SPOKE FOR, LEFT EMPTY, SAYS NOTHING NEW.
+
+      A removal that clears the last item on a subject arrives as both halves of
+      one fact: `absent: {statedAccessories: ["glasses"]}` and the survivors,
+      `free: {statedAccessories: []}`. The vacate above is that fact; the empty
+      value is the same fact with nothing left to say, and running it through
+      `statePhrase` would refuse the render with `noWords` for having correctly
+      removed the only thing there was.
+
+      Narrow on purpose — only when this facet actually produced a vacate, and
+      only when the value is empty. A facet with survivors still goes through
+      below and states them, and a genuinely wordless facet nobody vacated still
+      refuses, which is the case that door was built for.
+    */
+    if (vacatedFacets.has(facet) && statePhrase(facet, input.delta, input.prose) === null) continue;
     const definitions = slotsForFacet(facet, { accessoryKind: input.accessoryKind });
     if (definitions.length === 0) {
       /* The reason comes from the catalogue's own ASSIGNMENT rather than from
@@ -225,14 +308,22 @@ export function repaintAsksFor(input: RepaintAsksInput): RepaintAsksResult {
 
   return {
     ok: true,
-    asks: order.map((slot) => ({
-      slot,
-      /* Supplied always. The assembler prefers the library entry's noun when
-         it has one, and this is what makes a slot the library has never held
-         sayable at all — the degenerate case's whole condition. */
-      noun: nounBySlot.get(slot)!,
-      words: wordsBySlot.get(slot)!.join(", "),
-    })),
+    asks: order.map((slot) => {
+      const says = vacateBySlot.get(slot);
+      return {
+        slot,
+        /* Supplied always. The assembler prefers the library entry's noun when
+           it has one, and this is what makes a slot the library has never held
+           sayable at all — the degenerate case's whole condition. */
+        noun: nounBySlot.get(slot)!,
+        /* A vacate carries its sentence and NO words. The assembler refuses a
+           slot given both (`vacateAlsoAsks`), which is the right answer to a
+           delta that says a thing both left and changed. */
+        ...(says === undefined
+          ? { words: wordsBySlot.get(slot)!.join(", ") }
+          : { vacate: { says } }),
+      };
+    }),
   };
 }
 
