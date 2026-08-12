@@ -106,6 +106,32 @@ export type StoredCheck = {
    * not say which kind. They stay where they always were.
    */
   absent?: boolean;
+  /**
+   * THE SITE COULD NOT BE SEEN AT ALL — neither a pass nor a miss.
+   *
+   * `renderVerification.isOccluded`. Hair over both earlobes is the specimen:
+   * the reader reaches the frame, says the lobes are hidden, and the runtime
+   * already declines to refuse on it (`isRefusableMiss` is false). This report
+   * did not know the field existed, so such a check — read, unverified, binding
+   * — fell straight into `delivered_noncompliant`: **a false pass, in the
+   * column whose bar is ZERO, for a frame where nothing is wrong.**
+   *
+   * Measured before it was fixed, on one master, six readings of the same bytes
+   * and the same question: **four occluded, two verified.** Same picture, same
+   * ask, and today's report calls four of them a false pass and two of them a
+   * compliant delivery. The money is stable across all six (nothing refuses);
+   * only the founder's certification number moves, and it moves on a coin.
+   */
+  occluded?: boolean;
+  /**
+   * THIS CHECK'S SUCCESS CRITERION IS AN ABSENCE — the departure's own mark.
+   *
+   * `renderVerification.FacetCheck.absenceIsTheAsk`, set at the one departure
+   * call site and stored verbatim with the rest of the check. Read here for one
+   * purpose: `classOfCheck` gives a removal its own class, so a removal cannot
+   * be carried over the 95% bar by the additions that share its facet.
+   */
+  absenceIsTheAsk?: boolean;
 };
 
 export type StoredVerification = {
@@ -179,6 +205,24 @@ function wasRead(check: StoredCheck): boolean {
   return check.read === true;
 }
 
+/**
+ * COULD THIS FRAME HAVE ANSWERED THE QUESTION AT ALL?
+ *
+ * The runtime and this report have to agree about what a check MEANS, and until
+ * now they did not: `isRefusableMiss` has always excluded occluded checks — a
+ * site nobody can see never spends the user's refusal — while every test below
+ * read the same check as a read, unverified, binding miss and called it a false
+ * pass. The money said "nothing is wrong here" and the certification number said
+ * "charged for a miss", about one frame.
+ *
+ * Absent on every row written before the reader could say it, which classes
+ * exactly as it does today: an unknown is answerable until it says otherwise, so
+ * no historical row moves and no finding is taken away.
+ */
+function answerable(check: StoredCheck): boolean {
+  return check.occluded !== true;
+}
+
 export function classifyAttempt(row: AttemptRow): AttemptOutcome {
   return classifyChecks(row, row.verification?.checks ?? []);
 }
@@ -219,7 +263,11 @@ export function classifyAttempt(row: AttemptRow): AttemptOutcome {
  * one class that actually failed.
  */
 export function classifyAttemptForClass(row: AttemptRow, edit: string): AttemptOutcome {
-  return classifyChecks(row, (row.verification?.checks ?? []).filter((check) => check.facet === edit));
+  /* Through `classOfCheck`, the same function that NAMED the class — a filter
+     that re-derived membership from `check.facet` here would be the second list,
+     and its drift would show up as a class whose rate is computed from checks
+     that are not the ones the class is made of. */
+  return classifyChecks(row, (row.verification?.checks ?? []).filter((check) => classOfCheck(check) === edit));
 }
 
 function classifyChecks(row: AttemptRow, checks: ReadonlyArray<StoredCheck>): AttemptOutcome {
@@ -295,11 +343,11 @@ function classifyChecks(row: AttemptRow, checks: ReadonlyArray<StoredCheck>): At
     failing, which is a different failure with a different owner.
   */
   if (checks.some((check) =>
-    wasRead(check) && !check.verified && check.absent === true && check.carried !== true)) {
+    answerable(check) && wasRead(check) && !check.verified && check.absent === true && check.carried !== true)) {
     return "delivered_absent";
   }
 
-  if (checks.some((check) => wasRead(check) && !check.verified && check.binding !== false)) {
+  if (checks.some((check) => answerable(check) && wasRead(check) && !check.verified && check.binding !== false)) {
     return "delivered_noncompliant";
   }
 
@@ -315,10 +363,42 @@ function classifyChecks(row: AttemptRow, checks: ReadonlyArray<StoredCheck>): At
   const fresh = checks.filter((check) => check.carried !== true);
   if (fresh.length === 0) return "delivered_carried";
 
-  if (fresh.some((check) => wasRead(check) && !check.verified)) return "delivered_advisory";
-  /* Every check must be affirmatively read. One silence is not a clean sheet. */
-  if (fresh.every(wasRead)) return "delivered_compliant";
+  if (fresh.some((check) => answerable(check) && wasRead(check) && !check.verified)) return "delivered_advisory";
+  /*
+    Every check must be affirmatively read AND answerable. One silence is not a
+    clean sheet, and neither is a site nobody could see: an occluded check is
+    treated here exactly as a silence is — never a pass, never a false pass —
+    which is the only reading that leaves the money and the number saying the
+    same thing about the same frame.
+  */
+  if (fresh.every((check) => wasRead(check) && answerable(check))) return "delivered_compliant";
   return "delivered_unverified";
+}
+
+/**
+ * WHICH CLASS ONE CHECK BELONGS TO — and a removal is not the same class as the
+ * addition it undoes.
+ *
+ * Both are `statedAccessories`: *"small gold hoops"* and *"no glasses — her face
+ * uncovered"* write the same facet. Until this function they were therefore ONE
+ * row in the founder's table, and the arithmetic of that is the whole reason it
+ * matters: a removal delivering at 60% beside additions delivering at 100%
+ * reports as one class at about 90%, and the per-class bar he is asked to
+ * certify never sees the removal — which is the newest and least-proven
+ * capability on the road.
+ *
+ * The split is DERIVED from the check's own declaration, never from prose: the
+ * departure call site sets `absenceIsTheAsk`, `verifyRender` carries it onto the
+ * check, and `refineService` stores the check array verbatim, so the flag is
+ * already in every row written since the departure shipped. No migration, no new
+ * writer, and no second list — this is the one place the name is made, and both
+ * the naming and the filtering below read it.
+ *
+ * A row written before the flag existed has no flag and keeps exactly the class
+ * it has today. Nothing in the existing table moves.
+ */
+export function classOfCheck(check: StoredCheck): string {
+  return check.absenceIsTheAsk === true ? `${check.facet} · removal` : check.facet;
 }
 
 /**
@@ -330,8 +410,8 @@ function classifyChecks(row: AttemptRow, checks: ReadonlyArray<StoredCheck>): At
  * a class it might not belong to.
  */
 export function classesOf(row: AttemptRow): string[] {
-  const facets = (row.verification?.checks ?? []).map((check) => check.facet);
-  return Array.from(new Set(facets)).sort();
+  const classes = (row.verification?.checks ?? []).map(classOfCheck);
+  return Array.from(new Set(classes)).sort();
 }
 
 export type ClassTally = {
@@ -575,14 +655,19 @@ export function formatReport(report: ReliabilityReport): string {
   /* `claims` is the rate's denominator, printed beside the rate so the two can
      never be read apart — a class showing 100% off one claim and one showing it
      off twenty are different findings, and the old table hid the difference. */
-  const header = "class".padEnd(22)
+  /* Wide enough for the widest class NAME rather than for the widest name that
+     existed when this was written: `statedAccessories · removal` is 27 and would
+     have shunted its own row five columns right — the one row a reader is most
+     likely to be looking for. */
+  const width = Math.max(22, ...report.byClass.map((tally) => tally.edit.length), report.overall.edit.length);
+  const header = "class".padEnd(width)
     + "n".padStart(4) + " claim".padStart(7) + "  ok".padStart(6) + " FALSE".padStart(7)
     + "   adv".padStart(7) + " unver".padStart(7) + " carr".padStart(7) + " ref-h".padStart(7)
     + " ref-i".padStart(7) + "   rate  bar";
   lines.push(header);
   lines.push("-".repeat(header.length));
   const row = (tally: ClassTally) =>
-    tally.edit.padEnd(22)
+    tally.edit.padEnd(width)
     + String(tally.total).padStart(4)
     + String(tally.deliveryClaims).padStart(7)
     + String(tally.delivered_compliant).padStart(6)

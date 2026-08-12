@@ -599,3 +599,133 @@ describe("carried facets are never fresh deliveries", () => {
     expect(summarize([attempt()]).overall.delivered_carried).toBe(0);
   });
 });
+
+/*
+  A REMOVAL IS NOT THE ADDITION IT UNDOES — and until shift 63 they were one row.
+
+  "small gold hoops" and "no glasses — her face uncovered" both write
+  `statedAccessories`, so the founder's per-class table scored them together. A
+  removal delivering at 60% beside additions delivering at 100% reports as one
+  class at about 90% and clears a bar it never met.
+*/
+describe("the departure has a class of its own", () => {
+  const addition = check({ facet: "statedAccessories", asked: "small gold hoops", saw: "gold hoops on both ears" });
+  const removal = check({
+    facet: "statedAccessories",
+    asked: "no glasses — her face uncovered",
+    absenceIsTheAsk: true,
+    saw: "bare eyes, no frames",
+  });
+
+  it("names the two apart from the check's own declaration", () => {
+    const row = attempt({ verification: { checks: [addition, removal] } });
+    expect(classesOf(row)).toEqual(["statedAccessories", "statedAccessories · removal"]);
+  });
+
+  it("does not let a failed removal dirty the addition beside it", () => {
+    const row = attempt({
+      verification: {
+        checks: [addition, { ...removal, verified: false, saw: "she is still wearing her glasses" }],
+      },
+    });
+    expect(classifyAttemptForClass(row, "statedAccessories")).toBe("delivered_compliant");
+    expect(classifyAttemptForClass(row, "statedAccessories · removal")).toBe("delivered_noncompliant");
+    /* The whole row is still a false pass — the customer paid once for the
+       picture, and the zero-false-pass bar is stated on that. */
+    expect(classifyAttempt(row)).toBe("delivered_noncompliant");
+  });
+
+  it("CONTROL — without the declaration the two share one class, exactly as before", () => {
+    const row = attempt({
+      verification: { checks: [addition, { ...removal, absenceIsTheAsk: undefined }] },
+    });
+    expect(classesOf(row)).toEqual(["statedAccessories"]);
+  });
+
+  it("gives the removal its own row in the founder's table", () => {
+    const report = summarize([
+      attempt({ operationId: "op-add", verification: { checks: [addition] } }),
+      attempt({
+        operationId: "op-remove",
+        verification: { checks: [{ ...removal, verified: false, saw: "glasses still on" }] },
+      }),
+    ]);
+    const removals = report.byClass.find((tally) => tally.edit === "statedAccessories · removal")!;
+    const additions = report.byClass.find((tally) => tally.edit === "statedAccessories")!;
+    expect(removals.delivered_noncompliant).toBe(1);
+    expect(removals.clearsBar).toBe(false);
+    expect(additions.delivered_compliant).toBe(1);
+    expect(additions.clearsBar).toBe(true);
+    expect(report.blockers).toContain("statedAccessories · removal");
+  });
+});
+
+/*
+  A SITE NOBODY COULD SEE IS NOT A FALSE PASS.
+
+  Measured on one master, six readings of the same bytes and the same question:
+  four came back occluded, two verified. The runtime treats all six the same —
+  `isRefusableMiss` is false when occluded, so nothing refuses and nothing is
+  refunded — while this report called four of them a charge for a miss, in the
+  column whose bar is ZERO. The money and the certification number disagreed
+  about one frame.
+*/
+describe("an occluded site is neither a pass nor a miss", () => {
+  const hidden = check({
+    facet: "statedAccessories",
+    asked: "no earrings — both earlobes bare",
+    verified: false,
+    occluded: true,
+    binding: true,
+    saw: "both earlobes are hidden by hair, no earrings visible",
+  });
+
+  it("does not count an occluded check as a false pass", () => {
+    expect(classifyAttempt(attempt({ verification: { checks: [hidden] } }))).toBe("delivered_unverified");
+  });
+
+  it("CONTROL — the same check without the occlusion IS a false pass", () => {
+    expect(
+      classifyAttempt(attempt({ verification: { checks: [{ ...hidden, occluded: undefined }] } })),
+    ).toBe("delivered_noncompliant");
+  });
+
+  it("does not count it as a compliant delivery either — it is a silence, not a clean sheet", () => {
+    const row = attempt({ verification: { checks: [check(), hidden] } });
+    expect(classifyAttempt(row)).toBe("delivered_unverified");
+    const report = summarize([row]);
+    expect(report.overall.delivered_compliant).toBe(0);
+    expect(report.overall.delivered_noncompliant).toBe(0);
+    expect(report.overall.deliveryClaims).toBe(1);
+  });
+
+  it("still reports a real binding miss standing beside an occluded one", () => {
+    const row = attempt({
+      verification: {
+        checks: [hidden, check({ facet: "hairWorn", verified: false, saw: "hair in a high bun" })],
+      },
+    });
+    expect(classifyAttempt(row)).toBe("delivered_noncompliant");
+  });
+});
+
+describe("the table fits the names it is printing", () => {
+  it("does not shunt a long class name into the numbers", () => {
+    const text = formatReport(summarize([
+      attempt({
+        operationId: "op-remove",
+        verification: {
+          checks: [check({ facet: "statedAccessories", asked: "no glasses", absenceIsTheAsk: true })],
+        },
+      }),
+      attempt({ operationId: "op-eyes", verification: { checks: [check()] } }),
+    ]));
+    const lines = text.split("\n");
+    const removal = lines.find((line) => line.startsWith("statedAccessories · removal"))!;
+    const short = lines.find((line) => line.startsWith("eye.colour"))!;
+    /* The long name and the short one end in the same column — the alignment a
+       reader checks by eye, checked by the suite instead. */
+    expect(removal.length).toBe(short.length);
+    expect(removal.endsWith("   ✓")).toBe(true);
+  });
+});
