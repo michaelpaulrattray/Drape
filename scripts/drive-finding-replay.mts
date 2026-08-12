@@ -95,6 +95,7 @@ import {
   CLEAN_BOUNDARY_COHERENCE, FOUNDER_SEAM_COHERENCE, readSeamRow, seamRates, SEAM_CONTROL_ROWS,
 } from "./lib/seamRows.mts";
 import { createFalRegionReader } from "../server/castingV2/falRegionReader";
+import { askedObjectOnEachEar } from "./lib/askedObject.mts";
 import { readResolvedIdentity } from "../server/castingV2/rollService";
 import { currentValueOfFacet } from "../server/castingV2/refineDelta";
 import type { Mask } from "../server/castingV2/maskedComposite";
@@ -2111,7 +2112,8 @@ async function runWalk(): Promise<boolean> {
         `the delivered frame came back HTTP ${response.status}`);
       continue;
     }
-    const counted = await countEarringPair(Buffer.from(await response.arrayBuffer()), `walk-${index + 1}-v${row.id}`);
+    const frameBytes = Buffer.from(await response.arrayBuffer());
+    const counted = await countEarringPair(frameBytes, `walk-${index + 1}-v${row.id}`);
     countedAt.set(index, counted);
     /*
       ONE HOOP DELIVERED IS THE FINDING, and it fails the run outright. The
@@ -2190,6 +2192,38 @@ async function runWalk(): Promise<boolean> {
             : "")
         : "the row carries no statedAccessories check, so the frame this walk paid for was graded by nothing",
     );
+    /*
+      AND THE ASKED OBJECT, EAR BY EAR — the counter's question is not this one.
+
+      Shift 61: `delivered an earring on BOTH ears` passed on a cross and a
+      plain hoop. Two readings, one per half-frame, of the sentence she actually
+      typed. A side the reader cannot read is a NO-READ and unarms the check
+      rather than passing it — the same rule the pixel counter follows one block
+      up, for the same reason.
+    */
+    const perEar = await askedObjectOnEachEar(frameBytes, entry.step.instruction, counted.midline);
+    const unread = perEar.filter((side) => !side.read);
+    const said = perEar
+      .map((side) => `${side.side}: ${side.wearing ? "wearing it" : "NOT wearing it"}`
+        + ` (absent=${side.absent ?? "—"}, verified=${side.verified}) — "${side.saw}"`)
+      .join(" · ");
+    if (unread.length > 0) {
+      checks.neverArmed(
+        `[A] ${label} — the ASKED OBJECT on each ear, asked one ear at a time`,
+        `${said} — the reader named nothing on the ${unread.map((side) => side.side).join("/")}, `
+        + "so this is a no-read rather than a miss",
+      );
+    } else {
+      check(
+        perEar.every((side) => side.wearing),
+        `[A] ${label} — the ASKED OBJECT on each ear, asked one ear at a time`,
+        said
+        + (perEar.every((side) => side.wearing)
+          ? ""
+          : ". A pair is one thing in her ontology, so the ear wearing something else is "
+            + "wearing the asked thing's absence, not a rougher version of it"),
+      );
+    }
     /* Whether that verdict is contradicted by its own reading is asked of
        EVERY binding facet, one block up — see `[V]`. */
   }
