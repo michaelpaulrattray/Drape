@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto";
+
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 /**
@@ -2249,6 +2251,72 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
     expect(painted).toHaveLength(0);
     expect(ledger.refunds).toHaveLength(1);
     expect(ledger.charges.at(-1)?.amount).toBe(ledger.refunds.at(-1)?.amount);
+  });
+
+  it("records WHAT WENT OUT on the row, so the road is a fact and not a log line", async () => {
+    /*
+      The five-ask proof has to answer "what did this render actually send?" a
+      week after it ran, and until this record the only account of it was one
+      line on one process's stdout. Asserted against the dispatched request
+      rather than against the recipe beside it (working law 5): the keys on the
+      row must be the bytes the engine received, in the order it received them.
+    */
+    lineageReferences = [carryRow()];
+
+    await refineCandidate(hairDown, { ...input, instruction: "wear her hair down" });
+
+    const record = (landedVariant?.internalPrompt as {
+      repaint?: {
+        engineId: string;
+        references: Array<{ key: string; digest: string | null; kind: string | null; slot: string | null }>;
+        edited: string[];
+        carried: string[];
+        standing: string[];
+      };
+    }).repaint;
+    expect(record).toBeDefined();
+    expect(record!.engineId).toBe("test:repaint");
+    expect(record!.references.map((reference) => reference.key)).toEqual([
+      "casting-v2/candidates/abc.png",
+      "casting-v2/library/lips.png",
+    ]);
+    expect(record!.references.map((reference) => [reference.kind, reference.slot])).toEqual([
+      ["master", null],
+      ["carry", "lips"],
+    ]);
+    /* The row names as many references as the engine was handed — the count the
+       report prints, proved against the wire rather than against the recipe. */
+    expect(record!.references).toHaveLength(painted[0]!.references.length);
+    /* Every digest is of the bytes that were dispatched at that position. */
+    record!.references.forEach((reference, at) => {
+      expect(reference.digest).toBe(
+        createHash("sha256").update(painted[0]!.references[at]!.bytes).digest("hex"),
+      );
+    });
+    expect(record!.edited).toEqual(["hair"]);
+    expect(record!.carried).toEqual(["lips"]);
+  });
+
+  it("CONTROL — the same ask on the old road leaves no repaint record at all", async () => {
+    /*
+      The mark is only worth reading if its ABSENCE means something, and an
+      absence is evidence only where the fixture could have produced a presence
+      — this is the same ask, the same library row, and the same landing, with
+      the flag off.
+    */
+    lineageReferences = [carryRow()];
+
+    await refineCandidate({ ...hairDown, repaintEnabled: () => false, harvest: compositing },
+      { ...input, instruction: "wear her hair down" });
+
+    expect((landedVariant?.internalPrompt as { repaint?: unknown }).repaint).toBeUndefined();
+    /* And this run is not simply empty: a row DID land, from a render that DID
+       happen, on the other road. Without these two lines the assertion above
+       would pass just as well against a fixture that never reached the landing
+       at all — which is the shape of a control that cannot fail. */
+    expect((landedVariant?.internalPrompt as { prompt?: string }).prompt).toBeTruthy();
+    expect(journal).toContain("generate");
+    expect(painted).toHaveLength(0);
   });
 
   it("does not exist for anyone the flag has not named", async () => {

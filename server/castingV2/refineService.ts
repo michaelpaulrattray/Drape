@@ -2286,6 +2286,43 @@ export async function refineCandidate(
         carried: undefined,
         assembly: undefined,
         seam: undefined,
+        /*
+          WHICH COMPOSITOR MADE THIS PICTURE, ON THE PICTURE'S OWN ROW.
+
+          Until this line the answer lived in one log entry on one process's
+          stdout. Every other road leaves a mark a later reader can join on — a
+          paste leaves `assembly`, a composite leaves `seam` — and the repaint,
+          which is the road that spends the same money, left nothing at all. A
+          row with no `assembly`, no `seam` and no `repaint` is indistinguishable
+          from a plain full-frame render from before either existed, so "was this
+          repainted, and from what?" was a question the database could not
+          answer about a paid render.
+
+          It is the SENT request that is recorded, not the recipe that was
+          intended: `painted.sent.keys` and `.digests` are what `repaint()` put
+          on the wire, in dispatch order, and the roles are zipped onto them from
+          the recipe positionally because `repaint()` builds both lists in one
+          pass over `recipe.references` (its own header makes that ordering a
+          contract). The dimensions of each reference are deliberately NOT here:
+          a key names an object, and an object's pixel size is read from the
+          object. Recording a second copy of it would be the mirror law 4
+          forbids.
+        */
+        repaint: {
+          engineId: painted.sent.engineId,
+          references: painted.sent.keys.map((key, at) => {
+            const role = recipe.references[at]?.role;
+            return {
+              key,
+              digest: painted.sent.digests[at] ?? null,
+              kind: role?.kind ?? null,
+              slot: role && role.kind !== "master" ? role.slot : null,
+            };
+          }),
+          edited: recipe.edited,
+          carried: recipe.carried,
+          standing: recipe.standing.map((entry) => entry.slot),
+        },
       };
     };
 
@@ -2474,6 +2511,13 @@ export async function refineCandidate(
           by nothing — one specimen is not a calibration.
         */
         seam: harvested.seam,
+        /*
+          NAMED, NOT OMITTED — the mirror of the four `undefined`s the repaint
+          branch declares above. A paste has no recipe, and saying so here is
+          what lets `image.repaint` be read at the landing without the union
+          type hiding one road's field from the other.
+        */
+        repaint: undefined,
       };
     };
 
@@ -2965,6 +3009,12 @@ export async function refineCandidate(
           boundary to have an opinion about.
         */
         ...(image.seam ? { seam: image.seam } : {}),
+        /*
+          AND THE RECIPE, ON A REPAINTED ROW ONLY — see `repaintOnce`. Absent on
+          every other road, which is what makes its presence the mark of this
+          one rather than one more field a reader has to interpret.
+        */
+        ...(image.repaint ? { repaint: image.repaint } : {}),
         /*
           THE NET'S VERDICT, RECORDED (D-185).
 
