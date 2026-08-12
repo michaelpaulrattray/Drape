@@ -1012,16 +1012,56 @@ export async function refineCandidate(
         const original = await (dependencies.readBytes ?? storageReadBytes)(source.candidate.imageKey!);
         /*
           TWO DIFFERENT FAILURES, and collapsing them was this block's first
-          bug. A segmenter that finds nothing THROWS, and that is the honest
-          answer to "is it there" — not a reason to refuse. Only being unable to
-          LOOK at all is the fail-closed case, which is why the image read sits
-          outside this inner try and the segmentation sits inside it.
+          bug. A segmenter that finds nothing is the honest answer to "is it
+          there" — not a reason to refuse. Only being unable to LOOK at all is
+          the fail-closed case, which is why the image read sits outside this
+          inner try and the segmentation sits inside it.
+
+          **The split was right and the mechanism was not, for four months.**
+          The reader THREW on an empty answer, so this inner `catch` was the
+          only place absence could arrive — and it caught a fal 500 by exactly
+          the same door. "SAM3 found nothing" and "the segmenter fell over
+          mid-question" both landed on `presentInBase = false`, which prunes a
+          step she paid for. The comment above described a boundary the code did
+          not have.
+
+          `absentIsAnswer` is the reader's own way of saying it: an empty answer
+          comes back as an EMPTY MASK, so absence is a reading with a number
+          (0.0000%) and only transport still throws. The two causes now separate
+          themselves at the source, and the `catch` means what it always claimed
+          to mean. The earring court is where this was learned — it is the flag
+          that turned a column of "NO READ" into a measured negative population.
+          (opus-284 triage, fable-341.)
         */
         try {
-          const seen = await reader.region({ image: original.bytes, name: asked });
-          presentInBase = coverage(seen) >= departureFloorFor(asked).floor;
-        } catch {
-          presentInBase = false;
+          const seen = await reader.region({ image: original.bytes, name: asked, absentIsAnswer: true });
+          /*
+            STRICTLY GREATER, like every other reader of a coverage floor in
+            this codebase — `bornWornDetector:275`, `canthalTilt:403`, and the
+            DELIVERED frame's own gate a couple of thousand lines below. It
+            matters most exactly where it looks like a detail: an UNMEASURED
+            kind gets floor 0, whose documented meaning is "the segmenter found
+            nothing of it at all", and `0 >= 0` would turn an empty reading into
+            a present one for every kind but glasses and earring. Four existing
+            tests said so the moment `absentIsAnswer` let a real absence arrive
+            here as a number instead of a throw.
+          */
+          presentInBase = coverage(seen) > departureFloorFor(asked).floor;
+        } catch (error) {
+          /*
+            Transport, now that absence cannot arrive here. Fail CLOSED to the
+            same refusal the outer catch makes, rather than to a verdict about
+            her face that nothing read.
+          */
+          log.warn(
+            { candidate: input.candidatePublicId, asked, why: error instanceof Error ? error.message : String(error) },
+            "[refineService] the segmenter could not answer whether the chain put it there",
+          );
+          throw new TRPCError({
+            code: "PRECONDITION_FAILED",
+            message: "I couldn't check her face just now, and I won't undo a step without "
+              + "looking. Try that again in a moment — nothing was charged.",
+          });
         }
       } catch (error) {
         /*
@@ -1191,7 +1231,9 @@ export async function refineCandidate(
             and the direction that does not take her money.
           */
           const { floor, measured, provenance } = departureFloorFor(asked);
-          faceWearsIt = area >= floor;
+          /* Strictly greater — see the sibling gate above; a zero floor means
+             "nothing of it at all", not "anything at all". */
+          faceWearsIt = area > floor;
           log.info(
             {
               userId: input.userId,

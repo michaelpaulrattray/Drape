@@ -2977,8 +2977,11 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
         so the assertion cannot pass by the floor being zero.
       */
       const floor = departureFloorFor("earring").floor;
-      expect(0.00056).toBeGreaterThanOrEqual(floor);   // the measured pair
-      expect(0.0000).toBeLessThan(floor);              // a bare lobe
+      expect(0.00056).toBeGreaterThan(floor);          // the measured pair
+      expect(0.0000).not.toBeGreaterThan(floor);       // a bare lobe
+      /* And the reading an UNMEASURED kind gets, where the floor is 0: an
+         empty answer must still not read as present. */
+      expect(0).not.toBeGreaterThan(departureFloorFor("a thing nobody measured").floor);
       /* And the band it used to be judged against says the opposite. */
       expect(0.00056).toBeLessThan(COVERAGE_BANDS.eyewearFrames.min);
     });
@@ -3460,12 +3463,46 @@ describe("removal is typed, and most of it is free", () => {
     prune can only remove what the chain added. Either of these going red means
     the implementation is wrong, not the test.
   */
-  const seesInBase = (present: boolean) => ({
+  /**
+   * The base reader, in the three answers the REAL one can give.
+   *
+   * This double used to THROW to mean "found nothing", because that is what
+   * `falRegionReader` did before the call started passing `absentIsAnswer`.
+   * With the flag, an empty answer comes back as an EMPTY MASK and only
+   * transport throws — so a double that still throws for absence models a
+   * reader that does not exist, and it would keep the two causes welded
+   * together in the one place the fix was meant to separate them.
+   *
+   * Three modes, because the site now has three outcomes:
+   *   "present"      it predates the chain — do not prune a paid step
+   *   "absent"       an honest no, WITH A NUMBER (0.0000%) — prune
+   *   "unreachable"  transport — fail closed, refuse for free, charge nothing
+   */
+  const seesInBase = (mode: boolean | "present" | "absent" | "unreachable") => ({
     regions: {
-      region: async () => {
-        if (!present) throw new Error("the segmenter finds none");
-        /* Above eyewearFrames.min (0.004) — a real thing, not a speck. */
+      region: async (request: { name: string; absentIsAnswer?: boolean }) => {
+        const answer = mode === true ? "present" : mode === false ? "absent" : mode;
+        if (answer === "unreachable") throw new Error("the mask store answered 503");
         const side = 64;
+        if (answer === "absent") {
+          /*
+            THE FLAG IS PART OF THE CONTRACT, and modelling it is the whole
+            reason this double can prove anything. `falRegionReader:462` throws
+            `the segmenter found no <name> to edit` on an empty answer UNLESS
+            the caller passed `absentIsAnswer` — that is the switch between
+            "absence arrives as a throw, indistinguishable from a 503" and
+            "absence arrives as a mask with a number on it".
+
+            A double that returns an empty mask either way cannot tell those
+            apart, which is exactly the thing under test. The first version of
+            this did that, and the whole suite went green with the flag deleted
+            from the call site.
+          */
+          if (!request.absentIsAnswer) throw new Error(`the segmenter found no ${request.name} to edit`);
+          /* `emptyLike` — a frame-sized mask holding nothing. A reading. */
+          return { data: Buffer.alloc(side * side, 0), width: side, height: side };
+        }
+        /* Well above any floor: a real thing, not a speck. */
         return { data: Buffer.alloc(side * side, 255), width: side, height: side };
       },
       subject: async () => { throw new Error("no subject"); },
@@ -3823,7 +3860,10 @@ describe("removal is typed, and most of it is free", () => {
   it("selects an existing version for free when removal lands on one", async () => {
     twoStep();
     const result = await refineCandidate(
-      asks({ ok: true, intent: "remove", subject: "statedAccessories", match: "hoops" }),
+      /* Her original wore no hoops — the chain put them there, so the base is
+         asked and answers no. Stated rather than inherited from a reader that
+         could not be reached; see the note on the chain-minus-step test. */
+      { ...asks({ ok: true, intent: "remove", subject: "statedAccessories", match: "hoops" }), ...seesInBase("absent") },
       { ...input, instruction: "take the hoops off" },
     );
     expect(result.kind).toBe("selected");
@@ -3842,12 +3882,55 @@ describe("removal is typed, and most of it is free", () => {
     expect(journal).not.toContain("claim");
   });
 
+  /*
+    THE TWO CAUSES, SEPARATED AT THE SOURCE — fable-341's discriminating pair.
+
+    `presentInBase` used to be decided by a `catch`: the reader THREW to mean
+    "found nothing", so a fal 500 arrived by the same door as an honest absence
+    and both said "the chain put it there", which prunes a step she paid for.
+    `absentIsAnswer: true` makes absence a READING (an empty mask, 0.0000%) and
+    leaves only transport throwing, so the two now separate themselves before
+    any code has to guess.
+
+    Both arms below differ in ONE thing — what the reader does — and they must
+    land in different places, or the fold is still there wearing a flag.
+  */
+  it("prunes on an honest absence, which now arrives as a number", async () => {
+    twoStep();
+    const result = await refineCandidate(
+      { ...asks({ ok: true, intent: "remove", subject: "statedAccessories", match: "hoops" }), ...seesInBase("absent") },
+      { ...input, instruction: "take the hoops off" },
+    );
+    /* It got a verdict and acted on it. */
+    expect(result.kind).toBe("selected");
+  });
+
+  it("refuses for free when the segmenter cannot be reached at all", async () => {
+    twoStep();
+    const refusal = await refineCandidate(
+      { ...asks({ ok: true, intent: "remove", subject: "statedAccessories", match: "hoops" }), ...seesInBase("unreachable") },
+      { ...input, instruction: "take the hoops off" },
+    ).then(() => null, (error: Error) => error.message);
+
+    /*
+      FAIL CLOSED, and say so in her words. The refusal is the point: an
+      instrument that cannot answer must not be allowed to delete her work, and
+      the charge must not happen either.
+    */
+    expect(refusal).toMatch(/couldn't check her face/i);
+    expect(refusal).toMatch(/nothing was charged/i);
+    expect(ledger.charges).toEqual([]);
+  });
+
   it("says nothing was taken off when the match lands on the same steps", async () => {
     /* The genuinely-identical case keeps the old sentence: there is no step to
        name, and inventing one would be worse than the vague line. */
     twoStep();
     const result = await refineCandidate(
-      asks({ ok: true, intent: "remove", subject: "statedAccessories", match: "hoops" }),
+      /* Her original wore no hoops — the chain put them there, so the base is
+         asked and answers no. Stated rather than inherited from a reader that
+         could not be reached; see the note on the chain-minus-step test. */
+      { ...asks({ ok: true, intent: "remove", subject: "statedAccessories", match: "hoops" }), ...seesInBase("absent") },
       { ...input, instruction: "take the hoops off" },
     );
     expect(result.kind).toBe("selected");
@@ -3890,7 +3973,17 @@ describe("removal is typed, and most of it is free", () => {
   it("renders chain-minus-step, and files the shortened recipe", async () => {
     twoStep();
     await refineCandidate(
-      asks({ ok: true, intent: "remove", subject: "makeup", match: "smokey" }),
+      /*
+        THE BASE IS ASKED, AND IT SAYS NO — stated, not inherited.
+
+        This used to supply no reader at all, so `defaultRegionReader()` refused
+        for want of FAL_KEY and the refusal was read as "not in the base", which
+        let the prune proceed. The test passed BECAUSE of the fold it was
+        sitting next to: an unreachable segmenter meaning "the chain put it
+        there" is exactly what deletes a step somebody paid for. The fixture now
+        says what it means — her original wore no smokey eye.
+      */
+      { ...asks({ ok: true, intent: "remove", subject: "makeup", match: "smokey" }), ...seesInBase("absent") },
       { ...input, instruction: "get rid of the smokey eye" },
     );
     const call = vi.mocked(claimVariant).mock.calls[0]![0];
