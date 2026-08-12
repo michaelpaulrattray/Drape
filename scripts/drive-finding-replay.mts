@@ -2150,12 +2150,45 @@ async function runWalk(): Promise<boolean> {
         `${counted.saw} → ${counted.isPair ? "a pair" : "NOT a pair"}`,
       );
     }
+    /*
+      AND THE PRODUCT'S OWN VERDICT IS ASSERTED, NOT MERELY QUOTED (shift 62).
+
+      This line was `check(true, …)` — a record wearing a verdict's clothes. On
+      shift 61's walk it printed, in green, `verified=false — "left ear has a
+      dangly gold cross; right ear has a plain hoop, not a cross"` beside a step
+      the product had DELIVERED AND CHARGED, and the walk carried on to spend
+      the next 25 credits. A green line beside the product's own confession is
+      the false-pass shape one layer up from the one this walk exists to close.
+
+      What it asserts is the product's own predicate, not a second opinion:
+      `isRefusableMiss` — read, binding, not verified, not occluded, and not
+      excused by the reader saying the thing IS there (`absent:false`). A
+      delivered frame carrying one of those was charged for a render its own
+      reader called non-compliant, and no pixel count can outvote that.
+
+      Deliberately NOT the same question as the pixel counter above: the counter
+      asks whether something hangs from each ear, and this asks whether the
+      product believes it painted what she asked for. Shift 61 is the specimen
+      where those two answers differed — the counter said "a pair", the verdict
+      said one of them is the wrong object, and the verdict was right.
+    */
+    const productMiss = accessory !== undefined
+      && accessory.read === true
+      && accessory.verified !== true
+      && accessory.occluded !== true
+      && accessory.binding === true
+      && accessory.absent !== false;
     check(
-      true,
-      `[A] ${label} — and the product's own verdict on the same frame, verbatim`,
+      accessory !== undefined && !productMiss,
+      `[A] ${label} — the product's OWN verdict on the frame it delivered`,
       accessory
-        ? `verified=${accessory.verified} — saw: ${String(accessory.saw ?? "").slice(0, 140)}`
-        : "the row carries no statedAccessories check",
+        ? `verified=${accessory.verified} absent=${accessory.absent ?? "—"} `
+          + `binding=${accessory.binding} readings=${stored?.verification?.readings ?? "—"} `
+          + `— saw: ${String(accessory.saw ?? "").slice(0, 140)}`
+          + (productMiss
+            ? ". DELIVERED AND CHARGED over a binding miss its own reader evidenced — a false pass"
+            : "")
+        : "the row carries no statedAccessories check, so the frame this walk paid for was graded by nothing",
     );
     /* Whether that verdict is contradicted by its own reading is asked of
        EVERY binding facet, one block up — see `[V]`. */
@@ -2444,6 +2477,41 @@ async function runWalk(): Promise<boolean> {
           + `in storage now ${stored?.slice(0, 16) ?? "UNREADABLE"}`
           + (row ? "" : " — and no live library row holds this key at all"),
         );
+        /*
+          AND THE VERSION THAT RODE IS THE NEWEST THE BRANCH HAS — R5 (shift 62).
+
+          R4 above proves IDENTITY: the crop that rode is the crop the library
+          minted, byte for byte, at three points. It cannot prove CURRENCY, and
+          shift 61 is the walk where the difference cost 25 credits and wedged a
+          face: step 2 delivered cross earrings, the door refused both v2 crops
+          as `disputedDelivery`, and step 3 carried v1 — the plain hoops — with
+          every R4 digest agreeing perfectly. The frame then came back without
+          the crosses the branch had been told she was wearing, and the innocent
+          step took the refusal.
+
+          fable-309's condition 2 says the carry must be CURRENT in as many
+          words. Nothing asserted it, so the walk would have called a superseded
+          carry proven. This is that sentence, asserted: for every slot the
+          recipe carried, the version that rode is the highest version this
+          branch holds for that slot — refused rows included, because a refused
+          row is exactly how the branch learns its own words have moved past
+          what it can carry.
+        */
+        const slotRows = libraryNow.filter((entry) => entry.slot === reference.slot);
+        const newest = slotRows.reduce<number>((top, entry) => Math.max(top, Number(entry.version ?? 0)), 0);
+        const rode = Number(row?.version ?? 0);
+        const newer = slotRows.filter((entry) => Number(entry.version ?? 0) > rode);
+        check(
+          row !== undefined && newest > 0 && rode === newest,
+          `[R5] the ${reference.slot} crop step 3 carried is the NEWEST version this face holds`,
+          `carried v${rode || "—"} of ${newest || "—"}`
+          + (newer.length > 0
+            ? ` — SUPERSEDED: ${newer.map((entry) =>
+              `v${entry.version} (${entry.refusedReason ?? "filed"}${entry.storageKey ? "" : ", no bytes"})`).join(", ")}`
+              + ". The branch's words have moved past the only reference it can send, so this render "
+              + "was asked to paint a feature it was handed the wrong picture of"
+            : ""),
+        );
       }
     }
   }
@@ -2723,6 +2791,26 @@ async function runWalk(): Promise<boolean> {
     if (index >= steps.length) continue;
     if (!row || !step) {
       absent(`[E] ${position} the panel agrees with the assembly`, "this step produced no row to compare against");
+      continue;
+    }
+    /*
+      A STEP THAT NEVER LANDED IS OWED NO LIBRARY ROWS (shift 62).
+
+      The mint runs after a delivery, so a refused render mints nothing — by
+      design, and the refund is the whole point. Asserting "every slot this
+      render edited is IN the library" against a refusal therefore fails a
+      correct product every time: shift 61's step 3 was refused and refunded,
+      and this was the walk's only red, reading `MISSING from the library: hair`
+      about a render nobody was charged for. A check that cannot pass on a
+      refusal is not evidence about a refusal. Recorded, not passed, so the
+      refusal stays visible instead of disappearing into a green line.
+    */
+    if (row.status !== "ready") {
+      absent(
+        `[E] ${position} the panel agrees with the assembly`,
+        `this step ended ${row.status} — nothing was delivered, so nothing was minted and the `
+        + "library is owed nothing. The refusal itself is graded above",
+      );
       continue;
     }
     /* The store as it was when the panel was photographed — see the field's note. */
