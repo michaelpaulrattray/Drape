@@ -76,6 +76,7 @@
  *   FAL_KEY=… railway.cmd run --service MySQL -- \
  *     npx tsx scripts/drive-finding-replay.mts … --spend
  */
+import { existsSync, readdirSync } from "node:fs";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import mysql from "mysql2/promise";
@@ -130,6 +131,35 @@ const CONTROLS = process.argv.includes("--controls");
  */
 const REHEARSE = process.argv.includes("--rehearse");
 const OUT = path.resolve(arg("out", "output/finding-replay"));
+
+/*
+  A WALK'S EVIDENCE IS THE ONLY COPY OF A PAID RENDER'S DAY (shift 54).
+
+  `--out` is an ARGUMENT, and run 2 was launched with an `OUT_DIR` environment
+  variable that this script has never read — so an armed spend was pointed
+  straight at the directory holding run 1's five delivered frames and its only
+  log. It was caught in the minute after launch and the frames were copied out
+  by hand, with about two minutes to spare before step 1 landed.
+
+  Nothing was lost, and that is the whole reason to mechanise it: the overwrite
+  would have been SILENT, the frames are not reproducible at any price, and the
+  next person makes this mistake with nobody watching the clock. A spend that
+  would clobber a previous walk's delivered frames now refuses and says what to
+  pass. Rehearsals and dry runs are untouched — they write no delivered frames,
+  so they have nothing to destroy.
+*/
+if (SPEND && existsSync(OUT)) {
+  const delivered = readdirSync(OUT).filter((name) => /^\d+-delivered\.png$/.test(name));
+  if (delivered.length > 0 && !process.argv.includes("--overwrite")) {
+    throw new Error(
+      `${OUT} already holds ${delivered.length} delivered frame(s) from a previous walk `
+      + "— a spend would overwrite evidence that cannot be re-bought. Pass "
+      + "--out <a fresh directory> for this run, or --overwrite if you have genuinely "
+      + "finished with those frames. Note that --out is an ARGUMENT: an OUT_DIR "
+      + "environment variable is read by nothing and silently leaves this pointed here.",
+    );
+  }
+}
 
 const APP_BASE = arg("base");
 const TOKEN = arg("token");
@@ -946,9 +976,26 @@ async function runWalk(): Promise<boolean> {
       + "says step 5 moves to its own short run rather than being dropped silently.",
     );
   }
+  /*
+    THREE VALUES, THREE LINES (shift 54).
+
+    This was a two-way ternary over a THREE-way value, so `false` fell into the
+    `true` arm and the driver printed, on consecutive lines:
+
+      NOT A WALK FACE — this face is not wearing glasses …
+      glasses: present, so step 5 is answerable
+
+    It could never mis-gate a spend — `refuseOrReport` throws under `--spend` —
+    but the dry run is exactly where an operator decides whether to spend, and
+    the last line it prints about the glasses said the opposite of the reading.
+    Found on the dry run before run 2, on the one face where it mattered: run 1
+    had already taken her glasses off.
+  */
   console.log(bespectacled === null
     ? "  glasses: NO READ — proceeding, but step 5's expectation is unproven"
-    : "  glasses: present, so step 5 is answerable");
+    : bespectacled
+      ? "  glasses: present, so step 5 is answerable"
+      : "  glasses: ABSENT — step 5 cannot land on her, and a spend would refuse here");
 
   /* Skipped entirely on a rehearsal: four fal calls to answer a question that
      cannot refuse anything on that path. */
