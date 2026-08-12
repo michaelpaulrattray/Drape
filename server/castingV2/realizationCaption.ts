@@ -30,6 +30,8 @@
  * same-facet stacking, which is what exonerated the colour prose itself (D-146
  * closed); this is the permanent guard on that finding.
  */
+import sharp from "sharp";
+
 import { createModuleLogger } from "../logging/logger";
 import type { TextEngine } from "../providers/types";
 import { scrubBrands } from "./brandScrub";
@@ -259,20 +261,30 @@ export async function captionRealization(input: {
  * Fails SOFT, like every read-back: a missing sentence costs later precision,
  * and the render in hand is already correct and already paid for.
  */
-export async function captionSlot(input: {
-  /** The stylist's word for what to describe: `left earring`, `hair`, `jaw`. */
+/**
+ * THE LONG EDGE AT WHICH THE READER CAN ACTUALLY SEE.
+ *
+ * Measured, not chosen (opus-239): an earring crop is cut 1:1 from the frame and
+ * the production references are 24–36 px wide — the file's own dimensions equal
+ * the bbox, so nothing upscales them anywhere. At that size the reader described
+ * *"Thin gold hoop earring, smooth and continuous"* for a hoop with a CROSS
+ * HANGING FROM IT, four times out of four, under two different wordings. The
+ * same file resized — no information added, not one pixel of new detail — named
+ * the cross four times out of four. The hair crops in the same run are 463–823 px
+ * and have never lost a detail.
+ */
+const LEGIBLE_LONG_EDGE = 512;
+
+/** One ask, one picture. `visible: false` is the reader's only way to decline. */
+async function askAboutSlot(input: {
   noun: string;
-  /** `cut` — these bytes are the slot's own crop. `frame` — the whole picture. */
   view: "cut" | "frame";
   bytes: Buffer;
   contentType: string;
-  engine?: TextEngine;
+  engine: TextEngine;
   signal?: AbortSignal;
-}): Promise<string | null> {
-  const engine = input.engine ?? interpreterEngine();
-  if (!engine) return null;
-  try {
-    const reply = await engine.complete({
+}): Promise<{ caption: string; visible: boolean } | null> {
+  const reply = await input.engine.complete({
       system: SYSTEM_PROMPT,
       user: [
         input.view === "cut"
@@ -314,9 +326,47 @@ export async function captionSlot(input: {
       maxOutputTokens: 300,
       signal: input.signal,
     });
-    const parsed = JSON.parse(reply.text.trim().replace(/^```[a-z]*\s*/i, "").replace(/```\s*$/, ""));
-    const caption = typeof parsed?.caption === "string" ? parsed.caption.trim() : "";
-    if (!caption) return null;
+  const parsed = JSON.parse(reply.text.trim().replace(/^```[a-z]*\s*/i, "").replace(/```\s*$/, ""));
+  const caption = typeof parsed?.caption === "string" ? parsed.caption.trim() : "";
+  return { caption, visible: parsed?.visible !== false };
+}
+
+export async function captionSlot(input: {
+  /** The stylist's word for what to describe: `left earring`, `hair`, `jaw`. */
+  noun: string;
+  /** `cut` — these bytes are the slot's own crop. `frame` — the whole picture. */
+  view: "cut" | "frame";
+  bytes: Buffer;
+  contentType: string;
+  engine?: TextEngine;
+  signal?: AbortSignal;
+}): Promise<string | null> {
+  const engine = input.engine ?? interpreterEngine();
+  if (!engine) return null;
+  try {
+    /*
+      THE SMALL CROP DECIDES *IF*; THE ENLARGED CROP DECIDES *WHAT* (fable-295).
+
+      Two reads with two different jobs, because one image cannot do both. At
+      native scale the reader declines honestly — on a hoop hidden behind a pale
+      occluder it answered `visible:false` twice, and enlarging that same crop
+      made it produce a confident answer that CHANGED BETWEEN READS ("gold hoop",
+      then "silver-tone stud"). Enlarged, it also stops omitting: the cross charm
+      it could not see at 27×74 is named every time at 512.
+
+      So the gate is the read measured to say no, and the description is the read
+      measured to see. Priced honestly: a second vision call, and only for a crop
+      small enough to need one.
+
+      REJECTED, with its specimen: asking the reader to be INCLUSIVE about
+      attachment ("anything hanging from it or set into it is part of the
+      earring") does not fix the omission and makes an occluded crop worse — it
+      annexed the occluder as *"an irregular pale stone set within it"*. There is
+      no stone. The cure for a picture too small to read is a bigger picture, not
+      a broader question.
+    */
+    const gate = await askAboutSlot({ ...input, engine });
+    if (gate === null || !gate.caption) return null;
     /*
       NOTHING SEEN IS A REAL ANSWER, and it is not the same as no answer.
 
@@ -326,19 +376,69 @@ export async function captionSlot(input: {
       would cost a sentence about a cutout being handed to a painter as a fact
       about a person's face, forever.
     */
-    if (parsed?.visible === false) {
+    if (!gate.visible) {
       log.info(
-        { noun: input.noun, view: input.view, said: caption },
+        { noun: input.noun, view: input.view, said: gate.caption },
         "[realizationCaption] the reader could not see the thing — filing nothing rather than its note about the picture",
       );
       return null;
     }
+    const said = await describedCloser(input, engine) ?? gate.caption;
     /* Model-authored free text entering a paid prompt, scrubbed like the rest. */
-    const cleaned = scrubBrands(caption)?.trim() ?? "";
+    const cleaned = scrubBrands(said)?.trim() ?? "";
     if (!cleaned) return null;
     return tidy(cleaned) || null;
   } catch (error) {
     log.warn({ err: error, noun: input.noun }, "[realizationCaption] could not read a slot back");
+    return null;
+  }
+}
+
+/**
+ * The second read: the same pixels, enlarged until they can be seen.
+ *
+ * Returns null when there is nothing to gain — a whole frame, or a crop already
+ * legible — and that is the price control: a hair crop at 823 px costs one call,
+ * an earring at 27 px costs two. Also null on any failure, so the gate's own
+ * caption stands and this is never worse than the single read it replaces.
+ *
+ * Lanczos rather than nearest: the enlargement is for a reader's attention, and
+ * a resampled edge is what an eye (or a vision model) reads as an edge. No
+ * information is added by either — the finding is entirely about scale.
+ */
+async function describedCloser(
+  input: { noun: string; view: "cut" | "frame"; bytes: Buffer; contentType: string; signal?: AbortSignal },
+  engine: TextEngine,
+): Promise<string | null> {
+  if (input.view !== "cut") return null;
+  try {
+    const image = sharp(input.bytes);
+    const meta = await image.metadata();
+    const long = Math.max(meta.width ?? 0, meta.height ?? 0);
+    if (long === 0 || long >= LEGIBLE_LONG_EDGE) return null;
+    const scale = LEGIBLE_LONG_EDGE / long;
+    const enlarged = await image
+      .resize({
+        width: Math.max(1, Math.round((meta.width ?? 0) * scale)),
+        height: Math.max(1, Math.round((meta.height ?? 0) * scale)),
+        kernel: "lanczos3",
+      })
+      .png()
+      .toBuffer();
+    const closer = await askAboutSlot({
+      noun: input.noun,
+      view: "cut",
+      bytes: enlarged,
+      contentType: "image/png",
+      engine,
+      signal: input.signal,
+    });
+    /* A `visible:false` here does NOT retract the gate — the gate is the read
+       trusted to decline, and this one is trusted only to describe. Falling back
+       to the gate's caption keeps the result no worse than before this existed. */
+    return closer?.visible === true && closer.caption ? closer.caption : null;
+  } catch (error) {
+    log.warn({ err: error, noun: input.noun }, "[realizationCaption] could not enlarge the cut — keeping the first reading");
     return null;
   }
 }
