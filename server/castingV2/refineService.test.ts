@@ -2,6 +2,9 @@ import { createHash } from "node:crypto";
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { departureFloorFor } from "./bornWornDetector";
+import { COVERAGE_BANDS } from "./maskGeometry";
+
 /**
  * Refine's MONEY and its ORDER (M8 §10, §12).
  *
@@ -2863,6 +2866,124 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
     service refused into the refund rather than deliver an absence the library
     would forget one frame later. Each lobe now records its own side.
   */
+  /*
+    THE FLOOR THE COURT MEASURED, PROVEN TO BE THE ONE THE GATE CONSULTS.
+
+    Invariant 7 wearing its quietest hat: the earring floor was measured,
+    written into the catalogue with its provenance, and pinned by its own test —
+    and the gate went on comparing hoops to `COVERAGE_BANDS.eyewearFrames`
+    (0.4%, measured on GLASSES). The paid acceptance run refused a second time
+    with `coverage: 0.00056, faceWearsIt: false`, which is the number the court
+    says means WEARING sitting beside the verdict that says bare.
+
+    The double here is the reason the defect survived this file: the removal
+    arms answer "found" with a mask at 100% coverage, which clears every floor
+    that has ever existed and therefore cannot tell one floor from another. A
+    fixture that passes under both the right and the wrong threshold is not
+    testing a threshold. So these arms answer with the coverage the REAL
+    segmenter returned on the founder's own eight-face roll.
+  */
+  describe("the gate asks the catalogue's word and the kind's own floor", () => {
+    /** A frame-sized mask covering exactly `fraction` of itself. */
+    const maskCovering = (fraction: number) => {
+      const width = 1000;
+      const height = 1000;
+      const data = Buffer.alloc(width * height, 0);
+      data.fill(255, 0, Math.round(width * height * fraction));
+      return { data, width, height };
+    };
+
+    /** Every region name the service actually asked for, in order. */
+    const asked: string[] = [];
+
+    const wearing = (fraction: number) => ({
+      ...removing(false),
+      /*
+        A REMOVAL PARSE, then the delta — the two-call shape the freckles test
+        uses. The record is SILENT about earrings, which is the whole point:
+        that is the path where the FACE is asked, and the only path where the
+        floor can decide anything.
+      */
+      interpret: async (request: { mode?: string }) => (request.mode === undefined
+        ? { ok: true, intent: "remove", subject: "statedAccessories", match: "earrings" } as never
+        : { ok: true, delta: { free: { marks: "no earrings" } } } as never),
+      regions: {
+        region: async (request: { name: string }) => {
+          asked.push(request.name);
+          return maskCovering(fraction);
+        },
+        subject: async () => null,
+        landmark: async () => [],
+      } as never,
+    });
+
+    beforeEach(() => { asked.length = 0; });
+
+    /*
+      0.056% is the reading the production segmenter returned for this very
+      face (opus-284), and the court's worn band is 0.0404–0.0621% across eight.
+      Against the eyewear band this is a bare face; against the kind's own floor
+      it is a woman wearing earrings.
+    */
+    /** The refusal a face wearing them must never receive. */
+    const NOTHING_ON_RECORD = /nothing on record to take off/;
+
+    const refusalFor = async (fraction: number) => {
+      try {
+        await refineCandidate(wearing(fraction), { ...input, instruction: "take her earrings off" });
+        return null;
+      } catch (error) {
+        return error instanceof Error ? error.message : String(error);
+      }
+    };
+
+    it("asks the singular the reader's bilateral set is keyed on", async () => {
+      await refusalFor(0.00056);
+      /*
+        Asserted at the WIRE (invariant 5). She typed "earrings"; every region
+        question about them must go out as "earring", or the reader answers
+        nothing at all and a face plainly wearing them reads as bare.
+      */
+      expect(asked).not.toContain("earrings");
+      expect(asked).toContain("earring");
+    });
+
+    /*
+      THE ARM THAT CAUGHT MY OWN HALF-FIX.
+
+      The first cut of this describe asserted the wire word and the arithmetic
+      and swallowed the outcome — and when I put the eyewear band back into the
+      gate to check the red, **all 142 tests still passed**. The word was
+      proven, the numbers were proven, and the one claim that matters — that the
+      gate CONSULTS the floor — was proven by nothing. That is invariant 7
+      reappearing inside the test written for invariant 7.
+
+      So the assertion is the OUTCOME, both ways, one fixture apart: a face at
+      the measured worn coverage must not be told there is nothing to take off,
+      and a bare one must be.
+    */
+    it("does not tell a woman wearing earrings there is nothing to take off", async () => {
+      expect(await refusalFor(0.00056)).not.toMatch(NOTHING_ON_RECORD);
+    });
+
+    it("still says so to a face whose lobes are bare", async () => {
+      expect(await refusalFor(0)).toMatch(NOTHING_ON_RECORD);
+    });
+
+    it("puts the measured reading on the wearing side of the kind's floor", () => {
+      /*
+        The arithmetic the gate now runs, driven directly rather than through a
+        render — a backstop the model cannot rescue (law 3). Both directions,
+        so the assertion cannot pass by the floor being zero.
+      */
+      const floor = departureFloorFor("earring").floor;
+      expect(0.00056).toBeGreaterThanOrEqual(floor);   // the measured pair
+      expect(0.0000).toBeLessThan(floor);              // a bare lobe
+      /* And the band it used to be judged against says the opposite. */
+      expect(0.00056).toBeLessThan(COVERAGE_BANDS.eyewearFrames.min);
+    });
+  });
+
   it("files a vacancy under EACH lobe, in words that lobe is allowed to say", async () => {
     await refineCandidate({
       ...removing(false),

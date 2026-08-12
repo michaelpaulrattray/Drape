@@ -162,7 +162,7 @@ import {
 } from "./castingV2Scope";
 import { isUpsweptAsk, readCanthalTilt } from "./eyeShapeRouting";
 import { alreadyUpswept, wearsGlassesByPixels } from "./canthalTilt";
-import { binaryCoverage, COVERAGE_BANDS, coverage } from "./maskGeometry";
+import { binaryCoverage, coverage } from "./maskGeometry";
 import { departureFloorFor } from "./bornWornDetector";
 import { createFalRegionReader } from "./falRegionReader";
 import { createFalMaskedEditEngine } from "../providers/falImages";
@@ -989,6 +989,24 @@ export async function refineCandidate(
     if (matched.length > 0) {
       const began = Date.now();
       let presentInBase: boolean;
+      /*
+        THE SAME TWO MISTAKES AS THE FACE GATE BELOW, in the same function,
+        and this one decides whether to DELETE A STEP SHE PAID FOR.
+
+        It asked `parsed.match` — her own inflection — where the reader's
+        bilateral set is keyed on the singular, and it judged the answer against
+        the eyewear band. On a face wearing hoops both fail the same way: the
+        reader is asked "earrings" and finds nothing, or finds them and reads
+        0.056% against a 0.4% band written for glasses. Either way
+        `presentInBase` comes back false, the pair is treated as something the
+        chain added, and the prune below deletes a step she bought while the
+        earrings stay exactly where they are.
+
+        6a7f6251 fixed the word at the face gate and this sibling was missed —
+        law 7's sweep, owed then and paid now. Declared out here rather than
+        beside the read so the log below can name what was actually asked.
+      */
+      const asked = accessoryKindOf(parsed.match) ?? parsed.match;
       try {
         const reader = dependencies.regions ?? defaultRegionReader();
         const original = await (dependencies.readBytes ?? storageReadBytes)(source.candidate.imageKey!);
@@ -1000,8 +1018,8 @@ export async function refineCandidate(
           outside this inner try and the segmentation sits inside it.
         */
         try {
-          const seen = await reader.region({ image: original.bytes, name: parsed.match });
-          presentInBase = coverage(seen) >= COVERAGE_BANDS.eyewearFrames.min;
+          const seen = await reader.region({ image: original.bytes, name: asked });
+          presentInBase = coverage(seen) >= departureFloorFor(asked).floor;
         } catch {
           presentInBase = false;
         }
@@ -1024,7 +1042,8 @@ export async function refineCandidate(
       }
       log.info(
         {
-          candidate: input.candidatePublicId, asked: parsed.match, presentInBase,
+          candidate: input.candidatePublicId, said: parsed.match, asked, presentInBase,
+          floor: departureFloorFor(asked).floor,
           ms: Date.now() - began,
         },
         "[refineService] asked the ORIGINAL whether the chain put it there",
@@ -1154,11 +1173,39 @@ export async function refineCandidate(
           const asked = accessoryKindOf(parsed.match) ?? parsed.match;
           const seen = await reader.region({ image: shown.bytes, name: asked });
           const area = coverage(seen);
-          /* Above the class band it is really there; a confident speck is not. */
-          const band = COVERAGE_BANDS.eyewearFrames;
-          faceWearsIt = area >= band.min;
+          /*
+            THE FLOOR FOR THE KIND IN FRONT OF IT, not the eyewear band.
+
+            This compared every worn thing to `COVERAGE_BANDS.eyewearFrames.min`
+            (0.4%), a band measured on GLASSES. A pair of gold hoops covers
+            0.0404–0.0621% of the frame across eight measured faces, so the band
+            is **6.4x the largest of them** and no face wearing earrings could
+            ever be found to be wearing them. The refusal she got said her brief
+            had never asked for earrings, while she wore them in the picture.
+
+            `departureFloorFor` is the catalogue's per-kind answer and the same
+            one the DELIVERED frame is already judged against a few hundred
+            lines below — so this line was the last place in one gate still
+            holding a second opinion about what "is it there" means. An
+            unmeasured kind returns 0, which is the strictest reading there is
+            and the direction that does not take her money.
+          */
+          const { floor, measured, provenance } = departureFloorFor(asked);
+          faceWearsIt = area >= floor;
           log.info(
-            { userId: input.userId, candidate: input.candidatePublicId, said: parsed.match, asked, coverage: Number(area.toFixed(5)), faceWearsIt },
+            {
+              userId: input.userId,
+              candidate: input.candidatePublicId,
+              said: parsed.match,
+              asked,
+              coverage: Number(area.toFixed(5)),
+              floor,
+              /* Which court the verdict leaned on, so a log line can be argued
+                 with rather than merely believed. */
+              floorMeasured: measured,
+              provenance: measured ? provenance.slice(0, 120) : provenance,
+              faceWearsIt,
+            },
             "[refineService] the record was silent on a removal, so her face was asked",
           );
         } catch (error) {
