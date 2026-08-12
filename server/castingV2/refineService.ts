@@ -3214,7 +3214,33 @@ export async function refineCandidate(
             slots,
             knownDigests: known,
             operationId,
-            dependencies: { read, enabledFor: libraryEnabled },
+            dependencies: {
+              read,
+              /*
+                THE GROUND, ON THE ROAD THAT BRINGS NO MAP.
+
+                A repaint has no harvest, so `masterRegions` above is empty and
+                every cuttable slot would fall to `noRegion` and file words —
+                the library ceasing to acquire crops on the very road that makes
+                crops the carrier. The mint asks the delivered frame instead, and
+                what it gets is `region(delivered)`: the feature's whole extent
+                on the frame that delivered it (§2.3).
+
+                THE SAME ADAPTER as the guard's, deliberately — one definition of
+                how this product asks a frame where something is, rather than two
+                that drift. The independence the guard needs is between the two
+                READS, and it is structural: the mint invokes each seam
+                separately, so the mask that cut the crop is never the mask the
+                crop is scored against.
+
+                Gated on the FLAG rather than on the absence of evidence. The old
+                road can also arrive here with no evidence (the masked path off),
+                and inferring the need from that would start spending vision
+                calls on a live path that never asked for them.
+              */
+              ...(repaintEnabled ? { readGround: read } : {}),
+              enabledFor: libraryEnabled,
+            },
           });
           log.info(
             {

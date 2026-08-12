@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "0c1fde1d51a41518"
+    "sourceFingerprint": "d15ad39ed9a6a30b"
   },
   "domains": [
     {
@@ -25443,10 +25443,10 @@
       "message": "Names 3 of Raster's 3 fields (server/castingV2/maskedComposite.ts), 3 of Mask's 3 fields (server/castingV2/maskedComposite.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/referenceMint.ts:362",
+      "id": "finding:redeclared-shape:server/castingV2/referenceMint.ts:392",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/referenceMint.ts:362",
+      "subject": "server/castingV2/referenceMint.ts:392",
       "message": "Names 2 of RecipeRefusal's 4 fields (server/castingV2/recipeAssembler.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {

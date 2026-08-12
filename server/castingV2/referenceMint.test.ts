@@ -743,3 +743,130 @@ describe("the born read", () => {
     expect(geometry.frame).toEqual({ width: 40, height: 40 });
   });
 });
+
+/**
+ * THE GROUND A REPAINT BRINGS NO MAP FOR (§6.2.3, chunk 2).
+ *
+ * The old compositor hands over the masks its harvest already cut a paste with.
+ * A repaint has no harvest — it paints the whole frame and pastes nothing — so
+ * without this every cuttable slot falls to `noRegion` and the library files
+ * words on the one road that makes crops the carrier.
+ *
+ * Both directions are driven, because the failure mode of an optional
+ * dependency is that it changes the path that never asked for it.
+ */
+describe("the ground read, for a render that brought no regions", () => {
+  const GROUND = { x: 10, y: 10, width: 12, height: 12 };
+
+  /** A harness whose ground read is counted and answers somewhere the master
+   *  map does not, so a crop cut from it is distinguishable from one that was
+   *  not. */
+  function withGround(bench: ReturnType<typeof harness>, ground: Mask | null = rect(GROUND)) {
+    const calls: Array<{ question: string; side?: string }> = [];
+    return {
+      calls,
+      dependencies: {
+        ...bench.dependencies,
+        readGround: async (ask: { question: string; side?: string }) => {
+          calls.push({ question: ask.question, ...(ask.side ? { side: ask.side } : {}) });
+          return ground;
+        },
+      },
+    };
+  }
+
+  it("asks the delivered frame where the slot is, and cuts from that", async () => {
+    const bench = harness({ guardRead: rect(GROUND) });
+    const grounded = withGround(bench);
+
+    const result = await mintReferencesForRender({
+      userId: 1,
+      variantId: 11,
+      frame: { bytes: await frameBytes() },
+      /* Both of the repaint's own conditions: no `applied`, because the whole
+         frame was painted, and no region map, because there was no harvest. */
+      applied: null,
+      masterRegions: new Map(),
+      slots: [hairSlot()],
+      dependencies: grounded.dependencies as never,
+    });
+
+    expect(result.slots[0]).toMatchObject({ slot: "hair", outcome: "stored" });
+    expect(grounded.calls).toEqual([{ question: "hair" }]);
+    /* Cut from the ground the READ returned, not from a master map it never
+       had — provable because the two rectangles differ. */
+    expect(bench.rows[0]!.image!.geometry!.bbox).toEqual(GROUND);
+  });
+
+  it("CONTROL — a render that brought its own map never spends the call", async () => {
+    /* The property that makes this safe to land on a live path: the old road
+       cannot pay for this even by accident. */
+    const bench = harness();
+    const grounded = withGround(bench);
+
+    const result = await mint([hairSlot()], { ...bench, dependencies: grounded.dependencies as never });
+
+    expect(result.slots[0]).toMatchObject({ outcome: "stored" });
+    expect(grounded.calls).toEqual([]);
+    expect(bench.rows[0]!.image!.geometry!.bbox).toEqual(HAIR);
+  });
+
+  it("CONTROL — with no ground reader at all, the slot files words as before", async () => {
+    /* The regression anchor: this is exactly what a repaint would have done
+       before chunk 2, and it is what any render with neither map nor reader
+       still does. */
+    const bench = harness();
+
+    const result = await mintReferencesForRender({
+      userId: 1,
+      variantId: 11,
+      frame: { bytes: await frameBytes() },
+      applied: null,
+      masterRegions: new Map(),
+      slots: [hairSlot()],
+      dependencies: bench.dependencies as never,
+    });
+
+    expect(result.slots[0]).toMatchObject({ outcome: "words-only", reason: "noRegion" });
+    expect(bench.stored).toEqual([]);
+  });
+
+  it("asks for HER side by name, and takes null for an answer", async () => {
+    /*
+      A side is scoped by the reader or it is not scoped at all. The refusal is
+      preserved rather than routed around: a reader that cannot split answers
+      null, and the slot files words with NO coverage number — because a crop of
+      one hoop scored against a read of both would become this kind's specimen.
+    */
+    const earring = hairSlot({
+      slot: "earring@left",
+      tier: "item",
+      noun: "left earring",
+      words: ["dangly cross earrings in gold"],
+      question: "earring",
+      guardKind: "earring",
+      frame: "ownSide",
+    });
+
+    const asked = harness();
+    const canSplit = withGround(asked);
+    await mintReferencesForRender({
+      userId: 1, variantId: 11, frame: { bytes: await frameBytes() },
+      applied: null, masterRegions: new Map(), slots: [earring],
+      dependencies: canSplit.dependencies as never,
+    });
+    expect(canSplit.calls).toEqual([{ question: "earring", side: "left" }]);
+
+    const refused = harness();
+    const cannotSplit = withGround(refused, null);
+    const result = await mintReferencesForRender({
+      userId: 1, variantId: 11, frame: { bytes: await frameBytes() },
+      applied: null, masterRegions: new Map(), slots: [earring],
+      dependencies: cannotSplit.dependencies as never,
+    });
+
+    expect(result.slots[0]).toMatchObject({ slot: "earring@left", outcome: "words-only", reason: "noSide" });
+    expect(refused.stored).toEqual([]);
+    expect(JSON.stringify(result.slots)).not.toContain("coverage");
+  });
+});

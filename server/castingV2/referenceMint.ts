@@ -217,6 +217,36 @@ export type MintResult = {
 export type MintDependencies = {
   /** The guard's independent read. Required in production; injected in tests. */
   read?: RegionReader;
+  /**
+   * THE GROUND READ, for a render that supplied no region map of its own.
+   *
+   * The old compositor hands this mint the masks its harvest already cut a
+   * paste with, so the ground costs nothing. **A repaint has no harvest**: it
+   * paints the whole frame from the master plus references and pastes nothing,
+   * so `masterRegions` arrives empty and every cuttable slot would fall to
+   * `noRegion` and file words — the library quietly ceasing to acquire crops on
+   * the road built to make crops the carrier.
+   *
+   * So a render with no ground of its own may hand over a READER instead, and
+   * the mint asks the delivered frame where each slot it is about to cut
+   * actually is. That is §2.3's own definition of an edit-carried reference —
+   * cut from a delivered frame that wears the thing — and with no `applied` to
+   * intersect, the ground IS `region(delivered)`: the feature's whole extent on
+   * the frame that delivered it.
+   *
+   * **It is a SECOND reader field rather than a second use of `read`**, and the
+   * separation is the completeness guard's own law (§2.4): the guard's read must
+   * not be the read that cut the crop, or it is scoring a crop against the very
+   * mask that produced it — the checker that cannot fail. Two fields make that
+   * structural instead of remembered.
+   *
+   * **Absent, nothing changes at all.** A render that supplies its own maps
+   * never reaches this, so the old road is byte-identical with or without it.
+   *
+   * Costed honestly: one vision call per cuttable slot, on top of the guard's
+   * existing one, and the log line says how many were spent.
+   */
+  readGround?: RegionReader;
   store?: (input: { key: string; bytes: Buffer; contentType: string }) => Promise<{ key: string }>;
   record?: typeof recordReferenceRows;
   manifest?: (input: {
@@ -361,11 +391,37 @@ export async function mintReferencesForRender(input: MintInput): Promise<MintRes
     /** Per-side slots with no side to cut from, with the reason each one is out. */
     const sideless: Array<{ slot: SlotSpec; detail: string }> = [];
 
+    /*
+      THE GROUND THIS RENDER DID NOT BRING, asked of the frame in hand.
+
+      Only ever reached when the render supplied no map for the question — a
+      repaint, which has no harvest to inherit one from. A render that brought
+      its own never spends a call here, so the old road cannot pay for this even
+      by accident. `null` from the reader is not a failure: the slot simply has
+      no ground, falls to `noRegion` below, and files its words exactly as it
+      would have done.
+    */
+    let groundReads = 0;
+    const readGround = input.dependencies?.readGround;
+    const groundFor = async (question: string, side: Instance | null): Promise<Mask | null> => {
+      if (!readGround) return null;
+      groundReads += 1;
+      return readGround({
+        frame: input.frame.bytes,
+        question,
+        ...(side === null ? {} : { side }),
+      });
+    };
+
     for (const slot of input.slots) {
       if (slot.tier === "surface") continue;
       if (slot.question === null || slot.guardKind === null) continue;
       const { question, guardKind } = slot;
       if (slot.frame !== "ownSide") {
+        if (!regionsToCut.has(question)) {
+          const ground = await groundFor(question, null);
+          if (ground) regionsToCut.set(question, ground);
+        }
         cuttable.push({ ...slot, question, guardKind, regionKey: question, side: null });
         continue;
       }
@@ -394,16 +450,31 @@ export async function mintReferencesForRender(input: MintInput): Promise<MintRes
         });
         continue;
       }
+      const key = sideKey(question, side);
       const sides = input.masterSideRegions?.get(question) ?? null;
       if (!sides) {
-        sideless.push({
-          slot,
-          detail: `"${question}" was not read one side at a time on this render, so a crop of it filed as ${slot.noun} would contain the other one too`,
-        });
+        /*
+          A render that brought no side map may still have brought a READER, and
+          a side is scoped by the reader or it is not scoped at all: this asks
+          for HER side by name and takes `null` for an answer. A reader without
+          the capability answers null, which lands in exactly the refusal below
+          — words, no crop, and no coverage number measured against both of her
+          ears. The refusal is what produces the specimen, so it is preserved
+          rather than routed around.
+        */
+        const ground = await groundFor(question, side);
+        if (!ground) {
+          sideless.push({
+            slot,
+            detail: `"${question}" was not read one side at a time on this render, so a crop of it filed as ${slot.noun} would contain the other one too`,
+          });
+          continue;
+        }
+        regionsToCut.set(key, ground);
+        cuttable.push({ ...slot, question, guardKind, regionKey: key, side });
         continue;
       }
 
-      const key = sideKey(question, side);
       regionsToCut.set(key, sides[side]);
       const delivered = input.deliveredSideRegions?.get(question);
       if (delivered) deliveredToCut.set(key, delivered[side]);
@@ -739,6 +810,10 @@ export async function mintReferencesForRender(input: MintInput): Promise<MintRes
            spent on slots this render will file nothing for unless the crop is
            kept — so the line says what was bought and what it bought. */
         disputedReads,
+        /* AND WHAT THE GROUND COST, on a render that brought no map of its own.
+           Zero on every render that did — which is every render on the old road
+           — so a non-zero here is the repaint paying its declared price. */
+        groundReads,
         disputedKept: outcomes
           .filter((slot) => slot.outcome === "disputed" && slot.kept)
           .map((slot) => slot.slot),

@@ -307,6 +307,9 @@ type MintAsk = {
   deliveredSideRegions: ReadonlyMap<string, unknown> | null | undefined;
   /** The guard's own reader, so a test can drive it rather than trust it. */
   read: ((input: { frame: Buffer; question: string; side?: string }) => Promise<unknown>) | undefined;
+  /** The GROUND reader, handed only by a render that brought no region map —
+   *  which is the repaint, and only the repaint. */
+  readGround: ((input: { frame: Buffer; question: string; side?: string }) => Promise<unknown>) | undefined;
 };
 const mintAsks: MintAsk[] = [];
 vi.mock("./referenceMint", () => ({
@@ -318,7 +321,7 @@ vi.mock("./referenceMint", () => ({
     deliveredRegions?: unknown;
     masterSideRegions?: ReadonlyMap<string, unknown> | null;
     deliveredSideRegions?: ReadonlyMap<string, unknown> | null;
-    dependencies?: { read?: MintAsk["read"] };
+    dependencies?: { read?: MintAsk["read"]; readGround?: MintAsk["readGround"] };
   }) => {
     mintAsks.push({
       slots: ask.slots,
@@ -329,6 +332,7 @@ vi.mock("./referenceMint", () => ({
       masterSideRegions: ask.masterSideRegions,
       deliveredSideRegions: ask.deliveredSideRegions,
       read: ask.dependencies?.read,
+      readGround: ask.dependencies?.readGround,
     });
     return { outcome: "stored" as const, slots: [] };
   }),
@@ -2125,6 +2129,13 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
     /* NULL rather than a mask — which the mint reads as `wholeFrame`, and the
        whole frame is exactly what a repaint painted. */
     expect(mintAsks[0]!.applied).toBeNull();
+    /*
+      AND THE GROUND THE MINT MUST NOW READ FOR ITSELF (chunk 2).
+      With no harvest there is no region map, so without this every cuttable
+      slot falls to `noRegion` and the library files words on the one road that
+      makes crops the carrier.
+    */
+    expect(mintAsks[0]!.readGround).toBeTypeOf("function");
   });
 
   it("CONTROL — the same ask on the old road hands the mint the paste's own mask", async () => {
@@ -2135,6 +2146,11 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
 
     expect(mintAsks).toHaveLength(1);
     expect(mintAsks[0]!.applied).toEqual(composite.applied);
+    /* And it is never handed a ground reader, so the live road cannot start
+       paying for a vision call it never asked for. Gated on the FLAG, not on
+       the absence of evidence — the old road can arrive here with no evidence
+       too, and inferring the need from that would spend her credits. */
+    expect(mintAsks[0]!.readGround).toBeUndefined();
   });
 
   it("refuses an ask it cannot say declaratively, and gives the money back", async () => {
