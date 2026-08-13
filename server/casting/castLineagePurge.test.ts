@@ -186,6 +186,78 @@ describe("deletion purges what only the deleted thing owns", () => {
     expect(result.candidatesReleased).toBeGreaterThan(0);
   });
 
+  it("RETIRES her when the sheet is dead — a signed row with no Cast is a ghost", async () => {
+    /*
+      THE FOUNDER'S GHOST SIBLING (fable-367 §1), and it was in his own data:
+      candidate `ea5b4811` on Shina's expired sheet, `status = 'signed'`,
+      `signedCastId = NULL`, and no `models` row anywhere claiming it.
+
+      The dead-sheet branch used to clear the link and leave the status alone,
+      which left a row claiming a Cast that had just been deleted. She kept
+      appearing on Shina's SIBLINGS card, her tile fell through to the viewer
+      because the destination reads `signedCastId`, and — worst of the three —
+      no sweep could ever collect her: every release lists
+      ready/queued/dispatched/failed/discarded, and `signed` is in none of them.
+      The release below says "her own candidate always goes" and she was the one
+      row that could not.
+    */
+    const { journal } = await run({
+      candidate: { id: 55, sessionId: 7 },
+      survivor: null,
+      sessionStatus: "expired",
+    });
+
+    expect(journal[0].set).toEqual({
+      signedCastId: null, status: "expired", expiredReason: "retention",
+    });
+    /* `retention` and not the refundable flavour: she was delivered, looked at,
+       and signed. The money question was settled long before the deletion. */
+    expect(journal[0].set).toMatchObject({ expiredReason: "retention" });
+  });
+
+  it("retires her to a status the siblings card cannot show", async () => {
+    /*
+      The cross-check that makes the fix mean what it claims, read from the
+      sibling query's OWN list rather than from a second copy of it. If anyone
+      ever widens what a siblings card shows, this reddens here — which is the
+      only place that would notice.
+    */
+    const { SIBLING_VISIBLE_STATUSES } = await import("../db/castingV2Sign");
+    const { journal } = await run({
+      candidate: { id: 55, sessionId: 7 },
+      survivor: null,
+      sessionStatus: "expired",
+    });
+
+    const retired = (journal[0].set as { status?: string }).status;
+    expect(retired).toBeTruthy();
+    expect(SIBLING_VISIBLE_STATUSES).not.toContain(retired);
+    /* And the live-sheet path deliberately DOES land on a visible one — she
+       goes back in the tray and can be signed again. A test that only proved
+       the exclusion would pass if this ceremony retired everybody. */
+    const live = await run({
+      candidate: { id: 55, sessionId: 7 },
+      survivor: null,
+      sessionStatus: "open",
+    });
+    expect(SIBLING_VISIBLE_STATUSES).toContain((live.journal[0].set as { status?: string }).status);
+  });
+
+  it("collects her with the rest of the sheet rather than leaving one row behind", async () => {
+    /*
+      The release's status list and the status she is retired to are two halves
+      of one promise — "her own candidate always goes". Asserted at the source,
+      because what matters is that no reachable status sits outside every
+      sweep's list: that is the shape that made her immortal.
+    */
+    const source = await readSource();
+    const release = source.slice(source.indexOf("const released = releaseWholeSheet"));
+    /* Whatever she is set to must be a TERMINAL state — one the release does
+       not need to touch — rather than a live one it silently skips. */
+    expect(release).toContain('inArray(castingCandidates.status, ["queued", "dispatched", "ready", "failed", "discarded"])');
+    expect(source).not.toMatch(/:\s*\{\s*signedCastId:\s*null\s*\}\)/);
+  });
+
   it("guards inside the statement that writes, never in a check before it", async () => {
     /*
       Invariant 1. Read at the source rather than through the mock, because what

@@ -1248,6 +1248,17 @@ export async function listSignedCasts(
  * candidate is purged with its session, so listing one would be promising a
  * face that disappears in seven days.
  */
+/**
+ * The two statuses a face can be in and still be somebody's sibling.
+ *
+ * Named rather than inlined because the deletion ceremony has to know it: a
+ * Cast deleted off a dead sheet must land on a status that is NOT in this list,
+ * or she haunts every surviving Cast's card forever (fable-367 §1, and she did
+ * — production candidate `ea5b4811`). `castLineagePurge.test.ts` asserts the
+ * status it retires her to against THIS array, so the two cannot drift apart
+ * the way a second copy of the list would.
+ */
+export const SIBLING_VISIBLE_STATUSES = ["ready", "signed"] as const;
 export async function listCastSiblings(input: {
   userId: number;
   sessionId: number;
@@ -1265,7 +1276,7 @@ export async function listCastSiblings(input: {
       eq(castingCandidates.userId, input.userId),
       isNotNull(castingCandidates.keptAt),
       ne(castingCandidates.id, input.excludeCandidateId),
-      inArray(castingCandidates.status, ["ready", "signed"]),
+      inArray(castingCandidates.status, [...SIBLING_VISIBLE_STATUSES]),
     ))
     .orderBy(asc(castingCandidates.keptAt))
     .limit(input.limit ?? 6);

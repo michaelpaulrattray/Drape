@@ -134,11 +134,42 @@ export async function purgeCastLineageIn(
     restores the status, or a row that is briefly `ready` while still pointing
     at a tombstoned model would be visible to anything reading in between.
   */
+  /*
+    AND A DEAD SHEET HAS NOWHERE TO PUT HER BACK — the founder's ghost sibling
+    (fable-367 §1), read off his own rows.
+
+    This branch used to clear `signedCastId` and leave `status` at `"signed"`,
+    on the reasoning that a sheet which no longer exists cannot take her back.
+    But `signed` is not a resting state; it is a claim, and the thing it claims
+    had just been deleted. Three consequences, all live in production on his
+    account (candidate `ea5b4811`, status `signed`, `signedCastId` NULL, no
+    model row anywhere):
+
+      1. She keeps appearing on every surviving Cast's SIBLINGS card, because
+         that read is `keptAt IS NOT NULL AND status IN ('ready','signed')`.
+         His words: *"it still shows up as a sibling even though the cast sheet
+         is gone or deleted."*
+      2. Her destination is computed from `signedCastId`, which is now null, so
+         the tile falls through to the viewer — the branch written for "there is
+         genuinely nowhere else to go".
+      3. **She becomes immortal.** Every sweep that collects candidates lists
+         `["queued","dispatched","ready","failed","discarded"]` — including the
+         release ten lines below, whose own comment says *"her own candidate
+         always goes"*. A row left at `signed` is in none of those lists, so the
+         one row this ceremony is most certainly finished with is the only one
+         it could never collect, and her objects sit in the bucket for good.
+
+    `signed` was the only status that could be non-terminal and unswept at the
+    same time, and only ever in this one situation: the Cast that justified it
+    is gone. So the dead-sheet path gives her the end the retention sweep would
+    have given her had she never been signed — `expired` with the reason that
+    must never be refunded, because she WAS delivered and looked at.
+  */
   await tx
     .update(castingCandidates)
     .set(sheetLive
       ? { signedCastId: null, status: "ready", expiredReason: null }
-      : { signedCastId: null })
+      : { signedCastId: null, status: "expired", expiredReason: "retention" })
     .where(and(
       eq(castingCandidates.id, candidate.id),
       eq(castingCandidates.userId, input.userId),
