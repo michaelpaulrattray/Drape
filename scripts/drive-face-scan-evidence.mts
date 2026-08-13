@@ -341,6 +341,62 @@ for (const theme of THEMES) {
       `${instanceTags.length} of ${regions?.boxes.length ?? 0} boxes name an instance: `
         + `${instanceTags.map((b: any) => b.tag).join(", ") || "none"}`,
     );
+    /*
+      ---- SMALLEST-WINS, HIT-TESTED (fable-384) ----
+
+      His report: *"the bounding boxes showing by smallest first rule wasnt
+      working when i was hovering over her eyes when she was wearing glasses."*
+      Measured before the fix: 12 of 13 contained overlaps handed the point to
+      the LARGER box, because there was no such rule — the browser resolves
+      overlapping absolute boxes by paint order, and her glasses were painted
+      last.
+
+      `elementFromPoint` is the browser's own hit-test, so this asks the page
+      exactly what his cursor asked it. The criterion is the SMALLEST box
+      containing the point rather than the smaller of a pair — the centre of the
+      glasses box is where her nose is, and the nose winning it is the rule
+      working.
+    */
+    const hover = await page.evaluate(`(() => {
+      const boxes = Array.from(document.querySelectorAll(".dpc-regions__box")).map((node) => {
+        const rect = node.getBoundingClientRect();
+        return { node, tag: node.querySelector(".dpc-regions__tag")?.textContent ?? "", area: rect.width * rect.height, rect };
+      });
+      const inside = (box, x, y) => x >= box.rect.x && x <= box.rect.x + box.rect.width
+        && y >= box.rect.y && y <= box.rect.y + box.rect.height;
+      const checked = [];
+      for (const small of boxes) {
+        for (const big of boxes) {
+          if (small === big || small.area >= big.area) continue;
+          const cx = small.rect.x + small.rect.width / 2;
+          const cy = small.rect.y + small.rect.height / 2;
+          if (!inside(big, cx, cy)) continue;
+          const containing = boxes.filter((box) => inside(box, cx, cy));
+          const smallest = containing.reduce((held, box) => (box.area < held.area ? box : held), containing[0]);
+          const hit = document.elementFromPoint(cx, cy);
+          const hitBox = hit ? hit.closest(".dpc-regions__box") : null;
+          checked.push({
+            smaller: small.tag,
+            larger: big.tag,
+            expected: smallest.tag,
+            got: hitBox ? (hitBox.querySelector(".dpc-regions__tag")?.textContent ?? "?") : "nothing",
+            ok: hitBox === smallest.node,
+          });
+        }
+      }
+      return { checked, wrong: checked.filter((one) => !one.ok) };
+    })()`) as any;
+    const eyeOverlaps = hover.checked.filter((one: any) =>
+      one.smaller.toLowerCase().includes("eye") && one.larger.toLowerCase().includes("glasses"));
+    check(
+      hover.checked.length > 0 && hover.wrong.length === 0,
+      `${theme}: the SMALLEST box wins every point it contains`,
+      `${hover.checked.length} contained overlaps, ${hover.wrong.length} wrong`
+        + (hover.wrong.length
+          ? `: ${hover.wrong.slice(0, 3).map((one: any) => `"${one.expected}" lost to "${one.got}"`).join(", ")}`
+          : ` — including ${eyeOverlaps.length} eye-inside-glasses, his own specimen`),
+    );
+
     const outside = (regions?.boxes ?? []).filter((box: any) => {
       const p = regions.plate;
       return box.rect.x < p.x - 1 || box.rect.y < p.y - 1

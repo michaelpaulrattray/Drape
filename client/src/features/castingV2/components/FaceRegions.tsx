@@ -101,7 +101,27 @@ export function FaceRegions({
     one it is, and clicking either opens the SAME ask: the row's slots, the row's
     prefill, one edit meaning both.
   */
-  const drawn = rows.flatMap((row) => row.regions.map((region, at) => ({ row, region, at })));
+  const drawn = rows
+    .flatMap((row) => row.regions.map((region, at) => ({ row, region, at })))
+    /*
+      THE SMALLEST BOX WINS THE POINT — the founder, twice: first on hair over
+      eyes, then *"the bounding boxes showing by smallest first rule wasnt
+      working when i was hovering over her eyes when she was wearing glasses."*
+
+      Measured before this line existed (`probe-region-hover-disposable.mts`):
+      **12 of 13 contained overlaps handed the point to the LARGER box.** There
+      was no smallest-wins rule anywhere in the code — the browser's own
+      hit-test resolves overlapping absolute boxes by PAINT ORDER, so whichever
+      feature the catalogue happened to list last swallowed every point inside
+      it. On his face that was her glasses, sitting over both eyes, her nose and
+      both ears.
+
+      So the paint order IS the rule: largest first, smallest last, on top.
+      Derived from the boxes' own area rather than a z-index ladder, because a
+      ladder is a second list of how features nest and it would be wrong the
+      first time a new feature is added between two rungs.
+    */
+    .sort((a, b) => (b.region.box.width * b.region.box.height) - (a.region.box.width * a.region.box.height));
   if (drawn.length === 0) return null;
 
   const close = () => selection.select(null);

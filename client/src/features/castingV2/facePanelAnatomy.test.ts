@@ -64,8 +64,23 @@ describe("the picture promises only what was measured", () => {
     /* Flattened from the rows' own regions, so a pair read on both sides draws
        both: a single rectangle over one eye is the same "only showing one eye"
        the founder read in the tile (fable-382 §2, swept one surface across). */
-    expect(regions).toContain("rows.flatMap((row) => row.regions.map((region, at) => ({ row, region, at })))");
+    expect(regions).toContain(".flatMap((row) => row.regions.map((region, at) => ({ row, region, at })))");
     expect(regions).toContain("if (drawn.length === 0) return null;");
+    /*
+      AND THE SMALLEST ONE IS PAINTED LAST (fable-384, his second report on this
+      rule). The browser resolves overlapping absolute boxes by paint order, so
+      the order IS the rule — sorted by the boxes' own area rather than by a
+      z-index ladder, which would be a second list of how features nest.
+
+      The half that can actually fail is the browser drive, which hit-tests the
+      centre of every contained overlap; this is the structural half.
+    */
+    expect(regions).toContain("b.region.box.width * b.region.box.height");
+    const css = await readFile(CSS, "utf8");
+    const tag = css.slice(css.indexOf(".dpc-regions__tag {"));
+    /* A tag hangs above its own box, so an eye's label sits on the brow above
+       it — hit-testable while invisible until this line. */
+    expect(tag.slice(0, tag.indexOf("}"))).toContain("pointer-events: none");
   });
 
   it("DRAWS NOTHING WHILE A REFINEMENT IS IN FLIGHT (fable-365)", async () => {

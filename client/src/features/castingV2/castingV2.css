@@ -3206,6 +3206,16 @@
 /* The name rides with the box only while it is pointed at. */
 .dpc-regions__tag {
   position: absolute;
+  /*
+    AND IT NEVER TAKES A POINT FROM ITS NEIGHBOUR.
+
+    The tag hangs ABOVE its own box, so an eye's label sits on the brow right
+    above it — and while it is invisible it was still hit-testable, so pointing
+    at her brow landed on her eye's name. Found by the hover probe's own second
+    reading, after the smallest-wins fix left exactly two overlaps wrong: the
+    same class as the bug being fixed, one element down.
+  */
+  pointer-events: none;
   left: 0;
   bottom: calc(100% + 4px);
   padding: 2px 6px;
