@@ -238,6 +238,42 @@ for (const theme of THEMES) {
     const appliedTheme = await page.evaluate(() => document.documentElement.getAttribute("data-theme"));
     check(appliedTheme === theme, `${theme}: the page is actually in this theme`, `data-theme="${appliedTheme}"`);
 
+    /*
+      AND THEN IT WAITS FOR HER FACE TO BE READ — which this driver never did,
+      and every verdict it took was of a state no user ever settles on.
+
+      With the scan live, `.dpc-face` mounts within a second carrying only what
+      the LIBRARY knows (one row on this fixture) and a "Reading her features…"
+      line, and the segmenter's answer lands about twenty seconds later. Reading
+      the panel at mount graded the incomplete state as if it were the finished
+      one: sixteen failures, six of which were the shipped rule being read at the
+      wrong moment.
+
+      Measured here rather than assumed (`probe-panel-cold-fill`, this shift):
+      cold, the working line held for 24s at one row, then the panel filled to
+      nine IN THE SAME PAGE LIFE. So the wait is bounded generously and the
+      panel is never re-opened to force it.
+
+      It FAILS rather than proceeding if the scan never settles — a driver that
+      quietly grades the loading state is exactly what produced the sixteen.
+    */
+    const settledAfter = await (async () => {
+      const startedAt = Date.now();
+      for (let attempt = 0; attempt < 60; attempt += 1) {
+        const working = await page.evaluate(() => Boolean(document.querySelector(".dpc-face__working")));
+        if (!working) return Date.now() - startedAt;
+        await new Promise((resolve) => setTimeout(resolve, 1_000));
+      }
+      return null;
+    })();
+    check(
+      settledAfter !== null,
+      `${theme}: her face is finished being read before anything is judged`,
+      settledAfter === null
+        ? "the working line was still up after 60s — every reading below would have been of the loading state"
+        : `the "Reading her features…" line cleared after ${(settledAfter / 1000).toFixed(1)}s`,
+    );
+
     /* Thumbnails are background images; a shot taken before they decode is a
        photograph of an empty box. Wait on the bytes. */
     await page.evaluate(`(async () => {
