@@ -450,27 +450,27 @@ export default function CastingRoom() {
                   person precedent: present with an honest coming-soon state,
                   never omitted, never a control that pretends to work.
                 */}
-                <section className="dpc-rcard dpc-refine">
+                <section className="dpc-rcard dpc-rrefine">
                   <div className="dpc-rcard__head">
                     <span className="dpc-rcard__title">Refine without recasting</span>
                     <span className="dpc-rcard__hint">
                       Face stays locked. Everything else is fair game.
                     </span>
                   </div>
-                  <div className="dpc-refine__shell">
+                  <div className="dpc-rrefine__shell">
                     <input
-                      className="dpc-refine__input"
+                      className="dpc-rrefine__input"
                       placeholder="softer light, less styled hair, plain grey tee"
                       disabled
                       aria-label="Refine this Cast (not available yet)"
                     />
-                    <button type="button" className="dpc-refine__go" disabled>
+                    <button type="button" className="dpc-rrefine__go" disabled>
                       New takes
                     </button>
                   </div>
-                  <div className="dpc-refine__chips">
+                  <div className="dpc-rrefine__chips">
                     {REFINE_CHIPS.map((chip) => (
-                      <button type="button" className="dpc-refine__chip" key={chip} disabled>
+                      <button type="button" className="dpc-rrefine__chip" key={chip} disabled>
                         {chip}
                       </button>
                     ))}

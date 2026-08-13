@@ -40,10 +40,10 @@ const DRAWN_ELEMENTS: Array<{ element: string; marker: string }> = [
   { element: "MASTER chip", marker: "dpc-master__tag" },
   { element: "attached footer bar", marker: "dpc-master__foot" },
   { element: "IDENTITY LOCKED", marker: "dpc-master__locked" },
-  { element: "refine card", marker: "dpc-refine__shell" },
-  { element: "refine input", marker: "dpc-refine__input" },
-  { element: "refine button", marker: "dpc-refine__go" },
-  { element: "refine chips", marker: "dpc-refine__chip" },
+  { element: "refine card", marker: "dpc-rrefine__shell" },
+  { element: "refine input", marker: "dpc-rrefine__input" },
+  { element: "refine button", marker: "dpc-rrefine__go" },
+  { element: "refine chips", marker: "dpc-rrefine__chip" },
   { element: "takes section", marker: "dpc-takes__grid" },
   { element: "takes add tile", marker: "dpc-takes__tile--add" },
   { element: "voice player skeleton", marker: "dpc-voice__wave" },
@@ -91,7 +91,7 @@ describe("the casting room is built to the drawing", () => {
     const source = await readFile(ROOM, "utf8");
     // Every drawn action that has no capability behind it is disabled. The
     // drawing's weights survive; the promise does not.
-    for (const inert of ["dpc-room__cta", "dpc-refine__go", "dpc-refine__input", "dpc-camp__add"]) {
+    for (const inert of ["dpc-room__cta", "dpc-rrefine__go", "dpc-rrefine__input", "dpc-camp__add"]) {
       const index = source.indexOf(inert);
       expect(index, `${inert} must exist`).toBeGreaterThan(-1);
       expect(

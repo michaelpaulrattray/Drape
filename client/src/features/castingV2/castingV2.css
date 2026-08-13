@@ -1794,11 +1794,27 @@
 .dpc-rcard__body { font: 400 11.5px/1.5 var(--font-sans); color: var(--metaStrong); margin: 0; }
 .dpc-rcard__quiet { font: 400 11.5px var(--font-sans); color: var(--meta); background: none; border: none; padding: 0; cursor: not-allowed; }
 
-/* ---- refine: input shell + button + chips ---- */
+/* ---- the ROOM's refine card: input shell + button + chips ----
 
-.dpc-refine { gap: 12px; }
+   `dpc-rrefine`, not `dpc-refine`, and the extra letter is the whole fix
+   (fable-367 §2). Two different surfaces had grown the same block name: this
+   card on the signed Cast's profile, and the casting sheet's ask panel further
+   down this file — whose rule (`align-items: center; width: min(100%, 760px)`)
+   therefore also applied here and shrink-wrapped every row of this card to its
+   own content. The founder saw the consequence: a field 144px wide clipping its
+   placeholder mid-word with the button jammed against the cut, in a card 728px
+   wide. The element names never collided; only the block did, and the later
+   rule won.
 
-.dpc-refine__shell {
+   Their child classes were disjoint, which is exactly why it survived — a
+   collision that shows up in one property of one surface reads as that
+   surface's own bad layout. Renamed rather than out-specified: a `!important`
+   or a longer selector would leave the two blocks fighting on the next
+   property either of them grows. */
+
+.dpc-rrefine { gap: 12px; }
+
+.dpc-rrefine__shell {
   display: flex;
   align-items: center;
   gap: 9px;
@@ -1808,7 +1824,7 @@
   background: var(--surface);
 }
 
-.dpc-refine__input {
+.dpc-rrefine__input {
   flex: 1;
   min-width: 0;
   border: none;
@@ -1817,10 +1833,10 @@
   color: var(--ink);
   padding: 1px 2px;
 }
-.dpc-refine__input:disabled { color: var(--faint); cursor: not-allowed; }
-.dpc-refine__input:focus { outline: none; }
+.dpc-rrefine__input:disabled { color: var(--faint); cursor: not-allowed; }
+.dpc-rrefine__input:focus { outline: none; }
 
-.dpc-refine__go {
+.dpc-rrefine__go {
   flex: none;
   padding: 7px 13px;
   border-radius: 8px;
@@ -1832,9 +1848,9 @@
   opacity: 0.55;
 }
 
-.dpc-refine__chips { display: flex; flex-wrap: wrap; gap: 7px; }
+.dpc-rrefine__chips { display: flex; flex-wrap: wrap; gap: 7px; }
 
-.dpc-refine__chip {
+.dpc-rrefine__chip {
   padding: 5px 10px;
   border: 1px solid var(--borderInput);
   border-radius: 999px;

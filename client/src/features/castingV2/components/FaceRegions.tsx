@@ -66,6 +66,30 @@ export function FaceRegions({
     field.setSelectionRange(field.value.length, field.value.length);
   }, [open?.slots.join(" "), open?.prefill]);
 
+  /*
+    A BUSY FACE HAS NO REGIONS — the founder, fable-365: *"when the image is
+    generating a refinement/loading i can still see and click the bounding boxes
+    through it."*
+    Anything open closes as the work begins, so the layer re-arms clean rather
+    than restoring a box whose picture has since been replaced.
+  */
+  useEffect(() => {
+    if (busy && open) selection.select(null);
+  }, [busy, open]);
+
+  /*
+    AND THE BOXES ARE NOT DRAWN AT ALL WHILE ONE IS IN FLIGHT.
+
+    Disabling the field was not enough and never was: the boxes sat above the
+    loading state, still lit, still hit-testable, so a click landed on a frame
+    that was about to be superseded — and the panel read as not knowing its own
+    render was busy. Hidden rather than greyed, because the founder's taste is
+    restrained and a spinner per box would be louder than the thing it explains.
+    It re-arms on the terminal state, which is what `busy` falling away IS: the
+    refinement has landed or been refused.
+  */
+  if (busy) return null;
+
   const withBox = rows.filter((row) => row.box !== null);
   if (withBox.length === 0) return null;
 

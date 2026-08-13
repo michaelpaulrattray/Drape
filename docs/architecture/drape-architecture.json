@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "0485d9bdeb9b8404"
+    "sourceFingerprint": "6ad16a4838f79685"
   },
   "domains": [
     {
@@ -7944,6 +7944,10 @@
     {
       "id": "test:client/src/features/castingV2/cardMenuAnatomy.test.ts",
       "path": "client/src/features/castingV2/cardMenuAnatomy.test.ts"
+    },
+    {
+      "id": "test:client/src/features/castingV2/cssBlockOwnership.test.ts",
+      "path": "client/src/features/castingV2/cssBlockOwnership.test.ts"
     },
     {
       "id": "test:client/src/features/castingV2/dispatchFailure.test.ts",

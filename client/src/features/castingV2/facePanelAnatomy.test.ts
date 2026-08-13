@@ -64,6 +64,27 @@ describe("the picture promises only what was measured", () => {
     expect(regions).toContain("rows.filter((row) => row.box !== null)");
   });
 
+  it("DRAWS NOTHING WHILE A REFINEMENT IS IN FLIGHT (fable-365)", async () => {
+    /*
+      The founder: *"when the image is generating a refinement/loading i can
+      still see and click the bounding boxes through it."* Disabling the field
+      was never enough — the boxes themselves sat above the loading state, lit
+      and hit-testable, so a click landed on a frame about to be superseded.
+    */
+    const regions = withoutProse(await readFile(REGIONS, "utf8"));
+    expect(regions).toContain("if (busy) return null;");
+    /*
+      And it must come BEFORE anything is drawn, not as a class on a box that
+      still exists — an inert layer is one that is not there. Proven by
+      position, since a `busy` check living below the boxes' own render would
+      satisfy a plain `toContain` while changing nothing.
+    */
+    expect(regions.indexOf("if (busy) return null;")).toBeLessThan(regions.indexOf("dpc-regions__box"));
+    /* Anything open closes as the work starts, so the layer re-arms clean
+       rather than restoring a box over a picture that has since changed. */
+    expect(regions).toContain("if (busy && open) selection.select(null);");
+  });
+
   it("places every box as a fraction of ITS OWN frame, never in screen pixels", async () => {
     const regions = withoutProse(await readFile(REGIONS, "utf8"));
     expect(regions).toContain("box.frame.width) * 100}%");
