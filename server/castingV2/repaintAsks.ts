@@ -61,7 +61,7 @@ import { facetOfAxis, facetOfSubject, type Facet } from "./refineFacets";
 import { itemsOf, facetsWrittenBy, type RefineDelta } from "./refineDelta";
 import type { FreeSubject } from "./refineSubjects";
 import {
-  FACET_SLOTS, facetsOfSlot, slotDefinition, slotsForFacet, type SlotDefinition,
+  FACET_SLOTS, facetsOfSlot, narrowToScope, slotDefinition, slotsForFacet,
 } from "./referenceSlotCatalogue";
 import { accessoryKindOf, vacantPhraseFor } from "./accessoryKinds";
 import type { Ask, FeatureSlot } from "./recipeAssembler";
@@ -157,6 +157,14 @@ export type RepaintAsksRefusal = {
     | "unnamedObject"
     | "uncatalogued"
     | "noWords"
+    /**
+     * She pointed at ONE of a pair and asked for it to come off.
+     *
+     * The paint narrows (the per-eye court); the VACANCY sentence has never
+     * been measured per-side, and the once it was watched it took both sides
+     * (opus-275, located by opus-342). See the refusal in the departure loop.
+     */
+    | "perSideRemoval"
     /** The delta writes no facet at all. See the refusal at the foot of
      *  {@link repaintAsksFor} — an empty ask list is a charge for nothing. */
     | "nothingAsked";
@@ -259,24 +267,6 @@ function statePhrase(
  * render (fable-174) and two asks for one slot would be two instructions about
  * one feature.
  */
-/**
- * The scoped instance's slot, or all of them.
- *
- * Deliberately a FILTER of what the catalogue already returned rather than a
- * lookup of its own: a scope can only ever narrow the fan-out this facet was
- * always going to produce, so a scope naming a slot this facet does not have
- * narrows to nothing and the caller's refusal fires (`notASlot`) instead of
- * quietly painting the whole face. That refusal is the door — a scope that
- * silently reverts to a whole-face render is how the one-frame class starts.
- */
-function narrowToScope(
-  definitions: SlotDefinition[],
-  scope: FeatureSlot | undefined,
-): SlotDefinition[] {
-  if (scope === undefined) return definitions;
-  return definitions.filter((definition) => definition.slot === scope);
-}
-
 export function repaintAsksFor(input: RepaintAsksInput): RepaintAsksResult {
   const order: FeatureSlot[] = [];
   const wordsBySlot = new Map<FeatureSlot, string[]>();
@@ -315,6 +305,38 @@ export function repaintAsksFor(input: RepaintAsksInput): RepaintAsksResult {
         return {
           ok: false, reason: "unnamedObject", facet,
           detail: `this render says ${noun} has left her and the placement table cannot name what that is, so the recipe has no slot to vacate`,
+        };
+      }
+      /*
+        A SCOPED REMOVAL OF ONE OF A PAIR REFUSES, and the reason is a
+        measurement rather than caution.
+
+        The narrowing above is granted for PAINTING because the per-eye court
+        bought the answer — 31 of 32 single-side paints landed on exactly the
+        asked eye, zero on the wrong one, zero on both (opus-342). A departure
+        is a different sentence to a different part of the recipe: the slot goes
+        VACANT and the frame is told the site carries nothing. The one
+        measurement this program has of that sentence per-side says it takes
+        BOTH — opus-275's *"honours 'her left' 6/6 and takes BOTH on 'her right'
+        5/6"*, which opus-342 re-read and located precisely: *"whatever went
+        wrong there was about the earring VACANCY sentence, not about the word
+        'right'"*.
+
+        So narrowing here would ship, silently, the one shape a court has
+        already seen fail — she asks for one hoop off, both come off, and she is
+        charged for a picture of a different question. It refuses instead, free
+        of a picture and whole of her money, and the door opens the day a
+        removal court exists (the fidelity law's declared shortcut, named rather
+        than taken).
+
+        Narrow on purpose: a departure whose feature has ONE slot cannot be
+        narrowed by a scope at all, so it is not asked about here — only a
+        genuinely bilateral vacancy refuses.
+      */
+      if (input.scope !== undefined && definitions.length > 1) {
+        return {
+          ok: false, reason: "perSideRemoval", facet,
+          detail: `this render takes ${noun} off one side only, and the one court of a per-side vacancy sentence saw it take both (opus-275) — the recipe would say a thing about her the render is not measured to deliver`,
         };
       }
       for (const definition of definitions) {

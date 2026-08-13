@@ -50,11 +50,13 @@
 import {
   FACET_SLOTS,
   facetsOfSlot,
+  narrowToScope,
   slotsForFacet,
   slotSpecFor,
   slotsRemintedEveryRender,
   type SlotDefinition,
 } from "./referenceSlotCatalogue";
+import type { FeatureSlot } from "./recipeAssembler";
 import { captionWording, type RealizationCaptions } from "./realizationCaption";
 import type { SlotSpec } from "./referenceMint";
 import type { Facet } from "./refineFacets";
@@ -114,6 +116,26 @@ export type MintedSlotsInput = {
    * every caller that has no library to consult.
    */
   held?: ReadonlySet<string>;
+  /**
+   * THE ONE INSTANCE THE ASK WAS ABOUT — and it is where ruling C is kept.
+   *
+   * fable-444 chose the reference over the axis: the delta goes on saying
+   * "green eyes" because that is what she typed, and *the library* is what
+   * remembers that only one of them is green. That makes this call the place
+   * the whole ruling is load-bearing, because the library's rows are minted
+   * here.
+   *
+   * Without it, a scoped render PAINTS one eye and FILES both: `earned` carries
+   * the facet, the facet fans out to both instances, and `eye@right` gets a row
+   * asserting a delivery its own render never made — read from its own crop, so
+   * plausible, and carried into every later recipe as a fact she paid for. That
+   * is the fan-out this program has been paying for in other coats, arriving at
+   * the one door the ruling put the memory behind.
+   *
+   * Undefined is every render before the panel sends a scope, which is all of
+   * them today: the narrowing is a no-op and nothing about the fan-out changes.
+   */
+  scope?: FeatureSlot;
 };
 
 export type MintedSlotsResult = {
@@ -160,12 +182,25 @@ export type MintedSlotsResult = {
   emit it. The day the assembler files an open ask, reaching for `notASlot` is a
   visibly wrong choice rather than the only one available.
 */
+/*
+  `outsideScope` — a facet this render earned whose slots do not include the one
+  she pointed at.
+
+  It should be unreachable, and it is reported rather than skipped for the same
+  reason `uncataloguedFeature` is: the render that produced it was refused
+  upstream by `repaintAsksFor`, whose fan-out narrows through the same helper and
+  returns `notASlot` when the narrowing empties. So reaching this means the ask
+  list and the mint disagree about which slots a scoped render is about — which
+  is exactly the drift the shared helper exists to prevent, and it must arrive as
+  a named finding in the log rather than as a slot that quietly filed nothing.
+*/
 export type UnfiledReason =
   | "notASlot"
   | "unnamedObject"
   | "uncataloguedFeature"
   | "noWords"
-  | "openKind";
+  | "openKind"
+  | "outsideScope";
 
 function unfiledReasonFor(facet: Facet): UnfiledReason {
   const assignment = FACET_SLOTS[facet];
@@ -225,12 +260,21 @@ export function mintedSlotsForRender(input: MintedSlotsInput): MintedSlotsResult
 
   const collect = (facets: readonly Facet[], disputed: boolean) => {
     for (const facet of facets) {
-      const definitions = slotsForFacet(facet, { accessoryKind: input.accessoryKind });
+      /* Narrowed through the catalogue's own helper, which is also what the
+         recipe's ask list narrows through — one definition of *the fan-out, cut
+         to the instance she pointed at*, so the render and its record cannot
+         come to disagree about which side this was. */
+      const catalogued = slotsForFacet(facet, { accessoryKind: input.accessoryKind });
+      const definitions = narrowToScope(catalogued, input.scope);
       if (definitions.length === 0) {
         /* The reason comes from the ASSIGNMENT rather than from what the caller
            happened to pass, so a decided absence and an unnamed object never wear
-           each other's label. */
-        unfiled.push({ facet, reason: unfiledReasonFor(facet) });
+           each other's label — and a facet the SCOPE excluded is a third thing
+           again, which is why it is not allowed to borrow either of theirs. */
+        unfiled.push({
+          facet,
+          reason: catalogued.length > 0 ? "outsideScope" : unfiledReasonFor(facet),
+        });
         continue;
       }
       for (const definition of definitions) {

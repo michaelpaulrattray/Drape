@@ -2799,6 +2799,36 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
     expect(recipe).not.toContain("right eye");
   });
 
+  it("files the LIBRARY on one eye too, not just the painter — ruling C at the wire", async () => {
+    /*
+      fable-444 chose the reference over the axis: the delta goes on saying
+      "green eyes" and the LIBRARY is what remembers that only one of them is
+      green. That makes the mint the one place the ruling is load-bearing, and
+      the shipped slice narrowed the ask list without narrowing the mint — so a
+      scoped render painted ONE eye and filed BOTH, `eye@right` carrying a row
+      that asserts a delivery its own recipe never asked for into every later
+      render.
+
+      Asserted on the slot list the mint RECEIVES rather than on the line that
+      passes it (invariant 5), because the wiring is the half a unit test on
+      `mintedSlotsForRender` cannot see.
+    */
+    captionsRead = { "eye.colour": "A clear green iris" };
+    await refineCandidate({ ...repainting, ...greenEyes, ...mintingLibrary, harvest: unmasked },
+      { ...input, scope: "eye@left" });
+
+    expect(mintAsks).toHaveLength(1);
+    expect(mintAsks[0]!.slots.map((slot) => slot.slot)).toEqual(["eye@left"]);
+  });
+
+  it("CONTROL — the same ask unscoped files both eyes", async () => {
+    captionsRead = { "eye.colour": "A clear green iris" };
+    await refineCandidate({ ...repainting, ...greenEyes, ...mintingLibrary, harvest: unmasked }, input);
+
+    expect(mintAsks).toHaveLength(1);
+    expect(mintAsks[0]!.slots.map((slot) => slot.slot)).toEqual(["eye@left", "eye@right"]);
+  });
+
   it("refuses an ask it cannot say declaratively, and gives the money back", async () => {
     /* Makeup has no library slot by ruling (fable-168/201). Painting anyway
        would send a recipe that never mentions what she asked for and charge her
@@ -2856,6 +2886,35 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
       );
 
     /* "Nothing was charged" has to be TRUE, not merely kind. */
+    expect(painted).toHaveLength(0);
+    expect(ledger.charges.at(-1)?.amount).toBe(ledger.refunds.at(-1)?.amount);
+  });
+
+  it("tells her the ONE-OF-A-PAIR door refused, and names what she can do instead", async () => {
+    /*
+      The narrowing is granted for PAINT (the per-eye court, 31/32 exact) and
+      not for a VACANCY: the only time a per-side vacancy sentence was watched
+      it took BOTH sides (opus-275, located to the vacancy sentence by
+      opus-342 §3). Rather than ship the shape a court has already seen fail,
+      the door refuses — and says why, in the makeup door's ruled voice, with
+      the thing she CAN do in the same breath.
+    */
+    await expect(refineCandidate({
+      /* The removal harness — a reader that answers with masks rather than with
+         nulls, because that is the reader production has (the fake-reader law,
+         and the bug it cost). Only the departed OBJECT differs. */
+      ...removing(false),
+      interpret: async () => ({
+        ok: true as const,
+        delta: { absent: { statedAccessories: ["gold hoop earrings"] } },
+      }),
+    }, { ...input, instruction: "take this earring off", scope: "earring@left" }))
+      .rejects.toThrow(
+        "Taking just one of a pair off isn't something I can do yet — ask for both and "
+        + "they'll come off together. Nothing was charged.",
+      );
+
+    /* And "nothing was charged" is arithmetic rather than kindness. */
     expect(painted).toHaveLength(0);
     expect(ledger.charges.at(-1)?.amount).toBe(ledger.refunds.at(-1)?.amount);
   });

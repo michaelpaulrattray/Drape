@@ -3925,6 +3925,17 @@ export async function refineCandidate(
             the gate the whole feature stood behind.
           */
           held: new Set(live.map((row) => row.slot)),
+          /*
+            AND THE ONE INSTANCE SHE POINTED AT, so the library records what the
+            painter was actually asked for.
+
+            This is where fable-444's ruling C is kept: the delta stays
+            whole-face, and the library is the memory of per-side. A scoped
+            render that filed both instances would put a row on `eye@right`
+            claiming a delivery its own recipe never asked for — and every later
+            render would carry it.
+          */
+          ...(input.scope ? { scope: input.scope } : {}),
         });
         if (unfiled.length > 0) {
           log.info(
@@ -4405,6 +4416,20 @@ function failedFactsMessage(error: unknown): string | null {
          noun she never used. */
       : "That's makeup, and makeup isn't something I can place yet — it's coming. "
         + "Nothing was charged.";
+  }
+  /*
+    ONE OF A PAIR, ASKED TO COME OFF — the door the departure loop closes, said
+    in a sentence that names the gap instead of implying a malfunction.
+
+    Same voice as the makeup door and for the same ruled reason (fable-354): a
+    refusal that KNOWS why should say why, or she retypes an instruction the
+    product already knows it cannot render. What she is told is exactly what is
+    true — the product can take BOTH off today and cannot yet take one off — so
+    the sentence carries the thing she can do next instead of a dead end.
+  */
+  if (error instanceof RepaintCannotSayError && error.reason === "perSideRemoval") {
+    return "Taking just one of a pair off isn't something I can do yet — ask for both and "
+      + "they'll come off together. Nothing was charged.";
   }
   /*
     A REMOVAL THAT WOULD NOT TAKE, in its own words.

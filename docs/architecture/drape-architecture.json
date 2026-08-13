@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "ed9e162185c61e13"
+    "sourceFingerprint": "01d5188fbe9ab1cc"
   },
   "domains": [
     {
@@ -18352,6 +18352,11 @@
     {
       "from": "module:server/castingV2/mintedSlots.ts",
       "to": "module:server/castingV2/realizationCaption.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/mintedSlots.ts",
+      "to": "module:server/castingV2/recipeAssembler.ts",
       "kind": "imports"
     },
     {

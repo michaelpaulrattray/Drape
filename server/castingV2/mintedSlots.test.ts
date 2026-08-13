@@ -78,6 +78,63 @@ describe("the slots a render files", () => {
     expect(slots.map((slot) => slot.tier)).toEqual(["item", "item"]);
   });
 
+  /*
+    RULING C IS KEPT HERE, and until this test existed it was kept nowhere.
+    (fable-444: per-side is a property of the REFERENCE, not of the axis — the
+    delta goes on saying "green eyes" and the LIBRARY is what remembers that
+    only one of them is green.)
+
+    The ask list narrowed to the clicked instance in the shipped slice; the mint
+    did not. So a scoped render painted ONE eye and filed BOTH — `eye@right`
+    getting a row that asserts a delivery its own recipe never asked for, read
+    from its own crop so entirely plausible, and carried into every later
+    recipe as a fact she paid for.
+  */
+  it("files ONE instance's row when the ask was scoped to one, and nothing on the other", () => {
+    const { slots, unfiled } = mintedSlotsForRender({
+      earned: ["eye.colour"],
+      captions: { "eye.colour": "A clear green iris" },
+      scope: "eye@left",
+    });
+
+    expect(unfiled).toEqual([]);
+    expect(slots.map((slot) => slot.slot)).toEqual(["eye@left"]);
+    /* The absence is the whole point: nothing anywhere in what the mint is
+       handed mentions the eye she did not point at. */
+    expect(JSON.stringify(slots)).not.toContain("eye@right");
+  });
+
+  it("CONTROL — the same ask UNSCOPED still files both eyes", () => {
+    /* The inert half, and the sabotage detector for the narrowing: make the
+       filter a no-op and the test above goes red; make it swallow everything
+       and this one does. */
+    const { slots } = mintedSlotsForRender({
+      earned: ["eye.colour"],
+      captions: { "eye.colour": "A clear green iris" },
+    });
+
+    expect(slots.map((slot) => slot.slot)).toEqual(["eye@left", "eye@right"]);
+  });
+
+  it("names a facet the scope excluded as OUTSIDE SCOPE, never as an uncatalogued one", () => {
+    /*
+      It should be unreachable — `repaintAsksFor` refuses the render with
+      `notASlot` before a pixel is painted — and it is reported rather than
+      skipped because reaching it means the ask list and the mint disagree about
+      which slots a scoped render is about. A finding wearing another reason's
+      label is a finding nobody reads (the same argument `uncataloguedFeature`
+      already makes in this file).
+    */
+    const { slots, unfiled } = mintedSlotsForRender({
+      earned: ["lips"],
+      captions: { lips: "Full, a soft nude" },
+      scope: "eye@left",
+    });
+
+    expect(slots).toEqual([]);
+    expect(unfiled).toEqual([{ facet: "lips", reason: "outsideScope" }]);
+  });
+
   it("files a single-instance accessory as one slot", () => {
     const { slots } = mintedSlotsForRender({
       earned: ["statedAccessories"],

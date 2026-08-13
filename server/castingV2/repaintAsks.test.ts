@@ -219,6 +219,63 @@ describe("a departure vacates the slot and says so", () => {
     for (const ask of result.asks) expect(ask.vacate?.says).toContain("bare");
   });
 
+  it("REFUSES to take one of a pair off, because the one court of that sentence saw it take both", () => {
+    /*
+      The narrowing is granted for PAINT and not for a VACANCY. The per-eye
+      court measured single-side paints (31/32 exact, zero on the wrong eye);
+      the only time a per-side vacancy sentence was watched it took BOTH sides
+      (opus-275, located to the vacancy sentence rather than to the word "right"
+      by opus-342 §3).
+
+      So this is the fidelity law's declared shortcut being named instead of
+      taken: she asks for one hoop off, and rather than shipping the shape a
+      court has already seen fail, the door refuses free and whole.
+    */
+    const result = repaintAsksFor({
+      delta: { free: { statedAccessories: [] }, absent: { statedAccessories: ["gold hoop earrings"] } },
+      prose,
+      accessoryKind: "earring",
+      scope: "earring@left",
+    });
+
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.reason).toBe("perSideRemoval");
+    expect(result.detail).toContain("both");
+  });
+
+  it("CONTROL — a scoped removal of a thing there is only ONE of is untouched", () => {
+    /*
+      The refusal above is about a fan-out a scope can narrow, and glasses have
+      no sides to narrow between: the list is one slot scoped or unscoped, so
+      nothing about the render changes and refusing it would be a door closing
+      on a case it was never built for.
+    */
+    const result = repaintAsksFor({
+      delta: { free: { statedAccessories: [] }, absent: { statedAccessories: ["glasses"] } },
+      prose,
+      accessoryKind: "glasses",
+      scope: "glasses",
+    });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.asks.map((ask) => ask.slot)).toEqual(["glasses"]);
+  });
+
+  it("CONTROL — an UNSCOPED pair removal still vacates both, exactly as it did", () => {
+    /* The inert half. Every removal before the panel sends a scope. */
+    const result = repaintAsksFor({
+      delta: { free: { statedAccessories: [] }, absent: { statedAccessories: ["gold hoop earrings"] } },
+      prose,
+      accessoryKind: "earring",
+    });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.asks.map((ask) => ask.slot)).toEqual(["earring@left", "earring@right"]);
+  });
+
   it("CONTROL — a departure of something the table cannot name still refuses", () => {
     /* The honest answer, and the same one the mint gives. An absence sentence
        improvised at the call site is the free-floating prose fable-195 ruled

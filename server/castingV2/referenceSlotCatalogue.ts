@@ -921,6 +921,36 @@ export function slotsForFacet(
 }
 
 /**
+ * THE FAN-OUT, NARROWED TO THE ONE INSTANCE SHE POINTED AT (fable-444, ruling C).
+ *
+ * A bilateral facet fans out to one slot per side, which is what makes "her
+ * eyes" one sentence and two references. A scope says *this ask is about that
+ * one instance*, and every consumer of {@link slotsForFacet} on a scoped render
+ * has to narrow the same way or the two disagree about what the render was.
+ *
+ * It lives HERE, beside the fan-out it narrows, because it has two callers and a
+ * second copy of it is working law 4's mirror: `repaintAsks` narrowed and the
+ * mint did not, so a scoped green eye would have been PAINTED on one eye and
+ * FILED on both — the library's `eye@right` row claiming a delivery its own
+ * render never made, on the strength of a verdict about the other eye. The
+ * library is what ruling C makes the memory of per-side, so a mint that fans out
+ * is the ruling failing at the one place it is load-bearing.
+ *
+ * Deliberately a FILTER of what the catalogue already returned rather than a
+ * lookup of its own: a scope can only ever NARROW the list this facet was always
+ * going to produce, so a scope naming a slot this facet does not have narrows to
+ * nothing and the caller's own refusal fires instead of quietly painting — or
+ * filing — the whole face.
+ */
+export function narrowToScope(
+  definitions: readonly SlotDefinition[],
+  scope: FeatureSlot | undefined,
+): SlotDefinition[] {
+  if (scope === undefined) return [...definitions];
+  return definitions.filter((definition) => definition.slot === scope);
+}
+
+/**
  * The mint's input for one slot, composed from this slot's own record plus the
  * stack the render is filing.
  *
