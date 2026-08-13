@@ -2741,3 +2741,44 @@ export const castingReferenceLibrary = mysqlTable("casting_reference_library", {
 
 export type CastingReferenceLibraryRow = typeof castingReferenceLibrary.$inferSelect;
 export type InsertCastingReferenceLibraryRow = typeof castingReferenceLibrary.$inferInsert;
+
+/**
+ * How an open-lane ask went. Five words, because five different answers would
+ * change the promotion decision this table exists to price.
+ *
+ * `words_only` and not `words-only`: a value that cannot be a TypeScript
+ * identifier invites a second spelling at the boundary.
+ */
+export const CASTING_OPEN_LANE_OUTCOMES = [
+  "delivered",
+  "refunded",
+  "words_only",
+  "unreadable",
+  "refused",
+] as const;
+
+/**
+ * THE OPEN LANE'S DEMAND RECORD (OPEN_LANE_DESIGN_NOTE §7, migration 0031).
+ *
+ * One row is: somebody asked for a thing the catalogue does not own, and this
+ * is how it went. **The column list is the privacy boundary** — this table is
+ * built to be read by staff, so the customer's own sentence, their account,
+ * their cast and any image key are not omitted from a projection, they are
+ * absent from the row. See the migration for the full reasoning, including the
+ * one correlation this shape still permits.
+ *
+ * Nothing writes it yet: the writer is §8 step 6 and lands after the lane.
+ */
+export const castingOpenLaneDemand = mysqlTable("casting_open_lane_demand", {
+  id: int("id").autoincrement().primaryKey(),
+  /** The NORMALIZED noun, never the sentence. */
+  kind: varchar("kind", { length: 64 }).notNull(),
+  outcome: mysqlEnum("outcome", CASTING_OPEN_LANE_OUTCOMES).notNull(),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+}, (table) => ([
+  index("idx_casting_open_lane_demand_kind").on(table.kind, table.outcome),
+  index("idx_casting_open_lane_demand_created").on(table.createdAt),
+]));
+
+export type CastingOpenLaneDemandRow = typeof castingOpenLaneDemand.$inferSelect;
+export type InsertCastingOpenLaneDemandRow = typeof castingOpenLaneDemand.$inferInsert;

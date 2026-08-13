@@ -1,0 +1,107 @@
+-- THE OPEN LANE'S DEMAND RECORD (OPEN_LANE_DESIGN_NOTE §7, ruling 4).
+--
+-- One row is: **somebody asked for a thing the catalogue does not own, and this
+-- is how it went.** Nothing else. Not the sentence they typed, not the cast,
+-- not the user, not an image key.
+--
+-- PURELY ADDITIVE. One new table. No column of any existing table changes, and
+-- **nothing reads or writes it yet** — the writer is §8 step 6 and lands after
+-- the lane itself, because it records outcomes that do not exist until there is
+-- a lane to produce them. The migration lands first anyway: a new table is in
+-- every INSERT the moment its writer ships, so there is no dark landing for it,
+-- and this program has the scar that named that rule.
+--
+-- ============================================================================
+-- WHY THE COLUMN LIST IS THIS SHORT, AND WHY THAT IS THE POINT
+-- ============================================================================
+--
+-- This table exists to be READ BY STAFF. That single fact decides its shape.
+--
+-- Invariant 8: a read path returns an explicit projection, and a sensitive
+-- field group stays out BY CONSTRUCTION rather than by a caller remembering to
+-- omit it. The strongest available construction is for the fact never to be in
+-- the row. `masterPrompt`, `technicalSchema` and `preferences` are the recipe
+-- for reproducing a customer's cast, and the founder's 2026-07-25 ruling treats
+-- them the way one treats a password. An open-lane ask is a fragment of exactly
+-- that material — it is the customer describing, in their own words, something
+-- nobody has ever asked for before, which is as identifying as creative work
+-- gets.
+--
+-- So a staff member reading this table learns that eleven people asked for
+-- horns and seven got them, and learns nothing whatever about any one of them.
+-- That is the whole design, and every column absent from it is absent on
+-- purpose:
+--
+--   no userId       — not even denormalized. There is no ownership question to
+--                     answer here, so an owner column would be pure exposure.
+--   no candidateId  — the same fact one join further away.
+--   no instruction  — the customer's own sentence is the creative content.
+--   no storageKey   — nothing here points at a picture of anybody.
+--
+-- `id` is a row identity rather than a fact about a person, and the table needs
+-- one to be a table.
+--
+-- ============================================================================
+-- THE ONE CORRELATION THIS SHAPE STILL PERMITS, DECLARED RATHER THAN DENIED
+-- ============================================================================
+--
+-- `createdAt` is a timestamp at full precision, and casting operations carry
+-- timestamps too. Anyone holding BOTH this table and the operations table could
+-- line the two up and attribute a kind to the account that asked for it.
+--
+-- That is not a leak this table can close by itself — coarsening the clock
+-- would blunt the only trend reading it is for — and it is not a leak anybody
+-- can reach through the product, because there is no staff surface that serves
+-- this table and no procedure selects from it. It is named here so that the day
+-- somebody builds that surface, this paragraph is what they read first: the
+-- aggregate is the deliverable, and a row-level export of this table beside a
+-- generation history reconstructs precisely the attribution the column list was
+-- shaped to prevent.
+--
+-- ============================================================================
+-- THE OUTCOMES, AND WHY EACH IS ITS OWN WORD
+-- ============================================================================
+--
+-- The point of the table is to price a promotion decision (ruling 5: promotion
+-- stays a human decision reading this). So the five outcomes are the five
+-- answers that would change that decision, and they are deliberately not
+-- collapsed into success/failure:
+--
+--   delivered    a picture was made and kept. The kind works today.
+--   refunded     it was attempted and the money came back. The kind is
+--                REACHED but not SERVED — the loudest possible promotion case.
+--   words_only   served without a reference crop, because the mint door's
+--                absence control declined (§4). Cheaper than refunded and worse
+--                than delivered, and the number that answers the founder's one
+--                open question in §8.
+--   unreadable   the normalizer could not produce a key at all.
+--   refused      it never got that far — a door turned it away for free.
+--
+-- `words_only` rather than `words-only`: a MySQL ENUM may hold a hyphen, and a
+-- value that cannot be a TypeScript identifier invites a second spelling at the
+-- boundary. One spelling, everywhere.
+--
+-- ============================================================================
+-- RETENTION
+-- ============================================================================
+--
+-- Nothing here is personal data and nothing here points at an object in
+-- storage, so this table is NOT swept with a candidate and must not be: a
+-- demand record whose lifetime is its asker's would erase the very history the
+-- promotion decision is made from, and would do it fastest for the customers
+-- who churn. The rows are the product's own memory of what people wanted.
+CREATE TABLE `casting_open_lane_demand` (
+	`id` int AUTO_INCREMENT NOT NULL,
+	-- The NORMALIZED noun, never the sentence. 64 to match `noun` on the
+	-- reference library, which is the same kind of word in the same ontology.
+	`kind` varchar(64) NOT NULL,
+	`outcome` enum('delivered','refunded','words_only','unreadable','refused') NOT NULL,
+	`createdAt` timestamp NOT NULL DEFAULT (now()),
+	CONSTRAINT `casting_open_lane_demand_id` PRIMARY KEY(`id`)
+);
+--> statement-breakpoint
+-- The read this table exists for: how did asks for THIS kind go. Composite, so
+-- the count per (kind, outcome) is answered from the index alone.
+CREATE INDEX `idx_casting_open_lane_demand_kind` ON `casting_open_lane_demand` (`kind`,`outcome`);--> statement-breakpoint
+-- And the other one: what has been asked for lately, whatever it was.
+CREATE INDEX `idx_casting_open_lane_demand_created` ON `casting_open_lane_demand` (`createdAt`);
