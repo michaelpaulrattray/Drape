@@ -600,6 +600,16 @@ export const castingV2Router = router({
             an option and have a typed "yes" resolve into an edit nobody offered.
           */
           answering: z.string().trim().min(1).max(200).optional(),
+          /*
+            THE RECTANGLE SHE POINTED AT (fable-444, ruling C) — a slot key like
+            `eye@left`, meaning this ask is about that one instance.
+
+            Capped and shaped here so a malformed key never reaches the
+            catalogue; whether the key names anything real is the service's
+            door, which refuses free. Absent on every ask the panel does not
+            scope, which is all of them until the client sends one.
+          */
+          scope: z.string().trim().min(1).max(40).optional(),
         })
         .strict(),
     )
@@ -613,6 +623,7 @@ export const castingV2Router = router({
         candidatePublicId: input.candidateId,
         instruction: input.instruction,
         answering: input.answering,
+        scope: input.scope,
       });
     }),
 

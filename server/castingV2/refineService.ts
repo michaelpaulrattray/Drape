@@ -281,6 +281,22 @@ export type RefineInput = {
    * user was actually shown.
    */
   answering?: string;
+  /**
+   * THE RECTANGLE SHE POINTED AT (fable-444, ruling C).
+   *
+   * A slot key — `eye@left` — meaning *this ask is about that one instance*.
+   * The panel already draws a rectangle per instance and the library already
+   * stores one row per instance; this is the third piece, and it is the only
+   * new one: the ask narrows to the clicked slot, so `eye@right` is not
+   * mentioned in the recipe at all.
+   *
+   * Validated at the door rather than trusted: a scope that names nothing this
+   * instruction writes is REFUSED, free, because a scope that silently reverts
+   * to a whole-face render is how a per-eye edit becomes a both-eyes charge.
+   *
+   * Absent is the whole-face ask, which is every render before this one.
+   */
+  scope?: string;
 };
 
 export type RefineResult = {
@@ -460,6 +476,29 @@ export async function refineCandidate(
     throw new TRPCError({
       code: "PRECONDITION_FAILED",
       message: "That face has already been signed. Nothing was charged.",
+    });
+  }
+
+  /*
+    A SCOPE THAT NAMES NOTHING IS REFUSED AT THE DOOR — free (fable-444 §3).
+
+    `scope` says *this ask is about one instance*, and the whole value of it is
+    that `eye@right` is never mentioned. A scope the catalogue does not know, or
+    one naming a slot that is not an instance of anything, must therefore not
+    fall through to a whole-face render: she would be charged for both eyes
+    having asked for one, and the picture would look like a correct render of a
+    different question. That is the shape this program keeps paying for, so the
+    unknown scope stops here, before the claim, before the charge.
+
+    The narrower half — a scope naming a slot THIS INSTRUCTION does not write —
+    cannot be judged yet, because nothing has been interpreted at this point. It
+    is caught downstream by `repaintAsksFor`, whose fan-out narrows to nothing
+    and refuses with `notASlot` rather than painting.
+  */
+  if (input.scope !== undefined && slotDefinition(input.scope) === null) {
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: "I don't know which part of her that is. Nothing was charged.",
     });
   }
 
@@ -2419,6 +2458,12 @@ export async function refineCandidate(
             this changes the recipe.
           */
           restore: { state: composed, slots: supersededCarrySlots(branchRows) },
+          /*
+            ONE INSTANCE, IF SHE POINTED AT ONE. Undefined on every ask that
+            does not come from a clicked rectangle, which is all of them until
+            the panel sends one — so this line changes nothing by itself.
+          */
+          ...(input.scope ? { scope: input.scope } : {}),
         })
         : repaintCannotRemove();
       if (!asks.ok) {

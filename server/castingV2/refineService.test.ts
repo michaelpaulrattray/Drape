@@ -2763,6 +2763,42 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
 
 
 
+  it("refuses a scope it cannot place, before the claim and for free", async () => {
+    /*
+      fable-444 §3. A scope names the rectangle she clicked. One the catalogue
+      does not know must NOT fall through to a whole-face render: she would be
+      charged for both eyes having asked for one, and the picture would look
+      like a correct render of a different question.
+
+      Asserted on the LEDGER as well as the throw — "free" is a claim about
+      money, and a refusal that charges is the defect wearing a refusal's coat.
+    */
+    const chargesBefore = ledger.charges.length;
+    await expect(refineCandidate({ ...repainting, ...greenEyes, harvest: unmasked },
+      { ...input, scope: "her left eyebrow-ish" }))
+      .rejects.toThrow(/which part of her/i);
+    expect(ledger.charges).toHaveLength(chargesBefore);
+    expect(painted).toHaveLength(0);
+  });
+
+  it("sends ONE eye to the painter when she scoped the ask to one", async () => {
+    /*
+      The positive control beside the refusal — a door that only ever refuses is
+      a door that is simply shut — and the wire assertion at the same time: the
+      recipe the painter receives names `eye@left` and never `eye@right`. That
+      absence is the whole feature (fable-444, ruling C).
+    */
+    await refineCandidate({ ...repainting, ...greenEyes, harvest: unmasked },
+      { ...input, scope: "eye@left" });
+
+    expect(painted).toHaveLength(1);
+    /* Read on the PROMPT the painter receives, in the words it receives them
+       in — the slot key is our bookkeeping and never reaches the engine. */
+    const recipe = JSON.stringify(painted[0]);
+    expect(recipe).toContain("Change only her left eye");
+    expect(recipe).not.toContain("right eye");
+  });
+
   it("refuses an ask it cannot say declaratively, and gives the money back", async () => {
     /* Makeup has no library slot by ruling (fable-168/201). Painting anyway
        would send a recipe that never mentions what she asked for and charge her

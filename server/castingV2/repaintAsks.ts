@@ -60,7 +60,9 @@ import type { HairColour } from "../../shared/castingVocabularies";
 import { facetOfAxis, facetOfSubject, type Facet } from "./refineFacets";
 import { itemsOf, facetsWrittenBy, type RefineDelta } from "./refineDelta";
 import type { FreeSubject } from "./refineSubjects";
-import { FACET_SLOTS, facetsOfSlot, slotDefinition, slotsForFacet } from "./referenceSlotCatalogue";
+import {
+  FACET_SLOTS, facetsOfSlot, slotDefinition, slotsForFacet, type SlotDefinition,
+} from "./referenceSlotCatalogue";
 import { accessoryKindOf, vacantPhraseFor } from "./accessoryKinds";
 import type { Ask, FeatureSlot } from "./recipeAssembler";
 
@@ -122,6 +124,28 @@ export type RepaintAsksInput = {
     state: RefineDelta;
     slots: readonly FeatureSlot[];
   };
+  /**
+   * ONE INSTANCE, BECAUSE SHE POINTED AT IT (fable-444, ruling C).
+   *
+   * *"How would i edit just the left or right eye?"* — the founder's own
+   * question. A bilateral facet fans out to one ask per instance, which is what
+   * makes "her eyes" one sentence and two references. When she clicks the
+   * rectangle over one eye, this holds the slot she clicked and the fan-out
+   * narrows to it: one ask, on `eye@left`, and `eye@right` is not mentioned at
+   * all — which is precisely how the per-eye court bought its answer (31 of 32
+   * exact, zero on the wrong eye, opus-342). Nothing about the WORDING changes;
+   * the only difference is the slot list, so the measured behaviour and the
+   * shipped behaviour are the same behaviour.
+   *
+   * Per-side is a property of the REFERENCE, never of the axis (fable-444): the
+   * delta still says "green eyes" because that is what she typed, and the
+   * library — which has always stored `eye@left` and `eye@right` as separate
+   * rows with their own words, crops and versions — is what remembers that only
+   * one of them is green.
+   *
+   * Undefined is the whole-face ask, unchanged and untouched.
+   */
+  scope?: FeatureSlot;
 };
 
 export type RepaintAsksRefusal = {
@@ -235,6 +259,24 @@ function statePhrase(
  * render (fable-174) and two asks for one slot would be two instructions about
  * one feature.
  */
+/**
+ * The scoped instance's slot, or all of them.
+ *
+ * Deliberately a FILTER of what the catalogue already returned rather than a
+ * lookup of its own: a scope can only ever narrow the fan-out this facet was
+ * always going to produce, so a scope naming a slot this facet does not have
+ * narrows to nothing and the caller's refusal fires (`notASlot`) instead of
+ * quietly painting the whole face. That refusal is the door — a scope that
+ * silently reverts to a whole-face render is how the one-frame class starts.
+ */
+function narrowToScope(
+  definitions: SlotDefinition[],
+  scope: FeatureSlot | undefined,
+): SlotDefinition[] {
+  if (scope === undefined) return definitions;
+  return definitions.filter((definition) => definition.slot === scope);
+}
+
 export function repaintAsksFor(input: RepaintAsksInput): RepaintAsksResult {
   const order: FeatureSlot[] = [];
   const wordsBySlot = new Map<FeatureSlot, string[]>();
@@ -316,7 +358,10 @@ export function repaintAsksFor(input: RepaintAsksInput): RepaintAsksResult {
       refuses, which is the case that door was built for.
     */
     if (vacatedFacets.has(facet) && statePhrase(facet, input.delta, input.prose) === null) continue;
-    const definitions = slotsForFacet(facet, { accessoryKind: input.accessoryKind });
+    const definitions = narrowToScope(
+      slotsForFacet(facet, { accessoryKind: input.accessoryKind }),
+      input.scope,
+    );
     if (definitions.length === 0) {
       /* The reason comes from the catalogue's own ASSIGNMENT rather than from
          what the caller happened to pass, so a decided absence and an unnamed

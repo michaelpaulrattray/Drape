@@ -100,6 +100,51 @@ describe("one step's delta becomes the recipe's asks", () => {
     for (const ask of result.asks) expect(ask.words).toBe("green — iris prose for green");
   });
 
+  it("narrows to ONE instance when she pointed at one, with the same words", () => {
+    /*
+      The founder's question — "how would i edit just the left or right eye?" —
+      and the answer the per-eye court bought: 31 of 32 single-side paints
+      landed on exactly the asked eye, zero on the wrong one, zero on both
+      (opus-342). What the court changed was the SLOT LIST and nothing else, so
+      this asserts both halves: one ask, and the identical sentence.
+    */
+    const both = repaintAsksFor({ delta: { eyeColour: "green" }, prose });
+    const one = repaintAsksFor({ delta: { eyeColour: "green" }, prose, scope: "eye@left" });
+
+    expect(one.ok).toBe(true);
+    if (!one.ok || !both.ok) return;
+    expect(one.asks.map((ask) => ask.slot)).toEqual(["eye@left"]);
+    /* `eye@right` is not mentioned AT ALL — that absence is the feature. */
+    expect(JSON.stringify(one.asks)).not.toContain("eye@right");
+    /* Same wording as the unscoped ask: the narrowing may not become a second
+       vocabulary, or the court measured a sentence this build does not send. */
+    expect(one.asks[0]!.words).toBe(both.asks[0]!.words);
+  });
+
+  it("REFUSES rather than quietly painting the whole face when the scope names nothing this ask writes", () => {
+    /*
+      The door (fable-444 §3). A scope that falls through to a whole-face render
+      is a both-eyes charge for a one-eye ask, and the picture would look like a
+      correct render of a different question — which is exactly how this
+      program's worst defects have looked.
+    */
+    const result = repaintAsksFor({ delta: { eyeColour: "green" }, prose, scope: "lips" });
+
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.reason).toBe("notASlot");
+    expect(result.facet).toBe("eye.colour");
+  });
+
+  it("leaves an unscoped ask exactly as it was", () => {
+    /* The inert half: every render before the panel sends a scope. */
+    const result = repaintAsksFor({ delta: { eyeColour: "green" }, prose, scope: undefined });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.asks.map((ask) => ask.slot)).toEqual(["eye@left", "eye@right"]);
+  });
+
   it("takes an accessory's slot from the described OBJECT, never from the facet", () => {
     const result = repaintAsksFor({
       delta: { free: { statedAccessories: ["small gold hoops"] } },
