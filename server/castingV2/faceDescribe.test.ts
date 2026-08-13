@@ -29,7 +29,7 @@ import { facePanel, type PanelRow } from "./facePanel";
 import { scanFace } from "./faceScan";
 import type { Mask } from "./maskedComposite";
 import type { TextEngine } from "../providers/types";
-import { catalogueSlots } from "./referenceSlotCatalogue";
+import { catalogueSlots, isAskable } from "./referenceSlotCatalogue";
 import type { StoredReference } from "./referenceLibrary";
 
 const FRAME = { bytes: Buffer.from("frame"), contentType: "image/png" };
@@ -144,7 +144,7 @@ describe("which rows are described, derived rather than listed", () => {
     const derived = describedFeatures();
     const expected = Array.from(new Set(
       catalogueSlots()
-        .filter((definition) => definition.question === null && definition.panel.row === "own")
+        .filter((definition) => !isAskable(definition) && definition.panel.row === "own")
         .map((definition) => definition.feature),
     )).sort();
     expect(derived).toEqual(expected);

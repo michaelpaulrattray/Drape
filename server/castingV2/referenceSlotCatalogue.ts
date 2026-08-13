@@ -157,6 +157,22 @@ type QuestionSource =
   | { from: "facetRegion" }
   /** The accessory table's own region — `statedAccessories` has no facet region. */
   | { from: "accessoryRegion"; region: string }
+  /**
+   * NOT ASKED — COMPOSED, from two regions that ARE answered.
+   *
+   * D-213 forbids asking a segmenter an open question, and no question names a
+   * body. `derived` is the third possibility the catalogue was missing: a region
+   * that is arithmetic on answers the reader already gives. `belowHead` is the
+   * whole-subject matte below the bottom of the `face` box (`belowHeadMask`),
+   * and nothing new is asked of any model to obtain it.
+   *
+   * Its guard is geometric for the same reason (`derived-geometry`): there is no
+   * calibrated completeness specimen for a composed region, and borrowing
+   * another family's number would be a guard nobody measured. What CAN be proved
+   * is that the crop holds every pixel the derivation kept, and that is stricter
+   * than a specimen.
+   */
+  | { from: "derived"; of: "belowHead"; note: string }
   | {
     from: "none";
     /** How the nearest available region relates to the slot. */
@@ -372,10 +388,34 @@ const ANATOMY_SLOTS: readonly CatalogueEntry[] = [
     group: "body",
     facets: ["bust", "waist", "shoulders", "arms", "build"],
     instances: { of: "one" },
+    /*
+      HER BUILD IS DERIVED, and the note it used to carry has been half
+      measured away (opus-326, ruled in fable-422 §2).
+
+      What it said: no question names a build, and a crop of her filed as her
+      build is a second master — "measured this week as +7% to +10% face-height
+      drift when a reference at the wrong scale rides a render".
+
+      The drift half is superseded. That measurement was taken before
+      `referenceFit.padToFrame` existed; with the padding applied the body bench
+      measured head height stable to ≤1% across fifteen renders, with the
+      REFERENCELESS floor render moving it as much as the crop arms did. A
+      number that no longer reproduces cannot go on justifying a feature loss.
+
+      The second-portrait half stands, and the bench answered it too: a carrier's
+      identity cost scales with how much of her FACIAL GEOMETRY it contains
+      (fable-423 §2). The below-head crop contains none — it starts under her
+      chin — which is why it carries where the skin bench's face-cut cost
+      identity on 2 of 3 faces.
+
+      And the reason this changed at all: under words alone a delivered build is
+      lost ENTIRELY on the next edit — 3 faces of 3, back inside the floor's own
+      noise, as though she had never paid for it. The same crop kept 92–109%.
+    */
     question: {
-      from: "none",
-      relation: "broader",
-      note: "there is no question that names a build. The nearest a segmenter has is the whole subject, and a crop of HER filed as her build is a second master — measured this week as +7% to +10% face-height drift when a reference at the wrong scale rides a render (fable-381 §A.5: there is no version of that which is not two masters)",
+      from: "derived",
+      of: "belowHead",
+      note: "no question names a build, so this region is composed rather than asked: the whole-subject matte below the bottom of the `face` box. Its completeness is arithmetic against the masks that built it, never a specimen nobody calibrated",
     },
   },
   {
@@ -559,6 +599,45 @@ function nearestRegionOf(entry: CatalogueEntry): string | null {
   return Array.from(regions)[0] ?? null;
 }
 
+/**
+ * The key a DERIVED region travels under, and the reason it reads like a
+ * sentence no one would send to a model: it is never sent to one. The mint
+ * matches on this exact string and composes the mask from regions that ARE
+ * asked; anything else reaching a reader under it would be an open question.
+ */
+export const DERIVED_REGION_KEY = {
+  belowHead: "derived:below-head",
+} as const;
+
+/** Is this region key one the mint must COMPOSE rather than ask for? */
+export function isDerivedRegion(question: string | null): question is string {
+  return question !== null && Object.values(DERIVED_REGION_KEY).includes(question as never);
+}
+
+/**
+ * CAN A SEGMENTER BE ASKED FOR THIS SLOT'S REGION? — one predicate, three
+ * readers.
+ *
+ * Before derived regions existed, every consumer spelled this `question ===
+ * null`, and that was the same sentence: no question, no picture. A derived
+ * region breaks the spelling without breaking the meaning — `build` now HAS a
+ * region key and still cannot be asked for, because the key is composed and
+ * handing it to a reader would be the open question D-213 forbids.
+ *
+ * So the fact lives here once and is derived by everyone else. The alternative
+ * was three copies of `question === null || isDerivedRegion(question)`, which is
+ * the second list law 4 is about — and the version of it that would have sent
+ * `derived:below-head` to a segmenter from whichever copy was missed.
+ */
+/* A type predicate, so a caller that has checked does not then have to assert:
+   `question` and `guardKind` are non-null together or not at all, and this is
+   the one place that fact is worth teaching the compiler. */
+export function isAskable(
+  definition: SlotDefinition,
+): definition is SlotDefinition & { question: string; guardKind: string } {
+  return definition.question !== null && !isDerivedRegion(definition.question);
+}
+
 function definitionOf(entry: CatalogueEntry, instance: Instance | null): SlotDefinition {
   const noun = instance === null ? entry.noun : `${instance} ${entry.noun}`;
   const base = {
@@ -584,6 +663,26 @@ function definitionOf(entry: CatalogueEntry, instance: Instance | null): SlotDef
         : `the nearest question the region vocabulary has is "${nearest}", which is `
           + `${entry.question.relation} than this slot: ${entry.question.note}`,
     };
+  }
+
+  if (entry.question.from === "derived") {
+    /*
+      A COMPOSED REGION TRAVELS UNDER A KEY, NOT UNDER A QUESTION.
+
+      `DERIVED_REGION_KEY` is deliberately not a phrase any segmenter would be
+      asked: the mint recognises it and composes the mask itself, and a reader
+      handed it by mistake would be being asked an open question, which is the
+      thing D-213 forbids. The guard kind says what judges the crop — geometry,
+      not a specimen — so the two fields still name one concept each.
+    */
+    const key = DERIVED_REGION_KEY[entry.question.of];
+    /* The guard kind is the key, exactly as it is the question everywhere else
+       — one name for one concept. A separate name here would have been the
+       first slot in the catalogue whose crop could be judged under a family it
+       does not belong to, which is the failure that invariant guards. Nothing
+       can adopt a specimen under this name because the mint never sends it to
+       a guard: it proves the crop geometrically instead. */
+    return { ...base, question: key, guardKind: key };
   }
 
   const question = entry.question.from === "accessoryRegion"

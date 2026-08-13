@@ -23,6 +23,8 @@ import {
   slotSpecFor,
   FACET_SLOTS,
   SLOT_CATALOGUE,
+  DERIVED_REGION_KEY,
+  isDerivedRegion,
 } from "./referenceSlotCatalogue";
 import { allFacets } from "./refineFacets";
 
@@ -77,11 +79,42 @@ describe("no question is invented, and none carries a side", () => {
   it("takes every anatomy question from the region vocabulary that owns it", () => {
     for (const definition of catalogueSlots()) {
       if (definition.question === null) continue;
+      /* A DERIVED region is the one thing here that is not asked at all, so it
+         is not owned by a table and must not be: it is composed by the mint
+         from regions that ARE owned. It is admitted by name, and the next test
+         proves the name could never reach a segmenter as a question. */
+      if (isDerivedRegion(definition.question)) continue;
       const entry = SLOT_CATALOGUE.find((candidate) => candidate.feature === definition.feature)!;
       const owned = entry.facets.some((facet) => regionNameOf(facet) === definition.question)
         || LANDMARK_OF_ACCESSORY.some((accessory) => accessory.region === definition.question);
       expect(owned, `${definition.slot} asks "${definition.question}", which no table owns`).toBe(true);
     }
+  });
+
+  it("a derived key is not a question, and cannot be mistaken for one", () => {
+    const keys = Object.values(DERIVED_REGION_KEY);
+    expect(keys.length).toBeGreaterThan(0);
+    for (const key of keys) {
+      /* Not in the region vocabulary, not in the accessory table — so a reader
+         handed it would be being asked an open question, which is what D-213
+         forbids and why the mint composes these rather than asking. */
+      expect(allFacets().some((facet) => regionNameOf(facet) === key)).toBe(false);
+      expect(LANDMARK_OF_ACCESSORY.some((accessory) => accessory.region === key)).toBe(false);
+      /* And it announces itself: a phrase beginning `derived:` is not something
+         a caller could type by accident and get past the mint's routing. */
+      expect(key.startsWith("derived:")).toBe(true);
+      expect(isDerivedRegion(key)).toBe(true);
+    }
+    expect(isDerivedRegion("face skin")).toBe(false);
+    expect(isDerivedRegion(null)).toBe(false);
+  });
+
+  it("her build is the derived one, and it is the only one", () => {
+    const derived = catalogueSlots().filter((definition) => isDerivedRegion(definition.question));
+    expect(derived.map((definition) => definition.slot)).toEqual(["build"]);
+    /* Her skin is NOT derived: fable-423 closed that question — every designed
+       carrier was ridden and none was faithful, so skin keeps its words. */
+    expect(slotDefinition("skin")!.question).toBeNull();
   });
 
   it("NEVER puts a laterality word in a question — SAM 3 returned the same hoop twice", () => {

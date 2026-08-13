@@ -60,7 +60,7 @@ import { createModuleLogger } from "../logging/logger";
 import type { Mask } from "./maskedComposite";
 import type { RegionReader } from "./maskedRefine";
 import type { FeatureSlot } from "./recipeAssembler";
-import { catalogueSlots, type SlotDefinition } from "./referenceSlotCatalogue";
+import { catalogueSlots, isAskable, type SlotDefinition } from "./referenceSlotCatalogue";
 import { boundsOf } from "./segmentCuts";
 
 const log = createModuleLogger("castingV2/faceScan");
@@ -130,7 +130,9 @@ export function scanPlan(): { feature: string; question: string; slots: SlotDefi
   const armed = armedQuestions();
   const byFeature = new Map<string, { feature: string; question: string; slots: SlotDefinition[] }>();
   for (const definition of catalogueSlots()) {
-    if (definition.question === null) continue;
+    /* Not askable means not scannable: no question, or a COMPOSED region whose
+       key is not a question anyone may send to a reader (her build). */
+    if (!isAskable(definition)) continue;
     if (definition.group === "accessories" && !armed.has(definition.question)) continue;
     const held = byFeature.get(definition.feature);
     if (held) held.slots.push(definition);

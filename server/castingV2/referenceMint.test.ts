@@ -11,6 +11,7 @@ import sharp from "sharp";
 import { describe, expect, it } from "vitest";
 
 import { mintReferencesForRender, type SlotSpec } from "./referenceMint";
+import { slotDefinition } from "./referenceSlotCatalogue";
 import { unionMasks } from "./maskGeometry";
 import type { Mask } from "./maskedComposite";
 
@@ -442,6 +443,59 @@ describe("what the mint never cuts", () => {
     expect(bench.stored).toEqual([]);
     expect(bench.rows[0]).toMatchObject({ slot: "jaw", words: ["a softer jawline"] });
     expect(bench.rows[0]!.image).toBeUndefined();
+  });
+
+  it("NEVER sends a derived region key to a reader, and files her build's words", async () => {
+    /*
+      `build`'s region is composed, not asked (`belowHeadMask`): the whole
+      subject below the bottom of the face box. Its key —
+      `derived:below-head` — is a phrase no segmenter should ever receive, and
+      the generic path would have handed it over as a question the moment the
+      catalogue stopped saying `null`.
+
+      Until the composer is wired, a derived slot files words exactly as it did
+      when it had no region at all. What this case pins is the part that is not
+      allowed to change either way: NO VISION CALL, and nothing asked under that
+      key.
+    */
+    const asked: string[] = [];
+    const bench = harness();
+    const withCount = {
+      ...bench,
+      dependencies: {
+        ...bench.dependencies,
+        read: async (...args: unknown[]) => {
+          asked.push(String((args[0] as { question?: string })?.question ?? "(no question)"));
+          return rect(HAIR);
+        },
+        readGround: async (...args: unknown[]) => {
+          asked.push(String((args[0] as { question?: string })?.question ?? "(no question)"));
+          return rect(HAIR);
+        },
+      },
+    };
+    const build = slotDefinition("build")!;
+    const result = await mint(
+      [hairSlot({
+        slot: "build",
+        noun: build.noun,
+        words: ["noticeably narrower shoulders and slimmer upper arms"],
+        question: build.question,
+        guardKind: build.guardKind,
+      })],
+      withCount,
+    );
+
+    expect(result.slots[0]).toMatchObject({ slot: "build", outcome: "words-only", reason: "noQuestion" });
+    expect(asked).toEqual([]);
+    expect(bench.stored).toEqual([]);
+    expect(bench.rows[0]).toMatchObject({
+      slot: "build",
+      words: ["noticeably narrower shoulders and slimmer upper arms"],
+    });
+    /* And the catalogue really is handing a derived key here — otherwise this
+       case would pass by testing the old `question: null` road. */
+    expect(build.question).toBe("derived:below-head");
   });
 
   /*

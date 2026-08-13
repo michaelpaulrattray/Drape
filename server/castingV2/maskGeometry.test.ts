@@ -23,6 +23,8 @@ import {
   unionMasks,
   type FaceGeometry,
   intersectMask,
+  belowHeadMask,
+  belowHeadCropIsComplete,
   overlapWith,
   placeDestinationZone,
   requestMatte,
@@ -978,5 +980,100 @@ describe("only what is attached to the thing counts as the thing's edge", () => 
   it("returns nothing when nothing touches", () => {
     const claim = mask((x, y) => (x >= 26 && y >= 26 ? 255 : 0));
     expect(coverage(attachedTo(claim, object))).toBe(0);
+  });
+});
+
+/**
+ * HER BUILD, DERIVED — the cut the body bench measured, promoted to the mint.
+ *
+ * The bench (opus-326) found a delivered build lost ENTIRELY on the next edit,
+ * 3 faces of 3, and the same below-head crop keeping 92–109% of it. These are
+ * the laws of the cut that carried it, driven without a segmenter: the chin
+ * comes from the head's own mask, the subject's soft edge survives, and every
+ * case where the answer would be a guess is a refusal instead.
+ */
+describe("belowHeadMask", () => {
+  const SIZE = 16;
+  /** A mask with `on(x, y)` deciding each pixel, at a chosen alpha. */
+  const maskOf = (on: (x: number, y: number) => boolean, alpha = 255): Mask => {
+    const data = Buffer.alloc(SIZE * SIZE);
+    for (let y = 0; y < SIZE; y += 1) {
+      for (let x = 0; x < SIZE; x += 1) if (on(x, y)) data[y * SIZE + x] = alpha;
+    }
+    return { data, width: SIZE, height: SIZE };
+  };
+  /** A head in the top third, a body filling the rest — one column wide enough
+   *  that neither is empty by accident. */
+  const head = maskOf((x, y) => y >= 2 && y <= 5 && x >= 6 && x <= 9);
+  const subject = maskOf((x, y) => (y >= 2 && y <= 5 && x >= 6 && x <= 9) || (y >= 6 && x >= 3 && x <= 12));
+
+  it("cuts below the head's LOWEST row, and that row belongs to the head", () => {
+    const { mask, chinRow } = belowHeadMask({ subject, head });
+    expect(chinRow).toBe(5);
+    /* The chin row itself is not hers to carry… */
+    for (let x = 0; x < SIZE; x += 1) expect(mask.data[5 * SIZE + x]).toBe(0);
+    /* …and the row under it is. */
+    expect(mask.data[6 * SIZE + 3]).toBe(255);
+    expect(mask.data[6 * SIZE + 2]).toBe(0);
+  });
+
+  it("keeps the subject's own alpha rather than re-hardening it", () => {
+    const soft = maskOf((x, y) => y >= 6 && x >= 3 && x <= 12, 200);
+    const { mask } = belowHeadMask({ subject: unionMasks(soft, head), head });
+    expect(mask.data[7 * SIZE + 5]).toBe(200);
+  });
+
+  it("carries nothing of her head, even when the subject includes it", () => {
+    const { mask } = belowHeadMask({ subject, head });
+    for (let y = 0; y <= 5; y += 1) {
+      for (let x = 0; x < SIZE; x += 1) expect(mask.data[y * SIZE + x]).toBe(0);
+    }
+  });
+
+  it("REFUSES an empty head mask rather than guessing a chin", () => {
+    expect(() => belowHeadMask({ subject, head: maskOf(() => false) }))
+      .toThrow(MaskError);
+  });
+
+  it("REFUSES when the head reaches the bottom of the frame", () => {
+    const tall = maskOf((x, y) => y >= 2 && x >= 6 && x <= 9);
+    expect(() => belowHeadMask({ subject: tall, head: tall })).toThrow(MaskError);
+  });
+
+  it("REFUSES when nothing of her is below the chin", () => {
+    expect(() => belowHeadMask({ subject: head, head })).toThrow(MaskError);
+  });
+
+  it("refuses masks that do not share a resolution — never resizes one to fit", () => {
+    const other = { data: Buffer.alloc(8 * 8), width: 8, height: 8 };
+    expect(() => belowHeadMask({ subject, head: other })).toThrow(MaskError);
+  });
+
+  it("refuses a mask whose stride is not one byte per pixel (D-210)", () => {
+    const threeChannel = { data: Buffer.alloc(SIZE * SIZE * 3), width: SIZE, height: SIZE };
+    expect(() => belowHeadMask({ subject: threeChannel, head })).toThrow(MaskError);
+  });
+
+  describe("belowHeadCropIsComplete", () => {
+    it("passes only when the box holds EVERY kept pixel", () => {
+      const { mask } = belowHeadMask({ subject, head });
+      expect(belowHeadCropIsComplete({ mask, box: { x: 3, y: 6, width: 10, height: 10 } }))
+        .toEqual({ complete: true, outside: 0 });
+    });
+
+    it("fails, and COUNTS what it left behind, when the box clips her", () => {
+      const { mask } = belowHeadMask({ subject, head });
+      const verdict = belowHeadCropIsComplete({ mask, box: { x: 4, y: 6, width: 9, height: 10 } });
+      expect(verdict.complete).toBe(false);
+      /* One column of her, ten rows tall — named, not approximated. */
+      expect(verdict.outside).toBe(10);
+    });
+
+    it("is not fooled by a box that is merely LARGE", () => {
+      const { mask } = belowHeadMask({ subject, head });
+      /* The whole frame minus her leftmost column: big, and still incomplete. */
+      expect(belowHeadCropIsComplete({ mask, box: { x: 4, y: 0, width: SIZE, height: SIZE } }).complete)
+        .toBe(false);
+    });
   });
 });

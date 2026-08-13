@@ -97,6 +97,7 @@ import {
   type GuardRefusalReason,
   type RegionReader,
 } from "./referenceCompleteness";
+import { isDerivedRegion } from "./referenceSlotCatalogue";
 import { parseSlot, type Instance, type SlotFrame } from "./referenceSlots";
 import { accessoryKindOfSlot, tidyStackWord } from "./slotWordShape";
 import type { FeatureSlot, FeatureTier } from "./recipeAssembler";
@@ -487,6 +488,23 @@ export async function mintReferencesForRender(input: MintInput): Promise<MintRes
     for (const slot of input.slots) {
       if (slot.tier === "surface") continue;
       if (slot.question === null || slot.guardKind === null) continue;
+      /*
+        A DERIVED REGION IS NOT ASKED, AND THIS MINT CANNOT YET COMPOSE ONE.
+
+        `build`'s region is arithmetic on two answered regions (`belowHeadMask`),
+        not a question — and the key it travels under is deliberately a phrase no
+        segmenter should ever be handed. The composer that turns that key into a
+        mask is the next piece of this build; until it lands, a derived slot
+        falls to the words-only loop below, which is byte-for-byte what `build`
+        did before it had a region at all.
+
+        DECLARED SCAFFOLDING, not a silent lesser path: the geometry and its
+        tests are in `maskGeometry`, the catalogue names the region, and this is
+        the line that will route to the composer. What it must never do — and
+        the reason it exists rather than being left to the generic path — is let
+        `derived:below-head` reach a reader as a question.
+      */
+      if (isDerivedRegion(slot.question)) continue;
       const { question, guardKind } = slot;
       if (slot.frame !== "ownSide") {
         if (!regionsToCut.has(question)) {
@@ -678,7 +696,9 @@ export async function mintReferencesForRender(input: MintInput): Promise<MintRes
     */
     for (const slot of input.slots) {
       if (slot.tier === "surface") continue;
-      if (slot.question !== null && slot.guardKind !== null) continue;
+      /* A derived region joins this loop rather than the cut above, for as long
+         as no composer exists for it — see the note at the cuttable loop. */
+      if (slot.question !== null && slot.guardKind !== null && !isDerivedRegion(slot.question)) continue;
       if (slot.disputed) {
         disputedNothingKept(
           slot,
@@ -694,7 +714,9 @@ export async function mintReferencesForRender(input: MintInput): Promise<MintRes
         slot: slot.slot,
         outcome: "words-only",
         reason: "noQuestion",
-        detail: "no segmentation question names this slot, so there is nothing honest to cut",
+        detail: isDerivedRegion(slot.question)
+          ? "this slot's region is composed rather than asked, and no composer is wired into this mint yet"
+          : "no segmentation question names this slot, so there is nothing honest to cut",
       });
     }
     for (const { slot, detail } of sideless) {

@@ -52,7 +52,7 @@
  * made the waist leave the recipe, applied to the words that describe her.
  */
 import { createModuleLogger } from "../logging/logger";
-import { catalogueSlots } from "./referenceSlotCatalogue";
+import { catalogueSlots, isAskable } from "./referenceSlotCatalogue";
 import { interpreterEngine } from "./interpreter";
 import type { TextEngine } from "../providers/types";
 
@@ -119,9 +119,11 @@ DESCRIBED_ASKS.skin = SKIN_ASK;
 /**
  * The features that draw a row and can never be photographed — derived.
  *
- * `question === null` is the catalogue saying there is no honest question for
- * this slot; `panel.row === "own"` is it saying the row is drawn anyway. Exactly
- * those two facts together mean "a row that can only ever hold words", and
+ * `isAskable` false is the catalogue saying no segmenter can be asked for this
+ * slot — either it has no question at all, or its region is composed and its key
+ * is not a question anyone may ask (her build). `panel.row === "own"` is it
+ * saying the row is drawn anyway. Exactly those two facts together mean "a row
+ * that can only ever hold words", and
  * build and skin are the only members today. cheekbones, jaw and chin have no
  * question either and draw NO row (`STRUCTURE_IS_WORDS`), so they are correctly
  * outside this set rather than excluded by name.
@@ -129,7 +131,7 @@ DESCRIBED_ASKS.skin = SKIN_ASK;
 export function describedFeatures(): string[] {
   return Array.from(new Set(
     catalogueSlots()
-      .filter((definition) => definition.question === null && definition.panel.row === "own")
+      .filter((definition) => !isAskable(definition) && definition.panel.row === "own")
       .map((definition) => definition.feature),
   )).sort();
 }

@@ -1201,3 +1201,106 @@ export function mergeRegions(specs: RegionSpec[]): RegionSpec {
     exclude: excludes,
   };
 }
+
+/**
+ * HER BUILD, WHICH NO SEGMENTER CAN BE ASKED FOR.
+ *
+ * `build` is one of the two catalogue slots carrying `question: { from: "none" }`
+ * — there is no region vocabulary word that names a body, and D-213 forbids
+ * inventing one to ask a segmenter with. So this does not ask. It DERIVES, from
+ * two answers the reader already gives:
+ *
+ *   the whole-subject matte   knows her silhouette, edge ramp and all
+ *   the region `face`         knows where her head stops
+ *
+ * and her build is what is left of her below her chin. No model is asked a
+ * question it cannot answer; the composition is arithmetic on two it can.
+ *
+ * # Why this exists at all
+ *
+ * The body bench (opus-326) measured what the product does with a build today:
+ * words only, and the build is **lost entirely on the next edit** — 3 faces of
+ * 3, back inside the floor's own noise, as though the edit never happened. The
+ * same below-head crop, padded and labelled, kept 92–109% of it. This function
+ * is the cut that bench made, promoted to the mint.
+ *
+ * # Where the chin is, and why the head's own mask decides
+ *
+ * The lowest row the head occupies IS the boundary, and it is taken from the
+ * mask rather than from a landmark or a fraction of frame height: a fraction
+ * would move with her framing and a landmark is a second model to be wrong.
+ * Rows at or above it belong to her head; only rows strictly BELOW it are her
+ * build.
+ *
+ * # It refuses rather than guesses
+ *
+ * An empty head mask has no chin, and a chin at the bottom of the frame leaves
+ * no body — both are refusals, because the alternative is a crop of nothing
+ * filed as her build. A crop of her that means something else under her name is
+ * the failure this whole slot's catalogue note is about.
+ */
+export function belowHeadMask(input: {
+  /** Her silhouette. Soft edges preserved — this is a matte, not an outline. */
+  subject: Mask;
+  /** The head, as `region("face")` reads it. Only its lowest row is used. */
+  head: Mask;
+}): { mask: Mask; chinRow: number } {
+  assertStride(input.subject, "subject matte");
+  assertStride(input.head, "head mask");
+  assertSameSize(input.subject, input.head);
+  const { width, height } = input.subject;
+
+  let chinRow = -1;
+  for (let y = height - 1; y >= 0 && chinRow < 0; y -= 1) {
+    for (let x = 0; x < width; x += 1) {
+      if (input.head.data[y * width + x]! > 127) { chinRow = y; break; }
+    }
+  }
+  if (chinRow < 0) throw new MaskError("the head mask is empty — there is no chin to cut below");
+  if (chinRow >= height - 1) throw new MaskError("her head reaches the bottom of the frame — no build is in this picture");
+
+  const data = Buffer.alloc(width * height);
+  let kept = 0;
+  for (let y = chinRow + 1; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      const at = y * width + x;
+      /* The subject's own alpha, unchanged — a hard copy here would put a
+         binary edge back into the one mask that has a real ramp. */
+      data[at] = input.subject.data[at]!;
+      if (data[at]! > 127) kept += 1;
+    }
+  }
+  if (kept === 0) throw new MaskError("nothing of her is below her chin in this frame");
+  return { mask: { data, width, height }, chinRow };
+}
+
+/**
+ * IS THIS CROP THE WHOLE OF HER BUILD? — arithmetic, because it can be.
+ *
+ * Every other slot's crop is judged by a completeness specimen: a vision family
+ * that knows what a complete crop of THAT REGION looks like. There is no
+ * measured specimen for a below-head crop, and adopting another family's number
+ * would be a guard nobody calibrated (working law 2).
+ *
+ * A geometric crop can be checked geometrically instead, and the check is
+ * stricter than a specimen: the box must contain **every** pixel the derived
+ * mask kept. Nothing is sampled, nothing is judged, and the answer cannot be
+ * "probably".
+ */
+export function belowHeadCropIsComplete(input: {
+  mask: Mask;
+  box: { x: number; y: number; width: number; height: number };
+}): { complete: boolean; outside: number } {
+  assertStride(input.mask, "below-head mask");
+  const { width, height, data } = input.mask;
+  const { x, y, width: boxWidth, height: boxHeight } = input.box;
+  let outside = 0;
+  for (let row = 0; row < height; row += 1) {
+    for (let column = 0; column < width; column += 1) {
+      if (data[row * width + column]! <= 127) continue;
+      const inside = column >= x && column < x + boxWidth && row >= y && row < y + boxHeight;
+      if (!inside) outside += 1;
+    }
+  }
+  return { complete: outside === 0, outside };
+}
