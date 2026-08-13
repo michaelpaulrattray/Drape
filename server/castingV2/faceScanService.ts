@@ -45,7 +45,7 @@
  */
 import { createModuleLogger } from "../logging/logger";
 import { storagePublicUrl, storageReadBytes } from "../storage";
-import { scanFace, type FaceScan } from "./faceScan";
+import { scanFace, scanPlan, type FaceScan } from "./faceScan";
 import { createFalRegionReader } from "./falRegionReader";
 import type { PanelBox, PanelScan } from "./facePanel";
 import type { Mask } from "./maskedComposite";
@@ -82,7 +82,37 @@ export type ScannedFace = {
   failed: readonly { question: string; why: string }[];
   /** What the stencils cost the payload, measured rather than assumed. */
   stencilBytes: number;
+  /**
+   * WHICH SIDES CAME BACK, per bilateral feature: `eye:LR brow:L- ear:LR`.
+   *
+   * The eyes court cost two shifts and could not be settled from the record:
+   * the founder reported one eye, the log carried `asked/found/empty` counts,
+   * and the scan writes nothing — so his specimen could only be RE-DRIVEN on
+   * the same bytes, never read back (fable-383 ruling 2). One field closes
+   * that. `-` is a side that was asked about and answered nothing, which is an
+   * honest answer on a face with an ear behind her hair and a finding on a face
+   * looking straight at the camera.
+   */
+  sides: string;
 };
+
+/**
+ * The laterality summary, derived from the plan the scan actually ran.
+ *
+ * From `scanPlan()` rather than from the slots that came back, so a feature
+ * that answered NOTHING still prints `--` — an absence is only legible beside
+ * the question that produced it.
+ */
+function sidesOf(slots: ReadonlyMap<FeatureSlot, unknown>): string {
+  return scanPlan()
+    .filter((region) => region.slots.some((slot) => slot.instance !== null))
+    .map((region) => {
+      const found = (instance: string) =>
+        region.slots.some((slot) => slot.instance === instance && slots.has(slot.slot));
+      return `${region.feature}:${found("left") ? "L" : "-"}${found("right") ? "R" : "-"}`;
+    })
+    .join(" ");
+}
 
 type CacheEntry = {
   promise: Promise<ScannedFace>;
@@ -178,6 +208,7 @@ async function displayOf(scan: FaceScan, frameUrl: string): Promise<ScannedFace>
     empty: scan.empty,
     failed: scan.failed,
     stencilBytes,
+    sides: sidesOf(slots),
   };
 }
 
@@ -260,6 +291,9 @@ export async function scannedFace(input: {
           empty: value.empty.length,
           failed: value.failed.length,
           stencilBytes: value.stencilBytes,
+          /* WHICH SIDES, per bilateral feature — the field the eyes court
+             needed and did not have. */
+          sides: value.sides,
           /*
             THE RE-SCAN RATE, on every scan — the number that promotes this
             cache to a table (4b), or declines to. A rate near zero says the

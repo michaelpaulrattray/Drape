@@ -94,6 +94,34 @@ export type { SlotFrame };
  *  keeping a second answer to "where does her jaw go". */
 export type SlotGroup = "face" | "hair" | "body" | "accessories";
 
+/**
+ * WHETHER THIS SLOT IS A ROW ON THE PANEL — and if not, where its words are read.
+ *
+ * A slot exists so that words about a feature have somewhere to LAND. Whether
+ * the panel draws a row for it is a second question, and the founder answered it
+ * separately (fable-360, fable-382 §1): *"only show the 8 rows that real
+ * pictures have"*, *"i dont think eyelashes really needs to be there ·
+ * cheekbones or jaw or chin"*.
+ *
+ * So this is data on the one catalogue rather than a second list of "rows the
+ * panel shows" — law 4's copy, which would drift the first time a slot is added.
+ * Three answers, and the difference between the last two is the whole point:
+ *
+ *   own          the slot speaks for itself
+ *   foldedInto   no row, but its words are read on another row's — a lash ask
+ *                still lands, and it is read under her eyes
+ *   none         no row and no words on screen; askable in the box, carried in
+ *                the stack, never a square
+ *
+ * `none` is not "unsupported". Facial structure is words by founder ruling, and
+ * a words-only slot with no row is exactly that ruling: the ask works, the words
+ * are kept, and the panel does not offer a picture of something that has none.
+ */
+export type PanelPlacement =
+  | { row: "own" }
+  | { row: "foldedInto"; feature: string; why: string }
+  | { row: "none"; why: string };
+
 export type SlotDefinition = {
   slot: FeatureSlot;
   /** The feature half of the key: `hair`, `eye`, `earring`. */
@@ -102,6 +130,8 @@ export type SlotDefinition = {
   instance: Instance | null;
   tier: FeatureTier;
   group: SlotGroup;
+  /** Whether the panel draws a row for it, and where its words are read if not. */
+  panel: PanelPlacement;
   /** Bare and plain, the stylist's word: `hair`, `left earring`. */
   noun: string;
   /** The segmentation question, or `null` when no question names this slot. */
@@ -161,7 +191,19 @@ type CatalogueEntry = {
    */
   instances: { of: "one" } | { of: "perSide"; pairNoun: string };
   question: QuestionSource;
+  /** Absent means {@link PanelPlacement} `own` — most slots speak for themselves. */
+  panel?: PanelPlacement;
 };
+
+const STRUCTURE_IS_WORDS = (part: string): PanelPlacement => ({
+  row: "none",
+  why:
+    `facial structure is WORDS by founder ruling (fable-360: "for now facial structure runs as `
+    + `words/descriptions but dont show them in the cutouts"), and he named ${part} again in `
+    + `fable-382 §1. The slot keeps its stack and the ask box still reaches it; what it does not `
+    + `have is a row on the panel, because there is no question that names it and a row with `
+    + `neither a picture nor anything said is an empty square with a label`,
+});
 
 /**
  * THE ANATOMY SLOTS.
@@ -220,6 +262,21 @@ const ANATOMY_SLOTS: readonly CatalogueEntry[] = [
       relation: "broader",
       note: "that question is the whole eye, so a crop of it filed as her lashes is the eye's crop under a second name — two rows holding one fact (D-242)",
     },
+    /*
+      AND THE SAME SENTENCE, ONE LAYER UP. The reason lashes can never have a
+      picture of their own — the only region that contains them IS the eye — is
+      the reason they are read on the eyes row rather than beside it. The
+      founder's words were shorter: "i dont think eyelashes really needs to be
+      there" (fable-382 §1).
+    */
+    panel: {
+      row: "foldedInto",
+      feature: "eye",
+      why:
+        "the only region that contains lashes is the eye itself, so a lash row could never hold a "
+        + "picture that was not the eyes' picture under a second name (D-242) — the words are read "
+        + "on the eyes row, and a lash ask still lands in this slot's own stack",
+    },
   },
   {
     feature: "nose",
@@ -264,6 +321,7 @@ const ANATOMY_SLOTS: readonly CatalogueEntry[] = [
       relation: "broader",
       note: "a crop of that region filed as her cheekbone is a picture of her whole face",
     },
+    panel: STRUCTURE_IS_WORDS("cheekbones"),
   },
   {
     feature: "jaw",
@@ -277,6 +335,7 @@ const ANATOMY_SLOTS: readonly CatalogueEntry[] = [
       relation: "broader",
       note: "a crop of that region filed as her jaw is a picture of her whole face",
     },
+    panel: STRUCTURE_IS_WORDS("the jaw"),
   },
   {
     feature: "chin",
@@ -290,6 +349,7 @@ const ANATOMY_SLOTS: readonly CatalogueEntry[] = [
       relation: "broader",
       note: "a crop of that region filed as her chin is a picture of her whole face",
     },
+    panel: STRUCTURE_IS_WORDS("the chin"),
   },
   {
     feature: "ear",
@@ -422,6 +482,31 @@ function entryOf(feature: string): CatalogueEntry | undefined {
 }
 
 /**
+ * A FOLDED SLOT'S WORDS MUST HAVE SOMEWHERE TO BE READ — checked once, at load.
+ *
+ * `foldedInto` names another feature, and a name is a reference that can rot: a
+ * host that is renamed, deleted, or itself folded away would take the folded
+ * slot's words off the screen SILENTLY — the ask would still work, the stack
+ * would still fill, and nothing anywhere would say why nobody could see it. So
+ * the catalogue refuses to load rather than shipping a slot that speaks into a
+ * room with no door.
+ */
+for (const entry of SLOT_CATALOGUE) {
+  if (entry.panel?.row !== "foldedInto") continue;
+  const host = entryOf(entry.panel.feature);
+  if (host === undefined) {
+    throw new Error(
+      `"${entry.feature}" is folded into "${entry.panel.feature}", which is not a catalogued feature — its words would be invisible`,
+    );
+  }
+  if ((host.panel ?? { row: "own" }).row !== "own") {
+    throw new Error(
+      `"${entry.feature}" is folded into "${host.feature}", which has no row of its own — its words would be invisible`,
+    );
+  }
+}
+
+/**
  * The one question this slot's facets ask, or a refusal to guess.
  *
  * Throws rather than picking, because two facets in one slot naming two regions
@@ -459,6 +544,7 @@ function definitionOf(entry: CatalogueEntry, instance: Instance | null): SlotDef
     instance,
     tier: entry.tier,
     group: entry.group,
+    panel: entry.panel ?? { row: "own" as const },
     noun,
     frame: entry.instances.of === "perSide" ? ("ownSide" as const) : ("wholeFrame" as const),
     ...(entry.instances.of === "perSide" ? { pairNoun: entry.instances.pairNoun } : {}),

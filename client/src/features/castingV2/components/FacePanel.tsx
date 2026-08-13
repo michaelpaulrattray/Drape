@@ -53,6 +53,19 @@ export type FacePanelBox = {
   frame: { width: number; height: number };
 };
 
+/**
+ * A MINTED crop is its own picture and `crop` is null. A SCAN-BORN one is the
+ * whole frame with a window on it — see `cutoutStyle`.
+ */
+export type FacePanelCutout = { contentUrl: string; maskUrl: string; crop: FacePanelBox | null };
+
+/**
+ * One rectangle on the photograph. `name` is null when it covers what the row
+ * says it does — a pair's rectangles each carry their instance's name, because
+ * clicking a rectangle is a promise about those pixels (fable-378 (c)).
+ */
+export type FacePanelRegion = { box: FacePanelBox; name: string | null };
+
 export type FacePanelRow = {
   slots: readonly string[];
   name: string;
@@ -60,20 +73,16 @@ export type FacePanelRow = {
   from: string | null;
   prefill: string;
   /**
-   * A MINTED crop is its own picture and `crop` is null. A SCAN-BORN one is the
-   * whole frame with a window on it — see `cutoutStyle`.
-   */
-  thumb: { contentUrl: string; maskUrl: string; crop: FacePanelBox | null } | null;
-  box: FacePanelBox | null;
-  /**
-   * What the RECTANGLE covers, when that is narrower than the row — null on
-   * almost every row, and null means the row's own name is the label.
+   * NONE, ONE, OR ONE PER INSTANCE — a matched pair shows both, side by side.
    *
-   * A matched pair with geometry for one instance is the case: the row says
-   * "Her eyes" because an edit to it means both, and the box says "Her right
-   * eye" because that is what those pixels are (fable-378 (c)).
+   * Measured rather than chosen: the union of two eye boxes fitted into a 34px
+   * tile draws 34 × 5.7 pixels of content in an empty square, and two ears
+   * union into a tile that is 85% background. Abutted, the gap between them —
+   * which is her face, not her eyes — is simply not in the picture.
    */
-  boxName: string | null;
+  cutouts: readonly FacePanelCutout[];
+  /** Where it is on the picture: none, one, or one per instance. */
+  regions: readonly FacePanelRegion[];
 };
 
 /**
@@ -90,7 +99,7 @@ export type FacePanelRow = {
  * window is published here as numbers and the arithmetic lives beside the tile
  * size it depends on, in the stylesheet.
  */
-export function cutoutStyle(thumb: { contentUrl: string; maskUrl: string; crop: FacePanelBox | null }) {
+export function cutoutStyle(thumb: FacePanelCutout) {
   return {
     backgroundImage: `url(${JSON.stringify(thumb.contentUrl)})`,
     /* Both spellings: the unprefixed property is the standard and the prefixed
@@ -104,10 +113,9 @@ export function cutoutStyle(thumb: { contentUrl: string; maskUrl: string; crop: 
         "--dpc-cut-w": thumb.crop.width,
         "--dpc-cut-h": thumb.crop.height,
         "--dpc-cut-fw": thumb.crop.frame.width,
+        /* The fit is a CONTAIN and the stylesheet derives it, because the box a
+           cutout lands in is only square while the row has one of them. */
         "--dpc-cut-fh": thumb.crop.frame.height,
-        /* The longer side, which is what makes the fit a CONTAIN rather than a
-           stretch — the same divisor on both axes. */
-        "--dpc-cut-max": Math.max(thumb.crop.width, thumb.crop.height),
       }
       : {}),
   } as React.CSSProperties;
@@ -169,12 +177,24 @@ export function FacePanel({
                       onScope(row.prefill);
                     }}
                   >
-                    {row.thumb ? (
+                    {row.cutouts.length > 0 ? (
+                      /* ONE TILE, ONE PICTURE PER INSTANCE. Two eyes share the
+                         tile rather than one standing for both — the founder
+                         read a single-eye tile on a two-eyed face as broken, and
+                         the union of the two boxes measured as a sliver. */
                       <span
-                        className={`dpc-face__thumb${row.thumb.crop ? " dpc-face__thumb--cutout" : ""}`}
+                        className="dpc-face__thumb"
+                        data-parts={row.cutouts.length}
                         aria-hidden="true"
-                        style={cutoutStyle(row.thumb)}
-                      />
+                      >
+                        {row.cutouts.map((cutout, at) => (
+                          <span
+                            key={`${cutout.contentUrl}:${cutout.crop?.x ?? at}`}
+                            className={`dpc-face__cut${cutout.crop ? " dpc-face__cut--cutout" : ""}`}
+                            style={cutoutStyle(cutout)}
+                          />
+                        ))}
+                      </span>
                     ) : (
                       /* NOT AN EMPTY TILE. A slot with no minted crop has never
                          been cut on this face, and a grey square would read as a

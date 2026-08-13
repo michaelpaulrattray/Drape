@@ -59,9 +59,13 @@ describe("one selection, two views of it", () => {
 });
 
 describe("the picture promises only what was measured", () => {
-  it("draws a region only for a row that has a box", async () => {
+  it("draws a rectangle only where one was measured — one per INSTANCE", async () => {
     const regions = withoutProse(await readFile(REGIONS, "utf8"));
-    expect(regions).toContain("rows.filter((row) => row.box !== null)");
+    /* Flattened from the rows' own regions, so a pair read on both sides draws
+       both: a single rectangle over one eye is the same "only showing one eye"
+       the founder read in the tile (fable-382 §2, swept one surface across). */
+    expect(regions).toContain("rows.flatMap((row) => row.regions.map((region, at) => ({ row, region, at })))");
+    expect(regions).toContain("if (drawn.length === 0) return null;");
   });
 
   it("DRAWS NOTHING WHILE A REFINEMENT IS IN FLIGHT (fable-365)", async () => {
@@ -265,14 +269,21 @@ describe("the panel's copy, classified", () => {
       row — a name composed in the client is a name the server's tests cannot
       hold. `slots` appears only as a key and as the selection's subject.
     */
-    const rendered = panel.match(/\{row\.[a-zA-Z.]+\}/g) ?? [];
-    expect(new Set(rendered)).toEqual(new Set(["{row.name}", "{row.from}"]));
+    /* Matched where a TEXT NODE begins, so an attribute carrying a count
+       (`data-parts`) is not mistaken for copy. What is read out loud is what
+       this law is about. */
+    const rendered = panel.match(/>\{row\.[a-zA-Z.]+\}/g) ?? [];
+    expect(new Set(rendered)).toEqual(new Set([">{row.name}", ">{row.from}"]));
   });
 
-  it("shows a faint outline where there is no crop, never a filled grey tile", async () => {
+  it("shows NOTHING where there is no crop — his words were 'never as empty squares'", async () => {
     const css = await readFile(CSS, "utf8");
     const none = css.slice(css.indexOf(".dpc-face__thumb--none"));
-    expect(none.slice(0, none.indexOf("}"))).toContain("background-color: transparent");
+    const body = none.slice(0, none.indexOf("}"));
+    expect(body).toContain("background-color: transparent");
+    /* The faint outline was still an empty square beside "a slim gold hoop".
+       The space is kept so the names stay on one left edge; the mark is not. */
+    expect(body).toContain("box-shadow: none");
   });
 });
 
@@ -298,17 +309,20 @@ describe("a scanned row and a minted row are the same object", () => {
     /* A size written here and again in the component would be two answers to
        how big a thumbnail is, and the drift would show as a cutout sliding off
        its own feature. */
-    expect(body).toContain("--dpc-thumb-size: 34px");
-    expect(body).toContain("width: var(--dpc-thumb-size)");
-    expect(body).toContain("height: var(--dpc-thumb-size)");
+    expect(body).toContain("--dpc-thumb-side: 34");
+    expect(body).toContain("width: calc(var(--dpc-thumb-side) * 1px)");
+    expect(body).toContain("height: calc(var(--dpc-thumb-side) * 1px)");
+    /* And a PAIR halves that one fact rather than writing 17 anywhere. */
+    const pair = css.slice(css.indexOf('.dpc-face__thumb[data-parts="2"]'));
+    expect(pair.slice(0, pair.indexOf("}"))).toContain("var(--dpc-thumb-side) / 2");
     const panel = withoutProse(await readFile(PANEL, "utf8"));
     expect(panel).not.toContain("34");
   });
 
-  it("fits the crop the way the stencil fits itself — one divisor, both axes", async () => {
+  it("fits the crop the way the stencil fits itself — one scale, both axes", async () => {
     const css = await readFile(CSS, "utf8");
-    const cutout = css.slice(css.indexOf(".dpc-face__thumb--cutout {"));
-    const body = cutout.slice(0, cutout.indexOf("}"));
+    const cutout = css.slice(css.indexOf(".dpc-face__cut--cutout {"));
+    const body = cutout.slice(0, cutout.lastIndexOf("}"));
     /*
       `--dpc-cut-max` is the crop's LONGER side on both axes, which is what makes
       this a contain rather than a stretch — the same fit `mask-size: contain`
@@ -316,17 +330,21 @@ describe("a scanned row and a minted row are the same object", () => {
       picture in different places, and at 34px that reads as a smudge rather
       than as a bug.
     */
-    expect(body).toContain("var(--dpc-cut-max)");
-    /* Four: the divisor of both axes of the size, and of both axes of the
-       position. A rule that dropped one would fit one axis differently from the
-       other, which is the stretch this exists to avoid. */
-    expect(body.match(/var\(--dpc-cut-max\)/g)!.length).toBe(4);
+    /* The scale is the CONTAIN the stencil beside it already uses — a min() of
+       the two ratios rather than "divide by the longer side", because a PAIR's
+       half-width box is not square and the shortcut is only the same answer
+       while it is. */
+    expect(body).toContain("--dpc-cut-scale: min(");
+    /* Four uses: both axes of the size, and both axes of the position. A rule
+       that dropped one would fit one axis differently from the other, which is
+       the stretch this exists to avoid. */
+    expect(body.match(/var\(--dpc-cut-scale\)/g)!.length).toBe(4);
     expect(body).toContain("background-size");
     expect(body).toContain("background-position");
-    /* The base rule still centres the stencil, which is the other half of the
-       agreement. */
-    const thumb = css.slice(css.indexOf(".dpc-face__thumb {"));
-    expect(thumb.slice(0, thumb.indexOf("}"))).toContain("mask-size: contain");
+    /* The part's own rule still centres the stencil, which is the other half of
+       the agreement. */
+    const cut = css.slice(css.indexOf(".dpc-face__cut {"));
+    expect(cut.slice(0, cut.indexOf("}"))).toContain("mask-size: contain");
   });
 
   it("publishes the geometry as numbers and lets the stylesheet do the sums", async () => {
@@ -334,10 +352,12 @@ describe("a scanned row and a minted row are the same object", () => {
     for (const property of ["--dpc-cut-x", "--dpc-cut-y", "--dpc-cut-w", "--dpc-cut-h", "--dpc-cut-fw", "--dpc-cut-fh"]) {
       expect(panel).toContain(property);
     }
-    expect(panel).toContain('Math.max(thumb.crop.width, thumb.crop.height)');
     /* And the cutout class rides the crop, so a minted thumbnail — which IS its
        own picture — never gets the arithmetic applied to it. */
-    expect(panel).toContain('row.thumb.crop ? " dpc-face__thumb--cutout" : ""');
+    expect(panel).toContain('cutout.crop ? " dpc-face__cut--cutout" : ""');
+    /* One tile, one picture per instance — the pair count is published as data
+       so the stylesheet, not the component, decides how a pair shares 34px. */
+    expect(panel).toContain("data-parts={row.cutouts.length}");
   });
 
   it("prefers the scanned panel over the unscanned one, and merges nothing itself", async () => {
@@ -360,8 +380,8 @@ describe("the rectangle names what it covers (fable-378 (c))", () => {
     /* Both the visible tag and the accessible label, because a screen reader
        hearing "Her eyes" over one eye is told the same untruth the tag would
        show. */
-    expect(regions).toContain("{row.boxName ?? row.name}");
-    expect(regions).toContain("`${row.boxName ?? row.name}. Edit it here.`");
+    expect(regions).toContain("{region.name ?? row.name}");
+    expect(regions).toContain("`${region.name ?? row.name}. Edit it here.`");
     /* But the EDIT is still the row's — both slots, one ask. A pair read on one
        side must not quietly become an edit to one side. */
     expect(regions).toContain("selection.select({ slots: row.slots, name: row.name, prefill: row.prefill })");

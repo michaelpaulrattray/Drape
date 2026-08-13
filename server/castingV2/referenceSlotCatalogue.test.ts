@@ -36,6 +36,10 @@ describe("what a slot is", () => {
       instance: null,
       tier: "anatomy",
       group: "hair",
+      /* Whether the panel draws a row for it is the catalogue's answer too —
+         structure is words, lashes are read on the eyes, and everything else
+         speaks for itself (fable-382 §1). */
+      panel: { row: "own" },
       noun: "hair",
       question: "hair",
       guardKind: "hair",

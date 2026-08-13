@@ -3031,14 +3031,30 @@
   /* The mock's own size. Sixteen 44px rows in a 292px column read as a second
      screen; at 34 the list reads as a list.
 
-     It is a variable because the SCAN-BORN cutout below does arithmetic with
-     it. A tile size written once here and again in the component would be two
-     answers to how big a thumbnail is, and the drift would show up as a
-     cutout sliding off its own feature. */
-  --dpc-thumb-size: 34px;
-  width: var(--dpc-thumb-size);
-  height: var(--dpc-thumb-size);
+     UNITLESS, because the SCAN-BORN cutout below does arithmetic with it and a
+     PAIR splits it in half. A tile size written once here and again in the
+     component would be two answers to how big a thumbnail is, and the drift
+     would show up as a cutout sliding off its own feature. */
+  --dpc-thumb-side: 34;
+  width: calc(var(--dpc-thumb-side) * 1px);
+  height: calc(var(--dpc-thumb-side) * 1px);
   border-radius: 7px;
+  overflow: hidden;
+  display: flex;
+}
+
+/*
+  ONE PICTURE OF ONE INSTANCE. A row with two of them (her eyes, her earrings)
+  gives each half the tile's width and its full height, so a wide feature is
+  limited by the half-width and a tall one by the full height — which is exactly
+  what the bench looked at before this shipped.
+*/
+.dpc-face__cut {
+  flex: 1 1 0;
+  min-width: 0;
+  height: 100%;
+  --dpc-cut-box-w: var(--dpc-thumb-side);
+  --dpc-cut-box-h: var(--dpc-thumb-side);
   background-color: color-mix(in srgb, var(--onScrim) 8%, transparent);
   background-size: contain;
   background-position: center;
@@ -3053,6 +3069,10 @@
   mask-mode: luminance;
 }
 
+.dpc-face__thumb[data-parts="2"] .dpc-face__cut {
+  --dpc-cut-box-w: calc(var(--dpc-thumb-side) / 2);
+}
+
 /*
   THE SCAN-BORN CUTOUT — her own feature, cut out of the frame already on screen.
 
@@ -3063,28 +3083,41 @@
   slide the right rectangle of it under the tile.
 
   The maths is here rather than in the component so the tile size stays a single
-  fact. `--dpc-cut-max` is the crop's longer side, which is the divisor that
-  makes this a CONTAIN: the crop lands at exactly the size and position the
-  stencil's own `mask-size: contain` puts the shape, so the picture and the shape
-  agree by construction rather than by two calculations happening to match.
+  fact. The scale is the CONTAIN the stencil beside it is already using —
+  `min(boxWidth / cropWidth, boxHeight / cropHeight)` — so the picture and the
+  shape agree by construction rather than by two calculations happening to
+  match. Written as a min() rather than "divide by the crop's longer side"
+  because a PAIR's half-width box is not square, and the longer-side shortcut is
+  only the same answer while it is.
 */
-.dpc-face__thumb--cutout {
+.dpc-face__cut--cutout {
+  --dpc-cut-scale: min(
+    calc(var(--dpc-cut-box-w) / var(--dpc-cut-w)),
+    calc(var(--dpc-cut-box-h) / var(--dpc-cut-h))
+  );
   background-size:
-    calc(var(--dpc-thumb-size) * var(--dpc-cut-fw) / var(--dpc-cut-max))
-    calc(var(--dpc-thumb-size) * var(--dpc-cut-fh) / var(--dpc-cut-max));
+    calc(var(--dpc-cut-fw) * var(--dpc-cut-scale) * 1px)
+    calc(var(--dpc-cut-fh) * var(--dpc-cut-scale) * 1px);
   background-position:
-    calc(var(--dpc-thumb-size) * (0.5 - (var(--dpc-cut-x) + var(--dpc-cut-w) / 2) / var(--dpc-cut-max)))
-    calc(var(--dpc-thumb-size) * (0.5 - (var(--dpc-cut-y) + var(--dpc-cut-h) / 2) / var(--dpc-cut-max)));
+    calc((var(--dpc-cut-box-w) / 2 - (var(--dpc-cut-x) + var(--dpc-cut-w) / 2) * var(--dpc-cut-scale)) * 1px)
+    calc((var(--dpc-cut-box-h) / 2 - (var(--dpc-cut-y) + var(--dpc-cut-h) / 2) * var(--dpc-cut-scale)) * 1px);
 }
 
 /*
-  NO CROP IS NOT A FAILED CROP. Most slots have never been cut on this face, so
-  the placeholder is a faint outline rather than a filled square — a grey block
-  reads as a picture that did not load.
+  NO CROP IS NOT A FAILED CROP — AND IT IS NOT A SQUARE EITHER.
+
+  It was a faint outline, on the reasoning that a grey block reads as a picture
+  that did not load. Under the content rule a row exists because it has a
+  picture OR something said, so a pictureless row is ORDINARY — and his own
+  words were *"never as empty squares"* (fable-382 §1), which the outline was
+  still drawing beside "a slim gold hoop".
+
+  The space is kept and the mark is gone: the names stay on one left edge
+  instead of going ragged, and nothing on screen looks like a failed image.
 */
 .dpc-face__thumb--none {
   background-color: transparent;
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--onScrim) 14%, transparent);
+  box-shadow: none;
 }
 
 .dpc-face__body { min-width: 0; display: flex; flex-direction: column; gap: 2px; }

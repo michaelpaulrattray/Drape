@@ -52,6 +52,8 @@ export function FaceRegions({
   onAsk: (instruction: string) => void;
 }) {
   const [draft, setDraft] = useState("");
+  /** Which of the open row's rectangles was clicked — a pair has two. */
+  const [openAt, setOpenAt] = useState(0);
   const fieldRef = useRef<HTMLInputElement>(null);
   const open = selection.selected;
   const openRow = open ? rows.find((row) => row.slots.join(" ") === open.slots.join(" ")) : undefined;
@@ -90,10 +92,24 @@ export function FaceRegions({
   */
   if (busy) return null;
 
-  const withBox = rows.filter((row) => row.box !== null);
-  if (withBox.length === 0) return null;
+  /*
+    ONE RECTANGLE PER MEASURED INSTANCE, not one per row.
+
+    A matched pair used to draw a single rectangle over one eye and call it "Her
+    eyes" — the same "only showing one eye" the founder read in the tile, one
+    surface across (law 7's sweep). Both eyes are now clickable, each says which
+    one it is, and clicking either opens the SAME ask: the row's slots, the row's
+    prefill, one edit meaning both.
+  */
+  const drawn = rows.flatMap((row) => row.regions.map((region, at) => ({ row, region, at })));
+  if (drawn.length === 0) return null;
 
   const close = () => selection.select(null);
+  /* Where the open box hangs: under the rectangle that was clicked. Without it,
+     clicking her left eye would open the field under her right one. */
+  const anchor = openRow
+    ? (openRow.regions[Math.min(openAt, openRow.regions.length - 1)] ?? null)
+    : null;
 
   return (
     <span className="dpc-regions" onClick={(event) => event.stopPropagation()}>
@@ -109,8 +125,8 @@ export function FaceRegions({
           onClick={close}
         />
       ) : null}
-      {withBox.map((row) => {
-        const box = row.box!;
+      {drawn.map(({ row, region, at }) => {
+        const box = region.box;
         const style = {
           left: `${(box.x / box.frame.width) * 100}%`,
           top: `${(box.y / box.frame.height) * 100}%`,
@@ -121,7 +137,7 @@ export function FaceRegions({
         const lit = row.slots.some((slot) => selection.isHovered(slot));
         return (
           <button
-            key={row.slots.join(" ")}
+            key={`${row.slots.join(" ")}:${at}`}
             type="button"
             className="dpc-regions__box"
             style={style}
@@ -129,25 +145,27 @@ export function FaceRegions({
             data-lit={lit ? "true" : "false"}
             /*
               THE RECTANGLE NAMES WHAT IT COVERS (fable-378 (c)). On almost
-              every box that is the row's own name. On a matched pair whose
-              geometry is one instance — one eye read, one behind hair — the row
-              still reads "Her eyes" and this says "Her right eye", because
-              clicking a rectangle is a promise about those pixels. The edit is
-              still the row's: both slots, one ask.
+              every box that is the row's own name. On a matched pair it is the
+              instance — the row still reads "Her eyes" and this says "Her right
+              eye", because clicking a rectangle is a promise about those pixels.
+              The edit is still the row's: both slots, one ask.
             */
-            aria-label={`${row.boxName ?? row.name}. Edit it here.`}
+            aria-label={`${region.name ?? row.name}. Edit it here.`}
             onMouseEnter={() => selection.hover(row.slots)}
             onMouseLeave={() => selection.hover(null)}
             onFocus={() => selection.hover(row.slots)}
             onBlur={() => selection.hover(null)}
-            onClick={() => selection.select({ slots: row.slots, name: row.name, prefill: row.prefill })}
+            onClick={() => {
+              setOpenAt(at);
+              selection.select({ slots: row.slots, name: row.name, prefill: row.prefill });
+            }}
           >
-            <span className="dpc-regions__tag">{row.boxName ?? row.name}</span>
+            <span className="dpc-regions__tag">{region.name ?? row.name}</span>
           </button>
         );
       })}
 
-      {open && openRow?.box ? (
+      {open && anchor ? (
         <form
           className="dpc-regions__ask"
           /* Escape belongs to this box while it is open, and the viewer's own
@@ -155,8 +173,8 @@ export function FaceRegions({
              below and `CandidateViewer`'s Escape branch. */
           data-owns-escape="true"
           style={{
-            left: `${((openRow.box.x + openRow.box.width / 2) / openRow.box.frame.width) * 100}%`,
-            top: `${((openRow.box.y + openRow.box.height) / openRow.box.frame.height) * 100}%`,
+            left: `${((anchor.box.x + anchor.box.width / 2) / anchor.box.frame.width) * 100}%`,
+            top: `${((anchor.box.y + anchor.box.height) / anchor.box.frame.height) * 100}%`,
           }}
           onSubmit={(event) => {
             event.preventDefault();

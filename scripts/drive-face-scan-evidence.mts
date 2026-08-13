@@ -74,25 +74,36 @@ const READ_PANEL = `(() => {
   const panel = document.querySelector(".dpc-face");
   if (!panel) return null;
   const rows = Array.from(panel.querySelectorAll(".dpc-face__row")).map((row) => {
-    const thumb = row.querySelector(".dpc-face__thumb");
-    const style = thumb ? getComputedStyle(thumb) : null;
+    const tile = row.querySelector(".dpc-face__thumb");
+    /* ONE TILE, ONE PART PER INSTANCE — a matched pair draws two, so the tile
+       is a container now and the arithmetic lives on the parts inside it. */
+    const parts = Array.from(row.querySelectorAll(".dpc-face__cut")).map((part) => {
+      const style = getComputedStyle(part);
+      return {
+        isCutout: part.classList.contains("dpc-face__cut--cutout"),
+        background: style.backgroundImage.slice(0, 120),
+        maskKind: (style.maskImage || style.webkitMaskImage || "").slice(0, 30),
+        backgroundSize: style.backgroundSize,
+        backgroundPosition: style.backgroundPosition,
+        cut: {
+          x: part.style.getPropertyValue("--dpc-cut-x"),
+          y: part.style.getPropertyValue("--dpc-cut-y"),
+          w: part.style.getPropertyValue("--dpc-cut-w"),
+          h: part.style.getPropertyValue("--dpc-cut-h"),
+          fw: part.style.getPropertyValue("--dpc-cut-fw"),
+          fh: part.style.getPropertyValue("--dpc-cut-fh"),
+        },
+      };
+    });
     return {
       name: row.querySelector(".dpc-face__name")?.textContent ?? "",
       words: row.querySelector(".dpc-face__words")?.textContent ?? "",
-      hasThumb: Boolean(thumb) && !thumb.classList.contains("dpc-face__thumb--none"),
-      isCutout: Boolean(thumb) && thumb.classList.contains("dpc-face__thumb--cutout"),
-      background: style ? style.backgroundImage.slice(0, 120) : "",
-      maskKind: style ? (style.maskImage || style.webkitMaskImage || "").slice(0, 30) : "",
-      backgroundSize: style ? style.backgroundSize : "",
-      backgroundPosition: style ? style.backgroundPosition : "",
-      cut: thumb ? {
-        x: thumb.style.getPropertyValue("--dpc-cut-x"),
-        y: thumb.style.getPropertyValue("--dpc-cut-y"),
-        w: thumb.style.getPropertyValue("--dpc-cut-w"),
-        h: thumb.style.getPropertyValue("--dpc-cut-h"),
-        fw: thumb.style.getPropertyValue("--dpc-cut-fw"),
-        fh: thumb.style.getPropertyValue("--dpc-cut-fh"),
-      } : null,
+      hasThumb: parts.length > 0,
+      isCutout: parts.some((part) => part.isCutout),
+      parts,
+      background: parts[0]?.background ?? "",
+      maskKind: parts[0]?.maskKind ?? "",
+      cut: parts[0]?.cut ?? null,
     };
   });
   return { rows, cutouts: rows.filter((row) => row.isCutout).length };
@@ -195,7 +206,7 @@ for (const theme of THEMES) {
     */
     const started = Date.now();
     await page.waitForFunction(
-      `document.querySelectorAll(".dpc-face__thumb--cutout").length > 0`,
+      `document.querySelectorAll(".dpc-face__cut--cutout").length > 0`,
       { timeout: 180_000, polling: 500 },
     ).catch(() => null);
     const waited = Date.now() - started;
@@ -203,7 +214,7 @@ for (const theme of THEMES) {
     /* Backgrounds and stencils are images; a shot taken before they decode is a
        photograph of an empty box. */
     await page.evaluate(`(async () => {
-      const urls = Array.from(document.querySelectorAll(".dpc-face__thumb"))
+      const urls = Array.from(document.querySelectorAll(".dpc-face__cut"))
         .flatMap((thumb) => {
           const style = getComputedStyle(thumb);
           return [style.maskImage, style.webkitMaskImage, style.backgroundImage];
@@ -261,6 +272,51 @@ for (const theme of THEMES) {
       `${new Set(cutouts.map((r: any) => r.background)).size} distinct background images across ${cutouts.length} cutouts`,
     );
 
+    /*
+      ---- THE SURGERY (fable-382 §1): NO ROW WITHOUT CONTENT ----
+
+      His panel had sixteen rows and seven pictures. A row is now drawn only
+      where this face has a picture or something said about it, structure is
+      words with no row at all, and lashes are read on the eyes.
+    */
+    const empties = after.rows.filter((row: any) => !row.hasThumb && !row.words.trim());
+    check(
+      empties.length === 0,
+      `${theme}: every row on screen has a picture or something said about it`,
+      `${after.rows.length} rows, ${after.rows.filter((r: any) => r.hasThumb).length} with a picture, `
+        + `${empties.length} with neither${empties.length ? `: ${empties.map((r: any) => r.name).join(", ")}` : ""}`,
+    );
+    const gone = ["cheekbone", "jaw", "chin", "lash"];
+    const survivors = after.rows.filter((row: any) =>
+      gone.some((word: string) => row.name.toLowerCase().includes(word)));
+    check(
+      survivors.length === 0,
+      `${theme}: facial structure and lashes have no row of their own`,
+      survivors.length === 0
+        ? `none of ${gone.join(" / ")} on screen; the ask box still reaches all of them`
+        : `still drawn: ${survivors.map((r: any) => r.name).join(", ")}`,
+    );
+
+    /*
+      ---- THE PAIR TILE (fable-382 §2): BOTH OF THEM ----
+
+      *"its only showing one eye"* — on a face whose eyes were both read. A pair
+      row now draws one part per instance, measured against the union it
+      replaced (`bench-pair-tile`: the union of two eye boxes is 34 × 5.7px of
+      content in an empty square).
+    */
+    const pairs = after.rows.filter((row: any) => row.parts.length > 1);
+    const pairNames = ["eyes", "brows", "ears", "earrings"];
+    const oneSided = after.rows.filter((row: any) =>
+      pairNames.some((word: string) => row.name.toLowerCase().endsWith(word)) && row.parts.length === 1);
+    check(
+      pairs.length > 0,
+      `${theme}: a matched pair draws BOTH instances in its one tile`,
+      pairs.length > 0
+        ? `${pairs.map((r: any) => `${r.name} (${r.parts.length})`).join(", ")}`
+        : `no pair row drew two parts; one-sided pair rows: ${oneSided.map((r: any) => r.name).join(", ") || "none"}`,
+    );
+
     /* ---- the regions the picture now offers ---- */
     const regions = await page.evaluate(READ_REGIONS) as any;
     check(
@@ -271,6 +327,19 @@ for (const theme of THEMES) {
         ? `${theme}: COLD — the picture gained click targets it did not have`
         : `${theme}: WARM — the picture had its click targets from the first paint`,
       `${beforeRegions?.boxes.length ?? 0} boxes before, ${regions?.boxes.length ?? 0} after: ${(regions?.boxes ?? []).map((b: any) => b.tag).join(", ")}`,
+    );
+    /* A pair draws one rectangle per instance and each says which one — the
+       tags read "Her right eye" / "Her left eye" while the row stays "Her eyes".
+       Written without a word boundary on purpose: an escape in this line once
+       compiled to a literal control character, and the check reported zero on a
+       screen full of correctly named boxes. */
+    const instanceTags = (regions?.boxes ?? []).filter((box: any) =>
+      / left | right /i.test(` ${String(box.tag).replace(/\s+/g, " ")} `));
+    check(
+      instanceTags.length > 0,
+      `${theme}: a pair's rectangles each say which one they cover`,
+      `${instanceTags.length} of ${regions?.boxes.length ?? 0} boxes name an instance: `
+        + `${instanceTags.map((b: any) => b.tag).join(", ") || "none"}`,
     );
     const outside = (regions?.boxes ?? []).filter((box: any) => {
       const p = regions.plate;
@@ -345,7 +414,7 @@ for (const theme of THEMES) {
       await page.evaluate(`(() => {
         const style = document.createElement("style");
         style.id = "scan-control-nobg";
-        style.textContent = ".dpc-face__thumb--cutout { background-image: none !important; }";
+        style.textContent = ".dpc-face__cut--cutout { background-image: none !important; }";
         document.head.appendChild(style);
       })()`);
       await new Promise((resolve) => setTimeout(resolve, 300));
@@ -373,7 +442,7 @@ for (const theme of THEMES) {
       */
       const target = cutouts[0];
       await page.evaluate(`(() => {
-        const thumb = document.querySelectorAll(".dpc-face__thumb")[${target.at}];
+        const thumb = document.querySelectorAll(".dpc-face__thumb")[${target.at}].querySelector(".dpc-face__cut");
         thumb.style.setProperty("--dpc-cut-x", String(Math.max(0, Number(${JSON.stringify(target.cut.fw)}) - Number(${JSON.stringify(target.cut.w)}))));
         thumb.style.setProperty("--dpc-cut-y", String(Math.max(0, Number(${JSON.stringify(target.cut.fh)}) - Number(${JSON.stringify(target.cut.h)}))));
       })()`);
@@ -392,7 +461,7 @@ for (const theme of THEMES) {
       }
       /* Put it back before the pairwise reading, which depends on it. */
       await page.evaluate(`(() => {
-        const thumb = document.querySelectorAll(".dpc-face__thumb")[${target.at}];
+        const thumb = document.querySelectorAll(".dpc-face__thumb")[${target.at}].querySelector(".dpc-face__cut");
         thumb.style.setProperty("--dpc-cut-x", ${JSON.stringify(target.cut.x)});
         thumb.style.setProperty("--dpc-cut-y", ${JSON.stringify(target.cut.y)});
       })()`);

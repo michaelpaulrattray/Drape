@@ -321,3 +321,41 @@ describe("what the panel receives", () => {
     expect(scan.stencilBytes).toBeLessThan(100_000);
   });
 });
+
+/**
+ * THE FIELD THE EYES COURT DID NOT HAVE (fable-383 ruling 2).
+ *
+ * The founder reported one eye; the log carried counts and no laterality; the
+ * scan writes nothing. So the one instrument that could have settled the court
+ * could not record what the court needed, and his specimen had to be re-driven
+ * on the same bytes across two shifts. One field closes it forever.
+ */
+describe("the scan says which sides it found", () => {
+  it("names every bilateral feature and the sides that answered", async () => {
+    const { deps } = await dependencies(countingReader());
+    const scan = await scannedFace({ ...FACE, dependencies: deps });
+    /* Both sides on every pair, because the fake reader answers both — the
+       shape of the field is what is on trial here. */
+    expect(scan.sides).toContain("eye:LR");
+    expect(scan.sides).toContain("brow:LR");
+    expect(scan.sides).toContain("ear:LR");
+  });
+
+  it("prints a dash for a side that answered nothing, rather than omitting it", async () => {
+    /* An ear behind her hair is an honest one-sided answer, and a `-` beside
+       its own question is the difference between "nothing came back" and "we
+       never asked". The reader below answers only on her left. */
+    const oneSided: any = {
+      async region() { return maskOf({ x: 10, y: 20, width: 30, height: 40 }); },
+      async regionSides() {
+        return { left: maskOf({ x: 10, y: 20, width: 30, height: 40 }), right: { data: Buffer.alloc(FRAME.width * FRAME.height, 0), width: FRAME.width, height: FRAME.height } };
+      },
+      async subject() { return maskOf({ x: 10, y: 20, width: 30, height: 40 }); },
+      async landmark() { return null; },
+    };
+    const { deps } = await dependencies(oneSided);
+    const scan = await scannedFace({ ...FACE, dependencies: deps });
+    expect(scan.sides).toContain("eye:L-");
+    expect(scan.sides).not.toContain("eye:LR");
+  });
+});

@@ -31,6 +31,29 @@
  * which is what scopes the ask — and the image is still clickable only where it
  * has been measured.
  *
+ * # A ROW WITH NOTHING IN IT DOES NOT EXIST
+ *
+ * The founder, looking at his own face on the shipped panel (fable-382 §1):
+ * *"i dont think eyelashes really needs to be there · cheekbones or jaw or
+ * chin"* — against his earlier ruling that only the rows real pictures have
+ * should be listed. Two rules, and they are different rules:
+ *
+ *   the catalogue says a slot has NO ROW      structure is words (fable-360),
+ *                                             lashes are read on the eyes
+ *   this file says a row has NO CONTENT       nothing pictured, nothing said
+ *
+ * The first is a decision about the product's shape and lives in the catalogue
+ * beside the slot it is about. The second is a fact about THIS face, so it is
+ * computed here, per face, every time: a row appears when it has a thumbnail or
+ * something said about it, and otherwise it is not on screen at all. An empty
+ * square with a label is a promise of a picture that does not exist.
+ *
+ * **What that costs, said out loud**: on a face with no scan and an empty
+ * library the panel is EMPTY rather than a list of everything askable. The ask
+ * box under the picture still reaches every slot, including the ones with no row
+ * (his facial structure), so nothing became unaskable — the panel stopped being
+ * a menu and became a description.
+ *
  * # A PAIR IS ONE ROW UNTIL IT ISN'T
  *
  * Stored as instances, spoken as pairs, split on divergence (fable-167) — and
@@ -86,6 +109,28 @@ export type PanelScan = {
   slots: ReadonlyMap<FeatureSlot, { box: PanelBox; maskUrl: string }>;
 };
 
+/**
+ * ONE PICTURE OF ONE INSTANCE.
+ *
+ * A MINTED crop is its own picture and `crop` is null: the content URL is the
+ * cutout, the way the library has always served it. A SCAN-BORN one is the whole
+ * frame with a window on it, so `crop` says which window — the browser cuts the
+ * picture it already has, and no object was written to show it.
+ */
+export type PanelCutout = { contentUrl: string; maskUrl: string; crop: PanelBox | null };
+
+/**
+ * ONE RECTANGLE ON THE PHOTOGRAPH, and what it actually covers.
+ *
+ * `name` is null on almost every one, and null is not an omission — it means the
+ * rectangle covers what the row says it does, so the row's own name is the
+ * label. It is a name when the row is a PAIR: the row still speaks the person's
+ * ontology (*"Her eyes"*, one row, an edit to it means both) and each rectangle
+ * says which eye it is, because clicking a rectangle is a promise about those
+ * pixels (fable-378 (c)).
+ */
+export type PanelRegion = { box: PanelBox; name: string | null };
+
 export type PanelRow = {
   /**
    * What tapping this row is about. A matched pair carries BOTH instance keys:
@@ -102,30 +147,29 @@ export type PanelRow = {
   /** The opening of their own sentence, written into the ask box on a tap. */
   prefill: string;
   /**
-   * The cutout, from one of two places.
+   * THE PICTURES OF IT — none, one, or one per instance.
    *
-   * A MINTED crop is its own picture and `crop` is null: the content URL is the
-   * cutout, the way the library has always served it. A SCAN-BORN one is the
-   * whole frame with a window on it, so `crop` says which window — the browser
-   * cuts the picture it already has, and no object was written to show it.
+   * A matched pair carries BOTH, drawn side by side in the one tile, and that is
+   * measured rather than chosen (`bench-pair-tile`): the union of two eye boxes
+   * fitted into a 34px tile is 34 × 5.7 pixels of content in an empty square,
+   * and two ears union into a tile that is 85% background. Abutted, each
+   * instance keeps its own boundary and the gap between them — which is her
+   * face, not her eyes — is simply not in the picture.
+   *
+   * Ordered as the PHOTOGRAPH reads, left to right, and derived from the boxes
+   * rather than from the side words: `left` means HER left, which is the image's
+   * right (`falRegionReader`).
    */
-  thumb: { contentUrl: string; maskUrl: string; crop: PanelBox | null } | null;
-  /** Where it is on the picture — null when this face has never been read there. */
-  box: PanelBox | null;
+  cutouts: readonly PanelCutout[];
   /**
-   * WHAT THE RECTANGLE ITSELF COVERS, when that is narrower than the row.
+   * WHERE IT IS ON THE PICTURE — none, one, or one per instance.
    *
-   * Null on almost every row, and null is not an omission — it means the box
-   * covers what the row says it does, so the row's own name is the label.
-   *
-   * It is not null when a matched pair has geometry for ONE instance. The row
-   * still speaks the person's ontology — *"Her eyes"*, one row, an edit to it
-   * means both — but the rectangle on the photograph is a fact about pixels,
-   * and those pixels are one eye. Labelling them "Her eyes" would promise that
-   * clicking there edits the pair *there*, which is the wrong-boundary class
-   * with a rectangle on it (fable-378 ruling (c)).
+   * Empty when this face has never been read there, and a rectangle is never
+   * placed by proportion. A pair with both instances read draws two, because a
+   * single rectangle on a two-eyed face is the same "only showing one eye" the
+   * founder read in the tile — same class, one surface across (law 7).
    */
-  boxName: string | null;
+  regions: readonly PanelRegion[];
 };
 
 export type FacePanel = {
@@ -261,6 +305,33 @@ export function facePanel(input: {
   };
 
   const definitions = catalogueSlots();
+
+  /**
+   * THE WORDS OF THE SLOTS THAT HAVE NO ROW OF THEIR OWN, by the row that reads
+   * them.
+   *
+   * A folded slot still stores everything ever said about it — "longer lashes"
+   * lands in `lashes@left`/`lashes@right` exactly as before — and this is the
+   * only place those words become visible. Deduplicated by the sentence itself,
+   * because a pair asked as a pair files one sentence on both sides and the row
+   * would otherwise say it twice.
+   */
+  const foldedWords = new Map<string, string[]>();
+  for (const definition of definitions) {
+    if (definition.panel.row !== "foldedInto") continue;
+    const held = foldedWords.get(definition.panel.feature) ?? [];
+    for (const word of stateOf(definition.slot).words) {
+      if (!held.includes(word)) held.push(word);
+    }
+    foldedWords.set(definition.panel.feature, held);
+  }
+  /** Its own words first, then what it is reading for a slot with no row. */
+  const wordsFor = (feature: string, own: readonly string[]): readonly string[] => {
+    const folded = foldedWords.get(feature);
+    if (folded === undefined || folded.length === 0) return own;
+    return [...own, ...folded.filter((word) => !own.includes(word))];
+  };
+
   const spoken = new Set<FeatureSlot>();
   const rowsOf = new Map<SlotGroup, PanelRow[]>();
   const push = (row: PanelRow) => {
@@ -271,6 +342,13 @@ export function facePanel(input: {
 
   for (const definition of definitions) {
     if (spoken.has(definition.slot)) continue;
+    /* No row of its own, by the catalogue's own account — the words of a folded
+       slot are already gathered above, and a `none` slot is words the ask box
+       reaches and the panel does not draw. */
+    if (definition.panel.row !== "own") {
+      spoken.add(definition.slot);
+      continue;
+    }
     const state = stateOf(definition.slot);
 
     if (definition.instance === null) {
@@ -280,13 +358,13 @@ export function facePanel(input: {
         slots: [definition.slot],
         group: definition.group,
         name,
-        words: state.words,
+        words: wordsFor(definition.feature, state.words),
         from: state.from,
         prefill: prefillFor(name),
-        thumb: state.thumb,
-        box: state.box,
-        /* The row is one thing and the box covers it. */
-        boxName: null,
+        cutouts: state.thumb ? [state.thumb] : [],
+        /* The row is one thing and the rectangle covers it, so it needs no name
+           of its own — the row's is the label. */
+        regions: state.box ? [{ box: state.box, name: null }] : [],
       });
       continue;
     }
@@ -313,42 +391,55 @@ export function facePanel(input: {
 
     if (!diverged) {
       const name = nameOf(left, input.pronouns.possessive, true);
+      /*
+        BOTH INSTANCES, IN THE ORDER THE PHOTOGRAPH READS THEM.
+
+        The founder, on his own face: *"its only showing one eye"* — and the
+        court proved the reader had found both (opus-303). The tile was drawing
+        `left ?? right` under a comment written about EARRINGS, where showing one
+        of a matched pair is exactly right. Two eyes are not two earrings.
+
+        The order is derived from where the boxes ARE, never from the side word:
+        `left` is HER left, which is the image's right, so ordering by the word
+        would mirror every pair tile on the panel.
+      */
+      const sides = [
+        { definition: left, state: leftState },
+        { definition: right, state: rightState },
+      ]
+        .map((side) => ({
+          ...side,
+          at: side.state.thumb?.crop?.x ?? side.state.box?.x ?? null,
+        }))
+        .sort((a, b) => (a.at === null || b.at === null ? 0 : a.at - b.at));
+      const pictured = sides.filter((side) => side.state.thumb !== null);
+      const measured = sides.filter((side) => side.state.box !== null);
       push({
         slots: [left.slot, right.slot],
         group: left.group,
         name,
-        words: leftState.words,
+        words: wordsFor(left.feature, leftState.words),
         from: leftState.from,
         prefill: prefillFor(name),
+        /* One tile, both of them — and one of them when that is all this face
+           has. A pair is matched by its WORDS and never by its pixels (two
+           crops of two ears are never byte-identical), so the pictures do not
+           have to agree for the row to be one row. */
+        cutouts: pictured.map((side) => side.state.thumb!),
         /*
-          ONE THUMBNAIL FOR A MATCHED PAIR, and it is the left instance's own
-          crop rather than a composite of two. The row says "her earrings" and
-          shows one of them, which is what a matched pair looks like anyway.
-          Two crops of two ears are never byte-identical (different light,
-          different occlusion), so a pair is matched by its WORDS and never by
-          its pixels.
-        */
-        thumb: leftState.thumb ?? rightState.thumb,
-        /*
-          AND THE BOX FALLS BACK THE SAME WAY, BUT SAYS SO (fable-378 (c)).
+          AND EVERY RECTANGLE SAYS WHICH ONE IT IS (fable-378 (c), swept).
 
-          A pair with geometry for one instance used to show a cutout and no
-          click target at all — the thumbnail fell back and the box did not. The
-          founder's own reading was the one that could not happen: an eye you can
-          see in the list and cannot click on the picture.
-
-          So the rectangle is drawn, and where it covers ONE of the two it is
-          labelled as that one. The row stays "Her eyes" because that is what an
-          edit to it means; the rectangle says "Her right eye" because that is
-          what those pixels are. The stylist's promise above, the pixels below —
-          and neither has to lie for the other.
+          The row stays "Her eyes" because that is what an edit to it means; each
+          rectangle says "Her left eye" / "Her right eye" because that is what
+          those pixels are. The stylist's promise above, the pixels below — and
+          neither has to lie for the other. This is also the fix for the case
+          that could not happen: a pair read on one side only used to show a
+          cutout and NO click target at all.
         */
-        box: leftState.box ?? rightState.box,
-        boxName: leftState.box
-          ? null
-          : rightState.box
-            ? nameOf(right, input.pronouns.possessive, false)
-            : null,
+        regions: measured.map((side) => ({
+          box: side.state.box!,
+          name: nameOf(side.definition, input.pronouns.possessive, false),
+        })),
       });
       continue;
     }
@@ -360,22 +451,37 @@ export function facePanel(input: {
         slots: [side.slot],
         group: side.group,
         name,
-        words: state_.words,
+        /* A diverged host is two rows, and a folded slot's words are read on
+           BOTH of them: they are about both sides and nothing in the stack says
+           which side a lash sentence was about. Said twice beats vanishing. */
+        words: wordsFor(side.feature, state_.words),
         from: state_.from,
         prefill: prefillFor(name),
-        thumb: state_.thumb,
-        box: state_.box,
+        cutouts: state_.thumb ? [state_.thumb] : [],
         /* A diverged pair is already two rows, each about one instance, so the
            rectangle covers exactly what its row names. */
-        boxName: null,
+        regions: state_.box ? [{ box: state_.box, name: null }] : [],
       });
     }
   }
 
+  /**
+   * A ROW APPEARS WHEN IT HAS SOMETHING TO SHOW (fable-382 §1).
+   *
+   * A picture of the feature, or something said about it — his own "no glasses"
+   * row is the second kind and is exactly as real as the first. Provenance is
+   * deliberately NOT content: *"from an edit"* on a row with no picture and no
+   * words tells the person nothing about their own face.
+   *
+   * A group whose rows all fell away disappears with them, which the filter
+   * below already did for the group with no rows at all.
+   */
+  const hasContent = (row: PanelRow): boolean => row.cutouts.length > 0 || row.words.length > 0;
+
   return {
     possessive: input.pronouns.possessive,
     groups: PANEL_GROUPS
-      .map((section) => ({ ...section, rows: rowsOf.get(section.group) ?? [] }))
+      .map((section) => ({ ...section, rows: (rowsOf.get(section.group) ?? []).filter(hasContent) }))
       .filter((section) => section.rows.length > 0),
   };
 }
