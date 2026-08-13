@@ -60,6 +60,7 @@ export type AttemptOutcome =
   | "refused_infra"
   | "delivered_advisory"
   | "refused_honest"
+  | "refused_cannot_say"
   | "delivered_unverified"
   | "delivered_carried"
   | "delivered_compliant"
@@ -165,6 +166,23 @@ export type AttemptRow = {
  * number forever.
  */
 const HONEST_REFUSAL_CLASSES = new Set(["facts_missing"]);
+
+/**
+ * NOT A FAILURE AT ALL — a capability gap, refused before anything was rendered.
+ *
+ * `cannot_say` is the repaint road refusing an ask its recipe has no way to
+ * state (`expression`, today). No provider was contacted, no picture was made,
+ * the whole charge went back. Filing it with the dead transports would say
+ * *our infrastructure broke* about a product that worked exactly as designed;
+ * filing it with `facts_missing` would say *the picture came back wrong* about
+ * a picture that was never taken.
+ *
+ * It gets its own column because it answers its own question: **how often does
+ * a customer ask for something this product cannot yet express?** That number
+ * is a roadmap, and it is the number the smile finding would have made visible
+ * months earlier (fable-442 ruling 2).
+ */
+const CANNOT_SAY_CLASSES = new Set(["cannot_say"]);
 
 /**
  * The variant statuses an attempt can still move away from.
@@ -273,6 +291,7 @@ export function classifyAttemptForClass(row: AttemptRow, edit: string): AttemptO
 function classifyChecks(row: AttemptRow, checks: ReadonlyArray<StoredCheck>): AttemptOutcome {
   if (row.status !== "ready") {
     if (!row.failureClass) return "unclassified";
+    if (CANNOT_SAY_CLASSES.has(row.failureClass)) return "refused_cannot_say";
     return HONEST_REFUSAL_CLASSES.has(row.failureClass) ? "refused_honest" : "refused_infra";
   }
 
@@ -450,6 +469,8 @@ export type ClassTally = {
    */
   delivered_carried: number;
   refused_honest: number;
+  /** Asks this product cannot yet express — refused before any render. */
+  refused_cannot_say: number;
   refused_infra: number;
   unclassified: number;
   /**
@@ -514,6 +535,7 @@ const emptyTally = (edit: string): ClassTally => ({
   delivered_unverified: 0,
   delivered_carried: 0,
   refused_honest: 0,
+  refused_cannot_say: 0,
   refused_infra: 0,
   unclassified: 0,
   deliveryClaims: 0,
@@ -663,7 +685,7 @@ export function formatReport(report: ReliabilityReport): string {
   const header = "class".padEnd(width)
     + "n".padStart(4) + " claim".padStart(7) + "  ok".padStart(6) + " FALSE".padStart(7)
     + "   adv".padStart(7) + " unver".padStart(7) + " carr".padStart(7) + " ref-h".padStart(7)
-    + " ref-i".padStart(7) + "   rate  bar";
+    + " ref-c".padStart(7) + " ref-i".padStart(7) + "   rate  bar";
   lines.push(header);
   lines.push("-".repeat(header.length));
   const row = (tally: ClassTally) =>
@@ -678,6 +700,10 @@ export function formatReport(report: ReliabilityReport): string {
        rate: it is the store working, and it is not the painter delivering. */
     + String(tally.delivered_carried).padStart(7)
     + String(tally.refused_honest).padStart(7)
+    /* ref-c between the honest refusal and the infrastructure one, because that
+       is where it belongs in meaning: nothing broke, and nothing was wrong with
+       a picture — the product could not say the ask. */
+    + String(tally.refused_cannot_say).padStart(7)
     + String(tally.refused_infra).padStart(7)
     /* A rate with no claims behind it is not 0% — it is nothing, and printing
        a number there invites it to be compared with a real one. */

@@ -137,6 +137,25 @@ export type ProviderFailureClass =
    * the money back rather than a second charge-shaped attempt.
    */
   | "removal_not_delivered"
+  /**
+   * WE CANNOT SAY THIS ASK, SO NOTHING WAS RENDERED (fable-442 ruling 2).
+   *
+   * The repaint assembles a recipe declaratively; an ask whose facet has no
+   * slot — `expression` today — cannot be stated in one, and painting a recipe
+   * that never mentions what she asked for is worse than refusing. So the road
+   * refuses BEFORE the provider is contacted, and the whole charge goes back.
+   *
+   * It had been recording itself as `unknown`, which is the one class that
+   * means *we do not know why*. The door whose entire point is that it knows
+   * exactly what went wrong was filing its refusals into the noise bucket —
+   * and D-236's report reads that column, so a named product gap was inflating
+   * the unknown-failure rate and hiding inside it.
+   *
+   * Not a provider failure at all, and it wears this union because the column
+   * is one column. Non-retryable by construction: the recipe will have the same
+   * nothing to say a second later.
+   */
+  | "cannot_say"
   /** Unmapped. Treated as non-retryable so unknowns fail closed. */
   | "unknown";
 

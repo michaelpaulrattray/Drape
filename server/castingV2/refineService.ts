@@ -67,7 +67,7 @@ import {
 import { getBriefForOwnedCandidate, getOwnedCandidateWithSelectedFace } from "../db/castingV2";
 import { readBriefFacts } from "./rollProjection";
 import { createModuleLogger } from "../logging/logger";
-import { ProviderError } from "../providers/types";
+import { ProviderError, type ProviderFailureClass } from "../providers/types";
 import { storagePublicUrl, storagePut, storageReadBytes } from "../storage";
 import { withTransaction } from "../db/connection";
 import { createStorageCleanupManifestIn } from "../db/storageCleanup";
@@ -4263,7 +4263,7 @@ export async function refineCandidate(
         operationId,
         variant: variant.publicId,
         userId: input.userId,
-        failureClass: error instanceof ProviderError ? error.failureClass : "unknown",
+        failureClass: failureClassFor(error),
         cause: error instanceof Error ? error.message : String(error),
         stack: error instanceof Error ? error.stack?.split(/\r?\n/).slice(0, 4).join(" | ") : undefined,
       },
@@ -4279,7 +4279,7 @@ export async function refineCandidate(
     await failVariant({
       userId: input.userId,
       variantId: variant.id,
-      failureClass: error instanceof ProviderError ? error.failureClass : "unknown",
+      failureClass: failureClassFor(error),
     });
     return completeDirectOperationFailure({
       userId: input.userId,
@@ -4397,6 +4397,23 @@ function failedFactsMessage(error: unknown): string | null {
  * and a receipt that calls it "generation failed" invites a support
  * conversation nobody can resolve from the record.
  */
+/**
+ * The class this failure is FILED under — the column D-236's report reads.
+ *
+ * Both the log line and the variant row take it from here, so the diagnosis a
+ * human reads and the class a rate is computed from cannot disagree. They used
+ * to be two copies of the same ternary and they drifted the moment one gained
+ * a case (fable-442 ruling 2).
+ *
+ * `unknown` is reserved for what it says: a failure nobody classified. A door
+ * that knows exactly why it refused does not file itself into that bucket.
+ */
+function failureClassFor(error: unknown): ProviderFailureClass {
+  if (error instanceof ProviderError) return error.failureClass;
+  if (error instanceof RepaintCannotSayError) return "cannot_say";
+  return "unknown";
+}
+
 function refundDescriptionFor(error: unknown): string {
   if (error instanceof ProviderError && error.failureClass === "render_fault") {
     return "Refine refunded — the image came back damaged";

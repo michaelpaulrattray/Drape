@@ -2787,6 +2787,15 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
       },
     ]);
     expect(ledger.charges.at(-1)?.amount).toBe(ledger.refunds.at(-1)?.amount);
+    /*
+      AND THE ROW SAYS THE SAME THING AS THE RECEIPT (fable-442 ruling 2).
+
+      It recorded `unknown` — the class that means *nobody knows why* — on the
+      one door whose entire point is that it knows exactly what went wrong. The
+      founder's smile ask went into that bucket, so a named product gap was
+      inflating the unknown-failure rate D-236's report reads.
+    */
+    expect(failedVariant?.failureClass).toBe("cannot_say");
   });
 
   it("tells her WHY the makeup door refused, in the founder's ruled words", async () => {

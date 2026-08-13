@@ -103,6 +103,37 @@ describe("what became of one paid attempt", () => {
       .toBe("refused_infra");
   });
 
+  it("gives an ask it cannot express its own column, not the infrastructure one", () => {
+    /*
+      The founder's smile ask (opus-346): filed, refused at the repaint door
+      because `expression` has no slot, refunded whole — and recorded as
+      `unknown`, which put a named product gap into the bucket that means
+      "nobody knows why". `cannot_say` is not a failure of anything; it is the
+      count of asks this product cannot yet say, which is a roadmap.
+    */
+    expect(classifyAttempt(attempt({ status: "failed", failureClass: "cannot_say" })))
+      .toBe("refused_cannot_say");
+    /* And it is NOT swept into either neighbour — nothing broke, and no
+       picture came back wrong, because no picture was ever taken. */
+    expect(classifyAttempt(attempt({ status: "failed", failureClass: "cannot_say" })))
+      .not.toBe("refused_infra");
+    expect(classifyAttempt(attempt({ status: "failed", failureClass: "cannot_say" })))
+      .not.toBe("refused_honest");
+  });
+
+  it("keeps a cannot-say refusal out of the delivery rate entirely", () => {
+    /* A refusal claims no delivery. If this ever entered the denominator, a
+       product gap would depress the rate the founder certifies — the same
+       inversion the honest-refusal split was made for. */
+    const report = summarize([
+      attempt({ status: "failed", failureClass: "cannot_say" }),
+      attempt({ verification: { checks: [check({ facet: "eye.colour", verified: true })] } }),
+    ]);
+    expect(report.overall.refused_cannot_say).toBe(1);
+    expect(report.overall.deliveryClaims).toBe(1);
+    expect(report.overall.deliveryRate).toBe(100);
+  });
+
   it("says unclassified rather than guessing", () => {
     expect(classifyAttempt(attempt({ status: "failed", failureClass: null })))
       .toBe("unclassified");
