@@ -3825,6 +3825,30 @@ export async function refineCandidate(
            lists are complements by construction rather than by two filters
            happening to agree. */
         const disputed = Array.from(missedFacets);
+        /*
+          THE DIGESTS THIS BRANCH ALREADY HOLDS, so a byte-identical crop is
+          caught whether it arrived this render or three renders ago. `marks`
+          and `makeup` at `face skin` produced exactly that in production,
+          three separate times — the walk, not the fold's entries, because a
+          RETIRED row's bytes are still bytes at a key and a new row pointing
+          at the same picture is still two rows holding one fact.
+
+          The anchor is this variant: its own rows do not exist yet, so the
+          walk climbs its parents and returns the library as it stood when
+          this render started.
+
+          Taken BEFORE the slot list rather than inside it, because the list
+          now needs it: a slot re-cut every render is filed on the strength of
+          what the library already keeps for it, and that answer lives here.
+        */
+        const live = liveReferences(await listLineageReferences({
+          userId: input.userId,
+          candidateId: variant.candidateId,
+          anchorVariantId: variant.id,
+        }));
+        const known = new Map<string, string>();
+        for (const row of live) if (row.digest) known.set(row.slot, row.digest);
+
         const { slots, unfiled } = mintedSlotsForRender({
           earned,
           disputed,
@@ -3832,6 +3856,18 @@ export async function refineCandidate(
           /* What the instruction said the worn object IS — derived once above,
              beside the region override that has to name the same object. */
           accessoryKind: accessoryRegion,
+          /*
+            WHAT THE LIBRARY ALREADY KEEPS FOR HER, which is the only honest
+            answer to *has she paid for a build?*
+
+            A build produces no caption — measured on the live pipeline, dev
+            #365: the render verifier passed the narrowing, `buildSpan` read it
+            at −10.8%, and the caption reader looked at the same frame and said
+            *"no visible slimming edit"* for both facets. So "does this slot
+            have words" is a gate that can never open for `build`, and it was
+            the gate the whole feature stood behind.
+          */
+          held: new Set(live.map((row) => row.slot)),
         });
         if (unfiled.length > 0) {
           log.info(
@@ -3846,27 +3882,6 @@ export async function refineCandidate(
           );
         }
         if (slots.length > 0) {
-          /*
-            THE DIGESTS THIS BRANCH ALREADY HOLDS, so a byte-identical crop is
-            caught whether it arrived this render or three renders ago. `marks`
-            and `makeup` at `face skin` produced exactly that in production,
-            three separate times — the walk, not the fold's entries, because a
-            RETIRED row's bytes are still bytes at a key and a new row pointing
-            at the same picture is still two rows holding one fact.
-
-            The anchor is this variant: its own rows do not exist yet, so the
-            walk climbs its parents and returns the library as it stood when
-            this render started.
-          */
-          const known = new Map<string, string>();
-          for (const row of liveReferences(await listLineageReferences({
-            userId: input.userId,
-            candidateId: variant.candidateId,
-            anchorVariantId: variant.id,
-          }))) {
-            if (row.digest) known.set(row.slot, row.digest);
-          }
-
           const reader = dependencies.regions ?? defaultRegionReader();
           /*
             THE GUARD'S OWN READ, and `absentIsAnswer` is true on purpose.

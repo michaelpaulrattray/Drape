@@ -97,6 +97,23 @@ export type MintedSlotsInput = {
    * an ask was about ears or eyes.
    */
   accessoryKind?: string | null;
+  /**
+   * THE SLOTS THE LIBRARY ALREADY KEEPS SOMETHING FOR, on this branch.
+   *
+   * Only a slot re-cut every render consults it, and for that slot it is the
+   * only honest answer to *has she paid for this?* — because the obvious proxy
+   * is broken. **A body edit produces no caption at all**, measured on the live
+   * pipeline (dev #365, shift 77): the render verifier passed the narrowing,
+   * `buildSpan` read it at −10.8%, and the caption reader looked at the same
+   * delivered frame and refused to write a sentence — *"no visible slimming
+   * edit"* — for both facets the ask wrote. So "this slot has words" is a gate
+   * that can never open for `build`, and it was the gate the whole feature
+   * stood behind.
+   *
+   * Absent, a re-mint slot is filed only on the render that earns it, which is
+   * every caller that has no library to consult.
+   */
+  held?: ReadonlySet<string>;
 };
 
 export type MintedSlotsResult = {
@@ -203,11 +220,26 @@ export function mintedSlotsForRender(input: MintedSlotsInput): MintedSlotsResult
       for (const definition of definitions) {
         if (seen.has(definition.slot)) continue;
         const words = stackOf(definition);
-        if (words === null) {
+        /*
+          A SLOT WHOSE CARRIER IS ITS CROP IS NOT GATED ON ITS WORDS.
+
+          For anatomy generally, D-244 makes the words the carrier of record and
+          the crop the assist, so a wordless row would be a version bump
+          asserting a feature exists. `build` is the measured exception in both
+          halves: words-only retained 0% of a delivered build across three faces
+          and the crop retained 92–109%, and the caption reader will not write a
+          sentence about a body edit at all. Gating the crop on the words is
+          gating the carrier on the assist, and it kept the whole feature dark.
+
+          The row is not wordless either, as it happens: the mint reads a slot's
+          words off its own CUT, which for `build` is a photograph of her torso
+          rather than the whole frame the caption reader was defeated by.
+        */
+        if (words === null && definition.remint !== "everyRender") {
           unfiled.push({ facet, reason: "noWords" });
           continue;
         }
-        file(definition, words, disputed);
+        file(definition, words ?? [], disputed);
       }
     }
   };
@@ -239,16 +271,23 @@ export function mintedSlotsForRender(input: MintedSlotsInput): MintedSlotsResult
     a disputed build must stay disputed. This pass only reaches a slot no facet
     of this render mentioned.
 
-    A slot with no stack is skipped in SILENCE rather than reported unfiled: this
-    is not a facet that earned something and had nowhere to go, it is a feature
-    nobody has ever asked about — and the pristine master every render anchors on
-    already carries it. There is nothing to preserve and nothing to report.
+    AND THE DISCRIMINATOR IS THE LIBRARY, never the words.
+
+    A face nobody has body-edited is skipped in SILENCE, and rightly: the
+    pristine master every render anchors on already carries her build, so there
+    is nothing to preserve and nothing to report. But *"has anything been said
+    about her build"* is the wrong way to ask that, because nothing ever is —
+    the measurement is at {@link MintedSlotsInput.held}. So the question put
+    here is *"does the library already keep something for this slot"*, which is
+    true from the moment a render earns it and false before it.
+
+    Skipped in silence rather than reported unfiled either way: this is not a
+    facet that earned something and had nowhere to go.
   */
   for (const definition of slotsRemintedEveryRender()) {
     if (seen.has(definition.slot)) continue;
-    const words = stackOf(definition);
-    if (words === null) continue;
-    file(definition, words, false);
+    if (!input.held?.has(definition.slot)) continue;
+    file(definition, stackOf(definition) ?? [], false);
   }
 
   return { slots, unfiled };

@@ -2694,6 +2694,46 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
     expect(mintAsks[0]!.readGround).toBeUndefined();
   });
 
+  it("tells the mint to re-cut her BUILD on a render that earned nothing of it", async () => {
+    /*
+      THE GATE THIS FEATURE STOOD DARK BEHIND, asserted at the wire.
+
+      Driven live on dev #365 (shift 77): a body edit's two facets earned their
+      delivery, `buildSpan` read the narrowing at −10.8%, and the caption reader
+      looked at the same delivered frame and refused to write a sentence — *"no
+      visible slimming edit"*. With no caption the slot filed nothing, so the
+      composer never ran, so her build was never kept, and the next edit
+      returned her to the master: 4.0% retained, dead centre of the bench's
+      words-only column.
+
+      The discriminator is now the LIBRARY, and only this assertion proves this
+      caller passes it. A version that computed `held` and forgot to hand it
+      over would leave every unit test green and the feature exactly as dark as
+      it was.
+    */
+    lineageReferences = [carryRow({ slot: "build", tier: "anatomy", noun: "build", words: [] })];
+    captionsRead = { hairWorn: "worn long and loose" };
+    await refineCandidate({ ...hairDown, ...mintingLibrary, harvest: compositing },
+      { ...input, instruction: "wear her hair down" });
+
+    expect(mintAsks).toHaveLength(1);
+    expect(mintAsks[0]!.slots.map((slot) => slot.slot)).toContain("build");
+  });
+
+  it("CONTROL — a face whose library keeps no build is not asked to cut one", async () => {
+    /* The cost is two reads per delivered render, and it is spent only where
+       there is something to preserve. A face nobody has body-edited is carried
+       by the pristine master every render anchors on. */
+    lineageReferences = [];
+    captionsRead = { hairWorn: "worn long and loose" };
+    await refineCandidate({ ...hairDown, ...mintingLibrary, harvest: compositing },
+      { ...input, instruction: "wear her hair down" });
+
+    expect(mintAsks).toHaveLength(1);
+    expect(mintAsks[0]!.slots.map((slot) => slot.slot)).not.toContain("build");
+  });
+
+
 
   it("refuses an ask it cannot say declaratively, and gives the money back", async () => {
     /* Makeup has no library slot by ruling (fable-168/201). Painting anyway

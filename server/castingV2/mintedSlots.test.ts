@@ -248,45 +248,83 @@ describe("the slots a render DISPUTES", () => {
  * `build`'s crop is a photograph of her torso IN WHATEVER SHE IS WEARING, so a
  * crop kept across somebody else's clothing edit is a picture of last week's top
  * labelled "the exact build she has, unchanged" (fable-424 §4). The rule is data
- * on the catalogue and derived here; these cases are the door it comes through.
+ * on the catalogue and derived here.
+ *
+ * Two of these cases are the LIVE defect (dev #365, shift 77), where the whole
+ * feature stood dark behind a gate nobody had driven: a body edit produces no
+ * caption at all — the render verifier passed the narrowing, `buildSpan` read it
+ * at −10.8%, and the caption reader said *"no visible slimming edit"* — so
+ * "does this slot have words" could never open for `build`.
  */
 describe("the slots re-cut every render", () => {
-  it("files her build on a render that earned nothing of it", () => {
+  it("files her build on the render that EARNS it, with no caption at all", () => {
+    /* The gate that kept it dark. Both facets earned their delivery and neither
+       produced a sentence; under the words rule the slot filed nothing, so the
+       composer never ran and her build was never kept. */
+    const { slots, unfiled } = mintedSlotsForRender({
+      earned: ["shoulders", "arms"],
+      captions: {},
+    });
+
+    expect(slots.map((slot) => slot.slot)).toEqual(["build"]);
+    expect(slots[0]!.words).toEqual([]);
+    /* And it is NOT reported unfiled: nothing went unhomed. */
+    expect(unfiled).toEqual([]);
+  });
+
+  it("still refuses a wordless row for a slot whose CARRIER is its words", () => {
+    /* The exception is `build`'s alone and it is measured. For anatomy generally
+       D-244 makes the words the carrier of record, and a wordless row would be a
+       version bump asserting a feature exists. */
+    const { slots, unfiled } = mintedSlotsForRender({ earned: ["lips"], captions: {} });
+
+    expect(slots).toEqual([]);
+    expect(unfiled).toEqual([{ facet: "lips", reason: "noWords" }]);
+  });
+
+  it("re-files her build on a render that earned nothing of it", () => {
     const { slots, unfiled } = mintedSlotsForRender({
       earned: ["eye.colour"],
-      captions: {
-        "eye.colour": "Green",
-        build: "Noticeably narrower shoulders and slimmer upper arms",
-      },
+      captions: { "eye.colour": "Green" },
+      held: new Set(["build", "hair"]),
     });
 
     expect(slots.map((slot) => slot.slot)).toEqual(["eye@left", "eye@right", "build"]);
     expect(unfiled).toEqual([]);
-    /* Her whole build stack, not the facet the render happened to touch. */
-    expect(slots[2]!.words).toEqual(["Noticeably narrower shoulders and slimmer upper arms"]);
     expect(slots[2]!.disputed).toBeUndefined();
   });
 
-  it("files NOTHING before anything has ever been said about her build", () => {
+  it("files NOTHING before the library keeps anything for her build", () => {
     /*
-      And in silence, not as `unfiled`. This is not a facet that earned
-      something and had nowhere to go — it is a feature nobody has asked about,
-      and the pristine master every render anchors on already carries it. There
-      is nothing to preserve and nothing to report.
+      In silence, not as `unfiled`. A face nobody has body-edited has nothing to
+      preserve: the pristine master every render anchors on already carries her
+      build. The discriminator is the LIBRARY rather than the words, because
+      nothing is ever said about a build for the words to answer with.
     */
     const { slots, unfiled } = mintedSlotsForRender({
       earned: ["eye.colour"],
-      captions: { "eye.colour": "Green" },
+      captions: { "eye.colour": "Green", build: "A more athletic build" },
     });
 
     expect(slots.map((slot) => slot.slot)).toEqual(["eye@left", "eye@right"]);
     expect(unfiled).toEqual([]);
   });
 
+  it("carries her whole build stack when there IS one", () => {
+    const { slots } = mintedSlotsForRender({
+      earned: ["eye.colour"],
+      captions: { "eye.colour": "Green", build: "Noticeably narrower shoulders" },
+      held: new Set(["build"]),
+    });
+
+    expect(slots[2]!.words).toEqual(["Noticeably narrower shoulders"]);
+  });
+
   it("does not file her build TWICE on the render that earned it", () => {
     const { slots } = mintedSlotsForRender({
       earned: ["shoulders"],
       captions: { build: "A more athletic build", shoulders: "Broader shoulders" },
+      held: new Set(["build"]),
     });
 
     expect(slots.map((slot) => slot.slot)).toEqual(["build"]);
@@ -303,6 +341,7 @@ describe("the slots re-cut every render", () => {
       earned: [],
       disputed: ["shoulders"],
       captions: { shoulders: "Broader shoulders" },
+      held: new Set(["build"]),
     });
 
     expect(slots.map((slot) => [slot.slot, slot.disputed ?? false])).toEqual([["build", true]]);
