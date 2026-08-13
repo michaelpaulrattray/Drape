@@ -87,6 +87,72 @@ shipped behaviour, so failing costs nothing but the bench.
   ("warm olive, freckled"). This bench is about the picture only; if it fails,
   the words lose nothing, which is why failing is cheap.
 
+---
+
+# THE RESULT — run 2026-08-13, shift 70
+
+**Bar 1 PASSES. Bar 2 FAILS 3 of 6. So skin stays words**, which is the shipped
+behaviour, and per §4 that is a result rather than a disappointment.
+
+```
+face          A vs B    A vs C    A vs A'   C beats A'?
+43ac4560       27.22     66.85     34.81    YES
+7cf4f801       12.38     14.01     31.87    no
+83e10422       10.05     17.62     23.35    no
+4c98c7fc       13.00     17.67     31.83    no
+d508cd29       11.27     39.41     20.27    YES
+2f43a3fc       12.82     93.48     35.47    YES
+
+1. A vs B >= 6.0 on every face      6/6   PASS
+2. A vs C > A vs A'                 3/6   FAIL   (bar: at least 5 of 6)
+3. the founder's own look                 OWED — output/skin-bench/
+```
+
+**What it means, in one line: at 34px a skin patch carries TONE strongly and
+IDENTITY weakly.** When two casts have different complexions arm C wins hugely
+(66.9, 39.4, 93.5); when their tones are close it loses to the within-person
+control (14.0, 17.6, 17.7), because two places on one face differ more than two
+faces of one tone. A tile that is mostly a tone swatch is a picture of something
+the row's words already say — *"warm olive, freckled"* — so it earns its square
+only for the founder's eye, which is bar 3, and bar 3 does not run alone.
+
+**The FAIL is trustworthy in both directions:** both branches fired (3 YES, 3
+no), so this is not a comparison that can only return one answer.
+
+## Three corrections the run made to this design
+
+1. **The patch is NOT free.** §2 said it *"costs no extra segmenter call"*
+   because `face` is already read for the midline. It is not: the `skin` slot
+   carries `question: { from: "none" }` (`referenceSlotCatalogue.ts:316`), so
+   `scanPlan()` drops it and **no face mask is ever surfaced on `FaceScan`**.
+   Run 1 proved it the loud way — 8 faces, 8 × "NO FACE MASK", every scan
+   reporting 9 slots found. The patch needs one extra `face skin` read per face.
+   If the row ever ships, that call is part of its price.
+2. **The patch must stand BACK from every feature, and §2's rule did not.** The
+   largest square of *face minus every other region* sat flush against eyes on
+   several faces and carried eyelashes and orbital shadow into the tile — because
+   SAM's masks are tight to the feature, so the shadow around it belongs to no
+   region and survives as "skin". It contaminated the **within-person control**
+   specifically, which is the arm bar 2 is measured against. Fixed with a 12px
+   erosion; run 1's bar-2 number is void and run 1 is kept at
+   `output/skin-bench-run1/` as the record of why.
+3. **A population chosen by recency cannot answer a question about range.** §4
+   asked for *"at least six faces spanning the tone range"*; run 1 took the six
+   most recent dev faces and got six versions of one complexion, which makes arm
+   C unanswerable rather than negative. Run 2 surveys all 18 ready dev faces with
+   one cheap call each, takes each one's mean skin luma, and picks six **evenly
+   across** the sorted range — 130.1 … 170.8, spread 40.7 against a pre-set
+   adequacy bar of 20. The bench now refuses to report a bar-2 verdict at all if
+   the pool is too narrow.
+
+**One honest limit that remains.** The patch lands on the largest feature-free
+skin area, which is *not always a cheek or forehead* as §2 claimed — `chin`,
+`jaw` and `cheekbones` return NO READ from the segmenter, so they are never
+subtracted, and two of the six patches landed on a chin. They are still skin and
+the measurement stands; the claim about *where* it lands does not.
+
+---
+
 ## 6. Cost
 
 Zero segmenter calls beyond a scan that already happened, per face. Six faces ×
