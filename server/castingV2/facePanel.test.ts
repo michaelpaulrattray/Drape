@@ -287,3 +287,59 @@ describe("what a scan adds to a row", () => {
     expect(withoutScan.every((panelRow) => panelRow.box === null && panelRow.thumb === null)).toBe(true);
   });
 });
+
+/**
+ * THE RECTANGLE NAMES WHAT IT COVERS (fable-378 ruling (c)).
+ *
+ * A matched pair is one row about two slots, and until now its box came from
+ * the left instance alone — so a pair read on one side only showed a cutout
+ * with no click target at all: a feature you can see in the list and cannot
+ * touch on the picture. The fix is not to relabel the row. It is to let the row
+ * keep the person's own ontology while the rectangle keeps the pixels' one.
+ */
+describe("a pair whose geometry is one instance", () => {
+  const frame = { width: 1000, height: 1500 };
+  const scanned = (slots: Record<string, { x: number; y: number; width: number; height: number }>) => facePanel({
+    rows: [],
+    pronouns: SHE,
+    contentUrl: (key) => `https://bucket.example/${key}`,
+    maskUrl: (key) => key,
+    scan: {
+      frameUrl: "https://bucket.example/casting/master.jpg",
+      slots: new Map(Object.entries(slots).map(([slot, box]) => [slot, {
+        box: { ...box, frame },
+        maskUrl: `data:image/png;base64,${slot}`,
+      }])),
+    },
+  }).groups.flatMap((group) => group.rows);
+
+  it("draws the box it has, and says which eye it is", () => {
+    const eyes = scanned({ "eye@right": { x: 640, y: 500, width: 60, height: 30 } })
+      .find((row) => row.name === "Her eyes")!;
+
+    /* The row is unchanged: both slots, one ask, the pair's own name. */
+    expect(eyes.slots).toEqual(["eye@left", "eye@right"]);
+    expect(eyes.name).toBe("Her eyes");
+    /* The rectangle exists — the defect was that it did not. */
+    expect(eyes.box).toEqual({ x: 640, y: 500, width: 60, height: 30, frame });
+    /* And it does not claim to be the pair. */
+    expect(eyes.boxName).toBe("Her right eye");
+  });
+
+  it("says nothing extra when the box covers what the row names", () => {
+    const eyes = scanned({
+      "eye@left": { x: 300, y: 500, width: 60, height: 30 },
+      "eye@right": { x: 640, y: 500, width: 60, height: 30 },
+    }).find((row) => row.name === "Her eyes")!;
+    /* Null is not an omission: it means the row's own name is the label. */
+    expect(eyes.boxName).toBeNull();
+    expect(eyes.box!.x).toBe(300);
+  });
+
+  it("leaves a row with no geometry at all unlabelled and unclickable", () => {
+    const eyes = scanned({ nose: { x: 400, y: 600, width: 120, height: 160 } })
+      .find((row) => row.name === "Her eyes")!;
+    expect(eyes.box).toBeNull();
+    expect(eyes.boxName).toBeNull();
+  });
+});

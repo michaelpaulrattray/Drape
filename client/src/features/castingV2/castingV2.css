@@ -684,6 +684,30 @@
   text-decoration: none;
 }
 
+/*
+  THE PICTURE'S OWN COLUMN — the one line everything under the photograph hangs
+  off (fable-377).
+
+  The ask box used to be a sibling of the whole stage, so it centred on the
+  viewer while the picture centred on the stage's middle column: the picture at
+  606, the input at 685, the notes at 720. Three centrelines, on the one surface
+  whose whole job is to be about the photograph.
+
+  It takes the frame's own ceiling rather than a second one, so the two cannot
+  disagree about how wide the picture's column is — and `min-height: 0` because
+  shift 27's scar is exactly this: a column that would not shrink took the
+  photograph's height and rendered it at 0×0 while every source assertion passed.
+*/
+.dpc-viewer__column {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  min-height: 0;
+  max-height: 100%;
+  max-width: min(100%, 760px);
+}
+
 .dpc-viewer__frame {
   margin: 0;
   display: flex;

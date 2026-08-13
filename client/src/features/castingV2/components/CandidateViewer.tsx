@@ -315,49 +315,68 @@ export function CandidateViewer({
       */}
       <div className="dpc-viewer__stage" data-beside={beside ? "true" : "false"}>
         {before ? <aside className="dpc-viewer__rail">{before}</aside> : null}
-        <figure className="dpc-viewer__frame" data-wait={wait ? "true" : "false"}>
-          {/*
-            The picture and everything laid over it share one box, so the dots and
-            the type land on the IMAGE rather than on the letterboxing beside it.
-            An overlay measured against the figure would drift the moment a
-            portrait and a landscape frame sat in the same viewer.
-          */}
-          <span className="dpc-viewer__plate">
-            <img src={frame.url} alt={frame.personaLine ?? frame.label} />
-            {/* The face's own regions, in the same box as the picture. */}
-            {overlay}
-            {wait ? (
-              <>
-                <span className="dpc-viewer__dots" aria-hidden="true" />
-                <span className="dpc-viewer__falloff" aria-hidden="true" />
-                <span className="dpc-viewer__wait" role="status">
-                  <span className="dpc-viewer__waitSaid">{wait.instruction}</span>
-                  <span className="dpc-viewer__waitMeta">
-                    <span>{STAGE_WORDS[wait.stage]}</span>
-                    <span className="dpc-viewer__waitTypical">{TYPICAL_WAIT}</span>
-                    {wait.extra ? (
-                      <span className="dpc-viewer__waitTypical">
-                        {`and ${wait.extra} more running`}
-                      </span>
-                    ) : null}
+        <div className="dpc-viewer__column">
+          <figure className="dpc-viewer__frame" data-wait={wait ? "true" : "false"}>
+            {/*
+              The picture and everything laid over it share one box, so the dots and
+              the type land on the IMAGE rather than on the letterboxing beside it.
+              An overlay measured against the figure would drift the moment a
+              portrait and a landscape frame sat in the same viewer.
+            */}
+            <span className="dpc-viewer__plate">
+              <img src={frame.url} alt={frame.personaLine ?? frame.label} />
+              {/* The face's own regions, in the same box as the picture. */}
+              {overlay}
+              {wait ? (
+                <>
+                  <span className="dpc-viewer__dots" aria-hidden="true" />
+                  <span className="dpc-viewer__falloff" aria-hidden="true" />
+                  <span className="dpc-viewer__wait" role="status">
+                    <span className="dpc-viewer__waitSaid">{wait.instruction}</span>
+                    <span className="dpc-viewer__waitMeta">
+                      <span>{STAGE_WORDS[wait.stage]}</span>
+                      <span className="dpc-viewer__waitTypical">{TYPICAL_WAIT}</span>
+                      {wait.extra ? (
+                        <span className="dpc-viewer__waitTypical">
+                          {`and ${wait.extra} more running`}
+                        </span>
+                      ) : null}
+                    </span>
                   </span>
+                </>
+              ) : null}
+            </span>
+            <figcaption className="dpc-viewer__caption">
+              <span className="dp-chrome">{frame.label}</span>
+              {frame.personaLine ? <span>{frame.personaLine}</span> : null}
+              {canStep ? (
+                <span className="dp-chrome dpc-viewer__count">
+                  {index + 1} / {frames.length}
                 </span>
-              </>
-            ) : null}
-          </span>
-          <figcaption className="dpc-viewer__caption">
-            <span className="dp-chrome">{frame.label}</span>
-            {frame.personaLine ? <span>{frame.personaLine}</span> : null}
-            {canStep ? (
-              <span className="dp-chrome dpc-viewer__count">
-                {index + 1} / {frames.length}
-              </span>
-            ) : null}
-          </figcaption>
-        </figure>
+              ) : null}
+            </figcaption>
+          </figure>
+          {/*
+            THE FURNITURE STANDS UNDER THE PICTURE, NOT UNDER THE VIEWER
+            (fable-377, on the founder's screenshot).
+
+            `below` used to be a sibling of the whole stage, so it centred on the
+            viewer while the picture centred on the stage's middle column — and
+            those are not the same line, because the rail on the left and the
+            dock on the right are different widths. Measured before the change:
+            the picture at 606, the input at 685, the row and its notes at 720.
+            **Three centrelines on one surface**, and his eye found it in a
+            screenshot.
+
+            One authority now: the image's own column. The ask box, the credits
+            line and the undo line hang off the picture they are about, which is
+            the founder's design language — the image is the subject and the
+            furniture aligns to it.
+          */}
+          {below}
+        </div>
         {beside ? <aside className="dpc-viewer__dock">{beside}</aside> : null}
       </div>
-      {below}
     </div>,
     document.body,
   );

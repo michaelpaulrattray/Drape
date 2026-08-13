@@ -127,14 +127,22 @@ export function FaceRegions({
             style={style}
             data-active={active ? "true" : "false"}
             data-lit={lit ? "true" : "false"}
-            aria-label={`${row.name}. Edit it here.`}
+            /*
+              THE RECTANGLE NAMES WHAT IT COVERS (fable-378 (c)). On almost
+              every box that is the row's own name. On a matched pair whose
+              geometry is one instance — one eye read, one behind hair — the row
+              still reads "Her eyes" and this says "Her right eye", because
+              clicking a rectangle is a promise about those pixels. The edit is
+              still the row's: both slots, one ask.
+            */
+            aria-label={`${row.boxName ?? row.name}. Edit it here.`}
             onMouseEnter={() => selection.hover(row.slots)}
             onMouseLeave={() => selection.hover(null)}
             onFocus={() => selection.hover(row.slots)}
             onBlur={() => selection.hover(null)}
             onClick={() => selection.select({ slots: row.slots, name: row.name, prefill: row.prefill })}
           >
-            <span className="dpc-regions__tag">{row.name}</span>
+            <span className="dpc-regions__tag">{row.boxName ?? row.name}</span>
           </button>
         );
       })}

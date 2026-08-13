@@ -285,6 +285,36 @@ for (const theme of THEMES) {
         : `${outside.length} outside: ${outside.map((b: any) => b.tag).join(", ")}`,
     );
 
+    /*
+      ---- ONE CENTRELINE UNDER THE PICTURE (fable-377) ----
+
+      His screenshot, measured: the picture at 606, the ask box at 685, its
+      helper lines at 720. Three centrelines on the one surface whose whole job
+      is to be about the photograph — and the ask box was a sibling of the
+      entire stage, so it centred on the viewer while the picture centred on the
+      stage's middle column.
+
+      Mechanised rather than remembered, because this is exactly the rule a
+      later hand breaks by moving one node up a level.
+    */
+    const centres = await page.evaluate(`(() => {
+      const mid = (node) => { if (!node) return null; const r = node.getBoundingClientRect(); return Math.round(r.x + r.width / 2); };
+      return {
+        plate: mid(document.querySelector(".dpc-viewer__plate")),
+        ask: mid(document.querySelector(".dpc-refine__ask")),
+        notes: Array.from(document.querySelectorAll(".dpc-refine__note")).map(mid),
+      };
+    })()`) as any;
+    const off = [centres.ask, ...centres.notes]
+      .filter((value: number | null) => value !== null)
+      .filter((value: number) => Math.abs(value - centres.plate) > 2);
+    check(
+      centres.plate !== null && centres.ask !== null && off.length === 0,
+      `${theme}: the ask box and its lines hang off the PICTURE's centreline`,
+      `picture ${centres.plate}, ask ${centres.ask}, notes ${centres.notes.join(" / ")}`
+        + (off.length ? ` — ${off.length} off by more than 2px` : ""),
+    );
+
     await shot(page, ".dpc-face", `panel-after-${theme}.png`);
     await shot(page, ".dpc-viewer__plate", `picture-${theme}.png`);
     await page.screenshot({ path: path.join(OUT, `sheet-${theme}.png`) as `${string}.png` });

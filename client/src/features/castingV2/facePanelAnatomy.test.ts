@@ -127,7 +127,10 @@ describe("the panel stands beside the picture, never on top of its height", () =
   it("puts the stage on a row, so the panel's length is never the picture's", async () => {
     const [viewer, css] = await Promise.all([readFile(VIEWER, "utf8"), readFile(CSS, "utf8")]);
     const stage = viewer.slice(viewer.indexOf('className="dpc-viewer__stage"'));
-    expect(stage.slice(0, stage.indexOf("</div>"))).toContain("{beside}");
+    /* To the stage's OWN close, found by its indentation — the picture's column
+       inside it closes first now, and slicing to the first `</div>` would end
+       the search before the dock it is looking for. */
+    expect(stage.slice(0, stage.indexOf("\n      </div>"))).toContain("{beside}");
     const rule = css.slice(css.indexOf(".dpc-viewer__stage {"));
     expect(rule.slice(0, rule.indexOf("}"))).toContain("flex-direction: row");
   });
@@ -348,5 +351,53 @@ describe("a scanned row and a minted row are the same object", () => {
     /* Fired only where the capability exists, so a user outside the scope pays
        no round trip at all. */
     expect(sheet).toContain("Boolean(face.data?.scanning)");
+  });
+});
+
+describe("the rectangle names what it covers (fable-378 (c))", () => {
+  it("labels a box by its own name where that is narrower than the row's", async () => {
+    const regions = withoutProse(await readFile(REGIONS, "utf8"));
+    /* Both the visible tag and the accessible label, because a screen reader
+       hearing "Her eyes" over one eye is told the same untruth the tag would
+       show. */
+    expect(regions).toContain("{row.boxName ?? row.name}");
+    expect(regions).toContain("`${row.boxName ?? row.name}. Edit it here.`");
+    /* But the EDIT is still the row's — both slots, one ask. A pair read on one
+       side must not quietly become an edit to one side. */
+    expect(regions).toContain("selection.select({ slots: row.slots, name: row.name, prefill: row.prefill })");
+  });
+});
+
+/**
+ * ONE ALIGNMENT AUTHORITY UNDER THE PICTURE (fable-377, on his screenshot).
+ *
+ * The image is the subject and the furniture aligns to it. `below` was a
+ * sibling of the whole stage, so it centred on the viewer while the picture
+ * centred on the stage's middle column — measured at 606 / 685 / 720, three
+ * centrelines on one surface. The half that can actually fail is the browser
+ * drive (`scripts/drive-face-scan-evidence.mts`), which compares the rendered
+ * midpoints; this is the structural half.
+ */
+describe("the ask box hangs off the picture, not off the viewer", () => {
+  it("puts `below` inside the picture's own column, not beside the stage", async () => {
+    const viewer = await readFile(VIEWER, "utf8");
+    const column = viewer.slice(viewer.indexOf('className="dpc-viewer__column"'));
+    const untilClose = column.slice(0, column.indexOf('className="dpc-viewer__dock"'));
+    expect(untilClose).toContain("<figure");
+    expect(untilClose).toContain("{below}");
+    /* And nothing hangs off the stage itself any more — a second child there is
+       a second centreline. */
+    const stage = viewer.slice(viewer.indexOf('className="dpc-viewer__stage"'));
+    expect(stage.slice(stage.indexOf("</div>"), stage.indexOf("</div>") + 40)).not.toContain("{below}");
+  });
+
+  it("gives that column the frame's own ceiling rather than a second one", async () => {
+    const css = await readFile(CSS, "utf8");
+    const column = css.slice(css.indexOf(".dpc-viewer__column {"));
+    const body = column.slice(0, column.indexOf("}"));
+    expect(body).toContain("max-width: min(100%, 760px)");
+    /* Shift 27's scar: a column that will not shrink takes the photograph's
+       height and renders it at 0×0 while every source assertion passes. */
+    expect(body).toContain("min-height: 0");
   });
 });

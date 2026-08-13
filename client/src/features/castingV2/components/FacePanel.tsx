@@ -65,6 +65,15 @@ export type FacePanelRow = {
    */
   thumb: { contentUrl: string; maskUrl: string; crop: FacePanelBox | null } | null;
   box: FacePanelBox | null;
+  /**
+   * What the RECTANGLE covers, when that is narrower than the row — null on
+   * almost every row, and null means the row's own name is the label.
+   *
+   * A matched pair with geometry for one instance is the case: the row says
+   * "Her eyes" because an edit to it means both, and the box says "Her right
+   * eye" because that is what those pixels are (fable-378 (c)).
+   */
+  boxName: string | null;
 };
 
 /**

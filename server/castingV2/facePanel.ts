@@ -112,6 +112,20 @@ export type PanelRow = {
   thumb: { contentUrl: string; maskUrl: string; crop: PanelBox | null } | null;
   /** Where it is on the picture — null when this face has never been read there. */
   box: PanelBox | null;
+  /**
+   * WHAT THE RECTANGLE ITSELF COVERS, when that is narrower than the row.
+   *
+   * Null on almost every row, and null is not an omission — it means the box
+   * covers what the row says it does, so the row's own name is the label.
+   *
+   * It is not null when a matched pair has geometry for ONE instance. The row
+   * still speaks the person's ontology — *"Her eyes"*, one row, an edit to it
+   * means both — but the rectangle on the photograph is a fact about pixels,
+   * and those pixels are one eye. Labelling them "Her eyes" would promise that
+   * clicking there edits the pair *there*, which is the wrong-boundary class
+   * with a rectangle on it (fable-378 ruling (c)).
+   */
+  boxName: string | null;
 };
 
 export type FacePanel = {
@@ -271,6 +285,8 @@ export function facePanel(input: {
         prefill: prefillFor(name),
         thumb: state.thumb,
         box: state.box,
+        /* The row is one thing and the box covers it. */
+        boxName: null,
       });
       continue;
     }
@@ -313,7 +329,26 @@ export function facePanel(input: {
           its pixels.
         */
         thumb: leftState.thumb ?? rightState.thumb,
-        box: leftState.box,
+        /*
+          AND THE BOX FALLS BACK THE SAME WAY, BUT SAYS SO (fable-378 (c)).
+
+          A pair with geometry for one instance used to show a cutout and no
+          click target at all — the thumbnail fell back and the box did not. The
+          founder's own reading was the one that could not happen: an eye you can
+          see in the list and cannot click on the picture.
+
+          So the rectangle is drawn, and where it covers ONE of the two it is
+          labelled as that one. The row stays "Her eyes" because that is what an
+          edit to it means; the rectangle says "Her right eye" because that is
+          what those pixels are. The stylist's promise above, the pixels below —
+          and neither has to lie for the other.
+        */
+        box: leftState.box ?? rightState.box,
+        boxName: leftState.box
+          ? null
+          : rightState.box
+            ? nameOf(right, input.pronouns.possessive, false)
+            : null,
       });
       continue;
     }
@@ -330,6 +365,9 @@ export function facePanel(input: {
         prefill: prefillFor(name),
         thumb: state_.thumb,
         box: state_.box,
+        /* A diverged pair is already two rows, each about one instance, so the
+           rectangle covers exactly what its row names. */
+        boxName: null,
       });
     }
   }
