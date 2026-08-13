@@ -22,12 +22,47 @@ import type { FaceSelectionModel } from "./faceSelection";
  *
  * # A REGION IS ONLY DRAWN WHERE ONE WAS MEASURED
  *
- * A row's box comes from the geometry of a crop that was actually minted on this
- * face. Rows without one — most of them today — are absent from the picture
- * entirely rather than placed by proportion: a rectangle over the wrong pixels
- * is a promise that clicking there edits that thing, and it would be a promise
- * the product cannot keep. They remain tappable in the panel, which is where the
- * ask gets scoped either way.
+ * A row's box comes from a real reading of THIS face — the geometry of a crop a
+ * paid edit minted, or, since the scan, where a segmenter found the feature on
+ * the frame already on screen. Never from proportion: a rectangle over the wrong
+ * pixels is a promise that clicking there edits that thing, and it would be a
+ * promise the product cannot keep.
+ *
+ * A row with no rectangle is no longer *"most of them"* and is no longer merely
+ * absent from the PICTURE — fable-414 took it off the panel altogether
+ * (*"everything in the right panel should have a bounding box"*), so panel
+ * membership and a place on the photograph are now one fact. What that costs is
+ * stated where the filter lives (`facePanel.ts`), and it is not nothing: a face
+ * wearing earrings has no earrings row today, because earring detection is
+ * unarmed and nothing measures where they are.
+ *
+ * # THE COPY, CLASSIFIED (UI milestone contract)
+ *
+ * This surface had no classification block until shift 79, and the gap was
+ * found by a copy audit rather than by reading the file — every string below
+ * was shipping unclassified while the panel beside it had a full block.
+ *
+ *   "{Her left eye}. Edit it here."       INVENTED — no mock covers a
+ *                                         screen-reader label. The NAME is not
+ *                                         invented: it is the row's own, or the
+ *                                         instance's on a pair (fable-378 (c)),
+ *                                         so the rectangle speaks the person's
+ *                                         ontology and not the geometry's
+ *   "Change something about them…"        VERIFIED — the shipped ask box's own
+ *                                         placeholder (`RefinePanel:295`),
+ *                                         reused verbatim: two doors to one
+ *                                         edit must not speak differently
+ *   "Refine" · "Refining…"                VERIFIED — the shipped submit label
+ *                                         and its busy state (`RefinePanel:301`)
+ *   "{25} credits"                        ADAPTED  — the panel below reads
+ *                                         "…· 25 credits each", which is a RATE
+ *                                         across tiles. This box is one edit to
+ *                                         one feature, so the "each" would be
+ *                                         false here. Beside the button and
+ *                                         never on it (D-15/D-109)
+ *   "What to change about {her lips}"     INVENTED — the field's screen-reader
+ *                                         label, derived from the open row's
+ *                                         name for the same reason as above
  *
  * # The boxes are in the FRAME's pixels, and the picture is not
  *

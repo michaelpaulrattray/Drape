@@ -63,17 +63,35 @@ if (failures.length > 0) {
  * simply does not appear, and the count is printed beside the pack so a block
  * that grows a row this cannot see is visible as a number rather than silent.
  */
-const component = await readFile(
-  path.resolve("client/src/features/castingV2/components/FacePanel.tsx"),
-  "utf8",
-);
-const classified: { text: string; verdict: string; note: string }[] = [];
-for (const line of component.split("\n")) {
-  const match = line.match(/^\s*\*\s+(".+?")\s+(VERIFIED|ADAPTED|INVENTED)\s+—\s*(.*)$/);
-  if (!match) continue;
-  classified.push({ text: match[1], verdict: match[2], note: match[3].trim() });
+const SOURCES = [
+  "client/src/features/castingV2/components/FacePanel.tsx",
+  /* Added shift 79. This surface shipped unclassified and the gap was found by
+     this audit rather than by reading the file — so the audit now reads it. */
+  "client/src/features/castingV2/components/FaceRegions.tsx",
+];
+const classified: { text: string; verdict: string; note: string; source: string }[] = [];
+for (const source of SOURCES) {
+  const component = await readFile(path.resolve(source), "utf8");
+  let found = 0;
+  /*
+    SPLIT ON EITHER ENDING. This checkout holds both: `.gitattributes` hands
+    some files back with CRLF, and a trailing `\r` is a LINE TERMINATOR in
+    JavaScript — so `(.*)$` cannot reach the end of the string and every line
+    of a CRLF file fails to match. FaceRegions.tsx parsed as ZERO classified
+    strings on its first run for exactly that reason, and the only thing that
+    caught it was the `found === 0` guard below: a copy audit reporting nothing
+    is shaped precisely like a surface with nothing to report.
+  */
+  for (const line of component.split(/\r?\n/)) {
+    const match = line.match(/^\s*\*\s+(".+?")\s+(VERIFIED|ADAPTED|INVENTED)\s+—\s*(.*)$/);
+    if (!match) continue;
+    classified.push({ text: match[1], verdict: match[2], note: match[3].trim(), source: path.basename(source) });
+    found += 1;
+  }
+  /* A surface that stops classifying its copy must not quietly leave the audit:
+     the whole finding this file exists to prevent is a string nobody looked at. */
+  if (found === 0) throw new Error(`no classified copy in ${source} — the block moved or its shape changed`);
 }
-if (classified.length === 0) throw new Error("no classified copy found — the block moved or its shape changed");
 
 /**
  * DID IT ACTUALLY REACH THE SCREEN? The saw lines are the driver's record of
@@ -84,7 +102,26 @@ if (classified.length === 0) throw new Error("no classified copy found — the b
  * matched on its literal stem, because the shipped form derives the rest.
  */
 const seen = records.map((record) => `${record.law} ${record.saw}`).join("\n");
-const stem = (text: string) => text.replace(/^"|"$/g, "").split(/[{…]/)[0].trim();
+/**
+ * EVERY LITERAL RUN, with the derived parts cut out.
+ *
+ * Two wrong versions preceded this one, in opposite directions, and both are
+ * worth the lines it takes to say so. Taking the FIRST fragment made
+ * "{Her left eye}. Edit it here." an empty stem, so every templated string on
+ * the new surface reported NOT SEEN — an instrument failing in the direction
+ * that looks like a finding. Taking the LONGEST then made "possessive" the stem
+ * of "Reading {possessive} features…" — a placeholder's own name, the one
+ * string guaranteed never to ship — and reported as unseen a line the run had
+ * plainly read. Falling back to single WORDS would have been the third and
+ * worst: "credits" or "features" appears somewhere in almost any run, so the
+ * audit would agree with itself forever.
+ *
+ * So: cut what the product derives, and require every remaining run.
+ */
+const literalRuns = (text: string) => text.replace(/^"|"$/g, "")
+  .split(/\{[^}]*\}|…/)
+  .map((part) => part.trim())
+  .filter((part) => part.length > 2);
 /*
   ONE ROW PER STRING, not per line. A line documenting a PAIR — "she came with
   it" · "from an edit" — collapses two different facts into one verdict, and on
@@ -93,8 +130,8 @@ const stem = (text: string) => text.replace(/^"|"$/g, "").split(/[{…]/)[0].tri
   finding.
 */
 const audit = classified.flatMap((entry) => entry.text.split(/\s+·\s+/).map((text) => {
-  const part = stem(text);
-  return { ...entry, text, found: part.length > 2 && seen.includes(part) };
+  const runs = literalRuns(text);
+  return { ...entry, text, found: runs.length > 0 && runs.every((run) => seen.includes(run)) };
 }));
 
 /** The shots this pack shows, and it refuses to reference one that is not there. */
@@ -177,9 +214,10 @@ const html = `<!doctype html>
 <h2>The copy, classified</h2>
 <p>Read out of <code>FacePanel.tsx</code>'s own classification block — the record of what was checked against his mock — and each string then looked for in the driver's saw lines. <strong>Shipped</strong> means this run actually read it off the live DOM; a classified string nobody shipped is the drift this column exists to catch.</p>
 <table>
-  <tr><th>String</th><th>Class</th><th>Shipped</th><th>Why it is what it is</th></tr>
+  <tr><th>String</th><th>Surface</th><th>Class</th><th>Shipped</th><th>Why it is what it is</th></tr>
   ${audit.map((entry) => `<tr>
     <td><code>${escape(entry.text)}</code></td>
+    <td class="off">${escape(entry.source)}</td>
     <td><span class="tag ${verdictClass(entry.verdict)}">${entry.verdict}</span></td>
     <td class="${entry.found ? "ok" : "no"}">${entry.found ? "seen in the run" : "NOT SEEN"}</td>
     <td>${escape(entry.note)}</td>
@@ -189,7 +227,8 @@ const html = `<!doctype html>
   ? `, and ${audit.filter((entry) => !entry.found).length} of them has never been seen on screen by any run of this driver: `
     + audit.filter((entry) => !entry.found).map((entry) => `<code>${escape(entry.text)}</code>`).join(", ")
     + ". It is shipped copy with no evidence behind it — on this fixture every library row was minted by an edit, so the provenance line for a feature the face ARRIVED with has no row to appear on. A fixture that cannot show a string cannot audit it"
-  : ", every one of them read off the live DOM by the run above"}. Two surfaces carry user-visible copy with <em>no</em> classification block of their own and are named here rather than left out: the rectangle's label (<code>"Her left eye. Edit it here."</code>) and the scoped ask's own controls (<code>"Change something about them…"</code>, <code>"Refine"</code>, <code>"25 credits"</code>) in <code>FaceRegions.tsx</code>. All four are asserted by the run above; none is classified against a mock.</p>
+  : ", every one of them read off the live DOM by the run above"}.
+${SOURCES.length > 1 ? `Read from ${SOURCES.length} surfaces: <code>${SOURCES.map((source) => path.basename(source)).join("</code>, <code>")}</code>. The second one shipped with no classification block at all until this audit reported its strings as unclassified — the audit finding its own blind spot is the only reason it is here.` : ""}</p>
 
 <h2>The surface</h2>
 ${shots.map((shot) => `<figure>

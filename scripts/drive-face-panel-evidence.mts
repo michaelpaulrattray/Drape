@@ -191,6 +191,7 @@ const READ_REGIONS = `(() => {
     open: Boolean(form),
     draft: field ? field.value : null,
     fieldLabel: field ? field.getAttribute("aria-label") : null,
+    fieldPlaceholder: field ? field.getAttribute("placeholder") : null,
     submitText: submit ? submit.textContent : null,
     priceText: price ? price.textContent : null,
     submitHasPrice: submit ? /\\d/.test(submit.textContent ?? "") : null,
@@ -851,6 +852,28 @@ for (const theme of THEMES) {
       opened.fieldOutline === "none",
       `${theme}: no inner focus ring on the field`,
       `outline-style: ${opened.fieldOutline}`,
+    );
+    /*
+      THE TWO STRINGS THE COPY AUDIT COULD NOT EVIDENCE (shift 79). The pack
+      reads every classified string back out of these saw lines, and a string
+      no check reads is shipped copy with nothing behind it. Both are on this
+      surface and both were captured by the DOM read already — nothing asserted
+      them.
+
+      The placeholder is the shipped ask box's own, reused verbatim so the two
+      doors to one edit do not speak differently; the field's label names the
+      feature, because a screen reader arriving at this box mid-page has no
+      rectangle to look at.
+    */
+    check(
+      opened.fieldPlaceholder === "Change something about them…",
+      `${theme}: the scoped box asks in the same words as the ask box below`,
+      `placeholder "${opened.fieldPlaceholder}"`,
+    );
+    check(
+      opened.fieldLabel === `What to change about ${MEASURED_ROW.toLowerCase()}`,
+      `${theme}: and its label names the feature it is scoped to`,
+      `aria-label "${opened.fieldLabel}"`,
     );
     const askBox = await page.evaluate(`(() => {
       const form = document.querySelector(".dpc-regions__ask");
