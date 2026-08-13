@@ -2662,7 +2662,13 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
     /* The row names as many references as the engine was handed — the count the
        report prints, proved against the wire rather than against the recipe. */
     expect(record!.references).toHaveLength(painted[0]!.references.length);
-    /* Every digest is of the bytes that were dispatched at that position. */
+    /*
+      Every digest is of the bytes the LIBRARY holds at that position — which on
+      this row are also the bytes dispatched, because nothing here is padded.
+      The two part company once a carry is fitted to the master's geometry, and
+      that is deliberate: the promise being proved is "this feature's minted crop
+      has not changed", so the digest is taken before transport touches it.
+    */
     record!.references.forEach((reference, at) => {
       expect(reference.digest).toBe(
         createHash("sha256").update(painted[0]!.references[at]!.bytes).digest("hex"),
@@ -2670,6 +2676,57 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
     });
     expect(record!.edited).toEqual(["hair"]);
     expect(record!.carried).toEqual(["lips"]);
+  });
+
+  /** The dispatch record's reference list, with the size each one went out at. */
+  const sentGeometries = () => ((landedVariant?.internalPrompt as {
+    repaint?: { references: Array<{ sentGeometry: string | null }> };
+  }).repaint!.references).map((reference) => reference.sentGeometry);
+
+  it("records the SIZE each reference went out at, so a padded carry is provable", async () => {
+    /*
+      The carried-crop drift hid for four shifts because the record said WHICH
+      crop was sent and never how big it was — so "two references at different
+      scales", the measured cause of the founder's head-size complaint, was a
+      thing the database could not express.
+
+      Driven through the injection point rather than through sharp: the padding
+      itself is proved on real pixels in `referenceFit.test.ts`, and what this
+      asserts is the wire — that whatever geometry actually went out reaches the
+      row.
+    */
+    lineageReferences = [carryRow()];
+
+    await refineCandidate({
+      ...hairDown,
+      fitReference: async ({ reference, frame }) => ({ ...reference, ...frame }),
+    }, { ...input, instruction: "wear her hair down" });
+
+    const [master, carry] = sentGeometries();
+    expect(master, "the master goes out at its own frame").toMatch(/^\d+x\d+$/);
+    expect(carry, "and a padded carry goes out at the SAME frame").toBe(master);
+  });
+
+  it("CONTROL — an UNPADDED carry records its own smaller size, so the gap is visible", async () => {
+    /*
+      THE ONE THAT MATTERS. If the row reported the frame's size regardless of
+      what was sent, it would certify every render as padded — including the ones
+      that silently were not, which is precisely the blindness this column was
+      added to end. A fit that did not happen has to be readable ON THE ROW.
+    */
+    lineageReferences = [carryRow()];
+
+    await refineCandidate({
+      ...hairDown,
+      fitReference: async ({ reference, role, frame }) => ({
+        ...reference,
+        ...(role.kind === "master" ? frame : { width: 484, height: 617 }),
+      }),
+    }, { ...input, instruction: "wear her hair down" });
+
+    const [master, carry] = sentGeometries();
+    expect(carry, "the crop's own size, exactly as #179 sent it").toBe("484x617");
+    expect(carry, "and demonstrably NOT the master's").not.toBe(master);
   });
 
   it("records what it sent BEFORE the engine answers, so a REFUSED render still says", async () => {

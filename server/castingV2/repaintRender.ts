@@ -42,7 +42,7 @@ import { createHash } from "node:crypto";
 
 import type { ImageResult } from "../providers/types";
 
-import type { Recipe, ReferenceImage } from "./recipeAssembler";
+import type { Recipe, ReferenceImage, ReferenceRole } from "./recipeAssembler";
 
 /** Bytes for one reference. Injected, so the fixture path never touches R2. */
 export type ReferenceLoader = (image: ReferenceImage) => Promise<ReferenceBytes>;
@@ -91,6 +91,19 @@ export type RepaintInput = {
    * should not be able to deny making.
    */
   onDispatch?: (sent: SentRequest) => void | Promise<void>;
+  /**
+   * BRING EACH REFERENCE TO THE MASTER'S GEOMETRY BEFORE IT GOES OUT.
+   *
+   * Optional, and absent it changes nothing — which is what lets the old
+   * behaviour stay reachable in tests. Applied AFTER the digest check, so the
+   * pixel-frozen promise is still proved against the library's own bytes and
+   * this is transport rather than a rewrite of the mint.
+   *
+   * See `referenceFit.ts` for the measurement that made this necessary: a
+   * 484×617 crop beside a 1024×1536 master drifted the frame +7% to +10%, and
+   * the same crop padded to the master's geometry holds it.
+   */
+  fit?: ReferenceFitter;
 };
 
 /**
@@ -104,10 +117,40 @@ export type SentRequest = {
   prompt: string;
   /** In send order, element 0 the master. */
   keys: readonly string[];
-  /** Digest of the bytes actually dispatched, in the same order. */
+  /**
+   * Digest of the bytes the LIBRARY holds, in the same order — the pixel-frozen
+   * proof, taken before any transport fitting.
+   *
+   * Deliberately not the digest of the padded bytes: the promise being kept is
+   * *"this feature's minted crop has not changed"*, and a digest taken after a
+   * dispatch-time transform could not prove it.
+   */
   digests: readonly string[];
+  /**
+   * THE SIZE EACH REFERENCE ACTUALLY WENT OUT AT, as `"1024x1536"`.
+   *
+   * The carried-crop drift was invisible for four shifts because the record said
+   * WHICH crop went out and never how big it was. `null` where nothing measured
+   * it. Asserted at the wire (working law 5): this is read off the bytes handed
+   * to the engine, not off the geometry column beside them.
+   */
+  geometry: readonly (string | null)[];
   engineId: string;
 };
+
+/**
+ * Bring one reference to the frame the master is being rendered at.
+ *
+ * Injected rather than done here so this module keeps knowing nothing about
+ * libraries, buckets or image codecs — it is handed bytes and it dispatches
+ * them. Returns the dimensions it dispatched so the record can state them.
+ */
+export type ReferenceFitter = (input: {
+  reference: ReferenceBytes;
+  image: ReferenceImage;
+  role: ReferenceRole;
+  frame: { width: number; height: number };
+}) => Promise<ReferenceBytes & { width: number; height: number }>;
 
 export type RepaintDelivery = {
   ok: true;
@@ -140,6 +183,7 @@ export async function repaint(input: RepaintInput): Promise<RepaintResult> {
   const loaded: ReferenceBytes[] = [];
   const keys: string[] = [];
   const digests: string[] = [];
+  const geometry: (string | null)[] = [];
 
   for (const reference of input.recipe.references) {
     let bytes: ReferenceBytes;
@@ -169,13 +213,33 @@ export async function repaint(input: RepaintInput): Promise<RepaintResult> {
         detail: `${reference.image.key} was minted as ${reference.image.sha} and loaded as ${digest.slice(0, 12)}`,
       };
     }
-    loaded.push(bytes);
+    /*
+      FITTED AFTER THE DIGEST, and the order is the whole design. The digest
+      above proves the LIBRARY's bytes have not moved; the fit below is what
+      goes on the wire. Fitting first would take the digest of a transport
+      artefact and the pixel-frozen promise would prove nothing.
+    */
+    const fitted = input.fit
+      ? await input.fit({
+        reference: bytes,
+        image: reference.image,
+        role: reference.role,
+        frame: { width: input.width, height: input.height },
+      })
+      : null;
+
+    loaded.push(fitted ? { bytes: fitted.bytes, contentType: fitted.contentType } : bytes);
     keys.push(reference.image.key);
     digests.push(digest);
+    /* Null rather than "0x0" when nothing could measure it — an unknown size is
+       not a size, and a record that states one would be inventing evidence. */
+    geometry.push(fitted && fitted.width > 0 && fitted.height > 0
+      ? `${fitted.width}x${fitted.height}`
+      : null);
   }
 
   const sent: SentRequest = {
-    prompt: input.recipe.prompt, keys, digests, engineId: input.engine.id,
+    prompt: input.recipe.prompt, keys, digests, geometry, engineId: input.engine.id,
   };
   await input.onDispatch?.(sent);
 

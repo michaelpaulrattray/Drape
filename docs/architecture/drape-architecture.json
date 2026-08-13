@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "f63aad7df0d26a1a"
+    "sourceFingerprint": "33663af4d0360e73"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 94
+      "moduleCount": 95
     },
     {
       "id": "domain:castingV2",
@@ -3503,6 +3503,12 @@
     {
       "id": "module:server/castingV2/referenceCompleteness.ts",
       "path": "server/castingV2/referenceCompleteness.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/referenceFit.ts",
+      "path": "server/castingV2/referenceFit.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -8762,6 +8768,10 @@
     {
       "id": "test:server/castingV2/referenceCompleteness.test.ts",
       "path": "server/castingV2/referenceCompleteness.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/referenceFit.test.ts",
+      "path": "server/castingV2/referenceFit.test.ts"
     },
     {
       "id": "test:server/castingV2/referenceLibrary.test.ts",
@@ -18308,6 +18318,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/castingV2/referenceFit.ts",
+      "to": "module:server/castingV2/referenceLibrary.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/castingV2/referenceLibrary.ts",
       "to": "module:server/castingV2/recipeAssembler.ts",
       "kind": "imports"
@@ -18790,6 +18805,11 @@
     {
       "from": "module:server/castingV2/refineService.ts",
       "to": "module:server/castingV2/referenceCompleteness.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/refineService.ts",
+      "to": "module:server/castingV2/referenceFit.ts",
       "kind": "imports"
     },
     {

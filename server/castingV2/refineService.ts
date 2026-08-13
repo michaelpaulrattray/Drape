@@ -152,8 +152,9 @@ import { listLineageReferences, recordReferenceRows, retireReferenceSlot } from 
 import type { RegionReader as MintRegionReader } from "./referenceCompleteness";
 import { assembleRecipe, type FeatureSlot } from "./recipeAssembler";
 import { slotDefinition } from "./referenceSlotCatalogue";
-import { repaint, type RepaintEngine, type SentRequest } from "./repaintRender";
+import { repaint, type ReferenceFitter, type RepaintEngine, type SentRequest } from "./repaintRender";
 import { RepaintCannotSayError, repaintAsksFor, repaintCannotRemove } from "./repaintAsks";
+import { padToFrame, studioBackgroundOf, type StudioBackground } from "./referenceFit";
 import { pronounsForSex } from "./castPronouns";
 import {
   captureCastingReferenceLibraryEnabled,
@@ -373,6 +374,14 @@ export type RefineServiceDependencies = {
   repaintEnabled?: (userId: number) => boolean;
   /** Writes the sent recipe onto the variant at dispatch — see `recordVariantDispatch`. */
   recordDispatch?: typeof recordVariantDispatch;
+  /**
+   * Brings each reference to the master's geometry before dispatch.
+   *
+   * Injectable so a suite can drive the padding decision directly — the default
+   * reads real image bytes, and a test that had to mint a valid PNG per case to
+   * exercise one branch would be testing sharp.
+   */
+  fitReference?: ReferenceFitter;
 };
 
 async function defaultStoreImage(input: { key: string; bytes: Buffer; contentType: string }) {
@@ -2145,6 +2154,13 @@ export async function refineCandidate(
       return { width: meta.width, height: meta.height };
     };
     /*
+      Her studio's own wall, sampled ONCE per render rather than once per carried
+      crop: the master does not change between its own references, and
+      `studioBackgroundOf` reads the whole image to run its control.
+    */
+    let studioBackgroundOnce: Promise<StudioBackground> | null = null;
+    const studioBackground = () => (studioBackgroundOnce ??= studioBackgroundOf(base.bytes));
+    /*
       RENDER RECIPE v3 (D-152) — ONE step from the sharp original, always.
 
       v2 carried the selected PARENT as a realization pin, which held the facets
@@ -2426,6 +2442,18 @@ export async function refineCandidate(
           return {
             key,
             digest: sent.digests[at] ?? null,
+            /*
+              AND HOW BIG IT WENT OUT — read off the dispatched bytes, not off
+              the geometry column beside them (working law 5).
+
+              The carried-crop drift hid for four shifts because the record said
+              WHICH crop was sent and never at what size, so "two references at
+              different scales" was a thing nobody could see in the database. A
+              padded reference reads the master's own frame here; an unpadded one
+              reads its crop's, which is how a fit that quietly did not happen
+              stays visible.
+            */
+            sentGeometry: sent.geometry[at] ?? null,
             kind: role?.kind ?? null,
             slot: role && role.kind !== "master" ? role.slot : null,
           };
@@ -2459,6 +2487,78 @@ export async function refineCandidate(
         load: async (image) => (image.key === variant.baseImageKey
           ? { bytes: base.bytes, contentType: base.contentType }
           : await (dependencies.readBytes ?? storageReadBytes)(image.key)),
+        /*
+          AND EVERY CARRIED CROP GOES OUT AT THE MASTER'S OWN GEOMETRY.
+
+          Measured, not supposed: a 484×617 crop beside a 1024×1536 master
+          drifted the founder's frame +7% to +10% face height across three
+          repeats, against +0.5% with no carry at all — and the same crop padded
+          back to its own position holds the frame AND keeps her hair. The
+          numbers and their controls are in `referenceFit.ts`.
+
+          Keyed on the branch rows already read above for the asks, so the
+          geometry used here is the geometry the library recorded when it cut the
+          crop — not a second lookup that could answer about a different row.
+        */
+        fit: dependencies.fitReference ?? (async ({ reference, image, role, frame }) => {
+          /*
+            Measured for the record, and a failure to measure is UNKNOWN rather
+            than fatal: `sent.geometry` is evidence about what went out, and
+            evidence that cannot be gathered must not take a paid render down
+            with it. Zero reads as null in the record.
+          */
+          const asDispatched = async (bytes: Buffer, contentType: string) => {
+            try {
+              const sharp = (await import("sharp")).default;
+              const meta = await sharp(bytes).metadata();
+              return { bytes, contentType, width: meta.width ?? 0, height: meta.height ?? 0 };
+            } catch {
+              return { bytes, contentType, width: 0, height: 0 };
+            }
+          };
+          const unpadded = () => asDispatched(reference.bytes, reference.contentType);
+          /* The master IS the frame; nothing to fit, but its size is still
+             measured so the wire assertion covers every reference. */
+          if (role.kind === "master") return unpadded();
+          const stored = branchRows.find((row) => row.storageKey === image.key)?.geometry ?? null;
+          /*
+            NO GEOMETRY MEANS NO PAD, dispatched exactly as production does
+            today. Refusing here would turn a missing column into a failed paid
+            render: the crop still carries its feature, it simply carries the old
+            drift with it, and `sent.geometry` records the size that went out —
+            so the gap is visible in the record rather than assumed away.
+          */
+          if (!stored) return unpadded();
+          try {
+            return {
+              bytes: await padToFrame({
+                crop: reference.bytes,
+                geometry: stored,
+                frame,
+                background: await studioBackground(),
+              }),
+              contentType: "image/png",
+              ...frame,
+            };
+          } catch (cause) {
+            /*
+              DECLARED, NOT SILENT. Every throw in `padToFrame` is an integrity
+              complaint — a bbox from a differently-sized frame, a crop whose
+              bytes disagree with its own geometry, a background that came back
+              as the average of the whole photograph. None of them is a reason to
+              refuse a render the old road would have delivered, so this falls
+              back to today's behaviour and says so at error level, with the
+              recorded geometry showing the crop's own size rather than the
+              frame's.
+            */
+            log.error(
+              { operationId, variant: variant.publicId, key: image.key, detail: (cause as Error)?.message },
+              "[refineService] a carried crop could not be padded to the master's geometry — "
+              + "dispatching it unpadded, which is the old drift and not a new failure",
+            );
+            return unpadded();
+          }
+        }),
         /* The master's exact pixels — a repaint returns a frame of the same
            size, and a resolution TIER is what produced 848x1264 for a 1024x1536
            master once already. */
