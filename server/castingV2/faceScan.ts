@@ -72,6 +72,20 @@ export type ScanBox = {
 export type FaceScan = {
   /** Where each feature is, for the slots this frame could answer. */
   boxes: ReadonlyMap<FeatureSlot, ScanBox>;
+  /**
+   * THE SHAPE, not just the rectangle — kept because the founder chose the
+   * masked-cutout look (fable-374: *"masked cutouts."*).
+   *
+   * The panel renders a cutout client-side from the frame it already has plus
+   * this mask, so every row speaks one visual language whether it was born of a
+   * scan or minted by an edit. It is the SHAPE only: no cut pixels, no new image
+   * objects, 4a's architecture untouched.
+   *
+   * Held here rather than re-read later because it is already in hand — the box
+   * below is derived FROM it, and asking the segmenter the same question twice
+   * would pay twice for one answer and invite two different ones.
+   */
+  masks: ReadonlyMap<FeatureSlot, Mask>;
   /** What was asked and what came back, so a thin scan is legible rather than
    *  mysterious — the founder's panel showing three rows is either a face or a
    *  broken reader, and only this tells them apart. */
@@ -133,6 +147,7 @@ export async function scanFace(input: {
 }): Promise<FaceScan> {
   const frame = { width: input.frame.width, height: input.frame.height };
   const boxes = new Map<FeatureSlot, ScanBox>();
+  const masks = new Map<FeatureSlot, Mask>();
   const empty: string[] = [];
   const failed: { question: string; why: string }[] = [];
   const plan = scanPlan();
@@ -167,7 +182,14 @@ export async function scanFace(input: {
         for (const slot of region.slots) {
           const mask = slot.instance === "left" ? sides.left : sides.right;
           const box = boxIn(mask, frame);
-          if (box) boxes.set(slot.slot, box);
+          /* Box and mask are set together, always: a slot with a rectangle and
+             no shape would render as a hard-edged crop beside its cutout
+             neighbours, and one with a shape and no rectangle has nowhere to
+             put it. They are one answer. */
+          if (box) {
+            boxes.set(slot.slot, box);
+            masks.set(slot.slot, mask);
+          }
         }
         if (region.slots.every((slot) => !boxes.has(slot.slot))) empty.push(region.question);
         return;
@@ -181,7 +203,10 @@ export async function scanFace(input: {
       });
       const box = boxIn(mask, frame);
       if (box) {
-        for (const slot of region.slots) boxes.set(slot.slot, box);
+        for (const slot of region.slots) {
+          boxes.set(slot.slot, box);
+          masks.set(slot.slot, mask);
+        }
       } else {
         empty.push(region.question);
       }
@@ -201,5 +226,5 @@ export async function scanFace(input: {
     { asked: plan.length, found: boxes.size, empty: empty.length, failed: failed.length },
     "[faceScan] read a face",
   );
-  return { boxes, asked: plan.length, found: boxes.size, empty, failed };
+  return { boxes, masks, asked: plan.length, found: boxes.size, empty, failed };
 }

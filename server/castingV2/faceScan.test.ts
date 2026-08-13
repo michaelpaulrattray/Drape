@@ -217,3 +217,42 @@ describe("it asks them all at once", () => {
     expect(peak).toBeGreaterThan(1);
   });
 });
+
+describe("the shape is kept beside the rectangle (fable-374)", () => {
+  it("returns a mask for every slot it returns a box for, and for no others", async () => {
+    /*
+      The founder chose masked cutouts, so the panel needs the SHAPE as well as
+      the rectangle. A slot with a box and no mask would render as a hard-edged
+      crop beside its cutout neighbours; one with a mask and no box has nowhere
+      to put it. They are one answer and they travel together.
+    */
+    const scan = await scanFace({
+      frame: FRAME,
+      reader: reader({ region: (name) => (name === "facial hair" ? EMPTY : maskOf({ x: 5, y: 5, width: 5, height: 5 })) }),
+    });
+
+    expect([...scan.masks.keys()].sort()).toEqual([...scan.boxes.keys()].sort());
+    expect(scan.masks.has("facial-hair")).toBe(false);
+  });
+
+  it("keeps each side's OWN shape, never the pair's", async () => {
+    const scan = await scanFace({ frame: FRAME, reader: reader({}) });
+    const left = scan.masks.get("eye@left");
+    const right = scan.masks.get("eye@right");
+    expect(left).toBeDefined();
+    expect(right).toBeDefined();
+    /* Two different pictures, not one union wearing two names — the same
+       discipline at the thumbnail as at the box (fable-374). */
+    expect(Buffer.compare(Buffer.from(left!.data), Buffer.from(right!.data))).not.toBe(0);
+  });
+
+  it("does not re-read the segmenter to get the shape it already had", async () => {
+    const counting = reader({});
+    await scanFace({ frame: FRAME, reader: counting });
+    /* The box is DERIVED from the mask, so keeping the mask costs nothing. One
+       question per region, and paying twice for one answer would also invite
+       two different ones. */
+    const plan = scanPlan();
+    expect(counting.asked.length + counting.sideAsked.length).toBe(plan.length);
+  });
+});
