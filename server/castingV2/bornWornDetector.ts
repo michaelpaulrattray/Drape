@@ -68,6 +68,28 @@ export type BornWornClass = {
   floor: number | null;
   /** Where that number came from, in one sentence, or why there isn't one. */
   measurement: string;
+  /**
+   * THE SAME QUESTION AT THE OTHER BOUNDARY — coverage of the whole frame by
+   * ONE SIDE of a paired thing, above which that side is wearing one.
+   *
+   * A pair is read two-sidedly wherever it is drawn per instance, and a side is
+   * about half the union the number above was measured on. Carrying one figure
+   * across that boundary is what {@link EARRING_SIDE_COVERAGE_FLOOR}'s own
+   * provenance was written to prevent — the shipped union floor sits ABOVE two
+   * of sixteen measured worn sides.
+   *
+   * `null` for a kind worn singly, which has no side to judge, and for a paired
+   * kind nobody has measured per side — which cannot arm (see below).
+   */
+  sideFloor: number | null;
+  /** Where THAT number came from, or why there isn't one. */
+  sideMeasurement: string;
+  /**
+   * Worn in twos, from the placement table's own `pair` field — never restated
+   * here. It governs which boundary this class is judged at, and a whole-frame
+   * reading of a pair is a reading of BOTH of them at once.
+   */
+  pair: boolean;
   /** Armed classes are asked and may file rows. Unarmed ones are inert. */
   armed: boolean;
 };
@@ -85,6 +107,37 @@ export type BornWornClass = {
 export const EARRING_COVERAGE_FLOOR = 0.0002;
 
 /**
+ * THE SAME QUESTION ABOUT ONE EAR — and it is a different number, which is the
+ * entire point of it existing.
+ *
+ * `EARRING_COVERAGE_FLOOR` above was measured on the WHOLE-FRAME union (8 worn
+ * faces, 0.0404–0.0621%) and its provenance claims a 2x margin. That claim is
+ * true of the boundary its consumers read at: both departure gates call
+ * `reader.region(...)`, which IS the union. It is FALSE at the per-side
+ * boundary, and not by a little — a court of sixteen worn SIDES read
+ * 0.0189–0.0347%, so the shipped floor sits at **0.945x the smallest worn
+ * side, above it rather than under it**. Two of those sixteen read at or under
+ * it, so arming a per-side detector on the union's number would file a worn
+ * earring as ABSENT on one wearing ear in eight — the founder's missing-row bug
+ * half-closed and then reopened on 12.5% of faces.
+ *
+ * So: 0.00009 — the same 2x margin the union floor was written with, derived at
+ * the boundary it is applied at rather than carried across one. The
+ * wrong-boundary class's sixth member, dead unpublished.
+ *
+ * **Rounded DOWN, and that is not tidiness.** Half of the smallest worn side is
+ * 0.0000945, and the court prints to four decimals — so the true smallest worn
+ * side lies in [0.01885%, 0.01895%] and a floor of 0.000095 would sit at 1.99x
+ * under it while its own provenance said 2x. A margin claim that is false in
+ * the third digit is the same defect as one false in the first, found earlier.
+ * 0.00009 is at least 2.09x under the smallest worn side across the whole
+ * rounding interval, and it costs nothing on the other arm: every non-wearing
+ * side in the court read EXACTLY zero, so no floor above zero separates them
+ * differently.
+ */
+export const EARRING_SIDE_COVERAGE_FLOOR = 0.00009;
+
+/**
  * The floor for each kind of thing the accessory table can name, and its
  * provenance — every entry filled in, because a kind nobody has considered is
  * exactly the silent gap `FRINGE_AT_EDGE`'s closure test exists to forbid. A
@@ -99,6 +152,12 @@ const FLOOR_OF_CLASS: Record<
   {
     floor: number | null;
     measurement: string;
+    /**
+     * The per-side number, for a kind worn in twos. See
+     * {@link BornWornClass.sideFloor} for why it cannot be the one above.
+     */
+    sideFloor?: number | null;
+    sideMeasurement?: string;
     /**
      * Withhold DETECTION while the departure floor stands. Absent = arm.
      *
@@ -118,6 +177,10 @@ const FLOOR_OF_CLASS: Record<
       "23 bare faces read 0.000% and 8 bespectacled faces 1.349–2.093% through the "
       + "production segmenter, 2026-08-09; the floor sits in the empty three orders "
       + "of magnitude between them (canthalTilt.ts)",
+    sideFloor: null,
+    sideMeasurement:
+      "NOT MEASURED and never needed: glasses are ONE object across two eyes "
+      + "(accessoryKinds `pair: false`), so no surface reads them a side at a time",
   },
   earring: {
     floor: EARRING_COVERAGE_FLOOR,
@@ -131,17 +194,31 @@ const FLOOR_OF_CLASS: Record<
       + "only current work is insurance against a spurious partial segmentation nobody "
       + "has yet observed; and a further 3 faces whose ears were HIDDEN BY HAIR read "
       + "0.0000% identically, so this reading cannot tell a bare ear from an unseen one",
-    deferArming:
-      "the court measured what the DEPARTURE gate needs and not what detection needs. "
-      + "Hunting earrings on an untouched master asks the same reading that cannot "
-      + "separate a bare lobe from one behind hair, and fable-340 rules that these kinds "
-      + "arm only once their court uses the three-class design — a site may be called "
-      + "bare only when it is VISIBLY bare. The floor is live for departures now; "
-      + "arming waits for that court",
+    sideFloor: EARRING_SIDE_COVERAGE_FLOOR,
+    sideMeasurement:
+      "the same court read PER SIDE through the product's own `regionSides`, 2026-08-14 "
+      + "(scripts/read-earring-side-floor-disposable.mts): 16 worn sides 0.0189–0.0347%, "
+      + "8 visibly bare sides and 6 sides behind hair ALL exactly 0.0000% — 14 of 14 "
+      + "non-wearing sides structural zeros, no segmentation at all. The floor sits at "
+      + "least 2x under the smallest worn SIDE (2.09x, rounded down so the margin claim "
+      + "survives the court's own four-decimal rounding). Two things this number is "
+      + "allowed to do and the "
+      + "union floor above is not: judge one ear, and be quoted as a 2x margin. And what "
+      + "it still cannot do: license an ABSENCE — a covered side and a bare side both "
+      + "read zero, so detection files presence only (fable-435), which satisfies "
+      + "fable-340's visibly-bare rule by construction because no absent row exists to "
+      + "misfile. Arithmetic checked rather than assumed: this reader's masks are "
+      + "strictly binary (0/255 only, read byte by byte on 6 sides across all three "
+      + "classes), so the alpha-weighted `coverage` the court measured with and the "
+      + "pixel-counting `binaryCoverage` presence applies are the same reading here",
   },
   "nose stud": {
     floor: null,
     measurement: "NOT MEASURED — no positive/negative court has been run for nose studs",
+    sideFloor: null,
+    sideMeasurement:
+      "NOT MEASURED and never needed: a nose stud is one thing in one place "
+      + "(accessoryKinds `pair: false`)",
   },
 };
 
@@ -159,20 +236,119 @@ const FLOOR_OF_CLASS: Record<
  * Writing the earring number armed the detector as a side effect and the
  * existing pin caught it — the fix is to let the table say which job the
  * measurement was for, rather than to let one number answer two questions.
+ *
+ * # A PAIRED KIND NEEDS A NUMBER AT BOTH BOUNDARIES
+ *
+ * The same rule again, one boundary along. A kind worn in twos is drawn and
+ * clicked per instance, so something will judge ONE SIDE of it — and a union
+ * number applied to a side is a margin that quietly stops being true. The
+ * earring court measured that gap at 0.945x rather than the 2x its provenance
+ * claimed, which would have filed a worn earring absent on one ear in eight.
+ * So `pair: true` here means both floors or no arming: the table cannot say
+ * yes to detection on half a court, and the compiler asks the question a
+ * reviewer would forget to.
  */
-export const BORN_WORN_CLASSES: readonly BornWornClass[] = LANDMARK_OF_ACCESSORY.map((entry) => {
-  const measured = FLOOR_OF_CLASS[entry.region];
+/**
+ * One row of the catalogue, from one kind and what has been measured about it.
+ *
+ * Exported so the arming rule can be DRIVEN rather than restated. A test that
+ * re-writes `typeof floor === "number" && …` beside the production line is a
+ * second copy of the rule agreeing with itself — it passes on a build where the
+ * real one has been deleted. Given this door, the negative arms (a paired kind
+ * with no per-side court, a deferred kind, a kind with no court at all) are
+ * ordinary readings of the same function that decides in production.
+ */
+export function bornWornClassFor(
+  kind: { region: string; pair: boolean },
+  measured: (typeof FLOOR_OF_CLASS)[string] | undefined,
+): BornWornClass {
+  const sideFloor = measured?.sideFloor ?? null;
   return {
-    id: entry.region,
-    region: entry.region,
+    id: kind.region,
+    region: kind.region,
     floor: measured?.floor ?? null,
     measurement: measured?.measurement ?? "NOT CONSIDERED — this kind has no entry in FLOOR_OF_CLASS",
-    armed: typeof measured?.floor === "number" && measured.deferArming === undefined,
+    sideFloor,
+    sideMeasurement: measured?.sideMeasurement
+      ?? "NOT CONSIDERED — this kind has no entry in FLOOR_OF_CLASS",
+    pair: kind.pair,
+    armed: typeof measured?.floor === "number"
+      && measured.deferArming === undefined
+      && (!kind.pair || typeof sideFloor === "number"),
   };
-});
+}
+
+export const BORN_WORN_CLASSES: readonly BornWornClass[] = LANDMARK_OF_ACCESSORY
+  .map((entry) => bornWornClassFor(entry, FLOOR_OF_CLASS[entry.region]));
 
 export function armedBornWornClasses(): readonly BornWornClass[] {
   return BORN_WORN_CLASSES.filter((entry) => entry.armed);
+}
+
+/**
+ * WHETHER THIS CATALOGUE CAN FILE THIS CLASS AT ALL — asked before anything is
+ * read, and the reason lives here rather than at each caller.
+ *
+ * The whole-frame write path files ONE row per class from ONE reading, and
+ * `reader.region` on a bilateral name returns the union of both sides. A kind
+ * worn in twos is drawn, clicked and stored per instance, so a union row would
+ * be two objects under one facet, judged at a boundary no surface reads. There
+ * is no per-side write path yet; there is a per-side READ path (the panel scan),
+ * which is why the class can be armed and still unfileable here.
+ *
+ * Consulted by the detector, which refuses rather than reads, AND by the
+ * catalogue, which leaves the class out of what it wants — one rule, two
+ * consumers, no second copy of it (law 4).
+ */
+export function catalogueCanFile(entry: BornWornClass): boolean {
+  return !entry.pair;
+}
+
+/**
+ * THE FLOOR A READING IS JUDGED AGAINST, ASKED AT THE BOUNDARY IT WAS TAKEN AT
+ * — the detection half of this catalogue, and the reason there are two numbers.
+ *
+ * # Which consumer reads which, in one place
+ *
+ * - `departureFloorFor` (below) answers the DEPARTURE gates: a delivered frame
+ *   the customer already paid to change, asked whole-frame, judged on the union
+ *   floor. It decides refunds. Nothing here touches it.
+ * - This answers DETECTION: a master or a frame on screen, asked to find what
+ *   is already there. The panel scan reads a pair two-sidedly, so it asks at
+ *   `"side"`; everything else is asked whole-frame and asks at `"frame"`.
+ *
+ * They are two questions about the same class and they must never collapse back
+ * into one number, because the boundaries genuinely differ: 0.0002 is 2x under
+ * the smallest worn UNION and 0.945x the smallest worn SIDE.
+ *
+ * # Zero for a question this catalogue does not name
+ *
+ * Anatomy — eyes, ears, hair — has no accessory court and needs none: the scan
+ * has always filed a box for any region that answered with pixels at all, and
+ * `> 0` is exactly that rule written down. The permissive fallback cannot reach
+ * an accessory, because an accessory is only ever asked when its class is
+ * ARMED, and arming requires a measured number at every boundary it will be
+ * read at.
+ */
+export function detectionFloorFor(
+  question: string | null | undefined,
+  boundary: "frame" | "side",
+): { floor: number; measured: boolean; provenance: string } {
+  const entry = BORN_WORN_CLASSES.find((candidate) => candidate.region === question);
+  if (!entry) {
+    return {
+      floor: 0,
+      measured: false,
+      provenance: `"${question}" is not a thing a face WEARS, so no accessory court measured it — `
+        + "any pixels at all are the region answering, which is what the scan has always done",
+    };
+  }
+  const floor = boundary === "side" ? entry.sideFloor : entry.floor;
+  return {
+    floor: floor ?? 0,
+    measured: typeof floor === "number",
+    provenance: boundary === "side" ? entry.sideMeasurement : entry.measurement,
+  };
 }
 
 /**
@@ -180,8 +356,19 @@ export function armedBornWornClasses(): readonly BornWornClass[] {
  * has LEFT her — the departure gate's half of this catalogue.
  *
  * Same segmenter, same question, same arithmetic as the detection above, so it
- * reads the same floors: two tables would be two answers to *is this thing in
+ * reads the same table: two tables would be two answers to *is this thing in
  * this picture* and law 4 says the copies drift.
+ *
+ * **One table, two boundaries.** This gate asks whole-frame — both consumers
+ * call `reader.region(...)`, which for a pair is the union — so it reads the
+ * union floor, and that is the boundary the union floor was measured at. The
+ * per-side number belongs to {@link detectionFloorFor}, which the panel scan
+ * consults when it reads a pair two-sidedly. The two must never be collapsed
+ * back into one: the union floor sits 2x under the smallest worn union and
+ * 0.945x the smallest worn side, so a single number would be a false margin at
+ * whichever boundary it did not come from. **Nothing about refunds reads the
+ * per-side number** — this function is the refund-deciding one, and it is
+ * unchanged.
  *
  * # An unmeasured kind gets zero, and that is not a threshold
  *
@@ -267,6 +454,33 @@ export async function detectBornWorn(input: {
         catalogue and a guess, and it should not depend on two fields agreeing.
       */
       scan.failed.push({ facet: entry.id, detail: "armed without a measured floor" });
+      continue;
+    }
+    if (!catalogueCanFile(entry)) {
+      /*
+        A PAIR CANNOT BE FILED FROM A WHOLE-FRAME READING, and arming the
+        earring class is what made that reachable rather than theoretical.
+
+        This function asks `reader.region`, which for a bilateral name is the
+        UNION of both sides — one mask over two objects. The store keys a pair
+        per instance (`earring@left`), the panel draws a rectangle per instance,
+        and the library already refuses a per-side crop taken from a union
+        because it is "a picture of two things under the name of one". Filing
+        the union here would put both hoops in one row under a facet no slot in
+        the catalogue answers to, judged against the union floor while every
+        surface that reads it works per side.
+
+        So it refuses, loudly and per the file's own rule that a failure is a
+        silent non-entry to the customer and a recorded one to us. The panel's
+        scan already reads pairs correctly (`faceScan`, `regionSides`, judged at
+        `sideFloor`); what is missing is a per-side WRITE path for this
+        catalogue, and it is missing rather than approximated.
+      */
+      scan.failed.push({
+        facet: entry.id,
+        detail: "worn in twos — a whole-frame reading is both sides at once, and this catalogue "
+          + "has no per-side write path yet. Refused rather than filed at the wrong boundary",
+      });
       continue;
     }
     try {

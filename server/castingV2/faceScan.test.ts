@@ -178,6 +178,53 @@ describe("the scan files only what it measured", () => {
     expect(without.urls.every((url) => url === undefined)).toBe(true);
   });
 
+  /*
+    THE SPECIMEN THAT WOULD HAVE BEEN LOST.
+
+    The earring court read sixteen worn SIDES at 0.0189–0.0347% of frame, and
+    the shipped union floor (0.0200%) sits ABOVE the smallest two of them. This
+    frame is 1000×1500, so a worn side of 0.0189% is 284 pixels, the per-side
+    floor is 135 and the union floor would be 300. Judged on the union number, a real gold hoop on a real ear
+    would have been filed as absent and her row would have gone missing on one
+    wearing ear in eight — the founder's own bug, half-closed and reopened.
+  */
+  it("keeps a worn earring at the smallest measured reading, and files nothing for a bare lobe", async () => {
+    const wornSide = maskOf({ x: 120, y: 400, width: 4, height: 71 }); // 284px = 0.0189%
+    const scan = await scanFace({
+      describe: null,
+      frame: FRAME,
+      reader: reader({
+        sides: (name) => (name === "earring"
+          ? { left: wornSide, right: EMPTY }
+          : { left: maskOf({ x: 100, y: 200, width: 20, height: 20 }), right: maskOf({ x: 700, y: 200, width: 20, height: 20 }) }),
+      }),
+    });
+
+    /* The worn side is PRESENT at the smallest reading the court ever took... */
+    expect(scan.boxes.get("earring@left")).toMatchObject({ x: 120, width: 4 });
+    /* ...and the bare one files nothing at all, which is what makes arming
+       presence-only safe: there is no absent row to misfile (fable-435). */
+    expect(scan.boxes.has("earring@right")).toBe(false);
+    expect(scan.masks.has("earring@right")).toBe(false);
+  });
+
+  it("does not file a box for a reading under the court's own floor", async () => {
+    /* 135 pixels — EXACTLY the per-side floor, and half a real hoop. Every
+       floor in this codebase is read strictly-greater, so the boundary itself
+       files nothing. The negative control the positive one above needs: without
+       it, a floor of zero would pass that test just as well. */
+    const speck = maskOf({ x: 120, y: 400, width: 1, height: 135 });
+    const scan = await scanFace({
+      describe: null,
+      frame: FRAME,
+      reader: reader({ sides: (name) => (name === "earring" ? { left: speck, right: EMPTY } : null) }),
+    });
+
+    expect(scan.boxes.has("earring@left")).toBe(false);
+    /* And the region says it answered nothing, rather than saying nothing. */
+    expect(scan.empty).toContain("earring");
+  });
+
   it("writes nothing anywhere — the scan mints no reference (fable-360 ruling 5)", async () => {
     /*
       The boundary this whole build is checked against, asserted the only way a

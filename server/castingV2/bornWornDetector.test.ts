@@ -19,9 +19,12 @@ import {
   BORN_WORN_CLASSES,
   BORN_WORN_DETECTOR,
   EARRING_COVERAGE_FLOOR,
+  EARRING_SIDE_COVERAGE_FLOOR,
   armedBornWornClasses,
+  bornWornClassFor,
   departureFloorFor,
   detectBornWorn,
+  detectionFloorFor,
   type BornWornClass,
 } from "./bornWornDetector";
 import type { Mask } from "./maskedComposite";
@@ -82,20 +85,141 @@ describe("the born-worn catalogue's vocabulary", () => {
   });
 
   it("lets a measured floor stand without arming detection", () => {
-    const earring = BORN_WORN_CLASSES.find((entry) => entry.id === "earring")!;
-    /* The departure gate reads the floor... */
+    /*
+      THE MECHANISM, DRIVEN — no shipped class defers any more, so the shipped
+      table can no longer show this and a version of it written out of local
+      objects would be the rule agreeing with a copy of itself. Through
+      `bornWornClassFor` it is the same function that decides in production.
+
+      It still matters: `deferArming` is how a kind holds a measured DEPARTURE
+      floor while detection waits for the court detection needs, and it is what
+      held earrings for four shifts until the per-side court passed.
+    */
+    const held = bornWornClassFor(
+      { region: "earring", pair: true },
+      {
+        floor: EARRING_COVERAGE_FLOOR,
+        measurement: "the union court",
+        sideFloor: EARRING_SIDE_COVERAGE_FLOOR,
+        sideMeasurement: "the per-side court",
+        deferArming: "a ruling has not been given yet",
+      },
+    );
+    /* Both numbers present, both courts run, and detection still inert — the
+       field decides, not the arithmetic. */
+    expect(held.floor).toBe(EARRING_COVERAGE_FLOOR);
+    expect(held.sideFloor).toBe(EARRING_SIDE_COVERAGE_FLOOR);
+    expect(held.armed).toBe(false);
+
+    /* And the departure gate reads the union floor either way — that half has
+       been live since the court measured it, and nothing here touched it. */
     expect(departureFloorFor("earring").measured).toBe(true);
     expect(departureFloorFor("earring").floor).toBe(EARRING_COVERAGE_FLOOR);
-    /* ...and the detector still does not hunt it on an untouched master. */
-    expect(earring.armed).toBe(false);
-    /*
-      The reason has to be legible from the row, or the next reader sees a
-      measured floor that is somehow inert and re-arms it.
-    */
-    expect(earring.measurement).not.toMatch(/NOT (MEASURED|CONSIDERED)/);
+  });
 
-    /* Slice 1 still arms exactly one class, and that is the honest state. */
-    expect(armedBornWornClasses().map((entry) => entry.id)).toEqual(["glasses"]);
+  /*
+    TWO BOUNDARIES, TWO NUMBERS — the finding that had to land before arming.
+
+    The union floor was measured on whole-frame readings (0.0404–0.0621%) and
+    its provenance claims a 2x margin. A per-side detector judges ONE ear, where
+    the worn band is 0.0189–0.0347%, and the union number sits at 0.945x the
+    smallest worn side — ABOVE it. Two of the sixteen measured worn sides read at
+    or under it, so arming on the union number would have filed a worn earring
+    as absent on one wearing ear in eight.
+  */
+  it("keeps the per-side floor and the union floor apart, each under its own court", () => {
+    const earring = BORN_WORN_CLASSES.find((entry) => entry.id === "earring")!;
+    expect(earring.floor).toBe(EARRING_COVERAGE_FLOOR);
+    expect(earring.sideFloor).toBe(EARRING_SIDE_COVERAGE_FLOOR);
+    expect(earring.sideFloor).not.toBe(earring.floor);
+
+    /*
+      The smallest worn SIDE the court read, and the margin the provenance
+      claims — the pair that must never drift apart. Taken at the BOTTOM of the
+      printed reading's rounding interval (0.0189% is somewhere in
+      [0.01885%, 0.01895%]), because a margin that only holds if the court
+      rounded generously is not a margin.
+    */
+    const smallestWornSide = 0.0001885;
+    expect(earring.sideFloor!).toBeLessThanOrEqual(smallestWornSide / 2);
+    /* And the union number would NOT have cleared it, which is the finding. */
+    expect(earring.floor!).toBeGreaterThan(smallestWornSide);
+
+    /* Each provenance names the boundary it belongs to, or the next reader
+       carries one across the other exactly as this one nearly was. */
+    expect(earring.measurement).toContain("0.0404");
+    expect(earring.sideMeasurement).toContain("PER SIDE");
+    expect(earring.sideMeasurement).toContain("0.0189");
+    /* The false-positive arm, stated from the data rather than from hope: 14 of
+       14 non-wearing sides read exactly zero, bare AND behind hair. It is the
+       reason presence-only arming is safe on a covered face. */
+    expect(earring.sideMeasurement).toContain("14 of 14");
+  });
+
+  /*
+    WHICH GATE READS WHICH, asserted rather than commented. The departure gate
+    decides refunds; it must keep reading the union number and must never see
+    the per-side one.
+  */
+  it("never hands the refund-deciding gate the per-side number", () => {
+    expect(departureFloorFor("earring").floor).toBe(EARRING_COVERAGE_FLOOR);
+    expect(departureFloorFor("earring").floor).not.toBe(EARRING_SIDE_COVERAGE_FLOOR);
+    expect(departureFloorFor("glasses").floor).toBe(GLASSES_COVERAGE_FLOOR);
+    /* An unmeasured kind is still judged at zero — the strictest reading there
+       is, and the direction that does not take her money. */
+    expect(departureFloorFor("nose stud").floor).toBe(0);
+    expect(departureFloorFor("nose stud").measured).toBe(false);
+  });
+
+  it("answers the detection question at the boundary it is asked at", () => {
+    expect(detectionFloorFor("earring", "side").floor).toBe(EARRING_SIDE_COVERAGE_FLOOR);
+    expect(detectionFloorFor("earring", "frame").floor).toBe(EARRING_COVERAGE_FLOOR);
+    expect(detectionFloorFor("glasses", "frame").floor).toBe(GLASSES_COVERAGE_FLOOR);
+    /* Glasses are one object across two eyes, so there is no side to judge —
+       and the row says that in as many words rather than returning a number. */
+    expect(detectionFloorFor("glasses", "side").measured).toBe(false);
+    expect(detectionFloorFor("glasses", "side").provenance).toContain("pair: false");
+
+    /*
+      A question no accessory court names is judged at zero, which is exactly
+      what the scan has always done: any pixels at all are the region
+      answering. The permissive fallback must be legible as a fallback.
+    */
+    for (const anatomy of ["eyes", "hair", "ear", "lips"]) {
+      expect(detectionFloorFor(anatomy, "side").floor).toBe(0);
+      expect(detectionFloorFor(anatomy, "frame").measured).toBe(false);
+    }
+  });
+
+  /*
+    THE ARMING RULE, one boundary along. A kind worn in twos is drawn, clicked
+    and stored per instance, so something will judge one side of it — and the
+    earring court is the proof that a union number applied to a side is a margin
+    that has quietly stopped being true.
+  */
+  it("cannot arm a paired kind on a whole-frame number alone", () => {
+    const unionCourtOnly = { floor: EARRING_COVERAGE_FLOOR, measurement: "the union court, alone" };
+    const bothCourts = { ...unionCourtOnly, sideFloor: EARRING_SIDE_COVERAGE_FLOOR, sideMeasurement: "per side" };
+
+    /* The negative arm: worn in twos, one number. This is the state the
+       catalogue was in for four shifts, and arming it then would have filed a
+       worn earring absent on one wearing ear in eight. */
+    expect(bornWornClassFor({ region: "earring", pair: true }, unionCourtOnly).armed).toBe(false);
+    /* The positive arm, so the refusal above is not a reader that says no to
+       everything: the same kind with both courts arms. */
+    expect(bornWornClassFor({ region: "earring", pair: true }, bothCourts).armed).toBe(true);
+    /* And a kind worn singly is unaffected — one number is all its boundary
+       needs, which is why glasses armed on the union court alone. */
+    expect(bornWornClassFor({ region: "glasses", pair: false }, unionCourtOnly).armed).toBe(true);
+    /* No floor at all is still the safety property, unchanged either way. */
+    expect(bornWornClassFor({ region: "nose stud", pair: false }, undefined).armed).toBe(false);
+  });
+
+  it("arms the two classes whose courts have passed, and no others", () => {
+    expect(armedBornWornClasses().map((entry) => entry.id).sort()).toEqual(["earring", "glasses"]);
+    /* Nose studs have no court at all and must stay inert — a catalogue that
+       lists what it merely suspects is a product guessing about her face. */
+    expect(BORN_WORN_CLASSES.find((entry) => entry.id === "nose stud")!.armed).toBe(false);
   });
 
   /*
@@ -192,14 +316,46 @@ describe("reading a master for what it already has", () => {
     expect(scan.detections).toEqual([]);
   });
 
+  /*
+    A PAIR IS NOT FILED FROM A UNION, and arming the earring class is what made
+    this reachable rather than theoretical. `reader.region` on a bilateral name
+    returns both sides merged; the store, the panel and the library all work per
+    instance. A row filed here would be two hoops under one facet, judged at the
+    wrong boundary — so it refuses and says which half is missing.
+  */
+  it("refuses to file a kind worn in twos from a whole-frame reading", async () => {
+    const earring = BORN_WORN_CLASSES.find((entry) => entry.id === "earring")!;
+    expect(earring.armed).toBe(true);
+    const ears = reader(async () => maskCovering(500));
+
+    const scan = await detectBornWorn({ image: IMAGE, reader: ears, classes: [earring] });
+
+    /* Not even asked: a refusal that still spends a vision call is a refusal
+       that costs house money to learn nothing. */
+    expect(ears.region).not.toHaveBeenCalled();
+    expect(scan.detections).toEqual([]);
+    expect(scan.absent).toEqual([]);
+    expect(scan.failed).toHaveLength(1);
+    expect(scan.failed[0].facet).toBe("earring");
+    expect(scan.failed[0].detail).toContain("per-side write path");
+
+    /* The positive arm on the same call: a kind worn singly still files, so the
+       refusal is about pairs and not about arming. */
+    const both = await detectBornWorn({ image: IMAGE, reader: reader(async () => maskCovering(209)), classes: [earring, glasses] });
+    expect(both.detections.map((found) => found.facet)).toEqual(["glasses"]);
+  });
+
   it("cannot be armed into filing without a floor", async () => {
     const eyes = reader(async () => maskCovering(500));
-    const forced: BornWornClass = { id: "earring", region: "earring", floor: null, measurement: "none", armed: true };
+    const forced: BornWornClass = {
+      id: "nose stud", region: "nose stud", floor: null, measurement: "none",
+      sideFloor: null, sideMeasurement: "none", pair: false, armed: true,
+    };
     const scan = await detectBornWorn({ image: IMAGE, reader: eyes, classes: [forced] });
 
     expect(eyes.region).not.toHaveBeenCalled();
     expect(scan.detections).toEqual([]);
-    expect(scan.failed).toEqual([{ facet: "earring", detail: "armed without a measured floor" }]);
+    expect(scan.failed).toEqual([{ facet: "nose stud", detail: "armed without a measured floor" }]);
   });
 
   /*
@@ -208,8 +364,11 @@ describe("reading a master for what it already has", () => {
     because a segmenter had a bad minute.
   */
   it("loses one class rather than the whole scan when a read fails", async () => {
+    /* A second SINGLY-worn class, because a pair never reaches the read at all
+       (the refusal above) and this is a test about the read failing. */
     const second: BornWornClass = {
-      id: "earring", region: "earring", floor: 0.001, measurement: "test only", armed: true,
+      id: "nose stud", region: "nose stud", floor: 0.001, measurement: "test only",
+      sideFloor: null, sideMeasurement: "worn singly", pair: false, armed: true,
     };
     const eyes = reader(async (input) => {
       if (input.name === "glasses") throw new Error("segmenter said 502");
@@ -219,6 +378,6 @@ describe("reading a master for what it already has", () => {
     const scan = await detectBornWorn({ image: IMAGE, reader: eyes, classes: [glasses, second] });
 
     expect(scan.failed).toEqual([{ facet: "glasses", detail: "segmenter said 502" }]);
-    expect(scan.detections.map((found) => found.facet)).toEqual(["earring"]);
+    expect(scan.detections.map((found) => found.facet)).toEqual(["nose stud"]);
   });
 });

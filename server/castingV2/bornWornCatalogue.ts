@@ -44,6 +44,7 @@ import { storagePut } from "../storage";
 import {
   BORN_WORN_CLASSES,
   BORN_WORN_DETECTOR,
+  catalogueCanFile,
   detectBornWorn,
   type BornWornClass,
 } from "./bornWornDetector";
@@ -126,7 +127,15 @@ export async function catalogueBornWorn(input: {
         .filter((row) => row.provenance === "detected_born" && row.detector === detector)
         .map((row) => row.facet),
     );
-    const wanted = catalogue.filter((entry) => entry.armed && !held.has(entry.id));
+    /*
+      `catalogueCanFile` is asked here as well as inside the detector, and it is
+      not a second copy of the rule — it is the same predicate, read for a
+      different purpose. The detector refuses to READ a class it cannot file;
+      this decides what this candidate still WANTS, and a class that can never
+      be filed must not sit in that list or every re-run reports work outstanding
+      on a master it has finished with.
+    */
+    const wanted = catalogue.filter((entry) => entry.armed && catalogueCanFile(entry) && !held.has(entry.id));
     if (wanted.length === 0) {
       return { outcome: "already-catalogued", segments: [], excluded: [] };
     }

@@ -49,7 +49,7 @@
  * the same reason: a scan is house money on a read the user never asked to pay
  * for, so it degrades to today's panel rather than to an error.
  */
-import { armedBornWornClasses } from "./bornWornDetector";
+import { armedBornWornClasses, detectionFloorFor } from "./bornWornDetector";
 import {
   assertEveryDescribedFeatureHasAnAsk,
   DESCRIBED_ASKS,
@@ -58,7 +58,7 @@ import {
 } from "./faceDescribe";
 import { createModuleLogger } from "../logging/logger";
 import type { Mask } from "./maskedComposite";
-import { belowHeadMask, MaskError } from "./maskGeometry";
+import { belowHeadMask, binaryCoverage, MaskError } from "./maskGeometry";
 import type { RegionReader } from "./maskedRefine";
 import type { FeatureSlot } from "./recipeAssembler";
 import {
@@ -318,6 +318,29 @@ export async function scanFace(input: {
   */
   await Promise.all(plan.map(async (region) => {
     const bilateral = region.slots.some((slot) => slot.instance !== null);
+    /*
+      THE READING IS JUDGED AGAINST THE FLOOR MEASURED AT THE BOUNDARY IT WAS
+      TAKEN AT — one rule, asked at whichever boundary this region is read.
+
+      A bilateral region is read a side at a time, so it asks for the per-side
+      number; everything else asks whole-frame. For anatomy the answer is 0,
+      which is exactly what this loop has always done (`boxIn` is non-null iff
+      at least one pixel is set, and `binaryCoverage > 0` iff the same), so no
+      face gains or loses a row from the rule existing.
+
+      For an accessory it is the court speaking. The earring court is why it is
+      asked per boundary rather than once: the union floor sits ABOVE two of
+      sixteen measured worn sides, so a pair judged on it would lose a real
+      earring on one wearing ear in eight.
+
+      `binaryCoverage` — the presence arithmetic — and the courts measured with
+      alpha-weighted `coverage`. On this reader they are the same reading: its
+      masks were read byte by byte and are strictly binary (0/255 only), which
+      makes the two identical by arithmetic rather than by luck. The provenance
+      strings say so, and the day a matting reader answers one of these
+      questions the floors get re-derived rather than reinterpreted.
+    */
+    const floor = detectionFloorFor(region.question, bilateral ? "side" : "frame").floor;
     try {
       if (bilateral && input.reader.regionSides) {
         const sides = await input.reader.regionSides({
@@ -339,7 +362,7 @@ export async function scanFace(input: {
         }
         for (const slot of region.slots) {
           const mask = slot.instance === "left" ? sides.left : sides.right;
-          const box = boxIn(mask, frame);
+          const box = binaryCoverage(mask) > floor ? boxIn(mask, frame) : null;
           /* Box and mask are set together, always: a slot with a rectangle and
              no shape would render as a hard-edged crop beside its cutout
              neighbours, and one with a shape and no rectangle has nowhere to
@@ -359,7 +382,7 @@ export async function scanFace(input: {
         absentIsAnswer: true,
         ...(input.frame.url ? { imageUrl: input.frame.url } : {}),
       });
-      const box = boxIn(mask, frame);
+      const box = binaryCoverage(mask) > floor ? boxIn(mask, frame) : null;
       if (box) {
         for (const slot of region.slots) {
           boxes.set(slot.slot, box);

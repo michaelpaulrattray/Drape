@@ -36,6 +36,7 @@ vi.mock("../db/storageCleanup", () => ({
 }));
 
 const { catalogueBornWorn } = await import("./bornWornCatalogue");
+import { armedBornWornClasses } from "./bornWornDetector";
 import type { Mask } from "./maskedComposite";
 import type { StoredSegment } from "../db/castingV2Segments";
 
@@ -175,6 +176,34 @@ describe("cataloguing a master", () => {
     expect(eyes.region).not.toHaveBeenCalled();
     expect(calls.manifest).not.toHaveBeenCalled();
     expect(calls.record).not.toHaveBeenCalled();
+  });
+
+  /*
+    A CLASS THIS PATH CANNOT FILE IS NOT WORK OUTSTANDING.
+
+    Earrings are armed — the panel scan reads them per side — and this catalogue
+    writes one row per class from one whole-frame reading, which for a pair is
+    both ears at once. So it never wants them, and a master whose glasses are
+    already held is FINISHED rather than perpetually one class short. Without
+    this, every re-scan of every catalogued face would report "nothing found"
+    and re-run its refusal forever.
+  */
+  it("never wants a kind it has no way to file", async () => {
+    const armed = armedBornWornClasses().map((entry) => entry.id);
+    expect(armed).toContain("earring");
+    expect(armedBornWornClasses().find((entry) => entry.id === "earring")!.pair).toBe(true);
+
+    const eyes = reader(boxMask(10));
+    const result = await catalogueBornWorn({
+      userId: 1,
+      candidateId: 9,
+      master: await masterPng(),
+      reader: eyes,
+      dependencies: { ...(dependencies as object), list: async () => [storedDetection()] } as never,
+    });
+
+    expect(result.outcome).toBe("already-catalogued");
+    expect(eyes.region).not.toHaveBeenCalled();
   });
 
   it("re-reads for a BETTER detector, and leaves the old row's name alone", async () => {
