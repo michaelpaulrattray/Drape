@@ -2971,6 +2971,35 @@
   color: color-mix(in srgb, var(--onScrim) 62%, transparent);
 }
 
+/*
+  THE PANEL IS READING HER FACE, AND SAYS SO (founder, fable-397: *"it usually
+  takes about 5-10 seconds — but currently it looks like nothing is even
+  happening"*).
+
+  One quiet line under the sub, not a spinner per row: the rows the library
+  already knows are on screen and tappable throughout, so this is the panel
+  saying more is coming — not a loading screen standing in front of it. It
+  breathes rather than spins, because a scan is the slowest thing on this
+  surface and a fast animation beside a slow wait reads as impatience.
+*/
+.dpc-face__working {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: color-mix(in srgb, var(--onScrim) 48%, transparent);
+  animation: dpc-face-breathe 2.4s ease-in-out infinite;
+}
+
+@keyframes dpc-face-breathe {
+  0%, 100% { opacity: 0.55; }
+  50% { opacity: 1; }
+}
+
+/* Someone who has asked for less movement gets the line and none of it. */
+@media (prefers-reduced-motion: reduce) {
+  .dpc-face__working { animation: none; opacity: 0.8; }
+}
+
 .dpc-face__group { display: flex; flex-direction: column; gap: 2px; }
 
 /*

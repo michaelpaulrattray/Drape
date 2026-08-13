@@ -261,9 +261,53 @@ describe("the box on the picture is the ask box, at the feature", () => {
 });
 
 describe("the panel's copy, classified", () => {
-  it("keeps the founder's heading verbatim with the pronoun derived", async () => {
-    const panel = await readFile(PANEL, "utf8");
-    expect(panel).toContain("On {possessive} face");
+  it("carries the founder's ruled heading, and no longer the one he replaced", async () => {
+    /*
+      "Refine them" — his own words (fable-398). The heading it replaces named
+      the face, and this panel had outgrown that: the same photograph that
+      showed the new BODY and SKIN rows showed "On her face" over them.
+
+      ANCHORED ON THE ELEMENT, and asserted against the PROSE-STRIPPED source
+      for a reason this very test earned. The old assertion read the raw file
+      for the bare phrase, and the change that retired the heading left it
+      quoted in the comment above — so it would have gone on passing over a
+      heading that no longer existed. A copy assertion that a comment can
+      satisfy is not reading the copy.
+    */
+    const panel = withoutProse(await readFile(PANEL, "utf8"));
+    expect(panel).toContain(">Refine them<");
+    expect(panel).not.toContain("On {possessive} face");
+  });
+
+  /**
+   * THE WORKING STATE CANNOT OUTLIVE ITS WORK (founder, fable-397).
+   *
+   * The founder watched a 5-10 second scan with no sign it was happening. The
+   * line that fixes it has one dangerous failure mode — being still on screen
+   * after the scan has died — and that is a question about where the flag comes
+   * from, which a suite can hold. Derived from the query's own pending state, it
+   * is false the moment the scan lands OR errors; kept in a `useState` beside
+   * the query, there is exactly one path that forgets to clear it, and that path
+   * is the failure.
+   */
+  it("shows a working line while the scan runs, with the pronoun derived", async () => {
+    const panel = withoutProse(await readFile(PANEL, "utf8"));
+    expect(panel).toContain("Reading {possessive} features…");
+    /* Gated on the prop, so the line is absent — not merely invisible — the
+       rest of the time. */
+    expect(panel).toContain("working ?");
+    /* fable-397's own example is "Reading her features…", and shipping that
+       literal would say "her" over a man's photograph. */
+    expect(panel).not.toContain("Reading her features");
+  });
+
+  it("DERIVES that state from the scan query, so a dead scan cannot leave it stuck", async () => {
+    const sheet = withoutProse(await readFile(SHEET, "utf8"));
+    expect(sheet).toContain("faceScan.isPending");
+    /* No second copy of the fact: a flag set on start and cleared on success is
+       the shape that survives an error. */
+    expect(sheet).not.toMatch(/useState[^\n]*[Ww]orking/);
+    expect(sheet).not.toMatch(/set[A-Za-z]*Working\(/);
   });
 
   it("says what is true of a list that includes what has never been touched", async () => {

@@ -211,6 +211,27 @@ function stateOfSlot(
 ): SlotState {
   if (rows.length === 0) return EMPTY;
   const newest = rows.reduce((held, row) => (row.version > held.version ? row : held));
+  /*
+    A MAINTAINED ABSENCE IS NOT DISPLAYED — the founder, in as many words
+    (fable-401: *"do not display it"*).
+
+    A vacancy row's words are the sentence the RECIPE needs — "no glasses — her
+    face uncovered, no frames, no lenses and no rim shadow on her cheeks or
+    brows" — and they are load-bearing there: the master wears her glasses
+    forever, so every later render re-says the absence or paints them back on.
+    Read onto the panel they became a row describing something that is not on
+    her face, in the voice of something that is.
+
+    So the fact keeps working and stops speaking here. The row falls to EMPTY,
+    and a row with no cutout and no words does not render at all (`hasContent`)
+    — which is the ruling exactly: the row leaves the panel, the fact persists
+    underneath untouched.
+
+    Deliberately NOT filtered out of `rows` upstream: the vacancy must stay the
+    newest state, or a retired carry underneath it would surface as this slot's
+    current answer and the panel would show her the glasses she took off.
+  */
+  if (newest.role === "vacancy") return EMPTY;
   const carry = rows.filter((row) => row.role === "carry")
     .reduce<StoredReference | null>((held, row) => (held === null || row.version > held.version ? row : held), null);
 

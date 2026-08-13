@@ -22,8 +22,20 @@ import type { FaceSelectionModel } from "./faceSelection";
  *
  * # THE COPY, CLASSIFIED (UI milestone contract)
  *
- *   "On {possessive} face"                          VERIFIED — founder-cleared
- *                                                   verbatim; the pronoun derived
+ *   "Refine them"                                    VERIFIED — his own words
+ *                                                   (fable-398, "how about refine
+ *                                                   them or somthing"). It replaces
+ *                                                   v1's "On {possessive} face",
+ *                                                   which this panel had outgrown:
+ *                                                   the list gained BODY and SKIN
+ *                                                   rows, so a heading naming the
+ *                                                   face was false in the same
+ *                                                   photograph that showed them.
+ *                                                   A possessive variant ("Refine
+ *                                                   her/them") derives from the
+ *                                                   cast's pronoun the way the rows
+ *                                                   already do, if it is ever wanted;
+ *                                                   the ruled default is the plain one
  *   "Everything here can be changed. Tap one…"       ADAPTED  — v1's sub said
  *                                                   "Things this version is
  *                                                   keeping", which is false of a
@@ -32,6 +44,10 @@ import type { FaceSelectionModel } from "./faceSelection";
  *   "Face" · "Hair" · "Body" · "Accessories"         ADAPTED  — the group names
  *                                                   from fable-197/202, ordered
  *                                                   the way a face is read
+ *   "Reading {possessive} features…"                 ADAPTED  — fable-397's own
+ *                                                   example sentence, with the
+ *                                                   pronoun derived rather than
+ *                                                   the literal "her" shipped
  *   "her lips — "                                    VERIFIED — the shipped
  *                                                   prefill shape
  *   "she came with it" · "from an edit"              VERIFIED — the shipped
@@ -130,12 +146,40 @@ export type FacePanelGroup = {
 export function FacePanel({
   groups,
   possessive,
+  working,
   selection,
   onScope,
 }: {
   groups: readonly FacePanelGroup[];
-  /** HIS · HER · THEIR — this face's own word, derived on the server. */
+  /**
+   * HIS · HER · THEIR — this face's own word, derived on the server.
+   *
+   * The ruled heading no longer needs it; the working line below does, and for
+   * the reason the heading needed it before: fable-397's example copy reads
+   * "Reading her features…", and the mock it came from was of a woman. Shipping
+   * that literal would put "her" over a man's photograph, which is the mistake
+   * `segmentsOnFace` and the v1 heading each paid for once already (law 8 — a
+   * stylist does not call a man's face hers).
+   */
   possessive: string;
+  /**
+   * HER FACE IS BEING READ RIGHT NOW (founder, fable-397).
+   *
+   * His words, with a screenshot: *"the image should show some sort of loading
+   * state while its generating her crops/thumbnails — it usually takes about
+   * 5-10 seconds — but currently it looks like nothing is even happening."*
+   *
+   * It is one line, not a spinner per row, and the rows the library already
+   * knows stay on screen and tappable underneath it: the panel is not empty
+   * while the scan runs, it is INCOMPLETE, and those are different pictures.
+   *
+   * **It can never outlive its work.** The caller derives it from the scan
+   * query's own pending state, so a scan that errors simply stops being pending
+   * and the panel shows what the library alone knows — today's behaviour —
+   * rather than a "reading…" that never ends. A working state that can outlive
+   * its work is the invisible-run lesson wearing UI clothes.
+   */
+  working: boolean;
   /** The one selection model, shared with the picture's regions. */
   selection: FaceSelectionModel;
   /** Writes the opening of their sentence into the ask box. Never submits it. */
@@ -146,8 +190,12 @@ export function FacePanel({
   return (
     <div className="dpc-face" aria-labelledby="dpc-face-title">
       <div className="dpc-face__head">
-        <p className="dpc-face__title" id="dpc-face-title">On {possessive} face</p>
+        <p className="dpc-face__title" id="dpc-face-title">Refine them</p>
         <p className="dpc-face__sub">Everything here can be changed. Tap one to talk about it.</p>
+        {/* `role="status"` so a screen reader is told once, politely, that more
+            is coming — and told nothing at all when it lands, because the rows
+            arriving are their own announcement. */}
+        {working ? <p className="dpc-face__working" role="status">Reading {possessive} features…</p> : null}
       </div>
       {groups.map((group) => (
         <section className="dpc-face__group" key={group.group}>

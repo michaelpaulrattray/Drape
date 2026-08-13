@@ -887,6 +887,21 @@ export default function CastingSheet() {
   );
 
   const faceSelection = useFaceSelection();
+  /*
+    THE WAIT, MADE VISIBLE (founder, fable-397: *"it usually takes about 5-10
+    seconds — but currently it looks like nothing is even happening"*).
+
+    Derived from the query rather than tracked beside it, which is what makes it
+    unable to outlive its work: `isPending` is false the moment the scan lands
+    OR errors, so a failed scan leaves the panel showing what the library alone
+    knows — today's behaviour — and never a "reading…" that never ends. A flag
+    set when the scan starts and cleared when it succeeds would have exactly one
+    path that forgets to clear it, and that path is the failure.
+
+    `face.data?.scanning` gates it too: outside the scan's scope the query never
+    fires, so there is nothing to wait for and nothing to say.
+  */
+  const faceScanWorking = Boolean(face.data?.scanning) && faceScan.isPending;
   const scannedFaceData = faceScan.data?.enabled ? faceScan.data : null;
   const facePanelData = scannedFaceData ?? (face.data?.enabled ? face.data : null);
   const faceRows = facePanelData?.groups.flatMap((group) => group.rows) ?? [];
@@ -1828,6 +1843,7 @@ export default function CastingSheet() {
             <FacePanel
               groups={facePanelData.groups}
               possessive={facePanelData.possessive}
+              working={faceScanWorking}
               selection={faceSelection}
               onScope={setAskDraft}
             />

@@ -107,6 +107,69 @@ describe("a face with nothing said about it shows nothing", () => {
 });
 
 /**
+ * A MAINTAINED ABSENCE IS NOT DISPLAYED — the founder, in as many words
+ * (fable-401: *"do not display it"*).
+ *
+ * When she takes her glasses off, the library files a vacancy row whose words
+ * are the sentence every later RECIPE has to say — the master wears them
+ * forever, so silence paints them back on. Read onto the panel, that sentence
+ * became a row telling her about something that is not on her face.
+ *
+ * The fact keeps working and stops speaking. Both halves are asserted here,
+ * because dropping the row is easy and dropping the FACT would be the
+ * one-frame removal all over again — this file cannot see the recipe, so the
+ * half it can hold is that the vacancy still beats what is under it.
+ */
+describe("a slot she has emptied says nothing on the panel", () => {
+  const removed = () => [
+    row({ slot: "glasses", tier: "item", noun: "glasses", version: 1,
+      words: ["thin gold wire frames"], storageKey: "library/glasses.png", maskKey: "library/glasses-mask.png" }),
+    row({ slot: "glasses", tier: "item", noun: "glasses", role: "vacancy", version: 2,
+      words: ["no glasses — her face uncovered, no frames, no lenses and no rim shadow on her cheeks or brows"] }),
+  ];
+
+  it("draws no row for it — not a row reciting the absence", () => {
+    const rows = allRows(removed());
+    expect(rows.map((panelRow) => panelRow.name)).not.toContain("Her glasses");
+    /* And not merely renamed: nothing anywhere in the panel says it. */
+    expect(JSON.stringify(rows)).not.toContain("no glasses");
+  });
+
+  it("and the vacancy still BEATS the crop underneath it", () => {
+    /*
+      The row is dropped by having nothing to say, never by being filtered out
+      of the library — a vacancy that stopped being the newest state would let
+      the retired carry beneath it surface, and the panel would show her a
+      picture of the glasses she just took off. Same rows, one extra thing said
+      about the slot, and the crop must still not appear.
+    */
+    const rows = allRows(removed());
+    expect(JSON.stringify(rows)).not.toContain("library/glasses.png");
+  });
+
+  it("CONTROL — the same slot with an ordinary newest row is a row as usual", () => {
+    /* The rule keys on the vacancy ROLE and on nothing wider. Without this the
+       test above passes just as well against a panel that lost its glasses row
+       for some other reason entirely. */
+    const rows = allRows([
+      row({ slot: "glasses", tier: "item", noun: "glasses", version: 1, words: ["thin gold wire frames"] }),
+    ]);
+    expect(rows.map((panelRow) => panelRow.name)).toContain("Her glasses");
+  });
+
+  it("CONTROL — a re-add after the removal speaks again", () => {
+    /* The founder's own sequence, one step further on: the newest row is an
+       ordinary one again, so the row comes back with its new words. */
+    const rows = allRows([
+      ...removed(),
+      row({ slot: "glasses", tier: "item", noun: "glasses", version: 3, words: ["round tortoiseshell frames"] }),
+    ]);
+    const glasses = rows.find((panelRow) => panelRow.name === "Her glasses");
+    expect(glasses?.words).toEqual(["round tortoiseshell frames"]);
+  });
+});
+
+/**
  * WHICH SLOTS ARE ROWS AT ALL — the catalogue's answer, not this file's.
  *
  * Two different rules, and keeping them apart is the point: the catalogue says
