@@ -1,0 +1,219 @@
+import { describe, expect, it } from "vitest";
+
+import { scanFace, scanPlan } from "./faceScan";
+import { armedBornWornClasses } from "./bornWornDetector";
+import type { Mask } from "./maskedComposite";
+import type { RegionReader } from "./maskedRefine";
+
+/**
+ * THE AUTO-SCAN, driven directly — never through a model that usually behaves.
+ *
+ * The scan exists because a face nobody has edited has a panel of empty boxes
+ * (fable-352, his screenshot). What it must never do is fill those boxes with
+ * anything it did not measure, so these drive the four ways it can be wrong:
+ * asking the wrong questions, filing a box for a region that answered nothing,
+ * turning a failed reading into a fact, and giving a pair one box between them.
+ */
+const FRAME = { bytes: Buffer.from("not really a picture"), width: 1000, height: 1500 };
+
+/** A mask claiming one rectangle, so the box it produces is predictable. */
+function maskOf(box: { x: number; y: number; width: number; height: number }): Mask {
+  const data = Buffer.alloc(FRAME.width * FRAME.height, 0);
+  for (let y = box.y; y < box.y + box.height; y += 1) {
+    data.fill(255, y * FRAME.width + box.x, y * FRAME.width + box.x + box.width);
+  }
+  return { data, width: FRAME.width, height: FRAME.height };
+}
+
+const EMPTY: Mask = { data: Buffer.alloc(FRAME.width * FRAME.height, 0), width: FRAME.width, height: FRAME.height };
+
+function reader(answers: {
+  region?: (name: string) => Mask | Promise<Mask>;
+  sides?: ((name: string) => { left: Mask; right: Mask } | null) | null;
+}): RegionReader & { asked: string[]; sideAsked: string[]; urls: (string | undefined)[] } {
+  const asked: string[] = [];
+  const sideAsked: string[] = [];
+  const urls: (string | undefined)[] = [];
+  const built: any = {
+    asked,
+    sideAsked,
+    urls,
+    async region({ name, imageUrl }: { name: string; imageUrl?: string }) {
+      asked.push(name);
+      urls.push(imageUrl);
+      return answers.region ? answers.region(name) : maskOf({ x: 10, y: 20, width: 30, height: 40 });
+    },
+    async subject() { return EMPTY; },
+    async landmark() { return null; },
+  };
+  if (answers.sides !== null) {
+    built.regionSides = async ({ name, imageUrl }: { name: string; imageUrl?: string }) => {
+      sideAsked.push(name);
+      urls.push(imageUrl);
+      return answers.sides
+        ? answers.sides(name)
+        : { left: maskOf({ x: 100, y: 200, width: 20, height: 20 }), right: maskOf({ x: 700, y: 200, width: 20, height: 20 }) };
+    };
+  }
+  return built;
+}
+
+describe("what the scan asks is derived from the catalogue", () => {
+  it("asks nothing about a slot the catalogue calls words-only", () => {
+    const questions = scanPlan().map((region) => region.question);
+    /* Chin, jaw and cheekbones carry no segmentation question of their own —
+       the founder's third shape (fable-360) keeps them askable in words with no
+       thumbnail, and the catalogue is what says so. A scan that asked for them
+       would be inventing a picture for a row that has none. */
+    expect(questions).not.toContain("chin");
+    expect(questions).not.toContain("jaw");
+    expect(questions).not.toContain("cheekbone");
+  });
+
+  it("asks only about accessory classes that are ARMED", () => {
+    const questions = scanPlan().map((region) => region.question);
+    const armed = armedBornWornClasses().map((entry) => entry.region);
+    /* Glasses today. An unarmed class has no three-class court behind it, and a
+       detector without its court is a guess about a customer's face. */
+    expect(armed).toContain("glasses");
+    expect(questions).toContain("glasses");
+    for (const kind of ["earring", "nose stud"]) {
+      if (!armed.includes(kind)) expect(questions).not.toContain(kind);
+    }
+  });
+
+  it("asks each feature ONCE, however many slots it feeds", () => {
+    const plan = scanPlan();
+    const features = plan.map((region) => region.feature);
+    expect(new Set(features).size).toBe(features.length);
+    /* A bilateral feature is one question read two-sidedly, so both its slots
+       ride one plan entry rather than costing two reads. */
+    const eye = plan.find((region) => region.feature === "eye");
+    expect(eye?.slots.map((slot) => slot.instance).sort()).toEqual(["left", "right"]);
+  });
+});
+
+describe("the scan files only what it measured", () => {
+  it("gives each side of a pair its OWN box", async () => {
+    const scan = await scanFace({ frame: FRAME, reader: reader({}) });
+
+    expect(scan.boxes.get("eye@left")).toMatchObject({ x: 100, width: 20 });
+    expect(scan.boxes.get("eye@right")).toMatchObject({ x: 700, width: 20 });
+    /* One box shared between two instances is the wrong-boundary class with a
+       rectangle on it — a crop of both her earrings filed under one side. */
+    expect(scan.boxes.get("eye@left")).not.toEqual(scan.boxes.get("eye@right"));
+  });
+
+  it("carries the frame with every box, because a box without one is a rectangle in an unknown space", async () => {
+    const scan = await scanFace({ frame: FRAME, reader: reader({}) });
+    for (const box of scan.boxes.values()) {
+      expect(box.frame).toEqual({ width: 1000, height: 1500 });
+    }
+  });
+
+  it("FILES NOTHING for a region that answered nothing — an ear nobody can see is not an ear wearing nothing", async () => {
+    const scan = await scanFace({
+      frame: FRAME,
+      reader: reader({ region: (name) => (name === "facial hair" ? EMPTY : maskOf({ x: 5, y: 5, width: 5, height: 5 })) }),
+    });
+
+    expect(scan.boxes.has("facial-hair")).toBe(false);
+    expect(scan.empty).toContain("facial hair");
+    /* And the rest of the face is unaffected: one silent region is not a
+       failed scan. */
+    expect(scan.found).toBeGreaterThan(0);
+  });
+
+  it("turns a FAILED READING into no box, never into a fact", async () => {
+    const scan = await scanFace({
+      frame: FRAME,
+      reader: reader({
+        region: (name) => {
+          if (name === "hair") throw new Error("the segmenter fell over");
+          return maskOf({ x: 5, y: 5, width: 5, height: 5 });
+        },
+      }),
+    });
+
+    expect(scan.boxes.has("hair")).toBe(false);
+    expect(scan.failed.map((entry) => entry.question)).toContain("hair");
+    /* Recorded, not swallowed: a silent catch is how thirty faces were once
+       declared bare (opus-052 §3). And the scan still returns — a courtesy read
+       the user never asked to pay for must degrade to today's panel, not to an
+       error on her screen. */
+    expect(scan.failed[0]?.why).toContain("fell over");
+    expect(scan.found).toBeGreaterThan(0);
+  });
+
+  it("leaves a pair UNANSWERED rather than splitting one box across it", async () => {
+    /* `regionSides` returning null is the reader saying this name has no sides
+       for it — a capability answer. Falling back to the whole-frame question
+       would light both instances off one rectangle covering both. */
+    const scan = await scanFace({ frame: FRAME, reader: reader({ sides: () => null }) });
+
+    expect(scan.boxes.has("eye@left")).toBe(false);
+    expect(scan.boxes.has("eye@right")).toBe(false);
+    /* Named from the plan rather than typed here: the catalogue's question for
+       the eye feature is "eyes", and a test carrying its own copy of that word
+       is the second list this module refuses to keep. */
+    const eyeQuestion = scanPlan().find((region) => region.feature === "eye")?.question;
+    expect(scan.empty).toContain(eyeQuestion);
+  });
+
+  it("passes the frame's address through so twelve questions do not carry twelve copies", async () => {
+    const withUrl = reader({});
+    await scanFace({ frame: { ...FRAME, url: "https://pub-test.r2.dev/master.png" }, reader: withUrl });
+    expect(withUrl.urls.every((url) => url === "https://pub-test.r2.dev/master.png")).toBe(true);
+
+    /* And it is genuinely optional — a frame with no address is read exactly as
+       before. */
+    const without = reader({});
+    await scanFace({ frame: FRAME, reader: without });
+    expect(without.urls.every((url) => url === undefined)).toBe(true);
+  });
+
+  it("writes nothing anywhere — the scan mints no reference (fable-360 ruling 5)", async () => {
+    /*
+      The boundary this whole build is checked against, asserted the only way a
+      unit test honestly can: the module's dependencies. A scan that could write
+      would have to import a writer, and it imports none.
+    */
+    const source = await (await import("node:fs/promises")).readFile(
+      new URL("./faceScan.ts", import.meta.url), "utf8",
+    );
+    const imports = source.slice(0, source.indexOf("const log ="));
+    for (const writer of ["referenceLibrary", "referenceMint", "storage", "connection", "drizzle"]) {
+      expect(imports, `the scan must not import ${writer}`).not.toContain(writer);
+    }
+  });
+});
+
+describe("it asks them all at once", () => {
+  it("does not wait for one region before asking the next", async () => {
+    let inFlight = 0;
+    let peak = 0;
+    const slow: RegionReader = {
+      async region() {
+        inFlight += 1;
+        peak = Math.max(peak, inFlight);
+        await new Promise((resolve) => setTimeout(resolve, 5));
+        inFlight -= 1;
+        return maskOf({ x: 1, y: 1, width: 2, height: 2 });
+      },
+      async regionSides() {
+        inFlight += 1;
+        peak = Math.max(peak, inFlight);
+        await new Promise((resolve) => setTimeout(resolve, 5));
+        inFlight -= 1;
+        return { left: maskOf({ x: 1, y: 1, width: 2, height: 2 }), right: maskOf({ x: 9, y: 1, width: 2, height: 2 }) };
+      },
+      async subject() { return EMPTY; },
+      landmark: (async () => null) as never,
+    } as never;
+
+    await scanFace({ frame: FRAME, reader: slow });
+    /* Serially this is the difference between a panel that fills while she is
+       looking at the face and one that arrives after she stopped waiting. */
+    expect(peak).toBeGreaterThan(1);
+  });
+});

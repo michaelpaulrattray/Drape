@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "451f5baef52a8f41"
+    "sourceFingerprint": "f862ca3e0d29e3f5"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 95
+      "moduleCount": 96
     },
     {
       "id": "domain:castingV2",
@@ -3359,6 +3359,12 @@
     {
       "id": "module:server/castingV2/facePanel.ts",
       "path": "server/castingV2/facePanel.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/faceScan.ts",
+      "path": "server/castingV2/faceScan.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -8652,6 +8658,10 @@
     {
       "id": "test:server/castingV2/facePanel.test.ts",
       "path": "server/castingV2/facePanel.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/faceScan.test.ts",
+      "path": "server/castingV2/faceScan.test.ts"
     },
     {
       "id": "test:server/castingV2/falRegionReader.test.ts",
@@ -17883,6 +17893,41 @@
     {
       "from": "module:server/castingV2/facePanel.ts",
       "to": "module:server/castingV2/referenceSlots.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/faceScan.ts",
+      "to": "module:server/castingV2/bornWornDetector.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/faceScan.ts",
+      "to": "module:server/castingV2/maskedComposite.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/faceScan.ts",
+      "to": "module:server/castingV2/maskedRefine.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/faceScan.ts",
+      "to": "module:server/castingV2/recipeAssembler.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/faceScan.ts",
+      "to": "module:server/castingV2/referenceSlotCatalogue.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/faceScan.ts",
+      "to": "module:server/castingV2/segmentCuts.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/faceScan.ts",
+      "to": "module:server/logging/logger.ts",
       "kind": "imports"
     },
     {
