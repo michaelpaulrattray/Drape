@@ -490,26 +490,54 @@ for (const theme of THEMES) {
     );
 
     /* ---- one selection, two views ---- */
+    /*
+      PAIRED BY NAME, NEVER BY INDEX.
+
+      This read `boxes[0]` while hovering HER LIPS, which was sound when the
+      fixture offered exactly one measured region and is a coin flip now that
+      the scan draws twelve: box zero is her BUILD, so the check was asking
+      whether hovering her lips lights her build. It failed, and it would have
+      passed just as meaninglessly had the two been drawn in the other order.
+
+      The rule under test is that one selection has two views, so both halves
+      name the SAME feature at both ends.
+    */
     const rowSelector = `.dpc-face__row[aria-label^="${MEASURED_ROW}"]`;
     await page.hover(rowSelector);
     await new Promise((resolve) => setTimeout(resolve, 150));
     const litByRow = await page.evaluate(READ_REGIONS) as any;
+    const litBox = litByRow?.boxes?.find((box: any) => box.tag === MEASURED_ROW);
     check(
-      litByRow?.boxes[0]?.lit === "true",
-      `${theme}: hovering the row lights the region on the picture`,
-      `box data-lit="${litByRow?.boxes[0]?.lit}"`,
+      litBox?.lit === "true",
+      `${theme}: hovering the row lights ITS OWN region on the picture`,
+      litBox
+        ? `${MEASURED_ROW}'s box reads data-lit="${litBox.lit}", and it is 1 of ${litByRow.boxes.length} drawn`
+        : `no box is tagged "${MEASURED_ROW}" among ${litByRow?.boxes?.length ?? 0} drawn`,
+    );
+    /* And no OTHER region lights with it — a selection that lights everything
+       is not a selection. The negative control on the same hover. */
+    const alsoLit = (litByRow?.boxes ?? []).filter((box: any) => box.lit === "true" && box.tag !== MEASURED_ROW);
+    check(
+      alsoLit.length === 0,
+      `${theme}: and lights nothing else`,
+      alsoLit.length === 0
+        ? `1 of ${litByRow.boxes.length} boxes lit`
+        : `also lit: ${alsoLit.map((box: any) => box.tag).join(", ")}`,
     );
     await shot(page, ".dpc-face", `panel-${theme}.png`);
     await page.screenshot({ path: path.join(OUT, `sheet-${theme}.png`) as `${string}.png` });
 
-    await page.hover(".dpc-regions__box");
+    /* The reverse, hovering the SAME feature's box rather than whichever one
+       happens to be drawn first. */
+    const boxIndex = (litByRow?.boxes ?? []).findIndex((box: any) => box.tag === MEASURED_ROW);
+    await page.hover(`.dpc-regions__box:nth-of-type(${boxIndex + 1})`).catch(() => null);
     await new Promise((resolve) => setTimeout(resolve, 150));
     const litByBox = await page.evaluate(READ_PANEL) as any;
     const litRow = litByBox.rows.find((row: any) => row.name === MEASURED_ROW);
     check(
       litRow?.lit === "true",
-      `${theme}: hovering the region lights the row in the panel`,
-      `row data-lit="${litRow?.lit}"`,
+      `${theme}: hovering that region lights ITS OWN row in the panel`,
+      `${MEASURED_ROW}'s row reads data-lit="${litRow?.lit}" (box ${boxIndex + 1} of ${litByRow?.boxes?.length ?? 0})`,
     );
 
     /* ---- click the feature ON the picture ---- */
