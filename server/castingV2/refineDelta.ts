@@ -219,7 +219,21 @@ export function joinItems(value: FreeValue | undefined): string {
 export type RefineRefusal =
   /** A wall, and refusals always NAME theirs (D-131). */
   | { reason: "wall_likeness" }
-  | { reason: "wall_stage"; asked: string }
+  /**
+   * `backed` says whether the STAGE LEXICON agreed with the model's claim.
+   *
+   * The interpreter already computes this — it checks a stage claim against
+   * `stageWordIn` and gives the model one re-look when the sentence names no
+   * stage word (`refineInterpreter.ts`, fable-363 ruling 1). Until it was
+   * carried here the answer reached a log line and nothing else, so an UNBACKED
+   * refusal was delivered in the BACKED refusal's words: *"horns is a garment, a
+   * prop or the set"*, said to somebody who asked for something growing out of
+   * her head. A false sentence is a worse refusal than a vague one.
+   *
+   * Absent means backed — every refusal written before this existed came from a
+   * matched stage word, which is what the field says.
+   */
+  | { reason: "wall_stage"; asked: string; backed?: boolean }
   | { reason: "wall_content" }
   /**
    * `value` is WHAT THE MODEL ACTUALLY SAID, carried so the refusal can be

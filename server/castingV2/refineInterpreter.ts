@@ -181,6 +181,24 @@ const BASE_PROMPT = [
   "    A BODY TATTOO IS NEVER THIS WALL. A chest piece, a back piece, a sleeve — those are",
   "    ink placements, so they go to the ink subject and the gate answers them. Sending them",
   "    here tells the user it can never be rendered when the body-art studio is coming.",
+  /*
+    THE SAME SENTENCE, SAME SHAPE, FOR FANTASTICAL ANATOMY (OPEN_LANE_DESIGN
+    NOTE §2, approved as a standalone rider).
+
+    Measured 3/3 on the real transport: *"give her horns"* claimed the CONTENT
+    wall, whose message tells the user the thing can never be rendered. Horns
+    are not unsafe and the open lane is on the roadmap, so that is the wrong
+    thing to say — the identical mistake this block already corrects one line
+    up for a sleeve tattoo.
+
+    It is a request and not a control, which is why it was measured before and
+    after rather than asserted; the honest destination is the unbacked stage
+    sentence, which is code and does not depend on the model obeying this.
+  */
+  "    NOR IS FANTASTICAL ANATOMY. Horns, antlers, wings, a tail, scales, pointed ears —",
+  "    those are things on the PERSON that this simply cannot name yet, not unsafe ones.",
+  '    Reply {"wall": "stage", "asked": "<the thing, in their words>"} and the code says the',
+  "    honest sentence. Sending them here tells the user it can never be rendered.",
   "",
   "SUBJECTIVE asks are a wall too — prettier, hotter, better looking, more attractive. They name",
   'a judgement rather than a feature, so reply {"wall": "stage", "asked": "how attractive they look"}.',
@@ -744,7 +762,20 @@ async function runOnce(
       }
       if (relooked) return relooked;
     }
-    return { ok: false, refusal: { reason: "wall_stage", asked: asked || "that" } };
+    /*
+      AND THE ANSWER THE LEXICON GAVE IS CARRIED, not just logged.
+
+      `backing` is computed above and, until now, reached a warn line and
+      nothing else — so a refusal the lexicon could NOT back was delivered in
+      the backed refusal's words, which name a garment, a prop or the set. Said
+      to somebody who asked for horns, that sentence is simply false, and it is
+      the copy the founder's D-160 note already caught once wearing a different
+      wall's clothes.
+    */
+    return {
+      ok: false,
+      refusal: { reason: "wall_stage", asked: asked || "that", backed: backing !== null },
+    };
   }
 
   /*
@@ -795,12 +826,33 @@ export function refusalMessage(refusal: RefineParse & { ok: false }): string {
         + "Nothing was charged.";
     case "wall_stage":
       /*
-        It names what DOES work, because the wall narrowed and the old copy was
-        the reason the founder believed it had not (D-160). "Wardrobe or set"
-        was the whole sentence, so an earring refused under it read as a product
-        that does not do jewellery — when jewellery is exactly what Refine is
-        the stated channel for.
+        TWO SENTENCES, BECAUSE THERE ARE TWO REFUSALS UNDER ONE WALL.
+
+        BACKED — the stage lexicon matched a word in their sentence, so we know
+        what they asked for and can say so. It names what DOES work, because the
+        wall narrowed and the old copy was the reason the founder believed it had
+        not (D-160). "Wardrobe or set" was the whole sentence, so an earring
+        refused under it read as a product that does not do jewellery — when
+        jewellery is exactly what Refine is the stated channel for.
+
+        UNBACKED — the model claimed the wall, took its re-look, and the lexicon
+        still cannot find a stage word. Measured, that is where fantastical
+        anatomy lands: *"give her antlers"* re-claims 3/3 and is logged as a
+        STAGE_WORDS candidate that is not a stage word at all. Saying "antlers is
+        a garment, a prop or the set" to somebody who asked for something growing
+        out of her head is a FALSE sentence, and a false refusal is worse than a
+        vague one — it is the D-160 mistake with a new subject.
+
+        So the unbacked half claims nothing about what the thing IS. It says the
+        true thing: this is not something Refine can name yet. No promise about
+        the roadmap either — the open lane is real work in progress and a refusal
+        is not the place to sell it.
       */
+      if (refusal.refusal.backed === false) {
+        return `Refining can't do ${refusal.refusal.asked} yet — it isn't one of the things `
+          + "this can name. Faces, hair, skin, build and anything worn do work here. "
+          + "Nothing was charged.";
+      }
       return `Refining changes the person, not the shoot — ${refusal.refusal.asked} is `
         + "a garment, a prop or the set, which comes after Sign. Jewellery, glasses and "
         + "piercings do work here. Nothing was charged.";

@@ -30,7 +30,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { TextEngine, TextRequest } from "../providers/types";
-import { interpretRefinement } from "./refineInterpreter";
+import { interpretRefinement, refusalMessage } from "./refineInterpreter";
 import { stageWordIn } from "./refineDelta";
 
 const FILED = JSON.stringify({ intent: "edit", eyeShape: "fox eyes" });
@@ -175,5 +175,92 @@ describe("the stage wall's backstop", () => {
     /* `wall_content` is a policy answer and takes exactly one call — the
        backstop is pointed at one wall, not bolted onto all three. */
     expect(content.seen).toHaveLength(1);
+  });
+});
+
+/**
+ * THE ANSWER THE LEXICON GAVE, CARRIED TO THE CUSTOMER (this shift's rider).
+ *
+ * `backing` has been computed on this path since fable-363 and reached a warn
+ * line and nothing else. So an UNBACKED refusal was delivered in the BACKED
+ * refusal's words — *"antlers is a garment, a prop or the set"* — which is not
+ * a vague sentence, it is a false one, said to somebody who asked for something
+ * growing out of her head.
+ *
+ * Driven through scripted engines for law 3's reason: the interesting case is
+ * one a real model produces on its own schedule, and the paid measurement lives
+ * beside these rather than inside them (`probe-horns-wall-disposable.mts`:
+ * "give her horns" wall_content 3/3 BEFORE, wall_stage 3/3 AFTER, with the
+ * antlers control unmoved at wall_stage 3/3).
+ */
+describe("a refusal the lexicon could not back says so", () => {
+  it("marks a re-claimed wall UNBACKED", async () => {
+    const engine = scripted([WALL, JSON.stringify({ wall: "stage", asked: "antlers" })]);
+    const parse = await interpretRefinement({ instruction: "give her antlers", engine, ...FACE });
+
+    const refusal = parse.ok === false ? parse.refusal : null;
+    expect(refusal?.reason).toBe("wall_stage");
+    expect(refusal?.reason === "wall_stage" && refusal.backed).toBe(false);
+  });
+
+  it("marks a wall the lexicon DID back as backed — the positive control", async () => {
+    /* Without this, `backed: false` everywhere would pass the test above and be
+       exactly as wrong in the other direction. */
+    const engine = scripted([JSON.stringify({ wall: "stage", asked: "a coat" })]);
+    const parse = await interpretRefinement({ instruction: "put her in a long black coat", engine, ...FACE });
+
+    const refusal = parse.ok === false ? parse.refusal : null;
+    expect(refusal?.reason === "wall_stage" && refusal.backed).toBe(true);
+    /* And it took ONE call: a backed claim is settled deterministically and
+       never buys a re-look. */
+    expect(engine.seen).toHaveLength(1);
+  });
+
+  it("tells the truth to the customer instead of naming a category it does not know", () => {
+    const unbacked = refusalMessage({
+      ok: false,
+      refusal: { reason: "wall_stage", asked: "antlers", backed: false },
+    });
+    expect(unbacked).toContain("antlers");
+    expect(unbacked).toContain("isn't one of the things this can name");
+    /* THE FALSE SENTENCE, asserted absent. This is the whole finding. */
+    expect(unbacked).not.toContain("a garment, a prop or the set");
+    /* And it must not say the thing `wall_content`'s message says, which is
+       what sent this rider here in the first place. */
+    expect(unbacked.toLowerCase()).not.toContain("can't be rendered.");
+    expect(unbacked).toContain("Nothing was charged");
+  });
+
+  it("still says the D-160 sentence when the wall IS about the shoot", () => {
+    const backed = refusalMessage({
+      ok: false,
+      refusal: { reason: "wall_stage", asked: "a coat", backed: true },
+    });
+    expect(backed).toContain("a garment, a prop or the set");
+    /* Jewellery is named as working, which is the D-160 repair itself and must
+       survive this edit. */
+    expect(backed).toContain("Jewellery");
+  });
+
+  it("reads a refusal written before the field existed as BACKED", () => {
+    /* Absent means backed: every stored refusal predating this came from a
+       matched stage word, and a missing field must not silently rewrite old
+       copy into the new sentence. */
+    const legacy = refusalMessage({ ok: false, refusal: { reason: "wall_stage", asked: "a coat" } });
+    expect(legacy).toContain("a garment, a prop or the set");
+  });
+});
+
+describe("the content wall's carve-out for fantastical anatomy", () => {
+  it("tells the model, in the prompt it is actually sent", async () => {
+    /* ASSERT AT THE WIRE. A prompt sentence written in a constant nobody sends
+       is the inert-on-arrival class, and this shift has already found one. */
+    const engine = scripted([FILED]);
+    await interpretRefinement({ instruction: "give her horns", engine, ...FACE });
+    const system = engine.seen[0]!.system;
+    expect(system).toContain("NOR IS FANTASTICAL ANATOMY");
+    expect(system).toContain("Horns, antlers, wings, a tail, scales, pointed ears");
+    /* The neighbour it was modelled on must survive beside it. */
+    expect(system).toContain("A BODY TATTOO IS NEVER THIS WALL");
   });
 });
