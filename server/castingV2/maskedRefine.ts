@@ -240,7 +240,26 @@ export type RegionReader = {
    * whichever direction does not take the user's money, and which direction that
    * is depends on the question.
    */
-  region(input: { image: Buffer; name: string; absentIsAnswer?: boolean }): Promise<Mask>;
+  /*
+    `imageUrl` — WHERE THESE EXACT BYTES ALSO LIVE, when they live anywhere.
+
+    Optional, and it changes nothing about the answer: the mask still comes back
+    in `image`'s pixel space, because that is the only space the caller has. It
+    is a transport hint, so a reader that can send an address instead of a
+    2.3 MB upload may do so — twelve questions about one photograph currently
+    carry twelve copies of it (fable-358 §3).
+
+    **A reader may only use it once it has proven the address holds these
+    bytes.** Passing a URL that is nearly the frame — a thumbnail, a re-encode,
+    last version's master — is the wrong-frame class, and the caller cannot be
+    the one who guarantees it, because the caller is exactly who gets it wrong.
+  */
+  region(input: {
+    image: Buffer;
+    name: string;
+    absentIsAnswer?: boolean;
+    imageUrl?: string;
+  }): Promise<Mask>;
   /**
    * THE SAME REGION WITH ITS TWO SIDES STILL APART — optional, and the option
    * is the point.
@@ -268,6 +287,8 @@ export type RegionReader = {
     image: Buffer;
     name: string;
     absentIsAnswer?: boolean;
+    /** The same transport hint `region` takes, under the same proof. */
+    imageUrl?: string;
   }): Promise<SideRegions | null>;
   /** A soft whole-subject matte, for edge ramps. */
   subject(input: { image: Buffer }): Promise<Mask>;

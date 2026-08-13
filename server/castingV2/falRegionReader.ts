@@ -343,13 +343,73 @@ export function createFalRegionReader(input: {
    * dropped. Measured: the plain noun returns one mask on a whole frame anyway,
    * which is exactly why the second side had to come from a second picture.
    */
+  /*
+    SEND THE ADDRESS INSTEAD OF THE PICTURE — but only once it is PROVEN to be
+    the same picture (fable-358 §3).
+
+    Every call here base64s the frame into its own request body, so one panel
+    scan uploads ~38 MB of the same 2.3 MB master: twelve questions about one
+    photograph, each carrying its own copy. fal takes a URL for `image_url` and
+    our frames already live at one, so the six whole-frame calls of a scan can
+    upload nothing at all.
+
+    **The trap is the one this program keeps paying for**: geometry computed
+    against one image while the segmenter looked at another. Every mask below is
+    measured in the passed buffer's pixel space, so a URL that is not those
+    exact bytes would put a correct-looking mask in the wrong space — the
+    wrong-frame class, arriving silently.
+
+    So the URL is not trusted, it is CHECKED: fetched once per reader, hashed,
+    and compared with the bytes in hand. Match, and every whole-frame call after
+    it sends the address. Mismatch or an unreachable URL, and it says so and
+    uploads — one download replaces six uploads on the happy path, and the
+    unhappy path is exactly today's behaviour.
+
+    A HALF-frame never gets an address: it is a derived picture that exists only
+    in memory and has no URL to be identical to.
+  */
+  const referenced = new Map<string, Promise<string | null>>();
+  const addressIfIdentical = (image: Buffer, url: string): Promise<string | null> => {
+    const already = referenced.get(url);
+    if (already) return already;
+    const asked = (async () => {
+      try {
+        const response = await fetch(url, { signal: signal ?? AbortSignal.timeout(MASK_FETCH_TIMEOUT_MS) });
+        if (!response.ok) throw new Error(`the frame store answered ${response.status}`);
+        const bytes = Buffer.from(await response.arrayBuffer());
+        const { createHash } = await import("node:crypto");
+        const digest = (buffer: Buffer) => createHash("sha256").update(buffer).digest("hex");
+        const theirs = digest(bytes);
+        const ours = digest(image);
+        if (theirs !== ours) {
+          log.warn(
+            { url, theirs: theirs.slice(0, 12), ours: ours.slice(0, 12) },
+            "[falRegionReader] the frame at that address is not the frame in hand — uploading instead",
+          );
+          return null;
+        }
+        return url;
+      } catch (error) {
+        log.warn(
+          { url, err: error instanceof Error ? error.message : String(error) },
+          "[falRegionReader] could not confirm the frame at that address — uploading instead",
+        );
+        return null;
+      }
+    })();
+    referenced.set(url, asked);
+    return asked;
+  };
+
   const askRegion = async (
     image: Buffer,
     prompt: string,
     keep: "first" | "all" = "first",
+    imageUrl?: string,
   ): Promise<Mask | null> => {
+    const address = imageUrl ? await addressIfIdentical(image, imageUrl) : null;
     const json = await post(apiKey, SAM3, {
-      image_url: dataUri(image), prompt, include_scores: true, output_format: "png",
+      image_url: address ?? dataUri(image), prompt, include_scores: true, output_format: "png",
     }, signal);
     const masks: any[] = Array.isArray(json.masks) ? json.masks : [];
     const urls = masks
@@ -386,7 +446,7 @@ export function createFalRegionReader(input: {
    * real answer: a head turned away genuinely has one visible ear. `null` for the
    * WHOLE result means there was no split to make.
    */
-  const bilateralHalves = async (image: Buffer, name: string): Promise<{
+  const bilateralHalves = async (image: Buffer, name: string, imageUrl?: string): Promise<{
     atImageLeft: Mask | null;
     atImageRight: Mask | null;
   } | null> => {
@@ -399,7 +459,7 @@ export function createFalRegionReader(input: {
     /* A picture one pixel wide has no two sides to cut between. */
     if (width < 2) return null;
 
-    const face = await askRegion(image, "face", "all");
+    const face = await askRegion(image, "face", "all", imageUrl);
     const axis = face ? centroidX(face) : null;
     /* Clamped so a face read that lands on an edge cannot ask for a zero-width
        crop — a degenerate half is a thrown sharp error in place of a reading. */
@@ -436,16 +496,16 @@ export function createFalRegionReader(input: {
    * what makes `regionSides` cost nothing: both answers come out of one set of
    * calls, and there is exactly one midline in the system.
    */
-  const bilateral = async (image: Buffer, name: string): Promise<Mask | null> => {
-    const halves = await bilateralHalves(image, name);
-    if (halves === null) return askRegion(image, singularOf(name), "all");
+  const bilateral = async (image: Buffer, name: string, imageUrl?: string): Promise<Mask | null> => {
+    const halves = await bilateralHalves(image, name, imageUrl);
+    if (halves === null) return askRegion(image, singularOf(name), "all", imageUrl);
     const found = [halves.atImageLeft, halves.atImageRight].filter((mask): mask is Mask => mask !== null);
     if (found.length === 0) return null;
     return found.length === 1 ? found[0] : unionMasks(...found);
   };
 
   return {
-    async region({ image, name, absentIsAnswer }) {
+    async region({ image, name, absentIsAnswer, imageUrl }) {
       assertPicture(image, name);
       /*
         AN EMPTY ANSWER MEANS TWO DIFFERENT THINGS, and which one is the
@@ -466,10 +526,10 @@ export function createFalRegionReader(input: {
       };
 
       if (BILATERAL.has(name)) {
-        const both = await bilateral(image, name);
+        const both = await bilateral(image, name, imageUrl);
         return both ?? absent();
       }
-      const mask = await askRegion(image, name);
+      const mask = await askRegion(image, name, "first", imageUrl);
       if (!mask) return absent();
       return mask;
     },
@@ -507,10 +567,10 @@ export function createFalRegionReader(input: {
      * the same assumption the tilt reader has always made, and it is the reason
      * the mapping lives in one function instead of at four call sites.
      */
-    async regionSides({ image, name, absentIsAnswer }): Promise<SideRegions | null> {
+    async regionSides({ image, name, absentIsAnswer, imageUrl }): Promise<SideRegions | null> {
       assertPicture(image, name);
       if (!BILATERAL.has(name)) return null;
-      const halves = await bilateralHalves(image, name);
+      const halves = await bilateralHalves(image, name, imageUrl);
       if (halves === null) return null;
 
       if (halves.atImageLeft === null && halves.atImageRight === null) {

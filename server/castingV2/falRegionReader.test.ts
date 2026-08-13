@@ -592,3 +592,103 @@ describe("a mask that does not come back on the first try", () => {
     expect((error as Error).message).toContain("not a picture");
   });
 });
+
+/**
+ * SEND THE ADDRESS, NOT TWELVE COPIES OF THE PICTURE — and prove it is the same
+ * picture first (fable-358 §3).
+ *
+ * A panel scan asks twelve questions about one photograph and, before this,
+ * carried a base64 copy of a 2.3 MB master in every one of them — ~38 MB of
+ * upload for one cast selection. fal takes a URL, and our frames have one.
+ *
+ * The reason it is not simply "pass the URL through" is the failure this
+ * program keeps paying for: every mask below is measured in the passed
+ * buffer's pixel space, so an address holding *nearly* the frame — a
+ * thumbnail, a re-encode, last version's master — puts a correct-looking mask
+ * in the wrong space, silently. So the reader checks rather than trusts, and
+ * these drive both directions ON THE OUTGOING REQUEST, which is where a
+ * contract about what gets sent is proven.
+ */
+describe("the reader may send an address instead of the bytes", () => {
+  const bodyOf = (call: unknown[]): any => JSON.parse((call[1] as { body: string }).body);
+
+  const stub = (frameAt: (url: string) => Response) => {
+    const calls: unknown[][] = [];
+    vi.stubGlobal("fetch", vi.fn(async (...args: unknown[]) => {
+      calls.push(args);
+      const url = String(args[0]);
+      if (url.includes("fal.run")) {
+        return new Response(JSON.stringify({ masks: [{ url: "https://v3b.fal.media/x.png" }] }), {
+          status: 200, headers: { "content-type": "application/json" },
+        });
+      }
+      if (url.includes("v3b.fal.media")) {
+        return new Response(new Uint8Array(PNG), { status: 200, headers: { "content-type": "image/png" } });
+      }
+      return frameAt(url);
+    }));
+    return calls;
+  };
+
+  it("sends the URL when the address holds these exact bytes, and confirms it ONCE", async () => {
+    const calls = stub(() => new Response(new Uint8Array(PNG), {
+      status: 200, headers: { "content-type": "image/png" },
+    }));
+    const reader = createFalRegionReader({ apiKey: "test-key" });
+    const frame = "https://pub-test.r2.dev/casting/master.png";
+
+    await reader.region({ image: PNG, name: "lips", imageUrl: frame });
+    await reader.region({ image: PNG, name: "nose", imageUrl: frame });
+
+    const sam3 = calls.filter((call) => String(call[0]).includes("fal.run"));
+    expect(sam3).toHaveLength(2);
+    /* Asserted at the wire: the address goes out, and no copy of the picture
+       goes with it. */
+    for (const call of sam3) {
+      expect(bodyOf(call).image_url).toBe(frame);
+      expect(bodyOf(call).image_url).not.toContain("base64");
+    }
+    /* One confirmation for both questions — the check is per address, not per
+       call, or it would trade twelve uploads for twelve downloads. */
+    expect(calls.filter((call) => String(call[0]) === frame)).toHaveLength(1);
+  });
+
+  it("UPLOADS INSTEAD when the address holds a different picture", async () => {
+    /* The negative control, and the whole reason the check exists: a URL that
+       answers with a perfectly valid image which is not this frame. */
+    const other = Buffer.concat([PNG, Buffer.from("not the same file")]);
+    const calls = stub(() => new Response(new Uint8Array(other), {
+      status: 200, headers: { "content-type": "image/png" },
+    }));
+    const reader = createFalRegionReader({ apiKey: "test-key" });
+
+    await reader.region({ image: PNG, name: "lips", imageUrl: "https://pub-test.r2.dev/somebody-else.png" });
+
+    const sam3 = calls.filter((call) => String(call[0]).includes("fal.run"));
+    expect(sam3).toHaveLength(1);
+    expect(bodyOf(sam3[0]!).image_url).toContain("data:image/png;base64,");
+  });
+
+  it("UPLOADS INSTEAD when the address cannot be reached at all", async () => {
+    const calls = stub(() => new Response("nope", { status: 404 }));
+    const reader = createFalRegionReader({ apiKey: "test-key" });
+
+    await reader.region({ image: PNG, name: "lips", imageUrl: "https://pub-test.r2.dev/gone.png" });
+
+    const sam3 = calls.filter((call) => String(call[0]).includes("fal.run"));
+    expect(bodyOf(sam3[0]!).image_url).toContain("data:image/png;base64,");
+  });
+
+  it("uploads, as it always did, when no address is given", async () => {
+    const calls = stub(() => new Response("unused", { status: 500 }));
+    const reader = createFalRegionReader({ apiKey: "test-key" });
+
+    await reader.region({ image: PNG, name: "lips" });
+
+    const sam3 = calls.filter((call) => String(call[0]).includes("fal.run"));
+    expect(bodyOf(sam3[0]!).image_url).toContain("data:image/png;base64,");
+    /* And nothing was fetched to find that out: the old path costs no extra
+       round trip. */
+    expect(calls.filter((call) => String(call[0]).includes("pub-test"))).toHaveLength(0);
+  });
+});
