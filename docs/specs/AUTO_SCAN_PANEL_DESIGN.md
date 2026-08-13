@@ -51,7 +51,15 @@ glasses          1     the one ARMED born-worn class (fable-324/340)
 ```
 
 **$0.005 per call, so $0.060 per cast selection, once, cached** (SAM 3's
-published price, read off the model page). Earring and nose stud stay unarmed
+published price, read off the model page).
+
+> **The number went to 14 and came back, 2026-08-13.** Built, a scan cost
+> FOURTEEN: each of the three bilateral reads bought its own `face` read to find
+> the midline, and the bench proved it on a real face — `midline: 513 · 513 ·
+> 513`, three identical questions about one photograph. A frame has one midline,
+> so the axis is now read once per picture and shared (`falRegionReader.axisOf`,
+> holding the promise so the scan's parallel regions join one read rather than
+> all missing). **Twelve again, and $0.060 is the honest figure.** Earring and nose stud stay unarmed
 until their three-class courts pass — arming a detector kind without its court
 is how a false positive becomes a row on her face.
 
@@ -146,7 +154,37 @@ rather than by trust, and one download replaces six uploads.
 The six SIDE reads still upload, because a half-frame is a derived picture with
 no URL. Encoding them more cheaply is the same question as §6 and waits for it.
 
-## 6. The 512px question — measured, never assumed (fable-358 §4)
+## 6. The 512px question — MEASURED AND REFUSED, 2026-08-13 (shift 69)
+
+> **VERDICT: DO NOT ADOPT. 16 of 18 regions inside the pre-registered bar, and
+> the bar says every region on every face.**
+> `scripts/bench-scan-512-court-disposable.mts`, bar committed before the first
+> call (`e590a760`).
+
+```
+FAIL  cand 369  lips        IoU 0.459   centre 0.72%   area 54% off
+FAIL  cand 368  eye@left    IoU 0.713   centre 0.10%   area 40% off
+ok    the other 16 (hair, nose, both ears, both brows, the other three eyes,
+      the other lips): IoU 0.825–0.997, centre ≤ 0.62%, area ≤ 21%
+```
+
+Two things the run settled beyond the verdict:
+
+- **The 31× was never the scan's number.** opus-293 timed ONE call. A scan is
+  fourteen calls in parallel, so its wall clock is the slowest of them, not the
+  sum: **20.3s → 7.0s and 11.4s → 8.9s** across the two faces. The cheap eye
+  buys between 1.3× and 2.9× of waiting.
+- **It buys nothing at all in money.** SAM 3 charges per request, not per pixel,
+  so both arms cost exactly the same $0.005 a call. The whole upside was
+  latency, and 2 of 18 regions is too much of her face to pay for it.
+
+The failures are the shape the bar was written to catch: a lips box 54% off with
+IoU 0.46 is a rectangle that has slid off her mouth, and a percentage-of-frame
+comparison — opus-293's 0.24% against 0.27% — would have called it agreement.
+
+*(Original statement of the question, kept for the record:)*
+
+## 6a. The 512px question — measured, never assumed (fable-358 §4)
 
 opus-293 measured a 512px JPEG answering the same nose question 31× faster at
 0.24% of frame against the full read's 0.27%. That is close, and close is not a

@@ -433,6 +433,41 @@ export function createFalRegionReader(input: {
   };
 
   /**
+   * HER VERTICAL AXIS — one face read per picture, however many pairs are asked
+   * about it.
+   *
+   * A frame has ONE midline. Every bilateral region was buying its own face read
+   * to find it, and the scan proved what that costs on a real face: three
+   * bilateral reads on one frame printed `midline: 513 · 513 · 513`, three
+   * identical questions about one photograph — three round trips and $0.015 on
+   * every panel, for an answer that cannot differ.
+   *
+   * It holds the PROMISE rather than the axis, and that is the load-bearing
+   * half: the scan asks its regions in PARALLEL, so three memos storing settled
+   * values would all miss and all pay. The first caller starts the read and the
+   * other two join it.
+   *
+   * Keyed on the buffer itself, which is exact rather than clever — the same
+   * picture is the same object here (one reader is built per frame), and a
+   * genuinely different picture is a different object, so a stale axis cannot
+   * cross frames. The cost of a miss is one face read, which is today's price.
+   */
+  const axes = new Map<Buffer, Promise<number | null>>();
+  const axisOf = (image: Buffer, imageUrl?: string): Promise<number | null> => {
+    const held = axes.get(image);
+    if (held) return held;
+    const asked = (async () => {
+      const face = await askRegion(image, "face", "all", imageUrl);
+      return face ? centroidX(face) : null;
+    })();
+    axes.set(image, asked);
+    /* A failed read is not remembered: the next pair asks again rather than
+       inheriting one bad minute for the life of this reader. */
+    asked.catch(() => axes.delete(image));
+    return asked;
+  };
+
+  /**
    * THE TWO HALVES, KEPT APART — one side to a picture. See `BILATERAL` for the
    * measurement that made this the method.
    *
@@ -459,8 +494,7 @@ export function createFalRegionReader(input: {
     /* A picture one pixel wide has no two sides to cut between. */
     if (width < 2) return null;
 
-    const face = await askRegion(image, "face", "all", imageUrl);
-    const axis = face ? centroidX(face) : null;
+    const axis = await axisOf(image, imageUrl);
     /* Clamped so a face read that lands on an edge cannot ask for a zero-width
        crop — a degenerate half is a thrown sharp error in place of a reading. */
     const midline = Math.min(width - 1, Math.max(1, Math.round(axis ?? width / 2)));

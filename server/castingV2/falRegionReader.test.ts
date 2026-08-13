@@ -480,6 +480,49 @@ describe("falRegionReader cuts the frame instead of naming a side", () => {
        on the record rather than in a commit message. */
     expect(answer !== null, "the gate's old test would call this 'still in the frame'").toBe(true);
   });
+
+  /**
+   * ONE FRAME, ONE MIDLINE — and one face read to find it.
+   *
+   * Measured on real faces before it was changed: three bilateral reads of one
+   * photograph printed `midline: 513 · 513 · 513`, three identical questions
+   * about one picture, three round trips and $0.015 on every panel scan.
+   *
+   * The parallel arm is the one that matters. The scan asks its regions with
+   * `Promise.all`, so a memo that stored the settled axis would be empty when
+   * all three started and all three would pay anyway.
+   */
+  it("buys her axis ONCE, however many pairs are asked about the same picture", async () => {
+    const { prompts } = stubSam3({ sides: "both" });
+    const reader = createFalRegionReader({ apiKey: "test-key" });
+    const image = await frame();
+
+    await Promise.all([
+      reader.regionSides!({ image, name: "eyes" }),
+      reader.regionSides!({ image, name: "eyebrows" }),
+      reader.regionSides!({ image, name: "ear" }),
+    ]);
+
+    expect(prompts.filter((prompt) => prompt === "face")).toHaveLength(1);
+    /* And every pair still got its own two sides — the saving is the face read,
+       not a side. */
+    expect(prompts.filter((prompt) => prompt !== "face").sort())
+      .toEqual(["ear", "ear", "eye", "eye", "eyebrow", "eyebrow"]);
+  });
+
+  it("does NOT carry one picture's axis into another", async () => {
+    /* The negative control, and the reason the memo is keyed on the buffer
+       rather than on the reader: a stale midline crossing frames would cut two
+       different faces at one face's centre, which is the wrong-frame class with
+       a ruler on it. */
+    const { prompts } = stubSam3({ sides: "both" });
+    const reader = createFalRegionReader({ apiKey: "test-key" });
+
+    await reader.regionSides!({ image: await frame(), name: "eyes" });
+    await reader.regionSides!({ image: await frame(), name: "eyes" });
+
+    expect(prompts.filter((prompt) => prompt === "face")).toHaveLength(2);
+  });
 });
 
 /**
