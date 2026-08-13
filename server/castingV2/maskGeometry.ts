@@ -1290,17 +1290,109 @@ export function belowHeadMask(input: {
 export function belowHeadCropIsComplete(input: {
   mask: Mask;
   box: { x: number; y: number; width: number; height: number };
-}): { complete: boolean; outside: number } {
+}): { complete: boolean; outside: number; kept: number } {
   assertStride(input.mask, "below-head mask");
   const { width, height, data } = input.mask;
   const { x, y, width: boxWidth, height: boxHeight } = input.box;
   let outside = 0;
+  let kept = 0;
   for (let row = 0; row < height; row += 1) {
     for (let column = 0; column < width; column += 1) {
       if (data[row * width + column]! <= 127) continue;
+      kept += 1;
       const inside = column >= x && column < x + boxWidth && row >= y && row < y + boxHeight;
       if (!inside) outside += 1;
     }
   }
-  return { complete: outside === 0, outside };
+  return { complete: outside === 0, outside, kept };
+}
+
+/**
+ * HER SHOULDER SPAN OVER HER HEAD HEIGHT — the ratchet's instrument.
+ *
+ * # Why a number rides beside every re-mint
+ *
+ * `build`'s crop is re-cut from the frame in hand on EVERY delivered render
+ * (fable-424 §4), because a crop that persists across other people's edits is a
+ * copy drifting from its source and a below-head crop is also a photograph of
+ * her CLOTHES. The one honest worry with always-re-minting is the RATCHET: an
+ * un-asked per-render wobble compounding, because the crop tracks the newest
+ * frame rather than the paid one. The word stack re-says the bought state every
+ * render and should bound it — but that is a claim, and a logged distribution is
+ * what turns it into a reading.
+ *
+ * So this is logged per delivered render beside the mint. A drift trend across
+ * an edit chain is then a finding with a table behind it rather than a
+ * complaint.
+ *
+ * # What it measures, and why it is scale-immune
+ *
+ * The span is the widest row of the whole-subject matte in a band that starts at
+ * her chin and runs a head and a half down — her shoulders and upper arms, which
+ * is exactly what a build ask names, and short enough not to catch a hand at the
+ * bottom of the frame. Both terms are read off the same frame in the same
+ * pixels, so a re-framing cannot move the ratio on its own.
+ *
+ * Promoted unchanged from the body bench (`bench-body-carrier`, opus-326), which
+ * is the instrument the 92–109% carry was measured with.
+ *
+ * # `clipped` is not decoration
+ *
+ * A silhouette touching both frame edges saturates the span at the frame width,
+ * and a saturated instrument reads the same number for every build there is.
+ * Such a reading is reported and flagged rather than dropped, because "the
+ * instrument could not see this" and "this face has these shoulders" must never
+ * arrive as one number.
+ */
+export type BuildSpan = {
+  /** Span over head height — the reading. */
+  ratio: number;
+  spanPx: number;
+  headPx: number;
+  /** Where the widest row was, as a fraction of frame height. */
+  atRow: number;
+  /** Her silhouette touched both frame edges on that row, so the span saturated. */
+  clipped: boolean;
+};
+
+export function buildSpan(input: { subject: Mask; head: Mask }): BuildSpan | null {
+  assertStride(input.subject, "subject matte");
+  assertStride(input.head, "head mask");
+  assertSameSize(input.subject, input.head);
+  const { width, height } = input.subject;
+
+  let top = -1;
+  let chin = -1;
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      if (input.head.data[y * width + x]! <= 127) continue;
+      if (top < 0) top = y;
+      chin = y;
+      break;
+    }
+  }
+  if (top < 0) return null;
+  const headPx = chin - top + 1;
+  const bandBottom = Math.min(height - 1, Math.round(chin + 1.5 * headPx));
+
+  let spanPx = 0;
+  let atRow = chin;
+  let clipped = false;
+  for (let y = chin; y <= bandBottom; y += 1) {
+    let minX = -1;
+    let maxX = -1;
+    for (let x = 0; x < width; x += 1) {
+      if (input.subject.data[y * width + x]! <= 127) continue;
+      if (minX < 0) minX = x;
+      maxX = x;
+    }
+    if (minX < 0) continue;
+    const span = maxX - minX + 1;
+    if (span <= spanPx) continue;
+    spanPx = span;
+    atRow = y;
+    clipped = minX === 0 && maxX === width - 1;
+  }
+  if (spanPx === 0) return null;
+  return { ratio: spanPx / headPx, spanPx, headPx, atRow: atRow / height, clipped };
 }

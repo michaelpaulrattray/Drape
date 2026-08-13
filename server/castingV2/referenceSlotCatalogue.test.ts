@@ -46,6 +46,10 @@ describe("what a slot is", () => {
       question: "hair",
       guardKind: "hair",
       frame: "wholeFrame",
+      /* And when its crop is re-cut. Almost every slot keeps the crop it has
+         until a render earns it again; `build` is the one exception, and its
+         entry carries the reason. */
+      remint: "whenEarned",
     });
   });
 

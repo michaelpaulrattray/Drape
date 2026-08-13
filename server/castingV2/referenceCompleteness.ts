@@ -339,7 +339,19 @@ export function measureCoverage(
  * instrument travel together in {@link Adjudication} and are persisted from it
  * without a conditional at the write.
  */
-export type GuardInstrument = "area" | "centreline";
+/*
+  A THIRD, AND IT IS NOT A MEASURE OF THE SAME KIND.
+
+  `area` and `centreline` both score a crop against an independent READ of its
+  region, and both can be wrong about a boundary. `derived-geometry` scores a
+  composed region against the masks that composed it: the crop is complete iff
+  its box holds every pixel the derivation kept, counted, never sampled. It
+  reaches 1.0 or it refuses, and its bar is 1.0, because there is nothing here
+  for a threshold to divide. It is named rather than folded into `area` so a row
+  reading 100% says which of three instruments read it — the display-default
+  class this campaign keeps paying for.
+*/
+export type GuardInstrument = "area" | "centreline" | "derived-geometry";
 
 export type Adjudication = {
   instrument: GuardInstrument;
@@ -513,6 +525,25 @@ export type GuardInput = {
   disputed?: boolean;
 };
 
+/**
+ * WHICH SLOT ALREADY HOLDS THESE EXACT BYTES — one rule, two doors.
+ *
+ * `marks` and `makeup` at `face skin` produced byte-identical crops on three
+ * separate production renders, and two rows holding one fact is D-242 one layer
+ * up. The check is trivial and that is precisely why it needs to live in one
+ * place: the geometric door (a composed region, judged by arithmetic) and the
+ * measured door (a segmented region, judged by a specimen) reach entirely
+ * different verdicts and must reach the SAME one here. A second copy of five
+ * lines is still law 4's copy.
+ */
+export function duplicateSlotFor(
+  digest: string,
+  mintedDigests?: ReadonlyMap<string, string>,
+): string | null {
+  const held = Array.from(mintedDigests?.entries() ?? []).find(([, other]) => other === digest);
+  return held ? held[0] : null;
+}
+
 export function guardReference(input: GuardInput): GuardVerdict {
   if (input.guardRead === null) {
     return {
@@ -535,12 +566,11 @@ export function guardReference(input: GuardInput): GuardVerdict {
     };
   }
 
-  const duplicate = Array.from(input.mintedDigests?.entries() ?? [])
-    .find(([, digest]) => digest === input.digest);
+  const duplicate = duplicateSlotFor(input.digest, input.mintedDigests);
   if (duplicate) {
     return {
       ok: false, reason: "duplicateOfSlot", kind: input.kind, reading,
-      detail: `this crop is byte-identical to ${duplicate[0]}'s, and two slots may not hold one fact`,
+      detail: `this crop is byte-identical to ${duplicate}'s, and two slots may not hold one fact`,
     };
   }
 

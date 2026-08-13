@@ -25,6 +25,7 @@ import {
   intersectMask,
   belowHeadMask,
   belowHeadCropIsComplete,
+  buildSpan,
   overlapWith,
   placeDestinationZone,
   requestMatte,
@@ -1058,7 +1059,7 @@ describe("belowHeadMask", () => {
     it("passes only when the box holds EVERY kept pixel", () => {
       const { mask } = belowHeadMask({ subject, head });
       expect(belowHeadCropIsComplete({ mask, box: { x: 3, y: 6, width: 10, height: 10 } }))
-        .toEqual({ complete: true, outside: 0 });
+        .toEqual({ complete: true, outside: 0, kept: 100 });
     });
 
     it("fails, and COUNTS what it left behind, when the box clips her", () => {
@@ -1074,6 +1075,65 @@ describe("belowHeadMask", () => {
       /* The whole frame minus her leftmost column: big, and still incomplete. */
       expect(belowHeadCropIsComplete({ mask, box: { x: 4, y: 0, width: SIZE, height: SIZE } }).complete)
         .toBe(false);
+    });
+  });
+
+  /**
+   * THE RATCHET'S INSTRUMENT — the number that rides beside every re-mint.
+   *
+   * Not a guard and not a gate: it decides nothing and refuses nothing. Its job
+   * is to make "the crop tracks the newest frame, so an un-asked wobble could
+   * compound" a readable distribution instead of a worry (fable-424 §4).
+   */
+  describe("buildSpan", () => {
+    it("reads span over head height, in the frame's own pixels", () => {
+      const span = buildSpan({ subject, head })!;
+      /* Her head is 4 rows tall (y 2–5) and 10 columns wide below the chin. */
+      expect(span.headPx).toBe(4);
+      expect(span.spanPx).toBe(10);
+      expect(span.ratio).toBeCloseTo(2.5, 5);
+      expect(span.clipped).toBe(false);
+    });
+
+    it("moves when her shoulders do, and not when the frame does", () => {
+      const narrower = maskOf((x, y) => (
+        (y >= 2 && y <= 5 && x >= 6 && x <= 9) || (y >= 6 && x >= 5 && x <= 10)
+      ));
+      expect(buildSpan({ subject: narrower, head })!.ratio)
+        .toBeLessThan(buildSpan({ subject, head })!.ratio);
+    });
+
+    it("looks a head and a half below the chin and no further", () => {
+      /* A wide bar well below the band — a hand at the bottom of the frame is
+         not her shoulders, and a span that caught one would read her build off
+         whatever else is in the picture. */
+      const withHand = maskOf((x, y) => (
+        (y >= 2 && y <= 5 && x >= 6 && x <= 9) || (y >= 6 && y <= 11 && x >= 3 && x <= 12)
+        || (y >= 14 && x >= 0 && x <= 15)
+      ));
+      const span = buildSpan({ subject: withHand, head })!;
+      expect(span.spanPx).toBe(10);
+      expect(span.clipped).toBe(false);
+    });
+
+    it("FLAGS a saturated reading rather than reporting it as a build", () => {
+      const edgeToEdge = maskOf((x, y) => (
+        (y >= 2 && y <= 5 && x >= 6 && x <= 9) || y >= 6
+      ));
+      expect(buildSpan({ subject: edgeToEdge, head })!.clipped).toBe(true);
+    });
+
+    it("answers null rather than a number when there is nothing to read", () => {
+      /* No head is no chin, and no silhouette is no span. Either way the
+         ratchet's line says NO READ rather than carrying a zero that a later
+         reader would average in as a build. */
+      expect(buildSpan({ subject, head: maskOf(() => false) })).toBeNull();
+      expect(buildSpan({ subject: maskOf(() => false), head })).toBeNull();
+    });
+
+    it("refuses masks that do not share a resolution — never resizes one to fit", () => {
+      const other = { data: Buffer.alloc(8 * 8), width: 8, height: 8 };
+      expect(() => buildSpan({ subject, head: other })).toThrow(MaskError);
     });
   });
 });

@@ -98,8 +98,19 @@ export function intersectMasks(a: Mask, b: Mask): Mask {
   return { data, width: a.width, height: a.height };
 }
 
-/** The tight box around everything a mask claims, or null if it claims nothing. */
-export function boundsOf(mask: Mask): SegmentBox | null {
+/**
+ * The tight box around everything a mask claims, or null if it claims nothing.
+ *
+ * `above` is the alpha a pixel must EXCEED to count, and it defaults to 0 — a
+ * segment's mask is binary, so every claim is 255 and the default is the whole
+ * of it. A composed region carries a real matte ramp instead (`belowHeadMask`
+ * keeps the subject's own alpha), and there the threshold has to be the SAME
+ * one its completeness is judged at: a box drawn around every pixel above zero
+ * and a guard counting every pixel above 127 are two readings of one mask, and
+ * two readings of one mask disagreeing is how a crop passes a check it should
+ * have failed.
+ */
+export function boundsOf(mask: Mask, above = 0): SegmentBox | null {
   let minX = mask.width;
   let minY = mask.height;
   let maxX = -1;
@@ -107,7 +118,7 @@ export function boundsOf(mask: Mask): SegmentBox | null {
   for (let y = 0; y < mask.height; y += 1) {
     const row = y * mask.width;
     for (let x = 0; x < mask.width; x += 1) {
-      if (mask.data[row + x] === 0) continue;
+      if (mask.data[row + x]! <= above) continue;
       if (x < minX) minX = x;
       if (x > maxX) maxX = x;
       if (y < minY) minY = y;

@@ -453,10 +453,11 @@ describe("what the mint never cuts", () => {
       the generic path would have handed it over as a question the moment the
       catalogue stopped saying `null`.
 
-      Until the composer is wired, a derived slot files words exactly as it did
-      when it had no region at all. What this case pins is the part that is not
-      allowed to change either way: NO VISION CALL, and nothing asked under that
-      key.
+      With no composer wired — which is every caller that does not supply
+      `derivedGround` — a derived slot files words exactly as it did when it had
+      no region at all, and says so on the row. What this case pins is the part
+      that is not allowed to change either way: NO VISION CALL, and nothing
+      asked under that key.
     */
     const asked: string[] = [];
     const bench = harness();
@@ -486,7 +487,12 @@ describe("what the mint never cuts", () => {
       withCount,
     );
 
-    expect(result.slots[0]).toMatchObject({ slot: "build", outcome: "words-only", reason: "noQuestion" });
+    expect(result.slots[0]).toMatchObject({
+      slot: "build",
+      outcome: "words-only",
+      reason: "noRegion",
+      detail: "this slot's region is composed rather than asked, and no composer is wired into this mint",
+    });
     expect(asked).toEqual([]);
     expect(bench.stored).toEqual([]);
     expect(bench.rows[0]).toMatchObject({
@@ -1085,5 +1091,261 @@ describe("the words read", () => {
     const bench = harness();
     await mint([hairSlot()], bench);
     expect(bench.rows[0]!.words).toEqual(["a blunt shoulder-length bob"]);
+  });
+});
+
+/**
+ * HER BUILD — the region nobody can be asked for, composed and cut.
+ *
+ * The body bench (opus-326) found a delivered build lost ENTIRELY on the next
+ * edit, 3 faces of 3, and the same below-head crop keeping 92–109% of it. These
+ * cases drive the door that crop now comes through: composed from a matte and a
+ * head read on the frame in hand, judged by arithmetic rather than by a specimen
+ * nobody calibrated, and never intersected with where the paint was allowed to
+ * go.
+ */
+describe("the composed region", () => {
+  const SIZE = 40;
+  /** A frame with real texture, so two different crops are two different
+   *  digests and the duplicate door can be told apart from a passing one. */
+  async function bodyFrame(size = SIZE): Promise<Buffer> {
+    const data = Buffer.alloc(size * size * 3);
+    for (let y = 0; y < size; y += 1) {
+      for (let x = 0; x < size; x += 1) {
+        const at = (y * size + x) * 3;
+        data[at] = (x * 7) % 256;
+        data[at + 1] = (y * 5) % 256;
+        data[at + 2] = ((x + 1) * (y + 3)) % 256;
+      }
+    }
+    return sharp(data, { raw: { width: size, height: size, channels: 3 } }).png().toBuffer();
+  }
+
+  /** Her head high in the frame; her shoulders and body below it. */
+  const HEAD = { x: 14, y: 4, width: 12, height: 12 };
+  const BODY = { x: 8, y: 16, width: 24, height: 24 };
+  const head = rect(HEAD);
+  const subject = unionMasks(rect(HEAD), rect(BODY));
+
+  function buildSlot(overrides: Partial<SlotSpec> = {}): SlotSpec {
+    const definition = slotDefinition("build")!;
+    return {
+      slot: "build",
+      tier: definition.tier,
+      noun: definition.noun,
+      words: ["noticeably narrower shoulders and slimmer upper arms"],
+      question: definition.question,
+      guardKind: definition.guardKind,
+      frame: definition.frame,
+      ...overrides,
+    };
+  }
+
+  /** The composer's two seams, with every question it asks recorded. */
+  function ground(options: { head?: Mask | null; subject?: Mask | null } = {}) {
+    const asked: string[] = [];
+    return {
+      asked,
+      derivedGround: {
+        region: async (input: { question: string }) => {
+          asked.push(input.question);
+          return options.head === undefined ? head : options.head;
+        },
+        subject: async () => {
+          asked.push("(subject matte)");
+          return options.subject === undefined ? subject : options.subject;
+        },
+      },
+    };
+  }
+
+  async function mintBuild(options: {
+    slots?: SlotSpec[];
+    ground?: ReturnType<typeof ground>;
+    applied?: Mask | null;
+    knownDigests?: Map<string, string>;
+  } = {}) {
+    const bench = harness();
+    const composer = options.ground ?? ground();
+    const result = await mintReferencesForRender({
+      userId: 1,
+      variantId: 11,
+      frame: { bytes: await bodyFrame() },
+      applied: options.applied === undefined
+        ? rect({ x: 0, y: 0, width: SIZE, height: SIZE })
+        : options.applied,
+      masterRegions: new Map(),
+      slots: options.slots ?? [buildSlot()],
+      knownDigests: options.knownDigests,
+      dependencies: {
+        ...bench.dependencies,
+        derivedGround: composer.derivedGround,
+      } as never,
+    });
+    return { bench, result, asked: composer.asked };
+  }
+
+  it("cuts her build from the frame in hand and judges it by ARITHMETIC", async () => {
+    const { bench, result } = await mintBuild();
+
+    expect(result.slots[0]).toMatchObject({ slot: "build", outcome: "stored" });
+    /* Two objects — the crop for the recipe, the matte for the panel. */
+    expect(bench.stored).toHaveLength(2);
+
+    const row = bench.rows[0]!;
+    /* The box is her below-head extent, and it starts BELOW her chin: the
+       lowest row of the head mask belongs to her head. */
+    expect(row.image!.geometry).toEqual({
+      bbox: { x: BODY.x, y: HEAD.y + HEAD.height, width: BODY.width, height: BODY.height },
+      frame: { width: SIZE, height: SIZE },
+    });
+    /* And the verdict says which of three instruments read it, at what bar. */
+    expect(row.image!.guard).toEqual({
+      kind: "derived:below-head",
+      coverage: 10_000,
+      spill: 0,
+      threshold: 10_000,
+    });
+  });
+
+  it("asks for a head and a matte, and NEVER for the derived key", async () => {
+    const { asked } = await mintBuild();
+    expect(asked).toEqual(["face", "(subject matte)"]);
+    /* The key the catalogue hands out is a phrase no segmenter may receive. */
+    expect(asked).not.toContain("derived:below-head");
+  });
+
+  it("does NOT intersect her build with where the paint was allowed to go", async () => {
+    /*
+      THE REGRESSION THIS CASE EXISTS TO SURVIVE.
+
+      `build` is re-cut on every delivered render, including the ones that
+      painted her eyes. Routed through `cutSegments` — the obvious tidy-up —
+      the region would be intersected with `applied`, and on a "green eyes"
+      render `applied` is her eyes: a crop of her eyelids filed as her build.
+    */
+    const eyesOnly = rect({ x: 16, y: 8, width: 8, height: 4 });
+    const { bench, result } = await mintBuild({ applied: eyesOnly });
+
+    expect(result.slots[0]).toMatchObject({ slot: "build", outcome: "stored" });
+    expect(bench.rows[0]!.image!.geometry!.bbox)
+      .toEqual({ x: BODY.x, y: HEAD.y + HEAD.height, width: BODY.width, height: BODY.height });
+  });
+
+  it("takes the ratchet's reading on every render it composes", async () => {
+    const { result } = await mintBuild();
+    /* Her shoulders are 24px across and her head is 12px tall. */
+    expect(result.build).toMatchObject({ spanPx: 24, headPx: 12, ratio: 2, clipped: false });
+  });
+
+  it("REFUSES masks at another resolution rather than resizing one to fit", async () => {
+    /*
+      TWO MODELS ANSWER HERE — a matting model for the silhouette, a segmenter
+      for the head — and neither promises the frame's own pixels. The masks
+      below compose perfectly WITH EACH OTHER and are simply not this picture;
+      resizing one to fit would be a resample inside the one path that promises
+      not to, and a box measured in one grid and cut in another is the
+      wrong-boundary class with her whole body inside it.
+    */
+    const half = 20;
+    const smallHead = rect({ x: 7, y: 2, width: 6, height: 6 }, half);
+    const smallSubject = unionMasks(smallHead, rect({ x: 4, y: 8, width: 12, height: 12 }, half));
+    const { bench, result } = await mintBuild({
+      ground: ground({ head: smallHead, subject: smallSubject }),
+    });
+
+    expect(result.slots[0]).toMatchObject({ slot: "build", outcome: "words-only", reason: "noRegion" });
+    expect((result.slots[0] as { detail: string }).detail).toContain("never resize one to fit");
+    /* The words still file, exactly as they did before the region existed. */
+    expect(bench.rows[0]).toMatchObject({ slot: "build" });
+    expect(bench.rows[0]!.image).toBeUndefined();
+    expect(bench.stored).toEqual([]);
+  });
+
+  it("names WHICH read the frame gave up, rather than reporting a blank", async () => {
+    const noMatte = await mintBuild({ ground: ground({ subject: null }) });
+    expect((noMatte.result.slots[0] as { detail: string }).detail).toContain("no silhouette");
+
+    const noHead = await mintBuild({ ground: ground({ head: null }) });
+    expect((noHead.result.slots[0] as { detail: string }).detail).toContain("no head");
+  });
+
+  it("files words, never a crop, when there is no build in the picture", async () => {
+    /* Her head reaching the bottom of the frame is a portrait with no body in
+       it, and a crop of nothing filed as her build is the failure this whole
+       slot's catalogue note is about. */
+    const tall = rect({ x: 14, y: 4, width: 12, height: SIZE - 4 });
+    const { bench, result } = await mintBuild({
+      ground: ground({ head: tall, subject: tall }),
+    });
+
+    expect(result.slots[0]).toMatchObject({ slot: "build", outcome: "words-only", reason: "noRegion" });
+    expect(bench.stored).toEqual([]);
+  });
+
+  it("never stores a build its own reader DISPUTED — and keeps its pixels", async () => {
+    /*
+      The measured door's precedence, kept at the geometric one (fable-220 §3):
+      an unverified delivery may not become what the next render KNOWS her build
+      is, and the crop is the only instrument that can say whether the painter
+      or the reader was wrong. So the pixels are kept under the refusal's own
+      keys — which the assembler cannot see — and the row carries no
+      `storageKey` at all.
+    */
+    const { bench, result } = await mintBuild({ slots: [buildSlot({ disputed: true })] });
+
+    expect(result.slots[0]).toMatchObject({ slot: "build", outcome: "disputed", kept: true });
+    const row = bench.rows[0]!;
+    expect(row.image).toBeUndefined();
+    expect(row.refusal).toMatchObject({ reason: "disputedDelivery", kind: "derived:below-head" });
+    expect(row.refusal!.crop!.contentKey).toBe(bench.stored[0]);
+    /* The row that exists is EVIDENCE rather than a version: the library's fold
+       skips a `disputedDelivery` row entirely, so her previous build stays
+       newest and stays good. A disputed build with nothing to show would write
+       no row at all. */
+    expect(row.image).toBeUndefined();
+  });
+
+  it("refuses a crop another slot already holds, at the geometric door too", async () => {
+    /* Cut the same region twice and the second is byte-identical to the first.
+       Two rows holding one fact is D-242 whichever door let them in. */
+    const first = await mintBuild();
+    const digest = first.bench.rows[0]!.image!.digest;
+
+    const { bench, result } = await mintBuild({ knownDigests: new Map([["skin", digest]]) });
+    expect(result.slots[0]).toMatchObject({
+      slot: "build",
+      outcome: "words-only",
+      reason: "guardRefused",
+    });
+    expect((result.slots[0] as { detail: string }).detail).toContain("skin");
+    expect(bench.stored).toEqual([]);
+  });
+
+  it("spends no completeness read on a composed region", async () => {
+    /*
+      There is nothing to buy: the region was not READ, it was derived, so a
+      second read of it would be a read of a question no segmenter answers. The
+      guard's own reader is the one seam that must stay untouched here.
+    */
+    const bench = harness();
+    let guardReads = 0;
+    const composer = ground();
+    await mintReferencesForRender({
+      userId: 1,
+      variantId: 11,
+      frame: { bytes: await bodyFrame() },
+      applied: null,
+      masterRegions: new Map(),
+      slots: [buildSlot()],
+      dependencies: {
+        ...bench.dependencies,
+        read: async () => { guardReads += 1; return rect(BODY); },
+        derivedGround: composer.derivedGround,
+      } as never,
+    });
+
+    expect(guardReads).toBe(0);
+    expect(bench.rows[0]!.image).toBeDefined();
   });
 });

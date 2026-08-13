@@ -47,7 +47,14 @@
  * because it is the difference between a library that grows when a face changes
  * and one that grows when a request happens.
  */
-import { FACET_SLOTS, facetsOfSlot, slotsForFacet, slotSpecFor } from "./referenceSlotCatalogue";
+import {
+  FACET_SLOTS,
+  facetsOfSlot,
+  slotsForFacet,
+  slotSpecFor,
+  slotsRemintedEveryRender,
+  type SlotDefinition,
+} from "./referenceSlotCatalogue";
 import { captionWording, type RealizationCaptions } from "./realizationCaption";
 import type { SlotSpec } from "./referenceMint";
 import type { Facet } from "./refineFacets";
@@ -163,6 +170,26 @@ export function mintedSlotsForRender(input: MintedSlotsInput): MintedSlotsResult
   const unfiled: MintedSlotsResult["unfiled"] = [];
   const seen = new Set<string>();
 
+  /**
+   * The slot's stack as this render leaves it, or null when nothing has ever
+   * been said about it. Null is the honest state and it is not an error: it is
+   * a slot whose feature the master alone still accounts for.
+   */
+  const stackOf = (definition: SlotDefinition): readonly string[] | null => {
+    const members = facetsOfSlot(definition.slot) ?? [];
+    const words = members
+      .map((member) => captionWording(input.captions[member]).trim())
+      .filter((caption) => caption !== "");
+    return words.length === 0 ? null : words;
+  };
+
+  const file = (definition: SlotDefinition, words: readonly string[], disputed: boolean) => {
+    const spec = slotSpecFor(definition.slot, words);
+    if (spec === null) return;
+    seen.add(definition.slot);
+    slots.push(disputed ? { ...spec, disputed: true } : spec);
+  };
+
   const collect = (facets: readonly Facet[], disputed: boolean) => {
     for (const facet of facets) {
       const definitions = slotsForFacet(facet, { accessoryKind: input.accessoryKind });
@@ -175,18 +202,12 @@ export function mintedSlotsForRender(input: MintedSlotsInput): MintedSlotsResult
       }
       for (const definition of definitions) {
         if (seen.has(definition.slot)) continue;
-        const members = facetsOfSlot(definition.slot) ?? [];
-        const words = members
-          .map((member) => captionWording(input.captions[member]).trim())
-          .filter((caption) => caption !== "");
-        if (words.length === 0) {
+        const words = stackOf(definition);
+        if (words === null) {
           unfiled.push({ facet, reason: "noWords" });
           continue;
         }
-        const spec = slotSpecFor(definition.slot, words);
-        if (spec === null) continue;
-        seen.add(definition.slot);
-        slots.push(disputed ? { ...spec, disputed: true } : spec);
+        file(definition, words, disputed);
       }
     }
   };
@@ -203,6 +224,32 @@ export function mintedSlotsForRender(input: MintedSlotsInput): MintedSlotsResult
   */
   collect(input.earned, false);
   collect(input.disputed ?? [], true);
+
+  /*
+    AND THE SLOTS THAT ARE RE-CUT EVERY RENDER, whatever this one earned.
+
+    `build`'s crop is a photograph of her torso IN WHATEVER SHE IS WEARING, so a
+    crop kept across somebody else's clothing edit is a picture of last week's
+    top labelled "the exact build she has, unchanged" (fable-424 §4). Re-cutting
+    from the frame in hand is law 4 — a crop re-cut cannot be stale, where a
+    persisted one is a copy drifting from its source.
+
+    LAST, and `seen` is what makes that a rule rather than an ordering: a render
+    that DID earn this slot has already filed it above, with its own verdict, and
+    a disputed build must stay disputed. This pass only reaches a slot no facet
+    of this render mentioned.
+
+    A slot with no stack is skipped in SILENCE rather than reported unfiled: this
+    is not a facet that earned something and had nowhere to go, it is a feature
+    nobody has ever asked about — and the pristine master every render anchors on
+    already carries it. There is nothing to preserve and nothing to report.
+  */
+  for (const definition of slotsRemintedEveryRender()) {
+    if (seen.has(definition.slot)) continue;
+    const words = stackOf(definition);
+    if (words === null) continue;
+    file(definition, words, false);
+  }
 
   return { slots, unfiled };
 }

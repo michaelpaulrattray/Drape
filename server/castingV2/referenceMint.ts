@@ -8,24 +8,40 @@
  *
  * # References are minted FRESH — the old store seeds nothing
  *
- * Two sources, and no third (fable-173, on D-243's audit):
+ * Three sources, and no fourth (fable-173 on D-243's audit, plus fable-424 §4):
  *
  *   born anatomy    a fresh full region read on the MASTER
  *   edit-carried    the delivered-anchored cut on the DELIVERED frame,
  *                   `applied ∩ (region(delivered) ∪ region(master))`
+ *   composed        a region no segmenter can be asked for, DERIVED from two it
+ *                   can, on the frame in hand and bounded by nothing else. One
+ *                   member: `build` is her silhouette below the bottom of her
+ *                   head, and it is re-cut on EVERY delivered render because a
+ *                   below-head crop is also a photograph of her clothes
  *
  * `casting_segments` is not consulted, re-cut or superseded. Its rows are the
  * undo store and they are correct there.
  *
- * # The guard is the door, and it is a SECOND read
+ * # The guard is the door, and there are TWO of them
  *
  * A crop does not enter the library because it was produced; it enters because
- * an independent read of its own region on its own frame confirms it contains
- * its subject. The reader is injected into `mintGuardedReference`, so this
- * module cannot hand the guard the same mask that cut the crop — the checker
- * that cannot fail is unreachable rather than merely avoided. It costs one
- * vision call per reference, and that is the declared price of the founder's
- * fringe never entering the library again.
+ * something independent of the cut confirms it contains its subject.
+ *
+ *   measured     an independent second read of the crop's own region on its own
+ *                frame, scored against a specimen family. The reader is injected
+ *                into `mintGuardedReference`, so this module cannot hand the
+ *                guard the same mask that cut the crop — the checker that cannot
+ *                fail is unreachable rather than merely avoided. It costs one
+ *                vision call per reference, and that is the declared price of the
+ *                founder's fringe never entering the library again.
+ *   geometric    for a COMPOSED region, where there is no second read to buy:
+ *                the crop is complete iff its box holds every pixel the
+ *                derivation kept, counted, never sampled. Stricter than a
+ *                specimen and free. Borrowing another family's number instead
+ *                would be a guard whose verdicts nobody calibrated (law 2).
+ *
+ * The two share their duplicate rule (`duplicateSlotFor`) and their precedence
+ * on a disputed delivery, and nothing else.
  *
  * # What a REFUSED crop does, and why it is not "nothing"
  *
@@ -88,16 +104,24 @@ import {
 import { storagePut } from "../storage";
 import { createModuleLogger } from "../logging/logger";
 import { captureCastingReferenceLibraryEnabled } from "./castingV2Scope";
-import { cutSegments, encodeCut, type SegmentCut } from "./segmentCuts";
-import { readRaster, type Mask } from "./maskedComposite";
+import {
+  boundsOf, cropMask, cropRaster, cutSegments, encodeCut,
+  type SegmentBox, type SegmentCut,
+} from "./segmentCuts";
+import { readRaster, type Mask, type Raster } from "./maskedComposite";
+import {
+  belowHeadMask, belowHeadCropIsComplete, buildSpan, MaskError, type BuildSpan,
+} from "./maskGeometry";
 import type { SideRegions } from "./maskedRefine";
 import {
+  duplicateSlotFor,
   mintGuardedReference,
   refusalKeepsItsCrop,
   type GuardRefusalReason,
+  type GuardVerdict,
   type RegionReader,
 } from "./referenceCompleteness";
-import { isDerivedRegion } from "./referenceSlotCatalogue";
+import { DERIVED_REGION_ASKS, DERIVED_REGION_KEY, isDerivedRegion } from "./referenceSlotCatalogue";
 import { parseSlot, type Instance, type SlotFrame } from "./referenceSlots";
 import { accessoryKindOfSlot, tidyStackWord } from "./slotWordShape";
 import type { FeatureSlot, FeatureTier } from "./recipeAssembler";
@@ -250,6 +274,14 @@ export type MintedSlot =
 export type MintResult = {
   outcome: "stored" | "off" | "nothing-to-keep" | "failed";
   slots: MintedSlot[];
+  /**
+   * THE RATCHET'S READING, when a build was composed on this render.
+   *
+   * It decides nothing here. It is returned as well as logged so the instrument
+   * can be driven by a caller and asserted by a test — a number that only ever
+   * exists inside a log line is a number nobody can prove was taken.
+   */
+  build?: BuildSpan;
 };
 
 export type MintDependencies = {
@@ -313,6 +345,39 @@ export type MintDependencies = {
    * line beside `groundReads` and `disputedReads`.
    */
   readWords?: SlotWordsReader;
+  /**
+   * THE COMPOSER'S OWN TWO READS — both, or the composer is off.
+   *
+   * A DERIVED region is not asked for; it is composed from regions that ARE
+   * answered (`referenceSlotCatalogue`'s `DERIVED_REGION_KEY`). `belowHead` — her
+   * build — is the whole-subject matte below the bottom of the `face` box, so
+   * composing it needs a matte and a head, and they must both be read on **the
+   * frame the crop is cut from**. Nothing else will do:
+   *
+   *   `masterRegions`      the MASTER's face. Right question, wrong frame — a
+   *                        chin taken from before the edit cutting a crop from
+   *                        after it is the wrong-frame class with her body in it
+   *   `deliveredRegions`   the PAINTED frame's face, which on the composited road
+   *                        is not the frame the user is looking at either
+   *
+   * So the composer pays for its own two reads on `frame.bytes` and takes no
+   * shortcut, and the log line says how many it spent (`derivedReads`). They are
+   * one field rather than two so the composer cannot land half-wired: a matte
+   * with no head, or a head with no matte, composes nothing and would file words
+   * while looking configured.
+   *
+   * **Absent, nothing changes at all**: a derived slot falls straight to the
+   * words-only row it filed before it had a region, which is exactly what the
+   * mint did the day the geometry landed inert.
+   */
+  derivedGround?: {
+    /** The named regions the composition stands on — `face`, and no key that
+     *  `isDerivedRegion` would recognise. */
+    region: RegionReader;
+    /** Her silhouette, edge ramp and all. Not a question: the matting model has
+     *  one job and no name to get wrong. */
+    subject: (input: { frame: Buffer }) => Promise<Mask | null>;
+  };
   store?: (input: { key: string; bytes: Buffer; contentType: string }) => Promise<{ key: string }>;
   record?: typeof recordReferenceRows;
   manifest?: (input: {
@@ -416,6 +481,187 @@ function bp(value: number): number {
   return Math.round(value * 10_000);
 }
 
+/**
+ * The alpha a matte pixel must exceed to be HER.
+ *
+ * One constant for the box, the completeness count and the pixel count, because
+ * those are three readings of one mask and a mask read at two thresholds is how
+ * a crop passes a check it should have failed. 127 is the same midpoint
+ * `belowHeadMask` counts at.
+ */
+const MATTE_CLAIM = 127;
+
+/**
+ * HER BUILD, CUT FROM THE FRAME IN HAND — the composer (fable-424 §1/§2).
+ *
+ * Everything else in this mint cuts from a region a segmenter answered. This
+ * cuts from a region nobody can be asked for: `belowHead` is arithmetic on two
+ * answers the reader already gives — her silhouette, and where her head stops —
+ * and D-213 forbids inventing a question that names a body instead.
+ *
+ * # It is exported so it can be driven, and it is pure so driving it is cheap
+ *
+ * No network, no store, no flag. Every refusal below is a `MaskError` naming
+ * what could not be composed, and the caller turns one into the words-only row
+ * `build` filed before it had a region at all — never into a lost render.
+ */
+export function composeBelowHeadCut(input: {
+  /** The slot this cut belongs to, in the key space `cutSegments` uses. */
+  facet: string;
+  /** The delivered frame, decoded — the pixels the crop is made of. */
+  frame: Raster;
+  /** Her silhouette on that frame. */
+  subject: Mask;
+  /** `region("face")` on that same frame. Only its lowest row is used. */
+  head: Mask;
+}): { cut: SegmentCut; chinRow: number; complete: boolean; outside: number } {
+  const { mask, chinRow } = belowHeadMask({ subject: input.subject, head: input.head });
+  /*
+    THE MASKS AND THE PIXELS MUST BE ONE PICTURE.
+
+    Two models answer here — a matting model for the silhouette, a segmenter for
+    the head — and neither promises the frame's own resolution. A mask at another
+    size is refused rather than resized: a resample inside the one path that
+    promises not to (§5), and a box measured in one grid and cut in another is
+    the wrong-boundary class with her whole body inside it. The refusal is
+    visible in the log line, which is also how we find out whether the two models
+    ever disagree in production.
+  */
+  if (mask.width !== input.frame.width || mask.height !== input.frame.height) {
+    throw new MaskError(
+      `the composed region is ${mask.width}x${mask.height} and the frame is `
+      + `${input.frame.width}x${input.frame.height} — never resize one to fit`,
+    );
+  }
+  const box = boundsOf(mask, MATTE_CLAIM);
+  if (box === null) throw new MaskError("nothing of her is below her chin in this frame");
+
+  /*
+    AND THE BOX IS PROVED AGAINST THE MASK THAT DREW IT — arithmetic, because it
+    can be (fable-424 §2). Every other slot's crop is judged by a completeness
+    specimen for its region family; there is no measured specimen for a
+    below-head crop, and adopting another family's number would be a guard whose
+    verdicts nobody calibrated (working law 2).
+
+    SAID PLAINLY: under the box derivation on the line above, this cannot fail —
+    the bounds of a mask contain the mask. It is asserted anyway because the box
+    derivation is the thing most likely to change, and the obvious change is the
+    wrong one: routing this through `cutSegments` would intersect the region with
+    `applied`, and on a "green eyes" render `applied` is her eyes — a crop of her
+    eyelids filed as her build. `belowHeadCropIsComplete` is driven with boxes
+    that DO fail it in `maskGeometry.test.ts`; this call is the wiring that makes
+    the day somebody changes the box a red test rather than a bad reference.
+  */
+  const verdict = belowHeadCropIsComplete({ mask, box });
+
+  return {
+    chinRow,
+    complete: verdict.complete,
+    outside: verdict.outside,
+    cut: {
+      facet: input.facet,
+      region: DERIVED_REGION_KEY.belowHead,
+      /* The subject's own alpha, cropped — never re-hardened. This is the one
+         mask in the mint with a real edge ramp, and it is a matte because her
+         silhouette is. */
+      mask: cropMask(mask, box),
+      content: cropRaster(input.frame, box),
+      box,
+      frame: { width: input.frame.width, height: input.frame.height },
+      pixels: verdict.kept,
+      /*
+        THE UNION ACCOUNTING DOES NOT APPLY, and these say so rather than
+        reporting a zero that means something else. `arrivedPixels` and
+        `departedPixels` measure what a DELIVERED region reading found that the
+        MASTER's did not, and vice versa. This region was composed once, on the
+        delivered frame, from a matte and a head read on that same frame — there
+        is no second reading for it to have arrived from or departed to.
+        `deliveredRead: false` is the field's own honest state: no such split
+        exists here.
+      */
+      arrivedPixels: 0,
+      departedPixels: 0,
+      deliveredRead: false,
+    },
+  };
+}
+
+/**
+ * THE GEOMETRIC DOOR — what stands in for the guard on a composed region.
+ *
+ * The measured door (`mintGuardedReference`) buys a second, independent read of
+ * the crop's region and scores the crop against it. There is nothing to buy
+ * here: the region was not read, it was DERIVED, and the honest check is whether
+ * the crop holds every pixel the derivation kept. So this spends no vision call,
+ * reaches 1.0 or refuses, and records `derived-geometry` as the instrument so no
+ * row ever claims a specimen family it does not belong to.
+ *
+ * The duplicate rule is the measured door's own (`duplicateSlotFor`), imported
+ * rather than restated: two slots may not hold one fact, whichever door let them
+ * in.
+ */
+function geometricVerdict(input: {
+  kind: string;
+  digest: string;
+  mintedDigests: ReadonlyMap<string, string>;
+  composed: { complete: boolean; outside: number };
+  cropPixels: number;
+  /** The ask wrote this slot and the render's own reader disputed it. */
+  disputed?: boolean;
+}): GuardVerdict {
+  /* Coverage is `|crop ∩ region| / |region|` everywhere in this product, and
+     here the crop's mask IS the region cropped to its own box — so a complete
+     crop reads exactly 1.0 with no spill, and an incomplete one reads the share
+     it kept. Nothing is sampled and nothing is estimated. */
+  const regionPixels = input.cropPixels + input.composed.outside;
+  const reading = {
+    coverage: regionPixels === 0 ? 0 : input.cropPixels / regionPixels,
+    spill: 0,
+    regionPixels,
+    cropPixels: input.cropPixels,
+  };
+  const duplicate = duplicateSlotFor(input.digest, input.mintedDigests);
+  if (duplicate) {
+    return {
+      ok: false, reason: "duplicateOfSlot", kind: input.kind, reading,
+      detail: `this crop is byte-identical to ${duplicate}'s, and two slots may not hold one fact`,
+    };
+  }
+  /*
+    AND HERE, BEFORE COMPLETENESS — the measured door's own precedence, kept.
+
+    A disputed slot is refused however well its crop measures, because the
+    question it fails is not a question about the crop: the ask wrote this
+    facet and the render's own reader said the change is not in the delivered
+    picture. An unverified delivery may not become what the next render knows
+    her build IS. Placed above the completeness check for the same reason it is
+    placed there in `guardReference`: no completeness number can decide a
+    question about delivery.
+  */
+  if (input.disputed) {
+    return {
+      ok: false, reason: "disputedDelivery", kind: input.kind, reading,
+      detail: `this render's reader disputed that the ask landed on ${input.kind}; the composed crop is kept for a human rather than adopted`,
+    };
+  }
+  if (!input.composed.complete) {
+    return {
+      ok: false,
+      reason: "underCaptured",
+      kind: input.kind,
+      reading,
+      judged: { instrument: "derived-geometry", coverage: reading.coverage, threshold: 1 },
+      detail: `the crop's box leaves ${input.composed.outside} pixel(s) of the composed region outside it, and a crop of part of her build filed as her build is the failure this slot exists to avoid`,
+    };
+  }
+  return {
+    ok: true,
+    kind: input.kind,
+    reading,
+    judged: { instrument: "derived-geometry", coverage: 1, threshold: 1 },
+  };
+}
+
 export async function mintReferencesForRender(input: MintInput): Promise<MintResult> {
   const enabled = input.dependencies?.enabledFor ?? captureCastingReferenceLibraryEnabled;
   if (!enabled(input.userId)) return { outcome: "off", slots: [] };
@@ -459,6 +705,18 @@ export async function mintReferencesForRender(input: MintInput): Promise<MintRes
       /** The region key this slot is cut from — its question, or one side of it. */
       regionKey: string;
       side: Instance | null;
+      /**
+       * COMPOSED, NOT ASKED — and this is what judges it.
+       *
+       * Present exactly on a derived slot whose region the composer built. Its
+       * presence is what routes the slot past `mintGuardedReference` to the
+       * geometric door: a derived key may never reach a reader, and a composed
+       * region has no specimen family for a measured guard to consult.
+       */
+      composed?: { complete: boolean; outside: number };
+      /** Why no crop was cut for this slot, when the reason is more specific
+       *  than "this render has no evidence about it". */
+      noCutDetail?: string;
     }> = [];
     /** Per-side slots with no side to cut from, with the reason each one is out. */
     const sideless: Array<{ slot: SlotSpec; detail: string }> = [];
@@ -485,26 +743,22 @@ export async function mintReferencesForRender(input: MintInput): Promise<MintRes
       });
     };
 
+    /*
+      THE SLOTS WHOSE REGION IS COMPOSED RATHER THAN ASKED.
+
+      Held back from the loop below rather than routed through it, because the
+      key they travel under (`derived:below-head`) is deliberately a phrase no
+      segmenter may ever be handed — so the generic path, which looks a region up
+      by its question, must never see one. They are composed after the frame is
+      decoded, since composing needs the frame's own resolution to refuse a
+      mismatch against.
+    */
+    const derived: SlotSpec[] = [];
+
     for (const slot of input.slots) {
       if (slot.tier === "surface") continue;
       if (slot.question === null || slot.guardKind === null) continue;
-      /*
-        A DERIVED REGION IS NOT ASKED, AND THIS MINT CANNOT YET COMPOSE ONE.
-
-        `build`'s region is arithmetic on two answered regions (`belowHeadMask`),
-        not a question — and the key it travels under is deliberately a phrase no
-        segmenter should ever be handed. The composer that turns that key into a
-        mask is the next piece of this build; until it lands, a derived slot
-        falls to the words-only loop below, which is byte-for-byte what `build`
-        did before it had a region at all.
-
-        DECLARED SCAFFOLDING, not a silent lesser path: the geometry and its
-        tests are in `maskGeometry`, the catalogue names the region, and this is
-        the line that will route to the composer. What it must never do — and
-        the reason it exists rather than being left to the generic path — is let
-        `derived:below-head` reach a reader as a question.
-      */
-      if (isDerivedRegion(slot.question)) continue;
+      if (isDerivedRegion(slot.question)) { derived.push(slot); continue; }
       const { question, guardKind } = slot;
       if (slot.frame !== "ownSide") {
         if (!regionsToCut.has(question)) {
@@ -586,7 +840,80 @@ export async function mintReferencesForRender(input: MintInput): Promise<MintRes
       regionMasks: regionsToCut,
       deliveredMasks: deliveredToCut.size > 0 ? deliveredToCut : null,
     });
-    const cutBySlot = new Map(cuts.map((cut) => [cut.facet, cut]));
+
+    /*
+      AND THE COMPOSED ONES, CUT FROM THE FRAME IN HAND.
+
+      Deliberately NOT through `cutSegments`: that function intersects every
+      region with `applied`, which is where the paint was allowed to go — and a
+      build crop is re-cut on renders that painted her EYES. Her build
+      intersected with her eyelids is a crop of her eyelids filed as her build.
+      This region is not edit-carried and never was; it is the whole extent of
+      her below her chin on the frame the user is looking at (fable-424 §4).
+
+      A failure here costs the slot its crop and nothing else: it files the
+      words-only row `build` filed before it had a region, with the reason on it.
+    */
+    let derivedReads = 0;
+    let span: BuildSpan | null = null;
+    const composedCuts: SegmentCut[] = [];
+    const ground = input.dependencies?.derivedGround;
+    for (const slot of derived) {
+      const detail = (why: string) => {
+        cuttable.push({
+          ...slot,
+          question: slot.question!,
+          guardKind: slot.guardKind!,
+          regionKey: slot.question!,
+          side: null,
+          noCutDetail: why,
+        });
+      };
+      if (!ground) {
+        detail("this slot's region is composed rather than asked, and no composer is wired into this mint");
+        continue;
+      }
+      try {
+        derivedReads += 2;
+        const [head, subject] = await Promise.all([
+          ground.region({ frame: input.frame.bytes, question: DERIVED_REGION_ASKS.belowHead.head }),
+          ground.subject({ frame: input.frame.bytes }),
+        ]);
+        if (!head || !subject) {
+          detail(
+            `her build is composed from her silhouette and the bottom of her head, and this frame gave up `
+            + `${!head && !subject ? "neither" : !head ? "no head" : "no silhouette"}`,
+          );
+          continue;
+        }
+        /*
+          One instrument rides the decision (fable-424 §4) — logged below,
+          whether or not the crop survives the door.
+
+          Taken only for the region it measures. `buildSpan` reads a SHOULDER
+          span against a head height; handed some future derived region it would
+          answer a number about her shoulders under that region's name, which is
+          the wrong-boundary class wearing a metric.
+        */
+        if (slot.question === DERIVED_REGION_KEY.belowHead) span = buildSpan({ subject, head });
+        const composed = composeBelowHeadCut({ facet: slot.slot, frame, subject, head });
+        composedCuts.push(composed.cut);
+        cuttable.push({
+          ...slot,
+          question: slot.question!,
+          guardKind: slot.guardKind!,
+          regionKey: slot.question!,
+          side: null,
+          composed: { complete: composed.complete, outside: composed.outside },
+        });
+      } catch (error) {
+        detail(error instanceof MaskError
+          ? error.message
+          : `her build could not be composed from this frame: ${error instanceof Error ? error.message : String(error)}`);
+      }
+    }
+
+    const cutBySlot = new Map([...cuts, ...composedCuts].map((cut) => [cut.facet, cut]));
 
     /* Encoded once per cut and remembered: the words read these bytes and the
        digest hashes them, and encoding a crop twice to answer one question
@@ -696,9 +1023,7 @@ export async function mintReferencesForRender(input: MintInput): Promise<MintRes
     */
     for (const slot of input.slots) {
       if (slot.tier === "surface") continue;
-      /* A derived region joins this loop rather than the cut above, for as long
-         as no composer exists for it — see the note at the cuttable loop. */
-      if (slot.question !== null && slot.guardKind !== null && !isDerivedRegion(slot.question)) continue;
+      if (slot.question !== null && slot.guardKind !== null) continue;
       if (slot.disputed) {
         disputedNothingKept(
           slot,
@@ -714,9 +1039,7 @@ export async function mintReferencesForRender(input: MintInput): Promise<MintRes
         slot: slot.slot,
         outcome: "words-only",
         reason: "noQuestion",
-        detail: isDerivedRegion(slot.question)
-          ? "this slot's region is composed rather than asked, and no composer is wired into this mint yet"
-          : "no segmentation question names this slot, so there is nothing honest to cut",
+        detail: "no segmentation question names this slot, so there is nothing honest to cut",
       });
     }
     for (const { slot, detail } of sideless) {
@@ -751,7 +1074,16 @@ export async function mintReferencesForRender(input: MintInput): Promise<MintRes
         const said = await wordsFor(slot);
         if (said === null) { unread(slot); continue; }
         rows.push({ role: "carry", slot: slot.slot, tier: slot.tier, noun: slot.noun, words: said });
-        outcomes.push({ slot: slot.slot, outcome: "words-only", reason: "noRegion" });
+        outcomes.push({
+          slot: slot.slot,
+          outcome: "words-only",
+          reason: "noRegion",
+          /* A composed region that could not be composed says WHY, because
+             "the segmenter found nothing" and "the two models disagreed about
+             the frame's resolution" are different failures and only one of them
+             is ours. */
+          ...(slot.noCutDetail === undefined ? {} : { detail: slot.noCutDetail }),
+        });
         continue;
       }
 
@@ -764,30 +1096,55 @@ export async function mintReferencesForRender(input: MintInput): Promise<MintRes
       const said = (await wordsFor(slot)) ?? [];
       const encoded = await encodedFor(cut);
       const digest = digestOf(encoded.content);
-      if (!read) throw new Error("the completeness guard has no reader, and a crop may not enter the library unread");
-      const verdict = await mintGuardedReference({
-        kind: slot.guardKind,
-        question: slot.question,
-        /*
-          AND THE GUARD IS ASKED THE SAME NARROW QUESTION THE CROP ANSWERS.
+      /*
+        TWO DOORS, AND WHICH ONE IS DECIDED BY WHERE THE REGION CAME FROM.
 
-          A per-side crop scored against a read of both sides measures about half
-          of a region it entirely contains — a refusal with a number nobody
-          earned, which is exactly how a kind acquires a specimen it should not
-          have. The reader that cannot scope to a side returns nothing, and
-          nothing is `readDidNotSettle`: no pass, and no number either.
-        */
-        ...(slot.side === null ? {} : { side: slot.side }),
-        frame: input.frame.bytes,
-        crop: { mask: cut.mask, box: cut.box },
-        digest,
-        mintedDigests: digests,
-        /* The guard owns the precedence: the three refusals about whether this
-           is a real, unique picture of the subject come FIRST, and a dispute
-           only ever displaces a completeness verdict. */
-        ...(slot.disputed ? { disputed: true } : {}),
-      }, read);
-      if (slot.disputed) disputedReads += 1;
+        A composed region has no second read to be scored against — that is what
+        composed means — so it goes to the geometric door, which proves the crop
+        holds every pixel the derivation kept and spends no vision call. A read
+        region goes to the measured door, which buys its own independent read.
+        The branch is on `composed` rather than on the slot's name, so a second
+        derived slot needs no edit here and an asked slot can never reach the
+        arithmetic by accident.
+      */
+      const verdict = slot.composed
+        ? geometricVerdict({
+          kind: slot.guardKind,
+          digest,
+          mintedDigests: digests,
+          composed: slot.composed,
+          cropPixels: cut.pixels,
+          ...(slot.disputed ? { disputed: true } : {}),
+        })
+        : await (async () => {
+          if (!read) throw new Error("the completeness guard has no reader, and a crop may not enter the library unread");
+          return mintGuardedReference({
+            kind: slot.guardKind,
+            question: slot.question,
+            /*
+              AND THE GUARD IS ASKED THE SAME NARROW QUESTION THE CROP ANSWERS.
+
+              A per-side crop scored against a read of both sides measures about
+              half of a region it entirely contains — a refusal with a number
+              nobody earned, which is exactly how a kind acquires a specimen it
+              should not have. The reader that cannot scope to a side returns
+              nothing, and nothing is `readDidNotSettle`: no pass, and no number
+              either.
+            */
+            ...(slot.side === null ? {} : { side: slot.side }),
+            frame: input.frame.bytes,
+            crop: { mask: cut.mask, box: cut.box },
+            digest,
+            mintedDigests: digests,
+            /* The guard owns the precedence: the three refusals about whether
+               this is a real, unique picture of the subject come FIRST, and a
+               dispute only ever displaces a completeness verdict. */
+            ...(slot.disputed ? { disputed: true } : {}),
+          }, read);
+        })();
+      /* Counted on the MEASURED door only: the geometric one spends nothing, and
+         a composed slot's dispute costs a vision call nowhere. */
+      if (slot.disputed && !slot.composed) disputedReads += 1;
 
       if (!verdict.ok) {
         log.warn(
@@ -945,7 +1302,8 @@ export async function mintReferencesForRender(input: MintInput): Promise<MintRes
       outcomes.push({ slot: slot.slot, outcome: "stored", coverage: verdict.reading.coverage });
     }
 
-    if (rows.length === 0) return { outcome: "nothing-to-keep", slots: outcomes };
+    const ratchet = span === null ? {} : { build: span };
+    if (rows.length === 0) return { outcome: "nothing-to-keep", slots: outcomes, ...ratchet };
 
     /*
       THE MANIFEST BEFORE THE BYTES. The crop and its mask go to permanently
@@ -999,6 +1357,30 @@ export async function mintReferencesForRender(input: MintInput): Promise<MintRes
            Zero on every render that did — which is every render on the old road
            — so a non-zero here is the repaint paying its declared price. */
         groundReads,
+        /* AND WHAT THE COMPOSER COST — two reads on the delivered frame per
+           derived slot, spent only on a face that has a build to keep. Zero on
+           every render of a face nobody has body-edited, which is most of them. */
+        derivedReads,
+        /*
+          THE RATCHET'S READING (fable-424 §4).
+
+          `build`'s crop is re-cut from the frame in hand on every delivered
+          render, and the one honest worry with that is compounding: an un-asked
+          per-render wobble riding forward because the crop tracks the newest
+          frame rather than the paid one. The word stack re-says the bought state
+          every render and SHOULD bound it — this line is what turns that claim
+          into a distribution somebody can read across an edit chain. `clipped`
+          rides with it because a saturated span is not a build.
+        */
+        ...(span === null ? {} : {
+          build: {
+            ratio: Number(span.ratio.toFixed(4)),
+            spanPx: span.spanPx,
+            headPx: span.headPx,
+            atRow: Number(span.atRow.toFixed(4)),
+            clipped: span.clipped,
+          },
+        }),
         /* AND WHAT THE WORDS COST — one read per filed slot, the declared price
            of a slot's words describing the object at that site rather than a
            sentence about her whole face. Zero when nothing wired a reader. */
@@ -1020,7 +1402,7 @@ export async function mintReferencesForRender(input: MintInput): Promise<MintRes
       },
       "[library] minted this render's references",
     );
-    return { outcome: "stored", slots: outcomes };
+    return { outcome: "stored", slots: outcomes, ...ratchet };
   } catch (error) {
     /*
       Anything written is still on the manifest, because the discharge is the

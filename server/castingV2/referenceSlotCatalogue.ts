@@ -139,11 +139,28 @@ export type SlotDefinition = {
   /** The completeness specimen family. `null` exactly when `question` is. */
   guardKind: string | null;
   frame: SlotFrame;
+  /** When this slot's crop is re-cut — see {@link CatalogueEntry.remint}. */
+  remint: RemintRule;
   /** How the pair is spoken while it matches. Present only for a per-side slot. */
   pairNoun?: string;
   /** Present exactly when `question` is null — why, in one sentence. */
   wordsOnly?: string;
 };
+
+/**
+ * WHEN A SLOT'S CROP IS RE-CUT.
+ *
+ * `whenEarned` is what every slot did before this existed and what almost every
+ * slot should go on doing: the mint files a slot when THIS render delivered
+ * something into it, and a slot the render did not touch keeps the crop it
+ * already has. A re-cut costs vision calls, and paying them on eleven slots per
+ * render to re-photograph eleven features nobody edited is not a trade this
+ * product makes.
+ *
+ * `everyRender` is the exception the below-head crop forced, and it is not about
+ * cost — it is about what the crop CONTAINS.
+ */
+export type RemintRule = "whenEarned" | "everyRender";
 
 /**
  * Where a slot's question comes from, named rather than assumed.
@@ -209,6 +226,17 @@ type CatalogueEntry = {
   question: QuestionSource;
   /** Absent means {@link PanelPlacement} `own` — most slots speak for themselves. */
   panel?: PanelPlacement;
+  /**
+   * WHEN THIS SLOT'S CROP IS RE-CUT. Absent means `whenEarned`, which is what
+   * every slot did before `build` needed otherwise (fable-424 §4).
+   *
+   * A slot marked `everyRender` is filed on every delivered render whether or
+   * not this one earned it, so its crop is always cut from the frame in hand.
+   * It is law 4 at the door: a crop that persists across other people's edits is
+   * a COPY drifting from its source, and the alternative — a list of which edits
+   * invalidate which crop — is wrong the day somebody adds a slot to it.
+   */
+  remint?: RemintRule;
 };
 
 const STRUCTURE_IS_WORDS = (part: string): PanelPlacement => ({
@@ -417,6 +445,25 @@ const ANATOMY_SLOTS: readonly CatalogueEntry[] = [
       of: "belowHead",
       note: "no question names a build, so this region is composed rather than asked: the whole-subject matte below the bottom of the `face` box. Its completeness is arithmetic against the masks that built it, never a specimen nobody calibrated",
     },
+    /*
+      AND IT IS RE-CUT EVERY RENDER, because a below-head crop is not only her
+      build — it is her CLOTHES (opus-328 §4, ruled in fable-424 §4).
+
+        step 1  narrower shoulders          → the crop is minted: a grey t-shirt
+        step 2  "put her in a black blazer" → `build` earned nothing, so under
+                                              `whenEarned` nothing re-cuts it
+        step 3  "green eyes"                → the grey t-shirt rides again, into
+                                              a frame that must keep the blazer
+
+      Re-cutting from the frame in hand makes that unreachable rather than
+      merely avoided (law 4), and it costs no enumeration of which edits
+      invalidate a torso — the kind of list that is wrong the first time somebody
+      adds a slot to it. What it costs is two reads on the delivered frame, and
+      only on a face that has a build to keep: `mintedSlotsForRender` still files
+      nothing where nothing has ever been said, because an unedited build is
+      already carried by the pristine master every render anchors on.
+    */
+    remint: "everyRender",
   },
   {
     feature: "skin",
@@ -615,6 +662,24 @@ export function isDerivedRegion(question: string | null): question is string {
 }
 
 /**
+ * THE REAL QUESTIONS A DERIVED KEY IS COMPOSED FROM — beside the key that is
+ * never asked, deliberately.
+ *
+ * `derived:below-head` may not reach a segmenter; `face` must. Keeping both
+ * facts in one place is what stops the composer from inventing its own name for
+ * the head: a second spelling of "face" here and in `regionNameOf` is the copy
+ * that drifts, and the day one of them changes the mint would compose a build
+ * from a region nobody else believes in.
+ *
+ * The whole-subject matte is not in this table because it is not a QUESTION —
+ * it is the matting model's one job, asked through the reader's own `subject`
+ * seam with no name to get wrong.
+ */
+export const DERIVED_REGION_ASKS = {
+  belowHead: { head: "face" },
+} as const;
+
+/**
  * CAN A SEGMENTER BE ASKED FOR THIS SLOT'S REGION? — one predicate, three
  * readers.
  *
@@ -649,6 +714,7 @@ function definitionOf(entry: CatalogueEntry, instance: Instance | null): SlotDef
     panel: entry.panel ?? { row: "own" as const },
     noun,
     frame: entry.instances.of === "perSide" ? ("ownSide" as const) : ("wholeFrame" as const),
+    remint: entry.remint ?? ("whenEarned" as const),
     ...(entry.instances.of === "perSide" ? { pairNoun: entry.instances.pairNoun } : {}),
   };
 
@@ -731,6 +797,19 @@ export function catalogueSlots(): SlotDefinition[] {
       ? INSTANCES.map((instance) => definitionOf(entry, instance))
       : [definitionOf(entry, null)]
   ));
+}
+
+/**
+ * The slots the mint re-cuts on EVERY delivered render, whatever this one
+ * earned.
+ *
+ * Derived from the one catalogue rather than listed a second time here: a
+ * parallel list of "slots that re-mint" is exactly law 4's copy, and it would be
+ * wrong the first time a slot's rule changed. One member today (`build`), and
+ * the reason is on its entry.
+ */
+export function slotsRemintedEveryRender(): SlotDefinition[] {
+  return catalogueSlots().filter((definition) => definition.remint === "everyRender");
 }
 
 /**

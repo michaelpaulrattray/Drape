@@ -3942,6 +3942,38 @@ export async function refineCandidate(
               */
               ...(repaintEnabled ? { readGround: read } : {}),
               /*
+                THE COMPOSER'S TWO READS, ON THE FRAME THE USER IS LOOKING AT.
+
+                `build` has no segmentation question — no region vocabulary word
+                names a body, and D-213 forbids inventing one — so its region is
+                COMPOSED: her silhouette below the bottom of her head. Both terms
+                are read here, on `image.bytes`, and not taken from the harvest's
+                maps: those are the MASTER's regions (right question, wrong
+                frame) or the PAINTED frame's (not the composite the user sees).
+                A chin from one frame cutting a crop from another is the
+                wrong-boundary class with her whole body in it.
+
+                Not gated on a flag beyond the library's own, and deliberately:
+                this is what the live mint WRITES. Under words alone a delivered
+                build is lost ENTIRELY on the next edit — 3 faces of 3, as though
+                she had never paid for it (opus-326) — and the same crop kept
+                92–109% of it.
+
+                Costed honestly: two reads per delivered render, and ONLY on a
+                face that already has something to say about its build.
+                `mintedSlotsForRender` files nothing where nothing has ever been
+                said, so a face nobody has body-edited pays nothing at all. The
+                mint's log line reports them as `derivedReads`.
+
+                Wired HERE and asserted here — a control nothing invokes is not a
+                control (invariant 7), and this program has already paid twice
+                for a store that was inert while two benches passed.
+              */
+              derivedGround: {
+                region: read,
+                subject: ({ frame }) => reader.subject({ image: frame }),
+              },
+              /*
                 THE LIBRARY'S OWN READ OF WHAT THIS SLOT NOW IS.
 
                 Not gated on any flag, and that is deliberate: this is a fix to

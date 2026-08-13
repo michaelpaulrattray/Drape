@@ -241,3 +241,70 @@ describe("the slots a render DISPUTES", () => {
       .toEqual(mintedSlotsForRender({ earned: ["lips", "nose"], disputed: [], captions }));
   });
 });
+
+/**
+ * THE SLOT THAT IS FILED WHATEVER THIS RENDER EARNED.
+ *
+ * `build`'s crop is a photograph of her torso IN WHATEVER SHE IS WEARING, so a
+ * crop kept across somebody else's clothing edit is a picture of last week's top
+ * labelled "the exact build she has, unchanged" (fable-424 §4). The rule is data
+ * on the catalogue and derived here; these cases are the door it comes through.
+ */
+describe("the slots re-cut every render", () => {
+  it("files her build on a render that earned nothing of it", () => {
+    const { slots, unfiled } = mintedSlotsForRender({
+      earned: ["eye.colour"],
+      captions: {
+        "eye.colour": "Green",
+        build: "Noticeably narrower shoulders and slimmer upper arms",
+      },
+    });
+
+    expect(slots.map((slot) => slot.slot)).toEqual(["eye@left", "eye@right", "build"]);
+    expect(unfiled).toEqual([]);
+    /* Her whole build stack, not the facet the render happened to touch. */
+    expect(slots[2]!.words).toEqual(["Noticeably narrower shoulders and slimmer upper arms"]);
+    expect(slots[2]!.disputed).toBeUndefined();
+  });
+
+  it("files NOTHING before anything has ever been said about her build", () => {
+    /*
+      And in silence, not as `unfiled`. This is not a facet that earned
+      something and had nowhere to go — it is a feature nobody has asked about,
+      and the pristine master every render anchors on already carries it. There
+      is nothing to preserve and nothing to report.
+    */
+    const { slots, unfiled } = mintedSlotsForRender({
+      earned: ["eye.colour"],
+      captions: { "eye.colour": "Green" },
+    });
+
+    expect(slots.map((slot) => slot.slot)).toEqual(["eye@left", "eye@right"]);
+    expect(unfiled).toEqual([]);
+  });
+
+  it("does not file her build TWICE on the render that earned it", () => {
+    const { slots } = mintedSlotsForRender({
+      earned: ["shoulders"],
+      captions: { build: "A more athletic build", shoulders: "Broader shoulders" },
+    });
+
+    expect(slots.map((slot) => slot.slot)).toEqual(["build"]);
+  });
+
+  it("leaves a DISPUTED build disputed rather than re-filing it clean", () => {
+    /*
+      The re-mint pass runs last and `seen` is what makes that a rule rather than
+      an ordering: a render whose own reader disputed the build has already filed
+      it, marked, and a second clean entry would store an unverified delivery as
+      what the next render knows her build is.
+    */
+    const { slots } = mintedSlotsForRender({
+      earned: [],
+      disputed: ["shoulders"],
+      captions: { shoulders: "Broader shoulders" },
+    });
+
+    expect(slots.map((slot) => [slot.slot, slot.disputed ?? false])).toEqual([["build", true]]);
+  });
+});

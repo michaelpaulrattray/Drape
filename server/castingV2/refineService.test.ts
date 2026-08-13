@@ -344,6 +344,12 @@ type MintAsk = {
   /** The GROUND reader, handed only by a render that brought no region map —
    *  which is the repaint, and only the repaint. */
   readGround: ((input: { frame: Buffer; question: string; side?: string }) => Promise<unknown>) | undefined;
+  /** THE COMPOSER'''S TWO SEAMS, so a test can drive the reads her build is
+   *  composed from rather than trust that they were wired at all. */
+  derivedGround: {
+    region: (input: { frame: Buffer; question: string }) => Promise<unknown>;
+    subject: (input: { frame: Buffer }) => Promise<unknown>;
+  } | undefined;
 };
 const mintAsks: MintAsk[] = [];
 vi.mock("./referenceMint", () => ({
@@ -355,7 +361,11 @@ vi.mock("./referenceMint", () => ({
     deliveredRegions?: unknown;
     masterSideRegions?: ReadonlyMap<string, unknown> | null;
     deliveredSideRegions?: ReadonlyMap<string, unknown> | null;
-    dependencies?: { read?: MintAsk["read"]; readGround?: MintAsk["readGround"] };
+    dependencies?: {
+      read?: MintAsk["read"];
+      readGround?: MintAsk["readGround"];
+      derivedGround?: MintAsk["derivedGround"];
+    };
   }) => {
     journal.push("mint");
     mintAsks.push({
@@ -368,6 +378,7 @@ vi.mock("./referenceMint", () => ({
       deliveredSideRegions: ask.deliveredSideRegions,
       read: ask.dependencies?.read,
       readGround: ask.dependencies?.readGround,
+      derivedGround: ask.dependencies?.derivedGround,
     });
     return { outcome: "stored" as const, slots: [] };
   }),
@@ -2635,6 +2646,54 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
        too, and inferring the need from that would spend her credits. */
     expect(mintAsks[0]!.readGround).toBeUndefined();
   });
+
+  it("hands the mint the two reads her BUILD is composed from, on both roads", async () => {
+    /*
+      ASSERT AT THE WIRE (invariant 7, and this program's own scar tissue: two
+      benches passed while the segment store was inert).
+
+      `build` has no segmentation question — no region vocabulary word names a
+      body, and D-213 forbids inventing one — so its region is COMPOSED from her
+      silhouette and the bottom of her head. Both must be read on the frame the
+      user is looking at. The only thing that proves this caller wired them is
+      driving the seams the mint was actually handed.
+
+      Not gated on the repaint flag, unlike `readGround`: this is a fix to what
+      the LIVE mint writes. Under words alone a delivered build is lost entirely
+      on the next edit, 3 faces of 3 (opus-326).
+    */
+    const asked: string[] = [];
+    const blank = () => ({ data: Buffer.alloc(32 * 48, 0), width: 32, height: 48 });
+    const reader = {
+      region: async ({ name }: { name: string }) => { asked.push(name); return blank(); },
+      subject: async () => { asked.push("(subject matte)"); return blank(); },
+      landmark: async () => [],
+    };
+    captionsRead = { hairWorn: "worn long and loose" };
+    await refineCandidate(
+      { ...hairDown, ...mintingLibrary, harvest: compositing, regions: reader as never },
+      { ...input, instruction: "wear her hair down" },
+    );
+
+    const composer = mintAsks[0]!.derivedGround!;
+    expect(composer).toBeDefined();
+    await composer.region({ frame: TINY_MASTER_PNG, question: "face" });
+    await composer.subject({ frame: TINY_MASTER_PNG });
+    expect(asked).toEqual(["face", "(subject matte)"]);
+  });
+
+  it("CONTROL — the old road is handed the composer too", async () => {
+    /* The composer is the library's, not the repaint's. A build lost under
+       words is lost on whichever road delivered the render. */
+    captionsRead = { hairWorn: "worn long and loose" };
+    await refineCandidate({
+      ...hairDown, ...mintingLibrary, repaintEnabled: () => false, harvest: compositing,
+    }, { ...input, instruction: "wear her hair down" });
+
+    expect(mintAsks[0]!.derivedGround).toBeDefined();
+    expect(mintAsks[0]!.readGround).toBeUndefined();
+  });
+
 
   it("refuses an ask it cannot say declaratively, and gives the money back", async () => {
     /* Makeup has no library slot by ruling (fable-168/201). Painting anyway
