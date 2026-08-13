@@ -1348,4 +1348,243 @@ describe("the composed region", () => {
     expect(guardReads).toBe(0);
     expect(bench.rows[0]!.image).toBeDefined();
   });
+
+  /**
+   * WHERE A CALIBRATED RULER SETTLES THE DISPUTE (fable-429 §3).
+   *
+   * These drive the real court through the real door: no adjudication is
+   * stubbed, and the mint's own arithmetic decides every case. The one thing
+   * the harness supplies is two frames whose silhouettes differ by a known
+   * amount, so a settlement and a decline are the same code path reading two
+   * different pictures.
+   */
+  describe("a disputed build a ruler can measure", () => {
+    /** Her anchor: shoulders 24px across, head 12px tall — a ratio of 2.0. */
+    const ANCHOR_BODY = { x: 8, y: 16, width: 24, height: 24 };
+    /** The delivered frame, 16.7% narrower — past the court's 7.76% bar. */
+    const NARROW_BODY = { x: 10, y: 16, width: 20, height: 24 };
+    /** And one 4.2% narrower, which is under it. */
+    const BARELY_BODY = { x: 8, y: 16, width: 23, height: 24 };
+
+    /**
+     * A composer that answers for the frame it is HANDED, which is the whole
+     * point: the anchor read and the delivered read are the same two seams
+     * asked of two different pictures, and a ground that answered identically
+     * for both would make every case pass by reading nothing.
+     */
+    function twoFrames(options: { anchor: Buffer; delivered: Buffer; body?: typeof BODY }) {
+      const asked: Array<{ question: string; anchor: boolean }> = [];
+      const deliveredSubject = unionMasks(rect(HEAD), rect(options.body ?? NARROW_BODY));
+      const anchorSubject = unionMasks(rect(HEAD), rect(ANCHOR_BODY));
+      const isAnchor = (frame: Buffer) => frame.equals(options.anchor);
+      return {
+        asked,
+        get anchorReads() { return asked.filter((entry) => entry.anchor).length; },
+        derivedGround: {
+          region: async (input: { frame: Buffer; question: string }) => {
+            asked.push({ question: input.question, anchor: isAnchor(input.frame) });
+            return head;
+          },
+          subject: async (input: { frame: Buffer }) => {
+            asked.push({ question: "(subject matte)", anchor: isAnchor(input.frame) });
+            return isAnchor(input.frame) ? anchorSubject : deliveredSubject;
+          },
+        },
+      };
+    }
+
+    /**
+     * TWO PICTURES OF THE SAME SIZE, with different pixels.
+     *
+     * Same size because the composer REFUSES masks at another resolution rather
+     * than resizing one to fit, so a 41-pixel frame would fail these cases at a
+     * door two describes above — green for the wrong reason is the failure this
+     * whole file exists to avoid.
+     */
+    async function tintedFrame(tint: number): Promise<Buffer> {
+      const data = Buffer.alloc(SIZE * SIZE * 3);
+      for (let y = 0; y < SIZE; y += 1) {
+        for (let x = 0; x < SIZE; x += 1) {
+          const at = (y * SIZE + x) * 3;
+          data[at] = (x * 7 + tint) % 256;
+          data[at + 1] = (y * 5 + tint) % 256;
+          data[at + 2] = ((x + 1) * (y + 3) + tint) % 256;
+        }
+      }
+      return sharp(data, { raw: { width: SIZE, height: SIZE, channels: 3 } }).png().toBuffer();
+    }
+
+    async function mintDisputed(options: {
+      body?: typeof BODY;
+      facets?: readonly string[];
+      withAnchor?: boolean;
+      knownDigests?: Map<string, string>;
+    } = {}) {
+      const bench = harness();
+      /* Two different pictures, so `frame.equals` can tell them apart the way
+         the reader would. */
+      const anchor = await tintedFrame(0);
+      const delivered = await tintedFrame(64);
+      const composer = twoFrames({ anchor, delivered, ...(options.body ? { body: options.body } : {}) });
+      const result = await mintReferencesForRender({
+        userId: 1,
+        variantId: 11,
+        frame: { bytes: delivered },
+        applied: null,
+        masterRegions: new Map(),
+        slots: [buildSlot({
+          disputed: true,
+          disputedFacets: options.facets ?? ["shoulders", "arms"],
+        })],
+        knownDigests: options.knownDigests,
+        ...(options.withAnchor === false ? {} : { anchorFrame: { bytes: anchor } }),
+        dependencies: {
+          ...bench.dependencies,
+          derivedGround: composer.derivedGround,
+        } as never,
+      });
+      return { bench, result, composer };
+    }
+
+    it("STORES the crop a reader disputed when the ruler can see the change", async () => {
+      /*
+        The whole point of the grant. Her shoulders moved 16.7% — twice the
+        court's bar and sixteen times its wobble — on a frame whose caption
+        reader wrote nothing at all. Before this, that crop was refused, so the
+        next render re-anchored on the master and painted her build back.
+      */
+      const { bench, result } = await mintDisputed();
+
+      expect(result.slots[0]).toMatchObject({
+        slot: "build", outcome: "stored", adjudicated: true,
+      });
+      /* A real row with real pixels, judged by the completeness arithmetic like
+         any other crop — the dispute stopped refusing it and decided nothing
+         else. */
+      const row = bench.rows[0]!;
+      expect(row.image).toBeDefined();
+      expect(row.image!.guard).toMatchObject({ coverage: 10_000, threshold: 10_000 });
+      expect(row.refusal).toBeUndefined();
+      expect(bench.stored).toHaveLength(2);
+    });
+
+    it("carries BOTH verdicts on the record, never the winner alone", async () => {
+      /* Condition 2. A stored crop with the dispute dropped from its record is
+         indistinguishable from an ordinary pass, and the disagreement is the
+         distribution this program wants. */
+      const { result } = await mintDisputed();
+      expect(result.adjudications).toHaveLength(1);
+      const entry = result.adjudications![0]!;
+      expect(entry).toMatchObject({
+        slot: "build",
+        instrument: "buildSpan",
+        reader: "disputed",
+        facets: ["shoulders", "arms"],
+      });
+      expect(entry.verdict.settled).toBe(true);
+      /* And the bar it was judged against, with the court that set it. */
+      expect(entry.bar).toBeCloseTo(0.0776, 6);
+      expect(entry.source).toContain("bench-body-carrier");
+    });
+
+    it("keeps the crop REFUSED when the change is under the bar, and records the decline", async () => {
+      /* 4.2%: inside the range an unrelated edit has been seen to produce on
+         one of the bench's three faces. The ruler declines, the reader's
+         refusal stands, and the pixels are kept for a human exactly as before. */
+      const { bench, result } = await mintDisputed({ body: BARELY_BODY });
+
+      expect(result.slots[0]).toMatchObject({ slot: "build", outcome: "disputed", kept: true });
+      expect(bench.rows[0]!.image).toBeUndefined();
+      expect(bench.rows[0]!.refusal).toMatchObject({ reason: "disputedDelivery" });
+      expect(result.adjudications![0]!.verdict).toMatchObject({ declined: "belowBar" });
+    });
+
+    it("declines a facet its ruler does not measure — and buys NO read to do it", async () => {
+      /*
+        Condition 3, with its price attached: a waist dispute is refused before
+        any call is made, so facet-narrowness costs nothing and cannot be
+        skipped for being expensive.
+      */
+      const { bench, result, composer } = await mintDisputed({ facets: ["waist"] });
+
+      expect(result.slots[0]).toMatchObject({ outcome: "disputed", kept: true });
+      expect(bench.rows[0]!.image).toBeUndefined();
+      expect(result.adjudications![0]!.verdict).toMatchObject({ declined: "facetOutsideCourt" });
+      expect(composer.anchorReads).toBe(0);
+    });
+
+    it("declines when the branch already holds a build crop", async () => {
+      /* Every specimen is master → FIRST body edit. On a branch that already
+         bought one, the delta contains the earlier purchase and the ruler would
+         be confirming a delivery this render may never have made. */
+      const { bench, result, composer } = await mintDisputed({
+        knownDigests: new Map([["build", "a-digest-from-three-renders-ago"]]),
+      });
+
+      expect(result.slots[0]).toMatchObject({ outcome: "disputed", kept: true });
+      expect(bench.rows[0]!.image).toBeUndefined();
+      expect(result.adjudications![0]!.verdict)
+        .toMatchObject({ declined: "anchorCarriesPriorDelivery" });
+      expect(composer.anchorReads).toBe(0);
+    });
+
+    it("changes NOTHING for a caller that hands it no anchor frame", async () => {
+      /*
+        The additive control. A mint with no anchor cannot compare anything, so
+        every disputed slot behaves exactly as it did before this existed — and
+        it spends nothing finding that out.
+      */
+      const { bench, result, composer } = await mintDisputed({ withAnchor: false });
+
+      expect(result.slots[0]).toMatchObject({ outcome: "disputed", kept: true });
+      expect(bench.rows[0]!.image).toBeUndefined();
+      expect(bench.rows[0]!.refusal).toMatchObject({ reason: "disputedDelivery" });
+      expect(result.adjudications![0]!.verdict).toMatchObject({ declined: "noReading" });
+      expect(composer.anchorReads).toBe(0);
+    });
+
+    it("asks no court at all for a build nobody disputed, and buys no anchor read", async () => {
+      /*
+        The negative control on the price. An undisputed build is the ordinary
+        case — every render of a face with a build to keep — and it must not
+        start paying for a ruler nobody needs.
+      */
+      const bench = harness();
+      const anchor = await tintedFrame(0);
+      const delivered = await tintedFrame(64);
+      const composer = twoFrames({ anchor, delivered });
+      const result = await mintReferencesForRender({
+        userId: 1,
+        variantId: 11,
+        frame: { bytes: delivered },
+        applied: null,
+        masterRegions: new Map(),
+        slots: [buildSlot()],
+        anchorFrame: { bytes: anchor },
+        dependencies: { ...bench.dependencies, derivedGround: composer.derivedGround } as never,
+      });
+
+      expect(result.slots[0]).toMatchObject({ outcome: "stored" });
+      expect(result.slots[0]).not.toHaveProperty("adjudicated");
+      expect(result.adjudications).toBeUndefined();
+      expect(composer.anchorReads).toBe(0);
+    });
+
+    it("never lets a MEASURED door's dispute reach a court", async () => {
+      /*
+        Facet-narrowness has a second edge: `hair` has no court, so a disputed
+        hair crop is refused however it measures. A family that could inherit
+        `build`'s calibration is exactly what condition 3 forbids, and this is
+        the case that would go green if one ever did.
+      */
+      const bench = harness();
+      const result = await mint(
+        [hairSlot({ disputed: true, disputedFacets: ["hairColour"] })],
+        bench,
+      );
+      expect(result.slots[0]).toMatchObject({ slot: "hair", outcome: "disputed", kept: true });
+      expect(bench.rows[0]!.image).toBeUndefined();
+      expect(result.adjudications).toBeUndefined();
+    });
+  });
 });

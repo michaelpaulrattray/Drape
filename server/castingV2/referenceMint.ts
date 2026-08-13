@@ -82,6 +82,22 @@
  * A disputed slot with no crop to keep therefore writes nothing at all, which is
  * exactly what it did before this existed.
  *
+ * # AND ONE DISPUTE A RULER SETTLES INSTEAD (fable-429 §3)
+ *
+ * A body edit produces no caption, so the reader that decides whether an ask
+ * landed answers a question about her build off a frame it cannot read — and
+ * answers it wrongly in one direction only, which is why a paid build kept
+ * vanishing. `buildSpan` has a court (`deliveryCourt.ts`): three faces, a floor
+ * arm and a signal arm, a 0.00% negative control, and a live reading an eye
+ * confirmed at full size. Where such a ruler can see the change, it settles the
+ * dispute and the crop is judged on its own merits.
+ *
+ * Four things bound it, and each is checked rather than remembered: the ruler
+ * speaks only for the facets it MEASURES; only where the anchor is the pair its
+ * court was measured on; only toward delivery, never against it; and never near
+ * money — the render was delivered and charged before any of this runs. The
+ * reader's verdict rides on the record beside the ruler's, settled or declined.
+ *
  * # Failure is silent to the user and loud in the log
  *
  * If any of this fails the delivered picture stands, the face simply keeps no
@@ -112,6 +128,10 @@ import { readRaster, type Mask, type Raster } from "./maskedComposite";
 import {
   belowHeadMask, belowHeadCropIsComplete, buildSpan, MaskError, type BuildSpan,
 } from "./maskGeometry";
+import {
+  adjudicateDelivery, courtCovers, deliveryCourtFor,
+  type DeliveryAdjudication,
+} from "./deliveryCourt";
 import type { SideRegions } from "./maskedRefine";
 import {
   duplicateSlotFor,
@@ -193,6 +213,18 @@ export type SlotSpec = {
    * that before the list arrives here.
    */
   disputed?: boolean;
+  /**
+   * WHICH FACETS THE READER DISPUTED — the names, not just the mark.
+   *
+   * Only a court reads them, and only to refuse: a calibrated instrument may
+   * adjudicate the facets it MEASURES and no others (fable-429 §3 condition 3).
+   * `build` holds five facets and `buildSpan` measures three of them, so a
+   * dispute about her waist can never be settled by the width of her shoulders.
+   *
+   * Absent, no court applies and the dispute stands — which is every caller
+   * that has not been taught to carry them, and is today's behaviour exactly.
+   */
+  disputedFacets?: readonly string[];
 };
 
 /**
@@ -218,7 +250,15 @@ export type DisputedNothingKept =
   | "surface" | "noQuestion" | "noSide" | "noRegion";
 
 export type MintedSlot =
-  | { slot: FeatureSlot; outcome: "stored"; coverage: number }
+  | {
+    slot: FeatureSlot;
+    outcome: "stored";
+    coverage: number;
+    /** The render's reader disputed this delivery and a calibrated instrument
+     *  settled it (fable-429 §3). Absent on an undisputed pass, which is every
+     *  other stored crop in the product. */
+    adjudicated?: true;
+  }
   | {
     slot: FeatureSlot;
     outcome: "words-only";
@@ -282,6 +322,17 @@ export type MintResult = {
    * exists inside a log line is a number nobody can prove was taken.
    */
   build?: BuildSpan;
+  /**
+   * EVERY DISPUTE A COURT WAS ASKED ABOUT, settled or declined, carrying BOTH
+   * verdicts (fable-429 §3 condition 2).
+   *
+   * Returned rather than only logged, and the DECLINES are here too: the
+   * distribution worth having is *how often a reader and a ruler disagree*, and
+   * a record of the wins alone answers a different question. The caller writes
+   * these onto the render's own row, which is where a disagreement outlives a
+   * log-retention window.
+   */
+  adjudications?: DeliveryAdjudication[];
 };
 
 export type MintDependencies = {
@@ -431,6 +482,22 @@ export type MintInput = {
    * still catches collisions inside this render.
    */
   knownDigests?: ReadonlyMap<string, string>;
+  /**
+   * THE FRAME THIS RENDER WAS PAINTED FROM — the ruler's other end.
+   *
+   * Present only so a calibrated instrument can settle a delivery its reader
+   * disputed (fable-429 §3). A change is a comparison and the mint holds one
+   * frame; without this there is nothing to compare the delivered reading to,
+   * so the dispute stands exactly as it does today.
+   *
+   * It is the frame the render was ANCHORED on, never the previous delivered
+   * one where those differ — the court's specimens are `master → first body
+   * edit` and a ruler quoted against a different pair is a ruler with no court.
+   *
+   * **Absent, nothing changes at all**: no adjudication is attempted, no read is
+   * bought, and every disputed slot behaves as it did before this existed.
+   */
+  anchorFrame?: { bytes: Buffer };
   /** For the log line, so a reference can be traced to its operation. */
   operationId?: string;
   dependencies?: MintDependencies;
@@ -714,6 +781,11 @@ export async function mintReferencesForRender(input: MintInput): Promise<MintRes
        * region has no specimen family for a measured guard to consult.
        */
       composed?: { complete: boolean; outside: number };
+      /** THE READER WAS OVERRULED BY A CALIBRATED RULER (fable-429 §3), so this
+       *  slot's crop is judged on its own merits from here on. The dispute is
+       *  not erased — it rides on {@link MintResult.adjudications} and onto the
+       *  outcome — it simply stops being the thing that refuses the pixels. */
+      adjudicated?: true;
       /** Why no crop was cut for this slot, when the reason is more specific
        *  than "this render has no evidence about it". */
       noCutDetail?: string;
@@ -858,6 +930,36 @@ export async function mintReferencesForRender(input: MintInput): Promise<MintRes
     let span: BuildSpan | null = null;
     const composedCuts: SegmentCut[] = [];
     const ground = input.dependencies?.derivedGround;
+    const adjudications: DeliveryAdjudication[] = [];
+    /*
+      THE RULER'S OTHER END, read on the frame this render was painted from.
+
+      Bought ONLY when a court is about to be asked something it can answer:
+      the slot is disputed, an instrument holds a court for it, the court covers
+      every facet the reader disputed, and the branch has no crop for this slot
+      yet (the court's specimens are all first-body-edit). Any of those missing
+      and no call is made — the dispute stands, which is today's behaviour and
+      costs nothing.
+
+      Two reads, on the same two seams the composer already uses. Counted
+      separately from `derivedReads` because they are spent on a different frame
+      for a different question, and a price folded into another price is a price
+      nobody can audit.
+    */
+    let anchorReads = 0;
+    const anchorSpanFor = async (): Promise<BuildSpan | null> => {
+      if (!ground || !input.anchorFrame) return null;
+      anchorReads += 2;
+      const [head, subject] = await Promise.all([
+        ground.region({
+          frame: input.anchorFrame.bytes,
+          question: DERIVED_REGION_ASKS.belowHead.head,
+        }),
+        ground.subject({ frame: input.anchorFrame.bytes }),
+      ]);
+      if (!head || !subject) return null;
+      return buildSpan({ subject, head });
+    };
     for (const slot of derived) {
       const detail = (why: string) => {
         cuttable.push({
@@ -898,6 +1000,54 @@ export async function mintReferencesForRender(input: MintInput): Promise<MintRes
         if (slot.question === DERIVED_REGION_KEY.belowHead) span = buildSpan({ subject, head });
         const composed = composeBelowHeadCut({ facet: slot.slot, frame, subject, head });
         composedCuts.push(composed.cut);
+        /*
+          AND WHERE A CALIBRATED RULER EXISTS, THE DISPUTE IS THE RULER'S TO
+          SETTLE (fable-429 §3).
+
+          A body edit produces no caption at all — measured on the live pipeline
+          — so the reader that decides whether an ask landed answers a question
+          about her build by looking at a frame it cannot read, and answers it
+          wrongly in one direction only. `buildSpan` has a court: three faces, a
+          floor arm and a signal arm, a 0.00% negative control, and a live
+          reading an eye confirmed. Where it can see the change, it says so.
+
+          It can only ever settle TOWARD delivery. A reading below the bar
+          declines rather than confirming the reader — a ruler that did not see
+          a change has not proven there was none (D-235), and the crop then
+          stays refused and kept for a human exactly as it is today.
+        */
+        const court = slot.disputed ? deliveryCourtFor(slot.slot) : null;
+        let adjudicated: true | undefined;
+        if (court) {
+          const facets = slot.disputedFacets ?? [];
+          const anchorCarriesPriorDelivery = input.knownDigests?.has(slot.slot) ?? false;
+          /* The anchor read is bought only where the court could actually
+             answer — a facet outside it, or an anchor already carrying a
+             delivery, is refused for free. */
+          const eligible = courtCovers(court, facets)
+            && !anchorCarriesPriorDelivery
+            && input.anchorFrame !== undefined;
+          const verdict = adjudicateDelivery({
+            court,
+            facets,
+            anchor: eligible ? await anchorSpanFor() : null,
+            delivered: span,
+            anchorCarriesPriorDelivery,
+          });
+          adjudications.push({
+            slot: slot.slot,
+            instrument: court.instrument,
+            facets,
+            /* BOTH VERDICTS, always. This record exists because a reader said
+               no, and a stored crop with the dispute dropped from its record is
+               indistinguishable from an ordinary pass. */
+            reader: "disputed",
+            verdict,
+            bar: court.positive,
+            source: court.source,
+          });
+          if (verdict.settled) adjudicated = true;
+        }
         cuttable.push({
           ...slot,
           question: slot.question!,
@@ -905,6 +1055,7 @@ export async function mintReferencesForRender(input: MintInput): Promise<MintRes
           regionKey: slot.question!,
           side: null,
           composed: { complete: composed.complete, outside: composed.outside },
+          ...(adjudicated ? { adjudicated } : {}),
         });
       } catch (error) {
         detail(error instanceof MaskError
@@ -1114,7 +1265,11 @@ export async function mintReferencesForRender(input: MintInput): Promise<MintRes
           mintedDigests: digests,
           composed: slot.composed,
           cropPixels: cut.pixels,
-          ...(slot.disputed ? { disputed: true } : {}),
+          /* A dispute a calibrated ruler has settled no longer refuses the
+             crop — and it is the ONLY thing that changes: the completeness
+             arithmetic below still has to pass, the duplicate rule above still
+             applies, and the dispute itself is on the record either way. */
+          ...(slot.disputed && !slot.adjudicated ? { disputed: true } : {}),
         })
         : await (async () => {
           if (!read) throw new Error("the completeness guard has no reader, and a crop may not enter the library unread");
@@ -1267,7 +1422,7 @@ export async function mintReferencesForRender(input: MintInput): Promise<MintRes
         ordering itself is pinned exhaustively at the guard, where it can be
         driven; this line only refuses to be the place it goes wrong.
       */
-      if (slot.disputed) {
+      if (slot.disputed && !slot.adjudicated) {
         throw new Error(`${slot.slot}'s delivery was disputed and the guard passed it; a disputed crop may never enter the library`);
       }
 
@@ -1299,11 +1454,23 @@ export async function mintReferencesForRender(input: MintInput): Promise<MintRes
           },
         },
       });
-      outcomes.push({ slot: slot.slot, outcome: "stored", coverage: verdict.reading.coverage });
+      outcomes.push({
+        slot: slot.slot,
+        outcome: "stored",
+        coverage: verdict.reading.coverage,
+        ...(slot.adjudicated ? { adjudicated: true as const } : {}),
+      });
     }
 
     const ratchet = span === null ? {} : { build: span };
-    if (rows.length === 0) return { outcome: "nothing-to-keep", slots: outcomes, ...ratchet };
+    /* A dispute that was adjudicated is on the record even when the render
+       filed no row at all — a decline is exactly as much of a reading as a
+       settlement, and it is the half that says how often the ruler cannot
+       help. */
+    const courtRecord = adjudications.length === 0 ? {} : { adjudications };
+    if (rows.length === 0) {
+      return { outcome: "nothing-to-keep", slots: outcomes, ...ratchet, ...courtRecord };
+    }
 
     /*
       THE MANIFEST BEFORE THE BYTES. The crop and its mask go to permanently
@@ -1399,10 +1566,33 @@ export async function mintReferencesForRender(input: MintInput): Promise<MintRes
             slot.outcome === "disputed" && !slot.kept
           ))
           .map((slot) => `${slot.slot}:${slot.reason}`),
+        /*
+          AND WHERE A RULER WAS ASKED (fable-429 §3), with BOTH verdicts and the
+          two reads it cost.
+
+          Settled and declined alike: the disagreement between a reader and a
+          calibrated instrument is a distribution this program wants, and one
+          that logged only its wins would report a reader that is never wrong.
+          `anchorReads` is the price — two on the anchor frame, bought only
+          where the court could actually answer.
+        */
+        ...(adjudications.length === 0 ? {} : {
+          adjudicated: adjudications.map((entry) => (
+            entry.verdict.settled
+              ? `${entry.slot}:${entry.instrument}:settled@${(entry.verdict.change * 100).toFixed(1)}%`
+              : `${entry.slot}:${entry.instrument}:declined:${entry.verdict.declined}`
+          )),
+          anchorReads,
+        }),
       },
       "[library] minted this render's references",
     );
-    return { outcome: "stored", slots: outcomes, ...ratchet };
+    return {
+      outcome: "stored",
+      slots: outcomes,
+      ...ratchet,
+      ...courtRecord,
+    };
   } catch (error) {
     /*
       Anything written is still on the manifest, because the discharge is the

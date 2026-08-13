@@ -150,6 +150,7 @@ import { assembleWithCarriedSegments, listCarriedRows } from "./carriedSegments"
 import { makeupRegionFor } from "./makeupPlacement";
 import { keepSegmentsFromRender } from "./segmentPersistence";
 import { mintReferencesForRender } from "./referenceMint";
+import type { DeliveryAdjudication } from "./deliveryCourt";
 import { mintedSlotsForRender } from "./mintedSlots";
 import {
   deriveLibrary, libraryWithoutEditedCrops, liveReferences, supersededCarrySlots,
@@ -3818,6 +3819,17 @@ export async function refineCandidate(
     */
     const libraryEnabled = dependencies.referenceLibraryEnabled
       ?? captureCastingReferenceLibraryEnabled;
+    /*
+      WHERE A READER AND A CALIBRATED RULER DISAGREED (fable-429 §3 condition 2).
+
+      Hoisted out of the mint's own block so it can be written onto the landed
+      row below. The mint's log line carries it too, and that is deliberately not
+      enough: the disagreement is a distribution this program wants to read
+      WEEKS from now — a reader failing repeatedly on true geometry is a finding
+      in progress — and a log retention window is not where a finding in
+      progress should live.
+    */
+    let adjudications: DeliveryAdjudication[] | null = null;
     if (libraryEnabled(input.userId)) {
       try {
         /* The other half of the same derivation, and the reason it is a `Set`
@@ -3930,6 +3942,21 @@ export async function refineCandidate(
             deliveredSideRegions: image.evidence?.deliveredSideRegions ?? null,
             slots,
             knownDigests: known,
+            /*
+              THE FRAME THIS RENDER WAS PAINTED FROM — the ruler's other end.
+
+              `variant.baseImageKey` is what the render was anchored on, which
+              under recipe v3 is the sharp original: exactly the pair the body
+              bench measured its court on (master → first body edit). Passing
+              the previous DELIVERED frame instead would be a reading with no
+              court behind it.
+
+              It costs nothing unless a court is asked something it can answer:
+              the mint buys its two anchor reads only for a disputed slot whose
+              facets an instrument measures, on a branch with no crop for that
+              slot yet. Every other render passes these bytes and spends nothing.
+            */
+            anchorFrame: { bytes: base.bytes },
             operationId,
             dependencies: {
               read,
@@ -4016,12 +4043,17 @@ export async function refineCandidate(
               enabledFor: libraryEnabled,
             },
           });
+          /* Both verdicts, onto the landed row below. Null stays null when no
+             court was asked, which is every render that disputed nothing a
+             ruler measures — so the key's presence is itself the signal. */
+          adjudications = minted.adjudications ?? null;
           log.info(
             {
               operationId,
               variant: variant.publicId,
               outcome: minted.outcome,
               slots: minted.slots,
+              ...(minted.adjudications ? { adjudications: minted.adjudications } : {}),
             },
             "[refineService] the library was told what this render made of her",
           );
@@ -4062,6 +4094,12 @@ export async function refineCandidate(
           the fix becoming the bug the founder described.
         */
         captions: capturedCaptions,
+        /*
+          AND WHERE A READER AND A RULER DISAGREED ABOUT THIS RENDER'S DELIVERY
+          (fable-429 §3 condition 2). Absent on every render where no court was
+          asked, which is almost all of them.
+        */
+        ...(adjudications ? { adjudications } : {}),
         /*
           WHAT THE COMPOSITE DID, so a carried fact can be adjudicated later
           (fable-109). Absent when nothing was carried — an ordinary render has

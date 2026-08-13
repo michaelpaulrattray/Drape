@@ -350,6 +350,9 @@ type MintAsk = {
     region: (input: { frame: Buffer; question: string }) => Promise<unknown>;
     subject: (input: { frame: Buffer }) => Promise<unknown>;
   } | undefined;
+  /** THE RULER'S OTHER END — the frame this render was painted from, without
+   *  which no delivery dispute can be measured at all (fable-429 §3). */
+  anchorFrame: { bytes: Buffer } | undefined;
 };
 const mintAsks: MintAsk[] = [];
 vi.mock("./referenceMint", () => ({
@@ -361,6 +364,7 @@ vi.mock("./referenceMint", () => ({
     deliveredRegions?: unknown;
     masterSideRegions?: ReadonlyMap<string, unknown> | null;
     deliveredSideRegions?: ReadonlyMap<string, unknown> | null;
+    anchorFrame?: { bytes: Buffer };
     dependencies?: {
       read?: MintAsk["read"];
       readGround?: MintAsk["readGround"];
@@ -379,6 +383,7 @@ vi.mock("./referenceMint", () => ({
       read: ask.dependencies?.read,
       readGround: ask.dependencies?.readGround,
       derivedGround: ask.dependencies?.derivedGround,
+      anchorFrame: ask.anchorFrame,
     });
     return { outcome: "stored" as const, slots: [] };
   }),
@@ -2692,6 +2697,29 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
 
     expect(mintAsks[0]!.derivedGround).toBeDefined();
     expect(mintAsks[0]!.readGround).toBeUndefined();
+  });
+
+  it("hands the mint THE FRAME THIS RENDER WAS PAINTED FROM, so a ruler has two ends", async () => {
+    /*
+      ASSERTED AT THE WIRE, and this is the assertion the whole grant stands on.
+
+      `deliveryCourt`'s specimens are `master → first body edit`, so an
+      adjudication needs the anchor frame's bytes and cannot invent them. The
+      mint's own suite proves what it does with an anchor and what it does
+      without one; only this line proves the live path hands it one — and a
+      library that silently stopped passing it would go on adjudicating nothing
+      while every unit test in the mint stayed green. That is the exact shape of
+      the two defects this program has already paid for.
+    */
+    captionsRead = { hairWorn: "worn long and loose" };
+    await refineCandidate({
+      ...hairDown, ...mintingLibrary, harvest: compositing,
+    }, { ...input, instruction: "wear her hair down" });
+
+    expect(mintAsks[0]!.anchorFrame).toBeDefined();
+    /* The BASE's bytes — the frame the render was anchored on, never the
+       delivered one. A ruler quoted against the wrong pair has no court. */
+    expect(mintAsks[0]!.anchorFrame!.bytes).toEqual(TINY_MASTER_PNG);
   });
 
   it("tells the mint to re-cut her BUILD on a render that earned nothing of it", async () => {

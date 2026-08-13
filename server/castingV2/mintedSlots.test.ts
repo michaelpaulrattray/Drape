@@ -346,4 +346,48 @@ describe("the slots re-cut every render", () => {
 
     expect(slots.map((slot) => [slot.slot, slot.disputed ?? false])).toEqual([["build", true]]);
   });
+
+  it("carries the NAMES of the disputed facets, so a court can be facet-narrow", () => {
+    /*
+      fable-429 §3 condition 3. `build` holds five facets and `buildSpan`
+      measures three of them, so the mint's door has to know WHICH facet the
+      reader disputed — not merely that something in this slot was. Derived here
+      once and carried, rather than re-derived downstream where a second answer
+      to "which facets does this slot hold" would be free to disagree with this
+      one, and the disagreement would decide whether a ruler may speak.
+    */
+    const { slots } = mintedSlotsForRender({
+      earned: [],
+      disputed: ["shoulders", "waist"],
+      captions: { shoulders: "Narrower shoulders", waist: "A trimmer waist" },
+    });
+
+    expect(slots).toHaveLength(1);
+    expect(slots[0]!.disputedFacets).toEqual(["waist", "shoulders"]);
+  });
+
+  it("names only the facets THIS slot holds, never the render's whole dispute", () => {
+    /* A dispute about her hair must not arrive on her build's row and hand a
+       ruler a facet it was never shown. */
+    const { slots } = mintedSlotsForRender({
+      earned: [],
+      disputed: ["shoulders", "hair.colour"],
+      captions: { shoulders: "Narrower shoulders", "hair.colour": "Copper" },
+    });
+
+    const build = slots.find((slot) => slot.slot === "build")!;
+    const hair = slots.find((slot) => slot.slot === "hair")!;
+    expect(build.disputedFacets).toEqual(["shoulders"]);
+    expect(hair.disputedFacets).toEqual(["hair.colour"]);
+  });
+
+  it("names no facets on a slot nobody disputed", () => {
+    /* The negative control on the field: an earned slot carries no dispute at
+       all, so there is nothing for a court to be handed. */
+    const { slots } = mintedSlotsForRender({
+      earned: ["shoulders"],
+      captions: { shoulders: "Narrower shoulders" },
+    });
+    expect(slots[0]!.disputedFacets).toBeUndefined();
+  });
 });

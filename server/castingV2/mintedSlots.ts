@@ -200,11 +200,27 @@ export function mintedSlotsForRender(input: MintedSlotsInput): MintedSlotsResult
     return words.length === 0 ? null : words;
   };
 
+  /**
+   * WHICH FACETS THE READER DISPUTED, for the slot they landed in.
+   *
+   * A slot's dispute is a boolean at the mint's door; a COURT is facet-narrow
+   * (fable-429 §3 condition 3), and `build` holds five facets of which one
+   * instrument measures three. So the names travel with the mark rather than
+   * being re-derived downstream from the slot — a second derivation of "which
+   * facets does this slot hold" would be free to disagree with this one, and
+   * the disagreement would decide whether a ruler may speak.
+   */
+  const disputedSet = new Set<Facet>(input.disputed ?? []);
+  const disputedFacetsOf = (definition: SlotDefinition): readonly Facet[] =>
+    (facetsOfSlot(definition.slot) ?? []).filter((facet) => disputedSet.has(facet));
+
   const file = (definition: SlotDefinition, words: readonly string[], disputed: boolean) => {
     const spec = slotSpecFor(definition.slot, words);
     if (spec === null) return;
     seen.add(definition.slot);
-    slots.push(disputed ? { ...spec, disputed: true } : spec);
+    slots.push(disputed
+      ? { ...spec, disputed: true, disputedFacets: disputedFacetsOf(definition) }
+      : spec);
   };
 
   const collect = (facets: readonly Facet[], disputed: boolean) => {
