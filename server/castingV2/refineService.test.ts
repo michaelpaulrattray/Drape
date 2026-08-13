@@ -641,6 +641,66 @@ describe("refusals land before anything is claimed", () => {
     expect(ledger.charges.length, "and it is paid for like any other edit").toBeGreaterThan(0);
   });
 
+  /*
+    AND IT SAYS WHICH HALF IT DID NOT DO (fable-386 §2), PROVEN ON THE WIRE.
+
+    Serving the arms is right; serving them in silence is D-181 from the
+    customer's side — they typed two things, paid once, and can see one of them.
+    Four assertions, and each is a different place the waist used to survive:
+    the delivered SENTENCE, the stored RECIPE (base-anchored, so a phantom there
+    is permanent), the PROMPT the painter is sent, and the money.
+  */
+  it("says which half of a half-served ask was left out, and carries the waist nowhere", async () => {
+    const { claimVariant } = await import("../db/castingV2Variants");
+    const result = await refineCandidate(
+      {
+        harvest: unmasked,
+        interpret: async () => ({
+          ok: true as const,
+          delta: { free: { waist: "a smaller waist", arms: "bigger arms" } },
+        }),
+      },
+      { ...input, instruction: "a smaller waist and bigger arms" },
+    );
+
+    expect(result.note, "the delivery names the half it could not do").toContain("her waist is not in it");
+    expect(result.note).toContain("everything else you asked for was done");
+    /* A DELIVERED take. The refusal's reassuring sentence would be a lie here. */
+    expect(result.note?.toLowerCase()).not.toContain("nothing was charged");
+
+    const claimed = vi.mocked(claimVariant).mock.calls[0]![0] as {
+      deltas: { free?: Record<string, unknown> };
+      stepDeltas: { free?: Record<string, unknown> }[];
+    };
+    expect(claimed.deltas.free?.waist, "the stored recipe is base-anchored — a phantom here is forever")
+      .toBeUndefined();
+    expect(claimed.deltas.free?.arms, "and the half she paid for IS stored").toBe("bigger arms");
+    expect(claimed.stepDeltas[claimed.stepDeltas.length - 1]?.free?.waist).toBeUndefined();
+
+    /*
+      ASSERT AT THE WIRE — and on the RIGHT LANE, which this test's first cut
+      got wrong in a way worth keeping.
+
+      It asserted the word "waist" was absent from the whole prompt, and it
+      failed: the preservation clause says *"the same waist"*, because a facet
+      nobody is editing is a facet to be left exactly as it is. That is the fix
+      WORKING, read by an instrument too blunt to tell the two lanes apart. So
+      the criterion is the one the compositor's own leak-checker uses: a genuine
+      ask has the shape `HEADING: value`, and the split is the preservation
+      boundary itself.
+    */
+    const prompt = (landedVariant?.internalPrompt as { prompt: string }).prompt.toLowerCase();
+    const KEEP = "everything else must be identical to the reference";
+    expect(prompt, "the split below is only meaningful if the boundary is there").toContain(KEEP);
+    const askedFor = prompt.slice(0, prompt.indexOf(KEEP));
+    const preserved = prompt.slice(prompt.indexOf(KEEP));
+    expect(askedFor, "the painter is never told to change a waist it cannot see").not.toContain("waist");
+    expect(askedFor, "the positive control — the served half IS asked for").toContain("arms: bigger arms");
+    expect(preserved, "and her waist is named as a thing to leave alone").toContain("the same waist");
+
+    expect(ledger.charges.length, "and it is paid for, once, like any other edit").toBe(1);
+  });
+
   it("does NOT refuse a body ask that IS in the picture", async () => {
     const result = await refineCandidate(
       { harvest: unmasked, interpret: async () => ({ ok: true as const, delta: { free: { build: "a more athletic build" } } }) },

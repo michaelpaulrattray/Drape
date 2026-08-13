@@ -31,7 +31,12 @@
  * reads that base inside the statement that proves the parent, so this cannot
  * be got wrong by a later caller passing something else.
  */
-import { outOfFrame, outOfFrameMessage } from "./castingFrame";
+import {
+  nameWhatIsMissing,
+  outOfFrameMessage,
+  partlyOutOfFrameNote,
+  withoutWhatIsOutOfFrame,
+} from "./castingFrame";
 import { TRPCError } from "@trpc/server";
 import type { EyeColour, EyeShape, HairTexture } from "../../shared/castingRealization";
 import type { HairColour } from "../../shared/castingVocabularies";
@@ -299,7 +304,17 @@ export type RefineResult = {
   candidateId: string;
   imageUrl: string;
   instructions: string[];
-  /** What happened, for the panel to say — set only on a free outcome. */
+  /**
+   * What happened, for the panel to say.
+   *
+   * Two kinds of outcome need one: a FREE one, where silence would leave
+   * someone assuming they had just spent 25 credits (D-163 rule 4); and a PAID
+   * one that could only be served in part, where silence is the product
+   * deciding something on the customer's behalf without telling them (D-181,
+   * fable-386 §2). The panel says it whenever it is here — a reader that only
+   * looks at one kind of outcome makes the other kind's confession inert, which
+   * is what had happened to the dropped reference for its whole life.
+   */
   note?: string;
 };
 
@@ -795,6 +810,13 @@ export async function refineCandidate(
   }
   /* A likeness comparison rode this ask and was set aside (D-181). */
   const droppedReference = "droppedReference" in parsed && parsed.droppedReference === true;
+  /*
+    And its sibling: part of this ask is not in the photograph, so it was left
+    out (fable-386 §2). Declared beside `droppedReference` because they are ONE
+    CLASS — every way a paid ask can be served in part — and the delivery says
+    all of them or it is deciding on the customer's behalf in silence.
+  */
+  let outOfFrameNote: string | null = null;
   let chain: ChainStep[] = predecessorChain ?? [];
   let removedFacets = new Set<Facet>();
   /**
@@ -1429,22 +1451,43 @@ export async function refineCandidate(
     Two things make it safe to be strict here. It fires only on what THIS
     sentence wrote (`editDelta`, never the composed recipe — the already-true
     gate's own scar, where a delivered eye edit intercepted every later ask), and
-    it fires only when the whole ask is out of frame: *"a smaller waist and
+    it REFUSES only when the whole ask is out of frame: *"a smaller waist and
     bigger arms"* is served for the arms rather than refused for the waist,
     because refusing a sentence with a renderable half would take something away
     from her to be tidy.
 
+    **ONE READING DECIDES BOTH HALVES (working law 4).** The refusal and the
+    strip used to be two readings of the same table — one counting facets, one
+    deleting them — which is a second list of what the camera contains, and it
+    would have drifted the first time a facet was added to it. So the frame is
+    consulted ONCE: what survives the strip is the ask, and an ask with nothing
+    left in it is the whole-sentence refusal, by derivation rather than by count.
+
+    And the half that cannot be served LEAVES (fable-386 §2). It used to ride
+    along into the prompt, the caption, the verification and the stored recipe —
+    which is base-anchored, so one mixed sentence pinned a phantom waist
+    instruction to her for every later render on the branch. What it costs
+    instead is one sentence in the delivery, below.
+
     It sits before `admit`, so nothing has been claimed and nothing is charged.
   */
   if (editDelta) {
-    const asked = Array.from(facetsWrittenBy(editDelta));
-    const missing = asked.map((facet) => outOfFrame(facet)).filter((what): what is string => what !== null);
-    if (asked.length > 0 && missing.length === asked.length) {
-      log.info({ asked, missing }, "[refineService] the ask is outside the frame — refusing before dispatch");
-      throw spokenError({
-        code: "PRECONDITION_FAILED",
-        message: outOfFrameMessage(missing[0]!),
-      });
+    const { delta: inFrame, dropped: notInShot } = withoutWhatIsOutOfFrame(editDelta);
+    if (notInShot.length > 0) {
+      const survives = facetsWrittenBy(inFrame).size > 0;
+      if (!survives) {
+        log.info({ notInShot }, "[refineService] the ask is outside the frame — refusing before dispatch");
+        throw spokenError({
+          code: "PRECONDITION_FAILED",
+          message: outOfFrameMessage(nameWhatIsMissing(notInShot)),
+        });
+      }
+      log.info(
+        { notInShot, serving: Array.from(facetsWrittenBy(inFrame)) },
+        "[refineService] part of the ask is outside the frame — serving the rest and saying so",
+      );
+      editDelta = inFrame;
+      outOfFrameNote = partlyOutOfFrameNote(nameWhatIsMissing(notInShot));
     }
   }
 
@@ -4022,22 +4065,31 @@ export async function refineCandidate(
       log.warn({ err: error }, "[refineService] could not record the satisfaction outcome");
     }
 
+    /*
+      EVERY PART OF THIS ASK THAT WAS NOT SERVED, CONFESSED (D-181, fable-386 §2).
+
+      THE REFERENCE IS CONFESSED, not silently dropped (D-181). They asked for
+      green eyes LIKE someone. The green is theirs and it files; the comparison
+      cannot be served and never reaches the record. A product that quietly
+      serves half an instruction and says nothing has decided something on the
+      user's behalf without telling them.
+
+      The out-of-frame half is the same sentence about a different half, so the
+      two are collected rather than branched: a LIST, joined, because an ask can
+      lose a reference AND a waist in one breath, and a single-slot `note` with
+      a precedence would have picked one of the two truths to tell.
+    */
+    const servedInPart = [
+      droppedReference
+        ? "Made the eyes as you described. Refining can't copy a real "
+          + "person's features, so that part of the comparison was set aside."
+        : null,
+      outOfFrameNote,
+    ].filter((line): line is string => line !== null);
+
     const result: RefineResult = {
       kind: "rendered",
-      /*
-        THE REFERENCE IS CONFESSED, not silently dropped (D-181).
-
-        They asked for green eyes LIKE someone. The green is theirs and it
-        files; the comparison cannot be served and never reaches the record. A
-        product that quietly serves half an instruction and says nothing has
-        decided something on the user's behalf without telling them.
-      */
-      ...(droppedReference
-        ? {
-          note: "Made the eyes as you described. Refining can't copy a real "
-            + "person's features, so that part of the comparison was set aside.",
-        }
-        : {}),
+      ...(servedInPart.length > 0 ? { note: servedInPart.join(" ") } : {}),
       variantId: variant.publicId,
       candidateId: input.candidatePublicId,
       imageUrl: stored.url,

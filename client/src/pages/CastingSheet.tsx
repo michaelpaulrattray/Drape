@@ -31,6 +31,7 @@ import {
 } from "@/features/castingV2/briefDraft";
 import { classifyDispatchFailure, failureActionLabel } from "@/features/castingV2/dispatchFailure";
 import { cancelStory } from "@/features/castingV2/cancelNotice";
+import { refineOutcomeNote } from "@/features/castingV2/refineOutcomeNote";
 import { sheetExpiryNotice } from "@/features/castingV2/retentionCopy";
 import { sheetNotice } from "@/features/castingV2/sheetNotice";
 import {
@@ -992,15 +993,19 @@ export default function CastingSheet() {
         /* Bought HERE, so its arrival is not a late lander (D-161). */
         if (result?.variantId) boughtHere.current.add(result.variantId);
         /*
-          A FREE OUTCOME SAYS SO (D-163 rule 4).
+          AN OUTCOME THAT NEEDS A SENTENCE SAYS IT — free or paid.
 
-          Undoing, and removing a step that lands back on a picture
-          they already have, cost nothing — and silence would leave
-          someone assuming they had just spent 25 credits on a face
-          they were already looking at. The panel owns it, like
-          every other outcome here (D-154).
+          A FREE one because silence would leave someone assuming
+          they had just spent 25 credits on a face they were already
+          looking at (D-163 rule 4). A PAID one that could only be
+          served in part because naming the part left out is the
+          whole of D-181. This line used to read `kind === "selected"`
+          and threw the paid half away — see `refineOutcomeNote`,
+          which owns the rule now and is driven both ways.
+          The panel owns the saying, like every other outcome (D-154).
         */
-        if (result?.kind === "selected" && result.note) setRefineOutcome(result.note);
+        const said = refineOutcomeNote(result);
+        if (said) setRefineOutcome(said);
         await variants.refetch();
         await invalidate();
       })

@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 
-import { FRAMING_PREMISE, outOfFrame, outOfFrameMessage } from "./castingFrame";
+import {
+  FRAMING_PREMISE,
+  nameWhatIsMissing,
+  outOfFrame,
+  outOfFrameMessage,
+  partlyOutOfFrameNote,
+  withoutWhatIsOutOfFrame,
+} from "./castingFrame";
 import { PHOTOREAL_HUMAN_CONSTANT } from "./cohortPhotorealHuman";
 import { FREE_SUBJECT_KEYS } from "./refineSubjects";
 
@@ -51,5 +58,96 @@ describe("what the photograph does not contain", () => {
     expect(said.toLowerCase()).not.toContain("roll again");
     /* One sentence about the frame, one about the money. Not a paragraph. */
     expect(said.split(". ").length).toBeLessThanOrEqual(2);
+  });
+});
+
+/**
+ * THE STRIP — that what cannot be photographed LEAVES the ask.
+ *
+ * The refusal has always been the loud half. This is the quiet one, and it is
+ * the half that was costing something: before it existed, a waist asked for
+ * beside a servable facet rode into the prompt, the caption, the verification
+ * and the STORED recipe, which is composed into every later render on that
+ * branch. These drive the removal itself; `refineService.test.ts` drives that
+ * the service actually asks for it, on the wire, where the money is.
+ */
+describe("what the photograph does not contain leaves the ask", () => {
+  it("takes the waist out and leaves everything else exactly as it was", () => {
+    const { delta, dropped } = withoutWhatIsOutOfFrame({
+      free: { waist: "a smaller waist", arms: "bigger arms" },
+    });
+    expect(dropped).toEqual(["her waist"]);
+    expect(delta.free?.waist, "gone from the recipe, not merely unsaid").toBeUndefined();
+    expect(delta.free?.arms, "and the servable half is untouched").toBe("bigger arms");
+  });
+
+  it("does not touch an ask that is entirely in the picture", () => {
+    const asked = { eyeColour: "green" as const, free: { arms: "bigger arms" } };
+    const { delta, dropped } = withoutWhatIsOutOfFrame(asked);
+    expect(dropped).toEqual([]);
+    expect(delta).toEqual(asked);
+  });
+
+  it("does not mutate the delta it was handed", () => {
+    /* It is called on `editDelta` before composition, and a strip that reached
+       back into the caller's object would take the waist out of the sentence's
+       own record as well as out of the render. */
+    const asked = { free: { waist: "a smaller waist", arms: "bigger arms" } };
+    withoutWhatIsOutOfFrame(asked);
+    expect(asked.free.waist).toBe("a smaller waist");
+  });
+
+  it("empties the ask when the WHOLE sentence is out of frame — the refusal's own condition", () => {
+    /* The service derives its refusal from this rather than counting facets
+       itself, so this is the refusal's arithmetic, driven here. */
+    const { delta, dropped } = withoutWhatIsOutOfFrame({ free: { waist: "a smaller waist" } });
+    expect(dropped).toEqual(["her waist"]);
+    expect(delta.free, "an emptied lane is removed, not left as {}").toBeUndefined();
+  });
+
+  it("sweeps the DEPARTURE lane too, not only the positive one", () => {
+    /* Both lanes are facts about her that reach the painter. A rule that swept
+       one of them would be the misaimed-guard class: correct on the ask it was
+       written against, silently absent on the other. */
+    const { delta, dropped } = withoutWhatIsOutOfFrame({
+      absent: { waist: ["a corset"], arms: ["sleeves"] },
+    });
+    expect(dropped).toEqual(["her waist"]);
+    expect(delta.absent?.waist).toBeUndefined();
+    expect(delta.absent?.arms).toEqual(["sleeves"]);
+  });
+
+  it("names one missing thing plainly and several as a list", () => {
+    expect(nameWhatIsMissing(["her waist"])).toBe("her waist");
+    expect(nameWhatIsMissing(["her waist", "her hips"])).toBe("her waist and her hips");
+    expect(nameWhatIsMissing(["a", "b", "c"])).toBe("a, b and c");
+  });
+});
+
+describe("the sentence a half-served ask is delivered with", () => {
+  const said = partlyOutOfFrameNote("her waist");
+
+  it("names the half that was not done, and says the rest was", () => {
+    expect(said).toContain("her waist is not in it");
+    expect(said).toContain("everything else you asked for was done");
+  });
+
+  it("does NOT say nothing was charged, because something was", () => {
+    /* The negative control, and the one that matters: this is a DELIVERED take.
+       Borrowing the refusal's most reassuring sentence for a paid outcome would
+       be the exact reverse of the honesty this line exists for. */
+    expect(said.toLowerCase()).not.toContain("nothing was charged");
+  });
+
+  it("makes no offer, exactly like its refusing sibling", () => {
+    expect(said.toLowerCase()).not.toContain("recast");
+    expect(said.toLowerCase()).not.toContain("re-cast");
+    expect(said.toLowerCase()).not.toContain("roll again");
+  });
+
+  it("shares the framing clause with the refusal, so the two cannot drift", () => {
+    const clause = "This photograph is framed from the mid-torso up";
+    expect(said).toContain(clause);
+    expect(outOfFrameMessage("her waist")).toContain(clause);
   });
 });

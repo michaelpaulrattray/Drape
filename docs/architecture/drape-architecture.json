@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "1d123ce640960786"
+    "sourceFingerprint": "59ee9e8bb6660b3e"
   },
   "domains": [
     {
@@ -43,7 +43,7 @@
     {
       "id": "domain:castingV2",
       "name": "castingV2",
-      "moduleCount": 28
+      "moduleCount": 29
     },
     {
       "id": "domain:client-shared",
@@ -1523,6 +1523,12 @@
     {
       "id": "module:client/src/features/castingV2/failureCopy.ts",
       "path": "client/src/features/castingV2/failureCopy.ts",
+      "domain": "castingV2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/castingV2/refineOutcomeNote.ts",
+      "path": "client/src/features/castingV2/refineOutcomeNote.ts",
       "domain": "castingV2",
       "lifecycle": "active"
     },
@@ -8023,6 +8029,10 @@
       "path": "client/src/features/castingV2/pronounGrammar.test.ts"
     },
     {
+      "id": "test:client/src/features/castingV2/refineOutcomeNote.test.ts",
+      "path": "client/src/features/castingV2/refineOutcomeNote.test.ts"
+    },
+    {
       "id": "test:client/src/features/castingV2/refineWait.test.ts",
       "path": "client/src/features/castingV2/refineWait.test.ts"
     },
@@ -14027,6 +14037,11 @@
     },
     {
       "from": "module:client/src/pages/CastingSheet.tsx",
+      "to": "module:client/src/features/castingV2/refineOutcomeNote.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/CastingSheet.tsx",
       "to": "module:client/src/features/castingV2/retentionCopy.ts",
       "kind": "imports"
     },
@@ -17707,7 +17722,17 @@
     },
     {
       "from": "module:server/castingV2/castingFrame.ts",
+      "to": "module:server/castingV2/refineDelta.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/castingFrame.ts",
       "to": "module:server/castingV2/refineFacets.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/castingFrame.ts",
+      "to": "module:server/castingV2/refineSubjects.ts",
       "kind": "imports"
     },
     {
