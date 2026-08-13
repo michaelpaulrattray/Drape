@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "749a1ab04b2dbe37"
+    "sourceFingerprint": "b9c22fafb8220634"
   },
   "domains": [
     {
@@ -18038,6 +18038,11 @@
     {
       "from": "module:server/castingV2/faceScan.ts",
       "to": "module:server/castingV2/maskedRefine.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/faceScan.ts",
+      "to": "module:server/castingV2/maskGeometry.ts",
       "kind": "imports"
     },
     {

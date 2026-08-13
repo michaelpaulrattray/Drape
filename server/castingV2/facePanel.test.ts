@@ -29,7 +29,18 @@ function row(overrides: Partial<StoredReference> & { slot: string }): StoredRefe
     storageKey: null,
     maskKey: null,
     digest: null,
-    geometry: null,
+    /*
+      A BOX BY DEFAULT, because the founder's rule made one the price of
+      admission (fable-414: *"everything in the right panel should have a
+      bounding box"*), and an ordinary library row has one — the mint stores its
+      crop's geometry beside it, and a row the library has nothing for is filled
+      by the scan.
+
+      The cases whose subject IS that rule pass `geometry: null` explicitly, so
+      the membership question is asked where it is being tested and nowhere
+      else.
+    */
+    geometry: { bbox: { x: 10, y: 20, width: 30, height: 40 }, frame: { width: 1000, height: 1500 } },
     guard: null,
     refusal: null,
     version: 1,
@@ -73,11 +84,20 @@ describe("a face with nothing said about it shows nothing", () => {
     expect(panel([]).groups).toEqual([]);
   });
 
-  it("appears the moment something is said about it, box or no box", () => {
+  it("appears when it has a PLACE on the photograph, and not for words alone", () => {
+    /*
+      THE FOUNDER'S RULE (fable-414): *"nothing should ride words alone in the
+      right panel — everything in the right panel should have a bounding box."*
+      Words are welcome ON a row and may not BE the row: a name with nowhere to
+      point is a list about her face rather than a picture of it.
+    */
     const lips = named([row({ slot: "lips", words: ["a fuller lip"] })], "Her lips")!;
     expect(lips.words).toEqual(["a fuller lip"]);
-    expect(lips.cutouts).toEqual([]);
-    expect(lips.regions).toEqual([]);
+    expect(lips.regions).toHaveLength(1);
+
+    /* The same sentence with nothing to point at draws no row at all. */
+    expect(named([row({ slot: "lips", words: ["a fuller lip"], geometry: null })], "Her lips"))
+      .toBeUndefined();
   });
 
   it("keeps the group order it is read in, and drops a group with nothing in it", () => {
@@ -189,13 +209,19 @@ describe("the slots that have no row of their own", () => {
   });
 
   it("reads a lash sentence on the eyes row, because the only region holding lashes is the eye", () => {
-    const eyes = named([row({ slot: "lashes@left", words: ["longer lashes"] })], "Her eyes")!;
+    /* The eyes row needs its own place on the photograph to be drawn at all —
+       a folded sentence lands ON a row and cannot BE one. */
+    const held = [
+      row({ slot: "eye@left", words: [] }),
+      row({ slot: "eye@right", words: [] }),
+      row({ slot: "lashes@left", words: ["longer lashes"] }),
+    ];
+    const eyes = named(held, "Her eyes")!;
     expect(eyes.words).toEqual(["longer lashes"]);
     /* The row is still about the eyes — an edit to it means the eye slots, and
        the lash ask files where it always did. */
     expect(eyes.slots).toEqual(["eye@left", "eye@right"]);
-    expect(allRows([row({ slot: "lashes@left", words: ["longer lashes"] })]).map((r) => r.name))
-      .not.toContain("Her lashes");
+    expect(allRows(held).map((r) => r.name)).not.toContain("Her lashes");
   });
 
   it("says a folded sentence once when it was filed on both sides", () => {
@@ -237,20 +263,29 @@ describe("what the library adds to a row", () => {
     ]);
   });
 
-  it("REFUSES to invent a box for a row that has words but was never measured", () => {
-    /* The words-only case is most of the panel — her skin, anything the guard
-       turned away. A rectangle by proportion here is a promise that clicking
-       those pixels edits that thing. */
-    const skin = named([row({ slot: "skin", words: ["a warm tan"] })], "Her skin")!;
-    expect(skin.words).toEqual(["a warm tan"]);
-    expect(skin.regions).toEqual([]);
-    expect(skin.cutouts).toEqual([]);
+  it("REFUSES to invent a box for a row that was never measured — so the row goes", () => {
+    /*
+      A rectangle by proportion would be a promise that clicking those pixels
+      edits that thing. The panel has always refused to invent one; what the
+      founder's rule changed is the CONSEQUENCE — the row leaves rather than
+      standing there unclickable.
+
+      Her skin is the row this was written about, and it is no longer in this
+      state: it is drawn from `face skin` through the catalogue's `display`
+      field now. The rule is what is under test, so the case keeps a row with
+      nothing to point at rather than a slot that has since acquired one.
+    */
+    expect(named([row({ slot: "skin", words: ["a warm tan"], geometry: null })], "Her skin"))
+      .toBeUndefined();
   });
 
   it("does not count provenance as content — 'from an edit' about nothing is not a row", () => {
-    /* A library row that says only that something happened here, with no words
-       and no crop, tells the person nothing about their own face. */
-    expect(named([row({ slot: "lips", words: [] })], "Her lips")).toBeUndefined();
+    /* A library row that says only that something happened here, with no words,
+       no crop and nowhere to point, tells the person nothing about their own
+       face. A row with a PLACE is a different thing: the picture is the
+       content, which is why the box arm below still draws. */
+    expect(named([row({ slot: "lips", words: [], geometry: null })], "Her lips")).toBeUndefined();
+    expect(named([row({ slot: "lips", words: [] })], "Her lips")).toBeDefined();
   });
 
   it("tells a thing she arrived with from a thing she asked for", () => {
@@ -427,12 +462,15 @@ describe("what a scan adds to a row", () => {
        because something was SAID about her ears; the picture stays honest about
        what was measured, so there is no box and no cutout on it. */
     const rows = scanned(
-      [row({ slot: "ear@left", words: ["a little more tucked"] }), row({ slot: "ear@right", words: ["a little more tucked"] })],
+      [
+        row({ slot: "ear@left", words: ["a little more tucked"], geometry: null }),
+        row({ slot: "ear@right", words: ["a little more tucked"], geometry: null }),
+      ],
       { nose: { x: 400, y: 600, width: 120, height: 160 } },
     );
-    const ears = rows.find((panelRow) => panelRow.name === "Her ears")!;
-    expect(ears.regions).toEqual([]);
-    expect(ears.cutouts).toEqual([]);
+    /* No box was invented for them — and under the founder's rule that now
+       means the row leaves rather than standing there with nothing to click. */
+    expect(rows.map((panelRow) => panelRow.name)).not.toContain("Her ears");
   });
 
   it("drops the row entirely when the scan found nothing and nothing was said", () => {
@@ -460,11 +498,17 @@ describe("what a scan adds to a row", () => {
     ]);
   });
 
-  it("is exactly today's panel when there is no scan", () => {
-    const said = [row({ slot: "lips", words: ["a fuller lip"] }), row({ slot: "skin", words: ["a warm tan"] })];
-    const withoutScan = allRows(said);
-    expect(withoutScan.map((panelRow) => panelRow.name)).toEqual(["Her lips", "Her skin"]);
-    expect(withoutScan.every((panelRow) => panelRow.regions.length === 0 && panelRow.cutouts.length === 0)).toBe(true);
+  it("is the LIBRARY's own answer when there is no scan", () => {
+    /* Without a scan the panel is rows from the catalogue and content from the
+       library, exactly as before — and a row the library cannot place on the
+       frame is not drawn, which is the founder's rule applied to the same
+       inputs rather than a second rule for the unscanned case. */
+    const withoutScan = allRows([
+      row({ slot: "lips", words: ["a fuller lip"] }),
+      row({ slot: "skin", words: ["a warm tan"], geometry: null }),
+    ]);
+    expect(withoutScan.map((panelRow) => panelRow.name)).toEqual(["Her lips"]);
+    expect(withoutScan[0]!.regions).toHaveLength(1);
   });
 });
 
@@ -528,13 +572,19 @@ describe("a pair whose geometry is one instance", () => {
     expect(nose.regions).toEqual([{ box: { x: 400, y: 600, width: 120, height: 160, frame }, name: null }]);
   });
 
-  it("leaves a row with no geometry at all unlabelled and unclickable", () => {
-    /* Words keep the row on screen — the scan found neither eye, so there is
-       nothing to point at and nothing to name. */
-    const eyes = scanned(
+  it("draws no row at all when nothing can place it — not an unclickable one", () => {
+    /* The scan found neither eye, so there is nothing to point at. Words used
+       to keep such a row on screen; the founder's rule takes it off. */
+    const drawn = scanned(
       { nose: { x: 400, y: 600, width: 120, height: 160 } },
-      [row({ slot: "eye@left", words: ["green"] }), row({ slot: "eye@right", words: ["green"] })],
-    ).find((row) => row.name === "Her eyes")!;
-    expect(eyes.regions).toEqual([]);
+      [
+        row({ slot: "eye@left", words: ["green"], geometry: null }),
+        row({ slot: "eye@right", words: ["green"], geometry: null }),
+      ],
+    );
+    expect(drawn.map((panelRow) => panelRow.name)).not.toContain("Her eyes");
+    /* And the row that CAN be placed is still drawn, so the case is not passing
+       by the panel having emptied itself. */
+    expect(drawn.map((panelRow) => panelRow.name)).toContain("Her nose");
   });
 });

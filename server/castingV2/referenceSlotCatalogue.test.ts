@@ -25,6 +25,7 @@ import {
   SLOT_CATALOGUE,
   DERIVED_REGION_KEY,
   isDerivedRegion,
+  isAskable,
 } from "./referenceSlotCatalogue";
 import { allFacets } from "./refineFacets";
 
@@ -50,6 +51,10 @@ describe("what a slot is", () => {
          until a render earns it again; `build` is the one exception, and its
          entry carries the reason. */
       remint: "whenEarned",
+      /* And whether the panel draws it from somewhere other than the region it
+         is cut from. Only `skin` does, and only because the two genuinely come
+         apart there. */
+      display: null,
     });
   });
 
@@ -343,5 +348,67 @@ describe("what the mint is handed", () => {
   it("returns null for a slot it has never heard of, instead of composing a guess", () => {
     expect(slotSpecFor("hat", ["a wide brim"])).toBeNull();
     expect(slotSpecFor("makeup@lips", ["nude gloss"])).toBeNull();
+  });
+});
+
+/**
+ * SHOWN, NEVER CARRIED — the never-crossing assertion (fable-428 §3).
+ *
+ * The founder's box rule says every panel row has a bounding box on the
+ * photograph. `skin` is the row where the region it is DRAWN from and the region
+ * it may be CUT from come apart: her skin is all of her visible skin (working
+ * law 8), so a face crop filed as her skin is a partial wearing the name of the
+ * whole — while the same face-skin cutout is exactly the right picture for a
+ * row that is a name and a click affordance.
+ *
+ * That separation may not live in a comment. These drive it: a display region
+ * has no route to the mint, and the one door the mint has does not carry it.
+ */
+describe("a display region is shown and never carried", () => {
+  const displayed = catalogueSlots().filter((definition) => definition.display !== null);
+
+  it("has a member — otherwise every case below passes on an empty list", () => {
+    /* The positive control. A vacuous sweep is the checker that cannot fail,
+       and this file already learned that lesson on the totality case. */
+    expect(displayed.map((definition) => definition.slot)).toEqual(["skin"]);
+    expect(displayed[0]!.display).toBe("face skin");
+  });
+
+  it("names a region the segmenter actually answers, never an invented one", () => {
+    /* Same rule as a question's: a display region is asked of a real reader, so
+       an improvised phrase here would be the open question D-213 forbids
+       arriving through the display door instead of the cutting one. */
+    for (const definition of displayed) {
+      const owned = allFacets().some((facet) => regionNameOf(facet) === definition.display)
+        || LANDMARK_OF_ACCESSORY.some((accessory) => accessory.region === definition.display);
+      expect(owned, `${definition.slot} draws from "${definition.display}", which no table owns`)
+        .toBe(true);
+      expect(isDerivedRegion(definition.display)).toBe(false);
+    }
+  });
+
+  it("NEVER reaches the mint — the spec the mint is handed does not carry it", () => {
+    /*
+      `slotSpecFor` is the mint's only door. A display region reaching it as a
+      `question` would be cut, guarded against its own region, and filed as the
+      slot's crop — her face stored as her skin, complete against the wrong
+      boundary, which is the exact failure the catalogue note refuses.
+    */
+    for (const definition of displayed) {
+      const spec = slotSpecFor(definition.slot, ["a warm olive tone"])!;
+      expect(spec.question).toBeNull();
+      expect(spec.guardKind).toBeNull();
+      expect(Object.values(spec)).not.toContain(definition.display);
+    }
+  });
+
+  it("does not silently become a question by being a display region", () => {
+    /* The other direction: a slot with a display region must still be
+       words-only by the catalogue's own account, so nothing downstream can read
+       `display` as permission to cut. */
+    for (const definition of displayed) {
+      expect(isAskable(definition)).toBe(false);
+      expect(definition.wordsOnly).toBeTypeOf("string");
+    }
   });
 });

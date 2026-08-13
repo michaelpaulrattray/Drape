@@ -58,9 +58,16 @@ import {
 } from "./faceDescribe";
 import { createModuleLogger } from "../logging/logger";
 import type { Mask } from "./maskedComposite";
+import { belowHeadMask, MaskError } from "./maskGeometry";
 import type { RegionReader } from "./maskedRefine";
 import type { FeatureSlot } from "./recipeAssembler";
-import { catalogueSlots, isAskable, type SlotDefinition } from "./referenceSlotCatalogue";
+import {
+  catalogueSlots,
+  isAskable,
+  isDerivedRegion,
+  DERIVED_REGION_ASKS,
+  type SlotDefinition,
+} from "./referenceSlotCatalogue";
 import { boundsOf } from "./segmentCuts";
 
 const log = createModuleLogger("castingV2/faceScan");
@@ -130,19 +137,51 @@ export function scanPlan(): { feature: string; question: string; slots: SlotDefi
   const armed = armedQuestions();
   const byFeature = new Map<string, { feature: string; question: string; slots: SlotDefinition[] }>();
   for (const definition of catalogueSlots()) {
-    /* Not askable means not scannable: no question, or a COMPOSED region whose
-       key is not a question anyone may send to a reader (her build). */
-    if (!isAskable(definition)) continue;
-    if (definition.group === "accessories" && !armed.has(definition.question)) continue;
+    /*
+      A SLOT MAY BE DRAWN FROM A REGION IT MAY NEVER BE CUT FROM (fable-428 §3).
+
+      The founder's rule is that every panel row carries a bounding box on the
+      photograph. `skin` is the row where the two regions come apart: her skin is
+      all of her visible skin, so a face crop FILED as her skin would be a
+      partial wearing the name of the whole — while the same face-skin cutout is
+      the right picture for a row that is a name and a click affordance.
+
+      Asked here and nowhere else. The catalogue keeps `question` null for such a
+      slot, so this is the only route the region has, and the mint's own door
+      (`slotSpecFor`) does not carry the field at all.
+    */
+    const question = isAskable(definition) ? definition.question : definition.display;
+    /* Not scannable: no question, no display region, or a COMPOSED region whose
+       key is not a question anyone may send to a reader (her build, below). */
+    if (question === null || question === undefined) continue;
+    if (definition.group === "accessories" && !armed.has(question)) continue;
     const held = byFeature.get(definition.feature);
     if (held) held.slots.push(definition);
     else byFeature.set(definition.feature, {
       feature: definition.feature,
-      question: definition.question,
+      question,
       slots: [definition],
     });
   }
   return Array.from(byFeature.values());
+}
+
+/**
+ * THE SLOTS WHOSE REGION IS COMPOSED RATHER THAN ASKED.
+ *
+ * Held apart from {@link scanPlan} because they cost a different thing: no
+ * question is sent for these at all. Her build is the whole-subject matte below
+ * the bottom of the `face` box (`belowHeadMask`) — arithmetic on two answers the
+ * reader already gives, which is the only shape D-213 permits for a region no
+ * vocabulary word names.
+ *
+ * It is the SAME region the mint cuts her build's carrier from, and that is the
+ * point: the box she clicks and the crop the paid render carries are one answer
+ * with two uses, not two answers that drift (working law 4). It is why fable-428
+ * §1 retired the torso probe — evidence for a road already ruled out.
+ */
+export function composedPlan(): SlotDefinition[] {
+  return catalogueSlots().filter((definition) => isDerivedRegion(definition.question));
 }
 
 /**
@@ -223,6 +262,55 @@ export async function scanFace(input: {
       });
 
   /*
+    AND HER BUILD, COMPOSED RATHER THAN ASKED — started here so its two reads
+    ride beside every other question about this photograph rather than after
+    them (fable-428 §1).
+
+    Two reads, and the `face` one is NOT shared with the plan's: no catalogue
+    slot asks `face` (they ask `face skin`, `eyes`, `hair`), so there is nothing
+    to reuse. The cost is stated rather than implied — the scan's line goes from
+    ~14 reads to ~16 on a first look.
+
+    Every failure here is the same failure every other region has: this row gets
+    no box and the panel is exactly what it was before. A scan is a courtesy the
+    user did not ask to pay for.
+  */
+  const composed = composedPlan();
+  const composing = composed.length === 0
+    ? Promise.resolve<Array<{ definition: SlotDefinition; mask: Mask }>>([])
+    : (async () => {
+      const [head, subject] = await Promise.all([
+        input.reader.region({
+          image: input.frame.bytes,
+          name: DERIVED_REGION_ASKS.belowHead.head,
+          absentIsAnswer: true,
+          ...(input.frame.url ? { imageUrl: input.frame.url } : {}),
+        }),
+        input.reader.subject({ image: input.frame.bytes }),
+      ]);
+      return composed.flatMap((definition) => {
+        try {
+          const { mask } = belowHeadMask({ subject, head });
+          return [{ definition, mask }];
+        } catch (error) {
+          failed.push({
+            question: definition.question ?? definition.slot,
+            why: error instanceof MaskError
+              ? error.message
+              : `her build could not be composed: ${error instanceof Error ? error.message : String(error)}`,
+          });
+          return [];
+        }
+      });
+    })().catch((error) => {
+      failed.push({
+        question: "derived",
+        why: error instanceof Error ? error.message : String(error),
+      });
+      return [] as Array<{ definition: SlotDefinition; mask: Mask }>;
+    });
+
+  /*
     IN PARALLEL, because they are independent questions about one picture and
     the model answers each in a couple of seconds. Serially this is the
     difference between a panel that fills while she looks at the face and one
@@ -291,6 +379,16 @@ export async function scanFace(input: {
       failed.push({ question: region.question, why: error instanceof Error ? error.message : String(error) });
     }
   }));
+
+  /* The composed rows join the same two maps by the same rule as every asked
+     one: box and mask together, always. A slot with a rectangle and no shape
+     renders as a hard-edged crop beside its cutout neighbours. */
+  for (const { definition, mask } of await composing) {
+    const box = boxIn(mask, frame);
+    if (!box) { empty.push(definition.question ?? definition.slot); continue; }
+    boxes.set(definition.slot, box);
+    masks.set(definition.slot, mask);
+  }
 
   const described = await words;
   for (const entry of wordsPlan()) {

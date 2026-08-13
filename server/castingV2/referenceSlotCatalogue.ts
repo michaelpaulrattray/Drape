@@ -141,6 +141,13 @@ export type SlotDefinition = {
   frame: SlotFrame;
   /** When this slot's crop is re-cut — see {@link CatalogueEntry.remint}. */
   remint: RemintRule;
+  /**
+   * THE REGION THIS ROW MAY BE DRAWN FROM, and never cut for the library.
+   *
+   * `null` for almost every slot, because almost every slot is drawn from the
+   * region it is cut from. See {@link CatalogueEntry.display}.
+   */
+  display: string | null;
   /** How the pair is spoken while it matches. Present only for a per-side slot. */
   pairNoun?: string;
   /** Present exactly when `question` is null — why, in one sentence. */
@@ -237,6 +244,33 @@ type CatalogueEntry = {
    * invalidate which crop — is wrong the day somebody adds a slot to it.
    */
   remint?: RemintRule;
+  /**
+   * SHOWN, NEVER CARRIED — a region a row may be DRAWN from that must never be
+   * cut for the library (fable-428 §3).
+   *
+   * The founder's rule is that every panel row has a bounding box on the
+   * photograph: *"nothing should ride words alone in the right panel"*. Most
+   * rows satisfy it for free, because the region they are drawn from is the
+   * region their crop is cut from — one answer, two uses.
+   *
+   * `skin` is the row where those two come apart, and it comes apart in a
+   * direction that matters. Her skin is ALL of her visible skin — a tan does not
+   * stop at the jaw (working law 8) — so a crop of her face filed as *her skin*
+   * is a partial wearing the name of the whole, complete against the wrong
+   * boundary. That is why its `question` is `none` and must stay `none`.
+   *
+   * But a ROW is a name and a click affordance, not a scope diagram. The face
+   * skin cutout reads as skin at a glance, and the scope of the edit lives where
+   * law 8 enforces it — in the ask's own words at edit time. Measured on three
+   * production frames before the choice was made: a face-skin box claims
+   * **11.5–12.5%** of the area a tan would touch. Filed here with the decision
+   * rather than discovered after it.
+   *
+   * The separation is structural, not remembered: `slotSpecFor` — the mint's
+   * only door — never carries this field, so a display region has no route to a
+   * crop. `referenceSlotCatalogue.test.ts` drives that it cannot.
+   */
+  display?: string;
 };
 
 const STRUCTURE_IS_WORDS = (part: string): PanelPlacement => ({
@@ -483,6 +517,19 @@ const ANATOMY_SLOTS: readonly CatalogueEntry[] = [
       relation: "narrower",
       note: "her skin is all of her visible skin — a tan does not stop at the jaw (working law 8) — so a face crop filed as her skin is a partial wearing the name of the whole, and it would read complete against the wrong boundary",
     },
+    /*
+      AND THE SAME REGION THE NOTE ABOVE REFUSES AS A CROP IS THE ONE THE PANEL
+      DRAWS HER SKIN FROM (founder's box rule, ruled in fable-428 §2).
+
+      Not a contradiction — two different questions about one region. As a
+      CARRIER it would be a picture of her face labelled "her skin", and every
+      later render would be told her skin is her face. As a ROW it is a name and
+      a click affordance, and "her face skin" is where a person looks to judge
+      skin. The understatement is real and measured (11.5–12.5% of what a tan
+      touches, three production frames) and it is filed on `display` above
+      rather than discovered by somebody later.
+    */
+    display: "face skin",
   },
 ];
 
@@ -715,6 +762,7 @@ function definitionOf(entry: CatalogueEntry, instance: Instance | null): SlotDef
     noun,
     frame: entry.instances.of === "perSide" ? ("ownSide" as const) : ("wholeFrame" as const),
     remint: entry.remint ?? ("whenEarned" as const),
+    display: entry.display ?? null,
     ...(entry.instances.of === "perSide" ? { pairNoun: entry.instances.pairNoun } : {}),
   };
 

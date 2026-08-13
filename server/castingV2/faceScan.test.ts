@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { scanFace, scanPlan } from "./faceScan";
+import { composedPlan, scanFace, scanPlan } from "./faceScan";
 import { armedBornWornClasses } from "./bornWornDetector";
 import type { Mask } from "./maskedComposite";
 import type { RegionReader } from "./maskedRefine";
@@ -30,20 +30,24 @@ const EMPTY: Mask = { data: Buffer.alloc(FRAME.width * FRAME.height, 0), width: 
 function reader(answers: {
   region?: (name: string) => Mask | Promise<Mask>;
   sides?: ((name: string) => { left: Mask; right: Mask } | null) | null;
-}): RegionReader & { asked: string[]; sideAsked: string[]; urls: (string | undefined)[] } {
+}): RegionReader & {
+  asked: string[]; sideAsked: string[]; subjectAsked: string[]; urls: (string | undefined)[];
+} {
   const asked: string[] = [];
   const sideAsked: string[] = [];
+  const subjectAsked: string[] = [];
   const urls: (string | undefined)[] = [];
   const built: any = {
     asked,
     sideAsked,
+    subjectAsked,
     urls,
     async region({ name, imageUrl }: { name: string; imageUrl?: string }) {
       asked.push(name);
       urls.push(imageUrl);
       return answers.region ? answers.region(name) : maskOf({ x: 10, y: 20, width: 30, height: 40 });
     },
-    async subject() { return EMPTY; },
+    async subject() { subjectAsked.push("(subject matte)"); return EMPTY; },
     async landmark() { return null; },
   };
   if (answers.sides !== null) {
@@ -209,7 +213,13 @@ describe("it asks them all at once", () => {
         inFlight -= 1;
         return { left: maskOf({ x: 1, y: 1, width: 2, height: 2 }), right: maskOf({ x: 9, y: 1, width: 2, height: 2 }) };
       },
-      async subject() { return EMPTY; },
+      async subject() {
+        inFlight += 1;
+        peak = Math.max(peak, inFlight);
+        await new Promise((resolve) => setTimeout(resolve, 5));
+        inFlight -= 1;
+        return EMPTY;
+      },
       landmark: (async () => null) as never,
     } as never;
 
@@ -256,6 +266,85 @@ describe("the shape is kept beside the rectangle (fable-374)", () => {
        question per region, and paying twice for one answer would also invite
        two different ones. */
     const plan = scanPlan();
-    expect(counting.asked.length + counting.sideAsked.length).toBe(plan.length);
+    /*
+      One question per plan entry, plus the composed row's own two — a `face`
+      read and the whole-subject matte, which no plan entry asks for and which
+      therefore cannot be shared with one. The composed cost is stated in the
+      sum rather than left to widen it silently: if a future region starts
+      being read twice, this arithmetic is what says so.
+    */
+    const composedReads = composedPlan().length === 0 ? 0 : 1;
+    expect(counting.asked.length + counting.sideAsked.length).toBe(plan.length + composedReads);
+    expect(counting.subjectAsked.length).toBe(composedPlan().length === 0 ? 0 : 1);
+    /* And every question is asked ONCE. */
+    expect(new Set(counting.asked).size).toBe(counting.asked.length);
+  });
+});
+
+/**
+ * THE TWO ROWS THAT COULD NOT COMPLY WITH THE FOUNDER'S BOX RULE — until now.
+ *
+ * *"Nothing should ride words alone in the right panel — everything in the right
+ * panel should have a bounding box"* (fable-414). Every row satisfied it except
+ * `skin`, whose region may be drawn and never cut, and `build`, whose region is
+ * composed rather than asked. These drive both, and the control that keeps them
+ * out of the library.
+ */
+describe("the rows that are drawn from somewhere else", () => {
+  it("gives HER SKIN a box, from the region it may never be cut from", () => {
+    const questions = scanPlan().map((region) => region.question);
+    expect(questions).toContain("face skin");
+    const skin = scanPlan().find((region) => region.question === "face skin");
+    expect(skin?.slots.map((slot) => slot.slot)).toEqual(["skin"]);
+  });
+
+  it("gives HER BUILD a box, composed from a matte and a head", async () => {
+    const counting = reader({});
+    const scan = await scanFace({ frame: FRAME, reader: counting, describe: null });
+
+    /* The composed region is her silhouette below the bottom of the face box,
+       so the harness's head mask decides where it starts. */
+    expect(counting.asked).toContain("face");
+    expect(counting.subjectAsked).toHaveLength(1);
+    expect(composedPlan().map((definition) => definition.slot)).toEqual(["build"]);
+  });
+
+  it("files NO box for her build when the frame has no body in it", async () => {
+    /*
+      The matte and the head are the same rectangle: her head reaches the bottom
+      of what the reader can see, so nothing of her is below her chin. A box
+      here would be a rectangle around nothing, labelled "her build".
+    */
+    const one = maskOf({ x: 400, y: 100, width: 200, height: 1400 });
+    const scan = await scanFace({
+      frame: FRAME,
+      reader: reader({ region: (name) => (name === "face" ? one : EMPTY), sides: null }),
+      describe: null,
+    });
+
+    expect(scan.boxes.has("build")).toBe(false);
+    /* Recorded rather than swallowed — a silent catch is how thirty faces were
+       once declared bare. */
+    expect(scan.failed.some((entry) => entry.question.includes("below-head"))).toBe(true);
+  });
+
+  it("NEVER sends the derived key to a reader", async () => {
+    const counting = reader({});
+    await scanFace({ frame: FRAME, reader: counting, describe: null });
+    for (const question of [...counting.asked, ...counting.sideAsked]) {
+      expect(question.startsWith("derived:")).toBe(false);
+    }
+  });
+
+  it("CONTROL — a scan writes nothing anywhere, composed rows included", async () => {
+    /* The scan's own boundary (fable-360 ruling 5), restated where the two new
+       rows enter it: geometry in memory, no row, no object, no manifest. The
+       composed region is the same region the mint cuts a CARRIER from, so this
+       is the line that keeps "shown" and "carried" apart at the scan too. */
+    const scan = await scanFace({ frame: FRAME, reader: reader({}), describe: null });
+    expect(Object.keys(scan)).toEqual(
+      expect.arrayContaining(["boxes", "masks", "descriptions", "empty", "failed"]),
+    );
+    expect(scan.boxes.size).toBeGreaterThan(0);
   });
 });

@@ -220,6 +220,7 @@ describe("the scan carries the words", () => {
 
 describe("and the panel puts them where the library is silent", () => {
   const SHE: CastPronouns = { subject: "she", object: "her", possessive: "her", plural: false };
+  const FRAME = { width: 1024, height: 1536 };
 
   function panelWith(rows: StoredReference[], words: Map<string, readonly string[]>): PanelRow[] {
     return facePanel({
@@ -227,18 +228,41 @@ describe("and the panel puts them where the library is silent", () => {
       pronouns: SHE,
       contentUrl: (key) => `https://bucket.example/${key}`,
       maskUrl: (key) => `/proxy/${key}`,
-      scan: { frameUrl: "https://bucket.example/frame.png", slots: new Map(), words },
+      /*
+        BOTH described rows now have a place on the photograph, which is the
+        price of admission to the panel (fable-414, built in fable-428): her
+        build's region is COMPOSED (`belowHeadMask`) and her skin's is DRAWN
+        from `face skin` — a region it may never be cut from. Without those
+        boxes neither row renders, so a fixture without them would be testing
+        the words channel against a row that cannot exist.
+      */
+      scan: {
+        frameUrl: "https://bucket.example/frame.png",
+        slots: new Map([
+          ["build", { box: { x: 60, y: 700, width: 900, height: 800, frame: FRAME }, maskUrl: "/proxy/build-mask" }],
+          ["skin", { box: { x: 330, y: 260, width: 340, height: 470, frame: FRAME }, maskUrl: "/proxy/skin-mask" }],
+        ]),
+        words,
+      },
     }).groups.flatMap((group) => group.rows);
   }
 
-  it("draws a row that would otherwise not exist", () => {
-    /* The founder's complaint, in one assertion: "obviously missing her body". */
-    const without = panelWith([], new Map());
-    expect(without.find((row) => row.slots.includes("build"))).toBeUndefined();
+  it("fills a row the library is silent about", () => {
+    /*
+      The founder's complaint — *"obviously missing her body"* — used to be
+      answered by this channel ALONE: the row existed only because a sentence
+      was read for it. Since the box rule (fable-414) her build has a place on
+      the photograph of its own, so the row is drawn by its geometry and this
+      channel is what it SAYS. Both halves are asserted, because a row that
+      draws and says nothing is the empty square he complained about first.
+    */
+    const silent = panelWith([], new Map()).find((row) => row.slots.includes("build"));
+    expect(silent?.words).toEqual([]);
+    expect(silent?.regions).toHaveLength(1);
 
-    const with_ = panelWith([], new Map([["build", ["slim shoulders, long neck"]]]));
-    const body = with_.find((row) => row.slots.includes("build"));
-    expect(body?.words).toEqual(["slim shoulders, long neck"]);
+    const spoken = panelWith([], new Map([["build", ["slim shoulders, long neck"]]]))
+      .find((row) => row.slots.includes("build"));
+    expect(spoken?.words).toEqual(["slim shoulders, long neck"]);
   });
 
   it("never argues with what an edit filed — the library wins whole", () => {

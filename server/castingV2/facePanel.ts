@@ -112,9 +112,13 @@ export type PanelScan = {
    * pictured (fable-388 §1, fable-389 §1).
    *
    * A separate channel from `slots` because it answers a different question:
-   * `slots` is geometry, and these two rows have no geometry by the catalogue's
-   * own ruling. It is DISPLAY — a description read off the frame is not a
-   * library row, so it is never carried into a recipe or checked in a render.
+   * `slots` is geometry and this is prose. Both rows now have geometry too —
+   * her build's is composed and her skin's is drawn from a region it may never
+   * be cut from (fable-428) — and that is what puts them on the panel at all
+   * under the box rule. This is what they SAY once they are there.
+   *
+   * It is DISPLAY either way: a description read off the frame is not a library
+   * row, so it is never carried into a recipe or checked in a render.
    */
   words?: ReadonlyMap<FeatureSlot, readonly string[]>;
 };
@@ -510,17 +514,29 @@ export function facePanel(input: {
   }
 
   /**
-   * A ROW APPEARS WHEN IT HAS SOMETHING TO SHOW (fable-382 §1).
+   * A ROW APPEARS WHEN IT HAS A PLACE ON THE PHOTOGRAPH — founder ruling,
+   * fable-414: *"nothing should ride words alone in the right panel — everything
+   * in the right panel should have a bounding box."*
    *
-   * A picture of the feature, or something said about it — his own "no glasses"
-   * row is the second kind and is exactly as real as the first. Provenance is
-   * deliberately NOT content: *"from an edit"* on a row with no picture and no
-   * words tells the person nothing about their own face.
+   * It used to be *a picture of the feature, or something said about it*
+   * (fable-382 §1), and the second half is what he overruled. Words are welcome
+   * ON a row and may not BE the row: a row with no rectangle is a name with
+   * nowhere to point, and the panel is a picture of her face rather than a list
+   * about it.
+   *
+   * WHAT THIS COSTS, said plainly rather than discovered: a row whose feature
+   * nothing can locate on the frame leaves the panel until something can. Her
+   * build and her skin were both in that state three days ago and neither is
+   * now — build's region is composed (`belowHeadMask`) and skin's is drawn from
+   * a region it may never be CUT from (`display`). `teeth` is the one that stays
+   * out, and it stays out honestly: the ask box still reaches it, the words are
+   * still kept, and the panel does not offer a picture of something it cannot
+   * point at.
    *
    * A group whose rows all fell away disappears with them, which the filter
    * below already did for the group with no rows at all.
    */
-  const hasContent = (row: PanelRow): boolean => row.cutouts.length > 0 || row.words.length > 0;
+  const hasContent = (row: PanelRow): boolean => row.regions.length > 0;
 
   return {
     possessive: input.pronouns.possessive,
