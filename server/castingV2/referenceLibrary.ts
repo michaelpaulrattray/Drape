@@ -38,6 +38,10 @@
  * across renders — where the newer one is simply right.
  */
 import { REFUSAL_THAT_IS_EVIDENCE_ONLY } from "./referenceCompleteness";
+/* The panel's own divergence instrument, borrowed rather than re-stated: one
+   definition of "this pair is two things now", read by the row that draws it
+   and by the question that must not claim both (working law 4). */
+import { pairHasDiverged } from "./referenceSlots";
 import type {
   FeatureSlot,
   FeatureTier,
@@ -185,6 +189,65 @@ export function supersededCarrySlots(rows: readonly StoredReference[]): FeatureS
        list here would be a second copy of the door's vocabulary. */
     .filter(([, row]) => row.storageKey === null)
     .map(([slot]) => slot);
+}
+
+/**
+ * WHICH ONE OF A PAIR THE LAST EDIT OF IT ACTUALLY TOUCHED — the library
+ * answering the question the chain cannot (fable-444 condition 1).
+ *
+ * Ruling C put the per-side memory HERE: the delta goes on saying *"green
+ * eyes"* because that is what she typed, and these rows are what remember that
+ * only one of them is green. So these rows are also the only honest answer to
+ * *"may a later render still ask whether her eyes are green"* — and the answer
+ * is no, because one of them is brown and a reader told to judge both will
+ * honestly say the picture fails. `eye.colour` is a GUARANTEED axis, so that
+ * answer is binding: it refuses and refunds a render that delivered exactly
+ * what was asked, on every later edit, for as long as the chain lives. **A
+ * per-eye edit would brick the chain it belongs to** — measured on the court's
+ * own frames, where today's whole-face question disputes 4 of 16 correct
+ * one-eye renders (`bench-scoped-verification`).
+ *
+ * TWO CONDITIONS, and each one alone would be wrong:
+ *
+ *   the rows DISAGREE          a matched pair is one thing and is asked about
+ *                              as one thing. Divergence is read from the words
+ *                              every time (`pairHasDiverged`), never a flag —
+ *                              the same instrument the panel splits its row on,
+ *                              so the picture and the question cannot disagree
+ *                              about whether she has one pair of eyes or two
+ *   ONE of them is newest      the version that last wrote this feature. Both
+ *                              at the newest version means the last edit wrote
+ *                              both, whatever their words say, and the question
+ *                              is whole-face again
+ *
+ * Returns null for everything else, which is nearly everything: a face with no
+ * library, a matched pair, a feature that is not bilateral. Narrowing is the
+ * exception and it has to earn itself.
+ */
+export function instanceLastWritten(
+  rows: readonly StoredReference[],
+  slots: readonly FeatureSlot[],
+): FeatureSlot | null {
+  if (slots.length !== 2) return null;
+  const newest = new Map<FeatureSlot, StoredReference>();
+  for (const row of liveReferences(rows)) {
+    if (!slots.includes(row.slot)) continue;
+    const held = newest.get(row.slot);
+    if (!held || row.version > held.version) newest.set(row.slot, row);
+  }
+  if (newest.size === 0) return null;
+  const [first, second] = slots as [FeatureSlot, FeatureSlot];
+  const words = (slot: FeatureSlot) => newest.get(slot)?.words ?? [];
+  /* A row the library never wrote is an empty stack, and an empty stack beside
+     a written one is a disagreement — that is exactly the state a scoped edit
+     leaves behind on a face whose other side nobody has touched. */
+  const diverged = pairHasDiverged({
+    feature: "", left: { words: words(first) }, right: { words: words(second) },
+  });
+  if (!diverged) return null;
+  const at = (slot: FeatureSlot) => newest.get(slot)?.version ?? -1;
+  if (at(first) === at(second)) return null;
+  return at(first) > at(second) ? first : second;
 }
 
 function imageOf(row: StoredReference): ReferenceImage | undefined {

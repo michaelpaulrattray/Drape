@@ -20,6 +20,7 @@ import {
   facetsWithUnreliabilityPrior,
   joinClauses,
   missingFacts,
+  scopedToInstance,
   settleCarriedChecks,
   shortfalls,
   unreadFacts,
@@ -755,6 +756,60 @@ describe("a confirming re-read that never lands cannot deliver an evidenced abse
 
     expect(confirmed.ok).toBe(true);
     expect(rereads, "there is nothing to confirm").toBe(0);
+  });
+
+  it("a scoped fact asks about ONE eye and puts THAT eye on the receipt", () => {
+    /*
+      fable-444 condition 2, in its three places at once. The reader's line has
+      to name the side; the CUSTOMER's sentence has to say which eye fell short,
+      because "the render came back without green" is a different receipt from
+      "without her left eye green" and only one of them is what happened; and
+      both readings of D-194 have to match on the same string, or a majority of
+      three quietly degrades to a single sample.
+    */
+    const scoped = scopedToInstance(
+      { facet: EYE_COLOUR, asked: "green", binding: true },
+      { noun: "left eye", other: "right eye" },
+    );
+
+    expect(scoped.asked).toContain("HER LEFT EYE ONLY");
+    expect(scoped.asked).toContain("her right eye was deliberately left as it was");
+    expect(scoped.shortfall).toBe("without her left eye green");
+    /* Untouched: a scoped fact is exactly as refusable as the whole-face one it
+       replaces. The question became answerable; the answer still counts. */
+    expect(scoped.binding).toBe(true);
+  });
+
+  it("keeps a shortfall the caller already wrote — a removal says its own sentence", () => {
+    /* The one fact class that authors its own customer sentence (`departedShortfall`)
+       must not have it overwritten by a template about the side. */
+    const scoped = scopedToInstance(
+      { facet: EYE_COLOUR, asked: "no hoop", shortfall: "with the hoop still in the picture", binding: true },
+      { noun: "left ear", other: "right ear" },
+    );
+
+    expect(scoped.shortfall).toBe("with the hoop still in the picture");
+  });
+
+  it("puts the scoped shortfall on the sentence the customer actually reads", () => {
+    /* Driven through `shortfalls`, not read off the object — the receipt is the
+       thing that matters and it is one function further on. */
+    const verdict: RenderVerdict = {
+      ok: false,
+      checks: [{
+        ...scopedToInstance(
+          { facet: EYE_COLOUR, asked: "green", binding: true },
+          { noun: "left eye", other: "right eye" },
+        ),
+        read: true,
+        verified: false,
+        binding: true,
+        absent: true,
+        saw: "both irises still brown",
+      } as never],
+    };
+
+    expect(shortfalls(verdict)).toEqual(["without her left eye green"]);
   });
 
   it("a removal that did not happen is the same catastrophe from the other side", async () => {

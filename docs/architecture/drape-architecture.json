@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "01d5188fbe9ab1cc"
+    "sourceFingerprint": "df10e4dbc2d547ae"
   },
   "domains": [
     {
@@ -18652,6 +18652,11 @@
     {
       "from": "module:server/castingV2/referenceLibrary.ts",
       "to": "module:server/castingV2/referenceCompleteness.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/referenceLibrary.ts",
+      "to": "module:server/castingV2/referenceSlots.ts",
       "kind": "imports"
     },
     {

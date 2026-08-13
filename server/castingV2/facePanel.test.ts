@@ -588,3 +588,57 @@ describe("a pair whose geometry is one instance", () => {
     expect(drawn.map((panelRow) => panelRow.name)).toContain("Her nose");
   });
 });
+
+/**
+ * A PER-EYE EDIT ON THE PANEL — fable-444 condition 1, decided rather than
+ * deferred: **the panel may never claim what the rows do not agree on.**
+ *
+ * Ruling C put the per-side memory in the library, which means the panel is
+ * where the founder finds out that only one of them is green. The split itself
+ * is the pair rule this file already owns (`pairHasDiverged`); what these cases
+ * pin is that a per-eye edit REACHES it — a state sentence claiming both eyes
+ * over one green eye is the confession-never-displayed class inverted, and the
+ * ruling forbade it from the start rather than after somebody read it.
+ */
+describe("one green eye is never spoken of as two", () => {
+  const scoped = [
+    row({ slot: "eye@left", noun: "left eye", words: ["green"], version: 2 }),
+    row({ slot: "eye@right", noun: "right eye", words: ["dark brown"], version: 1 }),
+  ];
+
+  it("splits into two rows, each saying what ITS OWN library row says", () => {
+    expect(named(scoped, "Her eyes")).toBeUndefined();
+    expect(named(scoped, "Her left eye")?.words).toEqual(["green"]);
+    expect(named(scoped, "Her right eye")?.words).toEqual(["dark brown"]);
+  });
+
+  it("draws a rectangle per row, so tapping one is a promise about those pixels", () => {
+    expect(named(scoped, "Her left eye")?.regions).toHaveLength(1);
+    expect(named(scoped, "Her right eye")?.regions).toHaveLength(1);
+  });
+
+  it("CONTROL — a whole-face edit is still ONE row about both of them", () => {
+    /* The discriminator: split on the pair rather than on divergence and this
+       goes red. She has one pair of eyes until an edit makes it two. */
+    const matched = [
+      row({ slot: "eye@left", noun: "left eye", words: ["green"], version: 2 }),
+      row({ slot: "eye@right", noun: "right eye", words: ["green"], version: 2 }),
+    ];
+
+    expect(named(matched, "Her eyes")?.words).toEqual(["green"]);
+    expect(named(matched, "Her left eye")).toBeUndefined();
+  });
+
+  it("re-merges when a later whole-face edit makes them match again", () => {
+    /* Nothing to clear, because there was never a flag: the row is derived from
+       the words every time (fable-167). */
+    const remerged = [
+      ...scoped,
+      row({ slot: "eye@left", noun: "left eye", words: ["hazel"], version: 3 }),
+      row({ slot: "eye@right", noun: "right eye", words: ["hazel"], version: 3 }),
+    ];
+
+    expect(named(remerged, "Her eyes")?.words).toEqual(["hazel"]);
+    expect(named(remerged, "Her left eye")).toBeUndefined();
+  });
+});

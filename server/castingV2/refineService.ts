@@ -153,12 +153,15 @@ import { mintReferencesForRender } from "./referenceMint";
 import type { DeliveryAdjudication } from "./deliveryCourt";
 import { mintedSlotsForRender } from "./mintedSlots";
 import {
-  deriveLibrary, libraryWithoutEditedCrops, liveReferences, supersededCarrySlots,
+  deriveLibrary, instanceLastWritten, libraryWithoutEditedCrops, liveReferences,
+  supersededCarrySlots,
 } from "./referenceLibrary";
 import { listLineageReferences, recordReferenceRows, retireReferenceSlot } from "../db/castingV2ReferenceLibrary";
 import type { RegionReader as MintRegionReader } from "./referenceCompleteness";
 import { assembleRecipe, type FeatureSlot } from "./recipeAssembler";
-import { slotDefinition } from "./referenceSlotCatalogue";
+import {
+  facetsOfSlot, slotDefinition, slotsForFacet, slotsForFeature, type SlotDefinition,
+} from "./referenceSlotCatalogue";
 import { repaint, type ReferenceFitter, type RepaintEngine, type SentRequest } from "./repaintRender";
 import { RepaintCannotSayError, repaintAsksFor, repaintCannotRemove } from "./repaintAsks";
 import { padToFrame, studioBackgroundOf, type StudioBackground } from "./referenceFit";
@@ -194,6 +197,7 @@ import {
   missingFacts,
   settleCarriedChecks,
   shortfalls,
+  scopedToInstance,
   verifyRender,
   type RenderVerdict,
 } from "./renderVerification";
@@ -2424,21 +2428,35 @@ export async function refineCandidate(
     const repaintEnabled = (dependencies.repaintEnabled ?? captureCastingRepaintEnabled)(
       input.userId,
     );
-    const repaintOnce = async () => {
-      /*
-        THE BRANCH'S ROWS ARE READ BEFORE THE ASKS ARE BUILT (fable-318 R2).
+    /*
+      THE BRANCH'S ROWS ARE READ BEFORE THE ASKS ARE BUILT (fable-318 R2).
 
-        They used to be read after, because the asks were a function of the step
-        alone. They are not: a slot whose newest crop the door refused has to be
-        re-said in WORDS by this render, and only these rows know which slots
-        those are. Read once and used twice — the same list derives the library
-        below, so the asks and the library cannot disagree about the face.
-      */
-      const branchRows = await listLineageReferences({
+      They used to be read after, because the asks were a function of the step
+      alone. They are not: a slot whose newest crop the door refused has to be
+      re-said in WORDS by this render, and only these rows know which slots
+      those are. Read once and used twice — the same list derives the library
+      below, so the asks and the library cannot disagree about the face.
+
+      **And now three times**, which is why it sits out here rather than inside
+      the render: the VERIFICATION reads it too, to know which one of a pair the
+      last edit of it touched (fable-444 condition 1). A second read would be a
+      second list of the same rows and law 4 says what happens to those — and
+      this one has to agree with the recipe exactly, because it decides what the
+      reader is asked about the picture the recipe produced.
+
+      Read once per RENDER rather than per attempt. The free retry re-enters the
+      paint, not this: nothing writes a library row between the two attempts —
+      the mint lands after the render is kept — so a per-attempt read could only
+      ever return the same rows more slowly.
+    */
+    const branchRows = repaintEnabled
+      ? await listLineageReferences({
         userId: input.userId,
         candidateId: variant.candidateId,
         anchorVariantId: variant.id,
-      });
+      })
+      : [];
+    const repaintOnce = async () => {
       const asks = editDelta
         ? repaintAsksFor({
           delta: editDelta,
@@ -3105,6 +3123,81 @@ export async function refineCandidate(
               && (!before.has(item.toLowerCase()) || carriedEvidence)),
         }));
       });
+    /*
+      AND THE QUESTION NARROWS WITH THE ASK (fable-444 condition 2).
+
+      A scoped render paints one instance and leaves the other exactly as the
+      master had it. Ask the WHOLE-FACE question of that frame — *"are her eyes
+      green"* — and the honest answer is no, because one of them is brown. On
+      `eye.colour` that answer is binding, so the net would dispute a delivery
+      the founder asked for and received, spend a free re-render, and then refund
+      him for getting what he paid for. A checker that cannot be right about a
+      correct render is worse than no checker: it spends the user's money to be
+      wrong, and it would have arrived the hour the panel sent its first scope.
+
+      THREE CONDITIONS, and the second is the one that keeps this honest:
+
+        the scope is set                 — every render before the client half
+                                           is untouched, which is all of them
+        the facet is WRITTEN BY THIS STEP — a carried eye colour from an earlier
+                                           whole-face edit is still a whole-face
+                                           fact and is still asked as one. The
+                                           scope describes THIS ask, not the
+                                           recipe
+        the facet lands in the SCOPED slot — read from the catalogue rather than
+                                           assumed from the feature name
+
+      A scope naming a slot there is only one of (`lips`) narrows nothing and is
+      left alone: the question was already about the only one she has, and a
+      side clause on it would be an instruction about a side that does not
+      exist.
+
+      # AND THE ASK ENDS BEFORE THE FACT DOES (fable-444 condition 1)
+
+      The scope describes THIS step. `facts` is built from the COMPOSED recipe,
+      so the eye colour a scoped step wrote is still in the list on every later
+      render — as a whole-face question, because the composed delta says "green
+      eyes" and ruling C is why it does. So the narrowing above would end with
+      the ask and the next unrelated edit would put the disputed question back,
+      and the one after that, for as long as the chain lives: **a per-eye edit
+      would brick the chain it belongs to**, each later edit costing a wait and
+      a refund and never the thing she came back for.
+
+      Ruling C says where to ask instead: the LIBRARY is the memory of per-side,
+      so the library is what says which one of a pair the last edit of it
+      touched (`instanceLastWritten`). One resolver answers both moments —
+      THIS ask's scope while it is being painted, the library's own rows on
+      every render after — because two of them would be two answers to "which
+      eye is this question about", and the second one would be discovered by a
+      customer.
+    */
+    const scopedSide = input.scope ? slotDefinition(input.scope) : null;
+    const inScope = new Set(scopedSide ? facetsOfSlot(scopedSide.slot) ?? [] : []);
+    /** The instance this fact is about, or null for the whole face. */
+    const sideOfFact = (fact: { facet: Facet }): SlotDefinition | null => {
+      if (scopedSide !== null && scopedSide.instance !== null
+        && writtenFacets.has(fact.facet) && inScope.has(fact.facet)) return scopedSide;
+      /* The library's answer, which needs no scope and outlives the ask.
+         `accessoryKind` is this step's own object, so a carried accessory's
+         slots resolve exactly as the mint resolved them. */
+      const slots = slotsForFacet(fact.facet, { accessoryKind: accessoryRegion });
+      const written = instanceLastWritten(branchRows, slots.map((it) => it.slot));
+      return written === null ? null : slots.find((it) => it.slot === written) ?? null;
+    };
+    for (let at = 0; at < facts.length; at += 1) {
+      const fact = facts[at]!;
+      const side = sideOfFact(fact);
+      if (side === null || side.instance === null) continue;
+      const sibling = (slotsForFeature(side.feature) ?? [])
+        .find((definition) => definition.slot !== side.slot);
+      facts[at] = scopedToInstance(fact, {
+        noun: side.noun,
+        /* Named from the catalogue, never composed here: "the other one" is
+           what a reader has to guess at, and a guess about which side is the
+           whole failure mode this clause exists to avoid. */
+        other: sibling?.noun ?? `other ${side.feature}`,
+      });
+    }
     /*
       AND THE PINNED PRESENTATION (D-186), which is the fourth symptom.
 

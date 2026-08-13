@@ -12,7 +12,8 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  deriveLibrary, libraryWithoutEditedCrops, liveReferences, type StoredReference,
+  deriveLibrary, instanceLastWritten, libraryWithoutEditedCrops, liveReferences,
+  type StoredReference,
 } from "./referenceLibrary";
 import { assembleRecipe } from "./recipeAssembler";
 
@@ -492,5 +493,67 @@ describe("a vacated slot", () => {
     expect(recipe.ok).toBe(true);
     if (!recipe.ok) return;
     expect(recipe.prompt).not.toContain("Keep her left earring exactly");
+  });
+});
+
+/**
+ * WHICH ONE OF A PAIR THE LAST EDIT TOUCHED (fable-444 condition 1).
+ *
+ * Ruling C put the per-side memory in these rows, so these rows are the only
+ * honest answer to "may a later render still ask whether her EYES are green".
+ * Every case below is a state a real chain produces, and each is driven with
+ * the case that would pass if the rule were missing.
+ */
+describe("which one of a pair the last edit wrote", () => {
+  const eyes = ["eye@left", "eye@right"];
+
+  it("names the side a scoped edit wrote, when the other side was never touched", () => {
+    const left = row({ slot: "eye@left", words: ["green"], version: 2 });
+
+    expect(instanceLastWritten([left], eyes)).toBe("eye@left");
+  });
+
+  it("names the side of the NEWEST divergence, not the first one", () => {
+    /* Scoped left green, then scoped right blue. The composed delta says blue,
+       and blue is a fact about her right eye alone. */
+    const left = row({ slot: "eye@left", words: ["green"], version: 2 });
+    const right = row({ slot: "eye@right", words: ["icy blue"], version: 3 });
+
+    expect(instanceLastWritten([left, right], eyes)).toBe("eye@right");
+  });
+
+  it("names NOBODY when the pair matches — a whole-face edit wrote both", () => {
+    const left = row({ slot: "eye@left", words: ["green"], version: 2 });
+    const right = row({ slot: "eye@right", words: ["green"], version: 2 });
+
+    expect(instanceLastWritten([left, right], eyes)).toBeNull();
+  });
+
+  it("names nobody when both sides diverge at the SAME version", () => {
+    /* One render that wrote both sides differently is still one render's
+       account of both sides, and the question it answers is whole-face. */
+    const left = row({ slot: "eye@left", words: ["green"], version: 2 });
+    const right = row({ slot: "eye@right", words: ["hazel"], version: 2 });
+
+    expect(instanceLastWritten([left, right], eyes)).toBeNull();
+  });
+
+  it("names nobody on a face the library has never written", () => {
+    expect(instanceLastWritten([], eyes)).toBeNull();
+  });
+
+  it("names nobody for a feature there is only one of", () => {
+    const lips = row({ slot: "lips", words: ["a fuller cupid's bow"], version: 2 });
+
+    expect(instanceLastWritten([lips], ["lips"])).toBeNull();
+  });
+
+  it("reads through the fold — a RETIRED newest row is not what the branch holds", () => {
+    /* The rule that makes this a library question rather than a max() over
+       rows: she took the left one back, so the pair matches again and nothing
+       may claim one side of it. */
+    const left = row({ slot: "eye@left", words: ["green"], version: 2, retiredAt: new Date() });
+
+    expect(instanceLastWritten([left], eyes)).toBeNull();
   });
 });

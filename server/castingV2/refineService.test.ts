@@ -2799,6 +2799,161 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
     expect(recipe).not.toContain("right eye");
   });
 
+  /*
+    THE CHECKER MUST NOT DISPUTE A DELIVERY IT MISREAD (fable-444 condition 2).
+
+    A scoped render paints one eye and leaves the other as the master had it.
+    The whole-face question over that frame — "are her eyes green" — is honestly
+    answered NO, and on `eye.colour` that answer is BINDING: the net would
+    dispute a delivery the founder asked for and received, spend a free
+    re-render, and then refund him for getting what he paid for.
+
+    Asserted on the LINES THE READER RECEIVES, because that is the wire — the
+    question is the whole subject here, and a constant near it would prove
+    nothing about what was asked.
+  */
+  const askedLines: string[] = [];
+  const watchingVerifier = {
+    id: "verifier",
+    complete: async (request: { system: string; user: string }) => {
+      if (request.system.includes("how they")) {
+        return { text: JSON.stringify({ hairWorn: "unclear" }), truncated: false, latencyMs: 1 };
+      }
+      askedLines.push(request.user);
+      return {
+        text: JSON.stringify({ results: [{ id: 1, present: true, saw: "one green iris" }] }),
+        truncated: false,
+        latencyMs: 1,
+      };
+    },
+  } as never;
+
+  it("asks the reader about ONE eye when the ask was scoped to one", async () => {
+    askedLines.length = 0;
+    await refineCandidate({ ...repainting, ...greenEyes, harvest: unmasked, verifier: watchingVerifier },
+      { ...input, scope: "eye@left" });
+
+    expect(askedLines).toHaveLength(1);
+    /* The side, in her own ontology, and the other one named rather than left
+       to be guessed at — a guess about which side is the whole failure mode. */
+    expect(askedLines[0]).toContain("HER LEFT EYE ONLY");
+    expect(askedLines[0]).toContain("her right eye was deliberately left as it was");
+  });
+
+  it("CONTROL — an unscoped ask still asks the whole-face question", async () => {
+    /* The inert half, and the discriminator: make the narrowing unconditional
+       and this goes red rather than the feature going quietly wrong. */
+    askedLines.length = 0;
+    await refineCandidate({ ...repainting, ...greenEyes, harvest: unmasked, verifier: watchingVerifier }, input);
+
+    expect(askedLines).toHaveLength(1);
+    expect(askedLines[0]).not.toContain("ONLY");
+  });
+
+  /*
+    AND THE NEXT RENDER MUST NOT DISPUTE IT EITHER (fable-444 condition 1, where
+    it costs money).
+
+    The narrowing above is keyed on THIS ask's scope, so it ends when the ask
+    does. `facts` is built from the COMPOSED delta — every named facet of the
+    whole recipe, not only the ones this step wrote — and the composed delta says
+    "green eyes" forever, because ruling C put the per-side memory in the library
+    and left the axis whole-face. `eye.colour` is a GUARANTEED axis, so its
+    carried fact is binding without needing a realization caption.
+
+    So on the very next unrelated edit the reader is asked *"are her eyes green"*
+    over a frame with one green eye and one brown one, answers no honestly, and a
+    binding miss refuses and refunds a render that delivered exactly what was
+    asked. Not once: every later edit on that face, for as long as the chain
+    lives. **A per-eye edit would brick the chain it belongs to.**
+
+    The library is the memory, so the library is the instrument: the newest live
+    row of a bilateral feature says which instance the last edit of it actually
+    touched, and a pair whose rows disagree may not be asked about as one thing.
+  */
+  it("keeps asking about ONE eye on the NEXT render, off the library rather than the ask", async () => {
+    askedLines.length = 0;
+    variantRows = [{
+      id: 500,
+      publicId: "variant-1",
+      imageKey: "casting-v2/variants/first.png",
+      instructions: ["make her eyes green"],
+      deltas: { eyeColour: "green" },
+      internalPrompt: {
+        prompt: "p",
+        resolved: {
+          sex: "female", ageBand: "30s", energy: "warm",
+          heritage: [{ heritage: "Nordic", pct: 100 }],
+          realized: { eyeColour: "green", eyeShape: null },
+        },
+      },
+    }];
+    candidateRow.selectedVariantPublicId = "variant-1";
+    /* What the scoped render left behind: one instance written at version 2,
+       the other never written at all. That is divergence, and it is the only
+       record of the side that survives the ask. */
+    lineageReferences = [carryRow({
+      id: 2, publicId: "ref-eye-left", slot: "eye@left", noun: "left eye",
+      words: ["green"], storageKey: null, maskKey: null, version: 2,
+    })];
+
+    await refineCandidate(
+      {
+        ...repainting,
+        harvest: unmasked,
+        verifier: watchingVerifier,
+        interpret: async () => ({ ok: true as const, delta: { hairColour: "copper" as const } }),
+      },
+      { ...input, instruction: "colour her hair copper" },
+    );
+
+    expect(askedLines).toHaveLength(1);
+    expect(askedLines[0]).toContain("HER LEFT EYE ONLY");
+  });
+
+  it("CONTROL — a MATCHED pair is still asked about as one thing", async () => {
+    /*
+      The discriminator, and the reason the instrument is the library rather
+      than "was anything ever scoped": a whole-face green edit files BOTH rows
+      at the same version, they agree, and the question stays whole-face. Make
+      the narrowing fire on any bilateral facet and this goes red.
+    */
+    askedLines.length = 0;
+    variantRows = [{
+      id: 500,
+      publicId: "variant-1",
+      imageKey: "casting-v2/variants/first.png",
+      instructions: ["make her eyes green"],
+      deltas: { eyeColour: "green" },
+      internalPrompt: {
+        prompt: "p",
+        resolved: {
+          sex: "female", ageBand: "30s", energy: "warm",
+          heritage: [{ heritage: "Nordic", pct: 100 }],
+          realized: { eyeColour: "green", eyeShape: null },
+        },
+      },
+    }];
+    candidateRow.selectedVariantPublicId = "variant-1";
+    lineageReferences = [
+      carryRow({ id: 2, publicId: "ref-eye-left", slot: "eye@left", noun: "left eye", words: ["green"], storageKey: null, maskKey: null, version: 2 }),
+      carryRow({ id: 3, publicId: "ref-eye-right", slot: "eye@right", noun: "right eye", words: ["green"], storageKey: null, maskKey: null, version: 2 }),
+    ];
+
+    await refineCandidate(
+      {
+        ...repainting,
+        harvest: unmasked,
+        verifier: watchingVerifier,
+        interpret: async () => ({ ok: true as const, delta: { hairColour: "copper" as const } }),
+      },
+      { ...input, instruction: "colour her hair copper" },
+    );
+
+    expect(askedLines).toHaveLength(1);
+    expect(askedLines[0]).not.toContain("ONLY");
+  });
+
   it("files the LIBRARY on one eye too, not just the painter — ruling C at the wire", async () => {
     /*
       fable-444 chose the reference over the axis: the delta goes on saying

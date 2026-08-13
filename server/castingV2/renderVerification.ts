@@ -185,6 +185,52 @@ export type FacetCheck = {
   absenceIsTheAsk?: boolean;
 };
 
+/**
+ * THE SAME FACT, ASKED ABOUT ONE SIDE — verification scoping with the ask
+ * (fable-444 condition 2).
+ *
+ * A scoped render paints one instance and leaves the other exactly as the
+ * master had it. Ask the whole-face question of that frame and the honest answer
+ * is NO — her eyes are not green, one of them is brown — and on a facet this
+ * program defines that answer is binding, so a delivery the founder asked for
+ * and received would be disputed, re-rendered at the house's expense, and then
+ * refunded. **A checker that cannot be right about a correct render is worse
+ * than no checker**, because it spends the user's money to be wrong.
+ *
+ * So the question narrows with the ask, and it narrows in three places at once,
+ * which is why this is a function rather than a string built at the call site:
+ *
+ *   the READER's line   names the side and says the other is not in question
+ *   the SHORTFALL       completes *"the render came back ___"* for a customer,
+ *                       who must not be told her whole recipe failed when one
+ *                       eye did — `without green` is a different receipt from
+ *                       `without her left eye green`
+ *   the KEY             `facet|asked` is what the re-read and the close reading
+ *                       match on, so the scoped line has to be the same string
+ *                       in every reading or D-194's majority silently degrades
+ *                       to a single sample
+ *
+ * It does NOT touch `binding`. A scoped fact is exactly as refusable as the
+ * whole-face one it replaces — the point is that the question is now answerable,
+ * not that the answer stops counting.
+ */
+export function scopedToInstance(
+  fact: VerifiableFact,
+  side: {
+    /** The stylist's word for the instance, bare: `left eye`, `right earring`. */
+    noun: string;
+    /** And the one the reader must ignore, named so it cannot be guessed at. */
+    other: string;
+  },
+): VerifiableFact {
+  return {
+    ...fact,
+    asked: `${fact.asked} — HER ${side.noun.toUpperCase()} ONLY. Judge only her ${side.noun}; `
+      + `her ${side.other} was deliberately left as it was and is not part of this question.`,
+    shortfall: fact.shortfall ?? `without her ${side.noun} ${fact.asked}`,
+  };
+}
+
 /** A real miss: read, not verified, and the picture could have answered. */
 export function isMiss(check: FacetCheck): boolean {
   return check.read && !check.verified && check.occluded !== true;
@@ -239,6 +285,27 @@ const SYSTEM_PROMPT = [
   "A PAIR MEANS BOTH SIDES. 'Earrings' is two earrings, one on each ear — a single earring",
   "with the other ear BARE and VISIBLE is NOT present, however good the one is. Say so, and",
   "name which ear is empty.",
+  "",
+  /*
+    UNLESS THE LINE ITSELF NAMES ONE SIDE (fable-444 condition 2).
+
+    It sits directly under the pair rule because it is the one exception to it,
+    and an exception written three paragraphs away from its rule is an exception
+    a reader weighs against the rule rather than inside it.
+
+    The founder asked to edit one eye; the court proved the engine can
+    (opus-342). A reader still asked the whole-face question over that frame
+    would honestly answer that her eyes are not green — one of them is not — and
+    that answer is `binding` on `eye.colour`, so it would refuse and refund a
+    render that delivered exactly what she paid for. The R1 family must not fire
+    on an ask it misread.
+  */
+  "A LINE MAY NAME ONE SIDE, AND THEN IT IS THE ONLY SIDE. When a line says 'her left eye",
+  "only' or 'her right earring only', judge THAT side and ignore the other completely. The",
+  "other side was deliberately left as it was, and the two being different is what was asked",
+  "for rather than a fault — so never answer that such a line is not present because the",
+  "sides do not match. Her left is on YOUR RIGHT as you look at the photograph, and her",
+  "right is on your left. If the named side is hidden, that is the occluded answer above.",
   "",
   'If the second side is HIDDEN — behind hair, turned away, out of frame — answer',
   '{"present":true,"occluded":true} and say in `saw` which side you cannot see. That is not',
