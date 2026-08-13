@@ -401,16 +401,43 @@ function describe(entry: LibraryEntry): string {
  * Removal strikes; a delta appends. Both leave one ordered list, and that list
  * is the whole instruction for the feature — the anchor supplies the pixels it
  * started from and nothing else does.
+ *
+ * # THE ASK SUPERSEDES THE VACANCY (fable-401, and the founder found it live)
+ *
+ * A vacancy's words are an absence — *"no glasses — her face uncovered, no
+ * frames, no lenses…"* — filed so that every LATER render re-says it and the
+ * master does not paint her glasses back on. That rule is right for every slot
+ * this render is not touching, and exactly wrong for the one it is: an ask that
+ * puts the thing BACK is the newest answer about that slot, so appending it to
+ * the absence dispatched both instructions in one clause —
+ *
+ *   "Change only the glasses: no glasses — her face uncovered, …, glasses."
+ *
+ * — which is what the founder paid 25 credits for twice on production v#182.
+ * The painter obeyed the vacate, the verifier honestly saw no glasses, and the
+ * render refused into the refund. **A user could not reverse a removal**, and
+ * removal-and-reversal is one promise, not two.
+ *
+ * So the absence stands down for its own slot the same way an edited slot's
+ * carry crop already does, and for the same reason: never send a reference — in
+ * pixels OR in words — that contradicts the stated ask (fable-318 R2). It
+ * stands down only when the ask actually SAYS something; a bare strike against
+ * a vacancy still meets `removeNotInStack`, which is the honest answer to
+ * taking off what is already off.
+ *
+ * The landing half needs nothing: `deriveLibrary` gives `state` to the newest
+ * row, so the re-add's own reference wins the slot back the moment it mints.
  */
 function stackFor(entry: LibraryEntry | undefined, ask: Ask): readonly string[] | { missing: string } {
-  const existing = entry?.words ?? [];
+  const asked = ask.words !== undefined && ask.words.trim() !== "";
+  const existing = entry?.vacant === true && asked ? [] : entry?.words ?? [];
   let survived = [...existing];
   for (const strike of ask.remove ?? []) {
     const at = survived.indexOf(strike);
     if (at === -1) return { missing: strike };
     survived.splice(at, 1);
   }
-  if (ask.words !== undefined && ask.words.trim() !== "") survived.push(ask.words.trim());
+  if (asked) survived.push(ask.words!.trim());
   return survived;
 }
 

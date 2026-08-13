@@ -773,6 +773,116 @@ describe("a slot declared vacant", () => {
 });
 
 /**
+ * PUTTING IT BACK ON (fable-401) — the founder's own production failure, driven
+ * at the assembler with the string that was actually dispatched.
+ *
+ * He removed her glasses, then asked for glasses again. Production v#182
+ * (2026-08-13T09:03Z) sent this, verbatim, off the row's own `recipe.prompt`:
+ *
+ *   "Change only the glasses: no glasses — her face uncovered, no frames, no
+ *    lenses and no rim shadow on her cheeks or brows, glasses."
+ *
+ * Two instructions about one feature, at war in one clause. The painter obeyed
+ * the vacate twice, the verifier honestly saw no glasses, and 25 credits went
+ * back — twice. The absence must stand down for the slot the ask re-fills, and
+ * must keep standing for every slot the ask does not touch. Both halves below;
+ * neither is a finding without the other.
+ */
+describe("an ask supersedes the vacancy it re-fills", () => {
+  /* The production phrase, character for character (`accessoryKinds`'s
+     `vacantPhrase` for the glasses kind) — a shortened paraphrase would let a
+     substring assertion pass against a prompt that still says the real one. */
+  const GONE_VERBATIM =
+    "no glasses — her face uncovered, no frames, no lenses and no rim shadow on her cheeks or brows";
+  const vacantGlasses: LibraryEntry = {
+    slot: "glasses", tier: "item", noun: "glasses", vacant: true, words: [GONE_VERBATIM],
+  };
+  const hair: LibraryEntry = {
+    slot: "hair", tier: "anatomy", noun: "hair",
+    words: ["Dark brown, near-black hair, straight and center-parted"],
+    carry: { key: "casting-v2/library/hair.png" },
+  };
+
+  it("REPRODUCES THE DEFECT'S INPUT and no longer says the absence", () => {
+    const recipe = assembleRecipe({
+      master: MASTER, pronouns: SHE, library: [vacantGlasses, hair],
+      asks: [{ slot: "glasses", noun: "glasses", words: "glasses" }],
+    });
+
+    expect(recipe.ok).toBe(true);
+    if (!recipe.ok) return;
+    /* Asserted on the OUTGOING prompt — the wire is where the contradiction
+       was, so the wire is where it has to be gone from. */
+    expect(recipe.prompt).not.toContain(GONE_VERBATIM);
+    expect(recipe.prompt).not.toContain("no glasses");
+    expect(recipe.ask).toBe("Change only the glasses: glasses.");
+    /* And the record agrees with the wire: the stack is the new answer alone. */
+    expect(recipe.wordStacks.get("glasses")).toEqual(["glasses"]);
+    expect(recipe.edited).toEqual(["glasses"]);
+    expect(recipe.vacated).toEqual([]);
+  });
+
+  it("CONTROL — the same library and an UNRELATED ask still says the absence", () => {
+    /*
+      The half that must not break. A removal governs every later render on the
+      branch: the master wears her glasses forever, so a recipe about her hair
+      that goes quiet about them paints them back on (the one-frame removal,
+      proved with pictures before the vacancy row existed). The stand-down is
+      for the re-filled slot ONLY.
+    */
+    const recipe = assembleRecipe({
+      master: MASTER, pronouns: SHE, library: [vacantGlasses, hair, lips()],
+      /* An ask on a slot whose crop is NOT in this fixture: editing `hair`
+         here would refuse with `carriesItsOwnEdit`, because a feature's own
+         crop never rides its own edit and this fixture hands hair one. The
+         production caller strips it (`libraryWithoutEditedCrops`); the point
+         of this control is the vacancy, so it edits somewhere else and lets
+         the hair carry as it does on a real unrelated render. */
+      asks: [{ slot: "lips", noun: "lips", words: "noticeably fuller" }],
+    });
+
+    expect(recipe.ok).toBe(true);
+    if (!recipe.ok) return;
+    expect(recipe.prompt).toContain(GONE_VERBATIM);
+    expect(recipe.standing.map((said) => said.slot)).toContain("glasses");
+  });
+
+  it("CONTROL — a NON-vacant slot's words still accumulate, so nothing else was loosened", () => {
+    /* D-244 line 2: the stack is the whole state and a delta appends to it. The
+       stand-down keys on `vacant`, and this proves it keys on nothing wider —
+       an ordinary second ask on a described slot keeps what came before. */
+    const recipe = assembleRecipe({
+      master: MASTER, pronouns: SHE, library: [lips()],
+      asks: [{ slot: "lips", noun: "lips", words: "noticeably fuller" }],
+    });
+
+    expect(recipe.ok).toBe(true);
+    if (!recipe.ok) return;
+    expect(recipe.wordStacks.get("lips")).toEqual(["a soft nude lip gloss", "noticeably fuller"]);
+  });
+
+  it("CONTROL — a bare STRIKE against a vacancy still refuses, so the door is narrow", () => {
+    /*
+      The stand-down arms only when the ask SAYS something, and this drives the
+      other branch of that condition: with no words the vacancy's own words are
+      still the stack, so the strike lands on them and empties it. A slot that
+      would regenerate from the master with nothing said is a revert wearing an
+      edit's clothes — `emptyWordStack`, the refusal that was already there.
+      Either way it refuses; what matters is that the stand-down did not quietly
+      turn "take off what is already off" into a legal render.
+    */
+    const refusal = assembleRecipe({
+      master: MASTER, pronouns: SHE, library: [vacantGlasses],
+      asks: [{ slot: "glasses", noun: "glasses", remove: [GONE_VERBATIM] }],
+    });
+
+    expect(refusal.ok).toBe(false);
+    if (refusal.ok) return;
+    expect(refusal.reason).toBe("emptyWordStack");
+  });
+});
+
+/**
  * A PAIR THAT IS WHOLLY EMPTY SPEAKS AS A PAIR (fable-332).
  *
  * The library is keyed per side, so "take her earrings off" leaves two
