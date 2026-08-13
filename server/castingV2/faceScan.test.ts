@@ -95,7 +95,7 @@ describe("what the scan asks is derived from the catalogue", () => {
 
 describe("the scan files only what it measured", () => {
   it("gives each side of a pair its OWN box", async () => {
-    const scan = await scanFace({ frame: FRAME, reader: reader({}) });
+    const scan = await scanFace({ frame: FRAME, reader: reader({}), describe: null });
 
     expect(scan.boxes.get("eye@left")).toMatchObject({ x: 100, width: 20 });
     expect(scan.boxes.get("eye@right")).toMatchObject({ x: 700, width: 20 });
@@ -105,7 +105,7 @@ describe("the scan files only what it measured", () => {
   });
 
   it("carries the frame with every box, because a box without one is a rectangle in an unknown space", async () => {
-    const scan = await scanFace({ frame: FRAME, reader: reader({}) });
+    const scan = await scanFace({ frame: FRAME, reader: reader({}), describe: null });
     for (const box of scan.boxes.values()) {
       expect(box.frame).toEqual({ width: 1000, height: 1500 });
     }
@@ -113,6 +113,7 @@ describe("the scan files only what it measured", () => {
 
   it("FILES NOTHING for a region that answered nothing — an ear nobody can see is not an ear wearing nothing", async () => {
     const scan = await scanFace({
+      describe: null,
       frame: FRAME,
       reader: reader({ region: (name) => (name === "facial hair" ? EMPTY : maskOf({ x: 5, y: 5, width: 5, height: 5 })) }),
     });
@@ -126,6 +127,7 @@ describe("the scan files only what it measured", () => {
 
   it("turns a FAILED READING into no box, never into a fact", async () => {
     const scan = await scanFace({
+      describe: null,
       frame: FRAME,
       reader: reader({
         region: (name) => {
@@ -149,7 +151,7 @@ describe("the scan files only what it measured", () => {
     /* `regionSides` returning null is the reader saying this name has no sides
        for it — a capability answer. Falling back to the whole-frame question
        would light both instances off one rectangle covering both. */
-    const scan = await scanFace({ frame: FRAME, reader: reader({ sides: () => null }) });
+    const scan = await scanFace({ frame: FRAME, reader: reader({ sides: () => null }), describe: null });
 
     expect(scan.boxes.has("eye@left")).toBe(false);
     expect(scan.boxes.has("eye@right")).toBe(false);
@@ -162,13 +164,13 @@ describe("the scan files only what it measured", () => {
 
   it("passes the frame's address through so twelve questions do not carry twelve copies", async () => {
     const withUrl = reader({});
-    await scanFace({ frame: { ...FRAME, url: "https://pub-test.r2.dev/master.png" }, reader: withUrl });
+    await scanFace({ frame: { ...FRAME, url: "https://pub-test.r2.dev/master.png" }, reader: withUrl, describe: null });
     expect(withUrl.urls.every((url) => url === "https://pub-test.r2.dev/master.png")).toBe(true);
 
     /* And it is genuinely optional — a frame with no address is read exactly as
        before. */
     const without = reader({});
-    await scanFace({ frame: FRAME, reader: without });
+    await scanFace({ frame: FRAME, reader: without, describe: null });
     expect(without.urls.every((url) => url === undefined)).toBe(true);
   });
 
@@ -211,7 +213,7 @@ describe("it asks them all at once", () => {
       landmark: (async () => null) as never,
     } as never;
 
-    await scanFace({ frame: FRAME, reader: slow });
+    await scanFace({ frame: FRAME, reader: slow, describe: null });
     /* Serially this is the difference between a panel that fills while she is
        looking at the face and one that arrives after she stopped waiting. */
     expect(peak).toBeGreaterThan(1);
@@ -227,6 +229,7 @@ describe("the shape is kept beside the rectangle (fable-374)", () => {
       to put it. They are one answer and they travel together.
     */
     const scan = await scanFace({
+      describe: null,
       frame: FRAME,
       reader: reader({ region: (name) => (name === "facial hair" ? EMPTY : maskOf({ x: 5, y: 5, width: 5, height: 5 })) }),
     });
@@ -236,7 +239,7 @@ describe("the shape is kept beside the rectangle (fable-374)", () => {
   });
 
   it("keeps each side's OWN shape, never the pair's", async () => {
-    const scan = await scanFace({ frame: FRAME, reader: reader({}) });
+    const scan = await scanFace({ frame: FRAME, reader: reader({}), describe: null });
     const left = scan.masks.get("eye@left");
     const right = scan.masks.get("eye@right");
     expect(left).toBeDefined();
@@ -248,7 +251,7 @@ describe("the shape is kept beside the rectangle (fable-374)", () => {
 
   it("does not re-read the segmenter to get the shape it already had", async () => {
     const counting = reader({});
-    await scanFace({ frame: FRAME, reader: counting });
+    await scanFace({ frame: FRAME, reader: counting, describe: null });
     /* The box is DERIVED from the mask, so keeping the mask costs nothing. One
        question per region, and paying twice for one answer would also invite
        two different ones. */

@@ -45,7 +45,9 @@
  */
 import { createModuleLogger } from "../logging/logger";
 import { storagePublicUrl, storageReadBytes } from "../storage";
+import { describeFace, type FaceDescriptions } from "./faceDescribe";
 import { scanFace, scanPlan, type FaceScan } from "./faceScan";
+import { interpreterEngine } from "./interpreter";
 import { createFalRegionReader } from "./falRegionReader";
 import type { PanelBox, PanelScan } from "./facePanel";
 import type { Mask } from "./maskedComposite";
@@ -75,6 +77,13 @@ export type ScannedFace = {
   /** The frame every row draws from — the picture the viewer already has. */
   frameUrl: string;
   slots: ReadonlyMap<FeatureSlot, { box: PanelBox; maskUrl: string }>;
+  /**
+   * The rows that can only be described — build and skin, one line each.
+   *
+   * A map of the same shape as `slots` because the panel merges them the same
+   * way: the library wins where it has anything, and this fills the rest.
+   */
+  words: ReadonlyMap<FeatureSlot, readonly string[]>;
   /** What was asked and what came back, so a thin scan is legible. */
   asked: number;
   found: number;
@@ -200,9 +209,13 @@ async function displayOf(scan: FaceScan, frameUrl: string): Promise<ScannedFace>
     stencilBytes += stencil.length;
     slots.set(slot, { box, maskUrl: `data:image/png;base64,${stencil.toString("base64")}` });
   }
+  const words = new Map<FeatureSlot, readonly string[]>();
+  for (const [slot, line] of Array.from(scan.descriptions.entries())) words.set(slot, [line]);
+
   return {
     frameUrl,
     slots,
+    words,
     asked: scan.asked,
     found: slots.size,
     empty: scan.empty,
@@ -212,6 +225,16 @@ async function displayOf(scan: FaceScan, frameUrl: string): Promise<ScannedFace>
   };
 }
 
+/**
+ * The live words reader, or nothing.
+ *
+ * Built here beside the region reader for the same reason it is: this module
+ * decides what a real scan uses, and `scanFace` takes what it is given.
+ */
+function defaultDescriber(): ((input: { bytes: Buffer; contentType: string }) => Promise<FaceDescriptions>) | null {
+  return interpreterEngine() === null ? null : describeFace;
+}
+
 function defaultRegionReader(): RegionReader | null {
   const apiKey = process.env.FAL_KEY;
   return apiKey ? createFalRegionReader({ apiKey }) : null;
@@ -219,6 +242,7 @@ function defaultRegionReader(): RegionReader | null {
 
 export type FaceScanDependencies = {
   reader?: RegionReader | null;
+  describe?: ((input: { bytes: Buffer; contentType: string }) => Promise<FaceDescriptions>) | null;
   readBytes?: typeof storageReadBytes;
   publicUrl?: (key: string) => string;
 };
@@ -276,6 +300,10 @@ export async function scannedFace(input: {
     const scan = await scanFace({
       frame: { bytes: frame.bytes, width: metadata.width, height: metadata.height, url },
       reader,
+      contentType: frame.contentType,
+      describe: input.dependencies?.describe === undefined
+        ? defaultDescriber()
+        : input.dependencies.describe,
     });
     return await displayOf(scan, url);
   })();
@@ -291,6 +319,10 @@ export async function scannedFace(input: {
           empty: value.empty.length,
           failed: value.failed.length,
           stencilBytes: value.stencilBytes,
+          /* Counted beside the boxes: a panel with every cutout and no
+             descriptions is a different failure from one with neither, and the
+             founder's complaint was about the rows that have no cutout. */
+          described: value.words.size,
           /* WHICH SIDES, per bilateral feature — the field the eyes court
              needed and did not have. */
           sides: value.sides,
@@ -340,9 +372,9 @@ export function scannedFaceIfReady(input: {
   return held?.settled ?? null;
 }
 
-/** The panel's view of a scan — boxes and stencils, nothing else. */
+/** The panel's view of a scan — boxes, stencils and the two described rows. */
 export function panelScanOf(scan: ScannedFace): PanelScan {
-  return { frameUrl: scan.frameUrl, slots: scan.slots };
+  return { frameUrl: scan.frameUrl, slots: scan.slots, words: scan.words };
 }
 
 /** For tests and for the reliability report. */

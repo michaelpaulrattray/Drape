@@ -107,6 +107,16 @@ export type PanelBox = {
 export type PanelScan = {
   frameUrl: string;
   slots: ReadonlyMap<FeatureSlot, { box: PanelBox; maskUrl: string }>;
+  /**
+   * WHAT THE SCAN COULD ONLY SAY — one line for a row that can never be
+   * pictured (fable-388 §1, fable-389 §1).
+   *
+   * A separate channel from `slots` because it answers a different question:
+   * `slots` is geometry, and these two rows have no geometry by the catalogue's
+   * own ruling. It is DISPLAY — a description read off the frame is not a
+   * library row, so it is never carried into a recipe or checked in a render.
+   */
+  words?: ReadonlyMap<FeatureSlot, readonly string[]>;
 };
 
 /**
@@ -295,10 +305,23 @@ export function facePanel(input: {
       { contentUrl: input.contentUrl, maskUrl: input.maskUrl },
       input.pronouns,
     );
-    const found = scan?.slots.get(slot);
-    if (!scan || !found) return held;
+    if (!scan) return held;
+    const found = scan.slots.get(slot);
+    /*
+      WORDS MERGE THE SAME WAY THE PICTURES DO: whatever the library holds wins
+      whole, and the scan fills a row that has nothing. It is never blended —
+      a described line under a sentence the customer's own edit filed would be
+      the reader arguing with her purchase.
+
+      `from` stays null for a described row, deliberately. "She came with it"
+      and "from an edit" are facts about a library row's provenance, and a
+      description is neither: it is what this photograph shows.
+    */
+    const described = held.words.length === 0 ? scan.words?.get(slot) ?? [] : held.words;
+    if (!found) return described === held.words ? held : { ...held, words: described };
     return {
       ...held,
+      words: described,
       thumb: held.thumb ?? { contentUrl: scan.frameUrl, maskUrl: found.maskUrl, crop: found.box },
       box: held.box ?? found.box,
     };

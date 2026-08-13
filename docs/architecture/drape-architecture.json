@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "92033d1705e5a873"
+    "sourceFingerprint": "95b197be9a169eef"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 100
+      "moduleCount": 101
     },
     {
       "id": "domain:castingV2",
@@ -3365,6 +3365,12 @@
     {
       "id": "module:server/castingV2/eyeShapeRouting.ts",
       "path": "server/castingV2/eyeShapeRouting.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/faceDescribe.ts",
+      "path": "server/castingV2/faceDescribe.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -8707,6 +8713,10 @@
     {
       "id": "test:server/castingV2/eyeShapeRouting.test.ts",
       "path": "server/castingV2/eyeShapeRouting.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/faceDescribe.test.ts",
+      "path": "server/castingV2/faceDescribe.test.ts"
     },
     {
       "id": "test:server/castingV2/facePanel.test.ts",
@@ -17956,6 +17966,26 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/castingV2/faceDescribe.ts",
+      "to": "module:server/castingV2/interpreter.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/faceDescribe.ts",
+      "to": "module:server/castingV2/referenceSlotCatalogue.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/faceDescribe.ts",
+      "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/faceDescribe.ts",
+      "to": "module:server/providers/types.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/castingV2/facePanel.ts",
       "to": "module:server/castingV2/castPronouns.ts",
       "kind": "imports"
@@ -17983,6 +18013,11 @@
     {
       "from": "module:server/castingV2/faceScan.ts",
       "to": "module:server/castingV2/bornWornDetector.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/faceScan.ts",
+      "to": "module:server/castingV2/faceDescribe.ts",
       "kind": "imports"
     },
     {
@@ -18017,6 +18052,11 @@
     },
     {
       "from": "module:server/castingV2/faceScanService.ts",
+      "to": "module:server/castingV2/faceDescribe.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/faceScanService.ts",
       "to": "module:server/castingV2/facePanel.ts",
       "kind": "imports"
     },
@@ -18028,6 +18068,11 @@
     {
       "from": "module:server/castingV2/faceScanService.ts",
       "to": "module:server/castingV2/falRegionReader.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/faceScanService.ts",
+      "to": "module:server/castingV2/interpreter.ts",
       "kind": "imports"
     },
     {

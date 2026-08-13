@@ -50,6 +50,12 @@
  * for, so it degrades to today's panel rather than to an error.
  */
 import { armedBornWornClasses } from "./bornWornDetector";
+import {
+  assertEveryDescribedFeatureHasAnAsk,
+  DESCRIBED_ASKS,
+  describedFeatures,
+  type FaceDescriptions,
+} from "./faceDescribe";
 import { createModuleLogger } from "../logging/logger";
 import type { Mask } from "./maskedComposite";
 import type { RegionReader } from "./maskedRefine";
@@ -91,6 +97,16 @@ export type FaceScan = {
    *  broken reader, and only this tells them apart. */
   asked: number;
   found: number;
+  /**
+   * WHAT THE FRAME CAN ONLY BE DESCRIBED AS — the two rows a segmenter is
+   * forbidden to picture (fable-388 §1, fable-389 §1).
+   *
+   * A slot with no question has no box and no mask, so on a face nobody has
+   * edited its row has nothing at all and does not draw. These are words, from
+   * one read of the same frame, and they are DISPLAY: they are not library rows,
+   * so nothing carries them into a recipe or checks them in a render.
+   */
+  descriptions: ReadonlyMap<FeatureSlot, string>;
   /** Regions that were asked and answered nothing, by question. */
   empty: readonly string[];
   /** Regions whose READING failed, by question, with the reason. */
@@ -127,6 +143,30 @@ export function scanPlan(): { feature: string; question: string; slots: SlotDefi
   return Array.from(byFeature.values());
 }
 
+/**
+ * The slots that can only ever hold words, with the ask that fills them.
+ *
+ * Derived from the catalogue the same way `scanPlan` is, and checked: a row
+ * that draws itself, has no question, and has no description ask either would
+ * be permanently empty — the founder's own complaint, arriving again in a new
+ * row. It refuses rather than shipping that.
+ */
+export function wordsPlan(): { feature: string; slots: SlotDefinition[] }[] {
+  assertEveryDescribedFeatureHasAnAsk();
+  /* Only the features that actually have an ask: `describedFeatures()` is the
+     whole derived set, and a declared exception (NOT_DESCRIBED) would otherwise
+     be counted as describable in the log and read as a reader that failed. */
+  const features = new Set(describedFeatures().filter((feature) => feature in DESCRIBED_ASKS));
+  const byFeature = new Map<string, { feature: string; slots: SlotDefinition[] }>();
+  for (const definition of catalogueSlots()) {
+    if (!features.has(definition.feature)) continue;
+    const held = byFeature.get(definition.feature);
+    if (held) held.slots.push(definition);
+    else byFeature.set(definition.feature, { feature: definition.feature, slots: [definition] });
+  }
+  return Array.from(byFeature.values());
+}
+
 function boxIn(mask: Mask, frame: { width: number; height: number }): ScanBox | null {
   const bounds = boundsOf(mask);
   if (bounds === null) return null;
@@ -144,13 +184,41 @@ function boxIn(mask: Mask, frame: { width: number; height: number }): ScanBox | 
 export async function scanFace(input: {
   frame: { bytes: Buffer; width: number; height: number; url?: string | null };
   reader: RegionReader;
+  /**
+   * The words reader — REQUIRED, and `null` is a real answer.
+   *
+   * Not defaulted to the live one on purpose. A default here made every unit
+   * suite that scans a frame reach the paid transport the moment a key was in
+   * the environment: `vitest.setup.ts` strips `DATABASE_URL` and nothing else,
+   * so the guard that keeps tests off the database does not keep them off this.
+   * A caller that wants no descriptions says so.
+   */
+  describe: ((input: { bytes: Buffer; contentType: string }) => Promise<FaceDescriptions>) | null;
+  contentType?: string;
 }): Promise<FaceScan> {
   const frame = { width: input.frame.width, height: input.frame.height };
   const boxes = new Map<FeatureSlot, ScanBox>();
   const masks = new Map<FeatureSlot, Mask>();
   const empty: string[] = [];
   const failed: { question: string; why: string }[] = [];
+  const descriptions = new Map<FeatureSlot, string>();
   const plan = scanPlan();
+
+  /*
+    THE WORDS READ RIDES ALONGSIDE, not after: it is one more independent
+    question about the same photograph, and serially it would add its own
+    seconds to a panel somebody is watching fill.
+  */
+  const describer = input.describe;
+  const words = describer === null
+    ? Promise.resolve<FaceDescriptions>({ build: null, skin: null })
+    : describer({ bytes: input.frame.bytes, contentType: input.contentType ?? "image/png" })
+      .catch((error) => {
+        /* Same rule as a failed region: a courtesy read that fails costs the
+           user nothing and leaves the row exactly as it is today. */
+        failed.push({ question: "descriptions", why: error instanceof Error ? error.message : String(error) });
+        return { build: null, skin: null } as FaceDescriptions;
+      });
 
   /*
     IN PARALLEL, because they are independent questions about one picture and
@@ -222,9 +290,27 @@ export async function scanFace(input: {
     }
   }));
 
+  const described = await words;
+  for (const entry of wordsPlan()) {
+    const line = described[entry.feature as keyof FaceDescriptions];
+    if (!line) continue;
+    /* Every slot of the feature, so a folded pair would inherit it — there are
+       none today and the loop is the same shape the boxes take. */
+    for (const definition of entry.slots) descriptions.set(definition.slot, line);
+  }
+
   log.info(
-    { asked: plan.length, found: boxes.size, empty: empty.length, failed: failed.length },
+    {
+      asked: plan.length,
+      found: boxes.size,
+      empty: empty.length,
+      failed: failed.length,
+      /* The words are counted separately: a scan with every box and no
+         description is a different failure from a scan with neither. */
+      described: descriptions.size,
+      describable: wordsPlan().length,
+    },
     "[faceScan] read a face",
   );
-  return { boxes, masks, asked: plan.length, found: boxes.size, empty, failed };
+  return { boxes, masks, descriptions, asked: plan.length, found: boxes.size, empty, failed };
 }
