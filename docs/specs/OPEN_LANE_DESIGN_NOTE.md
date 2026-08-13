@@ -80,6 +80,15 @@ facets          24      in FACET_SLOTS and in ZONE_SCOPE alike
 silence.** That is the size of "add a kind", and it is the number any estimate
 of this build has to start from.
 
+> **Corrected by the build, 2026-08-13 (shift 73, step 2).** Eleven was a hand
+> count and it was already low: `SUBJECT_NOUNS` landed the same day, and the
+> list above omits every table that decides by OMISSION. Counted by scanning the
+> source for declarations keyed on the closed vocabulary — **eighteen**, plus
+> `FREE_SUBJECTS` itself. The answers, with the derivation or the reason for
+> each, are in `server/castingV2/openKindPolicy.ts`, and its completeness is
+> checked against the source on every run rather than against a list somebody
+> keeps — which is this paragraph's own moral.
+
 ### The precedent is in the codebase, with its cost already measured
 
 `subjectQualifiers.ts` exists because exactly this happened once. `qualifierFor`

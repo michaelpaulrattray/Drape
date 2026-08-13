@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "e27286176263a99f"
+    "sourceFingerprint": "92033d1705e5a873"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 99
+      "moduleCount": 100
     },
     {
       "id": "domain:castingV2",
@@ -3473,6 +3473,12 @@
     {
       "id": "module:server/castingV2/mintedSlots.ts",
       "path": "server/castingV2/mintedSlots.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/openKindPolicy.ts",
+      "path": "server/castingV2/openKindPolicy.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -8781,6 +8787,10 @@
     {
       "id": "test:server/castingV2/onImageGeometryMonochrome.test.ts",
       "path": "server/castingV2/onImageGeometryMonochrome.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/openKindPolicy.test.ts",
+      "path": "server/castingV2/openKindPolicy.test.ts"
     },
     {
       "id": "test:server/castingV2/openLaneKind.test.ts",
@@ -18258,6 +18268,26 @@
     {
       "from": "module:server/castingV2/mintedSlots.ts",
       "to": "module:server/castingV2/refineFacets.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/openKindPolicy.ts",
+      "to": "module:server/castingV2/changeAmplitude.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/openKindPolicy.ts",
+      "to": "module:server/castingV2/mintedSlots.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/openKindPolicy.ts",
+      "to": "module:server/castingV2/subjectQualifiers.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/openKindPolicy.ts",
+      "to": "module:server/castingV2/zoneScope.ts",
       "kind": "imports"
     },
     {
