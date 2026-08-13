@@ -143,7 +143,32 @@ export type PanelCutout = { contentUrl: string; maskUrl: string; crop: PanelBox 
  * says which eye it is, because clicking a rectangle is a promise about those
  * pixels (fable-378 (c)).
  */
-export type PanelRegion = { box: PanelBox; name: string | null };
+export type PanelRegion = {
+  box: PanelBox;
+  name: string | null;
+  /**
+   * THE ONE INSTANCE THESE PIXELS ARE (fable-444, ruling C).
+   *
+   * The ROW's `slots` is what an edit to the row means — both eyes, because
+   * that is what "her eyes" means to a stylist. This is what the RECTANGLE is,
+   * and on a pair the two are deliberately different: clicking her left eye is
+   * a sentence about her left eye, and the ask goes out scoped to it.
+   *
+   * Always present, never derived from the region's ORDER: the regions are
+   * sorted as the photograph reads them (left to right), which is the opposite
+   * of the side words on a mirrored frame — an index into a sorted list is
+   * exactly the guess this program has already paid for once.
+   */
+  slot: FeatureSlot;
+  /**
+   * The opening of their sentence for THIS rectangle, when it differs from the
+   * row's — non-null exactly when {@link PanelRegion.name} is, and for the same
+   * reason. Written here rather than composed in the browser from the name: how
+   * a prefill reads is one decision, and a second copy of it in the client is
+   * the mirror working law 4 is about.
+   */
+  prefill: string | null;
+};
 
 export type PanelRow = {
   /**
@@ -412,7 +437,7 @@ export function facePanel(input: {
         cutouts: state.thumb ? [state.thumb] : [],
         /* The row is one thing and the rectangle covers it, so it needs no name
            of its own — the row's is the label. */
-        regions: state.box ? [{ box: state.box, name: null }] : [],
+        regions: state.box ? [{ box: state.box, name: null, prefill: null, slot: definition.slot }] : [],
       });
       continue;
     }
@@ -487,6 +512,11 @@ export function facePanel(input: {
         regions: measured.map((side) => ({
           box: side.state.box!,
           name: nameOf(side.definition, input.pronouns.possessive, false),
+          prefill: prefillFor(nameOf(side.definition, input.pronouns.possessive, false)),
+          /* The instance this rectangle IS, beside the name that says so. The
+             row's `slots` still carries both: one row, and an edit to the ROW
+             means both, while an edit to this RECTANGLE means this one. */
+          slot: side.definition.slot,
         })),
       });
       continue;
@@ -508,7 +538,7 @@ export function facePanel(input: {
         cutouts: state_.thumb ? [state_.thumb] : [],
         /* A diverged pair is already two rows, each about one instance, so the
            rectangle covers exactly what its row names. */
-        regions: state_.box ? [{ box: state_.box, name: null }] : [],
+        regions: state_.box ? [{ box: state_.box, name: null, prefill: null, slot: side.slot }] : [],
       });
     }
   }

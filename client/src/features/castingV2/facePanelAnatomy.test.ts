@@ -441,9 +441,72 @@ describe("the rectangle names what it covers (fable-378 (c))", () => {
        show. */
     expect(regions).toContain("{region.name ?? row.name}");
     expect(regions).toContain("`${region.name ?? row.name}. Edit it here.`");
-    /* But the EDIT is still the row's — both slots, one ask. A pair read on one
-       side must not quietly become an edit to one side. */
-    expect(regions).toContain("selection.select({ slots: row.slots, name: row.name, prefill: row.prefill })");
+    /* And the EDIT is still the row's SLOTS — both of them, one ask — with the
+       side carried as a SCOPE rather than by dropping a slot. What an edit to
+       "her eyes" means never changed; what the render is asked to touch did
+       (fable-444, ruling C). */
+    expect(regions).toContain("slots: row.slots,");
+    expect(regions).toContain("...(scoped ? { scope: region.slot } : {}),");
+  });
+
+  /*
+    AND A MEASUREMENT GAP IS NOT A SCOPE — fable-378 (c), which fable-444 adds
+    to rather than replaces.
+
+    A pair read on ONE side draws one rectangle because the scan missed the
+    other, not because her face has one eye. Scoping that click would turn
+    "change her eyes" into "change her left eye" on the strength of a failed
+    reading — so the narrowing needs BOTH rectangles drawn, or a row that is
+    already about one instance (a diverged pair, which is two rows).
+  */
+  it("scopes only when both of the pair are actually on the picture", async () => {
+    const regions = withoutProse(await readFile(REGIONS, "utf8"));
+
+    expect(regions).toContain("region.slot.includes(\"@\")");
+    expect(regions).toContain("(row.regions.length > 1 || row.slots.length === 1)");
+    /* And an unscoped click still speaks about the ROW, never about the one
+       rectangle it happened to land on. */
+    expect(regions).toContain("name: scoped ? region.name ?? row.name : row.name,");
+  });
+
+  /*
+    AND IT REACHES THE WIRE — assert on the outgoing request, not on a constant
+    near it (working law 5).
+
+    The scope is worth nothing until the server is told, and the two halves of
+    that journey are in two files: the box hands it to the caller, and the
+    caller puts it in the mutation. Either one alone is a scope that silently
+    does nothing, which is precisely the whole-face render this feature exists
+    to stop.
+  */
+  it("carries the scope from the rectangle all the way onto the request", async () => {
+    const [regions, sheet] = await Promise.all([
+      readFile(REGIONS, "utf8").then(withoutProse),
+      readFile(SHEET, "utf8").then(withoutProse),
+    ]);
+
+    expect(regions).toContain("onAsk(said, open.scope);");
+    expect(sheet).toContain("function askRefine(instruction: string, scope?: string)");
+    expect(sheet).toContain("...(scope ? { scope } : {}),");
+  });
+
+  /*
+    AND THE PICTURE SAYS THE SAME THING THE ASK DOES.
+
+    A selection is about a row, so both of a pair lit — correct while every ask
+    meant both, and a false claim the moment one of them is the ask: the box
+    reads "her left eye" while a bright outline sits around the eye this render
+    will deliberately not touch. It is fable-444 condition 1's rule (the panel
+    may never claim what the rows do not agree on) on the surface she is
+    actually looking at, and the unscoped case has to survive it — her lips and
+    a pair tapped from the row still light everything they mean.
+  */
+  it("lights only the rectangle the scoped ask is about", async () => {
+    const regions = withoutProse(await readFile(REGIONS, "utf8"));
+
+    expect(regions).toContain("const active = open?.scope !== undefined");
+    expect(regions).toContain("? open.scope === region.slot");
+    expect(regions).toContain(": row.slots.some((slot) => selection.isSelected(slot));");
   });
 });
 

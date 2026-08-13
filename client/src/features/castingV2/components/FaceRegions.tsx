@@ -83,8 +83,9 @@ export function FaceRegions({
   selection: FaceSelectionModel;
   priceCredits: number;
   busy: boolean;
-  /** The same paid edit the ask box submits. */
-  onAsk: (instruction: string) => void;
+  /** The same paid edit the ask box submits, scoped to one instance when she
+   *  clicked one instance's rectangle. */
+  onAsk: (instruction: string, scope?: string) => void;
 }) {
   const [draft, setDraft] = useState("");
   /** Which of the open row's rectangles was clicked — a pair has two. */
@@ -188,7 +189,23 @@ export function FaceRegions({
           width: `${(box.width / box.frame.width) * 100}%`,
           height: `${(box.height / box.frame.height) * 100}%`,
         };
-        const active = row.slots.some((slot) => selection.isSelected(slot));
+        /*
+          AND THE LIT RECTANGLE IS THE ONE THE ASK IS ABOUT.
+
+          A selection is about a row, so both of a pair used to light — which was
+          right while every ask was about both. It is a false claim the moment
+          she clicks one eye: the box says "her left eye", the ask goes out
+          scoped to her left eye, and the picture would still be drawing a bright
+          outline around the eye this render will not touch. Same rule as the
+          panel's words on a diverged pair (fable-444 condition 1) one surface
+          over — the picture may never claim what the ask does not say.
+
+          Unscoped selections are untouched: her lips, her hair, and a pair
+          tapped from the panel's own row all still light everything they mean.
+        */
+        const active = open?.scope !== undefined
+          ? open.scope === region.slot
+          : row.slots.some((slot) => selection.isSelected(slot));
         const lit = row.slots.some((slot) => selection.isHovered(slot));
         return (
           <button
@@ -212,7 +229,51 @@ export function FaceRegions({
             onBlur={() => selection.hover(null)}
             onClick={() => {
               setOpenAt(at);
-              selection.select({ slots: row.slots, name: row.name, prefill: row.prefill });
+              /*
+                THE RECTANGLE IS THE SCOPING GESTURE — fable-438 §2, granted on
+                the founder's own question (*"how would i edit just the left or
+                right eye?"*), and the court's answer that the engine already
+                can: 31 of 32 single-side paints on exactly the asked eye, zero
+                on the wrong one.
+
+                So the box opens about THIS eye, says so in her own words, and
+                the ask goes out carrying the slot. The row stays "Her eyes" and
+                tapping the ROW still means both — the stylist's ontology on the
+                list, the pixels on the picture, and neither has to lie for the
+                other.
+
+                Scoped only where there is something to narrow, and the second
+                condition is fable-378 (c) surviving intact rather than being
+                overwritten:
+
+                  the rectangle IS an instance   a feature there is only one of
+                                                 (her lips) sends nothing. A
+                                                 scope that names the whole face
+                                                 does nothing, and "does
+                                                 nothing" is the silent
+                                                 whole-face render this defect
+                                                 class starts with — the server
+                                                 refuses it rather than obeying
+                  BOTH of the pair are drawn     or the row is already about one
+                                                 of them. A pair read on ONE
+                                                 side has one rectangle because
+                                                 the SCAN missed the other, not
+                                                 because her face has one eye —
+                                                 scoping there would let a
+                                                 measurement gap quietly turn
+                                                 "change her eyes" into "change
+                                                 her left eye", which is the
+                                                 rule fable-378 (c) wrote and
+                                                 nothing here supersedes
+              */
+              const scoped = region.slot.includes("@")
+                && (row.regions.length > 1 || row.slots.length === 1);
+              selection.select({
+                slots: row.slots,
+                name: scoped ? region.name ?? row.name : row.name,
+                prefill: scoped ? region.prefill ?? row.prefill : row.prefill,
+                ...(scoped ? { scope: region.slot } : {}),
+              });
             }}
           >
             <span className="dpc-regions__tag">{region.name ?? row.name}</span>
@@ -235,7 +296,7 @@ export function FaceRegions({
             event.preventDefault();
             const said = draft.trim();
             if (!said || busy) return;
-            onAsk(said);
+            onAsk(said, open.scope);
             close();
           }}
           /* Esc closes it and spends nothing — there is nothing to undo,

@@ -80,7 +80,17 @@ export type FacePanelCutout = { contentUrl: string; maskUrl: string; crop: FaceP
  * says it does — a pair's rectangles each carry their instance's name, because
  * clicking a rectangle is a promise about those pixels (fable-378 (c)).
  */
-export type FacePanelRegion = { box: FacePanelBox; name: string | null };
+export type FacePanelRegion = {
+  box: FacePanelBox;
+  name: string | null;
+  /** The one instance these pixels ARE — `eye@left`. The ROW's slots say what
+   *  an edit to the row means; this says what the rectangle is, and clicking it
+   *  scopes the ask to it (fable-444, ruling C). */
+  slot: string;
+  /** This rectangle's own opening sentence, when it differs from the row's.
+   *  Written by the server so the browser never composes copy. */
+  prefill: string | null;
+};
 
 export type FacePanelRow = {
   slots: readonly string[];

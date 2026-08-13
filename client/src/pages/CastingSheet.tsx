@@ -957,7 +957,13 @@ export default function CastingSheet() {
     alike — a second copy of this closure is the drift this codebase keeps
     meeting, and here it would drift on the thing that spends money.
   */
-  function askRefine(instruction: string) {
+  /**
+   * `scope` is the one instance she clicked, when she clicked one — the picture's
+   * rectangles are the only thing that sends it, and the ask box below sends
+   * nothing, because a typed sentence with no rectangle behind it is about the
+   * whole feature (fable-444, ruling C).
+   */
+  function askRefine(instruction: string, scope?: string) {
     if (!viewerCandidateId) return;
 
     /*
@@ -989,6 +995,7 @@ export default function CastingSheet() {
         candidateId: viewerCandidateId,
         instruction,
         ...(answering ? { answering } : {}),
+        ...(scope ? { scope } : {}),
       })
       .then(async (result) => {
         /*

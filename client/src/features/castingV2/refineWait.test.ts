@@ -155,8 +155,16 @@ describe("the answer chips are the typed path, not a second one", () => {
     /* The submit path is now the named `askRefine`, called by the ask box AND
        by the box that opens on the picture (fable-200) — one handler, because a
        second copy of it would drift on the thing that spends money. */
-    const submit = sheet.slice(sheet.indexOf("function askRefine(instruction: string) {"));
+    /* Anchored on the NAME rather than the whole signature, and the anchor is
+       asserted before it is used: `indexOf` on a signature that has since grown
+       a parameter returns -1, and a slice from -1 is an empty string — a reader
+       that says nothing, shaped exactly like a passing one. It cost this suite
+       a red when `scope` arrived (fable-444). */
+    const at = sheet.indexOf("function askRefine(instruction: string");
+    expect(at).toBeGreaterThan(-1);
+    const submit = sheet.slice(at);
     const beforeMutation = submit.slice(0, submit.indexOf("refine"));
+    expect(beforeMutation.length).toBeGreaterThan(0);
     expect(beforeMutation).toContain("setRefineOutcome(null)");
     expect(beforeMutation).toContain("setReaskOptions(null)");
   });

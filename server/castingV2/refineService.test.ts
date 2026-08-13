@@ -2851,6 +2851,76 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
   });
 
   /*
+    AND THE NARROWED QUESTION'S ANSWER IS ON THE RECORD (fable-448 §1).
+
+    The scoped question was bought with a stated trade: it refuses none of the
+    correct one-eye renders the whole-face question refuses 1-in-4 of, and it
+    waves the WRONG eye through 4 times in 16 — a price that is only right
+    while the engine paints the wrong eye 0 times in 32, as the court measured.
+    The base rate is therefore load-bearing, and nothing was watching it.
+
+    Not a gate: a gate on the wrong-side arm is the whole-face question back
+    under a new name, refusing exactly what this exists to deliver. A line per
+    read, disputing or not, so what comes out is a distribution.
+  */
+  const narrowedLines = () => logged.filter((line) => line.message.includes("a per-side question was put"));
+
+  it("logs the per-side read and what it answered", async () => {
+    logged.length = 0;
+    await refineCandidate({ ...repainting, ...greenEyes, harvest: unmasked, verifier: watchingVerifier },
+      { ...input, scope: "eye@left" });
+
+    const lines = narrowedLines();
+    expect(lines).toHaveLength(1);
+    expect(lines[0]!.fields.askScope).toBe("eye@left");
+    expect(lines[0]!.fields.reads).toEqual([
+      expect.objectContaining({ slot: "eye@left", from: "ask", read: true, verified: true }),
+    ]);
+  });
+
+  it("logs it when the read DISPUTES, which is the whole point of watching", async () => {
+    /*
+      The decay this instrument exists to see: a render that painted the eye she
+      did not ask for reads as a scoped question answered NO. If the line rode
+      the delivered render only, that is precisely the case it could never
+      count — so it is written before the refusal, and the refusal still
+      happens.
+    */
+    logged.length = 0;
+    const disputing = {
+      id: "verifier",
+      complete: async (request: { system: string; user: string }) => {
+        if (request.system.includes("how they")) {
+          return { text: JSON.stringify({ hairWorn: "unclear" }), truncated: false, latencyMs: 1 };
+        }
+        return {
+          text: JSON.stringify({ results: [{ id: 1, present: false, saw: "a brown iris" }] }),
+          truncated: false,
+          latencyMs: 1,
+        };
+      },
+    } as never;
+
+    await expect(refineCandidate({ ...repainting, ...greenEyes, harvest: unmasked, verifier: disputing },
+      { ...input, scope: "eye@left" })).rejects.toThrow();
+
+    const lines = narrowedLines();
+    expect(lines).toHaveLength(1);
+    expect(lines[0]!.fields.reads).toEqual([
+      expect.objectContaining({ slot: "eye@left", from: "ask", read: true, verified: false }),
+    ]);
+  });
+
+  it("CONTROL — a whole-face ask writes no line at all", async () => {
+    /* A denominator that counts whole-face renders would drown the thing being
+       watched. Make the line unconditional and this goes red. */
+    logged.length = 0;
+    await refineCandidate({ ...repainting, ...greenEyes, harvest: unmasked, verifier: watchingVerifier }, input);
+
+    expect(narrowedLines()).toHaveLength(0);
+  });
+
+  /*
     AND THE NEXT RENDER MUST NOT DISPUTE IT EITHER (fable-444 condition 1, where
     it costs money).
 

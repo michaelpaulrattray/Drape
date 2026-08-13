@@ -259,7 +259,10 @@ describe("what the library adds to a row", () => {
       crop: null,
     }]);
     expect(built.regions).toEqual([
-      { box: { x: 12, y: 30, width: 200, height: 140, frame: { width: 1024, height: 1536 } }, name: null },
+      {
+        box: { x: 12, y: 30, width: 200, height: 140, frame: { width: 1024, height: 1536 } },
+        name: null, prefill: null, slot: "hair",
+      },
     ]);
   });
 
@@ -416,7 +419,7 @@ describe("what a scan adds to a row", () => {
       maskUrl: "data:image/png;base64,nose",
       crop: { x: 400, y: 600, width: 120, height: 160, frame },
     }]);
-    expect(nose.regions).toEqual([{ box: { x: 400, y: 600, width: 120, height: 160, frame }, name: null }]);
+    expect(nose.regions).toEqual([{ box: { x: 400, y: 600, width: 120, height: 160, frame }, name: null, prefill: null, slot: "nose" }]);
   });
 
   it("leaves the MINTED cutout in place where an edit made one", () => {
@@ -437,7 +440,7 @@ describe("what a scan adds to a row", () => {
     */
     expect(hair.cutouts[0]!.contentUrl).toBe("https://bucket.example/library/hair.png");
     expect(hair.cutouts[0]!.crop).toBeNull();
-    expect(hair.regions).toEqual([{ box: { x: 12, y: 30, width: 200, height: 140, frame }, name: null }]);
+    expect(hair.regions).toEqual([{ box: { x: 12, y: 30, width: 200, height: 140, frame }, name: null, prefill: null, slot: "hair" }]);
   });
 
   it("gives a measured row its click target even when the crop came from an edit", () => {
@@ -454,7 +457,7 @@ describe("what a scan adds to a row", () => {
       .find((panelRow) => panelRow.name === "Her hair")!;
 
     expect(hair.cutouts[0]!.contentUrl).toBe("https://bucket.example/library/hair.png");
-    expect(hair.regions).toEqual([{ box: { x: 900, y: 900, width: 50, height: 50, frame }, name: null }]);
+    expect(hair.regions).toEqual([{ box: { x: 900, y: 900, width: 50, height: 50, frame }, name: null, prefill: null, slot: "hair" }]);
   });
 
   it("still refuses to invent a box for a region the scan did not find", () => {
@@ -493,8 +496,14 @@ describe("what a scan adds to a row", () => {
     /* Two rectangles, each naming the eye it covers — never one box spanning
        both, which would be a rectangle across the bridge of her nose. */
     expect(eyes.regions).toEqual([
-      { box: { x: 300, y: 500, width: 60, height: 30, frame }, name: "Her right eye" },
-      { box: { x: 640, y: 500, width: 60, height: 30, frame }, name: "Her left eye" },
+      {
+        box: { x: 300, y: 500, width: 60, height: 30, frame },
+        name: "Her right eye", prefill: "her right eye — ", slot: "eye@right",
+      },
+      {
+        box: { x: 640, y: 500, width: 60, height: 30, frame },
+        name: "Her left eye", prefill: "her left eye — ", slot: "eye@left",
+      },
     ]);
   });
 
@@ -550,7 +559,10 @@ describe("a pair whose geometry is one instance", () => {
     /* The rectangle exists — the defect was that it did not. */
     /* And it does not claim to be the pair. */
     expect(eyes.regions).toEqual([
-      { box: { x: 640, y: 500, width: 60, height: 30, frame }, name: "Her right eye" },
+      {
+        box: { x: 640, y: 500, width: 60, height: 30, frame },
+        name: "Her right eye", prefill: "her right eye — ", slot: "eye@right",
+      },
     ]);
     expect(eyes.cutouts).toHaveLength(1);
   });
@@ -569,7 +581,7 @@ describe("a pair whose geometry is one instance", () => {
     /* Null is not an omission: it means the row's own name is the label. */
     const nose = scanned({ nose: { x: 400, y: 600, width: 120, height: 160 } })
       .find((row) => row.name === "Her nose")!;
-    expect(nose.regions).toEqual([{ box: { x: 400, y: 600, width: 120, height: 160, frame }, name: null }]);
+    expect(nose.regions).toEqual([{ box: { x: 400, y: 600, width: 120, height: 160, frame }, name: null, prefill: null, slot: "nose" }]);
   });
 
   it("draws no row at all when nothing can place it — not an unclickable one", () => {

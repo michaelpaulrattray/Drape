@@ -3173,21 +3173,45 @@ export async function refineCandidate(
     */
     const scopedSide = input.scope ? slotDefinition(input.scope) : null;
     const inScope = new Set(scopedSide ? facetsOfSlot(scopedSide.slot) ?? [] : []);
-    /** The instance this fact is about, or null for the whole face. */
-    const sideOfFact = (fact: { facet: Facet }): SlotDefinition | null => {
+    /**
+     * The instance this fact is about, or null for the whole face — and WHICH
+     * of the two resolvers said so, because the log below distinguishes them.
+     */
+    const sideOfFact = (fact: { facet: Facet }): { side: SlotDefinition; from: "ask" | "library" } | null => {
       if (scopedSide !== null && scopedSide.instance !== null
-        && writtenFacets.has(fact.facet) && inScope.has(fact.facet)) return scopedSide;
+        && writtenFacets.has(fact.facet) && inScope.has(fact.facet)) {
+        return { side: scopedSide, from: "ask" };
+      }
       /* The library's answer, which needs no scope and outlives the ask.
          `accessoryKind` is this step's own object, so a carried accessory's
          slots resolve exactly as the mint resolved them. */
       const slots = slotsForFacet(fact.facet, { accessoryKind: accessoryRegion });
       const written = instanceLastWritten(branchRows, slots.map((it) => it.slot));
-      return written === null ? null : slots.find((it) => it.slot === written) ?? null;
+      if (written === null) return null;
+      const side = slots.find((it) => it.slot === written);
+      return side === undefined ? null : { side, from: "library" };
     };
+    /**
+     * EVERY NARROWED QUESTION, KEPT UNTIL ITS ANSWER COMES BACK (fable-448 §1).
+     *
+     * The per-side question was bought with a measured trade: the whole-face
+     * question refuses 1 in 4 correct one-eye renders, and the scoped one waves
+     * the WRONG eye through 4 times in 16 — priced against a court where the
+     * engine painted the wrong eye 0 of 32 times. The pass rides that base rate,
+     * so the base rate is the thing that must not decay quietly.
+     *
+     * It cannot be a gate: a gate here would be the whole-face question back
+     * under another name, refusing the renders this narrowing exists to
+     * deliver. So it is a LOG, written whether the read disputes or not — the
+     * shape the removal's visibility note already uses — and what it produces is
+     * a distribution rather than a sample of failures.
+     */
+    const narrowedReads: Array<{ facet: Facet; slot: string; from: "ask" | "library" }> = [];
     for (let at = 0; at < facts.length; at += 1) {
       const fact = facts[at]!;
-      const side = sideOfFact(fact);
-      if (side === null || side.instance === null) continue;
+      const narrowed = sideOfFact(fact);
+      if (narrowed === null || narrowed.side.instance === null) continue;
+      const { side, from } = narrowed;
       const sibling = (slotsForFeature(side.feature) ?? [])
         .find((definition) => definition.slot !== side.slot);
       facts[at] = scopedToInstance(fact, {
@@ -3197,6 +3221,7 @@ export async function refineCandidate(
            whole failure mode this clause exists to avoid. */
         other: sibling?.noun ?? `other ${side.feature}`,
       });
+      narrowedReads.push({ facet: fact.facet, slot: side.slot, from });
     }
     /*
       AND THE PINNED PRESENTATION (D-186), which is the fourth symptom.
@@ -3402,6 +3427,42 @@ export async function refineCandidate(
       log.warn(
         { operationId, variant: variant.publicId, advisory },
         "[refineService] delivered with advisory misses — watch this facet class",
+      );
+    }
+
+    /*
+      AND WHAT THE PER-SIDE QUESTIONS ANSWERED (fable-448 §1), written here so
+      the line covers the refused render as well as the delivered one — a
+      wrong-side paint would show up as a scoped read that DISPUTED, and a line
+      that fires only on delivery could never see it.
+
+      Written for the reads THEMSELVES rather than for the misses: a verdict
+      recorded only when it is bad has no denominator, which is the lesson the
+      seam verdict and the invisible-site note both already carry.
+    */
+    if (narrowedReads.length > 0) {
+      const answered = new Map(verification.checks.map((check) => [check.facet, check]));
+      log.info(
+        {
+          operationId,
+          variant: variant.publicId,
+          askScope: input.scope ?? null,
+          attempts,
+          reads: narrowedReads.map((narrowed) => {
+            const check = answered.get(narrowed.facet);
+            return {
+              ...narrowed,
+              /* Null is not false: it means the reader never answered this one
+                 (an unavailable reader delivers unverified), and a distribution
+                 that counts a no-read as a pass is the false-pass class again. */
+              read: check?.read ?? null,
+              verified: check?.verified ?? null,
+              absent: check?.absent ?? null,
+              binding: check?.binding ?? null,
+            };
+          }),
+        },
+        "[refineService] a per-side question was put to this frame — logged whether or not it disputed, so a decaying wrong-side rate is a distribution and not an anecdote",
       );
     }
 

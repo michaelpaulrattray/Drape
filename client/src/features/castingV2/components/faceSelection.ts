@@ -28,6 +28,21 @@ export type FaceSelection = {
   name: string;
   /** The opening of their sentence, already written for them. */
   prefill: string;
+  /**
+   * THE ONE INSTANCE SHE POINTED AT, when she pointed at one (fable-444).
+   *
+   * A row is about a pair; a RECTANGLE is about one of them. When the click
+   * landed on one eye's rectangle this carries that eye's slot, and the ask
+   * goes out scoped to it — the render paints that eye and the library files
+   * that eye, with the other one left exactly as it was.
+   *
+   * Undefined for every selection that is genuinely about the whole thing (her
+   * lips, her hair, or a pair tapped from the panel's own row), and undefined
+   * is what every ask sent before this existed carried. A scope that named the
+   * whole face would be a scope that does nothing, which is the silent
+   * whole-face render the server's door refuses.
+   */
+  scope?: string;
 };
 
 export type FaceSelectionModel = {
