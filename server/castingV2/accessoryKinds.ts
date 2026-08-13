@@ -86,6 +86,58 @@ export const LANDMARK_OF_ACCESSORY: {
    */
   vacantPhrase: string;
   /**
+   * WHERE THIS THING IS WORN, IN THE CUSTOMER'S OWN WORDS — for the one sentence
+   * a removal has to say when nothing in the picture can see the site
+   * (fable-398 §3).
+   *
+   * Two fields because the sentence has a verb in it: *"her ears ARE behind her
+   * hair"* and *"his nose IS behind his hair"* cannot both come out of one
+   * template, and this is the same rule the vacant phrases follow one field up —
+   * a plural that the code guesses is a plural that ships wrong on the first
+   * kind whose noun does not take an "s".
+   *
+   * The possessive is NOT in the string. It is derived from the cast's own
+   * pronoun at the call site (`castPronouns`), because a literal "her" here
+   * would ship over a man's face — the defect caught on the scan panel's
+   * working line before it reached anyone.
+   *
+   * Required, like `vacantPhrase`, so a new kind cannot land without one.
+   */
+  site: {
+    /**
+     * WHAT TO ASK THE SEGMENTER FOR THE PLACE ITSELF, as opposed to the object.
+     *
+     * D-226's founding observation is that these two questions have different
+     * answers: asked for a covered ear the segmenter returns nothing at all, and
+     * *that silence is the reading* — nothing in the picture can see this site.
+     * Taken from the anatomy vocabulary `REGION_OF_FACET` already owns, never
+     * invented here (D-213: a segmenter is never asked an open question).
+     */
+    question: string;
+    /** The place, bare: `ears`, `eyes`, `nose`. Read after a possessive. */
+    words: string;
+    /** True when that noun takes a plural verb. */
+    plural: boolean;
+  };
+  /**
+   * THE THING ITSELF, IN THE TWO GRAMMARS THE DELIVERY SENTENCES NEED.
+   *
+   * Authored rather than pluralized by rule: `${region}s` is right for earrings,
+   * already wrong for glasses (its own plural) and wrong again for a nose stud
+   * (which wants an article after "wearing" and must not have one after a
+   * possessive). The panel's `PAIR_NOUN_OF_ACCESSORY` answers a third question —
+   * how the pair is NAMED — and borrowing it would put "no longer wearing nose
+   * stud" in front of a customer.
+   */
+  worn: {
+    /** After *"no longer wearing"*: `earrings`, `glasses`, `a nose stud`. */
+    phrase: string;
+    /** After a possessive: `her earrings`, `his nose stud`. Never an article. */
+    possessed: string;
+    /** True when that noun takes a plural verb, and is referred to as "them". */
+    plural: boolean;
+  };
+  /**
    * THE SAME ABSENCE, SAID ABOUT ONE INSTANCE — required in practice for every
    * `pair: true` kind, and pinned by a test rather than by the type because a
    * kind worn singly has no instance to name.
@@ -117,6 +169,8 @@ export const LANDMARK_OF_ACCESSORY: {
     bothSides: "one on each ear, a matching pair",
     /* Both lobes named, for the same reason `bothSides` exists: a pair is the
        one kind here that can be half-removed by a painter reading loosely. */
+    site: { question: "ear", words: "ears", plural: true },
+    worn: { phrase: "earrings", possessed: "earrings", plural: true },
     vacantPhrase: "no earrings — both earlobes bare, nothing hanging from either ear",
     vacantPhrasePerInstance: "no earring on her {side} ear — that earlobe bare, nothing hanging from it",
   },
@@ -129,6 +183,8 @@ export const LANDMARK_OF_ACCESSORY: {
     /* The specimen this whole clause exists for. Her glasses are IN the master,
        so silence about them is an instruction to keep them — and the founder's
        "ghost rim" is what a half-hearted removal leaves behind. */
+    site: { question: "eyes", words: "eyes", plural: true },
+    worn: { phrase: "glasses", possessed: "glasses", plural: true },
     vacantPhrase: "no glasses — her face uncovered, no frames, no lenses and no rim shadow on her cheeks or brows",
   },
   {
@@ -137,6 +193,8 @@ export const LANDMARK_OF_ACCESSORY: {
     drops: false,
     region: "nose stud",
     pair: false,
+    site: { question: "nose", words: "nose", plural: false },
+    worn: { phrase: "a nose stud", possessed: "nose stud", plural: false },
     vacantPhrase: "no nose jewellery — her nose and septum bare, with no piercing visible",
   },
 ];

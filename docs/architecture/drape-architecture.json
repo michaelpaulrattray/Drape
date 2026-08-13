@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "9618172b674ed7ad"
+    "sourceFingerprint": "af4eb82d9f875405"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 101
+      "moduleCount": 102
     },
     {
       "id": "domain:castingV2",
@@ -3449,6 +3449,12 @@
     {
       "id": "module:server/castingV2/interpreter.ts",
       "path": "server/castingV2/interpreter.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/invisibleRemoval.ts",
+      "path": "server/castingV2/invisibleRemoval.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -8769,6 +8775,10 @@
     {
       "id": "test:server/castingV2/inheritedVerdict.test.ts",
       "path": "server/castingV2/inheritedVerdict.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/invisibleRemoval.test.ts",
+      "path": "server/castingV2/invisibleRemoval.test.ts"
     },
     {
       "id": "test:server/castingV2/likenessRefusal.test.ts",
@@ -18241,6 +18251,26 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/castingV2/invisibleRemoval.ts",
+      "to": "module:server/castingV2/accessoryKinds.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/invisibleRemoval.ts",
+      "to": "module:server/castingV2/castPronouns.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/invisibleRemoval.ts",
+      "to": "module:server/castingV2/maskedRefine.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/invisibleRemoval.ts",
+      "to": "module:server/castingV2/maskGeometry.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/castingV2/maskedRefine.ts",
       "to": "module:server/castingV2/accessoryKinds.ts",
       "kind": "imports"
@@ -19028,6 +19058,11 @@
     {
       "from": "module:server/castingV2/refineService.ts",
       "to": "module:server/castingV2/hairStyles.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/refineService.ts",
+      "to": "module:server/castingV2/invisibleRemoval.ts",
       "kind": "imports"
     },
     {

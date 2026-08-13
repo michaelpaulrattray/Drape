@@ -169,7 +169,8 @@ import {
 } from "./castingV2Scope";
 import { isUpsweptAsk, readCanthalTilt } from "./eyeShapeRouting";
 import { alreadyUpswept, wearsGlassesByPixels } from "./canthalTilt";
-import { binaryCoverage, coverage } from "./maskGeometry";
+import { INVISIBLE_AT, binaryCoverage, coverage } from "./maskGeometry";
+import { invisibleRemovalNote, readSiteVisibility } from "./invisibleRemoval";
 import { departureFloorFor } from "./bornWornDetector";
 import { createFalRegionReader } from "./falRegionReader";
 import { createFalMaskedEditEngine } from "../providers/falImages";
@@ -3420,6 +3421,15 @@ export async function refineCandidate(
       render came out shadowy.
     */
     const vacatedSlots = (image.repaint?.vacated ?? []) as readonly FeatureSlot[];
+    /*
+      AND WHETHER SHE WILL BE ABLE TO SEE ANY OF IT (fable-398 §3).
+
+      One sentence at most, however many slots were vacated: two removals on one
+      face are one disappointment, and a note that repeated itself per lobe would
+      read as a malfunction. First hidden site wins — see `invisibleRemoval` for
+      the reading, the bar, and the declaration that it may not fire yet.
+    */
+    let invisibleSiteNote: string | null = null;
     if (vacatedSlots.length > 0) {
       const reader = dependencies.regions ?? defaultRegionReader();
       for (const slot of vacatedSlots) {
@@ -3570,6 +3580,47 @@ export async function refineCandidate(
           { operationId, variant: variant.publicId, slot },
           "[refineService] the vacancy is on the record — every later recipe says the absence rather than going quiet about it",
         );
+
+        /*
+          IS THERE ANYTHING TO SEE — asked last, because everything above is what
+          makes the second half of the sentence true.
+
+          Wrapped whole, and the swallow is the point: a note is the least
+          important thing in this block. The picture is correct, the library
+          agrees with it and the money is settled; a landmark call that times out
+          must cost a sentence and never the render. That is the same law the
+          caption and the satisfaction label already live under, and the reason
+          this is a try/catch rather than a `.catch()` is the same too — a
+          synchronous throw walks past a promise handler into the outer catch,
+          which refunds.
+        */
+        if (invisibleSiteNote === null && definition.guardKind) {
+          try {
+            const site = await readSiteVisibility({
+              reader,
+              frame: image.bytes,
+              kind: definition.guardKind,
+            });
+            log.info(
+              {
+                operationId, variant: variant.publicId, slot, kind: site.kind,
+                visible: site.visible, cause: site.cause, bar: INVISIBLE_AT,
+                hiddenShare: site.hiddenShare === null ? null : Number(site.hiddenShare.toFixed(4)),
+              },
+              "[refineService] whether she can see where this came off — logged whether or not it speaks, so the bar becomes a distribution",
+            );
+            invisibleSiteNote = invisibleRemovalNote({
+              kind: site.kind,
+              pronouns: pronounsForSex(currentIdentity?.sex),
+              cause: site.cause,
+            });
+          } catch (error) {
+            log.warn(
+              { operationId, variant: variant.publicId, slot, err: error },
+              "[refineService] could not read whether the removal will be visible — delivering without the note",
+            );
+          }
+        }
       }
     }
 
@@ -4066,7 +4117,8 @@ export async function refineCandidate(
     }
 
     /*
-      EVERY PART OF THIS ASK THAT WAS NOT SERVED, CONFESSED (D-181, fable-386 §2).
+      WHAT SHE IS OWED ABOUT THIS TAKE, BEYOND THE PICTURE ITSELF
+      (D-181, fable-386 §2, fable-398 §3).
 
       THE REFERENCE IS CONFESSED, not silently dropped (D-181). They asked for
       green eyes LIKE someone. The green is theirs and it files; the comparison
@@ -4078,18 +4130,26 @@ export async function refineCandidate(
       two are collected rather than branched: a LIST, joined, because an ask can
       lose a reference AND a waist in one breath, and a single-slot `note` with
       a precedence would have picked one of the two truths to tell.
+
+      **The third one is not a confession of a half-served ask, and the list is
+      named for the whole rather than for its first two members because of it.**
+      A removal onto a hidden site was served in FULL; what she is owed is that
+      the picture cannot show it. Same law from the other direction, same field,
+      same joined line — and it goes LAST because it is about what she is looking
+      at rather than about what was left out of it.
     */
-    const servedInPart = [
+    const owedAboutThisTake = [
       droppedReference
         ? "Made the eyes as you described. Refining can't copy a real "
           + "person's features, so that part of the comparison was set aside."
         : null,
       outOfFrameNote,
+      invisibleSiteNote,
     ].filter((line): line is string => line !== null);
 
     const result: RefineResult = {
       kind: "rendered",
-      ...(servedInPart.length > 0 ? { note: servedInPart.join(" ") } : {}),
+      ...(owedAboutThisTake.length > 0 ? { note: owedAboutThisTake.join(" ") } : {}),
       variantId: variant.publicId,
       candidateId: input.candidatePublicId,
       imageUrl: stored.url,

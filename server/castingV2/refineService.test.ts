@@ -3084,6 +3084,85 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
   });
 
   /*
+    AND WHETHER SHE WILL SEE ANY OF IT, ON THE DELIVERED RESULT (fable-398 §3).
+
+    The reading itself is proved in `invisibleRemoval.test.ts`, against the real
+    geometry and with both sabotage arms. What is proved HERE is the only thing
+    that file cannot: that the sentence reaches the field the panel reads. The
+    dropped-reference confession is why that is a separate claim — it was
+    composed, spread into the result and serialized on every likeness ask for
+    weeks while `refineOutcomeNote`'s predecessor threw it away, so a note nobody
+    asserted at the wire is a note nobody has seen.
+
+    The double must answer TWO different questions differently: the site is empty
+    (the removal landed) and her hair is everywhere (nothing can see the site).
+    One answer for both would prove whichever one it happened to suit.
+  */
+  describe("a removal onto a site nothing can see", () => {
+    const FRAME = 64;
+    /**
+     * A reader that answers each question about the delivered frame on its own
+     * terms. `sees` names the regions it finds; everything else comes back the
+     * frame-sized nothing the real reader returns — including "glasses", which
+     * is what makes the removal land in the first place.
+     */
+    const answering = (sees: readonly string[]) => ({
+      ...removing(false),
+      regions: {
+        region: async (request: { name: string }) => ({
+          data: Buffer.alloc(FRAME * FRAME, sees.includes(request.name) ? 255 : 0),
+          width: FRAME,
+          height: FRAME,
+        }),
+        subject: async () => null,
+        /* Where her eyes are — the landmark model answers even when the
+           segmenter cannot, which is the whole of D-226. */
+        landmark: async () => [{ x: 0.35, y: 0.4 }, { x: 0.65, y: 0.4 }],
+      } as never,
+    });
+
+    const deliver = async (sees: readonly string[]) => await refineCandidate(
+      answering(sees),
+      { ...input, instruction: "remove her glasses" },
+    ) as { note?: string };
+
+    it("names her hair on the delivered take, in the cast's own pronoun", async () => {
+      /* Her eyes cannot be found and her hair is everywhere: the site is hidden
+         and the cause is proven. */
+      const result = await deliver(["hair"]);
+
+      /* Delivered and charged — this is not a refusal and says nothing about
+         money. She has a picture; what she does not have is a visible change. */
+      expect(journal).toContain("land");
+      expect(ledger.refunds).toHaveLength(0);
+      expect(result.note).toMatch(/eyes are behind (her|his|their) hair/);
+      expect(result.note).toMatch(/no longer wearing glasses/);
+      expect(result.note).not.toMatch(/charge|credit/i);
+    });
+
+    it("falls back to the sentence that claims no cause", async () => {
+      /* Nothing can see the site and nothing is provably over it. */
+      const result = await deliver([]);
+
+      expect(journal).toContain("land");
+      expect(result.note).toMatch(/glasses weren't visible in this shot/);
+      expect(result.note).not.toMatch(/behind/);
+    });
+
+    /*
+      THE ARM THAT COULD HAVE PRODUCED THE OTHER TWO. Everything is identical but
+      whether her eyes are in the picture; if this one also spoke, the note would
+      be a constant rather than a reading.
+    */
+    it("stays silent when she can see the site perfectly well", async () => {
+      const result = await deliver(["eyes", "hair"]);
+
+      expect(journal).toContain("land");
+      expect(result.note).toBeUndefined();
+    });
+  });
+
+  /*
     AND A PAIR CAN NOW BE RECORDED AT ALL (fable-332).
 
     An earring removal LANDED and could not be filed: the kind's phrase claims
