@@ -32,7 +32,7 @@ import { createModuleLogger } from "../logging/logger";
 import type { TextEngine } from "../providers/types";
 import { interpreterEngine } from "./interpreter";
 import { declarativeStateRule } from "./declarativeState";
-import { readDelta, type FreeLaneCheck, type RefineParse } from "./refineDelta";
+import { readDelta, stageWordIn, type FreeLaneCheck, type RefineParse } from "./refineDelta";
 import { freeSubjectGuidance } from "./refineSubjects";
 import { INK_NEEDS_DOCUMENT_MESSAGE } from "./inkPlacement";
 import { readRemovalSubject } from "./refineRemoval";
@@ -141,6 +141,11 @@ const BASE_PROMPT = [
   '  A SHAPE is ink even when they do not say "tattoo": a star, a heart, a rose, initials,',
   '  a word, a symbol. Marks are what skin does by itself — freckles, moles, scars,',
   '  birthmarks, vitiligo. Anything DRAWN on the skin belongs to the free-lane subject "ink".',
+  "  A CONDITION OF THE SKIN IS NOT A MARK. A mark is ONE THING YOU COULD POINT AT —",
+  '  "a mole on her left cheek", "a scar through her eyebrow", "freckles across her nose".',
+  "  A quality spread over her skin with no one place — acne, weathered or sun-damaged",
+  "  skin, ruddiness, dryness, being freckly in general — is skinCharacter, in their words.",
+  '  "acne on her face" is skinCharacter: "acne". "A mole on her cheek" is marks.',
   '  "contoured cheekbones" is makeup; "high cheekbones" is structure.',
   '  A COLOUR PHRASE THAT SAYS "HAIR" IS HAIR. "Pastel pink hair color", "pink hair",',
   '    "hair color pink" — the word hair names the drawer, so it is never makeup. What a',
@@ -183,6 +188,47 @@ const BASE_PROMPT = [
   "Casting decisions are NOT refinements: age, heritage, sex and build are who was cast rather",
   'than how they look today. Reply {"wall": "stage", "asked": "her age"} and the like — rolling',
   "again is the honest answer to those.",
+  /*
+    A COLOURING CONDITION IS NOT A CASTING DECISION — and this line is what makes
+    fable-363 ruling 1 reach its own bar.
+
+    The stage-wall backstop below is the ruled fix, and driven on the real
+    transport it did NOT recover the sentence it was built for: *"make her
+    albino"* filed 0/5 with the backstop and 0/5 without it, identically, and the
+    re-look's reply said why — it came back `asked: "her albinism"` and
+    `asked: "her age"`, which is THIS sentence, quoted. The model was never
+    flipping a coin on albinism. It was obeying an instruction, and it reads
+    albinism as heritage.
+
+    The founder called *"make her albino"* a genuine ask (fable-361 §2), so the
+    sentence over-captures. It is narrowed here rather than at the wall, because
+    the wall was never the door: a backstop that overrode a ruled product
+    position would be the wrong repair in the right place.
+
+    # The four words are untouched, and that is measured, not intended
+
+    Narrowing this could have opened age, heritage, sex or build — a scope change
+    nobody asked for, on a door that charges. Driven n=5 each with this line in
+    place (`scripts/probe-casting-decision-carveout-disposable.mts`,
+    `output/carveout-probe/probe.txt`):
+
+        make her albino                 5/5 FILE   (0/5 before)
+        give her vitiligo on her hands  5/5 FILE
+        let her hair go grey            5/5 FILE
+        make her look older   (age)     0/5 file — still refuses
+        make her korean  (heritage)     0/5 file — still refuses
+        make her a man        (sex)     0/5 file — still refuses
+        make her more muscular (build)  0/5 file — still refuses
+        put her on a beach   (scene)    0/5 file — still refuses
+
+    And the albino filing decomposes 5/5 into skin, hair, brows, lashes and eyes
+    together — the whole-person reading working law 8 asks for, which the model
+    knew all along and was being refused for.
+  */
+  "  A COLOURING CONDITION IS NOT HERITAGE. Albinism, vitiligo, going grey, sun damage — those",
+  "  are how her colouring IS, not who was cast, so they file normally. Albinism is the whole",
+  "  person's colouring: file the skin, the hair, the brows and lashes, and the eyes together,",
+  "  because a pale face under unchanged dark hair is not what they asked for.",
   "",
   'If the instruction is empty or you genuinely cannot tell what is wanted, reply {"unclear": true}.',
 ].join("\n");
@@ -283,6 +329,69 @@ const HYBRID_CONSTRAINT = [
 ].join("\n");
 
 /**
+ * THE STAGE RE-LOOK — what the code says when it overrides an unbacked wall
+ * (fable-363 ruling 1).
+ *
+ * # It does not tell the model the answer, and that is deliberate
+ *
+ * The obvious wording — *"this is not a stage ask, file it"* — would be a
+ * different defect wearing the fix's clothes. `stageWordIn` is a LEXICON with no
+ * `beach` and no `sofa` in it, so *"put her on a beach"* also arrives here
+ * unbacked, and a constraint that pushes toward filing would push a genuine
+ * scene ask into whichever facet would take its words. **A safe refusal turned
+ * into a wrong render is worse than the wrong refusal being fixed.**
+ *
+ * So this states what the code actually established — that their sentence names
+ * no scenery the code can see — and then asks for a JUSTIFIED answer either way.
+ * A wall re-claimed with the offending word named STANDS, and that word is
+ * logged: it is the evidence that would widen `STAGE_WORDS`, which is fable-363's
+ * own audit condition met by the mechanism rather than by a promise.
+ *
+ * Both halves are driven in the suite against an engine that always claims the
+ * wall, because a backstop tested only through a model that usually behaves is
+ * not tested (working law 3).
+ *
+ * # WHAT THIS DOES NOT FIX, measured and named rather than hoped past
+ *
+ * Driven on the real transport, n=5 per sentence, twice: every scene, wardrobe
+ * and prop ask still refuses **5/5** — including *"put her on a beach"* and
+ * *"photograph her in a forest at sunset"*, which the lexicon cannot back and
+ * which are held by this constraint alone. Nothing scenery-shaped filed, in 50
+ * samples. And *"give her freckles across her nose"* recovers **5/5**.
+ *
+ * But *"make her albino"* and *"make her look older"* still refused **0/5** with
+ * this constraint in place — measured **identically with the backstop and
+ * without it**, so on the sentence it was built for the backstop recovered
+ * nothing. The re-look's own reply said why: it came back `asked: "her age"` and
+ * `asked: "her albinism"` — the base prompt's OWN EXAMPLE STRING, quoted from
+ * the ruled sentence *"Casting decisions are NOT refinements: age, heritage, sex
+ * and build are who was cast rather than how they look today."* The model was
+ * not flipping a coin there; it was obeying an instruction, and it reads
+ * albinism as heritage.
+ *
+ * **So the repair went to the sentence, not to the wall** — see the colouring
+ * carve-out beside it in `BASE_PROMPT`, where albino now files 5/5 and all four
+ * casting words still refuse 5/5. A backstop that overrode a ruled product
+ * position from a re-look constraint would have been the wrong repair in the
+ * right place.
+ *
+ * What this backstop is for, then, is the case it can actually adjudicate: a
+ * model claiming scenery in a sentence naming none. Its cost is one extra text
+ * call, and only on a refusal.
+ */
+const STAGE_RELOOK_CONSTRAINT = [
+  "",
+  "",
+  "THE CODE HAS CHECKED THEIR SENTENCE FOR SCENERY, WARDROBE AND PROPS AND FOUND NONE, so a",
+  "refusal on those grounds is not yet earned. Read the instruction once more. If it is about",
+  "the PERSON — her face, hair, skin, body, colouring or adornment — file it normally.",
+  'If it genuinely is about the scene, the setting, a garment or a prop, reply {"wall": "stage"}',
+  'again AND put in "asked" the exact word FROM THEIR INSTRUCTION that names it. Never file a',
+  "place, a scene, a garment or a prop into any facet — those have no slot, and filing one is",
+  "worse than refusing it.",
+].join("\n");
+
+/**
  * The echo pass's one extra line (D-172).
  *
  * Deliberately narrow: it constrains the VOCABULARY of the answer and changes
@@ -331,6 +440,14 @@ export type RefineInterpretInput = {
   echoed?: boolean;
   /** The hybrid-likeness pass — the comparison is already settled (D-181). */
   hybrid?: boolean;
+  /**
+   * THE STAGE RE-LOOK — the code found no stage word and is asking again
+   * (fable-363). Set by `interpretRefinement` after an unbacked `wall_stage`,
+   * never by a caller, and never twice: a re-look that claims the wall again
+   * falls through to the ordinary refusal, so the worst case is exactly the
+   * behaviour that shipped before this existed.
+   */
+  stageRelook?: boolean;
   /** What the face is NOW — relative asks resolve against this. */
   currentEyeColour: string | null;
   currentEyeShape: string | null;
@@ -425,7 +542,8 @@ async function runOnce(
     const reply = await engine.complete({
       system: (input.mode === "edit" ? BASE_PROMPT : SYSTEM_PROMPT)
         + (input.echoed ? ECHO_CONSTRAINT : "")
-        + (input.hybrid ? HYBRID_CONSTRAINT : ""),
+        + (input.hybrid ? HYBRID_CONSTRAINT : "")
+        + (input.stageRelook ? STAGE_RELOOK_CONSTRAINT : ""),
       user: [
         `Current eye colour: ${input.currentEyeColour ?? "unknown"}`,
         `Current eye shape: ${input.currentEyeShape ?? "unknown"}`,
@@ -564,6 +682,44 @@ async function runOnce(
       return { ok: false, refusal: { reason: "wall_likeness" } };
     }
     if (reply.wall === "content") return { ok: false, refusal: { reason: "wall_content" } };
+    /*
+      THE CODE DECIDES, THE MODEL PROPOSES (fable-363 ruling 1, D-181's shape).
+
+      This was the one wall the code took on trust. `readDelta` owns a real stage
+      instrument and it never ran here, because a wall reply carries no delta to
+      run it on — so the model's claim was the whole decision, and measured on
+      "make her albino" it was a COIN FLIP: refused 4 times in 5, filed correctly
+      the fifth, on an ask the founder named as genuine.
+
+      So the claim is now checked against `stageWordIn`, the same lexicon
+      `readDelta` uses. Their sentence names a stage word: the refusal is BACKED
+      and stands, deterministically, before any second call. It names none: the
+      refusal is UNBACKED — not disproven, because a lexicon without `beach` in
+      it cannot disprove anything — and the model gets one re-look that must
+      JUSTIFY a second claim by naming the word.
+
+      A re-claim stands and is logged with the word, which is the evidence that
+      would widen `STAGE_WORDS` from measurement rather than from taste. Anything
+      else falls through to today's refusal, so the worst case is unchanged.
+    */
+    const backing = stageWordIn(instruction);
+    if (backing === null && !input.stageRelook) {
+      log.warn(
+        { asked, instruction },
+        "[refineInterpreter] the model claimed the stage wall and their sentence names no stage "
+        + "word — overriding for one re-look",
+      );
+      const relooked = await runOnce(engine, { ...input, stageRelook: true }, instruction);
+      if (relooked?.ok) return relooked;
+      if (relooked && !relooked.ok && relooked.refusal.reason === "wall_stage") {
+        log.warn(
+          { claimed: relooked.refusal.asked, instruction },
+          "[refineInterpreter] the stage wall was re-claimed with a word the lexicon lacks — "
+          + "a STAGE_WORDS candidate",
+        );
+      }
+      if (relooked) return relooked;
+    }
     return { ok: false, refusal: { reason: "wall_stage", asked: asked || "that" } };
   }
 

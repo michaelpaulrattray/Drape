@@ -78,8 +78,23 @@ export const FREE_SUBJECTS = {
   chin: "CHIN",
   ears: "EARS",
   skinTone: "SKIN TONE",
+  /*
+    A CONDITION OF THE SKIN, WHICH IS NOT A MARK ON IT (fable-363 ruling 2,
+    executing the founder's taxonomy in fable-361 §3).
+
+    The taxonomy is the founder's: only enumerable FEATURES ever get a picture,
+    and everything diffuse carries as words. The interpreter did not know it —
+    measured on the real transport, *"acne on her face"* filed under `marks`
+    four times in five, and the fifth found this slot on its own. Acne is not a
+    thing you can point to; it is what her skin is doing, so it belongs here
+    beside weathering, ruddiness and being freckly in general.
+
+    The split this pair now holds: **one thing you could point at is a MARK; a
+    quality spread over her with no one place is a CHARACTER.**
+  */
   skinCharacter: "SKIN CHARACTER",
-  /** Visible marks: scars, freckling, birthmarks, vitiligo. NOT ink. */
+  /** One sited thing on the skin: a mole, a scar, a birthmark, freckles across
+      her nose. NOT ink, and NOT a diffuse condition — see `skinCharacter`. */
   marks: "MARKS",
   /*
     ADORNMENT IS THE PERSON, NOT THE STAGE (D-160).

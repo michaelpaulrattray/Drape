@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "33663af4d0360e73"
+    "sourceFingerprint": "5441dbfb5971f79a"
   },
   "domains": [
     {
@@ -8924,6 +8924,10 @@
     {
       "id": "test:server/castingV2/spokenSentences.test.ts",
       "path": "server/castingV2/spokenSentences.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/stageWallBackstop.test.ts",
+      "path": "server/castingV2/stageWallBackstop.test.ts"
     },
     {
       "id": "test:server/castingV2/statedAccessories.test.ts",

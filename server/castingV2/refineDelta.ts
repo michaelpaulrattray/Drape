@@ -438,6 +438,48 @@ const STAGE_WORDS = [
  */
 const ACCESSORY_ALLOWED = new Set(["wearing"]);
 
+/**
+ * DOES THEIR OWN SENTENCE NAME A STAGE WORD — the code's half of the stage wall
+ * (fable-363 ruling 1).
+ *
+ * # What this is for, and the defect it closes
+ *
+ * `wall_stage` was the one refusal in the interpreter the code never re-checked:
+ * `refineInterpreter` took the model's claim and returned it, while the real
+ * instrument below never ran. Measured on the founder's own ask, *"make her
+ * albino"* hit that wall **4 times in 5** and filed correctly the fifth — a
+ * coin-flip wall on a legitimate face edit, which is the shape D-181 already
+ * ruled blocking. Beside it, six body asks hit the same wall **18 times out of
+ * 18**, perfectly stable. The wall is steady where the model is sure and flips
+ * exactly where a real ask half-registers.
+ *
+ * # ITS ABSENCE IS NOT EVIDENCE OF ABSENCE, and the caller must treat it so
+ *
+ * This is a LEXICON. It can say "their sentence definitely names scenery"; it
+ * can never say "their sentence definitely does not", because the list has no
+ * `beach`, no `sofa`, no `jeans`, and no finite list ever would. So a `true`
+ * here BACKS a refusal and a `false` only means the refusal is UNBACKED — which
+ * is a reason to look again, never a licence to file. The caller does the
+ * looking; this function does not decide.
+ *
+ * # The accessory carve-out travels with it (D-160)
+ *
+ * `readDelta` exempts "wearing" for the accessories subject, because that is how
+ * anyone describes an earring. This site does not know the subject — there is no
+ * parsed delta yet — so it applies the exemption rather than withholding it: the
+ * failure being fixed is a wrong refusal, and a guard aimed at parsed VALUES,
+ * re-pointed at the raw sentence without its carve-out, would refuse
+ * *"wearing small gold hoops"* on the very word the carve-out exists for. Every
+ * real garment ask names its garment too — "wearing a red coat" still fires on
+ * `coat` — so nothing that should refuse stops refusing.
+ */
+export function stageWordIn(text: string): string | null {
+  const lowered = text.toLowerCase();
+  return STAGE_WORDS.find(
+    (word) => !ACCESSORY_ALLOWED.has(word) && new RegExp(`\\b${word}\\b`).test(lowered),
+  ) ?? null;
+}
+
 /** Runtime validation of the interpreter's reply — a closed vocabulary is only
     closed if something checks. */
 export function readDelta(value: unknown, check?: FreeLaneCheck): RefineDelta | null {
