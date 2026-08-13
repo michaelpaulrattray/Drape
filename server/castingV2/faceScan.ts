@@ -252,13 +252,13 @@ export async function scanFace(input: {
   */
   const describer = input.describe;
   const words = describer === null
-    ? Promise.resolve<FaceDescriptions>({ build: null, skin: null })
+    ? Promise.resolve<FaceDescriptions>({ build: null, skin: null, teeth: null })
     : describer({ bytes: input.frame.bytes, contentType: input.contentType ?? "image/png" })
       .catch((error) => {
         /* Same rule as a failed region: a courtesy read that fails costs the
            user nothing and leaves the row exactly as it is today. */
         failed.push({ question: "descriptions", why: error instanceof Error ? error.message : String(error) });
-        return { build: null, skin: null } as FaceDescriptions;
+        return { build: null, skin: null, teeth: null } as FaceDescriptions;
       });
 
   /*

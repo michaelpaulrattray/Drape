@@ -22,6 +22,7 @@ import {
   describeFace,
   describeSeparately,
   describeTogether,
+  describeWithTeeth,
   describedFeatures,
   NOT_DESCRIBED,
 } from "./faceDescribe";
@@ -123,10 +124,48 @@ describe("the two arms, which differ in ONE thing", () => {
   });
 
   it("ships the arm the bench chose", async () => {
-    /* The pointer is a measurement's result, so it is pinned: arm A, 11/12 on
-       discrimination against arm B's 9/12 and a bar of 10. Changing it should
-       mean a new run, and this fails if it changes without one. */
-    expect(describeFace).toBe(describeTogether);
+    /* The pointer is a measurement's result, so it is pinned. Arm A won the
+       first bench (11/12 against arm B's 9/12, bar 10); the three-question arm
+       then matched it 12/12 on the same faces on the same evening and cleared
+       two bars of its own, so the shipped reader is that one. Changing this
+       should mean a new run, and this fails if it changes without one. */
+    expect(describeFace).toBe(describeWithTeeth);
+  });
+
+  it("arm 3Q asks the third question in the SAME call, on the same rules", async () => {
+    const engine = engineSaying('{"build": "slim shoulders", "skin": "warm olive", "teeth": "even and bright"}');
+    const read = await describeWithTeeth({ ...FRAME, engine });
+    expect(engine.sent).toHaveLength(1);
+    expect(read).toEqual({ build: "slim shoulders", skin: "warm olive", teeth: "even and bright" });
+  });
+
+  it("tells the teeth reader, ON THE WIRE, not to describe a mouth or guess at a closed one", async () => {
+    /*
+      ASSERTED ON THE OUTGOING REQUEST (law 5). The catalogue refuses teeth a
+      PICTURE because "a crop of the mouth filed as her teeth is the lips' crop
+      under a second name"; the same mistake in words is a line about her lips
+      filed as a line about her teeth. Both halves of the instruction are
+      load-bearing and neither is checkable from the constant beside it.
+    */
+    const engine = engineSaying('{"build": "a", "skin": "b", "teeth": null}');
+    await describeWithTeeth({ ...FRAME, engine });
+    const asked = engine.sent[0].user;
+    expect(asked).toContain("HER TEETH");
+    for (const word of ["lips", "mouth", "smile"]) expect(asked).toContain(word);
+    expect(asked).toContain("never guess at what a closed mouth is hiding");
+  });
+
+  it("treats a hedge about teeth as no description, like every other row", async () => {
+    const read = await describeWithTeeth({
+      ...FRAME,
+      engine: engineSaying('{"build": "slim", "skin": "fair", "teeth": "unclear"}'),
+    });
+    expect(read.teeth).toBeNull();
+  });
+
+  it("says nothing about any of the three when there is no transport", async () => {
+    expect(await describeWithTeeth({ ...FRAME, engine: null }))
+      .toEqual({ build: null, skin: null, teeth: null });
   });
 
   it("keeps both arms on the SAME rules, or the bench compared two things", async () => {
@@ -169,13 +208,22 @@ describe("which rows are described, derived rather than listed", () => {
 
   it("accepts one that is declared, and the declaration says why", () => {
     expect(() => assertEveryDescribedFeatureHasAnAsk(describedFeatures())).not.toThrow();
-    /* `teeth` is the one the guard itself found. A reason of two words would
-       satisfy the type and defeat the point. */
+    /* A reason of two words would satisfy the type and defeat the point, and a
+       feature may not be declared in both places at once. The map is empty
+       today; the assertions stand for the next row that lands in it. */
     for (const [feature, why] of Object.entries(NOT_DESCRIBED)) {
       expect(why.length, feature).toBeGreaterThan(60);
       expect(feature in DESCRIBED_ASKS, feature).toBe(false);
     }
-    expect(Object.keys(NOT_DESCRIBED)).toContain("teeth");
+  });
+
+  it("asks about teeth now, because the bench it was waiting on was run", () => {
+    /* `teeth` was the exception this guard found for itself and it is spent:
+       fable-402 §2 ruled "if the bench passes, teeth joins". It passed six
+       bars, so the row is asked and no longer excused. */
+    expect(describedFeatures()).toContain("teeth");
+    expect("teeth" in DESCRIBED_ASKS).toBe(true);
+    expect("teeth" in NOT_DESCRIBED).toBe(false);
   });
 });
 
@@ -193,10 +241,31 @@ describe("the scan carries the words", () => {
     const scan = await scanFace({
       frame,
       reader,
-      describe: async () => ({ build: "slim shoulders, long neck", skin: "warm olive, freckled" }),
+      describe: async () => ({
+        build: "slim shoulders, long neck",
+        skin: "warm olive, freckled",
+        teeth: "even and bright, upper row shown in a smile",
+      }),
     });
     expect(scan.descriptions.get("build")).toBe("slim shoulders, long neck");
     expect(scan.descriptions.get("skin")).toBe("warm olive, freckled");
+    expect(scan.descriptions.get("teeth")).toBe("even and bright, upper row shown in a smile");
+  });
+
+  it("leaves the teeth row empty on the closed mouth every cast frame has", async () => {
+    /*
+      The common case, and the one the bench measured 17 times on real masters:
+      the roll prompt says "Mouth closed" with override authority, so the honest
+      answer is null and a row with no content does not draw. This pins that a
+      null costs the panel nothing rather than filing an empty string.
+    */
+    const scan = await scanFace({
+      frame,
+      reader,
+      describe: async () => ({ build: "slim shoulders", skin: "warm olive", teeth: null }),
+    });
+    expect(scan.descriptions.has("teeth")).toBe(false);
+    expect(scan.descriptions.get("build")).toBe("slim shoulders");
   });
 
   it("asks nothing when it is handed no describer", async () => {

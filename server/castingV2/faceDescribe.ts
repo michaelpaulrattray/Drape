@@ -62,7 +62,17 @@ const log = createModuleLogger("castingV2/faceDescribe");
 export type FaceDescriptions = {
   build: string | null;
   skin: string | null;
+  teeth: string | null;
 };
+
+/**
+ * The shape the FIRST bench's two arms answer in — build and skin, no teeth.
+ *
+ * They are kept because they are the artifact the shipped arm was chosen on,
+ * and a bench arm that quietly grew a third question would make its own result
+ * unreproducible. Nothing in the product calls them.
+ */
+export type TwoQuestionDescriptions = Omit<FaceDescriptions, "teeth">;
 
 /**
  * The rules both arms are given, verbatim, so the arms differ in ONE thing.
@@ -113,8 +123,26 @@ const SKIN_ASK = [
   "Her skin, not her makeup and not the lighting.",
 ].join("\n");
 
+/**
+ * HER TEETH — joined on fable-402 §2's own conditional, after the bench.
+ *
+ * The ask is written against the catalogue's reason for refusing teeth a
+ * picture — *"that question is the mouth, so a crop of it filed as her teeth is
+ * the lips' crop under a second name"*. The same mistake in words is a line
+ * about her lips filed as a line about her teeth, so it is forbidden by name,
+ * along with the worse one: describing what a closed mouth hides.
+ */
+const TEETH_ASK = [
+  "HER TEETH: only if her teeth can actually be SEEN in this photograph —",
+  'what the picture shows of them, e.g. "even and bright, a small gap at the front".',
+  "If her lips are together, or her mouth is closed, or her teeth are not visible for any",
+  "other reason, answer null for this one. Never describe her lips, her mouth or her smile",
+  "here — those are not her teeth — and never guess at what a closed mouth is hiding.",
+].join("\n");
+
 DESCRIBED_ASKS.build = BUILD_ASK;
 DESCRIBED_ASKS.skin = SKIN_ASK;
+DESCRIBED_ASKS.teeth = TEETH_ASK;
 
 /**
  * The features that draw a row and can never be photographed — derived.
@@ -140,26 +168,16 @@ export function describedFeatures(): string[] {
  * A ROW THAT DRAWS, CANNOT BE PICTURED, AND IS DELIBERATELY NOT DESCRIBED —
  * with the reason, because "nobody wrote one" is not one.
  *
- * `teeth` was found by the guard below on its first run, which is the guard
- * earning itself: the founder named body and skin from his own look at the
- * panel, and the catalogue says there are THREE rows in that state. It is not
- * quietly bundled in, for a reason that is about the measurement rather than
- * about teeth: {@link describeFace}'s arm was chosen on a bench that asked
- * TWO questions in one read, and its discrimination bar is a fact about that
- * artifact. A third question makes it a different reader, and adopting a
- * measured verdict for an unmeasured thing is how a number outlives what it
- * was measured on.
+ * **Empty today, and that is a result rather than an oversight.** `teeth` lived
+ * here from the moment the guard below found it (the founder named body and
+ * skin from his own look at the panel; the catalogue said there were THREE rows
+ * in that state) until the bench fable-402 §2 ordered was run. It is now asked,
+ * so the exception is spent. The record of why is in {@link describeFace}.
  *
- * Filed for a ruling (opus-310), not forgotten.
+ * The next wordless row the catalogue grows lands here or in `DESCRIBED_ASKS`,
+ * and the guard refuses until one of them is chosen deliberately.
  */
-export const NOT_DESCRIBED: Record<string, string> = {
-  teeth:
-    "found by this guard rather than by anybody's eye, and held out of the chunk that "
-    + "shipped build and skin: the one-read arm was MEASURED on two questions and a third "
-    + "would make it an unmeasured reader. A closed mouth is also the common case in a "
-    + "casting portrait, so the honest answer would be null on most frames — which is a "
-    + "reason to price the read before buying it, not a reason to skip the row forever",
-};
+export const NOT_DESCRIBED: Record<string, string> = {};
 
 /** Refuse rather than describe half the rows that need describing. */
 export function assertEveryDescribedFeatureHasAnAsk(features: readonly string[] = describedFeatures()): void {
@@ -242,6 +260,31 @@ async function ask(
 }
 
 /**
+ * ARM 3Q — one read, all three descriptions. **This is the shipped reader.**
+ *
+ * Deliberately identical to {@link describeTogether} in everything but the
+ * question list: the arms of the bench that compared them differ in ONE thing,
+ * which is the rule the mirror experiment and the first describe bench were
+ * both built on. What it cost to add the third question, measured rather than
+ * assumed, is recorded on {@link describeFace}.
+ */
+export async function describeWithTeeth(input: ReadInput): Promise<FaceDescriptions> {
+  const answered = await ask(
+    input,
+    [
+      BUILD_ASK, "", SKIN_ASK, "", TEETH_ASK, "",
+      'Reply with JSON: {"build": "...", "skin": "...", "teeth": "..."} and nothing else.',
+    ].join("\n"),
+    ["build", "skin", "teeth"],
+  );
+  return {
+    build: answered.build ?? null,
+    skin: answered.skin ?? null,
+    teeth: answered.teeth ?? null,
+  };
+}
+
+/**
  * ARM A — one read, both descriptions.
  *
  * The cheap arm, and the one with the failure mode worth measuring: a single
@@ -249,7 +292,7 @@ async function ask(
  * words. That is the same shape as a normalizer answering one word to
  * everything, so it needs a discriminating bar rather than a plausibility read.
  */
-export async function describeTogether(input: ReadInput): Promise<FaceDescriptions> {
+export async function describeTogether(input: ReadInput): Promise<TwoQuestionDescriptions> {
   const answered = await ask(
     input,
     [BUILD_ASK, "", SKIN_ASK, "", 'Reply with JSON: {"build": "...", "skin": "..."} and nothing else.'].join("\n"),
@@ -264,7 +307,7 @@ export async function describeTogether(input: ReadInput): Promise<FaceDescriptio
  * Twice the calls (~$0.01 apiece on the interpreter transport, house money
  * either way) and it cannot blur by construction.
  */
-export async function describeSeparately(input: ReadInput): Promise<FaceDescriptions> {
+export async function describeSeparately(input: ReadInput): Promise<TwoQuestionDescriptions> {
   const [build, skin] = await Promise.all([
     ask(input, [BUILD_ASK, "", 'Reply with JSON: {"build": "..."} and nothing else.'].join("\n"), ["build"]),
     ask(input, [SKIN_ASK, "", 'Reply with JSON: {"skin": "..."} and nothing else.'].join("\n"), ["skin"]),
@@ -295,5 +338,36 @@ export async function describeSeparately(input: ReadInput): Promise<FaceDescript
  *
  * Bar 1 is the one to read: without it, arm B looks like a clean pass on every
  * other column while describing nobody in particular.
+ *
+ * # AND THEN THE THIRD QUESTION (fable-402 §2, `bench-teeth-describe-disposable.mts`)
+ *
+ * `teeth` was held out of that chunk because the verdict above is a fact about
+ * a TWO-question reader. The second bench ran the shipped arm and the
+ * three-question arm on the same six faces on the same evening, so the cost of
+ * the third question is attributable rather than atmospheric:
+ *
+ * ```
+ *            coverage      discrimination   blurs   below-the-crop
+ *  arm 2Q    6/6 · 6/6     12/12            0        0
+ *  arm 3Q    6/6 · 6/6     12/12            0        0            ← ships
+ * ```
+ *
+ * It cost nothing, and two bars were added for the question teeth actually
+ * raises:
+ *
+ * - **NO INVENTION — 0 of 17.** Every distinct dev master answers `null` for
+ *   teeth. Every frame this product CASTS has a closed mouth by prompt law
+ *   (`cohortPhotorealHuman.ts`: *"Mouth closed, lips together and relaxed …
+ *   a broad smile is not"*), so this is the column where a sentence about
+ *   teeth nobody can see would have appeared. None did.
+ * - **CAN BE ANSWERED.** Seventeen nulls are only evidence if the reader could
+ *   have said something. It can: on three synthetic smiling fixtures it
+ *   answered 3/3 and a judge matched note to face 3/3 — and then on a REAL
+ *   product frame, a delivered `"give her a broad smile"` refine, it wrote
+ *   *"even and white, upper row shown in smile"*, which is what the picture
+ *   shows and only what it shows.
+ *
+ * The row still draws nothing on a closed mouth: no content, no row, which is
+ * the founder's own panel rule doing the work.
  */
-export const describeFace = describeTogether;
+export const describeFace = describeWithTeeth;
