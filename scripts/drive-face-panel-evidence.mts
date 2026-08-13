@@ -86,10 +86,11 @@ const MEASURED_ROW = "Her lips";
  *   DESCRIBED  what the scan read off this frame; carries NO `from`, by design
  *   PAIR       one row in her words, one rectangle per instance (fable-378 (c))
  *
- * `Her earrings` belongs in LIBRARY by its rows and appears in none of these:
- * see the ABSENT record below the pair check.
+ * `Her earrings` joined LIBRARY in shift 80, when earring detection armed and
+ * the row came back onto the panel. It had been recorded ABSENT below the pair
+ * check for four shifts — the check that could not fire in either direction.
  */
-const LIBRARY_ROWS = ["Her lips", "Her hair", "Her glasses"] as const;
+const LIBRARY_ROWS = ["Her lips", "Her hair", "Her glasses", "Her earrings"] as const;
 const DESCRIBED_ROWS = ["Her build", "Her skin"] as const;
 const PAIR_ROWS = ["Her eyes", "Her brows", "Her ears"] as const;
 
@@ -470,12 +471,13 @@ for (const theme of THEMES) {
       RE-ANCHORED (shift 79). The rule it now states: A MATCHED PAIR IS ONE ROW
       WITH TWO RECTANGLES — asserted on a pair the picture actually has.
 
-      It named her EARRINGS, and on this fixture that assertion cannot fire in
-      either direction: earring detection is deliberately unarmed (fable-340's
-      `deferArming`), so the pair has no rectangle, so fable-414's box rule
-      takes the row off the panel. A check that cannot fail is the thing this
-      program keeps finding, and it was one — recorded as ABSENT below rather
+      It named her EARRINGS, and for four shifts that assertion could not fire
+      in either direction: earring detection was deliberately unarmed
+      (fable-340's `deferArming`), so the pair had no rectangle, so fable-414's
+      box rule took the row off the panel. A check that cannot fail is the thing
+      this program keeps finding, and it was one — recorded as ABSENT rather
       than deleted, because the day it CAN fire is the day someone should look.
+      **Shift 80 is that day** (see the earring block below the pair check).
 
       Her eyes, her brows and her ears are read pairs on this frame, so the rule
       is exercised where the ontology actually lands: ONE row in the person's own
@@ -493,12 +495,36 @@ for (const theme of THEMES) {
         ? `${PAIR_ROWS.join(", ")} — one row each of ${panel.rows.length}`
         : `not one row each: ${pairFailures.join(", ")}`,
     );
-    absent(
-      `${theme}: a matched pair is one row — her EARRINGS`,
-      "not applicable and NOT a pass: she is wearing hoops and the library holds "
-      + '"a slim gold hoop" on both sides, but earring detection is unarmed by ruling '
-      + "(fable-340 deferArming), so the pair has no rectangle and fable-414's box rule "
-      + "takes the row off the panel entirely. Filed in opus-336 §3",
+    /*
+      HER EARRINGS, JUDGED AT LAST — and the rule the picture actually states.
+
+      She wears ONE hoop. Her left ear carries it; her right ear is behind her
+      hair, and the earring court's whole point is that those two are different
+      facts about a face: a worn side segments (0.0189–0.0347% of frame), and a
+      side that is bare OR covered returns nothing at all. Presence-only arming
+      files the first and never guesses at the second, so this row is one row
+      with ONE rectangle — not half a pair.
+
+      The row is on the panel because it has a rectangle to point at, which is
+      fable-414's box rule working in the direction nobody could exercise until
+      detection armed.
+    */
+    const earringRows = panel.rows.filter((row: any) => row.name === "Her earrings");
+    /* Its own read of the boxes — the regions are read again below for the
+       hover checks, and a check that borrows a later read is a check whose
+       subject moved between the two. */
+    const drawn = await page.evaluate(READ_REGIONS) as any;
+    const boxNames = (drawn?.boxes ?? []).map((region: any) => region.tag);
+    check(
+      earringRows.length === 1
+        && earringRows[0].parts === 1
+        && boxNames.includes("Her left earring")
+        && !boxNames.includes("Her right earring"),
+      `${theme}: the ear that wears one is found, and the ear behind her hair is not guessed at`,
+      earringRows.length !== 1
+        ? `${earringRows.length} rows named "Her earrings"`
+        : `one row, ${earringRows[0].parts} part(s), words "${earringRows[0].words}" (${earringRows[0].from})`
+          + ` · boxes: ${boxNames.filter((name: string) => name.includes("earring")).join(", ") || "none"}`,
     );
 
     /* ---- the thumbnail, and the negative control ---- */
