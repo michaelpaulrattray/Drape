@@ -297,6 +297,28 @@ const VALID_IN_CONTEXT: readonly string[] = [
   "know", "last", "left", "like", "long", "look", "made", "many", "mark",
   "mask", "much", "must", "need", "nice", "none", "note", "only", "open",
   "pale", "part", "pick", "plain", "pull", "push", "quite", "read", "ready",
+  /*
+    THE SWEEP'S OWN HARVEST (opus-347), and the instance that started it:
+    **"shave her head" was answered with "Did you mean shape?"** — the
+    founder's own phrasing for a bald edit, stopped at the door by a typo
+    question about shaping her head, before the interpreter ever saw it.
+
+    `shave` is not a typo, it is a barber's verb. Rather than add that one
+    word, `sweep-nearmiss-falsepositives-disposable.mts` put every word the
+    PRODUCT ITSELF writes — its roll prompt, its refine prose, its refusal
+    sentences, its catalogue notes — through its own typo gate, on the
+    principle that a word this product uses is a real word in this domain by
+    construction. 70,867 tokens, 4,749 distinct, and these are what came back.
+    A guard test keeps the neighbourhood walked from now on, so the list
+    cannot silently fall behind the vocabulary again.
+  */
+  "shave", "shaves", "shaven", "buzz", "trim", "grow", "grows", "grown",
+  "crown", "frown", "part", "pair", "tell", "hips", "chip", "chips",
+  "coin", "cone", "born", "built", "busy", "chair", "checks", "earn",
+  "earns", "fails", "flips", "heard", "lies", "node", "noise", "nope",
+  "prose", "rode", "role", "skim", "skip", "slips", "tear", "tenth",
+  "torn", "tune", "wait", "waits", "warn", "while", "word", "wore",
+  "write", "years", "zone",
   "right", "rough", "same", "seen", "sets", "show", "size", "slim", "small",
   "smile", "some", "soft", "sort", "stay", "still", "stop", "such", "sure",
   "take", "tall", "text", "they", "thing", "time", "tiny", "tone", "tint",
@@ -304,8 +326,23 @@ const VALID_IN_CONTEXT: readonly string[] = [
   "were", "wave", "weak", "wear", "well", "wire", "wispy", "work", "your",
 ];
 
+/**
+ * SPELLINGS THAT ARE NOT MISTAKES — the other half of "valid in context".
+ *
+ * `color` is one slip from `colour` and `gray` from `grey`, so a US customer
+ * typing the spelling they were taught is asked whether they meant ours. That
+ * is not a correction, it is a nationality quiz in front of the work. `blond`
+ * is the same shape with a different history — both spellings are standard and
+ * the product happens to store one.
+ *
+ * Separated from the curated list rather than folded into it, because these are
+ * a CLASS with a rule ("a standard alternate spelling of a word we know is
+ * never a typo") and the list below is a neighbourhood walk.
+ */
+const ALTERNATE_SPELLINGS: readonly string[] = ["color", "gray", "blond", "grey", "colour", "blonde"];
+
 /** A word we can name, or an ordinary word — either way, not a typo. */
-const NEVER_A_TYPO = new Set<string>([...KNOWN_WORDS, ...VALID_IN_CONTEXT]);
+const NEVER_A_TYPO = new Set<string>([...KNOWN_WORDS, ...VALID_IN_CONTEXT, ...ALTERNATE_SPELLINGS]);
 
 /**
  * Valid, including the shapes English puts a word into.
@@ -316,14 +353,33 @@ const NEVER_A_TYPO = new Set<string>([...KNOWN_WORDS, ...VALID_IN_CONTEXT]);
  * suffixes come off instead. A genuine typo survives it: "hiars" reduces to
  * "hiar", which is still nothing we know, and still gets its free question.
  */
-const INFLECTIONS = ["s", "es", "ed", "ing", "er", "ers", "y", "ier", "iest"];
+const INFLECTIONS = ["s", "es", "ed", "d", "ing", "er", "ers", "y", "ier", "iest"];
+
+/**
+ * Known, or one suffix away from known.
+ *
+ * The vocabulary stores `freckles`, `cheekbones`, `brows`, `eyes` — PLURALS,
+ * because that is how a face is talked about. Stripping suffixes off the TYPED
+ * word can never reach them, so `freckle` and `cheekbone` reduced to nothing we
+ * knew and were offered their own plural back as a correction.
+ */
+function knownOrInflectionOf(word: string): boolean {
+  if (NEVER_A_TYPO.has(word)) return true;
+  return INFLECTIONS.some((suffix) => NEVER_A_TYPO.has(`${word}${suffix}`));
+}
 
 function validInContext(token: string): boolean {
-  if (NEVER_A_TYPO.has(token)) return true;
+  if (knownOrInflectionOf(token)) return true;
+  /*
+    Both directions, and they compose: `freckled` takes `ed` off to `freckl`,
+    which is not a word we know — but `freckle` plus `s` is. One-directional
+    matching missed the whole family; the sweep over the product's own
+    vocabulary is what showed the shape (opus-347).
+  */
   return INFLECTIONS.some((suffix) => {
     if (!token.endsWith(suffix) || token.length - suffix.length < 3) return false;
     const stem = token.slice(0, -suffix.length);
-    return NEVER_A_TYPO.has(stem) || NEVER_A_TYPO.has(`${stem}e`);
+    return knownOrInflectionOf(stem) || knownOrInflectionOf(`${stem}e`);
   });
 }
 

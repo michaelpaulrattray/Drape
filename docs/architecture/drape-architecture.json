@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "3cfaab2420eab364"
+    "sourceFingerprint": "e8976bcdf06dcfcb"
   },
   "domains": [
     {
@@ -8813,6 +8813,10 @@
     {
       "id": "test:server/castingV2/mintedSlots.test.ts",
       "path": "server/castingV2/mintedSlots.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/nearMissVocabulary.test.ts",
+      "path": "server/castingV2/nearMissVocabulary.test.ts"
     },
     {
       "id": "test:server/castingV2/onImageGeometryMonochrome.test.ts",
