@@ -90,10 +90,19 @@ describe("the three the audit sent back, now ruled", () => {
   });
 
   it("every other facet DOES have a region — the control", () => {
-    /* Without this, `hasRegion` could be false everywhere and the assertion
-       above would still pass. */
+    /*
+      Without this, `hasRegion` could be false everywhere and the assertion
+      above would still pass.
+
+      THE BODY FACETS JOIN EXPRESSION, and the reason is the same shape rather
+      than a second exception: there is no question that names a build. A torso
+      mask wearing a waist's name is the wrong-boundary class, so the body row
+      carries WORDS and routes full-frame (fable-381 §A.4: "there is no version
+      of that which is not two masters"). If open-vocabulary regions ever make a
+      torso cut honest, this list shortens and the change is deliberate.
+    */
     const regionless = allFacets().filter((facet) => !hasRegion(facet));
-    expect(regionless).toEqual(["expression"]);
+    expect(regionless).toEqual(["bust", "waist", "shoulders", "arms", "build", "expression"]);
   });
 
   it("jaw is one local contour, not a bilateral pair", () => {

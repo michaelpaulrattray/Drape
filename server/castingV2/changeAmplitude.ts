@@ -82,6 +82,14 @@ export const CHANGE_AMPLITUDE: Record<FreeSubject, ChangeAmplitude> = {
   jaw: { levels: RESTRUCTURE, basis: { reasoned: "a contour against the background, so the edge moves decisively" } },
   chin: { levels: RESTRUCTURE, basis: { reasoned: "as the jaw, over a smaller arc" } },
   ears: { levels: REPLACEMENT, basis: { reasoned: "an ear is present or it is not, against hair or background" } },
+  /* A body edit moves a CONTOUR against the background or the garment: the
+     interior stays her, the delta lives at the outline — the jaw's own reasoning
+     over a longer arc. */
+  bust: { levels: RESTRUCTURE, basis: { reasoned: "a chest edit moves the outline under the garment; the fabric between the edges is unchanged" } },
+  waist: { levels: RESTRUCTURE, basis: { reasoned: "a waist edit moves two side contours" } },
+  shoulders: { levels: RESTRUCTURE, basis: { reasoned: "a shoulder edit moves the line where she meets the backdrop" } },
+  arms: { levels: RESTRUCTURE, basis: { reasoned: "an arm edit moves the arm's own edge against the backdrop" } },
+  build: { levels: RESTRUCTURE, basis: { reasoned: "the whole figure's outline moves; her face and her clothes do not" } },
   skinTone: { levels: SURFACE, basis: { reasoned: "a tan is a few levels across all visible skin — the freckle case, spread wider" } },
   skinCharacter: { levels: SURFACE, basis: { reasoned: "texture is the freckle case by another name" } },
   marks: {

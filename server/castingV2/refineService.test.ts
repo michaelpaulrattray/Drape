@@ -602,6 +602,54 @@ describe("refusals land before anything is claimed", () => {
     expect(ledger.charges).toHaveLength(0);
   });
 
+  /*
+    THE FIFTH DOOR, DRIVEN — and driven where the money is, not at its helper.
+
+    `castingFrame.test.ts` proves the table and the sentence. This proves the
+    SERVICE consults them before the claim, which is invariant 7's whole point: a
+    control nothing calls does not exist. Driven through a fake interpreter, so
+    the model cannot rescue it (law 3).
+  */
+  it("refuses an ask the photograph does not contain, for free", async () => {
+    await expect(refineCandidate(
+      { harvest: unmasked, interpret: async () => ({ ok: true as const, delta: { free: { waist: "a smaller waist" } } }) },
+      { ...input, instruction: "make her waist smaller" },
+    )).rejects.toThrow(/framed from the mid-torso up/);
+
+    expect(journal, "nothing was begun").not.toContain("begin");
+    expect(journal, "and nothing was deducted").not.toContain("deduct");
+    expect(ledger.charges).toHaveLength(0);
+  });
+
+  it("SERVES a sentence whose other half is in the picture", async () => {
+    /*
+      The must-not-fire half. Refusing "a smaller waist and bigger arms" for the
+      waist would take the arms away from her to be tidy — so the door fires only
+      when the WHOLE ask is out of frame.
+    */
+    const result = await refineCandidate(
+      {
+        harvest: unmasked,
+        interpret: async () => ({
+          ok: true as const,
+          delta: { free: { waist: "a smaller waist", arms: "bigger arms" } },
+        }),
+      },
+      { ...input, instruction: "a smaller waist and bigger arms" },
+    );
+    expect(result).toBeTruthy();
+    expect(ledger.charges.length, "and it is paid for like any other edit").toBeGreaterThan(0);
+  });
+
+  it("does NOT refuse a body ask that IS in the picture", async () => {
+    const result = await refineCandidate(
+      { harvest: unmasked, interpret: async () => ({ ok: true as const, delta: { free: { build: "a more athletic build" } } }) },
+      { ...input, instruction: "give her a more athletic build" },
+    );
+    expect(result).toBeTruthy();
+    expect(ledger.charges.length).toBeGreaterThan(0);
+  });
+
   it("does NOT refuse a reading that keeps her sentence, on the same face", async () => {
     /* The negative half, on the same fixture: green is not brown, so the guard
        has nothing to say and the ordinary path runs. */

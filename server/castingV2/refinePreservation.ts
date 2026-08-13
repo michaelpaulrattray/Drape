@@ -97,6 +97,21 @@ const CATEGORIES: Category[] = [
     },
   },
   {
+    /*
+      ONE CATEGORY FOR THE WHOLE FIGURE, because the panel row is one thing and
+      the clause speaks the same ontology (law 8). The siblings still exist so a
+      bust edit does not license the model to redraw her shoulders.
+    */
+    whole: "the same build",
+    siblings: {
+      [f("bust")]: "the same chest",
+      [f("waist")]: "the same waist",
+      [f("shoulders")]: "the same shoulders",
+      [f("arms")]: "the same arms",
+      [f("build")]: "the same build",
+    },
+  },
+  {
     whole: "the same makeup",
     siblings: { [facetOfAxis("makeup")]: "the same makeup" },
   },

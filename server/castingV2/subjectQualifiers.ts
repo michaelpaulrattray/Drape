@@ -93,6 +93,17 @@ export const SUBJECT_QUALIFIER: Record<FreeSubject, SubjectQualifier> = {
   brows: { describe: ", as brow hair growing from this person's own brow bone, not pencilled on" },
   lashes: { describe: ", as lashes on this person's own lash line" },
   nose: { describe: ", as the nose's own structure, with the rest of the face unchanged" },
+  /*
+    THE BODY CLAUSES SAY "THE SAME PERSON, BUILT DIFFERENTLY" — because the
+    failure to avoid is a build ask arriving as a different woman. Each one also
+    says what must NOT move: the garment is the stage (D-160) and a body edit
+    that restyles her t-shirt has answered a question nobody asked.
+  */
+  bust: { describe: ", as this person's own chest under the same garment, with the neckline and the fabric unchanged" },
+  waist: { describe: ", as this person's own waist, with the same garment sitting on it" },
+  shoulders: { describe: ", as this person's own shoulder line and posture, not a different pose" },
+  arms: { describe: ", as this person's own arms at the same relaxed position, not a different pose" },
+  build: { describe: ", as the same person built differently — her face, her hair and her clothes exactly as they are" },
   lips: { describe: ", as the lips' own shape and surface, distinct from any lip colour" },
   teeth: { describe: ", visible in the mouth as it is already held, without changing the expression" },
   cheekbones: { describe: ", as the face's own bone structure under its own skin" },

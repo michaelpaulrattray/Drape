@@ -755,6 +755,16 @@ const MOVES_ITS_EDGE: Record<Facet, { readonly moves: boolean; readonly why: str
   jaw: { moves: true, why: "a contour against the background" },
   chin: { moves: true, why: "as the jaw, over a smaller arc" },
   ears: { moves: true, why: "an ear is exposed or covered" },
+  /* A BODY EDIT IS ALL EDGE. The outline where she meets the backdrop moves and
+     her interior does not — the jaw's own reasoning over a longer arc. It cannot
+     claim a reveal in practice because these facets route `fullFrame` and never
+     take the masked path, but a declaration by silence is what this table
+     exists to prevent. */
+  bust: { moves: true, why: "the chest's outline under the garment moves" },
+  waist: { moves: true, why: "two side contours move" },
+  shoulders: { moves: true, why: "the shoulder line against the backdrop moves" },
+  arms: { moves: true, why: "an arm's own edge against the backdrop moves" },
+  build: { moves: true, why: "the whole figure's outline moves" },
   skinTone: { moves: false, why: "a tan is her own surface, a few levels different" },
   skinCharacter: { moves: false, why: "texture is the freckle case by another name" },
   marks: { moves: false, why: "freckles do not remove skin — the right phantom's own facet" },

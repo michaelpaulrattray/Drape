@@ -161,6 +161,18 @@ export const ZONE_SCOPE: Record<Facet, ZoneScope> = {
 
   /* ---- not a zone at all ---- */
   expression: "fullFrame",
+  /*
+    THE BODY IS THE WHOLE FRAME, and it is not a zone that nobody has cut yet —
+    it is a zone that cannot be cut honestly. A torso mask wearing a waist's name
+    is the wrong-boundary class (the note's §3 refuses to guess), and a body edit
+    moves the outline where she meets the backdrop, which no interior zone
+    contains. `expression` is the precedent and the reason is the same shape.
+  */
+  bust: "fullFrame",
+  waist: "fullFrame",
+  shoulders: "fullFrame",
+  arms: "fullFrame",
+  build: "fullFrame",
 };
 
 export function zoneScopeOf(facet: Facet): ZoneScope {

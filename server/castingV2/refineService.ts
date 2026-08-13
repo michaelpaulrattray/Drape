@@ -31,6 +31,7 @@
  * reads that base inside the statement that proves the parent, so this cannot
  * be got wrong by a later caller passing something else.
  */
+import { outOfFrame, outOfFrameMessage } from "./castingFrame";
 import { TRPCError } from "@trpc/server";
 import type { EyeColour, EyeShape, HairTexture } from "../../shared/castingRealization";
 import type { HairColour } from "../../shared/castingVocabularies";
@@ -1415,6 +1416,38 @@ export async function refineCandidate(
     existed. The step chain rides along and simply stays short on a legacy row,
     which is honest: removal refuses there, and nothing else notices.
   */
+  /*
+    THE OUT-OF-FRAME DOOR — the fifth refuse-before-dispatch door, and its CALL
+    SITE (fable-381 §A.1, on the body-row note's §0).
+
+    *"Make her waist smaller"* on a casting portrait is not an edit at all: the
+    photograph is framed from the mid-torso up and her waist is not in the file.
+    `occluded` is the near neighbour and is NOT the same door — a waist under a
+    t-shirt could be answered by a different garment; a waist below the crop line
+    can only be answered by a different photograph.
+
+    Two things make it safe to be strict here. It fires only on what THIS
+    sentence wrote (`editDelta`, never the composed recipe — the already-true
+    gate's own scar, where a delivered eye edit intercepted every later ask), and
+    it fires only when the whole ask is out of frame: *"a smaller waist and
+    bigger arms"* is served for the arms rather than refused for the waist,
+    because refusing a sentence with a renderable half would take something away
+    from her to be tidy.
+
+    It sits before `admit`, so nothing has been claimed and nothing is charged.
+  */
+  if (editDelta) {
+    const asked = Array.from(facetsWrittenBy(editDelta));
+    const missing = asked.map((facet) => outOfFrame(facet)).filter((what): what is string => what !== null);
+    if (asked.length > 0 && missing.length === asked.length) {
+      log.info({ asked, missing }, "[refineService] the ask is outside the frame — refusing before dispatch");
+      throw spokenError({
+        code: "PRECONDITION_FAILED",
+        message: outOfFrameMessage(missing[0]!),
+      });
+    }
+  }
+
   const priorInstructions = readInstructions(predecessor?.instructions);
   const instructions = editDelta
     ? [...priorInstructions, instruction.trim()]

@@ -218,6 +218,29 @@ describe("what the library adds to a row", () => {
   });
 });
 
+/**
+ * HER BUILD — one row over five facets (fable-382 §3, on his own correction:
+ * *"their body should just be a single thing like body type or body shape it
+ * doesnt need individal pieces like hips chest etc"*).
+ */
+describe("the body is one row and never pieces", () => {
+  it("speaks every body facet as one row, in the Body section", () => {
+    const built = panel([
+      row({ slot: "build", words: ["broader shoulders", "a more athletic build"] }),
+    ]);
+    const body = built.groups.find((group) => group.heading === "Body");
+    expect(body!.rows.map((r) => r.name)).toEqual(["Her build"]);
+    expect(body!.rows[0]!.prefill).toBe("her build — ");
+  });
+
+  it("shows no piece row for any of the five facets", () => {
+    const names = allRows([row({ slot: "build", words: ["a larger bust"] })]).map((r) => r.name);
+    for (const piece of ["Her bust", "Her waist", "Her shoulders", "Her arms", "Her chest", "Her hips"]) {
+      expect(names, piece).not.toContain(piece);
+    }
+  });
+});
+
 describe("a pair is one row until it isn't, and the split is derived", () => {
   const hoops = (left: string[], right: string[]) => [
     row({ slot: "earring@left", tier: "item", words: left }),

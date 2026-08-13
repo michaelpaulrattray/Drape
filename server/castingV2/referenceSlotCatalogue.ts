@@ -361,6 +361,24 @@ const ANATOMY_SLOTS: readonly CatalogueEntry[] = [
     question: { from: "facetRegion" },
   },
   {
+    /*
+      HER BUILD — the founder's own new row (fable-360 ruling 3, narrowed to ONE
+      concept in fable-382 §3). Five facets fold into it exactly as three fold
+      into `skin`, and the split is never visible: one row, one prefill, one ask.
+    */
+    feature: "build",
+    noun: "build",
+    tier: "anatomy",
+    group: "body",
+    facets: ["bust", "waist", "shoulders", "arms", "build"],
+    instances: { of: "one" },
+    question: {
+      from: "none",
+      relation: "broader",
+      note: "there is no question that names a build. The nearest a segmenter has is the whole subject, and a crop of HER filed as her build is a second master — measured this week as +7% to +10% face-height drift when a reference at the wrong scale rides a render (fable-381 §A.5: there is no version of that which is not two masters)",
+    },
+  },
+  {
     feature: "skin",
     noun: "skin",
     tier: "anatomy",
@@ -459,6 +477,11 @@ export const FACET_SLOTS: Record<Facet, FacetAssignment> = {
   jaw: { feature: "jaw" },
   chin: { feature: "chin" },
   ears: { feature: "ear" },
+  bust: { feature: "build" },
+  waist: { feature: "build" },
+  shoulders: { feature: "build" },
+  arms: { feature: "build" },
+  build: { feature: "build" },
   skinTone: { feature: "skin" },
   skinCharacter: { feature: "skin" },
   marks: { feature: "skin" },

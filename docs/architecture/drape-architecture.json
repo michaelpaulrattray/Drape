@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "05280bbae4380f40"
+    "sourceFingerprint": "2860a0df1f99be91"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 97
+      "moduleCount": 98
     },
     {
       "id": "domain:castingV2",
@@ -3293,6 +3293,12 @@
     {
       "id": "module:server/castingV2/castViewPackage.ts",
       "path": "server/castingV2/castViewPackage.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/castingFrame.ts",
+      "path": "server/castingV2/castingFrame.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -8627,6 +8633,10 @@
     {
       "id": "test:server/castingV2/castViewPackage.test.ts",
       "path": "server/castingV2/castViewPackage.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/castingFrame.test.ts",
+      "path": "server/castingV2/castingFrame.test.ts"
     },
     {
       "id": "test:server/castingV2/castingV2Scope.test.ts",
@@ -17696,6 +17706,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/castingV2/castingFrame.ts",
+      "to": "module:server/castingV2/refineFacets.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/castingV2/castingIntent.ts",
       "to": "module:server/castingV2/brandScrub.ts",
       "kind": "imports"
@@ -18853,6 +18868,11 @@
     {
       "from": "module:server/castingV2/refineService.ts",
       "to": "module:server/castingV2/carriedSegments.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/refineService.ts",
+      "to": "module:server/castingV2/castingFrame.ts",
       "kind": "imports"
     },
     {

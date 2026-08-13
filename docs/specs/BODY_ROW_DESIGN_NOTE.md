@@ -1,7 +1,8 @@
 # The body row — design note
 
 *Owed to Fable before any build, per fable-360 ruling 3. Written 2026-08-13,
-shift 67. Nothing here is built.*
+shift 67. **BUILT shift 71** — see §7 at the end for what shipped, what was
+measured on the way, and the two things the note got wrong.*
 
 > **Founder, fable-360:** *"We need body shape/build — larger bust, smaller
 > waist, bigger arms, bigger chest etc — this would need a row."*
@@ -262,3 +263,71 @@ fable-360 ruling 1 the answer "no thumbnail" is already a supported outcome.
 
 **Open for the founder:** `hips` in or out · whether an out-of-frame waist ask
 should offer a re-cast at full length rather than simply declining.
+
+
+---
+
+## 7. What shipped (shift 71), and what the run corrected
+
+Ruled by fable-381 §A and narrowed by the founder in fable-382 §3 (*"their body
+should just be a single thing like body type or body shape it doesnt need
+individal pieces like hips chest etc"*). The trio landed together, as required.
+
+### The sentence amendment — measured both ways
+
+`build` came out of `refineInterpreter.ts`'s casting-decision sentence, and a
+scoped carve-out went in beside the colouring one. Re-run of the same probe,
+n=3, plus four controls the amendment must NOT have opened:
+
+```
+give her a larger bust    3/3 FILED → free.bust        (0/3 before)
+make her waist smaller    3/3 FILED → free.waist
+give her bigger arms      3/3 FILED → free.arms
+a bigger chest            3/3 FILED → free.bust
+broader shoulders         3/3 FILED → free.shoulders
+a more athletic build     3/3 FILED → free.build
+------------------------------------------------------ controls
+make her look older       3/3 REFUSED  wall_stage "her age"
+make her korean           3/3 REFUSED  wall_stage "her heritage"
+make her a man            3/3 REFUSED  wall_stage "her sex"
+put her on a beach        3/3 REFUSED  wall_stage "beach"
+
+30 samples: 18 filed, 12 refused, 0 other.
+```
+
+Every sentence landed in its OWN facet — nothing fell into `skin`, `marks` or
+`makeup`, which was the charge risk the note named.
+
+### The row, and the shape the founder chose
+
+One catalogue slot (`build`, group Body, row *"Her build"*), five facets folded
+into it exactly as three fold into `skin`. The split is plumbing and is
+invisible at every surface: one row, one prefill, one ask. **No `hips`, no piece
+rows.** The panel test asserts the absence of all six piece names.
+
+### The out-of-frame door — the fifth refusal, at its call site
+
+`castingFrame.ts` holds what the photograph contains; `refineService` consults it
+before anything is claimed. Two halves, both driven through a fake interpreter so
+the model cannot rescue them:
+
+- *"make her waist smaller"* → refused for free, one sentence, no recast offer,
+  **nothing charged** (`journal` has no `begin`, no `deduct`);
+- *"a smaller waist and bigger arms"* → **served and charged**, because refusing
+  a sentence with a renderable half would take the arms away to be tidy.
+
+Sabotaged both ways: firing on any out-of-frame facet reddens the second;
+removing the door reddens the first.
+
+### Two things the note got wrong
+
+1. **§0's "per-frame in-shot test" is not what shipped, and the substitute is
+   declared.** The product makes exactly ONE framing, so the answer needs no
+   read — and `castingFrame.test.ts` asserts that premise against the cohort's
+   own `FRAMING` constant. The day a full-length frame ships, that test fails and
+   the table must become a measurement.
+2. **§3's region probe was never needed for the build.** Five facets route
+   `fullFrame` and carry words, which §4 had already concluded; the probe would
+   only decide a thumbnail the founder's own ONE-ROW ruling does not ask for.
+   Not run, not owed — reopened only if open-vocabulary regions make a torso cut
+   honest.

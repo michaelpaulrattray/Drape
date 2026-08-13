@@ -111,6 +111,35 @@ export const FREE_SUBJECTS = {
     and the scene are still the stage, and still refuse.
   */
   statedAccessories: "ACCESSORIES",
+  /*
+    HER BUILD — ONE ROW, FIVE FACETS, AND THE SPLIT IS PLUMBING (fable-381 §A.3,
+    narrowed by the founder in fable-382 §3).
+
+    His ask: *"We need body shape/build — larger bust, smaller waist, bigger
+    arms, bigger chest etc — this would need a row."* His correction a day
+    later: *"their body should just be a single thing like body type or body
+    shape it doesnt need individal pieces like hips chest etc thats too much and
+    over complicated."*
+
+    Both are honoured because a ROW is not a FACET. The panel draws ONE row and
+    the ask box takes one holistic sentence; underneath, D-142 still applies —
+    *"broader shoulders"* and *"a slimmer build"* can both be true at once, so
+    filed to one slot the second would silently delete the first, which is the
+    mullet-under-copper defect rebuilt in a new place. `skin` is the precedent
+    that makes this ordinary rather than clever: three facets, one row, per-facet
+    supersession, and nobody has ever seen the seam.
+
+    **No `hips`, by founder ruling** — and `waist` is here not because it can be
+    rendered but because it must be DECLINED BY NAME. It is below the crop line
+    of every frame this product makes (`castingFrame.ts`), and a vocabulary that
+    could not recognise the word would send the ask to the stage wall, where the
+    honest answer is "the photograph does not contain her waist".
+  */
+  bust: "BUST",
+  waist: "WAIST",
+  shoulders: "SHOULDERS",
+  arms: "ARMS",
+  build: "BUILD",
   /** Ink is its own subject because D-133 gives it its own law. */
   ink: "INK",
   facialHair: "FACIAL HAIR",
@@ -224,6 +253,19 @@ export const FREE_SUBJECT_KIND: Record<FreeSubject, "presence" | "degree"> = {
   jaw: "degree",
   chin: "degree",
   ears: "degree",
+  /*
+    EVERY BODY FACET IS A DEGREE ASK, and that is the row's weakest column said
+    out loud rather than discovered in a refund. Larger, smaller, bigger,
+    broader — a photograph cannot settle any of them, and fable-349 proved the
+    reader blind to subtle degree on a real paid render (delivered fuller lips
+    read back as "naturally thin, not fuller"). So a body ask can never refuse
+    on the reader's word, exactly as the lips row cannot.
+  */
+  bust: "degree",
+  waist: "degree",
+  shoulders: "degree",
+  arms: "degree",
+  build: "degree",
   skinTone: "degree",
   skinCharacter: "degree",
   /** A continuum — "softer", "warmer", "more serious" — of which the one crisp

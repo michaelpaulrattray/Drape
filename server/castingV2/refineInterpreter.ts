@@ -185,7 +185,7 @@ const BASE_PROMPT = [
   "SUBJECTIVE asks are a wall too — prettier, hotter, better looking, more attractive. They name",
   'a judgement rather than a feature, so reply {"wall": "stage", "asked": "how attractive they look"}.',
   "",
-  "Casting decisions are NOT refinements: age, heritage, sex and build are who was cast rather",
+  "Casting decisions are NOT refinements: age, heritage and sex are who was cast rather",
   'than how they look today. Reply {"wall": "stage", "asked": "her age"} and the like — rolling',
   "again is the honest answer to those.",
   /*
@@ -225,6 +225,30 @@ const BASE_PROMPT = [
     together — the whole-person reading working law 8 asks for, which the model
     knew all along and was being refused for.
   */
+  /*
+    BUILD COMES OUT OF THAT SENTENCE — fable-381 §A.2, on the founder's own ask
+    in fable-360 ruling 3 (*"We need body shape/build — larger bust, smaller
+    waist, bigger arms, bigger chest etc — this would need a row"*).
+
+    It is the same repair as the colouring carve-out one line down, for the same
+    reason: the 18/18 refusal measured in the body-row note was never a model
+    being vague. It was a model obeying a ruled instruction precisely, and six of
+    those eighteen refusals came back worded *"her build"* — the brief, quoted
+    back. A code-side backstop cannot reach a refusal the prompt genuinely
+    instructs, so the instruction is what changes.
+
+    **`age` and `sex` are untouched and that is measured, not intended** — the
+    probe drives them as controls beside the six body sentences, exactly as the
+    albino carve-out did.
+  */
+  "  A BUILD IS NOT A CASTING DECISION. Her figure is how she looks today, not who was cast:",
+  "  a larger bust or chest, broader shoulders, bigger or slimmer arms, a more athletic or",
+  "  slighter build. Those file normally in the free lane, under bust, shoulders, arms or",
+  "  build — and a whole-figure word like athletic, curvy or slight is build.",
+  '  Her WAIST files under waist in the same way. Whether this photograph contains her waist',
+  "  is not yours to decide; file it and the product answers that itself.",
+  "  What stays a casting decision is her AGE, her HERITAGE and her SEX.",
+  "",
   "  A COLOURING CONDITION IS NOT HERITAGE. Albinism, vitiligo, going grey, sun damage — those",
   "  are how her colouring IS, not who was cast, so they file normally. Albinism is the whole",
   "  person's colouring: file the skin, the hair, the brows and lashes, and the eyes together,",

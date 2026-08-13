@@ -64,6 +64,14 @@ describe("every class says how big its own change is", () => {
     const reasoned = unmeasuredAmplitudes();
     expect(reasoned).toContain("skinTone");
     expect(reasoned).not.toContain("marks");
-    expect(reasoned.length, "more classes are guessed than this table admits").toBeLessThanOrEqual(19);
+    /*
+      24 since the body row landed: five classes arrived together (bust, waist,
+      shoulders, arms, build) and every one of them is REASONED, from the jaw's
+      measured behaviour over a longer arc. That is a rise, and a rise is what
+      this bar exists to make visible rather than to forbid — what would measure
+      them is a before/after pair on one anchor with the outline's own
+      displacement read off it, and nobody has run one.
+    */
+    expect(reasoned.length, "more classes are guessed than this table admits").toBeLessThanOrEqual(24);
   });
 });
