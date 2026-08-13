@@ -97,6 +97,38 @@ describe("the model is told exactly what the assembler refuses", () => {
   });
 });
 
+/**
+ * A BRAND IS A LOOK, NOT A WALL (fable-404, and the founder paid for it).
+ *
+ * He asked for "miu miu styled glasses" and the recipe got the bare noun
+ * `glasses`. The prompt said "never name a brand" and nothing about the rest of
+ * the sentence, so the model dropped the whole ask — it read "lose the brand"
+ * and "lose the look" as one lever.
+ *
+ * **The real instrument for this is the bench, not this file** (n≥3 per
+ * phrasing through the live model: styling kept went 3/12 → 12/12, brands out
+ * 11/12 → 12/12, the no-brand control unmoved at 6/6). What a unit test can
+ * hold is that the sentence which produced those numbers is still in the prompt
+ * that leaves the building — an LLM rule deleted by a later edit fails silently
+ * and only on a paid ask.
+ */
+describe("the brand rule tells the model what to KEEP", () => {
+  const prompt = refineParseSystemPrompt();
+
+  it("names the substitution, not only the prohibition", () => {
+    expect(prompt).toContain("SERVE THE ASK ANYWAY");
+    /* The worked example, shown rather than described — it is the founder's own
+       sentence and its correct answer. */
+    expect(prompt).toContain('"miu miu styled glasses" files ["styled glasses"]');
+  });
+
+  it("CONTROL — and still forbids the name itself", () => {
+    /* The half that must never relax: a fix that kept the aesthetic by keeping
+       the house name would be a worse defect than the one it repairs. */
+    expect(prompt).toContain("Never name a brand, a product, or a real person");
+  });
+});
+
 describe("the door the fix is for", () => {
   const pronouns = { subject: "she", object: "her", possessive: "her", plural: false } as const;
   const master = { key: "masters/one.png" };

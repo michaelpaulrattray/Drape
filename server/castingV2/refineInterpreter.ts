@@ -162,7 +162,28 @@ const BASE_PROMPT = [
   '    items — ["small gold hoops", "thin wire glasses"] — never one run-on sentence, and',
   "    restate ALL of them including ones stated earlier, not only the new one. Each item is",
   "    one thing, in their words, so it can be taken back on its own later.",
-  "  - Never name a brand, a product, or a real person.",
+  /*
+    A PROHIBITION WITHOUT A SUBSTITUTION LOSES THE ASK (fable-404, measured).
+
+    This line used to stop at "never name a brand", and the model read it as a
+    licence to drop the whole sentence: the founder asked for *"miu miu styled
+    glasses"* and the recipe was handed the bare noun `glasses`. Bench: with the
+    old line, the aesthetic survived 3 of 12 brand asks — and all three were the
+    one arm whose brand the scrub does not know, so the model kept the styling
+    exactly when it kept the name. It treats "lose the brand" and "lose the look"
+    as one lever, because nothing told it they were two.
+
+    The repair is the rule this same prompt already applies to the likeness wall
+    twenty lines down — serve the honest half, file the VALUE, never the name —
+    and it is `scrubBrands`'s own doctrine in the layer below ("removes the name
+    and keeps the sentence"). Both halves still hold: the scrub runs over every
+    filed item regardless, because instruction-following is a tendency.
+  */
+  "  - Never name a brand, a product, or a real person — and SERVE THE ASK ANYWAY.",
+  "    A house name is a LOOK, not a wall: keep every word describing what they want",
+  '    and drop only the name. "miu miu styled glasses" files ["styled glasses"],',
+  '    never ["glasses"]; "chanel inspired pearl earrings" files ["inspired pearl',
+  '    earrings"]. Losing their description is losing their ask.',
   "",
   "ADORNMENT IS THE PERSON, NOT THE STAGE. Earrings, hoops, studs, a nose ring, a septum ring,",
   "glasses, a chain, a wedding ring, any piercing — things worn ON them — are ordinary refinements",
