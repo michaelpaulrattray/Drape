@@ -30,9 +30,13 @@ import { captureCastingV2Enabled } from "../castingV2/castingV2Scope";
 import { UNLOCKABLE_FIELDS } from "../castingV2/briefCompiler";
 import { listLineageSegments, resolveOwnedCandidateId } from "../db/castingV2Segments";
 import { maskFetchUrl, segmentsOnFace } from "../castingV2/segmentsOnFace";
-import { facePanel } from "../castingV2/facePanel";
+import { facePanel, type PanelScan } from "../castingV2/facePanel";
 import { listLineageReferences } from "../db/castingV2ReferenceLibrary";
-import { captureCastingReferenceLibraryEnabled } from "../castingV2/castingV2Scope";
+import {
+  captureCastingFaceScanEnabled,
+  captureCastingReferenceLibraryEnabled,
+} from "../castingV2/castingV2Scope";
+import { panelScanOf, scannedFace, scannedFaceIfReady } from "../castingV2/faceScanService";
 import { pronounsForSex } from "../castingV2/castPronouns";
 import { currentValueOfFacet } from "../castingV2/refineDelta";
 import { readResolvedIdentity } from "../castingV2/rollService";
@@ -184,6 +188,71 @@ async function loadRollProjection(userId: number, rollPublicId: string): Promise
     parentRollPublicId: lineage.parentRollPublicId,
     parentCandidatePublicId: lineage.parentCandidatePublicId,
     parentCandidatePosition: lineage.parentCandidatePosition,
+  });
+}
+
+/**
+ * ONE OWNED FACE-VERSION, read once for both panel procedures.
+ *
+ * `facePanel` and `faceScan` return the same payload from the same facts, and
+ * the only difference between them is whether a scan is awaited. Two copies of
+ * this walk would be two ownership stories about the same row (law 4), so
+ * there is one — and every statement in it carries `userId` into its own WHERE
+ * (invariant 1) rather than trusting a check before it.
+ */
+async function readOwnedFaceForPanel(
+  userId: number,
+  input: { candidateId: string; variantId: string | null },
+): Promise<{
+  candidateId: number;
+  anchor: Awaited<ReturnType<typeof listCandidateVariants>>[number] | null;
+  rows: Awaited<ReturnType<typeof listLineageReferences>>;
+  identitySex: string | undefined;
+}> {
+  const candidateId = await resolveOwnedCandidateId({
+    userId,
+    candidatePublicId: input.candidateId,
+  }).catch(() => null);
+  if (candidateId === null) throw new TRPCError({ code: "NOT_FOUND", message: "Candidate not found" });
+
+  const variants = await listCandidateVariants(userId, input.candidateId);
+  const anchor = input.variantId === null
+    ? null
+    : variants.find((variant) => variant.publicId === input.variantId);
+  if (input.variantId !== null && !anchor) {
+    throw new TRPCError({ code: "NOT_FOUND", message: "Version not found" });
+  }
+
+  const rows = await listLineageReferences({
+    userId,
+    candidateId,
+    anchorVariantId: anchor?.id ?? null,
+  });
+
+  /* The pronoun is a fact about the person, so it comes from the version being
+     looked at — or, with none selected, from this face's earliest record of the
+     same person (`listCandidateVariants` is ascending). `castPronouns` answers
+     `they` when the record cannot say, which is correct English rather than a
+     guess. */
+  const identity = anchor
+    ? readResolvedIdentity(anchor.internalPrompt)
+    : readResolvedIdentity(variants[0]?.internalPrompt);
+  return { candidateId, anchor: anchor ?? null, rows, identitySex: identity?.sex };
+}
+
+function panelFor(
+  face: Awaited<ReturnType<typeof readOwnedFaceForPanel>>,
+  scan: PanelScan | null,
+) {
+  return facePanel({
+    rows: face.rows,
+    pronouns: pronounsForSex(face.identitySex),
+    contentUrl: storagePublicUrl,
+    /* A CSS mask is a CORS fetch and the public bucket sends no allow-origin —
+       see `maskFetchUrl`. A scan's stencil travels as a data URL and needs
+       neither. */
+    maskUrl: (key) => maskFetchUrl(storagePublicUrl(key)),
+    scan,
   });
 }
 
@@ -968,46 +1037,93 @@ export const castingV2Router = router({
       requireCastingV2(ctx.user.id);
       enforceRateLimit(ctx.user.id, RATE_LIMITS.castingRead);
       if (!captureCastingReferenceLibraryEnabled(ctx.user.id)) {
-        return { enabled: false as const, possessive: "their", groups: [] };
+        return { enabled: false as const, scanning: false, possessive: "their", groups: [] };
       }
 
-      const candidateId = await resolveOwnedCandidateId({
-        userId: ctx.user.id,
-        candidatePublicId: input.candidateId,
-      }).catch(() => null);
-      if (candidateId === null) throw new TRPCError({ code: "NOT_FOUND", message: "Candidate not found" });
+      const face = await readOwnedFaceForPanel(ctx.user.id, input);
+      /*
+        WHAT IS ALREADY READ, and never a read of its own.
 
-      const variants = await listCandidateVariants(ctx.user.id, input.candidateId);
-      const anchor = input.variantId === null
-        ? null
-        : variants.find((variant) => variant.publicId === input.variantId);
-      if (input.variantId !== null && !anchor) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Version not found" });
+        This procedure is the panel's first paint and must answer in the time a
+        list takes to render; a scan is fourteen segmenter calls and seconds.
+        So the first look at a version gets the library alone and the scan
+        arrives on `faceScan` below — and every look after that finds it warm
+        here, complete in one round trip.
+      */
+      const ready = captureCastingFaceScanEnabled(ctx.user.id)
+        ? scannedFaceIfReady({
+          userId: ctx.user.id,
+          candidateId: face.candidateId,
+          variantId: face.anchor?.id ?? null,
+        })
+        : null;
+      return {
+        enabled: true as const,
+        /* Whether a scan is worth asking for. The client fires nothing when
+           this is false, so a user outside the scope pays no round trip for a
+           capability they do not have. */
+        scanning: captureCastingFaceScanEnabled(ctx.user.id),
+        ...panelFor(face, ready === null ? null : panelScanOf(ready)),
+      };
+    }),
+
+  /**
+   * THE SAME PANEL, AFTER READING HER FACE — the auto-scan's only surface.
+   *
+   * The panel's rows come from the catalogue and their content from the
+   * library, and the library holds only what an EDIT minted — so a face nobody
+   * has edited is a column of empty slots (the founder's own screenshot,
+   * fable-352). This runs the scan for the version being looked at and returns
+   * the panel with those rows filled from what the picture already contains.
+   *
+   * **It is the same shape as `facePanel` on purpose.** The client renders the
+   * fast one and swaps this in when it lands; two payloads that differed in
+   * shape would put panel logic in the browser, where it cannot be tested
+   * against a face.
+   *
+   * Scanning is idempotent per (candidate, version): the first caller pays,
+   * every caller after joins the same read (`faceScanService`). Nothing is
+   * charged to the user — a scan is house money on a read they never asked to
+   * pay for — and nothing is written anywhere.
+   */
+  faceScan: protectedProcedure
+    .input(z.object({ candidateId: publicId, variantId: publicId.nullable() }).strict())
+    .query(async ({ ctx, input }) => {
+      requireCastingV2(ctx.user.id);
+      enforceRateLimit(ctx.user.id, RATE_LIMITS.castingRead);
+      if (!captureCastingReferenceLibraryEnabled(ctx.user.id) || !captureCastingFaceScanEnabled(ctx.user.id)) {
+        return { enabled: false as const, scanning: false, possessive: "their", groups: [] };
       }
 
-      const rows = await listLineageReferences({
-        userId: ctx.user.id,
-        candidateId,
-        anchorVariantId: anchor?.id ?? null,
-      });
+      const face = await readOwnedFaceForPanel(ctx.user.id, input);
+      /*
+        THE FRAME BEING LOOKED AT, and it comes from the same owner-scoped
+        reads the panel used. A selected version is its own picture; with none
+        selected the master is the face. A row with no image key has nothing to
+        read, so it degrades to the unscanned panel rather than throwing.
+      */
+      let imageKey = face.anchor?.imageKey ?? null;
+      if (face.anchor === null) {
+        const owned = await getOwnedCandidateWithSelectedFace(ctx.user.id, input.candidateId);
+        imageKey = owned?.candidate.imageKey ?? null;
+      }
 
-      /* The pronoun is a fact about the person, so it comes from the version
-         being looked at — or, with none selected, from this face's earliest
-         record of the same person (`listCandidateVariants` is ascending).
-         `castPronouns` answers `they` when the record cannot say, which is
-         correct English rather than a guess. */
-      const identity = anchor
-        ? readResolvedIdentity(anchor.internalPrompt)
-        : readResolvedIdentity(variants[0]?.internalPrompt);
-      const panel = facePanel({
-        rows,
-        pronouns: pronounsForSex(identity?.sex),
-        contentUrl: storagePublicUrl,
-        /* A CSS mask is a CORS fetch and the public bucket sends no
-           allow-origin — see `maskFetchUrl`. */
-        maskUrl: (key) => maskFetchUrl(storagePublicUrl(key)),
-      });
-      return { enabled: true as const, ...panel };
+      let scan: PanelScan | null = null;
+      if (imageKey !== null) {
+        /*
+          A FAILED SCAN IS TODAY'S PANEL, not an error. The user asked to look
+          at a face, not to buy a reading, so a segmenter that is down or a
+          frame that will not decode costs them nothing and shows them exactly
+          what they saw yesterday (`faceScan`'s own posture, one layer up).
+        */
+        scan = await scannedFace({
+          userId: ctx.user.id,
+          candidateId: face.candidateId,
+          variantId: face.anchor?.id ?? null,
+          imageKey,
+        }).then(panelScanOf).catch(() => null);
+      }
+      return { enabled: true as const, scanning: true, ...panelFor(face, scan) };
     }),
 
   /** Refunds only what never started. Delivered work is never refunded (§H.6). */

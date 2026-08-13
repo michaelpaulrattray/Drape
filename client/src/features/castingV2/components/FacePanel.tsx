@@ -45,15 +45,64 @@ import type { FaceSelectionModel } from "./faceSelection";
  * (§3.0a) — so the panel reads as a description of a face rather than a grid of
  * empty tiles.
  */
+export type FacePanelBox = {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  frame: { width: number; height: number };
+};
+
 export type FacePanelRow = {
   slots: readonly string[];
   name: string;
   words: readonly string[];
   from: string | null;
   prefill: string;
-  thumb: { contentUrl: string; maskUrl: string } | null;
-  box: { x: number; y: number; width: number; height: number; frame: { width: number; height: number } } | null;
+  /**
+   * A MINTED crop is its own picture and `crop` is null. A SCAN-BORN one is the
+   * whole frame with a window on it — see `cutoutStyle`.
+   */
+  thumb: { contentUrl: string; maskUrl: string; crop: FacePanelBox | null } | null;
+  box: FacePanelBox | null;
 };
+
+/**
+ * How a thumbnail draws itself.
+ *
+ * Both kinds are one picture stencilled by one shape, which is the founder's
+ * ruling in one sentence (*"masked cutouts"*, fable-374): a row born of a scan
+ * and a row minted by an edit read as the same object, so the panel is a
+ * description of a face rather than a mix of two rendering languages.
+ *
+ * The difference is only where the picture comes from. A minted crop IS the
+ * cutout, so `contain` in the stylesheet is the whole of it. A scan mints
+ * nothing — the frame the viewer is already showing is the content — so the
+ * window is published here as numbers and the arithmetic lives beside the tile
+ * size it depends on, in the stylesheet.
+ */
+export function cutoutStyle(thumb: { contentUrl: string; maskUrl: string; crop: FacePanelBox | null }) {
+  return {
+    backgroundImage: `url(${JSON.stringify(thumb.contentUrl)})`,
+    /* Both spellings: the unprefixed property is the standard and the prefixed
+       one is what older WebKit still reads. */
+    WebkitMaskImage: `url(${JSON.stringify(thumb.maskUrl)})`,
+    maskImage: `url(${JSON.stringify(thumb.maskUrl)})`,
+    ...(thumb.crop
+      ? {
+        "--dpc-cut-x": thumb.crop.x,
+        "--dpc-cut-y": thumb.crop.y,
+        "--dpc-cut-w": thumb.crop.width,
+        "--dpc-cut-h": thumb.crop.height,
+        "--dpc-cut-fw": thumb.crop.frame.width,
+        "--dpc-cut-fh": thumb.crop.frame.height,
+        /* The longer side, which is what makes the fit a CONTAIN rather than a
+           stretch — the same divisor on both axes. */
+        "--dpc-cut-max": Math.max(thumb.crop.width, thumb.crop.height),
+      }
+      : {}),
+  } as React.CSSProperties;
+}
 
 export type FacePanelGroup = {
   group: string;
@@ -113,16 +162,9 @@ export function FacePanel({
                   >
                     {row.thumb ? (
                       <span
-                        className="dpc-face__thumb"
+                        className={`dpc-face__thumb${row.thumb.crop ? " dpc-face__thumb--cutout" : ""}`}
                         aria-hidden="true"
-                        style={{
-                          backgroundImage: `url(${JSON.stringify(row.thumb.contentUrl)})`,
-                          /* Both spellings: the unprefixed property is the
-                             standard and the prefixed one is what older WebKit
-                             still reads. */
-                          WebkitMaskImage: `url(${JSON.stringify(row.thumb.maskUrl)})`,
-                          maskImage: `url(${JSON.stringify(row.thumb.maskUrl)})`,
-                        }}
+                        style={cutoutStyle(row.thumb)}
                       />
                     ) : (
                       /* NOT AN EMPTY TILE. A slot with no minted crop has never

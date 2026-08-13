@@ -3005,9 +3005,15 @@
 .dpc-face__thumb {
   flex: none;
   /* The mock's own size. Sixteen 44px rows in a 292px column read as a second
-     screen; at 34 the list reads as a list. */
-  width: 34px;
-  height: 34px;
+     screen; at 34 the list reads as a list.
+
+     It is a variable because the SCAN-BORN cutout below does arithmetic with
+     it. A tile size written once here and again in the component would be two
+     answers to how big a thumbnail is, and the drift would show up as a
+     cutout sliding off its own feature. */
+  --dpc-thumb-size: 34px;
+  width: var(--dpc-thumb-size);
+  height: var(--dpc-thumb-size);
   border-radius: 7px;
   background-color: color-mix(in srgb, var(--onScrim) 8%, transparent);
   background-size: contain;
@@ -3021,6 +3027,30 @@
   mask-repeat: no-repeat;
   -webkit-mask-source-type: luminance;
   mask-mode: luminance;
+}
+
+/*
+  THE SCAN-BORN CUTOUT — her own feature, cut out of the frame already on screen.
+
+  A minted thumbnail is its own picture and needs no arithmetic: the crop IS the
+  image, and `contain` above draws it. A scanned one has no picture of its own on
+  purpose (fable-373 ruling 4a: no new objects, nothing to purge, nothing that
+  can drift from its frame) — so the content is the WHOLE frame and these rules
+  slide the right rectangle of it under the tile.
+
+  The maths is here rather than in the component so the tile size stays a single
+  fact. `--dpc-cut-max` is the crop's longer side, which is the divisor that
+  makes this a CONTAIN: the crop lands at exactly the size and position the
+  stencil's own `mask-size: contain` puts the shape, so the picture and the shape
+  agree by construction rather than by two calculations happening to match.
+*/
+.dpc-face__thumb--cutout {
+  background-size:
+    calc(var(--dpc-thumb-size) * var(--dpc-cut-fw) / var(--dpc-cut-max))
+    calc(var(--dpc-thumb-size) * var(--dpc-cut-fh) / var(--dpc-cut-max));
+  background-position:
+    calc(var(--dpc-thumb-size) * (0.5 - (var(--dpc-cut-x) + var(--dpc-cut-w) / 2) / var(--dpc-cut-max)))
+    calc(var(--dpc-thumb-size) * (0.5 - (var(--dpc-cut-y) + var(--dpc-cut-h) / 2) / var(--dpc-cut-max)));
 }
 
 /*

@@ -23,10 +23,13 @@
  * INVENTED in a column beside themselves; a product cannot, because a box drawn
  * over the wrong pixels is a promise that clicking there edits that thing.
  *
- * Every anatomy row gets its box the day the region read is cached at scan time
- * (roadmap §5 / the mock's own note). Until then the rows are tappable — which
- * is what scopes the ask — and the image is clickable only where it has been
- * measured.
+ * **That day has arrived for a scanned face** (fable-373/374). A `scan` handed
+ * in says where each feature is ON THIS FRAME, so a face nobody has edited gets
+ * its boxes and its cutouts from what the picture already contains rather than
+ * from what an edit minted. The rule above is unchanged and is why the scan is
+ * a READING and not a proportion: without one, the rows are still tappable —
+ * which is what scopes the ask — and the image is still clickable only where it
+ * has been measured.
  *
  * # A PAIR IS ONE ROW UNTIL IT ISN'T
  *
@@ -71,6 +74,18 @@ export type PanelBox = {
   frame: { width: number; height: number };
 };
 
+/**
+ * WHAT A SCAN CONTRIBUTES — the frame, and a shape per feature on it.
+ *
+ * A scan mints nothing (fable-373 ruling 4a), so a scan-born thumbnail is the
+ * frame the viewer is already showing, cut by the box and stencilled by the
+ * mask. One picture, eight shapes, no objects.
+ */
+export type PanelScan = {
+  frameUrl: string;
+  slots: ReadonlyMap<FeatureSlot, { box: PanelBox; maskUrl: string }>;
+};
+
 export type PanelRow = {
   /**
    * What tapping this row is about. A matched pair carries BOTH instance keys:
@@ -86,8 +101,15 @@ export type PanelRow = {
   from: string | null;
   /** The opening of their own sentence, written into the ask box on a tap. */
   prefill: string;
-  /** The cutout, when this slot has a minted crop. Null is the common case. */
-  thumb: { contentUrl: string; maskUrl: string } | null;
+  /**
+   * The cutout, from one of two places.
+   *
+   * A MINTED crop is its own picture and `crop` is null: the content URL is the
+   * cutout, the way the library has always served it. A SCAN-BORN one is the
+   * whole frame with a window on it, so `crop` says which window — the browser
+   * cuts the picture it already has, and no object was written to show it.
+   */
+  thumb: { contentUrl: string; maskUrl: string; crop: PanelBox | null } | null;
   /** Where it is on the picture — null when this face has never been read there. */
   box: PanelBox | null;
 };
@@ -100,7 +122,7 @@ export type FacePanel = {
 type SlotState = {
   words: readonly string[];
   from: string | null;
-  thumb: { contentUrl: string; maskUrl: string } | null;
+  thumb: { contentUrl: string; maskUrl: string; crop: PanelBox | null } | null;
   box: PanelBox | null;
 };
 
@@ -125,7 +147,7 @@ function stateOfSlot(
     .reduce<StoredReference | null>((held, row) => (held === null || row.version > held.version ? row : held), null);
 
   const image = carry !== null && carry.storageKey !== null && carry.maskKey !== null
-    ? { contentUrl: urls.contentUrl(carry.storageKey), maskUrl: urls.maskUrl(carry.maskKey) }
+    ? { contentUrl: urls.contentUrl(carry.storageKey), maskUrl: urls.maskUrl(carry.maskKey), crop: null }
     : null;
   const geometry = carry?.geometry ?? null;
 
@@ -176,6 +198,14 @@ export function facePanel(input: {
   contentUrl: (key: string) => string;
   /** Stencils are fetched under CORS and crops are not — see `maskFetchUrl`. */
   maskUrl: (key: string) => string;
+  /**
+   * What this frame was READ to contain, when it has been read.
+   *
+   * Null is the ordinary case and the panel is exactly what it was: rows from
+   * the catalogue, content from the library. Present, it fills the rows the
+   * library has nothing for — which on a face nobody has edited is all of them.
+   */
+  scan?: PanelScan | null;
 }): FacePanel {
   const live = liveReferences(input.rows);
   const bySlot = new Map<FeatureSlot, StoredReference[]>();
@@ -185,11 +215,36 @@ export function facePanel(input: {
     else bySlot.set(row.slot, [row]);
   }
 
-  const stateOf = (slot: FeatureSlot): SlotState => stateOfSlot(
-    bySlot.get(slot) ?? [],
-    { contentUrl: input.contentUrl, maskUrl: input.maskUrl },
-    input.pronouns,
-  );
+  /**
+   * THE LIBRARY WINS WHERE IT HAS MINTED, and the scan fills the rest.
+   *
+   * The two answer different questions and the difference is the founder's own
+   * (*"she came with it"* vs *"from an edit"*): a minted crop is what an edit
+   * MADE, cut from the frame that delivered it, and it stays the picture of
+   * that feature even when a scan of today's frame could also find one. The
+   * scan is what the picture already contains, and it is the only answer for a
+   * face nobody has touched.
+   *
+   * Box and thumbnail are filled INDEPENDENTLY. A slot can have a minted crop
+   * from an ancestor version and no geometry on this one — the row keeps its
+   * cutout and gains a click target, rather than choosing one and losing the
+   * other.
+   */
+  const scan = input.scan ?? null;
+  const stateOf = (slot: FeatureSlot): SlotState => {
+    const held = stateOfSlot(
+      bySlot.get(slot) ?? [],
+      { contentUrl: input.contentUrl, maskUrl: input.maskUrl },
+      input.pronouns,
+    );
+    const found = scan?.slots.get(slot);
+    if (!scan || !found) return held;
+    return {
+      ...held,
+      thumb: held.thumb ?? { contentUrl: scan.frameUrl, maskUrl: found.maskUrl, crop: found.box },
+      box: held.box ?? found.box,
+    };
+  };
 
   const definitions = catalogueSlots();
   const spoken = new Set<FeatureSlot>();

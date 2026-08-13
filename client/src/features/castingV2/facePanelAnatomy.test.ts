@@ -272,3 +272,81 @@ describe("the panel's copy, classified", () => {
     expect(none.slice(0, none.indexOf("}"))).toContain("background-color: transparent");
   });
 });
+
+/**
+ * THE MASKED CUTOUT — the founder's own answer, held as a rule.
+ *
+ * His word in fable-374 was *"masked cutouts"*: a row born of a SCAN and a row
+ * minted by an EDIT must read as the same object, so the panel is a description
+ * of a face rather than a mix of two rendering languages. A scan writes no
+ * picture of its own (ruling 4a), so a scanned row draws the frame already on
+ * screen through a stencil — which means arithmetic, and arithmetic is where the
+ * cutout can slide off the feature it claims.
+ *
+ * These are the source-level halves. The half that can actually fail is the
+ * browser drive, because a CSS assertion cannot fail on an element that never
+ * rendered.
+ */
+describe("a scanned row and a minted row are the same object", () => {
+  it("keeps the tile size a SINGLE fact, since the cutout does arithmetic with it", async () => {
+    const css = await readFile(CSS, "utf8");
+    const thumb = css.slice(css.indexOf(".dpc-face__thumb {"));
+    const body = thumb.slice(0, thumb.indexOf("}"));
+    /* A size written here and again in the component would be two answers to
+       how big a thumbnail is, and the drift would show as a cutout sliding off
+       its own feature. */
+    expect(body).toContain("--dpc-thumb-size: 34px");
+    expect(body).toContain("width: var(--dpc-thumb-size)");
+    expect(body).toContain("height: var(--dpc-thumb-size)");
+    const panel = withoutProse(await readFile(PANEL, "utf8"));
+    expect(panel).not.toContain("34");
+  });
+
+  it("fits the crop the way the stencil fits itself — one divisor, both axes", async () => {
+    const css = await readFile(CSS, "utf8");
+    const cutout = css.slice(css.indexOf(".dpc-face__thumb--cutout {"));
+    const body = cutout.slice(0, cutout.indexOf("}"));
+    /*
+      `--dpc-cut-max` is the crop's LONGER side on both axes, which is what makes
+      this a contain rather than a stretch — the same fit `mask-size: contain`
+      gives the stencil above. Two different fits would put the shape and the
+      picture in different places, and at 34px that reads as a smudge rather
+      than as a bug.
+    */
+    expect(body).toContain("var(--dpc-cut-max)");
+    /* Four: the divisor of both axes of the size, and of both axes of the
+       position. A rule that dropped one would fit one axis differently from the
+       other, which is the stretch this exists to avoid. */
+    expect(body.match(/var\(--dpc-cut-max\)/g)!.length).toBe(4);
+    expect(body).toContain("background-size");
+    expect(body).toContain("background-position");
+    /* The base rule still centres the stencil, which is the other half of the
+       agreement. */
+    const thumb = css.slice(css.indexOf(".dpc-face__thumb {"));
+    expect(thumb.slice(0, thumb.indexOf("}"))).toContain("mask-size: contain");
+  });
+
+  it("publishes the geometry as numbers and lets the stylesheet do the sums", async () => {
+    const panel = withoutProse(await readFile(PANEL, "utf8"));
+    for (const property of ["--dpc-cut-x", "--dpc-cut-y", "--dpc-cut-w", "--dpc-cut-h", "--dpc-cut-fw", "--dpc-cut-fh"]) {
+      expect(panel).toContain(property);
+    }
+    expect(panel).toContain('Math.max(thumb.crop.width, thumb.crop.height)');
+    /* And the cutout class rides the crop, so a minted thumbnail — which IS its
+       own picture — never gets the arithmetic applied to it. */
+    expect(panel).toContain('row.thumb.crop ? " dpc-face__thumb--cutout" : ""');
+  });
+
+  it("prefers the scanned panel over the unscanned one, and merges nothing itself", async () => {
+    const sheet = withoutProse(await readFile(SHEET, "utf8"));
+    /*
+      Same shape from the server, so the swap is one `??`. A merge in the
+      browser would be a second answer to how a scanned row differs from a
+      minted one, and only the server can be tested against a face.
+    */
+    expect(sheet).toContain("const facePanelData = scannedFaceData ?? (face.data?.enabled ? face.data : null)");
+    /* Fired only where the capability exists, so a user outside the scope pays
+       no round trip at all. */
+    expect(sheet).toContain("Boolean(face.data?.scanning)");
+  });
+});

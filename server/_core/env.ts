@@ -24,11 +24,13 @@ import {
   validateSnapshotRestoreEnvironment,
 } from "../casting/snapshotRestoreScope";
 import {
+  CASTING_FACE_SCAN_SCOPE_ENV,
   CASTING_REFERENCE_LIBRARY_SCOPE_ENV,
   CASTING_REPAINT_SCOPE_ENV,
   CASTING_SEGMENTS_DELIVERED_SCOPE_ENV,
   CASTING_SEGMENTS_SCOPE_ENV,
   CASTING_V2_SCOPE_ENV,
+  validateCastingFaceScanEnvironment,
   validateCastingReferenceLibraryEnvironment,
   validateCastingRepaintEnvironment,
   validateCastingSegmentsDeliveredEnvironment,
@@ -172,6 +174,16 @@ export function validateEnv(): void {
   */
   validateCastingRepaintEnvironment({
     scope: process.env[CASTING_REPAINT_SCOPE_ENV],
+    libraryScope: process.env[CASTING_REFERENCE_LIBRARY_SCOPE_ENV],
+  });
+  /*
+    The auto-scan: reading a face nobody has edited so the panel is not a
+    column of empty slots. Checked against the LIBRARY scope because the panel
+    is its only consumer — a scan whose answer nothing renders is a paid read
+    into the dark, and inert looks the same as mistaken from outside.
+  */
+  validateCastingFaceScanEnvironment({
+    scope: process.env[CASTING_FACE_SCAN_SCOPE_ENV],
     libraryScope: process.env[CASTING_REFERENCE_LIBRARY_SCOPE_ENV],
   });
 

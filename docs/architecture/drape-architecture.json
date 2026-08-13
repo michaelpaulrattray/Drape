@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "f862ca3e0d29e3f5"
+    "sourceFingerprint": "cb89060aea06567a"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 96
+      "moduleCount": 97
     },
     {
       "id": "domain:castingV2",
@@ -3369,6 +3369,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:server/castingV2/faceScanService.ts",
+      "path": "server/castingV2/faceScanService.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:server/castingV2/falRegionReader.ts",
       "path": "server/castingV2/falRegionReader.ts",
       "domain": "casting-v2",
@@ -5851,6 +5857,16 @@
       "file": "server/routes/castingV2.ts"
     },
     {
+      "id": "route:castingV2.faceScan",
+      "namespace": "castingV2",
+      "name": "faceScan",
+      "type": "query",
+      "auth": "protected",
+      "strictInput": true,
+      "rateLimited": true,
+      "file": "server/routes/castingV2.ts"
+    },
+    {
       "id": "route:castingV2.follow",
       "namespace": "castingV2",
       "name": "follow",
@@ -7707,6 +7723,11 @@
       "grammar": "off|all|users:<ids>"
     },
     {
+      "id": "flag:CASTING_FACE_SCAN_SCOPE",
+      "name": "CASTING_FACE_SCAN_SCOPE",
+      "grammar": "off|all|users:<ids>"
+    },
+    {
       "id": "flag:CASTING_REFERENCE_LIBRARY_SCOPE",
       "name": "CASTING_REFERENCE_LIBRARY_SCOPE",
       "grammar": "off|all|users:<ids>"
@@ -8662,6 +8683,10 @@
     {
       "id": "test:server/castingV2/faceScan.test.ts",
       "path": "server/castingV2/faceScan.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/faceScanService.test.ts",
+      "path": "server/castingV2/faceScanService.test.ts"
     },
     {
       "id": "test:server/castingV2/falRegionReader.test.ts",
@@ -17931,6 +17956,51 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/castingV2/faceScanService.ts",
+      "to": "module:server/castingV2/facePanel.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/faceScanService.ts",
+      "to": "module:server/castingV2/faceScan.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/faceScanService.ts",
+      "to": "module:server/castingV2/falRegionReader.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/faceScanService.ts",
+      "to": "module:server/castingV2/maskedComposite.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/faceScanService.ts",
+      "to": "module:server/castingV2/maskedRefine.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/faceScanService.ts",
+      "to": "module:server/castingV2/recipeAssembler.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/faceScanService.ts",
+      "to": "module:server/castingV2/segmentCuts.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/faceScanService.ts",
+      "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/faceScanService.ts",
+      "to": "module:server/storage.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/castingV2/falRegionReader.ts",
       "to": "module:server/castingV2/accessoryKinds.ts",
       "kind": "imports"
@@ -21773,6 +21843,11 @@
     {
       "from": "module:server/routes/castingV2.ts",
       "to": "module:server/castingV2/facePanel.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/castingV2.ts",
+      "to": "module:server/castingV2/faceScanService.ts",
       "kind": "imports"
     },
     {

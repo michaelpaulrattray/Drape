@@ -32,6 +32,12 @@ import {
   parseCastingReferenceLibraryScope,
   validateCastingReferenceLibraryEnvironment,
   CASTING_REPAINT_SCOPE_ENV,
+  CastingFaceScanCoverageError,
+  CastingFaceScanScopeConfigurationError,
+  CASTING_FACE_SCAN_SCOPE_ENV,
+  captureCastingFaceScanEnabled,
+  parseCastingFaceScanScope,
+  validateCastingFaceScanEnvironment,
   CastingRepaintCoverageError,
   CastingRepaintScopeConfigurationError,
   captureCastingRepaintEnabled,
@@ -487,5 +493,78 @@ describe("the compositor-swap sub-flag", () => {
     process.env[CASTING_V2_SCOPE_ENV] = "users:1";
     delete process.env[CASTING_REPAINT_SCOPE_ENV];
     expect(captureCastingRepaintEnabled(1)).toBe(false);
+  });
+});
+
+describe("the auto-scan sub-flag", () => {
+  const previous = { ...process.env };
+
+  afterEach(() => {
+    process.env = { ...previous };
+  });
+
+  it("is off by default and refuses anything it cannot read exactly", () => {
+    expect(parseCastingFaceScanScope(undefined)).toEqual({ kind: "off" });
+    for (const raw of ["ALL", "user:1", "users:", "users:0", "users:1,1", "true"]) {
+      expect(() => parseCastingFaceScanScope(raw), raw)
+        .toThrow(CastingFaceScanScopeConfigurationError);
+    }
+  });
+
+  it("asserts nothing while absent", () => {
+    expect(validateCastingFaceScanEnvironment({
+      scope: undefined,
+      libraryScope: undefined,
+    })).toEqual({ kind: "off" });
+  });
+
+  it("refuses to read a face for a user whose panel does not render", () => {
+    /*
+      The scan produces panel furniture and nothing else. Armed past the panel's
+      own flag it is fourteen segmenter calls whose answer nobody can see —
+      inert, and inert is indistinguishable from mistaken from outside.
+    */
+    expect(() => validateCastingFaceScanEnvironment({
+      scope: "users:1",
+      libraryScope: undefined,
+    })).toThrow(CastingFaceScanCoverageError);
+    expect(() => validateCastingFaceScanEnvironment({
+      scope: "all",
+      libraryScope: "users:1",
+    })).toThrow(CastingFaceScanCoverageError);
+    expect(() => validateCastingFaceScanEnvironment({
+      scope: "users:1,2",
+      libraryScope: "users:1",
+    })).toThrow(/names users outside/);
+  });
+
+  it("accepts a scope its parent already covers", () => {
+    expect(validateCastingFaceScanEnvironment({
+      scope: "users:1",
+      libraryScope: "users:1,2",
+    })).toEqual({ kind: "users", userIds: [1] });
+    expect(validateCastingFaceScanEnvironment({
+      scope: "users:1",
+      libraryScope: "all",
+    })).toEqual({ kind: "users", userIds: [1] });
+  });
+
+  it("is enabled only when the WHOLE chain names the user", () => {
+    process.env[CASTING_V2_SCOPE_ENV] = "users:1";
+    process.env[CASTING_REFERENCE_LIBRARY_SCOPE_ENV] = "users:1";
+    process.env[CASTING_FACE_SCAN_SCOPE_ENV] = "users:1";
+    expect(captureCastingFaceScanEnabled(1)).toBe(true);
+    expect(captureCastingFaceScanEnabled(2)).toBe(false);
+
+    process.env[CASTING_REFERENCE_LIBRARY_SCOPE_ENV] = "off";
+    expect(captureCastingFaceScanEnabled(1)).toBe(false);
+
+    process.env[CASTING_REFERENCE_LIBRARY_SCOPE_ENV] = "users:1";
+    process.env[CASTING_V2_SCOPE_ENV] = "off";
+    expect(captureCastingFaceScanEnabled(1)).toBe(false);
+
+    process.env[CASTING_V2_SCOPE_ENV] = "users:1";
+    delete process.env[CASTING_FACE_SCAN_SCOPE_ENV];
+    expect(captureCastingFaceScanEnabled(1)).toBe(false);
   });
 });

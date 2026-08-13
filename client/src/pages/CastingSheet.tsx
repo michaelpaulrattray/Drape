@@ -859,8 +859,35 @@ export default function CastingSheet() {
     laid over the picture. Held here because they are rendered by two different
     children — and held ONCE, because a fact stored twice drifts.
   */
+  /*
+    THE SAME PANEL, AFTER HER FACE HAS BEEN READ.
+
+    A scan is fourteen segmenter calls and takes seconds, so it cannot ride the
+    first paint — the panel above renders from the library immediately and this
+    swaps in when it lands. Same shape, so the swap is one `??` rather than a
+    merge in the browser: the server is the only place that knows how a scanned
+    row differs from a minted one.
+
+    Fired only when the panel says a scan is available for this account
+    (`scanning`), so a user outside `CASTING_FACE_SCAN_SCOPE` pays no round
+    trip. Idempotent per (candidate, version) on the server, so the retries and
+    refocus refetches TanStack does for free cost nothing.
+  */
+  const faceScan = trpc.castingV2.faceScan.useQuery(
+    {
+      candidateId: viewerCandidateId ?? "",
+      variantId: variants.data?.selectedVariantId ?? null,
+    },
+    {
+      enabled: viewerRefinable && Boolean(viewerCandidateId) && Boolean(face.data?.scanning),
+      /* It never changes for a version — a new version is a new key. */
+      staleTime: Infinity,
+    },
+  );
+
   const faceSelection = useFaceSelection();
-  const facePanelData = face.data?.enabled ? face.data : null;
+  const scannedFaceData = faceScan.data?.enabled ? faceScan.data : null;
+  const facePanelData = scannedFaceData ?? (face.data?.enabled ? face.data : null);
   const faceRows = facePanelData?.groups.flatMap((group) => group.rows) ?? [];
   /*
     ONE DRAFT, THREE DOORS. The ask box under the picture, a row tapped in the

@@ -557,6 +557,102 @@ export function validateCastingRepaintEnvironment(input: {
   return repaint;
 }
 
+/* ---------------------------------------------- the auto-scan sub-flag */
+
+/**
+ * THE AUTO-SCAN — reading a face nobody has edited, on its own switch.
+ *
+ * Off, the face panel is exactly what it is today: rows from the catalogue,
+ * content from the library, and an untouched face showing a column of empty
+ * slots (the founder's own screenshot, fable-352). On, the panel's first read
+ * of a version also asks a segmenter where every feature is on that frame, and
+ * fills the rows the library has nothing for.
+ *
+ * # Why it needs a switch of its own, given the panel already has one
+ *
+ * It SPENDS. Not a customer's credits — a scan is house money on a read the
+ * user never asked to pay for — but fourteen segmenter calls per version
+ * looked at, and a switch is the difference between that starting when we
+ * choose and starting the moment a deploy lands on whoever already has the
+ * panel. `CASTING_REFERENCE_LIBRARY_SCOPE` is open for the founder, so without
+ * this the scan would arrive on his next selection unannounced.
+ *
+ * # Its parent is the LIBRARY scope, because the panel is its only consumer
+ *
+ * The scan produces panel furniture and nothing else — no rows, no objects, no
+ * manifest (fable-373 ruling 4a). The panel it fills is dark until the library
+ * scope is on, so a scan scope reaching past it is a paid read whose answer
+ * nobody can see: inert, and inert is indistinguishable from mistaken from
+ * outside (invariant 7). The transport is inherited rather than re-asserted —
+ * `CASTING_V2_SCOPE`, which every scope below it must sit inside, already
+ * refuses to arm without `FAL_KEY`.
+ */
+export const CASTING_FACE_SCAN_SCOPE_ENV = "CASTING_FACE_SCAN_SCOPE";
+
+export class CastingFaceScanScopeConfigurationError extends Error {
+  constructor() {
+    super(
+      `${CASTING_FACE_SCAN_SCOPE_ENV} must be "off", "all", or "users:" followed by unique positive integer user ids`,
+    );
+    this.name = "CastingFaceScanScopeConfigurationError";
+  }
+}
+
+export class CastingFaceScanCoverageError extends Error {
+  constructor(detail: string) {
+    super(`${CASTING_FACE_SCAN_SCOPE_ENV} ${detail}`);
+    this.name = "CastingFaceScanCoverageError";
+  }
+}
+
+export function parseCastingFaceScanScope(raw: string | undefined): CastingV2Scope {
+  return parseScopeGrammar(raw, () => {
+    throw new CastingFaceScanScopeConfigurationError();
+  });
+}
+
+/**
+ * Whether this user's untouched faces are read on selection.
+ *
+ * An AND of the whole chain, for `captureCastingSegmentsEnabled`'s reason: the
+ * boot check already refuses a scope that reaches past its parent, and this is
+ * the same rule enforced again where it is used, because a boot check that was
+ * never invoked is the second way a flag pair goes wrong.
+ */
+export function captureCastingFaceScanEnabled(userId: number): boolean {
+  const scan = parseCastingFaceScanScope(process.env[CASTING_FACE_SCAN_SCOPE_ENV]);
+  if (!castingV2EnabledForUser(scan, userId)) return false;
+  return captureCastingReferenceLibraryEnabled(userId);
+}
+
+export function validateCastingFaceScanEnvironment(input: {
+  scope: string | undefined;
+  libraryScope: string | undefined;
+}): CastingV2Scope {
+  const scan = parseCastingFaceScanScope(input.scope);
+  if (scan.kind === "off") return scan;
+
+  const library = parseCastingReferenceLibraryScope(input.libraryScope);
+  if (library.kind === "off") {
+    throw new CastingFaceScanCoverageError(
+      `cannot be enabled while ${CASTING_REFERENCE_LIBRARY_SCOPE_ENV} is off — the scan fills a panel that does not render`,
+    );
+  }
+  if (library.kind === "all") return scan;
+  if (scan.kind === "all") {
+    throw new CastingFaceScanCoverageError(
+      `cannot be "all" while ${CASTING_REFERENCE_LIBRARY_SCOPE_ENV} is limited to specific users`,
+    );
+  }
+  const uncovered = scan.userIds.filter((userId) => !library.userIds.includes(userId));
+  if (uncovered.length > 0) {
+    throw new CastingFaceScanCoverageError(
+      `names users outside ${CASTING_REFERENCE_LIBRARY_SCOPE_ENV}: ${uncovered.join(",")}`,
+    );
+  }
+  return scan;
+}
+
 export function validateCastingV2Environment(input: {
   scope: string | undefined;
   cleanupWorker: string | undefined;

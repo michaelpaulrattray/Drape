@@ -107,6 +107,9 @@ describe("what the library adds to a row", () => {
       /* The stencil goes through the proxy: a CSS mask is a CORS fetch and the
          public bucket sends no allow-origin, so a bucket mask renders NOTHING. */
       maskUrl: "/api/image-proxy?url=https%3A%2F%2Fbucket.example%2Flibrary%2Fhair-mask.png",
+      /* A minted crop IS the picture, so there is no window onto a frame — the
+         scan-born rows are the ones that carry one. */
+      crop: null,
     });
     expect(built.box).toEqual({ x: 12, y: 30, width: 200, height: 140, frame: { width: 1024, height: 1536 } });
   });
@@ -172,5 +175,115 @@ describe("a pair is one row until it isn't, and the split is derived", () => {
     expect(names).not.toContain("Her lasheses");
     expect(names).toContain("Her eyes");
     expect(names).toContain("Her ears");
+  });
+});
+
+/**
+ * WHAT A SCAN ADDS, AND WHAT IT MUST NOT TAKE OVER.
+ *
+ * A scan is what the picture already contains; the library is what an edit
+ * made. The founder's own two provenances ("she came with it" / "from an edit")
+ * are the whole of the distinction, and the failure to avoid is a scan of
+ * today's frame quietly replacing the crop a paid render minted.
+ */
+describe("what a scan adds to a row", () => {
+  const frame = { width: 1000, height: 1500 };
+  const scanOf = (slots: Record<string, { x: number; y: number; width: number; height: number }>) => ({
+    frameUrl: "https://bucket.example/casting/master.jpg",
+    slots: new Map(
+      Object.entries(slots).map(([slot, box]) => [slot, {
+        box: { ...box, frame },
+        maskUrl: `data:image/png;base64,${slot}`,
+      }]),
+    ),
+  });
+
+  const scanned = (rows: StoredReference[], slots: Parameters<typeof scanOf>[0]) => facePanel({
+    rows,
+    pronouns: SHE,
+    contentUrl: (key) => `https://bucket.example/${key}`,
+    maskUrl: (key) => `/api/image-proxy?url=${encodeURIComponent(`https://bucket.example/${key}`)}`,
+    scan: scanOf(slots),
+  }).groups.flatMap((group) => group.rows);
+
+  it("fills a row the library has never held with a window on the frame", () => {
+    const nose = scanned([], { nose: { x: 400, y: 600, width: 120, height: 160 } })
+      .find((row) => row.name === "Her nose")!;
+
+    /* The picture is the frame the viewer already has — no object was written
+       to show this, which is the whole of ruling 4a. */
+    expect(nose.thumb).toEqual({
+      contentUrl: "https://bucket.example/casting/master.jpg",
+      maskUrl: "data:image/png;base64,nose",
+      crop: { x: 400, y: 600, width: 120, height: 160, frame },
+    });
+    expect(nose.box).toEqual({ x: 400, y: 600, width: 120, height: 160, frame });
+  });
+
+  it("leaves the MINTED cutout in place where an edit made one", () => {
+    const rows = [row({
+      slot: "hair",
+      words: ["a copper shag"],
+      storageKey: "library/hair.png",
+      maskKey: "library/hair-mask.png",
+      geometry: { bbox: { x: 12, y: 30, width: 200, height: 140 }, frame },
+    })];
+    const hair = scanned(rows, { hair: { x: 900, y: 900, width: 50, height: 50 } })
+      .find((panelRow) => panelRow.name === "Her hair")!;
+
+    /*
+      The library wins where it has minted. A scan of today's frame replacing
+      the crop a paid render cut would make "from an edit" a lie on a row that
+      is showing a picture of something else.
+    */
+    expect(hair.thumb!.contentUrl).toBe("https://bucket.example/library/hair.png");
+    expect(hair.thumb!.crop).toBeNull();
+    expect(hair.box).toEqual({ x: 12, y: 30, width: 200, height: 140, frame });
+  });
+
+  it("gives a measured row its click target even when the crop came from an edit", () => {
+    /* A crop minted on an ancestor version, with no geometry recorded — the row
+       keeps its cutout AND gains a box, rather than the panel choosing one. */
+    const rows = [row({
+      slot: "hair",
+      words: ["a copper shag"],
+      storageKey: "library/hair.png",
+      maskKey: "library/hair-mask.png",
+      geometry: null,
+    })];
+    const hair = scanned(rows, { hair: { x: 900, y: 900, width: 50, height: 50 } })
+      .find((panelRow) => panelRow.name === "Her hair")!;
+
+    expect(hair.thumb!.contentUrl).toBe("https://bucket.example/library/hair.png");
+    expect(hair.box).toEqual({ x: 900, y: 900, width: 50, height: 50, frame });
+  });
+
+  it("still refuses to invent a box for a region the scan did not find", () => {
+    /* An ear behind her hair files NOTHING (fable-352). The row is present and
+       tappable, as every row is, and the picture stays honest about what was
+       measured. */
+    const rows = scanned([], { nose: { x: 400, y: 600, width: 120, height: 160 } });
+    const ears = rows.find((panelRow) => panelRow.name === "Her ears")!;
+    expect(ears.box).toBeNull();
+    expect(ears.thumb).toBeNull();
+    expect(rows.find((panelRow) => panelRow.name === "Her jaw")!.box).toBeNull();
+  });
+
+  it("shows a matched pair one side's shape, never a box spanning both", () => {
+    const rows = scanned([], {
+      "eye@left": { x: 300, y: 500, width: 60, height: 30 },
+      "eye@right": { x: 640, y: 500, width: 60, height: 30 },
+    });
+    const eyes = rows.find((panelRow) => panelRow.name === "Her eyes")!;
+    /* One row, two slots, and the geometry of ONE instance — a box drawn
+       around both would be a rectangle across the bridge of her nose. */
+    expect(eyes.slots).toEqual(["eye@left", "eye@right"]);
+    expect(eyes.box).toEqual({ x: 300, y: 500, width: 60, height: 30, frame });
+    expect(eyes.thumb!.crop).toEqual({ x: 300, y: 500, width: 60, height: 30, frame });
+  });
+
+  it("is exactly today's panel when there is no scan", () => {
+    const withoutScan = allRows([]);
+    expect(withoutScan.every((panelRow) => panelRow.box === null && panelRow.thumb === null)).toBe(true);
   });
 });

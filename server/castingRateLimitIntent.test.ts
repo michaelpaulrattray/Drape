@@ -160,6 +160,10 @@ describe("which bucket each casting procedure was handed", () => {
       segmentsOnFace: "castingRead",
       /* Panel v2's read — a read, on the read bucket, like its v1 sibling. */
       facePanel: "castingRead",
+      /* The auto-scan is a READ of a face, house-funded and idempotent per
+         (candidate, version) — so it sits in the read bucket beside the panel
+         it fills, not in a bucket that would let a refetch storm buy scans. */
+      faceScan: "castingRead",
       cancel: "castingSheet",
     });
   });
