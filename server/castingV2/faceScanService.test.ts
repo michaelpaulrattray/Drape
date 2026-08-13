@@ -211,6 +211,25 @@ describe("what is ready, without waiting for it", () => {
 });
 
 describe("the re-scan rate is a reading", () => {
+  /*
+    THIS ONE TEST BUYS ITS OWN CLOCK, AND THE REASON IS A COUPLING WORTH NAMING.
+
+    Every other test in this file scans one face and costs ~50 ms. This one has
+    to push a real key out of a real cache, so it scans FACE_SCAN_CACHE_LIMIT + 2
+    of them — its cost is proportional to a PRODUCTION CONSTANT, and it is the
+    only test in the suite that is. Measured: 1,729 ms alone on an idle machine,
+    5,021 ms inside the 431-file parallel run, against vitest's 5,000 ms default.
+    So it passed alone, passed the shift it was written in, and went red on the
+    next run of an unchanged tree — the worst shape a test can have, because the
+    red says nothing about its subject.
+
+    An explicit budget rather than a cheaper test: reading the limit from the
+    module is the right discipline (derive, never mirror — a hard-coded 64 here
+    would stop proving eviction the day the ceiling moves), and the honest
+    consequence of that discipline is that raising the ceiling makes this test
+    slower. 30 s is ~6× the contended cost, so the ceiling can quadruple before
+    this line needs looking at again.
+  */
   it("counts a key that was evicted and came back", async () => {
     const reader = countingReader();
     const { deps } = await dependencies(reader);
@@ -232,7 +251,7 @@ describe("the re-scan rate is a reading", () => {
     */
     expect(faceScanCacheStats().rescans).toBe(1);
     expect(faceScanCacheStats().rescanRate).toBeGreaterThan(0);
-  });
+  }, 30_000);
 });
 
 describe("what the panel receives", () => {
