@@ -4,11 +4,11 @@
  *
  * Panel v2 was built whole in shift 26 and NEVER LOOKED AT. This opens the real
  * sheet, opens the real viewer on a real frame, photographs the panel in both
- * themes, and asserts the things a photograph cannot: that the one region drawn
- * over the picture is the one the library actually measured, that hovering a row
- * lights that region and hovering the region lights the row, that clicking it
- * opens a scoped box AT the feature already carrying their sentence, and that
- * closing it spends nothing.
+ * themes, and asserts the things a photograph cannot: that every row has a place
+ * on the picture and every place belongs to a row, that hovering a row lights
+ * ITS OWN region and nothing else and hovering the region lights the row, that
+ * clicking it opens a scoped box AT that feature already carrying their
+ * sentence, and that closing it spends nothing.
  *
  * Every check records what it SAW (D-235). An affirmative with no observation
  * behind it is not a reading.
@@ -24,14 +24,26 @@
  * harvest's own words, corrected against the photograph itself in shift 27
  * (`scripts/seed-face-panel-fixture-disposable.mts` says exactly what was
  * changed and why). The one piece of GEOMETRY in the fixture — her lips — is a
- * real stored measurement on this exact frame, and it is the only region the
- * picture offers, which is the truthful state of the product today: hair and
- * earrings have no measured box until the mint caller produces one.
+ * real stored measurement on this exact frame, and it is the only region a MINT
+ * has ever put there.
  *
- * Requires `CASTING_REFERENCE_LIBRARY_SCOPE=users:1` on the running server. With
- * the flag off the endpoint answers `enabled: false`, the panel does not render,
- * and this driver fails rather than passing quietly — which is the correct
- * verdict for a run that proved nothing.
+ * # AND THE SCAN NOW ANSWERS FOR THE REST (shift 79)
+ *
+ * With `CASTING_FACE_SCAN_SCOPE` live, the panel's first read of a version also
+ * asks a segmenter where every feature is, so the picture carries twelve regions
+ * and nine rows rather than one of each. Every assertion below that named a
+ * count was re-anchored one at a time, each carrying the rule it now states and
+ * the ruling that overruled the old one — never in bulk, because a bulk re-tune
+ * makes a real regression and an overruled rule indistinguishable forever
+ * (fable-431 §4).
+ *
+ * Requires `CASTING_REFERENCE_LIBRARY_SCOPE=users:1` AND
+ * `CASTING_FACE_SCAN_SCOPE=users:1` on the running server. With the library flag
+ * off the endpoint answers `enabled: false`, the panel does not render, and this
+ * driver fails rather than passing quietly — which is the correct verdict for a
+ * run that proved nothing. With the SCAN flag off the panel is one library row,
+ * every re-anchored check below fails loudly, and that too is correct: this
+ * driver grades the product the founder is actually looking at.
  */
 import "dotenv/config";
 import { mkdir, writeFile } from "node:fs/promises";
@@ -55,8 +67,31 @@ const SESSION = "2df4aeab-daa0-4bab-8ce7-d1e2c969510d";
 const TILE = "01";
 const THEMES = ["dark", "light"] as const;
 
-/** The row the library has a measured box for — the only clickable region. */
+/**
+ * The row whose box is a real stored MEASUREMENT from a mint, rather than one
+ * the scan read off this frame. It is no longer the only clickable region — it
+ * is the only one a paid edit put there, which is what makes it the right
+ * subject for the minted-crop and one-selection-two-views checks.
+ */
 const MEASURED_ROW = "Her lips";
+
+/**
+ * THE FIXTURE'S THREE POPULATIONS, named rather than counted (shift 79).
+ *
+ * With the scan live a row's words come from one of two places and the panel
+ * says which, so a count of "rows with words" can no longer tell a library row
+ * from a described one — or notice that one of the four went missing.
+ *
+ *   LIBRARY    minted by an edit; carries a `from` line
+ *   DESCRIBED  what the scan read off this frame; carries NO `from`, by design
+ *   PAIR       one row in her words, one rectangle per instance (fable-378 (c))
+ *
+ * `Her earrings` belongs in LIBRARY by its rows and appears in none of these:
+ * see the ABSENT record below the pair check.
+ */
+const LIBRARY_ROWS = ["Her lips", "Her hair", "Her glasses"] as const;
+const DESCRIBED_ROWS = ["Her build", "Her skin"] as const;
+const PAIR_ROWS = ["Her eyes", "Her brows", "Her ears"] as const;
 
 const secret = process.env.JWT_SECRET;
 const appId = process.env.VITE_APP_ID;
@@ -82,7 +117,32 @@ const READ_PANEL = `(() => {
   if (!panel) return null;
   const rows = Array.from(panel.querySelectorAll(".dpc-face__row")).map((row) => {
     const thumb = row.querySelector(".dpc-face__thumb");
-    const style = thumb ? getComputedStyle(thumb) : null;
+    /*
+      THE PICTURE IS THE __cut CHILDREN, NOT THE __thumb WRAPPER, and one row
+      can hold two of them — a matched pair draws an instance each, side by side
+      in the one tile. This read was taking getComputedStyle off the WRAPPER,
+      which carries no mask and no window at all (the mask lives on
+      .dpc-face__cut, castingV2.css:3081), so every style it reported was of the
+      wrong element. It survived only because the assertion that consumed it
+      stopped being reachable when the scan shipped.
+
+      (No backticks in this comment on purpose: it lives inside a template
+      literal, and one would end the string.)
+    */
+    const cuts = Array.from(row.querySelectorAll(".dpc-face__cut")).map((cut) => {
+      const style = getComputedStyle(cut);
+      return {
+        maskImage: style.maskImage || style.webkitMaskImage || "",
+        maskMode: style.maskMode || style.webkitMaskSourceType || "",
+        background: style.backgroundImage,
+        /* A MINTED crop is its own picture and publishes no window; a SCAN-BORN
+           one is the whole frame with a window on it, and the window is these
+           custom properties (cutoutStyle / .dpc-face__cut--cutout). This is
+           how the two kinds are told apart from the outside. */
+        cutWidth: style.getPropertyValue("--dpc-cut-w").trim(),
+        windowed: cut.classList.contains("dpc-face__cut--cutout"),
+      };
+    });
     return {
       name: row.querySelector(".dpc-face__name")?.textContent ?? "",
       words: row.querySelector(".dpc-face__words")?.textContent ?? "",
@@ -91,9 +151,9 @@ const READ_PANEL = `(() => {
       lit: row.getAttribute("data-lit"),
       active: row.getAttribute("data-active"),
       hasThumb: Boolean(thumb) && !thumb.classList.contains("dpc-face__thumb--none"),
-      maskImage: style ? (style.maskImage || style.webkitMaskImage || "") : "",
-      maskMode: style ? (style.maskMode || style.webkitMaskSourceType || "") : "",
-      background: style ? style.backgroundImage : "",
+      /** One per instance — a pair's tile holds two. */
+      parts: Number(thumb?.getAttribute("data-parts") ?? 0),
+      cuts,
     };
   });
   const groups = Array.from(panel.querySelectorAll(".dpc-face__group")).map((group) => ({
@@ -182,15 +242,43 @@ async function shotBuffer(page: Page, selector: string): Promise<Buffer | null> 
   return Buffer.from(await page.screenshot({ clip: box, encoding: "binary" }) as Uint8Array);
 }
 
-async function thumbShot(page: Page, index: number): Promise<Buffer | null> {
+/**
+ * ONE ROW'S TILE, FOUND BY ITS NAME.
+ *
+ * It took an INDEX into `.dpc-face__thumb`, and the list it indexed changes
+ * shape while the page is alive: the panel mounts with whatever the library
+ * knows (one row here) and fills to nine when the scan answers. So the same
+ * number addressed a different feature depending on when it was called — and
+ * the negative control at the foot of this file called it in a second browser,
+ * where nothing guaranteed the same moment. The live shot and its control have
+ * to be the same tile or the delta between them means nothing.
+ */
+async function thumbShotOf(page: Page, rowName: string): Promise<Buffer | null> {
   const box = await page.evaluate(`(() => {
-    const thumb = document.querySelectorAll(".dpc-face__thumb")[${index}];
+    const row = Array.from(document.querySelectorAll(".dpc-face__row"))
+      .find((node) => (node.querySelector(".dpc-face__name")?.textContent ?? "") === ${JSON.stringify(rowName)});
+    const thumb = row?.querySelector(".dpc-face__thumb");
     if (!thumb) return null;
     const rect = thumb.getBoundingClientRect();
     return { x: rect.x + window.scrollX, y: rect.y + window.scrollY, width: rect.width, height: rect.height };
   })()`) as any;
   if (!box || box.width < 2 || box.height < 2) return null;
   return Buffer.from(await page.screenshot({ clip: box, encoding: "binary" }) as Uint8Array);
+}
+
+/**
+ * WAIT FOR HER FACE TO BE FINISHED BEING READ. Null when it never settles,
+ * which is a failure at every call site rather than a slow pass (opus-335 §3:
+ * a driver that grades the loading state photographs a face mid-read).
+ */
+async function waitForSettled(page: Page): Promise<number | null> {
+  const startedAt = Date.now();
+  for (let attempt = 0; attempt < 60; attempt += 1) {
+    const working = await page.evaluate(() => Boolean(document.querySelector(".dpc-face__working")));
+    if (!working) return Date.now() - startedAt;
+    await new Promise((resolve) => setTimeout(resolve, 1_000));
+  }
+  return null;
 }
 
 /** Open the sheet, open the viewer, wait for the panel to actually arrive. */
@@ -212,7 +300,6 @@ async function openPanel(page: Page): Promise<number> {
 
 /** The healthy thumbnail photographs, kept so the control has something to differ from. */
 const liveThumbs: Record<string, Buffer | null> = {};
-let thumbIndex = -1;
 
 for (const theme of THEMES) {
   const { browser, page } = await openDrivenPage({ base: BASE, token, width: 1440, height: 1000 });
@@ -257,15 +344,7 @@ for (const theme of THEMES) {
       It FAILS rather than proceeding if the scan never settles — a driver that
       quietly grades the loading state is exactly what produced the sixteen.
     */
-    const settledAfter = await (async () => {
-      const startedAt = Date.now();
-      for (let attempt = 0; attempt < 60; attempt += 1) {
-        const working = await page.evaluate(() => Boolean(document.querySelector(".dpc-face__working")));
-        if (!working) return Date.now() - startedAt;
-        await new Promise((resolve) => setTimeout(resolve, 1_000));
-      }
-      return null;
-    })();
+    const settledAfter = await waitForSettled(page);
     check(
       settledAfter !== null,
       `${theme}: her face is finished being read before anything is judged`,
@@ -296,10 +375,23 @@ for (const theme of THEMES) {
     const panel = await page.evaluate(READ_PANEL) as any;
 
     /* ---- the copy, verbatim ---- */
+    /*
+      RE-ANCHORED (shift 79). The rule it now states: THE HEADING IS THE
+      FOUNDER'S OWN WORD.
+
+      It asserted `"On her face"` and had been failing since fable-398 ruled
+      "Refine them" in his own words ("how about refine them or somthing"). The
+      old heading was not merely replaced, it was FALSIFIED by this panel: the
+      list gained BODY and SKIN rows, so a heading naming the face was untrue in
+      the same photograph that showed her shoulders. The pronoun law it used to
+      carry lives on in "no row calls a woman's face his", three checks down —
+      which is where it belongs, because the rows are what still derive a
+      pronoun (FacePanel.tsx:25-38).
+    */
     check(
-      panel.title === "On her face",
-      `${theme}: the heading, with this face's own pronoun`,
-      `title="${panel.title}" over a woman's photograph`,
+      panel.title === "Refine them",
+      `${theme}: the heading is his own word, and names nothing this panel is not`,
+      `title="${panel.title}" over a panel carrying ${panel.rows.length} rows including her build`,
     );
     check(
       panel.sub === "Everything here can be changed. Tap one to talk about it.",
@@ -325,75 +417,234 @@ for (const theme of THEMES) {
       `${untouched.length} of ${panel.rows.length} rows carry no words — e.g. ${untouched.slice(0, 3).map((r: any) => r.name).join(", ")}`,
     );
     const spoken = panel.rows.filter((row: any) => row.words !== "");
+    /*
+      RE-ANCHORED (shift 79). The rule it now states: EVERY LIBRARY ROW WITH A
+      PLACE ON THE PHOTOGRAPH REACHES THE PANEL, AND SAYS SO.
+
+      It counted `spoken === 4` — the fixture's four library rows — and the scan
+      overruled the count from both ends at once: it ADDS words to rows the
+      library has nothing for (her build, her skin), and fable-414's box rule
+      REMOVES a worded row that nothing can point at (her earrings, §ABSENT
+      below). A count cannot tell those two apart, so this names the rows.
+
+      The discriminator is the provenance line, which is the product's own:
+      a LIBRARY row is something she asked for or arrived with, a DESCRIBED row
+      is what this photograph shows, and only the first has a `from`.
+    */
+    const named = (name: string) => panel.rows.find((row: any) => row.name === name);
+    const missingLibrary = LIBRARY_ROWS
+      .filter((name) => !(named(name)?.words !== "" && named(name)?.from === "from an edit"));
     check(
-      spoken.length === 4,
-      `${theme}: every library row reaches the panel`,
-      spoken.map((r: any) => `${r.name}: "${r.words}"`).join(" | "),
+      missingLibrary.length === 0,
+      `${theme}: every library row with a place on the photograph reaches the panel, carrying its own words`,
+      missingLibrary.length === 0
+        ? LIBRARY_ROWS.map((name) => `${name}: "${named(name)!.words}" (${named(name)!.from})`).join(" | ")
+        : `missing or wordless: ${missingLibrary.join(", ")}`,
     );
+    /*
+      RE-ANCHORED (shift 79). The rule it now states: A DESCRIPTION IS NOT A
+      PROVENANCE, and the panel says nothing rather than saying the wrong thing.
+
+      Both halves of one rule, because the old check only had the positive one
+      and read a designed null as a missing value: a described row carrying
+      "from an edit" would be the panel telling her she bought her own
+      shoulders (`facePanel.ts:341` — the null is deliberate and documented).
+    */
+    const describedRows = DESCRIBED_ROWS.map((name) => named(name)).filter(Boolean);
     check(
-      spoken.every((row: any) => row.from === "from an edit"),
-      `${theme}: a spoken row says where it came from`,
-      spoken.map((r: any) => `"${r.from}"`).join(", "),
+      describedRows.length === DESCRIBED_ROWS.length
+        && describedRows.every((row: any) => row.words !== "" && row.from === ""),
+      `${theme}: a row the scan described carries its words and claims no provenance`,
+      describedRows.length === 0
+        ? `none of ${DESCRIBED_ROWS.join(", ")} is on the panel at all`
+        : describedRows.map((r: any) => `${r.name}: "${r.words}" from="${r.from}"`).join(" | "),
     );
+    const silent = panel.rows.filter((row: any) => row.words === "");
     check(
-      panel.rows.filter((row: any) => row.from !== "").length === spoken.length,
+      silent.length > 0 && silent.every((row: any) => row.from === ""),
       `${theme}: a row nothing has happened to claims no provenance`,
-      `${panel.rows.length - spoken.length} silent rows carry no "from" line`,
+      `${silent.length} silent rows: ${silent.map((r: any) => `${r.name}(from="${r.from}")`).join(", ")}`,
     );
-    /* The pair rule, read off the screen: matched earrings are ONE row. */
-    const earringRows = panel.rows.filter((row: any) => /earring/i.test(row.name));
+    /*
+      RE-ANCHORED (shift 79). The rule it now states: A MATCHED PAIR IS ONE ROW
+      WITH TWO RECTANGLES — asserted on a pair the picture actually has.
+
+      It named her EARRINGS, and on this fixture that assertion cannot fire in
+      either direction: earring detection is deliberately unarmed (fable-340's
+      `deferArming`), so the pair has no rectangle, so fable-414's box rule
+      takes the row off the panel. A check that cannot fail is the thing this
+      program keeps finding, and it was one — recorded as ABSENT below rather
+      than deleted, because the day it CAN fire is the day someone should look.
+
+      Her eyes, her brows and her ears are read pairs on this frame, so the rule
+      is exercised where the ontology actually lands: ONE row in the person's own
+      words (fable-378 (c)), and each rectangle naming its own instance, because
+      clicking a rectangle is a promise about those pixels.
+    */
+    const pairFailures = PAIR_ROWS.filter((name) => {
+      const rows = panel.rows.filter((row: any) => row.name === name);
+      return rows.length !== 1;
+    });
     check(
-      earringRows.length === 1 && earringRows[0].name === "Her earrings",
-      `${theme}: a matched pair is one row`,
-      earringRows.map((r: any) => `"${r.name}"`).join(", ") || "no earring row at all",
+      pairFailures.length === 0,
+      `${theme}: a matched pair is one row, in her own words`,
+      pairFailures.length === 0
+        ? `${PAIR_ROWS.join(", ")} — one row each of ${panel.rows.length}`
+        : `not one row each: ${pairFailures.join(", ")}`,
+    );
+    absent(
+      `${theme}: a matched pair is one row — her EARRINGS`,
+      "not applicable and NOT a pass: she is wearing hoops and the library holds "
+      + '"a slim gold hoop" on both sides, but earring detection is unarmed by ruling '
+      + "(fable-340 deferArming), so the pair has no rectangle and fable-414's box rule "
+      + "takes the row off the panel entirely. Filed in opus-336 §3",
     );
 
     /* ---- the thumbnail, and the negative control ---- */
     const withThumb = panel.rows
       .map((row: any, at: number) => ({ ...row, at }))
       .filter((row: any) => row.hasThumb);
+    /*
+      RE-ANCHORED (shift 79). The rule it now states: EVERY ROW ON THE PANEL HAS
+      A PICTURE OF ITSELF, and the two ways of getting one read as one object.
+
+      It asserted exactly one cutout, on the only row a mint had ever cropped.
+      The scan overruled the "only" and not the rest: a scan mints nothing, so
+      the frame the viewer is already showing is the content and the stencil is
+      a window on it (`cutoutStyle`). Both kinds are one picture cut by one
+      shape, which is the founder's ruling in one word — "masked cutouts",
+      fable-374 — so the panel is a description of a face rather than a mix of
+      two rendering languages.
+
+      The window is what tells them apart from outside, so this asserts the
+      DIFFERENCE rather than trusting the sameness: the minted row publishes no
+      `--dpc-cut-w` because its crop IS the picture, and every scan-born row
+      publishes one. A scan row with no window would draw the entire frame
+      shrunk into a 34px tile — a face in a stamp, which is what this check
+      would otherwise let through.
+    */
     check(
-      withThumb.length === 1 && withThumb[0].name === MEASURED_ROW,
-      `${theme}: a cutout appears only where a crop was minted`,
-      `${withThumb.length} thumbnails: ${withThumb.map((r: any) => r.name).join(", ") || "none"}`,
+      withThumb.length === panel.rows.length,
+      `${theme}: every row has a picture of itself`,
+      `${withThumb.length} cutouts on ${panel.rows.length} rows: ${withThumb.map((r: any) => r.name).join(", ") || "none"}`,
     );
-    if (withThumb.length === 1) {
-      thumbIndex = withThumb[0].at;
-      check(
-        /luminance/i.test(withThumb[0].maskMode),
-        `${theme}: the cutout is cut by LUMINANCE, not by a missing alpha channel`,
-        `mask-mode: ${withThumb[0].maskMode}`,
-      );
-      liveThumbs[theme] = await thumbShot(page, thumbIndex);
-      check(
-        liveThumbs[theme] !== null,
-        `${theme}: the cutout has a box worth photographing`,
-        liveThumbs[theme] ? `${liveThumbs[theme]!.length} bytes` : "no box",
-      );
-    } else {
-      check(false, `${theme}: the cutout is cut by LUMINANCE`, "never reached — no thumbnail found");
-    }
+    const minted = withThumb.filter((row: any) => row.cuts.every((cut: any) => !cut.windowed));
+    const windowed = withThumb.filter((row: any) => row.cuts.every((cut: any) => cut.windowed && cut.cutWidth !== ""));
+    check(
+      minted.length === 1 && minted[0].name === MEASURED_ROW
+        && windowed.length === withThumb.length - 1,
+      `${theme}: the minted crop is its own picture; every scanned one is a window on the frame`,
+      `its own picture: ${minted.map((r: any) => r.name).join(", ") || "none"}`
+      + ` · windowed: ${windowed.length} of ${withThumb.length}`
+      + ` · e.g. ${windowed[0]?.name} --dpc-cut-w=${windowed[0]?.cuts[0]?.cutWidth}`,
+    );
+    /*
+      THE PAIR RULE'S OTHER HALF, and the one the founder actually read: a
+      single-eye tile on a two-eyed face is broken. One row, one tile, one
+      picture PER INSTANCE.
+    */
+    const pairTiles = PAIR_ROWS.map((name) => panel.rows.find((row: any) => row.name === name)).filter(Boolean);
+    check(
+      pairTiles.length === PAIR_ROWS.length
+        && pairTiles.every((row: any) => row.parts === 2 && row.cuts.length === 2),
+      `${theme}: a pair's one tile holds a picture of each side`,
+      pairTiles.map((r: any) => `${r.name}: ${r.parts} parts / ${r.cuts.length} cuts`).join(" · ")
+        || "no pair rows at all",
+    );
+    const allCuts = withThumb.flatMap((row: any) => row.cuts.map((cut: any) => ({ ...cut, name: row.name })));
+    const notLuminance = allCuts.filter((cut: any) => !/luminance/i.test(cut.maskMode));
+    check(
+      allCuts.length > 0 && notLuminance.length === 0,
+      `${theme}: every cutout is cut by LUMINANCE, not by a missing alpha channel`,
+      notLuminance.length === 0
+        ? `${allCuts.length} cutouts across ${withThumb.length} rows, mask-mode: ${allCuts[0]?.maskMode}`
+        : `not luminance: ${notLuminance.map((c: any) => `${c.name}(${c.maskMode})`).join(", ")}`,
+    );
+    /*
+      BY NAME, NEVER BY POSITION — the same defect the hover pair paid for
+      (opus-335 §3). The live shot for the blocked-stencil control at the foot of
+      this file was only ever taken inside a branch requiring the panel to hold
+      exactly ONE thumbnail, so with the scan live the control reported "never
+      reached" instead of failing loudly. A control that cannot arm does not
+      exist (invariant 7).
+    */
+    liveThumbs[theme] = await thumbShotOf(page, MEASURED_ROW);
+    check(
+      liveThumbs[theme] !== null,
+      `${theme}: ${MEASURED_ROW}' cutout has a box worth photographing`,
+      liveThumbs[theme] ? `${liveThumbs[theme]!.length} bytes` : `no tile on a row named "${MEASURED_ROW}"`,
+    );
 
     /* ---- the picture's regions ---- */
     const regions = await page.evaluate(READ_REGIONS) as any;
+    /*
+      RE-ANCHORED (shift 79). The rule it now states is the FOUNDER'S OWN, and
+      it is worth stating as he did (fable-414): *"nothing should ride words
+      alone in the right panel — everything in the right panel should have a
+      bounding box."*
+
+      It asserted `boxes.length === 1`, which was the truthful state of the
+      product on the day it was written — one measured lip box and nothing else.
+      The scan overruled the number and PROVED the rule, so the check now tests
+      the rule instead of the number, in both directions:
+
+        every row has a place       no row is a name with nowhere to point
+        every place has a row       no rectangle promises pixels no row owns
+
+      The second half is the one a count could never see, and it is the more
+      dangerous failure: a box the panel cannot explain is a click target that
+      edits something the customer was never shown.
+
+      A pair draws one rectangle per instance and each carries its INSTANCE's
+      name ("Her left eye"), not the row's — fable-378 (c), because clicking a
+      rectangle is a promise about those pixels. So a box matches its row by
+      either name.
+    */
+    const tags: string[] = regions ? regions.boxes.map((box: any) => box.tag) : [];
+    const rowsWithoutPlace = panel.rows.filter((row: any) => {
+      const bare = row.name.replace(/^Her |^His |^Their /, "");
+      return !tags.some((tag) => tag === row.name || new RegExp(`(left|right) ${bare.replace(/s$/, "")}`, "i").test(tag));
+    });
     check(
-      regions !== null && regions.boxes.length === 1,
-      `${theme}: exactly one region is drawn — the one that was measured`,
-      regions ? `${regions.boxes.length} boxes: ${regions.boxes.map((b: any) => b.tag).join(", ")}` : "no .dpc-regions at all",
+      regions !== null && regions.boxes.length > 0 && rowsWithoutPlace.length === 0,
+      `${theme}: every row on the panel has a place on the photograph`,
+      regions === null
+        ? "no .dpc-regions at all"
+        : `${regions.boxes.length} boxes for ${panel.rows.length} rows`
+          + (rowsWithoutPlace.length === 0 ? ` — ${tags.join(", ")}` : ` · nowhere to point: ${rowsWithoutPlace.map((r: any) => r.name).join(", ")}`),
     );
-    if (regions && regions.boxes.length === 1) {
-      const box = regions.boxes[0];
-      check(
-        box.tag === MEASURED_ROW,
-        `${theme}: the region is her lips, not a rectangle placed by proportion`,
-        `tag="${box.tag}" label="${box.label}"`,
-      );
-      check(
-        [box.left, box.top, box.width, box.height].every((value: string) => value.endsWith("%")),
-        `${theme}: the box is a fraction of its own frame, never screen pixels`,
-        `left=${box.left} top=${box.top} w=${box.width} h=${box.height}`,
-      );
-    }
+    const orphanBoxes = tags.filter((tag) => {
+      const bare = tag.replace(/^(Her|His|Their) (left |right )?/, "");
+      return !panel.rows.some((row: any) => row.name === tag || row.name.replace(/^(Her|His|Their) /, "").replace(/s$/, "") === bare.replace(/s$/, ""));
+    });
+    check(
+      tags.length > 0 && orphanBoxes.length === 0,
+      `${theme}: and every place on the photograph belongs to a row`,
+      orphanBoxes.length === 0
+        ? `${tags.length} boxes, every one owned by a row on the panel`
+        : `boxes no row owns: ${orphanBoxes.join(", ")}`,
+    );
+    const measuredBox = (regions?.boxes ?? []).find((box: any) => box.tag === MEASURED_ROW);
+    check(
+      Boolean(measuredBox),
+      `${theme}: the region measured by a paid mint is on the picture under its own name`,
+      measuredBox ? `tag="${measuredBox.tag}" label="${measuredBox.label}"` : `no box tagged "${MEASURED_ROW}" among ${tags.length}`,
+    );
+    /*
+      NEVER SCREEN PIXELS — asserted across EVERY box rather than the one that
+      happened to be first. A rectangle placed by proportion is the thing this
+      surface must never do, and one box in twelve doing it is the whole defect.
+    */
+    const inPixels = (regions?.boxes ?? []).filter(
+      (box: any) => ![box.left, box.top, box.width, box.height].every((value: string) => value.endsWith("%")),
+    );
+    check(
+      tags.length > 0 && inPixels.length === 0,
+      `${theme}: every box is a fraction of its own frame, never screen pixels`,
+      inPixels.length === 0
+        ? `${tags.length} boxes in %, e.g. ${measuredBox?.tag} left=${measuredBox?.left} top=${measuredBox?.top} w=${measuredBox?.width} h=${measuredBox?.height}`
+        : `in pixels: ${inPixels.map((b: any) => `${b.tag}(${b.left},${b.top})`).join(", ")}`,
+    );
 
     /*
       ---- THE PICTURE IS STILL A PICTURE ----
@@ -404,11 +655,20 @@ for (const theme of THEMES) {
       while every source-level assertion about it passed.
     */
     const stage = await page.evaluate(`(() => {
-      const rect = (q) => { const n = document.querySelector(q); if (!n) return null; const r = n.getBoundingClientRect(); return { x: Math.round(r.x), y: Math.round(r.y), w: Math.round(r.width), h: Math.round(r.height) }; };
+      const box = (n) => { if (!n) return null; const r = n.getBoundingClientRect(); return { x: Math.round(r.x), y: Math.round(r.y), w: Math.round(r.width), h: Math.round(r.height) }; };
+      const rect = (q) => box(document.querySelector(q));
+      /* BY NAME, NOT BY POSITION — ".dpc-regions__box" is her BUILD now, and
+         measuring it while calling it ${MEASURED_ROW} is the same coin flip the
+         hover pair paid for. */
+      const named = Array.from(document.querySelectorAll(".dpc-regions__box"))
+        .find((node) => (node.querySelector(".dpc-regions__tag")?.textContent ?? "") === ${JSON.stringify(MEASURED_ROW)});
+      const rows = Array.from(document.querySelectorAll(".dpc-face__row"));
       return {
         plate: rect(".dpc-viewer__plate"), figure: rect(".dpc-viewer__frame"),
         dock: rect(".dpc-viewer__dock"), rail: rect(".dpc-viewer__rail"),
-        box: rect(".dpc-regions__box"), panel: rect(".dpc-face"),
+        box: box(named), panel: rect(".dpc-face"),
+        lastRow: box(rows[rows.length - 1]),
+        viewport: { w: window.innerWidth, h: window.innerHeight },
         stacksUnderPicture: document.querySelectorAll(".dpc-refine .dpc-refine__stack").length,
         railSteps: document.querySelectorAll(".dpc-viewer__rail .dpc-refine__step").length,
       };
@@ -418,10 +678,29 @@ for (const theme of THEMES) {
       `${theme}: the photograph keeps its size with the panel on`,
       stage.plate ? `the plate renders ${stage.plate.w} × ${stage.plate.h}` : "no plate at all",
     );
+    /*
+      RE-ANCHORED (shift 79). The rule it now states: THE PANEL IS A COLUMN
+      BESIDE THE PICTURE AND ALL OF IT CAN BE SEEN WITHOUT SCROLLING.
+
+      It asserted `dock.h <= figure.h`, using the picture's own height as the
+      proxy for "not a page under it" — sound while the panel was four rows and
+      arithmetically doomed at nine (920 against an 820px figure). The property
+      that actually matters survives the row count and is a design law this
+      house already mechanizes: the dock is visible without scrolling. Where the
+      dock STANDS is asserted by its own two checks below, which is where that
+      half belonged all along.
+
+      It fails the moment a row count pushes the last row past the fold, which
+      is the real version of what the height proxy was reaching for.
+    */
     check(
-      stage.dock !== null && stage.figure !== null && stage.dock.h <= stage.figure.h + 4,
-      `${theme}: the panel is a column beside the picture, not a page under it`,
-      stage.dock ? `dock ${stage.dock.w} × ${stage.dock.h} beside a ${stage.figure?.h}px figure` : "no dock",
+      stage.dock !== null && stage.lastRow !== null
+        && stage.dock.y >= 0
+        && stage.lastRow.y + stage.lastRow.h <= stage.viewport.h,
+      `${theme}: the whole panel is visible without scrolling`,
+      stage.dock && stage.lastRow
+        ? `dock ${stage.dock.w} × ${stage.dock.h} from y=${stage.dock.y}, last row ends at ${stage.lastRow.y + stage.lastRow.h} in a ${stage.viewport.h}px viewport`
+        : "no dock or no rows",
     );
     check(
       stage.box !== null
@@ -429,10 +708,10 @@ for (const theme of THEMES) {
         && stage.box.x >= stage.plate.x - 1 && stage.box.y >= stage.plate.y - 1
         && stage.box.x + stage.box.w <= stage.plate.x + stage.plate.w + 1
         && stage.box.y + stage.box.h <= stage.plate.y + stage.plate.h + 1,
-      `${theme}: her region is a real target inside the picture`,
+      `${theme}: ${MEASURED_ROW}' region is a real target inside the picture`,
       stage.box
         ? `box ${stage.box.w} × ${stage.box.h} at (${stage.box.x}, ${stage.box.y}) inside a plate at (${stage.plate.x}, ${stage.plate.y}) ${stage.plate.w} × ${stage.plate.h}`
-        : "no region drawn",
+        : `no box tagged "${MEASURED_ROW}" drawn`,
     );
 
     /*
@@ -540,8 +819,22 @@ for (const theme of THEMES) {
       `${MEASURED_ROW}'s row reads data-lit="${litRow?.lit}" (box ${boxIndex + 1} of ${litByRow?.boxes?.length ?? 0})`,
     );
 
-    /* ---- click the feature ON the picture ---- */
-    await page.click(".dpc-regions__box");
+    /*
+      ---- click the feature ON the picture ----
+
+      RE-ANCHORED (shift 79). THE THIRD MEMBER OF THE INDEX-NOT-NAME CLASS, and
+      the one that was still live after opus-335 fixed the hover pair three
+      lines above it. This clicked `.dpc-regions__box` — the FIRST rectangle,
+      which is her BUILD — and then asserted the box opened carrying "her lips
+      — ". It has been failing on a true statement about the wrong feature, and
+      on the day the scan happened to draw her lips first it would have PASSED
+      just as meaninglessly. Same shape, same file, same fix: name the feature
+      at both ends (working law 7 — fix the class, not the instance).
+    */
+    const measuredSelector = litBox?.label
+      ? `.dpc-regions__box[aria-label="${litBox.label.replace(/"/g, '\\"')}"]`
+      : `.dpc-regions__box:nth-of-type(${boxIndex + 1})`;
+    await page.click(measuredSelector);
     await page.waitForSelector(".dpc-regions__ask", { timeout: 10_000 });
     const opened = await page.evaluate(READ_REGIONS) as any;
     check(
@@ -561,7 +854,10 @@ for (const theme of THEMES) {
     );
     const askBox = await page.evaluate(`(() => {
       const form = document.querySelector(".dpc-regions__ask");
-      const region = document.querySelector(".dpc-regions__box");
+      /* The feature that was actually clicked, not whichever is drawn first —
+         this measured the distance from her BUILD's rectangle to a form opened
+         at her LIPS and called it "at the feature". */
+      const region = document.querySelector(${JSON.stringify(measuredSelector)});
       if (!form || !region) return null;
       const f = form.getBoundingClientRect();
       const r = region.getBoundingClientRect();
@@ -660,8 +956,18 @@ for (const theme of THEMES) {
       void request.continue();
     });
     await openPanel(page);
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    const control = thumbIndex >= 0 ? await thumbShot(page, thumbIndex) : null;
+    /* THE SAME MOMENT AS THE LIVE SHOT, not a 1.5s guess. The panel mounts with
+       one row and fills to nine when the scan answers, so a control taken mid-fill
+       is a photograph of a different panel — and the delta between two different
+       panels is not a reading of anything. */
+    const controlSettled = await waitForSettled(page);
+    check(
+      controlSettled !== null,
+      "control: her face is finished being read before the control is photographed",
+      controlSettled === null ? "the working line never cleared" : `settled after ${(controlSettled / 1000).toFixed(1)}s`,
+    );
+    await new Promise((resolve) => setTimeout(resolve, 600));
+    const control = await thumbShotOf(page, MEASURED_ROW);
     check(blocked > 0, "control: the stencil really was blocked", `${blocked} proxy requests aborted`);
     if (control && liveThumbs.dark) {
       await writeFile(path.join(OUT, "thumb-control-blocked.png"), control);

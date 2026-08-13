@@ -528,10 +528,25 @@ export function facePanel(input: {
    * nothing can locate on the frame leaves the panel until something can. Her
    * build and her skin were both in that state three days ago and neither is
    * now — build's region is composed (`belowHeadMask`) and skin's is drawn from
-   * a region it may never be CUT from (`display`). `teeth` is the one that stays
-   * out, and it stays out honestly: the ask box still reaches it, the words are
-   * still kept, and the panel does not offer a picture of something it cannot
-   * point at.
+   * a region it may never be CUT from (`display`). What stays out stays out
+   * honestly: the ask box still reaches it, the words are still kept, and the
+   * panel does not offer a picture of something it cannot point at.
+   *
+   * **TWO rows are in that state, not one** (shift 79 — this sentence named
+   * `teeth` alone and was read as the complete list, which is what an
+   * enumeration in a comment always becomes):
+   *
+   *   teeth      no region, and no ask can produce one — the honest case
+   *   EARRINGS   the expensive one. Earring DETECTION is deliberately unarmed
+   *              (`bornWornDetector`'s `deferArming`, fable-340: a site may be
+   *              called bare only when it is VISIBLY bare, and the court that
+   *              proves that has not been run). So the scan never asks where
+   *              they are, they never get a rectangle, and this filter takes
+   *              the row off the panel — on a face WEARING them, with the
+   *              customer's own edit words on file for both sides. Driven on
+   *              the dev fixture, which wears gold hoops and has no earrings
+   *              row (opus-336 §3). Arming the earring court closes it; nothing
+   *              here should be loosened to paper over it.
    *
    * A group whose rows all fell away disappears with them, which the filter
    * below already did for the group with no rows at all.
