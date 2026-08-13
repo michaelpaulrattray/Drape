@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "e71dede23537c137"
+    "sourceFingerprint": "be79e557e8e5d77d"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 98
+      "moduleCount": 99
     },
     {
       "id": "domain:castingV2",
@@ -3473,6 +3473,12 @@
     {
       "id": "module:server/castingV2/mintedSlots.ts",
       "path": "server/castingV2/mintedSlots.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/openLaneKind.ts",
+      "path": "server/castingV2/openLaneKind.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -8775,6 +8781,10 @@
     {
       "id": "test:server/castingV2/onImageGeometryMonochrome.test.ts",
       "path": "server/castingV2/onImageGeometryMonochrome.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/openLaneKind.test.ts",
+      "path": "server/castingV2/openLaneKind.test.ts"
     },
     {
       "id": "test:server/castingV2/overridePrecedence.test.ts",
@@ -18248,6 +18258,21 @@
     {
       "from": "module:server/castingV2/mintedSlots.ts",
       "to": "module:server/castingV2/refineFacets.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/openLaneKind.ts",
+      "to": "module:server/castingV2/refineSubjects.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/openLaneKind.ts",
+      "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/openLaneKind.ts",
+      "to": "module:server/providers/types.ts",
       "kind": "imports"
     },
     {

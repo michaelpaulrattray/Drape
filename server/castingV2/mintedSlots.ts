@@ -116,7 +116,32 @@ export type MintedSlotsResult = {
  * quietly wearing another reason's label. `noWords` is a read-back that failed
  * soft, which costs later precision and nothing today.
  */
-export type UnfiledReason = "notASlot" | "unnamedObject" | "uncataloguedFeature" | "noWords";
+/*
+  `openKind` — DECLARED SCAFFOLDING, and it lands before anything can produce it.
+
+  Nothing returns it today. The open lane's acceptance path and its slotless
+  `Ask` are separate builds (OPEN_LANE_DESIGN_NOTE §8 steps 4–5) and are not
+  started. The label is reserved here, with its reason, because of what it costs
+  to add late.
+
+  An open kind is a FOURTH situation and it must not wear `notASlot`'s label.
+  `notASlot` means "this rides somewhere else, and here is where" — three decided
+  absences, each with a written reason. An open kind means "nobody has catalogued
+  this yet, and it may get its own slot when it promotes". Filed under the first,
+  the second is invisible at exactly the place it exists to be seen: **the count
+  of asks with nowhere to go is the promotion signal**, and it cannot be read out
+  of a bucket that also holds three permanent residents.
+
+  `openLaneKind.test.ts` holds the negative control that today's producer cannot
+  emit it. The day the assembler files an open ask, reaching for `notASlot` is a
+  visibly wrong choice rather than the only one available.
+*/
+export type UnfiledReason =
+  | "notASlot"
+  | "unnamedObject"
+  | "uncataloguedFeature"
+  | "noWords"
+  | "openKind";
 
 function unfiledReasonFor(facet: Facet): UnfiledReason {
   const assignment = FACET_SLOTS[facet];

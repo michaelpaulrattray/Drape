@@ -280,6 +280,90 @@ export function bindsOnPresence(subject: FreeSubject): boolean {
 }
 
 /**
+ * WHAT PEOPLE CALL EACH CLOSED SUBJECT — the open lane's collision check reads
+ * this, and nothing else does yet (OPEN_LANE_DESIGN_NOTE §1).
+ *
+ * # Why this table has to exist, measured before it was written
+ *
+ * The open lane keys an ask by a noun a model produced. §1 drove that and it
+ * converged — with ONE systematic exception, 3/3 rather than a wobble:
+ *
+ *     "her cheeks should be covered in scales"  →  cheeks · cheeks · cheeks
+ *
+ * When the sentence makes the SITE its grammatical subject, the normalizer keys
+ * the site instead of the thing. And `cheeks` is a hair's breadth from
+ * `cheekbones`, **a subject the closed lane already owns** — so the failure
+ * mode is not a wobbly key, it is an open key quietly becoming a face edit.
+ *
+ * The guard against it is to check every normalized kind against the closed
+ * vocabulary before accepting it as new. **And the vocabulary it has to be
+ * checked against is not this file's KEYS.** `cheeks` does not equal
+ * `cheekbones`; `earrings` does not equal `statedAccessories`; `tattoo` does
+ * not equal `ink`. A check written against the identifiers would have passed
+ * the exact sentence that motivated it — the misaimed-guard class, which in
+ * this campaign has now cost a carve-out and 28 clothing words.
+ *
+ * So: what a subject is CALLED, as a total function over the closed set. Total
+ * on purpose — a subject added without its nouns will not compile, which is the
+ * same construction the eight tables in §0 use and for the same reason. An
+ * unowned axis falls silently to the loudest prior.
+ *
+ * # What this table is NOT
+ *
+ * It is not the interpreter's routing vocabulary and must never become it —
+ * routing is the model's job through `freeSubjectGuidance`, and a second list
+ * that decided routing would be working law 4's violation exactly. This list
+ * answers one question: *is this noun already ours?*
+ *
+ * # Its honest limit, declared
+ *
+ * A synonym nobody listed passes as a new kind. That is a real hole and it is
+ * not closable by cleverness — "what words name this feature" is information,
+ * not derivation, and a fuzzy stem rule broad enough to catch the misses would
+ * also swallow legitimate new kinds, which is the same bug pointed the other
+ * way. **The demand table (§7) is the instrument for it**: a kind accumulating
+ * rows that is obviously one of these subjects is a missing noun, visible in
+ * the one place somebody is already looking.
+ *
+ * Plurals are folded by the reader, so a word need not be listed twice.
+ */
+export const SUBJECT_NOUNS: Record<FreeSubject, readonly string[]> = {
+  hairCut: ["hair", "haircut", "cut", "fringe", "bangs", "layers"],
+  hairShade: ["hair colour", "hair color", "highlights", "roots"],
+  hairPattern: ["hair texture", "curls", "waves", "coils"],
+  hairFinish: ["hair finish", "shine", "frizz"],
+  hairWorn: ["ponytail", "bun", "updo", "braid", "plait"],
+  eyeColourFree: ["eye colour", "eye color", "iris", "irises"],
+  eyeShapeFree: ["eye", "eyes", "eyelid", "eyelids", "eye shape"],
+  brows: ["brow", "brows", "eyebrow", "eyebrows"],
+  lashes: ["lash", "lashes", "eyelash", "eyelashes"],
+  nose: ["nose", "nostril", "nostrils", "bridge", "septum"],
+  lips: ["lip", "lips", "mouth", "cupid's bow"],
+  teeth: ["tooth", "teeth", "smile line", "gums"],
+  /* THE MEASURED ONE. `cheeks` is what the normalizer returned; without it in
+     this list the guard cannot see the collision it was written for. */
+  cheekbones: ["cheekbone", "cheekbones", "cheek", "cheeks"],
+  jaw: ["jaw", "jawline", "mandible"],
+  chin: ["chin"],
+  ears: ["ear", "ears", "earlobe", "earlobes"],
+  skinTone: ["skin", "skin tone", "complexion", "tan"],
+  skinCharacter: ["acne", "pores", "texture", "ruddiness", "weathering", "blemishes"],
+  marks: ["mark", "marks", "mole", "moles", "scar", "scars", "birthmark", "birthmarks", "freckles"],
+  statedAccessories: [
+    "earring", "earrings", "glasses", "spectacles", "sunglasses", "piercing",
+    "piercings", "necklace", "stud", "studs", "hoop", "hoops",
+  ],
+  bust: ["bust", "chest", "breasts"],
+  waist: ["waist", "midriff", "stomach", "torso"],
+  shoulders: ["shoulder", "shoulders"],
+  arms: ["arm", "arms", "biceps", "forearm", "forearms"],
+  build: ["build", "body", "body type", "body shape", "figure", "physique", "frame"],
+  ink: ["ink", "tattoo", "tattoos"],
+  facialHair: ["beard", "moustache", "mustache", "stubble", "sideburns", "goatee", "facial hair"],
+  expression: ["expression", "smile", "frown", "smirk", "scowl"],
+};
+
+/**
  * The one subject that files somewhere else.
  *
  * `readResolvedIdentity` passes unknown fields through whole, so an expression
