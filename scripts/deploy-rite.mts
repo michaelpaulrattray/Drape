@@ -44,15 +44,22 @@ const die: (why: string) => never = (why: string): never => {
   process.exit(1);
 };
 
-const run = (command: string, args: string[]): string => {
+/*
+  `shell` is not a style choice on Windows: `railway.cmd` is a batch file, and
+  `execFileSync` without a shell cannot resolve one from PATH — it returns the
+  spawn error as text, which reads exactly like a command that ran and said
+  nothing. The first run of this script watched a deploy that had already
+  succeeded for thirty minutes because of it.
+*/
+const run = (command: string, args: string[], shell = false): string => {
   try {
-    return execFileSync(command, args, { encoding: "utf8", maxBuffer: 32 * 1024 * 1024 });
+    return execFileSync(command, args, { encoding: "utf8", shell, maxBuffer: 32 * 1024 * 1024 });
   } catch (error: any) {
     return `${error?.stdout ?? ""}${error?.stderr ?? ""}` || String(error?.message ?? error);
   }
 };
 const git = (...args: string[]) => run("git", args).trim();
-const railway = (...args: string[]) => run("railway.cmd", args);
+const railway = (...args: string[]) => run("railway.cmd", args, true);
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 /* ── 1. what is being deployed ──────────────────────────────────────────── */
