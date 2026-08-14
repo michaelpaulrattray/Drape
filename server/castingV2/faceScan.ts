@@ -316,6 +316,10 @@ export async function scanFace(input: {
     difference between a panel that fills while she looks at the face and one
     that arrives after she has stopped waiting for it.
   */
+  /** How many empty anatomy reads were asked again, and how many the second
+   *  read rescued — the instrument the ruling asks for (fable-468 ruling 1). */
+  const reasked = { asked: 0, rescued: 0 };
+
   await Promise.all(plan.map(async (region) => {
     const bilateral = region.slots.some((slot) => slot.instance !== null);
     /*
@@ -341,6 +345,8 @@ export async function scanFace(input: {
       questions the floors get re-derived rather than reinterpreted.
     */
     const floor = detectionFloorFor(region.question, bilateral ? "side" : "frame").floor;
+    /** One reading of this region: what it filed, without deciding anything. */
+    const read = async (): Promise<"filed" | "empty" | "failed" | "capability"> => {
     try {
       if (bilateral && input.reader.regionSides) {
         const sides = await input.reader.regionSides({
@@ -356,10 +362,7 @@ export async function scanFace(input: {
           it, which is the wrong-boundary class with a rectangle on it. So the
           pair goes unanswered instead, honestly.
         */
-        if (sides === null) {
-          empty.push(region.question);
-          return;
-        }
+        if (sides === null) return "capability";
         for (const slot of region.slots) {
           const mask = slot.instance === "left" ? sides.left : sides.right;
           const box = binaryCoverage(mask) > floor ? boxIn(mask, frame) : null;
@@ -372,8 +375,7 @@ export async function scanFace(input: {
             masks.set(slot.slot, mask);
           }
         }
-        if (region.slots.every((slot) => !boxes.has(slot.slot))) empty.push(region.question);
-        return;
+        return region.slots.some((slot) => boxes.has(slot.slot)) ? "filed" : "empty";
       }
 
       const mask = await input.reader.region({
@@ -383,14 +385,12 @@ export async function scanFace(input: {
         ...(input.frame.url ? { imageUrl: input.frame.url } : {}),
       });
       const box = binaryCoverage(mask) > floor ? boxIn(mask, frame) : null;
-      if (box) {
-        for (const slot of region.slots) {
-          boxes.set(slot.slot, box);
-          masks.set(slot.slot, mask);
-        }
-      } else {
-        empty.push(region.question);
+      if (!box) return "empty";
+      for (const slot of region.slots) {
+        boxes.set(slot.slot, box);
+        masks.set(slot.slot, mask);
       }
+      return "filed";
     } catch (error) {
       /*
         A scan is a courtesy the user did not ask to pay for, so a failed
@@ -400,7 +400,43 @@ export async function scanFace(input: {
         once declared bare.
       */
       failed.push({ question: region.question, why: error instanceof Error ? error.message : String(error) });
+      return "failed";
     }
+  };
+
+    /*
+      AND AN EMPTY ANATOMY READ IS ASKED ONCE MORE (fable-468 ruling 1, on the
+      founder's own three specimens).
+
+      "Empty is a real answer" is true of a thing she may not be wearing and
+      false of a part of her face: she is in frame, looking at the camera, and
+      an empty read of her lips is a MISSED READING rather than a fact. It was
+      costing whole rows — his lips vanished on the frame where she smiled (the
+      region changed shape) and his eyes vanished on a build edit that touched
+      neither — because a row's price of admission is a rectangle (fable-414),
+      and the scan had reported none.
+
+      So anatomy gets a second look at the same frame, once. Worn things do not:
+      an empty earring read is the born-worn detector being deliberately
+      careful, and asking twice would only make it careful twice.
+
+      The rate is LOGGED rather than assumed. Two empties leave the row off, the
+      same as today, and the distribution then says whether it is the segmenter
+      or the frames — which three screenshots cannot.
+    */
+    const anatomy = region.slots.every((slot) => slot.tier === "anatomy");
+    const first = await read();
+    if (first === "filed" || first === "failed" || first === "capability" || !anatomy) {
+      if (first === "empty" || first === "capability") empty.push(region.question);
+      return;
+    }
+    reasked.asked += 1;
+    const second = await read();
+    if (second === "filed") {
+      reasked.rescued += 1;
+      return;
+    }
+    if (second !== "failed") empty.push(region.question);
   }));
 
   /* The composed rows join the same two maps by the same rule as every asked
@@ -432,6 +468,9 @@ export async function scanFace(input: {
          description is a different failure from a scan with neither. */
       described: descriptions.size,
       describable: wordsPlan().length,
+      /* The re-ask, as a rate rather than an anecdote (fable-468 ruling 1). */
+      reasked: reasked.asked,
+      rescued: reasked.rescued,
     },
     "[faceScan] read a face",
   );

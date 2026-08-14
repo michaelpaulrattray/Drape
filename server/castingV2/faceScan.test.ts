@@ -129,6 +129,76 @@ describe("the scan files only what it measured", () => {
     expect(scan.found).toBeGreaterThan(0);
   });
 
+  /*
+    AN EMPTY ANATOMY READ IS ASKED ONCE MORE (fable-468 ruling 1).
+
+    Measured on the founder's own frames before this existed: his LIPS row
+    vanished on the frame where she smiled and his EYES row vanished on a build
+    edit that touched neither, both because the scan reported nothing there and
+    a row's price of admission is a rectangle. A part of her face reading empty
+    is a missed reading; a bare earlobe reading empty is a fact.
+  */
+  it("asks an empty ANATOMY region again, and keeps what the second look finds", async () => {
+    let looks = 0;
+    const scan = await scanFace({
+      describe: null,
+      frame: FRAME,
+      reader: reader({
+        region: (name) => {
+          if (name !== "lips") return maskOf({ x: 5, y: 5, width: 5, height: 5 });
+          looks += 1;
+          /* Empty once, then found — the flake this ruling is about. */
+          return looks === 1 ? EMPTY : maskOf({ x: 40, y: 60, width: 12, height: 8 });
+        },
+      }),
+    });
+
+    expect(looks).toBe(2);
+    expect(scan.boxes.has("lips")).toBe(true);
+    expect(scan.empty).not.toContain("lips");
+  });
+
+  it("gives up after the second look, so an honest absence stays absent", async () => {
+    let looks = 0;
+    const scan = await scanFace({
+      describe: null,
+      frame: FRAME,
+      reader: reader({
+        region: (name) => {
+          if (name !== "lips") return maskOf({ x: 5, y: 5, width: 5, height: 5 });
+          looks += 1;
+          return EMPTY;
+        },
+      }),
+    });
+
+    expect(looks).toBe(2);
+    expect(scan.boxes.has("lips")).toBe(false);
+    expect(scan.empty).toContain("lips");
+  });
+
+  it("CONTROL — a WORN thing is asked once and not argued with", async () => {
+    /* An empty earring read is the born-worn rule being careful on purpose;
+       asking twice would only make it careful twice. Make the re-ask
+       unconditional and this goes red. */
+    let looks = 0;
+    const scan = await scanFace({
+      describe: null,
+      frame: FRAME,
+      reader: reader({
+        region: (name) => maskOf({ x: 5, y: 5, width: 5, height: 5 }),
+        sides: (name) => {
+          if (name !== "earring") return { left: maskOf({ x: 100, y: 200, width: 20, height: 20 }), right: maskOf({ x: 700, y: 200, width: 20, height: 20 }) };
+          looks += 1;
+          return { left: EMPTY, right: EMPTY };
+        },
+      }),
+    });
+
+    expect(looks).toBeLessThanOrEqual(1);
+    expect(scan.boxes.has("earring@left")).toBe(false);
+  });
+
   it("turns a FAILED READING into no box, never into a fact", async () => {
     const scan = await scanFace({
       describe: null,
