@@ -365,11 +365,48 @@ describe("a pair is one row until it isn't, and the split is derived", () => {
     expect(allRows(hoops(["a gold hoop"], ["a gold hoop"])).some((r) => r.name === "Left earring")).toBe(false);
   });
 
-  it("splits the row the moment one side is edited, with no flag to set", () => {
+  /*
+    RE-ANCHORED BY FOUNDER RULING (fable-452): divergence stopped changing the
+    panel's SHAPE.
+
+    It used to split into two top-level rows, so the list re-arranged itself to
+    report a fact about her face. The rule underneath is unchanged and is still
+    derived from the words every time — what moved is where it is SAID: one row,
+    two children, and the parent's words attributed side by side.
+  */
+  it("says which side is which the moment one is edited, with no flag to set", () => {
     const rows = allRows(hoops(["a gold hoop", "noticeably bigger"], ["a gold hoop"]));
-    expect(rows.map((r) => r.name)).toContain("Left earring");
-    expect(rows.map((r) => r.name)).toContain("Right earring");
-    expect(rows.find((r) => r.name === "Left earring")!.slots).toEqual(["earring@left"]);
+    const earrings = rows.find((r) => r.name === "Earrings")!;
+
+    /* Still ONE row, and tapping it still means both. */
+    expect(rows.map((r) => r.name)).not.toContain("Left earring");
+    expect(earrings.slots).toEqual(["earring@left", "earring@right"]);
+    /* And it claims nothing of either side: each side's own words, attributed. */
+    expect(earrings.words).toEqual(["left a gold hoop, noticeably bigger", "right a gold hoop"]);
+    /* The children are the per-instance records that already existed. */
+    expect(earrings.instances.map((instance) => [instance.name, instance.words])).toEqual([
+      ["Left earring", ["a gold hoop", "noticeably bigger"]],
+      ["Right earring", ["a gold hoop"]],
+    ]);
+    /* Each carries the scope its tap sends — the same wire the rectangle over
+       that earring sends (fable-444 ruling C). */
+    expect(earrings.instances.map((instance) => instance.slot)).toEqual(["earring@left", "earring@right"]);
+  });
+
+  it("opens a MATCHED pair too — the children are the row's sides, not its disagreement", () => {
+    /* The children exist whether or not the sides agree: a pair is a pair, and
+       she can ask about one eye of two identical ones. Make the instances
+       conditional on divergence and this goes red. */
+    const built = named(hoops(["a gold hoop"], ["a gold hoop"]), "Earrings")!;
+
+    expect(built.instances.map((instance) => instance.name)).toEqual(["Left earring", "Right earring"]);
+    /* And the parent still speaks in her own words, not attributed ones. */
+    expect(built.words).toEqual(["a gold hoop"]);
+  });
+
+  it("CONTROL — a row there is only one of has nothing to open", () => {
+    const nose = named([row({ slot: "nose", words: ["a little straighter"] })], "Nose")!;
+    expect(nose.instances).toEqual([]);
   });
 
   it("merges again when they match again, because there was never a flag to clear", () => {
@@ -629,15 +666,32 @@ describe("one green eye is never spoken of as two", () => {
     row({ slot: "eye@right", noun: "right eye", words: ["dark brown"], version: 1 }),
   ];
 
-  it("splits into two rows, each saying what ITS OWN library row says", () => {
-    expect(named(scoped, "Eyes")).toBeUndefined();
-    expect(named(scoped, "Left eye")?.words).toEqual(["green"]);
-    expect(named(scoped, "Right eye")?.words).toEqual(["dark brown"]);
+  /*
+    RE-ANCHORED BY FOUNDER RULING (fable-452), and the rule is the SAME rule.
+
+    These used to assert two top-level rows. The ruling made a pair one
+    expandable row with its two sides as children, so what condition 1 forbids
+    is now forbidden in one row's words: the parent may say only what both sides
+    carry, and where they disagree it says each side's own, attributed.
+  */
+  it("says each side's own words, attributed, and claims neither for the pair", () => {
+    const eyes = named(scoped, "Eyes")!;
+
+    expect(eyes.words).toEqual(["left green", "right dark brown"]);
+    expect(eyes.instances.map((instance) => [instance.name, instance.words])).toEqual([
+      ["Left eye", ["green"]],
+      ["Right eye", ["dark brown"]],
+    ]);
+    /* The thing the ruling forbids, asserted directly: no sentence on this row
+       says "green" as though it were true of her eyes. */
+    expect(eyes.words.join(" ")).not.toBe("green");
   });
 
-  it("draws a rectangle per row, so tapping one is a promise about those pixels", () => {
-    expect(named(scoped, "Left eye")?.regions).toHaveLength(1);
-    expect(named(scoped, "Right eye")?.regions).toHaveLength(1);
+  it("draws a rectangle per instance, so tapping one is a promise about those pixels", () => {
+    const eyes = named(scoped, "Eyes")!;
+
+    expect(eyes.regions.map((region) => region.name)).toEqual(["Left eye", "Right eye"]);
+    expect(eyes.instances.map((instance) => instance.box !== null)).toEqual([true, true]);
   });
 
   it("CONTROL — a whole-face edit is still ONE row about both of them", () => {
@@ -649,7 +703,10 @@ describe("one green eye is never spoken of as two", () => {
     ];
 
     expect(named(matched, "Eyes")?.words).toEqual(["green"]);
+    /* One row, and its words are hers rather than attributed — the children are
+       there either way, which is the ruling's shape and not its symptom. */
     expect(named(matched, "Left eye")).toBeUndefined();
+    expect(named(matched, "Eyes")?.instances).toHaveLength(2);
   });
 
   it("re-merges when a later whole-face edit makes them match again", () => {
@@ -663,5 +720,7 @@ describe("one green eye is never spoken of as two", () => {
 
     expect(named(remerged, "Eyes")?.words).toEqual(["hazel"]);
     expect(named(remerged, "Left eye")).toBeUndefined();
+    /* And the attribution is gone with the divergence, not left behind. */
+    expect(named(remerged, "Eyes")?.words.join(" ")).not.toContain("left ");
   });
 });

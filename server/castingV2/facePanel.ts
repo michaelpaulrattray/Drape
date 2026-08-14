@@ -217,6 +217,53 @@ export type PanelRow = {
    * founder read in the tile — same class, one surface across (law 7).
    */
   regions: readonly PanelRegion[];
+  /**
+   * THE TWO SIDES OF A PAIR, WHEN THIS ROW IS ONE (founder, fable-452).
+   *
+   * Empty on every row there is only one of. On a pair it holds both instances,
+   * whether or not they agree — the row is the pair and these are its children,
+   * so *"Eyes ▾ → Left eye · Right eye"*, collapsed until she opens it.
+   *
+   * # A diverged pair stopped changing the panel's SHAPE
+   *
+   * It used to become two top-level rows, so the list re-arranged itself to
+   * report a fact about her face. Now the structure is constant and the WORDS
+   * carry the fact: the parent says the derived sentence ("left green, right
+   * brown") and each child says its own. That is fable-444 condition 1
+   * unchanged — the panel may never claim what the rows do not agree on — said
+   * in one row's words instead of by splitting the list.
+   *
+   * Ordered LEFT then RIGHT, from the catalogue, and deliberately not in the
+   * photograph's order the way {@link PanelRow.cutouts} is: a picture is placed
+   * where the eye finds it, and a list is read in the words it is written in.
+   */
+  instances: readonly PanelInstance[];
+};
+
+/**
+ * ONE SIDE OF A PAIR, as a row of its own inside its parent.
+ *
+ * Everything here already existed per instance — the library's rows, the scan's
+ * boxes, the mint's crops. Nothing is fetched to open a pair and nothing new is
+ * stored to close one.
+ */
+export type PanelInstance = {
+  /** What tapping it edits — and it is the SAME wire a click on that instance's
+   *  rectangle sends (`scope`), so there is one scoping mechanism with two
+   *  entrances (fable-444 ruling C, fable-452). */
+  slot: FeatureSlot;
+  /** Bare, like every label: "Left eye" (fable-450/451). */
+  name: string;
+  /** How the product speaks about this one — "her left eye". */
+  spoken: string;
+  /** The opening of her sentence about this one. */
+  prefill: string;
+  /** What this side alone carries. Empty is a real answer, not a gap. */
+  words: readonly string[];
+  /** Its own picture, when it has one. */
+  cutout: PanelCutout | null;
+  /** Its own place on the photograph, when it has been read there. */
+  box: PanelBox | null;
 };
 
 export type FacePanel = {
@@ -328,6 +375,24 @@ function spokenOf(definition: SlotDefinition, possessive: string, paired: boolea
 /** The opening of their sentence, from the words the product speaks in. */
 function prefillFor(spoken: string): string {
   return `${spoken} — `;
+}
+
+/**
+ * WHAT A PAIR SAYS WHEN ITS TWO SIDES DISAGREE (fable-444 condition 1).
+ *
+ * "left green, right brown" — each side's own words, attributed to the side
+ * that carries them, so the row can be about both eyes without claiming
+ * anything of either. A side with nothing to say is left out rather than
+ * described as empty: silence about an eye nobody has edited is true, and
+ * "right nothing" is not.
+ */
+function attributedWords(
+  left: { noun: string; words: readonly string[] },
+  right: { noun: string; words: readonly string[] },
+): readonly string[] {
+  return [left, right]
+    .filter((side) => side.words.length > 0)
+    .map((side) => `${side.noun} ${side.words.join(", ")}`);
 }
 
 /**
@@ -467,6 +532,8 @@ export function facePanel(input: {
         /* The row is one thing and the rectangle covers it, so it needs no name
            of its own — the row's is the label. */
         regions: state.box ? [{ box: state.box, name: null, spoken: null, prefill: null, slot: definition.slot }] : [],
+        /* There is only one of it, so there is nothing to open. */
+        instances: [],
       });
       continue;
     }
@@ -491,7 +558,7 @@ export function facePanel(input: {
       right: { words: rightState.words },
     });
 
-    if (!diverged) {
+    {
       const spokenName = spokenOf(left, input.pronouns.possessive, true);
       /*
         BOTH INSTANCES, IN THE ORDER THE PHOTOGRAPH READS THEM.
@@ -521,8 +588,26 @@ export function facePanel(input: {
         group: left.group,
         name: labelOf(left, true),
         spoken: spokenName,
-        words: wordsFor(left.feature, leftState.words),
-        from: leftState.from,
+        /*
+          AND THE PARENT NEVER CLAIMS WHAT THE TWO SIDES DO NOT AGREE ON
+          (fable-444 condition 1, now said in this row's own words).
+
+          While they match, this is what both of them say — exactly as it always
+          was. The moment they diverge it becomes the derived sentence, "left
+          green, right brown", attributed side by side rather than picking one
+          and calling it her eyes. Derived from the two instances every render,
+          never a stored summary: a summary beside its own source is the mirror
+          working law 4 is about, and it would be the half that goes stale.
+        */
+        words: diverged
+          ? attributedWords(
+            { noun: left.instance!, words: wordsFor(left.feature, leftState.words) },
+            { noun: right.instance!, words: wordsFor(right.feature, rightState.words) },
+          )
+          : wordsFor(left.feature, leftState.words),
+        /* And where it came from is only sayable when both sides came from the
+           same place. Two different provenances is not a fact about the pair. */
+        from: leftState.from === rightState.from ? leftState.from : null,
         prefill: prefillFor(spokenName),
         /* One tile, both of them — and one of them when that is all this face
            has. A pair is matched by its WORDS and never by its pixels (two
@@ -549,30 +634,32 @@ export function facePanel(input: {
              means both, while an edit to this RECTANGLE means this one. */
           slot: side.definition.slot,
         })),
+        /*
+          THE TWO CHILDREN (founder, fable-452) — always both, whether or not
+          they agree, because the pair is the row and these are its sides.
+          Everything here already exists per instance, so opening a pair fetches
+          nothing and closing one stores nothing.
+
+          Left then right, from the catalogue: a list is read in the words it is
+          written in, while the tile above is ordered by where the eye finds
+          each picture.
+        */
+        instances: [
+          { definition: left, state: leftState },
+          { definition: right, state: rightState },
+        ].map(({ definition: side, state }) => ({
+          slot: side.slot,
+          name: labelOf(side, false),
+          spoken: spokenOf(side, input.pronouns.possessive, false),
+          prefill: prefillFor(spokenOf(side, input.pronouns.possessive, false)),
+          words: wordsFor(side.feature, state.words),
+          cutout: state.thumb,
+          box: state.box,
+        })),
       });
       continue;
     }
 
-    for (const side of [left, right]) {
-      const state_ = stateOf(side.slot);
-      const spokenName = spokenOf(side, input.pronouns.possessive, false);
-      push({
-        slots: [side.slot],
-        group: side.group,
-        name: labelOf(side, false),
-        spoken: spokenName,
-        /* A diverged host is two rows, and a folded slot's words are read on
-           BOTH of them: they are about both sides and nothing in the stack says
-           which side a lash sentence was about. Said twice beats vanishing. */
-        words: wordsFor(side.feature, state_.words),
-        from: state_.from,
-        prefill: prefillFor(spokenName),
-        cutouts: state_.thumb ? [state_.thumb] : [],
-        /* A diverged pair is already two rows, each about one instance, so the
-           rectangle covers exactly what its row names. */
-        regions: state_.box ? [{ box: state_.box, name: null, spoken: null, prefill: null, slot: side.slot }] : [],
-      });
-    }
   }
 
   /**

@@ -857,6 +857,98 @@ for (const theme of THEMES) {
     await shot(page, ".dpc-face", `panel-${theme}.png`);
     await page.screenshot({ path: path.join(OUT, `sheet-${theme}.png`) as `${string}.png` });
 
+    /*
+      A PAIR OPENS INTO ITS TWO SIDES — founder ruling, fable-452, photographed
+      in both states because a disclosure is exactly the kind of thing that
+      looks right in the state its author left it in.
+
+      The chevron is asserted to be its OWN control: the ruling keeps the row's
+      tap meaning an ask about the pair, so a nesting that swallowed the row's
+      click would obey the screenshot and break the sentence.
+    */
+    const collapsed = await page.evaluate(`(() => {
+      const row = Array.from(document.querySelectorAll(".dpc-face__rows > li"))
+        .find((item) => item.querySelector(".dpc-face__name")?.textContent === "Eyes");
+      if (!row) return null;
+      const chevron = row.querySelector(".dpc-face__open");
+      return {
+        hasChevron: Boolean(chevron),
+        expanded: chevron ? chevron.getAttribute("aria-expanded") : null,
+        label: chevron ? chevron.getAttribute("aria-label") : null,
+        children: row.querySelectorAll(".dpc-face__row--side").length,
+        /* The row's own button is still there and still one button. */
+        rowButtons: row.querySelectorAll(":scope > .dpc-face__row").length,
+      };
+    })()`) as any;
+    check(
+      collapsed?.hasChevron === true && collapsed.expanded === "false" && collapsed.children === 0,
+      `${theme}: a pair carries a chevron and is closed until she opens it`,
+      collapsed === null
+        ? "no Eyes row at all"
+        : `chevron ${collapsed.hasChevron}, aria-expanded=${collapsed.expanded}, ${collapsed.children} children drawn`,
+    );
+    check(
+      collapsed?.rowButtons === 1 && /^Show each of /.test(collapsed?.label ?? ""),
+      `${theme}: and the chevron is its own control, so the row still means the pair`,
+      `${collapsed?.rowButtons} row button(s), chevron says "${collapsed?.label}"`,
+    );
+
+    await page.click(".dpc-face__rows > li .dpc-face__open").catch(() => null);
+    await new Promise((resolve) => setTimeout(resolve, 150));
+    const expanded = await page.evaluate(`(() => {
+      const row = Array.from(document.querySelectorAll(".dpc-face__rows > li"))
+        .find((item) => item.querySelector(".dpc-face__open")?.getAttribute("aria-expanded") === "true");
+      if (!row) return null;
+      const children = Array.from(row.querySelectorAll(".dpc-face__row--side"));
+      return {
+        parent: row.querySelector(".dpc-face__name")?.textContent ?? "",
+        names: children.map((child) => child.querySelector(".dpc-face__name")?.textContent ?? ""),
+        thumbs: children.filter((child) => {
+          const thumb = child.querySelector(".dpc-face__thumb");
+          return Boolean(thumb) && !thumb.classList.contains("dpc-face__thumb--none");
+        }).length,
+      };
+    })()`) as any;
+    check(
+      expanded !== null && expanded.names.length === 2
+        && expanded.names.every((name: string) => /^(Left|Right) /.test(name)),
+      `${theme}: opening it shows the two sides, each named as itself`,
+      expanded === null
+        ? "nothing expanded"
+        : `${expanded.parent} → ${expanded.names.join(" · ")}, ${expanded.thumbs} with a picture of their own`,
+    );
+    await shot(page, ".dpc-face", `panel-open-${theme}.png`);
+
+    /* CLICKING A CHILD IS THE SCOPING GESTURE AGAIN — the same wire the
+       rectangle sends. Read on the child's own pressed state and on the picture,
+       because "scoped" that lights both eyes is not scoped. */
+    await page.click(".dpc-face__row--side").catch(() => null);
+    await new Promise((resolve) => setTimeout(resolve, 150));
+    const afterChild = await page.evaluate(`(() => {
+      const children = Array.from(document.querySelectorAll(".dpc-face__row--side"));
+      const boxes = Array.from(document.querySelectorAll(".dpc-regions__box"));
+      return {
+        pressed: children.map((child) => child.getAttribute("aria-pressed")),
+        activeBoxes: boxes.filter((box) => box.getAttribute("data-active") === "true")
+          .map((box) => box.querySelector(".dpc-regions__tag")?.textContent ?? ""),
+        askDraft: (document.querySelector(".dpc-refine__field") || {}).value ?? null,
+      };
+    })()`) as any;
+    check(
+      afterChild?.pressed?.filter((state: string) => state === "true").length === 1
+        && afterChild.activeBoxes.length === 1,
+      `${theme}: tapping one side scopes to it — one child pressed, one rectangle lit`,
+      `pressed: ${afterChild?.pressed?.join(", ")} · lit boxes: ${afterChild?.activeBoxes?.join(", ") || "none"}`,
+    );
+    /* And it opened HER sentence about that one side, not the pair's. */
+    check(
+      typeof afterChild?.askDraft === "string" && /^(her|his|their) (left|right) /.test(afterChild.askDraft),
+      `${theme}: and the ask box opens about that side in the words the product speaks`,
+      `ask box holds "${afterChild?.askDraft}"`,
+    );
+    await page.click(".dpc-face__open").catch(() => null);
+    await new Promise((resolve) => setTimeout(resolve, 150));
+
     /* The reverse, hovering the SAME feature's box rather than whichever one
        happens to be drawn first. */
     const boxIndex = (litByRow?.boxes ?? []).findIndex((box: any) => box.tag === MEASURED_ROW);

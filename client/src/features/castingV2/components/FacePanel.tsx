@@ -1,3 +1,5 @@
+import { useState } from "react";
+
 import type { FaceSelectionModel } from "./faceSelection";
 
 /**
@@ -117,6 +119,27 @@ export type FacePanelRow = {
   cutouts: readonly FacePanelCutout[];
   /** Where it is on the picture: none, one, or one per instance. */
   regions: readonly FacePanelRegion[];
+  /**
+   * THE TWO SIDES OF A PAIR, WHEN THIS ROW IS ONE (founder, fable-452).
+   *
+   * Empty on every row there is only one of. The parent means the pair and a
+   * child means that instance — tapping one scopes the ask exactly as clicking
+   * that instance's rectangle on the photograph does, which is one mechanism
+   * with two entrances rather than a second way to mean the same thing.
+   */
+  instances: readonly FacePanelInstance[];
+};
+
+/** One side of a pair, as a row of its own inside its parent. */
+export type FacePanelInstance = {
+  slot: string;
+  /** Bare, like every label: "Left eye". */
+  name: string;
+  /** How the product speaks about this one — "her left eye". */
+  spoken: string;
+  prefill: string;
+  words: readonly string[];
+  cutout: FacePanelCutout | null;
 };
 
 /**
@@ -203,6 +226,21 @@ export function FacePanel({
   /** Writes the opening of their sentence into the ask box. Never submits it. */
   onScope: (prefill: string) => void;
 }) {
+  /*
+    WHICH PAIRS ARE OPEN — and it is the one piece of state this panel keeps.
+
+    Not the selection: that is held once, outside, and handed to both surfaces
+    (working law 4, and the reason this file was forbidden any state at all
+    until the founder's nesting ruling). A disclosure is a different kind of
+    fact — nothing else in the product needs to know that she has opened her
+    eyes row, and nothing is fetched or stored when she does.
+
+    Collapsed by default, keyed by the row's own slots, so re-rendering the
+    panel with new words leaves what she opened open.
+  */
+  const [opened, setOpened] = useState<readonly string[]>([]);
+  const keyOf = (row: FacePanelRow) => row.slots.join(" ");
+
   if (groups.length === 0) return null;
 
   return (
@@ -220,8 +258,14 @@ export function FacePanel({
           <p className="dpc-face__groupName">{group.heading}</p>
           <ul className="dpc-face__rows">
             {group.rows.map((row) => {
-              const active = row.slots.some((slot) => selection.isSelected(slot));
+              /* The parent is lit for the PAIR. A child's own selection is
+                 scoped to one side, and that is what the child reads below —
+                 so tapping her left eye does not light the row as though the
+                 ask were about both. */
+              const active = row.slots.some((slot) => selection.isSelected(slot))
+                && selection.selected?.scope === undefined;
               const lit = row.slots.some((slot) => selection.isHovered(slot));
+              const isOpen = opened.includes(keyOf(row));
               return (
                 <li key={row.slots.join(" ")}>
                   <button
@@ -275,6 +319,88 @@ export function FacePanel({
                       {row.from ? <span className="dpc-face__from">{row.from}</span> : null}
                     </span>
                   </button>
+                  {/*
+                    THE CHEVRON IS ITS OWN TARGET (founder, fable-452).
+
+                    Tapping the row still means what it has always meant — an
+                    ask about the pair — so opening it cannot also be what
+                    tapping the row does. One button, one job, and it is the
+                    only new control on this surface.
+                  */}
+                  {row.instances.length > 0 ? (
+                    <button
+                      type="button"
+                      className="dpc-face__open"
+                      aria-expanded={isOpen}
+                      aria-controls={`dpc-face-sides-${keyOf(row).replace(/[^a-z0-9]+/gi, "-")}`}
+                      aria-label={`${isOpen ? "Hide" : "Show"} each of ${row.spoken}`}
+                      onClick={() => setOpened((held) => (held.includes(keyOf(row))
+                        ? held.filter((key) => key !== keyOf(row))
+                        : [...held, keyOf(row)]))}
+                    >
+                      <span aria-hidden="true">{isOpen ? "▾" : "▸"}</span>
+                    </button>
+                  ) : null}
+                  {row.instances.length > 0 && isOpen ? (
+                    <ul
+                      className="dpc-face__sides"
+                      id={`dpc-face-sides-${keyOf(row).replace(/[^a-z0-9]+/gi, "-")}`}
+                    >
+                      {row.instances.map((instance) => {
+                        /*
+                          A CHILD MEANS THAT INSTANCE, and it sends the SAME
+                          wire the rectangle over that instance sends: the row's
+                          slots, scoped to this one (fable-444 ruling C). Two
+                          entrances, one scoping mechanism — a second way to say
+                          "this eye" is a second thing to get wrong.
+                        */
+                        const scoped = selection.selected?.scope === instance.slot;
+                        return (
+                          <li key={instance.slot}>
+                            <button
+                              type="button"
+                              className="dpc-face__row dpc-face__row--side"
+                              data-active={scoped ? "true" : "false"}
+                              data-lit={selection.isHovered(instance.slot) ? "true" : "false"}
+                              aria-label={`${instance.name}${instance.words.length ? `, ${instance.words.join(", ")}` : ""}. Talk about it.`}
+                              aria-pressed={scoped}
+                              onMouseEnter={() => selection.hover([instance.slot])}
+                              onMouseLeave={() => selection.hover(null)}
+                              onFocus={() => selection.hover([instance.slot])}
+                              onBlur={() => selection.hover(null)}
+                              onClick={() => {
+                                selection.select({
+                                  slots: row.slots,
+                                  name: instance.name,
+                                  spoken: instance.spoken,
+                                  prefill: instance.prefill,
+                                  scope: instance.slot,
+                                });
+                                onScope(instance.prefill);
+                              }}
+                            >
+                              {instance.cutout ? (
+                                <span className="dpc-face__thumb" data-parts={1} aria-hidden="true">
+                                  <span
+                                    className={`dpc-face__cut${instance.cutout.crop ? " dpc-face__cut--cutout" : ""}`}
+                                    style={cutoutStyle(instance.cutout)}
+                                  />
+                                </span>
+                              ) : (
+                                <span className="dpc-face__thumb dpc-face__thumb--none" aria-hidden="true" />
+                              )}
+                              <span className="dpc-face__body">
+                                <span className="dpc-face__name">{instance.name}</span>
+                                {instance.words.length > 0 ? (
+                                  <span className="dpc-face__words">{instance.words.join(", ")}</span>
+                                ) : null}
+                              </span>
+                            </button>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  ) : null}
                 </li>
               );
             })}

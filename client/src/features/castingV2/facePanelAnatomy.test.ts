@@ -31,9 +31,18 @@ describe("one selection, two views of it", () => {
       readFile(PANEL, "utf8"),
       readFile(REGIONS, "utf8"),
     ]);
-    /* Neither view may keep its own idea of what is selected: a second copy is
-       how a row stays lit after its box has closed. */
-    expect(withoutProse(panel)).not.toContain("useState");
+    /*
+      Neither view may keep its own idea of what is SELECTED: a second copy is
+      how a row stays lit after its box has closed.
+
+      It was written as a ban on `useState` in the panel at all, which was a
+      blunt spelling of the rule and became wrong the day the founder's nesting
+      ruling gave the panel one honest piece of local view state (fable-452 —
+      which pairs are open). So it now bans what it always meant: a second
+      answer to what is selected.
+    */
+    expect(withoutProse(panel)).not.toMatch(/useState<[^>]*[Ss]elect/);
+    expect(withoutProse(panel)).not.toContain("setSelected");
     expect(withoutProse(regions)).not.toMatch(/useState<[^>]*[Ss]elect/);
     expect(panel).toContain("selection.isSelected");
     expect(regions).toContain("selection.isSelected");
@@ -574,5 +583,61 @@ describe("the panel labels a thing and speaks a sentence (fable-450/451)", () =>
        the picture speaks about the eye. */
     expect(regions).toContain("spoken: scoped ? region.spoken ?? row.spoken : row.spoken,");
     expect(panel).toContain("spoken: row.spoken,");
+  });
+});
+
+/*
+  A PAIR OPENS INTO ITS TWO SIDES — founder ruling, fable-452, with a reference
+  screenshot he called "a little over complicated".
+
+  The shape is small on purpose: one chevron, two children, no per-child
+  furniture. What these hold is the part a screenshot cannot show — that the
+  child sends the SAME wire the rectangle already sends, and that opening a row
+  did not quietly change what tapping it means.
+*/
+describe("the pair nests, and the child is the scoping gesture again", () => {
+  it("gives the chevron its own target, so the row still means the pair", async () => {
+    const panel = withoutProse(await readFile(PANEL, "utf8"));
+
+    expect(panel).toContain("className=\"dpc-face__open\"");
+    expect(panel).toContain("aria-expanded={isOpen}");
+    /* The row's own click is untouched: both slots, no scope — an ask about
+       the pair, exactly as before the ruling. */
+    expect(panel).toContain("selection.select({ slots: row.slots, name: row.name, spoken: row.spoken, prefill: row.prefill });");
+  });
+
+  it("sends the child's ask down the SAME wire the rectangle sends", async () => {
+    const panel = withoutProse(await readFile(PANEL, "utf8"));
+
+    /* The row's slots, scoped to this instance — the shape `FaceRegions`
+       builds when she clicks that instance's rectangle. Two entrances, one
+       mechanism; a second way to say "this eye" is a second thing to get
+       wrong. */
+    expect(panel).toContain("scope: instance.slot,");
+    expect(panel).toContain("slots: row.slots,");
+    expect(panel).toContain("prefill: instance.prefill,");
+  });
+
+  it("lights per INSTANCE, so the picture and the list agree about which eye", async () => {
+    const [panel, regions] = await Promise.all([
+      readFile(PANEL, "utf8").then(withoutProse),
+      readFile(REGIONS, "utf8").then(withoutProse),
+    ]);
+
+    /* A child is active only while the ask is scoped to it, and a rectangle is
+       lit for the instance its pixels ARE. Both halves, because either one
+       alone lets the list and the photograph disagree about the subject. */
+    expect(panel).toContain("const scoped = selection.selected?.scope === instance.slot;");
+    expect(panel).toContain("selection.hover([instance.slot])");
+    expect(regions).toContain("const lit = selection.isHovered(region.slot);");
+    expect(regions).toContain("selection.hover([region.slot])");
+  });
+
+  it("CONTROL — a row there is only one of grows no chevron", async () => {
+    const panel = withoutProse(await readFile(PANEL, "utf8"));
+    /* Guarded on the instances the server sends, never on a list of which
+       features come in twos — that list already exists, in the catalogue. */
+    expect(panel).toContain("{row.instances.length > 0 ?");
+    expect(panel).not.toMatch(/\["eye", "ear", "brow"\]/);
   });
 });

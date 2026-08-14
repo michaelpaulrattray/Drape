@@ -218,7 +218,11 @@ export function FaceRegions({
         const active = open?.scope !== undefined
           ? open.scope === region.slot
           : row.slots.some((slot) => selection.isSelected(slot));
-        const lit = row.slots.some((slot) => selection.isHovered(slot));
+        /* Lit for the instance these pixels ARE, not for its row: hovering the
+           left eye's child row in the panel must light the left eye and not
+           both (fable-452). A whole-row hover still lights both, because it
+           hovers both slots. */
+        const lit = selection.isHovered(region.slot);
         return (
           <button
             key={`${row.slots.join(" ")}:${at}`}
@@ -235,9 +239,12 @@ export function FaceRegions({
               The edit is still the row's: both slots, one ask.
             */
             aria-label={`${region.name ?? row.name}. Edit it here.`}
-            onMouseEnter={() => selection.hover(row.slots)}
+            /* And hovering ONE rectangle speaks about one instance, so its own
+               child row lights and its sibling's does not. The parent row lights
+               either way — its slots include this one. */
+            onMouseEnter={() => selection.hover([region.slot])}
             onMouseLeave={() => selection.hover(null)}
-            onFocus={() => selection.hover(row.slots)}
+            onFocus={() => selection.hover([region.slot])}
             onBlur={() => selection.hover(null)}
             onClick={() => {
               setOpenAt(at);

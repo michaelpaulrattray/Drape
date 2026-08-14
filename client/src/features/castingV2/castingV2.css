@@ -3049,6 +3049,70 @@
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--onScrim) 30%, transparent);
 }
 
+/*
+  A PAIR OPENS INTO ITS TWO SIDES — the founder's nesting ruling (fable-452),
+  and deliberately less furniture than the reference he sent: one chevron, two
+  children, nothing else. The row keeps its own meaning (an ask about the pair)
+  because the chevron is a separate target.
+
+  The list item becomes the pair's container, so the chevron can sit on the row
+  and the children under it without a wrapper element per row.
+*/
+.dpc-face__rows > li {
+  position: relative;
+}
+
+.dpc-face__open {
+  position: absolute;
+  top: 4px;
+  right: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  /*
+    Quiet, but legible — the row is the subject and this is furniture, and
+    furniture nobody can see is not restraint. Read off the first shots at
+    10px/0.45, where it photographed as a speck (law 6: looked at, then
+    changed).
+  */
+  opacity: 0.6;
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.dpc-face__open:hover,
+.dpc-face__open[aria-expanded="true"] {
+  opacity: 0.9;
+}
+
+.dpc-face__open:focus-visible {
+  outline: none;
+  opacity: 0.9;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--onScrim) 52%, transparent);
+}
+
+/* The children hang under their parent, indented by the tile they line up
+   beside rather than by a number chosen to look right. */
+.dpc-face__sides {
+  margin: 0 0 2px calc(var(--dpc-thumb-side, 34) * 1px);
+  padding: 0;
+  list-style: none;
+}
+
+.dpc-face__row--side {
+  gap: 10px;
+  padding: 5px 8px;
+}
+
+
 /* The border carries focus — no inner ring on a row, same law as the field. */
 .dpc-face__row:focus-visible {
   outline: none;
@@ -3100,6 +3164,12 @@
 
 .dpc-face__thumb[data-parts="2"] .dpc-face__cut {
   --dpc-cut-box-w: calc(var(--dpc-thumb-side) / 2);
+}
+
+/* Half the tile, because a child of a pair is a detail of the row above it —
+   derived from the one tile fact, never a second number (fable-452). */
+.dpc-face__row--side .dpc-face__thumb {
+  --dpc-thumb-side: 24;
 }
 
 /*
