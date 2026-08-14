@@ -83,6 +83,7 @@ const ledgerBefore = (await query(
 const candidateRows = (await query(
   `SELECT publicId, imageKey FROM casting_candidates
     WHERE userId = ? AND status = 'ready' AND imageKey IS NOT NULL
+      AND selectedVariantId IS NULL
     ORDER BY id DESC LIMIT 12`,
   [USER],
 )) as any[];
@@ -155,6 +156,9 @@ async function stillHer(parent: Buffer, child: Buffer, label: string): Promise<b
    copper hair), and the already-true door refuses a step a face has. Skipped by
    name rather than by luck. */
 const SPENT = new Set(["86e896f1-b9ca-4f4f-8bd7-b38e32b82a36", "8540d86f-1058-498c-97d3-9bb75acd9d5e"]);
+/* The third measurable (a) arm runs on a face from the FRESH sheet — every
+   earlier candidate now carries one of tonight's courts, which is what the roll
+   was authorised for (fable-540 §3). */
 const candidates = candidateRows
   .map((row: any) => row.publicId as string)
   .filter((publicId: string) => !SPENT.has(publicId))

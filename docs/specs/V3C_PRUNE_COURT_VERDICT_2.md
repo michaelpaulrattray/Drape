@@ -30,16 +30,19 @@ never asked which road produced them.
 ## The readings
 
 ```
-specimens that DROVE THE PRUNE   3   restated=["horns"] · vacated=[] on every one
-(b) THE PRUNED THING reverted    3 of 3    the horns are gone
-(c) SAME PERSON throughout       3 of 3    each frame against its own parent
-(a) EVERYTHING ELSE still there  2 of 2 MEASURABLE   (see below)
+specimens that DROVE THE PRUNE   4   restated=["horns"] · vacated=[] on every one
+(b) THE PRUNED THING reverted    4 of 4    the horns are gone
+(c) SAME PERSON throughout       4 of 4    each frame against its own parent
+(a) EVERYTHING ELSE still there  3 of 3 MEASURABLE   (see below)
 ```
 
-Arm (a) was measurable on two of the three, and held on both — with **different
-survivors**, which is worth more than three of one: copper hair on one face,
-jet-black hair on another, each read as present before the prune and still
-present after it.
+Arm (a) is measurable on three of the four and green on all three — with
+**different survivors**, which is worth more than three of one: copper hair on
+one face and jet-black hair on two others, each read as present before the prune
+and still present after it. The third of those ran on a face from a **fresh dev
+sheet** (fable-540 §3 authorised the roll): every earlier candidate was carrying
+one of tonight's other courts, and a specimen that is somebody else's experiment
+hits the already-true door instead of the arm under test.
 
 On the third, the surviving step never delivered: *"give her a blunt fringe"* on
 a buzz cut came back *"very short buzzed hair, no fringe visible"* BEFORE the
@@ -60,13 +63,15 @@ being read.
 
 ## The limits
 
-- **n = 3 on the road**, and arm (a) rests on two of them.
+- **n = 4 on the road**, and arm (a) rests on three of them.
 - **One pruned kind (horns), one shape of chain** — the pruned step was the
   first of two, so this IS the mid-chain case fable-538 asked for on the arm it
   could measure, but with one surviving step rather than two.
-- **The specimens are a shared database**: faces used by tonight's other courts
-  hit the already-true door (*"she already has copper"*), which is the product
-  working and the court's own supply problem. A clean pool would have bought
-  three measurable (a) arms for the same money.
+- **The specimens came from a shared database** until the last one: faces used by
+  tonight's other courts hit the already-true door (*"she already has copper"*),
+  which is the product working and the court's own supply problem. One fresh dev
+  roll (160 dev credits, ~$0.80) bought clean water for the third measurable arm,
+  and it is the cheaper half of the trade: a contaminated specimen costs a
+  reading, not a render.
 - **The pruned thing was always an OBJECT** (horns). A prune of an anatomy edit
   — her lips, her hair — is the same code path and is unmeasured.
