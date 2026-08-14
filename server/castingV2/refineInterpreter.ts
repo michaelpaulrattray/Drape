@@ -34,6 +34,7 @@ import { interpreterEngine } from "./interpreter";
 import { declarativeStateRule } from "./declarativeState";
 import { readDelta, stageWordIn, type FreeLaneCheck, type RefineParse } from "./refineDelta";
 import { freeSubjectGuidance } from "./refineSubjects";
+import { closedSubjectFor } from "./openLaneKind";
 import { REFINE_REFUSALS } from "./refineRefusals";
 import { readRemovalSubject } from "./refineRemoval";
 import { namesUnknownProperNoun } from "./properNouns";
@@ -442,6 +443,37 @@ const HYBRID_CONSTRAINT = [
  * model claiming scenery in a sentence naming none. Its cost is one extra text
  * call, and only on a refusal.
  */
+/**
+ * AND THE ONE THING THE RE-LOOK COULD NOT SAY UNTIL THE VOCABULARY GREW.
+ *
+ * Measured on the day horns was promoted: *"give her curved ram horns"* and
+ * *"she should have small goat horns"* filed correctly 3/3 each, and *"add
+ * horns to her head"* claimed the stage wall 3/3 — through the re-look, which
+ * had already told it the code found no scenery. The model was not flipping a
+ * coin; it reads "add X to her head" as putting a THING on a person, which is
+ * what the stage wall is for, and nothing in the constraint told it otherwise.
+ *
+ * The product knows better than the model here, and it knows it MECHANICALLY:
+ * the word it claimed is one of the subjects the closed vocabulary owns. So the
+ * re-look is handed that fact by name, derived from the same table the guidance
+ * list comes from — every kind promoted after this one inherits the sentence
+ * without anybody writing it a line.
+ *
+ * It never widens what may be filed: an unowned word produces no sentence at
+ * all, and the refusal falls through exactly as before.
+ */
+function ownedWordConstraint(claimed: string): string {
+  const subject = closedSubjectFor(claimed);
+  if (subject === null) return "";
+  return [
+    "",
+    `THEIR WORD "${claimed}" IS ONE OF THE SUBJECTS YOU MAY FILE — it belongs to \`${subject}\`, which is`,
+    "a fact about the PERSON rather than the scene. It is not a prop, a garment or a piece of set",
+    "dressing, whatever the sentence around it looks like. File it under that subject in their own",
+    "words.",
+  ].join("\n");
+}
+
 const STAGE_RELOOK_CONSTRAINT = [
   "",
   "",
@@ -552,6 +584,12 @@ export type RefineInterpretInput = {
    * behaviour that shipped before this existed.
    */
   stageRelook?: boolean;
+  /**
+   * THE WORD THE MODEL CLAIMED AS SCENERY, carried into the re-look so the
+   * constraint can answer it by name when the vocabulary owns it. Set here,
+   * never by a caller, exactly like `stageRelook` beside it.
+   */
+  stageClaimed?: string;
   /**
    * THE RESTATEMENT PASS — the last reading kept only what she already is, and
    * the service is asking once more before it refuses (fable-460).
@@ -797,6 +835,7 @@ async function runOnce(
         + (input.echoed ? ECHO_CONSTRAINT : "")
         + (input.hybrid ? HYBRID_CONSTRAINT : "")
         + (input.stageRelook ? STAGE_RELOOK_CONSTRAINT : "")
+        + (input.stageRelook && input.stageClaimed ? ownedWordConstraint(input.stageClaimed) : "")
         + (input.restated ? RESTATED_CONSTRAINT : ""),
       user: [
         `Current eye colour: ${input.currentEyeColour ?? "unknown"}`,
@@ -963,7 +1002,11 @@ async function runOnce(
         "[refineInterpreter] the model claimed the stage wall and their sentence names no stage "
         + "word — overriding for one re-look",
       );
-      const relooked = await runOnce(engine, { ...input, stageRelook: true }, instruction);
+      const relooked = await runOnce(
+        engine,
+        { ...input, stageRelook: true, stageClaimed: asked },
+        instruction,
+      );
       if (relooked?.ok) return relooked;
       if (relooked && !relooked.ok && relooked.refusal.reason === "wall_stage") {
         log.warn(

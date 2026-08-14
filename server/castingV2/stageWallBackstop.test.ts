@@ -110,6 +110,43 @@ describe("the stage wall's backstop", () => {
     expect(engine.seen[1]!.system).toContain("THE CODE HAS CHECKED THEIR SENTENCE FOR SCENERY");
   });
 
+  it("answers a claim the VOCABULARY owns, by name, in the prompt it is actually sent", async () => {
+    /*
+      MEASURED, THE DAY HORNS WAS PROMOTED. Two phrasings filed 3/3 and *"add
+      horns to her head"* claimed the stage wall 3/3 — through the re-look,
+      which had already told it no scenery was found. The model was not being
+      random: it reads "add X to her head" as putting a THING on a person, and
+      nothing in the constraint said the product's own list owns that word.
+
+      Driven rather than probed (law 3), and asserted at the WIRE: the sentence
+      lives in a prompt or it does not exist. Derived from `closedSubjectFor`,
+      so every kind promoted after horns inherits it without a line being
+      written for it.
+    */
+    const engine = scripted([JSON.stringify({ wall: "stage", asked: "horns" }), FILED]);
+    await interpretRefinement({ instruction: "add horns to her head", engine, ...FACE });
+
+    expect(engine.seen).toHaveLength(2);
+    const relook = engine.seen[1]!.system;
+    expect(relook).toContain('THEIR WORD "horns" IS ONE OF THE SUBJECTS YOU MAY FILE');
+    expect(relook).toContain("horns"); // the subject it names is the card's own key
+    /* And the first request never carried it — this is a REPLY to a claim. */
+    expect(engine.seen[0]!.system).not.toContain("IS ONE OF THE SUBJECTS YOU MAY FILE");
+  });
+
+  it("says NOTHING extra when the claimed word is not ours — the negative control", async () => {
+    /*
+      The other half, and the half that keeps the backstop honest: a sentence
+      about a beach must not be told the vocabulary owns anything. Without this
+      the constraint would be a general nudge toward filing, which is exactly
+      what the test below forbids.
+    */
+    const engine = scripted([JSON.stringify({ wall: "stage", asked: "beach" }), FILED]);
+    await interpretRefinement({ instruction: "put her on a beach", engine, ...FACE });
+
+    expect(engine.seen[1]!.system).not.toContain("IS ONE OF THE SUBJECTS YOU MAY FILE");
+  });
+
   it("does not tell the model the answer — the re-look asks for a justified reply either way", () => {
     const engine = scripted([WALL, FILED]);
     return interpretRefinement({ instruction: "make her albino", engine, ...FACE }).then(() => {
