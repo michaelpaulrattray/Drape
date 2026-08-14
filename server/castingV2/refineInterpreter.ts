@@ -561,6 +561,14 @@ export type RefineInterpretInput = {
    * the door made before this existed.
    */
   restated?: boolean;
+  /**
+   * THE ONE VALUE THE INVENTION DOOR VOUCHED FOR (fable-494/495).
+   *
+   * Set by this module's own door after a containment failure it asked about,
+   * never by a caller — like `echoed`. It reaches `readDelta` as the check's
+   * `vouched` pair and widens containment for that value and no other.
+   */
+  vouched?: { subject: string; value: string };
   /** What the face is NOW — relative asks resolve against this. */
   currentEyeColour: string | null;
   currentEyeShape: string | null;
@@ -634,14 +642,133 @@ export async function interpretRefinement(input: RefineInterpretInput): Promise<
         for (let echo = 1; echo <= 2; echo += 1) {
           const echoed = await runOnce(engine, { ...input, echoed: true }, instruction);
           if (echoed?.ok) return echoed;
-          if (echo === 2 && echoed) return echoed;
+          if (echo === 2 && echoed) return inventionDoor(engine, input, instruction, echoed);
         }
       }
-      return parsed;
+      return inventionDoor(engine, input, instruction, parsed);
     }
     if (attempt < 3) log.warn({ attempt }, "[refineInterpreter] empty reply — re-sampling");
   }
   return { ok: false, refusal: { reason: "unreadable" } };
+}
+
+/**
+ * THE INVENTION DOOR — the last thing a containment failure meets (fable-495).
+ *
+ * # Why containment alone could not do this
+ *
+ * The guard polices WORDS and the harm it exists to stop is invented FACTS, and
+ * five incidents have now come apart in that gap: an apostrophe, a morphology,
+ * a prior-stated item, a plural restatement the product itself instructed, and
+ * the founder's "a harry potter LIGHTING bolt scar" — where the model repaired
+ * his typo to "lightning" and containment read the repair as a word he never
+ * said.
+ *
+ * There is no lexical rule that separates a repair from a change of meaning:
+ * `shave` and `shape` are one character apart and are different facts about her
+ * face. So the question is asked of the model in the narrowest form it has, and
+ * THE CODE DECIDES from the answer — the same split the removal lexicon uses,
+ * at the guard the open lane will inherit.
+ *
+ * # It can only ever loosen ONE value, and it fails toward the refusal
+ *
+ * An unreadable answer, an answer that says the value invents, or a re-read
+ * that fails any other wall all end at the refusal that was already going to be
+ * returned. The vouching is exact on the subject AND the words, so nothing else
+ * in the reply is widened, and the re-read goes through every wall again.
+ *
+ * Its cost is one text call on a path that was refusing for free.
+ */
+async function inventionDoor(
+  engine: TextEngine,
+  input: RefineInterpretInput,
+  instruction: string,
+  refused: RefineParse,
+): Promise<RefineParse> {
+  if (refused.ok || refused.refusal.reason !== "wall_unfileable") return refused;
+  if (input.vouched) return refused;
+  const asked = refused.refusal.asked;
+  const value = "value" in refused.refusal ? refused.refusal.value : null;
+  if (!asked || !value) return refused;
+
+  const verdict = await asksNothingOfItsOwn(engine, {
+    instruction,
+    subject: asked,
+    value,
+    prior: input.prior?.[asked] ?? [],
+    signal: input.signal,
+  });
+  if (verdict === null || verdict.invents) {
+    log.warn(
+      { asked, value, invents: verdict?.invents ?? null, fact: verdict?.fact ?? null },
+      "[refineInterpreter] the filed value asserts something they did not ask for — refusing",
+    );
+    return refused;
+  }
+  log.info(
+    { asked, value },
+    "[refineInterpreter] the filed value says only what they asked — re-reading with it vouched",
+  );
+  const vouchedRead = await runOnce(engine, { ...input, vouched: { subject: asked, value } }, instruction);
+  return vouchedRead?.ok ? vouchedRead : refused;
+}
+
+/**
+ * THE NARROWEST QUESTION THERE IS: does this value assert a fact that is not
+ * theirs? One structured answer, and the code reads it.
+ */
+const INVENTION_QUESTION = [
+  "You are checking ONE thing about how a customer's instruction was read.",
+  "",
+  "They typed an instruction. A reading of it produced a value for one feature.",
+  "Answer whether that value asserts any FACT that is not theirs.",
+  "",
+  "A fact is theirs when it is in their sentence, when it is one of the items",
+  "already on record for that feature, or when it is part of a thing their",
+  "sentence names — a film, a character, a house, a look. Unpacking a reference",
+  "they named into plain description is THEIRS. Repairing a spelling of a word",
+  "they typed is THEIRS. Saying the same thing in other words is THEIRS.",
+  "",
+  "Adding a detail they did not give is NOT theirs: a cause, a size, a colour,",
+  "a place, a story about how it got there.",
+  "",
+  'Reply with JSON only: {"invents": true|false, "fact": "<the fact that is not',
+  'theirs, or null>"}',
+].join("\n");
+
+async function asksNothingOfItsOwn(
+  engine: TextEngine,
+  input: {
+    instruction: string;
+    subject: string;
+    value: string;
+    prior: readonly string[];
+    signal?: AbortSignal;
+  },
+): Promise<{ invents: boolean; fact: string | null } | null> {
+  try {
+    const reply = await engine.complete({
+      system: INVENTION_QUESTION,
+      user: [
+        `Their instruction: ${input.instruction}`,
+        `The feature: ${input.subject}`,
+        `Already on record for it: ${JSON.stringify(input.prior)}`,
+        `The value the reading produced: ${input.value}`,
+      ].join("\n"),
+      json: true,
+      temperature: 0,
+      maxOutputTokens: 200,
+      signal: input.signal,
+    });
+    const raw = JSON.parse(stripFence(reply.text)) as { invents?: unknown; fact?: unknown };
+    if (typeof raw.invents !== "boolean") return null;
+    return { invents: raw.invents, fact: typeof raw.fact === "string" ? raw.fact : null };
+  } catch (error) {
+    /* A door that cannot be asked refuses — the free refusal was already the
+       answer, and an unreadable verdict may not become a licence. */
+    log.warn({ err: String(error).slice(0, 160) }, "[refineInterpreter] the invention question could not be asked");
+    return null;
+  }
 }
 
 /** One sampling. Returns null when the reply was unusable, so the caller retries. */
@@ -855,7 +982,11 @@ async function runOnce(
     a free value must appear in the sentence the user typed. `check.wall` comes
     back set when a wall was hit, so the refusal can name it.
   */
-  const check: FreeLaneCheck = { instruction, prior: input.prior as FreeLaneCheck["prior"] };
+  const check: FreeLaneCheck = {
+    instruction,
+    prior: input.prior as FreeLaneCheck["prior"],
+    ...(input.vouched ? { vouched: input.vouched } : {}),
+  };
   const delta = readDelta(reply, check);
   /* A WALL is an answer, not a hiccup — it must not be re-sampled. */
   if (!delta) return check.wall ? { ok: false, refusal: check.wall } : null;

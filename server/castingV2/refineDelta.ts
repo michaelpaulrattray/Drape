@@ -371,6 +371,22 @@ export type FreeLaneCheck = {
    * refuses the very shape the interpreter is instructed to produce.
    */
   prior?: Partial<Record<FreeSubject, string[]>>;
+  /**
+   * ONE VALUE THE INVENTION DOOR HAS VOUCHED FOR (fable-494/495).
+   *
+   * Containment polices WORDS; the harm it exists to stop is invented FACTS,
+   * and the two came apart for the fifth time on *"a harry potter LIGHTING
+   * bolt scar"*: the model repaired his typo to "lightning" and containment
+   * read the repair as a word he never said.
+   *
+   * There is no lexical rule that separates a repair from a change of meaning —
+   * `shave` and `shape` are one character apart and are different facts about
+   * her face — so the question is asked of a model and DECIDED by the code
+   * (`interpretRefinement`'s invention door), and its answer arrives here as a
+   * single vouched pair. One pair, and only for the value that failed: a
+   * vouching that widened to a subject would be the guard switched off.
+   */
+  vouched?: { subject: string; value: string };
   /** Set when the value hit a wall, so the caller can name which one. */
   wall?: RefineRefusal;
 };
@@ -786,7 +802,12 @@ export function readDelta(value: unknown, check?: FreeLaneCheck): RefineDelta | 
         const alreadyStated = (check.prior?.[subject as FreeSubject] ?? [])
           .some((item) => strip(item).toLowerCase() === strip(scrubbed).toLowerCase());
         const fromInstruction = stemmedContainment(strip(scrubbed), strip(check.instruction));
-        if (!alreadyStated && !fromInstruction) {
+        /* The invention door's own answer about THIS value, exact on both the
+           subject and the words — see `FreeLaneCheck.vouched`. */
+        const vouchedHere = check.vouched !== undefined
+          && check.vouched.subject === subject
+          && strip(check.vouched.value).toLowerCase() === strip(scrubbed).toLowerCase();
+        if (!alreadyStated && !fromInstruction && !vouchedHere) {
           check.wall = { reason: "wall_unfileable", asked: subject, value: scrubbed };
           return null;
         }

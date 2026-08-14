@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "470f7a9efbf3e4b1"
+    "sourceFingerprint": "80b752f3de1e76a8"
   },
   "domains": [
     {
@@ -8821,6 +8821,10 @@
     {
       "id": "test:server/castingV2/inheritedVerdict.test.ts",
       "path": "server/castingV2/inheritedVerdict.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/inventionDoor.test.ts",
+      "path": "server/castingV2/inventionDoor.test.ts"
     },
     {
       "id": "test:server/castingV2/invisibleRemoval.test.ts",
