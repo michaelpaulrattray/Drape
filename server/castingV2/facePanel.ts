@@ -144,8 +144,13 @@ export type PanelCutout = { contentUrl: string; maskUrl: string; crop: PanelBox 
  * pixels (fable-378 (c)).
  */
 export type PanelRegion = {
+  /** BARE, because a tag is a label (founder, fable-451): "Left eye", never
+   *  "Her left eye". The side stays — the side is the information. */
   box: PanelBox;
   name: string | null;
+  /** How the product SPEAKS about this one — "her left eye" — for the sentences
+   *  a label is not. Non-null exactly when {@link PanelRegion.name} is. */
+  spoken: string | null;
   /**
    * THE ONE INSTANCE THESE PIXELS ARE (fable-444, ruling C).
    *
@@ -171,6 +176,9 @@ export type PanelRegion = {
 };
 
 export type PanelRow = {
+  /** How the product speaks about this row — "her eyes". The possessive lives
+   *  here and in {@link PanelRow.prefill}, and on no label (fable-450/451). */
+  spoken: string;
   /**
    * What tapping this row is about. A matched pair carries BOTH instance keys:
    * one row, and an edit to it means both sides.
@@ -285,21 +293,41 @@ function stateOfSlot(
   };
 }
 
-function nameOf(definition: SlotDefinition, possessive: string, paired: boolean): string {
-  const noun = paired ? definition.pairNoun ?? definition.noun : definition.noun;
-  /*
-    THE POSSESSIVE, FOR A WORN THING TOO. The recipe assembler gives a worn item
-    an article — "the left earring" — because it is talking to a painter about an
-    object. The panel is talking to the person whose face it is, and the founder's
-    own mock says "Her glasses". Same distinction the product already draws, read
-    the other way round.
-  */
-  return `${capitalize(possessive)} ${noun}`;
+function nounOf(definition: SlotDefinition, paired: boolean): string {
+  return paired ? definition.pairNoun ?? definition.noun : definition.noun;
 }
 
-/** The opening of their sentence: lowercased, because it is theirs. */
-function prefillFor(name: string): string {
-  return `${name.charAt(0).toLowerCase()}${name.slice(1)} — `;
+/**
+ * THE LABEL — bare, because a list is labels (founder, fable-450/451).
+ *
+ * *"The 'their' beside every feature is unnecessary"*, and then, on the
+ * rectangles: *"even on hover it's too long — just 'Left eye'."* So the
+ * possessive comes off everything that NAMES a thing, and the side stays,
+ * because the side is the information the pronoun never was.
+ *
+ * It is the same distinction the recipe assembler already draws between an
+ * article and a possessive, moved one surface over: the panel is a list of
+ * her features, and a list does not need to say whose face it is on every line.
+ */
+function labelOf(definition: SlotDefinition, paired: boolean): string {
+  return capitalize(nounOf(definition, paired));
+}
+
+/**
+ * HOW THE PRODUCT SPEAKS ABOUT IT — and the possessive lives on here.
+ *
+ * Everywhere the product says a sentence rather than a name — the ask box's
+ * opening words, the delivery and refusal messages — it is still talking to
+ * the person whose face this is. The pronoun machinery is unchanged; it simply
+ * stopped being stamped on labels.
+ */
+function spokenOf(definition: SlotDefinition, possessive: string, paired: boolean): string {
+  return `${possessive} ${nounOf(definition, paired)}`;
+}
+
+/** The opening of their sentence, from the words the product speaks in. */
+function prefillFor(spoken: string): string {
+  return `${spoken} — `;
 }
 
 /**
@@ -426,18 +454,19 @@ export function facePanel(input: {
 
     if (definition.instance === null) {
       spoken.add(definition.slot);
-      const name = nameOf(definition, input.pronouns.possessive, false);
+      const spokenName = spokenOf(definition, input.pronouns.possessive, false);
       push({
         slots: [definition.slot],
         group: definition.group,
-        name,
+        name: labelOf(definition, false),
+        spoken: spokenName,
         words: wordsFor(definition.feature, state.words),
         from: state.from,
-        prefill: prefillFor(name),
+        prefill: prefillFor(spokenName),
         cutouts: state.thumb ? [state.thumb] : [],
         /* The row is one thing and the rectangle covers it, so it needs no name
            of its own — the row's is the label. */
-        regions: state.box ? [{ box: state.box, name: null, prefill: null, slot: definition.slot }] : [],
+        regions: state.box ? [{ box: state.box, name: null, spoken: null, prefill: null, slot: definition.slot }] : [],
       });
       continue;
     }
@@ -463,7 +492,7 @@ export function facePanel(input: {
     });
 
     if (!diverged) {
-      const name = nameOf(left, input.pronouns.possessive, true);
+      const spokenName = spokenOf(left, input.pronouns.possessive, true);
       /*
         BOTH INSTANCES, IN THE ORDER THE PHOTOGRAPH READS THEM.
 
@@ -490,10 +519,11 @@ export function facePanel(input: {
       push({
         slots: [left.slot, right.slot],
         group: left.group,
-        name,
+        name: labelOf(left, true),
+        spoken: spokenName,
         words: wordsFor(left.feature, leftState.words),
         from: leftState.from,
-        prefill: prefillFor(name),
+        prefill: prefillFor(spokenName),
         /* One tile, both of them — and one of them when that is all this face
            has. A pair is matched by its WORDS and never by its pixels (two
            crops of two ears are never byte-identical), so the pictures do not
@@ -511,8 +541,9 @@ export function facePanel(input: {
         */
         regions: measured.map((side) => ({
           box: side.state.box!,
-          name: nameOf(side.definition, input.pronouns.possessive, false),
-          prefill: prefillFor(nameOf(side.definition, input.pronouns.possessive, false)),
+          name: labelOf(side.definition, false),
+          spoken: spokenOf(side.definition, input.pronouns.possessive, false),
+          prefill: prefillFor(spokenOf(side.definition, input.pronouns.possessive, false)),
           /* The instance this rectangle IS, beside the name that says so. The
              row's `slots` still carries both: one row, and an edit to the ROW
              means both, while an edit to this RECTANGLE means this one. */
@@ -524,21 +555,22 @@ export function facePanel(input: {
 
     for (const side of [left, right]) {
       const state_ = stateOf(side.slot);
-      const name = nameOf(side, input.pronouns.possessive, false);
+      const spokenName = spokenOf(side, input.pronouns.possessive, false);
       push({
         slots: [side.slot],
         group: side.group,
-        name,
+        name: labelOf(side, false),
+        spoken: spokenName,
         /* A diverged host is two rows, and a folded slot's words are read on
            BOTH of them: they are about both sides and nothing in the stack says
            which side a lash sentence was about. Said twice beats vanishing. */
         words: wordsFor(side.feature, state_.words),
         from: state_.from,
-        prefill: prefillFor(name),
+        prefill: prefillFor(spokenName),
         cutouts: state_.thumb ? [state_.thumb] : [],
         /* A diverged pair is already two rows, each about one instance, so the
            rectangle covers exactly what its row names. */
-        regions: state_.box ? [{ box: state_.box, name: null, prefill: null, slot: side.slot }] : [],
+        regions: state_.box ? [{ box: state_.box, name: null, spoken: null, prefill: null, slot: side.slot }] : [],
       });
     }
   }

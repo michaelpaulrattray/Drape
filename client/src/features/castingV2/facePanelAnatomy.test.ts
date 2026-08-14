@@ -543,3 +543,36 @@ describe("the ask box hangs off the picture, not off the viewer", () => {
     expect(body).toContain("min-height: 0");
   });
 });
+
+/*
+  LABELS ARE BARE; SENTENCES STILL SPEAK — the founder, twice in one morning
+  (fable-450: *"the 'their' beside every feature is unnecessary"*; fable-451:
+  *"even on hover it's too long — just 'Left eye'"*).
+
+  The boundary is the whole ruling, so both halves are asserted: a label that
+  quietly regained a possessive and a sentence that quietly lost one are the
+  same defect from opposite ends, and only one of them is visible in a
+  screenshot.
+*/
+describe("the panel labels a thing and speaks a sentence (fable-450/451)", () => {
+  it("takes its label and its sentence from two different server fields", async () => {
+    const [regions, panel] = await Promise.all([
+      readFile(REGIONS, "utf8").then(withoutProse),
+      readFile(PANEL, "utf8").then(withoutProse),
+    ]);
+
+    /* The tag and the row label are the NAME — bare, straight from the server,
+       never assembled here. */
+    expect(regions).toContain("<span className=\"dpc-regions__tag\">{region.name ?? row.name}</span>");
+    expect(panel).toContain("{row.name}");
+    /* And the one label that is a sentence takes `spoken`, which is where the
+       possessive lives. Composing it in the browser from the bare name is what
+       this split exists to prevent. */
+    expect(regions).toContain("`What to change about ${open.spoken}`");
+    expect(regions).not.toContain("open.name.toLowerCase()");
+    /* Both entrances carry it, or the scoped box speaks about the row while
+       the picture speaks about the eye. */
+    expect(regions).toContain("spoken: scoped ? region.spoken ?? row.spoken : row.spoken,");
+    expect(panel).toContain("spoken: row.spoken,");
+  });
+});

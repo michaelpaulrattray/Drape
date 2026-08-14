@@ -42,12 +42,18 @@ import type { FaceSelectionModel } from "./faceSelection";
  * found by a copy audit rather than by reading the file — every string below
  * was shipping unclassified while the panel beside it had a full block.
  *
- *   "{Her left eye}. Edit it here."       INVENTED — no mock covers a
+ *   "{Left eye}. Edit it here."           INVENTED — no mock covers a
  *                                         screen-reader label. The NAME is not
  *                                         invented: it is the row's own, or the
  *                                         instance's on a pair (fable-378 (c)),
  *                                         so the rectangle speaks the person's
- *                                         ontology and not the geometry's
+ *                                         ontology and not the geometry's.
+ *                                         BARE since 2026-08-14, and it is the
+ *                                         founder's own ruling (fable-451):
+ *                                         *"even on hover it's too long — just
+ *                                         'Left eye'"*. The side stays, because
+ *                                         the side is the information the
+ *                                         pronoun never was
  *   "Change something about them…"        VERIFIED — the shipped ask box's own
  *                                         placeholder (`RefinePanel:295`),
  *                                         reused verbatim: two doors to one
@@ -61,8 +67,14 @@ import type { FaceSelectionModel } from "./faceSelection";
  *                                         false here. Beside the button and
  *                                         never on it (D-15/D-109)
  *   "What to change about {her lips}"     INVENTED — the field's screen-reader
- *                                         label, derived from the open row's
- *                                         name for the same reason as above
+ *                                         label. The one label here that is a
+ *                                         SENTENCE, so it keeps the possessive
+ *                                         while the tags go bare: a reader
+ *                                         hearing "what to change about left
+ *                                         eye" is being read a column header
+ *                                         rather than asked a question. Taken
+ *                                         from the server's `spoken`, never
+ *                                         composed here (fable-450/451)
  *
  * # The boxes are in the FRAME's pixels, and the picture is not
  *
@@ -271,6 +283,7 @@ export function FaceRegions({
               selection.select({
                 slots: row.slots,
                 name: scoped ? region.name ?? row.name : row.name,
+                spoken: scoped ? region.spoken ?? row.spoken : row.spoken,
                 prefill: scoped ? region.prefill ?? row.prefill : row.prefill,
                 ...(scoped ? { scope: region.slot } : {}),
               });
@@ -315,7 +328,10 @@ export function FaceRegions({
             placeholder="Change something about them…"
             maxLength={200}
             disabled={busy}
-            aria-label={`What to change about ${open.name.toLowerCase()}`}
+            /* The one label that is a SENTENCE, so it keeps the possessive
+               (fable-451): a screen reader hearing "what to change about left
+               eye" is being read a column header, not asked a question. */
+            aria-label={`What to change about ${open.spoken}`}
           />
           <button type="submit" className="dpc-regions__submit" disabled={!draft.trim() || busy}>
             {busy ? "Refining…" : "Refine"}

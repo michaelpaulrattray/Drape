@@ -82,7 +82,11 @@ export type FacePanelCutout = { contentUrl: string; maskUrl: string; crop: FaceP
  */
 export type FacePanelRegion = {
   box: FacePanelBox;
+  /** BARE — "Left eye", never "Her left eye" (founder, fable-451). The side is
+   *  the information; the pronoun was not. */
   name: string | null;
+  /** How the product SPEAKS about this one, for the sentences a label is not. */
+  spoken: string | null;
   /** The one instance these pixels ARE — `eye@left`. The ROW's slots say what
    *  an edit to the row means; this says what the rectangle is, and clicking it
    *  scopes the ask to it (fable-444, ruling C). */
@@ -93,6 +97,10 @@ export type FacePanelRegion = {
 };
 
 export type FacePanelRow = {
+  /** How the product speaks about this row — "her eyes". Labels are bare
+   *  (fable-450/451); the possessive survives wherever the product says a
+   *  sentence. */
+  spoken: string;
   slots: readonly string[];
   name: string;
   words: readonly string[];
@@ -231,7 +239,7 @@ export function FacePanel({
                     onFocus={() => selection.hover(row.slots)}
                     onBlur={() => selection.hover(null)}
                     onClick={() => {
-                      selection.select({ slots: row.slots, name: row.name, prefill: row.prefill });
+                      selection.select({ slots: row.slots, name: row.name, spoken: row.spoken, prefill: row.prefill });
                       onScope(row.prefill);
                     }}
                   >

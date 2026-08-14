@@ -26,6 +26,9 @@ export type FaceSelection = {
   slots: readonly string[];
   /** How that selection reads, for the box's own scoping: "her earrings". */
   name: string;
+  /** How the product speaks about it — "her left eye" — for the sentences that
+   *  are not labels. The label itself is bare (fable-450/451). */
+  spoken: string;
   /** The opening of their sentence, already written for them. */
   prefill: string;
   /**

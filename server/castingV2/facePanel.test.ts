@@ -91,12 +91,12 @@ describe("a face with nothing said about it shows nothing", () => {
       Words are welcome ON a row and may not BE the row: a name with nowhere to
       point is a list about her face rather than a picture of it.
     */
-    const lips = named([row({ slot: "lips", words: ["a fuller lip"] })], "Her lips")!;
+    const lips = named([row({ slot: "lips", words: ["a fuller lip"] })], "Lips")!;
     expect(lips.words).toEqual(["a fuller lip"]);
     expect(lips.regions).toHaveLength(1);
 
     /* The same sentence with nothing to point at draws no row at all. */
-    expect(named([row({ slot: "lips", words: ["a fuller lip"], geometry: null })], "Her lips"))
+    expect(named([row({ slot: "lips", words: ["a fuller lip"], geometry: null })], "Lips"))
       .toBeUndefined();
   });
 
@@ -109,20 +109,31 @@ describe("a face with nothing said about it shows nothing", () => {
   });
 
   it("opens their own sentence, lowercased, when a row is tapped", () => {
-    expect(named([row({ slot: "lips", words: ["a fuller lip"] })], "Her lips")!.prefill).toBe("her lips — ");
+    expect(named([row({ slot: "lips", words: ["a fuller lip"] })], "Lips")!.prefill).toBe("her lips — ");
     expect(named(
       [
         row({ slot: "earring@left", tier: "item", words: ["a gold hoop"] }),
         row({ slot: "earring@right", tier: "item", words: ["a gold hoop"] }),
       ],
-      "Her earrings",
+      "Earrings",
     )!.prefill).toBe("her earrings — ");
   });
 
-  it("uses THIS face's pronoun — v1 called a man's eyes hers in front of him", () => {
-    const names = allRows([row({ slot: "lips", words: ["a fuller lip"] })], HE).map((panelRow) => panelRow.name);
-    expect(names).toContain("His lips");
-    expect(names.some((name) => name.startsWith("Her "))).toBe(false);
+  it("uses THIS face's pronoun WHERE IT SPEAKS — v1 called a man's eyes hers in front of him", () => {
+    /*
+      The labels went bare on 2026-08-14 (founder, fable-450/451), so a label
+      that carries no pronoun cannot get one wrong — and a test asserting that
+      would be an assertion that cannot fail. The claim moved with the pronoun:
+      it is the SENTENCES the product speaks that must be his, and those are
+      `spoken` and the ask box's opening words.
+    */
+    const rows = allRows([row({ slot: "lips", words: ["a fuller lip"] })], HE);
+    expect(rows.map((panelRow) => panelRow.name)).toContain("Lips");
+    expect(rows.map((panelRow) => panelRow.spoken)).toContain("his lips");
+    expect(rows.map((panelRow) => panelRow.prefill)).toContain("his lips — ");
+    expect(rows.some((panelRow) => `${panelRow.spoken}${panelRow.prefill}`.includes("her "))).toBe(false);
+    /* And no label anywhere carries a possessive, whichever pronoun it is. */
+    expect(rows.some((panelRow) => /^(Her|His|Their) /.test(panelRow.name))).toBe(false);
   });
 });
 
@@ -150,7 +161,7 @@ describe("a slot she has emptied says nothing on the panel", () => {
 
   it("draws no row for it — not a row reciting the absence", () => {
     const rows = allRows(removed());
-    expect(rows.map((panelRow) => panelRow.name)).not.toContain("Her glasses");
+    expect(rows.map((panelRow) => panelRow.name)).not.toContain("Glasses");
     /* And not merely renamed: nothing anywhere in the panel says it. */
     expect(JSON.stringify(rows)).not.toContain("no glasses");
   });
@@ -174,7 +185,7 @@ describe("a slot she has emptied says nothing on the panel", () => {
     const rows = allRows([
       row({ slot: "glasses", tier: "item", noun: "glasses", version: 1, words: ["thin gold wire frames"] }),
     ]);
-    expect(rows.map((panelRow) => panelRow.name)).toContain("Her glasses");
+    expect(rows.map((panelRow) => panelRow.name)).toContain("Glasses");
   });
 
   it("CONTROL — a re-add after the removal speaks again", () => {
@@ -184,7 +195,7 @@ describe("a slot she has emptied says nothing on the panel", () => {
       ...removed(),
       row({ slot: "glasses", tier: "item", noun: "glasses", version: 3, words: ["round tortoiseshell frames"] }),
     ]);
-    const glasses = rows.find((panelRow) => panelRow.name === "Her glasses");
+    const glasses = rows.find((panelRow) => panelRow.name === "Glasses");
     expect(glasses?.words).toEqual(["round tortoiseshell frames"]);
   });
 });
@@ -202,10 +213,10 @@ describe("the slots that have no row of their own", () => {
        recipe reads them. What it does not get is a square on the panel. */
     const rows = [row({ slot: "jaw", words: ["a softer jawline"] }), row({ slot: "lips", words: ["a fuller lip"] })];
     const names = allRows(rows).map((panelRow) => panelRow.name);
-    expect(names).toContain("Her lips");
-    expect(names).not.toContain("Her jaw");
-    expect(names).not.toContain("Her chin");
-    expect(names).not.toContain("Her cheekbones");
+    expect(names).toContain("Lips");
+    expect(names).not.toContain("Jaw");
+    expect(names).not.toContain("Chin");
+    expect(names).not.toContain("Cheekbones");
   });
 
   it("reads a lash sentence on the eyes row, because the only region holding lashes is the eye", () => {
@@ -216,12 +227,12 @@ describe("the slots that have no row of their own", () => {
       row({ slot: "eye@right", words: [] }),
       row({ slot: "lashes@left", words: ["longer lashes"] }),
     ];
-    const eyes = named(held, "Her eyes")!;
+    const eyes = named(held, "Eyes")!;
     expect(eyes.words).toEqual(["longer lashes"]);
     /* The row is still about the eyes — an edit to it means the eye slots, and
        the lash ask files where it always did. */
     expect(eyes.slots).toEqual(["eye@left", "eye@right"]);
-    expect(allRows(held).map((r) => r.name)).not.toContain("Her lashes");
+    expect(allRows(held).map((r) => r.name)).not.toContain("Lashes");
   });
 
   it("says a folded sentence once when it was filed on both sides", () => {
@@ -232,7 +243,7 @@ describe("the slots that have no row of their own", () => {
         row({ slot: "lashes@left", words: ["longer lashes"] }),
         row({ slot: "lashes@right", words: ["longer lashes"] }),
       ],
-      "Her eyes",
+      "Eyes",
     )!;
     expect(eyes.words).toEqual(["green", "longer lashes"]);
   });
@@ -246,7 +257,7 @@ describe("what the library adds to a row", () => {
       storageKey: "library/hair.png",
       maskKey: "library/hair-mask.png",
       geometry: { bbox: { x: 12, y: 30, width: 200, height: 140 }, frame: { width: 1024, height: 1536 } },
-    })], "Her hair")!;
+    })], "Hair")!;
 
     expect(built.words).toEqual(["a blunt shoulder-length bob"]);
     expect(built.cutouts).toEqual([{
@@ -261,7 +272,7 @@ describe("what the library adds to a row", () => {
     expect(built.regions).toEqual([
       {
         box: { x: 12, y: 30, width: 200, height: 140, frame: { width: 1024, height: 1536 } },
-        name: null, prefill: null, slot: "hair",
+        name: null, spoken: null, prefill: null, slot: "hair",
       },
     ]);
   });
@@ -278,7 +289,7 @@ describe("what the library adds to a row", () => {
       field now. The rule is what is under test, so the case keeps a row with
       nothing to point at rather than a slot that has since acquired one.
     */
-    expect(named([row({ slot: "skin", words: ["a warm tan"], geometry: null })], "Her skin"))
+    expect(named([row({ slot: "skin", words: ["a warm tan"], geometry: null })], "Skin"))
       .toBeUndefined();
   });
 
@@ -287,14 +298,14 @@ describe("what the library adds to a row", () => {
        no crop and nowhere to point, tells the person nothing about their own
        face. A row with a PLACE is a different thing: the picture is the
        content, which is why the box arm below still draws. */
-    expect(named([row({ slot: "lips", words: [], geometry: null })], "Her lips")).toBeUndefined();
-    expect(named([row({ slot: "lips", words: [] })], "Her lips")).toBeDefined();
+    expect(named([row({ slot: "lips", words: [], geometry: null })], "Lips")).toBeUndefined();
+    expect(named([row({ slot: "lips", words: [] })], "Lips")).toBeDefined();
   });
 
   it("tells a thing she arrived with from a thing she asked for", () => {
-    expect(named([row({ slot: "glasses", tier: "item", variantId: null, words: ["round wire frames"] })], "Her glasses")!.from)
+    expect(named([row({ slot: "glasses", tier: "item", variantId: null, words: ["round wire frames"] })], "Glasses")!.from)
       .toBe("she came with it");
-    expect(named([row({ slot: "hair", variantId: 11, words: ["copper"] })], "Her hair")!.from)
+    expect(named([row({ slot: "hair", variantId: 11, words: ["copper"] })], "Hair")!.from)
       .toBe("from an edit");
   });
 
@@ -308,14 +319,14 @@ describe("what the library adds to a row", () => {
       row({ slot: "earring@left", tier: "item", words: ["a gold hoop"], version: 1 }),
       row({ slot: "earring@right", tier: "item", words: ["a gold hoop"], version: 1 }),
     ];
-    expect(named(worn, "Her earrings")!.words).toEqual(["a gold hoop"]);
+    expect(named(worn, "Earrings")!.words).toEqual(["a gold hoop"]);
 
     const removed = [
       ...worn,
       row({ slot: "earring@left", tier: "item", words: ["a gold hoop"], version: 2, retiredAt: new Date() }),
       row({ slot: "earring@right", tier: "item", words: ["a gold hoop"], version: 2, retiredAt: new Date() }),
     ];
-    expect(named(removed, "Her earrings")).toBeUndefined();
+    expect(named(removed, "Earrings")).toBeUndefined();
   });
 });
 
@@ -330,13 +341,13 @@ describe("the body is one row and never pieces", () => {
       row({ slot: "build", words: ["broader shoulders", "a more athletic build"] }),
     ]);
     const body = built.groups.find((group) => group.heading === "Body");
-    expect(body!.rows.map((r) => r.name)).toEqual(["Her build"]);
+    expect(body!.rows.map((r) => r.name)).toEqual(["Build"]);
     expect(body!.rows[0]!.prefill).toBe("her build — ");
   });
 
   it("shows no piece row for any of the five facets", () => {
     const names = allRows([row({ slot: "build", words: ["a larger bust"] })]).map((r) => r.name);
-    for (const piece of ["Her bust", "Her waist", "Her shoulders", "Her arms", "Her chest", "Her hips"]) {
+    for (const piece of ["Bust", "Waist", "Shoulders", "Arms", "Chest", "Hips"]) {
       expect(names, piece).not.toContain(piece);
     }
   });
@@ -349,21 +360,21 @@ describe("a pair is one row until it isn't, and the split is derived", () => {
   ];
 
   it("speaks a matched pair as one thing, and edits both sides", () => {
-    const built = named(hoops(["a gold hoop"], ["a gold hoop"]), "Her earrings")!;
+    const built = named(hoops(["a gold hoop"], ["a gold hoop"]), "Earrings")!;
     expect(built.slots).toEqual(["earring@left", "earring@right"]);
-    expect(allRows(hoops(["a gold hoop"], ["a gold hoop"])).some((r) => r.name === "Her left earring")).toBe(false);
+    expect(allRows(hoops(["a gold hoop"], ["a gold hoop"])).some((r) => r.name === "Left earring")).toBe(false);
   });
 
   it("splits the row the moment one side is edited, with no flag to set", () => {
     const rows = allRows(hoops(["a gold hoop", "noticeably bigger"], ["a gold hoop"]));
-    expect(rows.map((r) => r.name)).toContain("Her left earring");
-    expect(rows.map((r) => r.name)).toContain("Her right earring");
-    expect(rows.find((r) => r.name === "Her left earring")!.slots).toEqual(["earring@left"]);
+    expect(rows.map((r) => r.name)).toContain("Left earring");
+    expect(rows.map((r) => r.name)).toContain("Right earring");
+    expect(rows.find((r) => r.name === "Left earring")!.slots).toEqual(["earring@left"]);
   });
 
   it("merges again when they match again, because there was never a flag to clear", () => {
     const rows = allRows(hoops(["a gold hoop", "noticeably bigger"], ["a gold hoop", "noticeably bigger"]));
-    expect(rows.map((r) => r.name)).toContain("Her earrings");
+    expect(rows.map((r) => r.name)).toContain("Earrings");
     expect(rows.some((r) => r.name.includes("left"))).toBe(false);
   });
 
@@ -374,9 +385,9 @@ describe("a pair is one row until it isn't, and the split is derived", () => {
       row({ slot: "ear@left", words: ["a little more tucked"] }),
       row({ slot: "ear@right", words: ["a little more tucked"] }),
     ]).map((r) => r.name);
-    expect(names).toContain("Her eyes");
-    expect(names).toContain("Her ears");
-    expect(names).not.toContain("Her eyess");
+    expect(names).toContain("Eyes");
+    expect(names).toContain("Ears");
+    expect(names).not.toContain("Eyess");
   });
 });
 
@@ -410,7 +421,7 @@ describe("what a scan adds to a row", () => {
 
   it("fills a row the library has never held with a window on the frame", () => {
     const nose = scanned([], { nose: { x: 400, y: 600, width: 120, height: 160 } })
-      .find((row) => row.name === "Her nose")!;
+      .find((row) => row.name === "Nose")!;
 
     /* The picture is the frame the viewer already has — no object was written
        to show this, which is the whole of ruling 4a. */
@@ -419,7 +430,7 @@ describe("what a scan adds to a row", () => {
       maskUrl: "data:image/png;base64,nose",
       crop: { x: 400, y: 600, width: 120, height: 160, frame },
     }]);
-    expect(nose.regions).toEqual([{ box: { x: 400, y: 600, width: 120, height: 160, frame }, name: null, prefill: null, slot: "nose" }]);
+    expect(nose.regions).toEqual([{ box: { x: 400, y: 600, width: 120, height: 160, frame }, name: null, spoken: null, prefill: null, slot: "nose" }]);
   });
 
   it("leaves the MINTED cutout in place where an edit made one", () => {
@@ -431,7 +442,7 @@ describe("what a scan adds to a row", () => {
       geometry: { bbox: { x: 12, y: 30, width: 200, height: 140 }, frame },
     })];
     const hair = scanned(rows, { hair: { x: 900, y: 900, width: 50, height: 50 } })
-      .find((panelRow) => panelRow.name === "Her hair")!;
+      .find((panelRow) => panelRow.name === "Hair")!;
 
     /*
       The library wins where it has minted. A scan of today's frame replacing
@@ -440,7 +451,7 @@ describe("what a scan adds to a row", () => {
     */
     expect(hair.cutouts[0]!.contentUrl).toBe("https://bucket.example/library/hair.png");
     expect(hair.cutouts[0]!.crop).toBeNull();
-    expect(hair.regions).toEqual([{ box: { x: 12, y: 30, width: 200, height: 140, frame }, name: null, prefill: null, slot: "hair" }]);
+    expect(hair.regions).toEqual([{ box: { x: 12, y: 30, width: 200, height: 140, frame }, name: null, spoken: null, prefill: null, slot: "hair" }]);
   });
 
   it("gives a measured row its click target even when the crop came from an edit", () => {
@@ -454,10 +465,10 @@ describe("what a scan adds to a row", () => {
       geometry: null,
     })];
     const hair = scanned(rows, { hair: { x: 900, y: 900, width: 50, height: 50 } })
-      .find((panelRow) => panelRow.name === "Her hair")!;
+      .find((panelRow) => panelRow.name === "Hair")!;
 
     expect(hair.cutouts[0]!.contentUrl).toBe("https://bucket.example/library/hair.png");
-    expect(hair.regions).toEqual([{ box: { x: 900, y: 900, width: 50, height: 50, frame }, name: null, prefill: null, slot: "hair" }]);
+    expect(hair.regions).toEqual([{ box: { x: 900, y: 900, width: 50, height: 50, frame }, name: null, spoken: null, prefill: null, slot: "hair" }]);
   });
 
   it("still refuses to invent a box for a region the scan did not find", () => {
@@ -473,12 +484,12 @@ describe("what a scan adds to a row", () => {
     );
     /* No box was invented for them — and under the founder's rule that now
        means the row leaves rather than standing there with nothing to click. */
-    expect(rows.map((panelRow) => panelRow.name)).not.toContain("Her ears");
+    expect(rows.map((panelRow) => panelRow.name)).not.toContain("Ears");
   });
 
   it("drops the row entirely when the scan found nothing and nothing was said", () => {
     const rows = scanned([], { nose: { x: 400, y: 600, width: 120, height: 160 } });
-    expect(rows.map((panelRow) => panelRow.name)).toEqual(["Her nose"]);
+    expect(rows.map((panelRow) => panelRow.name)).toEqual(["Nose"]);
   });
 
   it("shows a matched pair BOTH of them, in the order the photograph reads", () => {
@@ -490,7 +501,7 @@ describe("what a scan adds to a row", () => {
       "eye@left": { x: 640, y: 500, width: 60, height: 30 },
       "eye@right": { x: 300, y: 500, width: 60, height: 30 },
     });
-    const eyes = rows.find((panelRow) => panelRow.name === "Her eyes")!;
+    const eyes = rows.find((panelRow) => panelRow.name === "Eyes")!;
     expect(eyes.slots).toEqual(["eye@left", "eye@right"]);
     expect(eyes.cutouts.map((cutout) => cutout.crop!.x)).toEqual([300, 640]);
     /* Two rectangles, each naming the eye it covers — never one box spanning
@@ -498,11 +509,11 @@ describe("what a scan adds to a row", () => {
     expect(eyes.regions).toEqual([
       {
         box: { x: 300, y: 500, width: 60, height: 30, frame },
-        name: "Her right eye", prefill: "her right eye — ", slot: "eye@right",
+        name: "Right eye", spoken: "her right eye", prefill: "her right eye — ", slot: "eye@right",
       },
       {
         box: { x: 640, y: 500, width: 60, height: 30, frame },
-        name: "Her left eye", prefill: "her left eye — ", slot: "eye@left",
+        name: "Left eye", spoken: "her left eye", prefill: "her left eye — ", slot: "eye@left",
       },
     ]);
   });
@@ -516,7 +527,7 @@ describe("what a scan adds to a row", () => {
       row({ slot: "lips", words: ["a fuller lip"] }),
       row({ slot: "skin", words: ["a warm tan"], geometry: null }),
     ]);
-    expect(withoutScan.map((panelRow) => panelRow.name)).toEqual(["Her lips"]);
+    expect(withoutScan.map((panelRow) => panelRow.name)).toEqual(["Lips"]);
     expect(withoutScan[0]!.regions).toHaveLength(1);
   });
 });
@@ -551,17 +562,17 @@ describe("a pair whose geometry is one instance", () => {
 
   it("draws the box it has, and says which eye it is", () => {
     const eyes = scanned({ "eye@right": { x: 640, y: 500, width: 60, height: 30 } })
-      .find((row) => row.name === "Her eyes")!;
+      .find((row) => row.name === "Eyes")!;
 
     /* The row is unchanged: both slots, one ask, the pair's own name. */
     expect(eyes.slots).toEqual(["eye@left", "eye@right"]);
-    expect(eyes.name).toBe("Her eyes");
+    expect(eyes.name).toBe("Eyes");
     /* The rectangle exists — the defect was that it did not. */
     /* And it does not claim to be the pair. */
     expect(eyes.regions).toEqual([
       {
         box: { x: 640, y: 500, width: 60, height: 30, frame },
-        name: "Her right eye", prefill: "her right eye — ", slot: "eye@right",
+        name: "Right eye", spoken: "her right eye", prefill: "her right eye — ", slot: "eye@right",
       },
     ]);
     expect(eyes.cutouts).toHaveLength(1);
@@ -571,17 +582,17 @@ describe("a pair whose geometry is one instance", () => {
     const eyes = scanned({
       "eye@left": { x: 640, y: 500, width: 60, height: 30 },
       "eye@right": { x: 300, y: 500, width: 60, height: 30 },
-    }).find((row) => row.name === "Her eyes")!;
+    }).find((row) => row.name === "Eyes")!;
     /* One row, one ask, two promises about two sets of pixels. */
-    expect(eyes.regions.map((region) => region.name)).toEqual(["Her right eye", "Her left eye"]);
+    expect(eyes.regions.map((region) => region.name)).toEqual(["Right eye", "Left eye"]);
     expect(eyes.regions.map((region) => region.box.x)).toEqual([300, 640]);
   });
 
   it("names a singular row's rectangle with nothing extra at all", () => {
     /* Null is not an omission: it means the row's own name is the label. */
     const nose = scanned({ nose: { x: 400, y: 600, width: 120, height: 160 } })
-      .find((row) => row.name === "Her nose")!;
-    expect(nose.regions).toEqual([{ box: { x: 400, y: 600, width: 120, height: 160, frame }, name: null, prefill: null, slot: "nose" }]);
+      .find((row) => row.name === "Nose")!;
+    expect(nose.regions).toEqual([{ box: { x: 400, y: 600, width: 120, height: 160, frame }, name: null, spoken: null, prefill: null, slot: "nose" }]);
   });
 
   it("draws no row at all when nothing can place it — not an unclickable one", () => {
@@ -594,10 +605,10 @@ describe("a pair whose geometry is one instance", () => {
         row({ slot: "eye@right", words: ["green"], geometry: null }),
       ],
     );
-    expect(drawn.map((panelRow) => panelRow.name)).not.toContain("Her eyes");
+    expect(drawn.map((panelRow) => panelRow.name)).not.toContain("Eyes");
     /* And the row that CAN be placed is still drawn, so the case is not passing
        by the panel having emptied itself. */
-    expect(drawn.map((panelRow) => panelRow.name)).toContain("Her nose");
+    expect(drawn.map((panelRow) => panelRow.name)).toContain("Nose");
   });
 });
 
@@ -619,14 +630,14 @@ describe("one green eye is never spoken of as two", () => {
   ];
 
   it("splits into two rows, each saying what ITS OWN library row says", () => {
-    expect(named(scoped, "Her eyes")).toBeUndefined();
-    expect(named(scoped, "Her left eye")?.words).toEqual(["green"]);
-    expect(named(scoped, "Her right eye")?.words).toEqual(["dark brown"]);
+    expect(named(scoped, "Eyes")).toBeUndefined();
+    expect(named(scoped, "Left eye")?.words).toEqual(["green"]);
+    expect(named(scoped, "Right eye")?.words).toEqual(["dark brown"]);
   });
 
   it("draws a rectangle per row, so tapping one is a promise about those pixels", () => {
-    expect(named(scoped, "Her left eye")?.regions).toHaveLength(1);
-    expect(named(scoped, "Her right eye")?.regions).toHaveLength(1);
+    expect(named(scoped, "Left eye")?.regions).toHaveLength(1);
+    expect(named(scoped, "Right eye")?.regions).toHaveLength(1);
   });
 
   it("CONTROL — a whole-face edit is still ONE row about both of them", () => {
@@ -637,8 +648,8 @@ describe("one green eye is never spoken of as two", () => {
       row({ slot: "eye@right", noun: "right eye", words: ["green"], version: 2 }),
     ];
 
-    expect(named(matched, "Her eyes")?.words).toEqual(["green"]);
-    expect(named(matched, "Her left eye")).toBeUndefined();
+    expect(named(matched, "Eyes")?.words).toEqual(["green"]);
+    expect(named(matched, "Left eye")).toBeUndefined();
   });
 
   it("re-merges when a later whole-face edit makes them match again", () => {
@@ -650,7 +661,7 @@ describe("one green eye is never spoken of as two", () => {
       row({ slot: "eye@right", noun: "right eye", words: ["hazel"], version: 3 }),
     ];
 
-    expect(named(remerged, "Her eyes")?.words).toEqual(["hazel"]);
-    expect(named(remerged, "Her left eye")).toBeUndefined();
+    expect(named(remerged, "Eyes")?.words).toEqual(["hazel"]);
+    expect(named(remerged, "Left eye")).toBeUndefined();
   });
 });

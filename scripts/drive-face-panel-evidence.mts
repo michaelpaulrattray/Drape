@@ -73,7 +73,18 @@ const THEMES = ["dark", "light"] as const;
  * is the only one a paid edit put there, which is what makes it the right
  * subject for the minted-crop and one-selection-two-views checks.
  */
-const MEASURED_ROW = "Her lips";
+const MEASURED_ROW = "Lips";
+
+/**
+ * AND HOW THE PRODUCT SPEAKS ABOUT IT — the other half of fable-450/451.
+ *
+ * The founder took the possessive off every LABEL (*"just 'Left eye'"*), and it
+ * stayed everywhere the product says a sentence. Both halves are named here, on
+ * purpose: a check that read the label alone would pass on the day the ask box
+ * started saying "what to change about lips", which is the ruling being obeyed
+ * on one surface and lost on the other.
+ */
+const MEASURED_SPOKEN = "her lips";
 
 /**
  * THE FIXTURE'S THREE POPULATIONS, named rather than counted (shift 79).
@@ -90,9 +101,9 @@ const MEASURED_ROW = "Her lips";
  * the row came back onto the panel. It had been recorded ABSENT below the pair
  * check for four shifts — the check that could not fire in either direction.
  */
-const LIBRARY_ROWS = ["Her lips", "Her hair", "Her glasses", "Her earrings"] as const;
-const DESCRIBED_ROWS = ["Her build", "Her skin"] as const;
-const PAIR_ROWS = ["Her eyes", "Her brows", "Her ears"] as const;
+const LIBRARY_ROWS = ["Lips", "Hair", "Glasses", "Earrings"] as const;
+const DESCRIBED_ROWS = ["Build", "Skin"] as const;
+const PAIR_ROWS = ["Eyes", "Brows", "Ears"] as const;
 
 const secret = process.env.JWT_SECRET;
 const appId = process.env.VITE_APP_ID;
@@ -509,7 +520,7 @@ for (const theme of THEMES) {
       fable-414's box rule working in the direction nobody could exercise until
       detection armed.
     */
-    const earringRows = panel.rows.filter((row: any) => row.name === "Her earrings");
+    const earringRows = panel.rows.filter((row: any) => row.name === "Earrings");
     /* Its own read of the boxes — the regions are read again below for the
        hover checks, and a check that borrows a later read is a check whose
        subject moved between the two. */
@@ -518,11 +529,11 @@ for (const theme of THEMES) {
     check(
       earringRows.length === 1
         && earringRows[0].parts === 1
-        && boxNames.includes("Her left earring")
-        && !boxNames.includes("Her right earring"),
+        && boxNames.includes("Left earring")
+        && !boxNames.includes("Right earring"),
       `${theme}: the ear that wears one is found, and the ear behind her hair is not guessed at`,
       earringRows.length !== 1
-        ? `${earringRows.length} rows named "Her earrings"`
+        ? `${earringRows.length} rows named "Earrings"`
         : `one row, ${earringRows[0].parts} part(s), words "${earringRows[0].words}" (${earringRows[0].from})`
           + ` · boxes: ${boxNames.filter((name: string) => name.includes("earring")).join(", ") || "none"}`,
     );
@@ -623,13 +634,16 @@ for (const theme of THEMES) {
       edits something the customer was never shown.
 
       A pair draws one rectangle per instance and each carries its INSTANCE's
-      name ("Her left eye"), not the row's — fable-378 (c), because clicking a
+      name ("Left eye"), not the row's — fable-378 (c), because clicking a
       rectangle is a promise about those pixels. So a box matches its row by
       either name.
     */
     const tags: string[] = regions ? regions.boxes.map((box: any) => box.tag) : [];
     const rowsWithoutPlace = panel.rows.filter((row: any) => {
-      const bare = row.name.replace(/^Her |^His |^Their /, "");
+      /* The label is already bare (founder, fable-450/451) — it used to be
+         stripped of "Her "/"His "/"Their " here, and that strip is now a rule
+         about a shape the panel cannot produce. */
+      const bare = row.name;
       return !tags.some((tag) => tag === row.name || new RegExp(`(left|right) ${bare.replace(/s$/, "")}`, "i").test(tag));
     });
     check(
@@ -640,10 +654,20 @@ for (const theme of THEMES) {
         : `${regions.boxes.length} boxes for ${panel.rows.length} rows`
           + (rowsWithoutPlace.length === 0 ? ` — ${tags.join(", ")}` : ` · nowhere to point: ${rowsWithoutPlace.map((r: any) => r.name).join(", ")}`),
     );
-    const orphanBoxes = tags.filter((tag) => {
-      const bare = tag.replace(/^(Her|His|Their) (left |right )?/, "");
-      return !panel.rows.some((row: any) => row.name === tag || row.name.replace(/^(Her|His|Their) /, "").replace(/s$/, "") === bare.replace(/s$/, ""));
-    });
+    /*
+      RE-ANCHORED ON THE BARE LABEL (founder, fable-450/451), and the old rule
+      is the reason it had to be: it stripped a POSSESSIVE off the tag before
+      matching, so with the possessive gone every instance tag ("Left eye")
+      matched no row and seven boxes read as orphans. The rule it states is
+      unchanged — every rectangle belongs to a row on the panel — and only the
+      spelling of a label moved.
+    */
+    const stem = (label: string): string => label
+      .toLowerCase()
+      .replace(/^(left|right) /, "")
+      .replace(/s$/, "");
+    const orphanBoxes = tags.filter((tag) =>
+      !panel.rows.some((row: any) => row.name === tag || stem(row.name) === stem(tag)));
     check(
       tags.length > 0 && orphanBoxes.length === 0,
       `${theme}: and every place on the photograph belongs to a row`,
@@ -896,10 +920,22 @@ for (const theme of THEMES) {
       `${theme}: the scoped box asks in the same words as the ask box below`,
       `placeholder "${opened.fieldPlaceholder}"`,
     );
+    /*
+      AND IT IS THE ONE LABEL HERE THAT IS A SENTENCE (founder, fable-451).
+
+      The tags went bare — *"even on hover it's too long — just 'Left eye'"* —
+      and this did not: a screen reader hearing "what to change about left eye"
+      is being read a column header rather than asked a question. So it is
+      checked against the server's own `spoken`, which is where the possessive
+      now lives, and the possessive is checked SEPARATELY. Comparing only
+      against `spoken` would pass just as happily on the day the server started
+      sending a bare one — both sides would move together and the ruling would
+      leave no mark anywhere.
+    */
     check(
-      opened.fieldLabel === `What to change about ${MEASURED_ROW.toLowerCase()}`,
-      `${theme}: and its label names the feature it is scoped to`,
-      `aria-label "${opened.fieldLabel}"`,
+      opened.fieldLabel === `What to change about ${MEASURED_SPOKEN}`,
+      `${theme}: and its label names the feature it is scoped to, in the words the product speaks`,
+      `aria-label "${opened.fieldLabel}" · the row's own label is "${MEASURED_ROW}"`,
     );
     const askBox = await page.evaluate(`(() => {
       const form = document.querySelector(".dpc-regions__ask");
