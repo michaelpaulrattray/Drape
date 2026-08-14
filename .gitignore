@@ -121,3 +121,12 @@ temp/
 
 # M3 calibration output (real spend artifacts, founder-reviewed then disposed)
 .calibration/
+
+# Local agent scaffolding — never committed (founder rule). The mailbox was
+# staged by name once (c47b27ba) and untracked again in 1f2d3011; this is the
+# guard that stops it being possible rather than remembered.
+.agents/
+.codex/
+.avela-agent-bridge/
+CLAUDE.local.md
+.claude/settings.local.json
