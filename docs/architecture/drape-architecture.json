@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "bbcfbcbcfd6a46ff"
+    "sourceFingerprint": "62e079c708cd7885"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 105
+      "moduleCount": 106
     },
     {
       "id": "domain:castingV2",
@@ -3677,6 +3677,12 @@
     {
       "id": "module:server/castingV2/refineSubjects.ts",
       "path": "server/castingV2/refineSubjects.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/refusalCounter.ts",
+      "path": "server/castingV2/refusalCounter.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -19299,6 +19305,11 @@
     },
     {
       "from": "module:server/castingV2/refineService.ts",
+      "to": "module:server/castingV2/refusalCounter.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/refineService.ts",
       "to": "module:server/castingV2/removalWords.ts",
       "kind": "imports"
     },
@@ -19425,6 +19436,26 @@
     {
       "from": "module:server/castingV2/refineSubjects.ts",
       "to": "module:server/castingV2/refineDelta.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/refusalCounter.ts",
+      "to": "module:drizzle/schema.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/refusalCounter.ts",
+      "to": "module:server/auditLog.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/refusalCounter.ts",
+      "to": "module:server/db/connection.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/refusalCounter.ts",
+      "to": "module:server/logging/logger.ts",
       "kind": "imports"
     },
     {

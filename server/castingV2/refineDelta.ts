@@ -294,6 +294,18 @@ export type RefineRefusal =
  * `intent` is optional on an edit so that every existing caller and every test
  * mock which returns `{ ok: true, delta }` still means what it always meant.
  */
+/**
+ * WHICH WAY THE INVENTION DOOR WENT, when it ran at all (fable-498 §4).
+ *
+ * `rescued` — containment refused and the door read the value as saying only
+ * what she asked, so the ask went through. `upheld` — the door agreed with
+ * containment and the refusal stood. Absent on every parse the door never saw.
+ *
+ * It rides the parse because the interpreter knows the verdict and the SERVICE
+ * knows the customer: the count has to be written where both are true.
+ */
+export type InventionDoorOutcome = "rescued" | "upheld";
+
 export type RefineParse =
   | {
     ok: true;
@@ -307,6 +319,8 @@ export type RefineParse =
      * knife fight does not.
      */
     droppedReference?: boolean;
+    /** Set when the invention door rescued this reading — see the type. */
+    door?: InventionDoorOutcome;
   }
   /** Bare "undo" / "go back" — free navigation, never a render. */
   | { ok: true; intent: "navigate" }
@@ -350,7 +364,12 @@ export type RefineParse =
      */
     items?: string[];
   }
-  | { ok: false; refusal: RefineRefusal };
+  | {
+    ok: false;
+    refusal: RefineRefusal;
+    /** Set when the invention door upheld this refusal — see the type. */
+    door?: InventionDoorOutcome;
+  };
 
 /**
  * What a free-lane value may be, before it is allowed anywhere near a prompt.

@@ -1298,6 +1298,17 @@ export const AUDIT_ACTIONS = {
   MODEL_CREATED: "model.created",
   MODEL_DELETED: "model.deleted",
   MODEL_MINTED: "model.minted",
+
+  /*
+    A REFUSAL A USER EXPERIENCED, counted (fable-498 §5).
+
+    A free refusal writes no variant row on purpose — a zero-credit row is noise
+    in the ledger and a phantom for the recovery sweep — so its only record was
+    a log line, and a log line is not an artifact a rate can be read from. It
+    carries the REASON and the FACET and never the customer's own words: staff
+    read this table, and her sentence about her own face is creative content.
+  */
+  CASTING_REFUSAL: "casting.refusal",
   
   // Security events
   LOGIN_SUCCESS: "auth.login",

@@ -170,6 +170,7 @@ import {
   RepaintCannotSayError, repaintAsksFor, repaintCannotRemove, scopedAskIsUnsayable,
 } from "./repaintAsks";
 import { cannotSaySentence, likenessSetAsideNote } from "./cannotSayCopy";
+import { countRefusal } from "./refusalCounter";
 import { padToFrame, studioBackgroundOf, type StudioBackground } from "./referenceFit";
 import { pronounsForSex } from "./castPronouns";
 import {
@@ -763,6 +764,20 @@ export async function refineCandidate(
     });
   };
   if (parsed.ok && "delta" in parsed) parsed = await throughTheAlreadyTrueDoor(parsed);
+  /*
+    A RESCUE IS COUNTED TOO, and it is the half that makes the ratio mean
+    something: `upheld` alone would say how often the door refuses and nothing
+    about how often containment was wrong (fable-498 §4).
+  */
+  if (parsed.ok && "door" in parsed && parsed.door === "rescued") {
+    await countRefusal({
+      userId: input.userId,
+      candidateId: input.candidatePublicId,
+      reason: "wall_unfileable",
+      facet: null,
+      outcome: "rescued",
+    });
+  }
   if (!parsed.ok) {
     /*
       A FREE REFUSAL SHOULD NOT ALSO BE A FREE PASS ON DIAGNOSIS.
@@ -790,6 +805,26 @@ export async function refineCandidate(
       },
       "[refineService] refused before the charge — nothing claimed, nothing deducted",
     );
+    /*
+      AND IT IS COUNTED, because a log line is not an artifact (fable-498 §5).
+
+      This shift asked production how often the containment guard refuses an
+      honest ask and could not answer: free refusals write no row, and ten
+      deploys had rotated the only logs that carried them. The count carries the
+      REASON and the facet and never her sentence — staff read audit rows.
+
+      Awaited but never allowed to matter: `countRefusal` swallows its own
+      failures, so the customer's refusal cannot wait on bookkeeping.
+    */
+    await countRefusal({
+      userId: input.userId,
+      candidateId: input.candidatePublicId,
+      reason: parsed.refusal.reason,
+      facet: "asked" in parsed.refusal ? parsed.refusal.asked : null,
+      /* The door's own verdict where it ran, so the rescued-vs-upheld ratio is
+         readable from the day this lands. */
+      outcome: parsed.door === "upheld" ? "upheld" : "refused",
+    });
     // An honest boundary, not a fault — and free, which is the point of §10.
     throw new TRPCError({ code: "BAD_REQUEST", message: refusalMessage(parsed) });
   }

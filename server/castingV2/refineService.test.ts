@@ -409,6 +409,18 @@ vi.mock("../db/castingV2ReferenceLibrary", () => ({
   listLineageReferences: vi.fn(async () => lineageReferences),
 }));
 
+/**
+ * WHAT WAS COUNTED, and what may never be in it (fable-498 §4/§5).
+ *
+ * A free refusal writes no variant row, so its only artifact is this count —
+ * and the count is read by staff, which is why the payload may carry the reason
+ * and the facet and never the customer's own sentence.
+ */
+const counted: Array<Record<string, unknown>> = [];
+vi.mock("./refusalCounter", () => ({
+  countRefusal: vi.fn(async (input: Record<string, unknown>) => { counted.push(input); }),
+}));
+
 vi.mock("./signEngine", () => ({
   castingIdentityEngine: () => ({
     id: "test",
@@ -444,6 +456,7 @@ beforeEach(() => {
   keptAsks.length = 0;
   mintAsks.length = 0;
   lineageReferences = [];
+  counted.length = 0;
   captionsRead = {};
   assembleAsks.length = 0;
   carriedRowsFixture = [];
@@ -2346,6 +2359,45 @@ describe("a removal with no removal word is re-read as an edit", () => {
     expect(ledger.charges, "nothing was charged").toHaveLength(0);
     expect(ledger.refunds, "so nothing had to be given back").toHaveLength(0);
     expect(journal, "and nothing was claimed").not.toContain("claim");
+  });
+
+  it("COUNTS a free refusal, with the reason and never her sentence", async () => {
+    /*
+      The artifact D-236's sibling requires (fable-498 §5): a refusal a customer
+      experienced, countable afterwards. This shift asked production how often
+      the containment guard refuses an honest ask and could not answer at all.
+    */
+    await expect(refineCandidate({ harvest: unmasked,
+        interpret: async () => ({
+          ok: false as const,
+          refusal: { reason: "wall_unfileable" as const, asked: "marks", value: "a lightning bolt scar" },
+        }),
+      } as never,
+      { ...input, instruction: "give her a harry potter lighting bolt scar on her forehead" },
+    )).rejects.toThrow();
+
+    expect(counted).toHaveLength(1);
+    expect(counted[0]).toMatchObject({ reason: "wall_unfileable", facet: "marks", outcome: "refused" });
+    /* THE BOUNDARY, asserted on the payload rather than trusted: no field of it
+       may carry what she typed or what the model wrote. */
+    const said = JSON.stringify(counted[0]);
+    expect(said).not.toContain("harry potter");
+    expect(said).not.toContain("lightning bolt");
+  });
+
+  it("counts the door's RESCUE, which is the half that makes the ratio mean something", async () => {
+    await refineCandidate({ harvest: unmasked,
+        interpret: async () => ({
+          ok: true as const,
+          delta: { free: { marks: ["a lightning bolt scar on her forehead"] } },
+          door: "rescued" as const,
+        }),
+      } as never,
+      { ...input, instruction: "give her a harry potter lighting bolt scar on her forehead" },
+    );
+
+    expect(counted).toHaveLength(1);
+    expect(counted[0]).toMatchObject({ outcome: "rescued", reason: "wall_unfileable" });
   });
 
   it("CONTROL — a scoped ask that DOES belong to the scope proceeds and charges", async () => {

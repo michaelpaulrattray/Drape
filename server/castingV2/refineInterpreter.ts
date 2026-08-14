@@ -703,19 +703,32 @@ async function inventionDoor(
       { asked, value, invents: verdict?.invents ?? null, fact: verdict?.fact ?? null },
       "[refineInterpreter] the filed value asserts something they did not ask for — refusing",
     );
-    return refused;
+    /* WHICH WAY THE DOOR WENT, carried out on the parse so the service can
+       COUNT it (fable-498 §4). A log line is not an artifact — this shift
+       proved that on this very guard — so the outcome travels to the one place
+       that knows the user and the candidate. */
+    return { ...refused, door: "upheld" as const };
   }
   log.info(
     { asked, value },
     "[refineInterpreter] the filed value says only what they asked — re-reading with it vouched",
   );
   const vouchedRead = await runOnce(engine, { ...input, vouched: { subject: asked, value } }, instruction);
-  return vouchedRead?.ok ? vouchedRead : refused;
+  /* Only an EDIT can be rescued: the door exists for a value containment
+     refused, and a navigation carries none. */
+  if (vouchedRead?.ok && "delta" in vouchedRead) return { ...vouchedRead, door: "rescued" as const };
+  return { ...refused, door: "upheld" as const };
 }
 
 /**
  * THE NARROWEST QUESTION THERE IS: does this value assert a fact that is not
  * theirs? One structured answer, and the code reads it.
+ *
+ * EXPORTED for its own positive control (fable-498 §3a / fable-499 §1): the
+ * scripted arms prove the code refuses when handed `true`, and prove nothing
+ * about whether the reader ever SAYS true. A door that cannot say no is a
+ * rubber stamp, so the bench asks this exact function — never a second copy of
+ * its question — on values that plainly invent.
  */
 const INVENTION_QUESTION = [
   "You are checking ONE thing about how a customer's instruction was read.",
@@ -736,7 +749,7 @@ const INVENTION_QUESTION = [
   'theirs, or null>"}',
 ].join("\n");
 
-async function asksNothingOfItsOwn(
+export async function asksNothingOfItsOwn(
   engine: TextEngine,
   input: {
     instruction: string;
