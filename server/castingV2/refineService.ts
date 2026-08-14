@@ -1087,6 +1087,8 @@ async function refineCandidateCounted(
   let outOfFrameNote: string | null = null;
   let chain: ChainStep[] = predecessorChain ?? [];
   let removedFacets = new Set<Facet>();
+  /** What a prune took back, in the user's own words — see the prune branch. */
+  let takenBack: string | null = null;
   /**
    * WHAT A REMOVAL TOOK OFF HER, in her own words.
    *
@@ -1719,6 +1721,16 @@ async function refineCandidateCounted(
           removedFacets.add(facet);
         }
       }
+      /*
+        AND WHAT THE PRUNE TAKES BACK, IN WORDS — the restate ask's subject
+        (V3(c), fable-536 §2).
+
+        The user's own sentence named it and `matchSteps` already found the step
+        it names, so this is a record rather than a reading. It exists because
+        the verification needs a question at the wire: without it a prune ships
+        unverified on precisely the fact it exists to change.
+      */
+      takenBack = parsed.match?.trim() || predecessorChain[matched[0]!.index]?.instruction.trim() || null;
       /*
         ITEMS, NOT STEPS (D-171). A plural subject holds several facts in one
         step, so "remove the hoops" against "small gold hoops and thin wire
@@ -2772,6 +2784,41 @@ async function refineCandidateCounted(
         anchorVariantId: variant.id,
       })
       : [];
+    /**
+     * The prune's own asks, or null when this is not a prune we can name.
+     *
+     * Null is the honest answer in three cases and each one keeps the old
+     * refusal: nothing was struck (no facets), nothing can be named (the words
+     * are missing), or the struck facets file under no slot at all — a recipe
+     * that named none of them would be exactly the unverified render this shape
+     * exists to prevent.
+     */
+    const restateAsksForPrune = (): ReturnType<typeof repaintAsksFor> | null => {
+      if (removedFacets.size === 0 || takenBack === null) return null;
+      /*
+        THE KIND COMES FROM THE WORDS THAT LEFT, not from the ask.
+
+        `accessoryRegion` is derived from what this step FILES, and a prune files
+        nothing — so it is null here and `statedAccessories` (one facet over
+        several kinds) would resolve to no slot at all. The same longest-match
+        table answers it from the words being taken back, which is where the
+        kind actually is: "gold hoop earrings" is an earring whether it is
+        arriving or leaving.
+      */
+      const takenKind = accessoryRegion ?? accessoryKindOf(takenBack);
+      const slots = Array.from(removedFacets)
+        .flatMap((facet) => slotsForFacet(facet, { accessoryKind: takenKind ?? null }))
+        .map((definition) => definition.slot)
+        .filter((slot, at, all) => all.indexOf(slot) === at);
+      if (slots.length === 0) return null;
+      return repaintAsksFor({
+        /* Empty on purpose: a prune adds nothing. The asks below are the ask. */
+        delta: {},
+        prose: EDIT_PROSE,
+        restate: slots.map((slot) => ({ slot, taken: takenBack! })),
+      });
+    };
+
     const repaintOnce = async () => {
       const asks = editDelta
         ? repaintAsksFor({
@@ -2799,7 +2846,27 @@ async function refineCandidateCounted(
           */
           ...(input.scope ? { scope: input.scope } : {}),
         })
-        : repaintCannotRemove();
+        /*
+          A PRUNE ASKS SOMETHING AFTER ALL — the narrow lift (fable-536 §2/§3).
+
+          This door refused every prune outright, and its own detail said why:
+          a removal strikes matching words from the library's stack, "which is
+          not yet derived from the chain's own pruning". It is now
+          (`prunedCarries`), so the crop stops riding by derivation and the
+          master — which never had the thing — does the removing by arithmetic,
+          the road the horns removal court measured at 3/3 gone and 3/3 clean.
+
+          The ask exists for the VERIFICATION rather than for the painter: it
+          names the slots taken back and what was taken, so the net has a
+          question at the wire instead of shipping unverified on the one fact
+          this render exists to change.
+
+          A NARROWING, not an opening. Only a prune that actually took something
+          back and can name it gets through; anything else meets the same
+          refusal it met before, and the arm that proves it is driven.
+        */
+        : restateAsksForPrune()
+          ?? repaintCannotRemove();
       if (!asks.ok) {
         log.error(
           { operationId, variant: variant.publicId, reason: asks.reason, facet: asks.facet },
@@ -2972,6 +3039,11 @@ async function refineCandidateCounted(
            fact about the request — and read back below, where it is the only
            licence the library has to retire a crop. */
         vacated: recipe.vacated,
+        /* AND WHAT IT TOOK BACK. Not a vacancy — nothing is retired and nothing
+           is said in the prompt — but a fact about the request all the same, and
+           the anchor the verification reads to ask whether the pruned thing is
+           actually gone. Absent on every render that pruned nothing. */
+        ...(recipe.restated.length > 0 ? { restated: recipe.restated } : {}),
         standing: recipe.standing.map((entry) => entry.slot),
       });
 

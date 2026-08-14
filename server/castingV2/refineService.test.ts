@@ -3034,51 +3034,49 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
   });
 
   /**
-   * WHAT A PRUNE DOES ON THE REPAINT ROAD TODAY — the refusal, driven
-   * (V3(c)'s premise, settled here rather than assumed).
+   * WHAT A PRUNE DOES ON THE REPAINT ROAD — and this block is the RED-FLIP
+   * fable-534 asked for, now flipped (V3(c), fable-536 §2).
    *
-   * The shape note asked one question the code could not answer by reading:
-   * after a prune takes back the step that added her earrings, does the recipe
-   * still carry the earring CROP the library filed? The answer is neither yes
-   * nor a silent wrong picture — **it refuses, free**, and the refusal names
-   * the missing piece in the product's own words: *"a removal strikes matching
-   * words from the library's stack — which is not yet derived from the chain's
-   * own pruning"* (`repaintCannotRemove`).
-   *
-   * That is the honest state and it is worth a test, because it is the exact
-   * line V3(c) is built to delete. **This test is meant to go RED the day
-   * pruning is derived** — at which point it becomes the place to assert what
-   * the pruned render carries instead.
+   * It used to assert the refusal: *"Taking that off isn't something I can do
+   * on this face yet"*, charged and refunded, no picture — with a note saying
+   * it was written to go red the day pruning was derived. That day is this one,
+   * so it now asserts what the pruned render actually does.
    */
-  describe("a prune on the repaint road, today", () => {
-    it("refuses free rather than delivering a picture it cannot honestly compose", async () => {
-      lineageReferences = [carryRow({
-        id: 9, publicId: "ref-9", slot: "earring@left", tier: "item", noun: "left earring",
-        words: ["gold hoops"], storageKey: "casting-v2/library/earring-left.png",
-      })];
+  describe("a prune on the repaint road", () => {
+    const prunedEarrings = async () => {
+      lineageReferences = [
+        carryRow({
+          id: 9, publicId: "ref-9", slot: "earring@left", tier: "item", noun: "left earring",
+          words: ["gold hoops"], storageKey: "casting-v2/library/earring-left.png", variantId: 5,
+        }),
+        carryRow({
+          id: 10, publicId: "ref-10", slot: "lips", tier: "anatomy", noun: "lips",
+          words: ["a fuller cupid's bow"], storageKey: "casting-v2/library/lips.png", variantId: 5,
+        }),
+      ];
       variantRows = [{
         id: 700,
         publicId: "variant-earrings",
         candidateId: 1,
         imageKey: "casting-v2/variants/earrings.png",
         internalPrompt: candidateRow.internalPrompt as Record<string, unknown>,
-        instructions: ["gold hoop earrings", "make her hair longer"],
-        deltas: { free: { statedAccessories: ["gold hoop earrings"], hairCut: "longer hair" } },
+        instructions: ["gold hoop earrings", "a fuller cupid's bow"],
+        deltas: { free: { statedAccessories: ["gold hoop earrings"], lips: "a fuller cupid's bow" } },
         stepDeltas: [
           { free: { statedAccessories: ["gold hoop earrings"] } },
-          { free: { hairCut: "longer hair" } },
+          { free: { lips: "a fuller cupid's bow" } },
         ],
         status: "ready",
       }];
       candidateRow.selectedVariantPublicId = "variant-earrings";
 
       let call = 0;
-      await expect(refineCandidate(
+      return refineCandidate(
         {
           ...repainting,
-          /* The base has NO earrings, so the chain put them there and a prune
-             is the honest reading — this is the arbitration the post-run-7
-             guard requires before it will undo anything. */
+          /* The base has NO earrings, so the chain put them there and a prune is
+             the honest reading — the arbitration the post-run-7 guard requires
+             before it will undo anything. */
           regions: {
             region: async () => ({ data: Buffer.alloc(64 * 64, 0), width: 64, height: 64 }),
             subject: async () => ({ data: Buffer.alloc(64 * 64, 0), width: 64, height: 64 }),
@@ -3088,22 +3086,77 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
             call += 1;
             return call === 1
               ? { ok: true as const, intent: "remove" as const, subject: "statedAccessories", match: "gold hoop earrings" }
-              : { ok: true as const, delta: { free: { hairCut: "longer hair" } } };
+              : { ok: true as const, delta: { free: { lips: "a fuller cupid's bow" } } };
           }) as never,
         },
         { ...input, instruction: "take the earrings off" },
-      )).rejects.toThrow(/isn't something I can do on this face yet/);
+      );
+    };
 
+    it("paints her without them, and carries no crop of the thing taken back", async () => {
+      const result = await prunedEarrings();
+
+      expect(result.imageUrl).toBeTruthy();
+      expect(painted).toHaveLength(1);
+      const bytes = painted[0]!.references.map((reference) => String(reference.bytes));
+      /* Her lips still ride — that step survived the prune. */
+      expect(bytes.some((one) => one.includes("lips"))).toBe(true);
+      /* Her earrings do not: the ask was taken back, so the crop stopped
+         riding and the master — which never had them — does the removing. */
+      expect(bytes.some((one) => one.includes("earring"))).toBe(false);
+    });
+
+    it("names what it took back, so the verification has a question at the wire", async () => {
       /*
-        AND THE MONEY COMES BACK. The refusal is raised on the repaint road,
-        which is past the claim, so this is charged and then refunded rather
-        than free — money conserved, which is the property that matters, and
-        NO PICTURE, which is the other one. Asserting "free" here would have
-        been a nicer sentence and a false one.
+        The reason the ask exists at all (fable-536 §2). A prune arriving as an
+        ABSENCE of asks would ship unverified on precisely the fact it exists to
+        change.
       */
-      expect(ledger.charges).toHaveLength(1);
-      expect(ledger.refunds.reduce((sum, refund) => sum + refund.amount, 0))
-        .toBe(ledger.charges.reduce((sum, charge) => sum + charge.amount, 0));
+      await prunedEarrings();
+      const recipe = (landedVariant?.internalPrompt as { repaint?: { restated?: string[] } })?.repaint;
+      expect(recipe?.restated ?? []).toContain("earring@left");
+    });
+
+    it("CONTROL — a prune that names nothing still meets the old refusal", async () => {
+      /*
+        The lift is a NARROWING, not an opening (fable-536 §3). With no words to
+        name what left, there is no question to verify and no honest recipe, so
+        the road refuses exactly as it did before — driven, because a lift that
+        quietly widened would be indistinguishable from this one.
+      */
+      variantRows = [{
+        id: 702,
+        publicId: "variant-nameless",
+        candidateId: 1,
+        imageKey: "casting-v2/variants/nameless.png",
+        internalPrompt: candidateRow.internalPrompt as Record<string, unknown>,
+        instructions: ["gold hoop earrings"],
+        deltas: { free: { statedAccessories: ["gold hoop earrings"] } },
+        stepDeltas: [{ free: { statedAccessories: ["gold hoop earrings"] } }],
+        status: "ready",
+      }];
+      candidateRow.selectedVariantPublicId = "variant-nameless";
+
+      let call = 0;
+      await expect(refineCandidate(
+        {
+          ...repainting,
+          regions: {
+            region: async () => ({ data: Buffer.alloc(64 * 64, 0), width: 64, height: 64 }),
+            subject: async () => ({ data: Buffer.alloc(64 * 64, 0), width: 64, height: 64 }),
+            landmark: async () => [],
+          } as never,
+          interpret: (async () => {
+            call += 1;
+            /* A removal with no `match`: the parse names a subject and nothing
+               else, which is the shape that deletes whole steps. */
+            return call === 1
+              ? { ok: true as const, intent: "remove" as const, subject: "statedAccessories" }
+              : { ok: true as const, delta: {} };
+          }) as never,
+        },
+        { ...input, instruction: "take those off" },
+      )).rejects.toThrow();
       expect(painted).toHaveLength(0);
     });
   });

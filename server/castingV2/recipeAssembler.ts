@@ -204,6 +204,30 @@ export type Ask = {
    * layer out, exactly as `accessoryKind` already does.
    */
   vacate?: { says: string };
+  /**
+   * THIS SLOT'S ASK HAS BEEN TAKEN BACK — the prune's own shape (V3(c),
+   * fable-536 §2).
+   *
+   * A prune deletes the step that added a thing and recomposes what is left, so
+   * there is nothing to ADD and nothing to strike: the carry list is derived
+   * from the surviving chain (`prunedCarries`), the crop simply stops riding,
+   * and the render anchors on the pristine master which never had the thing.
+   * That road is measured — the horns removal court read 3/3 gone and 3/3 clean
+   * by dropping the carry alone.
+   *
+   * So why an ask at all, if the recipe says nothing? **Because the verification
+   * needs a question at the wire.** A prune that arrived as an ABSENCE of asks
+   * would give the net nothing to check, and the render would ship unverified
+   * on precisely the fact it exists to change. This names the slot and what was
+   * taken back, so the assembler can state it, the reader can be asked about it,
+   * and `nothingAsked` keeps meaning exactly what it says.
+   *
+   * It is not `vacate`: a vacancy SAYS an absence and retires the slot, which is
+   * right for a thing the master itself has and wrong for a thing an edit added
+   * — retiring here would make a prune irreversible, and re-adding the step must
+   * bring the crop back.
+   */
+  restate?: { taken: string };
 };
 
 export type AssembleInput = {
@@ -270,6 +294,13 @@ export type Recipe = {
   references: readonly RecipeReference[];
   /** The slots this render edits — the DELIVERED column of verification. */
   edited: readonly FeatureSlot[];
+  /**
+   * The slots whose ask this render TOOK BACK — named, and deliberately not in
+   * `edited`: nothing was delivered into them, and the verification asks the
+   * opposite question about them (is it gone) from the one it asks about an
+   * edit (is it there).
+   */
+  restated: readonly FeatureSlot[];
   /** Every slot this render promises to hold — the CARRIED column. An item or
    *  anatomy slot carries by crop, a surface by words alone; all three are
    *  promises, so all three are verified. */
@@ -320,6 +351,10 @@ export type RecipeRefusal = {
     | "wordsNotDeclarative"
     /** A vacate carrying words as well — see `Ask.vacate`. */
     | "vacateAlsoAsks"
+    /** A prune's ask was given something to say as well — see `Ask.restate`. */
+    | "restateAlsoAsks"
+    /** A prune's ask named nothing, so nothing could be verified about it. */
+    | "restateSaysNothing"
     /** A vacate whose sentence is empty; the recipe would go silent. */
     | "vacateSaysNothing"
     /** A presentation clause with no words — see {@link AssembleInput.presentation}. */
@@ -367,6 +402,17 @@ function askSentence(
 ): string | { unnamed: FeatureSlot } | { saysNothing: string } {
   const clauses: string[] = [];
   for (const ask of asks) {
+    /*
+      A TAKEN-BACK SLOT CONTRIBUTES NO CLAUSE — see `Ask.restate`.
+
+      The thing was added by an edit and this render anchors on the pristine
+      master, which never had it; the carry list no longer holds it either. So
+      there is nothing to say, and saying something would be the vacancy road
+      (which is for what the photograph itself brought). It is skipped here
+      rather than given an empty clause, because an ask with no words and no
+      noun is exactly what `slotNotNamed` is for on every OTHER shape.
+    */
+    if (ask.restate) continue;
     if (ask.vacate) {
       /*
         THE ABSENCE IS SAID IN THE SAME BREATH AS EVERY OTHER CHANGE.
@@ -508,7 +554,10 @@ function identityClause(pronouns: CastPronouns): string {
 
 export function assembleRecipe(input: AssembleInput): AssembleResult {
   const bySlot = new Map(input.library.map((entry) => [entry.slot, entry]));
-  const edited = input.asks.map((ask) => ask.slot);
+  const restated = input.asks.filter((ask) => ask.restate).map((ask) => ask.slot);
+  /* A taken-back slot is not an edited one: nothing is delivered into it, and
+     `edited` is the DELIVERED column of the verification. */
+  const edited = input.asks.filter((ask) => !ask.restate).map((ask) => ask.slot);
   const editedSet = new Set(edited);
   const pronouns = input.pronouns;
   const possessive = pronouns.possessive;
@@ -558,6 +607,32 @@ export function assembleRecipe(input: AssembleInput): AssembleResult {
 
   for (const ask of input.asks) {
     const entry = bySlot.get(ask.slot);
+    if (ask.restate) {
+      /*
+        NOTHING IS SAID, AND THAT IS THE POINT. The thing was added by an edit,
+        the anchor is the pristine master that never had it, and the carry list
+        no longer holds it — so the recipe stays silent and the master does the
+        removing by arithmetic. Saying an absence here would be the vacancy
+        road, which is for what the photograph itself brought.
+
+        Refused rather than half-formed if it is given anything else to do: an
+        ask cannot both take a thing back and describe it.
+      */
+      if ((ask.words !== undefined && ask.words.trim() !== "") || ask.vacate || ask.remove) {
+        return {
+          ok: false, reason: "restateAlsoAsks", slot: ask.slot,
+          detail: `${ask.slot} is being taken back and also asked for; a slot cannot be undone and described in one render`,
+        };
+      }
+      if (ask.restate.taken.trim() === "") {
+        return {
+          ok: false, reason: "restateSaysNothing", slot: ask.slot,
+          detail: `${ask.slot} is being taken back with nothing named, so the verification would have no question to ask about it`,
+        };
+      }
+      wordStacks.set(ask.slot, []);
+      continue;
+    }
     if (ask.vacate) {
       /*
         A VACATE IS THE WHOLE ASK FOR ITS SLOT, and the two refusals below say
@@ -833,7 +908,7 @@ export function assembleRecipe(input: AssembleInput): AssembleResult {
   }
 
   return {
-    ok: true, references, edited, carried, vacated, wordStacks, sentences, standing, ask,
+    ok: true, references, edited, restated, carried, vacated, wordStacks, sentences, standing, ask,
     prompt: [...sentences, ...standing.map((entry) => entry.sentence), ask]
       .filter((line) => line !== "")
       .join(" "),

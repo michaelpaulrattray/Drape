@@ -103,6 +103,23 @@ export type RepaintAsksInput = {
    */
   accessoryKind?: string | null;
   /**
+   * WHAT THIS STEP TAKES BACK — a prune, named (V3(c), fable-536 §2).
+   *
+   * A prune deletes an earlier step and recomposes what is left, so it writes no
+   * facet and adds nothing: its delta is empty by construction, and this door
+   * refused it outright until now (`repaintCannotRemove`, whose own detail said
+   * the missing piece was the library stack not being derived from the chain's
+   * pruning — it is now, in `prunedCarries`).
+   *
+   * The slots come from the caller because only the service knows which steps
+   * were struck; the WORDS are what was taken back, and they exist so the
+   * verification has a question at the wire. A prune that arrived as an absence
+   * of asks would ship unverified on precisely the fact it exists to change.
+   *
+   * Absent on every ordinary render, where this changes nothing.
+   */
+  restate?: readonly { slot: FeatureSlot; taken: string }[];
+  /**
    * SLOTS WHOSE NEWEST VERSION HAS NO PIXELS, AND THE STATE TO RE-SAY THEM FROM
    * (fable-318 R2).
    *
@@ -536,7 +553,16 @@ export function repaintAsksFor(input: RepaintAsksInput): RepaintAsksResult {
     }
   }
 
-  if (order.length === 0 && presentation.length === 0) {
+  /*
+    A PRUNE'S OWN ASKS — named rather than arriving as an absence.
+
+    Built before the emptiness check below, because a prune legitimately writes
+    no facet: taking a step back IS the ask, and `nothingAsked` keeps meaning
+    exactly what it says (this step writes no facet AND takes nothing back).
+  */
+  const restated = (input.restate ?? []).filter((one) => one.taken.trim() !== "");
+
+  if (order.length === 0 && presentation.length === 0 && restated.length === 0) {
     /*
       AN EMPTY ASK LIST IS NOT AN EMPTY RENDER — it is a charge for nothing.
 
@@ -599,7 +625,12 @@ export function repaintAsksFor(input: RepaintAsksInput): RepaintAsksResult {
           ? { words: wordsBySlot.get(slot)!.join(", ") }
           : { vacate: { says } }),
       };
-    }),
+    }).concat(restated.map((one) => ({
+      slot: one.slot,
+      /* No noun and no words: the recipe says nothing about a taken-back slot,
+         and the assembler refuses one given anything else to do. */
+      restate: { taken: one.taken },
+    })) as never),
   };
 }
 
