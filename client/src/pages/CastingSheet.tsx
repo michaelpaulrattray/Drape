@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { keepPreviousData } from "@tanstack/react-query";
 import { useLocation, useRoute, useSearch } from "wouter";
 import { ArrowLeft, Sparkles } from "lucide-react";
 import { toast } from "sonner";
@@ -865,7 +866,25 @@ export default function CastingSheet() {
       candidateId: viewerCandidateId ?? "",
       variantId: variants.data?.selectedVariantId ?? null,
     },
-    { enabled: viewerRefinable && Boolean(viewerCandidateId) },
+    {
+      enabled: viewerRefinable && Boolean(viewerCandidateId),
+      /*
+        THE PANEL DOES NOT BLINK OUT WHEN A VERSION LANDS (fable-461/462).
+
+        The founder watched it: the panel was there mid-render, VANISHED the
+        moment the edit landed, and came back a few seconds later. The version
+        id is part of this query's key, so a landing is a NEW KEY — and a new
+        key has no data, so `facePanelData` fell to null and the whole column
+        unmounted. Nothing was broken; the panel was being asked a question it
+        had not answered yet, in front of somebody.
+
+        Holding the previous version's answer is the honest bridge: her face is
+        still her face while the new one is read, and the working line below
+        says a read is in flight. The alternative — an empty column for the
+        seconds a scan takes — is what he actually saw.
+      */
+      placeholderData: keepPreviousData,
+    },
   );
 
   /*
@@ -896,6 +915,10 @@ export default function CastingSheet() {
       enabled: viewerRefinable && Boolean(viewerCandidateId) && Boolean(face.data?.scanning),
       /* It never changes for a version — a new version is a new key. */
       staleTime: Infinity,
+      /* And the same bridge as the library read: the scanned rows of the
+         version she was looking at stay on screen while this version's are
+         read, rather than the column emptying for the seconds that takes. */
+      placeholderData: keepPreviousData,
     },
   );
 
@@ -914,7 +937,18 @@ export default function CastingSheet() {
     `face.data?.scanning` gates it too: outside the scan's scope the query never
     fires, so there is nothing to wait for and nothing to say.
   */
-  const faceScanWorking = Boolean(face.data?.scanning) && faceScan.isPending;
+  /*
+    AND IT SAYS SO WHILE IT IS BRIDGING (fable-461/462).
+
+    `placeholderData` keeps the last version's rows on screen across a landing,
+    which is the fix for the blink — and rows from the version before this one,
+    shown silently, would be the quieter version of the same lie. Either query
+    holding a placeholder means what is on screen was read of a different frame,
+    and the working line is exactly the sentence for that.
+  */
+  const faceScanWorking = (Boolean(face.data?.scanning) && faceScan.isPending)
+    || face.isPlaceholderData
+    || faceScan.isPlaceholderData;
   const scannedFaceData = faceScan.data?.enabled ? faceScan.data : null;
   const facePanelData = scannedFaceData ?? (face.data?.enabled ? face.data : null);
   const faceRows = facePanelData?.groups.flatMap((group) => group.rows) ?? [];
