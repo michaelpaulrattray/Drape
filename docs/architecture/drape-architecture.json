@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "3c9f06fca9e12d75"
+    "sourceFingerprint": "ac1d17a5a80633b8"
   },
   "domains": [
     {
@@ -18651,6 +18651,16 @@
     {
       "from": "module:server/castingV2/faceScan.ts",
       "to": "module:server/castingV2/referenceSlotCatalogue.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/faceScan.ts",
+      "to": "module:server/castingV2/refineFacets.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/faceScan.ts",
+      "to": "module:server/castingV2/refineSubjects.ts",
       "kind": "imports"
     },
     {

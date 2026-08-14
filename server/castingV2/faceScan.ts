@@ -63,11 +63,14 @@ import type { RegionReader } from "./maskedRefine";
 import type { FeatureSlot } from "./recipeAssembler";
 import {
   catalogueSlots,
+  facetsOfSlot,
   isAskable,
   isDerivedRegion,
   DERIVED_REGION_ASKS,
   type SlotDefinition,
 } from "./referenceSlotCatalogue";
+import { subjectsOfFacet } from "./refineFacets";
+import { isDepartableSubject } from "./refineSubjects";
 import { boundsOf } from "./segmentCuts";
 
 const log = createModuleLogger("castingV2/faceScan");
@@ -133,6 +136,36 @@ function armedQuestions(): ReadonlySet<string> {
  * having no question at all, which is the catalogue speaking rather than this
  * function deciding.
  */
+/**
+ * A FEATURE THAT CAN HONESTLY NOT BE THERE — derived, never listed (fable-530 §4).
+ *
+ * The re-ask below exists because *"she is in frame, looking at the camera, and
+ * an empty read of her LIPS is a missed reading rather than a fact"*. That
+ * reasoning is about features which are ALWAYS in frame. A beard, a tattoo, a
+ * pair of horns can simply be absent, and asking twice about a clean-shaven
+ * chin only makes the product careful twice — on every clean face, for ever.
+ *
+ * So the discriminator is the subject vocabulary's own `departable`, read
+ * through the slot's facets: a slot is "can be absent" when EVERY subject that
+ * writes into it can leave. That last word is load-bearing — `skin` holds
+ * `marks` (departable) beside `skinTone` and `skinCharacter` (not), and her
+ * skin is always in frame, so it keeps its second look.
+ *
+ * The accepted tradeoff, stated rather than discovered: a bearded face whose
+ * first read misses the beard now waits for the next scan instead of buying a
+ * second look. Chosen because the wasted call is EVERY clean face and the
+ * missed large feature is rare and self-corrects.
+ */
+function canBeAbsent(slot: SlotDefinition): boolean {
+  const facets = facetsOfSlot(slot.slot);
+  if (facets === null || facets.length === 0) return false;
+  const subjects = facets.flatMap((facet) => subjectsOfFacet(facet));
+  /* A slot no free subject writes into cannot be judged this way, so it keeps
+     today's behaviour rather than acquiring an exemption by silence. */
+  if (subjects.length === 0) return false;
+  return subjects.every((subject) => isDepartableSubject(subject));
+}
+
 export function scanPlan(): { feature: string; question: string; slots: SlotDefinition[] }[] {
   const armed = armedQuestions();
   const byQuestion = new Map<string, { feature: string; question: string; slots: SlotDefinition[] }>();
@@ -449,7 +482,8 @@ export async function scanFace(input: {
       same as today, and the distribution then says whether it is the segmenter
       or the frames — which three screenshots cannot.
     */
-    const anatomy = region.slots.every((slot) => slot.tier === "anatomy");
+    const anatomy = region.slots.every((slot) => slot.tier === "anatomy")
+      && !region.slots.every(canBeAbsent);
     const first = await read();
     if (first === "filed" || first === "failed" || first === "capability" || !anatomy) {
       if (first === "empty" || first === "capability") empty.push(region.question);

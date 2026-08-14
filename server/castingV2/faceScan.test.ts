@@ -206,6 +206,81 @@ describe("the scan files only what it measured", () => {
     expect(scan.boxes.has("earring@left")).toBe(false);
   });
 
+  /*
+    A DEPARTABLE FEATURE'S ABSENCE IS A FACT, NOT A MISS (fable-530 §4).
+
+    The re-ask's own reasoning is about features that are ALWAYS in frame —
+    "she is in frame, looking at the camera, and an empty read of her LIPS is a
+    missed reading". A beard, a tattoo or a pair of horns can simply not be
+    there, and asking twice about a clean-shaven chin makes the product careful
+    twice on every clean face, for ever.
+
+    Three arms, because a one-armed version of this would be a rule that turned
+    the re-ask off for everybody and passed.
+  */
+  it("asks a DEPARTABLE anatomy feature once when it is absent", async () => {
+    let looks = 0;
+    const scan = await scanFace({
+      describe: null,
+      frame: FRAME,
+      reader: reader({
+        region: (name) => {
+          if (name !== "horns") return maskOf({ x: 5, y: 5, width: 5, height: 5 });
+          looks += 1;
+          return EMPTY;
+        },
+      }),
+    });
+
+    expect(looks).toBe(1);
+    expect(scan.boxes.has("horns")).toBe(false);
+    expect(scan.empty).toContain("horns");
+  });
+
+  it("behaves exactly as before when that feature IS there", async () => {
+    /* The arm that matters most: the saving is a second look nobody needed,
+       not a first look somebody did. */
+    let looks = 0;
+    const scan = await scanFace({
+      describe: null,
+      frame: FRAME,
+      reader: reader({
+        region: (name) => {
+          if (name !== "horns") return maskOf({ x: 5, y: 5, width: 5, height: 5 });
+          looks += 1;
+          return maskOf({ x: 30, y: 10, width: 20, height: 40 });
+        },
+      }),
+    });
+
+    expect(looks).toBe(1);
+    expect(scan.boxes.has("horns")).toBe(true);
+  });
+
+  it("CONTROL — a feature that is ALWAYS in frame still gets its second look", async () => {
+    /*
+      `skin` is the case that keeps the derivation honest: it holds `marks`,
+      which IS departable, beside `skinTone` and `skinCharacter`, which are not
+      — and her skin is always in frame. A predicate reading "any departable
+      facet" would take the second look away from her whole face, so it reads
+      EVERY subject that writes into the slot.
+    */
+    let looks = 0;
+    await scanFace({
+      describe: null,
+      frame: FRAME,
+      reader: reader({
+        region: (name) => {
+          if (name !== "face skin") return maskOf({ x: 5, y: 5, width: 5, height: 5 });
+          looks += 1;
+          return EMPTY;
+        },
+      }),
+    });
+
+    expect(looks).toBe(2);
+  });
+
   it("turns a FAILED READING into no box, never into a fact", async () => {
     const scan = await scanFace({
       describe: null,
