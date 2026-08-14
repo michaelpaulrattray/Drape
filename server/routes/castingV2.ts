@@ -730,6 +730,17 @@ export const castingV2Router = router({
         selectedVariantId: face.variantPublicId,
         originalImageUrl: face.candidate.imageKey ? storagePublicUrl(face.candidate.imageKey) : null,
         /*
+          THE SMALL COPY, WHERE ONE EXISTS (fable-503).
+
+          `thumbKey ?? imageKey` is the caller's rule, not this projection's:
+          rows delivered before thumbnails existed have none, and a rail that
+          assumed one would draw nothing at all for every face already on the
+          record. So this says only what is true and the client falls back.
+        */
+        originalThumbUrl: face.candidate.thumbKey
+          ? storagePublicUrl(face.candidate.thumbKey)
+          : null,
+        /*
           WHAT IS STILL RUNNING, from the database rather than from the client's
           own mutation state (D-161).
 
@@ -782,6 +793,9 @@ export const castingV2Router = router({
         variants: variants.map((variant) => ({
           variantId: variant.publicId,
           imageUrl: variant.imageKey ? storagePublicUrl(variant.imageKey) : null,
+          /* The rail draws this and the viewer shows it while the full frame
+             decodes; null on every version delivered before fable-503. */
+          thumbUrl: variant.thumbKey ? storagePublicUrl(variant.thumbKey) : null,
           /* Their own words, returned to them — the only refinement text that
              crosses this boundary. */
           instructions: Array.isArray(variant.instructions)

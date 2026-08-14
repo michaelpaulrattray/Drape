@@ -506,3 +506,87 @@ describe("the render-fault detector, enforcing", () => {
     expect(refunds).toHaveLength(0);
   });
 });
+
+/**
+ * THE SMALL COPY, ON THE PAID PATH (fable-503).
+ *
+ * `thumbKey` has been on this row since the roll domain landed and nothing ever
+ * wrote one, so a sheet drew eight 90-pixel tiles by downloading eight full
+ * frames. These arms hold the two halves of the promise: a delivered face lands
+ * WITH one, and a face whose thumbnail cannot be made or stored lands anyway.
+ */
+describe("a delivered face gets a thumbnail", () => {
+  /** A real picture, because a thumbnail of `Buffer.from("image")` is null. */
+  const realFrame = async () => (await import("sharp")).default({
+    create: { width: 768, height: 1024, channels: 3, background: { r: 120, g: 90, b: 80 } },
+  }).png().toBuffer();
+
+  function engineDelivering(bytes: Buffer) {
+    return () => ({
+      id: "fal:test",
+      generateCandidate: vi.fn(async () => {
+        journal.push("dispatch");
+        return {
+          bytes,
+          contentType: "image/png",
+          latencyMs: 1,
+          provenance: { provider: "fal" as const, model: "openai/gpt-image-2", providerRef: "req" },
+        };
+      }),
+    });
+  }
+
+  it("stores a WebP beside the frame and lands its key on the row", async () => {
+    const stored: Array<{ key?: string; contentType: string }> = [];
+    const dependencies = {
+      ...(baseDependencies() as Record<string, unknown>),
+      engine: engineDelivering(await realFrame()),
+      storeImage: vi.fn(async (input: { bytes: Buffer; contentType: string; key?: string }) => {
+        stored.push({ key: input.key, contentType: input.contentType });
+        return { key: input.key ?? "casting-v2/candidates/frame.png" };
+      }),
+    } as never;
+
+    await createRoll(dependencies, INPUT);
+
+    /* Two writes a face: the frame, then its small copy at a key minted before
+       the write so the row can carry it. */
+    expect(stored.filter((write) => write.contentType === "image/webp")).toHaveLength(8);
+    expect(stored.filter((write) => write.contentType === "image/png")).toHaveLength(8);
+    const db = await import("../db/castingV2");
+    const landings = (db.landCandidate as unknown as { mock: { calls: any[][] } }).mock.calls;
+    expect(landings).toHaveLength(8);
+    for (const [landing] of landings) {
+      expect(landing.thumbKey, "every delivered face carries its small copy").toMatch(/\.webp$/);
+    }
+  });
+
+  it("DELIVERS ANYWAY when the thumbnail cannot be stored", async () => {
+    /* A face she paid for never fails because its small copy did not write. */
+    const dependencies = {
+      ...(baseDependencies() as Record<string, unknown>),
+      engine: engineDelivering(await realFrame()),
+      storeImage: vi.fn(async (input: { bytes: Buffer; contentType: string; key?: string }) => {
+        if (input.contentType === "image/webp") throw new Error("R2 said no");
+        return { key: "casting-v2/candidates/frame.png" };
+      }),
+    } as never;
+
+    const result = await createRoll(dependencies, INPUT);
+    expect(result.ready).toBe(8);
+    expect(result.refundedCredits).toBe(0);
+    const db = await import("../db/castingV2");
+    const landings = (db.landCandidate as unknown as { mock: { calls: any[][] } }).mock.calls;
+    for (const [landing] of landings) expect(landing.thumbKey).toBeNull();
+  });
+
+  it("DELIVERS ANYWAY when the bytes cannot be shrunk", async () => {
+    /* The suite's own default engine returns four bytes of text — the case that
+       proved the detector fails open, reused for the mint. */
+    const result = await createRoll(baseDependencies(), INPUT);
+    expect(result.ready).toBe(8);
+    const db = await import("../db/castingV2");
+    const landings = (db.landCandidate as unknown as { mock: { calls: any[][] } }).mock.calls;
+    for (const [landing] of landings) expect(landing.thumbKey).toBeNull();
+  });
+});

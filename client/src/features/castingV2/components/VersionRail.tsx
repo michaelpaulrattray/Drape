@@ -20,9 +20,13 @@
  * The direction is the only thing that changed, and it is CSS: the rail lays
  * the same steps in a column and scrolls itself when the chain is long.
  */
+import { chipSrc } from "../railThumb";
+
 export type RailVariant = {
   variantId: string;
   imageUrl: string | null;
+  /** The small copy the rail draws; null on versions delivered before it existed. */
+  thumbUrl?: string | null;
   instructions: string[];
   filedAs?: string[];
 };
@@ -37,6 +41,7 @@ export function VersionRail({
   pending,
   selectedVariantId,
   originalImageUrl,
+  originalThumbUrl,
   onSelect,
   /** `column` beside the picture, `row` under it — the same steps either way. */
   layout,
@@ -45,6 +50,8 @@ export function VersionRail({
   pending: readonly RailPending[];
   selectedVariantId: string | null;
   originalImageUrl: string | null;
+  /** The master's small copy, when it has one. */
+  originalThumbUrl?: string | null;
   onSelect: (variantId: string | null) => void;
   layout: "column" | "row";
 }) {
@@ -65,7 +72,9 @@ export function VersionRail({
           aria-label="The original"
           onClick={() => onSelect(null)}
         >
-          {originalImageUrl ? <img src={originalImageUrl} alt="" /> : null}
+          {chipSrc({ thumbUrl: originalThumbUrl, imageUrl: originalImageUrl })
+            ? <img src={chipSrc({ thumbUrl: originalThumbUrl, imageUrl: originalImageUrl })!} alt="" />
+            : null}
           <span>Original</span>
         </button>
       </div>
@@ -88,7 +97,15 @@ export function VersionRail({
               : variant.instructions.join(" · ")}
             onClick={() => onSelect(variant.variantId)}
           >
-            {variant.imageUrl ? <img src={variant.imageUrl} alt="" /> : null}
+            {/*
+              THE SMALL COPY, FALLING BACK TO THE FRAME (fable-503).
+
+              A 90-pixel chip used to download a ~2.6 MB PNG, eight times a
+              sheet, because `thumbKey` was a column nothing wrote. Versions
+              delivered before that have no thumbnail and must keep drawing —
+              the fallback is the arm, not the assumption.
+            */}
+            {chipSrc(variant) ? <img src={chipSrc(variant)!} alt="" /> : null}
             <span>{variant.instructions.at(-1)}</span>
           </button>
           {/*

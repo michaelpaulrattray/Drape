@@ -69,6 +69,7 @@ import { readBriefFacts } from "./rollProjection";
 import { createModuleLogger } from "../logging/logger";
 import { ProviderError, type ProviderFailureClass } from "../providers/types";
 import { storagePublicUrl, storagePut, storageReadBytes } from "../storage";
+import { thumbnailOf } from "./thumbnails";
 import { withTransaction } from "../db/connection";
 import { createStorageCleanupManifestIn } from "../db/storageCleanup";
 import {
@@ -3773,18 +3774,44 @@ export async function refineCandidate(
     const cleanupBatchId = randomUUID();
     const extension = image.contentType.includes("jpeg") ? "jpg" : "png";
     const destinationKey = `${VARIANT_KEY_PREFIX}/${randomUUID()}.${extension}`;
+    /*
+      AND A SMALL PICTURE BESIDE IT (fable-503).
+
+      Shrunk before the manifest is written so both keys are held by the same
+      register-before-write: a thumbnail put to a public key with nothing that
+      knows it exists is the same orphan as a frame, at a twentieth of the size
+      and none of the excuse. A frame that cannot be shrunk lands without one.
+    */
+    const thumb = await thumbnailOf({ bytes: image.bytes, prefix: VARIANT_KEY_PREFIX });
     await withTransaction((tx) => createStorageCleanupManifestIn(tx, {
       id: cleanupBatchId,
       userId: input.userId,
       operationId,
       kind: "casting_candidate_cleanup",
-      storageItems: [{ storageKey: destinationKey, storageBackend: "public_r2" }],
+      storageItems: [
+        { storageKey: destinationKey, storageBackend: "public_r2" },
+        ...(thumb ? [{ storageKey: thumb.key, storageBackend: "public_r2" as const }] : []),
+      ],
     }));
 
-    const stored = await (dependencies.storeImage ?? defaultStoreImage)({
+    const store = dependencies.storeImage ?? defaultStoreImage;
+    const stored = await store({
       key: destinationKey,
       bytes: image.bytes,
       contentType: image.contentType,
+    });
+    /* The thumbnail is a courtesy: a delivery she paid for never fails because
+       its small copy did not store. */
+    const thumbStored = thumb === null ? null : await store({
+      key: thumb.key,
+      bytes: thumb.bytes,
+      contentType: thumb.contentType,
+    }).then(() => thumb.key).catch((error) => {
+      log.warn(
+        { err: String(error).slice(0, 120), operationId },
+        "[refineService] the thumbnail did not store — the picture stands without one",
+      );
+      return null;
     });
 
     /*
@@ -4554,6 +4581,7 @@ export async function refineCandidate(
       operationId,
       variantId: variant.id,
       imageKey: stored.key,
+      thumbKey: thumbStored,
       internalPrompt: {
         prompt,
         /* Same source as the prompt, for the same reason. */

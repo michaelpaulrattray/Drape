@@ -94,6 +94,7 @@ export function RefinePanel({
   pending = [],
   selectedVariantId,
   originalImageUrl,
+  originalThumbUrl,
   priceCredits,
   busy,
   onRefine,
@@ -114,6 +115,8 @@ export function RefinePanel({
   /** Null means the original is the face. */
   selectedVariantId: string | null;
   originalImageUrl: string | null;
+  /** The master's small copy — the rail draws it where a version has one. */
+  originalThumbUrl?: string | null;
   priceCredits: number;
   /** A refine is in flight — for this face or any other on the sheet. */
   busy: boolean;
@@ -210,6 +213,7 @@ export function RefinePanel({
           pending={pending}
           selectedVariantId={selectedVariantId}
           originalImageUrl={originalImageUrl}
+          originalThumbUrl={originalThumbUrl ?? null}
           onSelect={onSelect}
           layout="row"
         />

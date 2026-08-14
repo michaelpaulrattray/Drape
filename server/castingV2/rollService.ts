@@ -66,6 +66,7 @@ import {
   touchCastingSession,
 } from "../db/castingV2";
 import { storageDelete, storagePut } from "../storage";
+import { thumbnailOf } from "./thumbnails";
 import { createModuleLogger } from "../logging/logger";
 import { detectRenderFault } from "./renderFault";
 import { ProviderError } from "../providers/types";
@@ -160,7 +161,16 @@ export type RollServiceDependencies = {
   begin?: typeof beginDirectOperation;
   markRunning?: typeof markGenerationOperationRunning;
   deduct?: typeof deductCredits;
-  storeImage?: (input: { bytes: Buffer; contentType: string }) => Promise<{ key: string }>;
+  /**
+   * Writes a delivered picture and answers where it went.
+   *
+   * `key` is optional and the difference is the thumbnail's: a frame's key is
+   * minted by the writer, while a thumbnail's is minted BEFORE the write so the
+   * same key can be registered, held and discharged with its frame's.
+   */
+  storeImage?: (
+    input: { bytes: Buffer; contentType: string; key?: string },
+  ) => Promise<{ key: string }>;
 };
 
 export type CreateRollInput = {
@@ -195,8 +205,12 @@ export type RollResult = {
   failed: number;
 };
 
-async function defaultStoreImage(input: { bytes: Buffer; contentType: string }) {
+async function defaultStoreImage(input: { bytes: Buffer; contentType: string; key?: string }) {
   const extension = input.contentType === "image/jpeg" ? "jpg" : "png";
+  if (input.key) {
+    const written = await storagePut(input.key, input.bytes, input.contentType);
+    return { key: written.key };
+  }
   // Cryptographic UUID keys, never a pseudo-random source: a guessable key is
   // the only thing standing between a public-bucket candidate image and
   // anyone who guesses it. (The repo-wide guard rejects the weak API by name
@@ -717,10 +731,33 @@ async function dispatchCandidate(input: {
     const store = input.dependencies.storeImage ?? defaultStoreImage;
     const stored = await store({ bytes: image.bytes, contentType: image.contentType });
 
+    /*
+      AND A SMALL PICTURE BESIDE IT (fable-503).
+
+      `thumbKey` has been on this row since the roll domain landed and nothing
+      has ever written one, so every sheet draws eight 90-pixel tiles by
+      downloading eight full frames. A courtesy, never a condition: a face she
+      paid for does not fail because its small copy did not encode or store, so
+      both failures land as `null` and the row is exactly what it was.
+    */
+    const thumb = await thumbnailOf({ bytes: image.bytes, prefix: CANDIDATE_KEY_PREFIX });
+    const thumbKey = thumb === null ? null : await store({
+      key: thumb.key,
+      bytes: thumb.bytes,
+      contentType: thumb.contentType,
+    }).then((written) => written.key).catch((error) => {
+      log.warn(
+        { err: String(error).slice(0, 120), candidate: candidate.publicId },
+        "[rollService] the thumbnail did not store — the face stands without one",
+      );
+      return null;
+    });
+
     const landing = await landCandidate({
       userId,
       candidateId: candidate.id,
       imageKey: stored.key,
+      thumbKey,
       provider: image.provenance.provider,
       providerModel: image.provenance.model,
       providerRef: image.provenance.providerRef ?? null,

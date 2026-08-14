@@ -46,6 +46,15 @@ export type ChosenFrame = {
   candidateId: string;
   /** The picture they chose — a URL the rail already holds. */
   url: string;
+  /**
+   * Its small copy, if that version has one (fable-503).
+   *
+   * The rail drew this chip, so it is already in the browser: the viewer shows
+   * it in the same frame as the click and sharpens when the full picture
+   * decodes. Null for a version delivered before thumbnails existed, and then
+   * the viewer holds the previous frame exactly as it did.
+   */
+  previewUrl?: string | null;
   /** The picture that was on screen when they chose it. */
   insteadOf: string;
 };

@@ -2757,6 +2757,80 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
     painted.length = 0;
   });
 
+  /**
+   * THE SMALL COPY IS HELD BY THE SAME MANIFEST AS THE FRAME (fable-503).
+   *
+   * A thumbnail put to a public key with nothing that knows it exists is the same
+   * orphan as a frame — a picture of a person at a permanent URL that no row can
+   * ever purge — at a twentieth of the size and none of the excuse. So it is
+   * registered BEFORE the write, in the same batch, and discharged with it.
+   */
+  describe("the thumbnail of a delivered version", () => {
+    const realFrame = async () => (await import("sharp")).default({
+      create: { width: 640, height: 960, channels: 3, background: { r: 90, g: 80, b: 70 } },
+    }).png().toBuffer();
+
+    it("is registered with the frame and lands on the row", async () => {
+      const cleanup = await import("../db/storageCleanup");
+      const variants = await import("../db/castingV2Variants");
+      (cleanup.createStorageCleanupManifestIn as any).mockClear();
+      (variants.landVariant as any).mockClear();
+
+      const stored: Array<{ key: string; contentType: string }> = [];
+      await refineCandidate({
+        ...hairDown,
+        /* A REAL picture: the suite's standard engine answers four bytes of
+           text, and a thumbnail of that is correctly null. */
+        repaintEngine: () => ({
+          id: "test:repaint",
+          edit: async (request: { width: number; height: number }) => {
+            journal.push("repaint");
+            return {
+              bytes: await realFrame(),
+              contentType: "image/png",
+              width: request.width,
+              height: request.height,
+              latencyMs: 10,
+              provenance: { provider: "fal" as const, model: "gpt-image-2", providerRef: "req-r" },
+            };
+          },
+        }),
+        storeImage: async (ask: any) => {
+          stored.push({ key: ask.key, contentType: ask.contentType });
+          return { key: ask.key, url: `https://cdn.example/${ask.key}` };
+        },
+      } as never, { ...input, instruction: "wear her hair down" });
+
+      const manifest = (cleanup.createStorageCleanupManifestIn as any).mock.calls.at(-1)?.[1];
+      const held = (manifest?.storageItems ?? []).map((item: any) => item.storageKey);
+      /* BOTH keys, before either object exists. */
+      expect(held.filter((key: string) => key.endsWith(".webp"))).toHaveLength(1);
+      expect(held.length).toBe(2);
+      /* And every key the manifest holds is one the writer actually used. */
+      for (const key of held) expect(stored.map((write) => write.key)).toContain(key);
+
+      const landing = (variants.landVariant as any).mock.calls.at(-1)?.[0];
+      expect(landing?.thumbKey).toMatch(/\.webp$/);
+      expect(held).toContain(landing?.thumbKey);
+    });
+
+    it("lands WITHOUT one when the frame cannot be shrunk, and holds only the frame", async () => {
+      const cleanup = await import("../db/storageCleanup");
+      const variants = await import("../db/castingV2Variants");
+      (cleanup.createStorageCleanupManifestIn as any).mockClear();
+      (variants.landVariant as any).mockClear();
+
+      await refineCandidate(hairDown, { ...input, instruction: "wear her hair down" });
+
+      const manifest = (cleanup.createStorageCleanupManifestIn as any).mock.calls.at(-1)?.[1];
+      const held = (manifest?.storageItems ?? []).map((item: any) => item.storageKey);
+      /* One key, not two — a manifest naming an object nobody will ever write is
+         a purge that reports work it did not do. */
+      expect(held).toHaveLength(1);
+      expect((variants.landVariant as any).mock.calls.at(-1)?.[0]?.thumbKey).toBeNull();
+    });
+  });
+
   it("THE DEGENERATE CASE: an empty library sends the master alone, plus words", async () => {
     /* fable-171 condition 1 — the road every new cast travels, and the first
        fixture here for exactly that reason. It is not a special case in the

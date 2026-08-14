@@ -323,6 +323,8 @@ export async function landVariant(input: {
   operationId: string;
   variantId: number;
   imageKey: string;
+  /** The small copy for rails and first paints, when one could be made. */
+  thumbKey?: string | null;
   /**
    * The manifest holding this object until this transaction discharges it.
    *
@@ -379,6 +381,7 @@ export async function landVariant(input: {
       .set({
         status: "ready",
         imageKey: input.imageKey,
+        thumbKey: input.thumbKey ?? null,
         internalPrompt: input.internalPrompt,
         provider: input.provider,
         providerModel: input.providerModel,

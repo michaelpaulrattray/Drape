@@ -786,6 +786,13 @@ export default function CastingSheet() {
         serverUrl: candidate.imageUrl as string,
         chosen: chosenFrame,
       }),
+      /* Only the picked version's own small copy — a thumbnail of the frame
+         BEFORE the switch would be the previous picture wearing this one's
+         name, which is the error the decode gate exists to avoid. */
+      previewUrl: chosenFrame?.candidateId === candidate.candidateId
+        && candidate.imageUrl === chosenFrame.insteadOf
+        ? chosenFrame.previewUrl ?? null
+        : null,
       label: candidate.indexLabel,
       personaLine: candidate.personaLine,
       downloadName: `candidate-${candidate.indexLabel}`,
@@ -1005,14 +1012,25 @@ export default function CastingSheet() {
       also carries the face scan. Claiming it now takes the photograph off that
       batch's critical path entirely.
     */
-    const picked = variantId === null
-      ? variants.data?.originalImageUrl ?? null
-      : variants.data?.variants.find((entry) => entry.variantId === variantId)?.imageUrl ?? null;
+    const chosen = variantId === null
+      ? { url: variants.data?.originalImageUrl ?? null, thumb: variants.data?.originalThumbUrl ?? null }
+      : (() => {
+        const entry = variants.data?.variants.find((row) => row.variantId === variantId);
+        return { url: entry?.imageUrl ?? null, thumb: entry?.thumbUrl ?? null };
+      })();
+    const picked = chosen.url;
     const showing = candidates.find(
       (candidate) => candidate.candidateId === viewerCandidateId,
     )?.imageUrl ?? null;
     if (picked && showing && picked !== showing) {
-      setChosenFrame({ candidateId: viewerCandidateId, url: picked, insteadOf: showing });
+      setChosenFrame({
+        candidateId: viewerCandidateId,
+        url: picked,
+        /* The chip they clicked is already in the browser, so the viewer can
+           show the right picture immediately and sharpen in place. */
+        previewUrl: chosen.thumb,
+        insteadOf: showing,
+      });
     }
     void chooseVariant
       .mutateAsync({ candidateId: viewerCandidateId, variantId })
@@ -1954,6 +1972,7 @@ export default function CastingSheet() {
               pending={variants.data?.pending ?? []}
               selectedVariantId={variants.data?.selectedVariantId ?? null}
               originalImageUrl={variants.data?.originalImageUrl ?? null}
+              originalThumbUrl={variants.data?.originalThumbUrl ?? null}
               onSelect={selectVariant}
               layout="column"
             />
@@ -1987,6 +2006,7 @@ export default function CastingSheet() {
               pending={variants.data?.pending ?? []}
               selectedVariantId={variants.data?.selectedVariantId ?? null}
               originalImageUrl={variants.data?.originalImageUrl ?? null}
+              originalThumbUrl={variants.data?.originalThumbUrl ?? null}
               priceCredits={refinePrice}
               /*
                 BUSY IS SERVER TRUTH TOO (D-161). `refine.isPending` alone dies

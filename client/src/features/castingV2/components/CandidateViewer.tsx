@@ -35,6 +35,14 @@ import { Download, X } from "lucide-react";
  */
 export type ViewerFrame = {
   url: string;
+  /**
+   * A small copy of THIS frame, shown while the full one decodes (fable-503).
+   *
+   * Absent on a frame with no thumbnail — every version delivered before
+   * thumbnails existed — and then the viewer holds the previous picture, which
+   * is what it did before there was anything smaller to show.
+   */
+  previewUrl?: string | null;
   /** Shown in the caption chrome: "03", "Close-up", "Master". */
   label: string;
   /** The second caption line, where there is one. */
@@ -159,7 +167,18 @@ function useShownFrame(frame: ViewerFrame): ViewerFrame {
     return () => { live = false; };
   }, [frame, shown]);
 
-  return frame.url === shown.url ? frame : shown;
+  /*
+    AND WHILE IT DECODES, THE SMALL COPY OF THE RIGHT PICTURE (fable-501 §a,
+    buildable now that fable-503 mints one).
+
+    Holding the PREVIOUS frame was the honest answer while the rail's chips
+    were the full pictures — there was no smaller asset to show. With one, the
+    viewer can show what they clicked immediately, soft, and sharpen in place:
+    the same frame, the same box, no blank and no layout shift. Without one
+    (every version delivered before thumbnails) this is exactly what it was.
+  */
+  if (frame.url === shown.url) return frame;
+  return frame.previewUrl ? { ...frame, url: frame.previewUrl } : shown;
 }
 
 export function CandidateViewer({
