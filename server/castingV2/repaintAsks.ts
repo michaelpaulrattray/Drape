@@ -58,7 +58,7 @@ import type { EyeColour, EyeShape, HairTexture } from "../../shared/castingReali
 import type { HairColour } from "../../shared/castingVocabularies";
 
 import { facetOfAxis, facetOfSubject, type Facet } from "./refineFacets";
-import { itemsOf, facetsWrittenBy, type RefineDelta } from "./refineDelta";
+import { itemsOf, facetsAnsweredBy, facetsWrittenBy, type RefineDelta } from "./refineDelta";
 import {
   PRESENTATION_SUBJECTS, presentationNounOf, type FreeSubject,
 } from "./refineSubjects";
@@ -287,6 +287,52 @@ function statePhrase(
  * render (fable-174) and two asks for one slot would be two instructions about
  * one feature.
  */
+/**
+ * IS EVERY FACET THIS ASK WRITES OUTSIDE THE PART SHE POINTED AT?
+ *
+ * # The charge this deletes
+ *
+ * The founder tapped the panel's EARS row and asked for a cauliflower ear. The
+ * reading filed it as a MARK; marks have no slot inside an ear; and
+ * {@link repaintAsksFor} refused with `notASlot` — correctly, and AFTER the
+ * claim, so he was charged 25 credits and refunded them in the same second and
+ * told nothing useful (fable-471, fable-489 §3).
+ *
+ * The service's own comment said this could not be judged earlier "because
+ * nothing has been interpreted at this point". That premise expired: the parse
+ * now happens well before the claim, so the same fact is knowable while the
+ * refusal is still free.
+ *
+ * # It is deliberately NARROWER than the door it pre-empts
+ *
+ * `repaintAsksFor` refuses on the FIRST facet with no slot in scope. This
+ * refuses only when EVERY answered facet is outside — so a scoped ask with one
+ * facet inside proceeds exactly as it does today and meets the late door
+ * unchanged. And a facet whose slots depend on an accessory kind this caller
+ * cannot supply is not judged at all: cannot-tell must not become a refusal.
+ *
+ * The late door STAYS. This one is an early exit for the money, not a
+ * replacement for the guard (law 3: the backstop keeps its own drive).
+ */
+export function scopedAskIsUnsayable(input: {
+  delta: RefineDelta;
+  scope: FeatureSlot;
+  accessoryKind?: string | null;
+}): { unsayable: true; facets: Facet[] } | { unsayable: false } {
+  const answered: Facet[] = Array.from(facetsAnsweredBy(input.delta));
+  if (answered.length === 0) return { unsayable: false };
+  const outside: Facet[] = [];
+  for (const facet of answered) {
+    const slots = slotsForFacet(facet, { accessoryKind: input.accessoryKind ?? null });
+    /* No slots at all without the kind: this caller cannot judge it, and a
+       cannot-tell may not spend the customer's refusal. */
+    if (slots.length === 0) return { unsayable: false };
+    if (narrowToScope(slots, input.scope).length > 0) return { unsayable: false };
+    outside.push(facet);
+  }
+  return { unsayable: true, facets: outside };
+}
+
 export function repaintAsksFor(input: RepaintAsksInput): RepaintAsksResult {
   const order: FeatureSlot[] = [];
   const wordsBySlot = new Map<FeatureSlot, string[]>();

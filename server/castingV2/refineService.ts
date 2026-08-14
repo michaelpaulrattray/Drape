@@ -166,7 +166,9 @@ import {
   facetsOfSlot, slotDefinition, slotsForFacet, slotsForFeature, type SlotDefinition,
 } from "./referenceSlotCatalogue";
 import { repaint, type ReferenceFitter, type RepaintEngine, type SentRequest } from "./repaintRender";
-import { RepaintCannotSayError, repaintAsksFor, repaintCannotRemove } from "./repaintAsks";
+import {
+  RepaintCannotSayError, repaintAsksFor, repaintCannotRemove, scopedAskIsUnsayable,
+} from "./repaintAsks";
 import { cannotSaySentence, likenessSetAsideNote } from "./cannotSayCopy";
 import { padToFrame, studioBackgroundOf, type StudioBackground } from "./referenceFit";
 import { pronounsForSex } from "./castPronouns";
@@ -2256,6 +2258,50 @@ export async function refineCandidate(
           instructions: readInstructions(predecessorForParse?.instructions),
         };
       }
+    }
+  }
+
+  /*
+    AND A SCOPED ASK THE ROAD CANNOT PLACE IS REFUSED HERE — FREE (fable-489 §3).
+
+    The founder tapped the panel's EARS row and asked for a cauliflower ear. The
+    reading filed it as a MARK, marks have no slot inside an ear, and the
+    repaint's own door refused it — correctly, and after the claim, so he was
+    charged 25 credits and refunded them in the same second.
+
+    This service's comment said the narrow half "cannot be judged yet, because
+    nothing has been interpreted at this point". That premise expired when the
+    parse moved ahead of the claim: the same fact is knowable while the refusal
+    is still free, and a refusal that costs nothing is strictly better for her
+    than one that costs a charge and a refund.
+
+    Narrower than the door it pre-empts, on purpose (see
+    `scopedAskIsUnsayable`): it fires only when EVERY answered facet is outside
+    the scope, and never when the judgment would need an accessory kind this
+    point does not have. The late door STAYS and keeps its own drive — an early
+    exit for the money is not a replacement for the guard.
+  */
+  if (input.scope !== undefined && editDelta) {
+    const outside = scopedAskIsUnsayable({ delta: editDelta, scope: input.scope });
+    if (outside.unsayable) {
+      const scoped = slotDefinition(input.scope);
+      const scopeNoun = scoped
+        ? `${pronounsForSex(currentIdentity?.sex).possessive} ${scoped.noun}`
+        : null;
+      log.info(
+        { candidateId: input.candidatePublicId, instruction, scope: input.scope, facets: outside.facets },
+        "[refineService] the reading landed outside the part she pointed at — refusing before the claim",
+      );
+      throw new TRPCError({
+        code: "BAD_REQUEST",
+        message: cannotSaySentence("notASlot", {
+          words: null,
+          facet: outside.facets[0] ?? null,
+          scopeNoun,
+          /* Nothing has been claimed at this line — the whole point of it. */
+          moneySafe: true,
+        }),
+      });
     }
   }
 

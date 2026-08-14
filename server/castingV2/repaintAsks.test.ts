@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { repaintAsksFor, repaintCannotRemove, type EditProse } from "./repaintAsks";
+import { scopedAskIsUnsayable, repaintAsksFor, repaintCannotRemove, type EditProse } from "./repaintAsks";
 import { assembleRecipe } from "./recipeAssembler";
 import type { CastPronouns } from "./castPronouns";
 
@@ -134,6 +134,50 @@ describe("one step's delta becomes the recipe's asks", () => {
     if (result.ok) return;
     expect(result.reason).toBe("notASlot");
     expect(result.facet).toBe("eye.colour");
+  });
+
+  /*
+    THE BACKSTOP KEEPS ITS OWN DRIVE (fable-489 §3c).
+
+    The service now refuses this shape BEFORE the claim, which means the late
+    door would never be reached through the front door again — and a backstop
+    tested only through a well-behaved front door is untested (law 3). So it is
+    driven here, directly, on the founder's own shape: his cauliflower ear read
+    as a MARK with the scope on an ear.
+  */
+  it("still refuses a scoped ask whose facet has no slot in the scope", () => {
+    const result = repaintAsksFor({
+      delta: { free: { marks: ["cauliflower ear on her left ear"] } },
+      prose,
+      scope: "ear@left",
+    });
+
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.reason).toBe("notASlot");
+    expect(result.facet).toBe("marks");
+  });
+
+  /*
+    AND THE EARLY DOOR IS NARROWER THAN THIS ONE, which is what stops it
+    over-refusing: it fires only when EVERY answered facet is outside the scope.
+  */
+  it("the early predicate says nothing about an ask with one facet INSIDE the scope", () => {
+    const both = { eyeColour: "green" as const, free: { marks: ["a scar"] } };
+    expect(scopedAskIsUnsayable({ delta: both, scope: "eye@left" }).unsayable).toBe(false);
+    /* And it agrees with the door when nothing is inside. */
+    expect(scopedAskIsUnsayable({ delta: { free: { marks: ["a scar"] } }, scope: "ear@left" }))
+      .toMatchObject({ unsayable: true, facets: ["marks"] });
+  });
+
+  it("the early predicate declines to judge what needs an accessory kind it has not got", () => {
+    /* Cannot-tell must not become a refusal: without the kind, a stated
+       accessory has no slots to narrow, so the early door stands down and the
+       late one decides with the kind in hand. */
+    expect(scopedAskIsUnsayable({
+      delta: { free: { statedAccessories: ["a gold hoop"] } },
+      scope: "eye@left",
+    }).unsayable).toBe(false);
   });
 
   it("leaves an unscoped ask exactly as it was", () => {

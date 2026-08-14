@@ -2322,7 +2322,50 @@ describe("a removal with no removal word is re-read as an edit", () => {
       expect(reader.asked).toEqual(["her tiara"]);
     });
 
-    it("charges nothing either way", async () => {
+    /*
+    A SCOPED ASK THE ROAD CANNOT PLACE IS REFUSED BEFORE THE MONEY
+    (fable-489 §3) — his ear, with the charge deleted.
+
+    He tapped the panel's EARS row and asked for a cauliflower ear; the reading
+    filed it as a MARK; marks have no slot inside an ear. The repaint's door
+    refused it correctly and AFTER the claim, so he was charged 25 and refunded
+    in the same second.
+  */
+  it("refuses a scoped ask whose reading landed elsewhere — and writes NO ledger row", async () => {
+    briefWorn = null;
+    await expect(refineCandidate({ harvest: unmasked,
+        interpret: async () => ({
+          ok: true as const,
+          delta: { free: { marks: ["cauliflower ear on her left ear"] } },
+        }),
+      } as never,
+      { ...input, instruction: "her left ear — has cauliflower ear", scope: "ear@left" },
+    )).rejects.toThrow(/her left ear/);
+
+    /* THE MONEY PROOF, on the ledger rather than on the log (fable-489 §3b). */
+    expect(ledger.charges, "nothing was charged").toHaveLength(0);
+    expect(ledger.refunds, "so nothing had to be given back").toHaveLength(0);
+    expect(journal, "and nothing was claimed").not.toContain("claim");
+  });
+
+  it("CONTROL — a scoped ask that DOES belong to the scope proceeds and charges", async () => {
+    /*
+      The new door must not over-refuse (the misaimed-guard lesson: keep the
+      negative control after the positive passes). An eye colour asked with an
+      eye scope has a slot inside that scope, so it renders and charges exactly
+      as it did before this door existed.
+    */
+    briefWorn = null;
+    await refineCandidate({ harvest: unmasked,
+        interpret: async () => ({ ok: true as const, delta: { eyeColour: "green" as const } }),
+      } as never,
+      { ...input, instruction: "her left eye — green", scope: "eye@left" },
+    );
+    expect(ledger.charges, "charged once, exactly as before").toHaveLength(1);
+    expect(journal).toContain("generate");
+  });
+
+  it("charges nothing either way", async () => {
       briefWorn = null;
       await expect(refineCandidate({ harvest: unmasked,
           interpret: async () => ({
