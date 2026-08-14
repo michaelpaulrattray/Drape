@@ -893,6 +893,40 @@ for (const theme of THEMES) {
       `${collapsed?.rowButtons} row button(s), chevron says "${collapsed?.label}"`,
     );
 
+    /*
+      AND IT DRAWS IN THE SURFACE'S OWN INK, IN BOTH THEMES (founder,
+      fable-476/477).
+
+      His two sentences did the whole diagnosis: *"why is it black, shouldn't it
+      be white like everything else"* and *"on the dark theme i can see it
+      because its white like it should be."* The chevron took `color: inherit`,
+      which walks up to the app's THEME text colour — and this panel sits on the
+      viewer's scrim, which is dark in both themes.
+
+      The assertion is the CLASS rather than the instance and it names no token:
+      an affordance on this surface must draw in the same light ink its
+      neighbours do, whatever the theme is set to. A token rename cannot break
+      it and a re-flipped colour cannot pass it.
+    */
+    const ink = await page.evaluate(`(() => {
+      const read = (selector) => {
+        const node = document.querySelector(selector);
+        return node ? getComputedStyle(node).color : null;
+      };
+      return { chevron: read(".dpc-face__open"), label: read(".dpc-face__name") };
+    })()`) as { chevron: string | null; label: string | null };
+    const luminance = (colour: string | null): number => {
+      const parts = /rgba?\((\d+),\s*(\d+),\s*(\d+)/.exec(colour ?? "");
+      if (!parts) return -1;
+      const [r, g, b] = [Number(parts[1]), Number(parts[2]), Number(parts[3])];
+      return (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+    };
+    check(
+      ink.chevron !== null && ink.chevron === ink.label && luminance(ink.chevron) > 0.8,
+      `${theme}: the chevron draws in the same light ink as the labels beside it`,
+      `chevron ${ink.chevron} · label ${ink.label} · luminance ${luminance(ink.chevron).toFixed(2)}`,
+    );
+
     await page.click(".dpc-face__rows > li .dpc-face__open").catch(() => null);
     await new Promise((resolve) => setTimeout(resolve, 150));
     const expanded = await page.evaluate(`(() => {

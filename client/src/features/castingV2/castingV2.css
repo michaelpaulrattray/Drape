@@ -2841,7 +2841,8 @@
   border: 0;
   border-radius: 10px;
   background: transparent;
-  color: inherit;
+  /* And the v1 list on the same scrim, for the same reason. */
+  color: var(--onScrim);
   text-align: left;
   cursor: pointer;
 }
@@ -3032,7 +3033,10 @@
   border: 0;
   border-radius: 10px;
   background: transparent;
-  color: inherit;
+  /* THE SAME SWEEP (law 7): this inherited the flipping theme ink too, and
+     escaped the founder's eye only because every word inside it sets its own
+     colour. A bare string added here later would have gone black. */
+  color: var(--onScrim);
   text-align: left;
   cursor: pointer;
 }
@@ -3069,28 +3073,51 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 22px;
-  height: 22px;
+  width: 24px;
+  height: 24px;
   padding: 0;
   border: 0;
   border-radius: 6px;
   background: transparent;
-  color: inherit;
+  /*
+    THE SURFACE'S OWN INK, NEVER THE THEME'S (founder, fable-476/477).
+
+    His words: *"that chevron is basically invisible also in the light theme —
+    why is it black, shouldn't it be white like everything else"*, and then the
+    diagnosis in his next line: *"on the dark theme i can see it because its
+    white like it should be."*
+
+    `color: inherit` walks up to the app's theme text colour, which FLIPS —
+    while this panel sits on the viewer's scrim, which is dark in BOTH themes.
+    Every label beside it takes `--onScrim` and stays white; the one glyph that
+    inherited went black on a black surface in the light theme, and the founder
+    asked twice why a dropdown he was looking at was not a dropdown.
+  */
+  color: var(--onScrim);
   /*
     Quiet, but legible — the row is the subject and this is furniture, and
     furniture nobody can see is not restraint. Read off the first shots at
     10px/0.45, where it photographed as a speck (law 6: looked at, then
     changed).
+
+    12px/0.6 was the second reading of the same law, and it FAILED IN THE FIELD:
+    the founder asked *"didn't you say the eyes was suppose to be a dropdown?"*
+    while looking straight at one (fable-475 §1). A screenshot said legible; a
+    person said invisible, and the person is the instrument that matters.
+
+    14px/0.8 in a 24px target is the third reading. Still furniture — no
+    border, no fill, no label — but at the size a glyph has to be before an eye
+    walking a list stops on it.
   */
-  opacity: 0.6;
-  font-size: 12px;
+  opacity: 0.8;
+  font-size: 14px;
   line-height: 1;
   cursor: pointer;
 }
 
 .dpc-face__open:hover,
 .dpc-face__open[aria-expanded="true"] {
-  opacity: 0.9;
+  opacity: 1;
 }
 
 .dpc-face__open:focus-visible {
