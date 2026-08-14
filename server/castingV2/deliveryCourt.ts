@@ -165,8 +165,35 @@ export type DeliveryVerdict =
     change: number;
     anchorRatio: number;
     deliveredRatio: number;
+    /**
+     * THE ANCHOR SATURATED, so the change is a FLOOR rather than a figure.
+     *
+     * She filled the frame before and does not now. The true narrowing is at
+     * least what was measured — the anchor's real span is somewhere past the
+     * frame edge — so a reading that clears the bar clears it by more than it
+     * says. Carried onto the record because "10% narrower" and "at least 10%
+     * narrower" are different claims and only one of them is true here.
+     */
+    anchorClipped?: true;
   }
-  | { settled: false; declined: DeliveryDeclined; change?: number };
+  | {
+    settled: false;
+    declined: DeliveryDeclined;
+    change?: number;
+    /**
+     * WHAT THE RULER ACTUALLY READ, on a verdict that settled nothing.
+     *
+     * A decline used to record its reason and nothing else, and that is how
+     * candidate 1604's `"declined": "clipped"` reached this shift with no way
+     * to tell WHICH end was clipped or by how much — the founder's own
+     * disputed build, unanswerable from its own record. A reason with no
+     * reading behind it is the shape D-235 forbids in the other direction.
+     */
+    anchorRatio?: number;
+    deliveredRatio?: number;
+    anchorClipped?: boolean;
+    deliveredClipped?: boolean;
+  };
 
 /**
  * WHAT THE ROW AND THE LOG BOTH CARRY — both verdicts, never one.
@@ -204,14 +231,50 @@ export function adjudicateDelivery(input: {
        thing that can overrule anybody (D-235). */
     return { settled: false, declined: "noReading" };
   }
-  /* A silhouette touching both frame edges saturates the span at the frame
-     width, so the same number arrives for every build there is. `buildSpan`
-     reports that rather than hiding it, and a saturated reading may not
-     adjudicate: the change could be any size behind the clip. */
-  if (input.anchor.clipped || input.delivered.clipped) {
-    return { settled: false, declined: "clipped" };
-  }
+  const readings = {
+    anchorRatio: input.anchor.ratio,
+    deliveredRatio: input.delivered.ratio,
+    anchorClipped: input.anchor.clipped,
+    deliveredClipped: input.delivered.clipped,
+  };
   const change = (input.delivered.ratio - input.anchor.ratio) / input.anchor.ratio;
+  /*
+    A SILHOUETTE TOUCHING BOTH FRAME EDGES saturates the span at the frame
+    width, so the same number arrives for every build there is. A saturated
+    DELIVERED reading may not adjudicate: the change could be any size behind
+    the clip.
+  */
+  if (input.delivered.clipped) {
+    return { settled: false, declined: "clipped", change, ...readings };
+  }
+  /*
+    BUT CLIPPED → UNCLIPPED IS ITSELF A NARROWING (fable-468 §2).
+
+    This declined on either end, and that cost the product its biggest wins:
+    a larger woman FILLS the frame, so her master's span saturates, so the one
+    ask this facet exists for — slimming her — could never be adjudicated. The
+    founder's own disputed build is the specimen.
+
+    The asymmetry is what makes it safe. A clipped anchor means her true span
+    is at least the frame width, so the measured change UNDERSTATES the real
+    narrowing; a measurement that clears the bar clears it by more than it
+    says. The direction is required for the same reason it is safe: only a
+    NARROWING is provable this way, because a ratio that rose could have risen
+    on a smaller head rather than on wider shoulders.
+  */
+  if (input.anchor.clipped) {
+    if (change >= 0) return { settled: false, declined: "clipped", change, ...readings };
+    if (Math.abs(change) < input.court.positive) {
+      return { settled: false, declined: "belowBar", change, ...readings };
+    }
+    return {
+      settled: true,
+      change,
+      anchorRatio: input.anchor.ratio,
+      deliveredRatio: input.delivered.ratio,
+      anchorClipped: true,
+    };
+  }
   /*
     THE MAGNITUDE, NOT THE DIRECTION.
 
@@ -225,7 +288,7 @@ export function adjudicateDelivery(input: {
     is narrower than "the ask landed as asked".
   */
   if (Math.abs(change) < input.court.positive) {
-    return { settled: false, declined: "belowBar", change };
+    return { settled: false, declined: "belowBar", change, ...readings };
   }
   return {
     settled: true,

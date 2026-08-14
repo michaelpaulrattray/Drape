@@ -5916,3 +5916,132 @@ describe("the render tells the library what it made of her", () => {
     expect(mintAsks).toHaveLength(0);
   });
 });
+
+/**
+ * THE CARRIER A SLOT NEVER GOT, AT THE SERVICE'S OWN WIRE (fable-468 §2).
+ *
+ * `mintedSlots.test.ts` proves the rule; invariant 7 is why this exists: a
+ * control nothing invokes does not exist, and the two inputs the rule needs —
+ * the slots still awaiting a carrier, and the facets THIS render's reader
+ * confirmed without being asked — are both derived here, in the service, from
+ * reads that were already happening.
+ */
+describe("a later confirmation rescues a refused carrier", () => {
+  /** A carry row with a verdict and no pixels — the shape v#184 filed. */
+  const refusedBuildRow = {
+    id: 9,
+    publicId: "ref-build",
+    candidateId: 1,
+    variantId: 184,
+    role: "carry",
+    slot: "build",
+    tier: "body",
+    noun: "build",
+    words: [],
+    storageKey: null,
+    maskKey: null,
+    digest: null,
+    geometry: null,
+    guard: null,
+    refusal: { reason: "disputedDelivery" },
+    version: 1,
+    retiredAt: null,
+    createdAt: new Date("2026-08-14T00:21:06Z"),
+  };
+
+  /*
+    THE MINT ONLY RUNS ON THE REPAINT ROAD, so the road is switched on here —
+    the same three dependencies the library cases use, inlined because they are
+    defined inside another describe.
+  */
+  const repaintEngine = () => ({
+    id: "test:repaint",
+    edit: async (request: { width: number; height: number }) => {
+      journal.push("repaint");
+      return {
+        bytes: Buffer.from("repainted"),
+        contentType: "image/png",
+        width: request.width,
+        height: request.height,
+        latencyMs: 10,
+        provenance: { provider: "fal" as const, model: "gpt-image-2", providerRef: "req-r" },
+      };
+    },
+  });
+  const readBytes = async (key: string) => (key === "casting-v2/candidates/abc.png"
+    ? { bytes: TINY_MASTER_PNG, contentType: "image/png" }
+    : { bytes: Buffer.from(`crop:${key}`), contentType: "image/png" });
+  const onTheRepaintRoad = {
+    repaintEnabled: () => true,
+    /* The mint runs behind the library's own flag; the road needs both. */
+    referenceLibraryEnabled: () => true,
+    repaintEngine,
+    readBytes,
+    harvest: unmasked,
+  };
+
+  /** Everything the net asks about is there — the later render's own reading. */
+  const confirmsEverything = {
+    id: "verifier",
+    complete: async (request: { system: string }) => {
+      if (request.system.includes("how they")) {
+        return { text: JSON.stringify({ hairWorn: "unclear" }), truncated: false, latencyMs: 1 };
+      }
+      return {
+        text: JSON.stringify({
+          results: [1, 2, 3, 4].map((id) => ({ id, present: true, saw: "slender arms and torso" })),
+        }),
+        truncated: false,
+        latencyMs: 1,
+      };
+    },
+  } as never;
+
+  beforeEach(() => {
+    lineageReferences = [refusedBuildRow];
+    /* Her recipe already says her build, so this render CARRIES it and the net
+       asks about it — which is what makes a confirmation possible at all. */
+    variantRows = [{
+      id: 620,
+      publicId: "variant-build",
+      candidateId: 1,
+      imageKey: "casting-v2/variants/build.png",
+      internalPrompt: candidateRow.internalPrompt as Record<string, unknown>,
+      instructions: ["their build — slim super model build"],
+      deltas: { free: { build: "slim super model build" } },
+      stepDeltas: null,
+      status: "ready",
+    }];
+    candidateRow.selectedVariantPublicId = "variant-build";
+    captionsRead = { build: "Slender frame with narrow shoulders and slim arms" };
+  });
+
+  it("asks the mint for the build this render did not edit", async () => {
+    await refineCandidate(
+      {
+        ...onTheRepaintRoad,
+        verifier: confirmsEverything,
+        interpret: async () => ({ ok: true as const, delta: { eyeColour: "green" as const } }),
+      },
+      input,
+    );
+    const asked = mintAsks.at(-1)!.slots.map((slot) => slot.slot);
+    expect(asked, "the refused carrier is minted on the render that confirms it").toContain("build");
+  });
+
+  it("does NOT ask for it when the library already keeps its pixels", async () => {
+    /* The control: a slot with a crop is the re-mint pass's business, and this
+       row is not awaiting anything. */
+    lineageReferences = [{ ...refusedBuildRow, storageKey: "casting-v2/library/build.png", refusal: null }];
+    await refineCandidate(
+      {
+        ...onTheRepaintRoad,
+        verifier: confirmsEverything,
+        interpret: async () => ({ ok: true as const, delta: { eyeColour: "green" as const } }),
+      },
+      input,
+    );
+    const asked = mintAsks.at(-1)!.slots.filter((slot) => slot.slot === "build");
+    expect(asked, "filed once, by the pass that already owned it").toHaveLength(1);
+  });
+});

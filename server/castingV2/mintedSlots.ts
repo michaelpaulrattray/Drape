@@ -117,6 +117,24 @@ export type MintedSlotsInput = {
    */
   held?: ReadonlySet<string>;
   /**
+   * SLOTS THE BRANCH HAS A ROW FOR AND NO PIXELS — awaiting the carrier they
+   * never got (fable-468 §2, ruling b).
+   *
+   * `supersededCarrySlots` is the same reader the repaint uses to decide which
+   * features it must say in WORDS because their crop is missing; here it is the
+   * list of slots that would take a crop if this render can prove one.
+   */
+  awaitingCarrier?: ReadonlySet<string>;
+  /**
+   * FACETS THIS RENDER DID NOT ASK FOR AND ITS OWN READER CONFIRMED.
+   *
+   * The other half of ruling (b): a later render looking at the delivered frame
+   * and saying the build IS slim is the confirmation the disputed render never
+   * got. Separate from `earned` — which is written ∩ verified ∩ not-carried —
+   * because these facets were not written by this ask at all.
+   */
+  confirmed?: readonly Facet[];
+  /**
    * THE ONE INSTANCE THE ASK WAS ABOUT — and it is where ruling C is kept.
    *
    * fable-444 chose the reference over the axis: the delta goes on saying
@@ -348,6 +366,34 @@ export function mintedSlotsForRender(input: MintedSlotsInput): MintedSlotsResult
     if (seen.has(definition.slot)) continue;
     if (!input.held?.has(definition.slot)) continue;
     file(definition, stackOf(definition) ?? [], false);
+  }
+
+  /*
+    AND THE CARRIER A SLOT NEVER GOT, MINTED ON THE RENDER THAT CONFIRMS IT
+    (fable-468 §2, ruling b).
+
+    The specimen is the founder's candidate 1604. v#184 asked for a slim build
+    and delivered one — his own eye, at full size, and the ruler at −10.9% —
+    while the caption reader called it absent, so the door refused the crop as
+    `disputedDelivery` and the row was filed with no pixels. Two renders later
+    v#186 read the same body and said *"slender arms and torso visible,
+    consistent with a slim build"*. The branch now held a confirmation of a
+    delivery whose carrier had never been minted, and nothing looked.
+
+    So a slot the branch is still waiting on gets ONE more chance on every
+    later render whose own reader confirms one of its facets. It is not the
+    re-mint pass above: that one asks whether the library HOLDS something, and
+    the whole point here is that it holds nothing but a refusal.
+
+    The confirmation must come from this render's own reading of this render's
+    frame — a fact about the picture in hand, not a re-reading of the dispute.
+  */
+  for (const facet of input.confirmed ?? []) {
+    for (const definition of slotsForFacet(facet, { accessoryKind: input.accessoryKind ?? null })) {
+      if (seen.has(definition.slot)) continue;
+      if (!input.awaitingCarrier?.has(definition.slot)) continue;
+      file(definition, stackOf(definition) ?? [], false);
+    }
   }
 
   return { slots, unfiled };

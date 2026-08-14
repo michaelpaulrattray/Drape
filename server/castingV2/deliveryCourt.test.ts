@@ -167,14 +167,69 @@ describe("what the ruler declines — six ways, and each one leaves the reader's
     expect(adjudicate({ anchor: span(0) })).toMatchObject({ declined: "noReading" });
   });
 
-  it("declines a SATURATED reading, however large the change looks", () => {
+  it("declines a SATURATED DELIVERED reading, however large the change looks", () => {
     /*
       A silhouette touching both frame edges reads the frame's own width for
       every build there is, so the change behind the clip could be any size.
       Reported rather than dropped, and refused rather than believed.
     */
-    expect(adjudicate({ anchor: span(2.286, true) })).toMatchObject({ declined: "clipped" });
     expect(adjudicate({ delivered: span(2.037, true) })).toMatchObject({ declined: "clipped" });
+  });
+
+  /*
+    AND THE ONE CLIP THAT IS A READING (fable-468 §2).
+
+    This declined on EITHER end, and that cost the facet its biggest wins: a
+    larger woman fills the frame, so her master saturates, so slimming her —
+    the whole reason the facet exists — could never be adjudicated. The
+    founder's own disputed build (candidate 1604, v#184) declined exactly here.
+
+    Safe because the arithmetic runs one way only: a clipped anchor's true span
+    is at least the frame width, so a measured narrowing UNDERSTATES the real
+    one. What clears the bar cleared it by more than it says.
+  */
+  it("SETTLES a narrowing out of a clipped anchor, and marks the change a floor", () => {
+    const verdict = adjudicate({ anchor: span(2.286, true) });
+    expect(verdict.settled).toBe(true);
+    if (!verdict.settled) throw new Error("unreachable");
+    expect(verdict.change).toBeCloseTo((2.037 - 2.286) / 2.286, 6);
+    /* "At least this much" is a different claim from "this much", and only one
+       of them is true here. */
+    expect(verdict.anchorClipped).toBe(true);
+  });
+
+  it("still declines a clipped anchor whose reading did not NARROW", () => {
+    /* A ratio that rose could have risen on a smaller head rather than on
+       wider shoulders, and behind a clip there is no way to tell. */
+    expect(adjudicate({ anchor: span(2.286, true), delivered: span(2.6) }))
+      .toMatchObject({ declined: "clipped" });
+    /* Equal is not a narrowing either. */
+    expect(adjudicate({ anchor: span(2.286, true), delivered: span(2.286) }))
+      .toMatchObject({ declined: "clipped" });
+  });
+
+  it("still declines a clipped anchor whose narrowing is under the bar", () => {
+    /* The clip makes the reading a floor, not a licence: an understated change
+       that does not clear the bar has not cleared it. */
+    expect(adjudicate({ anchor: span(2.286, true), delivered: span(2.286 * 0.96) }))
+      .toMatchObject({ declined: "belowBar" });
+  });
+
+  it("puts the readings on every declined verdict, so a decline can be diagnosed", () => {
+    /*
+      Candidate 1604's record says `"declined": "clipped"` and nothing else —
+      the founder's own disputed build, and no way to tell from its own record
+      which end was clipped or by how much. A reason with no reading behind it
+      is a verdict nobody can check.
+    */
+    const verdict = adjudicate({ delivered: span(2.037, true) });
+    expect(verdict).toMatchObject({
+      declined: "clipped",
+      anchorRatio: 2.286,
+      deliveredRatio: 2.037,
+      anchorClipped: false,
+      deliveredClipped: true,
+    });
   });
 
   it("checks the facets BEFORE it looks at any number", () => {

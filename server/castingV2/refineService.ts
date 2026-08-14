@@ -4198,11 +4198,22 @@ export async function refineCandidate(
           now needs it: a slot re-cut every render is filed on the strength of
           what the library already keeps for it, and that answer lives here.
         */
-        const live = liveReferences(await listLineageReferences({
+        const lineage = await listLineageReferences({
           userId: input.userId,
           candidateId: variant.candidateId,
           anchorVariantId: variant.id,
-        }));
+        });
+        const live = liveReferences(lineage);
+        /*
+          AND THE SLOTS STILL WAITING FOR A CARRIER (fable-468 §2, ruling b).
+
+          Derived from the SAME read rather than a second one: `liveReferences`
+          drops a disputed row so it cannot displace a crop it has no verdict
+          about, and `supersededCarrySlots` reads the other consequence of that
+          rule — the slots whose newest word about the subject holds no pixels.
+          One of them is the founder's build on candidate 1604.
+        */
+        const awaitingCarrier = new Set(supersededCarrySlots(lineage));
         const known = new Map<string, string>();
         for (const row of live) if (row.digest) known.set(row.slot, row.digest);
 
@@ -4225,6 +4236,24 @@ export async function refineCandidate(
             the gate the whole feature stood behind.
           */
           held: new Set(live.map((row) => row.slot)),
+          awaitingCarrier,
+          /*
+            AND WHAT THIS RENDER'S OWN READER CONFIRMED WITHOUT BEING ASKED.
+
+            Read ∧ verified ∧ NOT written by this ask: the facet was carried
+            into the prompt as a fact she already has, and the reader looked at
+            the delivered frame and agreed. On candidate 1604 that is v#186
+            saying "slender arms and torso visible, consistent with a slim
+            build" two renders after the crop was refused as disputed.
+
+            `readChecks` above is deliberately not reused: it is filtered to
+            WRITTEN facets, which is the opposite of this question.
+          */
+          confirmed: verification.unavailable ? [] : Array.from(new Set(
+            verification.checks
+              .filter((check) => check.read && check.verified && !writtenFacets.has(check.facet))
+              .map((check) => check.facet),
+          )),
           /*
             AND THE ONE INSTANCE SHE POINTED AT, so the library records what the
             painter was actually asked for.

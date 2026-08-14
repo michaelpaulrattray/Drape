@@ -404,6 +404,78 @@ describe("the slots re-cut every render", () => {
     expect(slots.map((slot) => [slot.slot, slot.disputed ?? false])).toEqual([["build", true]]);
   });
 
+  /*
+    THE CARRIER A SLOT NEVER GOT (fable-468 §2, ruling b) — the founder's
+    candidate 1604, as a test.
+
+    v#184 delivered a slim build and the caption reader called it absent, so the
+    row was filed with no pixels. v#186, two renders later, read the same body
+    and said *"slender arms and torso visible, consistent with a slim build"* —
+    a confirmation of a delivery whose carrier had never been minted, and
+    nothing looked.
+  */
+  it("mints the carrier a disputed slot never got, on the render that confirms it", () => {
+    const { slots } = mintedSlotsForRender({
+      /* This render asked about her expression; nobody asked about her build. */
+      earned: ["expression"],
+      captions: { build: "Slender frame with narrow shoulders and slim arms" },
+      /* The library holds a build ROW and no build crop. */
+      held: new Set(),
+      awaitingCarrier: new Set(["build"]),
+      confirmed: ["build"],
+    });
+
+    expect(slots.map((slot) => [slot.slot, slot.disputed ?? false])).toEqual([["build", false]]);
+  });
+
+  it("does NOT mint it on a render that confirms nothing about it", () => {
+    /*
+      The control, and the reason this is a confirmation rather than a retry: a
+      later render that says nothing about her build has proven nothing about
+      it, and filing there would store whatever the frame happens to show as the
+      build she paid for.
+    */
+    const { slots } = mintedSlotsForRender({
+      earned: ["expression"],
+      captions: { build: "Slender frame with narrow shoulders and slim arms" },
+      held: new Set(),
+      awaitingCarrier: new Set(["build"]),
+      confirmed: ["eye.colour"],
+    });
+
+    expect(slots).toEqual([]);
+  });
+
+  it("does NOT mint a slot the library already keeps pixels for", () => {
+    /* `awaitingCarrier` is the whole gate: a slot with a crop is the re-mint
+       pass's business, and this pass must not file a second row for it. */
+    const { slots } = mintedSlotsForRender({
+      earned: ["expression"],
+      captions: { build: "Slender frame with narrow shoulders and slim arms" },
+      held: new Set(["build"]),
+      awaitingCarrier: new Set(),
+      confirmed: ["build"],
+    });
+
+    expect(slots.map((slot) => slot.slot)).toEqual(["build"]);
+    /* Filed once, by the re-mint pass, exactly as it was before this existed. */
+    expect(slots).toHaveLength(1);
+  });
+
+  it("does not file it TWICE when this render also earned the slot", () => {
+    /* `seen` again: a render that earned the build has already filed it with
+       its own verdict, and this pass may not add a second entry. */
+    const { slots } = mintedSlotsForRender({
+      earned: ["shoulders"],
+      captions: { build: "A more athletic build", shoulders: "Broader shoulders" },
+      held: new Set(),
+      awaitingCarrier: new Set(["build"]),
+      confirmed: ["build"],
+    });
+
+    expect(slots.map((slot) => slot.slot)).toEqual(["build"]);
+  });
+
   it("carries the NAMES of the disputed facets, so a court can be facet-narrow", () => {
     /*
       fable-429 §3 condition 3. `build` holds five facets and `buildSpan`
