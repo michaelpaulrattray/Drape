@@ -151,6 +151,26 @@
         ]
       }
     },
+    "vocabulary": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "vocabulary",
+          "file"
+        ],
+        "properties": {
+          "vocabulary": {
+            "enum": [
+              "subject",
+              "facet"
+            ]
+          }
+        }
+      }
+    },
     "tests": {
       "type": "array",
       "items": {

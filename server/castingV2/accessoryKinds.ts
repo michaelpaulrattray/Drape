@@ -206,6 +206,23 @@ export const LANDMARK_OF_ACCESSORY: {
  * painter's clause, the reader's question and the placement corridor cannot
  * disagree about what kind of object this is.
  */
+/**
+ * THE REGION EYEWEAR IS ASKED ABOUT, read off the table that owns it.
+ *
+ * `refineService`'s glasses gate typed this word in as a bare literal — the one
+ * stray segmenter string F5 named, outside every table. A word sent to a
+ * segmentation model has exactly one home, and it is the accessory table: if
+ * the kind is ever re-keyed, the gate follows instead of quietly asking about a
+ * region that no longer exists.
+ *
+ * Null when the table holds no eyewear entry at all, and the caller FAILS
+ * CLOSED on it — no question, spend exactly as before. That is the same rule
+ * the gate already states for a missing reader: it may only ever add a free
+ * question, never block someone the old path served.
+ */
+export const EYEWEAR_REGION: string | null =
+  LANDMARK_OF_ACCESSORY.find((entry) => entry.landmark === "eye")?.region ?? null;
+
 export function pairClauseFor(described?: string): string {
   /*
     THROUGH `accessoryEntry`, NEVER A SECOND SCAN OF THE SAME WORDS.

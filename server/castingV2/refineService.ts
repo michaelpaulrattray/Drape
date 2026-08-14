@@ -77,7 +77,7 @@ import {
   HAIR_TEXTURE_RENDER,
   IRIS_RENDER,
 } from "./realizedAxes";
-import { accessoryKindOf, pairClauseFor, vacantPhraseFor } from "./accessoryKinds";
+import { accessoryKindOf, EYEWEAR_REGION, pairClauseFor, vacantPhraseFor } from "./accessoryKinds";
 import { slotWordsRefusal } from "./slotWordShape";
 import { hairStyleByName } from "./hairStyles";
 import {
@@ -2265,11 +2265,13 @@ export async function refineCandidate(
       and that there are frames over her eyes; the second clause is here to keep
       this gate off bare-eyed customers, not to explain the first.
     */
-    if (!reading && faceBytes) {
+    if (!reading && faceBytes && EYEWEAR_REGION) {
       const wearingGlasses = await (async () => {
         try {
+          /* The region comes from the accessory table (V1/F5) — this used to be
+             the one segmenter word typed in outside every table. */
           const mask = await (dependencies.regions ?? defaultRegionReader())
-            .region({ image: faceBytes.bytes, name: "glasses", absentIsAnswer: true });
+            .region({ image: faceBytes.bytes, name: EYEWEAR_REGION, absentIsAnswer: true });
           return wearsGlassesByPixels(mask);
         } catch (error) {
           /* An instrument that cannot answer must not be able to ask, either. */

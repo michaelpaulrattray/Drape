@@ -437,6 +437,48 @@ function collectCreditCosts(): Entity[] {
   return costs.sort((a, b) => String(a.id).localeCompare(String(b.id)));
 }
 
+function collectVocabulary(): Entity[] {
+  /*
+    THE VOCABULARY, COUNTED (V1's own acceptance).
+
+    One card per kind was the milestone; being able to COUNT them is what makes
+    the milestone checkable from outside the code. Read from the card
+    registries by declaration order — the Atlas never runs app code, so this is
+    a source read like every other collector here.
+
+    Deliberately shallow: names, and which registry each came from. What a card
+    ANSWERS is the vocabulary suite's business (`subjectCards.test.ts` and the
+    pin), and duplicating those answers here would be a second copy of the
+    thing this milestone existed to stop having two of.
+  */
+  const registries: Array<{ file: string; declaration: string; kind: "subject" | "facet" }> = [
+    { file: "server/castingV2/subjectCards.ts", declaration: "SUBJECT_CARDS", kind: "subject" },
+    { file: "server/castingV2/facetCards.ts", declaration: "FACET_CARDS", kind: "facet" },
+  ];
+  const entities: Entity[] = [];
+  for (const registry of registries) {
+    if (!sourceFiles.includes(registry.file)) continue;
+    const source = read(registry.file);
+    const start = source.indexOf(`export const ${registry.declaration} = {`);
+    if (start === -1) continue;
+    const end = source.indexOf("\n} as const satisfies", start);
+    if (end === -1) continue;
+    const body = source.slice(start, end);
+    /* A card opens a block at exactly two spaces of indent; nothing nested
+       does, so the shape cannot pick up a field by accident. */
+    for (const hit of body.matchAll(/^ {2}("?[\w.]+"?): \{$/gm)) {
+      const name = hit[1].replace(/"/g, "");
+      entities.push({
+        id: `vocabulary:${registry.kind}:${name}`,
+        name,
+        vocabulary: registry.kind,
+        file: registry.file,
+      });
+    }
+  }
+  return entities.sort((a, b) => String(a.id).localeCompare(String(b.id)));
+}
+
 /* ------------------------------------------------------------- import graph */
 
 function collectImportEdges(project: Project): Edge[] {
@@ -816,6 +858,7 @@ export function buildAtlas() {
     workers: collectWorkers(),
     operationKinds: collectOperationKinds(),
     creditCosts: collectCreditCosts(),
+    vocabulary: collectVocabulary(),
     tests: testFiles.sort().map((file) => ({ id: `test:${file}`, path: file })),
     edges,
     findings,
@@ -923,6 +966,14 @@ export const SCHEMA = {
     workers: { type: "array", items: { type: "object", required: ["id", "name"] } },
     operationKinds: { type: "array", items: { type: "object", required: ["id", "kind"] } },
     creditCosts: { type: "array", items: { type: "object", required: ["id", "name"] } },
+    vocabulary: {
+      type: "array",
+      items: {
+        type: "object",
+        required: ["id", "name", "vocabulary", "file"],
+        properties: { vocabulary: { enum: ["subject", "facet"] } },
+      },
+    },
     tests: { type: "array", items: { type: "object", required: ["id", "path"] } },
     edges: {
       type: "array",

@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "0829a7832cc7e9bb"
+    "sourceFingerprint": "f90fc5f3a6b1591a"
   },
   "domains": [
     {
@@ -8049,6 +8049,350 @@
       "file": "server/casting/castingCreditCosts.ts"
     }
   ],
+  "vocabulary": [
+    {
+      "id": "vocabulary:facet:arms",
+      "name": "arms",
+      "vocabulary": "facet",
+      "file": "server/castingV2/facetCards.ts"
+    },
+    {
+      "id": "vocabulary:facet:brows",
+      "name": "brows",
+      "vocabulary": "facet",
+      "file": "server/castingV2/facetCards.ts"
+    },
+    {
+      "id": "vocabulary:facet:build",
+      "name": "build",
+      "vocabulary": "facet",
+      "file": "server/castingV2/facetCards.ts"
+    },
+    {
+      "id": "vocabulary:facet:bust",
+      "name": "bust",
+      "vocabulary": "facet",
+      "file": "server/castingV2/facetCards.ts"
+    },
+    {
+      "id": "vocabulary:facet:cheekbones",
+      "name": "cheekbones",
+      "vocabulary": "facet",
+      "file": "server/castingV2/facetCards.ts"
+    },
+    {
+      "id": "vocabulary:facet:chin",
+      "name": "chin",
+      "vocabulary": "facet",
+      "file": "server/castingV2/facetCards.ts"
+    },
+    {
+      "id": "vocabulary:facet:ears",
+      "name": "ears",
+      "vocabulary": "facet",
+      "file": "server/castingV2/facetCards.ts"
+    },
+    {
+      "id": "vocabulary:facet:expression",
+      "name": "expression",
+      "vocabulary": "facet",
+      "file": "server/castingV2/facetCards.ts"
+    },
+    {
+      "id": "vocabulary:facet:eye.colour",
+      "name": "eye.colour",
+      "vocabulary": "facet",
+      "file": "server/castingV2/facetCards.ts"
+    },
+    {
+      "id": "vocabulary:facet:eye.shape",
+      "name": "eye.shape",
+      "vocabulary": "facet",
+      "file": "server/castingV2/facetCards.ts"
+    },
+    {
+      "id": "vocabulary:facet:facialHair",
+      "name": "facialHair",
+      "vocabulary": "facet",
+      "file": "server/castingV2/facetCards.ts"
+    },
+    {
+      "id": "vocabulary:facet:hair.colour",
+      "name": "hair.colour",
+      "vocabulary": "facet",
+      "file": "server/castingV2/facetCards.ts"
+    },
+    {
+      "id": "vocabulary:facet:hair.cut",
+      "name": "hair.cut",
+      "vocabulary": "facet",
+      "file": "server/castingV2/facetCards.ts"
+    },
+    {
+      "id": "vocabulary:facet:hair.texture",
+      "name": "hair.texture",
+      "vocabulary": "facet",
+      "file": "server/castingV2/facetCards.ts"
+    },
+    {
+      "id": "vocabulary:facet:hairFinish",
+      "name": "hairFinish",
+      "vocabulary": "facet",
+      "file": "server/castingV2/facetCards.ts"
+    },
+    {
+      "id": "vocabulary:facet:hairWorn",
+      "name": "hairWorn",
+      "vocabulary": "facet",
+      "file": "server/castingV2/facetCards.ts"
+    },
+    {
+      "id": "vocabulary:facet:ink",
+      "name": "ink",
+      "vocabulary": "facet",
+      "file": "server/castingV2/facetCards.ts"
+    },
+    {
+      "id": "vocabulary:facet:jaw",
+      "name": "jaw",
+      "vocabulary": "facet",
+      "file": "server/castingV2/facetCards.ts"
+    },
+    {
+      "id": "vocabulary:facet:lashes",
+      "name": "lashes",
+      "vocabulary": "facet",
+      "file": "server/castingV2/facetCards.ts"
+    },
+    {
+      "id": "vocabulary:facet:lips",
+      "name": "lips",
+      "vocabulary": "facet",
+      "file": "server/castingV2/facetCards.ts"
+    },
+    {
+      "id": "vocabulary:facet:makeup",
+      "name": "makeup",
+      "vocabulary": "facet",
+      "file": "server/castingV2/facetCards.ts"
+    },
+    {
+      "id": "vocabulary:facet:marks",
+      "name": "marks",
+      "vocabulary": "facet",
+      "file": "server/castingV2/facetCards.ts"
+    },
+    {
+      "id": "vocabulary:facet:nose",
+      "name": "nose",
+      "vocabulary": "facet",
+      "file": "server/castingV2/facetCards.ts"
+    },
+    {
+      "id": "vocabulary:facet:shoulders",
+      "name": "shoulders",
+      "vocabulary": "facet",
+      "file": "server/castingV2/facetCards.ts"
+    },
+    {
+      "id": "vocabulary:facet:skinCharacter",
+      "name": "skinCharacter",
+      "vocabulary": "facet",
+      "file": "server/castingV2/facetCards.ts"
+    },
+    {
+      "id": "vocabulary:facet:skinTone",
+      "name": "skinTone",
+      "vocabulary": "facet",
+      "file": "server/castingV2/facetCards.ts"
+    },
+    {
+      "id": "vocabulary:facet:statedAccessories",
+      "name": "statedAccessories",
+      "vocabulary": "facet",
+      "file": "server/castingV2/facetCards.ts"
+    },
+    {
+      "id": "vocabulary:facet:teeth",
+      "name": "teeth",
+      "vocabulary": "facet",
+      "file": "server/castingV2/facetCards.ts"
+    },
+    {
+      "id": "vocabulary:facet:waist",
+      "name": "waist",
+      "vocabulary": "facet",
+      "file": "server/castingV2/facetCards.ts"
+    },
+    {
+      "id": "vocabulary:subject:arms",
+      "name": "arms",
+      "vocabulary": "subject",
+      "file": "server/castingV2/subjectCards.ts"
+    },
+    {
+      "id": "vocabulary:subject:brows",
+      "name": "brows",
+      "vocabulary": "subject",
+      "file": "server/castingV2/subjectCards.ts"
+    },
+    {
+      "id": "vocabulary:subject:build",
+      "name": "build",
+      "vocabulary": "subject",
+      "file": "server/castingV2/subjectCards.ts"
+    },
+    {
+      "id": "vocabulary:subject:bust",
+      "name": "bust",
+      "vocabulary": "subject",
+      "file": "server/castingV2/subjectCards.ts"
+    },
+    {
+      "id": "vocabulary:subject:cheekbones",
+      "name": "cheekbones",
+      "vocabulary": "subject",
+      "file": "server/castingV2/subjectCards.ts"
+    },
+    {
+      "id": "vocabulary:subject:chin",
+      "name": "chin",
+      "vocabulary": "subject",
+      "file": "server/castingV2/subjectCards.ts"
+    },
+    {
+      "id": "vocabulary:subject:ears",
+      "name": "ears",
+      "vocabulary": "subject",
+      "file": "server/castingV2/subjectCards.ts"
+    },
+    {
+      "id": "vocabulary:subject:expression",
+      "name": "expression",
+      "vocabulary": "subject",
+      "file": "server/castingV2/subjectCards.ts"
+    },
+    {
+      "id": "vocabulary:subject:eyeColourFree",
+      "name": "eyeColourFree",
+      "vocabulary": "subject",
+      "file": "server/castingV2/subjectCards.ts"
+    },
+    {
+      "id": "vocabulary:subject:eyeShapeFree",
+      "name": "eyeShapeFree",
+      "vocabulary": "subject",
+      "file": "server/castingV2/subjectCards.ts"
+    },
+    {
+      "id": "vocabulary:subject:facialHair",
+      "name": "facialHair",
+      "vocabulary": "subject",
+      "file": "server/castingV2/subjectCards.ts"
+    },
+    {
+      "id": "vocabulary:subject:hairCut",
+      "name": "hairCut",
+      "vocabulary": "subject",
+      "file": "server/castingV2/subjectCards.ts"
+    },
+    {
+      "id": "vocabulary:subject:hairFinish",
+      "name": "hairFinish",
+      "vocabulary": "subject",
+      "file": "server/castingV2/subjectCards.ts"
+    },
+    {
+      "id": "vocabulary:subject:hairPattern",
+      "name": "hairPattern",
+      "vocabulary": "subject",
+      "file": "server/castingV2/subjectCards.ts"
+    },
+    {
+      "id": "vocabulary:subject:hairShade",
+      "name": "hairShade",
+      "vocabulary": "subject",
+      "file": "server/castingV2/subjectCards.ts"
+    },
+    {
+      "id": "vocabulary:subject:hairWorn",
+      "name": "hairWorn",
+      "vocabulary": "subject",
+      "file": "server/castingV2/subjectCards.ts"
+    },
+    {
+      "id": "vocabulary:subject:ink",
+      "name": "ink",
+      "vocabulary": "subject",
+      "file": "server/castingV2/subjectCards.ts"
+    },
+    {
+      "id": "vocabulary:subject:jaw",
+      "name": "jaw",
+      "vocabulary": "subject",
+      "file": "server/castingV2/subjectCards.ts"
+    },
+    {
+      "id": "vocabulary:subject:lashes",
+      "name": "lashes",
+      "vocabulary": "subject",
+      "file": "server/castingV2/subjectCards.ts"
+    },
+    {
+      "id": "vocabulary:subject:lips",
+      "name": "lips",
+      "vocabulary": "subject",
+      "file": "server/castingV2/subjectCards.ts"
+    },
+    {
+      "id": "vocabulary:subject:marks",
+      "name": "marks",
+      "vocabulary": "subject",
+      "file": "server/castingV2/subjectCards.ts"
+    },
+    {
+      "id": "vocabulary:subject:nose",
+      "name": "nose",
+      "vocabulary": "subject",
+      "file": "server/castingV2/subjectCards.ts"
+    },
+    {
+      "id": "vocabulary:subject:shoulders",
+      "name": "shoulders",
+      "vocabulary": "subject",
+      "file": "server/castingV2/subjectCards.ts"
+    },
+    {
+      "id": "vocabulary:subject:skinCharacter",
+      "name": "skinCharacter",
+      "vocabulary": "subject",
+      "file": "server/castingV2/subjectCards.ts"
+    },
+    {
+      "id": "vocabulary:subject:skinTone",
+      "name": "skinTone",
+      "vocabulary": "subject",
+      "file": "server/castingV2/subjectCards.ts"
+    },
+    {
+      "id": "vocabulary:subject:statedAccessories",
+      "name": "statedAccessories",
+      "vocabulary": "subject",
+      "file": "server/castingV2/subjectCards.ts"
+    },
+    {
+      "id": "vocabulary:subject:teeth",
+      "name": "teeth",
+      "vocabulary": "subject",
+      "file": "server/castingV2/subjectCards.ts"
+    },
+    {
+      "id": "vocabulary:subject:waist",
+      "name": "waist",
+      "vocabulary": "subject",
+      "file": "server/castingV2/subjectCards.ts"
+    }
+  ],
   "tests": [
     {
       "id": "test:client/src/features/castingV2/briefDraft.test.ts",
@@ -8799,6 +9143,10 @@
       "path": "server/castingV2/eyeShapeRouting.test.ts"
     },
     {
+      "id": "test:server/castingV2/eyewearRegion.test.ts",
+      "path": "server/castingV2/eyewearRegion.test.ts"
+    },
+    {
       "id": "test:server/castingV2/faceDescribe.test.ts",
       "path": "server/castingV2/faceDescribe.test.ts"
     },
@@ -8889,6 +9237,10 @@
     {
       "id": "test:server/castingV2/nearMissVocabulary.test.ts",
       "path": "server/castingV2/nearMissVocabulary.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/newKindCost.test.ts",
+      "path": "server/castingV2/newKindCost.test.ts"
     },
     {
       "id": "test:server/castingV2/onImageGeometryMonochrome.test.ts",
