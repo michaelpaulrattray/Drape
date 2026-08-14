@@ -917,6 +917,38 @@ for (const theme of THEMES) {
         ? "nothing expanded"
         : `${expanded.parent} → ${expanded.names.join(" · ")}, ${expanded.thumbs} with a picture of their own`,
     );
+    /*
+      AND THE ONE CASE THAT CHANGES WHAT THE PANEL SAYS (fable-459 §2).
+
+      A diverged pair is the only shape where nesting changes the WORDS rather
+      than the arrangement, and the fixture's eyes matched — so it was proven in
+      the suite and, in the browser, only where it could not be wrong. The
+      fixture now carries the founder's own live specimen in words (one pale icy
+      blue iris against a warm brown one, his production v#185), and this reads
+      the sentence off the rendered panel.
+    */
+    const diverged = await page.evaluate(`(() => {
+      const row = Array.from(document.querySelectorAll(".dpc-face__rows > li"))
+        .find((item) => item.querySelector(".dpc-face__name")?.textContent === "Eyes");
+      if (!row) return null;
+      const children = Array.from(row.querySelectorAll(".dpc-face__row--side"));
+      return {
+        parentWords: row.querySelector(".dpc-face__words")?.textContent ?? "",
+        childWords: children.map((child) => child.querySelector(".dpc-face__words")?.textContent ?? ""),
+      };
+    })()`) as any;
+    check(
+      /left .*icy blue/i.test(diverged?.parentWords ?? "") && /right .*brown/i.test(diverged?.parentWords ?? ""),
+      `${theme}: a pair whose sides disagree says so, attributed, and claims neither`,
+      `parent reads "${diverged?.parentWords}"`,
+    );
+    check(
+      diverged?.childWords?.length === 2
+        && /icy blue/i.test(diverged.childWords[0] ?? "")
+        && /brown/i.test(diverged.childWords[1] ?? ""),
+      `${theme}: and each side says its own`,
+      `children read "${(diverged?.childWords ?? []).join('" · "')}"`,
+    );
     await shot(page, ".dpc-face", `panel-open-${theme}.png`);
 
     /* CLICKING A CHILD IS THE SCOPING GESTURE AGAIN — the same wire the
