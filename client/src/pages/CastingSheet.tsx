@@ -889,6 +889,9 @@ export default function CastingSheet() {
     },
     {
       enabled: viewerRefinable && Boolean(viewerCandidateId),
+      /* Kept for the sitting, like the scan beside it: a version she looked at
+         ten minutes ago should not have to be asked for again. */
+      gcTime: 60 * 60 * 1000,
       /*
         THE PANEL DOES NOT BLINK OUT WHEN A VERSION LANDS (fable-461/462).
 
@@ -943,6 +946,22 @@ export default function CastingSheet() {
       enabled: viewerRefinable && Boolean(viewerCandidateId) && Boolean(face.data?.scanning),
       /* It never changes for a version — a new version is a new key. */
       staleTime: Infinity,
+      /*
+        AND IT IS KEPT FOR THE WHOLE SESSION (fable-520 §2, the client half).
+
+        `staleTime: Infinity` says a cached answer is never refetched; it says
+        nothing about how long the answer is KEPT. TanStack's default drops an
+        inactive query after five minutes, so his own case — *"jump back three
+        edits"* in a long session — re-asked the server for a version he had
+        already looked at, and paid the scan's seconds again. An hour holds a
+        whole sitting.
+
+        What it costs: a scanned panel is rows plus one small stencil per row
+        (~7 KB), so twenty versions is a couple of megabytes of memory in the
+        tab. That is the right trade against a seven-second wait for an answer
+        we already had.
+      */
+      gcTime: 60 * 60 * 1000,
       /* And the same bridge as the library read, with the same boundary: the
          scanned rows of the version she was looking at stay while this
          version's are read, and NOTHING crosses from another face. */

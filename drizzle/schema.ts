@@ -1309,6 +1309,22 @@ export const AUDIT_ACTIONS = {
     read this table, and her sentence about her own face is creative content.
   */
   CASTING_REFUSAL: "casting.refusal",
+  /*
+    A SCAN THAT HAD TO BE BOUGHT — and whether it had been bought before.
+
+    The scan cache is in memory, keyed (candidate, version), and it dies with
+    the process: on a night with a dozen deploys, a version she looked at twice
+    is read twice. The re-scan rate is what decides whether that cache earns a
+    table, and the design note said it would be "a reading rather than an
+    anecdote" — but it was only ever a LOG LINE, and a log line whose window
+    rotates on deploy is exactly the artifact this program keeps learning it
+    does not have (the refusal counter's own lesson, one surface over).
+
+    So a MISS writes a row: rescan or not, and what it cost. A hit writes
+    nothing, because a free answer is not worth a row. It carries no reading
+    about her face — only that a read happened.
+  */
+  CASTING_SCAN_MISS: "casting.scan_miss",
   
   // Security events
   LOGIN_SUCCESS: "auth.login",

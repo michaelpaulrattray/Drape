@@ -44,6 +44,8 @@
  * of the shape is cheap. Nothing downstream may read these bytes as geometry.
  */
 import { createModuleLogger } from "../logging/logger";
+import { logAuditEvent } from "../auditLog";
+import { AUDIT_ACTIONS } from "../../drizzle/schema";
 import { storagePublicUrl, storageReadBytes } from "../storage";
 import { describeFace, type FaceDescriptions } from "./faceDescribe";
 import { scanFace, scanPlan, type FaceScan } from "./faceScan";
@@ -279,6 +281,31 @@ export async function scannedFace(input: {
   const rescan = seen.has(key);
   if (rescan) counters.rescans += 1;
   remember(key);
+
+  /*
+    THE MISS IS WRITTEN DOWN, because the rate is what decides the table.
+
+    This cache is in memory and dies with the process, so on a night with a
+    dozen deploys a version looked at twice is READ twice — and the re-scan rate
+    the design note promised would be "a reading rather than an anecdote" lived
+    only in a log line whose window rotates on every one of those deploys. That
+    is the refusal counter's lesson on another surface: a number nobody can read
+    back is not a measurement.
+    
+    A miss writes one row; a HIT writes nothing, because a free answer is not
+    worth a row. It carries no reading about her face — a candidate id, whether
+    this pair had been read before, and how full the cache was.
+  */
+  void logAuditEvent({
+    userId: input.userId,
+    action: AUDIT_ACTIONS.CASTING_SCAN_MISS,
+    resourceType: "casting_candidate",
+    resourceId: String(input.candidateId),
+    metadata: { rescan, variantId: input.variantId ?? null, cacheSize: cache.size },
+    severity: "info",
+  }).catch(() => {
+    /* A scan is a courtesy read; its bookkeeping may never break it. */
+  });
 
   const read = (async () => {
     const readBytes = input.dependencies?.readBytes ?? storageReadBytes;

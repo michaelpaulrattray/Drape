@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "a96eb91678281bd5"
+    "sourceFingerprint": "8f9ad57ab05da796"
   },
   "domains": [
     {
@@ -18639,6 +18639,16 @@
     {
       "from": "module:server/castingV2/faceScan.ts",
       "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/faceScanService.ts",
+      "to": "module:drizzle/schema.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/faceScanService.ts",
+      "to": "module:server/auditLog.ts",
       "kind": "imports"
     },
     {
