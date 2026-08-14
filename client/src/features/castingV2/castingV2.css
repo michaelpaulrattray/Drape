@@ -1090,7 +1090,18 @@
 .dpc-cardmenu__panel {
   /* Fixed and portalled to body — see the component for why. */
   position: fixed;
-  z-index: 60;
+  /*
+    ABOVE THE VIEWER, because a menu opened from inside it must be readable.
+
+    It sat at 60 and the viewer's SCRIM is 70, so the first menu opened on a
+    version chip was painted UNDER the scrim: legible in the light theme,
+    half-vanished in the dark one, and looking for all the world like a
+    rendering bug. It is not the panel's colour — it is the stacking.
+
+    75 keeps it under the destructive confirmation at 80, which is the one
+    thing that must interrupt a menu rather than sit beneath it.
+  */
+  z-index: 75;
   min-width: 178px;
   padding: var(--s-2);
   display: flex;
@@ -1123,6 +1134,7 @@
   line when there is not, so no free item grows a gap for the paid one's sake.
 */
 .dpc-cardmenu__item:has(.dpc-cardmenu__meta) { align-items: flex-start; }
+.dpc-cardmenu__lines { display: flex; flex-direction: column; min-width: 0; }
 .dpc-cardmenu__label { display: block; }
 .dpc-cardmenu__meta {
   display: block;

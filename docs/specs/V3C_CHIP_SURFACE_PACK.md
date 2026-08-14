@@ -69,13 +69,35 @@ string and its justification:
 | `free · you already have that version` | invented | The other half of D-121, said in her terms rather than as "selection". |
 | `That step has moved since this page was loaded — open the face again and take it off from there. Nothing was charged.` | invented | The stale-click refusal. Names what happened, what to do, and the money — the three parts every refusal in this product carries. |
 
+## The ship blocker, and what it actually was (fable-543 §2)
+
+Fable read the first pack's shots and stopped the unveil: *"a panel floating at
+the viewport's far edge, disconnected from its chip… in dark theme it
+half-vanishes against the scrim."* Both halves were real and neither was a
+colour problem:
+
+```
+PLACEMENT   the panel's RIGHT edge is aligned to the trigger's, which is right
+            for a card whose dots sit at its top-right and wrong for a chip on
+            the far-left rail — it opened leftward, into the gutter
+LEGIBILITY  the panel sat at z-index 60 and the viewer's SCRIM is 70, so it was
+            painted UNDER the scrim. Not the panel's colour: the stacking
+```
+
+Fixed as a **per-usage anchor** (`align="fromTheLeft"`) rather than a smarter
+default, and the shared component's other callers are proved untouched rather
+than assumed: the sheet card's menu lands at exactly the same offsets before and
+after (`dTop 6 · dLeft -152 · dRight 0 · width 178`), measured by
+`measure-cardmenu-placement-disposable.mts` on the page it actually lives on.
+The chip's went from `dLeft -195` (into the gutter) to `dLeft 0` (under its own
+chip).
+
+And the meta line now sits UNDER the label rather than beside it — the label and
+price were both flex children of the same row, so "quiet line under it" was
+rendering as one line.
+
 ## Two things left open, deliberately
 
-- **The menu panel opens beside the rail rather than snug against its chip.**
-  It is legible in both themes and it is the shared component's placement, used
-  by the sheet and roster cards too — so moving it is a change to every menu in
-  the product, not to this one. Named here for the founder's eye rather than
-  quietly adjusted.
 - **A pruned version's chip repeats the surviving step's sentence.** A chip
   shows the last instruction of its own list, so after taking back the newest
   step the new version's chip reads the same as the one before it. It is

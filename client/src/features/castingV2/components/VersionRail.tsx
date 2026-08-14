@@ -172,6 +172,9 @@ export function VersionRail({
           */}
           {onRemoveStep && variant.instructions.length > 0 ? (
             <CardMenu
+              /* The rail sits at the window's left edge, so a panel anchored to
+                 its right edge opens into the gutter — see `align`. */
+              align="fromTheLeft"
               label={variant.instructions.at(-1) ?? "this step"}
               open={menuOpenFor === variant.variantId}
               onToggle={() => setMenuOpenFor(

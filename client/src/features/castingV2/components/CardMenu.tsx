@@ -54,6 +54,7 @@ export function CardMenu({
   open,
   onToggle,
   onCancel,
+  align = "fromTheRight",
 }: {
   /** Names the subject, for the trigger's accessible name. */
   label: string;
@@ -66,11 +67,31 @@ export function CardMenu({
   open: boolean;
   onToggle: () => void;
   onCancel: () => void;
+  /**
+   * WHICH WAY THE PANEL OPENS — per usage, because the right answer depends on
+   * where the host sits (fable-543 §2).
+   *
+   * `fromTheRight` is the default and what every caller had: the panel's right
+   * edge lines up with the trigger's and it opens LEFTWARD, which is right for
+   * a card in a grid whose dots sit at its top-right corner.
+   *
+   * On the version rail that same rule threw the panel into the gutter at the
+   * window's edge — a control appearing somewhere other than where you clicked
+   * reads as broken, which is the one impression this surface exists to avoid.
+   * `fromTheLeft` lines the panel's LEFT edge up with the trigger's instead, so
+   * it opens toward the picture.
+   *
+   * A per-usage option rather than a smarter default: the placement of the
+   * sheet's and the roster's menus is measured byte-identical across this
+   * change (`measure-cardmenu-placement-disposable.mts`), which is what makes
+   * touching a shared component safe rather than hopeful.
+   */
+  align?: "fromTheRight" | "fromTheLeft";
 }) {
   const rootRef = useRef<HTMLSpanElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLSpanElement>(null);
-  const [at, setAt] = useState<{ top: number; right: number } | null>(null);
+  const [at, setAt] = useState<{ top: number; right?: number; left?: number } | null>(null);
 
   /*
     The panel is fixed-positioned in the viewport, so it has to be told where
@@ -86,7 +107,9 @@ export function CardMenu({
     const place = () => {
       const box = triggerRef.current?.getBoundingClientRect();
       if (!box) return;
-      setAt({ top: box.bottom + 6, right: Math.max(8, window.innerWidth - box.right) });
+      setAt(align === "fromTheLeft"
+        ? { top: box.bottom + 6, left: Math.max(8, box.left) }
+        : { top: box.bottom + 6, right: Math.max(8, window.innerWidth - box.right) });
     };
     place();
     window.addEventListener("scroll", place, true);
@@ -95,7 +118,7 @@ export function CardMenu({
       window.removeEventListener("scroll", place, true);
       window.removeEventListener("resize", place);
     };
-  }, [open]);
+  }, [open, align]);
 
   useEffect(() => {
     if (!open) return;
@@ -150,7 +173,9 @@ export function CardMenu({
             ref={panelRef}
             className="dpc-cardmenu__panel"
             role="menu"
-            style={{ top: at.top, right: at.right }}
+            style={at.left === undefined
+              ? { top: at.top, right: at.right }
+              : { top: at.top, left: at.left }}
           >
             {items.map((item, index) => (
               <span key={item.label}>
@@ -164,10 +189,13 @@ export function CardMenu({
                   onClick={item.onSelect}
                 >
                   {item.danger ? <Trash2 size={12} strokeWidth={2} aria-hidden="true" /> : null}
-                  <span className="dpc-cardmenu__label">{item.label}</span>
-                  {/* The price, quiet and under the action rather than inside
-                      it — D-109's own shape, said before the click. */}
-                  {item.meta ? <span className="dpc-cardmenu__meta">{item.meta}</span> : null}
+                  {/* The action and, UNDER it, what it costs — a column inside
+                      the row so the icon stays beside the label and the price
+                      gets its own line (D-109: never in the button text). */}
+                  <span className="dpc-cardmenu__lines">
+                    <span className="dpc-cardmenu__label">{item.label}</span>
+                    {item.meta ? <span className="dpc-cardmenu__meta">{item.meta}</span> : null}
+                  </span>
                 </button>
               </span>
             ))}
