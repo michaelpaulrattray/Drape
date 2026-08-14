@@ -39,6 +39,7 @@ import { randomUUID } from "node:crypto";
 import { TRPCError } from "@trpc/server";
 
 import { CASTING_V2_COSTS } from "../casting/castingCreditCosts";
+import { censusOfAttempt, censusSoFar } from "./callCensus";
 import { recordRefund, refundTruth } from "../casting/atomicCredits";
 import {
   beginDirectOperation,
@@ -146,11 +147,32 @@ const CANDIDATE_KEY_PREFIX = "casting-v2/candidates";
 function renderFaultMetadata(
   verdict: Awaited<ReturnType<typeof detectRenderFault>> | null,
 ): Record<string, unknown> | undefined {
-  if (!verdict) return undefined;
+  /*
+    AND WHAT THE TILE COST, on the same row and for the same reason the verdict
+    is here: it needs no migration, and it is genuinely audit rather than
+    product. A log line rotates on the next deploy; this row is still there
+    next week, when somebody asks whether the roll got slower.
+
+    Delivered or failed, both paths write it — a census that recorded only the
+    tiles that worked would price the good days, and a failed tile is money out
+    with nothing delivered.
+  */
+  const spent = censusSoFar();
+  const cost = spent === null ? undefined : {
+    calls: spent.total.calls,
+    callMs: spent.total.ms,
+    failedCalls: spent.total.failed,
+    wallMs: spent.wallMs,
+    byModel: spent.byModel,
+  };
+  if (!verdict && !cost) return undefined;
   return {
-    renderFault: verdict.fault,
-    renderFaultReason: verdict.reason,
-    ...(verdict.detail ? { renderFaultDetail: verdict.detail } : {}),
+    ...(cost ? { cost } : {}),
+    ...(verdict ? {
+      renderFault: verdict.fault,
+      renderFaultReason: verdict.reason,
+      ...(verdict.detail ? { renderFaultDetail: verdict.detail } : {}),
+    } : {}),
   };
 }
 
@@ -449,9 +471,18 @@ export async function createRoll(
 
   /* Shared across the eight; see  on dispatchCandidate. */
   const accountDown = { tripped: false };
+  /*
+    EACH TILE ON ITS OWN STOPWATCH (the latency-and-cost program).
+
+    A roll is eight independently billed renders, and the census is opened PER
+    CANDIDATE rather than around the eight: one census over the whole roll would
+    add up to "eight paints in the time of one" and say nothing about what a
+    tile costs, which is the number the price is set against. Per tile the
+    reading is what a customer actually waits for.
+  */
   const settlements = await Promise.all(
     candidates.map((candidate) =>
-      dispatchCandidate({
+      censusOfAttempt(() => dispatchCandidate({
         accountDown,
         dependencies,
         engine,
@@ -461,6 +492,22 @@ export async function createRoll(
         prompt: promptByPosition.get(candidate.position) ?? "",
         size: compiled.size,
         quality: compiled.quality,
+      })).then(({ value, error, census }) => {
+        log.info(
+          {
+            operationId: gate.operationId,
+            candidate: candidate.publicId,
+            delivered: error === undefined,
+            calls: census.total.calls,
+            failedCalls: census.total.failed,
+            callMs: census.total.ms,
+            wallMs: census.wallMs,
+            byModel: census.byModel,
+          },
+          "[rollService] what this tile cost in calls and seconds",
+        );
+        if (error !== undefined) throw error;
+        return value as Settlement;
       }),
     ),
   );

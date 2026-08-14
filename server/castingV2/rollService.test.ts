@@ -290,6 +290,35 @@ describe("settlement per slice", () => {
     );
   });
 
+  it("writes what each tile COST on its audit row — delivered and failed alike", async () => {
+    /*
+      ASSERT AT THE WIRE, because the same instrument shipped inert one commit
+      ago: the census field went onto the wrong object and a real render landed
+      with no cost on it, while the report said "an unread window" in a voice
+      that sounds like a reading.
+
+      Both paths, deliberately. A census that recorded only the tiles that
+      worked would price the good days, and a failed tile is money out with
+      nothing delivered — the exact number the cost program needs.
+    */
+    const generations = await import("../db/generations");
+    (generations.updateGeneration as any).mockClear();
+
+    await createRoll(baseDependencies((position) => position < 2), INPUT);
+
+    const written = (generations.updateGeneration as any).mock.calls
+      .map((call: any[]) => call[1]);
+    expect(written.length).toBe(8);
+    for (const row of written) {
+      expect(row.metadata?.cost, `${row.status} tile carries its cost`).toBeDefined();
+      expect(typeof row.metadata.cost.wallMs).toBe("number");
+      expect(typeof row.metadata.cost.calls).toBe("number");
+    }
+    /* And both outcomes really are represented, or this passed by measuring
+       one path twice. */
+    expect(new Set(written.map((row: any) => row.status))).toEqual(new Set(["completed", "failed"]));
+  });
+
   it("refunds exactly the slices that failed, and records a partial", async () => {
     await createRoll(baseDependencies((position) => position < 2), INPUT);
 

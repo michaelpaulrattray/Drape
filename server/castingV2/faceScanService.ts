@@ -46,6 +46,7 @@
 import { createModuleLogger } from "../logging/logger";
 import { logAuditEvent } from "../auditLog";
 import { AUDIT_ACTIONS } from "../../drizzle/schema";
+import { withCallCensus, type CallCensus } from "./callCensus";
 import { storagePublicUrl, storageReadBytes } from "../storage";
 import { describeFace, type FaceDescriptions } from "./faceDescribe";
 import { scanFace, scanPlan, type FaceScan } from "./faceScan";
@@ -331,7 +332,21 @@ export async function scannedFace(input: {
   */
   const entry: CacheEntry = { settled: null, partial: null, promise: null as never };
 
+  /*
+    AND THE SCAN IS ON THE STOPWATCH TOO (the latency-and-cost program).
+
+    A scan is house money — around fourteen segmenter calls per version looked
+    at — and until now the only figure for it was an estimate written in a
+    design note. The same census the paid render opens is opened here, so the
+    courtesy read's cost is measured by the same instrument rather than by a
+    second one that would disagree with it (law 4).
+
+    What it costs the user: nothing. What it buys: the scan's own line in the
+    cost table, and the arithmetic behind "promote this cache to a table".
+  */
+  let spent: CallCensus | null = null;
   const read = (async () => {
+    const { value, census } = await withCallCensus(async () => {
     const readBytes = input.dependencies?.readBytes ?? storageReadBytes;
     const publicUrl = input.dependencies?.publicUrl ?? storagePublicUrl;
     const reader = input.dependencies?.reader === undefined
@@ -390,6 +405,9 @@ export async function scannedFace(input: {
       },
     });
     return await displayOf(scan, url);
+    });
+    spent = census;
+    return value;
   })();
   entry.promise = read;
 
@@ -421,6 +439,11 @@ export async function scannedFace(input: {
           rescanRate: counters.scans === 0 ? 0 : Number((counters.rescans / counters.scans).toFixed(3)),
           cacheHits: counters.hits,
           cacheSize: cache.size,
+          /* WHAT THIS READ COST, from the same census the paid render uses —
+             the courtesy read's own line in the cost table. */
+          calls: spent?.total.calls ?? null,
+          callMs: spent?.total.ms ?? null,
+          wallMs: spent?.wallMs ?? null,
         },
         "[faceScanService] scanned a face-version",
       );
