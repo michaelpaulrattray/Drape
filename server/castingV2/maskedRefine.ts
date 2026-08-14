@@ -78,6 +78,7 @@ import { ProviderError } from "../providers/types";
 import { hasRegion, zoneScopeOf } from "./zoneScope";
 import { castingV2EnabledForUser, parseCastingV2Scope } from "./castingV2Scope";
 import type { Facet } from "./refineFacets";
+import { FACET_CARD_ENTRIES, facetTableOf } from "./facetCards";
 import { LANDMARK_OF_ACCESSORY, accessoryEntry } from "./accessoryKinds";
 
 const log = createModuleLogger("castingV2/maskedRefine");
@@ -532,29 +533,11 @@ export type MaskedRefineResult = {
  * never asked an open question. A facet with no entry has no masked path and
  * says so, rather than having a prompt invented for it.
  */
-const REGION_OF_FACET: Partial<Record<Facet, string>> = {
-  "hair.cut": "hair",
-  "hair.colour": "hair",
-  "hair.texture": "hair",
-  hairFinish: "hair",
-  hairWorn: "hair",
-  facialHair: "facial hair",
-  marks: "face skin",
-  "eye.colour": "eyes",
-  "eye.shape": "eyes",
-  brows: "eyebrows",
-  lashes: "eyes",
-  ears: "ear",
-  cheekbones: "face skin",
-  nose: "nose",
-  lips: "lips",
-  teeth: "lips",
-  chin: "face skin",
-  jaw: "face skin",
-  makeup: "face skin",
-  skinTone: "face skin",
-  skinCharacter: "face skin",
-};
+const REGION_OF_FACET: Partial<Record<Facet, string>> = Object.fromEntries(
+  FACET_CARD_ENTRIES
+    .filter(([, card]) => card.region !== null)
+    .map(([facet, card]) => [facet, card.region as string]),
+);
 
 export function regionNameOf(facet: Facet): string | null {
   return REGION_OF_FACET[facet] ?? null;
@@ -735,42 +718,8 @@ export function neighbourTableNames(): string[] {
  * `Record<Facet, …>` so a new facet does not compile without a decision, with a
  * test closing the other direction.
  */
-const MOVES_ITS_EDGE: Record<Facet, { readonly moves: boolean; readonly why: string }> = {
-  "hair.cut": { moves: true, why: "a cut is a new silhouette" },
-  "hair.colour": { moves: false, why: "a recoloured ponytail is the same ponytail" },
-  "hair.texture": { moves: true, why: "curl pattern changes how far the mass stands out" },
-  hairFinish: { moves: false, why: "shine changes how light sits, not where the hair is" },
-  hairWorn: { moves: true, why: "up, down, tied back — the shrink this machinery was built for" },
-  facialHair: { moves: true, why: "shaving removes it entirely" },
-  statedAccessories: { moves: true, why: "an object arrives or departs" },
-  ink: { moves: false, why: "a design is drawn on skin; the skin stays where it is" },
-  "eye.colour": { moves: false, why: "the iris does not change shape" },
-  "eye.shape": { moves: true, why: "a corner lift moves the lid boundary" },
-  brows: { moves: true, why: "a shape change moves the brow's edge" },
-  lashes: { moves: true, why: "lashes extend and retract past the lid" },
-  nose: { moves: true, why: "a contour edit moves the edge" },
-  lips: { moves: true, why: "fuller lips move the vermilion border" },
-  teeth: { moves: false, why: "behind the lips; the lips' own edge is unmoved" },
-  cheekbones: { moves: false, why: "bone structure reads as shading over a wide area" },
-  jaw: { moves: true, why: "a contour against the background" },
-  chin: { moves: true, why: "as the jaw, over a smaller arc" },
-  ears: { moves: true, why: "an ear is exposed or covered" },
-  /* A BODY EDIT IS ALL EDGE. The outline where she meets the backdrop moves and
-     her interior does not — the jaw's own reasoning over a longer arc. It cannot
-     claim a reveal in practice because these facets route `fullFrame` and never
-     take the masked path, but a declaration by silence is what this table
-     exists to prevent. */
-  bust: { moves: true, why: "the chest's outline under the garment moves" },
-  waist: { moves: true, why: "two side contours move" },
-  shoulders: { moves: true, why: "the shoulder line against the backdrop moves" },
-  arms: { moves: true, why: "an arm's own edge against the backdrop moves" },
-  build: { moves: true, why: "the whole figure's outline moves" },
-  skinTone: { moves: false, why: "a tan is her own surface, a few levels different" },
-  skinCharacter: { moves: false, why: "texture is the freckle case by another name" },
-  marks: { moves: false, why: "freckles do not remove skin — the right phantom's own facet" },
-  makeup: { moves: false, why: "makeup sits on the surface it is painted on" },
-  expression: { moves: true, why: "features move; it routes full-frame and never reaches here" },
-};
+const MOVES_ITS_EDGE: Record<Facet, { readonly moves: boolean; readonly why: string }> =
+  facetTableOf((card) => card.movesItsEdge);
 
 /** May any facet in this edit legitimately reveal what was behind something? */
 export function anyFacetMovesAnEdge(facets: ReadonlyArray<Facet>): boolean {

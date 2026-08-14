@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "fe406e42d745f88e"
+    "sourceFingerprint": "0829a7832cc7e9bb"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 107
+      "moduleCount": 108
     },
     {
       "id": "domain:castingV2",
@@ -3419,6 +3419,12 @@
     {
       "id": "module:server/castingV2/faceScanService.ts",
       "path": "server/castingV2/faceScanService.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/facetCards.ts",
+      "path": "server/castingV2/facetCards.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -9135,6 +9141,10 @@
     {
       "id": "test:server/castingV2/stylingResolution.test.ts",
       "path": "server/castingV2/stylingResolution.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/subjectCards.test.ts",
+      "path": "server/castingV2/subjectCards.test.ts"
     },
     {
       "id": "test:server/castingV2/subjectQualifiers.test.ts",
@@ -18260,6 +18270,21 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/castingV2/facetCards.ts",
+      "to": "module:server/castingV2/referenceSlotCatalogue.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/facetCards.ts",
+      "to": "module:server/castingV2/refineFacets.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/facetCards.ts",
+      "to": "module:server/castingV2/zoneScope.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/castingV2/falRegionReader.ts",
       "to": "module:server/castingV2/accessoryKinds.ts",
       "kind": "imports"
@@ -18432,6 +18457,11 @@
     {
       "from": "module:server/castingV2/maskedRefine.ts",
       "to": "module:server/castingV2/diagnosticCapture.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/maskedRefine.ts",
+      "to": "module:server/castingV2/facetCards.ts",
       "kind": "imports"
     },
     {
@@ -18862,6 +18892,11 @@
     {
       "from": "module:server/castingV2/referenceSlotCatalogue.ts",
       "to": "module:server/castingV2/accessoryKinds.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/referenceSlotCatalogue.ts",
+      "to": "module:server/castingV2/facetCards.ts",
       "kind": "imports"
     },
     {
@@ -20137,6 +20172,11 @@
     {
       "from": "module:server/castingV2/viewConformance.ts",
       "to": "module:shared/boardTypes.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/zoneScope.ts",
+      "to": "module:server/castingV2/facetCards.ts",
       "kind": "imports"
     },
     {

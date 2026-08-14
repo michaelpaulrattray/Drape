@@ -25,6 +25,7 @@
  * thing it describes.
  */
 import { allFacets, type Facet } from "./refineFacets";
+import { facetTableOf } from "./facetCards";
 
 /**
  * The five ways an edit's territory is decided.
@@ -116,64 +117,7 @@ export const OPEN_QUESTIONS: Partial<Record<Facet, string>> = {
  * Entries carry a note where the reason is not self-evident, because the whole
  * point of the fringe post-mortem is that the obvious-looking scope was wrong.
  */
-export const ZONE_SCOPE: Record<Facet, ZoneScope> = {
-  /* ---- distributed: patterns through a region, rendered whole ---- */
-  "hair.cut": "distributedFacet",
-  "hair.colour": "distributedFacet",
-  "hair.texture": "distributedFacet",
-  hairFinish: "distributedFacet",
-  hairWorn: "distributedFacet",
-  facialHair: "distributedFacet",
-  marks: "distributedFacet",
-
-  /* ---- bilateral pairs: two regions, one question, sameness asserted ---- */
-  "eye.colour": "bilateralPair",
-  "eye.shape": "bilateralPair",
-  brows: "bilateralPair",
-  lashes: "bilateralPair",
-  ears: "bilateralPair",
-  cheekbones: "bilateralPair",
-
-  /* ---- genuinely local ---- */
-  nose: "localFacet",
-  lips: "localFacet",
-  teeth: "localFacet",
-  chin: "localFacet",
-  /* FOUNDER RULING: a single local contour. The jawline is one connected
-     symmetric feature, so it is one region — a genuinely one-sided jaw ask is
-     re-ask territory, not a scope class. */
-  jaw: "localFacet",
-  /* FOUNDER RULING: several LOCAL facets asked together, never one face-wide
-     one. A face-wide makeup render would repaint her whole face to change a lip.
-     "A smoky eye and a nude lip" is two renders, composed by the existing
-     multi-patch machinery — and that is correct, because they are then
-     independently retryable. Cross-region coherence (left blush matching right)
-     rides the sameness reader as advisory. */
-  makeup: "localFacet",
-
-  /* ---- additions, scoped by what the instruction says the thing is ---- */
-  statedAccessories: "object",
-  ink: "object",
-
-  /* ---- the facet spans all visible skin ---- */
-  skinTone: "allSkin",
-  skinCharacter: "allSkin",
-
-  /* ---- not a zone at all ---- */
-  expression: "fullFrame",
-  /*
-    THE BODY IS THE WHOLE FRAME, and it is not a zone that nobody has cut yet —
-    it is a zone that cannot be cut honestly. A torso mask wearing a waist's name
-    is the wrong-boundary class (the note's §3 refuses to guess), and a body edit
-    moves the outline where she meets the backdrop, which no interior zone
-    contains. `expression` is the precedent and the reason is the same shape.
-  */
-  bust: "fullFrame",
-  waist: "fullFrame",
-  shoulders: "fullFrame",
-  arms: "fullFrame",
-  build: "fullFrame",
-};
+export const ZONE_SCOPE: Record<Facet, ZoneScope> = facetTableOf((card) => card.zone);
 
 export function zoneScopeOf(facet: Facet): ZoneScope {
   const scope = ZONE_SCOPE[facet];

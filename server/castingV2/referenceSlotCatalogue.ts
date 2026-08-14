@@ -82,6 +82,7 @@
  * that produces the specimen.
  */
 import { LANDMARK_OF_ACCESSORY } from "./accessoryKinds";
+import { facetTableOf } from "./facetCards";
 import { regionNameOf } from "./maskedRefine";
 import type { FeatureSlot, FeatureTier } from "./recipeAssembler";
 import type { SlotSpec } from "./referenceMint";
@@ -617,46 +618,7 @@ export type FacetAssignment =
   | { family: "accessories" }
   | { notASlot: string };
 
-export const FACET_SLOTS: Record<Facet, FacetAssignment> = {
-  "hair.cut": { feature: "hair" },
-  "hair.colour": { feature: "hair" },
-  "hair.texture": { feature: "hair" },
-  hairFinish: { feature: "hair" },
-  hairWorn: { feature: "hair" },
-  facialHair: { feature: "facial-hair" },
-  "eye.colour": { feature: "eye" },
-  "eye.shape": { feature: "eye" },
-  brows: { feature: "brow" },
-  lashes: { feature: "lashes" },
-  nose: { feature: "nose" },
-  lips: { feature: "lips" },
-  teeth: { feature: "teeth" },
-  cheekbones: { feature: "cheekbone" },
-  jaw: { feature: "jaw" },
-  chin: { feature: "chin" },
-  ears: { feature: "ear" },
-  bust: { feature: "build" },
-  waist: { feature: "build" },
-  shoulders: { feature: "build" },
-  arms: { feature: "build" },
-  build: { feature: "build" },
-  skinTone: { feature: "skin" },
-  skinCharacter: { feature: "skin" },
-  marks: { feature: "skin" },
-  makeup: {
-    notASlot:
-      "makeup is worn STATE on the anatomy slots it is worn on (fable-168), and a surface worn on anatomy is one anatomy slot whose stack holds the surface words (fable-201) — a smoky eye rides eye@left and eye@right, a nude lip rides lips",
-  },
-  statedAccessories: { family: "accessories" },
-  ink: {
-    notASlot:
-      "OWED, not absent: ink is per placement and its question comes from the placement rather than from a region table, so its slots arrive with the tattoo studio and the flash-sheet path (D-138, roadmap §3). Inventing a `tattoo` question here would ask a segmenter an open question (D-213)",
-  },
-  expression: {
-    notASlot:
-      "presentation, not identity (D-136) — a follow must never inherit a smile — and there is no zone that contains it (zoneScope `fullFrame`), so there is nothing to cut and nothing to carry",
-  },
-};
+export const FACET_SLOTS: Record<Facet, FacetAssignment> = facetTableOf((card) => card.slot);
 
 function entryOf(feature: string): CatalogueEntry | undefined {
   return SLOT_CATALOGUE.find((entry) => entry.feature === feature);
