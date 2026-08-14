@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "0ccb2d4e75c4f1a3"
+    "sourceFingerprint": "f14636b4709bb537"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 110
+      "moduleCount": 111
     },
     {
       "id": "domain:castingV2",
@@ -3431,6 +3431,12 @@
     {
       "id": "module:server/castingV2/facetCards.ts",
       "path": "server/castingV2/facetCards.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/falBudget.ts",
+      "path": "server/castingV2/falBudget.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -7634,8 +7640,8 @@
       "valueRecorded": false
     },
     {
-      "id": "env:FAL_CONCURRENCY",
-      "name": "FAL_CONCURRENCY",
+      "id": "env:FAL_ACCOUNT_CEILING",
+      "name": "FAL_ACCOUNT_CEILING",
       "valueRecorded": false
     },
     {
@@ -9188,6 +9194,10 @@
     {
       "id": "test:server/castingV2/faceScanService.test.ts",
       "path": "server/castingV2/faceScanService.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/falBudget.test.ts",
+      "path": "server/castingV2/falBudget.test.ts"
     },
     {
       "id": "test:server/castingV2/falConcurrency.test.ts",
@@ -14962,6 +14972,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/_core/env.ts",
+      "to": "module:server/castingV2/falBudget.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/_core/index.ts",
       "to": "module:server/_core/context.ts",
       "kind": "imports"
@@ -18678,6 +18693,11 @@
     },
     {
       "from": "module:server/castingV2/falConcurrency.ts",
+      "to": "module:server/castingV2/falBudget.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/falConcurrency.ts",
       "to": "module:server/logging/logger.ts",
       "kind": "imports"
     },
@@ -19673,6 +19693,11 @@
     },
     {
       "from": "module:server/castingV2/refineService.ts",
+      "to": "module:server/castingV2/falBudget.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/refineService.ts",
       "to": "module:server/castingV2/falRegionReader.ts",
       "kind": "imports"
     },
@@ -19903,6 +19928,11 @@
     },
     {
       "from": "module:server/castingV2/refineService.ts",
+      "to": "module:server/providers/providerQueue.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/refineService.ts",
       "to": "module:server/providers/types.ts",
       "kind": "imports"
     },
@@ -20024,6 +20054,11 @@
     {
       "from": "module:server/castingV2/repaintRender.ts",
       "to": "module:server/providers/types.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/rollEngine.ts",
+      "to": "module:server/castingV2/falBudget.ts",
       "kind": "imports"
     },
     {
@@ -20314,6 +20349,11 @@
     {
       "from": "module:server/castingV2/signEngine.ts",
       "to": "module:server/castingV2/castViewPackage.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/signEngine.ts",
+      "to": "module:server/castingV2/falBudget.ts",
       "kind": "imports"
     },
     {
@@ -26606,17 +26646,17 @@
       "message": "Names 2 of RecipeRefusal's 4 fields (server/castingV2/recipeAssembler.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/refineService.ts:385",
+      "id": "finding:redeclared-shape:server/castingV2/refineService.ts:387",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/refineService.ts:385",
+      "subject": "server/castingV2/refineService.ts:387",
       "message": "Names 3 of Thumbnail's 3 fields (server/castingV2/thumbnails.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/refineService.ts:433",
+      "id": "finding:redeclared-shape:server/castingV2/refineService.ts:435",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/refineService.ts:433",
+      "subject": "server/castingV2/refineService.ts:435",
       "message": "Names 3 of Thumbnail's 3 fields (server/castingV2/thumbnails.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {

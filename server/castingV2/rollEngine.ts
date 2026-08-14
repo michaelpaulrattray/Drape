@@ -11,6 +11,7 @@
  * eight fit, not whether one does.
  */
 import { createFalCreativeEngine, FAL_GPT_IMAGE_2 } from "../providers/falImages";
+import { falAllowanceOf } from "./falBudget";
 import { ProviderQueue } from "../providers/providerQueue";
 import type { CreativeEngine } from "../providers/types";
 
@@ -32,7 +33,9 @@ export function castingImageQueue(): ProviderQueue {
   if (!queue) {
     queue = new ProviderQueue({
       name: "fal-casting-images",
-      concurrency: envInt("ROLL_IMAGE_CONCURRENCY", 8),
+      /* From the shared budget, which the boot check proves fits inside the
+         account's ceiling beside the scans, the views and the edits. */
+      concurrency: falAllowanceOf("ROLL_IMAGE_CONCURRENCY"),
       maxQueueDepth: envInt("ROLL_IMAGE_MAX_QUEUE_DEPTH", 64),
     });
   }

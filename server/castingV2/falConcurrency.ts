@@ -47,13 +47,20 @@
  * segmenter may not spend the whole allowance even when it is alone.
  */
 import { createModuleLogger } from "../logging/logger";
+import { falAllowanceOf } from "./falBudget";
 
 const log = createModuleLogger("castingV2/falConcurrency");
 
-/** How many fal calls this process may have in flight at once. */
+/**
+ * How many fal calls this reader may have in flight at once.
+ *
+ * Read from the shared budget rather than from the variable directly: the
+ * account's ceiling is spent by four paths and a boot check proves they fit
+ * (`falBudget.ts`). Two readings of one number is how the arithmetic that check
+ * performs stops describing what the code actually does.
+ */
 export function falConcurrencyLimit(): number {
-  const raw = Number(process.env.FAL_CONCURRENCY ?? "6");
-  return Number.isFinite(raw) && raw >= 1 ? Math.floor(raw) : 6;
+  return Math.max(1, falAllowanceOf("FAL_CONCURRENCY"));
 }
 
 /** How many times a concurrency 429 is waited out before it becomes a failure. */

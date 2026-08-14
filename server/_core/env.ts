@@ -15,6 +15,7 @@ import {
   validateEvidenceComposerEnvironment,
 } from "../casting/evidence/evidenceComposerScope";
 import { assertDiagnosticCaptureConfigured } from "../castingV2/diagnosticCapture";
+import { assertFalBudget } from "../castingV2/falBudget";
 import {
   EVIDENCE_PACKAGE_SCOPE_ENV,
   validateEvidencePackageEnvironment,
@@ -186,6 +187,19 @@ export function validateEnv(): void {
     scope: process.env[CASTING_FACE_SCAN_SCOPE_ENV],
     libraryScope: process.env[CASTING_REFERENCE_LIBRARY_SCOPE_ENV],
   });
+
+  /*
+    THE ACCOUNT'S CONCURRENCY, SHARED OUT AND PROVED TO FIT (fable-511).
+
+    Four paths spend one twenty-request allowance — rolls, sign views, refine
+    edits and the region reader — and until this check nothing enforced the
+    arithmetic. What that cost is on the record: the founder's fresh casts came
+    back missing eyes, brows and ears because the reads over the line were
+    refused, and a refused courtesy read shows up as a feature the customer is
+    told she does not have.
+  */
+  const budget = assertFalBudget();
+  console.info(`[Env] fal concurrency budget: ${budget.line}`);
 
   for (const [key, consequence] of Object.entries(OPTIONAL_VARS)) {
     if (!process.env[key]) {

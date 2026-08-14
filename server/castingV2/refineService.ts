@@ -186,6 +186,8 @@ import { invisibleRemovalNote, readSiteVisibility } from "./invisibleRemoval";
 import { departureFloorFor } from "./bornWornDetector";
 import { createFalRegionReader } from "./falRegionReader";
 import { createFalMaskedEditEngine } from "../providers/falImages";
+import { ProviderQueue } from "../providers/providerQueue";
+import { falAllowanceOf } from "./falBudget";
 import {
   captionClause,
   captionRealization,
@@ -448,8 +450,33 @@ async function defaultStoreImage(input: { key: string; bytes: Buffer; contentTyp
   engine, and so production still refuses with one clear sentence rather than
   discovering it deep in a request.
 */
+/**
+ * ONE QUEUE FOR EVERY PAID EDIT, not one per edit (fable-511).
+ *
+ * This factory ran per refine, and `createFalMaskedEditEngine` builds its own
+ * `ProviderQueue` when it is handed none — so N concurrent edits meant N queues
+ * of four, which is a limit that rises with load and therefore is not one. The
+ * account's ceiling is spent by four paths (`falBudget.ts`) and this is one of
+ * them, so its allowance lives in the table and its queue lives here, once.
+ */
+let maskedEditQueue: ProviderQueue | null = null;
+
+function refineEditQueue(): ProviderQueue {
+  if (!maskedEditQueue) {
+    maskedEditQueue = new ProviderQueue({
+      name: "fal-refine-edits",
+      concurrency: falAllowanceOf("REFINE_EDIT_CONCURRENCY"),
+      maxQueueDepth: 32,
+    });
+  }
+  return maskedEditQueue;
+}
+
 function defaultMaskedEditEngine() {
-  return createFalMaskedEditEngine({ apiKey: process.env.FAL_KEY ?? "" });
+  return createFalMaskedEditEngine({
+    apiKey: process.env.FAL_KEY ?? "",
+    queue: refineEditQueue(),
+  });
 }
 
 function defaultRegionReader(): RegionReader {

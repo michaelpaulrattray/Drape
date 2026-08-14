@@ -16,6 +16,7 @@
  */
 import { createOpenRouterTextEngine, DEFAULT_INTERPRETER_MODEL } from "../providers/openrouterText";
 import { createFalIdentityEngine } from "../providers/falQueue";
+import { falAllowanceOf } from "./falBudget";
 import { ProviderQueue } from "../providers/providerQueue";
 import type { IdentityEngine } from "../providers/types";
 import { CAST_PACKAGE_VIEWS } from "./castViewPackage";
@@ -49,7 +50,7 @@ export function castPackageQueue(): ProviderQueue {
         sheet is also drawing on; a Sign that starves the rolls behind it trades
         one customer's wait for everybody's.
       */
-      concurrency: envInt("SIGN_VIEW_CONCURRENCY", 3),
+      concurrency: falAllowanceOf("SIGN_VIEW_CONCURRENCY"),
       maxQueueDepth: envInt("SIGN_VIEW_MAX_QUEUE_DEPTH", 24),
     });
   }
