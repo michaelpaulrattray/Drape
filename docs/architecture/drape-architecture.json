@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "12d9312253a3f3bd"
+    "sourceFingerprint": "8afdf960cafe920c"
   },
   "domains": [
     {
@@ -9673,6 +9673,10 @@
     {
       "id": "test:server/routes/modelCreatePayload.test.ts",
       "path": "server/routes/modelCreatePayload.test.ts"
+    },
+    {
+      "id": "test:server/scopeFlagTemplate.test.ts",
+      "path": "server/scopeFlagTemplate.test.ts"
     },
     {
       "id": "test:server/scriptConnectionDiscipline.test.ts",
