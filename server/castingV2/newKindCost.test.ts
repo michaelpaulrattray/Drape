@@ -28,6 +28,12 @@ import {
   facetTableOf,
   type FacetCard,
 } from "./facetCards";
+import {
+  REGION_CARDS,
+  REGION_CARD_ENTRIES,
+  regionTableOf,
+  type RegionCard,
+} from "./regionCards";
 
 /** A kind nobody has catalogued, answering all eight questions. */
 const SCAFFOLD: SubjectCard = {
@@ -136,5 +142,52 @@ describe("one card is enough", () => {
        the card, every one of those lookups is undefined. */
     expect((tableOf((card) => card.heading) as Record<string, unknown>).scaffold).toBeUndefined();
     expect((facetTableOf((card) => card.zone) as Record<string, unknown>).scaffold).toBeUndefined();
+  });
+});
+
+/**
+ * AND THE SAME QUESTION FOR AN ACCESSORY KIND (V1's other half).
+ *
+ * F5 measured the old cost: ~4 mandatory tables, a pair noun, two measurement
+ * courts, a completeness specimen and 4–5 prose sites no test closed. Measured
+ * again with a scaffold kind — a `choker` — the suite named exactly TWO source
+ * sites, and both were facts about the REGION rather than the kind: whether its
+ * material has fringe at the edge, and which regions its boundary is confused
+ * with. Both are on the region card now, so a new kind is its accessory entry
+ * plus its region card.
+ */
+describe("an accessory kind is its entry and its region", () => {
+  const SCAFFOLD_REGION: RegionCard = {
+    fringe: { at: false, why: "a scaffold has a solid edge" },
+    neighbours: { with: ["hair"], why: "hair falls over everything" },
+  };
+
+  it("answers both region tables for a region nothing else has heard of", () => {
+    const regions = { ...REGION_CARDS, scaffold: SCAFFOLD_REGION };
+    const entries = Object.entries(regions) as ReadonlyArray<readonly [string, RegionCard]>;
+    const derive = <T>(read: (card: RegionCard) => T) =>
+      Object.fromEntries(entries.map(([region, card]) => [region, read(card)])) as Record<string, T>;
+
+    expect(derive((card) => card.fringe.at).scaffold).toBe(false);
+    expect(derive((card) => card.neighbours.with).scaffold).toEqual(["hair"]);
+    /* And the phrasing is OPTIONAL — a region whose key is already the words
+       sent carries no `askedAs`, which is every region but one. */
+    expect(derive((card) => card.askedAs).scaffold).toBeUndefined();
+  });
+
+  it("CAN FAIL — the shipped regions know no scaffold", () => {
+    expect((regionTableOf((card) => card.fringe) as Record<string, unknown>).scaffold)
+      .toBeUndefined();
+  });
+
+  it("keeps a MEASURED phrasing wherever one was bought", () => {
+    /* The lips reading is the only one so far, and it is data rather than a
+       comment precisely so this can be asserted rather than read. */
+    const measured = REGION_CARD_ENTRIES.filter(([, card]) => card.askedAs !== undefined);
+    expect(measured.length).toBeGreaterThan(0);
+    for (const [region, card] of measured) {
+      expect(card.askedAs!.measured.length, region).toBeGreaterThanOrEqual(3);
+      expect(card.askedAs!.words.length, region).toBeGreaterThan(0);
+    }
   });
 });

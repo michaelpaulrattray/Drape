@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "a679ec927a9238d0"
+    "sourceFingerprint": "955b3063edaf4aa5"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 112
+      "moduleCount": 113
     },
     {
       "id": "domain:castingV2",
@@ -3719,6 +3719,12 @@
     {
       "id": "module:server/castingV2/refusalCounter.ts",
       "path": "server/castingV2/refusalCounter.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/regionCards.ts",
+      "path": "server/castingV2/regionCards.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -18738,6 +18744,11 @@
     },
     {
       "from": "module:server/castingV2/falRegionReader.ts",
+      "to": "module:server/castingV2/regionCards.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/falRegionReader.ts",
       "to": "module:server/logging/logger.ts",
       "kind": "imports"
     },
@@ -18909,6 +18920,11 @@
     {
       "from": "module:server/castingV2/maskedRefine.ts",
       "to": "module:server/castingV2/refineFacets.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/maskedRefine.ts",
+      "to": "module:server/castingV2/regionCards.ts",
       "kind": "imports"
     },
     {

@@ -79,6 +79,7 @@ import { hasRegion, zoneScopeOf } from "./zoneScope";
 import { castingV2EnabledForUser, parseCastingV2Scope } from "./castingV2Scope";
 import type { Facet } from "./refineFacets";
 import { FACET_CARD_ENTRIES, facetTableOf } from "./facetCards";
+import { regionTableOf } from "./regionCards";
 import { LANDMARK_OF_ACCESSORY, accessoryEntry } from "./accessoryKinds";
 
 const log = createModuleLogger("castingV2/maskedRefine");
@@ -591,19 +592,8 @@ export function regionNameOf(facet: Facet): string | null {
  * is two pixels wide and is exactly what a segmenter's boundary discards. That
  * exposure is closed by the territory rule, not by this table.
  */
-const FRINGE_AT_EDGE: Record<string, { readonly fringe: boolean; readonly why: string }> = {
-  hair: { fringe: true, why: "flyaway strands and coils stand proud of any outline — the founding case" },
-  "facial hair": { fringe: true, why: "stubble and beard edges are individual hairs over skin" },
-  eyebrows: { fringe: true, why: "brow hairs stand outside the brow's own shape" },
-  eyes: { fringe: true, why: "lashes reach well past the lid the segmenter draws" },
-  earring: { fringe: true, why: "hooks and fine chains are thinner than a confidence frontier" },
-  glasses: { fringe: true, why: "a wire temple arm is a couple of pixels wide" },
-  "face skin": { fringe: false, why: "skin is a surface bounded by other features; it has no fringe, and this is where the tear came from" },
-  lips: { fringe: false, why: "the vermilion border is an edge, not a fringe" },
-  nose: { fringe: false, why: "a contour against the face, with nothing finer at its boundary" },
-  ear: { fringe: false, why: "hair may fall across it, but that fringe is the HAIR's, harvested when hair is the question" },
-  "nose stud": { fringe: false, why: "a bead — solid, and larger than the boundary's error" },
-};
+const FRINGE_AT_EDGE: Record<string, { readonly fringe: boolean; readonly why: string }> =
+  regionTableOf((card) => ({ fringe: card.fringe.at, why: card.fringe.why }));
 
 /**
  * Whether this region's harvest may reach beyond the segmenter's boundary.
@@ -657,19 +647,8 @@ export function hasFringeAtEdge(region: string): boolean {
  *     wire-frame glasses" delivers arms clipped at the temples after a perfect
  *     paint, and the Tier A catalogue asks for exactly that.
  */
-const CONFUSABLE_NEIGHBOURS: Record<string, { readonly with: readonly string[]; readonly why: string }> = {
-  "face skin": { with: ["hair", "facial hair"], why: "both grow over and against skin, and hair is what moved in run-6" },
-  lips: { with: ["facial hair"], why: "a moustache sits on the vermilion border" },
-  eyes: { with: ["hair", "eyebrows"], why: "a fringe falls across the eyes" },
-  eyebrows: { with: ["hair"], why: "a fringe reaches the brow" },
-  nose: { with: [], why: "nothing that moves borders it" },
-  ear: { with: ["hair"], why: "hair falls over the ear" },
-  earring: { with: ["hair"], why: "the lobe sits under her hair" },
-  glasses: { with: ["hair"], why: "the arms run into it at the temples" },
-  "nose stud": { with: [], why: "small, and its anchor is named" },
-  "facial hair": { with: ["hair"], why: "they meet at the sideburn" },
-  hair: { with: [], why: "hair is the aggressor here, never the victim" },
-};
+const CONFUSABLE_NEIGHBOURS: Record<string, { readonly with: readonly string[]; readonly why: string }> =
+  regionTableOf((card) => card.neighbours);
 
 /** Regions that could be mistaken for this one. Unknown regions have none. */
 export function confusableNeighboursOf(region: string): readonly string[] {

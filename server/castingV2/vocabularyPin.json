@@ -699,5 +699,49 @@
     "statedAccessories": true,
     "teeth": false,
     "waist": true
+  },
+  "FRINGE_AT_EDGE": {
+    "hair": true,
+    "facial hair": true,
+    "eyebrows": true,
+    "eyes": true,
+    "earring": true,
+    "glasses": true,
+    "face skin": false,
+    "lips": false,
+    "nose": false,
+    "ear": false,
+    "nose stud": false
+  },
+  "CONFUSABLE_NEIGHBOURS": {
+    "face skin": [
+      "hair",
+      "facial hair"
+    ],
+    "lips": [
+      "facial hair"
+    ],
+    "eyes": [
+      "hair",
+      "eyebrows"
+    ],
+    "eyebrows": [
+      "hair"
+    ],
+    "nose": [],
+    "ear": [
+      "hair"
+    ],
+    "earring": [
+      "hair"
+    ],
+    "glasses": [
+      "hair"
+    ],
+    "nose stud": [],
+    "facial hair": [
+      "hair"
+    ],
+    "hair": []
   }
 }

@@ -28,7 +28,15 @@ import { CHANGE_AMPLITUDE } from "./changeAmplitude";
 import { FACET_SLOTS } from "./referenceSlotCatalogue";
 import { SUBJECT_QUALIFIER } from "./subjectQualifiers";
 import { ZONE_SCOPE } from "./zoneScope";
-import { anyFacetMovesAnEdge, edgeTableNames, regionNameOf } from "./maskedRefine";
+import {
+  anyFacetMovesAnEdge,
+  confusableNeighboursOf,
+  edgeTableNames,
+  fringeTableNames,
+  hasFringeAtEdge,
+  neighbourTableNames,
+  regionNameOf,
+} from "./maskedRefine";
 import {
   DEPARTABLE_SUBJECTS,
   FREE_SUBJECTS,
@@ -119,5 +127,36 @@ describe("the pin itself", () => {
     const tampered = { ...pin.FREE_SUBJECTS, hairCut: "HAIRCUT" };
     expect(tampered).not.toEqual(pin.FREE_SUBJECTS);
     expect(FREE_SUBJECTS).not.toEqual(tampered);
+  });
+});
+
+describe("the region tables", () => {
+  /*
+    CAPTURED FROM THE PRE-MOVE SOURCE, not from the code that replaced it.
+
+    These two moved onto the region card after the pin file was first written,
+    so their entries were read out of `git show HEAD:maskedRefine.ts` — the
+    literal as it stood before the derivation — rather than from the derivation
+    itself. A golden captured from the thing it is meant to check is not one.
+
+    They matter behaviourally: a harvest reaches past its boundary only where
+    `fringe` is true, and the neighbour list decides what "territory nobody
+    asked about" means at a shared edge. A silent flip here is a paid render
+    tearing at an edge, which is run-6's own defect.
+  */
+  it("say what they said before the region card existed", () => {
+    const fringe = Object.fromEntries(
+      Object.keys(pin.FRINGE_AT_EDGE).map((region) => [region, hasFringeAtEdge(region)]));
+    expect(fringe).toEqual(pin.FRINGE_AT_EDGE);
+
+    const neighbours = Object.fromEntries(
+      Object.keys(pin.CONFUSABLE_NEIGHBOURS)
+        .map((region) => [region, [...confusableNeighboursOf(region)]]));
+    expect(neighbours).toEqual(pin.CONFUSABLE_NEIGHBOURS);
+  });
+
+  it("cover every region the tables declare — a pin over a subset is not a pin", () => {
+    expect(Object.keys(pin.FRINGE_AT_EDGE).sort()).toEqual([...fringeTableNames()].sort());
+    expect(Object.keys(pin.CONFUSABLE_NEIGHBOURS).sort()).toEqual([...neighbourTableNames()].sort());
   });
 });
