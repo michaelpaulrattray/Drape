@@ -40,7 +40,10 @@ type Category = {
   siblings: Partial<Record<Facet, string>>;
 };
 
+import { FACET_CARD_ENTRIES, PRESERVATION_CATEGORIES } from "./facetCards";
+
 const f = facetOfSubject;
+void f;
 
 /**
  * The categories, and every facet belongs to exactly one.
@@ -50,113 +53,17 @@ const f = facetOfSubject;
  * them — `refinePreservation.test` proves the cover is total. A facet nobody
  * protects is a facet the model is free to redraw.
  */
-const CATEGORIES: Category[] = [
-  {
-    whole: "the same hair",
-    siblings: {
-      [facetOfAxis("hairStyle")]: "the same haircut",
-      [facetOfAxis("hairColour")]: "the same hair colour",
-      [facetOfAxis("hairTexture")]: "the same hair texture",
-      [f("hairFinish")]: "the same hair finish",
-      [f("hairWorn")]: "the hair worn the same way",
-    },
-  },
-  {
-    whole: "the same eyes",
-    siblings: {
-      [facetOfAxis("eyeColour")]: "the same eye colour",
-      [facetOfAxis("eyeShape")]: "the same eye shape",
-      [f("brows")]: "the same brows",
-      [f("lashes")]: "the same lashes",
-    },
-  },
-  {
-    whole: "the same bone structure",
-    siblings: {
-      [f("nose")]: "the same nose",
-      [f("cheekbones")]: "the same cheekbones",
-      [f("jaw")]: "the same jawline",
-      [f("chin")]: "the same chin",
-      [f("ears")]: "the same ears",
-    },
-  },
-  {
-    whole: "the same mouth",
-    siblings: {
-      [f("lips")]: "the same lips",
-      [f("teeth")]: "the same teeth",
-    },
-  },
-  {
-    whole: "the same skin",
-    siblings: {
-      [f("skinTone")]: "the same skin tone",
-      [f("skinCharacter")]: "the same skin texture",
-      [f("marks")]: "the same freckles, moles and marks",
-      [f("ink")]: "the same tattoos",
-    },
-  },
-  {
-    /*
-      ONE CATEGORY FOR THE WHOLE FIGURE, because the panel row is one thing and
-      the clause speaks the same ontology (law 8). The siblings still exist so a
-      bust edit does not license the model to redraw her shoulders.
-    */
-    whole: "the same build",
-    siblings: {
-      [f("bust")]: "the same chest",
-      [f("waist")]: "the same waist",
-      [f("shoulders")]: "the same shoulders",
-      [f("arms")]: "the same arms",
-      [f("build")]: "the same build",
-    },
-  },
-  {
-    whole: "the same makeup",
-    siblings: { [facetOfAxis("makeup")]: "the same makeup" },
-  },
-  {
-    whole: "the same facial hair",
-    siblings: { [f("facialHair")]: "the same facial hair" },
-  },
-  {
-    whole: "the same expression",
-    siblings: { [f("expression")]: "the same expression" },
-  },
-  {
-    /*
-      PIXEL-CONDITIONAL, and deliberately so (D-166, amended).
-
-      The ruling asks the tail to NAME the record's stated facts — "her glasses
-      stay on". It cannot, honestly: brief-stated accessories live on the roll's
-      intent and never reach the candidate's resolved identity, and the licence
-      is failure-to-appear, so a stated accessory may simply not be in the
-      picture. Naming glasses against a face that has none would invite the
-      model to ADD them — invented content wearing a preservation clause.
-
-      Phrasing it against what the REFERENCE shows achieves the intent and can
-      never assert an absent thing. Flagged to the founder as a one-line choice
-      rather than decided quietly.
-    */
-    /*
-      AND THE EXAMPLES CAME OUT (D-183).
-
-      The clause used to read "anything worn in the reference — glasses,
-      earrings, studs, a chain — still worn and unchanged", and the note above
-      had already identified the risk without spotting that the example list IS
-      the risk. On the founder's bare-eared candidate, "remove earrings"
-      produced a prompt whose ONLY mention of earrings was this list — removal
-      is subtraction, so the edits lane says nothing about them at all — and the
-      render came back wearing a hoop and a stud that were never in the base.
-
-      Naming a category invites it. The clause keeps its whole intent by
-      pointing at the photograph and naming nothing.
-    */
-    whole: "anything worn in the reference photograph still worn and unchanged, and nothing "
-      + "worn that is not in it",
-    siblings: { [f("statedAccessories")]: "anything else worn in the reference unchanged" },
-  },
-];
+export const CATEGORIES: Category[] = Object.entries(PRESERVATION_CATEGORIES)
+  .map(([identifier, whole]) => ({
+    whole,
+    siblings: Object.fromEntries(
+      FACET_CARD_ENTRIES
+        .filter(([, card]) => card.preservation.category === identifier)
+        .map(([facet, card]) => [facet, card.preservation.phrase]),
+    ) as Partial<Record<Facet, string>>,
+  }))
+  /* A category nobody belongs to says nothing and should not be spoken. */
+  .filter((category) => Object.keys(category.siblings).length > 0);
 
 /**
  * Categories with no facet at all — never edited, so never subtracted.

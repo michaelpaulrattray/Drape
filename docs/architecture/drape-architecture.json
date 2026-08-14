@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "f14636b4709bb537"
+    "sourceFingerprint": "94623785a7661ca3"
   },
   "domains": [
     {
@@ -19523,6 +19523,11 @@
     },
     {
       "from": "module:server/castingV2/refinePreservation.ts",
+      "to": "module:server/castingV2/facetCards.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/refinePreservation.ts",
       "to": "module:server/castingV2/refineFacets.ts",
       "kind": "imports"
     },
@@ -20329,6 +20334,11 @@
     {
       "from": "module:server/castingV2/segmentsOnFace.ts",
       "to": "module:server/castingV2/castPronouns.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/segmentsOnFace.ts",
+      "to": "module:server/castingV2/facetCards.ts",
       "kind": "imports"
     },
     {

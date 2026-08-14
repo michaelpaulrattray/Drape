@@ -22,7 +22,12 @@ import {
   tableOf,
   type SubjectCard,
 } from "./subjectCards";
-import { FACET_CARDS, facetTableOf, type FacetCard } from "./facetCards";
+import {
+  FACET_CARDS,
+  PRESERVATION_CATEGORIES,
+  facetTableOf,
+  type FacetCard,
+} from "./facetCards";
 
 /** A kind nobody has catalogued, answering all eight questions. */
 const SCAFFOLD: SubjectCard = {
@@ -41,6 +46,8 @@ const SCAFFOLD_FACET: FacetCard = {
   slot: { notASlot: "a scaffold has no home in the library" },
   region: null,
   movesItsEdge: { moves: false, why: "a scaffold moves nothing" },
+  naming: { shape: "hers" },
+  preservation: { category: "boneStructure", phrase: "the same scaffold" },
 };
 
 describe("one card is enough", () => {
@@ -97,6 +104,31 @@ describe("one card is enough", () => {
     expect(deriveFacet((card) => card.movesItsEdge).scaffold.moves).toBe(false);
     /* `region: null` is an answer: no masked path, stated rather than absent. */
     expect(deriveFacet((card) => card.region).scaffold).toBeNull();
+  });
+
+  it("answers the two WORD tables that used to be edited by hand", () => {
+    /*
+      MEASURED, not assumed. A scaffold face slot was added to all three
+      registries and the suite named every remaining hand-site: the preservation
+      tail had no phrase for the new facet, and the panel had no name for it —
+      two more tables keyed on the vocabulary, both of them prose a customer
+      reads. Both are views over the card now, so the same scaffold answers.
+    */
+    const facets = { ...FACET_CARDS, scaffold: SCAFFOLD_FACET };
+    const entriesOf = Object.entries(facets) as ReadonlyArray<readonly [string, FacetCard]>;
+
+    const naming = Object.fromEntries(entriesOf
+      .filter(([, card]) => card.naming !== null)
+      .map(([facet, card]) => [facet, card.naming]));
+    expect(naming.scaffold).toEqual(SCAFFOLD_FACET.naming);
+
+    const category = SCAFFOLD_FACET.preservation.category;
+    const siblings = entriesOf
+      .filter(([, card]) => card.preservation.category === category)
+      .map(([facet]) => facet);
+    expect(siblings).toContain("scaffold");
+    /* And the category it joins is one the tail actually speaks. */
+    expect(Object.keys(PRESERVATION_CATEGORIES)).toContain(category);
   });
 
   it("CAN FAIL — the same derivation over the shipped cards knows no scaffold", () => {

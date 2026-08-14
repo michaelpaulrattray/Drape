@@ -36,6 +36,7 @@
  *   callers (roadmap §0) — so the "she came with it" wording is defined here and
  *   deliberately unreachable rather than drawn as if it worked.
  */
+import { FACET_CARD_ENTRIES } from "./facetCards";
 import { allFacets, facetOfSubject } from "./refineFacets";
 import { hasRegion } from "./zoneScope";
 import { capitalize, type CastPronouns } from "./castPronouns";
@@ -58,31 +59,11 @@ type Naming =
  * call her nose an accessory. The reverse-direction test below closes the gap so
  * a new facet cannot arrive unnamed.
  */
-const NAMING_OF_FACET: Record<string, Naming> = {
-  marks: { shape: "hers" },
-  skinTone: { shape: "hers" },
-  skinCharacter: { shape: "hers" },
-  cheekbones: { shape: "hers" },
-  nose: { shape: "hers" },
-  lips: { shape: "hers" },
-  teeth: { shape: "hers" },
-  chin: { shape: "hers" },
-  jaw: { shape: "hers" },
-  ears: { shape: "hers" },
-  brows: { shape: "hers" },
-  lashes: { shape: "hers" },
-  facialHair: { shape: "hers" },
-  "eye.colour": { shape: "hers" },
-  "eye.shape": { shape: "hers" },
-  "hair.cut": { shape: "hers" },
-  "hair.colour": { shape: "hers" },
-  "hair.texture": { shape: "hers" },
-  hairFinish: { shape: "hers" },
-  hairWorn: { shape: "hairArrangement" },
-  makeup: { shape: "worn" },
-  statedAccessories: { shape: "worn" },
-  ink: { shape: "worn" },
-};
+const NAMING_OF_FACET: Record<string, Naming> = Object.fromEntries(
+  FACET_CARD_ENTRIES
+    .filter(([, card]) => card.naming !== null)
+    .map(([facet, card]) => [facet, card.naming as Naming]),
+);
 
 /** Facets named here — for the reverse-direction test. */
 export function namingTableFacets(): string[] {
