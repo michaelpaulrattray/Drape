@@ -117,6 +117,43 @@ describe("a row nobody is rendering gives the customer their hands back (fable-4
   });
 });
 
+describe("his evening, in order (fable-474 §2)", () => {
+  /*
+    THE REGRESSION TEST THAT IS THE FOUNDER'S OWN SEQUENCE, start to finish.
+    The arms above each hold one rule; this holds the walk they were found in,
+    so a future change that satisfies every rule separately and still recreates
+    his night has somewhere to fail.
+  */
+  it("edit cast A · look at cast B · A's worker dies · the sheet comes back", () => {
+    const A = "cand-A";
+    const B = "cand-B";
+
+    /* 1. He fires an edit on A, and is looking at A. */
+    let inFlight: string | null = A;
+    expect(refineBusy({ viewerCandidateId: A, inFlightCandidateId: inFlight, pending: [] })).toBe(true);
+
+    /* 2. He walks the viewer to B, which is rendering nothing. This is where
+          his boxes vanished and B's button read "Refining…". */
+    expect(refineBusy({ viewerCandidateId: B, inFlightCandidateId: inFlight, pending: [] })).toBe(false);
+
+    /* 3. The request comes back (his was a lost-contact rejection), so the
+          client's own knowledge falls away — and A is still busy, because the
+          SERVER says a row is running on it. */
+    inFlight = null;
+    expect(refineBusy({ viewerCandidateId: A, inFlightCandidateId: inFlight, pending: [live] })).toBe(true);
+
+    /* 4. A's worker dies. For as long as the lease runs the row still reads
+          dispatched, and A stays honestly shut — this is the designed cost. */
+    expect(refineBusy({ viewerCandidateId: A, inFlightCandidateId: inFlight, pending: [live] })).toBe(true);
+    /*    …and B is untouched throughout, which is the half he lost. */
+    expect(refineBusy({ viewerCandidateId: B, inFlightCandidateId: inFlight, pending: [] })).toBe(false);
+
+    /* 5. The lease passes. The sweep owns the row, the server says settling,
+          and A gives him his hands back — no refresh. */
+    expect(refineBusy({ viewerCandidateId: A, inFlightCandidateId: inFlight, pending: [settling] })).toBe(false);
+  });
+});
+
 describe("the sheet computes this in one place", () => {
   const SHEET = new URL("../../pages/CastingSheet.tsx", import.meta.url);
 

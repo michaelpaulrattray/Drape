@@ -112,7 +112,7 @@ import {
 } from "./refineDelta";
 import { interpretRefinement, refusalMessage } from "./refineInterpreter";
 import { readStoredDelta } from "./refineLegacy";
-import { namesRemoval } from "./removalWords";
+import { removalEvidence } from "./removalWords";
 import {
   LEAVE_AS_SHE_IS,
   alreadyUpsweptReask,
@@ -135,6 +135,7 @@ import {
   matchSteps,
   readChain,
   readRemovalSubject,
+  reReadNamesAThingToHave,
   sameChain,
   textMentions,
   type ChainStep,
@@ -946,10 +947,31 @@ export async function refineCandidate(
     already opens when a removal fails to hold up — rather than guessing at a
     delta here. The parse stays the model's; the CLASSIFICATION gets a floor.
   */
-  if (parsed.intent === "remove" && !namesRemoval(instruction)) {
+  /*
+    AND A WORD THAT ALSO DESCRIBES A LOOK DOES NOT SAY IT (fable-473/481).
+
+    "Her glasses — gentle monster style CLEAR rims" turned this backstop off,
+    because "clear" was in the removal lexicon. The mis-parse then ran all the
+    way to a paid render that took her glasses off — the only wrong charge in
+    the campaign's history.
+
+    So the evidence has three strengths now, and only the strongest skips the
+    re-read. On an AMBIGUOUS word the model proposes both readings and the CODE
+    decides between them (the D-181 shape, third door): if the edit reading
+    answers the facet the removal named, the sentence named a thing to HAVE —
+    "glasses clear rims", "drop earrings". If it answers nothing there, the
+    removal stands, so "no glasses" and "hair back" are untouched.
+
+    Its cost is one text call, and only on a parse that was about to remove
+    something on an adjective's word.
+  */
+  const evidence = removalEvidence(instruction);
+  if (parsed.intent === "remove" && evidence !== "stated") {
+    /* The noun the removal claimed, read before `parsed` can be replaced. */
+    const removalMatch = ("match" in parsed && typeof parsed.match === "string") ? parsed.match : "";
     log.warn(
-      { instruction },
-      "[refineService] a removal with no removal word — re-reading as an edit",
+      { instruction, evidence },
+      "[refineService] a removal with no plain removal word — re-reading as an edit",
     );
     const asEdit = await readInstruction({ mode: "edit" });
     if (asEdit.ok && "delta" in asEdit) {
@@ -957,8 +979,43 @@ export async function refineCandidate(
          re-ask. A re-read is a parse, and a parse that loses her sentence loses
          it either time. */
       const kept = await throughTheAlreadyTrueDoor(asEdit, "edit");
-      parsed = kept;
-      if ("delta" in kept) editDelta = kept.delta;
+      /*
+        DERIVED FROM THE COMPOSITION TABLE, never from a second list of what a
+        subject owns: `facetsAnsweredBy` is the same reader supersession uses,
+        so "did this reading fill the thing the removal was about" cannot drift
+        from what filling it means everywhere else.
+      */
+      const removalSubject = readRemovalSubject(parsed.subject);
+      /*
+        ONE PLACE, because the corpus bench decides with the same function: a
+        second copy of this rule would let the measurement and the product drift
+        apart, and the measurement is the only reason to believe the rule.
+      */
+      const namesAThingToHave = "delta" in kept && reReadNamesAThingToHave({
+        delta: kept.delta,
+        subject: removalSubject,
+        match: removalMatch,
+      });
+      if (evidence === "none" || namesAThingToHave) {
+        /*
+          BOTH OUTCOMES SAY SO, and the corpus is why: the bench read the
+          decision off this log and could see only one of the two branches, so
+          a removal that survived because the re-read returned nothing at all
+          was recorded as an edit winning. A decision with one audible outcome
+          is a decision nobody can measure.
+        */
+        log.info(
+          { instruction, evidence, subject: readRemovalSubject(parsed.subject) },
+          "[refineService] the re-read named a thing to have — the removal is dropped",
+        );
+        parsed = kept;
+        if ("delta" in kept) editDelta = kept.delta;
+      } else {
+        log.info(
+          { instruction, evidence, subject: removalSubject },
+          "[refineService] the re-read named nothing for that subject — the removal stands",
+        );
+      }
     }
   }
 

@@ -964,6 +964,24 @@ export function facetsAnsweredBy(delta: RefineDelta): Set<Facet> {
 }
 
 /**
+ * Every VALUE a delta states, in its own words — the positive lanes only.
+ *
+ * `facetsAnsweredBy` says which questions a reading answered; this says what it
+ * answered them WITH, which is a different question and the one the removal
+ * backstop needs: a positive lane can hold a negation ("no earrings"), and the
+ * code has to read the words to tell that apart from a thing to have.
+ */
+export function valuesFiledBy(delta: RefineDelta): string[] {
+  const values: string[] = [];
+  for (const axis of REFINABLE_AXES) {
+    const value = delta[axis];
+    if (typeof value === "string" && value.trim()) values.push(value);
+  }
+  for (const value of Object.values(delta.free ?? {})) values.push(...itemsOf(value));
+  return values;
+}
+
+/**
  * Which facets one delta SAYS SOMETHING ABOUT — answers and departures alike.
  *
  * # Why this is two functions and not one, which is the load-bearing decision

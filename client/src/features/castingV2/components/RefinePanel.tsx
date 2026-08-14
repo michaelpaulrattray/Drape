@@ -222,7 +222,19 @@ export function RefinePanel({
         the wait is unusual and say what happens if it never lands, so it reads
         as supervised rather than broken. Credits genuinely do come back.
       */}
-      {pending.some((entry) => Date.now() - new Date(entry.startedAt).getTime() > LONG_WAIT_MS) ? (
+      {/*
+        AND IT GOES WHEN NOTHING IS COMING (fable-460's sibling, found by
+        photographing the settling frame).
+
+        A settling row is old by construction — its lease is five minutes long —
+        so this note fired over it and promised *"it'll appear here when it
+        lands"* directly under a picture saying "this one didn't make it". Two
+        sentences about one row, disagreeing. The picture is the one that knows,
+        and it is on screen either way, so this stands down rather than being
+        rewritten into a second copy of it.
+      */}
+      {pending.some((entry) => Date.now() - new Date(entry.startedAt).getTime() > LONG_WAIT_MS)
+        && !pending.every((entry) => entry.stage === "settling") ? (
         <p className="dpc-refine__note">
           This one is taking longer than usual. It'll appear here when it lands, and if it
           doesn't arrive your credits come back on their own.

@@ -19,7 +19,15 @@
  * preference. A list of surface forms is a guard that proves the implementation
  * matches itself.
  */
-import { composeDeltas, facetsWrittenBy, itemsOf, type RefineDelta } from "./refineDelta";
+import {
+  composeDeltas,
+  facetsAnsweredBy,
+  facetsWrittenBy,
+  itemsOf,
+  valuesFiledBy,
+  type RefineDelta,
+} from "./refineDelta";
+import { readsAsNegation } from "./removalWords";
 import { facetOfAxis, facetOfSubject, type Facet } from "./refineFacets";
 import { FREE_SUBJECT_KEYS, isPluralSubject, type FreeSubject } from "./refineSubjects";
 import { REFINABLE_AXES, type RefinableAxis } from "./refineDelta";
@@ -407,4 +415,35 @@ export function sameChain(
 /** Recompose what survives — the ordinary composition rule, nothing special. */
 export function composeChain(chain: readonly ChainStep[]): RefineDelta {
   return composeDeltas(chain.map((step) => step.delta));
+}
+
+/**
+ * DID THE EDIT RE-READ NAME A THING TO HAVE — the ambiguous-word decision
+ * (fable-481 §2), in one place because two copies of it would disagree.
+ *
+ * `removalEvidence` says whether the user's sentence stated subtraction
+ * plainly, said nothing, or leaned on a word that also describes a look
+ * ("clear rims", "drop earrings"). On that last kind the model proposes both
+ * readings and this decides between them:
+ *
+ *   - the re-read must ANSWER the facet the removal named — anything else is
+ *     about something other than the thing being taken off;
+ *   - and its words must not be the departure restated. A positive lane can
+ *     hold "no earrings", which answers the facet while saying the thing is
+ *     gone; reading that as a thing to have would cancel a real removal.
+ *
+ * Exported so the corpus bench decides with the SHIPPED rule rather than a
+ * second copy of it — the class is measured, not asserted.
+ */
+export function reReadNamesAThingToHave(input: {
+  delta: RefineDelta;
+  /** The subject the removal claimed, or null when it named none. */
+  subject: FreeSubject | RefinableAxis | null;
+  /** The noun it claimed, for telling a restated departure from a look. */
+  match: string;
+}): boolean {
+  const filed = valuesFiledBy(input.delta);
+  if (filed.length > 0 && filed.every((value) => readsAsNegation(value, input.match))) return false;
+  const answered = facetsAnsweredBy(input.delta);
+  return input.subject ? answered.has(facetOf(input.subject)) : answered.size > 0;
 }

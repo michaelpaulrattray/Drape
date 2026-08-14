@@ -2255,6 +2255,73 @@ describe("a removal with no removal word is re-read as an edit", () => {
       expect(ledger.charges).toHaveLength(0);
       expect(journal).not.toContain("claim");
     });
+
+    /*
+      THE FOUNDER'S 25 CREDITS, AS A TEST (fable-473/481).
+
+      "Her glasses — gentle monster style glasses CLEAR rims" was classified as
+      a removal; "clear" was in the removal lexicon, so this backstop was
+      skipped; the base-worn path authored the departure; the painter took her
+      glasses off and the charge stood. Both arms are scripted, so the model
+      cannot rescue either one (law 3), and the verdict is read off the PAINTER'S
+      OWN SENTENCE — what was asked for is the artifact, not what we intended.
+    */
+    it("an ambiguous word does not authorize a removal when the sentence names a thing to HAVE", async () => {
+      briefWorn = ["glasses"];
+      const modes: (string | undefined)[] = [];
+      const result = await refineCandidate({ harvest: unmasked,
+          interpret: (async (request: { mode?: string }) => {
+            modes.push(request.mode);
+            return modes.length === 1
+              ? {
+                ok: true as const, intent: "remove" as const,
+                subject: "statedAccessories", match: "glasses",
+              }
+              : {
+                ok: true as const,
+                delta: { free: { statedAccessories: ["gentle monster style glasses clear rims"] } },
+              };
+          }) as never,
+        } as never,
+        { ...input, instruction: "her glasses — gentle monster style glasses clear rims" },
+      );
+
+      expect(modes, "the second reading is the edit re-read").toEqual([undefined, "edit"]);
+      const prompt = (landedVariant?.internalPrompt as { prompt: string }).prompt.toLowerCase();
+      expect(prompt, "the painter was told about the frames").toContain("clear rims");
+      expect(prompt, "and never told to take them off").not.toContain("taken off");
+      expect(result.variantId).toBeTruthy();
+    });
+
+    it("CONTROL — and an ambiguous word DOES stand when the re-read names nothing to have", async () => {
+      /*
+        The other half, and the one that protects a real removal: "no glasses"
+        carries only the ambiguous "no", and its edit re-read files the user's
+        own words back — a positive lane holding a negation. Taking that as a
+        thing to have would cancel the removal she asked for.
+      */
+      briefWorn = ["glasses"];
+      const reader = inflectionReader("glasses");
+      const modes: (string | undefined)[] = [];
+      await refineCandidate({ harvest: unmasked,
+          regions: reader.regions as never,
+          interpret: (async (request: { mode?: string }) => {
+            modes.push(request.mode);
+            return modes.length === 1
+              ? {
+                ok: true as const, intent: "remove" as const,
+                subject: "statedAccessories", match: "glasses",
+              }
+              : { ok: true as const, delta: { free: { statedAccessories: ["no glasses"] } } };
+          }) as never,
+        } as never,
+        { ...input, instruction: "no glasses" },
+      );
+
+      expect(modes).toEqual([undefined, "edit"]);
+      const prompt = (landedVariant?.internalPrompt as { prompt: string }).prompt.toLowerCase();
+      expect(prompt, "the removal she asked for survived the re-read").toContain("taken off");
+    });
   });
 
   it("still lets a real removal through", async () => {
