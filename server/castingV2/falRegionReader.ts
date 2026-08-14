@@ -22,6 +22,7 @@
 import { createModuleLogger } from "../logging/logger";
 import { assertImageBytes, NotAnImageError } from "../security/trustedImageFetch";
 import { LANDMARK_OF_ACCESSORY } from "./accessoryKinds";
+import { throughFalGate } from "./falConcurrency";
 import { MaskError, unionMasks } from "./maskGeometry";
 import type { Mask } from "./maskedComposite";
 import type { RegionReader, SideRegions } from "./maskedRefine";
@@ -40,21 +41,32 @@ const POINT = "fal-ai/moondream3-preview/point";
  */
 const LIFECYCLE = JSON.stringify({ expiration_duration_seconds: 3600 });
 
+/**
+ * EVERY CALL THIS READER MAKES GOES THROUGH THE GATE (fable-505/506).
+ *
+ * One place, because the account's twenty-concurrent ceiling is one ceiling: a
+ * scan asks eleven questions at once and each bilateral one becomes two more,
+ * so an ungated reader spends the whole allowance on one panel and the next
+ * panel gets nothing. The measurement, and what the provider said, are in
+ * `falConcurrency.ts`.
+ */
 async function post(apiKey: string, endpoint: string, body: unknown, signal?: AbortSignal): Promise<any> {
-  const response = await fetch(`https://fal.run/${endpoint}`, {
-    method: "POST",
-    headers: {
-      Authorization: `Key ${apiKey}`,
-      "Content-Type": "application/json",
-      "X-Fal-Object-Lifecycle-Preference": LIFECYCLE,
-    },
-    body: JSON.stringify(body),
-    signal,
+  return throughFalGate(async () => {
+    const response = await fetch(`https://fal.run/${endpoint}`, {
+      method: "POST",
+      headers: {
+        Authorization: `Key ${apiKey}`,
+        "Content-Type": "application/json",
+        "X-Fal-Object-Lifecycle-Preference": LIFECYCLE,
+      },
+      body: JSON.stringify(body),
+      signal,
+    });
+    if (!response.ok) {
+      throw new MaskError(`${endpoint}: ${response.status} ${(await response.text()).slice(0, 200)}`);
+    }
+    return response.json();
   });
-  if (!response.ok) {
-    throw new MaskError(`${endpoint}: ${response.status} ${(await response.text()).slice(0, 200)}`);
-  }
-  return response.json();
 }
 
 /**

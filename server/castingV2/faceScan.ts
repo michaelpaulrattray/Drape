@@ -465,6 +465,17 @@ export async function scanFace(input: {
       found: boxes.size,
       empty: empty.length,
       failed: failed.length,
+      /*
+        AND WHY, not just how many (fable-505's own cost).
+        
+        His panels were missing eyes, brows and ears for two days and the
+        container could only say `failed=12`. The reasons were on the object
+        the whole time and never reached a line anybody reads, so the diagnosis
+        had to reproduce the burst to learn what the provider had already said:
+        *"Reached concurrent requests limit of 20"*. Distinct reasons only —
+        eleven copies of one sentence is a log nobody finishes.
+      */
+      whyFailed: Array.from(new Set(failed.map((entry) => entry.why.slice(0, 120)))),
       /* The words are counted separately: a scan with every box and no
          description is a different failure from a scan with neither. */
       described: descriptions.size,

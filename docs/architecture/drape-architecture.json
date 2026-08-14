@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "f90fc5f3a6b1591a"
+    "sourceFingerprint": "a0e0f7ae4e267103"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 108
+      "moduleCount": 109
     },
     {
       "id": "domain:castingV2",
@@ -3425,6 +3425,12 @@
     {
       "id": "module:server/castingV2/facetCards.ts",
       "path": "server/castingV2/facetCards.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/falConcurrency.ts",
+      "path": "server/castingV2/falConcurrency.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -7616,6 +7622,11 @@
       "valueRecorded": false
     },
     {
+      "id": "env:FAL_CONCURRENCY",
+      "name": "FAL_CONCURRENCY",
+      "valueRecorded": false
+    },
+    {
       "id": "env:FAL_KEY",
       "name": "FAL_KEY",
       "valueRecorded": false
@@ -9161,6 +9172,10 @@
     {
       "id": "test:server/castingV2/faceScanService.test.ts",
       "path": "server/castingV2/faceScanService.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/falConcurrency.test.ts",
+      "path": "server/castingV2/falConcurrency.test.ts"
     },
     {
       "id": "test:server/castingV2/falRegionReader.test.ts",
@@ -18637,8 +18652,18 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/castingV2/falConcurrency.ts",
+      "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/castingV2/falRegionReader.ts",
       "to": "module:server/castingV2/accessoryKinds.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/falRegionReader.ts",
+      "to": "module:server/castingV2/falConcurrency.ts",
       "kind": "imports"
     },
     {

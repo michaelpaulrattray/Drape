@@ -64,6 +64,14 @@ const git = (...args: string[]) => run("git", args).trim();
 const railway = (...args: string[]) => run("railway.cmd", args, true);
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
+/** The production database's public URL, read by name and never printed. */
+function productionUrl(): string | undefined {
+  return railway("variables", "--service", "MySQL", "--kv").split(/\r?\n/)
+    .map((line) => line.trim())
+    .find((line) => line.startsWith("MYSQL_PUBLIC_URL="))
+    ?.slice("MYSQL_PUBLIC_URL=".length);
+}
+
 /* ── 1. what is being deployed ──────────────────────────────────────────── */
 
 const sha = git("rev-parse", "HEAD");
@@ -87,6 +95,41 @@ if (dirty.length > 0) {
 
   Read by NAME from the MySQL service; the URL never leaves this block.
 */
+/**
+ * IS HE IN THE MIDDLE OF SOMETHING (fable-504)?
+ *
+ * Ten deploys landed in one night while the founder was dogfooding, and one of
+ * them killed a roll he was watching. The Aug-1 ruling accepts that collision
+ * class and forbids drain infrastructure — it does not forbid manners. So the
+ * rite REFUSES while he has casting work from the last ten minutes, and says
+ * why. `--anyway` proceeds deliberately, for the case where the push IS the fix
+ * he is waiting on.
+ */
+const founderIsActive = await (async (): Promise<{ active: boolean; note: string }> => {
+  const url = productionUrl();
+  if (!url) return { active: false, note: "(unread — MYSQL_PUBLIC_URL not readable)" };
+  try {
+    const connection = await openDatabase(url);
+    const [rows] = await connection.query<any[]>(
+      `SELECT MAX(at) AS latest FROM (
+         SELECT MAX(createdAt) AS at FROM casting_candidates WHERE userId = 1
+         UNION ALL
+         SELECT MAX(createdAt) AS at FROM casting_candidate_variants WHERE userId = 1
+       ) AS his`,
+    );
+    await connection.end();
+    const latest = rows[0]?.latest ? new Date(rows[0].latest).getTime() : 0;
+    if (!latest) return { active: false, note: "no casting work on record" };
+    const minutes = (Date.now() - latest) / 60_000;
+    return {
+      active: minutes <= 10,
+      note: `his last casting work was ${minutes.toFixed(1)} minutes ago`,
+    };
+  } catch {
+    return { active: false, note: "(unread — the production ledger could not be reached)" };
+  }
+})();
+
 const inFlight = await (async (): Promise<string> => {
   const url = railway("variables", "--service", "MySQL", "--kv").split(/\r?\n/)
     .map((line) => line.trim())
@@ -117,6 +160,11 @@ const inFlight = await (async (): Promise<string> => {
 say(`DEPLOY RITE — ${shortSha} · ${subject}`);
 say(`  service ${SERVICE} · ${BASE}${DRY ? " · DRY RUN (no push)" : ""}`);
 say(`  paid work at push: ${inFlight}`);
+say(`  the founder: ${founderIsActive.note}`);
+if (founderIsActive.active && !process.argv.includes("--anyway")) {
+  die(`he is in an active session — ${founderIsActive.note}. Batch this and deploy when he goes `
+    + `quiet (fable-504). If this push IS the fix he is waiting on, say so and re-run with --anyway.`);
+}
 say("");
 
 /* ── 2. push both branches, and PROVE both landed ───────────────────────── */
