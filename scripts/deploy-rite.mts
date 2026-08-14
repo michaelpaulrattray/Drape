@@ -105,8 +105,12 @@ const inFlight = await (async (): Promise<string> => {
     return open === 0
       ? "nothing in flight"
       : `${open} candidate(s) IN FLIGHT — this deploy costs their wait (accepted class, D-85)`;
-  } catch (error) {
-    return `(unread — ${error instanceof Error ? error.message.slice(0, 60) : String(error)})`;
+  } catch {
+    /* NO ERROR TEXT. A driver's connection error can carry the DSN it was
+       handed, and this line goes into a mailbox report — the reading is
+       either taken or it is not, and which driver said no does not belong in
+       a receipt beside a credential. */
+    return "(unread — the production ledger could not be reached)";
   }
 })();
 

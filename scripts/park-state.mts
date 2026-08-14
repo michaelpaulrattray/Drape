@@ -86,8 +86,11 @@ async function readLedger(url: string): Promise<{ where: string; line: string } 
       where,
       line: `gross ${gross} of ${CEILING} · refunded ${refunded} · net ${gross - refunded} · rows ${rows.length}`,
     };
-  } catch (error) {
-    return { where, error: error instanceof Error ? error.message.slice(0, 120) : String(error) };
+  } catch {
+    /* NO ERROR TEXT, for the same reason the URL is never printed: a driver's
+       connection error can carry the DSN it was handed, and this block is
+       pasted into a mailbox report. */
+    return { where, error: "the connection failed" };
   }
 }
 
