@@ -77,7 +77,13 @@ async function post(apiKey: string, endpoint: string, body: unknown, signal?: Ab
       signal,
     });
     if (!response.ok) {
-      throw new MaskError(`${endpoint}: ${response.status} ${(await response.text()).slice(0, 200)}`);
+      /* 429 is the account's own concurrency ceiling and 5xx is the provider
+         having a moment — both are weather, and the scan's cache reads this to
+         decide whether a damaged reading is worth keeping. */
+      throw new MaskError(
+        `${endpoint}: ${response.status} ${(await response.text()).slice(0, 200)}`,
+        { retryable: response.status === 429 || response.status >= 500 },
+      );
     }
     return response.json();
     },
@@ -164,7 +170,9 @@ async function fetchMaskBytes(url: string, signal?: AbortSignal): Promise<Buffer
       const response = await fetch(url, { signal: AbortSignal.timeout(MASK_FETCH_TIMEOUT_MS) });
       if (!response.ok) {
         retryable = worthRetrying(response.status);
-        throw new MaskError(`the mask store answered ${response.status}`);
+        throw new MaskError(`the mask store answered ${response.status}`, {
+          retryable: response.status === 429 || response.status >= 500,
+        });
       }
       return Buffer.from(await response.arrayBuffer());
     } catch (error) {
@@ -180,7 +188,9 @@ async function fetchMaskBytes(url: string, signal?: AbortSignal): Promise<Buffer
       await new Promise((resolve) => setTimeout(resolve, MASK_FETCH_BACKOFF_MS * attempt));
     }
   }
-  throw new MaskError(`the mask could not be fetched — ${last}`);
+  /* Every attempt at fetching the drawn mask failed: transport, and the next
+     look may well get it. */
+  throw new MaskError(`the mask could not be fetched — ${last}`, { retryable: true });
 }
 
 async function fetchMask(url: string, signal?: AbortSignal): Promise<Mask> {

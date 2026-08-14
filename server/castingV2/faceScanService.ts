@@ -91,7 +91,7 @@ export type ScannedFace = {
   asked: number;
   found: number;
   empty: readonly string[];
-  failed: readonly { question: string; why: string }[];
+  failed: readonly { question: string; why: string; retryable?: boolean }[];
   /** What the stencils cost the payload, measured rather than assumed. */
   stencilBytes: number;
   /**
@@ -147,7 +147,7 @@ type CacheEntry = {
 
 const cache = new Map<string, CacheEntry>();
 const seen = new Set<string>();
-const counters = { scans: 0, rescans: 0, hits: 0, misses: 0, failures: 0 };
+const counters = { scans: 0, rescans: 0, hits: 0, misses: 0, failures: 0, damaged: 0 };
 
 /**
  * The key: the owner, the face, and the version.
@@ -413,7 +413,43 @@ export async function scannedFace(input: {
 
   read.then(
     (value) => {
-      entry.settled = value;
+      /*
+        A SCAN WITH FAILED REGIONS IS NOT KEPT — the founder's second missing-eyes
+        cause (fable-547), and it hid behind the first one.
+        
+        The segmenter answers "eyes" on his bespectacled frame (0.0942%), the
+        shipped scan finds both of them (0.0421% / 0.0516% per side), and the
+        panel builds an Eyes row from that scan. All three were measured on his
+        own specimen. What his panel actually showed was an OLDER reading of the
+        same version: the burst that lost eleven regions to the provider's
+        concurrency limit resolved into a scan whose `failed` list was long, and
+        that scan was cached for the life of the process. Every later look at
+        that version returned the damage rather than re-asking.
+        
+        The rule the code already had for a THROWN read is the right one here
+        too — *"a failed read is not cached; the next look pays again, which is
+        the right trade for a courtesy read"* — and it simply did not cover a
+        read that came back holding failures. It does now: a clean scan is kept,
+        a damaged one is served to whoever is waiting and then dropped, so the
+        next look re-asks the regions that were lost.
+        
+        What it costs: a face with a genuinely unanswerable region re-scans on
+        each new look rather than once. The client holds its own answer for the
+        session (staleTime Infinity), so that is bounded by how often somebody
+        opens the version afresh — and the alternative is a wrong panel that
+        cannot be fixed by looking again.
+      */
+      const weather = value.failed.filter((one) => one.retryable === true);
+      if (weather.length > 0) {
+        counters.damaged += 1;
+        log.warn(
+          { failed: value.failed.length, weather: weather.map((one) => one.question) },
+          "[faceScanService] this reading lost regions — serving it and NOT keeping it, so the next look re-asks",
+        );
+        if (cache.get(key) === entry) cache.delete(key);
+      } else {
+        entry.settled = value;
+      }
       log.info(
         {
           asked: value.asked,
@@ -517,6 +553,8 @@ export function faceScanCacheStats(): {
   hits: number;
   misses: number;
   failures: number;
+  /** Scans that came back holding failed regions and were therefore not kept. */
+  damaged: number;
   size: number;
 } {
   return {
@@ -565,4 +603,5 @@ export function resetFaceScanCache(): void {
   counters.hits = 0;
   counters.misses = 0;
   counters.failures = 0;
+  counters.damaged = 0;
 }

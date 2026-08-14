@@ -67,7 +67,28 @@ export type Shape =
   | { kind: "rect"; left: number; top: number; right: number; bottom: number }
   | { kind: "ellipse"; cx: number; cy: number; rx: number; ry: number };
 
-export class MaskError extends Error {}
+export class MaskError extends Error {
+  /**
+   * WOULD ASKING AGAIN PLAUSIBLY GET A DIFFERENT ANSWER?
+   *
+   * A provider limit, a 5xx or a timeout is weather: the same question a minute
+   * later is a different reading. "Nothing of her is below her chin in this
+   * frame" is not — it will fail identically for ever, and re-asking it buys
+   * the same nothing at the same price.
+   *
+   * The scan records this per failed region and the cache reads it: a reading
+   * that lost regions to WEATHER is served and dropped, so the next look
+   * re-asks; one that lost them to a stable fact is kept, because the next look
+   * would only lose them again. (Founder's second missing-eyes cause,
+   * fable-547: a burst's damage was cached for the life of the process.)
+   */
+  readonly retryable: boolean;
+
+  constructor(message: string, options: { retryable?: boolean } = {}) {
+    super(message);
+    this.retryable = options.retryable === true;
+  }
+}
 
 /** Every region an instruction can be scoped to. */
 export type RegionKind =

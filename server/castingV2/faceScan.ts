@@ -120,7 +120,15 @@ export type FaceScan = {
   /** Regions that were asked and answered nothing, by question. */
   empty: readonly string[];
   /** Regions whose READING failed, by question, with the reason. */
-  failed: readonly { question: string; why: string }[];
+  /**
+   * What could not be read, and WHETHER ASKING AGAIN MIGHT HELP.
+   *
+   * `retryable` is weather — a provider limit, a 5xx, a timeout. The cache reads
+   * it: a reading damaged by weather is served and dropped so the next look
+   * re-asks, and one damaged by a stable fact ("nothing of her is below her chin
+   * in this frame") is kept, because asking again buys the same nothing.
+   */
+  failed: readonly { question: string; why: string; retryable?: boolean }[];
 };
 
 /** The armed accessory questions, by the catalogue's own account of arming. */
@@ -294,7 +302,7 @@ export async function scanFace(input: {
   };
   const masks = new Map<FeatureSlot, Mask>();
   const empty: string[] = [];
-  const failed: { question: string; why: string }[] = [];
+  const failed: { question: string; why: string; retryable?: boolean }[] = [];
   const descriptions = new Map<FeatureSlot, string>();
   const plan = scanPlan();
 
@@ -457,7 +465,12 @@ export async function scanFace(input: {
         rather than swallowed, because a silent catch is how thirty faces were
         once declared bare.
       */
-      failed.push({ question: region.question, why: error instanceof Error ? error.message : String(error) });
+      failed.push({
+        question: region.question,
+        why: error instanceof Error ? error.message : String(error),
+        /* Weather or fact — the reader says which, and the cache reads it. */
+        ...(error instanceof MaskError && error.retryable ? { retryable: true } : {}),
+      });
       return "failed";
     }
   };

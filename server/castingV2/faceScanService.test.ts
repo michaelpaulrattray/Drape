@@ -12,6 +12,7 @@ import {
   scannedFace,
   scannedFaceIfReady,
 } from "./faceScanService";
+import { MaskError } from "./maskGeometry";
 import type { Mask } from "./maskedComposite";
 import type { RegionReader } from "./maskedRefine";
 
@@ -337,6 +338,72 @@ describe("the panel fills a feature at a time", () => {
     /* Not `done: true` with no rows — that would tell a panel the face has no
        features when the truth is that nothing has looked at it. */
     expect(scanProgressOf({ ...FACE, candidateId: 999 })).toBeNull();
+  });
+});
+
+describe("a damaged reading is served once and never kept", () => {
+  /*
+    THE FOUNDER'S SECOND MISSING-EYES CAUSE (fable-547), and it hid behind the
+    first one. The segmenter answers "eyes" on his bespectacled frame, the scan
+    finds both, and the panel builds the row — all measured on his own specimen.
+    What his panel showed was an OLDER reading of the same version: the burst
+    that lost eleven regions to the provider's concurrency limit resolved into a
+    scan whose failures were cached for the life of the process.
+  */
+  function readerLosing(names: readonly string[]) {
+    const box = { x: 10, y: 20, width: 30, height: 40 };
+    /* WEATHER, said the way the real reader says it: the provider's own 429 is
+       a `MaskError` marked retryable, and that mark is what the cache reads.
+       A plain Error here would be a stable failure and correctly KEPT. */
+    const refuse = () => {
+      throw new MaskError("fal-ai/sam-3/image: 429 concurrent_requests_limit", { retryable: true });
+    };
+    return {
+      async region(input: { name: string }) {
+        if (names.includes(input.name)) refuse();
+        return maskOf(box);
+      },
+      async regionSides(input: { name: string }) {
+        if (names.includes(input.name)) refuse();
+        return { left: maskOf(box), right: maskOf({ ...box, x: box.x + 500 }) };
+      },
+      async subject() { return maskOf(box); },
+      async landmark() { return null; },
+    } as unknown as RegionReader;
+  }
+
+  it("does not keep a scan that lost regions — the next look re-asks", async () => {
+    const { deps } = await dependencies(readerLosing(["eyes"]));
+    const damaged = await scannedFace({ ...FACE, dependencies: deps });
+    expect(damaged.failed.length, "the reading really did lose something").toBeGreaterThan(0);
+
+    /* Served to whoever was waiting… */
+    expect(damaged.asked).toBeGreaterThan(0);
+    /* …and then dropped, so the next look pays again rather than inheriting it. */
+    expect(scannedFaceIfReady(FACE)).toBeNull();
+    expect(faceScanCacheStats().damaged).toBe(1);
+
+    const reader = countingReader();
+    const second = await dependencies(reader);
+    const clean = await scannedFace({ ...FACE, dependencies: second.deps });
+    /* "Clean" means no WEATHER, not no failures: this fixture's frame has
+       nothing below the chin, so the composed build fails every time and asking
+       again would buy the same nothing. That one is kept on purpose. */
+    expect(clean.failed.some((one) => one.retryable === true)).toBe(false);
+    expect(scannedFaceIfReady(FACE), "and a reading with no weather IS kept").not.toBeNull();
+  });
+
+  it("CONTROL — a clean scan is still cached, and still costs one read", async () => {
+    /* The saving this whole cache exists for must survive the fix: without this
+       arm, "never keep anything" would pass the test above. */
+    const reader = countingReader();
+    const { deps, reads } = await dependencies(reader);
+    await scannedFace({ ...FACE, dependencies: deps });
+    const after = reader.calls();
+    await scannedFace({ ...FACE, dependencies: deps });
+    expect(reader.calls()).toBe(after);
+    expect(reads()).toBe(1);
+    expect(faceScanCacheStats().damaged).toBe(0);
   });
 });
 
