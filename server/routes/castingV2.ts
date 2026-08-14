@@ -244,8 +244,12 @@ async function readOwnedFaceForPanel(
 function panelFor(
   face: Awaited<ReturnType<typeof readOwnedFaceForPanel>>,
   scan: PanelScan | null,
+  /* True while this version's own read is still running — the panel keeps a
+     place for the rows it has not answered yet (fable-521). */
+  scanning = false,
 ) {
   return facePanel({
+    scanning,
     rows: face.rows,
     pronouns: pronounsForSex(face.identitySex),
     contentUrl: storagePublicUrl,
@@ -1100,7 +1104,20 @@ export const castingV2Router = router({
            this is false, so a user outside the scope pays no round trip for a
            capability they do not have. */
         scanning: captureCastingFaceScanEnabled(ctx.user.id),
-        ...panelFor(face, ready === null ? null : panelScanOf(ready)),
+        /*
+          THE FAST PANEL KEEPS PLACES FOR THE ROWS THE SCAN HAS NOT ANSWERED.
+
+          This is the first paint, and on a fresh cast it has nothing at all —
+          which is the founder's *"it looks like nothing is even happening"*.
+          A read that is COMING is a placeholder row; a read that is not coming
+          (the scan is out of scope, or it has already landed) leaves the panel
+          exactly as it was.
+        */
+        ...panelFor(
+          face,
+          ready === null ? null : panelScanOf(ready),
+          captureCastingFaceScanEnabled(ctx.user.id) && ready === null,
+        ),
       };
     }),
 
@@ -1160,7 +1177,9 @@ export const castingV2Router = router({
           imageKey,
         }).then(panelScanOf).catch(() => null);
       }
-      return { enabled: true as const, scanning: true, ...panelFor(face, scan) };
+      /* The scan has landed (or failed) by the time this returns, so nothing is
+         pending: every row here is either this version's answer or absent. */
+      return { enabled: true as const, scanning: true, ...panelFor(face, scan, false) };
     }),
 
   /** Refunds only what never started. Delivered work is never refunded (§H.6). */

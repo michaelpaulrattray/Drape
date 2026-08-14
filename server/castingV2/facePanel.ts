@@ -176,6 +176,24 @@ export type PanelRegion = {
 };
 
 export type PanelRow = {
+  /**
+   * WHETHER THIS ROW IS THIS VERSION'S ANSWER, OR A PLACE FOR ONE
+   * (founder-ratified, fable-521).
+   *
+   * `settled` — read from THIS version, full strength, tappable.
+   * `pending` — the scan is still running and this row has nothing yet: a
+   * placeholder square where the cutout will sit and a bar where the words
+   * will, in the panel's normal layout, so a fresh cast does not look like a
+   * product doing nothing. A pending row that settles with no box removes
+   * itself; no-box-no-row still governs the final state.
+   *
+   * The rule is one rule across the panel: **full strength means this
+   * version's confirmed reading.** Anything in progress — or carried from
+   * another version while this one is fetched — is drawn as a placeholder, and
+   * a row asserting a specific reading about a version that never had it may
+   * not render full strength.
+   */
+  state: "settled" | "pending";
   /** How the product speaks about this row — "her eyes". The possessive lives
    *  here and in {@link PanelRow.prefill}, and on no label (fable-450/451). */
   spoken: string;
@@ -461,6 +479,14 @@ export function facePanel(input: {
    * library has nothing for — which on a face nobody has edited is all of them.
    */
   scan?: PanelScan | null;
+  /**
+   * IS A READ STILL RUNNING FOR THIS VERSION?
+   *
+   * True while the scan is in flight, and it changes exactly one thing: a row
+   * with nothing yet keeps its place as a placeholder instead of leaving the
+   * panel. Nothing about a SETTLED row depends on it.
+   */
+  scanning?: boolean;
 }): FacePanel {
   const live = liveReferences(input.rows);
   const bySlot = new Map<FeatureSlot, StoredReference[]>();
@@ -565,6 +591,7 @@ export function facePanel(input: {
       spoken.add(definition.slot);
       const spokenName = spokenOf(definition, input.pronouns.possessive, false);
       push({
+        state: "settled",
         slots: [definition.slot],
         group: definition.group,
         name: labelOf(definition, false),
@@ -628,6 +655,7 @@ export function facePanel(input: {
       const pictured = sides.filter((side) => side.state.thumb !== null);
       const measured = sides.filter((side) => side.state.box !== null);
       push({
+        state: "settled",
         slots: [left.slot, right.slot],
         group: left.group,
         name: labelOf(left, true),
@@ -746,10 +774,34 @@ export function facePanel(input: {
    */
   const hasContent = (row: PanelRow): boolean => row.regions.length > 0;
 
+  /*
+    WHILE THE SCAN IS STILL RUNNING, A ROW WITH NOTHING IS A PLACE FOR SOMETHING
+    (founder-ratified, fable-521).
+    
+    The founder's words were *"it looks like nothing is even happening"*. A
+    fresh cast has no library rows and no scan yet, so the panel was empty —
+    and an empty panel and a product doing nothing look identical. So while
+    `scanning` is true, a row the catalogue draws keeps its place as a
+    PENDING row: its name, its layout, and a placeholder where the picture and
+    the words will be.
+    
+    The moment the scan settles, `scanning` is false and the rule below is
+    exactly what it always was — a row nothing can locate on the frame leaves
+    the panel (fable-414), so a pending row that finds nothing removes itself
+    rather than leaving a husk.
+  */
+  const keep = (row: PanelRow): boolean => hasContent(row) || (input.scanning === true);
+  const stateOfRow = (row: PanelRow): PanelRow => (
+    hasContent(row) ? row : { ...row, state: "pending" }
+  );
+
   return {
     possessive: input.pronouns.possessive,
     groups: PANEL_GROUPS
-      .map((section) => ({ ...section, rows: (rowsOf.get(section.group) ?? []).filter(hasContent) }))
+      .map((section) => ({
+        ...section,
+        rows: (rowsOf.get(section.group) ?? []).filter(keep).map(stateOfRow),
+      }))
       .filter((section) => section.rows.length > 0),
   };
 }

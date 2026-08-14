@@ -3251,6 +3251,57 @@
   The space is kept and the mark is gone: the names stay on one left edge
   instead of going ragged, and nothing on screen looks like a failed image.
 */
+/*
+  THE PLACEHOLDER ROW — a place kept for a reading, never a claim about one
+  (founder-ratified, fable-521; the Grok Segments panel is the reference and
+  the tokens are ours).
+
+  One rule, two cases: a row this version has not answered yet, and every row
+  while the panel is still showing the version before it. Both are drawn the
+  same way because to a reader they are the same thing — *not this version's
+  answer yet*.
+
+  No shimmer. A moving gradient is a second thing to look at on a panel whose
+  whole job is to be quiet beside a photograph, and the working line above
+  already says a read is running. It can be earned later, in the browser.
+*/
+.dpc-face__row[data-state="pending"],
+.dpc-face__row[data-state="carried"] {
+  cursor: default;
+  /* The layout is unchanged — that is the whole point of keeping the place. */
+  opacity: 0.55;
+}
+
+.dpc-face__row[data-state="pending"]:hover,
+.dpc-face__row[data-state="carried"]:hover {
+  background: transparent;
+}
+
+/* The square where the cutout will sit, and the bar where the words will. */
+.dpc-face__row[data-state="pending"] .dpc-face__thumb,
+.dpc-face__row[data-state="carried"] .dpc-face__thumb {
+  background: color-mix(in srgb, var(--onScrim) 12%, transparent);
+  border-radius: 6px;
+}
+
+.dpc-face__row[data-state="pending"] .dpc-face__cut,
+.dpc-face__row[data-state="carried"] .dpc-face__cut {
+  /* A carried row keeps ITS OWN layout and loses its picture: the previous
+     version's cutout is a photograph of a different frame. */
+  visibility: hidden;
+}
+
+.dpc-face__row[data-state="pending"] .dpc-face__words,
+.dpc-face__row[data-state="carried"] .dpc-face__words {
+  /* The words of another version are the falsehood this fixes, so they are
+     replaced by the bar rather than dimmed. */
+  color: transparent;
+  background: color-mix(in srgb, var(--onScrim) 12%, transparent);
+  border-radius: 4px;
+  min-width: 96px;
+  display: inline-block;
+}
+
 .dpc-face__thumb--none {
   background-color: transparent;
   box-shadow: none;

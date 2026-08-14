@@ -1982,6 +1982,20 @@ export default function CastingSheet() {
               groups={facePanelData?.groups ?? []}
               possessive={facePanelData?.possessive ?? "their"}
               working={faceScanWorking}
+              /*
+                EVERY ROW HERE IS ANOTHER VERSION'S ANSWER (fable-520 §1).
+
+                The bridge holds the previous version's panel while this one is
+                fetched, which is what stops the column blinking — and it was
+                ratified when the photograph was slow too, so everything moved
+                together. The photo is instant now, so for a moment the panel
+                describes a frame that is no longer on screen. His versions
+                genuinely differ (a slim build, an icy-blue eye), so those rows
+                are falsehoods rather than harmless placeholders.
+
+                The layout still does not blink. The rows just stop claiming.
+              */
+              carried={face.isPlaceholderData || faceScan.isPlaceholderData}
               selection={faceSelection}
               onScope={setAskDraft}
             />

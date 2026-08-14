@@ -99,6 +99,11 @@ export type FacePanelRegion = {
 };
 
 export type FacePanelRow = {
+  /**
+   * `settled` — this version's own answer, full strength and tappable.
+   * `pending` — a place kept for a read still running (fable-521).
+   */
+  state?: "settled" | "pending";
   /** How the product speaks about this row — "her eyes". Labels are bare
    *  (fable-450/451); the possessive survives wherever the product says a
    *  sentence. */
@@ -223,6 +228,7 @@ export function FacePanel({
   groups,
   possessive,
   working,
+  carried = false,
   selection,
   onScope,
 }: {
@@ -256,6 +262,15 @@ export function FacePanel({
    * its work is the invisible-run lesson wearing UI clothes.
    */
   working: boolean;
+  /**
+   * IS EVERY ROW HERE ANOTHER VERSION'S ANSWER?
+   *
+   * True while the panel is showing what it had for the PREVIOUS version and
+   * this one's read is still in flight — the bridge that keeps the layout from
+   * blinking. It may keep the layout; it may not let another version's reading
+   * pass for this one's (fable-520 §1).
+   */
+  carried?: boolean;
   /** The one selection model, shared with the picture's regions. */
   selection: FaceSelectionModel;
   /** Writes the opening of their sentence into the ask box. Never submits it. */
@@ -316,6 +331,22 @@ export function FacePanel({
                   <button
                     type="button"
                     className="dpc-face__row"
+                    /*
+                      FULL STRENGTH MEANS THIS VERSION'S CONFIRMED READING
+                      (founder-ratified, fable-521 §4).
+
+                      Two things are drawn as placeholders and they are the same
+                      thing to a reader: a row this version has not answered yet
+                      (`pending`), and every row while the panel is showing
+                      ANOTHER version's answers during a jump (`carried`). The
+                      second is the one that was a falsehood — his versions
+                      genuinely differ, so the previous version's icy-blue iris
+                      rendered full-strength was a claim about a frame that
+                      never had it.
+                    */
+                    data-state={carried ? "carried" : row.state}
+                    aria-busy={carried || row.state === "pending" ? true : undefined}
+                    disabled={carried || row.state === "pending"}
                     data-active={active ? "true" : "false"}
                     data-lit={lit ? "true" : "false"}
                     /* Their own words for the thing, then what it currently is —
@@ -358,10 +389,22 @@ export function FacePanel({
                     )}
                     <span className="dpc-face__body">
                       <span className="dpc-face__name">{row.name}</span>
-                      {row.words.length > 0 ? (
+                      {/*
+                        A PLACEHOLDER SAYS NOTHING ABOUT HER.
+
+                        The bar is drawn by the stylesheet; the sentence itself
+                        is not rendered at all, because a carried row's words
+                        are another version's reading and "dimmed" is still a
+                        claim. The name stays — the row is a place, and a place
+                        needs a label.
+                      */}
+                      {row.words.length > 0 && row.state !== "pending" && !carried ? (
                         <span className="dpc-face__words">{row.words.join(", ")}</span>
                       ) : null}
-                      {row.from ? <span className="dpc-face__from">{row.from}</span> : null}
+                      {row.state === "pending" || carried
+                        ? <span className="dpc-face__words" aria-hidden="true">&nbsp;</span>
+                        : null}
+                      {row.from && !carried ? <span className="dpc-face__from">{row.from}</span> : null}
                     </span>
                   </button>
                   {/*
