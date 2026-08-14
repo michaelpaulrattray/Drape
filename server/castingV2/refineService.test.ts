@@ -2991,6 +2991,81 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
    * refuse: a gate that says no to everybody would pass a one-armed test and
    * would have quietly taken the founder's own new kind away from him.
    */
+  /**
+   * WHAT A PRUNE DOES ON THE REPAINT ROAD TODAY — the refusal, driven
+   * (V3(c)'s premise, settled here rather than assumed).
+   *
+   * The shape note asked one question the code could not answer by reading:
+   * after a prune takes back the step that added her earrings, does the recipe
+   * still carry the earring CROP the library filed? The answer is neither yes
+   * nor a silent wrong picture — **it refuses, free**, and the refusal names
+   * the missing piece in the product's own words: *"a removal strikes matching
+   * words from the library's stack — which is not yet derived from the chain's
+   * own pruning"* (`repaintCannotRemove`).
+   *
+   * That is the honest state and it is worth a test, because it is the exact
+   * line V3(c) is built to delete. **This test is meant to go RED the day
+   * pruning is derived** — at which point it becomes the place to assert what
+   * the pruned render carries instead.
+   */
+  describe("a prune on the repaint road, today", () => {
+    it("refuses free rather than delivering a picture it cannot honestly compose", async () => {
+      lineageReferences = [carryRow({
+        id: 9, publicId: "ref-9", slot: "earring@left", tier: "item", noun: "left earring",
+        words: ["gold hoops"], storageKey: "casting-v2/library/earring-left.png",
+      })];
+      variantRows = [{
+        id: 700,
+        publicId: "variant-earrings",
+        candidateId: 1,
+        imageKey: "casting-v2/variants/earrings.png",
+        internalPrompt: candidateRow.internalPrompt as Record<string, unknown>,
+        instructions: ["gold hoop earrings", "make her hair longer"],
+        deltas: { free: { statedAccessories: ["gold hoop earrings"], hairCut: "longer hair" } },
+        stepDeltas: [
+          { free: { statedAccessories: ["gold hoop earrings"] } },
+          { free: { hairCut: "longer hair" } },
+        ],
+        status: "ready",
+      }];
+      candidateRow.selectedVariantPublicId = "variant-earrings";
+
+      let call = 0;
+      await expect(refineCandidate(
+        {
+          ...repainting,
+          /* The base has NO earrings, so the chain put them there and a prune
+             is the honest reading — this is the arbitration the post-run-7
+             guard requires before it will undo anything. */
+          regions: {
+            region: async () => ({ data: Buffer.alloc(64 * 64, 0), width: 64, height: 64 }),
+            subject: async () => ({ data: Buffer.alloc(64 * 64, 0), width: 64, height: 64 }),
+            landmark: async () => [],
+          } as never,
+          interpret: (async () => {
+            call += 1;
+            return call === 1
+              ? { ok: true as const, intent: "remove" as const, subject: "statedAccessories", match: "gold hoop earrings" }
+              : { ok: true as const, delta: { free: { hairCut: "longer hair" } } };
+          }) as never,
+        },
+        { ...input, instruction: "take the earrings off" },
+      )).rejects.toThrow(/isn't something I can do on this face yet/);
+
+      /*
+        AND THE MONEY COMES BACK. The refusal is raised on the repaint road,
+        which is past the claim, so this is charged and then refunded rather
+        than free — money conserved, which is the property that matters, and
+        NO PICTURE, which is the other one. Asserting "free" here would have
+        been a nicer sentence and a false one.
+      */
+      expect(ledger.charges).toHaveLength(1);
+      expect(ledger.refunds.reduce((sum, refund) => sum + refund.amount, 0))
+        .toBe(ledger.charges.reduce((sum, charge) => sum + charge.amount, 0));
+      expect(painted).toHaveLength(0);
+    });
+  });
+
   describe("what the edit cost, written on the row", () => {
     it("lands a census of the calls this render made", async () => {
       /*
