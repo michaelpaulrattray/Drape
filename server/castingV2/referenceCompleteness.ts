@@ -459,6 +459,14 @@ export const GUARD_REFUSALS = {
     why: "the shape is mostly its own outline, so coverage cannot divide anything on it "
       + "— only an eye can say whether this crop is the whole of the metal",
   },
+  mouthOpen: {
+    keepsCrop: false,
+    evidenceOnly: false,
+    why: "the frame she was delivered on is smiling, so a crop of her lips holds her "
+      + "TEETH — and every later render would be handed that as what her lips are, "
+      + "smuggling an expression into an identity reference (fable-493). The row files "
+      + "its words and the crop waits for the next closed-mouth render",
+  },
   brokenOutline: {
     keepsCrop: true,
     evidenceOnly: false,

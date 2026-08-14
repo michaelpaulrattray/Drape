@@ -328,6 +328,40 @@ async function placeInFrame(
   return { data, width, height };
 }
 
+/**
+ * THE WORDS SENT, WHICH ARE NOT THE REGION'S NAME (fable-492 §2a).
+ *
+ * A region's name is a KEY: catalogues, courts, floors, neighbour lists and
+ * library rows are all keyed on it, and a spelling change there is an edit in
+ * nine files and a silent mismatch in the tenth. What the segmenter is ASKED is
+ * a different thing — a phrasing, chosen by measurement, and this is the one
+ * place a phrasing is allowed to differ from its key.
+ *
+ * `lips` earned an entry. Bare, it answers NOTHING on an open mouth, which is
+ * how a smiling woman came to have no lips at all. Measured over five frames
+ * and four phrasings, house money (`bench-lips-phrasing-disposable`, the figure
+ * is the share of the frame the mask covers):
+ *
+ * ```
+ *                       lips      her lips   his lips   the lips
+ * woman, OPEN mouth     0.0000%   0.0944%    0.1022%    0.2342%
+ * woman, closed         0.1500%   0.1459%    0.1470%    0.1507%
+ * woman (warm)          0.2178%   0.2151%    0.2165%    0.2184%
+ * woman (fixture)       0.1993%   0.1965%    0.1963%    0.1992%
+ * MAN, closed mouth     0.1878%   0.0000%    0.1870%    0.1900%
+ * ```
+ *
+ * "her lips" answers nothing at all on a man — a gendered phrasing carries a
+ * gendered failure, and this product casts men. "The lips" answers on 5 of 5
+ * and reads highest of the four on the one frame that was failing. So the
+ * genderless phrasing wins, and it wins on the numbers rather than on taste.
+ */
+export const ASKED_AS: Readonly<Record<string, string>> = { lips: "the lips" };
+
+export function askedAs(name: string): string {
+  return ASKED_AS[name] ?? name;
+}
+
 export function createFalRegionReader(input: {
   apiKey: string;
   signal?: AbortSignal;
@@ -409,7 +443,8 @@ export function createFalRegionReader(input: {
   ): Promise<Mask | null> => {
     const address = imageUrl ? await addressIfIdentical(image, imageUrl) : null;
     const json = await post(apiKey, SAM3, {
-      image_url: address ?? dataUri(image), prompt, include_scores: true, output_format: "png",
+      image_url: address ?? dataUri(image), prompt: askedAs(prompt), include_scores: true,
+      output_format: "png",
     }, signal);
     const masks: any[] = Array.isArray(json.masks) ? json.masks : [];
     const urls = masks

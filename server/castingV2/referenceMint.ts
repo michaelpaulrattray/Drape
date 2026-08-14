@@ -503,6 +503,31 @@ export type MintInput = {
   dependencies?: MintDependencies;
 };
 
+/**
+ * IS SHE SMILING WITH HER TEETH SHOWING — the lips crop's own discriminator
+ * (fable-493).
+ *
+ * The teeth region answers the teeth when they are in the picture and nothing
+ * when they are not (measured on the founder's own two frames: 1,345px on the
+ * smile, 0 on the closed mouth), so no reading of the LIPS is needed to know
+ * whether a lips crop would carry them.
+ *
+ * A read that fails answers FALSE — the mint's own rule for a courtesy read:
+ * an instrument that cannot answer must not be able to refuse a crop either.
+ * The worst case is exactly the behaviour that shipped before this existed.
+ */
+async function teethAreShowing(read: RegionReader, frame: Buffer): Promise<boolean> {
+  try {
+    const mask = await read({ frame, question: "teeth" });
+    if (!mask) return false;
+    let set = 0;
+    for (let at = 0; at < mask.data.length; at += 1) if (mask.data[at]! > 127) set += 1;
+    return set / (mask.width * mask.height) > 0;
+  } catch {
+    return false;
+  }
+}
+
 async function defaultStore(input: { key: string; bytes: Buffer; contentType: string }) {
   return storagePut(input.key, input.bytes, input.contentType);
 }
@@ -1258,7 +1283,52 @@ export async function mintReferencesForRender(input: MintInput): Promise<MintRes
         derived slot needs no edit here and an asked slot can never reach the
         arithmetic by accident.
       */
-      const verdict = slot.composed
+      /*
+        A LIPS CROP IS CUT FROM A CLOSED MOUTH, OR IT WAITS (fable-493).
+
+        The founder asked what a lips reference contains when she is smiling.
+        Until today the question could not arise: the old cutting word answered
+        zero on an open mouth, so every lips crop in existence is closed-mouth
+        by accident of the very defect just fixed. "The lips" removes the
+        accident — it answers 0.2342% on his smiling frame — and a crop cut
+        there would be PARTED lips with teeth between them, handed to every
+        later render as "what her lips are". Expression is a per-render
+        presentation clause on this road and deliberately NOT a carried fact.
+
+        So the accident becomes a policy: the teeth region is its own
+        discriminator (measured — 1,345px on his smile, 0 on his closed mouth),
+        and a lips crop is refused where it answers. The row still files its
+        words, the panel still draws its row and its box, and the crop waits for
+        the next closed-mouth render exactly like a carrier awaiting its
+        confirmation.
+
+        IT RUNS BEFORE THE COMPLETENESS DOOR, and that ordering is the point.
+        `lips` has no completeness specimen, so today every lips crop is
+        refused `noSpecimen` — and that refusal KEEPS its pixels, because its
+        whole purpose is to produce the specimen the bar will one day be
+        derived from. A smiling crop kept there would calibrate the lips bar
+        on a mouth full of teeth. So the mouth is asked first: no crop is
+        stored, none is kept for adoption, and the words file as they always
+        did.
+
+        It costs ONE read, and only on a render that actually cut a lips crop.
+      */
+      const mouthIsOpen = slot.slot === "lips" && read !== undefined
+        ? await teethAreShowing(read, input.frame.bytes)
+        : false;
+      const verdict = mouthIsOpen
+        ? {
+          /* NO NUMBER. Nothing measured this crop's completeness — the mouth
+             was asked before the door was — and a zero here would be a figure
+             nobody earned wearing the clothes of one that was
+             (`readDidNotSettle`'s precedent, same file). */
+          ok: false as const,
+          reason: "mouthOpen" as const,
+          kind: slot.guardKind,
+          detail: "the delivered frame is smiling, so this crop would carry her teeth "
+            + "into every later render as what her lips are",
+        }
+        : slot.composed
         ? geometricVerdict({
           kind: slot.guardKind,
           digest,

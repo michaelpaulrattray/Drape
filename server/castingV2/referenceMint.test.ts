@@ -51,19 +51,31 @@ type Recorded = Parameters<NonNullable<Parameters<typeof mintReferencesForRender
 function harness(options: {
   /** What the guard's SECOND read finds. Null means the read did not settle. */
   guardRead?: Mask | null;
+  /** What a NAMED question finds, for the readers that are not the door's. */
+  answers?: Record<string, Mask | null>;
+  /** A reader that cannot answer at all — the courtesy read's worst case. */
+  readThrows?: boolean;
   storeFails?: boolean;
 } = {}) {
   const stored: string[] = [];
   const manifests: string[][] = [];
+  const asked: string[] = [];
   let recorded: Recorded | null = null;
   return {
     stored,
     manifests,
+    asked,
     get rows() { return recorded?.rows ?? []; },
     get batchId() { return recorded?.cleanupBatchId; },
     dependencies: {
       enabledFor: () => true,
-      read: async () => (options.guardRead === undefined ? rect(HAIR) : options.guardRead),
+      read: async (input: { question: string }) => {
+        asked.push(input.question);
+        if (options.readThrows) throw new Error("the segmenter said no");
+        const named = options.answers?.[input.question];
+        if (named !== undefined) return named;
+        return options.guardRead === undefined ? rect(HAIR) : options.guardRead;
+      },
       store: async (input: { key: string }) => {
         if (options.storeFails) throw new Error("R2 said no");
         stored.push(input.key);
@@ -183,8 +195,14 @@ describe("what the mint keeps", () => {
     again.
   */
   it("keeps the crop of a kind nobody has measured, in columns the painter cannot see", async () => {
+    /* The stand-in kind is `nose`, and it used to be `lips`. Not a weakening:
+       this case is about the ONE refusal that keeps its pixels, and any
+       unmeasured kind states it. `lips` stopped being able to stand for the
+       class the day it got a door of its own in front of this one (fable-493),
+       and a fixture that carries a second rule is a fixture that fails for
+       reasons the case is not about. */
     const bench = harness();
-    const result = await mint([hairSlot({ slot: "lips", noun: "lips", guardKind: "lips" })], bench);
+    const result = await mint([hairSlot({ slot: "nose", noun: "nose", guardKind: "nose" })], bench);
 
     expect(result.slots[0]).toMatchObject({
       outcome: "words-only",
@@ -206,7 +224,7 @@ describe("what the mint keeps", () => {
     expect(row.image).toBeUndefined();
     expect(row.refusal).toEqual({
       reason: "noSpecimen",
-      kind: "lips",
+      kind: "nose",
       coverage: 10_000,
       crop: {
         contentKey: bench.stored[0],
@@ -1586,5 +1604,116 @@ describe("the composed region", () => {
       expect(bench.rows[0]!.image).toBeUndefined();
       expect(result.adjudications).toBeUndefined();
     });
+  });
+});
+
+/*
+  A LIPS CROP IS CUT FROM A CLOSED MOUTH, OR IT WAITS (fable-493).
+
+  "The lips" is the cutting word from today (measured: 0.2342% on the founder's
+  smiling frame against 0.0000% for the bare "lips" that shipped before it), and
+  the word that finally reaches an open mouth is the word that can cut one. A
+  reference of PARTED lips with teeth between them would be handed to every later
+  render as what her lips ARE — an expression smuggled into an identity fact.
+
+  Both arms are driven here rather than reasoned about, because the difference
+  between them is one vision call answering or not answering.
+*/
+describe("a lips crop and an open mouth", () => {
+  /* Her mouth on the frame, and the region the door reads back — the same
+     rectangle, so nothing in these arms turns on a coverage number. */
+  const LIPS = { x: 14, y: 20, width: 12, height: 6 };
+  const onTheFrame = { masterRegions: new Map([["lips", rect(LIPS)]]) };
+  const lipsSlot = () => hairSlot({
+    slot: "lips",
+    noun: "lips",
+    guardKind: "lips",
+    /* The catalogue's own key, which is what a real slot carries — the words
+       that reach the segmenter ("the lips") are the READER's business, and
+       proving that translation is `falRegionReader.test.ts`'s wire assertion. */
+    question: "lips",
+    words: ["full, softly defined"],
+  });
+
+  it("files her words and keeps NO crop when the delivered frame is smiling", async () => {
+    /* The teeth answer, which is what smiling means to this guard. */
+    const bench = harness({
+      answers: { lips: rect(LIPS), teeth: rect({ x: 16, y: 22, width: 6, height: 3 }) },
+    });
+    const result = await mint([lipsSlot()], bench, onTheFrame);
+
+    expect(result.slots[0]).toMatchObject({
+      slot: "lips",
+      outcome: "words-only",
+      reason: "guardRefused",
+      /* NOT kept for adoption either — and that is the ordering's whole point.
+         `lips` has no completeness specimen, so without this door the crop would
+         be kept as the candidate specimen the lips bar is one day derived from,
+         and the bar would be calibrated on a mouth full of teeth. */
+    });
+    /* NOT kept for adoption either — and that is the ordering's whole point.
+       `lips` has no completeness specimen, so without this door the crop would
+       be kept as the candidate the lips bar is one day derived from, and the
+       bar would be calibrated on a mouth full of teeth. */
+    const filed = result.slots[0]!;
+    expect("keptForAdoption" in filed && filed.keptForAdoption).toBeFalsy();
+
+    /* Nothing was written and nothing was reserved: no object, no manifest. */
+    expect(bench.stored).toEqual([]);
+    expect(bench.manifests).toEqual([]);
+
+    const row = bench.rows[0]!;
+    expect(row.image).toBeUndefined();
+    /* The words file exactly as they always did — the row still says what her
+       lips are, and the panel still draws its row. */
+    expect(row.words).toEqual(["full, softly defined"]);
+    /* NO NUMBER on the refusal: nothing measured this crop's completeness. */
+    expect(row.refusal).toEqual({ reason: "mouthOpen", kind: "lips" });
+
+    /* And the question was asked at the wire, of the region that discriminates
+       — not of the lips, which answer either way. */
+    expect(bench.asked).toContain("teeth");
+  });
+
+  it("mints exactly as it did before, on a closed mouth", async () => {
+    /* The teeth region finds nothing, which is what a closed mouth reads as. */
+    const bench = harness({ answers: { lips: rect(LIPS), teeth: null } });
+    const result = await mint([lipsSlot()], bench, onTheFrame);
+
+    /* Today that is `noSpecimen` — nobody has measured a complete lips crop —
+       and its pixels are kept for exactly that purpose. The point of this arm
+       is that the new door is INVISIBLE here: this is the verdict the mint gave
+       before it existed, with its two objects and its manifest. */
+    expect(result.slots[0]).toMatchObject({
+      outcome: "words-only",
+      reason: "guardRefused",
+      keptForAdoption: true,
+    });
+    expect(bench.stored).toHaveLength(2);
+    expect(bench.manifests[0]).toEqual(bench.stored);
+    expect(bench.rows[0]!.refusal).toMatchObject({ reason: "noSpecimen", kind: "lips" });
+  });
+
+  it("does not refuse when the mouth cannot be read at all", async () => {
+    /*
+      The asymmetry, deliberately the other way round from D-235's.
+
+      An affirmative needs a reading — but this reading is a COURTESY the mint
+      buys on its own initiative, and an instrument that cannot answer must not
+      be able to turn away a crop that nothing is wrong with. A reader that
+      throws leaves the mint exactly where it was before this guard existed.
+    */
+    const bench = harness({ readThrows: true });
+    const result = await mint([lipsSlot()], bench, onTheFrame);
+
+    expect(result.slots[0]).toMatchObject({ outcome: "words-only", reason: "guardRefused" });
+    /* `readDidNotSettle`, from the completeness door — NOT `mouthOpen`. */
+    expect(bench.rows[0]!.refusal).toMatchObject({ reason: "readDidNotSettle" });
+  });
+
+  it("buys no teeth read for any other slot", async () => {
+    const bench = harness();
+    await mint([hairSlot()], bench);
+    expect(bench.asked).not.toContain("teeth");
   });
 });

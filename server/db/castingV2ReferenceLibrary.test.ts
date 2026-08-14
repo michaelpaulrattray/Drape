@@ -283,7 +283,13 @@ describe("what a refused crop may say about itself", () => {
   it("refuses keeping the pixels of any other refusal", () => {
     const notKept = GUARD_REFUSAL_REASONS
       .filter((reason) => !refusalKeepsItsCrop(reason));
-    expect(notKept).toEqual(["subjectAbsent", "readDidNotSettle", "underCaptured", "duplicateOfSlot"]);
+    expect(notKept).toEqual([
+      "subjectAbsent", "readDidNotSettle", "underCaptured", "duplicateOfSlot",
+      /* `mouthOpen` keeps nothing DELIBERATELY, and it is the one whose pixels
+         are tempting: `lips` has no specimen, so a kept smiling crop would
+         become the candidate the lips bar is derived from (fable-493). */
+      "mouthOpen",
+    ]);
     for (const reason of notKept) {
       expect(reasonOf(refused({
         refusal: {

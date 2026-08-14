@@ -91,6 +91,44 @@ describe("falRegionReader refuses a question asked of a document", () => {
 });
 
 /**
+ * WHAT IS ASKED IS NOT WHAT IS KEYED (fable-492 §2a).
+ *
+ * The lips phrasing was chosen by measurement — bare "lips" answers nothing at
+ * all on an open mouth — and a phrasing chosen by measurement has to be proven
+ * on the OUTGOING REQUEST rather than on the constant beside it, because the
+ * constant is not what the segmenter reads.
+ */
+describe("the words that leave for the segmenter", () => {
+  function spyOnTheWire() {
+    const sent: string[] = [];
+    const fetchSpy = vi.fn(async (_url: unknown, init: any) => {
+      sent.push(JSON.parse(String(init?.body ?? "{}")).prompt);
+      return new Response(JSON.stringify({ masks: [] }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
+    });
+    vi.stubGlobal("fetch", fetchSpy);
+    return sent;
+  }
+
+  it("asks for THE lips, not the key the rest of the system is built on", async () => {
+    const sent = spyOnTheWire();
+    const reader = createFalRegionReader({ apiKey: "test-key" });
+    await reader.region({ image: PNG, name: "lips", absentIsAnswer: true });
+    expect(sent).toEqual(["the lips"]);
+  });
+
+  it("sends every other region's own name, unchanged", async () => {
+    const sent = spyOnTheWire();
+    const reader = createFalRegionReader({ apiKey: "test-key" });
+    await reader.region({ image: PNG, name: "hair", absentIsAnswer: true });
+    await reader.region({ image: PNG, name: "teeth", absentIsAnswer: true });
+    expect(sent).toEqual(["hair", "teeth"]);
+  });
+});
+
+/**
  * BOTH SIDES OF A SYMMETRICAL FEATURE, DRIVEN DIRECTLY.
  *
  * # The defect these are written against, in its own numbers
