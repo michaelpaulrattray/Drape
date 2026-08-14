@@ -59,6 +59,7 @@ const tuple = <T extends string>(values: readonly T[]) => values as unknown as [
 import { createRoll, cancelRoll } from "../castingV2/rollService";
 import { signCandidate } from "../castingV2/signService";
 import { refineCandidate } from "../castingV2/refineService";
+import { pendingStage } from "../castingV2/pendingStage";
 import {
   listCandidateVariants,
   listPendingVariants,
@@ -758,14 +759,25 @@ export const castingV2Router = router({
             ?? "",
           startedAt: variant.createdAt,
           /*
-            THE ONLY PROGRESS THERE IS (D-169).
+            THE ONLY PROGRESS THERE IS (D-169) — AND WHO HOLDS THE ROW.
 
             Two real states, so the wait can say "in line" and then "being
             drawn" and be telling the truth. Everything after dispatch is
-            silence until the picture lands, which is why there is no third
-            state and no percentage.
+            silence until the picture lands, which is why there is no
+            percentage and never will be.
+
+            `settling` is not a third point on that line, it is a different
+            question answered: the owning operation's lease has passed, so no
+            worker is on this row and the recovery sweep is refunding it
+            (fable-467). Said here rather than left to the client, because the
+            lease is server truth and a browser guessing at it from
+            `startedAt` would be a second implementation of the sweep's rule.
           */
-          stage: variant.status,
+          stage: pendingStage({
+            status: variant.status,
+            leaseExpiresAt: variant.leaseExpiresAt,
+            now: new Date(),
+          }),
         })),
         variants: variants.map((variant) => ({
           variantId: variant.publicId,

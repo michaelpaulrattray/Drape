@@ -71,16 +71,37 @@ export type ViewerFrame = {
 export type ViewerWait = {
   /** Their words, verbatim — the record's own text (D-172). */
   instruction: string;
-  stage: "queued" | "dispatched";
+  /**
+   * The row's own state. Two of these are a live render moving; the third is
+   * not a further point along it.
+   *
+   * `settling` says the operation's lease has passed, so nobody is working on
+   * this row and the recovery sweep now owns it (fable-467). It is here
+   * because the alternative — going on saying "being drawn" about a render
+   * that died — is what held the founder in a locked sheet for five minutes.
+   */
+  stage: "queued" | "dispatched" | "settling";
   /** How many are running, when more than one is (the picture narrates none). */
   extra?: number;
 };
 
-/** The two states, in words a person uses. */
+/** The states, in words a person uses. */
 const STAGE_WORDS: Record<ViewerWait["stage"], string> = {
   queued: "in line",
   dispatched: "being drawn",
+  settling: "this one didn't make it",
 };
+
+/**
+ * What is true INSTEAD of the typical wait, once nobody is rendering.
+ *
+ * "Usually a minute or two" is a promise about a render in progress. Over a
+ * row the sweep has taken, it is a promise about nothing — and the only thing
+ * the customer actually needs at that moment is where their credits went. It
+ * is the same sentence the long-wait copy and the lost-contact line already
+ * make, said by the one surface that now knows it for certain.
+ */
+const SETTLING_NOTE = "your credits come back on their own";
 
 /**
  * How long a refine usually takes — MEASURED, and a copy constant on purpose.
@@ -316,7 +337,18 @@ export function CandidateViewer({
       <div className="dpc-viewer__stage" data-beside={beside ? "true" : "false"}>
         {before ? <aside className="dpc-viewer__rail">{before}</aside> : null}
         <div className="dpc-viewer__column">
-          <figure className="dpc-viewer__frame" data-wait={wait ? "true" : "false"}>
+          {/*
+            THE SOFTENING IS A CLAIM THAT SOMETHING IS BEING DRAWN, so it is
+            withheld the moment nothing is. Photographed first (law 6): a
+            settling row under the full treatment is a blurred, pulsing
+            photograph over the words "this one didn't make it" — the picture
+            saying work is happening while the sentence says it stopped. On a
+            settling row the picture comes back and only the sentence remains.
+          */}
+          <figure
+            className="dpc-viewer__frame"
+            data-wait={wait ? (wait.stage === "settling" ? "settling" : "true") : "false"}
+          >
             {/*
               The picture and everything laid over it share one box, so the dots and
               the type land on the IMAGE rather than on the letterboxing beside it.
@@ -329,13 +361,21 @@ export function CandidateViewer({
               {overlay}
               {wait ? (
                 <>
-                  <span className="dpc-viewer__dots" aria-hidden="true" />
+                  {/* The dot field is the render's own texture — nothing is
+                      rendering, so nothing moves. */}
+                  {wait.stage === "settling"
+                    ? null
+                    : <span className="dpc-viewer__dots" aria-hidden="true" />}
+                  {/* The scrim stays either way: the sentence has to be
+                      readable over a photograph that is no longer softened. */}
                   <span className="dpc-viewer__falloff" aria-hidden="true" />
                   <span className="dpc-viewer__wait" role="status">
                     <span className="dpc-viewer__waitSaid">{wait.instruction}</span>
                     <span className="dpc-viewer__waitMeta">
                       <span>{STAGE_WORDS[wait.stage]}</span>
-                      <span className="dpc-viewer__waitTypical">{TYPICAL_WAIT}</span>
+                      <span className="dpc-viewer__waitTypical">
+                        {wait.stage === "settling" ? SETTLING_NOTE : TYPICAL_WAIT}
+                      </span>
                       {wait.extra ? (
                         <span className="dpc-viewer__waitTypical">
                           {`and ${wait.extra} more running`}

@@ -32,6 +32,7 @@ import {
 import { classifyDispatchFailure, failureActionLabel } from "@/features/castingV2/dispatchFailure";
 import { cancelStory } from "@/features/castingV2/cancelNotice";
 import { refineOutcomeNote } from "@/features/castingV2/refineOutcomeNote";
+import { inFlightCandidate, refineBusy } from "@/features/castingV2/refineBusy";
 import { sheetExpiryNotice } from "@/features/castingV2/retentionCopy";
 import { sheetNotice } from "@/features/castingV2/sheetNotice";
 import {
@@ -790,6 +791,18 @@ export default function CastingSheet() {
   const viewerRefinable = Boolean(
     viewerCandidateId && viewerCandidate?.status === "ready",
   );
+  /*
+    IS OUR OWN REQUEST OUT, AND IS IT ABOUT THIS FACE (fable-465)?
+
+    One mutation hook serves every face in the sheet, so `refine.isPending`
+    alone says "somebody's edit is running" — and the founder walked the viewer
+    onto a different cast and found its boxes gone and its button reading
+    "Refining…" about a render that had nothing to do with it. The request
+    carries its own subject in `variables`; asking it is a derivation rather
+    than a second copy of the fact.
+  */
+  const refineIsOutForViewer = viewerCandidateId !== null
+    && inFlightCandidate(refine) === viewerCandidateId;
   /* The stack is fetched only while a refinable face is open — there is
      nothing to show otherwise, and eight idle queries per sheet is a cost
      nobody sees and everybody pays. */
@@ -814,7 +827,7 @@ export default function CastingSheet() {
         and it is the only thing available before the first refetch.
       */
       refetchInterval: (query) => (
-        query.state.data?.pending?.length || refine.isPending ? 4000 : false
+        query.state.data?.pending?.length || refineIsOutForViewer ? 4000 : false
       ),
     },
   );
@@ -1054,7 +1067,26 @@ export default function CastingSheet() {
   }
 
   const pendingForViewer = variants.data?.pending ?? [];
-  const narrating = pendingForViewer.at(-1) ?? null;
+  /*
+    BUSY IS ABOUT THIS FACE, AND ABOUT A ROW SOMEBODY IS ACTUALLY RENDERING.
+
+    The whole rule lives in `refineBusy` with both of its arms driven — another
+    cast's request must not mute this one (fable-465), and a row whose lease
+    has passed must give the customer their hands back (fable-466/467).
+  */
+  const viewerBusy = refineBusy({
+    viewerCandidateId,
+    inFlightCandidateId: inFlightCandidate(refine),
+    pending: pendingForViewer,
+  });
+  /*
+    A LIVE ROW NARRATES BEFORE A DEAD ONE. With one row in flight this is the
+    same `.at(-1)` it always was; with two, the picture should be describing
+    the render that is still coming rather than the one the sweep is refunding.
+  */
+  const narrating = pendingForViewer.filter((row) => row.stage !== "settling").at(-1)
+    ?? pendingForViewer.at(-1)
+    ?? null;
   const viewerWait = narrating
     ? {
       instruction: narrating.instruction,
@@ -1818,7 +1850,7 @@ export default function CastingSheet() {
               rows={faceRows}
               selection={faceSelection}
               priceCredits={refinePrice}
-              busy={refine.isPending || (variants.data?.pending?.length ?? 0) > 0}
+              busy={viewerBusy}
               onAsk={askRefine}
             />
           ) : null}
@@ -1881,7 +1913,7 @@ export default function CastingSheet() {
                 with the component, which is how a running edit became invisible
                 and got bought twice.
               */
-              busy={refine.isPending || (variants.data?.pending?.length ?? 0) > 0}
+              busy={viewerBusy}
               outcome={refineOutcome}
               /* Empty until the segment store is armed for this account — and
                  empty by construction whenever panel v2 is, since v2 replaces v1

@@ -609,6 +609,22 @@ export async function listPendingVariants(
    * lands, which is exactly why the surface says two words and no percentage.
    */
   status: "queued" | "dispatched";
+  /**
+   * WHEN THIS ROW STOPS BEING SOMEBODY'S PROMISE — the lease of the operation
+   * that owns it (fable-467).
+   *
+   * A refine's worker renews this every 30 seconds while it lives. When the
+   * worker dies the renewals stop, the lease passes, and the recovery sweep
+   * takes the row over and refunds it — but the row itself still says
+   * `dispatched`, because nothing has run to change it. Read as "still
+   * rendering", that is a customer held shut on a render nobody is doing; the
+   * founder lived five minutes of it with no way out.
+   *
+   * NULL only for a row whose operation is missing, which is not a state this
+   * schema can reach — `operationId` is NOT NULL with a unique index — so the
+   * null branch means "cannot tell", and cannot-tell reads as still running.
+   */
+  leaseExpiresAt: Date | null;
 }>> {
   assertPositiveId(userId, "userId");
   const db = await requireDb();
@@ -620,6 +636,13 @@ export async function listPendingVariants(
       requestText: castingCandidateVariants.requestText,
       createdAt: castingCandidateVariants.createdAt,
       status: castingCandidateVariants.status,
+      /*
+        The lease travels with the row rather than being fetched beside it: the
+        question "is anyone still working on this?" is about this exact
+        variant, and a second statement to answer it is a second answer that
+        can disagree with the first.
+      */
+      leaseExpiresAt: generationOperations.leaseExpiresAt,
     })
     .from(castingCandidateVariants)
     .innerJoin(castingCandidates, and(
@@ -627,6 +650,17 @@ export async function listPendingVariants(
       eq(castingCandidates.publicId, candidatePublicId),
       eq(castingCandidates.userId, userId),
     ))
+    /*
+      LEFT, not inner: the operation is what tells us whether the row is still
+      owned by a living worker, and it must never be able to DELETE a pending
+      row from the wait. A missing operation would silently empty the list —
+      the customer would see nothing in flight while a charge was out, which is
+      the exact defect (D-161) this whole read exists to prevent.
+    */
+    .leftJoin(
+      generationOperations,
+      eq(generationOperations.id, castingCandidateVariants.operationId),
+    )
     .where(and(
       eq(castingCandidateVariants.userId, userId),
       inArray(castingCandidateVariants.status, ["queued", "dispatched"]),

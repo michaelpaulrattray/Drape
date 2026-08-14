@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "ff78af693a32e297"
+    "sourceFingerprint": "878af02d613636f9"
   },
   "domains": [
     {
@@ -38,12 +38,12 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 103
+      "moduleCount": 104
     },
     {
       "id": "domain:castingV2",
       "name": "castingV2",
-      "moduleCount": 29
+      "moduleCount": 30
     },
     {
       "id": "domain:client-shared",
@@ -1523,6 +1523,12 @@
     {
       "id": "module:client/src/features/castingV2/failureCopy.ts",
       "path": "client/src/features/castingV2/failureCopy.ts",
+      "domain": "castingV2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/castingV2/refineBusy.ts",
+      "path": "client/src/features/castingV2/refineBusy.ts",
       "domain": "castingV2",
       "lifecycle": "active"
     },
@@ -3509,6 +3515,12 @@
     {
       "id": "module:server/castingV2/packageOrchestrator.ts",
       "path": "server/castingV2/packageOrchestrator.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/pendingStage.ts",
+      "path": "server/castingV2/pendingStage.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -8059,6 +8071,10 @@
       "path": "client/src/features/castingV2/pronounGrammar.test.ts"
     },
     {
+      "id": "test:client/src/features/castingV2/refineBusy.test.ts",
+      "path": "client/src/features/castingV2/refineBusy.test.ts"
+    },
+    {
       "id": "test:client/src/features/castingV2/refineOutcomeNote.test.ts",
       "path": "client/src/features/castingV2/refineOutcomeNote.test.ts"
     },
@@ -8845,6 +8861,10 @@
     {
       "id": "test:server/castingV2/partialDeferenceOn.test.ts",
       "path": "server/castingV2/partialDeferenceOn.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/pendingStage.test.ts",
+      "path": "server/castingV2/pendingStage.test.ts"
     },
     {
       "id": "test:server/castingV2/poolTendencies.test.ts",
@@ -12106,6 +12126,11 @@
     },
     {
       "from": "module:client/src/features/castingV2/components/RefinePanel.tsx",
+      "to": "module:client/src/features/castingV2/refineBusy.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/castingV2/components/RefinePanel.tsx",
       "to": "module:client/src/foundation/index.ts",
       "kind": "imports"
     },
@@ -14087,6 +14112,11 @@
     {
       "from": "module:client/src/pages/CastingSheet.tsx",
       "to": "module:client/src/features/castingV2/failureCopy.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/CastingSheet.tsx",
+      "to": "module:client/src/features/castingV2/refineBusy.ts",
       "kind": "imports"
     },
     {
@@ -22082,6 +22112,11 @@
     {
       "from": "module:server/routes/castingV2.ts",
       "to": "module:server/castingV2/faceScanService.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/castingV2.ts",
+      "to": "module:server/castingV2/pendingStage.ts",
       "kind": "imports"
     },
     {

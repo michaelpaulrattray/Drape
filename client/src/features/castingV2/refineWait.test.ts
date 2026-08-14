@@ -75,13 +75,46 @@ describe("the picture is the loader, and it claims nothing it cannot know", () =
 });
 
 describe("the wait says only what the row knows", () => {
-  it("names exactly two stages and no third", async () => {
+  /*
+    TWO STAGES OF PROGRESS, AND NO THIRD — the law is unchanged; what changed
+    is that `settling` is not one of them (fable-467).
+
+    A live render has exactly two states it can report, and nothing between
+    dispatch and landing is knowable. `settling` answers a different question:
+    the operation's lease has passed, so no worker holds the row and the sweep
+    is refunding it. It earns its place because the alternative — going on
+    saying "being drawn" over a render that died — is what held the founder in
+    a locked sheet. The assertion below is what stops it becoming a progress
+    scale by accretion: those three, and a fourth would need this line changed
+    on purpose.
+  */
+  it("names two stages of progress, a settling state, and nothing else", async () => {
     const source = await readFile(VIEWER, "utf8");
-    const map = source.slice(source.indexOf("const STAGE_WORDS"), source.indexOf("};", source.indexOf("const STAGE_WORDS")));
+    const at = source.indexOf("const STAGE_WORDS");
+    expect(at).toBeGreaterThan(-1);
+    const map = source.slice(at, source.indexOf("};", at));
+    expect(map.length).toBeGreaterThan(0);
     expect(map).toContain("queued");
     expect(map).toContain("dispatched");
     expect(map).toContain("in line");
     expect(map).toContain("being drawn");
+    expect(map).toContain("settling");
+    /* Three keys, counted — `queued:`, `dispatched:`, `settling:`. */
+    expect(map.match(/^\s{2}\w+:/gm)?.length).toBe(3);
+  });
+
+  /*
+    AND IT MUST NOT KEEP PROMISING A WAIT THAT IS OVER. "Usually a minute or
+    two" is a statement about a render in progress; over a row the sweep has
+    taken it is a promise about nothing, and the only fact the customer needs
+    at that moment is where their credits went.
+  */
+  it("swaps the typical-wait line for the money sentence once it is settling", async () => {
+    const source = await readFile(VIEWER, "utf8");
+    const at = source.indexOf("const SETTLING_NOTE");
+    expect(at).toBeGreaterThan(-1);
+    expect(source.slice(at, source.indexOf("\n", at))).toContain("credits come back on their own");
+    expect(source).toContain('wait.stage === "settling" ? SETTLING_NOTE : TYPICAL_WAIT');
   });
 
   /*
@@ -185,8 +218,15 @@ describe("the answer chips are the typed path, not a second one", () => {
     const query = sheet.slice(sheet.indexOf("trpc.castingV2.variants.useQuery"));
     const options = query.slice(query.indexOf("refetchInterval:"));
     const interval = options.slice(0, options.indexOf("),") + 2);
+    expect(interval.length).toBeGreaterThan(0);
     expect(interval).toContain("pending?.length");
-    expect(interval).toContain("refine.isPending");
+    /*
+      The client's own knowledge of an outstanding request — now asked about
+      the face on screen rather than about the sheet, since one mutation hook
+      serves all eight (fable-465). The deadlock this guards is unchanged: the
+      poll must start before the server has anything to report.
+    */
+    expect(interval).toContain("refineIsOutForViewer");
   });
 
   it("withdraws the question when it is dismissed", async () => {

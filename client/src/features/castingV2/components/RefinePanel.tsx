@@ -1,6 +1,7 @@
 import { Button } from "@/foundation";
 import { SegmentsOnFace, type FaceRow } from "./SegmentsOnFace";
 import { VersionRail } from "./VersionRail";
+import type { PendingStage } from "../refineBusy";
 
 /**
  * Refining one face — the panel under the expanded picture (M8).
@@ -56,11 +57,16 @@ export type PendingRefine = {
   /**
    * How far along it is, from the row rather than from a guess (D-169).
    *
-   * Two states and no third: `queued` is claimed-not-yet-sent, `dispatched` is
-   * the image model has it. After that there is silence until the picture
-   * lands, which is the whole reason this surface shows no percentage.
+   * `queued` is claimed-not-yet-sent, `dispatched` is the image model has it.
+   * After that there is silence until the picture lands, which is the whole
+   * reason this surface shows no percentage — and there is still no third
+   * point on that line.
+   *
+   * `settling` is a different question answered: the operation's lease has
+   * passed, nobody is rendering the row, and the recovery sweep is refunding
+   * it (fable-467). It is not progress; it is who holds the row.
    */
-  stage?: "queued" | "dispatched";
+  stage?: PendingStage;
 };
 
 /**
