@@ -495,10 +495,7 @@ describe("the rectangle names what it covers (fable-378 (c))", () => {
     ]);
 
     expect(regions).toContain("onAsk(said, open.scope);");
-    /* The signature grew a third parameter when the chips learned to take a
-       step back (V3(c)); the scope is still the second, which is what this
-       assertion is about. */
-    expect(sheet).toContain("function askRefine(instruction: string, scope?: string,");
+    expect(sheet).toContain("function askRefine(instruction: string, scope?: string)");
     expect(sheet).toContain("...(scope ? { scope } : {}),");
   });
 

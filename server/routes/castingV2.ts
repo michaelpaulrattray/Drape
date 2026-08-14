@@ -855,6 +855,19 @@ export const castingV2Router = router({
             ? variant.instructions.filter((entry): entry is string => typeof entry === "string")
             : [],
           /*
+            AND WHAT THIS VERSION WAS ASKED FOR, in her own words — the founder's
+            own ruling on the rail (2026-08-15): *"when you undo a step it should
+            call itself whatever your prompt was e.g. remove hair."*
+
+            For an edit this is the last thing in the list and nothing changes.
+            For a REMOVAL they differ, and the difference is the whole point:
+            removal deletes steps rather than appending one, so the list ends
+            with the last SURVIVING sentence and the chip read as a duplicate of
+            the version before it. The pending chip beside this has answered the
+            same question this way since D-163; the landed one now agrees.
+          */
+          requestText: variant.requestText ?? null,
+          /*
             WHERE each instruction was FILED (D-149) — subject headings only,
             never the deltas themselves.
 

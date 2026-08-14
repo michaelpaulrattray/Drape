@@ -43,7 +43,7 @@ import {
 import { RefinePanel } from "@/features/castingV2/components/RefinePanel";
 import { FacePanel } from "@/features/castingV2/components/FacePanel";
 import { VersionRail } from "@/features/castingV2/components/VersionRail";
-import { frameUrlFor, type ChosenFrame } from "@/features/castingV2/chosenFrame";
+import { frameUrlFor, selectedVariantFor, type ChosenFrame } from "@/features/castingV2/chosenFrame";
 import { FaceRegions } from "@/features/castingV2/components/FaceRegions";
 import { useFaceSelection } from "@/features/castingV2/components/faceSelection";
 import { KeptTray } from "@/features/castingV2/components/KeptTray";
@@ -1057,6 +1057,9 @@ export default function CastingSheet() {
     if (picked && showing && picked !== showing) {
       setChosenFrame({
         candidateId: viewerCandidateId,
+        /* The version this pick IS — the rail's highlight reads it, so the chip
+           and the photograph are one claim (fable-546). */
+        variantId,
         url: picked,
         /* The chip they clicked is already in the browser, so the viewer can
            show the right picture immediately and sharpen in place. */
@@ -1110,7 +1113,7 @@ export default function CastingSheet() {
    * nothing, because a typed sentence with no rectangle behind it is about the
    * whole feature (fable-444, ruling C).
    */
-  function askRefine(instruction: string, scope?: string, removeStep?: { at: number; instruction: string }) {
+  function askRefine(instruction: string, scope?: string) {
     if (!viewerCandidateId) return;
 
     /*
@@ -1143,11 +1146,6 @@ export default function CastingSheet() {
         instruction,
         ...(answering ? { answering } : {}),
         ...(scope ? { scope } : {}),
-        /* The step she pointed at, when a chip sent this rather than the box.
-           The server checks the index against this sentence and refuses free if
-           the two have come apart — a stale click must not prune a step nobody
-           chose. */
-        ...(removeStep ? { removeStep } : {}),
       })
       .then(async (result) => {
         /*
@@ -2011,7 +2009,20 @@ export default function CastingSheet() {
             <VersionRail
               variants={variants.data?.variants ?? []}
               pending={variants.data?.pending ?? []}
-              selectedVariantId={variants.data?.selectedVariantId ?? null}
+              /*
+                ONE SOURCE OF TRUTH FOR THE SELECTION (founder bug, fable-546).
+
+                This read the server-confirmed value while the photograph rode
+                the optimistic override, so for the length of a round trip the
+                picture was the new version and the lit chip was the old one.
+                Same claim, same expiry, same scope — the override answers both.
+              */
+              selectedVariantId={selectedVariantFor({
+                candidateId: viewerCandidateId ?? "",
+                serverUrl: viewerCandidate?.imageUrl ?? "",
+                serverSelected: variants.data?.selectedVariantId ?? null,
+                chosen: chosenFrame,
+              })}
               originalImageUrl={variants.data?.originalImageUrl ?? null}
               originalThumbUrl={variants.data?.originalThumbUrl ?? null}
               onSelect={selectVariant}
@@ -2025,37 +2036,6 @@ export default function CastingSheet() {
                 forbids. `refinable` is the sheet's own word for "this face can
                 be refined here", and the panel beside it uses the same gate.
               */
-              /*
-                AND ONLY WHERE THE ROAD SERVES HER (fable-542 §3).
-                `viewerRefinable` says this FACE can be refined; `stepBackEnabled`
-                says this ACCOUNT is on the road that can perform a prune. The
-                second is what keeps a visible control from being one that always
-                errors: the menu item, the action and the road widen together or
-                not at all.
-              */
-              {...(viewerRefinable && config.data?.stepBackEnabled ? {
-                onRemoveStep: (step: { variantId: string; at: number; instruction: string }) => {
-                  /*
-                    THE STEP IS TAKEN BACK FROM ITS OWN VERSION, so that version
-                    is selected first.
-
-                    The service prunes the SELECTED face's chain — that is what
-                    a chain is — and a chip can be clicked while another version
-                    is selected. Without this the request named an index in
-                    somebody else's chain and refused ("that step has moved"),
-                    which is the door working and the wiring wrong. Driven: it
-                    is how the first run of this surface behaved.
-
-                    Selecting is free (D-121) and is what clicking a chip means
-                    anyway, so the two clicks she would otherwise have to make
-                    are done in the order she meant them.
-                  */
-                  void Promise.resolve(selectVariant(step.variantId)).then(() => {
-                    askRefine(step.instruction, undefined, { at: step.at, instruction: step.instruction });
-                  });
-                },
-                removePriceCredits: refinePrice,
-              } : {})}
               layout="column"
             />
           ) : null}

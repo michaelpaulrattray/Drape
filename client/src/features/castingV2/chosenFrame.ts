@@ -57,7 +57,44 @@ export type ChosenFrame = {
   previewUrl?: string | null;
   /** The picture that was on screen when they chose it. */
   insteadOf: string;
+  /**
+   * WHICH VERSION THIS PICK IS — so the rail's highlight and the photograph are
+   * ONE claim rather than two (founder bug, fable-546).
+   *
+   * The viewer rode this override and the rail's highlight rode the
+   * server-confirmed selection, so for the round trip they disagreed: the
+   * picture switched instantly and the chip stayed lit on the version she had
+   * left. Two readers of "which version is she on" is the mirror law on a
+   * surface, and the answer is the same one the picture already uses — with the
+   * same expiry, the same scope and the same self-limiting rule, all of which
+   * come free by putting it here rather than in a second piece of state.
+   *
+   * `null` is the ORIGINAL, which is a real selection and not an absence.
+   */
+  variantId: string | null;
 };
+
+/**
+ * WHICH VERSION THE RAIL SHOULD LIGHT — the same claim as the picture above.
+ *
+ * While the override applies (this candidate, and the server still showing the
+ * frame it replaces), the chip she clicked is the lit one. The moment the
+ * server catches up — or anything else changes the picture, a refine landing
+ * mid-switch included — this falls back to the confirmed selection with no
+ * timer and no cleanup, exactly as the frame does.
+ */
+export function selectedVariantFor(input: {
+  candidateId: string;
+  /** What the server currently says this candidate's picture is. */
+  serverUrl: string;
+  /** What the server currently says is selected. */
+  serverSelected: string | null;
+  chosen: ChosenFrame | null;
+}): string | null {
+  const { chosen, candidateId, serverUrl, serverSelected } = input;
+  if (!chosen || chosen.candidateId !== candidateId) return serverSelected;
+  return serverUrl === chosen.insteadOf ? chosen.variantId : serverSelected;
+}
 
 export function frameUrlFor(input: {
   candidateId: string;
