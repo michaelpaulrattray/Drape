@@ -165,8 +165,8 @@ export function describedFeatures(): string[] {
 }
 
 /**
- * A ROW THAT DRAWS, CANNOT BE PICTURED, AND IS DELIBERATELY NOT DESCRIBED —
- * with the reason, because "nobody wrote one" is not one.
+ * A ROW THAT DRAWS AND IS DELIBERATELY NOT DESCRIBED — with the reason, because
+ * "nobody wrote one" is not one.
  *
  * **Empty today, and that is a result rather than an oversight.** `teeth` lived
  * here from the moment the guard below found it (the founder named body and
@@ -177,7 +177,27 @@ export function describedFeatures(): string[] {
  * The next wordless row the catalogue grows lands here or in `DESCRIBED_ASKS`,
  * and the guard refuses until one of them is chosen deliberately.
  */
-export const NOT_DESCRIBED: Record<string, string> = {};
+export const NOT_DESCRIBED: Record<string, string> = {
+  /*
+    HORNS IS THE FIRST MEMBER, and it widens what this bucket means, so the
+    heading above changed with it.
+
+    Every earlier occupant was a row that could not be PICTURED — no question
+    names it, so words were the only thing it could ever hold. Horns is the
+    opposite case arriving at the same door: it has no CUTTING question (the
+    survival court's crop arm beat nothing, and a mint would need a specimen
+    this kind has never bought) but it does have a DISPLAY region, measured by
+    the detection court at 0.0000% bare against 0.39–0.87% worn. So the row
+    draws a box from the photograph like any other.
+
+    And it needs no description ask, because a description would be a second
+    voice about the same thing: what her horns are was said in her own words
+    when she asked for them, and those words are already on the row's stack. An
+    ask here would buy a vision call to paraphrase the sentence she typed.
+  */
+  horns: "pictured rather than described: the display region gives the row its box, and what "
+    + "her horns ARE is already on the row in her own words from the ask",
+};
 
 /** Refuse rather than describe half the rows that need describing. */
 export function assertEveryDescribedFeatureHasAnAsk(features: readonly string[] = describedFeatures()): void {

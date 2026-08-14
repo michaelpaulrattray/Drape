@@ -602,10 +602,27 @@ const ANATOMY_SLOTS: readonly CatalogueEntry[] = [
       from: "none",
       note: "no region in the cutting vocabulary names them — deliberately, because the crop arm beat nothing and a crop would need a completeness specimen this kind has never bought. The DETECTOR can see them perfectly well (0.0000% on three visibly bare frames against 0.39–0.87% on twelve worn ones, two faces); that is a different question from what may be cut and filed",
     },
-    panel: {
-      row: "none",
-      why: "there is no crop of them, so a row would be a square with nothing behind it — the ask works, the words are kept, and the panel does not offer a picture of something that has none",
-    },
+    /*
+      AND IT DOES GET A ROW (fable-527 §3, amending the first shape call).
+
+      The first version of this entry said no row, on the reasoning that a row
+      is a picture and horns have no crop. That was the wrong half: the founder
+      renders horns tonight and his panel shows nothing where they plainly are
+      — the product claiming less than the picture holds, which he would file
+      as a bug by morning.
+
+      The teeth precedent is the shape, one row up: a DISPLAY region without a
+      cutting one. As a CARRIER a crop of horns bought nothing (the survival
+      court ran both arms and neither beat the other), and there is no
+      completeness specimen to guard a mint with. As a ROW it is a name, a
+      click affordance and a box on the photograph — and unlike almost every
+      other row, the region is its own discriminator: the detection court read
+      0.0000% on six visibly bare frames across two faces and 0.39–0.87% on
+      twelve worn ones, so a face with no horns shows no row without anybody
+      writing a rule for it.
+    */
+    panel: { row: "own" },
+    display: "horns",
   },
 ];
 
@@ -758,6 +775,15 @@ function nearestRegionOf(entry: CatalogueEntry): string | null {
  * `display` at all, so nothing here can become a crop.
  */
 export const DISPLAY_REGION_VOCABULARY: Readonly<Record<string, string>> = {
+  horns:
+    "measured by the horns court, 2026-08-14, on two of the founder's own faces "
+    + "(`docs/specs/V2_HORNS_VERDICT.md`): the segmenter answers \"horns\" with 0.0000% of "
+    + "the frame on six visibly bare renders and 0.3888–0.8741% on twelve worn ones, per "
+    + "face and never pooled. Total separation, which is why this row needs no floor of its "
+    + "own — any pixels at all are the region answering, exactly as the scan has always "
+    + "treated a question no accessory court measured. It is a DISPLAY region and not a "
+    + "cutting one: the survival court's crop arm beat nothing, and a mint would need a "
+    + "completeness specimen this kind has never bought",
   teeth:
     "measured on the founder's own production frames, 2026-08-14 "
     + "(probe-his-lips-disposable): the segmenter answers \"teeth\" with 1,345 px on his "

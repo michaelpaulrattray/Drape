@@ -379,9 +379,16 @@ describe("a display region is shown and never carried", () => {
       catalogue refuses to CUT from because a crop of it filed as her teeth is
       the mouth under a second name.
     */
-    expect(displayed.map((definition) => definition.slot)).toEqual(["teeth", "skin"]);
+    /*
+      THREE NOW (fable-527 §3). Horns arrived at the same door from a third
+      direction: its display region and its cutting region are the SAME words,
+      and the cutting one is refused anyway — the survival court ran a crop arm
+      and it beat nothing, and a mint would need a completeness specimen this
+      kind has never bought. The picture is honest; only the filing was not.
+    */
+    expect(displayed.map((definition) => definition.slot)).toEqual(["teeth", "skin", "horns"]);
     expect(displayed.map((definition) => [definition.slot, definition.display]))
-      .toEqual([["teeth", "teeth"], ["skin", "face skin"]]);
+      .toEqual([["teeth", "teeth"], ["skin", "face skin"], ["horns", "horns"]]);
   });
 
   it("names a region the segmenter actually answers, never an invented one", () => {
