@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "878af02d613636f9"
+    "sourceFingerprint": "a1cffc692e1545fe"
   },
   "domains": [
     {
@@ -8989,6 +8989,10 @@
     {
       "id": "test:server/castingV2/repaintRender.test.ts",
       "path": "server/castingV2/repaintRender.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/restatementPass.test.ts",
+      "path": "server/castingV2/restatementPass.test.ts"
     },
     {
       "id": "test:server/castingV2/retentionExemption.test.ts",

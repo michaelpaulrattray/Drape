@@ -649,18 +649,28 @@ export async function refineCandidate(
     };
   }
 
+  /*
+    ONE READING, ASKED THREE WAYS — the same face, the same sentence, the same
+    prior. Named here because there are three call sites (the first reading, the
+    removal re-read, and the restatement pass) and a fourth copy of this block
+    would be the drift law's own failure mode on the step that decides what gets
+    painted.
+  */
+  const readInstruction = (extra: { mode?: "edit"; restated?: boolean } = {}) =>
+    (dependencies.interpret ?? interpretRefinement)({
+      instruction,
+      prior: priorItems,
+      lastColourFacet: lastColourFacet ? colourFacetLabel(lastColourFacet) : null,
+      currentEyeColour: currentValueOfFacet(currentIdentity, "eye.colour"),
+      currentEyeShape: currentValueOfFacet(currentIdentity, "eye.shape"),
+      currentHairStyle: currentValueOfFacet(currentIdentity, "hair.cut"),
+      currentHairColour: currentValueOfFacet(currentIdentity, "hair.colour"),
+      currentHairTexture: currentValueOfFacet(currentIdentity, "hair.texture"),
+      currentMakeup: currentValueOfFacet(currentIdentity, "makeup"),
+      ...extra,
+    });
   /* `let` because a wordless removal is re-read as an edit below (D-189). */
-  let parsed = await (dependencies.interpret ?? interpretRefinement)({
-    instruction,
-    prior: priorItems,
-    lastColourFacet: lastColourFacet ? colourFacetLabel(lastColourFacet) : null,
-    currentEyeColour: currentValueOfFacet(currentIdentity, "eye.colour"),
-    currentEyeShape: currentValueOfFacet(currentIdentity, "eye.shape"),
-    currentHairStyle: currentValueOfFacet(currentIdentity, "hair.cut"),
-    currentHairColour: currentValueOfFacet(currentIdentity, "hair.colour"),
-    currentHairTexture: currentValueOfFacet(currentIdentity, "hair.texture"),
-    currentMakeup: currentValueOfFacet(currentIdentity, "makeup"),
-  });
+  let parsed = await readInstruction();
   /*
     AND DID HER SENTENCE SURVIVE THE READING? — before anything is claimed.
 
@@ -671,9 +681,49 @@ export async function refineCandidate(
     failed was never written. Measured at three of nineteen readings on the
     plural shape. Refused here, in the step that was already free.
   */
-  const refuseIfAbsorbed = (delta: RefineDelta): void => {
-    const verdict = saysNothingNew({ delta, prior: priorItems, identity: currentIdentity });
-    if (!verdict.absorbed) return;
+  /*
+    AND IT ASKS AGAIN BEFORE IT REFUSES (fable-460).
+
+    The founder's cast held "left eye icey blue". He typed "her eyes meadow
+    green" and this door told him *"She already has left eye icey blue"* —
+    because the reading had come back holding only the restatement. The door was
+    right that the delta said nothing new; it was wrong about what that MEANT.
+    Measured on his state before anything changed
+    (`scripts/bench-noop-door-disposable.mts`): 1 of 3 readings lost the ask,
+    2 of 3 filed meadow green. A third of a legitimate paid edit, refused with a
+    sentence that reads as the product not knowing colours.
+
+    So a first restatement buys one more reading, with a constraint that names
+    what went wrong and nothing else, and the SECOND reading faces this same
+    door. A sentence that genuinely asks for what she already has restates
+    twice and is refused exactly as before — the bench's control arm, which
+    must keep refusing free or this fix has simply deleted the guard.
+
+    Never more than once: the retry itself is `restated`, and its own verdict is
+    final.
+  */
+  const throughTheAlreadyTrueDoor = async (
+    parse: Extract<Awaited<ReturnType<typeof readInstruction>>, { ok: true }>,
+    mode?: "edit",
+  ): Promise<typeof parse> => {
+    if (!("delta" in parse)) return parse;
+    const verdict = saysNothingNew({ delta: parse.delta, prior: priorItems, identity: currentIdentity });
+    if (!verdict.absorbed) return parse;
+    log.warn(
+      { candidateId: input.candidatePublicId, instruction, alreadyTrue: verdict.alreadyTrue },
+      "[refineService] the reading kept only what she already is — asking once more before refusing",
+    );
+    const again = await readInstruction({ ...(mode ? { mode } : {}), restated: true });
+    if (again.ok && "delta" in again) {
+      const second = saysNothingNew({ delta: again.delta, prior: priorItems, identity: currentIdentity });
+      if (!second.absorbed) {
+        log.info(
+          { candidateId: input.candidatePublicId, instruction },
+          "[refineService] the second reading kept her sentence — carrying on",
+        );
+        return again as typeof parse;
+      }
+    }
     log.warn(
       { candidateId: input.candidatePublicId, instruction, alreadyTrue: verdict.alreadyTrue },
       "[refineService] the ask was absorbed into a restatement of what she already is — refusing, free",
@@ -683,7 +733,7 @@ export async function refineCandidate(
       message: refusalMessage({ ok: false, refusal: { reason: "absorbed", asked: verdict.alreadyTrue } }),
     });
   };
-  if (parsed.ok && "delta" in parsed) refuseIfAbsorbed(parsed.delta);
+  if (parsed.ok && "delta" in parsed) parsed = await throughTheAlreadyTrueDoor(parsed);
   if (!parsed.ok) {
     /*
       A FREE REFUSAL SHOULD NOT ALSO BE A FREE PASS ON DIAGNOSIS.
@@ -901,24 +951,14 @@ export async function refineCandidate(
       { instruction },
       "[refineService] a removal with no removal word — re-reading as an edit",
     );
-    const asEdit = await (dependencies.interpret ?? interpretRefinement)({
-      instruction,
-      mode: "edit",
-      prior: priorItems,
-      lastColourFacet: lastColourFacet ? colourFacetLabel(lastColourFacet) : null,
-      currentEyeColour: currentValueOfFacet(currentIdentity, "eye.colour"),
-      currentEyeShape: currentValueOfFacet(currentIdentity, "eye.shape"),
-      currentHairStyle: currentValueOfFacet(currentIdentity, "hair.cut"),
-      currentHairColour: currentValueOfFacet(currentIdentity, "hair.colour"),
-      currentHairTexture: currentValueOfFacet(currentIdentity, "hair.texture"),
-      currentMakeup: currentValueOfFacet(currentIdentity, "makeup"),
-    });
+    const asEdit = await readInstruction({ mode: "edit" });
     if (asEdit.ok && "delta" in asEdit) {
-      /* The SECOND reading gets the same guard as the first. A re-read is a
-         parse, and a parse that loses her sentence loses it either time. */
-      refuseIfAbsorbed(asEdit.delta);
-      parsed = asEdit;
-      editDelta = asEdit.delta;
+      /* The SECOND reading gets the same door as the first — including its one
+         re-ask. A re-read is a parse, and a parse that loses her sentence loses
+         it either time. */
+      const kept = await throughTheAlreadyTrueDoor(asEdit, "edit");
+      parsed = kept;
+      if ("delta" in kept) editDelta = kept.delta;
     }
   }
 

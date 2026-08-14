@@ -472,6 +472,47 @@ const ECHO_CONSTRAINT = [
   "how it got there. Saying less than they meant is correct here; saying more is not.",
 ].join("\n");
 
+/**
+ * THE RESTATEMENT PASS — what the code says when a reading kept only the past
+ * (fable-460).
+ *
+ * # The founder's specimen
+ *
+ * His cast had *"left eye icey blue"* filed. He typed **"her eyes meadow
+ * green"** and was told *"She already has left eye icey blue — this would have
+ * changed nothing, so nothing was charged."* Meadow green is not icy blue: the
+ * reading had returned the restatement and dropped the ask, and the already-
+ * true door — which exists to catch exactly that — refused with a sentence
+ * that reads as the product not understanding colours.
+ *
+ * Measured on that state before anything was changed
+ * (`scripts/bench-noop-door-disposable.mts`, n=3): **1 of 3** readings came
+ * back holding only the prior; the other two filed meadow green and went
+ * through. A third of a legitimate paid edit lost to a sampling.
+ *
+ * # Why a constraint rather than a plain re-sample
+ *
+ * A plain retry would work — the failure is a sampling — but it would be
+ * silent about WHY, and the same prompt has already lost her sentence once.
+ * This names the thing that went wrong and nothing else. It does not say what
+ * to file, it does not weaken a wall, and it does not tell the model the ask is
+ * legitimate: a sentence that genuinely only restates what she already is must
+ * still come back as that restatement, so the door can refuse it. The control
+ * arm of the bench is exactly that case, and it must keep refusing free.
+ *
+ * Its cost is one text call, on a path that was about to refuse for free.
+ */
+const RESTATED_CONSTRAINT = [
+  "",
+  "",
+  "YOUR LAST READING OF THIS SENTENCE FILED ONLY WHAT SHE ALREADY IS — every value it",
+  "returned was already on her, so nothing would have changed. Read the instruction once",
+  "more and file what it asks to CHANGE, in their words. Restate the other items of a",
+  "plural subject exactly as before, but the thing they asked for must be in there too.",
+  "If the sentence genuinely asks for nothing she does not already have, file that same",
+  "restatement again — that answer is correct and the code handles it.",
+].join("\n");
+
 export type RefineInterpretInput = {
   instruction: string;
   /**
@@ -511,6 +552,15 @@ export type RefineInterpretInput = {
    * behaviour that shipped before this existed.
    */
   stageRelook?: boolean;
+  /**
+   * THE RESTATEMENT PASS — the last reading kept only what she already is, and
+   * the service is asking once more before it refuses (fable-460).
+   *
+   * Set by `refineService` at the already-true door, never by an ordinary
+   * caller, and never twice: a second restatement falls through to the refusal
+   * the door made before this existed.
+   */
+  restated?: boolean;
   /** What the face is NOW — relative asks resolve against this. */
   currentEyeColour: string | null;
   currentEyeShape: string | null;
@@ -606,7 +656,8 @@ async function runOnce(
       system: (input.mode === "edit" ? BASE_PROMPT : SYSTEM_PROMPT)
         + (input.echoed ? ECHO_CONSTRAINT : "")
         + (input.hybrid ? HYBRID_CONSTRAINT : "")
-        + (input.stageRelook ? STAGE_RELOOK_CONSTRAINT : ""),
+        + (input.stageRelook ? STAGE_RELOOK_CONSTRAINT : "")
+        + (input.restated ? RESTATED_CONSTRAINT : ""),
       user: [
         `Current eye colour: ${input.currentEyeColour ?? "unknown"}`,
         `Current eye shape: ${input.currentEyeShape ?? "unknown"}`,

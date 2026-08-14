@@ -619,6 +619,63 @@ describe("refusals land before anything is claimed", () => {
   });
 
   /*
+    THE DOOR ASKS AGAIN BEFORE IT REFUSES (fable-460).
+
+    The founder's cast held "left eye icey blue". He typed "her eyes meadow
+    green" and was told *"She already has left eye icey blue"* — the reading had
+    dropped his ask and returned only the restatement, and the door read that as
+    "she already has it". Benched on his own state, 1 of 3 readings lost the ask
+    and 2 of 3 filed the colour: a third of a legitimate paid edit refused with a
+    sentence that reads as the product not understanding colours.
+
+    Driven through a fake interpreter, so the model cannot rescue it (law 3) —
+    and the `restated` flag is asserted AT THE WIRE, on the request the service
+    actually made, rather than on a constant near it.
+  */
+  it("asks once more when the reading kept only what she already is", async () => {
+    const asked: Array<boolean | undefined> = [];
+    const interpret = (async (request: { restated?: boolean }) => {
+      asked.push(request.restated);
+      /* The first reading loses her sentence; the second keeps it. */
+      return asked.length === 1
+        ? { ok: true as const, delta: { eyeColour: "brown" as const } }
+        : { ok: true as const, delta: { eyeColour: "green" as const } };
+    }) as never;
+
+    await refineCandidate(
+      { harvest: unmasked, interpret },
+      { ...input, instruction: "make her eyes meadow green" },
+    );
+
+    expect(asked, "the second ask carried the restatement constraint").toEqual([undefined, true]);
+    expect(journal, "and the edit she asked for was rendered").toContain("generate");
+    expect(ledger.charges, "charged once, for the picture she got").toHaveLength(1);
+  });
+
+  it("and asks only ONCE — a second restatement is still refused, free", async () => {
+    /*
+      The negative control, and the reason this is not simply "retry until it
+      changes its mind": a sentence that genuinely asks for what she already has
+      restates twice and must still be refused, for nothing. Without this arm a
+      fix that looped, or that deleted the door, would pass the arm above.
+    */
+    let asks = 0;
+    const interpret = (async () => {
+      asks += 1;
+      return { ok: true as const, delta: { eyeColour: "brown" as const } };
+    }) as never;
+
+    await expect(refineCandidate(
+      { harvest: unmasked, interpret },
+      { ...input, instruction: "make her eyes a warmer brown" },
+    )).rejects.toThrow(/already has brown/);
+
+    expect(asks, "two readings, never a third").toBe(2);
+    expect(journal, "nothing was begun").not.toContain("begin");
+    expect(ledger.charges).toHaveLength(0);
+  });
+
+  /*
     THE FIFTH DOOR, DRIVEN — and driven where the money is, not at its helper.
 
     `castingFrame.test.ts` proves the table and the sentence. This proves the
