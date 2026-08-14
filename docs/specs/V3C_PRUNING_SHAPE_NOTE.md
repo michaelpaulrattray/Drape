@@ -110,6 +110,33 @@ has been pruned may still be the best picture of her** (her hair crop minted on
 the render that also added earrings is still her hair). The intersection must be
 by SLOT-and-ask, not by render.
 
+## 4b. What actually landed (2026-08-15)
+
+Both halves are in, and the second one needed a ruling I did not make myself:
+
+```
+step 2   the carry derivation — live rows ∩ the surviving chain, with the two
+         exemptions (master-minted rows, slots re-cut every render). Nine unit
+         arms, and the one that matters is the negative control: on an ordinary
+         render it changes NOTHING.
+the lift the prune's own ask shape (`Ask.restate`), ruled by fable-536 as (ii).
+         The recipe says nothing about a taken-back slot — the master never had
+         the thing and the carry no longer holds it, so the removal is
+         arithmetic — but the ask NAMES it, so the verification has a question
+         at the wire instead of shipping unverified on the one fact the render
+         exists to change.
+```
+
+**The lift is a narrowing.** Only a prune that took something back AND can name
+it gets through; anything else meets yesterday's refusal, with no picture, and
+that arm is driven.
+
+One thing the wiring taught: the accessory KIND for the slot lookup has to come
+from the words that LEFT, not from the ask. A prune files nothing, so
+`accessoryRegion` is null and `statedAccessories` — one facet over several kinds
+— resolves to no slot at all. *"Gold hoop earrings"* is an earring whether it is
+arriving or leaving.
+
 ## 5. What it costs, and the order
 
 ```

@@ -66,7 +66,7 @@ const ledgerBefore = (await query(
 const candidates = (await query(
   `SELECT publicId FROM casting_candidates
     WHERE userId = ? AND status = 'ready' AND imageKey IS NOT NULL
-      AND selectedVariantPublicId IS NULL
+      AND selectedVariantId IS NULL
     ORDER BY id DESC LIMIT ?`,
   [USER, N],
 )).map((row: any) => row.publicId as string);
