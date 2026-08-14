@@ -703,12 +703,26 @@ export async function refineCandidate(
     Never more than once: the retry itself is `restated`, and its own verdict is
     final.
   */
+  /*
+    WHAT HAS ALREADY LEFT — the other half of "she already has that"
+    (fable-480 §2). Read from the composed recipe she is standing on, the same
+    place `priorItems` comes from, so both halves of the door are asking the
+    same predecessor.
+  */
+  const priorAbsent: Partial<Record<FreeSubject, string[]>> = {};
+  for (const [subject, value] of Object.entries(
+    readStoredDelta(predecessorForParse?.deltas)?.absent ?? {},
+  )) {
+    priorAbsent[subject as FreeSubject] = itemsOf(value);
+  }
   const throughTheAlreadyTrueDoor = async (
     parse: Extract<Awaited<ReturnType<typeof readInstruction>>, { ok: true }>,
     mode?: "edit",
   ): Promise<typeof parse> => {
     if (!("delta" in parse)) return parse;
-    const verdict = saysNothingNew({ delta: parse.delta, prior: priorItems, identity: currentIdentity });
+    const verdict = saysNothingNew({
+      delta: parse.delta, prior: priorItems, priorAbsent, identity: currentIdentity,
+    });
     if (!verdict.absorbed) return parse;
     log.warn(
       { candidateId: input.candidatePublicId, instruction, alreadyTrue: verdict.alreadyTrue },
@@ -716,7 +730,9 @@ export async function refineCandidate(
     );
     const again = await readInstruction({ ...(mode ? { mode } : {}), restated: true });
     if (again.ok && "delta" in again) {
-      const second = saysNothingNew({ delta: again.delta, prior: priorItems, identity: currentIdentity });
+      const second = saysNothingNew({
+        delta: again.delta, prior: priorItems, priorAbsent, identity: currentIdentity,
+      });
       if (!second.absorbed) {
         log.info(
           { candidateId: input.candidatePublicId, instruction },
@@ -731,7 +747,15 @@ export async function refineCandidate(
     );
     throw new TRPCError({
       code: "BAD_REQUEST",
-      message: refusalMessage({ ok: false, refusal: { reason: "absorbed", asked: verdict.alreadyTrue } }),
+      message: refusalMessage({
+        ok: false,
+        refusal: {
+          /* The departure gets its own sentence: "she already has no glasses"
+             is not English, and what she can see is that they are already off. */
+          reason: verdict.departed ? "absorbed_departure" : "absorbed",
+          asked: verdict.alreadyTrue,
+        },
+      }),
     });
   };
   if (parsed.ok && "delta" in parsed) parsed = await throughTheAlreadyTrueDoor(parsed);

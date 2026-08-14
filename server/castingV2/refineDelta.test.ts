@@ -769,6 +769,80 @@ describe("an ask absorbed into a restatement is refused before the charge", () =
 });
 
 /**
+ * A DEPARTURE THAT HAS ALREADY LEFT IS NOT NEW (fable-480 §2).
+ *
+ * The exemption at the top of this guard — *"a departure is new by definition
+ * — she was wearing it a moment ago"* — was true until the thing had already
+ * gone, and that was the hole the founder's 25 credits went through: a reading
+ * that echoed a standing departure skipped the whole function, and everything
+ * downstream worked perfectly on it (opus-363).
+ */
+describe("a removal of something already gone says nothing new", () => {
+  it("lets a FIRST removal through — she is wearing them", () => {
+    /* The protection this must not break, and the reason `priorAbsent` is
+       optional: no record of a departure means the departure is new. */
+    const verdict = saysNothingNew({
+      delta: { absent: { statedAccessories: ["glasses"] } },
+      prior: {},
+      priorAbsent: {},
+      identity: ORIGINAL,
+    });
+    expect(verdict.absorbed).toBe(false);
+  });
+
+  it("refuses a SECOND removal of the same thing", () => {
+    const verdict = saysNothingNew({
+      delta: { absent: { statedAccessories: ["glasses"] } },
+      prior: {},
+      priorAbsent: { statedAccessories: ["glasses"] },
+      identity: ORIGINAL,
+    });
+    expect(verdict.absorbed).toBe(true);
+    expect(verdict.absorbed && verdict.alreadyTrue).toBe("glasses");
+    /* Its own sentence: "she already has no glasses" is not English. */
+    expect(verdict.absorbed && verdict.departed).toBe(true);
+  });
+
+  it("still lets a departure through when only its SIBLING has gone", () => {
+    /* One genuinely new departure makes the whole delta new — the earrings are
+       gone, the glasses are not, and she is asking about the glasses. */
+    const verdict = saysNothingNew({
+      delta: { absent: { statedAccessories: ["glasses"] } },
+      prior: {},
+      priorAbsent: { statedAccessories: ["earrings"] },
+      identity: ORIGINAL,
+    });
+    expect(verdict.absorbed).toBe(false);
+  });
+
+  it("behaves exactly as before when nobody supplies the departures", () => {
+    /* The compatibility arm: a caller with no `priorAbsent` gets the old rule —
+       a departure is new — rather than a silent change of behaviour. */
+    const verdict = saysNothingNew({
+      delta: { absent: { statedAccessories: ["glasses"] } },
+      prior: {},
+      identity: ORIGINAL,
+    });
+    expect(verdict.absorbed).toBe(false);
+  });
+
+  it("describes the delta by its POSITIVE half when it echoes both", () => {
+    const verdict = saysNothingNew({
+      delta: {
+        absent: { statedAccessories: ["glasses"] },
+        free: { marks: ["lightly freckled"] },
+      },
+      prior: { marks: ["lightly freckled"] },
+      priorAbsent: { statedAccessories: ["glasses"] },
+      identity: ORIGINAL,
+    });
+    expect(verdict.absorbed).toBe(true);
+    expect(verdict.absorbed && verdict.alreadyTrue).toBe("lightly freckled");
+    expect(verdict.absorbed && verdict.departed).toBeUndefined();
+  });
+});
+
+/**
  * A REFUSAL THAT CARRIES WHAT THE MODEL SAID.
  *
  * Run-11 met `wall_unfileable` on three plain words and the reply was

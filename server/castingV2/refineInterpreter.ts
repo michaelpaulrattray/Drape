@@ -951,6 +951,17 @@ export function refusalMessage(refusal: RefineParse & { ok: false }): string {
       */
       return `She already has ${refusal.refusal.asked} — this would have changed nothing, `
         + "so nothing was charged. Ask for more of it, or say it another way.";
+    case "absorbed_departure":
+      /*
+        THE SAME FACT ABOUT THE OTHER DIRECTION, in her words rather than ours:
+        the thing is already off her, so there is nothing to take off. It says
+        what IS the case and leaves the next move open, because the sentence
+        that reached this door was very often not a removal at all — it was a
+        restyle whose reading came back as the state.
+      */
+      return `${refusal.refusal.asked} — that's already off her, so this would have `
+        + "changed nothing and nothing was charged. Say what you'd like instead and "
+        + "I'll put it on.";
     case "empty":
       return "Say what you'd like changed — anything about the person themselves.";
     case "unreadable":

@@ -652,6 +652,88 @@ describe("refusals land before anything is claimed", () => {
     expect(ledger.charges, "charged once, for the picture she got").toHaveLength(1);
   });
 
+  /*
+    HIS EXACT CASE, TURNED ROUND (fable-480 §2 + the restatement retry).
+
+    Her glasses are already off in the recipe she is standing on. He asks for
+    new frames; the first reading comes back holding only the standing
+    departure — the echo that used to skip this door entirely and reach a paid
+    render of a bare face. Now it is absorbed, the retry buys one more reading,
+    and the frames he asked for are what gets painted.
+  */
+  it("turns the restyle that was read as a removal into a delivered restyle", async () => {
+    variantRows = [{
+      id: 611,
+      publicId: "variant-bare",
+      candidateId: 1,
+      imageKey: "casting-v2/variants/bare.png",
+      internalPrompt: candidateRow.internalPrompt as Record<string, unknown>,
+      instructions: ["remove her glasses"],
+      /* The state that made the echo invisible: they are ALREADY off. */
+      deltas: { absent: { statedAccessories: ["glasses"] } },
+      stepDeltas: null,
+      status: "ready",
+    }];
+    candidateRow.selectedVariantPublicId = "variant-bare";
+
+    const readings: (boolean | undefined)[] = [];
+    const interpret = (async (request: { restated?: boolean }) => {
+      readings.push(request.restated);
+      return readings.length === 1
+        ? { ok: true as const, delta: { absent: { statedAccessories: ["glasses"] } } }
+        : {
+          ok: true as const,
+          delta: { free: { statedAccessories: ["gentle monster style glasses clear rims"] } },
+        };
+    }) as never;
+
+    const result = await refineCandidate(
+      { harvest: unmasked, interpret },
+      { ...input, instruction: "her glasses — gentle monster style glasses clear rims" },
+    );
+
+    expect(readings, "the restatement retry fired on the departure echo").toEqual([undefined, true]);
+    const prompt = (landedVariant?.internalPrompt as { prompt: string }).prompt.toLowerCase();
+    expect(prompt, "the frames he asked for were painted").toContain("clear rims");
+    expect(result.variantId).toBeTruthy();
+    expect(ledger.charges, "charged once, for the picture he asked for").toHaveLength(1);
+  });
+
+  it("refuses a SECOND removal of something already gone — free, and in its own words", async () => {
+    /*
+      The other arm of the same door: when the retry ALSO comes back holding
+      only the standing departure, the ask really is a no-op and it costs
+      nothing. The sentence is the departure's own — "she already has no
+      glasses" is not English.
+    */
+    variantRows = [{
+      id: 612,
+      publicId: "variant-bare-2",
+      candidateId: 1,
+      imageKey: "casting-v2/variants/bare.png",
+      internalPrompt: candidateRow.internalPrompt as Record<string, unknown>,
+      instructions: ["remove her glasses"],
+      deltas: { absent: { statedAccessories: ["glasses"] } },
+      stepDeltas: null,
+      status: "ready",
+    }];
+    candidateRow.selectedVariantPublicId = "variant-bare-2";
+
+    let reads = 0;
+    const interpret = (async () => {
+      reads += 1;
+      return { ok: true as const, delta: { absent: { statedAccessories: ["glasses"] } } };
+    }) as never;
+
+    await expect(refineCandidate(
+      { harvest: unmasked, interpret },
+      { ...input, instruction: "take her glasses off" },
+    )).rejects.toThrow(/already off her/);
+
+    expect(reads, "two readings, never a third").toBe(2);
+    expect(ledger.charges, "and nothing was charged").toHaveLength(0);
+  });
+
   it("and asks only ONCE — a second restatement is still refused, free", async () => {
     /*
       The negative control, and the reason this is not simply "retry until it

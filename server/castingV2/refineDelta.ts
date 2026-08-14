@@ -267,7 +267,21 @@ export type RefineRefusal =
    * zero-false-pass bar cannot see it, because the check it would have failed
    * was never written down. A refusal costs a sentence; this costs the bar.
    */
-  | { reason: "absorbed"; asked: string };
+  | { reason: "absorbed"; asked: string }
+  /**
+   * THE SAME THING, ABOUT A DEPARTURE (fable-480 §2).
+   *
+   * "A departure is new by definition" was the exemption at the top of
+   * `saysNothingNew`, and it was true right up until the thing had already
+   * left. On the founder's glasses it was the hole the wrong charge went
+   * through: a reading that echoed a standing departure sailed past the one
+   * door built to catch a reading that echoes the prior, and everything
+   * downstream then worked perfectly on it.
+   *
+   * A separate reason because it needs a separate SENTENCE. "She already has
+   * no glasses" is not English; what she can see is that they are already off.
+   */
+  | { reason: "absorbed_departure"; asked: string };
 
 /**
  * What the box was asked to DO — classified once, at entry (D-163).
@@ -1412,16 +1426,42 @@ export function saysNothingNew(input: {
   delta: RefineDelta;
   /** What each free subject already held — the same map the parse was shown. */
   prior: Partial<Record<FreeSubject, string[]>>;
+  /**
+   * What has ALREADY LEFT, from the composed recipe she is standing on.
+   *
+   * The exemption below used to be unconditional, and that was the hole the
+   * founder's wrong charge went through (fable-480 §2). Optional so a caller
+   * that cannot supply it gets exactly the old behaviour — a departure with no
+   * prior to compare against is new, which is what it was before this existed.
+   */
+  priorAbsent?: Partial<Record<FreeSubject, string[]>>;
   identity: ResolvedIdentity | null | undefined;
-}): { absorbed: false } | { absorbed: true; alreadyTrue: string } {
+}): { absorbed: false } | { absorbed: true; alreadyTrue: string; departed?: boolean } {
   const { delta } = input;
-  /* A departure is new by definition — she was wearing it a moment ago. */
-  for (const subject of FREE_SUBJECT_KEYS) {
-    if ((delta.absent?.[subject]?.length ?? 0) > 0) return { absorbed: false };
-  }
-
   const same = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase();
   const echoed: string[] = [];
+  /*
+    A DEPARTURE IS NEW BY DEFINITION — UNLESS IT HAS ALREADY LEFT.
+
+    She was wearing it a moment ago, so "take it off" always said something...
+    right up until the recipe already said it was off. Then the reading is an
+    echo like any other, and it was the ONE echo this door could not see: every
+    other subject's restatement is caught below, and a removal's restatement
+    skipped the whole function. That is how a restyle read as a removal reached
+    a paid render (opus-363).
+  */
+  const gone: string[] = [];
+  for (const subject of FREE_SUBJECT_KEYS) {
+    const departures = itemsOf(delta.absent?.[subject]);
+    if (departures.length === 0) continue;
+    const already = input.priorAbsent?.[subject] ?? [];
+    /* One genuinely new departure makes the whole delta new — she is asking
+       for something to go that has not gone. */
+    if (!departures.every((item) => already.some((held) => same(held, item)))) {
+      return { absorbed: false };
+    }
+    gone.push(...departures);
+  }
 
   for (const subject of FREE_SUBJECT_KEYS) {
     const filed = itemsOf(delta.free?.[subject]);
@@ -1454,7 +1494,16 @@ export function saysNothingNew(input: {
     the free-question and rule-3 paths, which have their own answers; claiming
     it here would take a sentence those paths handle away from them.
   */
-  if (echoed.length === 0) return { absorbed: false };
+  if (echoed.length === 0 && gone.length === 0) return { absorbed: false };
+  /*
+    A DELTA THAT ONLY RESTATES A DEPARTURE gets the departure's own sentence:
+    "she already has no glasses" is not English, and what she can see is that
+    they are already off. A delta that echoes BOTH is described by the positive
+    half, which is the half she named.
+  */
+  if (echoed.length === 0) {
+    return { absorbed: true, alreadyTrue: gone.join(", "), departed: true };
+  }
   return { absorbed: true, alreadyTrue: echoed.join(", ") };
 }
 
