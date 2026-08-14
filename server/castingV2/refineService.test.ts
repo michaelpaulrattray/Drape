@@ -3161,6 +3161,99 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
     });
   });
 
+  /**
+   * THE STEP SHE POINTED AT — the chip's own remove, server half
+   * (V3(c), `V3C_CHIP_SURFACE_NOTE.md`).
+   *
+   * A click is not a sentence. These drive what that buys: the interpreter is
+   * never asked, the matcher is never run, and a stale click refuses instead of
+   * pruning a step nobody chose.
+   */
+  describe("a prune she pointed at", () => {
+    const twoSteps = () => {
+      lineageReferences = [
+        carryRow({
+          id: 9, publicId: "ref-9", slot: "earring@left", tier: "item", noun: "left earring",
+          words: ["gold hoops"], storageKey: "casting-v2/library/earring-left.png", variantId: 5,
+        }),
+      ];
+      variantRows = [{
+        id: 710,
+        publicId: "variant-two",
+        candidateId: 1,
+        imageKey: "casting-v2/variants/two.png",
+        internalPrompt: candidateRow.internalPrompt as Record<string, unknown>,
+        instructions: ["gold hoop earrings", "colour her hair copper"],
+        deltas: { free: { statedAccessories: ["gold hoop earrings"], hairShade: "copper" } },
+        stepDeltas: [
+          { free: { statedAccessories: ["gold hoop earrings"] } },
+          { free: { hairShade: "copper" } },
+        ],
+        status: "ready",
+      }];
+      candidateRow.selectedVariantPublicId = "variant-two";
+    };
+
+    it("prunes THAT step without asking the interpreter or the matcher", async () => {
+      twoSteps();
+      let interpretations = 0;
+      const result = await refineCandidate(
+        {
+          ...repainting,
+          interpret: (async () => {
+            interpretations += 1;
+            return { ok: true as const, delta: {} };
+          }) as never,
+        },
+        {
+          ...input,
+          instruction: "",
+          removeStep: { at: 0, instruction: "gold hoop earrings" },
+        },
+      );
+
+      expect(interpretations, "a click is not a sentence").toBe(0);
+      expect(result.imageUrl).toBeTruthy();
+      /* The surviving step is still in the record, and the pruned one is gone —
+         read off the CLAIM, which is where the instruction list is written. */
+      const variants = await import("../db/castingV2Variants");
+      const claimed = (variants.claimVariant as any).mock.calls.at(-1)?.[0];
+      expect(claimed?.instructions).toEqual(["colour her hair copper"]);
+      /* And its crop stopped riding, which is the derivation doing the work. */
+      const bytes = painted[0]!.references.map((reference) => String(reference.bytes));
+      expect(bytes.some((one) => one.includes("earring"))).toBe(false);
+    });
+
+    it("refuses a STALE click rather than pruning the step that moved into place", async () => {
+      /*
+        She clicked while another edit landed. The index still exists and now
+        means a different step — the one shape where a pointed prune could take
+        something nobody chose, and the reason the sentence travels with the
+        index at all.
+      */
+      twoSteps();
+      await expect(refineCandidate(
+        { ...repainting },
+        {
+          ...input,
+          instruction: "",
+          removeStep: { at: 0, instruction: "a fuller cupid's bow" },
+        },
+      )).rejects.toThrow(/that step has moved/i);
+      expect(ledger.charges).toHaveLength(0);
+      expect(painted).toHaveLength(0);
+    });
+
+    it("refuses an index the chain does not have", async () => {
+      twoSteps();
+      await expect(refineCandidate(
+        { ...repainting },
+        { ...input, instruction: "", removeStep: { at: 7, instruction: "gold hoop earrings" } },
+      )).rejects.toThrow(/that step has moved/i);
+      expect(ledger.charges).toHaveLength(0);
+    });
+  });
+
   describe("what the edit cost, written on the row", () => {
     it("lands a census of the calls this render made", async () => {
       /*

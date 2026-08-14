@@ -315,6 +315,24 @@ export type RefineInput = {
    * Absent is the whole-face ask, which is every render before this one.
    */
   scope?: string;
+  /**
+   * THE STEP SHE POINTED AT — a chip's own remove (V3(c), the chip surface).
+   *
+   * A typed removal is ambiguous, so the service reads the sentence, matches it
+   * against the chain and asks the picture whether the chain put the thing
+   * there. **A click is not ambiguous**: she pointed at a step, the step is in
+   * the chain, and re-deriving either fact by guesswork is how a removal takes
+   * the wrong one when two steps share words.
+   *
+   * `at` is the step's index in the chain and `instruction` is the sentence the
+   * client drew that index FROM. They are checked against each other, because a
+   * client can be stale — she clicked while another edit landed — and a stale
+   * index prunes a step nobody chose. A mismatch refuses, free.
+   *
+   * Absent on every typed refinement, which is all of them until the chip
+   * affordance ships.
+   */
+  removeStep?: { at: number; instruction: string };
 };
 
 export type RefineResult = {
@@ -747,8 +765,32 @@ async function refineCandidateCounted(
       currentMakeup: currentValueOfFacet(currentIdentity, "makeup"),
       ...extra,
     });
+  /*
+    A CLICK ANSWERS BOTH QUESTIONS THE INTERPRETER IS FOR, so it is not asked.
+
+    The pointed prune (`removeStep`) names the step; the chain holds it; there
+    is nothing to read and nothing to match. Skipping the interpreter here is
+    not an optimisation — it is the difference between pruning the step she
+    chose and pruning a step that happens to share her words.
+
+    The index is checked against the sentence the client drew it from. A stale
+    client (she clicked while another edit landed) refuses rather than pruning
+    somebody else's step, which is the same door every other stale-state check
+    in this service uses.
+  */
+  const pointed = input.removeStep;
+
   /* `let` because a wordless removal is re-read as an edit below (D-189). */
-  let parsed = await readInstruction();
+  let parsed = pointed !== undefined
+    ? {
+      ok: true as const,
+      intent: "remove" as const,
+      /* Her own sentence for the step she pointed at. Checked against the chain
+         below, where the chain is in hand — it is a claim until then. */
+      match: pointed.instruction,
+      subject: null,
+    }
+    : await readInstruction();
   /*
     AND DID HER SENTENCE SURVIVE THE READING? — before anything is claimed.
 
@@ -1024,6 +1066,32 @@ async function refineCandidateCounted(
     : [];
 
   /*
+    THE POINTED STEP IS PROVED AGAINST THE CHAIN, here where the chain is in
+    hand and before anything is claimed.
+
+    A client can be stale — she clicked a chip while another edit landed — and a
+    stale index prunes a step nobody chose. The index alone cannot say; the
+    sentence it was drawn from can, and the two are checked against each other.
+  */
+  if (pointed !== undefined) {
+    const step = predecessorChain?.[pointed.at];
+    if (!step || step.instruction !== pointed.instruction) {
+      log.info(
+        {
+          userId: input.userId, candidate: input.candidatePublicId,
+          at: pointed.at, expected: pointed.instruction, found: step?.instruction ?? null,
+        },
+        "[refineService] the step she pointed at has moved — refusing rather than pruning another one",
+      );
+      throw new TRPCError({
+        code: "CONFLICT",
+        message: "That step has moved since this page was loaded — open the face again "
+          + "and take it off from there. Nothing was charged.",
+      });
+    }
+  }
+
+  /*
     THE REMOVAL, resolved against the RECIPE and not against the picture.
 
     `editDelta` is what the paid path ends up composing. It is `parsed.delta` for
@@ -1139,7 +1207,16 @@ async function refineCandidateCounted(
     something on an adjective's word.
   */
   const evidence = removalEvidence(instruction);
-  if (parsed.intent === "remove" && evidence !== "stated") {
+  /*
+    THE AMBIGUITY MACHINERY IS FOR SENTENCES, and a click is not one.
+
+    `removalEvidence` weighs how plainly her words said subtraction, because a
+    word like "clear rims" describes a look as well as an absence. A pointed
+    prune has no words to weigh: she clicked the step. Running this door on an
+    empty instruction reads as "she said nothing about removing", re-reads the
+    ask as an edit, and quietly turns her click into a render of nothing.
+  */
+  if (pointed === undefined && parsed.intent === "remove" && evidence !== "stated") {
     /* The noun the removal claimed, read before `parsed` can be replaced. */
     const removalMatch = ("match" in parsed && typeof parsed.match === "string") ? parsed.match : "";
     log.warn(
@@ -1253,7 +1330,17 @@ async function refineCandidateCounted(
       });
     }
 
-    const matched = matchSteps(predecessorChain, {
+    /*
+      A CLICK NEEDS NO MATCHER. She pointed at the step; the check above proved
+      it is the one she pointed at. Running the word matcher here would be
+      re-deriving by guesswork the fact the click already carried, and it is
+      exactly where a removal takes the wrong step when two share words.
+
+      `keep: null` — the whole step goes, because a chip IS a whole step.
+    */
+    const matched = pointed !== undefined
+      ? [{ index: pointed.at, keep: null }]
+      : matchSteps(predecessorChain, {
       subject: readRemovalSubject(parsed.subject),
       match: parsed.match,
       /* How wide they meant it, as the parser reported it — never inferred
@@ -1266,7 +1353,7 @@ async function refineCandidateCounted(
         EVERY step on the facet: "remove the earrings" took the glasses too.
       */
       items: parsed.items,
-    });
+      });
 
     /*
       DID THE CHAIN PUT IT THERE? — the picture arbitrates, in front of BOTH
@@ -1334,7 +1421,23 @@ async function refineCandidateCounted(
       says so in the echo example too), and this is the backstop that does not
       depend on the model doing it — a guard the model cannot rescue.
     */
-    if (matched.length > 0) {
+    /*
+      A CLICK HAS ALREADY ANSWERED THIS QUESTION, so the picture is not asked.
+
+      The arbitration exists because a SENTENCE cannot say which step it means:
+      it asks the master whether the chain put the thing there, because a prune
+      may only remove what the chain added. A chip names the step — the chain
+      demonstrably holds it, and the check above proved it is the one she
+      pointed at.
+
+      What the arbitration would still have told us is a different question:
+      whether her FACE will change. If the pruned step asked for something the
+      master already had, the step goes and the thing stays, because the master
+      is reference 1. That is the truth of a pointed prune and the copy must not
+      promise otherwise — it is not a reason to refuse her click, and it is not
+      a reason to spend a segmenter call she did not ask for.
+    */
+    if (matched.length > 0 && pointed === undefined) {
       const began = Date.now();
       let presentInBase: boolean;
       /*
