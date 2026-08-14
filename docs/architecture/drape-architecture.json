@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "33e38968b9baff52"
+    "sourceFingerprint": "55c4ad270527eeca"
   },
   "domains": [
     {
@@ -43,7 +43,7 @@
     {
       "id": "domain:castingV2",
       "name": "castingV2",
-      "moduleCount": 31
+      "moduleCount": 32
     },
     {
       "id": "domain:client-shared",
@@ -1403,6 +1403,12 @@
     {
       "id": "module:client/src/features/castingV2/castingV2.css",
       "path": "client/src/features/castingV2/castingV2.css",
+      "domain": "castingV2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/castingV2/chosenFrame.ts",
+      "path": "client/src/features/castingV2/chosenFrame.ts",
       "domain": "castingV2",
       "lifecycle": "active"
     },
@@ -8045,6 +8051,10 @@
       "path": "client/src/features/castingV2/cardMenuAnatomy.test.ts"
     },
     {
+      "id": "test:client/src/features/castingV2/chosenFrame.test.ts",
+      "path": "client/src/features/castingV2/chosenFrame.test.ts"
+    },
+    {
       "id": "test:client/src/features/castingV2/cssBlockOwnership.test.ts",
       "path": "client/src/features/castingV2/cssBlockOwnership.test.ts"
     },
@@ -14081,6 +14091,11 @@
     {
       "from": "module:client/src/pages/CastingSheet.tsx",
       "to": "module:client/src/features/castingV2/cancelNotice.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/CastingSheet.tsx",
+      "to": "module:client/src/features/castingV2/chosenFrame.ts",
       "kind": "imports"
     },
     {

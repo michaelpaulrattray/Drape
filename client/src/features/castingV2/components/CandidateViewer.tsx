@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Download, X } from "lucide-react";
 
@@ -129,6 +129,39 @@ const SETTLING_NOTE = "your credits come back on their own";
  */
 const TYPICAL_WAIT = "usually a minute or two";
 
+/**
+ * THE PICTURE CHANGES WHEN THE NEW ONE CAN BE PAINTED (fable-501 §a).
+ *
+ * A src swapped on an <img> is a request, not a picture: until the bytes have
+ * DECODED there is nothing to draw, and a fetched-but-undecoded frame still
+ * flashes. So the frame on screen holds until the next one is decodable, and
+ * then it changes in one paint — no blank, no layout shift.
+ *
+ * Only WITHIN one face. Stepping the arrows to the next candidate is a
+ * different question and must answer immediately: holding the previous woman's
+ * photograph while the next decodes would draw her under the next one's name.
+ *
+ * A decode that FAILS shows the frame anyway. The alternative is a viewer
+ * stranded on a picture the user did not ask for because an instrument said no
+ * — the same asymmetry the mint's courtesy reads use.
+ */
+function useShownFrame(frame: ViewerFrame): ViewerFrame {
+  const [shown, setShown] = useState(frame);
+
+  useEffect(() => {
+    if (frame.url === shown.url) return;
+    if (frame.candidateId !== shown.candidateId) { setShown(frame); return; }
+    let live = true;
+    const settle = () => { if (live) setShown(frame); };
+    const picture = new Image();
+    picture.src = frame.url;
+    void picture.decode().then(settle).catch(settle);
+    return () => { live = false; };
+  }, [frame, shown]);
+
+  return frame.url === shown.url ? frame : shown;
+}
+
 export function CandidateViewer({
   frames,
   index,
@@ -192,7 +225,8 @@ export function CandidateViewer({
   wait?: ViewerWait | null;
 }) {
   const closeRef = useRef<HTMLButtonElement>(null);
-  const frame = frames[index] ?? frames[0];
+  const asked = frames[index] ?? frames[0];
+  const frame = useShownFrame(asked);
   const canStep = Boolean(onIndexChange) && frames.length > 1;
 
   useEffect(() => {

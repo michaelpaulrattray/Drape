@@ -43,6 +43,7 @@ import {
 import { RefinePanel } from "@/features/castingV2/components/RefinePanel";
 import { FacePanel } from "@/features/castingV2/components/FacePanel";
 import { VersionRail } from "@/features/castingV2/components/VersionRail";
+import { frameUrlFor, type ChosenFrame } from "@/features/castingV2/chosenFrame";
 import { FaceRegions } from "@/features/castingV2/components/FaceRegions";
 import { useFaceSelection } from "@/features/castingV2/components/faceSelection";
 import { KeptTray } from "@/features/castingV2/components/KeptTray";
@@ -165,6 +166,15 @@ export default function CastingSheet() {
   */
   /** Which candidate the viewer is open on. Null when it is closed. */
   const [viewerCandidateId, setViewerCandidateId] = useState<string | null>(null);
+  /*
+    THE VERSION THEY JUST CLICKED, drawn before the server has been asked
+    (fable-501). Measured first: the photograph was waiting 27 seconds on a
+    tRPC batch that carried the face scan, and none of it was image bytes —
+    the rail's own thumbnails are the full pictures, already cached. The rule
+    for how long this claim survives is `chosenFrame`'s, and it expires by
+    arithmetic rather than by an effect.
+  */
+  const [chosenFrame, setChosenFrame] = useState<ChosenFrame | null>(null);
   /* The refine panel owns its own outcomes (D-154) — never a toast. */
   const [refineOutcome, setRefineOutcome] = useState<string | null>(null);
   /*
@@ -771,7 +781,11 @@ export default function CastingSheet() {
     .filter((candidate) =>
       !optimisticDiscarded[candidate.candidateId] && candidate.imageUrl)
     .map((candidate) => ({
-      url: candidate.imageUrl as string,
+      url: frameUrlFor({
+        candidateId: candidate.candidateId,
+        serverUrl: candidate.imageUrl as string,
+        chosen: chosenFrame,
+      }),
       label: candidate.indexLabel,
       personaLine: candidate.personaLine,
       downloadName: `candidate-${candidate.indexLabel}`,
@@ -984,6 +998,22 @@ export default function CastingSheet() {
   */
   const selectVariant = (variantId: string | null) => {
     if (!viewerCandidateId) return;
+    /*
+      PAINT FIRST, ASK SECOND (D-38), and here it is not a nicety: the URL of
+      the version they clicked is already in hand — it is the picture the rail
+      just drew them — while the server's answer arrives inside a batch that
+      also carries the face scan. Claiming it now takes the photograph off that
+      batch's critical path entirely.
+    */
+    const picked = variantId === null
+      ? variants.data?.originalImageUrl ?? null
+      : variants.data?.variants.find((entry) => entry.variantId === variantId)?.imageUrl ?? null;
+    const showing = candidates.find(
+      (candidate) => candidate.candidateId === viewerCandidateId,
+    )?.imageUrl ?? null;
+    if (picked && showing && picked !== showing) {
+      setChosenFrame({ candidateId: viewerCandidateId, url: picked, insteadOf: showing });
+    }
     void chooseVariant
       .mutateAsync({ candidateId: viewerCandidateId, variantId })
       .then(async () => {
