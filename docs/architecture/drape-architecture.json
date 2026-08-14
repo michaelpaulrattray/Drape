@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "b75b09d3131d1be1"
+    "sourceFingerprint": "2cfc81607faf3ecd"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 113
+      "moduleCount": 114
     },
     {
       "id": "domain:castingV2",
@@ -3275,6 +3275,12 @@
     {
       "id": "module:server/castingV2/briefCompiler.ts",
       "path": "server/castingV2/briefCompiler.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/callCensus.ts",
+      "path": "server/castingV2/callCensus.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -9110,6 +9116,10 @@
     {
       "id": "test:server/castingV2/briefFactsRole.test.ts",
       "path": "server/castingV2/briefFactsRole.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/callCensus.test.ts",
+      "path": "server/castingV2/callCensus.test.ts"
     },
     {
       "id": "test:server/castingV2/candidateInvariants.test.ts",
@@ -18750,6 +18760,11 @@
     },
     {
       "from": "module:server/castingV2/falRegionReader.ts",
+      "to": "module:server/castingV2/callCensus.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/falRegionReader.ts",
       "to": "module:server/castingV2/falConcurrency.ts",
       "kind": "imports"
     },
@@ -19716,6 +19731,11 @@
     {
       "from": "module:server/castingV2/refineService.ts",
       "to": "module:server/castingV2/bornWornDetector.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/refineService.ts",
+      "to": "module:server/castingV2/callCensus.ts",
       "kind": "imports"
     },
     {
@@ -22100,12 +22120,22 @@
     },
     {
       "from": "module:server/providers/falTransport.ts",
+      "to": "module:server/castingV2/callCensus.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/providers/falTransport.ts",
       "to": "module:server/logging/logger.ts",
       "kind": "imports"
     },
     {
       "from": "module:server/providers/falTransport.ts",
       "to": "module:server/providers/types.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/providers/openrouterImages.ts",
+      "to": "module:server/castingV2/callCensus.ts",
       "kind": "imports"
     },
     {
@@ -22126,6 +22156,11 @@
     {
       "from": "module:server/providers/openrouterImages.ts",
       "to": "module:server/providers/types.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/providers/openrouterText.ts",
+      "to": "module:server/castingV2/callCensus.ts",
       "kind": "imports"
     },
     {
@@ -26723,17 +26758,17 @@
       "message": "Names 2 of RecipeRefusal's 4 fields (server/castingV2/recipeAssembler.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/refineService.ts:388",
+      "id": "finding:redeclared-shape:server/castingV2/refineService.ts:389",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/refineService.ts:388",
+      "subject": "server/castingV2/refineService.ts:389",
       "message": "Names 3 of Thumbnail's 3 fields (server/castingV2/thumbnails.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/refineService.ts:436",
+      "id": "finding:redeclared-shape:server/castingV2/refineService.ts:437",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/refineService.ts:436",
+      "subject": "server/castingV2/refineService.ts:437",
       "message": "Names 3 of Thumbnail's 3 fields (server/castingV2/thumbnails.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {

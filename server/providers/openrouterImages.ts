@@ -1,4 +1,5 @@
 import { createModuleLogger } from "../logging/logger";
+import { throughCensus } from "../castingV2/callCensus";
 import { isContentRefusal } from "./falTransport";
 import { ProviderQueue, withRetry } from "./providerQueue";
 import {
@@ -95,7 +96,11 @@ export function createOpenRouterCreativeEngine(config: OpenRouterConfig): Creati
     id: `openrouter:${model}`,
 
     async generateCandidate(request: CandidateRequest): Promise<ImageResult> {
+      /* Counted at the transport, like every other paid call — the image
+         fallback is rare and a census that quietly omitted it would understate
+         exactly the renders that went wrong. */
       return queue.run("generateCandidate", () =>
+        throughCensus({ stage: "render", provider: "openrouter", model }, () =>
         withRetry(
           "openrouter.generateCandidate",
           async () => {
@@ -183,7 +188,7 @@ export function createOpenRouterCreativeEngine(config: OpenRouterConfig): Creati
             };
           },
           { signal: request.signal },
-        ),
+        )),
       );
     },
   };

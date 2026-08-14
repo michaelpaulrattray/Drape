@@ -1,0 +1,154 @@
+/**
+ * WHERE A PAID EDIT'S MINUTES AND MONEY GO — read back from the rows renders
+ * already write.
+ *
+ * The founder's order for the latency-and-cost program is *stopwatch every
+ * stage before optimising*, and this is the stopwatch's dial. Each landed
+ * variant carries a `census` on its `internalPrompt`: every outbound model call
+ * that request made before the row was written, with its stage, its model and
+ * its milliseconds. This adds them up across a window.
+ *
+ * What each column answers:
+ *
+ *   calls/render   the cost lever. Seven calls at a tenth of a cent is a
+ *                  different problem from one call at ten cents.
+ *   sum vs wall    the latency lever. Sum far above wall means the calls run
+ *                  together and only the slowest matters; sum ≈ wall means a
+ *                  queue of serial round trips, which is an architecture
+ *                  question rather than a provider one.
+ *   by stage       where to start. `segment` dominating says caching the
+ *                  master's regions is the first move; `read` dominating says
+ *                  the verification budget is.
+ *
+ *   npx tsx scripts/call-census-report.mts                     # dev database
+ *   railway.cmd run --service MySQL -- npx tsx scripts/…       # production
+ *
+ * Optional: --since 2026-08-14T00:00:00Z   (default: the last 7 days)
+ *           --user 1
+ *
+ * NO PII and no creative content: the census is a bill, never a transcript —
+ * stages, models, milliseconds, and region words from the closed vocabulary.
+ */
+import "dotenv/config";
+
+import { openDatabase, resolveDatabaseUrl, worldOf } from "./lib/dbConnection.mjs";
+
+const arg = (name: string): string | undefined => {
+  const index = process.argv.indexOf(`--${name}`);
+  return index === -1 ? undefined : process.argv[index + 1];
+};
+
+const sinceRaw = arg("since");
+const since = sinceRaw ? new Date(sinceRaw) : new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+if (Number.isNaN(since.getTime())) {
+  console.error(`--since is not a date: ${sinceRaw}`);
+  process.exit(1);
+}
+const userId = arg("user");
+
+const databaseUrl = resolveDatabaseUrl();
+const db = await openDatabase(databaseUrl);
+
+const [rows] = await db.query(
+  `SELECT id, createdAt, internalPrompt
+     FROM casting_candidate_variants
+    WHERE createdAt >= ?
+      AND internalPrompt IS NOT NULL
+      ${userId ? "AND userId = ?" : ""}
+    ORDER BY createdAt`,
+  userId ? [since, Number(userId)] : [since],
+);
+
+const readJson = (value: unknown): any => {
+  if (value && typeof value === "object") return value;
+  if (typeof value === "string") { try { return JSON.parse(value); } catch { return null; } }
+  return null;
+};
+
+type Bucket = { calls: number; ms: number };
+const add = (into: Map<string, Bucket>, key: string, ms: number) => {
+  const bucket = into.get(key) ?? { calls: 0, ms: 0 };
+  bucket.calls += 1;
+  bucket.ms += ms;
+  into.set(key, bucket);
+};
+
+const perRenderCalls: number[] = [];
+const perRenderWall: number[] = [];
+const perRenderSum: number[] = [];
+const byStage = new Map<string, Bucket>();
+const byModel = new Map<string, Bucket>();
+let censused = 0;
+let failedCalls = 0;
+
+for (const row of rows as any[]) {
+  const census = readJson(row.internalPrompt)?.census;
+  if (!census || !Array.isArray(census.calls)) continue;
+  censused += 1;
+  perRenderCalls.push(census.calls.length);
+  perRenderWall.push(Number(census.wallMs) || 0);
+  perRenderSum.push(Number(census.total?.ms) || 0);
+  failedCalls += Number(census.total?.failed) || 0;
+  for (const call of census.calls) {
+    add(byStage, String(call.stage), Number(call.ms) || 0);
+    add(byModel, `${call.provider}:${call.model}`, Number(call.ms) || 0);
+  }
+}
+
+const median = (values: number[]): number => {
+  if (values.length === 0) return 0;
+  const sorted = [...values].sort((a, b) => a - b);
+  const middle = Math.floor(sorted.length / 2);
+  return sorted.length % 2 === 0 ? (sorted[middle - 1]! + sorted[middle]!) / 2 : sorted[middle]!;
+};
+const p90 = (values: number[]): number => {
+  if (values.length === 0) return 0;
+  const sorted = [...values].sort((a, b) => a - b);
+  return sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * 0.9))]!;
+};
+
+console.log(`\nWHAT A PAID EDIT COSTS — since ${since.toISOString()}${userId ? ` · user ${userId}` : ""}`);
+console.log(`  world: ${worldOf(databaseUrl)}   (dev is :52008, production is :23768)\n`);
+
+if (censused === 0) {
+  /* An unread window, stated as one. The census landed 2026-08-15; every render
+     before it carries no field, and a row with no census is not a render that
+     made no calls. */
+  console.log(`  ${(rows as any[]).length} variants in this window and NONE carries a census.`);
+  console.log("  That is an unread window, not a free product — the census shipped 2026-08-15.\n");
+  await db.end();
+  process.exit(0);
+}
+
+console.log(`  renders measured   ${censused} of ${(rows as any[]).length} in the window`);
+console.log(`  calls per render   median ${median(perRenderCalls)} · p90 ${p90(perRenderCalls)} · max ${Math.max(...perRenderCalls)}`);
+console.log(`  call seconds       median ${(median(perRenderSum) / 1000).toFixed(1)}s summed across calls`);
+console.log(`  wall seconds       median ${(median(perRenderWall) / 1000).toFixed(1)}s · p90 ${(p90(perRenderWall) / 1000).toFixed(1)}s`);
+const parallelism = median(perRenderWall) === 0 ? 0 : median(perRenderSum) / median(perRenderWall);
+console.log(`  sum ÷ wall         ${parallelism.toFixed(2)}×  ${parallelism > 1.5 ? "— running together; the slowest call is the target" : "— serial round trips; the ORDER is the target"}`);
+if (failedCalls > 0) console.log(`  failed calls       ${failedCalls} (money out, nothing delivered by them)`);
+
+const table = (title: string, buckets: Map<string, Bucket>) => {
+  console.log(`\n  ${title}`);
+  const total = [...buckets.values()].reduce((sum, one) => sum + one.ms, 0);
+  for (const [key, bucket] of [...buckets.entries()].sort((a, b) => b[1].ms - a[1].ms)) {
+    const share = total === 0 ? 0 : (bucket.ms / total) * 100;
+    console.log(
+      `    ${key.padEnd(34)} ${String(bucket.calls).padStart(5)} calls  `
+      + `${(bucket.ms / 1000).toFixed(1).padStart(7)}s  ${share.toFixed(1).padStart(5)}%  `
+      + `${(bucket.ms / bucket.calls / 1000).toFixed(1)}s each`,
+    );
+  }
+};
+
+table("BY STAGE — where the seconds go", byStage);
+table("BY MODEL — where the invoice goes", byModel);
+
+console.log(`
+  READ THE LAST COLUMN OF THE STAGE TABLE FIRST. A stage that is many cheap
+  calls is a caching problem; one that is few expensive calls is a routing or a
+  model problem. They have different fixes and the totals alone hide which.
+`);
+
+await db.end();
+process.exit(0);

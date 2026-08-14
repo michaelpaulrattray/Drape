@@ -1,5 +1,6 @@
 import { createModuleLogger } from "../logging/logger";
 import { ProviderError, type ProviderFailureClass } from "./types";
+import { throughCensus } from "../castingV2/callCensus";
 
 const log = createModuleLogger("providers/falTransport");
 
@@ -153,6 +154,26 @@ export async function runFalImageJob(input: {
    * is a `data:` URI and no CDN object is created. Note it does NOT bypass the
    * queue — `queue.fal.run` still queues; only the payload changes.
    */
+  inlineResult?: boolean;
+}): Promise<FalJobResult> {
+  /*
+    COUNTED WHERE IT HAPPENS (the call census). One entry per JOB rather than
+    per HTTP round trip: submit, poll and result are one question to one model
+    from a customer's point of view, and it is the question that costs money.
+  */
+  return throughCensus(
+    { stage: "render", provider: "fal", model: input.endpoint },
+    () => runFalImageJobUncounted(input),
+  );
+}
+
+async function runFalImageJobUncounted(input: {
+  apiKey: string;
+  endpoint: string;
+  body: Record<string, unknown>;
+  timeoutMs: number;
+  pollIntervalMs: number;
+  signal?: AbortSignal;
   inlineResult?: boolean;
 }): Promise<FalJobResult> {
   const { apiKey, endpoint, timeoutMs, pollIntervalMs, signal } = input;

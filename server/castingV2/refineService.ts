@@ -172,6 +172,7 @@ import {
   RepaintCannotSayError, repaintAsksFor, repaintCannotRemove, scopedAskIsUnsayable,
 } from "./repaintAsks";
 import { cannotSaySentence, likenessSetAsideNote } from "./cannotSayCopy";
+import { censusOfAttempt, censusSoFar } from "./callCensus";
 import { countRefusal } from "./refusalCounter";
 import { padToFrame, studioBackgroundOf, type StudioBackground } from "./referenceFit";
 import { pronounsForSex } from "./castPronouns";
@@ -485,7 +486,47 @@ function defaultRegionReader(): RegionReader {
   return apiKey ? createFalRegionReader({ apiKey }) : refusingRegionReader;
 }
 
+/**
+ * ONE PAID EDIT, WITH A STOPWATCH RUNNING ON IT (the latency-and-cost program).
+ *
+ * The founder's two sentences — *"5 minutes for 1 generation is absurd"* and
+ * *"costs are getting ridiculous"* — are answered in the roadmap by the same
+ * instruction: **stopwatch every stage before optimising**. This is the
+ * stopwatch. It counts every outbound model call made anywhere inside one
+ * request, at the transports themselves, so the total is the TOTAL rather than
+ * the calls somebody remembered to instrument.
+ *
+ * It costs nothing: an async store entered once per request, a few dozen small
+ * objects, and no extra work of any kind. A refusal is measured too — a slow NO
+ * is a customer waiting, and it is the case with no artifact to inspect
+ * afterwards.
+ */
 export async function refineCandidate(
+  dependencies: RefineServiceDependencies,
+  input: RefineInput,
+): Promise<RefineResult> {
+  const { value, error, census } = await censusOfAttempt(
+    () => refineCandidateCounted(dependencies, input),
+  );
+  log.info(
+    {
+      userId: input.userId,
+      candidate: input.candidatePublicId,
+      delivered: error === undefined,
+      calls: census.total.calls,
+      failedCalls: census.total.failed,
+      callMs: census.total.ms,
+      wallMs: census.wallMs,
+      byStage: census.byStage,
+      byModel: census.byModel,
+    },
+    "[refineService] what this edit cost in calls and seconds",
+  );
+  if (error !== undefined) throw error;
+  return value as RefineResult;
+}
+
+async function refineCandidateCounted(
   dependencies: RefineServiceDependencies,
   input: RefineInput,
 ): Promise<RefineResult> {
@@ -4666,6 +4707,24 @@ export async function refineCandidate(
           the fix becoming the bug the founder described.
         */
         captions: capturedCaptions,
+        /*
+          WHAT THIS EDIT COST, IN CALLS AND SECONDS (the latency-and-cost
+          program's stopwatch).
+
+          Persisted on the row rather than logged alone, for the reason the
+          scan-miss counter learned the same night: a container log's window
+          rotates on every deploy, so a number that lives only there cannot be
+          read back a day later — and this program's first task is a census
+          across many renders, not a glance at one.
+
+          `censusSoFar` is honest in its name: the row lands before the request
+          finishes, so it carries what had been spent by the time the picture
+          was stored. The complete figure goes to the request's own closing log
+          line, and the two are meant to be read together.
+
+          A bill, never a transcript: no prompts, no images, no replies.
+        */
+        ...(censusSoFar() ? { census: censusSoFar() } : {}),
         /*
           AND WHERE A READER AND A RULER DISAGREED ABOUT THIS RENDER'S DELIVERY
           (fable-429 §3 condition 2). Absent on every render where no court was

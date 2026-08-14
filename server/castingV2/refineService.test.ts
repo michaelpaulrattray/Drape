@@ -2991,6 +2991,42 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
    * refuse: a gate that says no to everybody would pass a one-armed test and
    * would have quietly taken the founder's own new kind away from him.
    */
+  describe("what the edit cost, written on the row", () => {
+    it("lands a census of the calls this render made", async () => {
+      /*
+        ASSERT AT THE WIRE, and the reason is a live one: the first real dev
+        render after this shipped landed a row with `prompt`, `captions`,
+        `seam` and `verification` on it and NO census — the field was written
+        where the store could not be seen, so the stopwatch was inert and the
+        report said "an unread window" in a voice that sounded like a reading.
+
+        This asserts the field on the object handed to `landVariant`, which is
+        the thing that becomes the row.
+      */
+      const variants = await import("../db/castingV2Variants");
+      (variants.landVariant as any).mockClear();
+
+      await refineCandidate(hairDown, { ...input, instruction: "wear her hair down" });
+
+      const landing = (variants.landVariant as any).mock.calls.at(-1)?.[0];
+      const census = landing?.internalPrompt?.census;
+      expect(census, "the row carries what the render spent").toBeDefined();
+      expect(census.wallMs).toBeGreaterThanOrEqual(0);
+      /*
+        ZERO CALLS IS THE RIGHT ANSWER HERE and it is worth saying why: this
+        fixture's engines are fakes, so the render reaches no transport at all.
+        What is on trial in this file is that the FIELD reaches the row from
+        inside the store — the transports' own wiring is driven in
+        `callCensus.test.ts`, against the shipped OpenRouter engine with the
+        network stubbed, and the two together are the claim.
+      */
+      expect(census.total.calls).toBe(0);
+      /* A bill, never a transcript: no prompts, no images, no replies. */
+      const fields = new Set(census.calls.flatMap((call: any) => Object.keys(call)));
+      expect([...fields].sort()).toEqual(["about", "ms", "ok", "provider", "stage"].filter((key) => fields.has(key)));
+    });
+  });
+
   describe("a kind only the repaint road has been measured on", () => {
     const horns = {
       ...repainting,

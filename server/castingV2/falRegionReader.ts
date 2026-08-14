@@ -22,6 +22,7 @@
 import { createModuleLogger } from "../logging/logger";
 import { assertImageBytes, NotAnImageError } from "../security/trustedImageFetch";
 import { LANDMARK_OF_ACCESSORY } from "./accessoryKinds";
+import { throughCensus } from "./callCensus";
 import { throughFalGate } from "./falConcurrency";
 import { REGION_CARDS, REGION_CARD_ENTRIES, type AskedAs, type RegionCard } from "./regionCards";
 import { MaskError, unionMasks } from "./maskGeometry";
@@ -52,7 +53,19 @@ const LIFECYCLE = JSON.stringify({ expiration_duration_seconds: 3600 });
  * `falConcurrency.ts`.
  */
 async function post(apiKey: string, endpoint: string, body: unknown, signal?: AbortSignal): Promise<any> {
-  return throughFalGate(async () => {
+  /*
+    AND EVERY ONE OF THEM IS COUNTED (the call census).
+
+    Inside the gate rather than around it, deliberately: the segmenter is the
+    call this product makes most — a scan asks eleven questions, a bilateral
+    refine asks seven — so if the census measured the WAIT for a gate slot as
+    the model's latency, the cost program's first table would blame the
+    provider for our own queueing. `wallMs` on the census is where the waiting
+    belongs, and it is already there.
+  */
+  return throughFalGate(async () => throughCensus(
+    { stage: "segment", provider: "fal", model: endpoint, ...aboutOf(body) },
+    async () => {
     const response = await fetch(`https://fal.run/${endpoint}`, {
       method: "POST",
       headers: {
@@ -67,7 +80,24 @@ async function post(apiKey: string, endpoint: string, body: unknown, signal?: Ab
       throw new MaskError(`${endpoint}: ${response.status} ${(await response.text()).slice(0, 200)}`);
     }
     return response.json();
-  });
+    },
+  ));
+}
+
+/**
+ * WHAT THIS CALL WAS ABOUT, when that is a fixed word rather than a customer's
+ * sentence.
+ *
+ * The region names come from the closed vocabulary — "left eye", "face skin" —
+ * so recording them costs nobody their privacy and it is the difference between
+ * "eleven segment calls" and "eleven segment calls, six of them about eyes".
+ * Anything that is not a plain string is left out rather than stringified: a
+ * telemetry field is not a place to discover what a payload contains.
+ */
+function aboutOf(body: unknown): { about?: string } {
+  const prompt = (body as { text_input?: unknown; prompt?: unknown } | null)?.text_input
+    ?? (body as { prompt?: unknown } | null)?.prompt;
+  return typeof prompt === "string" && prompt.length <= 60 ? { about: prompt } : {};
 }
 
 /**

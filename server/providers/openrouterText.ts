@@ -1,4 +1,5 @@
 import { createModuleLogger } from "../logging/logger";
+import { throughCensus } from "../castingV2/callCensus";
 import { isContentRefusal } from "./falTransport";
 import { ProviderQueue, withRetry } from "./providerQueue";
 import {
@@ -105,7 +106,18 @@ export function createOpenRouterTextEngine(config: OpenRouterTextConfig): TextEn
     id: `openrouter:${model}`,
 
     async complete(request: TextRequest): Promise<TextResult> {
+      /*
+        COUNTED INSIDE THE QUEUE'S WORK rather than around it (the call census).
+        Time spent waiting for a slot is this product's own queueing, not the
+        model's latency; both matter and they are different numbers, and the
+        census's `wallMs` is where the waiting shows up.
+
+        The stage is `read` rather than `interpret` because most text calls on a
+        paid render are readings ABOUT a picture. Coarse on purpose: this
+        answers "where do the minutes go", not "which line of code ran".
+      */
       return queue.run("complete", () =>
+        throughCensus({ stage: "read", provider: "openrouter", model }, () =>
         withRetry(
           "openrouterText.complete",
           async () => {
@@ -220,7 +232,7 @@ export function createOpenRouterTextEngine(config: OpenRouterTextConfig): TextEn
             };
           },
           { signal: request.signal },
-        ),
+        )),
       );
     },
   };
