@@ -27,6 +27,8 @@
  */
 import { execFileSync } from "node:child_process";
 
+import { openDatabase } from "./lib/dbConnection.mts";
+
 const DRY = process.argv.includes("--dry");
 const SERVICE = process.env.RAILWAY_SERVICE ?? "Drape";
 const BASE = process.env.PROD_BASE_URL ?? "https://drape-production-0232.up.railway.app";
@@ -72,8 +74,45 @@ if (dirty.length > 0) {
   die(`the working tree has ${dirty.length} uncommitted tracked change(s) — a deploy must carry a commit, not a desk:\n${dirty.join("\n")}`);
 }
 
+/*
+  WHAT IS IN FLIGHT WHEN THIS LANDS — recorded, not prevented.
+
+  A deploy that lands mid-roll kills the process holding its candidates, and
+  the founder ruled that this is an accepted collision class: per-slice billing
+  plus the recovery sweep IS the answer, and drain infrastructure is explicitly
+  not to be built (2026-08-01). So this does not gate, wait or queue. It READS,
+  because the collision has been invisible in every receipt so far — tonight's
+  own 07:24Z roll was killed by a deploy from this shift and settled correctly
+  eight refunds later, and nothing in the record would have said so.
+
+  Read by NAME from the MySQL service; the URL never leaves this block.
+*/
+const inFlight = await (async (): Promise<string> => {
+  const url = railway("variables", "--service", "MySQL", "--kv").split(/\r?\n/)
+    .map((line) => line.trim())
+    .find((line) => line.startsWith("MYSQL_PUBLIC_URL="))
+    ?.slice("MYSQL_PUBLIC_URL=".length);
+  if (!url) return "(unread — MYSQL_PUBLIC_URL not readable)";
+  try {
+    const connection = await openDatabase(url);
+    const [rows] = await connection.query<any[]>(
+      `SELECT COUNT(*) AS open FROM casting_candidates
+        WHERE status NOT IN ('ready', 'failed', 'discarded')
+          AND createdAt >= (NOW() - INTERVAL 20 MINUTE)`,
+    );
+    await connection.end();
+    const open = Number(rows[0]?.open ?? 0);
+    return open === 0
+      ? "nothing in flight"
+      : `${open} candidate(s) IN FLIGHT — this deploy costs their wait (accepted class, D-85)`;
+  } catch (error) {
+    return `(unread — ${error instanceof Error ? error.message.slice(0, 60) : String(error)})`;
+  }
+})();
+
 say(`DEPLOY RITE — ${shortSha} · ${subject}`);
 say(`  service ${SERVICE} · ${BASE}${DRY ? " · DRY RUN (no push)" : ""}`);
+say(`  paid work at push: ${inFlight}`);
 say("");
 
 /* ── 2. push both branches, and PROVE both landed ───────────────────────── */
@@ -151,6 +190,7 @@ say("");
 say("─".repeat(72));
 say(`\`${shortSha}\` · main == local-migration · deploy SUCCESS · health ×3 — 200 ·`);
 say(`healthy · db ${latencies.map((value) => value.toFixed(2)).join(" / ")} ms ·`);
+say(`paid work at push: ${inFlight}`);
 say(`**UPTIME ANCHOR ${anchor}** (uptime ${healths[0]!.uptime.toFixed(1)} s)`);
 say("");
 say("FLAGS, read off the service:");
