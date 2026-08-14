@@ -44,8 +44,8 @@ sheet** (fable-540 §3 authorised the roll): every earlier candidate was carryin
 one of tonight's other courts, and a specimen that is somebody else's experiment
 hits the already-true door instead of the arm under test.
 
-On the third, the surviving step never delivered: *"give her a blunt fringe"* on
-a buzz cut came back *"very short buzzed hair, no fringe visible"* BEFORE the
+On the FOURTH, the surviving step never delivered: *"give her a blunt fringe"*
+on a buzz cut came back *"very short buzzed hair, no fringe visible"* BEFORE the
 prune. There is nothing there to survive, so that specimen's arm (a) is
 **unmeasurable rather than failed** — the script counts it as a miss, and this
 verdict corrects the script rather than the other way round.
