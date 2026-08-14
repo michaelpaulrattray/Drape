@@ -286,6 +286,20 @@ export const OPEN_KIND_POLICY: Record<string, OpenKindAnswer> = {
     },
     standing: "silence",
   },
+  PRESENTATION_NOUNS: {
+    file: "refineSubjects.ts",
+    asks: "the same question as PRESENTATION_SUBJECTS — this is the table it derives from",
+    answer: "no — an open kind files as identity, and every follow inherits it",
+    basis: {
+      derived: "V1 made the pair one fact on one card (`presentationNoun`, null for "
+        + "identity), and the list above is now `Object.fromEntries` over the cards that "
+        + "answer it. Answered separately rather than folded away because the SCAN sees "
+        + "a table wherever one is keyed on the vocabulary, and a table the policy cannot "
+        + "name is exactly the silence this file exists to end — the derivation made this "
+        + "one visible, which is the guard working rather than a new decision",
+    },
+    standing: "silence",
+  },
   PRESENTATION_FACETS: {
     file: "presentationState.ts",
     asks: "which facets the base read may PIN as a fact about her",

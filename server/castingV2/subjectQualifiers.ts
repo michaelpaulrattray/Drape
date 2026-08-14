@@ -42,6 +42,7 @@
  * shortcut that falls through a default is the thing this module exists to end.
  */
 import { FREE_SUBJECT_KEYS, type FreeSubject } from "./refineSubjects";
+import { tableOf } from "./subjectCards";
 
 /**
  * The floor. Two promises: it belongs to THIS person, and not appearing at all
@@ -76,63 +77,8 @@ export type SubjectQualifier =
  * `describe` is additive prose in the clause's own voice. It must not restate
  * the floor: two sentences of teeth read as nagging and dilute both.
  */
-export const SUBJECT_QUALIFIER: Record<FreeSubject, SubjectQualifier> = {
-  hairCut: { describe: ", cut and dressed as a real haircut on this person's own hair density and hairline" },
-  hairShade: {
-    describe: ", rendered as natural hair — dimensional rather than flat, with a "
-      + "slightly deeper root shadow and the tone reading as grown rather than dyed",
-  },
-  hairPattern: { describe: ", as the hair's own growth pattern through its whole length, not a styling of the ends" },
-  hairFinish: { describe: ", as the way this hair takes light, not a change of colour or cut" },
-  hairWorn: { describe: ", as the same hair restyled, not cut and not a different head of hair" },
-  eyeColourFree: { describe: ", as the iris's own colour with its natural variation, never a flat contact lens" },
-  eyeShapeFree: {
-    describe: ", as the eye's own structure — the lid, the corners and the lash line — "
-      + "and never drawn on with makeup or liner",
-  },
-  brows: { describe: ", as brow hair growing from this person's own brow bone, not pencilled on" },
-  lashes: { describe: ", as lashes on this person's own lash line" },
-  nose: { describe: ", as the nose's own structure, with the rest of the face unchanged" },
-  /*
-    THE BODY CLAUSES SAY "THE SAME PERSON, BUILT DIFFERENTLY" — because the
-    failure to avoid is a build ask arriving as a different woman. Each one also
-    says what must NOT move: the garment is the stage (D-160) and a body edit
-    that restyles her t-shirt has answered a question nobody asked.
-  */
-  bust: { describe: ", as this person's own chest under the same garment, with the neckline and the fabric unchanged" },
-  waist: { describe: ", as this person's own waist, with the same garment sitting on it" },
-  shoulders: { describe: ", as this person's own shoulder line and posture, not a different pose" },
-  arms: { describe: ", as this person's own arms at the same relaxed position, not a different pose" },
-  build: { describe: ", as the same person built differently — her face, her hair and her clothes exactly as they are" },
-  lips: { describe: ", as the lips' own shape and surface, distinct from any lip colour" },
-  teeth: { describe: ", visible in the mouth as it is already held, without changing the expression" },
-  cheekbones: { describe: ", as the face's own bone structure under its own skin" },
-  jaw: { describe: ", as the jaw's own contour, with the neck and chin left alone" },
-  chin: { describe: ", as the chin's own contour, with the jaw left alone" },
-  ears: { describe: ", on both sides and matching one another" },
-  skinTone: { describe: ", across all of this person's visible skin, evenly and consistently" },
-  skinCharacter: { describe: ", as the skin's own surface — texture that follows the form of the face rather than sitting flat on it" },
-  marks: {
-    /* "dense enough to read as theirs" was here and had to go: density is
-       amplitude, and a request for a few freckles is not a request for many. */
-    describe: ", as real marks on this person's own skin, following the form of the "
-      + "face rather than painted flat",
-  },
-  statedAccessories: {
-    /* The licence, carried (D-160). The cohort constant gives stated accessories
-       failure-to-appear teeth on the ROLL; the floor now says it here. What is
-       left is the part unique to accessories: nothing ELSE arrives with it. */
-    describe: ", worn by this person and rendered accurately as described and as "
-      + "their own. Nothing else is added: no other jewellery, no headwear, no props",
-  },
-  ink: {
-    exempt: "each item carries its own placement clause (D-171), built per item in "
-      + "composeEditPrompt — a shared qualifier would address the first design's "
-      + "placement to all of them",
-  },
-  facialHair: { describe: ", growing as this person's own hair, with the hairline and skin beneath unchanged" },
-  expression: { describe: ", as this person's own face doing it, with their features unchanged" },
-};
+export const SUBJECT_QUALIFIER: Record<FreeSubject, SubjectQualifier> =
+  tableOf((card) => card.qualifier);
 
 /**
  * The clause's qualifier — floor included, or empty for a declared exemption.

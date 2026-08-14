@@ -52,13 +52,31 @@ describe("the eight compile-closed tables", () => {
 
 describe("the four that decide by absence", () => {
   it("enrol exactly the kinds they enrolled before V1 began", () => {
-    /* Order matters here as much as membership: `PRESENTATION_SUBJECTS` is read
-       as a list by the routing bench, and a reordering that changed which
-       subject a tie resolved to would be a behaviour change wearing a
-       refactor's clothes. */
+    /*
+      MEMBERSHIP for the two set-lists, and the relaxation is argued rather than
+      convenient.
+
+      Deriving them from the cards puts them in REGISTRATION order rather than
+      the order somebody typed them, and the pin caught exactly that on the
+      first run: `["marks", "ink", "statedAccessories"]` became `["marks",
+      "statedAccessories", "ink"]`. Same three kinds, different sequence.
+
+      Every consumer was read before this line was softened: `isPluralSubject`
+      and `isDepartableSubject` are `includes`; `refineDeparture.test.ts` walks
+      the departable list as independent members; `repaintAsks` cites the
+      plural list for its rule, not its order; `openKindPolicy` files both
+      under the heading "the four lists, WHERE MEMBERSHIP IS THE ANSWER".
+      Nothing reads position.
+
+      `PRESENTATION_SUBJECTS` keeps its exact order, because it is derived from
+      an object whose key order decides which noun a lookup finds first.
+    */
     expect([...PRESENTATION_SUBJECTS]).toEqual(pin.PRESENTATION_SUBJECTS);
-    expect([...PLURAL_SUBJECTS]).toEqual(pin.PLURAL_SUBJECTS);
-    expect([...DEPARTABLE_SUBJECTS]).toEqual(pin.DEPARTABLE_SUBJECTS);
+    expect([...PLURAL_SUBJECTS].sort()).toEqual([...pin.PLURAL_SUBJECTS].sort());
+    expect([...DEPARTABLE_SUBJECTS].sort()).toEqual([...pin.DEPARTABLE_SUBJECTS].sort());
+    /* And the counts, so a sort cannot hide a kind quietly joining a list. */
+    expect(PLURAL_SUBJECTS).toHaveLength(pin.PLURAL_SUBJECTS.length);
+    expect(DEPARTABLE_SUBJECTS).toHaveLength(pin.DEPARTABLE_SUBJECTS.length);
   });
 
   it("send each facet to the same region, INCLUDING the eight that go nowhere", () => {

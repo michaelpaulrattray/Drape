@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "193460b4e5a2cb33"
+    "sourceFingerprint": "fe406e42d745f88e"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 106
+      "moduleCount": 107
     },
     {
       "id": "domain:castingV2",
@@ -3839,6 +3839,12 @@
     {
       "id": "module:server/castingV2/stylingResolution.ts",
       "path": "server/castingV2/stylingResolution.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/subjectCards.ts",
+      "path": "server/castingV2/subjectCards.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -17979,6 +17985,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/castingV2/changeAmplitude.ts",
+      "to": "module:server/castingV2/subjectCards.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/castingV2/characterSheet.ts",
       "to": "module:shared/boardTypes.ts",
       "kind": "imports"
@@ -19474,6 +19485,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/castingV2/refineSubjects.ts",
+      "to": "module:server/castingV2/subjectCards.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/castingV2/refusalCounter.ts",
       "to": "module:drizzle/schema.ts",
       "kind": "imports"
@@ -20044,8 +20060,23 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/castingV2/subjectCards.ts",
+      "to": "module:server/castingV2/changeAmplitude.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/subjectCards.ts",
+      "to": "module:server/castingV2/subjectQualifiers.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/castingV2/subjectQualifiers.ts",
       "to": "module:server/castingV2/refineSubjects.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/subjectQualifiers.ts",
+      "to": "module:server/castingV2/subjectCards.ts",
       "kind": "imports"
     },
     {

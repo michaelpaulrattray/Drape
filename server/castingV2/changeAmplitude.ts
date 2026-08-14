@@ -33,6 +33,7 @@
  * fixture that produced them.
  */
 import { FREE_SUBJECT_KEYS, type FreeSubject } from "./refineSubjects";
+import { tableOf } from "./subjectCards";
 import { subjectsOfFacet, type Facet } from "./refineFacets";
 
 export type AmplitudeBasis =
@@ -65,42 +66,8 @@ const REPLACEMENT = 25;
 const RESTRUCTURE = 10;
 const SURFACE = 4;
 
-export const CHANGE_AMPLITUDE: Record<FreeSubject, ChangeAmplitude> = {
-  hairCut: { levels: REPLACEMENT, basis: { reasoned: "a cut replaces hair with background and background with hair" } },
-  hairShade: { levels: REPLACEMENT, basis: { reasoned: "a colour change moves every strand pixel at once" } },
-  hairPattern: { levels: REPLACEMENT, basis: { reasoned: "curl pattern rearranges strands across the whole mass" } },
-  hairFinish: { levels: RESTRUCTURE, basis: { reasoned: "shine and matte change how light sits, not where the hair is" } },
-  hairWorn: { levels: REPLACEMENT, basis: { measured: "shrink-harvest.mts — shoulder bands 0.0% to 18.4% at 25 levels" } },
-  eyeColourFree: { levels: REPLACEMENT, basis: { reasoned: "the iris is small but the colour change across it is total" } },
-  eyeShapeFree: { levels: RESTRUCTURE, basis: { measured: "eye-shape matrix — corner lift reads at the lid boundary, not across the eye" } },
-  brows: { levels: RESTRUCTURE, basis: { reasoned: "brow hair over skin: a shape change moves the boundary, the interior stays brow" } },
-  lashes: { levels: RESTRUCTURE, basis: { reasoned: "fine dark strands on a small boundary" } },
-  nose: { levels: RESTRUCTURE, basis: { reasoned: "a contour edit moves edges; the centre of the nose stays the nose" } },
-  lips: { levels: RESTRUCTURE, basis: { reasoned: "fuller lips move the vermilion border, measured beyond the zone in fuller-lips.mts" } },
-  teeth: { levels: RESTRUCTURE, basis: { reasoned: "a small bright region behind the lips" } },
-  cheekbones: { levels: SURFACE, basis: { reasoned: "bone structure reads as a few levels of shading over a wide area" } },
-  jaw: { levels: RESTRUCTURE, basis: { reasoned: "a contour against the background, so the edge moves decisively" } },
-  chin: { levels: RESTRUCTURE, basis: { reasoned: "as the jaw, over a smaller arc" } },
-  ears: { levels: REPLACEMENT, basis: { reasoned: "an ear is present or it is not, against hair or background" } },
-  /* A body edit moves a CONTOUR against the background or the garment: the
-     interior stays her, the delta lives at the outline — the jaw's own reasoning
-     over a longer arc. */
-  bust: { levels: RESTRUCTURE, basis: { reasoned: "a chest edit moves the outline under the garment; the fabric between the edges is unchanged" } },
-  waist: { levels: RESTRUCTURE, basis: { reasoned: "a waist edit moves two side contours" } },
-  shoulders: { levels: RESTRUCTURE, basis: { reasoned: "a shoulder edit moves the line where she meets the backdrop" } },
-  arms: { levels: RESTRUCTURE, basis: { reasoned: "an arm edit moves the arm's own edge against the backdrop" } },
-  build: { levels: RESTRUCTURE, basis: { reasoned: "the whole figure's outline moves; her face and her clothes do not" } },
-  skinTone: { levels: SURFACE, basis: { reasoned: "a tan is a few levels across all visible skin — the freckle case, spread wider" } },
-  skinCharacter: { levels: SURFACE, basis: { reasoned: "texture is the freckle case by another name" } },
-  marks: {
-    levels: SURFACE,
-    basis: { measured: "freckles-layers.mts + marks-prose.mts — freckles read at >4 and vanish at >25" },
-  },
-  statedAccessories: { levels: REPLACEMENT, basis: { measured: "the-walk.mts — 27,613 px of frames at mean 0.962" } },
-  ink: { levels: REPLACEMENT, basis: { reasoned: "a design is opaque where it is drawn" } },
-  facialHair: { levels: REPLACEMENT, basis: { reasoned: "hair over skin, opaque where it grows" } },
-  expression: { levels: RESTRUCTURE, basis: { reasoned: "features move without being replaced" } },
-};
+export const CHANGE_AMPLITUDE: Record<FreeSubject, ChangeAmplitude> =
+  tableOf((card) => card.amplitude);
 
 /** The threshold an instrument should count at when measuring this class. */
 export function amplitudeFor(subject: FreeSubject): number {
