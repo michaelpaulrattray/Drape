@@ -59,6 +59,33 @@ and painted the thing back. That is the failure this arm exists to catch, and it
 did not happen here — a further edit (a grey scarf), with the vacancy restated
 the way the recipe restates it, came back clean-shaven 3 of 3.
 
+## Identity — the arm the first run owed, and it holds 9 of 9
+
+Fable ordered it (fable-533 §3) and the reason is exact: **a beard covers the
+jaw and half the mouth**, so a shave that quietly rebuilds his jawline passes
+every arm above. Retro-judged on the nine frames, reads only, $0.09:
+
+```
+control    still him   3 of 3
+removal    still him   3 of 3
+survival   still him   3 of 3
+```
+
+**Each frame was judged against its OWN PARENT, never against the master** —
+control and removal against the bearded master, survival against the removal
+frame it was made from. Judging a survival frame against the bearded master
+would ask it to look like a man with a beard, which is the thing that was
+deliberately taken off; that is the branch-state rule, learned when a
+copper-shag frame was judged against a blonde master and the carry was working
+perfectly.
+
+**One weakness in this reading, stated rather than hidden:** several of the
+reader's justifications name the setting rather than the face (*"studio
+portrait, gray backdrop"*). The verdict is the field the code reads and the
+`saw` is a locator rather than a caption — but a run that needed to be stronger
+would ask about a named feature (the nose, the eye spacing) rather than about
+sameness in general.
+
 ## The honest limits
 
 - **n = 3 on ONE specimen, one beard, one skin tone.** The failure mode this
@@ -67,10 +94,9 @@ the way the recipe restates it, came back clean-shaven 3 of 3.
 - **The beard was RENDERED onto him rather than born there.** For the mechanism
   under test that is the same thing — the frame the removal reads is the master
   either way — but a beard that came with the original photograph is not what
-  was measured.
-- **Identity was not judged.** The horns court asked *"same person"* on every
-  frame; this one asked only about the beard and the skin under it. The frames
-  look like the same man to me, and that is an impression rather than a reading.
+  was measured, and this reading says nothing about how a BORN beard's phrase
+  performs. **The first born-beard removal in production is to be read with
+  interest rather than assumed** (fable-533 §4).
 - **No per-side arm**, because a beard has no sides. The mirror hazard that
   costs pairs their court does not arise here.
 
