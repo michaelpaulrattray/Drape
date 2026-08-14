@@ -218,13 +218,25 @@ export class RepaintCannotSayError extends Error {
    * `null` everywhere else, which is the generic line's cue.
    */
   readonly words: string | null;
+  /**
+   * HOW THE PRODUCT SPEAKS ABOUT THE PART SHE POINTED AT — "her left ear".
+   *
+   * Null unless the ask carried a scope. It is the difference between "that
+   * didn't come through" and "I read that as a change to something other than
+   * her left ear" (fable-471 §1), which is the founder's own specimen.
+   */
+  readonly scopeNoun: string | null;
 
-  constructor(refusal: RepaintAsksRefusal, options: { words?: string | null } = {}) {
+  constructor(
+    refusal: RepaintAsksRefusal,
+    options: { words?: string | null; scopeNoun?: string | null } = {},
+  ) {
     super(`the repaint cannot express this ask: ${refusal.detail}`);
     this.name = "RepaintCannotSayError";
     this.reason = refusal.reason;
     this.facet = refusal.facet;
     this.words = options.words ?? null;
+    this.scopeNoun = options.scopeNoun ?? null;
   }
 }
 

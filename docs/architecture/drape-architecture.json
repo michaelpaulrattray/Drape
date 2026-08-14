@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "a5a8c7acc3164a50"
+    "sourceFingerprint": "ff71a7f582ea1666"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 104
+      "moduleCount": 105
     },
     {
       "id": "domain:castingV2",
@@ -3275,6 +3275,12 @@
     {
       "id": "module:server/castingV2/candidateService.ts",
       "path": "server/castingV2/candidateService.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/cannotSayCopy.ts",
+      "path": "server/castingV2/cannotSayCopy.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -8669,6 +8675,10 @@
     {
       "id": "test:server/castingV2/candidateRetention.test.ts",
       "path": "server/castingV2/candidateRetention.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/cannotSayCopy.test.ts",
+      "path": "server/castingV2/cannotSayCopy.test.ts"
     },
     {
       "id": "test:server/castingV2/canthalTilt.test.ts",
@@ -17759,6 +17769,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/castingV2/cannotSayCopy.ts",
+      "to": "module:server/castingV2/repaintAsks.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/castingV2/canthalTilt.ts",
       "to": "module:server/castingV2/maskedComposite.ts",
       "kind": "imports"
@@ -19101,6 +19116,11 @@
     {
       "from": "module:server/castingV2/refineService.ts",
       "to": "module:server/castingV2/bornWornDetector.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/refineService.ts",
+      "to": "module:server/castingV2/cannotSayCopy.ts",
       "kind": "imports"
     },
     {

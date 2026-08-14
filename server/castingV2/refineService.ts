@@ -166,6 +166,7 @@ import {
 } from "./referenceSlotCatalogue";
 import { repaint, type ReferenceFitter, type RepaintEngine, type SentRequest } from "./repaintRender";
 import { RepaintCannotSayError, repaintAsksFor, repaintCannotRemove } from "./repaintAsks";
+import { cannotSaySentence } from "./cannotSayCopy";
 import { padToFrame, studioBackgroundOf, type StudioBackground } from "./referenceFit";
 import { pronounsForSex } from "./castPronouns";
 import {
@@ -2622,6 +2623,15 @@ export async function refineCandidate(
             answering for everything is how the generic line stops being generic.
           */
           words: asks.facet === "makeup" ? editDelta?.makeup ?? null : null,
+          /* The part she pointed at, said the way the product speaks about it —
+             the sentence's whole difference on a scoped ask (fable-471). */
+          scopeNoun: (() => {
+            const scoped = input.scope ? slotDefinition(input.scope) : null;
+            /* The catalogue's own noun with her pronoun in front of it — the
+               same two facts the panel speaks a row with, never a third
+               spelling of "her left ear". */
+            return scoped ? `${pronounsForSex(currentIdentity?.sex).possessive} ${scoped.noun}` : null;
+          })(),
         });
       }
       /*
@@ -4733,32 +4743,35 @@ function failedFactsMessage(error: unknown): string | null {
     promise living inside a refusal is the easiest line in the product to leave
     rotting, because nothing fails when it goes stale.
   */
-  if (error instanceof RepaintCannotSayError && error.facet === "makeup") {
-    /* The leading noun adapts to the ask; the founder approved the voice, not
-       only the literal string for gloss. Bare `words` and not a re-derivation:
-       the phrase came off the delta the refusal was raised about. */
-    const noun = error.words?.trim();
-    return noun
-      ? `${noun.charAt(0).toUpperCase()}${noun.slice(1)} is makeup, and makeup isn't something `
-        + "I can place yet — it's coming. Nothing was charged."
-      /* No words to quote, so the sentence says the class instead of inventing a
-         noun she never used. */
-      : "That's makeup, and makeup isn't something I can place yet — it's coming. "
-        + "Nothing was charged.";
-  }
   /*
-    ONE OF A PAIR, ASKED TO COME OFF — the door the departure loop closes, said
-    in a sentence that names the gap instead of implying a malfunction.
+    EVERY DOOR THAT KNOWS WHY IT REFUSED SAYS SO — one registry, not one facet
+    (fable-471 §1, carrying fable-486 (f)).
 
-    Same voice as the makeup door and for the same ruled reason (fable-354): a
-    refusal that KNOWS why should say why, or she retypes an instruction the
-    product already knows it cannot render. What she is told is exactly what is
-    true — the product can take BOTH off today and cannot yet take one off — so
-    the sentence carries the thing she can do next instead of a dead end.
+    The founder tapped the panel's EARS row, asked for a cauliflower ear, and
+    read *"That refinement didn't come through"* — a malfunction's sentence, on
+    a road that knew exactly why: the reading filed it as a MARK and marks have
+    no slot inside an ear. `cannot_say` had been a class since fable-355 and its
+    honest sentence existed for exactly one facet.
+
+    The sentences live in `cannotSayCopy.ts` with the charge behaviour and the
+    report class beside them, so a new reason cannot ship with a class and no
+    copy. The makeup wording is unchanged — the founder ruled it — and it is now
+    one entry in that table rather than the only case with a voice.
   */
-  if (error instanceof RepaintCannotSayError && error.reason === "perSideRemoval") {
-    return "Taking just one of a pair off isn't something I can do yet — ask for both and "
-      + "they'll come off together. Nothing was charged.";
+  if (error instanceof RepaintCannotSayError) {
+    return cannotSaySentence(error.reason, {
+      words: error.words,
+      facet: error.facet,
+      scopeNoun: error.scopeNoun,
+      /*
+        HER BALANCE REALLY IS WHERE SHE LEFT IT, and the caller is what makes
+        that true: this function is only consulted when `refund.recorded` is
+        set — an unrecorded refund takes the support sentence one line up. The
+        founder's ruled makeup copy says "Nothing was charged" for exactly this
+        reason and it is unchanged by the generalization.
+      */
+      moneySafe: true,
+    });
   }
   /*
     A REMOVAL THAT WOULD NOT TAKE, in its own words.

@@ -3472,17 +3472,17 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
     expect(ledger.charges.at(-1)?.amount).toBe(ledger.refunds.at(-1)?.amount);
   });
 
-  it("CONTROL — the door next to it still gets the generic line", async () => {
+  it("CONTROL — a door beside it says its OWN sentence, never makeup's", async () => {
     /*
-      THE ONE THAT MATTERS. `ink` refuses through the SAME error class and the
-      same `notASlot` reason as makeup — a different facet is the only thing
-      separating them — so this is what proves the sentence is scoped to the door
-      the founder ruled rather than to the error type.
+      THE ONE THAT MATTERS, RE-ANCHORED (fable-471 §1). `ink` refuses through the
+      SAME error class and the same `notASlot` reason as makeup — a different
+      facet is the only thing separating them — so this is what proves the
+      makeup wording is scoped to the door the founder ruled.
 
-      Without it, a `failedFactsMessage` that starts answering for everything is
-      how the generic line quietly stops being generic, and every future road
-      refusal would tell a tattoo customer her ask was makeup. That is the
-      misaimed-guard class wearing copy clothes.
+      What changed is the other half: it used to prove that every other door got
+      the GENERIC line, and the generic line over a road that knew exactly why it
+      refused is what he read as a malfunction. Now the control is that the
+      sentence is this door's own and mentions no makeup.
     */
     await expect(refineCandidate({
       ...repainting,
@@ -3491,9 +3491,45 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
         delta: { free: { ink: "a small star tattoo behind her ear" } },
       }),
     }, { ...input, instruction: "give her a small star tattoo behind her ear" }))
-      .rejects.toThrow("That refinement didn't come through. Your credits have been returned.");
+      .rejects.toThrow(/isn't something I can place yet/);
+
+    const said = await refineCandidate({
+      ...repainting,
+      interpret: async () => ({
+        ok: true as const,
+        delta: { free: { ink: "a small star tattoo behind her ear" } },
+      }),
+    }, { ...input, instruction: "give her a small star tattoo behind her ear" })
+      .then(() => "", (error: Error) => error.message);
+    expect(said, "the founder's makeup wording belongs to makeup").not.toContain("makeup");
+    expect(said, "and it does not read as a malfunction").not.toContain("didn't come through");
 
     expect(painted).toHaveLength(0);
+    expect(ledger.charges.at(-1)?.amount).toBe(ledger.refunds.at(-1)?.amount);
+  });
+
+  /*
+    HIS EAR, AS A TEST (fable-471 §1) — the specimen that started this.
+
+    He tapped the panel's EARS row and asked for a cauliflower ear. The reading
+    filed it as a MARK; the scope said ears; marks have no slot inside an ear;
+    and the sentence he read was "That refinement didn't come through."
+  */
+  it("names the part she pointed at when the reading landed somewhere else", async () => {
+    const said = await refineCandidate({
+      ...repainting,
+      interpret: async () => ({
+        ok: true as const,
+        delta: { free: { marks: ["cauliflower ear on her left ear"] } },
+      }),
+    }, { ...input, instruction: "her left ear — has cauliflower ear", scope: "ear@left" })
+      .then(() => "", (error: Error) => error.message);
+
+    expect(said).toContain("her left ear");
+    expect(said).not.toContain("didn't come through");
+    /* And the money is where she left it, which the sentence may only say
+       because the refund is recorded. */
+    expect(said).toContain("Nothing was charged.");
     expect(ledger.charges.at(-1)?.amount).toBe(ledger.refunds.at(-1)?.amount);
   });
 
