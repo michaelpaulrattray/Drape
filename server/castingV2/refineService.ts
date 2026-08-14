@@ -174,6 +174,7 @@ import {
 } from "./repaintAsks";
 import { cannotSaySentence, likenessSetAsideNote } from "./cannotSayCopy";
 import { censusOfAttempt, censusSoFar } from "./callCensus";
+import { carriesAfterPruning } from "./prunedCarries";
 import { countRefusal } from "./refusalCounter";
 import { padToFrame, studioBackgroundOf, type StudioBackground } from "./referenceFit";
 import { pronounsForSex } from "./castPronouns";
@@ -2852,7 +2853,38 @@ async function refineCandidateCounted(
         `deriveLibrary` warns about one layer down.
       */
       const editedSlots = new Set(asks.asks.map((ask) => ask.slot));
-      const library = libraryWithoutEditedCrops(deriveLibrary(branchRows), editedSlots);
+      /*
+        AND A CROP WHOSE ASK HAS BEEN TAKEN BACK STOPS RIDING (V3(c) step 2).
+
+        The chain already prunes and the library does not, so the two answer
+        "what does she have" by different routes and a prune moves only one of
+        them. This derives the carry list from BOTH — live rows ∩ what the
+        surviving chain still names — and it deletes nothing, retires nothing
+        and writes nothing: re-adding the step brings the crop back because the
+        crop was never destroyed.
+
+        On an ordinary render it changes nothing, because the chain names every
+        crop the library holds; that is asserted rather than hoped in
+        `prunedCarries.test.ts`, along with the two exemptions that matter more
+        than the rule (a master-minted row belongs to every branch, and a slot
+        re-cut every render is minted by the render rather than by an ask).
+
+        `branchRows` itself is left whole on purpose: the geometry lookup and
+        the per-instance memory below are asking a different question — what
+        this face's rows SAY — and pruning an ask does not unsay it.
+      */
+      const carried = carriesAfterPruning({ rows: branchRows, composed });
+      if (carried.dropped.length > 0) {
+        log.info(
+          {
+            operationId,
+            variant: variant.publicId,
+            dropped: carried.dropped.map((one) => one.slot),
+          },
+          "[refineService] a crop stopped riding because the chain no longer asks for it",
+        );
+      }
+      const library = libraryWithoutEditedCrops(deriveLibrary(carried.rows), editedSlots);
       const recipe = assembleRecipe({
         /* The master is the base this render is anchored on, by key. Every
            render is `edit(original, …)` and `claimVariant` proved that base

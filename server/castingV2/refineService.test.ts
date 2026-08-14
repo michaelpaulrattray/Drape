@@ -2991,6 +2991,48 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
    * refuse: a gate that says no to everybody would pass a one-armed test and
    * would have quietly taken the founder's own new kind away from him.
    */
+  it("does not carry a crop the chain no longer asks for (V3(c) step 2, at the wire)", async () => {
+    /*
+      The state a prune leaves behind, built directly: the branch holds an
+      earring crop minted by an earlier render, and the surviving chain says
+      nothing about earrings. The derivation is unit-driven in
+      `prunedCarries.test.ts`; this is the one assertion that it is CONNECTED —
+      a filter nobody calls is a filter that does not exist.
+    */
+    lineageReferences = [
+      carryRow({
+        id: 9, publicId: "ref-9", slot: "earring@left", tier: "item", noun: "left earring",
+        words: ["gold hoops"], storageKey: "casting-v2/library/earring-left.png", variantId: 5,
+      }),
+      carryRow({
+        id: 10, publicId: "ref-10", slot: "lips", tier: "anatomy", noun: "lips",
+        words: ["a fuller cupid's bow"], storageKey: "casting-v2/library/lips.png", variantId: 5,
+      }),
+    ];
+    variantRows = [{
+      id: 701,
+      publicId: "variant-pruned",
+      candidateId: 1,
+      imageKey: "casting-v2/variants/pruned.png",
+      internalPrompt: candidateRow.internalPrompt as Record<string, unknown>,
+      /* The earrings step is GONE; her lips step survives. */
+      instructions: ["a fuller cupid's bow"],
+      deltas: { free: { lips: "a fuller cupid's bow" } },
+      stepDeltas: [{ free: { lips: "a fuller cupid's bow" } }],
+      status: "ready",
+    }];
+    candidateRow.selectedVariantPublicId = "variant-pruned";
+
+    await refineCandidate(hairDown, { ...input, instruction: "wear her hair down" });
+
+    const request = painted[0]!;
+    const bytes = request.references.map((reference) => String(reference.bytes));
+    /* Her lips still ride — the chain still names them. */
+    expect(bytes.some((one) => one.includes("lips"))).toBe(true);
+    /* Her earrings do not: nothing in the surviving chain asks for them. */
+    expect(bytes.some((one) => one.includes("earring"))).toBe(false);
+  });
+
   /**
    * WHAT A PRUNE DOES ON THE REPAINT ROAD TODAY — the refusal, driven
    * (V3(c)'s premise, settled here rather than assumed).
