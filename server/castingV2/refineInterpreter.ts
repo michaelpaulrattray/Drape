@@ -34,7 +34,7 @@ import { interpreterEngine } from "./interpreter";
 import { declarativeStateRule } from "./declarativeState";
 import { readDelta, stageWordIn, type FreeLaneCheck, type RefineParse } from "./refineDelta";
 import { freeSubjectGuidance } from "./refineSubjects";
-import { INK_NEEDS_DOCUMENT_MESSAGE } from "./inkPlacement";
+import { REFINE_REFUSALS } from "./refineRefusals";
 import { readRemovalSubject } from "./refineRemoval";
 import { namesUnknownProperNoun } from "./properNouns";
 
@@ -1030,87 +1030,18 @@ async function runOnce(
  * someone with nowhere to go is a dead end wearing polite words.
  */
 export function refusalMessage(refusal: RefineParse & { ok: false }): string {
-  switch (refusal.refusal.reason) {
-    /*
-      Each wall says WHICH wall, because "that isn't supported" tells someone
-      nothing about whether to rephrase, roll again, or stop. These four are
-      absolute — they are not tiers waiting to open — so the copy does not
-      promise a someday.
-    */
-    case "wall_likeness":
-      return "Refining can't make someone look like a specific real person. "
-        + "Nothing was charged.";
-    case "wall_stage":
-      /*
-        TWO SENTENCES, BECAUSE THERE ARE TWO REFUSALS UNDER ONE WALL.
+  /*
+    ONE REGISTRY, LOOKED UP (fable-486 §f).
 
-        BACKED — the stage lexicon matched a word in their sentence, so we know
-        what they asked for and can say so. It names what DOES work, because the
-        wall narrowed and the old copy was the reason the founder believed it had
-        not (D-160). "Wardrobe or set" was the whole sentence, so an earring
-        refused under it read as a product that does not do jewellery — when
-        jewellery is exactly what Refine is the stated channel for.
+    This was a `switch` whose cases carried the sentences while the charge
+    behaviour lived in whichever caller returned the refusal and the report
+    class lived nowhere. `refineRefusals.ts` holds the three together, so a new
+    refusal cannot ship with a sentence and no answer to "does this cost her
+    anything" — the question a customer asks first.
 
-        UNBACKED — the model claimed the wall, took its re-look, and the lexicon
-        still cannot find a stage word. Measured, that is where fantastical
-        anatomy lands: *"give her antlers"* re-claims 3/3 and is logged as a
-        STAGE_WORDS candidate that is not a stage word at all. Saying "antlers is
-        a garment, a prop or the set" to somebody who asked for something growing
-        out of her head is a FALSE sentence, and a false refusal is worse than a
-        vague one — it is the D-160 mistake with a new subject.
-
-        So the unbacked half claims nothing about what the thing IS. It says the
-        true thing: this is not something Refine can name yet. No promise about
-        the roadmap either — the open lane is real work in progress and a refusal
-        is not the place to sell it.
-      */
-      if (refusal.refusal.backed === false) {
-        return `Refining can't do ${refusal.refusal.asked} yet — it isn't one of the things `
-          + "this can name. Faces, hair, skin, build and anything worn do work here. "
-          + "Nothing was charged.";
-      }
-      return `Refining changes the person, not the shoot — ${refusal.refusal.asked} is `
-        + "a garment, a prop or the set, which comes after Sign. Jewellery, glasses and "
-        + "piercings do work here. Nothing was charged.";
-    case "wall_content":
-      return "That one can't be rendered. Nothing was charged.";
-    case "wall_unfileable":
-      /*
-        The honest version of wall (d): we will not render what we cannot write
-        down, and the reason it could not be written down is that the words
-        were not the user's own.
-      */
-      return "That came back with more detail than you asked for, so it wasn't recorded — "
-        + "and nothing is rendered that isn't recorded. Try saying it in your own words. "
-        + "Nothing was charged.";
-    case "gate_ink_document":
-      return INK_NEEDS_DOCUMENT_MESSAGE;
-    case "absorbed":
-      /*
-        HER ONTOLOGY, NOT OURS (law 8). What she can see is that she asked for
-        something the face already has; the model losing her sentence into a
-        restatement is our business and not a sentence anybody wants to read.
-        So the copy states the observable fact — everything that came back was
-        already true — and offers the two moves that are actually open.
-      */
-      return `She already has ${refusal.refusal.asked} — this would have changed nothing, `
-        + "so nothing was charged. Ask for more of it, or say it another way.";
-    case "absorbed_departure":
-      /*
-        THE SAME FACT ABOUT THE OTHER DIRECTION, in her words rather than ours:
-        the thing is already off her, so there is nothing to take off. It says
-        what IS the case and leaves the next move open, because the sentence
-        that reached this door was very often not a removal at all — it was a
-        restyle whose reading came back as the state.
-      */
-      return `${refusal.refusal.asked} — that's already off her, so this would have `
-        + "changed nothing and nothing was charged. Say what you'd like instead and "
-        + "I'll put it on.";
-    case "empty":
-      return "Say what you'd like changed — anything about the person themselves.";
-    case "unreadable":
-      return "That one didn't come through clearly. Try naming what you want changed about "
-        + "them. Nothing was charged.";
-  }
+    The reasons the copy gives are unchanged, verbatim; the `refusalCopy` suite
+    is the pin that proves it.
+  */
+  return REFINE_REFUSALS[refusal.refusal.reason].say(refusal.refusal);
 }
 

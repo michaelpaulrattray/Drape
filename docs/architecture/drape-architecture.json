@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "94623785a7661ca3"
+    "sourceFingerprint": "a679ec927a9238d0"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 111
+      "moduleCount": 112
     },
     {
       "id": "domain:castingV2",
@@ -3689,6 +3689,12 @@
     {
       "id": "module:server/castingV2/refineRecovery.ts",
       "path": "server/castingV2/refineRecovery.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/refineRefusals.ts",
+      "path": "server/castingV2/refineRefusals.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -9406,6 +9412,10 @@
     {
       "id": "test:server/castingV2/refineRecovery.test.ts",
       "path": "server/castingV2/refineRecovery.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/refineRefusals.test.ts",
+      "path": "server/castingV2/refineRefusals.test.ts"
     },
     {
       "id": "test:server/castingV2/refineRemoval.test.ts",
@@ -19458,11 +19468,6 @@
     },
     {
       "from": "module:server/castingV2/refineInterpreter.ts",
-      "to": "module:server/castingV2/inkPlacement.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/refineInterpreter.ts",
       "to": "module:server/castingV2/interpreter.ts",
       "kind": "imports"
     },
@@ -19474,6 +19479,11 @@
     {
       "from": "module:server/castingV2/refineInterpreter.ts",
       "to": "module:server/castingV2/refineDelta.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/refineInterpreter.ts",
+      "to": "module:server/castingV2/refineRefusals.ts",
       "kind": "imports"
     },
     {
@@ -19594,6 +19604,16 @@
     {
       "from": "module:server/castingV2/refineRecovery.ts",
       "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/refineRefusals.ts",
+      "to": "module:server/castingV2/inkPlacement.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/refineRefusals.ts",
+      "to": "module:server/castingV2/refineDelta.ts",
       "kind": "imports"
     },
     {

@@ -773,3 +773,54 @@ describe("the reader may send an address instead of the bytes", () => {
     expect(calls.filter((call) => String(call[0]).includes("pub-test"))).toHaveLength(0);
   });
 });
+
+/**
+ * THE VERDICT AS DATA, not as prose (fable-508's "card readings").
+ *
+ * A phrasing chosen by measurement and recorded only in a comment is a number
+ * nobody can print again — and this one decided what words reach a paid render's
+ * segmenter. The reading is on the entry now, and these arms hold it to being a
+ * reading rather than a decoration: the winner must actually win in the numbers
+ * it carries, and every specimen must have scored it.
+ */
+describe("the reading that chose the words", () => {
+  it("carries a specimen table in which the chosen phrasing WINS", async () => {
+    const { measuredPhrasings } = await import("./falRegionReader");
+    const measured = measuredPhrasings();
+    expect(measured.length).toBeGreaterThan(0);
+
+    for (const entry of measured) {
+      expect(entry.measured.length, `${entry.region} has no specimens`).toBeGreaterThanOrEqual(3);
+      for (const specimen of entry.measured) {
+        const readings = Object.entries(specimen.readings);
+        /* Every specimen scored the winner, and scored something else too — a
+           one-column table is not a comparison. */
+        expect(Object.keys(specimen.readings), `${entry.region}/${specimen.specimen}`)
+          .toContain(entry.words);
+        expect(readings.length).toBeGreaterThan(1);
+      }
+      /* THE WINNER'S OWN CLAIM: it answered on every specimen. Anything that
+         answers nothing on a real face is not a candidate, whatever it scores
+         elsewhere. */
+      for (const specimen of entry.measured) {
+        expect(specimen.readings[entry.words], `${entry.region} answered nothing on ${specimen.specimen}`)
+          .toBeGreaterThan(0);
+      }
+      expect(entry.verdict.length).toBeGreaterThan(40);
+    }
+  });
+
+  it("CAN FAIL — a phrasing that answers nothing on one specimen is caught", () => {
+    /* The lips table's own losers, driven: "her lips" reads 0 on the man and
+       bare "lips" reads 0 on the open mouth, which is why neither is the word. */
+    const table: Array<{ specimen: string; readings: Record<string, number> }> = [
+      { specimen: "MAN", readings: { "her lips": 0, "the lips": 0.0019 } },
+      { specimen: "OPEN", readings: { lips: 0, "the lips": 0.0023 } },
+    ];
+    for (const loser of ["her lips", "lips"]) {
+      const answersEverywhere = table.every((specimen) =>
+        specimen.readings[loser] === undefined || specimen.readings[loser]! > 0);
+      expect(answersEverywhere, loser).toBe(false);
+    }
+  });
+});

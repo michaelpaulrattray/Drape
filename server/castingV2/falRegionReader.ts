@@ -368,10 +368,53 @@ async function placeInFrame(
  * and reads highest of the four on the one frame that was failing. So the
  * genderless phrasing wins, and it wins on the numbers rather than on taste.
  */
-export const ASKED_AS: Readonly<Record<string, string>> = { lips: "the lips" };
+export type AskedAs = {
+  /** The words that actually leave for the segmenter. */
+  readonly words: string;
+  /**
+   * The reading that chose them — the bench's own table, as DATA.
+   *
+   * A phrasing chosen by measurement and recorded as prose is a number nobody
+   * can print again. Each row is `phrasing → share of the frame the returned
+   * mask covered`, per specimen, so the verdict can be re-read, re-printed and
+   * compared the day a reader changes underneath it.
+   */
+  readonly measured: ReadonlyArray<{
+    readonly specimen: string;
+    readonly readings: Readonly<Record<string, number>>;
+  }>;
+  /** Why the winner won, in one sentence. */
+  readonly verdict: string;
+};
+
+/**
+ * THE REGIONS WHOSE WIRE WORDS ARE NOT THEIR KEY, with the reading that chose
+ * them (fable-492 §2a; recorded as card readings per fable-508).
+ */
+export const ASKED_AS: Readonly<Record<string, AskedAs>> = {
+  lips: {
+    words: "the lips",
+    measured: [
+      { specimen: "woman, OPEN mouth", readings: { lips: 0, "her lips": 0.000944, "his lips": 0.001022, "the lips": 0.002342 } },
+      { specimen: "woman, closed", readings: { lips: 0.0015, "her lips": 0.001459, "his lips": 0.00147, "the lips": 0.001507 } },
+      { specimen: "woman (warm)", readings: { lips: 0.002178, "her lips": 0.002151, "his lips": 0.002165, "the lips": 0.002184 } },
+      { specimen: "woman (fixture)", readings: { lips: 0.001993, "her lips": 0.001965, "his lips": 0.001963, "the lips": 0.001992 } },
+      { specimen: "MAN, closed mouth", readings: { lips: 0.001878, "her lips": 0, "his lips": 0.00187, "the lips": 0.0019 } },
+    ],
+    verdict: "bare \"lips\" answers NOTHING on an open mouth and \"her lips\" answers "
+      + "nothing on a man — a gendered phrasing carries a gendered failure into a product "
+      + "that casts men. \"The lips\" answers on 5 of 5 and reads highest of the four on the "
+      + "one frame that was failing.",
+  },
+};
 
 export function askedAs(name: string): string {
-  return ASKED_AS[name] ?? name;
+  return ASKED_AS[name]?.words ?? name;
+}
+
+/** Every region whose wire words were chosen by measurement — for the report. */
+export function measuredPhrasings(): Array<{ region: string } & AskedAs> {
+  return Object.entries(ASKED_AS).map(([region, entry]) => ({ region, ...entry }));
 }
 
 export function createFalRegionReader(input: {
