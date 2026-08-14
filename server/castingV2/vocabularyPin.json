@@ -1,0 +1,703 @@
+{
+  "FREE_SUBJECTS": {
+    "hairCut": "HAIR CUT",
+    "hairShade": "HAIR COLOUR",
+    "hairPattern": "HAIR TEXTURE",
+    "hairFinish": "HAIR FINISH",
+    "hairWorn": "HAIR WORN",
+    "eyeColourFree": "EYE COLOUR",
+    "eyeShapeFree": "EYE SHAPE",
+    "brows": "BROWS",
+    "lashes": "LASHES",
+    "nose": "NOSE",
+    "lips": "LIPS",
+    "teeth": "TEETH",
+    "cheekbones": "CHEEKBONES",
+    "jaw": "JAW",
+    "chin": "CHIN",
+    "ears": "EARS",
+    "skinTone": "SKIN TONE",
+    "skinCharacter": "SKIN CHARACTER",
+    "marks": "MARKS",
+    "statedAccessories": "ACCESSORIES",
+    "bust": "BUST",
+    "waist": "WAIST",
+    "shoulders": "SHOULDERS",
+    "arms": "ARMS",
+    "build": "BUILD",
+    "ink": "INK",
+    "facialHair": "FACIAL HAIR",
+    "expression": "EXPRESSION"
+  },
+  "FREE_SUBJECT_KIND": {
+    "hairWorn": "presence",
+    "statedAccessories": "presence",
+    "ink": "presence",
+    "facialHair": "presence",
+    "eyeColourFree": "degree",
+    "eyeShapeFree": "degree",
+    "hairCut": "degree",
+    "hairShade": "degree",
+    "hairPattern": "degree",
+    "hairFinish": "degree",
+    "marks": "degree",
+    "brows": "degree",
+    "lashes": "degree",
+    "nose": "degree",
+    "lips": "degree",
+    "teeth": "degree",
+    "cheekbones": "degree",
+    "jaw": "degree",
+    "chin": "degree",
+    "ears": "degree",
+    "bust": "degree",
+    "waist": "degree",
+    "shoulders": "degree",
+    "arms": "degree",
+    "build": "degree",
+    "skinTone": "degree",
+    "skinCharacter": "degree",
+    "expression": "degree"
+  },
+  "SUBJECT_NOUNS": {
+    "hairCut": [
+      "hair",
+      "haircut",
+      "cut",
+      "fringe",
+      "bangs",
+      "layers"
+    ],
+    "hairShade": [
+      "hair colour",
+      "hair color",
+      "highlights",
+      "roots"
+    ],
+    "hairPattern": [
+      "hair texture",
+      "curls",
+      "waves",
+      "coils"
+    ],
+    "hairFinish": [
+      "hair finish",
+      "shine",
+      "frizz"
+    ],
+    "hairWorn": [
+      "ponytail",
+      "bun",
+      "updo",
+      "braid",
+      "plait"
+    ],
+    "eyeColourFree": [
+      "eye colour",
+      "eye color",
+      "iris",
+      "irises"
+    ],
+    "eyeShapeFree": [
+      "eye",
+      "eyes",
+      "eyelid",
+      "eyelids",
+      "eye shape"
+    ],
+    "brows": [
+      "brow",
+      "brows",
+      "eyebrow",
+      "eyebrows"
+    ],
+    "lashes": [
+      "lash",
+      "lashes",
+      "eyelash",
+      "eyelashes"
+    ],
+    "nose": [
+      "nose",
+      "nostril",
+      "nostrils",
+      "bridge",
+      "septum"
+    ],
+    "lips": [
+      "lip",
+      "lips",
+      "mouth",
+      "cupid's bow"
+    ],
+    "teeth": [
+      "tooth",
+      "teeth",
+      "smile line",
+      "gums"
+    ],
+    "cheekbones": [
+      "cheekbone",
+      "cheekbones",
+      "cheek",
+      "cheeks"
+    ],
+    "jaw": [
+      "jaw",
+      "jawline",
+      "mandible"
+    ],
+    "chin": [
+      "chin"
+    ],
+    "ears": [
+      "ear",
+      "ears",
+      "earlobe",
+      "earlobes"
+    ],
+    "skinTone": [
+      "skin",
+      "skin tone",
+      "complexion",
+      "tan"
+    ],
+    "skinCharacter": [
+      "acne",
+      "pores",
+      "texture",
+      "ruddiness",
+      "weathering",
+      "blemishes"
+    ],
+    "marks": [
+      "mark",
+      "marks",
+      "mole",
+      "moles",
+      "scar",
+      "scars",
+      "birthmark",
+      "birthmarks",
+      "freckles"
+    ],
+    "statedAccessories": [
+      "earring",
+      "earrings",
+      "glasses",
+      "spectacles",
+      "sunglasses",
+      "piercing",
+      "piercings",
+      "necklace",
+      "stud",
+      "studs",
+      "hoop",
+      "hoops"
+    ],
+    "bust": [
+      "bust",
+      "chest",
+      "breasts"
+    ],
+    "waist": [
+      "waist",
+      "midriff",
+      "stomach",
+      "torso"
+    ],
+    "shoulders": [
+      "shoulder",
+      "shoulders"
+    ],
+    "arms": [
+      "arm",
+      "arms",
+      "biceps",
+      "forearm",
+      "forearms"
+    ],
+    "build": [
+      "build",
+      "body",
+      "body type",
+      "body shape",
+      "figure",
+      "physique",
+      "frame"
+    ],
+    "ink": [
+      "ink",
+      "tattoo",
+      "tattoos"
+    ],
+    "facialHair": [
+      "beard",
+      "moustache",
+      "mustache",
+      "stubble",
+      "sideburns",
+      "goatee",
+      "facial hair"
+    ],
+    "expression": [
+      "expression",
+      "smile",
+      "frown",
+      "smirk",
+      "scowl"
+    ]
+  },
+  "PRESENTATION_SUBJECTS": [
+    "expression"
+  ],
+  "PLURAL_SUBJECTS": [
+    "marks",
+    "ink",
+    "statedAccessories"
+  ],
+  "DEPARTABLE_SUBJECTS": [
+    "statedAccessories",
+    "ink",
+    "marks",
+    "facialHair"
+  ],
+  "CHANGE_AMPLITUDE": {
+    "hairCut": {
+      "levels": 25,
+      "basis": {
+        "reasoned": "a cut replaces hair with background and background with hair"
+      }
+    },
+    "hairShade": {
+      "levels": 25,
+      "basis": {
+        "reasoned": "a colour change moves every strand pixel at once"
+      }
+    },
+    "hairPattern": {
+      "levels": 25,
+      "basis": {
+        "reasoned": "curl pattern rearranges strands across the whole mass"
+      }
+    },
+    "hairFinish": {
+      "levels": 10,
+      "basis": {
+        "reasoned": "shine and matte change how light sits, not where the hair is"
+      }
+    },
+    "hairWorn": {
+      "levels": 25,
+      "basis": {
+        "measured": "shrink-harvest.mts — shoulder bands 0.0% to 18.4% at 25 levels"
+      }
+    },
+    "eyeColourFree": {
+      "levels": 25,
+      "basis": {
+        "reasoned": "the iris is small but the colour change across it is total"
+      }
+    },
+    "eyeShapeFree": {
+      "levels": 10,
+      "basis": {
+        "measured": "eye-shape matrix — corner lift reads at the lid boundary, not across the eye"
+      }
+    },
+    "brows": {
+      "levels": 10,
+      "basis": {
+        "reasoned": "brow hair over skin: a shape change moves the boundary, the interior stays brow"
+      }
+    },
+    "lashes": {
+      "levels": 10,
+      "basis": {
+        "reasoned": "fine dark strands on a small boundary"
+      }
+    },
+    "nose": {
+      "levels": 10,
+      "basis": {
+        "reasoned": "a contour edit moves edges; the centre of the nose stays the nose"
+      }
+    },
+    "lips": {
+      "levels": 10,
+      "basis": {
+        "reasoned": "fuller lips move the vermilion border, measured beyond the zone in fuller-lips.mts"
+      }
+    },
+    "teeth": {
+      "levels": 10,
+      "basis": {
+        "reasoned": "a small bright region behind the lips"
+      }
+    },
+    "cheekbones": {
+      "levels": 4,
+      "basis": {
+        "reasoned": "bone structure reads as a few levels of shading over a wide area"
+      }
+    },
+    "jaw": {
+      "levels": 10,
+      "basis": {
+        "reasoned": "a contour against the background, so the edge moves decisively"
+      }
+    },
+    "chin": {
+      "levels": 10,
+      "basis": {
+        "reasoned": "as the jaw, over a smaller arc"
+      }
+    },
+    "ears": {
+      "levels": 25,
+      "basis": {
+        "reasoned": "an ear is present or it is not, against hair or background"
+      }
+    },
+    "bust": {
+      "levels": 10,
+      "basis": {
+        "reasoned": "a chest edit moves the outline under the garment; the fabric between the edges is unchanged"
+      }
+    },
+    "waist": {
+      "levels": 10,
+      "basis": {
+        "reasoned": "a waist edit moves two side contours"
+      }
+    },
+    "shoulders": {
+      "levels": 10,
+      "basis": {
+        "reasoned": "a shoulder edit moves the line where she meets the backdrop"
+      }
+    },
+    "arms": {
+      "levels": 10,
+      "basis": {
+        "reasoned": "an arm edit moves the arm's own edge against the backdrop"
+      }
+    },
+    "build": {
+      "levels": 10,
+      "basis": {
+        "reasoned": "the whole figure's outline moves; her face and her clothes do not"
+      }
+    },
+    "skinTone": {
+      "levels": 4,
+      "basis": {
+        "reasoned": "a tan is a few levels across all visible skin — the freckle case, spread wider"
+      }
+    },
+    "skinCharacter": {
+      "levels": 4,
+      "basis": {
+        "reasoned": "texture is the freckle case by another name"
+      }
+    },
+    "marks": {
+      "levels": 4,
+      "basis": {
+        "measured": "freckles-layers.mts + marks-prose.mts — freckles read at >4 and vanish at >25"
+      }
+    },
+    "statedAccessories": {
+      "levels": 25,
+      "basis": {
+        "measured": "the-walk.mts — 27,613 px of frames at mean 0.962"
+      }
+    },
+    "ink": {
+      "levels": 25,
+      "basis": {
+        "reasoned": "a design is opaque where it is drawn"
+      }
+    },
+    "facialHair": {
+      "levels": 25,
+      "basis": {
+        "reasoned": "hair over skin, opaque where it grows"
+      }
+    },
+    "expression": {
+      "levels": 10,
+      "basis": {
+        "reasoned": "features move without being replaced"
+      }
+    }
+  },
+  "SUBJECT_QUALIFIER": {
+    "hairCut": {
+      "describe": ", cut and dressed as a real haircut on this person's own hair density and hairline"
+    },
+    "hairShade": {
+      "describe": ", rendered as natural hair — dimensional rather than flat, with a slightly deeper root shadow and the tone reading as grown rather than dyed"
+    },
+    "hairPattern": {
+      "describe": ", as the hair's own growth pattern through its whole length, not a styling of the ends"
+    },
+    "hairFinish": {
+      "describe": ", as the way this hair takes light, not a change of colour or cut"
+    },
+    "hairWorn": {
+      "describe": ", as the same hair restyled, not cut and not a different head of hair"
+    },
+    "eyeColourFree": {
+      "describe": ", as the iris's own colour with its natural variation, never a flat contact lens"
+    },
+    "eyeShapeFree": {
+      "describe": ", as the eye's own structure — the lid, the corners and the lash line — and never drawn on with makeup or liner"
+    },
+    "brows": {
+      "describe": ", as brow hair growing from this person's own brow bone, not pencilled on"
+    },
+    "lashes": {
+      "describe": ", as lashes on this person's own lash line"
+    },
+    "nose": {
+      "describe": ", as the nose's own structure, with the rest of the face unchanged"
+    },
+    "bust": {
+      "describe": ", as this person's own chest under the same garment, with the neckline and the fabric unchanged"
+    },
+    "waist": {
+      "describe": ", as this person's own waist, with the same garment sitting on it"
+    },
+    "shoulders": {
+      "describe": ", as this person's own shoulder line and posture, not a different pose"
+    },
+    "arms": {
+      "describe": ", as this person's own arms at the same relaxed position, not a different pose"
+    },
+    "build": {
+      "describe": ", as the same person built differently — her face, her hair and her clothes exactly as they are"
+    },
+    "lips": {
+      "describe": ", as the lips' own shape and surface, distinct from any lip colour"
+    },
+    "teeth": {
+      "describe": ", visible in the mouth as it is already held, without changing the expression"
+    },
+    "cheekbones": {
+      "describe": ", as the face's own bone structure under its own skin"
+    },
+    "jaw": {
+      "describe": ", as the jaw's own contour, with the neck and chin left alone"
+    },
+    "chin": {
+      "describe": ", as the chin's own contour, with the jaw left alone"
+    },
+    "ears": {
+      "describe": ", on both sides and matching one another"
+    },
+    "skinTone": {
+      "describe": ", across all of this person's visible skin, evenly and consistently"
+    },
+    "skinCharacter": {
+      "describe": ", as the skin's own surface — texture that follows the form of the face rather than sitting flat on it"
+    },
+    "marks": {
+      "describe": ", as real marks on this person's own skin, following the form of the face rather than painted flat"
+    },
+    "statedAccessories": {
+      "describe": ", worn by this person and rendered accurately as described and as their own. Nothing else is added: no other jewellery, no headwear, no props"
+    },
+    "ink": {
+      "exempt": "each item carries its own placement clause (D-171), built per item in composeEditPrompt — a shared qualifier would address the first design's placement to all of them"
+    },
+    "facialHair": {
+      "describe": ", growing as this person's own hair, with the hairline and skin beneath unchanged"
+    },
+    "expression": {
+      "describe": ", as this person's own face doing it, with their features unchanged"
+    }
+  },
+  "ZONE_SCOPE": {
+    "hair.cut": "distributedFacet",
+    "hair.colour": "distributedFacet",
+    "hair.texture": "distributedFacet",
+    "hairFinish": "distributedFacet",
+    "hairWorn": "distributedFacet",
+    "facialHair": "distributedFacet",
+    "marks": "distributedFacet",
+    "eye.colour": "bilateralPair",
+    "eye.shape": "bilateralPair",
+    "brows": "bilateralPair",
+    "lashes": "bilateralPair",
+    "ears": "bilateralPair",
+    "cheekbones": "bilateralPair",
+    "nose": "localFacet",
+    "lips": "localFacet",
+    "teeth": "localFacet",
+    "chin": "localFacet",
+    "jaw": "localFacet",
+    "makeup": "localFacet",
+    "statedAccessories": "object",
+    "ink": "object",
+    "skinTone": "allSkin",
+    "skinCharacter": "allSkin",
+    "expression": "fullFrame",
+    "bust": "fullFrame",
+    "waist": "fullFrame",
+    "shoulders": "fullFrame",
+    "arms": "fullFrame",
+    "build": "fullFrame"
+  },
+  "FACET_SLOTS": {
+    "hair.cut": {
+      "feature": "hair"
+    },
+    "hair.colour": {
+      "feature": "hair"
+    },
+    "hair.texture": {
+      "feature": "hair"
+    },
+    "hairFinish": {
+      "feature": "hair"
+    },
+    "hairWorn": {
+      "feature": "hair"
+    },
+    "facialHair": {
+      "feature": "facial-hair"
+    },
+    "eye.colour": {
+      "feature": "eye"
+    },
+    "eye.shape": {
+      "feature": "eye"
+    },
+    "brows": {
+      "feature": "brow"
+    },
+    "lashes": {
+      "feature": "lashes"
+    },
+    "nose": {
+      "feature": "nose"
+    },
+    "lips": {
+      "feature": "lips"
+    },
+    "teeth": {
+      "feature": "teeth"
+    },
+    "cheekbones": {
+      "feature": "cheekbone"
+    },
+    "jaw": {
+      "feature": "jaw"
+    },
+    "chin": {
+      "feature": "chin"
+    },
+    "ears": {
+      "feature": "ear"
+    },
+    "bust": {
+      "feature": "build"
+    },
+    "waist": {
+      "feature": "build"
+    },
+    "shoulders": {
+      "feature": "build"
+    },
+    "arms": {
+      "feature": "build"
+    },
+    "build": {
+      "feature": "build"
+    },
+    "skinTone": {
+      "feature": "skin"
+    },
+    "skinCharacter": {
+      "feature": "skin"
+    },
+    "marks": {
+      "feature": "skin"
+    },
+    "makeup": {
+      "notASlot": "makeup is worn STATE on the anatomy slots it is worn on (fable-168), and a surface worn on anatomy is one anatomy slot whose stack holds the surface words (fable-201) — a smoky eye rides eye@left and eye@right, a nude lip rides lips"
+    },
+    "statedAccessories": {
+      "family": "accessories"
+    },
+    "ink": {
+      "notASlot": "OWED, not absent: ink is per placement and its question comes from the placement rather than from a region table, so its slots arrive with the tattoo studio and the flash-sheet path (D-138, roadmap §3). Inventing a `tattoo` question here would ask a segmenter an open question (D-213)"
+    },
+    "expression": {
+      "notASlot": "presentation, not identity (D-136) — a follow must never inherit a smile — and there is no zone that contains it (zoneScope `fullFrame`), so there is nothing to cut and nothing to carry"
+    }
+  },
+  "REGION_OF_FACET": {
+    "arms": null,
+    "brows": "eyebrows",
+    "build": null,
+    "bust": null,
+    "cheekbones": "face skin",
+    "chin": "face skin",
+    "ears": "ear",
+    "expression": null,
+    "eye.colour": "eyes",
+    "eye.shape": "eyes",
+    "facialHair": "facial hair",
+    "hair.colour": "hair",
+    "hair.cut": "hair",
+    "hair.texture": "hair",
+    "hairFinish": "hair",
+    "hairWorn": "hair",
+    "ink": null,
+    "jaw": "face skin",
+    "lashes": "eyes",
+    "lips": "lips",
+    "makeup": "face skin",
+    "marks": "face skin",
+    "nose": "nose",
+    "shoulders": null,
+    "skinCharacter": "face skin",
+    "skinTone": "face skin",
+    "statedAccessories": null,
+    "teeth": "lips",
+    "waist": null
+  },
+  "MOVES_ITS_EDGE": {
+    "arms": true,
+    "brows": true,
+    "build": true,
+    "bust": true,
+    "cheekbones": false,
+    "chin": true,
+    "ears": true,
+    "expression": true,
+    "eye.colour": false,
+    "eye.shape": true,
+    "facialHair": true,
+    "hair.colour": false,
+    "hair.cut": true,
+    "hair.texture": true,
+    "hairFinish": false,
+    "hairWorn": true,
+    "ink": false,
+    "jaw": true,
+    "lashes": true,
+    "lips": true,
+    "makeup": false,
+    "marks": false,
+    "nose": true,
+    "shoulders": true,
+    "skinCharacter": false,
+    "skinTone": false,
+    "statedAccessories": true,
+    "teeth": false,
+    "waist": true
+  }
+}

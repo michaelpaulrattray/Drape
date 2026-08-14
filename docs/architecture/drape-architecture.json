@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "6b368eb2ee33b4ed"
+    "sourceFingerprint": "193460b4e5a2cb33"
   },
   "domains": [
     {
@@ -9165,6 +9165,10 @@
     {
       "id": "test:server/castingV2/vocabularyParity.test.ts",
       "path": "server/castingV2/vocabularyParity.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/vocabularyPin.test.ts",
+      "path": "server/castingV2/vocabularyPin.test.ts"
     },
     {
       "id": "test:server/castingV2/zoneScope.test.ts",
