@@ -20,6 +20,7 @@ import {
   CENTRELINE_SPECIMENS,
   COMPLETENESS_SPECIMENS,
   GUARD_REFUSAL_REASONS,
+  GUARD_REFUSALS,
   guardReference,
   measureCoverage,
   mintGuardedReference,
@@ -251,6 +252,26 @@ describe("a DISPUTED delivery — the refusal that is not about the crop (fable-
     expect(verdict.ok).toBe(false);
     if (verdict.ok) return;
     expect(verdict.reason).toBe("disputedDelivery");
+  });
+
+  it("states both properties for every reason, so a new one cannot ship half-filed", () => {
+    /*
+      THE FOLD'S OWN CONTROL (fable-486 (f)). Three hand-kept lists became one
+      table, and this is what makes that a consolidation rather than a rename:
+      every reason answers both questions, and the derived lists are read from
+      the answers rather than from a second copy of them.
+    */
+    for (const reason of GUARD_REFUSAL_REASONS) {
+      const entry = GUARD_REFUSALS[reason];
+      expect(typeof entry.keepsCrop, reason).toBe("boolean");
+      expect(typeof entry.evidenceOnly, reason).toBe("boolean");
+      /* And a reason with no stated reason is how a list becomes folklore. */
+      expect(entry.why.length, reason).toBeGreaterThan(20);
+    }
+    /* Exactly one row is evidence rather than a version, and the fold reads
+       ONE — a second would quietly stop a crop riding into every prompt. */
+    expect(GUARD_REFUSAL_REASONS.filter((reason) => GUARD_REFUSALS[reason].evidenceOnly))
+      .toEqual(["disputedDelivery"]);
   });
 
   it("only the human-settled refusals keep their pixels", () => {

@@ -389,93 +389,113 @@ export type GuardPass = {
 };
 
 /**
- * Every way the door says no, in one list.
+ * EVERY WAY THE DOOR SAYS NO — one entry per refusal, carrying everything true
+ * about it (fable-486 (f)).
  *
- * Named rather than inlined because the library row now RECORDS the reason
- * (migration 0029), and a stored string whose legal values live only inside a
- * type annotation is a column nobody can validate at the write.
+ * # Why this is one table now
+ *
+ * It was three hand-kept lists — the reasons, the ones whose pixels are kept,
+ * and the one whose row is evidence rather than a version — and their own
+ * comments called the overlap a trap. Three lists mean three places to edit
+ * when a refusal is added and three chances to add it to two of them: the
+ * classic shape this program keeps paying for, in miniature.
+ *
+ * So each refusal states its own properties, and the lists below are DERIVED.
+ * A new reason cannot be filed without answering both questions, because the
+ * type will not let it.
+ *
+ * # The two properties, and they are genuinely different questions
+ *
+ * `keepsCrop` — is this a refusal that exists to be settled by a human looking
+ * at the picture? Then the pixels are kept for that person. The other four
+ * refuse a picture that must not be adopted, and keeping those would build a
+ * gallery of exactly the crops the guard exists to keep out.
+ *
+ * `evidenceOnly` — is this row a QUESTION parked beside the pixels that answer
+ * it, rather than an account of what the feature is? Only `disputedDelivery`
+ * is: the render that raised it delivered no verified account of the feature at
+ * all, so the fold must skip it and leave the slot's previous version newest.
+ * `noSpecimen` IS a version — that render earned its slot, the words moved on,
+ * and a crop nobody could certify is honestly reported as words with no
+ * picture. They coincide on one reason today and are not one property.
  */
-export const GUARD_REFUSAL_REASONS = [
-  "subjectAbsent",
-  "readDidNotSettle",
-  "noSpecimen",
-  "underCaptured",
-  "duplicateOfSlot",
-  "disputedDelivery",
-  "notScorableByArea",
-  "brokenOutline",
-] as const;
-
-export type GuardRefusalReason = typeof GUARD_REFUSAL_REASONS[number];
+export const GUARD_REFUSALS = {
+  subjectAbsent: {
+    keepsCrop: false,
+    evidenceOnly: false,
+    why: "a crop of where the thing would have been",
+  },
+  readDidNotSettle: {
+    keepsCrop: false,
+    evidenceOnly: false,
+    why: "it scored nothing at all",
+  },
+  noSpecimen: {
+    keepsCrop: true,
+    evidenceOnly: false,
+    why: "the kind has no measured positive, so the guard cannot say what complete "
+      + "looks like here — the crop is the only thing that can teach it",
+  },
+  underCaptured: {
+    keepsCrop: false,
+    evidenceOnly: false,
+    why: "measured against a real bar and refused correctly",
+  },
+  duplicateOfSlot: {
+    keepsCrop: false,
+    evidenceOnly: false,
+    why: "its bytes are already at another slot",
+  },
+  disputedDelivery: {
+    keepsCrop: true,
+    evidenceOnly: true,
+    why: "the ask wrote this facet and the reader said it did not land — the crop is "
+      + "the only thing that can say which of the two was wrong, and the row is that "
+      + "question rather than an account of the feature",
+  },
+  notScorableByArea: {
+    keepsCrop: true,
+    evidenceOnly: false,
+    why: "the shape is mostly its own outline, so coverage cannot divide anything on it "
+      + "— only an eye can say whether this crop is the whole of the metal",
+  },
+  brokenOutline: {
+    keepsCrop: true,
+    evidenceOnly: false,
+    why: "the length instrument judged it and found part of the centreline outside the "
+      + "crop — but that bar stands on one positive with a 1.4x margin, and a bar that "
+      + "thin has to be falsifiable by the thing it turns away. This is the one refusal "
+      + "kept because the REFUSAL may be wrong rather than because the crop is "
+      + "unjudgeable; when the bar earns more positives it joins `underCaptured`",
+  },
+} as const satisfies Record<string, { keepsCrop: boolean; evidenceOnly: boolean; why: string }>;
 
 /**
- * The refusals whose PIXELS are kept (fable-214 option (ii), fable-220 §3).
- *
- * Both are refusals that exist **in order to be settled by a human looking at
- * the picture**, and neither is a judgement that the crop is bad:
- *
- *   `noSpecimen`         the kind has no measured positive, so the guard cannot
- *                        say what complete looks like here. The crop is the only
- *                        thing that can teach it.
- *   `disputedDelivery`   the ask wrote this facet and the reader said it did not
- *                        land. The crop is the only thing that can say which of
- *                        the two was wrong.
- *   `notScorableByArea`  the shape is mostly its own outline, so coverage cannot
- *                        divide anything on it. Only an eye can say whether this
- *                        crop is the whole of the metal.
- *   `brokenOutline`      the length instrument DID judge it and found part of the
- *                        region's centreline outside the crop — but that bar
- *                        stands on one positive with a 1.4× margin, and its own
- *                        specimen-event clause (§2.4c) says the first crop an eye
- *                        calls complete that it refuses re-opens the family. A
- *                        bar that thin has to be falsifiable by the thing it
- *                        turns away, and it can only be falsified by an eye on
- *                        the picture. This is the one refusal kept because the
- *                        REFUSAL may be wrong, rather than because the crop is
- *                        unjudgeable — and when the bar earns more positives, it
- *                        should move to the discarding side and join
- *                        `underCaptured`.
- *
- * The other four refuse a picture that must not be adopted: `subjectAbsent` is a
- * crop of where the thing would have been, `duplicateOfSlot` already has its
- * bytes at another slot, `underCaptured` was measured against a real bar and
- * refused correctly, and `readDidNotSettle` scored nothing at all. Keeping any
- * of those would build a gallery of exactly the crops the guard exists to keep
- * out, and put it in front of the one person able to adopt them.
+ * The reasons themselves, derived — the library row RECORDS this string
+ * (migration 0029), and a stored value whose legal set lives only in a type
+ * annotation is a column nobody can validate at the write.
  */
-export const REFUSALS_THAT_KEEP_THEIR_CROP: readonly GuardRefusalReason[] = [
-  "noSpecimen",
-  "disputedDelivery",
-  "notScorableByArea",
-  "brokenOutline",
-];
+export const GUARD_REFUSAL_REASONS = Object.keys(GUARD_REFUSALS) as Array<keyof typeof GUARD_REFUSALS>;
+
+export type GuardRefusalReason = keyof typeof GUARD_REFUSALS;
+
+/** The refusals whose PIXELS are kept (fable-214 option (ii), fable-220 §3). */
+export const REFUSALS_THAT_KEEP_THEIR_CROP: readonly GuardRefusalReason[] =
+  GUARD_REFUSAL_REASONS.filter((reason) => GUARD_REFUSALS[reason].keepsCrop);
 
 export function refusalKeepsItsCrop(reason: GuardRefusalReason): boolean {
-  return REFUSALS_THAT_KEEP_THEIR_CROP.includes(reason);
+  return GUARD_REFUSALS[reason].keepsCrop;
 }
 
 /**
  * THE REFUSAL WHOSE ROW IS EVIDENCE AND NOT A VERSION (`referenceLibrary`'s fold).
  *
- * Every other row this table holds is an account of what a feature IS, and the
- * newest one per (slot, role) is the branch's answer. A `disputedDelivery` row
- * is not that. It is a question — *did the ask land?* — parked beside the
- * pixels that answer it, and the render that raised it delivered no verified
- * account of the feature at all.
- *
- * So the fold skips it, and the consequence is the point: **the slot's previous
- * version stays newest and stays good.** Without this the row would be the
- * newest carry row, it carries no `storageKey`, and the crop that was riding
- * into every prompt would silently stop — a disputed ask quietly changing what
- * the painter sees on the NEXT paid render. That is delivery, and fable-220 §3
- * ruled delivery untouched: only the pixels gain an afterlife.
- *
- * Named separately from {@link REFUSALS_THAT_KEEP_THEIR_CROP} because it is a
- * different property that happens to coincide on one reason today. `noSpecimen`
- * IS a version — that render earned its slot, the words moved on, and a crop
- * nobody could certify is honestly reported as a slot with words and no picture.
+ * Derived, and asserted singular: the fold reads ONE reason, and a second one
+ * appearing here without that fold learning about it would quietly stop a crop
+ * riding into every prompt.
  */
-export const REFUSAL_THAT_IS_EVIDENCE_ONLY: GuardRefusalReason = "disputedDelivery";
+const EVIDENCE_ONLY = GUARD_REFUSAL_REASONS.filter((reason) => GUARD_REFUSALS[reason].evidenceOnly);
+export const REFUSAL_THAT_IS_EVIDENCE_ONLY: GuardRefusalReason = EVIDENCE_ONLY[0]!;
 
 export type GuardRefusal = {
   ok: false;
