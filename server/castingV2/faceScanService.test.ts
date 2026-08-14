@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import sharp from "sharp";
 
 import {
@@ -12,6 +12,24 @@ import {
 } from "./faceScanService";
 import type { Mask } from "./maskedComposite";
 import type { RegionReader } from "./maskedRefine";
+
+/*
+  THE AUDIT WRITER IS CAUGHT RATHER THAN LET THROUGH.
+
+  The miss counter writes one row per scan MISS, and it writes it
+  fire-and-forget: the real `logAuditEvent` would reach for a database that
+  these tests deliberately cannot see, and the `.catch()` around the call would
+  swallow the failure without a mark. So a counter that had quietly stopped
+  writing would look exactly like this suite passing.
+*/
+const auditRows: Array<{ action: string; metadata: Record<string, unknown> }> = [];
+vi.mock("../auditLog", () => ({
+  logAuditEvent: async (event: any) => {
+    auditRows.push({ action: event.action, metadata: event.metadata ?? {} });
+  },
+}));
+
+const scanMisses = () => auditRows.filter((row) => row.action === "casting.scan_miss");
 
 /**
  * SERVING THE SCAN — driven where the money is.
@@ -98,6 +116,7 @@ const FACE = { userId: 7, candidateId: 41, variantId: null, imageKey: "casting/m
 
 beforeEach(() => {
   resetFaceScanCache();
+  auditRows.length = 0;
 });
 
 describe("one face-version is read once", () => {
@@ -251,7 +270,55 @@ describe("the re-scan rate is a reading", () => {
     */
     expect(faceScanCacheStats().rescans).toBe(1);
     expect(faceScanCacheStats().rescanRate).toBeGreaterThan(0);
+
+    /*
+      AND THE SAME EVENT SURVIVES THE PROCESS. The counters above are in memory
+      beside the cache, so a deploy takes the reading with the thing it was
+      reading — which is why the rate was unreadable on a night with a dozen
+      deploys. The durable half: exactly one row for the returning key, and it
+      says the key had been read before.
+    */
+    const rows = scanMisses();
+    expect(rows).toHaveLength(FACE_SCAN_CACHE_LIMIT + 2);
+    expect(rows.at(-1)?.metadata.rescan).toBe(true);
+    /* The negative arm of the same field, from the same run: the very first
+       read of this key was NOT a re-scan. A row that said `true` for every miss
+       would count every scan and measure nothing. */
+    expect(rows[0]?.metadata.rescan).toBe(false);
   }, 30_000);
+
+  it("writes one row for a miss and NOTHING for a hit", async () => {
+    const reader = countingReader();
+    const { deps } = await dependencies(reader);
+
+    await scannedFace({ ...FACE, dependencies: deps });
+    expect(scanMisses()).toHaveLength(1);
+    const row = scanMisses()[0];
+    expect(row.metadata).toMatchObject({ rescan: false, variantId: null });
+    expect(row.metadata.cacheSize).toBe(0);
+
+    /* The second look is free, so it is not worth a row — otherwise the rate's
+       denominator would be looks rather than reads, and every extra click would
+       make the cache look worse at the exact moment it was working. */
+    await scannedFace({ ...FACE, dependencies: deps });
+    expect(faceScanCacheStats().hits).toBe(1);
+    expect(scanMisses()).toHaveLength(1);
+  });
+
+  it("says nothing about her face in the row it writes", async () => {
+    const reader = countingReader();
+    const { deps } = await dependencies(reader);
+    await scannedFace({ ...FACE, variantId: 12, dependencies: deps });
+
+    /*
+      A scan reads fourteen places on a customer's face. The counter's whole
+      subject is HOW OFTEN that happens, so the row carries the shape of the
+      question and never its answer — no slots, no descriptions, no boxes, no
+      key. Enumerated rather than spot-checked: a field added later has to be
+      added here too, in front of somebody.
+    */
+    expect(Object.keys(scanMisses()[0].metadata).sort()).toEqual(["cacheSize", "rescan", "variantId"]);
+  });
 });
 
 describe("what the panel receives", () => {

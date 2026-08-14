@@ -167,3 +167,86 @@ describe("scripts open their database through one door", () => {
     ).toEqual([]);
   });
 });
+
+/*
+  THE SECOND WAY A SCRIPT READS THE WRONG DATABASE, and this one does not
+  misread a timestamp — it misreads the WORLD.
+
+  `railway run --service MySQL` injects that service's own variables, and there
+  is no `DATABASE_URL` among them: the production URL arrives as
+  `MYSQL_PUBLIC_URL`. `dotenv/config` does not overwrite variables that are
+  already set, but it happily fills one that is absent — so a script that loads
+  `.env` and then reaches for `DATABASE_URL` gets the DEV database back, under
+  the command whose entire purpose was to read production, with the right
+  heading printed over it and nothing anywhere to say otherwise.
+
+  That is not hypothetical. The scan-rate report was written this way and its
+  first "production is empty" reading came from dev; the two databases share a
+  hostname and a database name and differ only in the port, which is why nobody
+  sees it in the output. `resolveDatabaseUrl()` is the door for it.
+*/
+const PRODUCTION_INCANTATION = /service MySQL/;
+
+function readsTheWrongWorld(text: string): boolean {
+  if (!PRODUCTION_INCANTATION.test(text)) return false;
+  if (!/["']dotenv\/config["']/.test(text)) return false;
+  /*
+    AND IT MUST ACTUALLY OPEN A DATABASE. The first aim of this rule flagged two
+    calibration scripts that name the production wrapper in their usage line and
+    never touch a row — they run under it to inherit an environment, and the
+    world they read is a file on disk. A guard pointed at the wrong field fails
+    in both directions (it also stops saying anything useful about the field it
+    was for), so the subject is named explicitly here.
+  */
+  if (!/openDatabase|openPool|DATABASE_URL/.test(text)) return false;
+  return !/MYSQL_PUBLIC_URL|resolveDatabaseUrl/.test(text);
+}
+
+describe("a script documented for production reads production", () => {
+  it("CONTROL — it catches the exact shape that took tonight's false reading", () => {
+    expect(readsTheWrongWorld(
+      "/* railway.cmd run --service MySQL -- npx tsx this */\n"
+      + 'import "dotenv/config";\n'
+      + "const db = await openDatabase(process.env.DATABASE_URL);\n",
+    )).toBe(true);
+  });
+
+  it("CONTROL — it clears the same script once it goes through the door", () => {
+    expect(readsTheWrongWorld(
+      "/* railway.cmd run --service MySQL -- npx tsx this */\n"
+      + 'import "dotenv/config";\n'
+      + "const db = await openDatabase(resolveDatabaseUrl());\n",
+    )).toBe(false);
+  });
+
+  it("CONTROL — a local-only script is not asked to care", () => {
+    expect(readsTheWrongWorld('import "dotenv/config";\nconst db = await openDatabase();\n')).toBe(false);
+  });
+
+  it("CONTROL — a script that runs under the wrapper but reads no rows is not flagged", () => {
+    /* `scripts/calibration/freckle-density.mts`, reduced: it names the wrapper
+       in its usage line, loads `.env` for `FAL_KEY`, and reads frames off disk. */
+    expect(readsTheWrongWorld(
+      "/* railway.cmd run --service MySQL -- npx tsx this */\n"
+      + 'import "dotenv/config";\n'
+      + "const apiKey = process.env.FAL_KEY;\n",
+    )).toBe(false);
+  });
+
+  it("no production-documented script silently falls back to the dev database", () => {
+    const offenders: string[] = [];
+    for (const file of scriptFiles()) {
+      if (readsTheWrongWorld(readFileSync(file, "utf8"))) {
+        offenders.push(path.relative(REPO_ROOT, file).split(path.sep).join("/"));
+      }
+    }
+    expect(
+      offenders,
+      "These say `railway run --service MySQL` in their own header, load `.env`, and then\n"
+      + "resolve `DATABASE_URL` — which that command does not inject. They read DEV under the\n"
+      + "production incantation and print nothing to say so. Use `resolveDatabaseUrl()` from\n"
+      + "`scripts/lib/dbConnection.mts`:\n\n"
+      + `${offenders.join("\n")}\n`,
+    ).toEqual([]);
+  });
+});

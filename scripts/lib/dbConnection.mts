@@ -47,6 +47,43 @@ import mysql from "mysql2/promise";
  * this module exists to be the one place that decides it. A caller passing
  * `timezone: "local"` is asking for the bug by name; it does not get it.
  */
+/**
+ * WHICH WORLD THIS URL LEADS TO — host, port and database, never a credential.
+ *
+ * Dev and production are the same hostname and the same database NAME on this
+ * project (`hayabusa.proxy.rlwy.net/railway`); only the PORT differs — 52008 is
+ * dev, 23768 is production. A report that names neither is a report whose world
+ * has to be inferred, and it has been inferred wrongly here before.
+ */
+export function worldOf(url: string | undefined): string {
+  if (!url) return "(no url)";
+  try {
+    const parsed = new URL(url);
+    return `${parsed.hostname}:${parsed.port || "3306"}${parsed.pathname}`;
+  } catch {
+    return "(unparseable url)";
+  }
+}
+
+/**
+ * THE URL A SCRIPT SHOULD READ, and why the order is this way round.
+ *
+ * `railway run --service MySQL` injects that service's own variables and **no
+ * `DATABASE_URL`** — the production URL arrives as `MYSQL_PUBLIC_URL`. So a
+ * script that loads `.env` (for `FAL_KEY`, or anything else it needs) and then
+ * reaches for `DATABASE_URL` gets the DEV database back, under a command whose
+ * whole purpose was to read production, with no error and nothing in the output
+ * to say so. That is precisely how tonight's first "production is empty" read
+ * was taken from dev.
+ *
+ * `MYSQL_PUBLIC_URL` therefore wins when it is present, because it is only ever
+ * present when somebody has deliberately wrapped the command in the production
+ * service. A plain local run has no such variable and stays on `.env`.
+ */
+export function resolveDatabaseUrl(): string | undefined {
+  return process.env.MYSQL_PUBLIC_URL ?? process.env.PUBLIC_DATABASE_URL ?? process.env.DATABASE_URL;
+}
+
 export function openDatabase(
   input: string | mysql.ConnectionOptions | undefined = process.env.DATABASE_URL,
 ): Promise<mysql.Connection> {
@@ -54,6 +91,10 @@ export function openDatabase(
     ? { uri: input }
     : { ...input };
   if (!options.uri) throw new Error("no DATABASE_URL — pass one explicitly for a production ceremony");
+  /* Every opened connection says which world it opened, on STDERR so a script
+     whose stdout is a report or a JSON payload is not disturbed by it. The
+     silent version of this line cost a wrong reading tonight. */
+  process.stderr.write(`[db] ${worldOf(options.uri)}\n`);
   return mysql.createConnection({
     ...options,
     /*
