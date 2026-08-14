@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "955b3063edaf4aa5"
+    "sourceFingerprint": "f7043b92209778c5"
   },
   "domains": [
     {
@@ -9610,6 +9610,10 @@
     {
       "id": "test:server/changeRequests.test.ts",
       "path": "server/changeRequests.test.ts"
+    },
+    {
+      "id": "test:server/court.test.ts",
+      "path": "server/court.test.ts"
     },
     {
       "id": "test:server/credits.test.ts",
