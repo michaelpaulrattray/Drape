@@ -371,10 +371,26 @@ export const SUBJECT_NOUNS: Record<FreeSubject, readonly string[]> = {
  * a momentary choice made permanent for eight strangers. It is separated here,
  * once, rather than remembered at each write site.
  */
-export const PRESENTATION_SUBJECTS: readonly FreeSubject[] = ["expression"];
+export const PRESENTATION_NOUNS = {
+  /**
+   * How the recipe NAMES it in the change clause — "her expression: a warm,
+   * closed-mouth smile". Bare, possessive-less and article-less, exactly like
+   * every noun in the slot catalogue, because the assembler is the one place
+   * that decides whether a thing takes "the" or "her" (fable-446).
+   */
+  expression: "expression",
+} as const satisfies Partial<Record<FreeSubject, string>>;
+
+export const PRESENTATION_SUBJECTS: readonly FreeSubject[] =
+  Object.keys(PRESENTATION_NOUNS) as FreeSubject[];
 
 export function isPresentationSubject(subject: FreeSubject): boolean {
   return PRESENTATION_SUBJECTS.includes(subject);
+}
+
+/** The recipe's word for a presentation subject, or null for every other one. */
+export function presentationNounOf(subject: FreeSubject): string | null {
+  return (PRESENTATION_NOUNS as Partial<Record<FreeSubject, string>>)[subject] ?? null;
 }
 
 /**

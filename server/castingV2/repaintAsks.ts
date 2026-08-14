@@ -32,7 +32,7 @@
  * | | |
  * |---|---|
  * | `removal` | a step being taken back. Under D-244 removal STRIKES matching words from the stack, and the stack is the library's captions rather than the chain's steps — so the words to strike have to be matched against what the library actually holds. Not guessed here. **Chunk 3 opened the DEPARTURE half of removal, not this half** — see below. |
- * | `notASlot` | makeup, ink and expression. The catalogue's reasons are decided ones (fable-168/201, D-133/D-136) and each is written there; what is missing is where a surface's words ride, not whether they should. |
+ * | `notASlot` | makeup and ink. The catalogue's reasons are decided ones (fable-168/201, D-133) and each is written there; what is missing is where a surface's words ride, not whether they should. **`expression` left this list on 2026-08-14** (fable-446): it has no slot for the same decided reason and it no longer needs one, because a presentation fact rides the change clause in words and files nowhere — see the presentation loop below. |
  * | `unnamedObject` | she is visibly wearing something the placement table cannot name. The honest answer, and the same one the mint gives. |
  *
  * Every refusal names its facet, so the log line says which ask the product
@@ -59,12 +59,14 @@ import type { HairColour } from "../../shared/castingVocabularies";
 
 import { facetOfAxis, facetOfSubject, type Facet } from "./refineFacets";
 import { itemsOf, facetsWrittenBy, type RefineDelta } from "./refineDelta";
-import type { FreeSubject } from "./refineSubjects";
+import {
+  PRESENTATION_SUBJECTS, presentationNounOf, type FreeSubject,
+} from "./refineSubjects";
 import {
   FACET_SLOTS, facetsOfSlot, narrowToScope, slotDefinition, slotsForFacet,
 } from "./referenceSlotCatalogue";
 import { accessoryKindOf, vacantPhraseFor } from "./accessoryKinds";
-import type { Ask, FeatureSlot } from "./recipeAssembler";
+import type { Ask, FeatureSlot, PresentationClause } from "./recipeAssembler";
 
 /**
  * The prose table the render prompt is composed with, passed rather than
@@ -173,7 +175,13 @@ export type RepaintAsksRefusal = {
 };
 
 export type RepaintAsksResult =
-  | { ok: true; asks: Ask[] }
+  | {
+    ok: true;
+    asks: Ask[];
+    /** Facts with no slot to file under, said in the recipe's own sentence and
+     *  filed nowhere — see the presentation loop in {@link repaintAsksFor}. */
+    presentation?: readonly PresentationClause[];
+  }
   | RepaintAsksRefusal;
 
 /**
@@ -363,7 +371,50 @@ export function repaintAsksFor(input: RepaintAsksInput): RepaintAsksResult {
     }
   }
 
+  /*
+    A PRESENTATION FACT IS SAID IN WORDS AND FILED NOWHERE (fable-446).
+
+    `expression` is the first specimen of an ask the road could not state: no
+    slot by decision (D-136 — a follow must never inherit a smile), no zone to
+    cut, nothing to carry. It used to meet `notASlot` below and refuse into the
+    refund, which was honest and was still a customer typing *make her smile*
+    and being told the product could not. Now it rides the change clause.
+
+    # It is read from the COMPOSED state, and that is not the D-244 exception
+    # this module's `delta` warning is about
+
+    That warning says: do not re-ask a SLOT from the composed recipe, because
+    the library already holds that feature's stack and the recipe would compete
+    with it. A presentation fact has no library row anywhere — the composed
+    state is the ONLY place it is written down. Every render anchors on the
+    pristine master, so a recipe that goes quiet about her smile is a recipe
+    that paints the master's face back: the smile would last exactly one frame,
+    which is the class this campaign has already paid for twice (the born-worn
+    removal, and a build lost under words).
+
+    So it is re-said on every render of the branch until something supersedes
+    it, which is the same rule `restore` above lives by, for the same reason.
+  */
+  const presentation: PresentationClause[] = [];
+  /** The facets the clauses above spoke for — accumulated as they are pushed,
+   *  never re-derived from the subject list, which would be the same drift the
+   *  vacate loop keeps `vacatedFacets` to avoid. */
+  const spokenAsPresentation = new Set<Facet>();
+  const presentationState = input.restore?.state ?? input.delta;
+  for (const subject of PRESENTATION_SUBJECTS) {
+    const noun = presentationNounOf(subject);
+    if (noun === null) continue;
+    const facet = facetOfSubject(subject);
+    const words = statePhrase(facet, presentationState, input.prose);
+    if (words === null || words.trim() === "") continue;
+    presentation.push({ noun, words });
+    spokenAsPresentation.add(facet);
+  }
+
   for (const facet of Array.from(facetsWrittenBy(input.delta))) {
+    /* Already said above, in the one place it can be said — and said from the
+       composed state, so this step's own words are in it. */
+    if (spokenAsPresentation.has(facet)) continue;
     /*
       A FACET THE DEPARTURE ALREADY SPOKE FOR, LEFT EMPTY, SAYS NOTHING NEW.
 
@@ -426,7 +477,7 @@ export function repaintAsksFor(input: RepaintAsksInput): RepaintAsksResult {
     }
   }
 
-  if (order.length === 0) {
+  if (order.length === 0 && presentation.length === 0) {
     /*
       AN EMPTY ASK LIST IS NOT AN EMPTY RENDER — it is a charge for nothing.
 
@@ -471,6 +522,9 @@ export function repaintAsksFor(input: RepaintAsksInput): RepaintAsksResult {
 
   return {
     ok: true,
+    /* Present only when there is one, so the assembler's own default (no
+       clauses) is what every render that never asked for one receives. */
+    ...(presentation.length > 0 ? { presentation } : {}),
     asks: order.map((slot) => {
       const says = vacateBySlot.get(slot);
       return {

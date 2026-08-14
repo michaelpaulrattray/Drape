@@ -105,6 +105,7 @@ import {
   presenceItemsOfFacet,
   withoutFacets,
   presentationOf,
+  presentationWordsOfFacet,
   readDelta,
   REFINABLE_AXES,
   type RefineDelta,
@@ -2540,6 +2541,17 @@ export async function refineCandidate(
         pronouns: pronounsForSex(currentIdentity?.sex),
         library,
         asks: asks.asks,
+        /*
+          AND WHAT HAS NO SLOT TO FILE UNDER, SAID IN WORDS (fable-446).
+
+          Empty on every render that never asked for one, which is every render
+          before expression opened — the assembler's own default. It is passed
+          beside `asks` rather than folded into them because the two are
+          different kinds of thing: an ask names a slot the mint files and the
+          carry crops, and this names a fact that is true of the picture and of
+          nothing the library holds.
+        */
+        ...(asks.presentation ? { presentation: asks.presentation } : {}),
       });
       if (!recipe.ok) {
         log.error(
@@ -2987,9 +2999,22 @@ export async function refineCandidate(
        array it lives in. */
     const facts: Parameters<typeof verifyRender>[0]["facts"][number][] =
       Array.from(facetsWrittenBy(composed)).flatMap((facet) => {
-        const asked = currentIdentity
-          ? currentValueOfFacet(applyDelta(currentIdentity, composed), facet)
-          : null;
+        /*
+          A PRESENTATION FACT IS READ FROM THE RECIPE, NOT FROM THE IDENTITY
+          (fable-446).
+
+          `currentValueOfFacet` reads the resolved identity, and a smile is
+          deliberately never written there (D-136 — a follow must never inherit
+          one). So the identity answers null, the fact drops out of this list,
+          and the render is delivered with nobody having looked at the one thing
+          it was asked to change. The composed recipe is the only place the fact
+          is written down, and it is the same place the recipe's own clause is
+          built from — one source, one wording, painter and reader agreeing.
+        */
+        const asked = presentationWordsOfFacet(composed, facet)
+          ?? (currentIdentity
+            ? currentValueOfFacet(applyDelta(currentIdentity, composed), facet)
+            : null);
         if (!asked) return [];
         /*
           PRESENCE BINDS; DEGREE ADVISES (fable-118 ruling (c)) — and the scope

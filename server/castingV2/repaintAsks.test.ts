@@ -314,15 +314,85 @@ describe("a departure vacates the slot and says so", () => {
   });
 });
 
+/*
+  A FACT WITH NOWHERE TO FILE IT (fable-446).
+
+  `expression` is the first ask the road could not state — presentation rather
+  than identity (D-136), no zone to cut, nothing to carry — and until this it
+  refused into the refund. It now rides the recipe in words alone.
+*/
+describe("a presentation fact rides the words and files nowhere", () => {
+  it("says it in the recipe rather than refusing the render", () => {
+    const result = repaintAsksFor({ delta: { free: { expression: "a soft, closed-mouth smile" } }, prose });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.presentation).toEqual([{ noun: "expression", words: "a soft, closed-mouth smile" }]);
+    /* And NOTHING is filed: no slot means no mint, no crop, no carry, and no
+       row that would hand a follow a smile she never asked for. */
+    expect(result.asks).toEqual([]);
+  });
+
+  it("keeps saying it on a later render that never mentioned it", () => {
+    /*
+      THE ONE-FRAME CLASS, which this feature would otherwise walk straight
+      into. Every render anchors on the pristine master, so a recipe that goes
+      quiet about her smile paints the master's face back — the smile would
+      last exactly one frame, the way a born-worn removal did and a body edit
+      did. The composed state is the only place a slotless fact is written
+      down, so it is re-said from there on every render of the branch.
+    */
+    const result = repaintAsksFor({
+      delta: { hairColour: "copper" },
+      prose,
+      restore: { state: { hairColour: "copper", free: { expression: "a soft, closed-mouth smile" } }, slots: [] },
+    });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.presentation).toEqual([{ noun: "expression", words: "a soft, closed-mouth smile" }]);
+    expect(result.asks.map((ask) => ask.slot)).toEqual(["hair"]);
+  });
+
+  it("CONTROL — a branch with no expression carries no clause at all", () => {
+    /* The inert half. Make the clause unconditional and this goes red rather
+       than every render quietly acquiring a sentence about her face. */
+    const result = repaintAsksFor({
+      delta: { hairColour: "copper" },
+      prose,
+      restore: { state: { hairColour: "copper" }, slots: [] },
+    });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.presentation).toBeUndefined();
+  });
+
+  it("is a whole ask on its own — it does not fall through the empty-ask door", () => {
+    /*
+      `nothingAsked` exists because an empty ask list is a charge for nothing.
+      A render whose only ask is a presentation clause has no slots and is not
+      nothing: she typed a sentence, the recipe says it, and the picture is
+      supposed to change.
+    */
+    const result = repaintAsksFor({ delta: { free: { expression: "a wide, open smile" } }, prose });
+
+    expect(result.ok).toBe(true);
+  });
+});
+
 describe("what it refuses rather than paints", () => {
 
   it("refuses an ask whose facet has no slot, rather than dropping it", () => {
     /* THE DEFECT CLASS THIS EXISTS TO CLOSE. A dropped ask is a paid picture
        whose instruction never reached the painter — the hairWorn gate's own
        shape, arriving through the recipe instead of through the reader. */
+    /* `expression` was on this list until 2026-08-14 and is not any more: it
+       has no slot for the same decided reason and no longer needs one, because
+       a presentation fact rides the change clause (fable-446). Makeup and ink
+       still refuse, and they are the reason this test is not deleted. */
     for (const [delta, facet] of [
       [{ makeup: "a red lip" }, "makeup"],
-      [{ free: { expression: "a soft smile" } }, "expression"],
       [{ free: { ink: "a small swallow on her wrist" } }, "ink"],
     ] as const) {
       const result = repaintAsksFor({ delta, prose });

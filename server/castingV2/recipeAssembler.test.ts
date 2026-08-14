@@ -981,3 +981,83 @@ describe("two empty lobes are one sentence", () => {
     expect(recipe.vacated).toEqual(["earring@left", "earring@right"]);
   });
 });
+
+/*
+  A CLAUSE WITH NO SLOT BEHIND IT (fable-446).
+
+  `expression` has no slot by decision (D-136), no zone to cut and nothing to
+  carry, so it reaches exactly one place: the change sentence. The invariants
+  that keep the library honest — edited, carried, vacated, the word stacks —
+  must not be able to see it, and that is what these assert.
+*/
+describe("a presentation clause is said and filed nowhere", () => {
+  it("rides the change sentence in her own words", () => {
+    const recipe = assembleRecipe({
+      master: MASTER, pronouns: SHE, library: [], asks: [],
+      presentation: [{ noun: "expression", words: "a soft, closed-mouth smile" }],
+    });
+
+    expect(recipe.ok).toBe(true);
+    if (!recipe.ok) return;
+    /* The possessive comes from HERE, as it does for every anatomy clause —
+       a caller that shipped "her expression" would be that decision made
+       twice, and it would be wrong on the first male cast. */
+    expect(recipe.ask).toBe("Change only her expression: a soft, closed-mouth smile.");
+    expect(recipe.prompt).toContain("her expression: a soft, closed-mouth smile");
+    /* And nothing is filed. No slot means no mint, no crop, no carry, and no
+       row a follow could inherit a smile from. */
+    expect(recipe.edited).toEqual([]);
+    expect(recipe.carried).toEqual([]);
+    expect(recipe.vacated).toEqual([]);
+    expect(Array.from(recipe.wordStacks.keys())).toEqual([]);
+  });
+
+  it("rides in the SAME breath as the features that changed", () => {
+    /* One small ask, not a paragraph (§3.0a) — the rule the vacate phrase
+       already obeys. A second sentence about her face would be a second
+       instruction, which this assembler refuses everywhere else. */
+    const recipe = assembleRecipe({
+      master: MASTER, pronouns: SHE, library: [],
+      asks: [{ slot: "hair", noun: "hair", words: "a copper crop" }],
+      presentation: [{ noun: "expression", words: "a wide, open smile" }],
+    });
+
+    expect(recipe.ok).toBe(true);
+    if (!recipe.ok) return;
+    expect(recipe.ask).toBe("Change only her hair: a copper crop; her expression: a wide, open smile.");
+    expect(recipe.edited).toEqual(["hair"]);
+  });
+
+  it("REFUSES a clause with nothing to say rather than dropping it", () => {
+    /* `Change only her expression: .` is a paid render told to change
+       something into nothing, and a silent drop is the same render with no
+       trace of what went missing — the dropped-ask class this road exists to
+       close. */
+    const refusal = assembleRecipe({
+      master: MASTER, pronouns: SHE, library: [], asks: [],
+      presentation: [{ noun: "expression", words: "   " }],
+    });
+
+    expect(refusal.ok).toBe(false);
+    if (refusal.ok) return;
+    expect(refusal.reason).toBe("presentationSaysNothing");
+    expect(refusal.slot).toBeNull();
+  });
+
+  it("CONTROL — a recipe with no presentation clause is byte-identical to before", () => {
+    const withOut = assembleRecipe({
+      master: MASTER, pronouns: SHE, library: [],
+      asks: [{ slot: "hair", noun: "hair", words: "a copper crop" }],
+    });
+    const empty = assembleRecipe({
+      master: MASTER, pronouns: SHE, library: [],
+      asks: [{ slot: "hair", noun: "hair", words: "a copper crop" }],
+      presentation: [],
+    });
+
+    expect(withOut.ok && empty.ok).toBe(true);
+    if (!withOut.ok || !empty.ok) return;
+    expect(withOut.prompt).toBe(empty.prompt);
+    expect(withOut.ask).toBe("Change only her hair: a copper crop.");
+  });
+});

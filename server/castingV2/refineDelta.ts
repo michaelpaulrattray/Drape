@@ -1646,6 +1646,24 @@ export function identityDetailsOf(delta: RefineDelta): Record<string, string> | 
   return Object.keys(details).length > 0 ? details : null;
 }
 
+/**
+ * WHAT THIS BRANCH SAYS ABOUT A PRESENTATION FACET, for the reader (fable-446).
+ *
+ * `currentValueOfFacet` cannot answer it, and that is by design one layer up:
+ * presentation is deliberately kept out of the identity ({@link
+ * identityDetailsOf}), so the composed recipe is the ONLY place a smile is
+ * written down. Without this the fact has no `asked` value, drops out of the
+ * verification list, and the render is delivered with nobody having looked at
+ * the one thing it was asked to change.
+ */
+export function presentationWordsOfFacet(delta: RefineDelta, facet: Facet): string | null {
+  for (const [subject, value] of Object.entries(presentationOf(delta) ?? {})) {
+    if (facetOfSubject(subject as FreeSubject) !== facet) continue;
+    return value.trim() === "" ? null : value;
+  }
+  return null;
+}
+
 /** The presentation state — recorded on the variant, never on the identity. */
 export function presentationOf(delta: RefineDelta): Record<string, string> | null {
   if (!delta.free) return null;

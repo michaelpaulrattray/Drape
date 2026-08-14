@@ -3089,6 +3089,128 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
     expect(failedVariant?.failureClass).toBe("cannot_say");
   });
 
+  /*
+    AND THE SMILE WALKED OUT OF THAT DOOR (fable-446, the founder's YES).
+
+    *"Make her smile"* met the same refusal until 2026-08-14 — the honest one,
+    with the whole 25 back, and still a customer being told the product cannot
+    do the simplest thing anyone would ask a photographer for. Expression is
+    the first specimen of an ask with no slot to file under: presentation
+    rather than identity (D-136), no zone to cut, nothing to carry. It now
+    rides the recipe in words.
+
+    Driven end to end rather than at the door, because the claim is that a
+    render HAPPENS and is CHARGED FOR — the two things the refusal took away.
+  */
+  it("paints a smile instead of refunding it, and says so in the recipe", async () => {
+    const chargesBefore = ledger.charges.length;
+    const refundsBefore = ledger.refunds.length;
+
+    await refineCandidate({
+      ...repainting,
+      harvest: unmasked,
+      interpret: async () => ({ ok: true as const, delta: { free: { expression: "a soft, closed-mouth smile" } } }),
+    }, { ...input, instruction: "make her smile" });
+
+    expect(painted).toHaveLength(1);
+    /* On the PROMPT the painter receives, in the words it receives them in
+       (invariant 5) — the whole defect this door existed to prevent is an
+       instruction that never reaches the painter. */
+    expect(JSON.stringify(painted[0])).toContain("her expression: a soft, closed-mouth smile");
+    expect(ledger.charges.length).toBe(chargesBefore + 1);
+    expect(ledger.refunds.length).toBe(refundsBefore);
+  });
+
+  /*
+    AND THE READER IS ASKED ABOUT IT — the half a slotless fact loses silently.
+
+    `facts` are valued from the resolved identity, and a smile is deliberately
+    never written there (D-136). So the fact had no value, dropped out of the
+    list, and the render would have been delivered with nobody looking at the
+    one thing it was asked to change. Asserted on the LINES THE READER RECEIVES,
+    because that is the wire.
+  */
+  it("asks the reader about the smile it painted", async () => {
+    const seen: string[] = [];
+    const watching = {
+      id: "verifier",
+      complete: async (request: { system: string; user: string }) => {
+        if (request.system.includes("how they")) {
+          return { text: JSON.stringify({ hairWorn: "unclear" }), truncated: false, latencyMs: 1 };
+        }
+        seen.push(request.user);
+        return {
+          text: JSON.stringify({ results: [{ id: 1, present: true, saw: "a closed-mouth smile" }] }),
+          truncated: false,
+          latencyMs: 1,
+        };
+      },
+    } as never;
+
+    await refineCandidate({
+      ...repainting,
+      harvest: unmasked,
+      verifier: watching,
+      interpret: async () => ({ ok: true as const, delta: { free: { expression: "a soft, closed-mouth smile" } } }),
+    }, { ...input, instruction: "make her smile" });
+
+    expect(seen).toHaveLength(1);
+    expect(seen[0]).toContain("a soft, closed-mouth smile");
+  });
+
+  it("does not REFUSE on the reader's word — expression is a degree ask", async () => {
+    /*
+      D-246 clean, and honestly rather than optimistically: *"softer"*,
+      *"warmer"*, *"more serious"* are a continuum a photograph cannot settle,
+      and `FREE_SUBJECT_KIND` classes the whole subject `degree` for it. So a
+      reader that disputes the smile is RECORDED and never refunded — the same
+      treatment the body and lips rows get, for the same measured reason. The
+      day the crisp case earns a specimen of its own, promotion is one table
+      entry and this test is the thing that notices.
+    */
+    const chargesBefore = ledger.charges.length;
+    const refundsBefore = ledger.refunds.length;
+    const disputing = {
+      id: "verifier",
+      complete: async (request: { system: string }) => ({
+        text: request.system.includes("how they")
+          ? JSON.stringify({ hairWorn: "unclear" })
+          : JSON.stringify({ results: [{ id: 1, present: false, saw: "a neutral mouth" }] }),
+        truncated: false,
+        latencyMs: 1,
+      }),
+    } as never;
+
+    await refineCandidate({
+      ...repainting,
+      harvest: unmasked,
+      verifier: disputing,
+      interpret: async () => ({ ok: true as const, delta: { free: { expression: "a soft, closed-mouth smile" } } }),
+    }, { ...input, instruction: "make her smile" });
+
+    expect(ledger.charges.length).toBe(chargesBefore + 1);
+    expect(ledger.refunds.length).toBe(refundsBefore);
+  });
+
+  it("files NOTHING for it — no slot, no crop, nothing a follow could inherit", async () => {
+    /*
+      The other half of D-136, and the half a library would break quietly: a
+      momentary state must not become permanent. The mint files the slots a
+      render EDITED, and a presentation clause edits none — so this is the
+      promise asserted where the mint is actually asked, not on the type that
+      makes it hard to break.
+    */
+    await refineCandidate({
+      ...repainting,
+      ...mintingLibrary,
+      harvest: unmasked,
+      interpret: async () => ({ ok: true as const, delta: { free: { expression: "a soft, closed-mouth smile" } } }),
+    }, { ...input, instruction: "make her smile" });
+
+    expect(painted).toHaveLength(1);
+    expect(mintAsks.flatMap((ask) => ask.slots)).toEqual([]);
+  });
+
   it("tells her WHY the makeup door refused, in the founder's ruled words", async () => {
     /*
       He asked for a lip gloss TWICE, because the refusal never said why — the

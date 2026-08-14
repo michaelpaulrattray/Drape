@@ -214,7 +214,33 @@ export type AssembleInput = {
   /** The cast's reference library. An empty library is the degenerate case. */
   library: readonly LibraryEntry[];
   asks: readonly Ask[];
+  /**
+   * ASKS WITH NOTHING TO CUT AND NOTHING TO CARRY (fable-446).
+   *
+   * `expression` is the first of them: presentation rather than identity
+   * (D-136), `fullFrame` in every zone table, and a decided `notASlot` in the
+   * catalogue — *"there is nothing to cut and nothing to carry"*. Until this
+   * existed the road refused the ask outright and gave the money back, which
+   * was honest and was still a customer typing *make her smile* and getting a
+   * refund.
+   *
+   * So it rides as WORDS ONLY. It is deliberately not an {@link Ask}: an ask is
+   * keyed on a slot, and a slot is what the mint files, the carry crops and the
+   * verification counts as delivered. A presentation clause reaches exactly one
+   * place — the change sentence — and the invariants that keep the library
+   * honest cannot see it, which is the point rather than an omission.
+   */
+  presentation?: readonly PresentationClause[];
 };
+
+/**
+ * One presentation fact, said in the recipe and filed nowhere.
+ *
+ * `noun` is bare (`expression`) for the same reason a slot's is: this module
+ * decides whether a thing takes an article or a possessive, and a caller that
+ * shipped "her expression" would be that decision made twice.
+ */
+export type PresentationClause = { noun: string; words: string };
 
 export type RecipeReference = {
   role: ReferenceRole;
@@ -295,8 +321,11 @@ export type RecipeRefusal = {
     /** A vacate carrying words as well — see `Ask.vacate`. */
     | "vacateAlsoAsks"
     /** A vacate whose sentence is empty; the recipe would go silent. */
-    | "vacateSaysNothing";
-  slot: FeatureSlot;
+    | "vacateSaysNothing"
+    /** A presentation clause with no words — see {@link AssembleInput.presentation}. */
+    | "presentationSaysNothing";
+  /** Null for a refusal about something that has no slot by construction. */
+  slot: FeatureSlot | null;
   detail: string;
 };
 
@@ -334,7 +363,8 @@ function askSentence(
   bySlot: ReadonlyMap<FeatureSlot, LibraryEntry>,
   wordStacks: ReadonlyMap<FeatureSlot, readonly string[]>,
   possessive: string,
-): string | { unnamed: FeatureSlot } {
+  presentation: readonly PresentationClause[],
+): string | { unnamed: FeatureSlot } | { saysNothing: string } {
   const clauses: string[] = [];
   for (const ask of asks) {
     if (ask.vacate) {
@@ -369,6 +399,26 @@ function askSentence(
        reason: a stylist speaks about a thing, and about her). */
     const named = entry?.tier === "item" ? `the ${noun}` : `${possessive} ${noun}`;
     clauses.push(`${named}: ${(wordStacks.get(ask.slot) ?? []).join(", ")}`);
+  }
+  /*
+    AND THE PRESENTATION CLAUSES RIDE THE SAME SENTENCE.
+
+    Last, so a smile reads as the note it is beside the features that were
+    changed, and in the same breath rather than in a second instruction — the
+    rule the vacate phrase already obeys, for the same reason (§3.0a: one small
+    ask, not a paragraph).
+
+    A clause with nothing to say REFUSES here rather than being dropped. It
+    cannot happen through the door upstream, which is exactly why it is asserted
+    here: `Change only her expression: .` is a paid render told to change
+    something into nothing, and a silent drop would be the same render with no
+    trace of what went missing.
+  */
+  for (const clause of presentation) {
+    const noun = clause.noun.trim();
+    const words = clause.words.trim();
+    if (noun === "" || words === "") return { saysNothing: noun === "" ? "(unnamed)" : noun };
+    clauses.push(`${possessive} ${noun}: ${words}`);
   }
   if (clauses.length === 0) return "";
   return `Change only ${clauses.join("; ")}.`;
@@ -768,7 +818,13 @@ export function assembleRecipe(input: AssembleInput): AssembleResult {
     .filter((entry) => entry.carry !== undefined || (entry.tier !== "item" && entry.words.length > 0))
     .map((entry) => entry.slot);
 
-  const ask = askSentence(input.asks, bySlot, wordStacks, possessive);
+  const ask = askSentence(input.asks, bySlot, wordStacks, possessive, input.presentation ?? []);
+  if (typeof ask !== "string" && "saysNothing" in ask) {
+    return {
+      ok: false, reason: "presentationSaysNothing", slot: null,
+      detail: `the recipe was handed a presentation clause about ${ask.saysNothing} with nothing to say, so the render would be told to change it into nothing`,
+    };
+  }
   if (typeof ask !== "string") {
     return {
       ok: false, reason: "slotNotNamed", slot: ask.unnamed,
