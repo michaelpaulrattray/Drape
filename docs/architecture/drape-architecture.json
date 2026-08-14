@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "55c4ad270527eeca"
+    "sourceFingerprint": "564efb7f62adfc05"
   },
   "domains": [
     {
@@ -8257,6 +8257,10 @@
     {
       "id": "test:server/batchC-structured.test.ts",
       "path": "server/batchC-structured.test.ts"
+    },
+    {
+      "id": "test:server/benchKit.test.ts",
+      "path": "server/benchKit.test.ts"
     },
     {
       "id": "test:server/billing.test.ts",

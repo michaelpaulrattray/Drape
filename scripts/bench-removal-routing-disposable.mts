@@ -52,6 +52,7 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { randomUUID } from "node:crypto";
 
 import { openDatabase } from "./lib/dbConnection.mts";
+import { FREE_LANE, openLedgerWatch, recordingInterpreter } from "./lib/benchKit.mts";
 import { assertOneWorld } from "./lib/worldGuard.mts";
 import { refineCandidate } from "../server/castingV2/refineService";
 import { interpretRefinement } from "../server/castingV2/refineInterpreter";
@@ -92,10 +93,11 @@ const query = async (sql: string, params: unknown[] = []): Promise<any[]> => {
   return rows;
 };
 
-const ledgerBefore = (await query(
-  "SELECT COUNT(*) AS rowCount, COALESCE(SUM(amount), 0) AS net FROM point_transactions WHERE userId = ?",
-  [USER],
-))[0];
+/* The shared watch (fable-485 §c) rather than a fifth copy of this query: it
+   reads the caller's OWN connection, so the ledger it reports is the world the
+   bench drove, and a bench that spends money THROWS rather than printing that
+   it did. */
+const ledger = await openLedgerWatch({ query, userId: USER });
 
 const results: any[] = [];
 for (const ask of ASKS) {
@@ -106,22 +108,13 @@ for (const ask of ASKS) {
     /* THE SPY: the real interpreter, with every call and answer recorded. A
        second call carrying `mode: "edit"` IS the re-read — that is the branch
        the whole question turns on, and it is observed rather than assumed. */
-    const calls: { mode: string; ok: boolean; intent?: string; delta?: unknown; refusal?: unknown }[] = [];
-    const interpret = (async (request: Parameters<typeof interpretRefinement>[0]) => {
-      const answer = await interpretRefinement(request);
-      calls.push({
-        mode: (request as { mode?: string }).mode ?? "(default)",
-        ok: (answer as { ok: boolean }).ok,
-        intent: (answer as { intent?: string }).intent,
-        delta: (answer as { delta?: unknown }).delta,
-        refusal: (answer as { refusal?: unknown }).refusal,
-      });
-      return answer;
-    }) as typeof interpretRefinement;
+    const { interpret, calls } = recordingInterpreter(
+      interpretRefinement as (request: unknown) => Promise<unknown>,
+    );
 
     let threw: string | null = null;
     try {
-      await refineCandidate({ interpret, admit: () => false }, {
+      await refineCandidate({ interpret: interpret as typeof interpretRefinement, ...FREE_LANE }, {
         userId: USER,
         clientRequestId: randomUUID(),
         candidatePublicId: FACE,
@@ -154,15 +147,9 @@ for (const ask of ASKS) {
 }
 
 /* THE LEDGER, BOTH ENDS — "free" is an assertion, not a hope. */
-const ledgerAfter = (await query(
-  "SELECT COUNT(*) AS rowCount, COALESCE(SUM(amount), 0) AS net FROM point_transactions WHERE userId = ?",
-  [USER],
-))[0];
+const spend = await ledger.close();
 say("=".repeat(78));
-say(`LEDGER: ${ledgerBefore.rowCount} rows → ${ledgerAfter.rowCount} rows · net ${ledgerBefore.net} → ${ledgerAfter.net}`);
-if (Number(ledgerBefore.rowCount) !== Number(ledgerAfter.rowCount)) {
-  say("  *** THIS BENCH SPENT MONEY — that is a defect in the bench, report it ***");
-}
+say(spend.line);
 
 /* ── the reading ────────────────────────────────────────────────────────── */
 
