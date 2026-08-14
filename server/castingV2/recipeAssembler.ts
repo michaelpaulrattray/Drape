@@ -76,7 +76,7 @@
  * only kind of dark a pure function needs.
  */
 
-import { vacantPhraseFor } from "./accessoryKinds";
+import { vacantPhraseFor } from "./vacancyPhrases";
 import type { CastPronouns } from "./castPronouns";
 import { IMPERATIVE_OPENER } from "./declarativeState";
 import { accessoryKindOfSlot } from "./slotWordShape";

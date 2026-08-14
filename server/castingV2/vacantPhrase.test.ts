@@ -11,7 +11,8 @@
  */
 import { describe, expect, it } from "vitest";
 
-import { LANDMARK_OF_ACCESSORY, accessoryKindOf, vacantPhraseFor } from "./accessoryKinds";
+import { LANDMARK_OF_ACCESSORY, accessoryKindOf } from "./accessoryKinds";
+import { VACANCY_BY_KIND, VACANCY_KINDS, vacantPhraseFor } from "./vacancyPhrases";
 import { imperativeOpenerIn } from "./declarativeState";
 import { slotWordsRefusal } from "./slotWordShape";
 
@@ -19,15 +20,27 @@ describe("every kind the product can place can also say it is gone", () => {
   it("has a phrase for every entry in the table", () => {
     /* The compiler already requires the field; this proves none of them is the
        empty string, which the type cannot say. */
-    const silent = LANDMARK_OF_ACCESSORY.filter((entry) => entry.vacantPhrase.trim() === "");
+    const silent = VACANCY_KINDS.filter((kind) => VACANCY_BY_KIND[kind]!.says.trim() === "");
     expect(silent).toEqual([]);
+  });
+
+  it("still says the absence for every kind the product can PLACE", () => {
+    /*
+      The move's own guard (V3 slice b). The phrases left the accessory table
+      and a placement kind that lost its sentence would refuse `uncatalogued` on
+      a removal that works today — a regression with no compiler to catch it,
+      because the field is gone from that type entirely.
+    */
+    for (const entry of LANDMARK_OF_ACCESSORY) {
+      expect(vacantPhraseFor(entry.region), entry.region).not.toBeNull();
+    }
   });
 
   it("every phrase is a STATE, so the assembler's marker passes it by construction", () => {
     /* Not by care — by construction. An absence sentence that opened with
        "remove" would refuse at `wordsNotDeclarative` on the paid path. */
-    const instructions = LANDMARK_OF_ACCESSORY
-      .map((entry) => ({ region: entry.region, opener: imperativeOpenerIn(entry.vacantPhrase) }))
+    const instructions = VACANCY_KINDS
+      .map((kind) => ({ kind, opener: imperativeOpenerIn(VACANCY_BY_KIND[kind]!.says) }))
       .filter((entry) => entry.opener !== null);
     expect(instructions).toEqual([]);
   });
@@ -39,9 +52,10 @@ describe("every kind the product can place can also say it is gone", () => {
       alone leaves a painter looking at a photograph of her in glasses with
       nothing to look AT.
     */
-    for (const entry of LANDMARK_OF_ACCESSORY) {
-      expect(entry.vacantPhrase, entry.region).toMatch(/—/);
-      expect(entry.vacantPhrase.split("—")[1]!.trim().length).toBeGreaterThan(10);
+    for (const kind of VACANCY_KINDS) {
+      const says = VACANCY_BY_KIND[kind]!.says;
+      expect(says, kind).toMatch(/—/);
+      expect(says.split("—")[1]!.trim().length).toBeGreaterThan(10);
     }
   });
 
@@ -77,7 +91,7 @@ describe("a pair records its empty lobe in words that lobe may file", () => {
   it("every pair kind has a per-instance form, and every single kind may skip it", () => {
     /* The type cannot say "required when `pair` is true"; this can. */
     const pairsWithout = LANDMARK_OF_ACCESSORY
-      .filter((entry) => entry.pair && !entry.vacantPhrasePerInstance)
+      .filter((entry) => entry.pair && !VACANCY_BY_KIND[entry.region]?.perInstance)
       .map((entry) => entry.region);
     expect(pairsWithout).toEqual([]);
   });

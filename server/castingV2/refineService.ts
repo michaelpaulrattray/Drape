@@ -78,7 +78,8 @@ import {
   HAIR_TEXTURE_RENDER,
   IRIS_RENDER,
 } from "./realizedAxes";
-import { accessoryKindOf, EYEWEAR_REGION, pairClauseFor, vacantPhraseFor } from "./accessoryKinds";
+import { accessoryKindOf, EYEWEAR_REGION, pairClauseFor } from "./accessoryKinds";
+import { vacantPhraseFor } from "./vacancyPhrases";
 import { slotWordsRefusal } from "./slotWordShape";
 import { hairStyleByName } from "./hairStyles";
 import {

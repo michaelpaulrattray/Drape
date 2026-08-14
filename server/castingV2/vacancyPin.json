@@ -1,0 +1,10 @@
+{
+  "vacantPhrase": {
+    "earring": "no earrings — both earlobes bare, nothing hanging from either ear",
+    "glasses": "no glasses — her face uncovered, no frames, no lenses and no rim shadow on her cheeks or brows",
+    "nose stud": "no nose jewellery — her nose and septum bare, with no piercing visible"
+  },
+  "vacantPhrasePerInstance": {
+    "earring": "no earring on her {side} ear — that earlobe bare, nothing hanging from it"
+  }
+}

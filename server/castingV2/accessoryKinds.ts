@@ -65,27 +65,6 @@ export const LANDMARK_OF_ACCESSORY: {
   /** How to name both sides, in the painter's clause and the reader's. */
   bothSides?: string;
   /**
-   * WHAT THE SITE LOOKS LIKE WITH THE THING GONE (chunk 3,
-   * `LIBRARY_REMOVAL_DESIGN.md` §3).
-   *
-   * A removal on the repaint road is a slot declared vacant, and dropping its
-   * words and its crop is not enough: the MASTER is reference 1, so a born-worn
-   * item — her own glasses, in the master by definition — is painted straight
-   * back on by the very render that was meant to take it off. The recipe has to
-   * SAY the absence.
-   *
-   * Required, not optional, so a new kind cannot land without one — the
-   * compiler asks the question a reviewer would forget to.
-   *
-   * Written as a STATE and never as an instruction ("no earrings — bare
-   * earlobes", never "remove the earrings"), which is what makes it pass
-   * `IMPERATIVE_OPENER` by construction rather than by care. And derived from
-   * this table at emission rather than authored beside each ask, for the reason
-   * fable-195 gave about descriptions: a sentence generated from the record has
-   * nowhere to diverge to.
-   */
-  vacantPhrase: string;
-  /**
    * WHERE THIS THING IS WORN, IN THE CUSTOMER'S OWN WORDS — for the one sentence
    * a removal has to say when nothing in the picture can see the site
    * (fable-398 §3).
@@ -101,7 +80,7 @@ export const LANDMARK_OF_ACCESSORY: {
    * would ship over a man's face — the defect caught on the scan panel's
    * working line before it reached anyone.
    *
-   * Required, like `vacantPhrase`, so a new kind cannot land without one.
+   * Required, so a new kind cannot land without one.
    */
   site: {
     /**
@@ -137,28 +116,6 @@ export const LANDMARK_OF_ACCESSORY: {
     /** True when that noun takes a plural verb, and is referred to as "them". */
     plural: boolean;
   };
-  /**
-   * THE SAME ABSENCE, SAID ABOUT ONE INSTANCE — required in practice for every
-   * `pair: true` kind, and pinned by a test rather than by the type because a
-   * kind worn singly has no instance to name.
-   *
-   * The library is keyed per side (`earring@left`), and `slotWordsRefusal`
-   * refuses a per-side row whose words claim the pair — that rule exists
-   * because "both earlobes bare" was once filed identically under each ear. So
-   * a pair kind cannot RECORD its own vacancy in the pair's words, and until
-   * this existed an earring removal refused into the refund rather than
-   * delivering an absence the library could not hold.
-   *
-   * `{side}` is filled from the SLOT's own instance, never from a caller's
-   * opinion (fable-195). It is a record of which lobe is empty; it is not a
-   * steering instruction, and the mirror bench of 2026-08-12 is why that
-   * distinction is written here rather than assumed: told "no earring on her
-   * left ear", the painter clears the ear in the image's RIGHT half whichever
-   * ear that is — six paints, both framings. A both-sides vacancy therefore
-   * speaks with the PAIR phrase (the assembler collapses it), and a one-sided
-   * one is not offered at all.
-   */
-  vacantPhrasePerInstance?: string;
 }[] = [
   {
     words: ["earring", "stud", "hoop", "dangle", "drop"],
@@ -171,8 +128,6 @@ export const LANDMARK_OF_ACCESSORY: {
        one kind here that can be half-removed by a painter reading loosely. */
     site: { question: "ear", words: "ears", plural: true },
     worn: { phrase: "earrings", possessed: "earrings", plural: true },
-    vacantPhrase: "no earrings — both earlobes bare, nothing hanging from either ear",
-    vacantPhrasePerInstance: "no earring on her {side} ear — that earlobe bare, nothing hanging from it",
   },
   {
     words: ["glasses", "spectacles", "frames", "sunglasses", "eyewear"],
@@ -185,7 +140,6 @@ export const LANDMARK_OF_ACCESSORY: {
        "ghost rim" is what a half-hearted removal leaves behind. */
     site: { question: "eyes", words: "eyes", plural: true },
     worn: { phrase: "glasses", possessed: "glasses", plural: true },
-    vacantPhrase: "no glasses — her face uncovered, no frames, no lenses and no rim shadow on her cheeks or brows",
   },
   {
     words: ["nose ring", "nose stud", "septum", "nostril"],
@@ -195,7 +149,6 @@ export const LANDMARK_OF_ACCESSORY: {
     pair: false,
     site: { question: "nose", words: "nose", plural: false },
     worn: { phrase: "a nose stud", possessed: "nose stud", plural: false },
-    vacantPhrase: "no nose jewellery — her nose and septum bare, with no piercing visible",
   },
 ];
 
@@ -267,36 +220,3 @@ export function accessoryKindOf(described: string): string | null {
   return accessoryEntry(described)?.region ?? null;
 }
 
-/**
- * THE SENTENCE A VACATED SLOT SAYS, by kind id.
- *
- * Keyed on the REGION rather than on the words, because by the time a recipe is
- * being assembled the object has already been identified — re-reading the
- * user's phrase here would be a second answer to "what kind of thing is this",
- * and `pairClauseFor` has the scar from the first time that was done (a nose
- * stud told it was worn one on each ear).
- *
- * Null for a kind this table does not hold, and the caller must refuse rather
- * than improvise: an absence sentence invented at the call site is exactly the
- * free-floating parallel prose fable-195 ruled against, and the price of
- * getting it wrong is a paid render that says something untrue about her face.
- * Open-vocabulary removals arrive with their own vocabulary (roadmap §5), never
- * by loosening this door.
- */
-export function vacantPhraseFor(
-  kind: string | null | undefined,
-  /**
-   * WHICH INSTANCE IS EMPTY, when the slot is one of a pair — passed from the
-   * slot's own `instance`, never authored beside the call. With no instance
-   * this is the same function it has always been.
-   */
-  instance?: "left" | "right" | null,
-): string | null {
-  if (!kind) return null;
-  const entry = LANDMARK_OF_ACCESSORY.find((candidate) => candidate.region === kind);
-  if (!entry) return null;
-  if (instance && entry.vacantPhrasePerInstance) {
-    return entry.vacantPhrasePerInstance.replace("{side}", instance);
-  }
-  return entry.vacantPhrase;
-}

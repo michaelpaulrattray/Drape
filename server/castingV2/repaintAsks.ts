@@ -65,7 +65,8 @@ import {
 import {
   FACET_SLOTS, facetsOfSlot, narrowToScope, slotDefinition, slotsForFacet,
 } from "./referenceSlotCatalogue";
-import { accessoryKindOf, vacantPhraseFor } from "./accessoryKinds";
+import { accessoryKindOf } from "./accessoryKinds";
+import { vacantPhraseFor } from "./vacancyPhrases";
 import type { Ask, FeatureSlot, PresentationClause } from "./recipeAssembler";
 
 /**

@@ -250,6 +250,55 @@ describe("a departure vacates the slot and says so", () => {
     expect(result.asks[0]!.words).toBeUndefined();
   });
 
+  it("takes a BEARD off, which nothing on this road could do until today", async () => {
+    /*
+      V3 slice (b), the first non-accessory departure.
+
+      Everything `facialHair` needed already existed — it is departable, it has
+      a slot, a question and a guard kind — and the ask refused `uncatalogued`
+      anyway, because the sentence that says a thing is gone lived on the table
+      for things you WEAR. Moving the phrase onto a kind-keyed home is the whole
+      fix, and this is the door where the old refusal was raised.
+    */
+    const result = repaintAsksFor({
+      delta: { free: {}, absent: { facialHair: ["beard"] } },
+      prose,
+    });
+
+    expect(result.ok, "reason" in result ? String((result as { reason?: unknown }).reason) : "")
+      .toBe(true);
+    if (!result.ok) return;
+    expect(result.asks).toHaveLength(1);
+    expect(result.asks[0]!.slot).toBe("facial-hair");
+    /* A STATE that names the site, like every other one: what is gone AND what
+       the skin under it looks like, which is the half a render gets wrong. */
+    expect(result.asks[0]!.vacate?.says).toContain("no beard");
+    expect(result.asks[0]!.vacate?.says).toContain("clean-shaven");
+    expect(result.asks[0]!.words).toBeUndefined();
+  });
+
+  it("CONTROL — a kind with no phrase still refuses rather than improvising one", () => {
+    /*
+      The other half, and the half that keeps the move honest: adding a home for
+      the sentence must not open the door for kinds nobody has written one for.
+      `ink` is departable and has no phrase (its slots arrive with the tattoo
+      studio), so it refuses exactly as it did before.
+    */
+    const result = repaintAsksFor({
+      delta: { free: {}, absent: { ink: ["the star behind her ear"] } },
+      prose,
+    });
+
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    /* It refuses at the FIRST door that can answer honestly — for ink that is
+       `unnamedObject`, one step before the phrase lookup, because its slots
+       come from the placement and there is no slot to look a phrase up for.
+       Named exactly rather than loosely: "some refusal" would pass if the door
+       moved to one that was wrong for a different reason. */
+    expect(result.reason).toBe("unnamedObject");
+  });
+
   it("vacates BOTH lobes when a pair leaves, because a pair is two slots", () => {
     const result = repaintAsksFor({
       delta: { free: { statedAccessories: [] }, absent: { statedAccessories: ["gold hoop earrings"] } },
