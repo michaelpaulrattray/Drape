@@ -381,8 +381,13 @@ describe("a pair is one row until it isn't, and the split is derived", () => {
     /* Still ONE row, and tapping it still means both. */
     expect(rows.map((r) => r.name)).not.toContain("Left earring");
     expect(earrings.slots).toEqual(["earring@left", "earring@right"]);
-    /* And it claims nothing of either side: each side's own words, attributed. */
-    expect(earrings.words).toEqual(["left a gold hoop, noticeably bigger", "right a gold hoop"]);
+    /*
+      And it claims nothing of either side: each side's own words, attributed —
+      COMPOSED into one sentence, and each side compressed to what tells it
+      apart (fable-475 §2). The left earring's full stack ("a gold hoop",
+      "noticeably bigger") lives on the child row that opens beneath.
+    */
+    expect(earrings.words).toEqual(["left a gold hoop · right a gold hoop"]);
     /* The children are the per-instance records that already existed. */
     expect(earrings.instances.map((instance) => [instance.name, instance.words])).toEqual([
       ["Left earring", ["a gold hoop", "noticeably bigger"]],
@@ -677,7 +682,9 @@ describe("one green eye is never spoken of as two", () => {
   it("says each side's own words, attributed, and claims neither for the pair", () => {
     const eyes = named(scoped, "Eyes")!;
 
-    expect(eyes.words).toEqual(["left green", "right dark brown"]);
+    /* ONE composed sentence, not two stacks (fable-475 §2): the row has room
+       for about eight words, and both sides' full descriptions do not fit. */
+    expect(eyes.words).toEqual(["left green · right dark brown"]);
     expect(eyes.instances.map((instance) => [instance.name, instance.words])).toEqual([
       ["Left eye", ["green"]],
       ["Right eye", ["dark brown"]],
@@ -685,6 +692,41 @@ describe("one green eye is never spoken of as two", () => {
     /* The thing the ruling forbids, asserted directly: no sentence on this row
        says "green" as though it were true of her eyes. */
     expect(eyes.words.join(" ")).not.toBe("green");
+  });
+
+  /*
+    HIS OWN ROW, WITH THE WORDS THAT DID NOT FIT (fable-475 §2).
+
+    Scan-born descriptions are prose, not labels — the founder's read *"left A
+    pale grey-blue iris with a dark, dilated pupil, and a small bright…"*,
+    truncated mid-thought with a mid-sentence capital, because the row has space
+    for about eight words and it was being handed thirty.
+  */
+  it("compresses each side to what tells it apart, and keeps the rest on the child", () => {
+    const described = [
+      row({
+        slot: "eye@left",
+        noun: "left eye",
+        words: ["A pale grey-blue iris with a dark, dilated pupil, and a small bright highlight"],
+        version: 2,
+      }),
+      row({
+        slot: "eye@right",
+        noun: "right eye",
+        words: ["A warm brown iris with a soft limbal ring"],
+        version: 1,
+      }),
+    ];
+    const eyes = named(described, "Eyes")!;
+
+    expect(eyes.words).toEqual(["left a pale grey-blue iris · right a warm brown iris"]);
+    /* Lower case, because her sentence continues the row's own — the
+       mid-sentence capital is the thing he was looking at. */
+    expect(eyes.words[0]!).not.toMatch(/left A |right A /);
+    /* And nothing is lost: the whole description is on the child that opens. */
+    expect(eyes.instances[0]!.words).toEqual([
+      "A pale grey-blue iris with a dark, dilated pupil, and a small bright highlight",
+    ]);
   });
 
   it("draws a rectangle per instance, so tapping one is a promise about those pixels", () => {

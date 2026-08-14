@@ -390,9 +390,53 @@ function attributedWords(
   left: { noun: string; words: readonly string[] },
   right: { noun: string; words: readonly string[] },
 ): readonly string[] {
-  return [left, right]
+  const said = [left, right]
     .filter((side) => side.words.length > 0)
-    .map((side) => `${side.noun} ${side.words.join(", ")}`);
+    .map((side) => `${side.noun} ${distinguishing(side.words)}`);
+  /*
+    ONE SENTENCE, COMPOSED — never the two stacks concatenated (fable-475 §2).
+
+    The founder's own row read *"left A pale grey-blue iris with a dark, dilated
+    pupil, and a small bright…"* — truncated mid-thought, with a mid-sentence
+    capital, because both sides' FULL descriptions were being poured into a line
+    that has room for about eight words. The ruling was the derived short form
+    from the start: each side compressed to what tells it apart, the whole
+    description living on the child row that opens beneath.
+
+    Joined here rather than in the browser because the row's words are rendered
+    with a comma between them, and a comma is what separates the items of ONE
+    side's stack. The two sides are not two items; they are two answers.
+  */
+  return said.length > 0 ? [said.join(" · ")] : [];
+}
+
+/**
+ * THE FEW WORDS THAT TELL THIS SIDE FROM THE OTHER.
+ *
+ * A library row says *"a pale icy blue iris"* and fits; a scan-born description
+ * says *"A pale grey-blue iris with a dark, dilated pupil, and a small bright
+ * specular highlight"* and does not. The head of the phrase is what
+ * distinguishes it — every clause after the first `with`, `and` or comma is the
+ * detail the child row exists to hold.
+ *
+ * Code-owned and deterministic on purpose: a model asked to summarise here
+ * would be a second author of her words, and D-172 keeps the words hers. The
+ * cap is words rather than characters because a cut mid-word is exactly the
+ * truncation this replaces.
+ */
+function distinguishing(words: readonly string[]): string {
+  const first = words.find((word) => word.trim().length > 0) ?? "";
+  const head = first.split(/,| with | and /i)[0] ?? first;
+  /*
+    HER ARTICLE STAYS. An earlier draft stripped "a" and read "left gold hoop",
+    which is tidier and is not what she typed — D-172 keeps the words hers, and
+    the thing that actually went wrong on his screen was the CASE, not the
+    article.
+  */
+  const capped = head.trim().split(/\s+/).filter(Boolean).slice(0, 5).join(" ");
+  /* Her sentence continues the row's own, so it starts in lower case — "left A
+     pale grey-blue iris" is the mid-sentence capital he saw. */
+  return capped.charAt(0).toLowerCase() + capped.slice(1);
 }
 
 /**
