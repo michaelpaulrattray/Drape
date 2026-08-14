@@ -129,6 +129,19 @@ type CacheEntry = {
   promise: Promise<ScannedFace>;
   /** Set on resolve, so a caller that must not block can ask what is ready. */
   settled: ScannedFace | null;
+  /**
+   * WHAT HAS LANDED SO FAR — the rows a panel can draw while the rest is still
+   * being read (fable-521 §3).
+   *
+   * Fourteen questions run in parallel and the slowest decides when `settled`
+   * appears, so for several seconds this holds real rows nobody could see.
+   * It is grown by the scan's own `onFiled`, from the same boxes and masks that
+   * end up in `settled` — never a second reading of anything.
+   *
+   * `null` until the first feature lands, which is a different thing from an
+   * empty scan and is why it is not an empty map.
+   */
+  partial: ScannedFace | null;
 };
 
 const cache = new Map<string, CacheEntry>();
@@ -307,6 +320,17 @@ export async function scannedFace(input: {
     /* A scan is a courtesy read; its bookkeeping may never break it. */
   });
 
+  /*
+    THE ENTRY IS DECLARED BEFORE THE READ, because the read grows it.
+
+    `onFiled` runs while the scan is still in flight and writes each landed
+    feature onto this entry, so a panel asking mid-scan gets the rows that
+    exist rather than nothing at all. The alternative — a second structure the
+    endpoint reads — would be the same facts twice (law 4), and the two would
+    disagree on exactly the frames somebody was watching.
+  */
+  const entry: CacheEntry = { settled: null, partial: null, promise: null as never };
+
   const read = (async () => {
     const readBytes = input.dependencies?.readBytes ?? storageReadBytes;
     const publicUrl = input.dependencies?.publicUrl ?? storagePublicUrl;
@@ -331,10 +355,43 @@ export async function scannedFace(input: {
       describe: input.dependencies?.describe === undefined
         ? defaultDescriber()
         : input.dependencies.describe,
+      /*
+        EACH FEATURE, AS IT LANDS. The stencil for it is cut here rather than at
+        the end, which is the same work in a different order — `displayOf` will
+        cut the same shapes from the same masks when the scan resolves, and the
+        settled answer is still the authority. This one is what she can look at
+        in the meantime.
+      */
+      onFiled: (filed) => {
+        void (async () => {
+          for (const one of filed) {
+            const stencil = await stencilOf(one.mask, one.box);
+            const slots = new Map(entry.partial?.slots ?? []);
+            slots.set(one.slot, {
+              box: one.box,
+              maskUrl: `data:image/png;base64,${stencil.toString("base64")}`,
+            });
+            entry.partial = {
+              frameUrl: url,
+              slots,
+              words: entry.partial?.words ?? new Map(),
+              asked: scanPlan().length,
+              found: slots.size,
+              empty: [],
+              failed: [],
+              stencilBytes: (entry.partial?.stencilBytes ?? 0) + stencil.length,
+              sides: sidesOf(slots),
+            };
+          }
+        })().catch(() => {
+          /* A partial is a courtesy on top of a courtesy: if a stencil will not
+             cut here, the settled scan cuts it again a moment later. */
+        });
+      },
     });
     return await displayOf(scan, url);
   })();
-  const entry: CacheEntry = { settled: null, promise: read };
+  entry.promise = read;
 
   read.then(
     (value) => {
@@ -399,6 +456,31 @@ export function scannedFaceIfReady(input: {
   return held?.settled ?? null;
 }
 
+/**
+ * WHAT IS READY RIGHT NOW, and whether that is all of it (fable-521 §3).
+ *
+ * The settled scan when there is one; otherwise the rows that have landed so
+ * far, which is what lets the panel fill a feature at a time instead of waiting
+ * for the slowest of fourteen questions.
+ *
+ * `done` is about the READING, not about the rows: a scan that finished with
+ * three features is done, and a scan that has three of fourteen so far is not.
+ * The panel needs the difference — one draws an empty row as absent, the other
+ * as still coming.
+ *
+ * `null` for a key nobody has asked about, which is neither.
+ */
+export function scanProgressOf(input: {
+  userId: number;
+  candidateId: number;
+  variantId: number | null;
+}): { scan: ScannedFace; done: boolean } | null {
+  const held = cache.get(keyOf(input));
+  if (held === undefined) return null;
+  if (held.settled !== null) return { scan: held.settled, done: true };
+  return held.partial === null ? null : { scan: held.partial, done: false };
+}
+
 /** The panel's view of a scan — boxes, stencils and the two described rows. */
 export function panelScanOf(scan: ScannedFace): PanelScan {
   return { frameUrl: scan.frameUrl, slots: scan.slots, words: scan.words };
@@ -422,6 +504,36 @@ export function faceScanCacheStats(): {
 }
 
 /** Test-only: a process-wide cache would otherwise leak between cases. */
+/**
+ * Wait for a scan to finish, but never longer than this — the endpoint's own
+ * patience, so a first look answers with what has landed rather than holding
+ * the request open for the slowest question.
+ */
+export async function scanSettlesWithin(
+  promise: Promise<unknown>,
+  ms: number,
+): Promise<boolean> {
+  /*
+    AND IT SAYS WHETHER THE READING FINISHED, which is not the same question as
+    whether any rows landed — a scan that FAILED has no rows and is over.
+    Without that distinction the endpoint would answer "not finished" forever, a
+    polling client would ask again every second, and because a failed read is
+    deliberately not cached, every one of those asks would start a fresh
+    fourteen-question scan. A courtesy read in a retry loop is the one way this
+    could cost real money.
+  */
+  const finished = Symbol("finished");
+  const outcome = await Promise.race([
+    promise.then(() => finished, () => finished),
+    new Promise<undefined>((resolve) => {
+      const timer: any = setTimeout(resolve, ms);
+      /* Never hold the process open for a courtesy read's patience. */
+      timer?.unref?.();
+    }),
+  ]);
+  return outcome === finished;
+}
+
 export function resetFaceScanCache(): void {
   cache.clear();
   seen.clear();

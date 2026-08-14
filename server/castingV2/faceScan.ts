@@ -236,9 +236,29 @@ export async function scanFace(input: {
    */
   describe: ((input: { bytes: Buffer; contentType: string }) => Promise<FaceDescriptions>) | null;
   contentType?: string;
+  /**
+   * A FEATURE HAS LANDED — called as each one does, so the panel can fill a row
+   * at a time instead of all at once at the end (fable-521 §3).
+   *
+   * Fourteen questions are asked in parallel and each takes a couple of
+   * seconds; the slowest decides when the whole scan resolves. Publishing per
+   * feature is the difference between a panel that fills while she looks at the
+   * face and one that arrives after she has stopped waiting for it.
+   *
+   * It is handed only what THIS reading filed, never the accumulating whole:
+   * the caller owns the accumulation, so this cannot become a second copy of
+   * the scan drifting from the one that gets returned (law 4). A throw from it
+   * is the caller's problem and must never cost the reading — it is caught.
+   */
+  onFiled?: (filed: ReadonlyArray<{ slot: FeatureSlot; box: ScanBox; mask: Mask }>) => void;
 }): Promise<FaceScan> {
   const frame = { width: input.frame.width, height: input.frame.height };
   const boxes = new Map<FeatureSlot, ScanBox>();
+  /** Says what just landed, and never lets a listener's failure cost a read. */
+  const publish = (filed: ReadonlyArray<{ slot: FeatureSlot; box: ScanBox; mask: Mask }>): void => {
+    if (filed.length === 0 || input.onFiled === undefined) return;
+    try { input.onFiled(filed); } catch { /* a listener may not break a reading */ }
+  };
   const masks = new Map<FeatureSlot, Mask>();
   const empty: string[] = [];
   const failed: { question: string; why: string }[] = [];
@@ -347,6 +367,7 @@ export async function scanFace(input: {
     const floor = detectionFloorFor(region.question, bilateral ? "side" : "frame").floor;
     /** One reading of this region: what it filed, without deciding anything. */
     const read = async (): Promise<"filed" | "empty" | "failed" | "capability"> => {
+    const landed: Array<{ slot: FeatureSlot; box: ScanBox; mask: Mask }> = [];
     try {
       if (bilateral && input.reader.regionSides) {
         const sides = await input.reader.regionSides({
@@ -373,8 +394,10 @@ export async function scanFace(input: {
           if (box) {
             boxes.set(slot.slot, box);
             masks.set(slot.slot, mask);
+            landed.push({ slot: slot.slot, box, mask });
           }
         }
+        publish(landed);
         return region.slots.some((slot) => boxes.has(slot.slot)) ? "filed" : "empty";
       }
 
@@ -389,7 +412,9 @@ export async function scanFace(input: {
       for (const slot of region.slots) {
         boxes.set(slot.slot, box);
         masks.set(slot.slot, mask);
+        landed.push({ slot: slot.slot, box, mask });
       }
+      publish(landed);
       return "filed";
     } catch (error) {
       /*
@@ -447,6 +472,7 @@ export async function scanFace(input: {
     if (!box) { empty.push(definition.question ?? definition.slot); continue; }
     boxes.set(definition.slot, box);
     masks.set(definition.slot, mask);
+    publish([{ slot: definition.slot, box, mask }]);
   }
 
   const described = await words;

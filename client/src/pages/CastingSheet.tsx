@@ -962,6 +962,19 @@ export default function CastingSheet() {
         we already had.
       */
       gcTime: 60 * 60 * 1000,
+      /*
+        AND IT ASKS AGAIN WHILE THE READING IS STILL RUNNING (fable-521 §3).
+
+        The scan asks fourteen questions in parallel and answers with whichever
+        have landed, so a first look comes back part-filled and says so. Asking
+        again a second later is what makes the panel fill a row at a time
+        instead of appearing all at once when the slowest question returns.
+
+        It stops the moment the server says `done`, which a warm version says on
+        the first answer — so a face she has already looked at costs exactly one
+        request, as it always did.
+      */
+      refetchInterval: (query) => (query.state.data?.done === false ? 1_000 : false),
       /* And the same bridge as the library read, with the same boundary: the
          scanned rows of the version she was looking at stay while this
          version's are read, and NOTHING crosses from another face. */

@@ -133,13 +133,33 @@ describe("it is wired to the version she is looking at", () => {
       Kept segments change only when a refinement lands, which is exactly when
       `variants` refetches. A second interval on the same surface is a cost
       nobody sees and everybody pays.
+
+      The slice ends at the query's OWN closing rather than at a comment several
+      hundred lines below it: the wide window used to reach past three other
+      queries, so the scan's bounded interval (below) reddened a rule about
+      kept segments. A guard aimed at the wrong span fails in both directions —
+      it accused an innocent line here, and it would have missed a real interval
+      added to this query after that comment moved.
     */
     const sheet = await readFile(SHEET, "utf8");
-    const query = sheet.slice(
-      sheet.indexOf("trpc.castingV2.segmentsOnFace.useQuery"),
-      sheet.indexOf("The refinement the picture narrates"),
-    );
+    const from = sheet.indexOf("trpc.castingV2.segmentsOnFace.useQuery");
+    const query = sheet.slice(from, sheet.indexOf("useQuery", from + 40));
     expect(query).not.toContain("refetchInterval");
+  });
+
+  it("lets the SCAN ask again while it is still reading, and only until then", async () => {
+    /*
+      The one interval on this surface, and it is bounded by an answer rather
+      than by a clock: the scan publishes features as they land, so the panel
+      asks again every second while the server says the reading is unfinished
+      and stops the moment it says otherwise. A warm version says `done` on the
+      first answer and never polls at all.
+    */
+    const sheet = await readFile(SHEET, "utf8");
+    const from = sheet.indexOf("trpc.castingV2.faceScan.useQuery");
+    const query = sheet.slice(from, sheet.indexOf("useQuery", from + 40));
+    expect(query).toContain("refetchInterval");
+    expect(query).toContain("done === false");
   });
 
   it("sits immediately above the box it writes into", async () => {

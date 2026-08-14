@@ -7,6 +7,8 @@ import {
   faceScanCacheStats,
   panelScanOf,
   resetFaceScanCache,
+  scanProgressOf,
+  scanSettlesWithin,
   scannedFace,
   scannedFaceIfReady,
 } from "./faceScanService";
@@ -226,6 +228,115 @@ describe("what is ready, without waiting for it", () => {
     /* One tick for the settle handler that publishes it. */
     await Promise.resolve();
     expect(scannedFaceIfReady(FACE)).toBe(value);
+  });
+});
+
+describe("the panel fills a feature at a time", () => {
+  /*
+    THE ROWS EXIST BEFORE THE SCAN DOES (fable-521 §3).
+
+    Fourteen questions run in parallel and the slowest decides when the whole
+    scan resolves, so for several seconds there are real answers nobody could
+    see. These drive that window directly rather than hoping to catch it: the
+    reader is HELD OPEN, so "some features have landed and the reading is not
+    finished" is a state the test creates rather than races for.
+  */
+  function heldReader(box = { x: 10, y: 20, width: 30, height: 40 }) {
+    const waiting: Array<() => void> = [];
+    const gate = () => new Promise<void>((resolve) => { waiting.push(resolve); });
+    return {
+      /** How many questions are waiting on this gate right now. */
+      pending: () => waiting.length,
+      /** Let every question answered so far through. */
+      release: async () => {
+        const all = waiting.splice(0, waiting.length);
+        for (const open of all) open();
+        /* Two turns: one for the reads to resolve, one for the stencils the
+           partial cuts from them. */
+        await new Promise((resolve) => setTimeout(resolve, 5));
+      },
+      reader: {
+        async region() { await gate(); return maskOf(box); },
+        async regionSides() {
+          await gate();
+          return { left: maskOf(box), right: maskOf({ ...box, x: box.x + 500 }) };
+        },
+        async subject() { return maskOf(box); },
+        async landmark() { return null; },
+      } as unknown as RegionReader,
+    };
+  }
+
+  it("hands back the features that have landed, and says it is not finished", async () => {
+    const held = heldReader();
+    const { deps } = await dependencies(held.reader);
+
+    const reading = scannedFace({ ...FACE, dependencies: deps });
+    /* Nothing has answered yet: a key with no rows is NOT a panel with no
+       features, and the difference is what the placeholder rows are for. */
+    await new Promise((resolve) => setTimeout(resolve, 5));
+    expect(scanProgressOf(FACE)).toBeNull();
+
+    await held.release();
+    const midway = scanProgressOf(FACE);
+    expect(midway, "some features have landed").not.toBeNull();
+    expect(midway!.done, "and the reading is still running").toBe(false);
+    expect(midway!.scan.slots.size).toBeGreaterThan(0);
+    /* A real stencil, not an empty box: the partial is what the panel DRAWS,
+       so a row without its cutout would be a square with nothing in it. */
+    for (const [, slot] of midway!.scan.slots) {
+      expect(slot.maskUrl.startsWith("data:image/png;base64,")).toBe(true);
+      expect(slot.maskUrl.length).toBeGreaterThan(64);
+    }
+
+    /* And the second reads the plan makes (the re-ask, the composed rows) still
+       have to be let through before the whole thing settles. */
+    while (scanProgressOf(FACE)?.done !== true) await held.release();
+    const settled = await reading;
+    const after = scanProgressOf(FACE);
+    expect(after!.done).toBe(true);
+    expect(after!.scan).toBe(settled);
+    /* The settled answer is the authority and it is at least as complete as the
+       partial ever was. */
+    expect(settled.slots.size).toBeGreaterThanOrEqual(midway!.scan.slots.size);
+  });
+
+  it("says DONE on the first look at a face already read — no polling for an answer we have", async () => {
+    const reader = countingReader();
+    const { deps } = await dependencies(reader);
+    await scannedFace({ ...FACE, dependencies: deps });
+
+    const progress = scanProgressOf(FACE);
+    expect(progress?.done).toBe(true);
+  });
+
+  it("calls a FAILED reading finished, so a polling panel cannot spin the segmenter", async () => {
+    /*
+      THE ONE WAY THIS COULD COST REAL MONEY.
+
+      A failed scan is deliberately not cached — a cached rejection would make
+      one bad minute permanent for that version. Fine when a panel asked once;
+      not fine now that it asks again while a reading is unfinished. If failure
+      read as "not finished", the client would ask every second and every ask
+      would start a fresh fourteen-question scan.
+
+      So the endpoint's patience reports whether the reading ENDED, which is a
+      different question from whether any rows landed. Driven on a promise that
+      rejects, because that is the case.
+    */
+    const settled = await scanSettlesWithin(Promise.reject(new Error("the segmenter is down")), 50);
+    expect(settled).toBe(true);
+
+    /* And the control, or "finished" would just be a function that says yes:
+       a reading still in flight is NOT finished within the same patience. */
+    const pending = await scanSettlesWithin(new Promise(() => {}), 20);
+    expect(pending).toBe(false);
+  });
+
+  it("says NOTHING about a face nobody has asked about", () => {
+    /* Not `done: true` with no rows — that would tell a panel the face has no
+       features when the truth is that nothing has looked at it. */
+    expect(scanProgressOf({ ...FACE, candidateId: 999 })).toBeNull();
   });
 });
 

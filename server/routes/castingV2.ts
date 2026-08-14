@@ -36,7 +36,13 @@ import {
   captureCastingFaceScanEnabled,
   captureCastingReferenceLibraryEnabled,
 } from "../castingV2/castingV2Scope";
-import { panelScanOf, scannedFace, scannedFaceIfReady } from "../castingV2/faceScanService";
+import {
+  panelScanOf,
+  scanProgressOf,
+  scanSettlesWithin,
+  scannedFace,
+  scannedFaceIfReady,
+} from "../castingV2/faceScanService";
 import { pronounsForSex } from "../castingV2/castPronouns";
 import { currentValueOfFacet } from "../castingV2/refineDelta";
 import { readResolvedIdentity } from "../castingV2/rollService";
@@ -240,6 +246,17 @@ async function readOwnedFaceForPanel(
     : readResolvedIdentity(variants[0]?.internalPrompt);
   return { candidateId, anchor: anchor ?? null, rows, identitySex: identity?.sex };
 }
+
+/**
+ * HOW LONG THE FIRST LOOK WAITS BEFORE ANSWERING WITH WHAT IT HAS.
+ *
+ * A warm key resolves immediately and never spends this. A cold one takes
+ * several seconds for the slowest of fourteen questions, and this is the beat
+ * it waits before handing back the features that landed early — long enough
+ * that a fast scan still answers in one request, short enough that nobody
+ * watches a spinner for it.
+ */
+const FIRST_LOOK_PATIENCE_MS = 900;
 
 function panelFor(
   face: Awaited<ReturnType<typeof readOwnedFaceForPanel>>,
@@ -1146,7 +1163,10 @@ export const castingV2Router = router({
       requireCastingV2(ctx.user.id);
       enforceRateLimit(ctx.user.id, RATE_LIMITS.castingRead);
       if (!captureCastingReferenceLibraryEnabled(ctx.user.id) || !captureCastingFaceScanEnabled(ctx.user.id)) {
-        return { enabled: false as const, scanning: false, possessive: "their", groups: [] };
+        /* `done` on the dark answer too, so the client's "is it still reading"
+           question has one shape whatever the flags say — a field that exists
+           on only one branch is read as `undefined` and polls forever. */
+        return { enabled: false as const, scanning: false, done: true, possessive: "their", groups: [] };
       }
 
       const face = await readOwnedFaceForPanel(ctx.user.id, input);
@@ -1163,23 +1183,49 @@ export const castingV2Router = router({
       }
 
       let scan: PanelScan | null = null;
+      let done = true;
       if (imageKey !== null) {
+        const key = {
+          userId: ctx.user.id,
+          candidateId: face.candidateId,
+          variantId: face.anchor?.id ?? null,
+        };
         /*
           A FAILED SCAN IS TODAY'S PANEL, not an error. The user asked to look
           at a face, not to buy a reading, so a segmenter that is down or a
           frame that will not decode costs them nothing and shows them exactly
           what they saw yesterday (`faceScan`'s own posture, one layer up).
         */
-        scan = await scannedFace({
-          userId: ctx.user.id,
-          candidateId: face.candidateId,
-          variantId: face.anchor?.id ?? null,
-          imageKey,
-        }).then(panelScanOf).catch(() => null);
+        const reading = scannedFace({ ...key, imageKey }).catch(() => null);
+        /*
+          AND IT ANSWERS WITH WHAT HAS LANDED (fable-521 §3).
+
+          Fourteen questions run in parallel and the slowest decides when the
+          whole scan resolves, so waiting for it means a panel that arrives all
+          at once after several seconds. This waits a beat for a fast one, then
+          hands back the features that ARE ready and says it is not finished;
+          the client asks again and the panel fills a row at a time.
+
+          The bounded wait is not decoration. Without it a warm key — the common
+          case, every look after the first — would answer `done: false` with
+          nothing and buy a round trip to say what it already knew.
+        */
+        const finished = await scanSettlesWithin(reading, FIRST_LOOK_PATIENCE_MS);
+        const progress = scanProgressOf(key);
+        scan = progress === null ? null : panelScanOf(progress.scan);
+        /*
+          `finished` covers the case rows cannot: a scan that FAILED leaves no
+          progress at all, and answering "not finished" to that would have the
+          client ask again every second — each ask starting a fresh
+          fourteen-question read, because a failed scan is deliberately not
+          cached. Failure is an ending, and the panel it leaves is today's.
+        */
+        done = finished || (progress?.done ?? false);
       }
-      /* The scan has landed (or failed) by the time this returns, so nothing is
-         pending: every row here is either this version's answer or absent. */
-      return { enabled: true as const, scanning: true, ...panelFor(face, scan, false) };
+      /* `scanning` is the panel's word for "a place is kept for rows not
+         answered yet", so it is true exactly while the reading is still
+         running — not merely because a scan happened. */
+      return { enabled: true as const, scanning: true, done, ...panelFor(face, scan, !done) };
     }),
 
   /** Refunds only what never started. Delivered work is never refunded (§H.6). */
