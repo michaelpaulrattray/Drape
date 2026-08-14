@@ -268,6 +268,48 @@ describe("the scan carries the words", () => {
     expect(scan.descriptions.get("build")).toBe("slim shoulders");
   });
 
+  /*
+    HER TEETH GET A BOX WHEN THEY ARE IN THE PICTURE (fable-463).
+
+    The founder: *"her teeth never gained a bounding box after the edit"* — the
+    smile delivered, the teeth plainly there, and the row riding words alone
+    because the catalogue refuses to CUT a teeth crop (it would be the mouth
+    under a second name) and therefore gave the slot no region at all. The
+    display door is the skin precedent, with the region chosen by measurement:
+    "teeth" answers the teeth on a smiling frame and nothing on a closed mouth,
+    so the region is its own discriminator.
+  */
+  it("gives the teeth row a box when the reader finds teeth", async () => {
+    const scan = await scanFace({
+      frame,
+      reader: { ...reader, region: async ({ name }: { name: string }) => mask },
+      describe: async () => ({ build: null, skin: null, teeth: "even and bright" }),
+    });
+    expect(scan.boxes.has("teeth")).toBe(true);
+    expect(scan.masks.has("teeth")).toBe(true);
+  });
+
+  it("and NO box on the closed mouth every cast frame has — the control", async () => {
+    /*
+      The reading itself is the discriminator, so the control is a reader that
+      answers this question with nothing — which is what the founder's own
+      closed-mouth frame produced (0 px against 2,363 for the lips).
+    */
+    const bare: Mask = { data: Buffer.from([0]), width: 1, height: 1 };
+    const scan = await scanFace({
+      frame,
+      reader: {
+        ...reader,
+        region: async ({ name }: { name: string }) => (name === "teeth" ? bare : mask),
+      },
+      describe: async () => ({ build: "slim shoulders", skin: "warm olive", teeth: null }),
+    });
+    expect(scan.boxes.has("teeth")).toBe(false);
+    expect(scan.masks.has("teeth")).toBe(false);
+    /* And the lips row, a different question, is untouched. */
+    expect(scan.boxes.has("lips")).toBe(true);
+  });
+
   it("asks nothing when it is handed no describer", async () => {
     /* `describe` is required and `null` is a real answer — the default that
        used to be here made every unit suite reach the paid transport. */

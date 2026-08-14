@@ -386,6 +386,30 @@ const ANATOMY_SLOTS: readonly CatalogueEntry[] = [
       relation: "broader",
       note: "that question is the mouth, so a crop of it filed as her teeth is the lips' crop under a second name",
     },
+    /*
+      AND THE SAME REGION THE NOTE ABOVE REFUSES AS A CROP DRAWS THE ROW
+      (founder, fable-463: *"her teeth never gained a bounding box after the
+      edit"* — the smile delivered, the teeth plainly there, no box).
+
+      Exactly the skin precedent one row over: as a CARRIER the mouth would be
+      the lips' crop under a second name, and every later render would be told
+      her teeth are her lips. As a ROW it is a name and a click affordance, and
+      the mouth is where a person looks to judge teeth.
+
+      AND THE REGION IS "teeth", NOT the lips', which is a reading rather than
+      a guess. Measured on his own two frames (`probe-his-lips-disposable`):
+
+        v#186, the smile     lips 0 px · teeth 1,345 px
+        v#184, closed mouth  lips 2,363 px · teeth 0 px
+
+      So the segmenter answers this question with the teeth themselves when they
+      are in the picture and with nothing when they are not — which makes the
+      region its own discriminator: a closed mouth yields no box, no row, and
+      nothing had to be gated on the describer to make that true. The note above
+      still stands for CUTTING (a crop of the mouth filed as her teeth is the
+      lips' crop renamed), which is why the question stays `none`.
+    */
+    display: "teeth",
   },
   {
     feature: "cheekbone",
@@ -692,6 +716,27 @@ function nearestRegionOf(entry: CatalogueEntry): string | null {
   if (regions.size !== 1) return null;
   return Array.from(regions)[0] ?? null;
 }
+
+/**
+ * REGION WORDS A ROW MAY BE DRAWN FROM THAT NO FACET'S TABLE OWNS.
+ *
+ * A display region is sent to a real segmenter, so an improvised phrase here
+ * would be the open question D-213 forbids arriving through the display door
+ * instead of the cutting one. Almost every one is already owned by
+ * `REGION_OF_FACET` — the word the compositor cuts with — and this table is for
+ * the ones that are not, each carrying the reading that earned it.
+ *
+ * It is deliberately NOT a route into the mint: `slotSpecFor` does not read
+ * `display` at all, so nothing here can become a crop.
+ */
+export const DISPLAY_REGION_VOCABULARY: Readonly<Record<string, string>> = {
+  teeth:
+    "measured on the founder's own production frames, 2026-08-14 "
+    + "(probe-his-lips-disposable): the segmenter answers \"teeth\" with 1,345 px on his "
+    + "smiling frame and 0 px on his closed-mouth one, while \"lips\" answers 0 px and "
+    + "2,363 px on the same two. The two are different questions to this reader, whatever "
+    + "they are to a diagram — which is also why his panel had no LIPS row on the smile",
+};
 
 /**
  * The key a DERIVED region travels under, and the reason it reads like a

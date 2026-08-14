@@ -26,6 +26,7 @@ import {
   DERIVED_REGION_KEY,
   isDerivedRegion,
   isAskable,
+  DISPLAY_REGION_VOCABULARY,
 } from "./referenceSlotCatalogue";
 import { allFacets } from "./refineFacets";
 
@@ -52,8 +53,8 @@ describe("what a slot is", () => {
          entry carries the reason. */
       remint: "whenEarned",
       /* And whether the panel draws it from somewhere other than the region it
-         is cut from. Only `skin` does, and only because the two genuinely come
-         apart there. */
+         is cut from — `skin` and `teeth` do, each because the two genuinely
+         come apart there. */
       display: null,
     });
   });
@@ -370,8 +371,17 @@ describe("a display region is shown and never carried", () => {
   it("has a member — otherwise every case below passes on an empty list", () => {
     /* The positive control. A vacuous sweep is the checker that cannot fail,
        and this file already learned that lesson on the totality case. */
-    expect(displayed.map((definition) => definition.slot)).toEqual(["skin"]);
-    expect(displayed[0]!.display).toBe("face skin");
+    /*
+      TWO NOW (fable-463). Teeth joined skin at the same door and for the same
+      reason: the region is the right picture for the row and the wrong crop to
+      file as it. Their regions differ from their questions in opposite
+      directions — skin's is narrower than the slot, teeth's is a question the
+      catalogue refuses to CUT from because a crop of it filed as her teeth is
+      the mouth under a second name.
+    */
+    expect(displayed.map((definition) => definition.slot)).toEqual(["teeth", "skin"]);
+    expect(displayed.map((definition) => [definition.slot, definition.display]))
+      .toEqual([["teeth", "teeth"], ["skin", "face skin"]]);
   });
 
   it("names a region the segmenter actually answers, never an invented one", () => {
@@ -380,7 +390,10 @@ describe("a display region is shown and never carried", () => {
        arriving through the display door instead of the cutting one. */
     for (const definition of displayed) {
       const owned = allFacets().some((facet) => regionNameOf(facet) === definition.display)
-        || LANDMARK_OF_ACCESSORY.some((accessory) => accessory.region === definition.display);
+        || LANDMARK_OF_ACCESSORY.some((accessory) => accessory.region === definition.display)
+        /* Or the display vocabulary's own table, whose entries carry the
+           reading that earned them (fable-463: teeth). */
+        || DISPLAY_REGION_VOCABULARY[definition.display!] !== undefined;
       expect(owned, `${definition.slot} draws from "${definition.display}", which no table owns`)
         .toBe(true);
       expect(isDerivedRegion(definition.display)).toBe(false);
@@ -398,7 +411,11 @@ describe("a display region is shown and never carried", () => {
       const spec = slotSpecFor(definition.slot, ["a warm olive tone"])!;
       expect(spec.question).toBeNull();
       expect(spec.guardKind).toBeNull();
-      expect(Object.values(spec)).not.toContain(definition.display);
+      /* The field itself never crosses the door. Asserted on the KEY rather
+         than by searching the values: `teeth` draws from a region that shares
+         its own name, so a value search would read the slot's noun as a leak
+         (and did, the first time this ran). */
+      expect(Object.keys(spec)).not.toContain("display");
     }
   });
 

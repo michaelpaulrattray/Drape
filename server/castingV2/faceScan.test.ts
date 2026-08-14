@@ -90,6 +90,13 @@ describe("what the scan asks is derived from the catalogue", () => {
     const plan = scanPlan();
     const features = plan.map((region) => region.feature);
     expect(new Set(features).size).toBe(features.length);
+    /*
+      AND TEETH IS ITS OWN QUESTION (fable-463), not the lips' under a second
+      name: measured on the founder's own frames, "lips" answers 0 px on a
+      smiling mouth and "teeth" answers 1,345 — the two are different questions
+      to this reader, whatever they are to a diagram.
+    */
+    expect(plan.find((region) => region.feature === "teeth")?.question).toBe("teeth");
     /* A bilateral feature is one question read two-sidedly, so both its slots
        ride one plan entry rather than costing two reads. */
     const eye = plan.find((region) => region.feature === "eye");

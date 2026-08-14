@@ -135,7 +135,7 @@ function armedQuestions(): ReadonlySet<string> {
  */
 export function scanPlan(): { feature: string; question: string; slots: SlotDefinition[] }[] {
   const armed = armedQuestions();
-  const byFeature = new Map<string, { feature: string; question: string; slots: SlotDefinition[] }>();
+  const byQuestion = new Map<string, { feature: string; question: string; slots: SlotDefinition[] }>();
   for (const definition of catalogueSlots()) {
     /*
       A SLOT MAY BE DRAWN FROM A REGION IT MAY NEVER BE CUT FROM (fable-428 §3).
@@ -155,15 +155,15 @@ export function scanPlan(): { feature: string; question: string; slots: SlotDefi
        key is not a question anyone may send to a reader (her build, below). */
     if (question === null || question === undefined) continue;
     if (definition.group === "accessories" && !armed.has(question)) continue;
-    const held = byFeature.get(definition.feature);
+    const held = byQuestion.get(definition.feature);
     if (held) held.slots.push(definition);
-    else byFeature.set(definition.feature, {
+    else byQuestion.set(definition.feature, {
       feature: definition.feature,
       question,
       slots: [definition],
     });
   }
-  return Array.from(byFeature.values());
+  return Array.from(byQuestion.values());
 }
 
 /**
@@ -457,6 +457,7 @@ export async function scanFace(input: {
        none today and the loop is the same shape the boxes take. */
     for (const definition of entry.slots) descriptions.set(definition.slot, line);
   }
+
 
   log.info(
     {
