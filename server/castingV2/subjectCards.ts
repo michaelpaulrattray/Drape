@@ -59,6 +59,26 @@ export type SubjectCard = {
   /** The heading its prose is composed under — the D-87 sweep looks for it. */
   readonly heading: string;
   /**
+   * WHICH ROAD HAS MEASURED THIS SUBJECT, and therefore which road may serve it.
+   *
+   * `everyRoad` is what all twenty-eight shipped subjects say: they predate the
+   * compositor swap and the old paste road serves them as it always has.
+   *
+   * `repaintOnly` is the promotion gate (fable-525 §3). A subject promoted off a
+   * measurement court has been measured on ONE road — the repaint road, because
+   * that is where the courts are run — and admitting it on the old road would be
+   * charging somebody for a kind nobody has ever measured there. It is also what
+   * keeps the standing autonomy law: a promoted subject IS live behaviour, and
+   * `CASTING_REPAINT_SCOPE` is `users:1` today, so the deploy changes nothing for
+   * anyone but the founder. When repaint widens, the promoted kinds widen with
+   * it — one gate rather than two lists that drift apart (law 4).
+   *
+   * Required rather than optional, and that is the point of V1: an absent field
+   * decides by absence, which is the silent-decider class this vocabulary was
+   * rebuilt to remove. The compiler asks the question a reviewer would forget to.
+   */
+  readonly admittedOn: "everyRoad" | "repaintOnly";
+  /**
    * PRESENCE OR DEGREE — whether an ask on this subject may ever REFUSE.
    * Presence binds (the thing is in the picture or it is not); degree advises
    * (a matter of shade or amount nobody has defined). The essay is on
@@ -108,6 +128,7 @@ export const SUBJECT_CARDS = {
     renders in this neighbourhood already. */
   hairCut: {
     heading: "HAIR CUT",
+    admittedOn: "everyRoad",
     kind: "degree",
     nouns: ["hair", "haircut", "cut", "fringe", "bangs", "layers"],
     qualifier: { describe: ", cut and dressed as a real haircut on this person's own hair density "
@@ -122,6 +143,7 @@ export const SUBJECT_CARDS = {
   },
   hairShade: {
     heading: "HAIR COLOUR",
+    admittedOn: "everyRoad",
     kind: "degree",
     nouns: ["hair colour", "hair color", "highlights", "roots"],
     qualifier: { describe: ", rendered as natural hair — dimensional rather than flat, with a "
@@ -137,6 +159,7 @@ export const SUBJECT_CARDS = {
   },
   hairPattern: {
     heading: "HAIR TEXTURE",
+    admittedOn: "everyRoad",
     kind: "degree",
     nouns: ["hair texture", "curls", "waves", "coils"],
     qualifier: { describe: ", as the hair's own growth pattern through its whole length, not a "
@@ -151,6 +174,7 @@ export const SUBJECT_CARDS = {
   },
   hairFinish: {
     heading: "HAIR FINISH",
+    admittedOn: "everyRoad",
     kind: "degree",
     nouns: ["hair finish", "shine", "frizz"],
     qualifier: { describe: ", as the way this hair takes light, not a change of colour or cut" },
@@ -173,6 +197,7 @@ export const SUBJECT_CARDS = {
     the photograph. Two production specimens plus a prior refund. */
   hairWorn: {
     heading: "HAIR WORN",
+    admittedOn: "everyRoad",
     kind: "presence",
     nouns: ["ponytail", "bun", "updo", "braid", "plait"],
     qualifier: { describe: ", as the same hair restyled, not cut and not a different head of hair" },
@@ -193,6 +218,7 @@ export const SUBJECT_CARDS = {
   /** The founding D-187 case, in both lanes. */
   eyeColourFree: {
     heading: "EYE COLOUR",
+    admittedOn: "everyRoad",
     kind: "degree",
     nouns: ["eye colour", "eye color", "iris", "irises"],
     qualifier: { describe: ", as the iris's own colour with its natural variation, never a flat "
@@ -207,6 +233,7 @@ export const SUBJECT_CARDS = {
   },
   eyeShapeFree: {
     heading: "EYE SHAPE",
+    admittedOn: "everyRoad",
     kind: "degree",
     nouns: ["eye", "eyes", "eyelid", "eyelids", "eye shape"],
     qualifier: { describe: ", as the eye's own structure — the lid, the corners and the lash line "
@@ -222,6 +249,7 @@ export const SUBJECT_CARDS = {
   },
   brows: {
     heading: "BROWS",
+    admittedOn: "everyRoad",
     kind: "degree",
     nouns: ["brow", "brows", "eyebrow", "eyebrows"],
     qualifier: { describe: ", as brow hair growing from this person's own brow bone, not pencilled "
@@ -237,6 +265,7 @@ export const SUBJECT_CARDS = {
   },
   lashes: {
     heading: "LASHES",
+    admittedOn: "everyRoad",
     kind: "degree",
     nouns: ["lash", "lashes", "eyelash", "eyelashes"],
     qualifier: { describe: ", as lashes on this person's own lash line" },
@@ -250,6 +279,7 @@ export const SUBJECT_CARDS = {
   },
   nose: {
     heading: "NOSE",
+    admittedOn: "everyRoad",
     kind: "degree",
     nouns: ["nose", "nostril", "nostrils", "bridge", "septum"],
     qualifier: { describe: ", as the nose's own structure, with the rest of the face unchanged" },
@@ -263,6 +293,7 @@ export const SUBJECT_CARDS = {
   },
   lips: {
     heading: "LIPS",
+    admittedOn: "everyRoad",
     kind: "degree",
     nouns: ["lip", "lips", "mouth", "cupid's bow"],
     qualifier: { describe: ", as the lips' own shape and surface, distinct from any lip colour" },
@@ -277,6 +308,7 @@ export const SUBJECT_CARDS = {
   },
   teeth: {
     heading: "TEETH",
+    admittedOn: "everyRoad",
     kind: "degree",
     nouns: ["tooth", "teeth", "smile line", "gums"],
     qualifier: { describe: ", visible in the mouth as it is already held, without changing the "
@@ -293,6 +325,7 @@ export const SUBJECT_CARDS = {
        this list the guard cannot see the collision it was written for. */
   cheekbones: {
     heading: "CHEEKBONES",
+    admittedOn: "everyRoad",
     kind: "degree",
     nouns: ["cheekbone", "cheekbones", "cheek", "cheeks"],
     qualifier: { describe: ", as the face's own bone structure under its own skin" },
@@ -306,6 +339,7 @@ export const SUBJECT_CARDS = {
   },
   jaw: {
     heading: "JAW",
+    admittedOn: "everyRoad",
     kind: "degree",
     nouns: ["jaw", "jawline", "mandible"],
     qualifier: { describe: ", as the jaw's own contour, with the neck and chin left alone" },
@@ -319,6 +353,7 @@ export const SUBJECT_CARDS = {
   },
   chin: {
     heading: "CHIN",
+    admittedOn: "everyRoad",
     kind: "degree",
     nouns: ["chin"],
     qualifier: { describe: ", as the chin's own contour, with the jaw left alone" },
@@ -329,6 +364,7 @@ export const SUBJECT_CARDS = {
   },
   ears: {
     heading: "EARS",
+    admittedOn: "everyRoad",
     kind: "degree",
     nouns: ["ear", "ears", "earlobe", "earlobes"],
     qualifier: { describe: ", on both sides and matching one another" },
@@ -342,6 +378,7 @@ export const SUBJECT_CARDS = {
   },
   skinTone: {
     heading: "SKIN TONE",
+    admittedOn: "everyRoad",
     kind: "degree",
     nouns: ["skin", "skin tone", "complexion", "tan"],
     qualifier: { describe: ", across all of this person's visible skin, evenly and consistently" },
@@ -370,6 +407,7 @@ export const SUBJECT_CARDS = {
   */
   skinCharacter: {
     heading: "SKIN CHARACTER",
+    admittedOn: "everyRoad",
     kind: "degree",
     nouns: ["acne", "pores", "texture", "ruddiness", "weathering", "blemishes"],
     qualifier: { describe: ", as the skin's own surface — texture that follows the form of the "
@@ -389,6 +427,7 @@ export const SUBJECT_CARDS = {
     Presence-binding it would refund provably delivered freckles. */
   marks: {
     heading: "MARKS",
+    admittedOn: "everyRoad",
     kind: "degree",
     nouns: [
       "mark", "marks", "mole", "moles", "scar", "scars", "birthmark",
@@ -423,6 +462,7 @@ export const SUBJECT_CARDS = {
     is the person, and the fix that gave the free lane its first teeth. */
   statedAccessories: {
     heading: "ACCESSORIES",
+    admittedOn: "everyRoad",
     kind: "presence",
     nouns: [
       "earring", "earrings", "glasses", "spectacles", "sunglasses",
@@ -474,6 +514,7 @@ export const SUBJECT_CARDS = {
   */
   bust: {
     heading: "BUST",
+    admittedOn: "everyRoad",
     kind: "degree",
     nouns: ["bust", "chest", "breasts"],
     qualifier: { describe: ", as this person's own chest under the same garment, with the neckline "
@@ -489,6 +530,7 @@ export const SUBJECT_CARDS = {
   },
   waist: {
     heading: "WAIST",
+    admittedOn: "everyRoad",
     kind: "degree",
     nouns: ["waist", "midriff", "stomach", "torso"],
     qualifier: { describe: ", as this person's own waist, with the same garment sitting on it" },
@@ -502,6 +544,7 @@ export const SUBJECT_CARDS = {
   },
   shoulders: {
     heading: "SHOULDERS",
+    admittedOn: "everyRoad",
     kind: "degree",
     nouns: ["shoulder", "shoulders"],
     qualifier: { describe: ", as this person's own shoulder line and posture, not a different pose" },
@@ -515,6 +558,7 @@ export const SUBJECT_CARDS = {
   },
   arms: {
     heading: "ARMS",
+    admittedOn: "everyRoad",
     kind: "degree",
     nouns: ["arm", "arms", "biceps", "forearm", "forearms"],
     qualifier: { describe: ", as this person's own arms at the same relaxed position, not a "
@@ -529,6 +573,7 @@ export const SUBJECT_CARDS = {
   },
   build: {
     heading: "BUILD",
+    admittedOn: "everyRoad",
     kind: "degree",
     nouns: [
       "build", "body", "body type", "body shape", "figure", "physique",
@@ -549,6 +594,7 @@ export const SUBJECT_CARDS = {
     A tattoo asked for and not drawn is an absence, not a shade dispute. */
   ink: {
     heading: "INK",
+    admittedOn: "everyRoad",
     kind: "presence",
     nouns: ["ink", "tattoo", "tattoos"],
     qualifier: { exempt: "each item carries its own placement clause (D-171), built per item in "
@@ -566,6 +612,7 @@ export const SUBJECT_CARDS = {
     full beard she asked for" is a quibble and the absence gate declines it. */
   facialHair: {
     heading: "FACIAL HAIR",
+    admittedOn: "everyRoad",
     kind: "presence",
     nouns: [
       "beard", "moustache", "mustache", "stubble", "sideburns", "goatee",
@@ -590,6 +637,7 @@ export const SUBJECT_CARDS = {
     optimistically; it can be promoted when it has a specimen of its own. */
   expression: {
     heading: "EXPRESSION",
+    admittedOn: "everyRoad",
     kind: "degree",
     nouns: ["expression", "smile", "frown", "smirk", "scowl"],
     qualifier: { describe: ", as this person's own face doing it, with their features unchanged" },
@@ -600,6 +648,55 @@ export const SUBJECT_CARDS = {
     plural: false,
     departable: false,
     presentationNoun: "expression",
+  },
+  /**
+   * HORNS — the first kind promoted off a measurement court rather than off a
+   * plan (fable-525 §3, `docs/specs/V2_HORNS_VERDICT.md`).
+   *
+   * Every number below is from a driven court on two of the founder's own
+   * delivered faces, and the LIMITS are filed beside them because a card's
+   * evidence carries its own error bars:
+   *
+   *   delivery   6/6 on face 1 (high bun, blunt fringe) and 6/6 on face 2
+   *              (short crop), each affirmative agreed by two differently
+   *              shaped readers — the narrow D-235 question and a non-leading
+   *              "describe what is on and around this person's head" whose
+   *              answer the CODE searches. Negative control 0/3 on both faces
+   *              and both readers.
+   *   detection  bare 0.0000% ×3 · worn 0.61–0.83% (face 1), 0.39–0.87%
+   *              (face 2). Found 6/6, silent 3/3, per face and never pooled.
+   *   survival   3/3 through an unrelated edit ("her t-shirt is black"), with
+   *              identity held 3/3 — BY WORDS. The crop arm also held 3/3 and
+   *              beat nothing, so the status quo wins and the library
+   *              machinery buys horns nothing.
+   *   removal    3/3 gone and 3/3 clean on BOTH roads (dropping the carry, and
+   *              an absence sentence). No stump, no ghost rim.
+   *
+   *   THE LIMITS, unedited: survival and removal are n=3 on ONE face; delivery
+   *   and detection are 6 per face on two faces. Horns on a shaved head, a
+   *   turned head or under a hat are not measured, and the "not visible"
+   *   detection class was never bought. `admittedOn: "repaintOnly"` is the
+   *   other half of that sentence — the old paste road has measured none of it.
+   *
+   * `plural: true` because a pair is one ask: "give her horns" is answered
+   * absolutely by the next instruction about them rather than added to, which
+   * is what keeps removal arithmetic. `departable: true` is measured, not
+   * declared — that is what the removal court bought.
+   */
+  horns: {
+    heading: "HORNS",
+    admittedOn: "repaintOnly",
+    kind: "presence",
+    nouns: ["horns", "horn", "antlers"],
+    qualifier: { describe: ", growing from this person's own head through the hairline, with the "
+      + "hair and skin around the base unbroken" },
+    amplitude: {
+      levels: REPLACEMENT,
+      basis: { reasoned: "horns put opaque material where hair or background was" },
+    },
+    plural: true,
+    departable: true,
+    presentationNoun: null,
   },
 } as const satisfies Record<string, SubjectCard>;
 
@@ -623,3 +720,13 @@ export function tableOf<T>(read: (card: SubjectCard) => T): Record<FreeSubject, 
 export function subjectsWhere(read: (card: SubjectCard) => boolean): readonly FreeSubject[] {
   return SUBJECT_CARD_ENTRIES.filter(([, card]) => read(card)).map(([subject]) => subject);
 }
+
+/**
+ * The subjects only the repaint road may serve — derived, never listed twice.
+ *
+ * The admission door reads this. A second hand-written list beside it is the
+ * mirror law 4 forbids, and the drift would be a customer charged on a road
+ * where the kind they asked for has never been measured.
+ */
+export const REPAINT_ONLY_SUBJECTS: readonly FreeSubject[] =
+  subjectsWhere((card) => card.admittedOn === "repaintOnly");

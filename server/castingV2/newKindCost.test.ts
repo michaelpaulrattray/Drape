@@ -38,6 +38,7 @@ import {
 /** A kind nobody has catalogued, answering all eight questions. */
 const SCAFFOLD: SubjectCard = {
   heading: "SCAFFOLD",
+  admittedOn: "everyRoad",
   kind: "degree",
   nouns: ["scaffold"],
   qualifier: { describe: ", as a scaffold" },

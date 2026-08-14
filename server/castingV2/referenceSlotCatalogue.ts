@@ -200,8 +200,18 @@ type QuestionSource =
   | { from: "derived"; of: "belowHead"; note: string }
   | {
     from: "none";
-    /** How the nearest available region relates to the slot. */
-    relation: "broader" | "narrower";
+    /**
+     * How the nearest available region relates to the slot.
+     *
+     * Optional for one case and one case only: a slot whose facets name NO
+     * region has no nearest thing for a relation to be about, and horns is the
+     * first of those — its facet card writes `region: null` deliberately, so
+     * "broader" or "narrower" here would be a false word in the source that
+     * nothing would ever print. A slot that DOES have a nearest region must
+     * still say how it relates, and the catalogue refuses to load otherwise:
+     * that sentence is read by a person deciding whether a crop is honest.
+     */
+    relation?: "broader" | "narrower";
     note: string;
   };
 
@@ -556,6 +566,47 @@ const ANATOMY_SLOTS: readonly CatalogueEntry[] = [
     */
     display: "face skin",
   },
+  {
+    /*
+      HORNS — a slot so her horns have somewhere to STAND (fable-525 §3).
+
+      A slot exists so that words about a feature have somewhere to land, and
+      that is the whole of what horns needs. The survival court measured both
+      arms on the same face and the same chained edit: the words carry held 3/3
+      and a real cut of her own horns held 3/3, neither beating the other. So
+      the crop buys nothing and this slot is deliberately words-only — the
+      standing-words machinery restates the clause on every later render, which
+      is exactly what the winning arm did by hand.
+
+      NO ROW, and that is a founder rule rather than a shortcut: *"only show the
+      8 rows that real pictures have"*. A row is a picture and a click, and this
+      slot has no picture to show — a square with nothing behind it would be a
+      claim about her face that no crop backs.
+
+      The limits ride with it: survival and removal are n=3 on ONE face, and the
+      old paste road has measured none of it (`admittedOn: "repaintOnly"` on the
+      subject card, enforced at the admission door).
+    */
+    feature: "horns",
+    noun: "horns",
+    tier: "anatomy",
+    /* Not "accessories": horns are not worn, they GROW — she is not carrying
+       them and cannot take them off in the way a hoop comes out of a lobe. The
+       stylist's grouping for a thing coming through the hairline is the head. */
+    group: "hair",
+    facets: ["horns"],
+    /* One ask, not one per side: the court asked for horns and got a pair,
+       twelve times across two faces, and no reading ever separated them. */
+    instances: { of: "one" },
+    question: {
+      from: "none",
+      note: "no region in the cutting vocabulary names them — deliberately, because the crop arm beat nothing and a crop would need a completeness specimen this kind has never bought. The DETECTOR can see them perfectly well (0.0000% on three visibly bare frames against 0.39–0.87% on twelve worn ones, two faces); that is a different question from what may be cut and filed",
+    },
+    panel: {
+      row: "none",
+      why: "there is no crop of them, so a row would be a square with nothing behind it — the ask works, the words are kept, and the panel does not offer a picture of something that has none",
+    },
+  },
 ];
 
 /**
@@ -634,6 +685,21 @@ function entryOf(feature: string): CatalogueEntry | undefined {
  * the catalogue refuses to load rather than shipping a slot that speaks into a
  * room with no door.
  */
+/**
+ * A SLOT WITH A NEAREST REGION MUST SAY HOW IT RELATES — checked at load, for
+ * the same reason the fold check is: the sentence it produces is read by a
+ * person deciding whether this slot could honestly have been a crop.
+ */
+for (const entry of SLOT_CATALOGUE) {
+  if (entry.question.from !== "none") continue;
+  if (nearestRegionOf(entry) === null) continue;
+  if (entry.question.relation === undefined) {
+    throw new Error(
+      `"${entry.feature}" has no question of its own but its facets name a region — say whether that region is broader or narrower than this slot`,
+    );
+  }
+}
+
 for (const entry of SLOT_CATALOGUE) {
   if (entry.panel?.row !== "foldedInto") continue;
   const host = entryOf(entry.panel.feature);

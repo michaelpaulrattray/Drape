@@ -84,6 +84,7 @@ import { hairStyleByName } from "./hairStyles";
 import {
   FREE_SUBJECT_KEYS,
   FREE_SUBJECTS,
+  REPAINT_ONLY_SUBJECTS,
   isDepartableSubject,
   type FreeSubject,
 } from "./refineSubjects";
@@ -996,6 +997,42 @@ export async function refineCandidate(
   if (editDelta && lastColourFacet && needsColourReferent(instruction)) {
     editDelta = redirectColourTo(editDelta, lastColourFacet);
   }
+  /*
+    A KIND THE OLD ROAD HAS NEVER BEEN MEASURED ON REFUSES HERE — free, before
+    the claim and before the charge (fable-525 §3c).
+
+    Horns is the first subject promoted off measurement courts rather than off a
+    plan, and every one of those courts was run on the REPAINT road, because
+    that is the road that assembles a declarative recipe. Admitting it on the
+    old paste road would charge somebody for a kind nobody has ever measured
+    there — and the promotion's whole point was that a card's claims are backed.
+
+    Asserted at the door rather than assumed, because "the old road cannot do it
+    anyway" is exactly the reasoning that has been wrong before: the interpreter
+    now KNOWS the word, so without this the ask would sail past the vocabulary
+    check that used to refuse it and land in a paste render that has never
+    grown a horn.
+
+    The list is derived from the cards (`admittedOn`), so when repaint widens,
+    the promoted kinds widen with it — one gate, not two lists that drift.
+  */
+  const repaintServesThisUser = (dependencies.repaintEnabled ?? captureCastingRepaintEnabled)(
+    input.userId,
+  );
+  if (!repaintServesThisUser && editDelta?.free) {
+    const unserved = REPAINT_ONLY_SUBJECTS.filter((subject) => editDelta?.free?.[subject]);
+    if (unserved.length > 0) {
+      log.info(
+        { userId: input.userId, candidate: input.candidatePublicId, instruction, unserved },
+        "[refineService] the ask names a kind only the repaint road serves — refusing before the charge",
+      );
+      throw new TRPCError({
+        code: "BAD_REQUEST",
+        message: "I can't do that to her yet. Nothing was charged.",
+      });
+    }
+  }
+
   /* A likeness comparison rode this ask and was set aside (D-181). */
   const droppedReference = "droppedReference" in parsed && parsed.droppedReference === true;
   /*
@@ -2660,9 +2697,10 @@ export async function refineCandidate(
       delivered-frame read that closes it lands before the flag is flipped for
       anybody (opus-227 §3, fable-281).
     */
-    const repaintEnabled = (dependencies.repaintEnabled ?? captureCastingRepaintEnabled)(
-      input.userId,
-    );
+    /* Read once, at the admission door above, so the road that ADMITS the ask
+       and the road that PAINTS it can never be two different answers to the
+       same question inside one request. */
+    const repaintEnabled = repaintServesThisUser;
     /*
       THE BRANCH'S ROWS ARE READ BEFORE THE ASKS ARE BUILT (fable-318 R2).
 

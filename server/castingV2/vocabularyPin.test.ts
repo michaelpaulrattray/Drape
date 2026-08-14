@@ -46,15 +46,61 @@ import {
   SUBJECT_NOUNS,
 } from "./refineSubjects";
 
+/**
+ * WHAT HAS BEEN ADDED SINCE THE PIN WAS TAKEN — declared here, and nowhere else.
+ *
+ * The pin's question is *did the contents MOVE, or did they CHANGE?* A
+ * deliberate ADDITION is a third thing, and it must not be answerable by
+ * regenerating the golden — that is the habit this file exists to refuse.
+ *
+ * So every assertion below compares the PINNED keys and nothing else, and a
+ * separate assertion says the set of new keys is exactly this list. An addition
+ * nobody declared reddens; a pinned value that drifts still reddens; and the
+ * golden is never rewritten to agree with the code.
+ *
+ *   horns   promoted 2026-08-14 off four measurement courts (fable-525 §3,
+ *           `docs/specs/V2_HORNS_VERDICT.md`) — one subject, one facet.
+ */
+const ADDED_SUBJECTS = ["horns"];
+const ADDED_FACETS = ["horns"];
+
+/** The pinned part of a table: what the golden actually has an opinion about. */
+function pinnedPart(
+  table: Record<string, unknown>,
+  added: readonly string[],
+): Record<string, unknown> {
+  return Object.fromEntries(Object.entries(table).filter(([key]) => !added.includes(key)));
+}
+
+/** The keys a table has gained since the pin, sorted. */
+function addedPart(table: Record<string, unknown>, pinned: Record<string, unknown>): string[] {
+  return Object.keys(table).filter((key) => !(key in pinned)).sort();
+}
+
 describe("the eight compile-closed tables", () => {
   it("hold exactly what they held before V1 began", () => {
-    expect(FREE_SUBJECTS).toEqual(pin.FREE_SUBJECTS);
-    expect(FREE_SUBJECT_KIND).toEqual(pin.FREE_SUBJECT_KIND);
-    expect(SUBJECT_NOUNS).toEqual(pin.SUBJECT_NOUNS);
-    expect(SUBJECT_QUALIFIER).toEqual(pin.SUBJECT_QUALIFIER);
-    expect(CHANGE_AMPLITUDE).toEqual(pin.CHANGE_AMPLITUDE);
-    expect(ZONE_SCOPE).toEqual(pin.ZONE_SCOPE);
-    expect(FACET_SLOTS).toEqual(pin.FACET_SLOTS);
+    expect(pinnedPart(FREE_SUBJECTS, ADDED_SUBJECTS)).toEqual(pin.FREE_SUBJECTS);
+    expect(pinnedPart(FREE_SUBJECT_KIND, ADDED_SUBJECTS)).toEqual(pin.FREE_SUBJECT_KIND);
+    expect(pinnedPart(SUBJECT_NOUNS, ADDED_SUBJECTS)).toEqual(pin.SUBJECT_NOUNS);
+    expect(pinnedPart(SUBJECT_QUALIFIER, ADDED_SUBJECTS)).toEqual(pin.SUBJECT_QUALIFIER);
+    expect(pinnedPart(CHANGE_AMPLITUDE, ADDED_SUBJECTS)).toEqual(pin.CHANGE_AMPLITUDE);
+    expect(pinnedPart(ZONE_SCOPE, ADDED_FACETS)).toEqual(pin.ZONE_SCOPE);
+    expect(pinnedPart(FACET_SLOTS, ADDED_FACETS)).toEqual(pin.FACET_SLOTS);
+  });
+
+  it("have gained exactly the kinds somebody declared, and no others", () => {
+    /*
+      The other half of the relaxation above, and the half that makes it safe. A
+      kind that arrives without being named here is indistinguishable from a
+      kind that arrived by accident, which is precisely what the pin was for.
+    */
+    expect(addedPart(FREE_SUBJECTS, pin.FREE_SUBJECTS)).toEqual([...ADDED_SUBJECTS].sort());
+    expect(addedPart(FREE_SUBJECT_KIND, pin.FREE_SUBJECT_KIND)).toEqual([...ADDED_SUBJECTS].sort());
+    expect(addedPart(SUBJECT_NOUNS, pin.SUBJECT_NOUNS)).toEqual([...ADDED_SUBJECTS].sort());
+    expect(addedPart(SUBJECT_QUALIFIER, pin.SUBJECT_QUALIFIER)).toEqual([...ADDED_SUBJECTS].sort());
+    expect(addedPart(CHANGE_AMPLITUDE, pin.CHANGE_AMPLITUDE)).toEqual([...ADDED_SUBJECTS].sort());
+    expect(addedPart(ZONE_SCOPE, pin.ZONE_SCOPE)).toEqual([...ADDED_FACETS].sort());
+    expect(addedPart(FACET_SLOTS, pin.FACET_SLOTS)).toEqual([...ADDED_FACETS].sort());
   });
 });
 
@@ -80,11 +126,18 @@ describe("the four that decide by absence", () => {
       an object whose key order decides which noun a lookup finds first.
     */
     expect([...PRESENTATION_SUBJECTS]).toEqual(pin.PRESENTATION_SUBJECTS);
-    expect([...PLURAL_SUBJECTS].sort()).toEqual([...pin.PLURAL_SUBJECTS].sort());
-    expect([...DEPARTABLE_SUBJECTS].sort()).toEqual([...pin.DEPARTABLE_SUBJECTS].sort());
-    /* And the counts, so a sort cannot hide a kind quietly joining a list. */
-    expect(PLURAL_SUBJECTS).toHaveLength(pin.PLURAL_SUBJECTS.length);
-    expect(DEPARTABLE_SUBJECTS).toHaveLength(pin.DEPARTABLE_SUBJECTS.length);
+    const withoutAdded = (list: readonly string[]) =>
+      list.filter((subject) => !ADDED_SUBJECTS.includes(subject)).sort();
+    expect(withoutAdded(PLURAL_SUBJECTS)).toEqual([...pin.PLURAL_SUBJECTS].sort());
+    expect(withoutAdded(DEPARTABLE_SUBJECTS)).toEqual([...pin.DEPARTABLE_SUBJECTS].sort());
+    /* And the counts, so a sort cannot hide a kind quietly joining a list.
+       Horns enrols in BOTH, and both are measurements rather than guesses: a
+       pair is one ask (plural), and the removal court bought 3/3 gone and 3/3
+       clean on two roads (departable). */
+    expect(PLURAL_SUBJECTS).toHaveLength(pin.PLURAL_SUBJECTS.length + 1);
+    expect(DEPARTABLE_SUBJECTS).toHaveLength(pin.DEPARTABLE_SUBJECTS.length + 1);
+    expect([...PLURAL_SUBJECTS]).toContain("horns");
+    expect([...DEPARTABLE_SUBJECTS]).toContain("horns");
   });
 
   it("send each facet to the same region, INCLUDING the eight that go nowhere", () => {
@@ -97,7 +150,11 @@ describe("the four that decide by absence", () => {
     */
     const regions = Object.fromEntries(
       edgeTableNames().map((facet) => [facet, regionNameOf(facet as never)]));
-    expect(regions).toEqual(pin.REGION_OF_FACET);
+    expect(pinnedPart(regions, ADDED_FACETS)).toEqual(pin.REGION_OF_FACET);
+    /* And the added one's answer, written out rather than inherited: horns has
+       NO region, which is a decision about the cutting vocabulary and not a
+       statement that the segmenter cannot see them. */
+    expect(regions.horns).toBeNull();
   });
 });
 
@@ -105,7 +162,8 @@ describe("the edge table", () => {
   it("moves exactly the edges it moved before V1 began", () => {
     const edges = Object.fromEntries(
       edgeTableNames().map((facet) => [facet, anyFacetMovesAnEdge([facet as never])]));
-    expect(edges).toEqual(pin.MOVES_ITS_EDGE);
+    expect(pinnedPart(edges, ADDED_FACETS)).toEqual(pin.MOVES_ITS_EDGE);
+    expect(edges.horns).toBe(true);
   });
 });
 
@@ -115,10 +173,15 @@ describe("the pin itself", () => {
        would pass over nothing at all. */
     expect(Object.keys(pin.FREE_SUBJECTS).length).toBe(28);
     expect(Object.keys(pin.ZONE_SCOPE).length).toBe(29);
-    expect(Object.keys(pin.FREE_SUBJECTS)).toEqual(Object.keys(FREE_SUBJECTS));
+    expect(Object.keys(pin.FREE_SUBJECTS)).toEqual(
+      Object.keys(FREE_SUBJECTS).filter((subject) => !ADDED_SUBJECTS.includes(subject)));
     /* Sorted on both sides: `edgeTableNames()` sorts and the zone table keeps
        its authored order, and this is a question about MEMBERSHIP. */
-    expect(Object.keys(pin.ZONE_SCOPE).sort()).toEqual([...edgeTableNames()].sort());
+    expect(Object.keys(pin.ZONE_SCOPE).sort()).toEqual(
+      [...edgeTableNames()].filter((facet) => !ADDED_FACETS.includes(facet)).sort());
+    /* And the additions are present in the live table, so this check cannot
+       pass by the new facet being missing from both sides. */
+    for (const facet of ADDED_FACETS) expect([...edgeTableNames()]).toContain(facet);
   });
 
   it("CAN FAIL — the comparison, driven on a table with one value moved", () => {

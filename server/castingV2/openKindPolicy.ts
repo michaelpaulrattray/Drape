@@ -272,6 +272,21 @@ export const OPEN_KIND_POLICY: Record<string, OpenKindAnswer> = {
     },
     standing: "owed",
   },
+  REPAINT_ONLY_SUBJECTS: {
+    file: "subjectCards.ts",
+    asks: "may the OLD paste road serve this subject, or only the repaint road",
+    answer: "the open lane is repaint-only in practice, and this table does not decide it",
+    basis: {
+      derived: "the table is derived from `admittedOn`, which is a fact about which road has "
+        + "MEASURED a subject — and an open kind has no card, so it has no measurement on "
+        + "either road. What keeps it honest is a different door: the open lane only exists "
+        + "on the repaint road, because a declarative recipe is what makes an unlisted kind "
+        + "sayable at all. So the answer here is a silence with a reason rather than an "
+        + "entry: if an open kind ever reaches the paste road, the thing to fix is that "
+        + "road's admission, not this list",
+    },
+    standing: "silence",
+  },
   PRESENTATION_SUBJECTS: {
     file: "refineSubjects.ts",
     asks: "does this file as presentation instead of identity",

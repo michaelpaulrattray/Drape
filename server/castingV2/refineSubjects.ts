@@ -28,6 +28,7 @@
 import type { RefinableAxis } from "./refineDelta";
 import {
   FREE_SUBJECT_KEYS,
+  REPAINT_ONLY_SUBJECTS,
   SUBJECT_CARD_ENTRIES,
   subjectsWhere,
   tableOf,
@@ -47,6 +48,11 @@ export const FREE_SUBJECTS: Record<FreeSubject, string> = tableOf((card) => card
 export type { FreeSubject };
 
 export { FREE_SUBJECT_KEYS };
+
+/** The subjects only the repaint road may serve — see the card field it comes
+ *  from. Re-exported here so consumers keep importing the vocabulary from one
+ *  place. */
+export { REPAINT_ONLY_SUBJECTS };
 
 /**
  * PRESENCE OR DEGREE — the split that decides whether an ask can REFUSE.

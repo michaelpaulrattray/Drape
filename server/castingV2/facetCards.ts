@@ -274,6 +274,34 @@ export const FACET_CARDS = {
       phrase: "anything else worn in the reference unchanged",
     },
   },
+  /**
+   * HORNS — promoted off the four courts (fable-525 §3), and deliberately
+   * WORDS-ONLY, which is a measurement rather than a shortcut.
+   *
+   * The survival court ran both arms on the same face, the same chained edit and
+   * the same bar: the words carry held 3/3 and a real cut of her own horns
+   * (93×235, 121×244, 112×259 px, measured at the wire) held 3/3 as well.
+   * Neither beat the other, so the status quo wins and the library machinery
+   * buys horns nothing — the fidelity law's test is whether the lesser path is
+   * lesser, and here it measurably is not.
+   *
+   * `region: null` therefore, and the reason is worth being exact about because
+   * it is NOT "the segmenter cannot see them". It plainly can: the detection
+   * court read 0.0000% on three visibly bare frames and 0.39–0.87% on twelve
+   * worn ones, across two faces. That reading is the DETECTOR's. A region here
+   * is the CUTTING vocabulary — it would put horns on the masked road, where
+   * nothing about them has been measured, and it would hand the mint a crop to
+   * guard with a completeness specimen this kind has never bought. Enrolling
+   * the region is a second, measured step, not a free consequence of the first.
+   */
+  horns: {
+    zone: "object",
+    slot: { feature: "horns" },
+    region: null,
+    movesItsEdge: { moves: true, why: "horns arrive through the hairline and take space that was hair or background" },
+    naming: { shape: "hers" },
+    preservation: { category: "hair", phrase: "the same horns" },
+  },
   ink: {
     zone: "object",
     slot: {

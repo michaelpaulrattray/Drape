@@ -131,22 +131,40 @@ describe("the collision check — §1's measured failure, at the guard", () => {
     expect(closedSubjectFor("ponytail")).toBe("hairWorn");
   });
 
-  it("lets the five measured open concepts through — the negative control", () => {
+  it("lets the measured open concepts through — the negative control", () => {
     /* Symmetrical harm: a false collision routes a genuinely new ask into a
        closed subject, which is the same bug pointed the other way, and it fails
        SILENTLY. These are the probe's own concepts. */
-    for (const kind of ["horns", "antlers", "scales", "wings", "gills"]) {
+    for (const kind of ["scales", "wings", "gills"]) {
       expect(closedSubjectFor(kind), kind).toBeNull();
     }
+  });
+
+  it("has stopped letting HORNS through, because horns is a subject now", () => {
+    /*
+      The probe's five open concepts were chosen when none of them existed. Two
+      of them do now: horns was promoted off four measurement courts on
+      2026-08-14 and carries `antlers` in its nouns, so an ask about either
+      belongs to the closed lane and the collision check says so.
+
+      This assertion is the promotion's own footprint at this door. If horns
+      were ever unpromoted, this reddens rather than the open lane silently
+      re-acquiring a kind the closed one owns.
+    */
+    expect(closedSubjectFor("horns")).toBe("horns");
+    expect(closedSubjectFor("antlers")).toBe("horns");
   });
 });
 
 describe("naming the thing an out-of-vocabulary ask is about", () => {
   it("reads a clean key", async () => {
-    const reading = await normalizeOpenKind("give her curled ram horns", {
-      engine: engineSaying('{"kind":"horns"}'),
+    /* Was "horns" until horns became a closed subject; a clean key has to be a
+       kind the closed lane does NOT own, or this test is measuring the
+       collision check rather than the reading. */
+    const reading = await normalizeOpenKind("give her a curled ram's fleece", {
+      engine: engineSaying('{"kind":"fleece"}'),
     });
-    expect(reading).toEqual({ ok: true, kind: "horns" });
+    expect(reading).toEqual({ ok: true, kind: "fleece" });
   });
 
   it("reads a key out of a fenced reply, because providers add fences", async () => {

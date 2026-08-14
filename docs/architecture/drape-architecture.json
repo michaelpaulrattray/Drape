@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "2928c3c385c315f0"
+    "sourceFingerprint": "27b46963c54e912f"
   },
   "domains": [
     {
@@ -8188,6 +8188,12 @@
       "file": "server/castingV2/facetCards.ts"
     },
     {
+      "id": "vocabulary:facet:horns",
+      "name": "horns",
+      "vocabulary": "facet",
+      "file": "server/castingV2/facetCards.ts"
+    },
+    {
       "id": "vocabulary:facet:ink",
       "name": "ink",
       "vocabulary": "facet",
@@ -8358,6 +8364,12 @@
     {
       "id": "vocabulary:subject:hairWorn",
       "name": "hairWorn",
+      "vocabulary": "subject",
+      "file": "server/castingV2/subjectCards.ts"
+    },
+    {
+      "id": "vocabulary:subject:horns",
+      "name": "horns",
       "vocabulary": "subject",
       "file": "server/castingV2/subjectCards.ts"
     },
@@ -26706,17 +26718,17 @@
       "message": "Names 2 of RecipeRefusal's 4 fields (server/castingV2/recipeAssembler.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/refineService.ts:387",
+      "id": "finding:redeclared-shape:server/castingV2/refineService.ts:388",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/refineService.ts:387",
+      "subject": "server/castingV2/refineService.ts:388",
       "message": "Names 3 of Thumbnail's 3 fields (server/castingV2/thumbnails.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/refineService.ts:435",
+      "id": "finding:redeclared-shape:server/castingV2/refineService.ts:436",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/refineService.ts:435",
+      "subject": "server/castingV2/refineService.ts:436",
       "message": "Names 3 of Thumbnail's 3 fields (server/castingV2/thumbnails.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {

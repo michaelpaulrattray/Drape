@@ -261,6 +261,38 @@ describe("the cut is derived from the rows, never declared", () => {
     expect(classesOf(attempt({ verification: null }))).toEqual([]);
   });
 
+  it("watches a NEWLY PROMOTED kind from its first paid render (fable-525 §3b)", () => {
+    /*
+      Horns was promoted on 2026-08-14 with survival and removal measured at n=3
+      on a single face. The honest answer to a small n is not confidence, it is
+      SUPERVISION: because classes are derived from the facets a verdict was
+      written about, and horns BINDS (it is a presence subject, so an ask that
+      comes back without them is an absence), the very first horns render enters
+      this report under its own name and is judged against the 95% bar like
+      everything else.
+
+      Asserted rather than assumed, because "it derives, so it must appear" is
+      exactly the reasoning that has been right about the architecture and wrong
+      about the code before.
+    */
+    const row = attempt({
+      verification: { checks: [check({ facet: "horns", asked: "curved ram horns" })] },
+    });
+    expect(classesOf(row)).toEqual(["horns"]);
+
+    const report = summarize([row]);
+    const horns = report.byClass.find((tally) => tally.edit === "horns");
+    expect(horns?.total).toBe(1);
+
+    /* And a removal of them is a class of its own, so a horns removal can never
+       be carried over the bar by the horns additions beside it. */
+    const removal = attempt({
+      operationId: "op-2",
+      verification: { checks: [check({ facet: "horns", absenceIsTheAsk: true })] },
+    });
+    expect(classesOf(removal)).toEqual(["horns · removal"]);
+  });
+
   it("counts one multi-facet attempt against every class it touched", () => {
     const report = summarize([
       attempt({ verification: { checks: [check({ facet: "makeup" }), check({ facet: "eye.colour" })] } }),

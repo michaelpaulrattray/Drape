@@ -2980,6 +2980,52 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
     expect(keptAsks[0]!.evidence).toEqual(composite);
   });
 
+  /**
+   * A PROMOTED KIND IS ADMITTED ONLY WHERE IT WAS MEASURED (fable-525 §3c).
+   *
+   * Horns was promoted on 2026-08-14 off four courts, every one of them run on
+   * the repaint road. The old paste road has never grown a horn and nothing has
+   * ever measured whether it can, so an ask that names one there refuses free.
+   *
+   * Both arms are driven, because the interesting half is the one that must NOT
+   * refuse: a gate that says no to everybody would pass a one-armed test and
+   * would have quietly taken the founder's own new kind away from him.
+   */
+  describe("a kind only the repaint road has been measured on", () => {
+    const horns = {
+      ...repainting,
+      interpret: async () => ({ ok: true as const, delta: { free: { horns: "curved ram horns" } } }),
+    };
+
+    it("refuses on the OLD road, free, before anything is claimed", async () => {
+      await expect(refineCandidate(
+        { ...horns, repaintEnabled: () => false, harvest: compositing },
+        { ...input, instruction: "give her curved ram horns" },
+      )).rejects.toThrow(/can't do that to her yet/i);
+    });
+
+    it("is served on the repaint road — the arm that matters", async () => {
+      const result = await refineCandidate(horns,
+        { ...input, instruction: "give her curved ram horns" });
+      expect(result.imageUrl).toBeTruthy();
+      /* And it really went through the painter, rather than being answered by
+         some earlier free exit that would look identical from out here. */
+      expect(painted.length).toBeGreaterThan(0);
+    });
+
+    it("CONTROL — an ordinary subject is untouched on the old road", async () => {
+      /* The negative control for the guard's AIM. A gate that refused every
+         free-lane ask on the old road would pass both tests above and break
+         every customer not in the repaint scope — the misaimed-guard class,
+         which has cost this program twice. */
+      const result = await refineCandidate(
+        { ...hairDown, repaintEnabled: () => false, harvest: compositing },
+        { ...input, instruction: "wear her hair down" },
+      );
+      expect(result.imageUrl).toBeTruthy();
+    });
+  });
+
   const mintingLibrary = {
     referenceLibraryEnabled: () => true,
     verifier: {

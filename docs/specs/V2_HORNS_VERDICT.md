@@ -157,3 +157,34 @@ card entry for the segmenter question. No library slot.
 - **Two readers, one family.** They are shaped differently — narrow versus
   non-leading, with the code deciding on the second — but they are the same
   provider. A disagreement would have been a finding; there was none.
+
+---
+
+## PROMOTED — 2026-08-14, on this evidence
+
+Fable ruled the promotion in fable-525 §3 and scoped it: **horns is admitted
+only where the repaint road is on** (`CASTING_REPAINT_SCOPE`, `users:1` today).
+That solves two things at once — the measured road is the only road that serves
+it, and the deploy changes nothing for anybody but the founder.
+
+What shipped:
+
+```
+subject card     an ask, its clause, its amplitude, plural + departable, and
+                 `admittedOn: "repaintOnly"` — a REQUIRED field on every card,
+                 so a future kind cannot be promoted by forgetting to answer
+facet card       words-only by MEASUREMENT: the crop arm held 3/3 and beat
+                 nothing, so the library machinery buys horns nothing
+catalogue entry  a slot so her horns have somewhere to stand, with no panel row
+                 — there is no crop, and a square with nothing behind it is a
+                 claim about her face that no picture backs
+the admission    a non-repaint user's horns ask refuses FREE, before the claim.
+                 Driven both ways, and the arm that matters is the one that
+                 must NOT refuse
+the watch        horns enters the D-236 reliability report as its own class
+                 from its first paid render, with its removal a class of its
+                 own beside it. n=3 is bounded by supervision, not by hope
+```
+
+The limits above are unchanged by promotion and are filed verbatim on the
+subject card, where the next person to touch this reads them.

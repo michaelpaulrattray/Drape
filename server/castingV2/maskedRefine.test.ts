@@ -139,7 +139,11 @@ describe("the segmentation question is named per facet, never invented", () => {
        extent — segmenting the master for it would be asking where a thing is
        that nobody is wearing. */
     const additions = allFacets().filter(needsLandmarkDestination);
-    expect(additions.sort()).toEqual(["ink", "statedAccessories"]);
+    /* `horns` is the third, and for the same reason: they arrive through an
+       edit, so segmenting the MASTER for them asks where a thing is that she
+       does not have. The detection court reads them on the DELIVERED frame,
+       which is a different picture and a different question. */
+    expect(additions.sort()).toEqual(["horns", "ink", "statedAccessories"]);
     for (const facet of additions) expect(regionNameOf(facet)).toBeNull();
   });
 

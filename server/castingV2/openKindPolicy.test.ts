@@ -261,7 +261,11 @@ describe("and the closed lane is untouched", () => {
       and a policy record that had quietly installed a fallback would show up
       here as a silent "".
     */
-    expect(() => qualifierFor("horns" as unknown as FreeSubject)).toThrow();
+    /* `horns` was this control's unknown subject until 2026-08-14, when it was
+       promoted off its courts and became a real one. A negative control whose
+       specimen has joined the vocabulary is a control that passes for the wrong
+       reason, so it moved to a kind nobody has measured. */
+    expect(() => qualifierFor("gills" as unknown as FreeSubject)).toThrow();
   });
 
   it("gives every closed subject its own answer, from its own table", () => {

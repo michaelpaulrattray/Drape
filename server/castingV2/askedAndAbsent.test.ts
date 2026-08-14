@@ -112,7 +112,12 @@ describe("presence binds, degree advises — and the table says which is which",
 
   it("binds nothing that is a matter of degree — the whole list, not a sample", () => {
     const bound = FREE_SUBJECT_KEYS.filter((subject) => FREE_SUBJECT_KIND[subject] === "presence");
-    expect([...bound].sort()).toEqual(["facialHair", "hairWorn", "ink", "statedAccessories"]);
+    /* `horns` joined on 2026-08-14 and belongs here rather than beside the
+       degrees: horns are in the picture or they are not, so an ask for them
+       that comes back without them is an ABSENCE and refunds, exactly as a
+       missing beard does. The delivery court's 6/6 on two faces is what makes
+       that binding honest rather than optimistic. */
+    expect([...bound].sort()).toEqual(["facialHair", "hairWorn", "horns", "ink", "statedAccessories"]);
   });
 });
 
