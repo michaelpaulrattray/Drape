@@ -6,6 +6,22 @@ plan. The milestone is `docs/specs/VOCABULARY_OVERHAUL_REVIEW.md` Part 2, V1.*
 
 ---
 
+> *"so when do we execute it instead of this nine different files surgical edit
+> rubbish."* — the founder, ordering this program.
+
+**That was the question, and this is the answer in his terms.** The day he asked
+it, adding one thing to the vocabulary meant editing **~27 files** for a face
+slot (16 source, 11 scripts), and for an accessory kind ~4 mandatory tables plus
+a pair noun, two measurement courts, a completeness specimen, a noun list and
+**4–5 prose sites no test closed**. Today a face slot is **three registrations**
+— one per key space — and an accessory kind is **two**, with the pin, the Atlas
+regeneration and its courts behind them. Both numbers were measured the same
+way: add a scaffold kind, run the whole suite, and let it name every site that
+still has to be edited by hand. The nine-different-files surgery is gone; what
+is left is three cards that the compiler will not let you leave half-written.
+
+---
+
 ## 1. What V1 said it would do, and what it did
 
 > **V1 — ONE REGISTRATION PER KIND.** A single catalogue entry per kind feeds
