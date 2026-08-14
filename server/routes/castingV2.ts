@@ -26,7 +26,7 @@ import { assertFinalModelDeleteEnabled } from "./models";
 import { storagePublicUrl } from "../storage";
 import { assertClientRequestId } from "../../shared/clientRequestId";
 import { CASTING_V2_COSTS, CASTING_V2_ROLL_PRICE_CREDITS } from "../casting/castingCreditCosts";
-import { captureCastingV2Enabled } from "../castingV2/castingV2Scope";
+import { captureCastingRepaintEnabled, captureCastingV2Enabled } from "../castingV2/castingV2Scope";
 import { UNLOCKABLE_FIELDS } from "../castingV2/briefCompiler";
 import { listLineageSegments, resolveOwnedCandidateId } from "../db/castingV2Segments";
 import { maskFetchUrl, segmentsOnFace } from "../castingV2/segmentsOnFace";
@@ -294,6 +294,19 @@ export const castingV2Router = router({
     // button fires, from here rather than from a literal in the client.
     refinePriceCredits: CASTING_V2_REFINE_PRICE_CREDITS,
     packageViewCount: CAST_PACKAGE_VIEWS.length,
+    /*
+      WHETHER THE REPAINT ROAD SERVES THIS ACCOUNT — and therefore whether the
+      surfaces that only IT can perform may be drawn (fable-542 §3).
+
+      "Take this step back" on a version chip is the first of those: the prune
+      it performs is measured on the repaint road and nowhere else, so a menu
+      item anywhere else would be a control that refuses. The client asks; it
+      never decides — the scope is server-owned, exactly like `enabled` above.
+
+      One gate, not two lists: when the road widens, the affordance widens with
+      it, which is fable-525's doctrine applied to a surface.
+    */
+    stepBackEnabled: captureCastingRepaintEnabled(ctx.user.id),
   })),
 
   createSession: protectedProcedure

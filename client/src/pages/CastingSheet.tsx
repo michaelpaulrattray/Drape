@@ -2025,7 +2025,15 @@ export default function CastingSheet() {
                 forbids. `refinable` is the sheet's own word for "this face can
                 be refined here", and the panel beside it uses the same gate.
               */
-              {...(viewerRefinable ? {
+              /*
+                AND ONLY WHERE THE ROAD SERVES HER (fable-542 §3).
+                `viewerRefinable` says this FACE can be refined; `stepBackEnabled`
+                says this ACCOUNT is on the road that can perform a prune. The
+                second is what keeps a visible control from being one that always
+                errors: the menu item, the action and the road widen together or
+                not at all.
+              */
+              {...(viewerRefinable && config.data?.stepBackEnabled ? {
                 onRemoveStep: (step: { variantId: string; at: number; instruction: string }) => {
                   /*
                     THE STEP IS TAKEN BACK FROM ITS OWN VERSION, so that version
