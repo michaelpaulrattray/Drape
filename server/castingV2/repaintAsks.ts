@@ -66,7 +66,7 @@ import {
   FACET_SLOTS, facetsOfSlot, narrowToScope, slotDefinition, slotsForFacet,
 } from "./referenceSlotCatalogue";
 import { accessoryKindOf } from "./accessoryKinds";
-import { markKindOf } from "./markKinds";
+import { markCanDepart, markKindOf } from "./markKinds";
 import { vacantPhraseFor } from "./vacancyPhrases";
 import type { Ask, FeatureSlot, PresentationClause } from "./recipeAssembler";
 
@@ -439,7 +439,18 @@ export function repaintAsksFor(input: RepaintAsksInput): RepaintAsksResult {
           phrase and refuse exactly as they did. **Declared: this is
           scaffolding, and the per-kind mark vocabulary is the real source.**
         */
-        const says = vacantPhraseFor(markKindOf(noun) ?? definition.guardKind);
+        const markKind = markKindOf(noun);
+        /*
+          AND `canDepart` IS THE DOOR, not a comment. Freckles' sentence is
+          written and its court came back SHORT — they vanish on their own (1 of
+          3 survived an unrelated edit nobody asked to change them) and the skin
+          comes back airbrushed where they were. A kind whose court has not
+          passed refuses here, with the phrase sitting ready for the run that
+          earns it.
+        */
+        const says = markKind !== null
+          ? (markCanDepart(markKind) ? vacantPhraseFor(markKind) : null)
+          : vacantPhraseFor(definition.guardKind);
         if (says === null) {
           /*
             An absence sentence is never improvised at the call site — a

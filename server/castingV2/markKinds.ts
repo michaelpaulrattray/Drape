@@ -52,7 +52,25 @@ export type MarkKind = {
 };
 
 export const MARK_KINDS: readonly MarkKind[] = [
-  { words: ["freckle", "freckles", "freckling"], kind: "freckles", canDepart: true },
+  /*
+    FRECKLES: THE SENTENCE IS WRITTEN AND THE DOOR IS SHUT — the court's own
+    verdict (2026-08-15, `docs/specs/V3B_FRECKLE_COURT_VERDICT.md`).
+    
+    Two readings, and either one alone would have been enough. The CONTROL says
+    freckles vanish by themselves: three renders of an unrelated edit with
+    freckles never mentioned, and they survived ONE. So a removal cannot be
+    credited with taking off something that leaves on its own — the tan's class,
+    confirmed on a second specimen family. And where the removal did land, the
+    skin came back "smooth, slightly waxy, airbrushed" in two of three, with
+    every survival frame the same: the artefact the sentence was written to
+    prevent, arriving anyway.
+    
+    So the capability WAITS for the surface carrier work, exactly as fable-537
+    §3 ruled it should. The kind, its words and its sentence stay — they are
+    correct and they are what the next run will use — and `canDepart` is the
+    door, checked at the ask.
+  */
+  { words: ["freckle", "freckles", "freckling"], kind: "freckles", canDepart: false },
   /*
     KNOWN AND NOT YET SAYABLE. Each needs its own absence sentence (a scar's site
     is one place, a birthmark's is another) and its own court reading. Listed

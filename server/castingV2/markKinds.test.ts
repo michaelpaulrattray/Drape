@@ -31,15 +31,24 @@ describe("what kind of mark a sentence names", () => {
 });
 
 describe("the declared shortcut is visible in the table", () => {
-  it("ships exactly ONE kind that can say it is gone", () => {
+  it("ships NO kind that can say it is gone — the court shut the one door", () => {
+    /*
+      Freckles' sentence is written and its court came back SHORT: they vanish
+      on their own (1 of 3 survived an unrelated edit nobody asked to change
+      them) and the skin came back airbrushed where they were. So the capability
+      waits for the surface carrier work — the tan's own owner — and this list
+      is the record of that, not an oversight.
+    */
     const departable = MARK_KINDS.filter((entry) => entry.canDepart).map((entry) => entry.kind);
-    expect(departable).toEqual(["freckles"]);
+    expect(departable).toEqual([]);
   });
 
-  it("gives that one a phrase and the others none", () => {
+  it("keeps the sentence ready for the run that earns it", () => {
+    /* The phrase is correct and stays; `canDepart` is the door. Deleting the
+       sentence would throw away the thing the next court needs. */
     expect(vacantPhraseFor("freckles")).toContain("no freckles");
+    expect(markCanDepart("freckles")).toBe(false);
     for (const entry of MARK_KINDS.filter((one) => !one.canDepart)) {
-      expect(vacantPhraseFor(entry.kind), entry.kind).toBeNull();
       expect(markCanDepart(entry.kind), entry.kind).toBe(false);
     }
   });
