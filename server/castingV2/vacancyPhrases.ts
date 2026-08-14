@@ -84,6 +84,24 @@ export const VACANCY_BY_KIND: Readonly<Record<string, VacancyPhrase>> = {
     says: "no beard, moustache or stubble — his jaw, chin and upper lip clean-shaven, "
       + "the skin there the same tone as the rest of his face with no shadow or stubble texture",
   },
+  /*
+    FRECKLES — V3(b)'s second slot story, and a DECLARED shortcut (fable-537 §2).
+
+    One kind of mark ships with a sentence; scars, birthmarks and moles are named
+    in `MARK_KINDS` with `canDepart: false` and refuse exactly as they do today.
+    **This is scaffolding: the per-kind mark vocabulary is the real source, it is
+    owed, and it is on the board.**
+
+    Written like the others — a state, naming the site — and the site is the
+    whole face rather than a patch, because freckles are not in one place. The
+    second half is what a render gets wrong: it clears the freckles and leaves
+    the skin flat or waxy where they were, so the sentence says what the skin
+    should look like instead.
+  */
+  freckles: {
+    says: "no freckles — her skin clear and even across her nose, cheeks and forehead, "
+      + "with its own natural texture and colour rather than a flattened or airbrushed patch",
+  },
 };
 
 /**

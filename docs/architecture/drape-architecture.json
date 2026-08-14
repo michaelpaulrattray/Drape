@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "da60bd78aa73aacc"
+    "sourceFingerprint": "534e6b6d4f6cd683"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 116
+      "moduleCount": 117
     },
     {
       "id": "domain:castingV2",
@@ -3521,6 +3521,12 @@
     {
       "id": "module:server/castingV2/makeupPlacement.ts",
       "path": "server/castingV2/makeupPlacement.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/markKinds.ts",
+      "path": "server/castingV2/markKinds.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -9304,6 +9310,10 @@
     {
       "id": "test:server/castingV2/makeupPlacement.test.ts",
       "path": "server/castingV2/makeupPlacement.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/markKinds.test.ts",
+      "path": "server/castingV2/markKinds.test.ts"
     },
     {
       "id": "test:server/castingV2/maskGeometry.test.ts",
@@ -20175,6 +20185,11 @@
     },
     {
       "from": "module:server/castingV2/repaintAsks.ts",
+      "to": "module:server/castingV2/markKinds.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/repaintAsks.ts",
       "to": "module:server/castingV2/recipeAssembler.ts",
       "kind": "imports"
     },
@@ -26852,10 +26867,10 @@
       "message": "Names 3 of Thumbnail's 3 fields (server/castingV2/thumbnails.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/repaintAsks.ts:77",
+      "id": "finding:redeclared-shape:server/castingV2/repaintAsks.ts:78",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/repaintAsks.ts:77",
+      "subject": "server/castingV2/repaintAsks.ts:78",
       "message": "Names 5 of RefineDelta's 8 fields (server/castingV2/refineDelta.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {

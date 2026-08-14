@@ -66,6 +66,7 @@ import {
   FACET_SLOTS, facetsOfSlot, narrowToScope, slotDefinition, slotsForFacet,
 } from "./referenceSlotCatalogue";
 import { accessoryKindOf } from "./accessoryKinds";
+import { markKindOf } from "./markKinds";
 import { vacantPhraseFor } from "./vacancyPhrases";
 import type { Ask, FeatureSlot, PresentationClause } from "./recipeAssembler";
 
@@ -424,7 +425,21 @@ export function repaintAsksFor(input: RepaintAsksInput): RepaintAsksResult {
         };
       }
       for (const definition of definitions) {
-        const says = vacantPhraseFor(definition.guardKind);
+        /*
+          THE KIND, WHICH IS NOT ALWAYS THE SLOT'S GUARD KIND (V3(b), marks).
+
+          A slot's guard kind names what a segmenter is asked for, and `skin` has
+          none — its region is display-only. So a freckle removal looked its
+          sentence up under `null` and could never find one, which is a missing
+          KEY rather than a missing capability. The kind of a mark is what the
+          sentence names it as ("freckles"), read from the departing words by
+          the same longest-match rule the accessory table uses.
+
+          One kind ships (`MARK_KINDS`); the others are named there with no
+          phrase and refuse exactly as they did. **Declared: this is
+          scaffolding, and the per-kind mark vocabulary is the real source.**
+        */
+        const says = vacantPhraseFor(markKindOf(noun) ?? definition.guardKind);
         if (says === null) {
           /*
             An absence sentence is never improvised at the call site — a

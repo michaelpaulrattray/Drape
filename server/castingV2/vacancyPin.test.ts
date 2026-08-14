@@ -56,7 +56,10 @@ describe("the move did not rewrite a single sentence", () => {
       accident.
     */
     const added = Object.keys(VACANCY_BY_KIND).filter((kind) => !(kind in pin.vacantPhrase));
-    expect(added).toEqual(["facial hair"]);
+    /* `freckles` joined on 2026-08-15 as a DECLARED shortcut: one kind of mark
+       ships with a sentence and the rest refuse (`MARK_KINDS`), with the
+       per-kind vocabulary owed and on the board. */
+    expect(added.sort()).toEqual(["facial hair", "freckles"]);
   });
 
   it("CAN FAIL — the comparison, driven on a sentence with one character moved", () => {
