@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { keepPreviousData } from "@tanstack/react-query";
 import { useLocation, useRoute, useSearch } from "wouter";
 import { ArrowLeft, Sparkles } from "lucide-react";
 import { toast } from "sonner";
@@ -34,6 +33,7 @@ import { classifyDispatchFailure, failureActionLabel } from "@/features/castingV
 import { cancelStory } from "@/features/castingV2/cancelNotice";
 import { refineOutcomeNote } from "@/features/castingV2/refineOutcomeNote";
 import { inFlightCandidate, refineBusy } from "@/features/castingV2/refineBusy";
+import { bridgeWithinCandidate } from "@/features/castingV2/panelBridge";
 import { sheetExpiryNotice } from "@/features/castingV2/retentionCopy";
 import { sheetNotice } from "@/features/castingV2/sheetNotice";
 import {
@@ -882,8 +882,15 @@ export default function CastingSheet() {
         still her face while the new one is read, and the working line below
         says a read is in flight. The alternative — an empty column for the
         seconds a scan takes — is what he actually saw.
+
+        AND IT MAY ONLY CROSS ONE FACE (fable-491). Shipped as a plain
+        `keepPreviousData`, it held the previous answer whatever changed in the
+        key — so clicking from one cast into another drew HER rows and HER boxes
+        on the next woman's photograph until the new scan landed. Across
+        versions of one face the bridge is true; across casts it is the quieter
+        version of the same lie this comment was written about.
       */
-      placeholderData: keepPreviousData,
+      placeholderData: bridgeWithinCandidate(viewerCandidateId),
     },
   );
 
@@ -915,10 +922,10 @@ export default function CastingSheet() {
       enabled: viewerRefinable && Boolean(viewerCandidateId) && Boolean(face.data?.scanning),
       /* It never changes for a version — a new version is a new key. */
       staleTime: Infinity,
-      /* And the same bridge as the library read: the scanned rows of the
-         version she was looking at stay on screen while this version's are
-         read, rather than the column emptying for the seconds that takes. */
-      placeholderData: keepPreviousData,
+      /* And the same bridge as the library read, with the same boundary: the
+         scanned rows of the version she was looking at stay while this
+         version's are read, and NOTHING crosses from another face. */
+      placeholderData: bridgeWithinCandidate(viewerCandidateId),
     },
   );
 
@@ -948,7 +955,16 @@ export default function CastingSheet() {
   */
   const faceScanWorking = (Boolean(face.data?.scanning) && faceScan.isPending)
     || face.isPlaceholderData
-    || faceScan.isPlaceholderData;
+    || faceScan.isPlaceholderData
+    /*
+      AND WHILE THIS FACE HAS NO ANSWER AT ALL YET (fable-491).
+
+      Stepping from one cast to another leaves the panel with nothing to show —
+      the bridge refuses to carry another woman's rows — so what is on screen is
+      the heading and this line, rather than a blank column for the seconds a
+      scan takes. `enabled` keeps this false whenever no refinable face is open.
+    */
+    || (viewerRefinable && face.isPending);
   const scannedFaceData = faceScan.data?.enabled ? faceScan.data : null;
   const facePanelData = scannedFaceData ?? (face.data?.enabled ? face.data : null);
   const faceRows = facePanelData?.groups.flatMap((group) => group.rows) ?? [];
@@ -1912,10 +1928,10 @@ export default function CastingSheet() {
               layout="column"
             />
           ) : null}
-          beside={facePanelData && viewerRefinable ? (
+          beside={(facePanelData || faceScanWorking) && viewerRefinable ? (
             <FacePanel
-              groups={facePanelData.groups}
-              possessive={facePanelData.possessive}
+              groups={facePanelData?.groups ?? []}
+              possessive={facePanelData?.possessive ?? "their"}
               working={faceScanWorking}
               selection={faceSelection}
               onScope={setAskDraft}

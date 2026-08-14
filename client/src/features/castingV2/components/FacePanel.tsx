@@ -276,7 +276,17 @@ export function FacePanel({
   const [opened, setOpened] = useState<readonly string[]>([]);
   const keyOf = (row: FacePanelRow) => row.slots.join(" ");
 
-  if (groups.length === 0) return null;
+  /*
+    AN EMPTY PANEL IS NOTHING — UNLESS SOMETHING IS BEING READ (fable-491).
+
+    A face with no rows and nothing in flight has no panel: an empty column with
+    a heading is a promise of content that does not exist. But the moment she
+    steps from one cast to another, this panel has NO answer about the new face
+    and one is being fetched — and the honest thing on screen then is the
+    heading and "Reading her features…", not the previous woman's rows and not a
+    blank column either.
+  */
+  if (groups.length === 0 && !working) return null;
 
   return (
     <div className="dpc-face" aria-labelledby="dpc-face-title">

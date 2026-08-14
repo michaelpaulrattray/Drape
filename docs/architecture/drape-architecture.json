@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "cab580c3359b4657"
+    "sourceFingerprint": "16332872a038a292"
   },
   "domains": [
     {
@@ -43,7 +43,7 @@
     {
       "id": "domain:castingV2",
       "name": "castingV2",
-      "moduleCount": 30
+      "moduleCount": 31
     },
     {
       "id": "domain:client-shared",
@@ -1523,6 +1523,12 @@
     {
       "id": "module:client/src/features/castingV2/failureCopy.ts",
       "path": "client/src/features/castingV2/failureCopy.ts",
+      "domain": "castingV2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/castingV2/panelBridge.ts",
+      "path": "client/src/features/castingV2/panelBridge.ts",
       "domain": "castingV2",
       "lifecycle": "active"
     },
@@ -8073,6 +8079,10 @@
       "path": "client/src/features/castingV2/modalAnatomy.test.ts"
     },
     {
+      "id": "test:client/src/features/castingV2/panelBridge.test.ts",
+      "path": "client/src/features/castingV2/panelBridge.test.ts"
+    },
+    {
       "id": "test:client/src/features/castingV2/pronounGrammar.test.ts",
       "path": "client/src/features/castingV2/pronounGrammar.test.ts"
     },
@@ -14126,6 +14136,11 @@
     {
       "from": "module:client/src/pages/CastingSheet.tsx",
       "to": "module:client/src/features/castingV2/failureCopy.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/CastingSheet.tsx",
+      "to": "module:client/src/features/castingV2/panelBridge.ts",
       "kind": "imports"
     },
     {
