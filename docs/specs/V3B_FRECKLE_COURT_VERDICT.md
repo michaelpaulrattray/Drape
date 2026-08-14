@@ -64,6 +64,21 @@ slice, while the glasses and beard roads are untouched and still work (driven).
 The scaffolding that was declared is therefore standing but inert, which is the
 honest outcome of a court that came back short. Nothing about freckles ships.
 
+## The boundary this finding does NOT cross (fable-539 §3)
+
+**Freckles a face was BORN with are a different mechanism and are expected
+safe.** They ride the master anchor as PIXELS — reference 1 is the photograph,
+and the repaint reproduces it — while everything this court watched vanish was
+recipe-carried: added by an edit and re-said in words on every later render.
+The finding is about words failing to hold a surface, not about the master
+failing to hold its own face.
+
+Stated because the alternative is worse than an unmeasured gap: without this
+line, the next reader of *"freckles vanish on their own"* would reasonably fear
+for every born-freckled cast in production. With it, the fear has a boundary and
+**the born case has a named, unbought measurement** — one that costs a bare
+specimen and three renders whenever somebody wants it.
+
 ## What it would take to open the door
 
 The surface carrier work — the same owner as the tan. Both specimens say the
