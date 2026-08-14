@@ -156,7 +156,37 @@ export type FacePanelInstance = {
  * window is published here as numbers and the arithmetic lives beside the tile
  * size it depends on, in the stylesheet.
  */
-export function cutoutStyle(thumb: FacePanelCutout) {
+/**
+ * AND A PAIR IS ONE OBJECT PHOTOGRAPHED TWICE (founder, fable-462 §3).
+ *
+ * His right eye was *"zoomed in too much"* beside his left. Measured on the dev
+ * fixture, where both halves are scan windows: the left eye's crop came back
+ * 34×23 and the right's 50×28, and each tile scaled its own crop to fill its own
+ * half — so the frame was drawn at 512px behind one and 348px behind the other.
+ * **A 1.47× magnification difference inside one pair**, from nothing but the
+ * reader returning a slightly tighter box on one side.
+ *
+ * So the two halves scale to the SAME extent — the larger of the pair — while
+ * each still centres on its own feature. A pair reads as one object seen twice,
+ * which is what it is.
+ *
+ * `scaleTo` is undefined for a lone cutout, which is every other row: nothing
+ * changes for them.
+ */
+export function pairScaleExtent(cutouts: readonly FacePanelCutout[]): { width: number; height: number } | undefined {
+  const crops = cutouts.map((cutout) => cutout.crop).filter((crop): crop is FacePanelBox => crop !== null);
+  /* Only where BOTH halves are windows. A minted crop is its own picture and
+     carries no window to scale — normalising across the two kinds needs the
+     library to publish a minted crop's geometry, which it does not today, and
+     is named rather than guessed at. */
+  if (crops.length < 2 || crops.length !== cutouts.length) return undefined;
+  return {
+    width: Math.max(...crops.map((crop) => crop.width)),
+    height: Math.max(...crops.map((crop) => crop.height)),
+  };
+}
+
+export function cutoutStyle(thumb: FacePanelCutout, scaleTo?: { width: number; height: number }) {
   return {
     backgroundImage: `url(${JSON.stringify(thumb.contentUrl)})`,
     /* Both spellings: the unprefixed property is the standard and the prefixed
@@ -173,6 +203,11 @@ export function cutoutStyle(thumb: FacePanelCutout) {
         /* The fit is a CONTAIN and the stylesheet derives it, because the box a
            cutout lands in is only square while the row has one of them. */
         "--dpc-cut-fh": thumb.crop.frame.height,
+        /* The extents the SCALE is taken from — its own, unless it is half of a
+           pair, in which case both halves take the pair's. Position keeps using
+           its own w/h, so each still centres on its own feature. */
+        "--dpc-cut-sw": scaleTo?.width ?? thumb.crop.width,
+        "--dpc-cut-sh": scaleTo?.height ?? thumb.crop.height,
       }
       : {}),
   } as React.CSSProperties;
@@ -301,7 +336,7 @@ export function FacePanel({
                           <span
                             key={`${cutout.contentUrl}:${cutout.crop?.x ?? at}`}
                             className={`dpc-face__cut${cutout.crop ? " dpc-face__cut--cutout" : ""}`}
-                            style={cutoutStyle(cutout)}
+                            style={cutoutStyle(cutout, pairScaleExtent(row.cutouts))}
                           />
                         ))}
                       </span>

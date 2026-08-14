@@ -641,3 +641,61 @@ describe("the pair nests, and the child is the scoping gesture again", () => {
     expect(panel).not.toMatch(/\["eye", "ear", "brow"\]/);
   });
 });
+
+/**
+ * A PAIR IS ONE OBJECT PHOTOGRAPHED TWICE (founder, fable-462 §3).
+ *
+ * His right eye read *"zoomed in too much"* beside his left. Measured in the
+ * browser on the dev fixture, where both halves are scan windows: crops of
+ * 34×23 and 50×28, each tile scaling its own crop to fill its own half, drawn
+ * at 512px and 348px — a **1.47× magnification difference inside one row**,
+ * from nothing but the reader returning a tighter box on one side.
+ *
+ * The derivation is unit-tested here and the RESULT is measured in the browser
+ * (`drive-pair-zoom-disposable`), because "the same magnification" is a fact
+ * about what the browser drew and not about what we passed it.
+ */
+describe("both halves of a pair are drawn at one magnification", () => {
+  const window = (width: number, height: number) => ({
+    contentUrl: "frame.png",
+    maskUrl: "mask.png",
+    crop: { x: 0, y: 0, width, height, frame: { width: 1024, height: 1536 } },
+  });
+
+  it("scales both halves to the larger extent of the two", async () => {
+    const { pairScaleExtent } = await import("./components/FacePanel");
+    /* Wider on one side, taller on the other: each axis takes its own max, or a
+       pair whose halves disagree in different directions would still differ. */
+    expect(pairScaleExtent([window(34, 28), window(50, 23)])).toEqual({ width: 50, height: 28 });
+  });
+
+  it("leaves a lone cutout exactly as it was", async () => {
+    const { pairScaleExtent } = await import("./components/FacePanel");
+    expect(pairScaleExtent([window(34, 23)])).toBeUndefined();
+  });
+
+  it("declines a MIXED pair rather than half-normalising it", async () => {
+    /*
+      A minted crop is its own picture and carries no window to scale, so a pair
+      of one minted and one scanned cannot be normalised from here — the library
+      would have to publish a minted crop's geometry, which it does not. Named
+      rather than guessed at: half a normalisation is a second magnification
+      rule nobody can see.
+    */
+    const { pairScaleExtent } = await import("./components/FacePanel");
+    const minted = { contentUrl: "crop.png", maskUrl: "mask.png", crop: null };
+    expect(pairScaleExtent([window(34, 23), minted])).toBeUndefined();
+  });
+
+  it("takes the scale from those extents and the POSITION from its own", async () => {
+    /* The two must not be merged: a shared scale with a shared centre would
+       point both halves at the same eye. */
+    const css = await readFile(CSS, "utf8");
+    const rule = css.slice(css.indexOf(".dpc-face__cut--cutout"));
+    const block = rule.slice(0, rule.indexOf("}"));
+    expect(block).toContain("--dpc-cut-sw");
+    expect(block).toContain("var(--dpc-cut-box-w) / var(--dpc-cut-sw)");
+    /* Centring still reads its own crop. */
+    expect(block).toContain("var(--dpc-cut-x) + var(--dpc-cut-w) / 2");
+  });
+});

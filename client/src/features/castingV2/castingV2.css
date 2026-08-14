@@ -3217,9 +3217,19 @@
   only the same answer while it is.
 */
 .dpc-face__cut--cutout {
+  /*
+    THE EXTENTS THE SCALE IS TAKEN FROM — its own crop's, unless the component
+    hands it a pair's (founder, fable-462 §3: his right eye "zoomed in too
+    much"). Measured: 34x23 against 50x28 on one pair of eyes, drawn at 512px
+    and 348px — a 1.47x difference inside one row, from nothing but the reader
+    returning a tighter box on one side. Defaulted here so a lone cutout is
+    exactly what it always was.
+  */
+  --dpc-cut-sw: var(--dpc-cut-w);
+  --dpc-cut-sh: var(--dpc-cut-h);
   --dpc-cut-scale: min(
-    calc(var(--dpc-cut-box-w) / var(--dpc-cut-w)),
-    calc(var(--dpc-cut-box-h) / var(--dpc-cut-h))
+    calc(var(--dpc-cut-box-w) / var(--dpc-cut-sw)),
+    calc(var(--dpc-cut-box-h) / var(--dpc-cut-sh))
   );
   background-size:
     calc(var(--dpc-cut-fw) * var(--dpc-cut-scale) * 1px)
