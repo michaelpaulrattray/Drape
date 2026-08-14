@@ -1,5 +1,24 @@
 # A prune, measured — V3(c)'s three-arm court
 
+> ## ⚠ CORRECTION, 2026-08-15, before this was acted on
+>
+> **This court did not measure a prune.** Every one of its three specimens took
+> the DEPARTURE road, not the pruning road: their masters already wore earrings,
+> so the arbitration correctly read the removal as base-worn and the recipe
+> filed a VACANCY. The stored records say it plainly — `vacated:
+> ["earring@left","earring@right"]`, `restated: null`, on all three.
+>
+> What the numbers below ARE is a real reading of the vacancy road on a chained
+> face with a surviving step, and on that they hold. What they are NOT is a
+> measurement of the carry derivation or the restate ask, which is what the
+> heading claimed.
+>
+> The court has been rebuilt to pick specimens whose master wears no earrings
+> and to ASSERT THE ROAD AT THE WIRE (`restated` non-null on the delivered row)
+> before it reads a single arm — a court that cannot tell which road it drove
+> can pass on the wrong one. See `V3C_PRUNE_COURT_VERDICT_2.md` for the run that
+> answers the original question.
+
 *Run 2026-08-15 against arms pre-registered in fable-534 §3 and written into the
 script's header before the first call. **225 dev credits and about $1.00 of
 house money**; the production ledger was not touched. Every frame is in
