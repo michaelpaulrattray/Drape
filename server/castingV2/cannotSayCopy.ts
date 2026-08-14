@@ -179,3 +179,36 @@ export function cannotSaySentence(
 ): string {
   return CANNOT_SAY_COPY[reason].say(context);
 }
+
+/**
+ * THE LIKENESS CONFESSION — what a delivered take says when a comparison to a
+ * real person was set aside (D-181), and it may only name what it took from
+ * the parse (fable-490 §1b).
+ *
+ * # The sentence that lied
+ *
+ * The founder's vitiligo take carried: *"Made the eyes as you described.
+ * Refining can't copy a real person's features, so that part of the comparison
+ * was set aside."* — on a SKIN ask, on a face whose eyes nobody had mentioned.
+ * The copy was written for the green-eyes case and hardcoded its facet, so
+ * every later take asserted the same one.
+ *
+ * A confession that names the wrong feature is a false sentence in the
+ * founder's own product voice: worse than a generic one, because it is
+ * specific and wrong.
+ */
+export function likenessSetAsideNote(input: { subjects: readonly string[] }): string {
+  const said = input.subjects
+    .map((subject) => subject.toLowerCase())
+    .filter((subject) => subject.length > 0);
+  /*
+    NO SUBJECT, NO CLAIM. A parse that filed nothing nameable gets the sentence
+    without a feature in it rather than a guess — which is what the hardcoded
+    "the eyes" was, every time it was not eyes.
+  */
+  const made = said.length > 0
+    ? `Made the change to ${said.join(" and ")} as you described.`
+    : "Made that as you described.";
+  return `${made} Refining can't copy a real person's features, so that part of `
+    + "the comparison was set aside.";
+}

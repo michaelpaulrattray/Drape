@@ -239,3 +239,50 @@ describe("a platform is not a person", () => {
     expect(namesUnknownProperNoun("An East Asian model", { mode: "phrase" })).toBe(false);
   });
 });
+
+/**
+ * A CONDITION IS NOT A PERSON (fable-490 §1a).
+ *
+ * The founder typed "her skin — Vitiligo" — nobody named, nothing compared —
+ * and the delivered render came back carrying the likeness confession: *"Refining
+ * can't copy a real person's features, so that part of the comparison was set
+ * aside."* The guard had read a capitalised condition as somebody's name.
+ *
+ * Both arms, because the loosening direction is the dangerous one: a real
+ * likeness ask must still drop.
+ */
+describe("a condition is not a person", () => {
+  it("does not read a capitalised condition as a name", () => {
+    for (const phrase of [
+      "her skin — Vitiligo",
+      "Vitiligo",
+      "give her Alopecia",
+      "Heterochromia",
+      "her left ear — Cauliflower ear",
+      "a little Rosacea across her cheeks",
+    ]) {
+      expect(namesUnknownProperNoun(phrase, { mode: "phrase" }), phrase).toBe(false);
+    }
+  });
+
+  it("STILL fires on a real likeness ask, capitalised or not", () => {
+    /* The control, and the reason the list may only hold conditions: a name is
+       what this guard exists to keep out of a paid prompt. */
+    for (const phrase of [
+      "Zendaya lookalike",
+      "a Wes Anderson casting",
+      "give her Zendaya's cheekbones",
+      /* A syndrome named after its describer IS somebody's name, and the list
+         deliberately does not hold one. */
+      "Marfan syndrome build",
+    ]) {
+      expect(namesUnknownProperNoun(phrase, { mode: "phrase" }), phrase).toBe(true);
+    }
+  });
+
+  it("vouches nothing it was not given — an unlisted condition still fails closed", () => {
+    /* Not a regression: exactly today's behaviour, and the property that makes
+       the list safe to hold at all. */
+    expect(namesUnknownProperNoun("a touch of Poliosis at her temple", { mode: "phrase" })).toBe(true);
+  });
+});

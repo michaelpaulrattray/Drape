@@ -100,6 +100,7 @@ import {
   departedNoun,
   departedShortfall,
   facetsWrittenBy,
+  filedSubjectsOf,
   itemsOf,
   missingFromPrompt,
   presenceItemsOfFacet,
@@ -166,7 +167,7 @@ import {
 } from "./referenceSlotCatalogue";
 import { repaint, type ReferenceFitter, type RepaintEngine, type SentRequest } from "./repaintRender";
 import { RepaintCannotSayError, repaintAsksFor, repaintCannotRemove } from "./repaintAsks";
-import { cannotSaySentence } from "./cannotSayCopy";
+import { cannotSaySentence, likenessSetAsideNote } from "./cannotSayCopy";
 import { padToFrame, studioBackgroundOf, type StudioBackground } from "./referenceFit";
 import { pronounsForSex } from "./castPronouns";
 import {
@@ -4619,9 +4620,20 @@ export async function refineCandidate(
       at rather than about what was left out of it.
     */
     const owedAboutThisTake = [
+      /*
+        AND IT NAMES WHAT IT ACTUALLY FILED (fable-490 §1b).
+
+        This sentence hardcoded "the eyes" — written for the green-eyes case,
+        and asserted about the founder's SKIN ask on a face whose eyes nobody
+        had mentioned. A confession that names the wrong feature is worse than a
+        generic one: it is specific and wrong, in his own product voice.
+
+        The subjects come from the delta this take filed, through the same
+        reader the chips are labelled from — never a second account of what was
+        asked for.
+      */
       droppedReference
-        ? "Made the eyes as you described. Refining can't copy a real "
-          + "person's features, so that part of the comparison was set aside."
+        ? likenessSetAsideNote({ subjects: filedSubjectsOf(editDelta) })
         : null,
       outOfFrameNote,
       invisibleSiteNote,

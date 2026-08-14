@@ -103,3 +103,46 @@ describe("his own ask, in the sentence it should have had", () => {
     expect(said).toBe("A scar isn't something I can place yet. Nothing was charged.");
   });
 });
+
+/**
+ * A CONFESSION MAY NOT NAME A FEATURE IT DID NOT TAKE FROM THE PARSE
+ * (fable-490 §1b).
+ *
+ * The founder's vitiligo take carried "Made the eyes as you described" — on a
+ * SKIN ask, on a face whose eyes nobody had mentioned. The copy was written for
+ * the green-eyes case and hardcoded its facet, so every later take asserted the
+ * same one. A confession that names the wrong feature is worse than a generic
+ * one: it is specific and wrong, in the founder's own product voice.
+ */
+describe("the likeness confession names what it filed, and nothing else", () => {
+  it("names the subject the parse actually wrote", async () => {
+    const { likenessSetAsideNote } = await import("./cannotSayCopy");
+    expect(likenessSetAsideNote({ subjects: ["SKIN"] }))
+      .toBe("Made the change to skin as you described. Refining can't copy a real person's "
+        + "features, so that part of the comparison was set aside.");
+  });
+
+  it("names both when an ask wrote two", async () => {
+    const { likenessSetAsideNote } = await import("./cannotSayCopy");
+    expect(likenessSetAsideNote({ subjects: ["EYE COLOUR", "HAIR CUT"] }))
+      .toContain("eye colour and hair cut");
+  });
+
+  it("claims NO feature when the parse filed nothing nameable", async () => {
+    /* The control, and the defect exactly: with nothing to name, the sentence
+       says nothing rather than the last feature somebody hardcoded. */
+    const { likenessSetAsideNote } = await import("./cannotSayCopy");
+    const said = likenessSetAsideNote({ subjects: [] });
+    expect(said).toBe("Made that as you described. Refining can't copy a real person's "
+      + "features, so that part of the comparison was set aside.");
+    expect(said).not.toContain("eyes");
+  });
+
+  it("never asserts the eyes about an ask that did not write them", async () => {
+    /* The founder's own take, as the rule rather than as one case. */
+    const { likenessSetAsideNote } = await import("./cannotSayCopy");
+    for (const subjects of [["SKIN"], ["BUILD"], ["MARKS"], []]) {
+      expect(likenessSetAsideNote({ subjects }), subjects.join(",")).not.toContain("eyes");
+    }
+  });
+});

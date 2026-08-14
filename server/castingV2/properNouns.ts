@@ -104,6 +104,42 @@ const VOUCHED_NON_PEOPLE: ReadonlySet<string> = new Set([
 ]);
 
 /**
+ * CONDITIONS OF THE BODY — capitalized, and never a person (fable-490 §1a).
+ *
+ * # The defect this closes
+ *
+ * The founder typed **"her skin — Vitiligo"** — no person named, nothing
+ * compared — and the render came back carrying the D-181 confession: *"Refining
+ * can't copy a real person's features, so that part of the comparison was set
+ * aside."* The guard had read a capitalised condition word as somebody's name,
+ * on a paid take that was in fact delivered exactly as asked.
+ *
+ * A condition is the one class of capitalised word a stylist types about the
+ * PERSON IN FRONT OF THEM rather than about somebody else, and it is the class
+ * this guard is least able to tell from a name by shape alone.
+ *
+ * # The doctrine, which is `VOUCHED_NON_PEOPLE`'s doctrine
+ *
+ * **Conditions of the body and its surfaces only. Never a person, ever — not a
+ * syndrome named after its describer** (`Marfan`, `Ehlers-Danlos`), because
+ * those ARE somebody's name and the guard's whole job is to keep a real
+ * person's name out of a paid prompt. Every gap fails CLOSED: an unlisted
+ * condition still reads as a name and still drops, which is today's behaviour.
+ *
+ * That asymmetry is the licence for the list existing, and it is why adding a
+ * row is a decision rather than a convenience.
+ */
+const VOUCHED_CONDITIONS: ReadonlySet<string> = new Set([
+  // Pigment and the skin's own surface.
+  "vitiligo", "albinism", "rosacea", "melasma", "psoriasis", "eczema",
+  "hyperpigmentation", "hypopigmentation", "keratosis",
+  // Hair and its absence.
+  "alopecia", "hirsutism",
+  // The eyes, and one ear.
+  "heterochromia", "ptosis", "cauliflower",
+]);
+
+/**
  * Two callers, with genuinely different text, which is why the mode is a
  * parameter rather than one baked-in rule:
  *
@@ -151,5 +187,9 @@ function namesUnknownPart(word: string): boolean {
   // A word we can vouch for is not a name — see `VOUCHED_NON_PEOPLE` for why
   // this is a list and why it may only ever hold things that are not people.
   if (VOUCHED_NON_PEOPLE.has(lower)) return false;
+  /* A condition is a fact about the person in front of them, not a comparison
+     to somebody else — see `VOUCHED_CONDITIONS` for the doctrine and the
+     syndromes it deliberately excludes. */
+  if (VOUCHED_CONDITIONS.has(lower)) return false;
   return !VOCABULARY_WORDS.has(lower);
 }
