@@ -54,3 +54,11 @@ coupledContracts:
         role: >
           builds its "healthy" fixture from drizzle/meta/<latest>_snapshot.json,
           so this reference moves with every migration touching a pinned column
+      - path: server/storageCleanupEnumCopies.test.ts
+        role: >
+          MECHANIZES this entry (fable-486 §g). The fence may LAG the ORM enum
+          and may never LEAD it — equality would force it to describe a database
+          the founder has not migrated yet, which is the 2026-07-31 boot-guard
+          shape — and no script may spell the member list at all. The ceremony
+          that used to (a fifth pin, outside this registry, and the one that
+          runs against production) now derives it from schema.ts

@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "564efb7f62adfc05"
+    "sourceFingerprint": "12d9312253a3f3bd"
   },
   "domains": [
     {
@@ -9749,6 +9749,10 @@
     {
       "id": "test:server/storage-key-generation.test.ts",
       "path": "server/storage-key-generation.test.ts"
+    },
+    {
+      "id": "test:server/storageCleanupEnumCopies.test.ts",
+      "path": "server/storageCleanupEnumCopies.test.ts"
     },
     {
       "id": "test:server/stripe/stripeRefund.test.ts",
