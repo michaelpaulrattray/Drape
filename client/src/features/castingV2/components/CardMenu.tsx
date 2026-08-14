@@ -35,6 +35,17 @@ export type CardMenuItem = {
   onSelect: () => void;
   /** Destructive: separated by a rule and coloured on hover. */
   danger?: boolean;
+  /**
+   * THE QUIET LINE UNDER THE LABEL — what this costs, before the click.
+   *
+   * D-109 keeps a price OUT of button text and the UI contract requires a paid
+   * action to say what it costs before it is taken. Both are satisfied by
+   * saying it here: the label is the action, the meta line is the price, and it
+   * is read in the same glance rather than discovered on a receipt.
+   *
+   * Absent on every free item, which is all of them until a paid one arrives.
+   */
+  meta?: string;
 };
 
 export function CardMenu({
@@ -153,7 +164,10 @@ export function CardMenu({
                   onClick={item.onSelect}
                 >
                   {item.danger ? <Trash2 size={12} strokeWidth={2} aria-hidden="true" /> : null}
-                  {item.label}
+                  <span className="dpc-cardmenu__label">{item.label}</span>
+                  {/* The price, quiet and under the action rather than inside
+                      it — D-109's own shape, said before the click. */}
+                  {item.meta ? <span className="dpc-cardmenu__meta">{item.meta}</span> : null}
                 </button>
               </span>
             ))}

@@ -632,6 +632,24 @@ export const castingV2Router = router({
             scope, which is all of them until the client sends one.
           */
           scope: z.string().trim().min(1).max(40).optional(),
+          /*
+            THE STEP SHE POINTED AT — a chip's own remove (V3(c)).
+
+            `at` is the step's index in the chain and `instruction` is the
+            sentence the client drew that index FROM. Both travel because an
+            index alone cannot tell a stale click from a live one: she may have
+            clicked while another edit landed, and a stale index prunes a step
+            nobody chose. The service checks them against each other and refuses
+            free on a mismatch.
+
+            Absent on every typed refinement. The `instruction` field above is
+            still required by this schema and carries her own sentence for the
+            step, which is what the receipt and the operation payload read.
+          */
+          removeStep: z
+            .object({ at: z.number().int().min(0).max(200), instruction: z.string().trim().min(1).max(200) })
+            .strict()
+            .optional(),
         })
         .strict(),
     )
@@ -646,6 +664,7 @@ export const castingV2Router = router({
         instruction: input.instruction,
         answering: input.answering,
         scope: input.scope,
+        removeStep: input.removeStep,
       });
     }),
 

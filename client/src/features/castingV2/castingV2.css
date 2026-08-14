@@ -1117,6 +1117,20 @@
   cursor: pointer;
 }
 
+/*
+  A PAID ITEM SAYS WHAT IT COSTS, under its own label (D-109: never in the
+  button text). The row becomes two lines when there is a price and stays one
+  line when there is not, so no free item grows a gap for the paid one's sake.
+*/
+.dpc-cardmenu__item:has(.dpc-cardmenu__meta) { align-items: flex-start; }
+.dpc-cardmenu__label { display: block; }
+.dpc-cardmenu__meta {
+  display: block;
+  margin-top: 2px;
+  font: 400 11px var(--font-sans);
+  color: var(--meta);
+}
+
 .dpc-cardmenu__item:hover { background: var(--well); }
 .dpc-cardmenu__item:focus-visible { outline: 2px solid var(--accentSolid); outline-offset: -2px; }
 .dpc-cardmenu__item:disabled { opacity: 0.6; cursor: default; }
@@ -2577,6 +2591,11 @@
   max-width: 100%;
 }
 
+/*
+  THE CHIP IS A MENU HOST (D-155): remove lives ON the instruction chip, and the
+  first rung of `CardMenu`'s reveal ladder hangs off this class — the dots
+  appear when the chip is pointed at, not before.
+*/
 .dpc-refine__step {
   position: relative;
   display: flex;

@@ -349,8 +349,17 @@ export function CandidateViewer({
         /* Every slot this viewer renders belongs to the surface — the rail and
            the dock included. Left out of this list, a tap on a panel row read as
            a tap on the scrim and closed the whole viewer. */
+        /*
+          AND THE MENU THAT OPENS FROM A CHIP, which is not a DOM descendant of
+          this viewer at all — `CardMenu` portals its panel to `document.body`.
+          A React portal still bubbles through the REACT tree, so its clicks
+          arrive here with a target that is nowhere inside the viewer's own
+          markup, and without this the first use of the chip's own menu closed
+          the whole viewer. Caught by driving it (law 6), which is the second
+          time this list has learned the same lesson.
+        */
         if (target.closest(
-          "img, .dpc-viewer__chrome, .dpc-viewer__rail, .dpc-viewer__dock, .dpc-refine, .dpc-regions",
+          "img, .dpc-viewer__chrome, .dpc-viewer__rail, .dpc-viewer__dock, .dpc-refine, .dpc-regions, .dpc-cardmenu__panel, .dpc-cardmenu__trigger",
         )) return;
         onClose();
       }}

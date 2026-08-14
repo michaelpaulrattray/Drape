@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "ac225e6a600a1d8c"
+    "sourceFingerprint": "959188f2d2418011"
   },
   "domains": [
     {
@@ -12686,6 +12686,11 @@
     {
       "from": "module:client/src/features/castingV2/components/SignConfirm.tsx",
       "to": "module:client/src/features/castingV2/components/CastingModal.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/castingV2/components/VersionRail.tsx",
+      "to": "module:client/src/features/castingV2/components/CardMenu.tsx",
       "kind": "imports"
     },
     {

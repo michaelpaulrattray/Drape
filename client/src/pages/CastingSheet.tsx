@@ -1035,8 +1035,8 @@ export default function CastingSheet() {
     under it are the same control in two layouts — a second copy of this handler
     is a second answer to what selecting a version does.
   */
-  const selectVariant = (variantId: string | null) => {
-    if (!viewerCandidateId) return;
+  const selectVariant = (variantId: string | null): Promise<unknown> | undefined => {
+    if (!viewerCandidateId) return undefined;
     /*
       PAINT FIRST, ASK SECOND (D-38), and here it is not a nicety: the URL of
       the version they clicked is already in hand — it is the picture the rail
@@ -1064,7 +1064,11 @@ export default function CastingSheet() {
         insteadOf: showing,
       });
     }
-    void chooseVariant
+    /* Returned rather than fired and forgotten, because ONE caller has to wait
+       for it: taking a step back prunes the SELECTED face's chain, so the
+       selection must have landed before the prune is sent. Every other caller
+       ignores the promise exactly as before. */
+    return chooseVariant
       .mutateAsync({ candidateId: viewerCandidateId, variantId })
       .then(async () => {
         await variants.refetch();
@@ -1106,7 +1110,7 @@ export default function CastingSheet() {
    * nothing, because a typed sentence with no rectangle behind it is about the
    * whole feature (fable-444, ruling C).
    */
-  function askRefine(instruction: string, scope?: string) {
+  function askRefine(instruction: string, scope?: string, removeStep?: { at: number; instruction: string }) {
     if (!viewerCandidateId) return;
 
     /*
@@ -1139,6 +1143,11 @@ export default function CastingSheet() {
         instruction,
         ...(answering ? { answering } : {}),
         ...(scope ? { scope } : {}),
+        /* The step she pointed at, when a chip sent this rather than the box.
+           The server checks the index against this sentence and refuses free if
+           the two have come apart — a stale click must not prune a step nobody
+           chose. */
+        ...(removeStep ? { removeStep } : {}),
       })
       .then(async (result) => {
         /*
@@ -2006,6 +2015,39 @@ export default function CastingSheet() {
               originalImageUrl={variants.data?.originalImageUrl ?? null}
               originalThumbUrl={variants.data?.originalThumbUrl ?? null}
               onSelect={selectVariant}
+              /*
+                REMOVE IS OFFERED ONLY WHERE IT CAN HAPPEN.
+
+                The prune renders through the repaint road — it is the road
+                that assembles a declarative recipe and the only one measured
+                for it — so a chip menu on any other account would be a control
+                that refuses, which is the dead control the menu itself
+                forbids. `refinable` is the sheet's own word for "this face can
+                be refined here", and the panel beside it uses the same gate.
+              */
+              {...(viewerRefinable ? {
+                onRemoveStep: (step: { variantId: string; at: number; instruction: string }) => {
+                  /*
+                    THE STEP IS TAKEN BACK FROM ITS OWN VERSION, so that version
+                    is selected first.
+
+                    The service prunes the SELECTED face's chain — that is what
+                    a chain is — and a chip can be clicked while another version
+                    is selected. Without this the request named an index in
+                    somebody else's chain and refused ("that step has moved"),
+                    which is the door working and the wiring wrong. Driven: it
+                    is how the first run of this surface behaved.
+
+                    Selecting is free (D-121) and is what clicking a chip means
+                    anyway, so the two clicks she would otherwise have to make
+                    are done in the order she meant them.
+                  */
+                  void Promise.resolve(selectVariant(step.variantId)).then(() => {
+                    askRefine(step.instruction, undefined, { at: step.at, instruction: step.instruction });
+                  });
+                },
+                removePriceCredits: refinePrice,
+              } : {})}
               layout="column"
             />
           ) : null}

@@ -20,6 +20,9 @@
  * The direction is the only thing that changed, and it is CSS: the rail lays
  * the same steps in a column and scrolls itself when the chain is long.
  */
+import { useState } from "react";
+
+import { CardMenu } from "./CardMenu";
 import { chipSrc } from "../railThumb";
 
 export type RailVariant = {
@@ -36,6 +39,36 @@ export type RailPending = {
   instruction: string;
 };
 
+/**
+ * WOULD TAKING THIS CHIP'S STEP BACK BE FREE?
+ *
+ * The service's own rule, read from the list the rail already has: a removal
+ * whose surviving chain matches a version that already exists is a SELECTION
+ * (free), and anything else is a new combination and therefore a paid render
+ * (D-121). Compared as sentences in order, which is how the service compares
+ * them too.
+ */
+function stepBackIsFree(
+  all: readonly RailVariant[],
+  step: RailVariant,
+  selectedStack: readonly string[] = [],
+): boolean {
+  /* The same rule the click uses: the step comes out of the chain she is
+     looking at when that chain still contains it, so the survivor is the
+     selection MINUS this step rather than this version minus its own. */
+  const here = selectedStack.indexOf(step.instructions.at(-1) ?? "");
+  const inSelection = here !== -1
+    && step.instructions.every((line, at) => selectedStack[at] === line);
+  const surviving = inSelection
+    ? selectedStack.filter((_, at) => at !== here)
+    : step.instructions.slice(0, -1);
+  /* Nothing left means the ORIGINAL, which always exists. */
+  if (surviving.length === 0) return true;
+  return all.some((other) => other.variantId !== step.variantId
+    && other.instructions.length === surviving.length
+    && other.instructions.every((line, at) => line === surviving[at]));
+}
+
 export function VersionRail({
   variants,
   pending,
@@ -43,6 +76,8 @@ export function VersionRail({
   originalImageUrl,
   originalThumbUrl,
   onSelect,
+  onRemoveStep,
+  removePriceCredits,
   /** `column` beside the picture, `row` under it — the same steps either way. */
   layout,
 }: {
@@ -53,8 +88,23 @@ export function VersionRail({
   /** The master's small copy, when it has one. */
   originalThumbUrl?: string | null;
   onSelect: (variantId: string | null) => void;
+  /**
+   * TAKE THIS STEP BACK — absent where the road cannot do it (V3(c)).
+   *
+   * D-155 put remove on the chips carrying its price, and the rail's own note
+   * said the affordance must arrive WITH the action it opens. It does now. It
+   * is a prop rather than a flag read in here because whether a prune can
+   * happen is the sheet's knowledge, not the rail's — and an item that always
+   * refuses is the dead control `CardMenu` already forbids.
+   */
+  onRemoveStep?: (step: { variantId: string; at: number; instruction: string }) => void;
+  /** What a removal costs, from the server's own config — never typed here. */
+  removePriceCredits?: number;
   layout: "column" | "row";
 }) {
+  const [menuOpenFor, setMenuOpenFor] = useState<string | null>(null);
+  /* The chain she is looking at — the one a step is taken OUT of. */
+  const selectedStack = variants.find((one) => one.variantId === selectedVariantId)?.instructions ?? [];
   if (variants.length === 0 && pending.length === 0) return null;
 
   return (
@@ -79,7 +129,7 @@ export function VersionRail({
         </button>
       </div>
       {variants.map((variant, position) => (
-        <div className="dpc-refine__step" key={variant.variantId}>
+        <div className="dpc-refine__step dpc-menuhost" key={variant.variantId}>
           <button
             type="button"
             className="dpc-refine__pick"
@@ -108,6 +158,89 @@ export function VersionRail({
             {chipSrc(variant) ? <img src={chipSrc(variant)!} alt="" /> : null}
             <span>{variant.instructions.at(-1)}</span>
           </button>
+          {/*
+            REMOVE'S HOME, BUILT (D-121, D-155, and the rail's own note).
+
+            The step this chip stands for is the LAST of its own instruction
+            list, and its index is therefore one before the length — the same
+            arithmetic the label above uses, from the same list, so the sentence
+            she reads and the step the server prunes cannot come apart.
+
+            Backing up stays the chip itself: free navigation between pictures
+            that already exist. Removing is in the menu, priced. Two different
+            things, two different controls (D-155).
+          */}
+          {onRemoveStep && variant.instructions.length > 0 ? (
+            <CardMenu
+              label={variant.instructions.at(-1) ?? "this step"}
+              open={menuOpenFor === variant.variantId}
+              onToggle={() => setMenuOpenFor(
+                menuOpenFor === variant.variantId ? null : variant.variantId,
+              )}
+              onCancel={() => setMenuOpenFor(null)}
+              items={[{
+                label: "Take this step back",
+                danger: true,
+                /*
+                  THE PRICE IS DERIVED, NOT ASSUMED — D-121's own distinction,
+                  said before the click.
+
+                  Taking a step back is a paid re-render because a new
+                  combination is a new generation — UNLESS what is left is a
+                  version she already has, in which case the service moves her
+                  selection and charges nothing. The client can tell which:
+                  the chain without this step either matches a version in this
+                  list or it does not.
+
+                  Driven, and it is why this is here: the first run of the chip
+                  said "25 credits" and the removal came back "that takes it
+                  back to the original — nothing charged". A price promised
+                  before a click that does not happen is the prices law broken
+                  in the direction people forgive and nobody should.
+                */
+                meta: stepBackIsFree(variants, variant, selectedStack)
+                  ? "free · you already have that version"
+                  : removePriceCredits
+                    ? `${removePriceCredits} credits · a new render without it`
+                    : undefined,
+                onSelect: () => {
+                  setMenuOpenFor(null);
+                  /*
+                    THE STEP IS TAKEN OUT OF THE CHAIN SHE IS LOOKING AT, so the
+                    steps AFTER it survive.
+
+                    Every chip is a version, and a version's own chain ends with
+                    the step the chip names. Sending "the last step of THIS
+                    version" would take her back to that version minus its step
+                    and silently drop everything she did afterwards — a
+                    different thing from what a column of chips invites, which
+                    is *take that one out and keep the rest*. So the index sent
+                    is the step's place in the SELECTED chain when the selection
+                    still contains it, and the chip's own version otherwise
+                    (which is what backing up to an older branch means).
+
+                    The service was measured on exactly this shape: a prune with
+                    a later step standing on top of it, the later step surviving
+                    (the mid-chain arm).
+                  */
+                  const here = selectedStack.indexOf(variant.instructions.at(-1)!);
+                  const inSelection = here !== -1
+                    && variant.instructions.every((line, at) => selectedStack[at] === line);
+                  onRemoveStep(inSelection
+                    ? {
+                      variantId: selectedVariantId ?? variant.variantId,
+                      at: here,
+                      instruction: variant.instructions.at(-1)!,
+                    }
+                    : {
+                      variantId: variant.variantId,
+                      at: variant.instructions.length - 1,
+                      instruction: variant.instructions.at(-1)!,
+                    });
+                },
+              }]}
+            />
+          ) : null}
           {/*
             REMOVE'S HOME IS DESIGNED AND NOT YET BUILT (D-162).
 
