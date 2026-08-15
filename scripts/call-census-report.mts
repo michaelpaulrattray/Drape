@@ -78,6 +78,11 @@ const perRenderWall: number[] = [];
 const perRenderSum: number[] = [];
 const byStage = new Map<string, Bucket>();
 const byModel = new Map<string, Bucket>();
+/* WHICH QUESTIONS the reads were spent on. Recorded on every call since
+   `aboutOf` existed, summed by the request's own closing log line — and read
+   back across a window by nothing at all until now. Same shape as the field
+   that gave `byAbout` its comment: collected, never asserted. */
+const byAbout = new Map<string, Bucket>();
 let censused = 0;
 let failedCalls = 0;
 
@@ -92,6 +97,9 @@ for (const row of rows as any[]) {
   for (const call of census.calls) {
     add(byStage, String(call.stage), Number(call.ms) || 0);
     add(byModel, `${call.provider}:${call.model}`, Number(call.ms) || 0);
+    if (typeof call.about === "string" && call.about.length > 0) {
+      add(byAbout, call.about, Number(call.ms) || 0);
+    }
   }
 }
 
@@ -144,10 +152,53 @@ const table = (title: string, buckets: Map<string, Bucket>) => {
 table("BY STAGE — where the seconds go", byStage);
 table("BY MODEL — where the invoice goes", byModel);
 
+/*
+  AND BY QUESTION, which is the only table that names a LEVER.
+
+  The stage table says "segmentation costs 40s a render"; it cannot say whether
+  that is one question asked forty times or forty questions asked once, and
+  those have opposite fixes. `about` is the closed region vocabulary only — a
+  region name, never a customer's sentence — so this stays a bill.
+
+  Per-render rather than totals, because the window's size is arbitrary and
+  "1.9 calls per render about eyes" is a number somebody can act on.
+*/
+console.log(`\n  BY QUESTION — what the reads were bought for (${censused} renders)`);
+const askedTotal = [...byAbout.values()].reduce((sum, one) => sum + one.ms, 0);
+const asked = [...byAbout.entries()].sort((a, b) => b[1].ms - a[1].ms);
+if (asked.length === 0) {
+  console.log("    no call in this window carried a question — every one was prose (interpreter, treatment).");
+} else {
+  for (const [question, bucket] of asked.slice(0, 20)) {
+    const share = askedTotal === 0 ? 0 : (bucket.ms / askedTotal) * 100;
+    console.log(
+      `    ${question.padEnd(34)} ${String(bucket.calls).padStart(5)} calls  `
+      + `${(bucket.ms / 1000).toFixed(1).padStart(7)}s  ${share.toFixed(1).padStart(5)}%  `
+      + `${(bucket.calls / censused).toFixed(2)}/render`,
+    );
+  }
+  if (asked.length > 20) console.log(`    … and ${asked.length - 20} more questions`);
+}
+
 console.log(`
   READ THE LAST COLUMN OF THE STAGE TABLE FIRST. A stage that is many cheap
   calls is a caching problem; one that is few expensive calls is a routing or a
   model problem. They have different fixes and the totals alone hide which.
+
+  AND READ "sum ÷ wall" AS WHAT IT ARITHMETICALLY IS: the MEAN NUMBER OF CALLS
+  IN FLIGHT across the window, since the sum of call durations over an interval
+  is the integral of concurrency across it. A figure near 1.0 says the render
+  spends its whole clock with about one provider call outstanding. It does NOT
+  say nothing runs in parallel — a bilateral region's two halves go out
+  together by construction — it says the parallelism there is, and the idle
+  there is, cancel to about one.
+
+  TWO BIASES, BOTH DOWNWARD, both from the row being written before the request
+  ends (\`censusSoFar\`): a call still IN FLIGHT at that moment contributes its
+  elapsed time to the wall and nothing to the sum, and anything after the
+  picture is stored is missing from both. So this ratio and these totals are
+  FLOORS. The complete figure is in the request's own closing log line, and the
+  two are meant to be read together.
 `);
 
 await db.end();
