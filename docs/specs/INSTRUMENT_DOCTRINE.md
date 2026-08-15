@@ -20,12 +20,35 @@ Fable ruling AND has a real incident behind it. Every entry carries three
 things: the rule, the incident in one line, and the mailbox citation. **No
 aspirational entries** — a rule nobody has yet been bitten by is a preference.
 
-The rule bit on the file's first day, which is the best argument for keeping it.
-Two of the twelve sentences the seed order named could not be traced to an
-incident, so they were left out and sent back for their citation rather than
-given a plausible one — a fabricated incident here would be exactly the invented
+The rule bit while the file was being written, and again before it was an hour
+old, which is the best argument for keeping it.
+
+The seed order named **eleven** sentences. The twelve entries below are those
+eleven, minus *verify the instrument first* (founder law, above), plus two
+curated from the mailbox — so the two counts are about different sets and
+neither is the other's total. **Two of the eleven could not be traced to an
+incident**, so they were left out and sent back for their citation rather than
+given a plausible one; a fabricated incident here would be exactly the invented
 cause that entry 2 below had just been written to remove from a report. Both
-came back with citation and price tag and are entries 9 and 10.
+came back with citation and price tag and are entries 9 and 10. **A third was
+admitted on the seed list itself** — real sentence, real incident, never banked
+in a numbered ruling — and was reported ten minutes after the file was finished
+(08:41 → 08:51), by reading all twelve warrants in their own messages. It is
+entry 6, and it is banked now.
+
+So the rule has caught the order that wrote it (a seed list smuggled an unbanked
+sentence past the rule declared in the same message), the author who built the
+file (two siblings held out), and the reader who came after (the third, found by
+reading warrants nobody had asked to be re-read). All three inside one morning,
+on a file of twelve sentences.
+
+**How the rule is enforced: by reading.** One author opens every citation in its
+own message. Exactly one arm is mechanical — `server/instrumentDoctrine.test.ts`
+asserts that **no entry cites the message named in the `Ordered:` line above**,
+because the order that commissioned this file cannot also be a warrant for its
+contents. That arm fires on the one defect that has occurred here and on nothing
+else. It does not read the mailbox, and a green suite says nothing about whether
+a citation says what its entry claims.
 
 **And read this before you assume the worst of the codebase.** When the rule
 below about coverage lines was swept across the program's reports, **fourteen of
@@ -80,12 +103,22 @@ now owns a script (20 reads / $0.10, counted).
 
 ## On designing the instrument
 
-**6. A null result needs a fixture that could have produced a non-null.**
-Ask what the fixture can EXPRESS before believing its zero.
+**6. A null result is evidence only if the fixture could have produced a
+non-null.**
+Ask what the fixture can EXPRESS before believing its zero. A comparison whose
+fixture cannot produce the defect reads clean over anything, so every clean cell
+carries the proof it COULD have failed — and every cell carries its own n.
 *Incident:* a chain read *"0 of 5 regions degraded"* twice — guaranteed before
 the first frame was painted, because that bench's regions are disjoint, on
-which ground the two anchorings build the same picture by construction.
-*Banked:* fable-662 §3c (2026-08-09, the disjoint-chain trap).
+which ground the two anchorings build the same picture by construction. The row
+is at `ANCHORING_SIDE_BY_SIDE.md:106` and its algebra at `:118`.
+*Banked:* fable-665 §1, with fable-126 (the audit that cleared that page to the
+founder, naming the disjoint-algebra disqualification).
+
+*(Provenance, deliberately outside the warrant line above: this entry cited the
+order that commissioned this file until 2026-08-16, which is not a banking. The
+header tells the story, and a `*Banked:*` block holds warrants only — history
+goes here, where nothing can mistake it for one.)*
 
 **7. Re-derive the bar from the new estimator.**
 A bar inherited from a weaker design measures the weaker design.

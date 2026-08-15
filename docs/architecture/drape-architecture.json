@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "981a5a560c703c77"
+    "sourceFingerprint": "88d58563fe64f928"
   },
   "domains": [
     {
@@ -9782,6 +9782,10 @@
     {
       "id": "test:server/inkInstructionRoute.test.ts",
       "path": "server/inkInstructionRoute.test.ts"
+    },
+    {
+      "id": "test:server/instrumentDoctrine.test.ts",
+      "path": "server/instrumentDoctrine.test.ts"
     },
     {
       "id": "test:server/ipBlockingSlack.test.ts",
