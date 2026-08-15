@@ -27,6 +27,13 @@
  * assertOutsideScope(outsider, "CASTING_REPAINT_SCOPE");   // refuses a vacuous negative arm
  * ```
  *
+ * `assertOutsideScope` reads THIS process's environment, which is the same one
+ * a plainly-started dev server reads — but not when the server was started with
+ * flags of its own. In that case the account's standing is a fact about the
+ * SERVER, and the only honest proof is asking it: see
+ * `scripts/probe-panel-gate-disposable.mts`, which puts the same question to
+ * one server as both accounts.
+ *
  * `assertOutsideScope` is the half that matters. If the flag under test reads
  * `all` — which dev often does — then NOBODY is outside it, the negative arm
  * would pass while proving nothing, and this throws instead of letting a driver
