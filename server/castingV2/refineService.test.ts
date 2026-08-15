@@ -2515,6 +2515,120 @@ describe("a removal with no removal word is re-read as an edit", () => {
     expect(counted[0]).toMatchObject({ outcome: "rescued", reason: "wall_unfileable" });
   });
 
+  /*
+    EVERY DOOR, NOT THE TWO SOMEBODY REMEMBERED (opus-465).
+
+    The count above was wired at two call sites, and the refine road throws
+    about twenty user-visible free refusals. So production had counted ZERO
+    refusals on the morning the founder was refused IN IT — his "remove her
+    hair" hit the removal road's edit re-read, which threw straight past the
+    counter, between two audit rows written by the same helper minutes either
+    side. These drive the doors themselves; the counting now happens at the one
+    seam every refusal escapes through.
+  */
+  describe("every door a customer can hit leaves a countable artifact", () => {
+    /**
+     * His shape: read as a removal, re-read as an edit, and the wall.
+     *
+     * A STYLE of her hair, because that is a removal the re-read still handles:
+     * a departable subject would leave by the branch above and never reach this
+     * door. Her brief names the braids so the evidence gate — a different door,
+     * with its own row below — lets it past.
+     */
+    const removalThenWall = (asEdit: unknown) => {
+      let call = 0;
+      return async () => {
+        call += 1;
+        return call === 1
+          ? { ok: true as const, intent: "remove" as const, subject: "hairStyle", match: "braids" }
+          : asEdit;
+      };
+    };
+    beforeEach(() => { briefWorn = ["braids"]; });
+
+    it("COUNTS the founder's own door — the removal road's edit re-read", async () => {
+      /*
+        His SENTENCE no longer comes down here — the determinism fix routes
+        "remove her hair" to the haircut before the model is asked. The DOOR is
+        the one he hit, so it is driven with a sentence that still reaches it.
+      */
+      await expect(refineCandidate({ harvest: unmasked,
+          interpret: removalThenWall({
+            ok: false as const, refusal: { reason: "wall_content" as const },
+          }) as never,
+        },
+        { ...input, instruction: "remove her braids" },
+      )).rejects.toThrow();
+
+      expect(counted, "this refusal wrote nothing at all before today").toHaveLength(1);
+      expect(counted[0]).toMatchObject({ reason: "wall_content", outcome: "refused" });
+    });
+
+    it("COUNTS the re-read that matched nothing to change", async () => {
+      await expect(refineCandidate({ harvest: unmasked,
+          interpret: removalThenWall({ ok: true as const, intent: "navigate" as const }) as never,
+        },
+        { ...input, instruction: "remove her braids" },
+      )).rejects.toThrow();
+
+      expect(counted).toHaveLength(1);
+      expect(counted[0]).toMatchObject({ reason: "removal_reread_unmatched" });
+    });
+
+    it("COUNTS a door that has no parse behind it at all — the scope it cannot name", async () => {
+      await expect(refineCandidate({ harvest: unmasked,
+          interpret: async () => ({ ok: true as const, delta: { eyeColour: "green" as const } }),
+        } as never,
+        { ...input, instruction: "make it green", scope: "elbow@left" as never },
+      )).rejects.toThrow(/which part of her/);
+
+      expect(counted).toHaveLength(1);
+      expect(counted[0]).toMatchObject({ reason: "scope_unknown", facet: null });
+    });
+
+    it("COUNTS ONCE — the seam does not double-count a door that used to count itself", async () => {
+      await expect(refineCandidate({ harvest: unmasked,
+          interpret: async () => ({
+            ok: false as const,
+            refusal: { reason: "wall_unfileable" as const, asked: "marks", value: "a scar" },
+          }),
+        } as never,
+        { ...input, instruction: "give her a scar" },
+      )).rejects.toThrow();
+
+      expect(counted, "one refusal, one row").toHaveLength(1);
+    });
+
+    it("COUNTS NOTHING when the ask is served — the counter is not a request log", async () => {
+      briefWorn = null;
+      await refineCandidate({ harvest: unmasked,
+          interpret: async () => ({ ok: true as const, delta: { eyeColour: "green" as const } }),
+        } as never,
+        { ...input, instruction: "her eyes — green" },
+      );
+      expect(counted).toHaveLength(0);
+    });
+
+    it("COUNTS NOTHING for a failure PAST the claim — that one has a ledger row of its own", async () => {
+      /*
+        The boundary the tally depends on. A render that dies after the charge
+        is refunded and readable in the ledger; putting it in this count would
+        mix "the product said no for free" with "the product took the money and
+        failed", which are two different questions about two different fixes.
+      */
+      briefWorn = null;
+      engineThrows = new Error("the engine fell over");
+      await expect(refineCandidate({ harvest: unmasked,
+          interpret: async () => ({ ok: true as const, delta: { eyeColour: "green" as const } }),
+        } as never,
+        { ...input, instruction: "her eyes — green" },
+      )).rejects.toThrow();
+
+      expect(journal, "it got past the claim").toContain("claim");
+      expect(counted, "and is therefore not a free refusal").toHaveLength(0);
+    });
+  });
+
   it("CONTROL — a scoped ask that DOES belong to the scope proceeds and charges", async () => {
     /*
       The new door must not over-refuse (the misaimed-guard lesson: keep the

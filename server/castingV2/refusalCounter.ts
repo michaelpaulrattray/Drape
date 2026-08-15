@@ -35,6 +35,24 @@
  * A counter that breaks a refusal would be worse than no counter, so every
  * failure here is swallowed and logged: the customer's answer never waits on
  * the bookkeeping.
+ *
+ * # WHAT THIS TABLE IS NOT — the boundary, said out loud (fable-623 §4)
+ *
+ * **Free refusals only.** A refusal raised after the claim already has a
+ * variant row, a charge and a refund pair, and the reliability report reads
+ * those; counting it here as well would be the same fact in two ledgers,
+ * drifting. So this tally is not the whole refusal universe, and a reader
+ * asking "how often does a paid attempt fail" is asking the variant/refund
+ * record, not this one. The boundary is deliberate; written down so it cannot
+ * be mistaken for a blind spot.
+ *
+ * # WHERE IT IS COUNTED
+ *
+ * At ONE seam — `refineCandidate`, where every escaping refusal passes — and
+ * never at the doors themselves. Wiring the doors is what produced the finding
+ * that made this note necessary: the count was attached to two of about twenty
+ * of them, so production had counted ZERO refusals on a morning the founder was
+ * refused in it. See `refusalTag`.
  */
 import { createModuleLogger } from "../logging/logger";
 import { logAuditEvent } from "../auditLog";

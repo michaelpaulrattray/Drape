@@ -178,6 +178,7 @@ import { cannotSaySentence, likenessSetAsideNote } from "./cannotSayCopy";
 import { censusOfAttempt, censusSoFar } from "./callCensus";
 import { carriesAfterPruning } from "./prunedCarries";
 import { countRefusal } from "./refusalCounter";
+import { refusal, refusalOf } from "./refusalTag";
 import { padToFrame, studioBackgroundOf, type StudioBackground } from "./referenceFit";
 import { pronounsForSex } from "./castPronouns";
 import {
@@ -528,8 +529,16 @@ export async function refineCandidate(
   dependencies: RefineServiceDependencies,
   input: RefineInput,
 ): Promise<RefineResult> {
+  /*
+    WHETHER THE MONEY WAS EVER AT RISK, carried out of the attempt rather than
+    inferred at the seam. Everything before the claim is a free refusal with no
+    other artifact — the case the counter exists for. After it there is a
+    variant row, a charge and a refund pair, so a failure there is already
+    readable and putting it in this tally would mix two questions.
+  */
+  const attempt: RefineAttempt = { claimed: false };
   const { value, error, census } = await censusOfAttempt(
-    () => refineCandidateCounted(dependencies, input),
+    () => refineCandidateCounted(dependencies, input, attempt),
   );
   log.info(
     {
@@ -550,13 +559,40 @@ export async function refineCandidate(
     },
     "[refineService] what this edit cost in calls and seconds",
   );
-  if (error !== undefined) throw error;
+  /*
+    THE ONE PLACE A REFUSAL IS COUNTED (opus-465, the class behind fable-498 §5).
+
+    The counter was wired door by door and reached two of about twenty, so
+    production had counted ZERO refusals on a morning the founder was refused in
+    it. Counting here instead means a door that does not exist yet is counted
+    the day it is written, and an untagged one is counted as a GAP rather than
+    dropped. It cannot double-count: no free refusal counts itself any more.
+  */
+  if (error !== undefined) {
+    if (!attempt.claimed) {
+      const named = refusalOf(error);
+      if (named) {
+        await countRefusal({
+          userId: input.userId,
+          candidateId: input.candidatePublicId,
+          reason: named.reason,
+          facet: named.facet,
+          outcome: named.outcome,
+        });
+      }
+    }
+    throw error;
+  }
   return value as RefineResult;
 }
+
+/** What the attempt tells the seam about itself. */
+type RefineAttempt = { claimed: boolean };
 
 async function refineCandidateCounted(
   dependencies: RefineServiceDependencies,
   input: RefineInput,
+  attempt: RefineAttempt = { claimed: false },
 ): Promise<RefineResult> {
   const price = CASTING_V2_REFINE_PRICE_CREDITS;
   await assertNotFrozen(input.userId);
@@ -565,13 +601,13 @@ async function refineCandidateCounted(
 
   const source = await getOwnedCandidateWithSelectedFace(input.userId, input.candidatePublicId);
   if (!source) {
-    throw new TRPCError({
+    throw refusal("candidate_missing", {
       code: "NOT_FOUND",
       message: "That candidate is no longer available.",
     });
   }
   if (!source.candidate.imageKey) {
-    throw new TRPCError({
+    throw refusal("master_missing", {
       code: "PRECONDITION_FAILED",
       message: "That candidate's image isn't available. Nothing was charged.",
     });
@@ -582,7 +618,7 @@ async function refineCandidateCounted(
       produce a variant that can never be selected into anything, which is a
       charge for an artifact with no home.
     */
-    throw new TRPCError({
+    throw refusal("already_signed", {
       code: "PRECONDITION_FAILED",
       message: "That face has already been signed. Nothing was charged.",
     });
@@ -605,7 +641,7 @@ async function refineCandidateCounted(
     and refuses with `notASlot` rather than painting.
   */
   if (input.scope !== undefined && slotDefinition(input.scope) === null) {
-    throw new TRPCError({
+    throw refusal("scope_unknown", {
       code: "BAD_REQUEST",
       message: "I don't know which part of her that is. Nothing was charged.",
     });
@@ -946,17 +982,25 @@ async function refineCandidateCounted(
       { candidateId: input.candidatePublicId, instruction, alreadyTrue: verdict.alreadyTrue },
       "[refineService] the ask was absorbed into a restatement of what she already is — refusing, free",
     );
-    throw new TRPCError({
+    const absorbedReason = verdict.departed ? "absorbed_departure" : "absorbed";
+    throw refusal(absorbedReason, {
       code: "BAD_REQUEST",
       message: refusalMessage({
         ok: false,
         refusal: {
           /* The departure gets its own sentence: "she already has no glasses"
              is not English, and what she can see is that they are already off. */
-          reason: verdict.departed ? "absorbed_departure" : "absorbed",
+          reason: absorbedReason,
           asked: verdict.alreadyTrue,
         },
       }),
+      /*
+        NO FACET HERE, deliberately. `alreadyTrue` is a phrase built out of what
+        she asked for — "icey blue eyes" — and the count may carry the reason
+        and never her sentence. The reason alone answers the question this door
+        is counted for.
+      */
+      facet: null,
     });
   };
   if (parsed.ok && "delta" in parsed) parsed = await throughTheAlreadyTrueDoor(parsed);
@@ -1002,27 +1046,19 @@ async function refineCandidateCounted(
       "[refineService] refused before the charge — nothing claimed, nothing deducted",
     );
     /*
-      AND IT IS COUNTED, because a log line is not an artifact (fable-498 §5).
-
-      This shift asked production how often the containment guard refuses an
-      honest ask and could not answer: free refusals write no row, and ten
-      deploys had rotated the only logs that carried them. The count carries the
-      REASON and the facet and never her sentence — staff read audit rows.
-
-      Awaited but never allowed to matter: `countRefusal` swallows its own
-      failures, so the customer's refusal cannot wait on bookkeeping.
+      AND IT IS COUNTED, because a log line is not an artifact (fable-498 §5) —
+      by the SEAM now rather than here (opus-465). The reason and the facet ride
+      on the refusal itself; the door's own verdict rides with them so the
+      rescued-vs-upheld ratio stays readable. Never her sentence: staff read
+      audit rows.
     */
-    await countRefusal({
-      userId: input.userId,
-      candidateId: input.candidatePublicId,
-      reason: parsed.refusal.reason,
+    // An honest boundary, not a fault — and free, which is the point of §10.
+    throw refusal(parsed.refusal.reason, {
+      code: "BAD_REQUEST",
+      message: refusalMessage(parsed),
       facet: "asked" in parsed.refusal ? parsed.refusal.asked : null,
-      /* The door's own verdict where it ran, so the rescued-vs-upheld ratio is
-         readable from the day this lands. */
       outcome: parsed.door === "upheld" ? "upheld" : "refused",
     });
-    // An honest boundary, not a fault — and free, which is the point of §10.
-    throw new TRPCError({ code: "BAD_REQUEST", message: refusalMessage(parsed) });
   }
 
   /*
@@ -1100,7 +1136,7 @@ async function refineCandidateCounted(
     if (!moved) {
       /* The face moved under us — expired, discarded, signed in another tab.
          Say so rather than reporting a selection that did not happen. */
-      throw new TRPCError({
+      throw refusal("version_missing", {
         code: "NOT_FOUND",
         message: "That version isn't available any more. Nothing was charged.",
       });
@@ -1128,7 +1164,7 @@ async function refineCandidateCounted(
 
   if (parsed.intent === "navigate") {
     if (!predecessor) {
-      throw new TRPCError({
+      throw refusal("already_original", {
         code: "BAD_REQUEST",
         message: "You're already looking at the original. Nothing was charged.",
       });
@@ -1165,7 +1201,7 @@ async function refineCandidateCounted(
         },
         "[refineService] the step she pointed at has moved — refusing rather than pruning another one",
       );
-      throw new TRPCError({
+      throw refusal("step_moved", {
         code: "CONFLICT",
         message: "That step has moved since this page was loaded — open the face again "
           + "and take it off from there. Nothing was charged.",
@@ -1219,7 +1255,7 @@ async function refineCandidateCounted(
         { userId: input.userId, candidate: input.candidatePublicId, instruction, unserved },
         "[refineService] the ask names a kind only the repaint road serves — refusing before the charge",
       );
-      throw new TRPCError({
+      throw refusal("kind_unserved", {
         code: "BAD_REQUEST",
         message: "I can't do that to her yet. Nothing was charged.",
       });
@@ -1361,7 +1397,7 @@ async function refineCandidateCounted(
         diffing ancestors is right most of the time and silently drops an
         earlier edit the rest, which is the annihilation class by another road.
       */
-      throw new TRPCError({
+      throw refusal("history_predates_undo", {
         code: "PRECONDITION_FAILED",
         message: "This face was refined before undoing by name existed, so its steps can't be "
           + "taken apart. Backing up to an earlier version still works. Nothing was charged.",
@@ -1404,7 +1440,7 @@ async function refineCandidateCounted(
         },
         "[refineService] a removal reached the chain with no words in it — refusing rather than pruning",
       );
-      throw new TRPCError({
+      throw refusal("removal_unnamed", {
         code: "BAD_REQUEST",
         message: "I didn't catch what should come off. Tell me the thing itself — "
           + "\"the earrings\", \"her glasses\", \"the fringe\" — and I'll take it off. "
@@ -1590,7 +1626,7 @@ async function refineCandidateCounted(
             { candidate: input.candidatePublicId, asked, why: error instanceof Error ? error.message : String(error) },
             "[refineService] the segmenter could not answer whether the chain put it there",
           );
-          throw new TRPCError({
+          throw refusal("removal_uncheckable", {
             code: "PRECONDITION_FAILED",
             message: "I couldn't check her face just now, and I won't undo a step without "
               + "looking. Try that again in a moment — nothing was charged.",
@@ -1607,7 +1643,7 @@ async function refineCandidateCounted(
           { candidate: input.candidatePublicId, asked: parsed.match, why: error instanceof Error ? error.message : String(error) },
           "[refineService] could not check her face before undoing — refusing rather than guessing",
         );
-        throw new TRPCError({
+        throw refusal("removal_uncheckable", {
           code: "PRECONDITION_FAILED",
           message: "I couldn't check her face just now, and I won't undo a step without "
             + "looking. Try that again in a moment — nothing was charged.",
@@ -1813,8 +1849,9 @@ async function refineCandidateCounted(
           the removal through and this never runs.
         */
         if (subject === "statedAccessories") {
-          throw new TRPCError({
+          throw refusal("removal_not_in_brief", {
             code: "BAD_REQUEST",
+            facet: subject,
             message: `Her brief didn't ask for ${named}, and nothing since has added any, `
               + `so there's nothing on record to take off. If she's wearing ${named} `
               + "in the picture, tell me what to change instead and I'll edit it. "
@@ -1830,8 +1867,9 @@ async function refineCandidateCounted(
           this is a sentence. "Any" is the one word that works for a singular
           noun, a plural one and a mass one alike, without guessing which.
         */
-        throw new TRPCError({
+        throw refusal("removal_absent", {
           code: "BAD_REQUEST",
+          facet: subject ?? null,
           message: `I can't find any ${named} on this face — there's nothing to take off. `
             + "Nothing was charged.",
         });
@@ -1890,10 +1928,24 @@ async function refineCandidateCounted(
         currentHairTexture: currentValueOfFacet(currentIdentity, "hair.texture"),
         currentMakeup: currentValueOfFacet(currentIdentity, "makeup"),
       });
-      if (!asEdit.ok) throw new TRPCError({ code: "BAD_REQUEST", message: refusalMessage(asEdit) });
-      if (!("delta" in asEdit)) {
-        throw new TRPCError({
+      /*
+        THE FOUNDER'S OWN DOOR (opus-465). "Remove her hair" came through here,
+        was re-read as an edit, hit the content wall, and the refusal reached him
+        with nothing written down anywhere — this line threw straight past the
+        counter. It is why the count now happens at the seam and why every
+        refusal on this road carries its name.
+      */
+      if (!asEdit.ok) {
+        throw refusal(asEdit.refusal.reason, {
           code: "BAD_REQUEST",
+          message: refusalMessage(asEdit),
+          facet: subject ?? null,
+        });
+      }
+      if (!("delta" in asEdit)) {
+        throw refusal("removal_reread_unmatched", {
+          code: "BAD_REQUEST",
+          facet: subject ?? null,
           message: "There's nothing like that in what you've asked for so far, and it isn't "
             + "something I can change directly. Nothing was charged.",
         });
@@ -2091,7 +2143,7 @@ async function refineCandidateCounted(
       { candidate: input.candidatePublicId, variant: predecessor?.publicId },
       "[refineService] UNREADABLE PREDECESSOR — refusing rather than composing from nothing",
     );
-    throw new TRPCError({
+    throw refusal("history_unreadable", {
       code: "BAD_REQUEST",
       message: "Something's wrong with this face's history and I won't guess at it — "
         + "the edit would have dropped what you already asked for. Nothing was charged.",
@@ -2191,7 +2243,7 @@ async function refineCandidateCounted(
     grows is capped.
   */
   if (existing.length >= MAX_INSTRUCTIONS && instructions.length > priorInstructions.length) {
-    throw new TRPCError({
+    throw refusal("refine_limit", {
       code: "PRECONDITION_FAILED",
       message: "That face has as many refinements as it can carry. You can still undo or take "
         + "one out. Nothing was charged.",
@@ -2695,8 +2747,9 @@ async function refineCandidateCounted(
         { candidateId: input.candidatePublicId, instruction, scope: input.scope, facets: outside.facets },
         "[refineService] the reading landed outside the part she pointed at — refusing before the claim",
       );
-      throw new TRPCError({
+      throw refusal("scope_mismatch", {
         code: "BAD_REQUEST",
+        facet: outside.facets[0] ?? null,
         message: cannotSaySentence("notASlot", {
           words: null,
           facet: outside.facets[0] ?? null,
@@ -2714,7 +2767,7 @@ async function refineCandidateCounted(
       6), and before the claim so nobody is charged for a queue they could not
       get into.
     */
-    throw new TRPCError({
+    throw refusal("busy", {
       code: "TOO_MANY_REQUESTS",
       message: "Casting is busy right now. Try that again in a moment — nothing was charged.",
     });
@@ -2737,6 +2790,13 @@ async function refineCandidateCounted(
     return gate.result as RefineResult;
   }
   const operationId = gate.operationId;
+  /*
+    FROM HERE THE ATTEMPT HAS AN ARTIFACT OF ITS OWN — an operation row, and in
+    a moment a variant and a charge. Anything that fails past this line is
+    readable in the ledger and the recovery sweep, so the seam leaves it out of
+    the refusal tally: that count exists for the refusal with NO other record.
+  */
+  attempt.claimed = true;
 
   let variant: Awaited<ReturnType<typeof claimVariant>>;
   try {
