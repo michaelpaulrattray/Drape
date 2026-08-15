@@ -2120,6 +2120,32 @@ export default function CastingSheet() {
               selectedVariantId={variants.data?.selectedVariantId ?? null}
               originalImageUrl={variants.data?.originalImageUrl ?? null}
               originalThumbUrl={variants.data?.originalThumbUrl ?? null}
+              /*
+                WHAT A FRESH TAKE WOULD ASK FOR — the version ON SCREEN's own
+                words, or null on the original.
+
+                Through `selectedVariantFor`, the same override the lit chip
+                rides (fable-546). Reading the server-confirmed selection
+                instead left the control on screen after a click to the original
+                — measured, both themes: the picture was the master and the
+                button still offered to re-roll an edit that was no longer in
+                front of anybody. One source of truth for what is on screen, and
+                everything about the screen follows it.
+
+                Derived rather than remembered: the rail already has every
+                version's `requestText`, so a second copy of "what did this
+                version ask for" would be the parallel list law 4 forbids.
+              */
+              regenerates={
+                (variants.data?.variants ?? [])
+                  .find((entry) => entry.variantId === selectedVariantFor({
+                    candidateId: viewerCandidateId ?? "",
+                    serverUrl: viewerCandidate?.imageUrl ?? "",
+                    serverSelected: variants.data?.selectedVariantId ?? null,
+                    chosen: chosenFrame,
+                  }))
+                  ?.requestText ?? null
+              }
               priceCredits={refinePrice}
               /*
                 BUSY IS SERVER TRUTH TOO (D-161). `refine.isPending` alone dies

@@ -1,3 +1,5 @@
+import { RotateCw } from "lucide-react";
+
 import { Button } from "@/foundation";
 import { SegmentsOnFace, type FaceRow } from "./SegmentsOnFace";
 import { VersionRail } from "./VersionRail";
@@ -108,6 +110,7 @@ export function RefinePanel({
   draft,
   onDraft,
   stackHoisted = false,
+  regenerates = null,
 }: {
   variants: readonly RefineVariant[];
   /** Refinements still running, from server truth — survives remount (D-161). */
@@ -155,6 +158,12 @@ export function RefinePanel({
    * is armed for this account. Absent or empty renders nothing at all.
    */
   kept?: readonly FaceRow[];
+  /**
+   * The selected version's OWN request text, or null on the original — what a
+   * fresh take would ask for again. The server owns the words; this only
+   * carries them back.
+   */
+  regenerates?: string | null;
   /**
    * This face's own possessive, from the server — see `SegmentsOnFace`.
    *
@@ -322,6 +331,45 @@ export function RefinePanel({
         <Button type="submit" size="small" disabled={!trimmed || busy}>
           {busy ? "Refining…" : "Refine"}
         </Button>
+        {/*
+          REGENERATE — the founder's own ask (2026-08-15), after Grok's
+          dedicated action.
+
+          It is a SECOND DOOR ONTO ONE MACHINERY (law 4), not a second
+          implementation: it submits this version's own words, which the service
+          recognises as a repeat and answers with the offer — the same question,
+          the same price, the same confirm as typing it again. Nothing about
+          money or replacement is decided here.
+
+          So the label carries no price (D-109): the price is in the question
+          this raises, before anything is claimed.
+
+          It is absent on the ORIGINAL, because there is no edit to re-roll —
+          absent rather than disabled, since a control that can never apply to
+          the thing on screen is not a control that is temporarily unavailable.
+        */}
+        {regenerates ? (
+          <Button
+            type="button"
+            /*
+              SECONDARY, NOT QUIET — the first version was a ghost.
+
+              Photographed in the running app, "Refine" read clearly and
+              "Regenerate" was barely legible: a quiet button sits on the
+              viewer's dimmed dock, where quiet means invisible. The founder
+              asked for the DIRECTNESS of a dedicated action, and a control
+              nobody can see is not one.
+            */
+            variant="secondary"
+            size="small"
+            disabled={busy}
+            onClick={() => onRefine(regenerates)}
+            title={`A fresh take of "${regenerates}"`}
+          >
+            <RotateCw size={12} strokeWidth={2} aria-hidden="true" />
+            Regenerate
+          </Button>
+        ) : null}
       </form>
 
       {/*
