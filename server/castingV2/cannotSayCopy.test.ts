@@ -23,6 +23,7 @@ const REASONS: readonly CannotSayReason[] = [
   "uncatalogued",
   "noWords",
   "perSideRemoval",
+  "sideNamedWithoutScope",
   "nothingAsked",
 ];
 
@@ -70,6 +71,20 @@ describe("the sentences the founder ruled are unchanged", () => {
     expect(cannotSaySentence("notASlot", { ...bare, facet: "makeup" }))
       .toBe("That's makeup, and makeup isn't something I can place yet — it's coming. "
         + "Nothing was charged.");
+  });
+
+  it("names the side she typed and offers the box, without promising to charge", () => {
+    /*
+      Typed prose does not scope, so an unscoped side sentence used to fan out
+      to both instances WITH the side word inside the value — "change his left
+      eye: her right eye fiery red", dispatched and paid (fable-604 §3a). This
+      is the door, and its sentence has to hand back the thing she can do.
+    */
+    expect(cannotSaySentence("sideNamedWithoutScope", {
+      ...bare, facet: "eye.colour", words: "her right eye fiery red",
+    })).toBe('"Her right eye fiery red" names one side of a pair, and pointing at it is how I can work '
+      + "on just that one — tap it on her picture and say it there. Said in a sentence I would have to "
+      + "change both, which isn't what you asked for. Nothing was charged.");
   });
 
   it("keeps the one-of-a-pair wording, which names what she CAN do", () => {

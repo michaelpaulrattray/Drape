@@ -186,6 +186,15 @@ export type RepaintAsksRefusal = {
      * (opus-275, located by opus-342). See the refusal in the departure loop.
      */
     | "perSideRemoval"
+    /**
+     * The ask names ONE side of a pair and points at nothing.
+     *
+     * Typed prose does not scope, so the ask fans out to both instances with
+     * the side word still inside the value. See the refusal in the written
+     * loop, and fable-604 §3 for why this is a refusal today and an inference
+     * once its mirrored court has run.
+     */
+    | "sideNamedWithoutScope"
     /** The delta writes no facet at all. See the refusal at the foot of
      *  {@link repaintAsksFor} — an empty ask list is a charge for nothing. */
     | "nothingAsked";
@@ -266,6 +275,31 @@ export class RepaintCannotSayError extends Error {
  * `facetsWrittenBy` is the caller's list of what changed and this is asked only
  * about members of it.
  */
+/**
+ * WHICH SIDE A SENTENCE NAMES, or null when it names none or both.
+ *
+ * Deliberately crude and deliberately narrow. It answers one question — did
+ * this ask single out one half of a pair — and it is only ever asked of a
+ * BILATERAL feature's own value, so "parted on the left" (hair has one
+ * instance) never reaches it.
+ *
+ * Both words means neither: *"her left and right earrings gold"* is a genuine
+ * statement about the pair and must go through untouched. A word inside another
+ * word must not count, which is what the boundaries are for — "bright" is not
+ * "right", and that near-miss is exactly the shape that would refuse a render
+ * nobody asked to refuse.
+ */
+export function sideNamedIn(phrase: string): "left" | "right" | null {
+  /* Split into words rather than matched with word boundaries, so "bright"
+     can never read as "right" — the near-miss that would refuse a render
+     nobody asked to refuse. */
+  const words = phrase.toLowerCase().split(/[^a-z]+/);
+  const left = words.includes("left");
+  const right = words.includes("right");
+  if (left === right) return null;
+  return left ? "left" : "right";
+}
+
 function statePhrase(
   facet: Facet,
   delta: RefineDelta,
@@ -557,6 +591,44 @@ export function repaintAsksFor(input: RepaintAsksInput): RepaintAsksResult {
         ok: false, reason: "noWords", facet,
         detail: `${facet} is written by this step and has no value to say about it, so the slot would regenerate with nothing said`,
       };
+    }
+    /*
+      A SENTENCE THAT NAMES ONE SIDE AND SCOPES NOTHING (fable-604 §3a).
+
+      Typed prose does not scope: only the box she taps does. So *"her right eye
+      — fiery red"* with no scope fans the ask out to BOTH eyes and carries the
+      side word inside the value, and the recipe dispatched — verbatim from a
+      dev row —
+
+        Change only his LEFT eye: her right eye fiery red; his RIGHT eye: her
+        right eye fiery red.
+
+      The left eye is instructed to become "her right eye fiery red". That is
+      not a whole-pair edit, it is a contradiction sent to the engine at full
+      price, and the render's own read-back caught it afterwards — *"both irises
+      are vivid fiery red… not isolated to the right"* — on a frame that
+      delivered and charged.
+
+      So it refuses, free, and hands back the thing she can do. Only when
+      exactly ONE side is named: a sentence naming both ("her left and right
+      earrings") is a genuine statement about the pair and goes through, and a
+      feature with one instance cannot be narrowed by a side word at all.
+
+      The inference — reading the side out of the words and scoping the ask to
+      it — is the fix this door makes room for, and it lands behind its own
+      mirrored court (fable-604 §3b). Until then a refusal is the honest answer:
+      the founder's own per-side edits go through the panel and are untouched by
+      this.
+    */
+    if (input.scope === undefined && definitions.length > 1) {
+      const named = sideNamedIn(phrase);
+      if (named !== null) {
+        return {
+          ok: false, reason: "sideNamedWithoutScope", facet,
+          detail: `the ask names her ${named} side and scopes nothing, so the recipe would tell BOTH `
+            + `instances of ${facet} to become "${phrase}" — a contradiction dispatched at full price`,
+        };
+      }
     }
     for (const definition of definitions) {
       if (slotDefinition(definition.slot) === null) {

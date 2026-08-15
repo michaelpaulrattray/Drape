@@ -312,6 +312,68 @@ describe("a departure vacates the slot and says so", () => {
     for (const ask of result.asks) expect(ask.vacate?.says).toContain("bare");
   });
 
+  /**
+   * A SENTENCE THAT NAMES ONE SIDE AND POINTS AT NOTHING (fable-604 §3a).
+   *
+   * Typed prose does not scope; only the tapped box does. So an unscoped
+   * *"her right eye — fiery red"* fanned the ask out to BOTH eyes with the side
+   * word still inside the value, and the recipe dispatched — verbatim from a
+   * dev row — *"Change only his left eye: her right eye fiery red; his right
+   * eye: her right eye fiery red"*, at full price. The render's own read-back
+   * caught it afterwards and nothing consulted the reading.
+   *
+   * The three controls beside it are the whole of the rule: naming BOTH sides
+   * is a statement about the pair, a scoped ask is exactly the path this door
+   * points at, and a feature with one instance has no sides to confuse.
+   */
+  it("REFUSES a side named in prose with nothing pointed at, rather than dispatching a contradiction", () => {
+    const result = repaintAsksFor({
+      delta: { free: { eyeColourFree: "her right eye fiery red" } },
+      prose,
+    });
+
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.reason).toBe("sideNamedWithoutScope");
+    expect(result.detail).toContain("right");
+  });
+
+  it("CONTROL — a sentence naming BOTH sides is about the pair, and goes through", () => {
+    const result = repaintAsksFor({
+      delta: { free: { eyeColourFree: "her left and right eyes fiery red" } },
+      prose,
+    });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.asks.map((ask) => ask.slot)).toEqual(["eye@left", "eye@right"]);
+  });
+
+  it("CONTROL — the same sentence WITH a scope is the path the refusal points at", () => {
+    const result = repaintAsksFor({
+      delta: { free: { eyeColourFree: "her right eye fiery red" } },
+      prose,
+      scope: "eye@right",
+    });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.asks.map((ask) => ask.slot)).toEqual(["eye@right"]);
+  });
+
+  it("CONTROL — a side word about a feature there is only ONE of never reaches the door", () => {
+    /* "Parted on the left" is a haircut, and hair has one instance: there is no
+       fan-out for a side word to contradict. */
+    const result = repaintAsksFor({
+      delta: { free: { hairWorn: "parted on the left" } },
+      prose,
+    });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.asks.map((ask) => ask.slot)).toEqual(["hair"]);
+  });
+
   it("REFUSES to take one of a pair off, because the one court of that sentence saw it take both", () => {
     /*
       The narrowing is granted for PAINT and not for a VACANCY. The per-eye

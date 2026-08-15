@@ -117,6 +117,28 @@ export const CANNOT_SAY_COPY: Readonly<Record<CannotSayReason, CannotSayEntry>> 
     THE PAIR'S ONE SIDE — the founder's ruled voice again (fable-354's shape):
     say the gap and hand back the thing she CAN do.
   */
+  /*
+    ONE SIDE NAMED, NOTHING POINTED AT (fable-604 §3a).
+
+    Same voice as the pair's-one-side refusal above: say the gap and hand back
+    the thing she can do. The alternative it offers is real for everyone who can
+    reach this door — the repaint road sits inside the library scope, which is
+    what draws the boxes she taps.
+  */
+  sideNamedWithoutScope: {
+    /* Raised inside the recipe assembly, like the pair's-one-side refusal
+       beside it — after the claim, so the money comes BACK rather than never
+       leaving. The sentence says which of those two happened from the caller's
+       own fact, never from this label. */
+    charge: "refunded",
+    say: (context) => {
+      const said = lead(context);
+      return (said ? `"${said}" names one side` : "That names one side")
+        + " of a pair, and pointing at it is how I can work on just that one — tap it on her picture "
+        + "and say it there. Said in a sentence I would have to change both, which isn't what you asked "
+        + `for. ${MONEY(context.moneySafe)}`;
+    },
+  },
   perSideRemoval: {
     charge: "refunded",
     say: (context) => "Taking just one of a pair off isn't something I can do yet — ask for "
