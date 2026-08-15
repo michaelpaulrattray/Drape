@@ -324,6 +324,11 @@ const VALID_IN_CONTEXT: readonly string[] = [
   "take", "tall", "text", "they", "thing", "time", "tiny", "tone", "tint",
   "tidy", "very", "want", "warm", "wash", "wear", "well", "were", "went",
   "were", "wave", "weak", "wear", "well", "wire", "wispy", "work", "your",
+  /* Found by the guard test on 2026-08-15, in this repository's own prose: a
+     comment reading "it errs toward splitting" put `errs` one letter from
+     `ears`. An ordinary English word, so the rule is absolute — the question
+     never fires on it. */
+  "errs",
 ];
 
 /**

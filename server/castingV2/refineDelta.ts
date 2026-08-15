@@ -1133,7 +1133,15 @@ export function withoutFacets(delta: RefineDelta, facets: ReadonlySet<Facet>): R
  * `marks` and `ink` have no kind vocabulary, and this is what serves them: a
  * scar does not name freckles, so adding one retires nothing.
  */
-function namesSameThing(departed: string, answer: string): boolean {
+/*
+  EXPORTED since 2026-08-15, for the rail's take grouping (`railTakes.ts`).
+
+  "Is this the same thing" is asked in two places now — the departure lane, and
+  whether two renders are two TAKES of one edit — and a second implementation
+  would be free to disagree with this one about whether "gold hoop earrings" and
+  "gold hoops" name one object. One judgement, two callers (law 4).
+*/
+export function namesSameThing(departed: string, answer: string): boolean {
   const departedKind = accessoryKindOf(departed);
   const answerKind = accessoryKindOf(answer);
   if (departedKind && answerKind) return departedKind === answerKind;
@@ -1703,7 +1711,7 @@ export function missingFromPrompt(delta: RefineDelta, prompt: string): string[] 
  * the job is to catch a model INVENTING a fact, and no stemmer is needed to
  * notice "a long knife scar from a bar fight" when the user said "a scar".
  */
-function stemmedContainment(value: string, instruction: string): boolean {
+export function stemmedContainment(value: string, instruction: string): boolean {
   const stem = (word: string) => word
     .replace(/(ing|ed|es|s)$/i, "")
     /* And a trailing "e", so tie and tied both reduce to "ti". */

@@ -31,6 +31,7 @@ import { UNLOCKABLE_FIELDS } from "../castingV2/briefCompiler";
 import { listLineageSegments, resolveOwnedCandidateId } from "../db/castingV2Segments";
 import { maskFetchUrl, segmentsOnFace } from "../castingV2/segmentsOnFace";
 import { facePanel, type PanelScan } from "../castingV2/facePanel";
+import { liveTakes, takeShownFor } from "../castingV2/railTakes";
 import { listLineageReferences } from "../db/castingV2ReferenceLibrary";
 import {
   captureCastingFaceScanEnabled,
@@ -64,7 +65,7 @@ import {
 const tuple = <T extends string>(values: readonly T[]) => values as unknown as [T, ...T[]];
 import { createRoll, cancelRoll } from "../castingV2/rollService";
 import { signCandidate } from "../castingV2/signService";
-import { refineCandidate } from "../castingV2/refineService";
+import { readStepDeltas, refineCandidate } from "../castingV2/refineService";
 import { pendingStage } from "../castingV2/pendingStage";
 import {
   listCandidateVariants,
@@ -779,8 +780,26 @@ export const castingV2Router = router({
         listPendingVariants(ctx.user.id, input.candidateId),
       ]);
       if (!face) throw new TRPCError({ code: "NOT_FOUND", message: "That candidate is no longer available." });
+      /*
+        ONE CHIP PER EDIT, NEWEST WINS (founder, 2026-08-15; `railTakes.ts`).
+
+        A regeneration of the same ask is an ordinary row that describes the
+        same chain, so the rail shows the newest take of each distinct chain and
+        the older ones become invisible. Derived here rather than stored: the
+        rows already answer the question, and a supersession column would be a
+        second answer free to disagree with them (law 4).
+
+        The SELECTION is remapped through the same map. Without it, stepping
+        back onto a take that has since been re-rolled would show a picture with
+        no chip lit — the exact mismatch the rail's highlight work closed.
+      */
+      const { live, supersededBy } = liveTakes(variants.map((variant) => ({
+        publicId: variant.publicId,
+        steps: readStepDeltas(variant.stepDeltas),
+        variant,
+      })));
       return {
-        selectedVariantId: face.variantPublicId,
+        selectedVariantId: takeShownFor(face.variantPublicId, supersededBy),
         originalImageUrl: face.candidate.imageKey ? storagePublicUrl(face.candidate.imageKey) : null,
         /*
           THE SMALL COPY, WHERE ONE EXISTS (fable-503).
@@ -843,7 +862,7 @@ export const castingV2Router = router({
             now: new Date(),
           }),
         })),
-        variants: variants.map((variant) => ({
+        variants: live.map(({ variant }) => ({
           variantId: variant.publicId,
           imageUrl: variant.imageKey ? storagePublicUrl(variant.imageKey) : null,
           /* The rail draws this and the viewer shows it while the full frame

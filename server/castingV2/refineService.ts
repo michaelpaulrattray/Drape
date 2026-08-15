@@ -114,6 +114,7 @@ import {
   REFINABLE_AXES,
   type RefineDelta,
 } from "./refineDelta";
+import { sameStep } from "./railTakes";
 import { interpretRefinement, refusalMessage } from "./refineInterpreter";
 import { readStoredDelta } from "./refineLegacy";
 import { removalEvidence } from "./removalWords";
@@ -1921,12 +1922,43 @@ async function refineCandidateCounted(
   }
 
   const priorInstructions = readInstructions(predecessor?.instructions);
+  const priorSteps = readStepDeltas(predecessor?.stepDeltas);
+  /*
+    A REPEAT OF THE SAME ASK RE-ROLLS THIS VERSION IN PLACE (founder,
+    2026-08-15): *"just allow a refresh or regeneration of the same edit which
+    essentially produces no extra version and just regenerates the same
+    thumbnail"*, and on the trade — *"if you don't like how the generation
+    landed you can regenerate it without causing extra clutter"*.
+
+    So when the ask names the same change as the step that MADE the frame she is
+    looking at, this render is a second take of that version rather than a new
+    one after it: the chain is the predecessor's own chain, unchanged, and the
+    rail derives one chip per distinct chain with the newest take winning
+    (`railTakes.ts`). Nothing is deleted and no column is written — the older
+    take becomes invisible rather than absent, which is what keeps a fork made
+    from it resolving (fable-091).
+
+    It is still a paid render. Only the version COUNT stops growing.
+
+    `sameStep` compares the PARSED deltas, never the sentences, and it errs
+    toward treating two asks as different — a false split costs one chip, a
+    false merge would take a picture she paid for off the rail.
+  */
+  const repeatsThisVersion = Boolean(editDelta)
+    && priorSteps.length > 0
+    && sameStep(priorSteps[priorSteps.length - 1]!, editDelta!);
   const instructions = editDelta
-    ? [...priorInstructions, instruction.trim()]
+    ? (repeatsThisVersion ? priorInstructions : [...priorInstructions, instruction.trim()])
     : chain.map((step) => step.instruction);
   const stepDeltas = editDelta
-    ? [...readStepDeltas(predecessor?.stepDeltas), editDelta]
+    ? (repeatsThisVersion ? priorSteps : [...priorSteps, editDelta])
     : chain.map((step) => step.delta);
+  if (repeatsThisVersion) {
+    log.info(
+      { userId: input.userId, candidate: input.candidatePublicId, chain: priorSteps.length },
+      "[refineService] the same ask again — re-rolling this version in place rather than adding one",
+    );
+  }
   /*
     AN UNREADABLE PREDECESSOR STOPS THE MONEY (D-182).
 
@@ -2626,8 +2658,16 @@ async function refineCandidateCounted(
         store; recording it while the store is dark would buy nothing and would
         put a brand-new column into the one INSERT every paid refinement runs.
       */
+      /*
+        AND A RE-ROLL TAKES THE PREDECESSOR'S PARENT, not the predecessor: it is
+        the same version again, so it hangs where that version hung. Recording
+        the predecessor would make take 2 a CHILD of take 1 and the two would
+        never group.
+      */
       parentVariantPublicId: captureCastingSegmentsEnabled(input.userId)
-        ? predecessor?.publicId ?? null
+        ? (repeatsThisVersion
+          ? existing.find((row) => row.id === predecessor?.parentVariantId)?.publicId ?? null
+          : predecessor?.publicId ?? null)
         : null,
     });
   } catch (error) {
