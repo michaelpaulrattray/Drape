@@ -32,6 +32,7 @@ const widget = (over: Partial<BornWornClass> = {}): BornWornClass => ({
   armed: false,
   measurement: "NOT MEASURED — invented for this test",
   sideMeasurement: "NOT CONSIDERED and never needed",
+  courtDeferred: null,
   ...over,
 });
 
@@ -87,6 +88,37 @@ describe("the V4 map reads the shipped vocabulary", () => {
     expect(row.why).toContain("nose stud");
     expect(row.unarmed.some((entry) => entry.startsWith("nose stud"))).toBe(true);
     expect(row.armed.sort()).toEqual(["earring", "glasses"]);
+  });
+
+  it("tells a court that is OWED from one that was REFUSED", () => {
+    /*
+      fable-647's third state. `nose stud` has no floor and never will until
+      somebody asks for one — zero asks in either world — so it is a decision
+      taken, not work outstanding. A phase whose worklist counts settled rows
+      as remaining substance cannot say how much of itself is left.
+    */
+    const row = accessoryRow(detectionMap());
+    expect(row.why).toContain("NOBODY-SAYS-THIS");
+    expect(row.why).toContain("no demand in either world");
+    expect(row.why).not.toContain("OWED");
+  });
+
+  it("does not read a MISSING deferral as a refusal", () => {
+    /* The spelling this reader could get wrong in the expensive direction:
+       `undefined` is not `null`, and a class that simply never set the field
+       would be filed as "refused, reason undefined" — quietly removing a kind
+       from V4's worklist. */
+    const row = accessoryRow(detectionMap([
+      /* One armed kind the scan really does ask, so the row is not a violation
+         and its sentence is the arming summary this arm is about. */
+      widget({
+        id: "glasses", region: "glasses", floor: 0.001, armed: true,
+        measurement: "12 worn 1.2–2.0%, 12 bare 0.000%, invented for this test",
+      }),
+      { ...widget({ id: "gadget", region: "gadget" }), courtDeferred: undefined as unknown as null },
+    ]));
+    expect(row.why).toContain("gadget is OWED a court");
+    expect(row.why).not.toContain("undefined");
   });
 });
 

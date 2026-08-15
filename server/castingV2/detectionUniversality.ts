@@ -146,6 +146,20 @@ export function detectionMap(injectedClasses?: readonly BornWornClass[]): Detect
     if (assignment !== undefined && "family" in assignment) {
       const armed = classes.filter((entry) => entry.armed);
       const unarmed = classes.filter((entry) => !entry.armed);
+      /*
+        THE THIRD STATE (fable-647 §2). A kind with no court has two futures
+        that looked identical from here: one is work on V4's board, and one is a
+        decision already taken. `nose stud` is the second — its court was
+        REFUSED on a demand reading, not left undone — and a phase that cannot
+        tell those apart cannot say how much of itself is left.
+      */
+      /* `?? null` rather than `=== null`: the shipped catalogue always fills
+         this field, and an INJECTED class (a control, a future caller) may
+         omit it — in which case the honest reading is "a court is owed", never
+         "refused, reason undefined". A spelling this reader gets wrong would
+         quietly move a kind out of V4's worklist. */
+      const owed = unarmed.filter((entry) => (entry.courtDeferred ?? null) === null);
+      const refused = unarmed.filter((entry) => (entry.courtDeferred ?? null) !== null);
       const violations = classes
         .map((entry) => armingViolationOf(entry, askedQuestions))
         .filter((problem): problem is string => problem !== null);
@@ -160,14 +174,18 @@ export function detectionMap(injectedClasses?: readonly BornWornClass[]): Detect
           ? violations.join(" · ")
           : armed.length > 0
             ? `${armed.length} of ${classes.length} kinds armed`
-              + (unarmed.length > 0
-                /* Named, never counted: "the rest have no court" is how a kind
-                   nobody can see stays invisible in the instrument built to
-                   find it. */
-                ? ` — ${unarmed.map((entry) => entry.id).join(", ")} `
-                  + `${unarmed.length === 1 ? "has" : "have"} no court, so the scan does not ask `
-                  + `${unarmed.length === 1 ? "it" : "them"}`
-                : ", the whole table")
+              /* Named, never counted: "the rest have no court" is how a kind
+                 nobody can see stays invisible in the instrument built to
+                 find it. And a refused court is named as REFUSED, so V4's
+                 remaining work is not padded with a decision already taken. */
+              + (owed.length > 0
+                ? ` — ${owed.map((entry) => entry.id).join(", ")} `
+                  + `${owed.length === 1 ? "is" : "are"} OWED a court`
+                : "")
+              + (refused.length > 0
+                ? ` — ${refused.map((entry) => `${entry.id} NOBODY-SAYS-THIS (${entry.courtDeferred})`).join("; ")}`
+                : "")
+              + (unarmed.length === 0 ? ", the whole table" : "")
             : "no accessory kind has a measured court",
       };
     }

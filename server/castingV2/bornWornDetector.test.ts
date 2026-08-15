@@ -350,6 +350,7 @@ describe("reading a master for what it already has", () => {
     const forced: BornWornClass = {
       id: "nose stud", region: "nose stud", floor: null, measurement: "none",
       sideFloor: null, sideMeasurement: "none", pair: false, armed: true,
+      courtDeferred: null,
     };
     const scan = await detectBornWorn({ image: IMAGE, reader: eyes, classes: [forced] });
 
@@ -369,6 +370,7 @@ describe("reading a master for what it already has", () => {
     const second: BornWornClass = {
       id: "nose stud", region: "nose stud", floor: 0.001, measurement: "test only",
       sideFloor: null, sideMeasurement: "worn singly", pair: false, armed: true,
+      courtDeferred: null,
     };
     const eyes = reader(async (input) => {
       if (input.name === "glasses") throw new Error("segmenter said 502");

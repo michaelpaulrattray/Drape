@@ -92,6 +92,21 @@ export type BornWornClass = {
   pair: boolean;
   /** Armed classes are asked and may file rows. Unarmed ones are inert. */
   armed: boolean;
+  /**
+   * WHY NOBODY IS GOING TO MEASURE THIS ONE — `null` when a court is simply
+   * owed (fable-647).
+   *
+   * A kind with no floor has two entirely different futures, and until this
+   * field they looked identical from outside: a court NOT YET RUN, which is
+   * work on the board, and a court REFUSED on evidence, which is a decision.
+   * The V4 map reads it so the phase's worklist can tell its remaining
+   * substance from its closed rows — an unmeasured kind that nobody wants is
+   * not a gap in what the product can see, it is a thing nobody says.
+   *
+   * It can never arm anything: arming reads `floor` and `deferArming`, and a
+   * refusal is recorded beside a null floor, which was already inert.
+   */
+  courtDeferred: string | null;
 };
 
 /**
@@ -169,6 +184,11 @@ const FLOOR_OF_CLASS: Record<
      * until this field existed there was no way to say so.
      */
     deferArming?: string;
+    /**
+     * A COURT DELIBERATELY NOT RUN, and why — see
+     * {@link BornWornClass.courtDeferred}. Absent means the court is owed.
+     */
+    courtDeferred?: string;
   }
 > = {
   glasses: {
@@ -214,7 +234,21 @@ const FLOOR_OF_CLASS: Record<
   },
   "nose stud": {
     floor: null,
-    measurement: "NOT MEASURED — no positive/negative court has been run for nose studs",
+    measurement: "NOT MEASURED, AND DELIBERATELY SO — no positive/negative court has been run for "
+      + "nose studs, and one was refused on 2026-08-16 (fable-647) after the demand was read rather "
+      + "than assumed. Every brief and every refine instruction in BOTH worlds, matched against this "
+      + "table's own words (scripts/read-vocabulary-demand-disposable.mts): production 205 briefs + 55 "
+      + "edits and dev 42 + 117 mention a nose ring, nose stud, septum or nostril exactly ZERO times, "
+      + "with the same search finding 24 'hair' briefs as its control. The other two kinds in this "
+      + "table are asked for constantly (earring 20, glasses 22 in production), and the single paid "
+      + "edit in the whole corpus naming something this vocabulary has no word for is 'give her "
+      + "vampire fangs'. So the court would have had to manufacture its own worn population to measure "
+      + "the one kind nobody has ever wanted — which is the promotion kit measuring what we find "
+      + "interesting, the thing its own last clause forbids. Deferred until somebody asks; the detector "
+      + "stays unarmed, which is what a null floor already guarantees",
+    courtDeferred: "no demand in either world — zero asks in 260 production and 159 dev briefs and "
+      + "instructions, read 2026-08-16 against this table's own words. Deferred until somebody asks "
+      + "for one (fable-647)",
     sideFloor: null,
     sideMeasurement:
       "NOT MEASURED and never needed: a nose stud is one thing in one place "
@@ -275,6 +309,7 @@ export function bornWornClassFor(
     armed: typeof measured?.floor === "number"
       && measured.deferArming === undefined
       && (!kind.pair || typeof sideFloor === "number"),
+    courtDeferred: measured?.courtDeferred ?? null,
   };
 }
 
