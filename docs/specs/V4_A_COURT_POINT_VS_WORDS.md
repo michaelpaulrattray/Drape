@@ -93,6 +93,40 @@ a ~10-point spread needs roughly fifteen renders an arm — **~750 dev credits a
 not an overnight purchase, and it is the honest price of ruling on any carry
 change by measurement rather than by reasoning.
 
+## 4b. IT IS THE DELIVERY, NOT THE MASK (fable-600 §2, settled 2026-08-15)
+
+Every extent above is a segmenter mask's extent, and a re-read moves on its own,
+so the ~25% could have been the instrument. The control is the cheapest one
+there is — **read the same frame three times**, since a picture cannot change
+between reads:
+
+```
+WITHIN ONE FRAME (the instrument's floor)
+  born          left   0.0265% · 0.0266% · 0.0266%    spread 0.2%
+  born          right  0.0284% · 0.0284% · 0.0284%    spread 0.2%
+  after-point   left   0.0266% · 0.0266% · 0.0266%    spread 0.0%
+  after-point   right  0.0301% · 0.0301% · 0.0301%    spread 0.0%
+  after-point2  left   0.0209% · 0.0209% · 0.0209%    spread 0.0%
+  after-point2  right  0.0213% · 0.0213% · 0.0213%    spread 0.0%
+
+BETWEEN THE TWO POINT ARMS (means of three reads each)
+  left   0.0266% → 0.0209%    drift 27.4%
+  right  0.0301% → 0.0213%    drift 41.5%
+```
+
+**The segmenter reads a fixed frame to within 0.2%, and the two renders differ
+by 27% and 41%.** The variance is not the reader. It is the delivery.
+
+And it is visible: `output/court-carried-words/point-vs-point-earrings.png` puts
+the two arms' lobes side by side — the same silver cross, carried from the same
+crop, drawn plainly larger on one render than the other.
+
+So the noise floor stands as a product fact rather than an instrument artefact:
+**a carried crop's delivered size varies by a quarter or more between renders of
+an identical recipe.** The founder should hear it plainly, because it is the
+reason a pair he approved can come back looking different after an unrelated
+edit — nothing was mis-carried, the engine simply draws it at a different size.
+
 ## 5. What the court found on the way — the lineage bug
 
 The first two arms both refused into a refund: four renders, every one
