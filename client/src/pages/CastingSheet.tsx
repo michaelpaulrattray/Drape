@@ -32,7 +32,7 @@ import {
 import { classifyDispatchFailure, failureActionLabel } from "@/features/castingV2/dispatchFailure";
 import { cancelStory } from "@/features/castingV2/cancelNotice";
 import { refineOutcomeNote } from "@/features/castingV2/refineOutcomeNote";
-import { inFlightCandidate, refineBusy } from "@/features/castingV2/refineBusy";
+import { inFlightCandidate, refineBusy, refineWait } from "@/features/castingV2/refineBusy";
 import { bridgeWithinCandidate } from "@/features/castingV2/panelBridge";
 import { sheetExpiryNotice } from "@/features/castingV2/retentionCopy";
 import { sheetNotice } from "@/features/castingV2/sheetNotice";
@@ -1227,20 +1227,19 @@ export default function CastingSheet() {
     pending: pendingForViewer,
   });
   /*
-    A LIVE ROW NARRATES BEFORE A DEAD ONE. With one row in flight this is the
-    same `.at(-1)` it always was; with two, the picture should be describing
-    the render that is still coming rather than the one the sweep is refunding.
+    WHAT THE PICTURE IS WAITING FOR — one derivation, three rules.
+
+    A live row narrates before a dead one (with two out, the picture describes
+    the render still coming rather than the one the sweep is refunding); the
+    CLICK narrates before either, so the photograph and the button stop
+    disagreeing for the length of a round trip (fable-582); and a settling row
+    still narrates even though the controls have come back.
   */
-  const narrating = pendingForViewer.filter((row) => row.stage !== "settling").at(-1)
-    ?? pendingForViewer.at(-1)
-    ?? null;
-  const viewerWait = narrating
-    ? {
-      instruction: narrating.instruction,
-      stage: narrating.stage ?? ("queued" as const),
-      extra: pendingForViewer.length - 1,
-    }
-    : null;
+  const viewerWait = refineWait({
+    viewerCandidateId,
+    mutation: refine,
+    pending: pendingForViewer,
+  });
 
 
   /*

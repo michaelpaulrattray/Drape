@@ -1,7 +1,8 @@
 import { readFile } from "node:fs/promises";
 import { describe, expect, it } from "vitest";
 
-import { inFlightCandidate, refineBusy } from "./refineBusy";
+import type { PendingStage } from "./refineBusy";
+import { inFlightCandidate, refineBusy, refineWait } from "./refineBusy";
 
 /**
  * THE TWO WAYS THE SHEET LOCKED A FACE IT HAD NO BUSINESS LOCKING.
@@ -160,6 +161,10 @@ describe("the sheet computes this in one place", () => {
   it("uses the derivation for both surfaces and keeps no copy of the old one", async () => {
     const sheet = await readFile(SHEET, "utf8");
     expect(sheet).toContain("refineBusy({");
+    /* And the wait is the derivation's too, not a second answer assembled in
+       the page — the seam where the two surfaces drifted apart. */
+    expect(sheet).toContain("refineWait({");
+    expect(sheet).not.toContain("filter((row) => row.stage !== \"settling\").at(-1)");
     /*
       Both consumers — the boxes ON the picture (`FaceRegions`) and the ask box
       under it (`RefinePanel`) — take the same value. Two of them is the whole
@@ -169,5 +174,67 @@ describe("the sheet computes this in one place", () => {
     /* The defect itself, spelled out: the sheet-wide term must not come back
        beside the derivation. */
     expect(sheet).not.toContain("refine.isPending ||");
+  });
+});
+
+/**
+ * THE PHOTOGRAPH AND THE BUTTON, SAYING THE SAME THING AT THE SAME TIME
+ * (fable-582, from the founder: *"it does go into a loading state eventually
+ * but it takes awhile"*).
+ *
+ * The button was instant and the picture was not, because one read the click
+ * and the other read the server. These drive the handover in both directions:
+ * the click narrates immediately, the row takes over the moment it exists, and
+ * the row keeps narrating when the click is long gone — which is the half that
+ * must not regress, because a wait that dies with the panel is how one edit got
+ * bought twice (D-161).
+ */
+describe("the wait the picture shows", () => {
+  const out = { isPending: true, variables: { candidateId: HER, instruction: "give her horns" } };
+  const idle = { isPending: false, variables: { candidateId: HER, instruction: "give her horns" } };
+  const row = (over: Record<string, unknown> = {}) => ({
+    stage: "dispatched" as PendingStage, instruction: "dangly cross earrings", ...over,
+  });
+
+  it("narrates from the click, before the server has a row for it", () => {
+    expect(refineWait({ viewerCandidateId: HER, mutation: out, pending: [] }))
+      .toEqual({ instruction: "give her horns", stage: "queued", extra: 0 });
+  });
+
+  it("hands over to the row the moment it exists, without a flicker of nothing", () => {
+    expect(refineWait({ viewerCandidateId: HER, mutation: out, pending: [row()] }))
+      .toEqual({ instruction: "dangly cross earrings", stage: "dispatched", extra: 0 });
+  });
+
+  it("keeps narrating from the row when the click is long gone (D-161)", () => {
+    /* The panel was closed and reopened; the mutation is a memory, the render
+       is not. This is the arm that must never be traded for immediacy. */
+    expect(refineWait({ viewerCandidateId: HER, mutation: idle, pending: [row()] }))
+      .toEqual({ instruction: "dangly cross earrings", stage: "dispatched", extra: 0 });
+  });
+
+  it("says nothing about ANOTHER cast's click", () => {
+    expect(refineWait({ viewerCandidateId: THE_OTHER, mutation: out, pending: [] })).toBe(null);
+  });
+
+  it("narrates the live row over the settling one, and counts the rest", () => {
+    const wait = refineWait({
+      viewerCandidateId: HER,
+      mutation: idle,
+      pending: [row({ stage: "settling", instruction: "the dead one" }), row()],
+    });
+    expect(wait).toEqual({ instruction: "dangly cross earrings", stage: "dispatched", extra: 1 });
+  });
+
+  it("still describes a settling row, because the controls come back before the picture does", () => {
+    expect(refineWait({
+      viewerCandidateId: HER,
+      mutation: idle,
+      pending: [row({ stage: "settling" })],
+    })).toEqual({ instruction: "dangly cross earrings", stage: "settling", extra: 0 });
+  });
+
+  it("says nothing when nothing is out", () => {
+    expect(refineWait({ viewerCandidateId: HER, mutation: idle, pending: [] })).toBe(null);
   });
 });

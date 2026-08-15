@@ -77,3 +77,72 @@ export function inFlightCandidate(mutation: {
   if (!mutation.isPending) return null;
   return mutation.variables?.candidateId ?? null;
 }
+
+/**
+ * WHAT THE PICTURE IS WAITING FOR — the same click the button already knows
+ * about (fable-582).
+ *
+ * The founder: *"it does go into a loading state eventually but it takes
+ * awhile."* Two surfaces, two sources. The button flips to "Refining…" on the
+ * click, because `refineBusy` reads the mutation's own subject; the viewer's
+ * wait was drawn only from the SERVER's pending list, so it could not appear
+ * until the request had been answered and the variants query refetched. Between
+ * those two moments the button says one thing and the photograph says nothing.
+ *
+ * # The server keeps the durable half, and that is deliberate
+ *
+ * A wait that lived only in the mutation would vanish the moment the sheet was
+ * closed and reopened — the defect that got one edit bought twice (D-161). So
+ * a LIVE server row still wins: it narrates across unmount, across a reload,
+ * and across the founder walking to another face and back. The local reading is
+ * only the head of that same wait, filling the seconds before the row exists,
+ * and it hands over the moment it does.
+ *
+ * No new state is minted for it: the instruction is the one the request was
+ * sent with, read off the mutation exactly as its subject already is.
+ */
+export type RefineWait = {
+  /** The sentence this face is waiting on. */
+  instruction: string;
+  stage: PendingStage;
+  /** Other rows out for this face — "and 2 more". */
+  extra: number;
+};
+
+export function refineWait(input: {
+  viewerCandidateId: string | null;
+  /** The sheet's one refine request, subject and sentence both. */
+  mutation: {
+    isPending: boolean;
+    variables?: { candidateId?: string; instruction?: string } | undefined;
+  };
+  /** The server's rows for the face on screen. */
+  pending: readonly (PendingRow & { instruction: string })[];
+}): RefineWait | null {
+  /*
+    A LIVE ROW NARRATES BEFORE A DEAD ONE, and before the local reading: it is
+    the same wait, further along, and it is the one that survives a remount.
+  */
+  const live = input.pending.filter((row) => (row.stage ?? "queued") !== "settling").at(-1);
+  if (live) {
+    return {
+      instruction: live.instruction,
+      stage: live.stage ?? "queued",
+      extra: input.pending.length - 1,
+    };
+  }
+  const ours = input.viewerCandidateId !== null
+    && inFlightCandidate(input.mutation) === input.viewerCandidateId;
+  const instruction = input.mutation.variables?.instruction;
+  if (ours && instruction) {
+    /* Not in the list yet, so every row there is one of the others. */
+    return { instruction, stage: "queued", extra: input.pending.length };
+  }
+  /* Nothing live and nothing out: a settling row still narrates, because the
+     picture goes on describing a row the sweep is refunding even though the
+     controls have come back. */
+  const settling = input.pending.at(-1);
+  return settling
+    ? { instruction: settling.instruction, stage: settling.stage ?? "queued", extra: input.pending.length - 1 }
+    : null;
+}
