@@ -178,6 +178,8 @@ export default function CastingSheet() {
   /** The version he last CLICKED, per candidate — see `selectVariant`, where a
    *  burst of clicks settles out of order. */
   const selectionWanted = useRef<{ candidateId: string; variantId: string | null } | null>(null);
+  /** The write loop, while one is running — joined rather than raced. */
+  const selectionLoop = useRef<Promise<void> | null>(null);
   /* The refine panel owns its own outcomes (D-154) — never a toast. */
   const [refineOutcome, setRefineOutcome] = useState<string | null>(null);
   /*
@@ -1086,49 +1088,58 @@ export default function CastingSheet() {
        selection must have landed before the prune is sent. Every other caller
        ignores the promise exactly as before. */
     /*
-      THE LAST CLICK WINS, WHATEVER ORDER THE ANSWERS COME BACK IN
-      (founder, fable-609/610; reproduced under Fast 3G, 2 bursts in 4).
+      THE LAST CLICK WINS, AND THE WRITES GO ONE AT A TIME
+      (founder, fable-609/610; reproduced under Fast 3G).
 
-      Five clicks in half a second put five writes in flight, and they settle in
-      whatever order the network decides. Measured on a throttled burst: the
-      rail and the picture came to rest AGREEING WITH EACH OTHER on a version
-      two clicks back — an earlier write had landed last and set the selection
-      behind him. Every surface was honest; the server's answer was stale.
+      Five clicks in half a second used to put five writes in flight, and they
+      settle in whatever order the network decides: measured on a throttled
+      burst, the rail and the picture came to rest AGREEING WITH EACH OTHER on a
+      version two clicks back, because an earlier write landed last and set his
+      selection behind him. Every surface was honest; the server's answer was
+      stale.
 
-      So the newest click is remembered, and when a write settles onto anything
-      other than what he last asked for, one more write is sent. It converges in
-      one extra round trip, it cannot loop (the intent only moves when he clicks
-      again), and it needs no sequence column on the server.
+      The first cure — re-send when the newest response finds the server
+      elsewhere — was not enough, and its own sampler said so: the newest
+      response can arrive BEFORE a stale one, so the check runs and then the
+      stale write lands unobserved. Three of six bursts still came to rest on
+      the wrong version.
 
-      The intent is per candidate, because one viewer walks a whole sheet.
+      So the writes are serialized. One is in flight at a time; when it settles,
+      the loop looks at what he last CLICKED and writes again if that has moved.
+      The last write is therefore always the last intent, there is one refetch
+      at the end instead of one per click, and the picture was never waiting on
+      any of it — the override paints on the click.
+
+      Callers that must wait — the prune, which sends after the selection has
+      landed — get the loop's own promise whether they started it or joined it.
     */
     selectionWanted.current = { candidateId: viewerCandidateId, variantId };
-    return chooseVariant
-      .mutateAsync({ candidateId: viewerCandidateId, variantId })
-      .then(async () => {
+    if (selectionLoop.current) return selectionLoop.current;
+    const loop = (async () => {
+      while (true) {
         const wanted = selectionWanted.current;
-        /* A superseded click's answer does not get to repaint anything: a newer
-           one is already in flight and its own settle will do this. */
-        if (!wanted || wanted.candidateId !== viewerCandidateId || wanted.variantId !== variantId) return;
-        const fresh = await variants.refetch();
-        await invalidate();
-        const settled = fresh.data?.selectedVariantId ?? null;
-        if (settled !== wanted.variantId) {
-          await chooseVariant.mutateAsync({
-            candidateId: wanted.candidateId,
-            variantId: wanted.variantId,
-          });
+        if (!wanted) return;
+        await chooseVariant.mutateAsync({
+          candidateId: wanted.candidateId,
+          variantId: wanted.variantId,
+        });
+        const still = selectionWanted.current;
+        if (still && still.candidateId === wanted.candidateId && still.variantId === wanted.variantId) {
           await variants.refetch();
           await invalidate();
+          return;
         }
-      })
+      }
+    })()
       /*
         OUR SENTENCE, NEVER THE ERROR'S (run-9). This was `error.message`, so a
         gateway's plain-text 502 reached the panel as "Unexpected token 'u',
-        "upstream error" is not valid JSON" — the same string already fixed once
-        for roll dispatch, kept alive here because that fix was never swept.
+        "upstream error" is not valid JSON".
       */
-      .catch((error: unknown) => setRefineOutcome(refineFailureMessage(error)));
+      .catch((error: unknown) => setRefineOutcome(refineFailureMessage(error)))
+      .finally(() => { selectionLoop.current = null; });
+    selectionLoop.current = loop;
+    return loop;
   };
   /*
     v1 AND v2 ARE NEVER BOTH ON SCREEN. They answer different questions — what

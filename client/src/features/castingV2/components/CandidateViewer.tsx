@@ -157,22 +157,45 @@ function useShownFrame(frame: ViewerFrame): ViewerFrame {
   const [shown, setShown] = useState(frame);
 
   /*
-    RE-KEYING THIS EFFECT ON THE URLS WAS TRIED AND IS NOT THE ANSWER
-    (fable-609/610, 2026-08-15). The reasoning was good — `frame` is rebuilt
-    every render, so an effect keyed on the object restarts the decode on every
-    render — and the measurement did not support it: eight throttled bursts with
-    the change failed four, against one in six without. Reverted rather than
-    kept on the strength of an argument, and the diagnosis is owed before the
-    next attempt: instrument what this actually decodes and when it settles.
+    ONE DOWNLOAD PER PICTURE, however many times this effect runs — the
+    founder's stuck plate, diagnosed rather than argued (fable-609/610).
+
+    `frame` is rebuilt on every render of the sheet, so this effect re-ran on
+    every render: each run built a NEW `Image`, set the same src, and started
+    the fetch again. Instrumented from the driver under Fast 3G, that is exactly
+    what the browser recorded — the wanted frame requested at 44.5s, 46.9s,
+    48.0s and 50.5s, and **not one of those decodes ever settled**. Each restart
+    threw away the download that was nearly finished, so a 2.6MB PNG on a slow
+    connection never arrived at all and the plate kept drawing the frame it
+    already had while the chip beside it had moved on: *"the features switch but
+    not the image."*
+
+    Re-keying the effect on the URLs was tried first and did not carry its own
+    measurement (eight throttled bursts, four failures against one in six), so
+    it was reverted. This is the reading's own fix: the in-flight decode is held
+    BY URL, so a re-render joins the download already running instead of
+    starting a rival to it. The first render of a new picture starts exactly one
+    fetch; every render after it waits on that one.
+
+    A decode that FAILS still shows the frame, unchanged: the alternative is a
+    viewer stranded on a picture nobody asked for because an instrument said no.
   */
+  const pending = useRef<{ url: string; decoded: Promise<void> } | null>(null);
   useEffect(() => {
     if (frame.url === shown.url) return;
     if (frame.candidateId !== shown.candidateId) { setShown(frame); return; }
     let live = true;
-    const settle = () => { if (live) setShown(frame); };
-    const picture = new Image();
-    picture.src = frame.url;
-    void picture.decode().then(settle).catch(settle);
+    if (pending.current?.url !== frame.url) {
+      const picture = new Image();
+      picture.src = frame.url;
+      pending.current = {
+        url: frame.url,
+        /* Swallowed here so every joiner settles the same way — the caller
+           below decides what a failure means, once. */
+        decoded: picture.decode().catch(() => undefined),
+      };
+    }
+    void pending.current.decoded.then(() => { if (live) setShown(frame); });
     return () => { live = false; };
   }, [frame, shown]);
 

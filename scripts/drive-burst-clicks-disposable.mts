@@ -122,6 +122,32 @@ try {
   }
   console.log(`${versions} delivered versions on this face — ${versions + 1} chips including the original`);
 
+  /*
+    WHAT THE PLATE ACTUALLY DECODES — instrumented from OUT HERE, so the product
+    carries no probe. `Image.decode` is the gate the viewer holds its frame on;
+    this records every call, when it settled, and whether the caller had already
+    given up on it (the effect's own cleanup sets a flag we cannot see, so the
+    settle order is the observable half).
+  */
+  await page.evaluateOnNewDocument(`(() => {
+    window.__decodes = [];
+    const decode = Image.prototype.decode;
+    Image.prototype.decode = function patched() {
+      const at = performance.now();
+      const src = this.src;
+      const entry = { src, at: Math.round(at), settled: null, failed: false };
+      window.__decodes.push(entry);
+      return decode.call(this).then(
+        () => { entry.settled = Math.round(performance.now() - at); },
+        (error) => { entry.settled = Math.round(performance.now() - at); entry.failed = true; throw error; },
+      );
+    };
+  })()`);
+  await page.reload({ waitUntil: "networkidle2", timeout: 240_000 });
+  await page.waitForSelector(`button[aria-label="View candidate ${tile} larger"]`, { timeout: 240_000 });
+  await page.click(`button[aria-label="View candidate ${tile} larger"]`);
+  await page.waitForSelector(".dpc-refine__stack .dpc-refine__pick", { timeout: 240_000 });
+
   for (let burst = 0; burst < BURSTS; burst += 1) {
     /* FIVE CLICKS IN ~2 SECONDS, ending on a deliberately chosen chip so the
        assertion has a name to check rather than "whatever was last". */
@@ -147,16 +173,40 @@ try {
       return name;
     })()`) as string | null;
 
-    /* AT REST — long enough for any decode to land, so a split state here is
-       not a race caught mid-flight but a surface that stopped following. */
-    await new Promise((resolve) => setTimeout(resolve, 6_000));
-    const at = await page.evaluate(SURFACES(tile)) as Surfaces;
+    /*
+      AT REST — and "rest" is measured rather than assumed. Under Fast 3G a
+      2.6MB frame needs ~13 seconds of wire time, so a fixed six-second wait
+      would call a slow-but-correct swap a failure. This waits for agreement up
+      to 30s and REPORTS how long it took, which is the number that says whether
+      the picture is stuck or merely arriving.
+    */
+    let settledAfter: number | null = null;
+    let at = await page.evaluate(SURFACES(tile)) as Surfaces;
+    for (let tick = 0; tick < 60; tick += 1) {
+      at = await page.evaluate(SURFACES(tile)) as Surfaces;
+      if (at.plate !== null && (at.plate === at.litFrame || at.plate === at.litThumb)) {
+        settledAfter = tick * 500;
+        break;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 500));
+    }
     const agrees = at.plate !== null
       && (at.plate === at.litFrame || at.plate === at.litThumb);
     console.log(`burst ${burst + 1}: last click "${last}" · lit "${at.litLabel}"`
-      + ` · plate ${agrees ? "agrees" : "DISAGREES"}`);
+      + ` · plate ${agrees ? `agreed after ${settledAfter}ms` : "DISAGREES after 30s"}`);
     runs.push({ burst: burst + 1, last, ...at, agrees });
-    if (!agrees) await page.screenshot({ path: `${OUT}/burst-${burst + 1}-split.png` });
+    if (!agrees) {
+      await page.screenshot({ path: `${OUT}/burst-${burst + 1}-split.png` });
+      const decodes = await page.evaluate("window.__decodes ?? []") as Array<Record<string, unknown>>;
+      await writeFile(`${OUT}/burst-${burst + 1}-decodes.json`, `${JSON.stringify(decodes, null, 2)}
+`);
+      console.log(`  the last six decodes this page asked for:`);
+      for (const one of decodes.slice(-6)) {
+        console.log(`    …${String(one.src).slice(-24)} at ${one.at}ms`
+          + ` · ${one.settled === null ? "NEVER SETTLED" : `settled in ${one.settled}ms`}`
+          + `${one.failed ? " (failed)" : ""}`);
+      }
+    }
 
     check(at.litLabel === last,
       `burst ${burst + 1}: the lit chip is the last click`,
