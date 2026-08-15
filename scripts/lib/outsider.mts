@@ -146,16 +146,35 @@ export async function ensureOutsider(input: { donorOpenId?: string } = {}): Prom
 
     if (!candidatePublicId) {
       const donorOpenId = input.donorOpenId ?? DONOR_OPEN_ID;
+      /*
+        THE IDENTITY COMES WITH THE PICTURE, and the first version of this took
+        only the pixels.
+
+        A cast whose `internalPrompt` is null has no resolved identity, so a
+        render's verification can state almost no facts about her — measured:
+        every render on the first fixture produced ONE carried check
+        (`hairWorn`) and never the facet the ask wrote, so nothing was ever
+        earned and the library filed nothing. Two paid purchases went into
+        diagnosing what turned out to be this line.
+
+        A fixture that is not shaped like a real account measures itself.
+      */
       const [donors] = await conn.execute(
-        `SELECT c.imageKey, c.thumbKey, c.personaLine, r.briefText
+        `SELECT c.imageKey, c.thumbKey, c.personaLine, c.internalPrompt, c.provider,
+                c.providerModel, r.briefText
            FROM casting_candidates c
            JOIN casting_rolls r ON r.id = c.rollId
            JOIN users u ON u.id = c.userId
           WHERE u.openId = ? AND c.status = 'ready' AND c.imageKey IS NOT NULL
+            AND c.internalPrompt IS NOT NULL
           ORDER BY c.id DESC LIMIT 1`,
         [donorOpenId],
       );
-      const donor = (donors as Array<{ imageKey: string; thumbKey: string | null; personaLine: string | null; briefText: string }>)[0];
+      const donor = (donors as Array<{
+        imageKey: string; thumbKey: string | null; personaLine: string | null;
+        internalPrompt: unknown; provider: string | null; providerModel: string | null;
+        briefText: string;
+      }>)[0];
       if (donor) {
         sessionPublicId = randomUUID();
         await conn.execute(
@@ -189,9 +208,14 @@ export async function ensureOutsider(input: { donorOpenId?: string } = {}): Prom
         candidatePublicId = randomUUID();
         await conn.execute(
           `INSERT INTO casting_candidates
-             (publicId, rollId, sessionId, userId, position, status, pointsCost, imageKey, thumbKey, personaLine)
-           VALUES (?, ?, ?, ?, 1, 'ready', 0, ?, ?, ?)`,
-          [candidatePublicId, rollId, sessionId, id, donor.imageKey, donor.thumbKey, donor.personaLine],
+             (publicId, rollId, sessionId, userId, position, status, pointsCost, imageKey, thumbKey,
+              personaLine, internalPrompt, provider, providerModel)
+           VALUES (?, ?, ?, ?, 1, 'ready', 0, ?, ?, ?, ?, ?, ?)`,
+          [
+            candidatePublicId, rollId, sessionId, id, donor.imageKey, donor.thumbKey, donor.personaLine,
+            typeof donor.internalPrompt === "string" ? donor.internalPrompt : JSON.stringify(donor.internalPrompt),
+            donor.provider, donor.providerModel,
+          ],
         );
         await conn.execute(`UPDATE casting_sessions SET activeRollId = ? WHERE id = ?`, [rollId, sessionId]);
       }
