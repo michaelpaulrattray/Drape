@@ -74,3 +74,30 @@ for (const name of NEUTRALIZED_CREDENTIALS) {
   const testScoped = process.env[`TEST_${name}`];
   process.env[name] = testScoped || SENTINEL;
 }
+
+/**
+ * THE SUITE MUST MEAN THE SAME THING ON EVERY MACHINE — the scope flags are
+ * stripped (opus-467, found the hard way).
+ *
+ * The header above says tests should see the server's configuration, feature
+ * flags included, and for credentials that reasoning holds. For the casting
+ * SCOPE flags it does the opposite: they are per-developer values that switch
+ * whole roads on and off, so the same commit is green on one machine and red on
+ * another. Setting `CASTING_REPAINT_SCOPE=users:1` in a local `.env` — the
+ * production shape, and the obvious thing to do when reproducing the founder's
+ * behaviour — turns eight `refineService` tests red, and not one of them is
+ * about a defect.
+ *
+ * So the unit suite declares its own world: every road OFF unless the test
+ * arms it, which every suite that cares already does with `vi.stubEnv`. That
+ * makes the arming visible in the test rather than inherited from a file
+ * nobody reads while reviewing a diff.
+ *
+ * **What this pins is also what it admits**: the suite asserts the flags-off
+ * road. Coverage of the armed roads lives in the suites that arm them, and any
+ * gap there is a gap, not something a local `.env` should paper over by
+ * accident.
+ */
+for (const name of Object.keys(process.env)) {
+  if (/^CASTING_[A-Z0-9_]*SCOPE$/.test(name)) delete process.env[name];
+}
