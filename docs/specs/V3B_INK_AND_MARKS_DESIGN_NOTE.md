@@ -5,6 +5,28 @@ Nothing here has been driven. The ink half is founder-adjacent at every corner �
 placement, flash sheets, and what a tattoo IS in this product — so the questions
 that are taste are marked **FOUNDER** and are not answered here.*
 
+> **UPDATE, 2026-08-16, after §3's killer question was actually asked.**
+> `V3B_PLACEMENT_VOCABULARY_READING.md` — 56 reads of house money, and the
+> answer is **no, a reader cannot find a forearm, because there is no forearm in
+> a casting frame.** 16 of 16 masters are cropped above the elbow and every
+> subject wears the roll prompt's own crew tee. Worse, the reader does not
+> refuse: on 3 of 4 frames it returns upper-arm skin, from the opposite side of
+> the body, confidently labelled *forearm*.
+>
+> **The law that came out of it, and it governs everything below (fable-651 §2):**
+>
+> > **A placement clears the FRAME before it clears the reader.**
+>
+> A segmenter read is not proof that a region is in the photograph — the
+> relabel is the demonstration. §5 gains a step 1a for it.
+>
+> **The placement table is BLOCKED**, by ruling (fable-651 §4), on a founder
+> question that did not exist when this note was written: a studio on this frame
+> has two placements, one of them conditional on a t-shirt neckline. Filed with
+> a recommendation — change the WARDROBE, not the framing. Designing the
+> vocabulary now would be designing for a photograph that may be about to
+> change. §3 and §5 below stand as written; their CONTENTS wait on him.
+
 ---
 
 ## 0. Why this note exists, and what it is blocking
@@ -101,6 +123,15 @@ Two consequences worth stating before anybody builds:
   least exercised — `allSkin` is declared and unimplemented, and the roadmap's
   own note says cheeks do not exist as a region either. A placement the reader
   cannot find is a tattoo the panel cannot point at.
+
+  **This was tested and the warning was one layer short.** The reading found
+  that a placement the reader cannot find is the *lucky* case — it says so. The
+  dangerous case is a placement the reader finds **something else** for, which
+  is what `forearm` did. And the measured vocabulary that survives today's
+  frame is three surfaces, not a table: `neck`, `upper arm`, and `upper chest`
+  *conditional on the neckline*. Names must be **surfaces, not bones** —
+  `collarbone` and `clavicle` read nothing on a bare, unoccluded collarbone;
+  `upper chest` cut it exactly and correctly refused where fabric covered it.
 - **The slot key is user-facing.** `ink@left-forearm` becomes *"the tattoo on
   her left forearm"* in the panel and in every sentence the recipe writes, so
   the placement names are copy, not identifiers.
@@ -151,8 +182,17 @@ fable-562 is a founder ruling and it sequences the whole thing:
 
 ```
 1  THIS NOTE                       reviewed; the FOUNDER questions answered
+1a THE FRAME GATE                  which placements the photograph CONTAINS —
+                                   `castingFrame.ts`'s OUT_OF_FRAME door, which
+                                   holds one row today. A placement clears the
+                                   FRAME before it clears the reader, and a
+                                   segmenter read is NOT that proof. Its SHAPE
+                                   is settled (this line); its CONTENTS wait on
+                                   the founder's wardrobe answer, because that
+                                   answer changes what is in the picture
 2  the placement vocabulary        a table, its names as copy, its regions
-                                   proven findable by a reader
+                                   proven findable by a reader — and proven
+                                   IN FRAME before they are asked about
 3  the ink slot story              slots per placement, flash sheet as the
                                    reference, display region for the row
 4  THE COLLISION COURT             §4, on real ink references
@@ -168,7 +208,8 @@ regression.
 ## 6. What this note deliberately does not do
 
 - **It does not invent a placement vocabulary.** That is step 2, and the names
-  are copy the founder should see.
+  are copy the founder should see. *(Since tested: step 2 is blocked on the
+  wardrobe answer, and the names must be surfaces rather than bones.)*
 - **It does not choose between the collision candidates.** fable-561 said
   tested, not argued, and the early lean toward A is recorded as a lean.
 - **It does not promise the panel a tattoo row.** A row needs a rectangle
