@@ -374,6 +374,52 @@ describe("a departure vacates the slot and says so", () => {
     expect(result.asks.map((ask) => ask.slot)).toEqual(["hair"]);
   });
 
+  /**
+   * THE INFERENCE, DARK (fable-604 §3b).
+   *
+   * The refusal above is the honest answer until a court has run. These pin
+   * what the court is testing: with the inference armed, the sentence narrows
+   * to the side it names — the SAME slot a tapped box produces, so there is one
+   * definition of "her right eye" rather than two — and it narrows to HER side
+   * on both, which is the mirrored arm the image-half law demands of every
+   * per-side claim.
+   */
+  it("ARMED — narrows to the side the words name, right", () => {
+    const result = repaintAsksFor({
+      delta: { free: { eyeColourFree: "her right eye fiery red" } },
+      prose,
+      inferSideFromWords: true,
+    });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.asks.map((ask) => ask.slot)).toEqual(["eye@right"]);
+  });
+
+  it("ARMED — and left, which is the mirrored half of the same claim", () => {
+    const result = repaintAsksFor({
+      delta: { free: { eyeColourFree: "her left eye fiery red" } },
+      prose,
+      inferSideFromWords: true,
+    });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.asks.map((ask) => ask.slot)).toEqual(["eye@left"]);
+  });
+
+  it("ARMED — a sentence about the pair still asks for both", () => {
+    const result = repaintAsksFor({
+      delta: { free: { eyeColourFree: "her left and right eyes fiery red" } },
+      prose,
+      inferSideFromWords: true,
+    });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.asks.map((ask) => ask.slot)).toEqual(["eye@left", "eye@right"]);
+  });
+
   it("REFUSES to take one of a pair off, because the one court of that sentence saw it take both", () => {
     /*
       The narrowing is granted for PAINT and not for a VACANCY. The per-eye

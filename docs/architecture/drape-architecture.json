@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "98618765b49a0c93"
+    "sourceFingerprint": "5a875c6f20741265"
   },
   "domains": [
     {
@@ -7649,6 +7649,11 @@
     {
       "id": "env:BACK_VIEW_GATE_FORCE_FAIL",
       "name": "BACK_VIEW_GATE_FORCE_FAIL",
+      "valueRecorded": false
+    },
+    {
+      "id": "env:CASTING_SIDE_INFERENCE",
+      "name": "CASTING_SIDE_INFERENCE",
       "valueRecorded": false
     },
     {

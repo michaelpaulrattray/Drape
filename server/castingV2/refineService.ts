@@ -3078,6 +3078,17 @@ async function refineCandidateCounted(
             the panel sends one — so this line changes nothing by itself.
           */
           ...(input.scope ? { scope: input.scope } : {}),
+          /*
+            READING THE SIDE OUT OF HER SENTENCE — dark until its court has run
+            (fable-604 §3b).
+
+            Off, a sentence naming one side of a pair refuses rather than
+            dispatching a contradiction; on, it narrows to that side exactly as
+            a tapped box does. The flag exists so the court can drive the real
+            service end to end without the behaviour reaching anybody, and it
+            goes away — one default, one line — the day the court passes.
+          */
+          inferSideFromWords: process.env.CASTING_SIDE_INFERENCE === "on",
         })
         /*
           A PRUNE ASKS SOMETHING AFTER ALL — the narrow lift (fable-536 §2/§3).

@@ -167,6 +167,17 @@ export type RepaintAsksInput = {
    * Undefined is the whole-face ask, unchanged and untouched.
    */
   scope?: FeatureSlot;
+  /**
+   * READ THE SIDE OUT OF HER SENTENCE, when she pointed at nothing
+   * (fable-604 §3b — dark until its own mirrored court has run).
+   *
+   * Off, a sentence naming one side of a pair REFUSES rather than fanning out
+   * (see `sideNamedWithoutScope`, and the contradiction it exists to stop). On,
+   * the ask is narrowed to the side the words name, exactly as a tapped box
+   * would narrow it — the same slot, through the same door, so there is one
+   * definition of what "her right eye" means and not two.
+   */
+  inferSideFromWords?: boolean;
 };
 
 export type RepaintAsksRefusal = {
@@ -567,7 +578,7 @@ export function repaintAsksFor(input: RepaintAsksInput): RepaintAsksResult {
       refuses, which is the case that door was built for.
     */
     if (vacatedFacets.has(facet) && statePhrase(facet, input.delta, input.prose) === null) continue;
-    const definitions = narrowToScope(
+    let definitions = narrowToScope(
       slotsForFacet(facet, { accessoryKind: input.accessoryKind }),
       input.scope,
     );
@@ -622,7 +633,19 @@ export function repaintAsksFor(input: RepaintAsksInput): RepaintAsksResult {
     */
     if (input.scope === undefined && definitions.length > 1) {
       const named = sideNamedIn(phrase);
-      if (named !== null) {
+      if (named !== null && input.inferSideFromWords === true) {
+        /*
+          THE INFERENCE. It narrows to the side the words name and nothing else
+          changes: the same slot a tapped box produces, so the paint, the
+          verification's narrowing and the library's per-instance memory all go
+          on holding one definition of "her right eye".
+        */
+        const narrowed = definitions.filter((definition) => definition.instance === named);
+        /* Only when it lands on exactly one instance. A kind whose sides are
+           not spelled `left`/`right` narrows to nothing or to several, and
+           either way the honest answer is the one below. */
+        if (narrowed.length === 1) definitions = narrowed;
+      } else if (named !== null) {
         return {
           ok: false, reason: "sideNamedWithoutScope", facet,
           detail: `the ask names her ${named} side and scopes nothing, so the recipe would tell BOTH `
