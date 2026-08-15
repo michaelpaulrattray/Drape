@@ -27,12 +27,28 @@
 import { readFile, writeFile, access } from "node:fs/promises";
 import path from "node:path";
 
+import { armedBornWornClasses } from "../server/castingV2/bornWornDetector";
+
 const OUT = path.resolve("output/panel-v2");
 
 type CheckRecord = { law: string; ok: boolean; saw: string; armed: boolean };
 
 const records = JSON.parse(await readFile(path.join(OUT, "checks.json"), "utf8")) as CheckRecord[];
 if (records.length === 0) throw new Error("checks.json is empty — drive the evidence script first");
+
+/*
+  THE ONE CLAIM IN THIS PACK THAT WAS STILL TYPED (shift 91).
+
+  The header above says this file derives rather than re-types because the
+  hand-written pack it replaced carried stale claims forward. Its "one thing
+  this pack is not hiding" box was the exception: it stated, in the present
+  tense, that earring detection is unarmed — and stayed that way after the
+  per-side court passed and the class was armed, so a rebuild would have
+  published a defect that no longer exists as a live one. Read from the same
+  function the scan plan reads, so the box says what is true on the day it is
+  built.
+*/
+const EARRING_ARMED = armedBornWornClasses().some((entry) => entry.region === "earring");
 
 const failures = records.filter((record) => !record.ok);
 const armed = records.filter((record) => record.armed);
@@ -238,8 +254,10 @@ ${shots.map((shot) => `<figure>
 
 <h2>One thing this pack is not hiding</h2>
 <div class="box">
-  <p><strong>She is wearing gold hoop earrings and there is no earrings row.</strong> The library holds <code>"a slim gold hoop"</code> for both sides, from a real edit. Two correct rules meet at a wrong outcome: a row appears only when it has a place on the photograph (his own rule), and earring <em>detection</em> is deliberately unarmed until its court is run — so nothing ever measures where they are, and the row leaves the panel.</p>
-  <p>It is recorded in the run above as an <em>absent</em> rather than a passing check, because a green saying "no earrings row, as expected" is a pin holding a defect in place. The earring court is the next build.</p>
+${EARRING_ARMED ? `  <p><strong>The earrings row is back, and this box is kept rather than deleted.</strong> When this pack was first built, a face wearing gold hoops had no earrings row: two correct rules met at a wrong outcome — a row appears only when it has a place on the photograph (his own rule), and earring <em>detection</em> was unarmed until its court had run, so nothing measured where they were.</p>
+  <p>The per-side court has since passed and the class is armed, so the scan asks and the row has its rectangles. The paragraph stays because a pack that quietly drops the thing it promised not to hide is a pack nobody can check twice.</p>`
+: `  <p><strong>She is wearing gold hoop earrings and there is no earrings row.</strong> The library holds <code>"a slim gold hoop"</code> for both sides, from a real edit. Two correct rules meet at a wrong outcome: a row appears only when it has a place on the photograph (his own rule), and earring <em>detection</em> is unarmed until its court is run — so nothing ever measures where they are, and the row leaves the panel.</p>
+  <p>It is recorded in the run above as an <em>absent</em> rather than a passing check, because a green saying "no earrings row, as expected" is a pin holding a defect in place. The earring court is the next build.</p>`}
 </div>
 </div>
 `;

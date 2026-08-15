@@ -753,21 +753,23 @@ export function facePanel(input: {
    * honestly: the ask box still reaches it, the words are still kept, and the
    * panel does not offer a picture of something it cannot point at.
    *
-   * **TWO rows are in that state, not one** (shift 79 — this sentence named
-   * `teeth` alone and was read as the complete list, which is what an
-   * enumeration in a comment always becomes):
+   * **AND WHICH ROWS ARE IN THAT STATE IS NOT WRITTEN HERE** (shift 91), which
+   * is the third version of this paragraph and the last one that needs a shift.
    *
-   *   teeth      no region, and no ask can produce one — the honest case
-   *   EARRINGS   the expensive one. Earring DETECTION is deliberately unarmed
-   *              (`bornWornDetector`'s `deferArming`, fable-340: a site may be
-   *              called bare only when it is VISIBLY bare, and the court that
-   *              proves that has not been run). So the scan never asks where
-   *              they are, they never get a rectangle, and this filter takes
-   *              the row off the panel — on a face WEARING them, with the
-   *              customer's own edit words on file for both sides. Driven on
-   *              the dev fixture, which wears gold hoops and has no earrings
-   *              row (opus-336 §3). Arming the earring court closes it; nothing
-   *              here should be loosened to paper over it.
+   * Shift 78 named `teeth` alone. Shift 79 corrected it to *"TWO rows, not
+   * one"* — teeth and EARRINGS — and wrote, in this comment, that an
+   * enumeration in a comment always becomes stale. It then became stale in both
+   * halves within two days, in the direction nobody checks: teeth gained a
+   * region (`display: "all the teeth"`, fable-463/619 §2) and earrings gained a
+   * detector (the per-side court passed, `deferArming` came off), so BOTH rows
+   * now have rectangles and the paragraph was describing a panel that no longer
+   * existed. It was one of four prose sites carrying the same dead roster.
+   *
+   * The rule is what belongs here, and it is above: a row appears when
+   * something measured where it is. WHICH rows those are on any given face is
+   * an outcome of the catalogue, the scan and the library — read it from
+   * `catalogueSlots()` and `armedBornWornClasses()`, or from the panel itself
+   * on a real cast, never from a list in a comment.
    *
    * A group whose rows all fell away disappears with them, which the filter
    * below already did for the group with no rows at all.

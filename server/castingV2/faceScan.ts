@@ -27,13 +27,24 @@
  * # What it asks is DERIVED, never a second list
  *
  * Every question comes from `SLOT_CATALOGUE` through `catalogueSlots()`. A slot
- * whose `question` is null is words-only BY THE CATALOGUE'S OWN ACCOUNT — chin,
- * jaw, cheekbones, skin under the founder's third shape — and is not asked, so
- * the eight regions that can be pictured fall out of the vocabulary rather than
- * being typed here. Accessories are asked only when their class is ARMED
- * (`armedBornWornClasses`), because a detector without its three-class court is
- * a guess about a customer's face: glasses today, earring and nose stud when
- * their courts pass, and this file will not need editing when they do.
+ * with neither a `question` nor a `display` region is words-only BY THE
+ * CATALOGUE'S OWN ACCOUNT — chin, jaw and cheekbones under the founder's third
+ * shape — and is not asked, so the regions that can be pictured fall out of the
+ * vocabulary rather than being typed here. (A slot with a null `question` and a
+ * `display` region IS asked, under the display name: it may not be CUT as this
+ * feature and can still be POINTED AT — teeth and skin are both in that state,
+ * and the line below is where the two fields meet.) Accessories are asked only
+ * when their class is ARMED (`armedBornWornClasses`), because a detector
+ * without its court is a guess about a customer's face.
+ *
+ * WHICH kinds those are is deliberately not written here. This sentence used to
+ * say "glasses today, earring and nose stud when their courts pass", and it was
+ * false from the day the earring court passed — as were three other prose sites
+ * carrying the same roster, while the test beside this file skipped its own
+ * check precisely because the kind it guarded had become armed. `FLOOR_OF_CLASS`
+ * is the one place that answers it, and `faceScan.test.ts` now asserts this plan
+ * EQUAL to `armedBornWornClasses()` in both directions — so arming a kind moves
+ * the plan and the assertion together, and this file still needs no edit.
  *
  * A bilateral feature is ONE question read two-sidedly, so each side gets its
  * own box — which is what per-instance boxes and pair-row-lights-both need

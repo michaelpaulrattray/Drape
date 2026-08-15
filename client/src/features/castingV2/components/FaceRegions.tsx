@@ -32,9 +32,11 @@ import type { FaceSelectionModel } from "./faceSelection";
  * absent from the PICTURE — fable-414 took it off the panel altogether
  * (*"everything in the right panel should have a bounding box"*), so panel
  * membership and a place on the photograph are now one fact. What that costs is
- * stated where the filter lives (`facePanel.ts`), and it is not nothing: a face
- * wearing earrings has no earrings row today, because earring detection is
- * unarmed and nothing measures where they are.
+ * stated where the filter lives (`facePanel.ts`), and it is not nothing: a row
+ * nothing can locate on the frame leaves the panel until something can. Which
+ * rows those are is not written here — this sentence named her earrings, whose
+ * detector has since been armed, and a roster in a comment is the one thing on
+ * this surface no test reads.
  *
  * # THE COPY, CLASSIFIED (UI milestone contract)
  *

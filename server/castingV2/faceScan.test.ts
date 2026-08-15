@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { composedPlan, scanFace, scanPlan } from "./faceScan";
 import { armedBornWornClasses } from "./bornWornDetector";
+import { LANDMARK_OF_ACCESSORY } from "./accessoryKinds";
 import type { Mask } from "./maskedComposite";
 import type { RegionReader } from "./maskedRefine";
 
@@ -74,16 +75,34 @@ describe("what the scan asks is derived from the catalogue", () => {
     expect(questions).not.toContain("cheekbone");
   });
 
-  it("asks only about accessory classes that are ARMED", () => {
+  it("asks about EVERY armed accessory class and no unarmed one", () => {
     const questions = scanPlan().map((region) => region.question);
+    const accessories = LANDMARK_OF_ACCESSORY.map((entry) => entry.region);
     const armed = armedBornWornClasses().map((entry) => entry.region);
-    /* Glasses today. An unarmed class has no three-class court behind it, and a
-       detector without its court is a guess about a customer's face. */
-    expect(armed).toContain("glasses");
-    expect(questions).toContain("glasses");
-    for (const kind of ["earring", "nose stud"]) {
-      if (!armed.includes(kind)) expect(questions).not.toContain(kind);
-    }
+    /*
+      BOTH DIRECTIONS, OVER THE WHOLE TABLE — and the one-way version of this
+      check is why (shift 91).
+
+      It used to name `glasses` as the armed one and then loop `["earring",
+      "nose stud"]` under `if (!armed.includes(kind))`. Every clause of that was
+      true when it was written and none of it could fire the day it stopped
+      being: the earring court passed, `deferArming` came off, and the arm that
+      would have noticed simply skipped itself. A check that quietly stops
+      checking is this program's oldest shape of failure, and it left a roster
+      of which kinds are armed sitting unread in four prose sites.
+
+      So no kind is named here at all. The table says which kinds exist,
+      `armedBornWornClasses` says which are armed, and the plan is asserted
+      EQUAL to it — a new kind, or a kind arming or disarming, moves both sides
+      of this line at once or fails it.
+    */
+    const askedAccessories = questions.filter((question) => accessories.includes(question));
+    expect([...askedAccessories].sort()).toEqual([...armed].sort());
+    /* And the equality is only worth something if both sides are populated: two
+       empty lists are equal, and would pass on a build where arming had been
+       deleted outright. */
+    expect(armed.length).toBeGreaterThan(0);
+    expect(armed.length).toBeLessThanOrEqual(accessories.length);
   });
 
   it("asks each feature ONCE, however many slots it feeds", () => {

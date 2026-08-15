@@ -63,6 +63,25 @@ published price, read off the model page).
 until their three-class courts pass — arming a detector kind without its court
 is how a false positive becomes a row on her face.
 
+> **CORRECTION, 2026-08-16 (shift 91). The sentence above is out of date and the
+> table with it — kept rather than rewritten, because this is the design as it
+> was decided.** The earring per-side court has since passed and the class is
+> ARMED; only nose stud remains unarmed, and its floor is still `null`
+> ("NOT MEASURED"). The rule in that sentence is unchanged and is the point of
+> it; the roster is not maintained here, and this was one of five prose sites
+> found carrying it after it went false. Read the live answer from
+> `armedBornWornClasses()`; `faceScan.test.ts` asserts the plan equal to it in
+> both directions.
+>
+> **What the plan asks today**, printed from `scanPlan()`: twelve questions —
+> hair · facial hair · eyes · eyebrows · nose · lips · all the teeth · ear ·
+> face skin · horns · earring · glasses. Five of them are bilateral (eyes,
+> eyebrows, ear, horns, earring) and a bilateral question is read as two
+> half-frames, so the CALL count is 7 + (5 x 2) + 1 shared axis read = **18
+> reads, about $0.090** at the same $0.005. That figure is DERIVED from the plan
+> and the reader's own split, not metered on a live scan — the twelve above is
+> a question count and was never the call count once horns and earrings joined.
+
 ## 3. What the panel shows — the founder's third shape
 
 fable-360 replaced the (a)/(d) fork with his own answer, and it simplifies the
