@@ -66,6 +66,39 @@ So the inference stays dark. Shipping it would multiply the number of asks that
 reach a paint we know honours one side and not the other; the honest order is to
 fix the paint, then open the door.
 
+## 3b. A CANDIDATE CURE, courted twice — say the side BOTH ways
+
+The misses all landed on the image's RIGHT half whatever the recipe named, which
+is a positional bias rather than a naming confusion. So the ask names her
+anatomy and the half of the picture it lives on: *"her right eye (on the left of
+the picture as you look at it)"*, dark behind `CASTING_SIDE_PHRASING`.
+
+```
+FIRST PASS, six renders an arm, her right
+  plain    3/6 landed on her right eye
+  placed   6/6
+
+PAIRED PASS, six FRESH colours, each asked BOTH ways on the same parent
+  plain    wrong eye 1/6    ratios 2.48 · 6.30 · 0.28 · 2.47 · 2.47 · 2.02
+  placed   wrong eye 0/6    ratios 2.31 · 3.32 · 1.91 · 2.37 · 3.27 · 2.03
+```
+
+Pooled over both passes, twelve renders each way on her right:
+
+```
+without the clause   4 of 12 painted the other eye
+with the clause      0 of 12
+```
+
+**p ≈ 0.09 — suggestive, not conclusive**, and said that way on purpose. What is
+not in doubt: the clause never once hurt (every phrased render landed on the
+named eye, and the paired turquoise pair flipped from 0.28 to 1.91 on the colour
+that had failed), and it costs nothing per render.
+
+Note also that the baseline rate itself moves — 3/6 on the first pass and 1/6 on
+the second. A per-side failure rate quoted from six renders is not a constant,
+which is why the pooled figure is the one to carry.
+
 ## 4. And the read-back's side words cannot be trusted to judge this
 
 Five of the fourteen renders came back with an uncorroborated read-back (the
