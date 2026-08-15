@@ -815,6 +815,41 @@ async function refineCandidateCounted(
   */
   const pointed = input.removeStep;
 
+  /*
+    HER HAIR GOING IS A HAIRCUT, AND THE CODE DECIDES IT FROM HER SENTENCE
+    (founder ruling 2026-08-14: *"'remove her hair' and 'make her bald' are
+    essentially the same asks"*; fable-606 §1, fable-608 §2).
+
+    He typed *"remove her hair"* and was told *"That one can't be rendered"* — a
+    content objection about an ask this product serves happily under other
+    words — then typed the identical sentence again and it rendered her bald.
+    Driven on the real service, six attempts on that one sentence with the claim
+    door shut, the reading came back FOUR different ways: the paint three times,
+    a content wall, a "didn't come through clearly", and a "not one of the things
+    this can name". The neighbouring phrasings are stable because they never
+    reach the removal road at all — *"take her hair off"* and *"make her bald"*
+    parse straight to `hairStyle: "shaved head"`.
+
+    A first attempt fixed the removal road and moved the coin flip UPSTREAM into
+    the parse itself, which is the lesson: **the model's read is the unstable
+    thing, so the code cannot wait for it.** This is the lexicon-split pattern
+    the ruling names — the sentence is read here, by a rule, and the model is
+    not consulted about a class it keeps answering differently.
+
+    The rule is deliberately narrow: after fillers, the sentence must be a
+    removal word and the word "hair" and nothing else. *"Remove her hair clips"*
+    keeps a word the rule does not allow and goes to the model, and so does
+    *"get her hair off her face"* — which means tie it back, and is exactly the
+    over-capture this door has to refuse.
+  */
+  const baldFromHerWords = pointed === undefined && asksToRemoveHerHair(instruction);
+  if (baldFromHerWords) {
+    log.info(
+      { userId: input.userId, candidate: input.candidatePublicId, instruction },
+      "[refineService] her hair going is a haircut — the bald edit is read from her sentence, not asked for",
+    );
+  }
+
   /* `let` because a wordless removal is re-read as an edit below (D-189). */
   let parsed = pointed !== undefined
     ? {
@@ -825,7 +860,9 @@ async function refineCandidateCounted(
       match: pointed.instruction,
       subject: null,
     }
-    : await readInstruction();
+    : baldFromHerWords
+      ? { ok: true as const, delta: { hairStyle: BALD_HAIR_STYLE } }
+      : await readInstruction();
   /*
     AND DID HER SENTENCE SURVIVE THE READING? — before anything is claimed.
 
@@ -5701,6 +5738,77 @@ export function readRegeneratedFrom(internalPrompt: unknown): string | null {
   if (!internalPrompt || typeof internalPrompt !== "object") return null;
   const value = (internalPrompt as { regeneratedFrom?: unknown }).regeneratedFrom;
   return typeof value === "string" && value.length > 0 ? value : null;
+}
+
+/**
+ * THE WORDS THE STABLE PHRASINGS ALREADY FILE.
+ *
+ * *"Take her hair off"* and *"make her bald"* both parse straight to this
+ * value, so authoring it for *"remove her hair"* makes the three one edit
+ * rather than three that resemble each other. Taken from the parse rather than
+ * invented: it is what the product already says about a shaved head.
+ */
+const BALD_HAIR_STYLE = "shaved head";
+
+/**
+ * Does this removal name her HAIR itself, rather than a style of it?
+ *
+ * "Her hair", "the hair", "all her hair" — yes. "Her braids", "her fringe",
+ * "her ponytail" — no, and deliberately: a braid removed is not a shaved head,
+ * and the founder's own fringe is the reason this product does not treat a part
+ * of a haircut as a thing that can leave.
+ *
+ * Written as a word set rather than a pattern so that nothing here can be
+ * mangled into matching more than it says.
+ */
+const HAIR_MATCH_FILLER = new Set([
+  "her", "his", "their", "the", "all", "of", "a", "any",
+  "please", "just", "can", "you", "off", "it", "now", "entirely", "completely",
+]);
+
+/** The words that mean "make it go" in this family, and nothing wider. */
+const HAIR_REMOVAL_VERBS = new Set([
+  "remove", "removing", "delete", "lose", "ditch", "scrap", "rid", "get", "take", "shave",
+]);
+
+/** Everything that is not a word, so punctuation cannot hide a word. */
+function plainWords(sentence: string): string[] {
+  let cleaned = "";
+  for (const character of sentence.toLowerCase()) {
+    cleaned += (character >= "a" && character <= "z") ? character : " ";
+  }
+  return cleaned.split(" ").filter((word) => word !== "");
+}
+
+export function namesHerHairItself(match: string | null | undefined): boolean {
+  const words = plainWords(String(match ?? "")).filter((word) => !HAIR_MATCH_FILLER.has(word));
+  return words.length === 1 && (words[0] === "hair" || words[0] === "hairs");
+}
+
+/**
+ * IS THIS SENTENCE "TAKE HER HAIR AWAY", AND NOTHING ELSE?
+ *
+ * Narrow on purpose, because the cost of being wide is a paid render of the
+ * wrong thing. After fillers, what remains must be removal words and the word
+ * "hair" — so:
+ *
+ * ```
+ * YES   remove her hair · take her hair off · get rid of her hair ·
+ *       her hair — remove it · shave her hair off
+ * NO    remove her hair clips        (a word the rule does not allow)
+ * NO    get her hair off her face    (that means tie it back)
+ * NO    remove her braids            (a style of it, not it)
+ * NO    make her hair shorter        (not a removal at all)
+ * ```
+ *
+ * Written as word sets rather than patterns so nothing here can quietly match
+ * more than it says.
+ */
+export function asksToRemoveHerHair(sentence: string): boolean {
+  const words = plainWords(sentence).filter((word) => !HAIR_MATCH_FILLER.has(word));
+  if (!words.includes("hair") && !words.includes("hairs")) return false;
+  const rest = words.filter((word) => word !== "hair" && word !== "hairs");
+  return rest.length > 0 && rest.every((word) => HAIR_REMOVAL_VERBS.has(word));
 }
 
 export function readStepDeltas(value: unknown): RefineDelta[] {

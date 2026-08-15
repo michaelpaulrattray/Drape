@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { departureFloorFor } from "./bornWornDetector";
 import { COVERAGE_BANDS } from "./maskGeometry";
@@ -441,7 +441,7 @@ vi.mock("./signEngine", () => ({
   }),
 }));
 
-const { refineCandidate } = await import("./refineService");
+const { asksToRemoveHerHair, refineCandidate } = await import("./refineService");
 /* The door itself, so the pair-vacancy rows below are checked against the rule
    that used to refuse them rather than against a copy of it. */
 const { slotWordsRefusal } = await import("./slotWordShape");
@@ -2123,6 +2123,121 @@ describe("the render is checked against the record before it is delivered", () =
   was nothing to take off something they were trying to put on. The word list
   cannot prevent the mis-sampling; it stops it reaching the confession.
 */
+/**
+ * HER HAIR GOING IS A HAIRCUT, DECIDED IN CODE (founder ruling 2026-08-14,
+ * fable-606/608).
+ *
+ * He typed *"remove her hair"* and was told *"That one can't be rendered"*;
+ * he typed the same sentence again and it rendered her bald. Measured on the
+ * real service, six attempts, claim door shut: **the paint 3, the wall 2, a
+ * question 1 — three doors on one input.** The variance lives in the re-read
+ * this branch replaces, and the neighbouring phrasings never reach it at all
+ * (*"take her hair off"* and *"make her bald"* parse straight to
+ * `hairStyle: "shaved head"`, which is exactly why they are stable).
+ *
+ * The negative arm is the one that keeps this honest: a braid removed is not a
+ * shaved head, so a removal naming a STYLE of her hair still goes to the model.
+ */
+describe("her hair going is a haircut, read from her sentence", () => {
+  /* No brief and no chain by default — deliberately: a haircut needs no proof
+     she has hair, and the gate that asks for one refuses a fresh cast with
+     "I can't find any hair on this face". */
+  afterEach(() => { briefWorn = null; });
+
+  const asked = (instruction: string) => {
+    let calls = 0;
+    const interpret = async () => {
+      calls += 1;
+      return calls === 1
+        ? { ok: true as const, intent: "remove" as const, subject: "hairStyle", match: "braids" }
+        : { ok: true as const, delta: { hairStyle: "a soft bob" } };
+    };
+    return { interpret, count: () => calls, instruction };
+  };
+
+  const claimedDeltas = async () => {
+    const claimed = (await import("../db/castingV2Variants")).claimVariant as unknown as {
+      mock: { calls: Array<[{ deltas: unknown }]> };
+    };
+    return JSON.stringify(claimed.mock.calls.at(-1)?.[0]?.deltas);
+  };
+
+  it("is the bald edit, and the model is never asked about it", async () => {
+    const reader = asked("remove her hair");
+    const result = await refineCandidate(
+      { harvest: unmasked, interpret: reader.interpret as never },
+      { ...input, instruction: reader.instruction },
+    );
+
+    expect(result.variantId).toBeTruthy();
+    /* NOT ONCE. The model's reading of this sentence came back four different
+       ways in six attempts on the real service; the code does not wait for it. */
+    expect(reader.count()).toBe(0);
+    expect(await claimedDeltas()).toContain("shaved head");
+  });
+
+  it("holds for every phrasing the founder named", async () => {
+    for (const phrasing of [
+      "take her hair off",
+      "get rid of her hair",
+      "her hair — remove it",
+      "shave her hair off",
+    ]) {
+      const reader = asked(phrasing);
+      const result = await refineCandidate(
+        { harvest: unmasked, interpret: reader.interpret as never },
+        { ...input, instruction: phrasing, clientRequestId: `bald-${phrasing}` },
+      );
+      expect(result.variantId, phrasing).toBeTruthy();
+      expect(reader.count(), phrasing).toBe(0);
+      expect(await claimedDeltas(), phrasing).toContain("shaved head");
+    }
+  });
+
+  it("CONTROL — a style of her hair still goes to the model", async () => {
+    /* A braid removed is not a shaved head, and the founder's own fringe is why
+       this product does not treat part of a haircut as a thing that can leave.
+       Her brief names the braids so this reaches the re-read rather than the
+       evidence gate, which is a different question with its own tests. */
+    briefWorn = ["braids"];
+    const reader = asked("remove her braids");
+    await refineCandidate(
+      { harvest: unmasked, interpret: reader.interpret as never },
+      { ...input, instruction: reader.instruction },
+    ).catch(() => undefined);
+
+    expect(reader.count(), "the model still decides a style").toBe(2);
+    const deltas = await claimedDeltas();
+    expect(deltas).toContain("soft bob");
+    expect(deltas, "and nothing authored a shaved head behind her back").not.toContain("shaved head");
+  });
+
+  it("CONTROL — the sentences this rule must NOT take", () => {
+    /* Driven directly, because each of these is a paid render of the wrong
+       thing if the rule widens: hair clips are an accessory, hair off her face
+       is tied back, and shorter hair is a cut rather than a removal. */
+    for (const sentence of [
+      "remove her hair clips",
+      "get her hair off her face",
+      "remove her braids",
+      "make her hair shorter",
+      "take off her glasses",
+    ]) {
+      expect(asksToRemoveHerHair(sentence), sentence).toBe(false);
+    }
+    for (const sentence of [
+      "remove her hair",
+      "take her hair off",
+      "get rid of her hair",
+      "her hair — remove it",
+      "shave her hair off",
+      "REMOVE HER HAIR",
+    ]) {
+      expect(asksToRemoveHerHair(sentence), sentence).toBe(true);
+    }
+  });
+});
+
 describe("a removal with no removal word is re-read as an edit", () => {
   const misreads = (asEdit: unknown) => {
     let call = 0;
