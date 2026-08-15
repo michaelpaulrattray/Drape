@@ -2674,6 +2674,48 @@
 }
 
 /*
+  THE ONE THING THAT MOVES (founder, fable-619 §1: *"the blurred ghost chip
+  reads as broken rather than working"*).
+
+  He is describing the treatment above accurately: a still photograph, blurred,
+  desaturated and dimmed, is what a picture that FAILED looks like. Nothing in
+  the chip distinguished "being made" from "did not load".
+
+  A ring, not a shimmer and not a colour. A moving gradient over the whole chip
+  would be a second thing competing with the photograph beside it — the same
+  reason the placeholder rows refuse one — while a 14px monochrome arc reads as
+  a machine working and takes no attention it has not earned. It sits on the
+  scrim colour at low strength because the chip underneath is already dark.
+*/
+.dpc-refine__ghostSpin {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 14px;
+  height: 14px;
+  margin: -7px 0 0 -7px;
+  border-radius: 50%;
+  border: 1.5px solid color-mix(in srgb, var(--onScrim) 22%, transparent);
+  /* One quadrant carries the light, which is what makes the rotation legible
+     at this size — a full ring spinning is a ring standing still. */
+  border-top-color: color-mix(in srgb, var(--onScrim) 78%, transparent);
+  animation: dpc-ghost-spin 900ms linear infinite;
+}
+
+@keyframes dpc-ghost-spin {
+  to { transform: rotate(360deg); }
+}
+
+/*
+  Someone who has asked for less movement still needs to know it is working, so
+  the ring stays and stops: a static bright arc on a blurred plate still says
+  "something is here on purpose" in a way the plate alone did not.
+*/
+@media (prefers-reduced-motion: reduce) {
+  .dpc-refine__ghostSpin { animation: none; }
+}
+
+/*
   NOT `dp-chrome`. That class is mono, and mono is for chrome labels — "01",
   "Roll 2" — never for sentences. What sits here is the user's OWN instruction,
   which is content, and setting someone's words in 10px letter-spaced monospace

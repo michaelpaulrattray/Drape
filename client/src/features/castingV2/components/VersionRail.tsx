@@ -173,6 +173,15 @@ export function VersionRail({
                 the box: the picture is narrating now.
               */}
               {originalImageUrl ? <img src={originalImageUrl} alt="" /> : null}
+              {/*
+                AND ONE THING THAT MOVES (founder, fable-619 §1): *"the blurred
+                ghost chip reads as broken rather than working."* He is right —
+                a still, blurred, dimmed photograph is exactly what a failed
+                image looks like, and nothing else in the chip says otherwise.
+                One quiet monochrome ring, no shimmer and no colour, is the
+                smallest thing that turns "broken" into "working".
+              */}
+              <span className="dpc-refine__ghostSpin" aria-hidden="true" />
             </div>
             <span>{entry.instruction}</span>
           </div>
