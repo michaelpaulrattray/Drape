@@ -8,11 +8,12 @@ import { describe, expect, it } from "vitest";
  *
  * `docs/specs/INSTRUMENT_DOCTRINE.md` admits a sentence only when it has been
  * banked in a numbered Fable ruling with a real incident, and every entry
- * carries its mailbox citation. On the file's second day, one entry of twelve
- * turned out to cite **the order that commissioned the file** — the sentence
- * appeared there as four words in a seed list, with no incident and no banking,
- * and it had never been banked anywhere. Circular: the order cannot also be the
- * warrant.
+ * carries its mailbox citation. Ten minutes after the file was finished — it
+ * landed at 08:34 and closed at 08:41 on 2026-08-16, and the finding was
+ * reported at 08:51 — one entry of twelve turned out to cite **the order that
+ * commissioned the file**: the sentence appeared there as four words in a seed
+ * list, with no incident and no banking, and it had never been banked anywhere.
+ * Circular — the order cannot also be the warrant.
  *
  * # What this test covers, and what it does NOT
  *
