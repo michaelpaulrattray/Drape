@@ -29,6 +29,7 @@ import "dotenv/config";
 import { execFileSync } from "node:child_process";
 
 import { openDatabase } from "./lib/dbConnection.mts";
+import { uptimeAnchor } from "./lib/uptimeAnchor.mts";
 
 const WITH_SUITE = process.argv.includes("--suite");
 const WITH_PROD = !process.argv.includes("--no-prod");
@@ -114,7 +115,7 @@ const newest = run("railway.cmd", ["deployment", "list"], true).split("\n")
   .find((line) => /^[0-9a-f-]{36} \| [A-Z]+ \|/.test(line));
 say(`deploy    ${newest ? newest.split("|").slice(1).join("·").trim() : "(unreadable)"}`);
 
-const healths: Array<{ status: string; db: number; uptime: number }> = [];
+const healths: Array<{ status: string; db: number; uptime: number; timestamp: string }> = [];
 for (let read = 0; read < 3; read += 1) {
   const response = await fetch(`${BASE}/api/health`).catch(() => null);
   const body = response && response.ok ? await response.json() as any : null;
@@ -122,14 +123,16 @@ for (let read = 0; read < 3; read += 1) {
     status: body?.status ?? `HTTP ${response?.status ?? "none"}`,
     db: Number(body?.checks?.database?.latencyMs ?? NaN),
     uptime: Number(body?.uptime ?? NaN),
+    timestamp: String(body?.timestamp ?? ""),
   });
   if (read < 2) await new Promise((resolve) => setTimeout(resolve, 2_000));
 }
 const latencies = healths.map((entry) => entry.db).filter((value) => Number.isFinite(value));
 say(`health    ${healths.map((entry) => entry.status).join(" · ")} · db `
   + `${latencies.length ? `${Math.min(...latencies).toFixed(2)}–${Math.max(...latencies).toFixed(2)} ms` : "(unread)"}`);
-if (Number.isFinite(healths[0]!.uptime)) {
-  say(`          **UPTIME ANCHOR ${new Date(Date.now() - healths[0]!.uptime * 1000).toISOString()}**`);
+if (Number.isFinite(healths[0]!.uptime) && healths[0]!.timestamp) {
+  // Both terms from the same reading — see scripts/lib/uptimeAnchor.mts.
+  say(`          **UPTIME ANCHOR ${uptimeAnchor(healths[0]!)}**`);
 }
 
 const flags = run("railway.cmd", ["variables", "--service", SERVICE, "--kv"], true).split("\n")

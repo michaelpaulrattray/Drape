@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "4f799939982aba98"
+    "sourceFingerprint": "161d8841ef25a2b1"
   },
   "domains": [
     {
@@ -10318,6 +10318,10 @@
     {
       "id": "test:server/studio.test.ts",
       "path": "server/studio.test.ts"
+    },
+    {
+      "id": "test:server/uptimeAnchor.test.ts",
+      "path": "server/uptimeAnchor.test.ts"
     },
     {
       "id": "test:server/velocityLimits.test.ts",

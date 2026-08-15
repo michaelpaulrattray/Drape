@@ -28,6 +28,7 @@
 import { execFileSync } from "node:child_process";
 
 import { openDatabase } from "./lib/dbConnection.mts";
+import { uptimeAnchor } from "./lib/uptimeAnchor.mts";
 
 const DRY = process.argv.includes("--dry");
 const SERVICE = process.env.RAILWAY_SERVICE ?? "Drape";
@@ -213,7 +214,7 @@ if (deployment.status !== "SUCCESS") die(`the deploy ended ${deployment.status}`
 
 /* ── 4. health, THREE TIMES — a deploy reporting SUCCESS is a claim ─────── */
 
-const healths: Array<{ status: string; db: number; uptime: number }> = [];
+const healths: Array<{ status: string; db: number; uptime: number; timestamp: string }> = [];
 for (let read = 0; read < 3; read += 1) {
   const response = await fetch(`${BASE}/api/health`).catch(() => null);
   if (!response || !response.ok) die(`health read ${read + 1} returned ${response?.status ?? "no response"}`);
@@ -222,12 +223,15 @@ for (let read = 0; read < 3; read += 1) {
     status: body.status,
     db: Number(body.checks?.database?.latencyMs ?? NaN),
     uptime: Number(body.uptime ?? NaN),
+    timestamp: String(body.timestamp ?? ""),
   });
   if (read < 2) await wait(3_000);
 }
 if (healths.some((entry) => entry.status !== "healthy")) die(`health said ${healths.map((h) => h.status).join(", ")}`);
 const latencies = healths.map((entry) => entry.db);
-const anchor = new Date(Date.now() - Math.round(healths[0]!.uptime * 1000)).toISOString();
+// Both terms from the same reading — this loop sleeps, and the local clock is
+// not a party to the subtraction. See scripts/lib/uptimeAnchor.mts.
+const anchor = uptimeAnchor(healths[0]!);
 
 /* ── 5. the flags, OFF THE SERVICE ──────────────────────────────────────── */
 
