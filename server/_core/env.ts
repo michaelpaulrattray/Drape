@@ -28,12 +28,14 @@ import {
   CASTING_FACE_SCAN_SCOPE_ENV,
   CASTING_REFERENCE_LIBRARY_SCOPE_ENV,
   CASTING_REPAINT_SCOPE_ENV,
+  CASTING_SIDE_PHRASING_SCOPE_ENV,
   CASTING_SEGMENTS_DELIVERED_SCOPE_ENV,
   CASTING_SEGMENTS_SCOPE_ENV,
   CASTING_V2_SCOPE_ENV,
   validateCastingFaceScanEnvironment,
   validateCastingReferenceLibraryEnvironment,
   validateCastingRepaintEnvironment,
+  validateCastingSidePhrasingEnvironment,
   validateCastingSegmentsDeliveredEnvironment,
   validateCastingSegmentsEnvironment,
   validateCastingV2Environment,
@@ -176,6 +178,15 @@ export function validateEnv(): void {
   validateCastingRepaintEnvironment({
     scope: process.env[CASTING_REPAINT_SCOPE_ENV],
     libraryScope: process.env[CASTING_REFERENCE_LIBRARY_SCOPE_ENV],
+  });
+  /*
+    Saying which side twice — her anatomy and the half of the picture it is on.
+    Checked against the REPAINT scope because the clause is written by the
+    repaint recipe and nothing else says it.
+  */
+  validateCastingSidePhrasingEnvironment({
+    scope: process.env[CASTING_SIDE_PHRASING_SCOPE_ENV],
+    repaintScope: process.env[CASTING_REPAINT_SCOPE_ENV],
   });
   /*
     The auto-scan: reading a face nobody has edited so the panel is not a

@@ -174,7 +174,7 @@ for (const arm of ARMS) {
       [parent.id, cast.id]);
 
     /* THE ONLY DIFFERENCE BETWEEN A PAIR. */
-    process.env.CASTING_SIDE_PHRASING = arm.arm === "placed" ? "on" : "off";
+    process.env.CASTING_SIDE_PHRASING_SCOPE = arm.arm === "placed" ? `users:${outsider.id}` : "off";
     const ask = arm.ask(colour);
     const before = await balance();
     let kind = "";

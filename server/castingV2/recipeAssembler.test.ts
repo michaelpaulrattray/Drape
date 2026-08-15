@@ -1086,15 +1086,8 @@ describe("a presentation clause is said and filed nowhere", () => {
  * of the sentence moves.
  */
 describe("where that side is in the picture", () => {
-  const withPhrasing = <T>(run: () => T): T => {
-    const was = process.env.CASTING_SIDE_PHRASING;
-    process.env.CASTING_SIDE_PHRASING = "on";
-    try {
-      return run();
-    } finally {
-      process.env.CASTING_SIDE_PHRASING = was;
-    }
-  };
+  /* The flag is the CALLER's, not this function's — `placeSides` arrives the
+     same way `pronouns` does, so the arms set it rather than an environment. */
 
   it("says nothing extra while it is dark", () => {
     const recipe = assembleRecipe({
@@ -1109,11 +1102,11 @@ describe("where that side is in the picture", () => {
   });
 
   it("ARMED — names her side and the half of the picture it lives on", () => {
-    const recipe = withPhrasing(() => assembleRecipe({
-      master: MASTER, pronouns: SHE,
+    const recipe = assembleRecipe({
+      master: MASTER, pronouns: SHE, placeSides: true,
       library: [],
       asks: [{ slot: "eye@right", noun: "right eye", words: "fiery red" }],
-    }));
+    });
 
     expect(recipe.ok).toBe(true);
     if (!recipe.ok) return;
@@ -1123,11 +1116,11 @@ describe("where that side is in the picture", () => {
   });
 
   it("ARMED — and the mirrored half, because her left is the viewer's right", () => {
-    const recipe = withPhrasing(() => assembleRecipe({
-      master: MASTER, pronouns: SHE,
+    const recipe = assembleRecipe({
+      master: MASTER, pronouns: SHE, placeSides: true,
       library: [],
       asks: [{ slot: "eye@left", noun: "left eye", words: "fiery red" }],
-    }));
+    });
 
     expect(recipe.ok).toBe(true);
     if (!recipe.ok) return;
@@ -1137,11 +1130,11 @@ describe("where that side is in the picture", () => {
   });
 
   it("ARMED — a feature with one instance is left alone", () => {
-    const recipe = withPhrasing(() => assembleRecipe({
-      master: MASTER, pronouns: SHE,
+    const recipe = assembleRecipe({
+      master: MASTER, pronouns: SHE, placeSides: true,
       library: [],
       asks: [{ slot: "hair", noun: "hair", words: "copper" }],
-    }));
+    });
 
     expect(recipe.ok).toBe(true);
     if (!recipe.ok) return;

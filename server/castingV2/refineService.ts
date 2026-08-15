@@ -183,6 +183,7 @@ import { pronounsForSex } from "./castPronouns";
 import {
   captureCastingReferenceLibraryEnabled,
   captureCastingRepaintEnabled,
+  captureCastingSidePhrasingEnabled,
 } from "./castingV2Scope";
 import { isUpsweptAsk, readCanthalTilt } from "./eyeShapeRouting";
 import { alreadyUpswept, wearsGlassesByPixels } from "./canthalTilt";
@@ -3205,6 +3206,13 @@ async function refineCandidateCounted(
         /* Never assumed: `segmentsOnFace` shipped "hers" onto a male
            candidate's face before pronouns were passed rather than guessed. */
         pronouns: pronounsForSex(currentIdentity?.sex),
+        /*
+          AND WHERE A SIDE IS, when this account is inside the phrasing scope.
+          Read here rather than inside the assembler for the same reason the
+          pronouns are: the flag is per user and the assembler knows nothing
+          about users.
+        */
+        placeSides: captureCastingSidePhrasingEnabled(input.userId),
         library,
         asks: asks.asks,
         /*

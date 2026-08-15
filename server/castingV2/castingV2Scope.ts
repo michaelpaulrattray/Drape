@@ -560,6 +560,91 @@ export function validateCastingRepaintEnvironment(input: {
 /* ---------------------------------------------- the auto-scan sub-flag */
 
 /**
+ * SAYING WHICH SIDE TWICE — her anatomy, and the half of the picture it is on.
+ *
+ * Off, a per-side ask is named once, exactly as it is today: *"Change only her
+ * right eye: fiery red."* On, the clause also says where that side appears —
+ * *"her right eye (on the left of the picture as you look at it)"*.
+ *
+ * It exists because a court found the engine paints by POSITION rather than by
+ * anatomy. Twelve renders each way on her right eye: four painted the OTHER eye
+ * without the clause, none with it (p≈0.09 — suggestive rather than proven,
+ * never once worse, and free per render; `V4_SIDE_INFERENCE_COURT.md` §3b).
+ *
+ * The parent is the REPAINT scope rather than the library's, because the clause
+ * is written by the repaint recipe and nothing else says it: a user named here
+ * and not there would be armed for a sentence they cannot reach.
+ *
+ * Inert without it in the strongest sense — one parenthesis, in one clause, of
+ * one sentence; every other byte of the prompt is identical.
+ */
+export const CASTING_SIDE_PHRASING_SCOPE_ENV = "CASTING_SIDE_PHRASING_SCOPE";
+
+export class CastingSidePhrasingScopeConfigurationError extends Error {
+  constructor() {
+    super(
+      `${CASTING_SIDE_PHRASING_SCOPE_ENV} must be "off", "all", or "users:" followed by unique positive integer user ids`,
+    );
+    this.name = "CastingSidePhrasingScopeConfigurationError";
+  }
+}
+
+export class CastingSidePhrasingCoverageError extends Error {
+  constructor(detail: string) {
+    super(`${CASTING_SIDE_PHRASING_SCOPE_ENV} ${detail}`);
+    this.name = "CastingSidePhrasingCoverageError";
+  }
+}
+
+export function parseCastingSidePhrasingScope(raw: string | undefined): CastingV2Scope {
+  return parseScopeGrammar(raw, () => {
+    throw new CastingSidePhrasingScopeConfigurationError();
+  });
+}
+
+/**
+ * Whether this user's per-side asks say where the side is.
+ *
+ * An AND of the whole chain, for `captureCastingSegmentsEnabled`'s reason: the
+ * boot check already refuses a scope that reaches past its parent, and this is
+ * the same rule enforced again where it is used, because a boot check that was
+ * never invoked is the second way a flag pair goes wrong.
+ */
+export function captureCastingSidePhrasingEnabled(userId: number): boolean {
+  const child = parseCastingSidePhrasingScope(process.env[CASTING_SIDE_PHRASING_SCOPE_ENV]);
+  if (!castingV2EnabledForUser(child, userId)) return false;
+  return captureCastingRepaintEnabled(userId);
+}
+
+export function validateCastingSidePhrasingEnvironment(input: {
+  scope: string | undefined;
+  repaintScope: string | undefined;
+}): CastingV2Scope {
+  const child = parseCastingSidePhrasingScope(input.scope);
+  if (child.kind === "off") return child;
+
+  const parent = parseCastingRepaintScope(input.repaintScope);
+  if (parent.kind === "off") {
+    throw new CastingSidePhrasingCoverageError(
+      `cannot be enabled while ${CASTING_REPAINT_SCOPE_ENV} is off — the recipe says the side once, exactly as it does today`,
+    );
+  }
+  if (parent.kind === "all") return child;
+  if (child.kind === "all") {
+    throw new CastingSidePhrasingCoverageError(
+      `cannot be "all" while ${CASTING_REPAINT_SCOPE_ENV} is limited to specific users`,
+    );
+  }
+  const uncovered = child.userIds.filter((userId) => !parent.userIds.includes(userId));
+  if (uncovered.length > 0) {
+    throw new CastingSidePhrasingCoverageError(
+      `names users outside ${CASTING_REPAINT_SCOPE_ENV}: ${uncovered.join(",")}`,
+    );
+  }
+  return child;
+}
+
+/**
  * THE AUTO-SCAN — reading a face nobody has edited, on its own switch.
  *
  * Off, the face panel is exactly what it is today: rows from the catalogue,

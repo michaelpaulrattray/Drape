@@ -83,7 +83,7 @@ process.env.CASTING_REFERENCE_LIBRARY_SCOPE = `users:${outsider.id}`;
 process.env.ENABLE_STORAGE_CLEANUP_WORKER = "true";
 process.env.CASTING_SIDE_INFERENCE = "on";
 /* THE THING UNDER TEST. */
-process.env.CASTING_SIDE_PHRASING = "on";
+process.env.CASTING_SIDE_PHRASING_SCOPE = `users:${outsider.id}`;
 
 const FAL_KEY = process.env.FAL_KEY;
 if (!FAL_KEY) throw new Error("FAL_KEY is required — the judge reads regions");

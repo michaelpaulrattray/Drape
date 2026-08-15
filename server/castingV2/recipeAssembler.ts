@@ -256,6 +256,15 @@ export type AssembleInput = {
    * honest cannot see it, which is the point rather than an omission.
    */
   presentation?: readonly PresentationClause[];
+  /**
+   * SAY WHERE A SIDE IS, as well as whose it is (`CASTING_SIDE_PHRASING_SCOPE`).
+   *
+   * Decided by the caller because the flag is per user and this function knows
+   * nothing about users — the same reason `pronouns` arrives rather than being
+   * looked up. Absent is off, which is the sentence this assembler has always
+   * written.
+   */
+  placeSides?: boolean;
 };
 
 /**
@@ -395,7 +404,8 @@ const LEADING_DETERMINER = /^(?:a|an|the|her|his|their|its)\s+/i;
  * the delta alone — because that is what D-244 line 2 regenerates from.
  */
 /**
- * WHERE THAT SIDE IS IN THE PICTURE — dark behind `CASTING_SIDE_PHRASING`.
+ * WHERE THAT SIDE IS IN THE PICTURE — behind `CASTING_SIDE_PHRASING_SCOPE`,
+ * decided by the caller, which is the only side that knows whose render this is.
  *
  * Her right eye is on the LEFT of the photograph, and the engine appears to
  * paint by position rather than by anatomy: a court of twelve renders put a
@@ -411,8 +421,8 @@ const LEADING_DETERMINER = /^(?:a|an|the|her|his|their|its)\s+/i;
  * product does not already know — the sides come from the same catalogue the
  * panel draws its boxes from.
  */
-function whereItIs(slot: FeatureSlot): string {
-  if (process.env.CASTING_SIDE_PHRASING !== "on") return "";
+function whereItIs(slot: FeatureSlot, placeSides: boolean): string {
+  if (!placeSides) return "";
   const definition = slotDefinition(slot);
   if (definition === null || definition.instance === null) return "";
   /* Her left is the viewer's right. Said as the painter sees it, because the
@@ -428,6 +438,7 @@ function askSentence(
   wordStacks: ReadonlyMap<FeatureSlot, readonly string[]>,
   possessive: string,
   presentation: readonly PresentationClause[],
+  placeSides: boolean,
 ): string | { unnamed: FeatureSlot } | { saysNothing: string } {
   const clauses: string[] = [];
   for (const ask of asks) {
@@ -473,7 +484,7 @@ function askSentence(
        (`segmentsOnFace`'s worn-vs-hers distinction, one layer up, and the same
        reason: a stylist speaks about a thing, and about her). */
     const named = entry?.tier === "item" ? `the ${noun}` : `${possessive} ${noun}`;
-    clauses.push(`${named}${whereItIs(ask.slot)}: ${(wordStacks.get(ask.slot) ?? []).join(", ")}`);
+    clauses.push(`${named}${whereItIs(ask.slot, placeSides)}: ${(wordStacks.get(ask.slot) ?? []).join(", ")}`);
   }
   /*
     AND THE PRESENTATION CLAUSES RIDE THE SAME SENTENCE.
@@ -947,7 +958,10 @@ export function assembleRecipe(input: AssembleInput): AssembleResult {
     .filter((entry) => entry.carry !== undefined || (entry.tier !== "item" && entry.words.length > 0))
     .map((entry) => entry.slot);
 
-  const ask = askSentence(input.asks, bySlot, wordStacks, possessive, input.presentation ?? []);
+  const ask = askSentence(
+    input.asks, bySlot, wordStacks, possessive, input.presentation ?? [],
+    input.placeSides === true,
+  );
   if (typeof ask !== "string" && "saysNothing" in ask) {
     return {
       ok: false, reason: "presentationSaysNothing", slot: null,
