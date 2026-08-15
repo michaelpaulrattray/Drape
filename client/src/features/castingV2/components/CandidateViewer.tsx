@@ -156,6 +156,15 @@ const TYPICAL_WAIT = "usually a minute or two";
 function useShownFrame(frame: ViewerFrame): ViewerFrame {
   const [shown, setShown] = useState(frame);
 
+  /*
+    RE-KEYING THIS EFFECT ON THE URLS WAS TRIED AND IS NOT THE ANSWER
+    (fable-609/610, 2026-08-15). The reasoning was good — `frame` is rebuilt
+    every render, so an effect keyed on the object restarts the decode on every
+    render — and the measurement did not support it: eight throttled bursts with
+    the change failed four, against one in six without. Reverted rather than
+    kept on the strength of an argument, and the diagnosis is owed before the
+    next attempt: instrument what this actually decodes and when it settles.
+  */
   useEffect(() => {
     if (frame.url === shown.url) return;
     if (frame.candidateId !== shown.candidateId) { setShown(frame); return; }
