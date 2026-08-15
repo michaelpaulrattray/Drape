@@ -257,6 +257,51 @@ describe("falRegionReader cuts the frame instead of naming a side", () => {
     return { prompts };
   }
 
+  /**
+   * HER AXIS IS BOUGHT ONCE PER FACE (fable-603 §3), and only when the caller
+   * says whose face it is.
+   *
+   * Both arms are here because the saving and the risk are the same line: with
+   * a key, a second frame of the same candidate asks no face question at all;
+   * without one — and with a different key — every frame reads its own, which
+   * is what this did before and what a caller with no candidate still gets.
+   */
+  it("reads her face ONCE across a candidate's frames when the caller names the face", async () => {
+    const { prompts } = stubSam3({ sides: "both" });
+    const reader = createFalRegionReader({ apiKey: "test-key" });
+
+    await reader.regionSides!({ image: await frame(), name: "eyes", axisKey: "cast-a" });
+    const afterFirst = prompts.filter((prompt) => prompt === "face").length;
+    /* A DIFFERENT picture of the same face — a later version of her. */
+    await reader.regionSides!({
+      image: await sharp({
+        create: { width: WIDTH, height: HEIGHT, channels: 3, background: { r: 40, g: 40, b: 40 } },
+      }).png().toBuffer(),
+      name: "eyes",
+      axisKey: "cast-a",
+    });
+
+    expect(afterFirst).toBe(1);
+    expect(prompts.filter((prompt) => prompt === "face").length,
+      "the second frame of the same face asks nothing about her midline").toBe(1);
+  });
+
+  it("CONTROL — another face, and a caller that names none, each read their own", async () => {
+    const { prompts } = stubSam3({ sides: "both" });
+    const reader = createFalRegionReader({ apiKey: "test-key" });
+
+    await reader.regionSides!({ image: await frame(), name: "eyes", axisKey: "cast-b" });
+    await reader.regionSides!({ image: await frame(), name: "eyes", axisKey: "cast-c" });
+    await reader.regionSides!({
+      image: await sharp({
+        create: { width: WIDTH, height: HEIGHT, channels: 3, background: { r: 10, g: 10, b: 10 } },
+      }).png().toBuffer(),
+      name: "eyes",
+    });
+
+    expect(prompts.filter((prompt) => prompt === "face").length).toBe(3);
+  });
+
   it("returns a union covering BOTH sides of her midline, and never names a side", async () => {
     const { prompts } = stubSam3({ sides: "both" });
     const reader = createFalRegionReader({ apiKey: "test-key" });

@@ -319,6 +319,30 @@ function assertPicture(image: Buffer, question: string): void {
   both of which are anatomy. Cost is the same one extra call per bilateral
   region, now also paid on earrings — flagged to the latency-and-cost program.
 */
+/**
+ * HER AXIS, PER FACE — the one approximation this reader is allowed, declared.
+ *
+ * Keyed by whatever the caller calls a face (a candidate's public id), and held
+ * at module scope on purpose: the point is that the SECOND frame of the same
+ * face does not pay for the read the first one already made, and readers are
+ * built per call site.
+ *
+ * Bounded, because a process lives longer than a session. Oldest out first, and
+ * a hundred faces is far more than any one process works on before the axis is
+ * cheap again.
+ */
+const AXIS_BY_FACE = new Map<string, Promise<number | null>>();
+const AXIS_FACES_KEPT = 100;
+
+function rememberAxis(key: string, axis: Promise<number | null>): void {
+  AXIS_BY_FACE.set(key, axis);
+  while (AXIS_BY_FACE.size > AXIS_FACES_KEPT) {
+    const oldest = AXIS_BY_FACE.keys().next().value;
+    if (oldest === undefined) break;
+    AXIS_BY_FACE.delete(oldest);
+  }
+}
+
 const BILATERAL = new Set(
   catalogueSlots()
     .filter((definition) => definition.frame === "ownSide" && definition.question !== null)
@@ -558,7 +582,23 @@ export function createFalRegionReader(input: {
    * cross frames. The cost of a miss is one face read, which is today's price.
    */
   const axes = new Map<Buffer, Promise<number | null>>();
-  const axisOf = (image: Buffer, imageUrl?: string): Promise<number | null> => {
+  const axisOf = (image: Buffer, imageUrl?: string, axisKey?: string): Promise<number | null> => {
+    /*
+      AND ONCE PER FACE, when the caller says whose face it is (fable-603 §3).
+
+      A repaint reproduces the same pose and framing by construction, so her
+      axis barely moves between a master and its renders: measured across a
+      candidate's whole chain, **0.3px in 1024** (0.1px on the founder's own
+      cast), against a face read that is 13.7s of the ~23 a bilateral region
+      takes. The cut it decides is a half-frame split and no feature is a third
+      of a pixel wide.
+
+      It is an approximation and it is declared: a cached axis is a claim about
+      a frame it was not read from. Without a key nothing changes — every frame
+      reads its own.
+    */
+    const shared = axisKey === undefined ? null : AXIS_BY_FACE.get(axisKey);
+    if (shared) return shared;
     const held = axes.get(image);
     if (held) return held;
     const asked = (async () => {
@@ -566,9 +606,13 @@ export function createFalRegionReader(input: {
       return face ? centroidX(face) : null;
     })();
     axes.set(image, asked);
+    if (axisKey !== undefined) rememberAxis(axisKey, asked);
     /* A failed read is not remembered: the next pair asks again rather than
        inheriting one bad minute for the life of this reader. */
-    asked.catch(() => axes.delete(image));
+    asked.catch(() => {
+      axes.delete(image);
+      if (axisKey !== undefined) AXIS_BY_FACE.delete(axisKey);
+    });
     return asked;
   };
 
@@ -586,7 +630,9 @@ export function createFalRegionReader(input: {
    * real answer: a head turned away genuinely has one visible ear. `null` for the
    * WHOLE result means there was no split to make.
    */
-  const bilateralHalves = async (image: Buffer, name: string, imageUrl?: string): Promise<{
+  const bilateralHalves = async (
+    image: Buffer, name: string, imageUrl?: string, axisKey?: string,
+  ): Promise<{
     atImageLeft: Mask | null;
     atImageRight: Mask | null;
   } | null> => {
@@ -599,7 +645,7 @@ export function createFalRegionReader(input: {
     /* A picture one pixel wide has no two sides to cut between. */
     if (width < 2) return null;
 
-    const axis = await axisOf(image, imageUrl);
+    const axis = await axisOf(image, imageUrl, axisKey);
     /* Clamped so a face read that lands on an edge cannot ask for a zero-width
        crop — a degenerate half is a thrown sharp error in place of a reading. */
     const midline = Math.min(width - 1, Math.max(1, Math.round(axis ?? width / 2)));
@@ -635,8 +681,10 @@ export function createFalRegionReader(input: {
    * what makes `regionSides` cost nothing: both answers come out of one set of
    * calls, and there is exactly one midline in the system.
    */
-  const bilateral = async (image: Buffer, name: string, imageUrl?: string): Promise<Mask | null> => {
-    const halves = await bilateralHalves(image, name, imageUrl);
+  const bilateral = async (
+    image: Buffer, name: string, imageUrl?: string, axisKey?: string,
+  ): Promise<Mask | null> => {
+    const halves = await bilateralHalves(image, name, imageUrl, axisKey);
     if (halves === null) return askRegion(image, singularOf(name), "all", imageUrl);
     const found = [halves.atImageLeft, halves.atImageRight].filter((mask): mask is Mask => mask !== null);
     if (found.length === 0) return null;
@@ -644,7 +692,7 @@ export function createFalRegionReader(input: {
   };
 
   return {
-    async region({ image, name, absentIsAnswer, imageUrl }) {
+    async region({ image, name, absentIsAnswer, imageUrl, axisKey }) {
       assertPicture(image, name);
       /*
         AN EMPTY ANSWER MEANS TWO DIFFERENT THINGS, and which one is the
@@ -665,7 +713,7 @@ export function createFalRegionReader(input: {
       };
 
       if (BILATERAL.has(name)) {
-        const both = await bilateral(image, name, imageUrl);
+        const both = await bilateral(image, name, imageUrl, axisKey);
         return both ?? absent();
       }
       const mask = await askRegion(image, name, "first", imageUrl);
@@ -706,10 +754,10 @@ export function createFalRegionReader(input: {
      * the same assumption the tilt reader has always made, and it is the reason
      * the mapping lives in one function instead of at four call sites.
      */
-    async regionSides({ image, name, absentIsAnswer, imageUrl }): Promise<SideRegions | null> {
+    async regionSides({ image, name, absentIsAnswer, imageUrl, axisKey }): Promise<SideRegions | null> {
       assertPicture(image, name);
       if (!BILATERAL.has(name)) return null;
-      const halves = await bilateralHalves(image, name, imageUrl);
+      const halves = await bilateralHalves(image, name, imageUrl, axisKey);
       if (halves === null) return null;
 
       if (halves.atImageLeft === null && halves.atImageRight === null) {

@@ -4367,6 +4367,8 @@ async function refineCandidateCounted(
       try {
         const sides = await reader.regionSides({
           image: image.bytes, name: question, absentIsAnswer: true,
+          /* The same face, so the same axis — see the mint's own read. */
+          axisKey: input.candidatePublicId,
         });
         if (sides === null) return null;
         /* The mask's own bounds, padded a little so the reader sees the eye in
@@ -4998,8 +5000,12 @@ async function refineCandidateCounted(
             that told us plainly.
           */
           const read: MintRegionReader = async ({ frame, question, side }) => {
+            /* HER AXIS IS HERS, not this frame's (fable-603 §3): the face read a
+               bilateral question needs is bought once per candidate rather than
+               once per frame, on a measurement of 0.3px across a whole chain. */
+            const axisKey = input.candidatePublicId;
             if (side === undefined) {
-              return reader.region({ image: frame, name: question, absentIsAnswer: true });
+              return reader.region({ image: frame, name: question, absentIsAnswer: true, axisKey });
             }
             /*
               A SIDE IS SCOPED BY THE READER OR IT IS NOT SCOPED AT ALL.
@@ -5013,7 +5019,9 @@ async function refineCandidateCounted(
               become this kind's specimen.
             */
             if (!reader.regionSides) return null;
-            const sides = await reader.regionSides({ image: frame, name: question, absentIsAnswer: true });
+            const sides = await reader.regionSides({
+              image: frame, name: question, absentIsAnswer: true, axisKey,
+            });
             return sides ? sides[side] : null;
           };
 

@@ -256,11 +256,30 @@ export type RegionReader = {
     last version's master — is the wrong-frame class, and the caller cannot be
     the one who guarantees it, because the caller is exactly who gets it wrong.
   */
+  /*
+    `axisKey` — WHOSE FACE THESE FRAMES ARE, when the caller knows.
+
+    Optional, and it changes no answer: it names the CANDIDATE whose frames
+    these are, so her vertical axis — the face read a bilateral question needs
+    before it can cut the picture in half — is read once for that face instead
+    of once per frame.
+
+    Measured before it was allowed: across a candidate's whole chain her midline
+    moves **0.3px in 1024** (0.031% of the width), and 0.1px on the founder's own
+    cast, against a face read that costs 13.7 seconds of the ~23 a bilateral
+    region takes. The cut it decides is a half-frame split, and no feature is a
+    third of a pixel wide.
+
+    It is an APPROXIMATION and is declared as one: a cached axis is a claim
+    about a frame it was not read from. Omit it and every frame reads its own,
+    which is what this did before.
+  */
   region(input: {
     image: Buffer;
     name: string;
     absentIsAnswer?: boolean;
     imageUrl?: string;
+    axisKey?: string;
   }): Promise<Mask>;
   /**
    * THE SAME REGION WITH ITS TWO SIDES STILL APART — optional, and the option
@@ -291,6 +310,9 @@ export type RegionReader = {
     absentIsAnswer?: boolean;
     /** The same transport hint `region` takes, under the same proof. */
     imageUrl?: string;
+    /** The same face hint `region` takes — and this is the road that pays for
+     *  it, since a side read is what buys the axis in the first place. */
+    axisKey?: string;
   }): Promise<SideRegions | null>;
   /** A soft whole-subject matte, for edge ramps. */
   subject(input: { image: Buffer }): Promise<Mask>;
