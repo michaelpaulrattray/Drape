@@ -163,8 +163,20 @@ export type CallCensus = {
    * `tokenCalls` is beside the counts on purpose: a render whose token totals
    * come from three of its nine reads is a different number from one where all
    * nine reported, and without the denominator the two are indistinguishable.
+   *
+   * `labelledCalls` is the same denominator for `byAbout` below, and it is here
+   * for the same reason one table over: an absent column reads as free, and an
+   * absent LABEL reads as complete attribution.
    */
-  total: { calls: number; ms: number; failed: number; tokensIn: number; tokensOut: number; tokenCalls: number };
+  total: {
+    calls: number;
+    ms: number;
+    failed: number;
+    tokensIn: number;
+    tokensOut: number;
+    tokenCalls: number;
+    labelledCalls: number;
+  };
   /**
    * WALL TIME, against the sum above — the pair that says whether the minutes
    * are spent waiting on one slow thing or on many things in a row.
@@ -191,6 +203,13 @@ export type CallCensus = {
    * Only calls that carry one appear, so a render whose calls are all prose
    * (the interpreter, the treatment) contributes nothing here rather than a row
    * of blanks.
+   *
+   * **Which is exactly why it is never read without `total.labelledCalls`.**
+   * `byStage` and `byModel` beside it count every call; this one counts a
+   * subset, so the two look alike and share out different populations. Since
+   * the read stage started naming its purposes the subset is no longer
+   * "the segment calls" either — it is whatever happened to be labelled, and a
+   * consumer that assumes otherwise reads a sliver as the whole.
    */
   byAbout: Record<string, { calls: number; ms: number }>;
 };
@@ -204,6 +223,7 @@ function summarize(census: Census): CallCensus {
   let tokensIn = 0;
   let tokensOut = 0;
   let tokenCalls = 0;
+  let labelledCalls = 0;
   for (const call of census.calls) {
     ms += call.ms;
     if (!call.ok) failed += 1;
@@ -222,7 +242,12 @@ function summarize(census: Census): CallCensus {
     model.ms += call.ms;
     byModel[key] = model;
 
-    if (call.about !== undefined) {
+    /* NON-EMPTY, not merely present. An empty label would open a row keyed on
+       the blank string — the exact "row of blanks" this table exists to avoid —
+       and the report that reads these rows back already required a non-empty
+       string, so the two readers of one field disagreed until now. */
+    if (typeof call.about === "string" && call.about.length > 0) {
+      labelledCalls += 1;
       const about = byAbout[call.about] ?? { calls: 0, ms: 0 };
       about.calls += 1;
       about.ms += call.ms;
@@ -231,7 +256,7 @@ function summarize(census: Census): CallCensus {
   }
   return {
     calls: census.calls,
-    total: { calls: census.calls.length, ms, failed, tokensIn, tokensOut, tokenCalls },
+    total: { calls: census.calls.length, ms, failed, tokensIn, tokensOut, tokenCalls, labelledCalls },
     wallMs: Date.now() - census.startedAt,
     byStage,
     byModel,

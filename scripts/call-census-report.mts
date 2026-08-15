@@ -88,6 +88,12 @@ const byModel = new Map<string, Bucket>();
    back across a window by nothing at all until now. Same shape as the field
    that gave `byAbout` its comment: collected, never asserted. */
 const byAbout = new Map<string, Bucket>();
+/* AND HOW MUCH OF THE WINDOW THAT TABLE SPEAKS FOR. `about` is optional, so a
+   call without one is dropped from `byAbout` and summed in both tables above
+   it — which gives one report two different denominators under identically
+   shaped `%` columns. Counted per stage, because "0 of 352 reads" is the fact
+   a whole-window percentage would bury. */
+const labelledByStage = new Map<string, number>();
 let censused = 0;
 let failedCalls = 0;
 
@@ -110,6 +116,8 @@ for (const row of rows as any[]) {
     add(byModel, `${call.provider}:${call.model}`, Number(call.ms) || 0, tokens);
     if (typeof call.about === "string" && call.about.length > 0) {
       add(byAbout, call.about, Number(call.ms) || 0, tokens);
+      const stage = String(call.stage);
+      labelledByStage.set(stage, (labelledByStage.get(stage) ?? 0) + 1);
     }
   }
 }
@@ -193,18 +201,41 @@ table("BY MODEL — where the invoice goes", byModel);
 
   The stage table says "segmentation costs 40s a render"; it cannot say whether
   that is one question asked forty times or forty questions asked once, and
-  those have opposite fixes. `about` is the closed region vocabulary only — a
-  region name, never a customer's sentence — so this stays a bill.
+  those have opposite fixes. `about` is the closed vocabulary only — a region
+  name or a read purpose, never a customer's sentence — so this stays a bill.
 
   Per-render rather than totals, because the window's size is arbitrary and
   "1.9 calls per render about eyes" is a number somebody can act on.
+
+  IT PRINTS ITS COVERAGE FIRST, and that line is the point of this section as
+  much as the rows are. `about` is OPTIONAL: a call without one is dropped here
+  and summed in both tables above, so the `%` column here shares out a SUBSET
+  while the identically shaped columns above share out everything. An absent
+  column reads as free (the token half, above) and an absent LABEL reads as
+  complete attribution — the same trap, one table over. The dangerous window is
+  not this one but the next MIXED one, where a handful of labelled reads among
+  hundreds of unlabelled ones looks exactly like a working attribution of the
+  read stage while speaking for a sliver of it.
 */
-console.log(`\n  BY QUESTION — what the reads were bought for (${censused} renders)`);
 const askedTotal = [...byAbout.values()].reduce((sum, one) => sum + one.ms, 0);
 const asked = [...byAbout.entries()].sort((a, b) => b[1].ms - a[1].ms);
+const labelledCalls = [...labelledByStage.values()].reduce((sum, one) => sum + one, 0);
+const coverage = [...byStage.entries()]
+  .sort((a, b) => b[1].calls - a[1].calls)
+  .map(([stage, bucket]) => `${stage} ${labelledByStage.get(stage) ?? 0}/${bucket.calls}`)
+  .join(" · ");
+
+console.log(`\n  BY QUESTION — what the labelled calls were bought for (${censused} renders)`);
+console.log(`    ${labelledCalls} of ${allCalls} calls carry a question (${coverage})`);
 if (asked.length === 0) {
-  console.log("    no call in this window carried a question — every one was prose (interpreter, treatment).");
+  /* The count, never a cause. Until 2026-08-16 an unlabelled call really was a
+     prose read; now it may equally be a row written before the purposes
+     shipped, or a call site that forgot the field — and a reader that picks one
+     of those and prints it as fact is the invented zero wearing a sentence. */
+  console.log("    — so there is nothing to share out. An unattributed window, not a window");
+  console.log("    of one question, and not a window of free calls.");
 } else {
+  console.log("    — the rows below share out THAT subset, not the window.");
   for (const [question, bucket] of asked.slice(0, 20)) {
     const share = askedTotal === 0 ? 0 : (bucket.ms / askedTotal) * 100;
     console.log(

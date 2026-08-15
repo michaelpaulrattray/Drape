@@ -562,10 +562,16 @@ export async function refineCandidate(
       wallMs: census.wallMs,
       byStage: census.byStage,
       byModel: census.byModel,
-      /* WHICH QUESTIONS the segment minutes went on — the closed region
-         vocabulary, never anybody's sentence (`aboutOf`). The latency and cost
-         program's first question is "what are the nine calls", and this is the
-         line that answers it without a special run. */
+      /* WHICH QUESTIONS the minutes went on — the closed vocabulary only, a
+         region name or a read purpose, never anybody's sentence. The latency
+         and cost program's first question is "what are the nine calls", and
+         this is the line that answers it without a special run.
+
+         `labelledCalls` RIDES BESIDE IT and is not optional dressing. The two
+         fields above count every call; this one counts only the labelled ones,
+         so without the denominator a consumer reads a subset as the whole —
+         the same trap as an absent token column reading as a free call. */
+      labelledCalls: census.total.labelledCalls,
       byAbout: census.byAbout,
     },
     "[refineService] what this edit cost in calls and seconds",

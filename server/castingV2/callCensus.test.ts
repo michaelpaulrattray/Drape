@@ -266,3 +266,65 @@ describe("what the questions cost", () => {
     expect(census.byAbout).toEqual({ lips: { calls: 1, ms: 9 } });
   });
 });
+
+/**
+ * AND THE DENOMINATOR THAT KEEPS THAT OMISSION HONEST.
+ *
+ * `byAbout` drops unlabelled calls; `byStage` and `byModel` beside it drop
+ * nothing. Printed as siblings, they look like three views of one population
+ * and are not — so the census carries the count of labelled calls, and the
+ * report and the closing log line both state it above the table.
+ *
+ * The trap this closes is not today's window but the NEXT one. Today no read
+ * call is labelled, so a question table full of region words is visibly odd.
+ * Once the purposes start landing the table becomes MIXED, and a handful of
+ * labelled reads among hundreds of unlabelled ones reads exactly like a working
+ * attribution of the read stage while speaking for a sliver of it.
+ */
+describe("the question table carries its own denominator", () => {
+  it("counts the labelled calls beside the total, so the subset is nameable", async () => {
+    const { census } = await withCallCensus(async () => {
+      recordProviderCall({ stage: "segment", provider: "fal", model: "sam-3", ms: 10, ok: true, about: "eye" });
+      recordProviderCall({ stage: "read", provider: "openrouter", model: "sonnet", ms: 5, ok: true, about: "verify" });
+      recordProviderCall({ stage: "read", provider: "openrouter", model: "sonnet", ms: 6, ok: true });
+      recordProviderCall({ stage: "render", provider: "fal", model: "gpt-image-2", ms: 90, ok: true });
+    });
+
+    expect(census.total.calls).toBe(4);
+    expect(census.total.labelledCalls).toBe(2);
+  });
+
+  /*
+    THE NEGATIVE CONTROL. A counter that returned `total.calls` would pass the
+    assertion above on any census whose calls all happen to be labelled, so the
+    case that discriminates is the one where NONE is — and it must report zero
+    rather than quietly agreeing with the total (working law 2).
+  */
+  it("CONTROL — reports ZERO on a window where nothing is labelled, not the total", async () => {
+    const { census } = await withCallCensus(async () => {
+      recordProviderCall({ stage: "interpret", provider: "openrouter", model: "sonnet", ms: 5, ok: true });
+      recordProviderCall({ stage: "render", provider: "fal", model: "gpt-image-2", ms: 90, ok: true });
+    });
+
+    expect(census.total.calls).toBe(2);
+    expect(census.total.labelledCalls).toBe(0);
+    expect(census.byAbout).toEqual({});
+  });
+
+  /*
+    AND THE ONE THE TWO READERS DISAGREED ON. `summarize` accepted any label
+    that was merely PRESENT while `call-census-report.mts` required a non-empty
+    string, so an empty label would have opened a blank-keyed row here and been
+    invisible there — one field, two populations.
+  */
+  it("CONTROL — an empty label is not a label, and opens no blank row", async () => {
+    const { census } = await withCallCensus(async () => {
+      recordProviderCall({ stage: "segment", provider: "fal", model: "sam-3", ms: 8, ok: true, about: "" });
+      recordProviderCall({ stage: "segment", provider: "fal", model: "sam-3", ms: 8, ok: true, about: "ear" });
+    });
+
+    expect(census.total.labelledCalls).toBe(1);
+    expect(census.byAbout).toEqual({ ear: { calls: 1, ms: 8 } });
+    expect(Object.keys(census.byAbout)).not.toContain("");
+  });
+});
