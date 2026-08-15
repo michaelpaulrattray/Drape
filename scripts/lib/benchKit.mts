@@ -59,6 +59,18 @@ export type LedgerReading = { rows: number; net: number };
  * It is deliberately not a logger: no levels, no timestamps, no formatting
  * opinion. A driver's output is prose somebody reads, and the only thing wrong
  * with it was that it existed in one place.
+ *
+ * # AND IT DOES NOT CATCH THE SERVER'S OWN LOG. Measured, at a price.
+ *
+ * A 50-credit reproduction relied on this to keep the render's own line about
+ * what it carried, and kept twelve lines: its own. `pino` writes through
+ * `sonic-boom` to the file descriptor, not through `process.stdout.write`, so
+ * neither this nor a monkey-patch on that method sees a single log line.
+ *
+ * **A run that needs the SERVER's lines redirects the whole process** —
+ * `npx tsx script.mts > run.log 2>&1` — and greps the file afterwards. This is
+ * for the driver's own prose, which is a different thing and still worth
+ * having.
  */
 export function teeTo(file: string): (line?: string) => void {
   const slash = Math.max(file.lastIndexOf("/"), file.lastIndexOf("\\"));
