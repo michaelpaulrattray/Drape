@@ -279,6 +279,14 @@ const VALID_IN_CONTEXT: readonly string[] = [
   // Worn things, since accessories are a legitimate refine subject.
   "hoop", "hoops", "stud", "studs", "glass", "glasses", "frame", "frames",
   "lens", "lenses", "chain", "chains", "band", "bands", "ring", "rings",
+  /*
+    "CLIPS" IS ONE SLIP FROM "LIPS", and the product's own hair rule names hair
+    clips as the thing that must NOT be read as a haircut — so the gate would
+    have asked a customer taking clips out of her hair whether she meant her
+    lips. Caught by the vocabulary sweep the day the rule shipped, before any
+    user saw it (the "shave"→"shape" class, again).
+  */
+  "clip", "clips", "pins", "grip", "grips", "slide", "slides",
   // The shape words people actually type next to a feature.
   "wider", "wilder", "older", "boldest", "bolder", "thicker", "thinner",
   "fuller", "paler", "darker", "lighter", "softer", "sharper", "rounder",
