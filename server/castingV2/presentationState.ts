@@ -137,6 +137,7 @@ export async function capturePresentation(input: {
   if (!engine) return {};
   try {
     const reply = await engine.complete({
+      about: "caption",
       system: SYSTEM_PROMPT,
       user: PRESENTATION
         .map((entry) => `${entry.id}: ${entry.ask}\n${entry.vocabulary.guidance}`)

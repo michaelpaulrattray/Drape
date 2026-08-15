@@ -663,6 +663,7 @@ async function readOnce(input: {
 
   try {
     const reply = await engine.complete({
+      about: "verify",
       system: input.system,
       user: lines.join("\n"),
       images: [input.image],

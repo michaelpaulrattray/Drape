@@ -196,6 +196,7 @@ export async function normalizeOpenKind(
   let raw: string;
   try {
     const result = await deps.engine.complete({
+      about: "classify",
       system: OPEN_KIND_SYSTEM,
       user: text,
       json: true,

@@ -115,9 +115,17 @@ export function createOpenRouterTextEngine(config: OpenRouterTextConfig): TextEn
         The stage is `read` rather than `interpret` because most text calls on a
         paid render are readings ABOUT a picture. Coarse on purpose: this
         answers "where do the minutes go", not "which line of code ran".
+
+        AND `about` NAMES WHICH ONE, from the caller's closed list (`ReadPurpose`).
+        The coarse stage was answering "where do the minutes go" and could not
+        answer "which of them" — 352 calls and a fifth of every paid edit, filed
+        under one word. It is passed through untouched: this module does not
+        decide what a call was for, and it never reads the prompt to guess.
       */
       return queue.run("complete", () =>
-        throughCensus({ stage: "read", provider: "openrouter", model }, () =>
+        throughCensus(
+          { stage: "read", provider: "openrouter", model, ...(request.about ? { about: request.about } : {}) },
+          () =>
         withRetry(
           "openrouterText.complete",
           async () => {

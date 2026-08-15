@@ -256,9 +256,86 @@ export interface CreativeEngine {
  * comes back from here is ever trusted — see `castingIntent.ts` for what
  * happens to it.
  */
+/**
+ * WHY A TEXT CALL WAS MADE — the read stage's missing name.
+ *
+ * # The hole this closes
+ *
+ * Measured across 56 dev renders and 4 production ones: segmentation and
+ * reading are the same size (21.8% and 21.3% of a render's own seconds), and
+ * only one of them can be optimised. Every segment call names its question — a
+ * region from the closed vocabulary — so `eye 2.43/render · earring 1.39 ·
+ * face 0.59` says where to look. Every text call recorded `{stage, provider,
+ * model}` and nothing else, so an interpreter ask, a verification reading, a
+ * caption and a refusal door were one undifferentiated word.
+ *
+ * # Why it is passed rather than derived
+ *
+ * Because one function has seven purposes. `refineInterpreter.runOnce` is the
+ * single door every refine text call goes through, and it is invoked from the
+ * first ask, the echo pass and five separate re-ask doors. **The purpose is a
+ * property of why a call was made, never of which function made it**, so no
+ * amount of inspection at the transport can recover it.
+ *
+ * And the alternative — inferring it from the prompt — is the mistake this
+ * whole field is shaped to prevent: a customer's sentence has no business in a
+ * telemetry field. Which is the other half of why this is a UNION and not a
+ * string. A sentence is a compile error here, rather than a rule somebody has
+ * to remember at twelve call sites.
+ *
+ * `reask` is split per door on purpose. The colour door fires 21 times in 360
+ * attempts and rescues 16 of them, and what those re-asks COST is currently
+ * unknown; one lumped `reask` would reproduce the hole one level down.
+ */
+export type ReadPurpose =
+  /** The first ask of a customer's sentence. */
+  | "interpret"
+  /** A second ask with something deliberately withheld — one per door. */
+  | "reask.echo"
+  | "reask.prior"
+  | "reask.colour"
+  | "reask.vouched"
+  | "reask.hybrid"
+  | "reask.relook"
+  /** A reading that judges a delivered picture. */
+  | "verify"
+  /** A reading that describes a picture for the record. */
+  | "caption"
+  /** The describer — the face scan's own reader. */
+  | "describe"
+  /** A kind or key decision. */
+  | "classify"
+  /** A yes/no door that is not a re-ask. */
+  | "gate";
+
+/** Every member, for the pinned-enumeration test and for any reader that wants
+ *  to know the set without importing the type. Frozen so a caller cannot grow
+ *  the vocabulary by accident. */
+export const READ_PURPOSES: readonly ReadPurpose[] = Object.freeze([
+  "interpret",
+  "reask.echo",
+  "reask.prior",
+  "reask.colour",
+  "reask.vouched",
+  "reask.hybrid",
+  "reask.relook",
+  "verify",
+  "caption",
+  "describe",
+  "classify",
+  "gate",
+] as const);
+
 export type TextRequest = {
   system: string;
   user: string;
+  /**
+   * WHY this call is being made, from the closed list — never what it says.
+   *
+   * Optional so a test double or a script need not supply one; every call site
+   * on the paid path does, and `readPurpose.test.ts` pins that.
+   */
+  about?: ReadPurpose;
   /**
    * Pictures the model must actually look at, in the order given.
    *

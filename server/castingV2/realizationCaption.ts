@@ -232,6 +232,7 @@ export async function captionRealization(input: {
   const heading = facetHeading(input.facet);
   try {
     const reply = await engine.complete({
+      about: "caption",
       system: SYSTEM_PROMPT,
       user: [
         `Describe this person's ${heading.toLowerCase()}.${extraAsk(input.facet)}`,
@@ -319,6 +320,7 @@ async function askAboutSlot(input: {
   signal?: AbortSignal;
 }): Promise<{ caption: string; visible: boolean } | null> {
   const reply = await input.engine.complete({
+      about: "caption",
       system: SYSTEM_PROMPT,
       user: [
         input.view === "cut"

@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "4c8f32f1d4a8e037"
+    "sourceFingerprint": "b3c9087bec5988a5"
   },
   "domains": [
     {
@@ -9434,6 +9434,10 @@
     {
       "id": "test:server/castingV2/railTakes.test.ts",
       "path": "server/castingV2/railTakes.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/readPurpose.test.ts",
+      "path": "server/castingV2/readPurpose.test.ts"
     },
     {
       "id": "test:server/castingV2/realizationCaption.test.ts",

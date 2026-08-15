@@ -487,6 +487,7 @@ export async function interpretBrief(input: {
   /** One sampling of the interpreter. Named so the retry can repeat it exactly. */
   const runOnce = () =>
     textEngine.complete({
+      about: "interpret",
       system: SYSTEM_PROMPT,
       user: input.briefText,
       json: true,

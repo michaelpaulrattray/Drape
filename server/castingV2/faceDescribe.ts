@@ -255,6 +255,7 @@ async function ask(
   }
   try {
     const reply = await engine.complete({
+      about: "describe",
       system: RULES,
       user,
       images: [{ bytes: input.bytes, contentType: input.contentType }],

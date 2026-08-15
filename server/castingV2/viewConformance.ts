@@ -185,6 +185,7 @@ export function createViewConformanceJudge(config: ViewConformanceJudgeConfig): 
     let text: string;
     try {
       const reply = await config.engine.complete({
+        about: "verify",
         system: JUDGE_SYSTEM,
         user: [
           "SPECIFICATION for IMAGE 2:",

@@ -29,7 +29,7 @@ import { EYE_COLOURS, EYE_SHAPES, HAIR_TEXTURES } from "../../shared/castingReal
 import { HAIR_COLOURS } from "../../shared/castingVocabularies";
 import { REFINABLE_CUT_NAMES } from "./hairStyles";
 import { createModuleLogger } from "../logging/logger";
-import type { TextEngine } from "../providers/types";
+import type { ReadPurpose, TextEngine } from "../providers/types";
 import { interpreterEngine } from "./interpreter";
 import { declarativeStateRule } from "./declarativeState";
 import { readDelta, stageWordIn, type FreeLaneCheck, type RefineParse } from "./refineDelta";
@@ -667,7 +667,7 @@ export async function interpretRefinement(input: RefineInterpretInput): Promise<
     tell someone their perfectly clear instruction did not come through.
   */
   for (let attempt = 1; attempt <= 3; attempt += 1) {
-    const parsed = await runOnce(engine, input, instruction);
+    const parsed = await runOnce(engine, input, instruction, "interpret");
     if (parsed) {
       /*
         THE ECHO PASS (D-172) — only the user's words are ever filed.
@@ -697,7 +697,7 @@ export async function interpretRefinement(input: RefineInterpretInput): Promise<
           this pass exists to end, not a smaller version of it.
         */
         for (let echo = 1; echo <= 2; echo += 1) {
-          const echoed = await runOnce(engine, { ...input, echoed: true }, instruction);
+          const echoed = await runOnce(engine, { ...input, echoed: true }, instruction, "reask.echo");
           if (echoed?.ok) return echoed;
           if (echo === 2 && echoed) return throughTheDoors(engine, input, instruction, echoed);
         }
@@ -786,7 +786,7 @@ async function priorContextDoor(
   if (!filed) return refused;
 
   const upheld = { ...refused, door: "upheld" as const, doorAt: "wall_stage" as const };
-  const reread = await runOnce(engine, { ...input, prior: {}, priorWithheld: true }, instruction);
+  const reread = await runOnce(engine, { ...input, prior: {}, priorWithheld: true }, instruction, "reask.prior");
   if (!reread || !reread.ok) return upheld;
   /* EDIT ONLY (fable-639 §2). A removal read without the prior can resolve no
      referent, so rescuing one would trade a false refusal for a wrong edit. */
@@ -857,7 +857,7 @@ async function colourContextDoor(
   if (input.colourWithheld || !input.lastColourFacet) return refused;
 
   const upheld = { ...refused, door: "upheld" as const, doorAt: "wall_content" as const };
-  const reread = await runOnce(engine, { ...input, lastColourFacet: null, colourWithheld: true }, instruction);
+  const reread = await runOnce(engine, { ...input, lastColourFacet: null, colourWithheld: true }, instruction, "reask.colour");
   if (!reread || !reread.ok) return upheld;
   /* Only an EDIT is rescued, for the invention door's reason beside it: the
      measured case is an edit, and the other ok shapes carry no place to record
@@ -931,7 +931,7 @@ async function inventionDoor(
     { asked, value },
     "[refineInterpreter] the filed value says only what they asked — re-reading with it vouched",
   );
-  const vouchedRead = await runOnce(engine, { ...input, vouched: { subject: asked, value } }, instruction);
+  const vouchedRead = await runOnce(engine, { ...input, vouched: { subject: asked, value } }, instruction, "reask.vouched");
   /* Only an EDIT can be rescued: the door exists for a value containment
      refused, and a navigation carries none. */
   if (vouchedRead?.ok && "delta" in vouchedRead) {
@@ -981,6 +981,7 @@ export async function asksNothingOfItsOwn(
 ): Promise<{ invents: boolean; fact: string | null } | null> {
   try {
     const reply = await engine.complete({
+      about: "gate",
       system: INVENTION_QUESTION,
       user: [
         `Their instruction: ${input.instruction}`,
@@ -1004,15 +1005,34 @@ export async function asksNothingOfItsOwn(
   }
 }
 
-/** One sampling. Returns null when the reply was unusable, so the caller retries. */
+/**
+ * One sampling. Returns null when the reply was unusable, so the caller retries.
+ *
+ * # `purpose` — WHY this sampling is happening, and the caller is the only one
+ * # who knows
+ *
+ * This function is the single door every refine text call goes through, and it
+ * is invoked from seven places: the first ask, the echo pass, and five re-ask
+ * doors. They are the same code and the same model and they are not the same
+ * spend — the colour door alone fires on 21 of 360 attempts, and until this
+ * parameter existed all seven were filed at the census as one undifferentiated
+ * word.
+ *
+ * So the purpose is a property of WHY the call was made rather than of which
+ * function made it, and no inspection down at the transport can recover it. It
+ * is not defaulted: a new caller must say which door it is, or say `interpret`
+ * deliberately.
+ */
 async function runOnce(
   engine: TextEngine,
   input: RefineInterpretInput,
   instruction: string,
+  purpose: ReadPurpose,
 ): Promise<RefineParse | null> {
   let raw: unknown;
   try {
     const reply = await engine.complete({
+      about: purpose,
       system: (input.mode === "edit" ? BASE_PROMPT : SYSTEM_PROMPT)
         + (input.echoed ? ECHO_CONSTRAINT : "")
         + (input.hybrid ? HYBRID_CONSTRAINT : "")
@@ -1151,7 +1171,7 @@ async function runOnce(
         honest half to serve, and the wall stands.
       */
       if (!input.hybrid) {
-        const served = await runOnce(engine, { ...input, hybrid: true }, instruction);
+        const served = await runOnce(engine, { ...input, hybrid: true }, instruction, "reask.hybrid");
         if (served?.ok && "delta" in served) return { ...served, droppedReference: true };
       }
       return { ok: false, refusal: { reason: "wall_likeness" } };
@@ -1188,6 +1208,7 @@ async function runOnce(
         engine,
         { ...input, stageRelook: true, stageClaimed: asked },
         instruction,
+        "reask.relook",
       );
       if (relooked?.ok) return relooked;
       if (relooked && !relooked.ok && relooked.refusal.reason === "wall_stage") {
