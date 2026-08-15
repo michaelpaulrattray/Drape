@@ -792,3 +792,64 @@ describe("the table fits the names it is printing", () => {
     expect(removal.endsWith("   ✓")).toBe(true);
   });
 });
+
+/**
+ * THE MISS THE PRODUCT ALREADY NOTICES AND NOBODY COUNTS (2026-08-15).
+ *
+ * The realization captioner refuses to pin a caption that does not match the
+ * ask, and on a dev render of *"her right eye — fiery red"* it said exactly
+ * what went wrong: *"Both irises are vivid fiery red… left eye also shows the
+ * red tone, not isolated to the right."* The render delivered, charged, and
+ * counted here as a clean pass, because that verdict lived in a log line.
+ *
+ * It is counted now and it moves no rate — whether an uncorroborated read-back
+ * should refuse is a ruling nobody has made, and a ruling needs a number.
+ */
+describe("a delivery its own read-back could not corroborate", () => {
+  const delivered = (over: Partial<AttemptRow> = {}): AttemptRow => ({
+    operationId: "op-1",
+    createdAt: new Date("2026-08-15T00:00:00Z"),
+    status: "ready",
+    failureClass: null,
+    refundedCredits: 0,
+    instructions: ["her right eye — fiery red"],
+    verification: { checks: [{ facet: "eye.colour", read: true, verified: true, binding: true }] },
+    ...over,
+  } as AttemptRow);
+
+  it("counts it, and leaves every rate exactly where it was", () => {
+    const clean = summarize([delivered()]);
+    const missed = summarize([delivered({
+      verification: {
+        checks: [{ facet: "eye.colour", read: true, verified: true, binding: true }],
+        uncorroborated: [{
+          facet: "eye.colour",
+          asked: "right eye fiery red",
+          saw: "both irises are red, not isolated to the right",
+        }],
+      },
+    } as Partial<AttemptRow>)]);
+
+    expect(clean.uncorroborated).toBe(0);
+    expect(missed.uncorroborated).toBe(1);
+    /* The rate is untouched on purpose: counting is not scoring. */
+    expect(missed.overall.deliveryRate).toBe(clean.overall.deliveryRate);
+    expect(missed.overall.clearsBar).toBe(clean.overall.clearsBar);
+    expect(missed.overall.deliveryClaims).toBe(clean.overall.deliveryClaims);
+  });
+
+  it("does not count a REFUSED attempt twice", async () => {
+    /* A refusal is already a refusal in this report. Counting its read-back as
+       a second failure would make the honest path look like the failing one. */
+    const refused = summarize([delivered({
+      status: "failed",
+      failureClass: "facts_missing",
+      verification: {
+        checks: [],
+        uncorroborated: [{ facet: "eye.colour", asked: "x", saw: "y" }],
+      },
+    } as Partial<AttemptRow>)]);
+
+    expect(refused.uncorroborated).toBe(0);
+  });
+});

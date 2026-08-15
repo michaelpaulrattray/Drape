@@ -193,6 +193,20 @@ export async function captionRealization(input: {
   asked?: string | null;
   engine?: TextEngine;
   signal?: AbortSignal;
+  /**
+   * TOLD, NOT JUST LOGGED — the reader's own verdict, handed to the caller.
+   *
+   * When a caption does not corroborate the ask, this function returns null and
+   * writes a warning naming the facet, what was asked and what it saw. That
+   * line is the product noticing its own miss, and until now nothing but a log
+   * file received it: the render was delivered, the credits were spent, and the
+   * delivery-rate report — which reads stored rows — counted it as a clean
+   * pass, because the verdict was never anywhere it could read.
+   *
+   * A control that reports correctly and is never consulted is not a control.
+   * So the verdict goes back to the caller, which persists it on the row.
+   */
+  onUncorroborated?: (verdict: { facet: string; asked: string; saw: string }) => void;
 }): Promise<string | null> {
   const engine = input.engine ?? interpreterEngine();
   if (!engine) return null;
@@ -226,6 +240,7 @@ export async function captionRealization(input: {
         { facet: input.facet, asked: input.asked, saw: caption },
         "[realizationCaption] the edit is not visible in the render — refusing to pin what is there instead",
       );
+      input.onUncorroborated?.({ facet: input.facet, asked: input.asked, saw: caption });
       return null;
     }
     /*

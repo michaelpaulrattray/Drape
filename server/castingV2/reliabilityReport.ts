@@ -140,6 +140,22 @@ export type StoredVerification = {
   unavailable?: boolean;
   attempts?: number;
   readings?: number;
+  /**
+   * WHAT THE READ-BACK COULD NOT CORROBORATE (2026-08-15).
+   *
+   * The realization captioner is asked what the render made of the ask, and it
+   * refuses to pin a caption that does not match — *"Both irises are vivid
+   * fiery red… left eye also shows the red tone, not isolated to the right"*,
+   * on a render that delivered and charged. That verdict used to live only in a
+   * log line, so this report — which reads stored rows — counted the render as
+   * a clean pass.
+   *
+   * It is COUNTED here and it does not change any rate. Whether an
+   * uncorroborated read-back should refuse, or should count against the bar, is
+   * a ruling nobody has made; a number is what that ruling needs, and until
+   * today there was not one.
+   */
+  uncorroborated?: Array<{ facet: string; asked: string; saw: string }>;
 };
 
 /** One attempt, as the database already records it. Nothing new is written. */
@@ -495,6 +511,9 @@ export type ReliabilityReport = {
   overall: ClassTally;
   byClass: ClassTally[];
   creditsRefunded: number;
+  /** Delivered renders whose own read-back could not corroborate the ask.
+   *  Counted, never folded into a rate — see `StoredVerification`. */
+  uncorroborated: number;
   /** Classes below the bar, named — they do not block the others (D-236). */
   blockers: string[];
   /**
@@ -608,12 +627,19 @@ export function summarize(
   const overall = emptyTally("all");
   const byClass = new Map<string, ClassTally>();
   let creditsRefunded = 0;
+  let uncorroborated = 0;
 
   for (const row of rows) {
     const outcome = classifyAttempt(row);
     overall.total += 1;
     overall[outcome] += 1;
     creditsRefunded += row.refundedCredits ?? 0;
+    /* A DELIVERED render whose own read-back did not corroborate the ask. Only
+       delivered ones: a refusal is already counted as a refusal, and counting
+       it twice would make the honest path look like the failing one. */
+    if (row.status === "ready" && (row.verification?.uncorroborated?.length ?? 0) > 0) {
+      uncorroborated += 1;
+    }
 
     for (const edit of classesOf(row)) {
       const tally = byClass.get(edit) ?? emptyTally(edit);
@@ -633,6 +659,7 @@ export function summarize(
     overall: finish(overall),
     byClass: classes,
     creditsRefunded,
+    uncorroborated,
     blockers: classes
       .filter((tally) => tally.deliveryClaims > 0 && !tally.clearsBar)
       .map((tally) => tally.edit),
@@ -714,6 +741,12 @@ export function formatReport(report: ReliabilityReport): string {
   lines.push(row(report.overall));
   lines.push("");
   lines.push(`credits refunded: ${report.creditsRefunded}`);
+  if (report.uncorroborated > 0) {
+    lines.push(
+      `delivered but not corroborated by the read-back: ${report.uncorroborated}`
+      + " (counted, not scored — no ruling yet on whether these should refuse)",
+    );
+  }
   if (report.overall.delivered_carried > 0) {
     lines.push(
       `carried by stored segments: ${report.overall.delivered_carried} `

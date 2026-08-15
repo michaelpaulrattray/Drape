@@ -4282,11 +4282,28 @@ async function refineCandidateCounted(
       one is not.
     */
     const capturedCaptions: RealizationCaptions = { ...carriedCaptions };
+    /*
+      WHAT THE READ-BACK REFUSED TO CORROBORATE — kept, and written to the row
+      below.
+
+      This reader already catches misses precisely: on a dev render of *"her
+      right eye — fiery red"* it said *"Both irises are vivid fiery red… left
+      eye also shows the red tone, not isolated to the right"* — the exact
+      failure, in a sentence — and the render was delivered and charged anyway,
+      because the verdict lived in a log line and the delivery-rate report reads
+      stored rows.
+
+      Recording it does not change what the render does. It makes the miss
+      COUNTABLE, which is the precondition for anybody ruling on whether it
+      should refuse.
+    */
+    const uncorroborated: Array<{ facet: string; asked: string; saw: string }> = [];
     for (const facet of Array.from(captionFacets)) {
       const caption = await captionRealization({
         facet,
         bytes: image.bytes,
         contentType: image.contentType,
+        onUncorroborated: (verdict) => uncorroborated.push(verdict),
         /* What this render was told to produce, so the read-back can be
            checked against it rather than describing whatever turned up. */
         asked: currentIdentity
@@ -5135,6 +5152,13 @@ async function refineCandidateCounted(
               carriedFacets.has(check.facet) ? { ...check, carried: true } : check
             )),
           ...(verification.unavailable ? { unavailable: true } : {}),
+          /*
+            AND WHAT THE READ-BACK COULD NOT CORROBORATE. Absent on the renders
+            where every asked facet was visible, which is most of them — so its
+            presence is the mark of a miss rather than one more field to
+            interpret.
+          */
+          ...(uncorroborated.length > 0 ? { uncorroborated } : {}),
         },
       },
       provider: image.provenance?.provider ?? null,
