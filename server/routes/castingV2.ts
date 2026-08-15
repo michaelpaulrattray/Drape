@@ -31,7 +31,7 @@ import { UNLOCKABLE_FIELDS } from "../castingV2/briefCompiler";
 import { listLineageSegments, resolveOwnedCandidateId } from "../db/castingV2Segments";
 import { maskFetchUrl, segmentsOnFace } from "../castingV2/segmentsOnFace";
 import { facePanel, type PanelScan } from "../castingV2/facePanel";
-import { declaredTakes, takeShownFor } from "../castingV2/railTakes";
+import { liveTakes, takeShownFor } from "../castingV2/railTakes";
 import { listLineageReferences } from "../db/castingV2ReferenceLibrary";
 import {
   captureCastingFaceScanEnabled,
@@ -65,7 +65,7 @@ import {
 const tuple = <T extends string>(values: readonly T[]) => values as unknown as [T, ...T[]];
 import { createRoll, cancelRoll } from "../castingV2/rollService";
 import { signCandidate } from "../castingV2/signService";
-import { readRegeneratedFrom, refineCandidate } from "../castingV2/refineService";
+import { readStepDeltas, refineCandidate } from "../castingV2/refineService";
 import { pendingStage } from "../castingV2/pendingStage";
 import {
   listCandidateVariants,
@@ -793,9 +793,9 @@ export const castingV2Router = router({
         back onto a take that has since been re-rolled would show a picture with
         no chip lit — the exact mismatch the rail's highlight work closed.
       */
-      const { live, supersededBy } = declaredTakes(variants.map((variant) => ({
+      const { live, supersededBy } = liveTakes(variants.map((variant) => ({
         publicId: variant.publicId,
-        regeneratedFrom: readRegeneratedFrom(variant.internalPrompt),
+        steps: readStepDeltas(variant.stepDeltas),
         variant,
       })));
       return {
