@@ -183,6 +183,25 @@ type QuestionSource =
   /** The accessory table's own region — `statedAccessories` has no facet region. */
   | { from: "accessoryRegion"; region: string }
   /**
+   * ASKED OF THE FRAME THAT DELIVERED IT, NEVER OF THE MASTER.
+   *
+   * An ADDITION arrives through an edit, so its facet card says `region: null`
+   * and means it: segmenting the master for horns asks where a thing is that
+   * she does not have, and `needsLandmarkDestination` is the path that places
+   * one instead. That is a fact about the MASTER.
+   *
+   * The mint is a different picture. It cuts from the frame that just delivered
+   * the feature, where the thing is plainly there and plainly askable — the
+   * detection court read 0.0000% on three bare frames against 0.39–0.87% on
+   * twelve worn ones, asked exactly this word. So the cutting region lives
+   * here, on the slot, rather than being smuggled into the facet table where it
+   * would send a master-time reader after something she has not got.
+   *
+   * Two consumers, two truths, one word — and the word travels under the source
+   * that says which picture it is for.
+   */
+  | { from: "deliveredRegion"; region: string; note: string }
+  /**
    * NOT ASKED — COMPOSED, from two regions that ARE answered.
    *
    * D-213 forbids asking a segmenter an open question, and no question names a
@@ -568,61 +587,81 @@ const ANATOMY_SLOTS: readonly CatalogueEntry[] = [
   },
   {
     /*
-      HORNS — a slot so her horns have somewhere to STAND (fable-525 §3).
+      HORNS — a slot so her horns have somewhere to STAND (fable-525 §3), and
+      since 2026-08-15 a PAIR that carries by crop like any other feature.
 
-      A slot exists so that words about a feature have somewhere to land, and
-      that is the whole of what horns needs. The survival court measured both
-      arms on the same face and the same chained edit: the words carry held 3/3
-      and a real cut of her own horns held 3/3, neither beating the other. So
-      the crop buys nothing and this slot is deliberately words-only — the
-      standing-words machinery restates the clause on every later render, which
-      is exactly what the winning arm did by hand.
+      # Why this entry changed
 
-      NO ROW, and that is a founder rule rather than a shortcut: *"only show the
-      8 rows that real pictures have"*. A row is a picture and a click, and this
-      slot has no picture to show — a square with nothing behind it would be a
-      claim about her face that no crop backs.
+      The survival court measured both arms on the same face and the same
+      chained edit: words held 3/3 and a real cut held 3/3, neither beating the
+      other, so the slot was words-only and said so. Both arms were scored on
+      PRESENCE and IDENTITY. Neither was asked whether they are the same HORNS.
+
+      The founder: *"horns should be carried by reference as well — it's a
+      feature, otherwise they would change on every refinement"*, generalised
+      the same day: *"it's not just horns that carry, this was just an example of
+      anything in the future."* Crop-carry is the default for every promoted
+      feature kind; words-carry is never a feature's ship. The tie rule is
+      amended with it — a presence tie does not decide a carrier question, and
+      instance constancy is part of the bar (`V2_HORNS_VERDICT.md`'s head).
+
+      # And they are a PAIR, declared rather than wired
+
+      *"Left and right bounding boxes and edits should apply to things like
+      horns."* `perSide` is the declaration the machinery already follows: two
+      slots, per-side rows on the panel, per-side asks, and — the part that
+      matters most here — a question asked of ONE HALF OF THE FRAME at a time.
+
+      That is not a nicety. Asked "horns" on a whole frame, the segmenter
+      answers with ONE horn and not always the same one: measured on three
+      chained specimens, the placement axis swung by most of a face-width
+      (`V2_HORN_CONSTANCY_READING.md`). A pair read whole cannot be judged for
+      constancy at all, so the founder's ruling and the instrument's own
+      limitation demand the same shape.
 
       The limits ride with it: survival and removal are n=3 on ONE face, and the
       old paste road has measured none of it (`admittedOn: "repaintOnly"` on the
       subject card, enforced at the admission door).
     */
     feature: "horns",
-    noun: "horns",
+    noun: "horn",
     tier: "anatomy",
     /* Not "accessories": horns are not worn, they GROW — she is not carrying
        them and cannot take them off in the way a hoop comes out of a lobe. The
        stylist's grouping for a thing coming through the hairline is the head. */
     group: "hair",
     facets: ["horns"],
-    /* One ask, not one per side: the court asked for horns and got a pair,
-       twelve times across two faces, and no reading ever separated them. */
-    instances: { of: "one" },
+    /* A pair, by founder ruling and by the instrument's own limitation — see
+       the note above. The question stays the plain class noun; the SIDE is
+       imposed by the half of the frame it is asked of. */
+    instances: { of: "perSide", pairNoun: "horns" },
+    /*
+      ASKED OF THE DELIVERED FRAME. The facet card says `region: null` and is
+      right about the master — horns arrive through an edit, so segmenting the
+      picture she has now asks where a thing is she has not got. The mint cuts
+      from the frame that just delivered them, where the same word is answered
+      perfectly.
+    */
     question: {
-      from: "none",
-      note: "no region in the cutting vocabulary names them — deliberately, because the crop arm beat nothing and a crop would need a completeness specimen this kind has never bought. The DETECTOR can see them perfectly well (0.0000% on three visibly bare frames against 0.39–0.87% on twelve worn ones, two faces); that is a different question from what may be cut and filed",
+      from: "deliveredRegion",
+      region: "horns",
+      note: "the detection court read 0.0000% on three visibly bare frames against 0.39–0.87% on twelve worn ones, across two faces, asked exactly \"horns\" — the word was never the doubt; what was missing was a ruled reason to cut, and the founder supplied it (2026-08-15)",
     },
     /*
-      AND IT DOES GET A ROW (fable-527 §3, amending the first shape call).
+      IT GETS A ROW, and now the row has a picture behind it (fable-527 §3, then
+      the founder's carry ruling of 2026-08-15).
 
-      The first version of this entry said no row, on the reasoning that a row
-      is a picture and horns have no crop. That was the wrong half: the founder
-      renders horns tonight and his panel shows nothing where they plainly are
-      — the product claiming less than the picture holds, which he would file
-      as a bug by morning.
+      The first version of this entry said no row, on the reasoning that a row is
+      a picture and horns have no crop. The founder overruled the first half, and
+      his carry ruling has now removed the second: horns are cut like any other
+      feature, so the row draws from the slot's OWN question rather than from a
+      display region that could never be filed.
 
-      The teeth precedent is the shape, one row up: a DISPLAY region without a
-      cutting one. As a CARRIER a crop of horns bought nothing (the survival
-      court ran both arms and neither beat the other), and there is no
-      completeness specimen to guard a mint with. As a ROW it is a name, a
-      click affordance and a box on the photograph — and unlike almost every
-      other row, the region is its own discriminator: the detection court read
-      0.0000% on six visibly bare frames across two faces and 0.39–0.87% on
-      twelve worn ones, so a face with no horns shows no row without anybody
-      writing a rule for it.
+      That is why `display` is gone from this entry. It exists for a slot whose
+      picture and crop must differ — skin's face cut, teeth's mouth — and horns
+      is no longer one of those: the words it is shown from and the words it is
+      cut from are the same words, and now both are allowed.
     */
-    panel: { row: "own" },
-    display: "horns",
   },
 ];
 
@@ -898,7 +937,7 @@ function definitionOf(entry: CatalogueEntry, instance: Instance | null): SlotDef
     return { ...base, question: key, guardKind: key };
   }
 
-  const question = entry.question.from === "accessoryRegion"
+  const question = entry.question.from === "accessoryRegion" || entry.question.from === "deliveredRegion"
     ? entry.question.region
     : facetRegionOf(entry);
   /*

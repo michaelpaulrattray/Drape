@@ -275,24 +275,47 @@ export const FACET_CARDS = {
     },
   },
   /**
-   * HORNS — promoted off the four courts (fable-525 §3), and deliberately
-   * WORDS-ONLY, which is a measurement rather than a shortcut.
+   * HORNS — promoted off the four courts (fable-525 §3), words-only until the
+   * founder ruled otherwise, and now CUT LIKE ANY OTHER FEATURE.
+   *
+   * # What the courts measured, and the axis they never asked about
    *
    * The survival court ran both arms on the same face, the same chained edit and
-   * the same bar: the words carry held 3/3 and a real cut of her own horns
-   * (93×235, 121×244, 112×259 px, measured at the wire) held 3/3 as well.
-   * Neither beat the other, so the status quo wins and the library machinery
-   * buys horns nothing — the fidelity law's test is whether the lesser path is
-   * lesser, and here it measurably is not.
+   * the same bar: words held 3/3 and a real cut of her own horns (93×235,
+   * 121×244, 112×259 px, at the wire) held 3/3 too. Neither beat the other, so
+   * the status quo kept the slot and this card said so.
    *
-   * `region: null` therefore, and the reason is worth being exact about because
-   * it is NOT "the segmenter cannot see them". It plainly can: the detection
-   * court read 0.0000% on three visibly bare frames and 0.39–0.87% on twelve
-   * worn ones, across two faces. That reading is the DETECTOR's. A region here
-   * is the CUTTING vocabulary — it would put horns on the masked road, where
-   * nothing about them has been measured, and it would hand the mint a crop to
-   * guard with a completeness specimen this kind has never bought. Enrolling
-   * the region is a second, measured step, not a free consequence of the first.
+   * Both arms were scored on PRESENCE (horns still there) and IDENTITY (still
+   * her). **Neither was asked whether they are the same horns** — curve, extent,
+   * placement — and that is the unowned-axis-collapse class: an axis nobody pins
+   * re-rolls every render, and a court that cannot see it crowns the cheaper
+   * arm.
+   *
+   * # The founder's ruling, and it is general
+   *
+   * *"Horns should be carried by reference as well — it's a feature, otherwise
+   * they would change on every refinement"*, then: *"it's not just horns that
+   * carry, this was just an example of anything in the future."* So crop-carry
+   * is the default for every promoted feature kind, and words-carry is never a
+   * feature's ship. It agrees with this record's own law — a crop holds what it
+   * DEPICTS; the words on a reference are a label the engine does not honour.
+   *
+   * # And `region` STAYS NULL, because this table answers about the MASTER
+   *
+   * A facet's region is the question asked of the picture she has NOW, and
+   * horns are an addition: segmenting the master for them asks where a thing is
+   * that she does not have (`needsLandmarkDestination`, and the maskedRefine
+   * totality test that pins it). The word was never in doubt — the detection
+   * court read 0.0000% on three visibly bare frames against 0.39–0.87% on
+   * twelve worn ones, two faces — but it is answered on the DELIVERED frame,
+   * which is a different picture and a different question.
+   *
+   * So the cutting region lives on the slot catalogue as a `deliveredRegion`,
+   * where the mint asks it of the frame that just delivered the horns, and this
+   * table keeps saying the true thing about the master. The first crops will be
+   * refused `noSpecimen` and KEPT — that refusal is the road that produces the
+   * specimen this kind has never bought (`referenceCompleteness.ts`): cut,
+   * keep, measure, then calibrate.
    */
   horns: {
     zone: "object",

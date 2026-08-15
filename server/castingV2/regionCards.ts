@@ -149,6 +149,25 @@ export const REGION_CARDS = {
     fringe: { at: false, why: "a bead — solid, and larger than the boundary's error" },
     neighbours: { with: [], why: "small, and its anchor is named" },
   },
+  /*
+    HORNS — a cutting region since the founder ruled features carry by crop
+    (2026-08-15). The phrasing is the region's own name and was measured before
+    it was one: the detection court read 0.0000% on three visibly bare frames
+    against 0.39–0.87% on twelve worn ones, across two faces, asked exactly
+    "horns" (`V2_HORNS_VERDICT.md` §2).
+  */
+  horns: {
+    fringe: {
+      at: false,
+      why: "keratin with a hard outline — nothing of a horn stands outside the shape a "
+        + "segmenter draws for it, unlike the hair it comes through",
+    },
+    neighbours: {
+      with: ["hair"],
+      why: "they arrive THROUGH the hairline and take space that was hair, so the two share "
+        + "the one boundary either of them can move",
+    },
+  },
 } as const satisfies Record<string, RegionCard>;
 
 export const REGION_CARD_ENTRIES = Object.entries(REGION_CARDS) as ReadonlyArray<

@@ -666,9 +666,13 @@ export const SUBJECT_CARDS = {
    *   detection  bare 0.0000% ×3 · worn 0.61–0.83% (face 1), 0.39–0.87%
    *              (face 2). Found 6/6, silent 3/3, per face and never pooled.
    *   survival   3/3 through an unrelated edit ("her t-shirt is black"), with
-   *              identity held 3/3 — BY WORDS. The crop arm also held 3/3 and
-   *              beat nothing, so the status quo wins and the library
-   *              machinery buys horns nothing.
+   *              identity held 3/3 — by words, and the crop arm also held 3/3.
+   *              **SUPERSEDED as a carrier verdict** (founder, 2026-08-15):
+   *              both arms were scored on PRESENCE and IDENTITY and neither was
+   *              asked whether they are the SAME horns, so the tie decided
+   *              nothing. *"It's a feature, otherwise they would change on
+   *              every refinement"* — and the ruling generalises to every
+   *              promoted kind. Horns carry by crop, per side.
    *   removal    3/3 gone and 3/3 clean on BOTH roads (dropping the carry, and
    *              an absence sentence). No stump, no ghost rim.
    *

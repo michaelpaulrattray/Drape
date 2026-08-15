@@ -711,7 +711,8 @@
     "lips": false,
     "nose": false,
     "ear": false,
-    "nose stud": false
+    "nose stud": false,
+    "horns": false
   },
   "CONFUSABLE_NEIGHBOURS": {
     "face skin": [
@@ -742,6 +743,9 @@
     "facial hair": [
       "hair"
     ],
-    "hair": []
+    "hair": [],
+    "horns": [
+      "hair"
+    ]
   }
 }

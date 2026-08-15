@@ -15,6 +15,7 @@
 import { describe, expect, it } from "vitest";
 
 import { LANDMARK_OF_ACCESSORY } from "./accessoryKinds";
+import { REGION_CARDS } from "./regionCards";
 import { regionNameOf } from "./maskedRefine";
 import { assembleRecipe } from "./recipeAssembler";
 import {
@@ -96,7 +97,19 @@ describe("no question is invented, and none carries a side", () => {
       if (isDerivedRegion(definition.question)) continue;
       const entry = SLOT_CATALOGUE.find((candidate) => candidate.feature === definition.feature)!;
       const owned = entry.facets.some((facet) => regionNameOf(facet) === definition.question)
-        || LANDMARK_OF_ACCESSORY.some((accessory) => accessory.region === definition.question);
+        || LANDMARK_OF_ACCESSORY.some((accessory) => accessory.region === definition.question)
+        /*
+          OR THE REGION CARDS, for a question asked of the DELIVERED frame.
+
+          An addition's facet card says `region: null` and means it — segmenting
+          the MASTER for horns asks where a thing is she does not have. Its
+          cutting word is still a real region with a real card (phrasing, edge,
+          neighbours), and the card table is the one that owns it. The source
+          says which picture the word is for, so this is an ownership test that
+          still cannot be satisfied by an invented phrase.
+        */
+        || (entry.question.from === "deliveredRegion"
+          && REGION_CARDS[definition.question as keyof typeof REGION_CARDS] !== undefined);
       expect(owned, `${definition.slot} asks "${definition.question}", which no table owns`).toBe(true);
     }
   });
@@ -380,15 +393,17 @@ describe("a display region is shown and never carried", () => {
       the mouth under a second name.
     */
     /*
-      THREE NOW (fable-527 §3). Horns arrived at the same door from a third
-      direction: its display region and its cutting region are the SAME words,
-      and the cutting one is refused anyway — the survival court ran a crop arm
-      and it beat nothing, and a mint would need a completeness specimen this
-      kind has never bought. The picture is honest; only the filing was not.
+      THREE, THEN TWO AGAIN (fable-527 §3, then the founder's carry ruling of
+      2026-08-15). Horns arrived at this door from a third direction — its
+      display region and its cutting region were the SAME words, and only the
+      cutting one was refused — and it LEFT the moment the founder ruled that a
+      feature carries by reference. Its row now draws from its own question, so
+      it is no longer a slot whose picture and crop must differ, which is the
+      only thing this list is about.
     */
-    expect(displayed.map((definition) => definition.slot)).toEqual(["teeth", "skin", "horns"]);
+    expect(displayed.map((definition) => definition.slot)).toEqual(["teeth", "skin"]);
     expect(displayed.map((definition) => [definition.slot, definition.display]))
-      .toEqual([["teeth", "teeth"], ["skin", "face skin"], ["horns", "horns"]]);
+      .toEqual([["teeth", "teeth"], ["skin", "face skin"]]);
   });
 
   it("names a region the segmenter actually answers, never an invented one", () => {

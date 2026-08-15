@@ -218,23 +218,28 @@ describe("the scan files only what it measured", () => {
     Three arms, because a one-armed version of this would be a rule that turned
     the re-ask off for everybody and passed.
   */
+  /* Horns are a PAIR since the founder's carry ruling (2026-08-15), so the
+     question reaches the reader through `sides` — one half of the frame at a
+     time — exactly as the earring arm above. The rule under test is unchanged:
+     a departable feature's absence is a fact, asked once. */
   it("asks a DEPARTABLE anatomy feature once when it is absent", async () => {
     let looks = 0;
     const scan = await scanFace({
       describe: null,
       frame: FRAME,
       reader: reader({
-        region: (name) => {
-          if (name !== "horns") return maskOf({ x: 5, y: 5, width: 5, height: 5 });
+        sides: (name) => {
+          if (name !== "horns") return { left: maskOf({ x: 100, y: 200, width: 20, height: 20 }), right: maskOf({ x: 700, y: 200, width: 20, height: 20 }) };
           looks += 1;
-          return EMPTY;
+          return { left: EMPTY, right: EMPTY };
         },
       }),
     });
 
     expect(looks).toBe(1);
-    expect(scan.boxes.has("horns")).toBe(false);
-    expect(scan.empty).toContain("horns");
+    expect(scan.boxes.has("horns@left")).toBe(false);
+    expect(scan.boxes.has("horns@right")).toBe(false);
+    expect(scan.empty.some((one) => one.includes("horns"))).toBe(true);
   });
 
   it("behaves exactly as before when that feature IS there", async () => {
@@ -245,16 +250,17 @@ describe("the scan files only what it measured", () => {
       describe: null,
       frame: FRAME,
       reader: reader({
-        region: (name) => {
-          if (name !== "horns") return maskOf({ x: 5, y: 5, width: 5, height: 5 });
+        sides: (name) => {
+          if (name !== "horns") return { left: maskOf({ x: 100, y: 200, width: 20, height: 20 }), right: maskOf({ x: 700, y: 200, width: 20, height: 20 }) };
           looks += 1;
-          return maskOf({ x: 30, y: 10, width: 20, height: 40 });
+          return { left: maskOf({ x: 30, y: 10, width: 20, height: 40 }), right: maskOf({ x: 90, y: 10, width: 20, height: 40 }) };
         },
       }),
     });
 
     expect(looks).toBe(1);
-    expect(scan.boxes.has("horns")).toBe(true);
+    expect(scan.boxes.has("horns@left")).toBe(true);
+    expect(scan.boxes.has("horns@right")).toBe(true);
   });
 
   it("CONTROL — a feature that is ALWAYS in frame still gets its second look", async () => {
