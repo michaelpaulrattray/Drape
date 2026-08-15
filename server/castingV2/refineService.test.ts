@@ -2879,7 +2879,14 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
        prose is the ordinal in the request. Asserting both is what makes that
        claim checkable rather than plausible. */
     expect(request.prompt).toContain("Reference 2 is the exact lips she has");
-    expect(request.prompt).toContain("a fuller cupid's bow, unchanged");
+    /*
+      AND THE WORDS ARE NOT BESIDE IT (fable-598). The reference names the slot
+      and the claim; the crop is the description. His own dispatched prompt is
+      why: one object rode with two different sentences and the delivery
+      followed the disagreement rather than the pictures.
+    */
+    expect(request.prompt).toContain("the same lips, unchanged");
+    expect(request.prompt).not.toContain("a fuller cupid's bow");
   });
 
   /**

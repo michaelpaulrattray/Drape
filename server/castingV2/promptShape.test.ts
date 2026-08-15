@@ -149,10 +149,21 @@ describe("the prompt a paid render carries", () => {
     };
     const prompt = promptForEarringEdit([earring("left", [CLEAN_ROW]), earring("right", [CLEAN_ROW]), hair]);
 
-    expect(prompt).toContain("auburn-brown");
+    /*
+      AND SINCE fable-598 IT IS SAID ZERO TIMES FOR A CARRIED SLOT.
+
+      This hair entry has a crop, and a carried crop is no longer re-described
+      in the prompt: the picture is the description (POINT, DON'T DESCRIBE,
+      ruled from his own dispatched prompt, where one object rode with two
+      different sentences and the delivery followed the disagreement).
+
+      The rule this case was written for is stronger than ever — a slot's state
+      cannot be a pile that argues with itself if the prompt never states it —
+      and the stale caption is still what must not appear.
+    */
+    expect(prompt).not.toContain("auburn-brown");
     expect(prompt).not.toContain("reddish-copper");
-    /* Said once, on the thing it is about. */
-    expect(prompt.match(/auburn-brown/g)).toHaveLength(1);
+    expect(prompt).toContain("Reference 2 is the exact hair she has — the same hair, unchanged.");
   });
 
   it("carries no pair claim into a per-instance slot's own sentence", () => {

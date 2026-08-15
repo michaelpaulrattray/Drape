@@ -282,7 +282,7 @@ describe("the carry contract, per tier (fable-192 — measured, not precautionar
        sentence about one thing rather than two instructions. */
     expect(recipe.standing).toEqual([]); /* the words rode on the reference */
     expect(recipe.references[1]!.sentence).toBe(
-      "Reference 2 is the exact hair she has — worn down, a blunt fringe, unchanged.",
+      "Reference 2 is the exact hair she has — the same hair, unchanged.",
     );
   });
 
@@ -329,10 +329,20 @@ describe("the carry contract, per tier (fable-192 — measured, not precautionar
   });
 
   it("ITEM: the crop carries, and its words ride ON the reference, never beside it", () => {
-    /* The one tier whose crop carried outright. A description DERIVED from the
-       item's own record strengthens the reference (fable-194's format); a word
-       stack living beside it would be two instructions about one feature, which
-       is the thing that would drift. */
+    /*
+      The one tier whose crop carried outright.
+
+      This used to pin the item's own description ON the reference — fable-194's
+      format, on the reasoning that a description derived from the record
+      strengthens it while a stack BESIDE it would be two instructions about one
+      feature. **The second half stands and the first is superseded**
+      (fable-598, from his own dispatched prompt): a description on the
+      reference is also a second instruction, and when the describer gave one
+      object two sentences the delivery followed the disagreement.
+
+      So the reference names the slot and the claim. The crop is the
+      description.
+    */
     const recipe = assembleRecipe({
       master: MASTER, pronouns: SHE, library: [hoop], asks: [{ slot: "hair", noun: "hair", words: "worn up" }],
     });
@@ -340,7 +350,7 @@ describe("the carry contract, per tier (fable-192 — measured, not precautionar
     if (!recipe.ok) return;
     expect(recipe.references[1]!.role).toEqual({ kind: "carry", slot: "earring@left" });
     expect(recipe.references[1]!.sentence).toBe(
-      "Reference 2 is the exact left earring she has — a wide gold hoop, unchanged.",
+      "Reference 2 is the exact left earring she has — the same left earring, unchanged.",
     );
     expect(recipe.standing).toEqual([]);
     expect(recipe.carried).toEqual(["earring@left"]);
@@ -423,8 +433,8 @@ describe("THE PROMPT IS THE WIRE — the sentences and the array are one artifac
     expect(recipe.prompt).toBe(
       "Reference 1 is the photograph of this person — reproduce her exactly:" +
       " same face, same pose, same lighting, same framing, same background." +
-      " Reference 2 is the exact left earring she has — a wide gold hoop, unchanged." +
-      " Reference 3 is the exact hair she has — worn down, unchanged." +
+      " Reference 2 is the exact left earring she has — the same left earring, unchanged." +
+      " Reference 3 is the exact hair she has — the same hair, unchanged." +
       " Keep her skin exactly: an even golden tan." +
       " Change only her lips: noticeably fuller.",
     );
@@ -469,7 +479,7 @@ describe("THE PROMPT IS THE WIRE — the sentences and the array are one artifac
     expect(recipe.ok).toBe(true);
     if (!recipe.ok) return;
     expect(recipe.prompt).toContain("reproduce him exactly");
-    expect(recipe.prompt).toContain("the exact hair he has — cropped short, unchanged.");
+    expect(recipe.prompt).toContain("the exact hair he has — the same hair, unchanged.");
     expect(recipe.prompt).toContain("Change only his lips:");
   });
 
@@ -519,7 +529,7 @@ describe("THE PROMPT IS THE WIRE — the sentences and the array are one artifac
     expect(recipe.ok).toBe(true);
     if (!recipe.ok) return;
     expect(recipe.ask).toBe("");
-    expect(recipe.prompt.endsWith("Reference 2 is the exact hair she has — worn down, unchanged.")).toBe(true);
+    expect(recipe.prompt.endsWith("Reference 2 is the exact hair she has — the same hair, unchanged.")).toBe(true);
   });
 });
 

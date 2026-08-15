@@ -485,10 +485,35 @@ function askSentence(
  * reference's own sentence, and a slot without one gets a standing sentence.
  * Said once, attached to the thing it is about.
  */
+/**
+ * WHAT A CARRIED CROP IS CALLED — and it is never re-described.
+ * (Founder chase of 2026-08-15, ruled in fable-598 §2: POINT, DON'T DESCRIBE.)
+ *
+ * This used to emit the slot's whole word stack beside its picture, and his own
+ * dispatched prompt is the record of what that costs:
+ *
+ *   Reference 2 is the exact left earring she has — Small silver cross pendant
+ *   on a thin silver chain, plain narrow crucifix shape…, unchanged.
+ *   Reference 3 is the exact right earring she has — Silver-tone cross pendant
+ *   with rounded tubular arms and beveled edges, suspended from a curb-link
+ *   chain, unchanged.
+ *
+ * Two pictures of ONE object — 34 and 35 pixels wide, the same cross — and two
+ * different sentences about it. Both crosses drifted on that render and the
+ * right one drifted worse: the side whose sentence sat furthest from what its
+ * own crop showed.
+ *
+ * **A carried crop is the fact. A description beside it is a second author
+ * arguing with the picture**, and when they disagree the engine has to choose.
+ * So the words name the slot and the claim, and nothing else.
+ *
+ * It also serves the founder's own pair rule (fable-592) BY CONSTRUCTION: a
+ * matched pair rides two agreeing crops, a deliberately mismatched pair rides
+ * its two honest ones, and there is no sentence anywhere to force agreement
+ * onto either.
+ */
 function describe(entry: LibraryEntry): string {
-  return entry.words.length === 0
-    ? `the same ${entry.noun}, unchanged`
-    : `${entry.words.join(", ")}, unchanged`;
+  return `the same ${entry.noun}, unchanged`;
 }
 
 /**
