@@ -229,6 +229,26 @@ superseded it — fable-071/080).
   `Access-Control-Allow-Origin: http://localhost:3000` and a foreign one
   gets nothing.
 
+## 7b. The blank new-account lobby — DEFERRED BY THE FOUNDER (2026-08-15)
+
+`/app` settles to **62 characters of body text** for an account with nothing in
+it: the nav rail and the word "Home". One image (the avatar), no buttons, no
+empty state, no welcome, nothing to do. It is the first screen a real customer
+meets after signing in, and it is the only launch-surface finding of the outside
+walk that the founder has NOT ordered built.
+
+His words: *"not important at the moment, I'll deal with this at a later
+stage."* So it is **his to pick up, and not to be designed before he does** —
+filed here with its evidence rather than left in a mailbox message.
+
+```
+evidence        output/outsider-walk/{dark,light}-lobby.png
+how it was read docs/specs/V4_LAUNCH_SURFACE_READING.md (the outsider fixture,
+                both themes, nothing spent)
+sibling         the sheet's four-second empty stage — same walk, and that one
+                he DID order built (the panel's own skeleton language)
+```
+
 ## 8. Dormant founder items — mostly CLOSED 2026-08-09 (fable-122)
 
 Remaining: (L14) roster-card coherence question (sheets era,
