@@ -20,6 +20,13 @@ Fable ruling AND has a real incident behind it. Every entry carries three
 things: the rule, the incident in one line, and the mailbox citation. **No
 aspirational entries** — a rule nobody has yet been bitten by is a preference.
 
+The rule bit on the file's first day, which is the best argument for keeping it.
+Two of the twelve sentences the seed order named could not be traced to an
+incident, so they were left out and sent back for their citation rather than
+given a plausible one — a fabricated incident here would be exactly the invented
+cause that entry 2 below had just been written to remove from a report. Both
+came back with citation and price tag and are entries 9 and 10.
+
 **And read this before you assume the worst of the codebase.** When the rule
 below about coverage lines was swept across the program's reports, **fourteen of
 fifteen were already honest** — several already printed exactly the line the
@@ -94,9 +101,26 @@ Read the REASONS, not the count.
 invisible; the count looked fine.
 *Banked:* fable-646 §2.
 
+**9. A sabotage that changes nothing is indistinguishable from a test that
+cannot fail.** Prove the sabotage LANDED before believing the red — or the
+green.
+*Incident:* a card-body slice keyed on `index("  },")` found a NESTED closing
+brace, so two sabotages landed outside the card and the suite stayed green
+twice. Re-aimed at the field, both reddened.
+*Banked:* fable-510 §3, in those words. The sibling of *never `git checkout` to
+revert a sabotage* and *bench arms must be independent*.
+
+**10. A fixture that is not shaped like a real account measures itself.**
+*Incident:* a cloned fixture cast carried `internalPrompt` NULL, so verification
+could state almost nothing about her and nothing was earned or filed — **75 dev
+credits across two purchases, spent reading the clone's own hollowness** before
+the row said so. The sharper half: the row already held the answer, and the
+reading that should have preceded the purchase was a SELECT.
+*Banked:* fable-596 §1.
+
 ## On what a measurement can and cannot reach
 
-**9. A re-ask door inherits the correlation of what it re-asks.**
+**11. A re-ask door inherits the correlation of what it re-asks.**
 A door built as a second ask of the same engine cannot exceed the agreement
 between two of its calls — and that ceiling is findable only on the road, never
 from a probe, because the door only ever meets attempts that already claimed.
@@ -104,7 +128,7 @@ from a probe, because the door only ever meets attempts that already claimed.
 content→content, a ~76% ceiling.
 *Banked:* fable-656 §2 (measured at fable-655 §1).
 
-**10. Byte arithmetic closes only on a uniform file.**
+**12. Byte arithmetic closes only on a uniform file.**
 Record the CRLF/LF split beside the md5, or a proof-of-scope carries an
 unexplained term.
 *Incident:* a +118 that would not account to the byte until the line endings
@@ -120,4 +144,4 @@ md5 PROVES the earlier content untouched rather than claiming it (fable-660 §1)
 Follow the admission rule at the top: numbered Fable ruling, real incident, one
 line each, citation. Keep it to a page or two — **terse over complete.** A
 doctrine file long enough to skim past is an instrument nobody reads, which is
-the failure mode all ten of these describe.
+the failure mode all twelve of these describe.
