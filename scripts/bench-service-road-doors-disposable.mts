@@ -81,6 +81,23 @@
  * Only `wall_content` and `wall_stage` are the doors' business; any other free
  * refusal is printed under its own name and counts toward neither side.
  *
+ * # NULL_RUN=1 — the bench measuring its own noise floor
+ *
+ * Run 2's arms disagreed on how often the model claimed on the FIRST call — 21
+ * open against 41 shut out of 360 each — on a request proved byte-identical.
+ * Nothing in the product can do that, so the suspect is this file: the job list
+ * alternates `open, shut, open, shut…` and `LANES` lanes pull from a shared
+ * counter, so whenever the lanes run in lockstep, lane *k* takes indices
+ * *k, k+LANES, k+2·LANES…* — all the same parity at an even LANES — and **a
+ * lane can end up pinned to one arm**, carrying its keep-alive connection and
+ * whatever upstream the provider routes it to. `bench-arms-must-be-independent`
+ * in a new dress.
+ *
+ * `NULL_RUN=1` shuts BOTH arms. The labels then mean nothing and any gap
+ * between them is this bench's own noise. It is deliberately run BEFORE the
+ * scheduler is fixed (fable-655 §2): fixing first would destroy the only
+ * evidence of how much it mattered.
+ *
  * # There is no stopping rule any more, and that is stricter
  *
  * Run 1 stopped on the control arm reaching its bar. The corrected bar has TWO
@@ -127,6 +144,8 @@ import { refusalOf } from "../server/castingV2/refusalTag";
 import type { TextEngine, TextRequest } from "../server/providers/types";
 
 const SHAKEDOWN = process.env.SHAKEDOWN === "1";
+/** Both arms shut — the bench's own noise floor. See the header. */
+const NULL_RUN = process.env.NULL_RUN === "1";
 const PER_ARM = Number(process.env.PER_ARM ?? (SHAKEDOWN ? 3 : 60));
 const BLOCKS = Number(process.env.BLOCKS ?? (SHAKEDOWN ? 1 : 6));
 /** The corrected bar's two validity halves (opus-496 §6, fable-654 §3). */
@@ -308,7 +327,7 @@ const runOne = async (arm: "open" | "shut", block: number, n: number): Promise<v
   /* The ONLY difference between the arms. Both latches are read at one line
      each inside their own door's guard and nowhere else, so the shut arm sends
      the same first request and may not re-ask. */
-  const shut = arm === "shut" ? { colourWithheld: true, priorWithheld: true } : {};
+  const shut = (arm === "shut" || NULL_RUN) ? { colourWithheld: true, priorWithheld: true } : {};
   const interpret = ((request: Input) => {
     if (arm === "open" && !firstOpenInput) firstOpenInput = request;
     return interpretRefinement({ ...request, ...shut, engine: recorderFor(calls) });
@@ -433,6 +452,26 @@ for (let block = 1; block <= BLOCKS; block += 1) {
      two windows wearing one run's clothes. */
   const jobs: Array<{ arm: "open" | "shut"; n: number }> = [];
   for (let n = 1; n <= PER_ARM; n += 1) { jobs.push({ arm: "open", n }); jobs.push({ arm: "shut", n }); }
+  /* SHUFFLED, not alternating (fable-655 §2). An alternating list plus an even
+     `LANES` preserves parity: lane k takes k, k+LANES, k+2·LANES… and can end
+     up pinned to one arm for a whole block, carrying its connection and its
+     upstream with it. A seeded Fisher-Yates breaks the parity while keeping
+     both arms spread through the same minutes — the clock rival stays killed.
+     Seeded so a block is reproducible and the seed is part of the record;
+     `Math.random()` would make the schedule unquotable. */
+  let seed = (block * 2654435761 + PER_ARM) >>> 0;
+  const nextRandom = () => {
+    seed = (seed * 1664525 + 1013904223) >>> 0;
+    return seed / 4294967296;
+  };
+  for (let i = jobs.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(nextRandom() * (i + 1));
+    [jobs[i], jobs[j]] = [jobs[j]!, jobs[i]!];
+  }
+  /* And the shuffle gets its own reading rather than my word for it: how many
+     positions still sit where the alternating list would have put them. 120 of
+     120 is the unshuffled list; ~half is a shuffled one. */
+  const aligned = jobs.filter((job, i) => job.arm === (i % 2 === 0 ? "open" : "shut")).length;
   let next = 0;
   const started = Date.now();
   const lane = async () => {
@@ -446,7 +485,8 @@ for (let block = 1; block <= BLOCKS; block += 1) {
   blocksRun = block;
   const seconds = Math.round((Date.now() - started) / 1000);
   say(`  block ${block}: of ${block * PER_ARM} per arm — open claims ${claimed("open").length}/${OPEN_CLAIMS}`
-    + ` · shut conversions ${converted("shut")}/${SHUT_CONVERSIONS} · OPEN WALLED ${walled("open")} · ${seconds}s`);
+    + ` · shut conversions ${converted("shut")}/${SHUT_CONVERSIONS} · OPEN WALLED ${walled("open")}`
+    + ` · schedule ${aligned}/${jobs.length} parity-aligned · ${seconds}s`);
   /* NO EARLY STOP. Fixed n cannot select on anything, and every extra block is
      another chance for the open arm to refuse — see the header. */
 }
@@ -503,8 +543,26 @@ if (Math.abs(provenTiny - 1 / 11440) > 1e-9 || provenFlat < 0.4) {
 }
 say("");
 
+/* THE NULL RUN'S OWN READING: two arms that are the same arm. The gap between
+   their first-call claim counts is the bench's noise floor, and the direction
+   was chosen after the fact, so the two-tailed reading is about twice the
+   printed one — said here rather than left for the reader to remember. */
+if (NULL_RUN) {
+  const a = openClaims.length; const b = shutClaims.length;
+  const hi = Math.max(a, b); const lo = Math.min(a, b);
+  const n = attempts.filter((row) => row.arm === "open").length;
+  const m = attempts.filter((row) => row.arm === "shut").length;
+  const pNull = fisherOneTailed(hi, (a >= b ? n : m) - hi, lo, (a >= b ? m : n) - lo);
+  say(`NULL RUN — both arms shut. Labels mean nothing; the gap is this bench's own noise.`);
+  say(`  first-call content claims: "open" ${a}/${n} · "shut" ${b}/${m} · gap ${hi - lo}`);
+  say(`  Fisher one-tailed on the observed direction p = ${pNull < 0.0001 ? pNull.toExponential(2) : pNull.toFixed(4)}`
+    + ` (two-tailed ≈ ${Math.min(1, 2 * pNull).toFixed(4)})`);
+  say(`  run 2's gap, for comparison: 21 vs 41 out of 360 each — gap 20.`);
+}
 const invalid = openClaims.length < OPEN_CLAIMS || shutConverted < SHUT_CONVERSIONS;
-const verdict = SHAKEDOWN
+const verdict = NULL_RUN
+  ? "NULL RUN — no verdict by construction; both arms were shut. The reading is the gap above."
+  : SHAKEDOWN
   ? "SHAKEDOWN — no verdict by construction. These columns are discarded."
   : invalid
     ? `RUN INVALID — the open arm exercised the door ${openClaims.length}× (bar ${OPEN_CLAIMS}) and the shut arm converted ${shutConverted} claims into refusals (bar ${SHUT_CONVERSIONS}). One half or both went unmet, so this window says nothing about the doors.`
