@@ -27,12 +27,21 @@ const url = process.env.MYSQL_PUBLIC_URL ?? process.env.DATABASE_URL;
 if (!url || !url.includes("23768")) throw new Error("this reads the PRODUCTION ledger — run it under railway");
 const conn = await openDatabase(url);
 
+/*
+  AND THE COLLAPSE ITSELF, COUNTED (fable-580's second half: "verify his hoops
+  collapse, report counts"). Every cast with more than one delivered version,
+  so the flip from `declaredTakes` to `liveTakes` is reported as a figure over
+  his whole record rather than as an argument about one chain.
+*/
 const [candidates] = await conn.execute(
   `SELECT c.id, c.publicId, c.imageKey, c.thumbKey, c.selectedVariantId, COUNT(v.id) AS versions
      FROM casting_candidates c JOIN casting_candidate_variants v ON v.candidateId = c.id
-    WHERE v.requestText LIKE '%horns%' OR v.requestText LIKE '%fiery red%'
-    GROUP BY c.id ORDER BY c.id DESC LIMIT 3`,
+    WHERE v.status = 'ready'
+    GROUP BY c.id HAVING versions >= 2 ORDER BY c.id DESC`,
 );
+let totalReady = 0;
+let totalHidden = 0;
+let totalChained = 0;
 
 for (const candidate of candidates as Array<Record<string, never>>) {
   const row = candidate as unknown as {
@@ -68,6 +77,15 @@ for (const candidate of candidates as Array<Record<string, never>>) {
   console.log(`  selection points at ${selected ? `${selected.id} "${selected.ask}"` : "the ORIGINAL"}`);
   console.log(`  after the takes remap the rail lights `
     + `${takeShownFor(selected?.publicId ?? null, supersededBy) ?? "the ORIGINAL"}`);
+  totalReady += ready.length;
+  totalHidden += ready.length - live.length;
+  /*
+    AND WHETHER THE COLLAPSE COULD HAVE HAPPENED AT ALL. `liveTakes` only ever
+    merges rows whose step chain READS — a row with no `stepDeltas` is its own
+    take by construction — so "nothing collapsed" over rows that cannot be
+    compared is a fact about the fixture and not about his record.
+  */
+  totalChained += ready.filter((one) => readStepDeltas(one.stepDeltas).length > 0).length;
   console.log(`  ${ready.length} delivered · ${live.length} chips on the rail`);
   for (const variant of rows) {
     const hidden = variant.status === "ready" && !liveIds.has(variant.publicId);
@@ -78,6 +96,13 @@ for (const candidate of candidates as Array<Record<string, never>>) {
     if (variant.regeneratedFrom) console.log(`          regeneratedFrom ${variant.regeneratedFrom}`);
   }
 }
+
+console.log(`
+THE COLLAPSE, over every cast with more than one version:`);
+console.log(`  ${totalReady} delivered versions → ${totalReady - totalHidden} chips`
+  + ` · ${totalHidden} hidden behind a newer take of the same chain`);
+console.log(`  ${totalChained} of those ${totalReady} carry a readable chain,`
+  + ` which is the population the collapse could act on at all`);
 
 await conn.end();
 process.exit(0);

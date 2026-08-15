@@ -1037,6 +1037,67 @@ describe("the words read", () => {
     expect(bench.rows[0]!.words[0]).not.toMatch(/\.$/);
   });
 
+  /**
+   * ONE DESCRIPTION FOR A MATCHED PAIR, TWO FOR A REAL ONE (founder
+   * 2026-08-15; fable-591 §1 and the negative control fable-592 makes
+   * mandatory).
+   *
+   * His #193 delivered identical crosses and filed two different sentences
+   * about them — the describer is asked once per side, and two calls about one
+   * object come back with two answers. His own limit is the second arm: *"the
+   * description can genuinely be different if I edit the left or right earring
+   * to genuinely be a different earring, or ask for 2 different earrings in the
+   * first place"*, and a patch that forced agreement onto a deliberate mismatch
+   * would erase the capability click-to-scope shipped.
+   *
+   * The reader here answers with a DIFFERENT sentence every call, which is the
+   * describer's variance made deterministic: if the pair rule is not doing the
+   * work, the two rows cannot agree by accident.
+   */
+  const pairBench = async (leftWords: string[], rightWords: string[]) => {
+    const bench = harness({ guardRead: rect(HER_LEFT) });
+    let call = 0;
+    const reader = wordsReader(() => {
+      call += 1;
+      return `describer answer number ${call}`;
+    });
+    await mintReferencesForRender({
+      userId: 1,
+      variantId: 11,
+      frame: { bytes: await texturedFrame() },
+      applied: rect({ x: 0, y: 0, width: 40, height: 40 }),
+      masterRegions: new Map([["earring", rect(HER_LEFT)]]),
+      masterSideRegions: new Map([["earring", { left: rect(HER_LEFT), right: rect(HER_RIGHT) }]]),
+      slots: [
+        { ...earringSlot("left"), words: leftWords },
+        { ...earringSlot("right"), words: rightWords },
+      ],
+      dependencies: { ...bench.dependencies, readWords: reader.readWords } as never,
+    });
+    return { bench, reader };
+  };
+
+  it("describes a pair ASKED AS A PAIR once, and files that one description on both sides", async () => {
+    const { bench, reader } = await pairBench(["dangly cross earrings"], ["dangly cross earrings"]);
+
+    expect(reader.calls, "one object, one read — and one vision call saved").toHaveLength(1);
+    const words = bench.rows.map((row) => row.words.join(" "));
+    expect(words).toHaveLength(2);
+    expect(words[0]).toBe(words[1]);
+  });
+
+  it("CONTROL — a pair asked as two different things keeps its two descriptions", async () => {
+    const { bench, reader } = await pairBench(
+      ["a thin gold hoop"],
+      ["a silver stud"],
+    );
+
+    expect(reader.calls, "two things, two reads").toHaveLength(2);
+    const words = bench.rows.map((row) => row.words.join(" "));
+    expect(words).toHaveLength(2);
+    expect(words[0]).not.toBe(words[1]);
+  });
+
   it("NEVER asks about an accessory against the frame, and files no row at all", async () => {
     /*
       No side map and no ground, so there is no cut. Reading the whole frame for

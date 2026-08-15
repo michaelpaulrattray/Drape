@@ -1116,7 +1116,66 @@ export async function mintReferencesForRender(input: MintInput): Promise<MintRes
     */
     let wordReads = 0;
     const readWords = input.dependencies?.readWords;
+    /*
+      ONE DESCRIPTION FOR A MATCHED PAIR — and TWO for a pair that is genuinely
+      two things (founder 2026-08-15, via fable-591 §1 and fable-592).
+
+      His #193 delivered identical crosses and filed two different sentences
+      about them, because the describer is asked once per side and two calls
+      about one object come back with two answers. He also drew the limit
+      himself: *"the description can genuinely be different if I edit the left
+      or right earring to genuinely be a different earring, or ask for 2
+      different earrings in the first place."* A patch that forced agreement
+      onto a deliberate mismatch would erase the capability click-to-scope
+      shipped, which is the worse bug.
+
+      So the discriminator is the ASK, which the product already has: a slot's
+      `words` are its declarative stack as of this render, and a pair asked as a
+      pair carries the SAME stack on both sides — the recipe says it in the
+      founder's own dispatch, *"Change only his left earring: dangly cross
+      earrings; his right earring: dangly cross earrings."* Two sides whose
+      stacks are identical were asked for as one thing, so they are described
+      once and both rows file that description. Two sides whose stacks differ
+      were asked for separately, and each keeps its own read.
+
+      A per-side EDIT needs nothing from this rule: only the edited side is in
+      this render's list at all, so the other keeps the row it already had.
+
+      It also spends one vision call rather than two on the common case, which
+      is the shape a matched-pair ask takes every time.
+    */
+    const stackOf = (slot: SlotSpec) => slot.words.join(" | ").trim().toLowerCase();
+    const pairKeyBySlot = new Map<FeatureSlot, string>();
+    {
+      const bySide = new Map<string, SlotSpec[]>();
+      for (const slot of input.slots) {
+        const [feature, side] = slot.slot.split("@");
+        if (!side || !feature) continue;
+        const held = bySide.get(feature) ?? [];
+        held.push(slot);
+        bySide.set(feature, held);
+      }
+      for (const sides of Array.from(bySide.values())) {
+        if (sides.length !== 2) continue;
+        const [left, right] = sides as [SlotSpec, SlotSpec];
+        if (stackOf(left) === "" || stackOf(left) !== stackOf(right)) continue;
+        const feature = left.slot.split("@")[0];
+        for (const slot of sides) pairKeyBySlot.set(slot.slot, `${feature}|${stackOf(left)}`);
+      }
+    }
+    const pairWords = new Map<string, Promise<readonly string[] | null>>();
     const wordsFor = async (slot: SlotSpec): Promise<readonly string[] | null> => {
+      const pairKey = pairKeyBySlot.get(slot.slot);
+      if (pairKey !== undefined) {
+        const held = pairWords.get(pairKey);
+        if (held) return held;
+        const asked = readOneSlotsWords(slot);
+        pairWords.set(pairKey, asked);
+        return asked;
+      }
+      return readOneSlotsWords(slot);
+    };
+    const readOneSlotsWords = async (slot: SlotSpec): Promise<readonly string[] | null> => {
       /* Not wired: the slot files the words it arrived with, byte for byte
          today's behaviour. */
       if (!readWords) return slot.words;
