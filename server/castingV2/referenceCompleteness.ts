@@ -94,6 +94,20 @@ export type CompletenessSpecimens = {
   positive: number;
   /** Coverage it read on one a human verdict called incomplete. */
   negative: number;
+  /**
+   * A RULED FLOOR, when the positive cannot be one (fable-589 §3).
+   *
+   * `positive` is a measurement and stays one. On kinds where the mint's cut IS
+   * the region, a real mint reads 100.0 — and a bar AT 100 refuses 99.9 for
+   * nothing, which is a threshold nobody can pass wearing a measurement's
+   * clothes. So the bar is ruled, separately, with its anchors beside it, and
+   * the measured numbers are not bent to produce it.
+   *
+   * PROVISIONAL means what it says: every reading logs, and the floor is
+   * revisited when the population says something. A bar earns permanence from
+   * data, never from the night it was set (D-236's posture).
+   */
+  provisionalFloor?: number;
   source: string;
 };
 
@@ -112,6 +126,35 @@ export const COMPLETENESS_SPECIMENS: Readonly<Record<string, CompletenessSpecime
     source: "D-243 store audit: the delivered-anchored cut of v#163 (casting_segments #13) "
       + "against the founder's fringe on v#153 (#9)",
   },
+  /*
+    HORNS — the kind that made the ruled floor necessary (fable-589 §3).
+
+    Its anchors, every one of them a reading somebody took:
+
+      identity control     100.0%   a crop scored as itself, both sides
+      REAL MINTS           100.0%   ×4 — the founder's own two horns and two
+                                    earrings, filed and refused-kept on his
+                                    production renders of 2026-08-15
+      the known mis-cut     83.7%   the same crop with its top third gone,
+                                    looked at and called incomplete
+
+    So everything real passes today and the mis-cut class refuses with eleven
+    points of margin. The floor is 95% because the positive cannot be the bar
+    here: the mint's cut IS the region for this kind, so a real crop reads
+    100.0 and a bar at 100 would refuse 99.9 for nothing.
+
+    And the cost of being wrong is asymmetric in our favour: `noSpecimen` and
+    `underCaptured` both KEEP the crop, so an over-tight floor costs a kept
+    picture and a retry, never a lost feature.
+  */
+  horns: {
+    positive: 1,
+    negative: 0.837,
+    provisionalFloor: 0.95,
+    source: "fable-589 §3, on four real mints (his horns@left/right and "
+      + "earring@left/right, 2026-08-15), the identity control at 100.0%, and the "
+      + "looked-at mis-cut at 83.7% (V2_HORNS_SPECIMEN_CALIBRATION.md)",
+  },
 };
 
 /**
@@ -126,7 +169,12 @@ export const COMPLETENESS_SPECIMENS: Readonly<Record<string, CompletenessSpecime
  */
 export function thresholdFor(kind: string): number | null {
   const specimens = COMPLETENESS_SPECIMENS[kind];
-  return specimens ? specimens.positive : null;
+  if (!specimens) return null;
+  /* A ruled floor wins over the measurement it was ruled from — see
+     `provisionalFloor`, and note that it is never higher than the positive:
+     a "floor" above the one crop we have proven complete would refuse the
+     specimen itself. */
+  return specimens.provisionalFloor ?? specimens.positive;
 }
 
 /**

@@ -695,3 +695,46 @@ describe("the guard takes its OWN read — a checker handed its subject's read c
     expect(verdict.reason).toBe("readDidNotSettle");
   });
 });
+
+/**
+ * THE RULED FLOOR — horns, and the shape fable-589 §3 created.
+ *
+ * `positive` is a measurement and stays one; the BAR is ruled, because on a
+ * kind whose cut is the region a real mint reads 100.0 and a bar at 100 refuses
+ * 99.9 for nothing. These drive the ruling rather than restating it.
+ */
+describe("a ruled floor, where the positive cannot be the bar", () => {
+  it("takes the floor for horns and the measurement for hair", () => {
+    expect(thresholdFor("horns")).toBe(0.95);
+    expect(thresholdFor("hair")).toBe(COMPLETENESS_SPECIMENS.hair!.positive);
+  });
+
+  it("keeps the measured positive honest beside it", () => {
+    /* The reading is what four real mints and the identity control said. It is
+       not bent to produce the bar — that is the whole point of the split. */
+    expect(COMPLETENESS_SPECIMENS.horns!.positive).toBe(1);
+    expect(COMPLETENESS_SPECIMENS.horns!.negative).toBeCloseTo(0.837, 3);
+  });
+
+  it("passes what is real and refuses the mis-cut, with the margin stated", () => {
+    const floor = thresholdFor("horns")!;
+    /* Everything measured on a real mint. */
+    expect(1).toBeGreaterThanOrEqual(floor);
+    /* The looked-at mis-cut, and eleven points of daylight under the bar. */
+    expect(COMPLETENESS_SPECIMENS.horns!.negative).toBeLessThan(floor);
+    expect(floor - COMPLETENESS_SPECIMENS.horns!.negative).toBeGreaterThan(0.11);
+  });
+
+  it("never rules a floor ABOVE the crop it was ruled from", () => {
+    /* A floor over the positive would refuse the specimen itself — the shape of
+       a bar that cannot be passed, which is what this whole split exists to
+       prevent. Swept over every kind, so a future entry cannot reintroduce it. */
+    for (const [kind, specimens] of Object.entries(COMPLETENESS_SPECIMENS)) {
+      if (specimens.provisionalFloor === undefined) continue;
+      expect(specimens.provisionalFloor, `${kind}'s floor is above its own positive`)
+        .toBeLessThanOrEqual(specimens.positive);
+      expect(specimens.provisionalFloor, `${kind}'s floor is under its own negative`)
+        .toBeGreaterThan(specimens.negative);
+    }
+  });
+});
