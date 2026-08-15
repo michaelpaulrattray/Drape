@@ -188,6 +188,7 @@ import {
 import { isUpsweptAsk, readCanthalTilt } from "./eyeShapeRouting";
 import { alreadyUpswept, wearsGlassesByPixels } from "./canthalTilt";
 import { INVISIBLE_AT, binaryCoverage, coverage } from "./maskGeometry";
+import { boundsOf } from "./segmentCuts";
 import { invisibleRemovalNote, readSiteVisibility } from "./invisibleRemoval";
 import { departureFloorFor } from "./bornWornDetector";
 import { createFalRegionReader } from "./falRegionReader";
@@ -4316,18 +4317,124 @@ async function refineCandidateCounted(
       COUNTABLE, which is the precondition for anybody ruling on whether it
       should refuse.
     */
+    /**
+     * THE SAME ASK WITH ITS SIDE WORDS GONE — because the picture IS the side.
+     *
+     * The court's cut arm was measured with the side word stripped, and the
+     * wording matters: left in, the reader starts reasoning about a half of a
+     * picture that holds one eye, which is the confusion this road exists to
+     * leave behind.
+     */
+    const SIDE_WORDS = new Set(["left", "right"]);
+    const SIDE_PRONOUNS = new Set(["her", "his", "their", "the"]);
+    const withoutSideWords = (value: string): string => {
+      const words = value.split(" ").filter((word) => word !== "");
+      const kept: string[] = [];
+      for (let at = 0; at < words.length; at += 1) {
+        const word = words[at]!.toLowerCase();
+        const next = (words[at + 1] ?? "").toLowerCase();
+        /* "her right eye fiery red" → "eye fiery red". The pronoun goes only
+           when it is standing in front of a side; elsewhere it is hers. */
+        if (SIDE_WORDS.has(word)) continue;
+        if (SIDE_PRONOUNS.has(word) && SIDE_WORDS.has(next)) continue;
+        kept.push(words[at]!);
+      }
+      return kept.join(" ").trim();
+    };
+
+    /**
+     * THE NAMED SIDE'S OWN PICTURE, and the ask with its side words removed.
+     *
+     * `null` whenever this is not a per-side facet, the side cannot be
+     * resolved, the reader has no per-side capability, or the cut comes back
+     * empty — every one of which falls back to the frame, which is what this
+     * did before.
+     *
+     * The side is resolved by `sideOfFact`, the SAME resolver the verification
+     * narrows with: two answers to "which one of the pair is this about" would
+     * be the mirror law on a question that decides what gets pinned.
+     */
+    const sideViewOf = async (
+      facet: Facet,
+      asked: string | null,
+    ): Promise<{ bytes: Buffer; asked: string | null } | null> => {
+      const narrowed = sideOfFact({ facet });
+      const instance = narrowed?.side.instance ?? null;
+      const question = narrowed?.side.question ?? null;
+      if (instance === null || question === null) return null;
+      const reader = dependencies.regions ?? defaultRegionReader();
+      if (!reader.regionSides) return null;
+      try {
+        const sides = await reader.regionSides({
+          image: image.bytes, name: question, absentIsAnswer: true,
+        });
+        if (sides === null) return null;
+        /* The mask's own bounds, padded a little so the reader sees the eye in
+           its socket rather than a floating iris — `boundsOf` is the mint's own
+           box maths, borrowed rather than re-derived. */
+        const box = boundsOf(sides[instance], 127);
+        if (box === null) return null;
+        const sharp = (await import("sharp")).default;
+        const meta = await sharp(image.bytes).metadata();
+        const scaleX = (meta.width ?? sides[instance].width) / sides[instance].width;
+        const scaleY = (meta.height ?? sides[instance].height) / sides[instance].height;
+        const pad = 12;
+        const cut = await sharp(image.bytes).extract({
+          left: Math.max(0, Math.round(box.x * scaleX) - pad),
+          top: Math.max(0, Math.round(box.y * scaleY) - pad),
+          width: Math.min(
+            Math.round(box.width * scaleX) + pad * 2,
+            (meta.width ?? 0) - Math.max(0, Math.round(box.x * scaleX) - pad),
+          ),
+          height: Math.min(
+            Math.round(box.height * scaleY) + pad * 2,
+            (meta.height ?? 0) - Math.max(0, Math.round(box.y * scaleY) - pad),
+          ),
+        }).png().toBuffer();
+        return { bytes: cut, asked: asked === null ? null : withoutSideWords(asked) };
+      } catch (error) {
+        /* A courtesy read never costs a delivery. */
+        log.warn(
+          { err: String(error).slice(0, 120), facet, operationId },
+          "[refineService] could not cut the named side for the read-back — reading the frame instead",
+        );
+        return null;
+      }
+    };
+
     const uncorroborated: Array<{ facet: string; asked: string; saw: string }> = [];
     for (const facet of Array.from(captionFacets)) {
+      const asked = currentIdentity
+        ? currentValueOfFacet(applyDelta(currentIdentity, composed), facet)
+        : null;
+      /*
+        A PER-SIDE FACET IS READ FROM ITS OWN CUT — never from the frame
+        (fable-611 §2, courted).
+
+        Asked which eye a colour landed on, this reader is wrong in both
+        directions: on seventeen frames whose painted side the segmenter had
+        already measured, it refused three correct renders and corroborated
+        three that had painted the OTHER eye — and pinning the frame of
+        reference in its prompt made the prose confidently wrong without moving
+        a single verdict. What passed, on the same specimens, was taking the
+        side word out of the question entirely: the named side is CUT out and
+        the picture is the side. Three of three wrong-eye renders were then
+        refused, and the only refusals left were honest ones about colour.
+
+        It costs one region read on a render that wrote a per-side facet, and
+        nothing at all on every other render. A cut that cannot be made falls
+        back to the frame, which is exactly today's behaviour — a courtesy read
+        never costs a delivery.
+      */
+      const view = await sideViewOf(facet, asked);
       const caption = await captionRealization({
         facet,
-        bytes: image.bytes,
-        contentType: image.contentType,
+        bytes: view?.bytes ?? image.bytes,
+        contentType: view ? "image/png" : image.contentType,
         onUncorroborated: (verdict) => uncorroborated.push(verdict),
         /* What this render was told to produce, so the read-back can be
            checked against it rather than describing whatever turned up. */
-        asked: currentIdentity
-          ? currentValueOfFacet(applyDelta(currentIdentity, composed), facet)
-          : null,
+        asked: view ? view.asked : asked,
       });
       if (caption) capturedCaptions[facet] = caption;
     }

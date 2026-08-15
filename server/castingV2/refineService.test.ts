@@ -2983,6 +2983,66 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
    * Words-only carriers are a different thing and are deliberately not here:
    * skin has no crop to argue with and rides its sentence by founder ruling.
    */
+  /**
+   * A PER-SIDE FACET IS READ BACK FROM ITS OWN CUT (fable-611 §2, courted).
+   *
+   * Asked which eye a colour landed on, the read-back is wrong in both
+   * directions — on seventeen frames whose painted side the segmenter had
+   * measured it refused three correct renders and corroborated three wrong-eye
+   * ones, and pinning its frame of reference in the prompt moved no verdict at
+   * all. What passed was taking the side word out of the question: cut the
+   * named side out and the picture IS the side.
+   *
+   * Both halves are asserted on the CALL — the bytes it was handed and the ask
+   * it was given — because "reads the cut" is a claim about what went to the
+   * reader, not about a variable near it.
+   */
+  it("reads a per-side facet back from that side's own cut, with the side words gone", async () => {
+    const onePixelOn = () => {
+      const data = Buffer.alloc(32 * 48);
+      for (let at = 0; at < 200; at += 1) data[at] = 255;
+      return { data, width: 32, height: 48 };
+    };
+    captionsRead = { "eye.colour": "a fiery red iris" };
+    await refineCandidate({
+      ...repainting,
+      /* A real picture, because the cut is made with sharp: a sentinel buffer
+         would fall back to the frame and the arm would prove nothing. */
+      repaintEngine: () => ({
+        id: "test:repaint",
+        edit: async (request: { width: number; height: number }) => ({
+          bytes: TINY_MASTER_PNG,
+          contentType: "image/png",
+          width: request.width,
+          height: request.height,
+          latencyMs: 1,
+          provenance: { provider: "fal" as const, model: "gpt-image-2", providerRef: "req-cut" },
+        }),
+      }),
+      regions: {
+        region: async () => onePixelOn(),
+        regionSides: async () => ({ left: onePixelOn(), right: onePixelOn() }),
+        subject: async () => onePixelOn(),
+        landmark: async () => [],
+      } as never,
+      interpret: async () => ({
+        ok: true as const,
+        delta: { free: { eyeColourFree: "her right eye fiery red" } },
+      }),
+    } as never, { ...input, instruction: "her right eye fiery red", scope: "eye@right" });
+
+    const { captionRealization } = await import("./realizationCaption");
+    const call = (captionRealization as unknown as {
+      mock: { calls: Array<[{ facet: string; bytes: Buffer; asked: string | null }]> };
+    }).mock.calls.at(-1)?.[0];
+    expect(call?.facet).toBe("eye.colour");
+    /* Not the delivered frame: a cut of it. */
+    expect(call?.bytes.equals(TINY_MASTER_PNG)).toBe(false);
+    /* And no side word left for it to be wrong about. */
+    expect(call?.asked ?? "").not.toContain("right");
+    expect(call?.asked ?? "").toContain("fiery red");
+  });
+
   it("lets NO carried kind restate itself beside its own crop", async () => {
     const kinds = [
       { slot: "hair", tier: "anatomy", noun: "hair", words: ["auburn-brown, shoulder length"] },
