@@ -83,6 +83,16 @@ export function VersionRail({
           className="dpc-refine__pick"
           aria-pressed={selectedVariantId === null}
           aria-label="The original"
+          /* ITS FRAME TOO, for the same reason the versions carry theirs: "the
+             lit chip and the photograph agree" has to be readable on EVERY chip
+             or the reading skips the one selection the founder reaches for most
+             — a sampler comparing them read `null` here and could not tell a
+             legitimate original from a tangle (fable-581 §2). */
+          data-frame={originalImageUrl ?? undefined}
+          /* And its small copy, because the viewer shows that first and
+             sharpens in place — a reader comparing "which version is on screen"
+             has to know both spellings of the same picture. */
+          data-thumb={originalThumbUrl ?? undefined}
           onClick={() => onSelect(null)}
         >
           {chipSrc({ thumbUrl: originalThumbUrl, imageUrl: originalImageUrl })

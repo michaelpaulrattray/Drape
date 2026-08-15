@@ -777,30 +777,6 @@ export default function CastingSheet() {
     Built from the VISIBLE tiles so an optimistically discarded face is not
     something the arrows walk back into.
   */
-  const viewerFrames: ViewerFrame[] = candidates
-    .filter((candidate) =>
-      !optimisticDiscarded[candidate.candidateId] && candidate.imageUrl)
-    .map((candidate) => ({
-      url: frameUrlFor({
-        candidateId: candidate.candidateId,
-        serverUrl: candidate.imageUrl as string,
-        chosen: chosenFrame,
-      }),
-      /* Only the picked version's own small copy — a thumbnail of the frame
-         BEFORE the switch would be the previous picture wearing this one's
-         name, which is the error the decode gate exists to avoid. */
-      previewUrl: chosenFrame?.candidateId === candidate.candidateId
-        && candidate.imageUrl === chosenFrame.insteadOf
-        ? chosenFrame.previewUrl ?? null
-        : null,
-      label: candidate.indexLabel,
-      personaLine: candidate.personaLine,
-      downloadName: `candidate-${candidate.indexLabel}`,
-      candidateId: candidate.candidateId,
-    }));
-  const viewerIndex = viewerFrames.findIndex(
-    (frame) => frame.candidateId === viewerCandidateId,
-  );
 
   /*
     Only a READY, unsigned candidate of THIS sheet can be refined — the same
@@ -852,6 +828,38 @@ export default function CastingSheet() {
         query.state.data?.pending?.length || refineIsOutForViewer ? 4000 : false
       ),
     },
+  );
+
+  /*
+    THE OPEN FACE'S PICTURE COMES FROM THE SAME ANSWER AS ITS CHIP
+    (his shot 293, fable-581 §2).
+
+    The rail's selection is read from `variants` and the photograph was read
+    from `getRoll`, and those two land at different moments: sampled through a
+    real landing, the chip lit the new version and the picture stayed on the
+    previous one for three seconds — the highlight-lag disease with the
+    surfaces swapped, and small only because the two refetches happen close
+    together.
+
+    The variants payload already carries every version's URL, so the frame the
+    selected version IS can be read from the same answer that says which
+    version is selected. One arrival, one claim. Every other face in the sheet
+    keeps the roll's picture, which is the only thing that knows about faces
+    this query is not open on.
+  */
+  const selectedFrameUrl = variants.data
+    ? (variants.data.selectedVariantId === null
+      ? variants.data.originalImageUrl
+      : variants.data.variants.find(
+        (row) => row.variantId === variants.data?.selectedVariantId,
+      )?.imageUrl ?? null)
+    : null;
+  /** What the SERVER says this face's picture is — the open one from the
+   *  version answer, the rest from the roll. */
+  const serverFrameFor = (candidateId: string | null, fallback: string | null): string | null => (
+    candidateId !== null && candidateId === viewerCandidateId && selectedFrameUrl
+      ? selectedFrameUrl
+      : fallback
   );
 
   /*
@@ -1051,9 +1059,12 @@ export default function CastingSheet() {
         return { url: entry?.imageUrl ?? null, thumb: entry?.thumbUrl ?? null };
       })();
     const picked = chosen.url;
-    const showing = candidates.find(
+    /* The picture it replaces, read the same way the frame and the highlight
+       read it — an override whose `insteadOf` came from another answer would
+       expire against a value neither surface uses. */
+    const showing = serverFrameFor(viewerCandidateId, candidates.find(
       (candidate) => candidate.candidateId === viewerCandidateId,
-    )?.imageUrl ?? null;
+    )?.imageUrl ?? null);
     if (picked && showing && picked !== showing) {
       setChosenFrame({
         candidateId: viewerCandidateId,
@@ -1235,6 +1246,56 @@ export default function CastingSheet() {
     disagreeing for the length of a round trip (fable-582); and a settling row
     still narrates even though the controls have come back.
   */
+  /*
+    WHICH VERSION IS ON SCREEN — ONE ANSWER, for every surface that draws the
+    stack (founder shot 293, fable-581 §2).
+
+    fable-546 put the picture and the lit chip on one claim, and the fix reached
+    ONE of the two surfaces that draw the same versions: the rail beside the
+    picture took the override, while the stack under it kept reading the
+    server-confirmed value. Sampled through a real landing while clicking
+    between versions, that surface disagreed with the photograph in 17 of 40
+    comparable frames — the chip lit on the version he had left while the
+    picture showed the one he had just clicked, for as long as the round trip
+    took (`drive-selection-tangle-disposable.mts`).
+
+    Derived once here and handed to all three readers, so the third copy cannot
+    be the one that drifts (law 4).
+  */
+  const shownVariantId = selectedVariantFor({
+    candidateId: viewerCandidateId ?? "",
+    serverUrl: serverFrameFor(viewerCandidateId, viewerCandidate?.imageUrl ?? null) ?? "",
+    serverSelected: variants.data?.selectedVariantId ?? null,
+    chosen: chosenFrame,
+  });
+  const viewerFrames: ViewerFrame[] = candidates
+    .filter((candidate) =>
+      !optimisticDiscarded[candidate.candidateId] && candidate.imageUrl)
+    .map((candidate) => ({
+      url: frameUrlFor({
+        candidateId: candidate.candidateId,
+        /* The open face's picture comes from the version answer, so the frame
+           and the chip above it land together; every other face keeps the
+           roll's, which is the only answer that knows about them. */
+        serverUrl: serverFrameFor(candidate.candidateId, candidate.imageUrl as string) as string,
+        chosen: chosenFrame,
+      }),
+      /* Only the picked version's own small copy — a thumbnail of the frame
+         BEFORE the switch would be the previous picture wearing this one's
+         name, which is the error the decode gate exists to avoid. */
+      previewUrl: chosenFrame?.candidateId === candidate.candidateId
+        && serverFrameFor(candidate.candidateId, candidate.imageUrl as string) === chosenFrame.insteadOf
+        ? chosenFrame.previewUrl ?? null
+        : null,
+      label: candidate.indexLabel,
+      personaLine: candidate.personaLine,
+      downloadName: `candidate-${candidate.indexLabel}`,
+      candidateId: candidate.candidateId,
+    }));
+  const viewerIndex = viewerFrames.findIndex(
+    (frame) => frame.candidateId === viewerCandidateId,
+  );
+
   const viewerWait = refineWait({
     viewerCandidateId,
     mutation: refine,
@@ -2053,12 +2114,7 @@ export default function CastingSheet() {
                 picture was the new version and the lit chip was the old one.
                 Same claim, same expiry, same scope — the override answers both.
               */
-              selectedVariantId={selectedVariantFor({
-                candidateId: viewerCandidateId ?? "",
-                serverUrl: viewerCandidate?.imageUrl ?? "",
-                serverSelected: variants.data?.selectedVariantId ?? null,
-                chosen: chosenFrame,
-              })}
+              selectedVariantId={shownVariantId}
               originalImageUrl={variants.data?.originalImageUrl ?? null}
               originalThumbUrl={variants.data?.originalThumbUrl ?? null}
               onSelect={selectVariant}
@@ -2116,7 +2172,7 @@ export default function CastingSheet() {
               key={viewerCandidateId}
               variants={variants.data?.variants ?? []}
               pending={variants.data?.pending ?? []}
-              selectedVariantId={variants.data?.selectedVariantId ?? null}
+              selectedVariantId={shownVariantId}
               originalImageUrl={variants.data?.originalImageUrl ?? null}
               originalThumbUrl={variants.data?.originalThumbUrl ?? null}
               /*
@@ -2137,12 +2193,7 @@ export default function CastingSheet() {
               */
               regenerates={
                 (variants.data?.variants ?? [])
-                  .find((entry) => entry.variantId === selectedVariantFor({
-                    candidateId: viewerCandidateId ?? "",
-                    serverUrl: viewerCandidate?.imageUrl ?? "",
-                    serverSelected: variants.data?.selectedVariantId ?? null,
-                    chosen: chosenFrame,
-                  }))
+                  .find((entry) => entry.variantId === shownVariantId)
                   ?.requestText ?? null
               }
               priceCredits={refinePrice}
