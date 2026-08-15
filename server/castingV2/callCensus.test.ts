@@ -156,3 +156,39 @@ describe("the transports actually call it", () => {
     expect(census.calls[0]!.ok).toBe(true);
   });
 });
+
+/**
+ * THE FIELD THAT WAS COLLECTED AND NEVER READ.
+ *
+ * `about` has been on every region call since `aboutOf` existed, and its own
+ * comment names the prize — *"the difference between eleven segment calls and
+ * eleven segment calls, six of them about eyes"*. Nothing summed it, so the
+ * number that names the latency lever was invisible on every render the
+ * founder has ever paid for.
+ */
+describe("what the questions cost", () => {
+  it("sums the region calls by the thing they asked about", async () => {
+    const { census } = await withCallCensus(async () => {
+      recordProviderCall({ stage: "segment", provider: "fal", model: "sam-3", ms: 10, ok: true, about: "earring" });
+      recordProviderCall({ stage: "segment", provider: "fal", model: "sam-3", ms: 30, ok: true, about: "earring" });
+      recordProviderCall({ stage: "segment", provider: "fal", model: "sam-3", ms: 7, ok: true, about: "face" });
+    });
+
+    expect(census.byAbout).toEqual({
+      earring: { calls: 2, ms: 40 },
+      face: { calls: 1, ms: 7 },
+    });
+  });
+
+  it("leaves out the calls that carry no question, rather than filing them under a blank", async () => {
+    /* The interpreter and the treatment are asked in the customer's own prose,
+       which is deliberately never recorded. A row of blanks would read as a
+       question the product asks. */
+    const { census } = await withCallCensus(async () => {
+      recordProviderCall({ stage: "interpret", provider: "openrouter", model: "sonnet", ms: 5, ok: true });
+      recordProviderCall({ stage: "segment", provider: "fal", model: "sam-3", ms: 9, ok: true, about: "lips" });
+    });
+
+    expect(census.byAbout).toEqual({ lips: { calls: 1, ms: 9 } });
+  });
+});

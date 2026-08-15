@@ -147,11 +147,26 @@ export type CallCensus = {
   byStage: Record<string, { calls: number; ms: number }>;
   /** And per model, which is where the invoice starts. */
   byModel: Record<string, { calls: number; ms: number }>;
+  /**
+   * AND PER QUESTION, which is where the reading stops being an argument.
+   *
+   * `about` has been recorded on every call since it existed — its own comment
+   * says the point out loud, *"the difference between eleven segment calls and
+   * eleven segment calls, six of them about eyes"* — and nothing ever summed
+   * it, so the number that names the lever was collected and never read. A
+   * field nobody asserts on is a field nobody has.
+   *
+   * Only calls that carry one appear, so a render whose calls are all prose
+   * (the interpreter, the treatment) contributes nothing here rather than a row
+   * of blanks.
+   */
+  byAbout: Record<string, { calls: number; ms: number }>;
 };
 
 function summarize(census: Census): CallCensus {
   const byStage: Record<string, { calls: number; ms: number }> = {};
   const byModel: Record<string, { calls: number; ms: number }> = {};
+  const byAbout: Record<string, { calls: number; ms: number }> = {};
   let ms = 0;
   let failed = 0;
   for (const call of census.calls) {
@@ -166,6 +181,13 @@ function summarize(census: Census): CallCensus {
     model.calls += 1;
     model.ms += call.ms;
     byModel[key] = model;
+
+    if (call.about !== undefined) {
+      const about = byAbout[call.about] ?? { calls: 0, ms: 0 };
+      about.calls += 1;
+      about.ms += call.ms;
+      byAbout[call.about] = about;
+    }
   }
   return {
     calls: census.calls,
@@ -173,6 +195,7 @@ function summarize(census: Census): CallCensus {
     wallMs: Date.now() - census.startedAt,
     byStage,
     byModel,
+    byAbout,
   };
 }
 

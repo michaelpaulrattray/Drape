@@ -480,6 +480,10 @@ export async function scannedFace(input: {
           calls: spent?.total.calls ?? null,
           callMs: spent?.total.ms ?? null,
           wallMs: spent?.wallMs ?? null,
+          /* WHICH QUESTIONS the scan's minutes went on. The panel's cost is
+             argued about in whole scans; the lever is per question, and it was
+             being collected on every call and summed nowhere. */
+          byAbout: spent?.byAbout ?? null,
         },
         "[faceScanService] scanned a face-version",
       );

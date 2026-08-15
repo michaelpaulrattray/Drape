@@ -540,6 +540,11 @@ export async function refineCandidate(
       wallMs: census.wallMs,
       byStage: census.byStage,
       byModel: census.byModel,
+      /* WHICH QUESTIONS the segment minutes went on — the closed region
+         vocabulary, never anybody's sentence (`aboutOf`). The latency and cost
+         program's first question is "what are the nine calls", and this is the
+         line that answers it without a special run. */
+      byAbout: census.byAbout,
     },
     "[refineService] what this edit cost in calls and seconds",
   );

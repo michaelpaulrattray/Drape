@@ -59,6 +59,37 @@ master-region CACHING (same unchanged master re-segmented every render
 miss costs two paints), NBP routing pending its n≥20 court, and
 text-call budgets (verification readings are the OpenRouter driver).
 
+**FIRST READINGS, 2026-08-15 (opus, free — five delivered dev renders and one
+direct probe; artifacts in `output/court-carried-words/*.log`):**
+
+```
+a delivered refine    19 calls · wall 149-280s
+  render   1 call  ~100s   GPT Image 2, and it is 40-65% of the wall clock
+  segment  9 calls 46-123s SAM 3
+  read     9 calls 44-54s  Sonnet 5
+```
+
+Two corrections to the levers named above, both from artifacts:
+
+1. **Master-region caching buys nothing on the repaint road.** A repaint has no
+   harvest, so `masterRegions` arrives EMPTY and the mint reads the DELIVERED
+   frame instead (`refineService`, the `readGround` note) — a picture that has
+   never existed before, so there is nothing to cache. The lever was written for
+   the paste road. On the repaint road the cost is the number of reads, not
+   their repetition: two independent reads per slot (ground and guard) is a
+   deliberate structural cost, and the sweep should start with how many SLOTS a
+   render reads rather than with a cache.
+2. **One bilateral region costs three provider calls, and the face read is most
+   of the wall clock.** Measured at the wire on a real frame: one
+   `region({ name: "earring" })` → `face 1 call 13.7s · earring 2 calls 9.3s`.
+   fable-132 predicted the call count; the timing says the MIDLINE HINT is the
+   valuable half of that fix, not the halves.
+
+Both readings are now self-reporting: the census summarises `byAbout` — the
+question each call asked — and every render and every face scan logs it. That
+field was recorded on every call since `aboutOf` existed and summed nowhere,
+which is why "what are the nine calls" needed a special run until today.
+
 **Filed here by fable-132, deliberately NOT slipped in behind the D-238
 fix:** a bilateral region now costs **three** segmentation calls instead of
 two (the face, for her own midline, then the plain noun once per half) and
