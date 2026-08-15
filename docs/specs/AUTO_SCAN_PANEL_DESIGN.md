@@ -77,10 +77,25 @@ is how a false positive becomes a row on her face.
 > hair · facial hair · eyes · eyebrows · nose · lips · all the teeth · ear ·
 > face skin · horns · earring · glasses. Five of them are bilateral (eyes,
 > eyebrows, ear, horns, earring) and a bilateral question is read as two
-> half-frames, so the CALL count is 7 + (5 x 2) + 1 shared axis read = **18
-> reads, about $0.090** at the same $0.005. That figure is DERIVED from the plan
-> and the reader's own split, not metered on a live scan — the twelve above is
-> a question count and was never the call count once horns and earrings joined.
+> half-frames.
+>
+> **The call count is 20, and $0.100 — COUNTED, not derived**
+> (`scripts/count-scan-reads-disposable.mts`, a recording reader driven through
+> `scanFace` itself). The derivation this correction was first written with said
+> 18 and was wrong: it forgot that `build` is COMPOSED rather than asked, and
+> costs a head read plus a subject matte while sending no question at all. Two
+> attempts at hand-arithmetic on one figure is what the instrument is for.
+> Twelve is a question count and was never the call count once horns and
+> earrings joined the plan. The describer is a further call on a different
+> transport and is deliberately not inside this total.
+>
+> **FILED while counting: `"face"` is asked TWICE per picture.** The below-head
+> slot reads it for the head, and `bilateralHalves` reads it again for the
+> midline — same prompt, same frame, two provider calls, because one keeps the
+> first component and the other keeps all. The five bilateral questions already
+> share their axis read between them, so this is the last duplicate of that
+> question; it is ~$0.005 a scan and it is the same shape as the defect the
+> paragraph above this one records fixing.
 
 ## 3. What the panel shows — the founder's third shape
 

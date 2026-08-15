@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "811e19f4dabb6e90"
+    "sourceFingerprint": "7ab4fb2592e1969a"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 119
+      "moduleCount": 120
     },
     {
       "id": "domain:castingV2",
@@ -3395,6 +3395,12 @@
     {
       "id": "module:server/castingV2/deliveryCourt.ts",
       "path": "server/castingV2/deliveryCourt.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/detectionUniversality.ts",
+      "path": "server/castingV2/detectionUniversality.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -9244,6 +9250,10 @@
     {
       "id": "test:server/castingV2/deployCollision.test.ts",
       "path": "server/castingV2/deployCollision.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/detectionUniversality.test.ts",
+      "path": "server/castingV2/detectionUniversality.test.ts"
     },
     {
       "id": "test:server/castingV2/diagnosticCapture.test.ts",
@@ -18604,6 +18614,31 @@
     {
       "from": "module:server/castingV2/deliveryCourt.ts",
       "to": "module:server/castingV2/maskGeometry.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/detectionUniversality.ts",
+      "to": "module:server/castingV2/accessoryKinds.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/detectionUniversality.ts",
+      "to": "module:server/castingV2/bornWornDetector.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/detectionUniversality.ts",
+      "to": "module:server/castingV2/faceScan.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/detectionUniversality.ts",
+      "to": "module:server/castingV2/referenceSlotCatalogue.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/detectionUniversality.ts",
+      "to": "module:server/castingV2/refineFacets.ts",
       "kind": "imports"
     },
     {
