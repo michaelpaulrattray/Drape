@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "53b1705bab84583c"
+    "sourceFingerprint": "8f9b70e8797fc2fc"
   },
   "domains": [
     {
@@ -9216,6 +9216,10 @@
     {
       "id": "test:server/castingV2/characterSheetPack.test.ts",
       "path": "server/castingV2/characterSheetPack.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/colourContextDoor.test.ts",
+      "path": "server/castingV2/colourContextDoor.test.ts"
     },
     {
       "id": "test:server/castingV2/composedDirection.test.ts",

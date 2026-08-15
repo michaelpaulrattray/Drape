@@ -306,6 +306,21 @@ export type RefineRefusal =
  */
 export type InventionDoorOutcome = "rescued" | "upheld";
 
+/**
+ * WHICH WALL THE DOOR WAS STANDING AT (fable-635 §2c).
+ *
+ * Two doors now produce `rescued` / `upheld`: the invention door at
+ * `wall_unfileable`, and the colour-context door at `wall_content`. Without
+ * this the service's rescue count would file every rescue under the first
+ * one's name — it hard-coded that reason, correctly, on the day it was the
+ * only door — and the honest-ask-refused rate would be reading two different
+ * populations as one.
+ *
+ * A closed pair rather than the whole `reason` union, so it can only ever mean
+ * "a door ran here" and never drift into a second copy of the refusal reason.
+ */
+export type DoorAt = "wall_unfileable" | "wall_content";
+
 export type RefineParse =
   | {
     ok: true;
@@ -319,8 +334,10 @@ export type RefineParse =
      * knife fight does not.
      */
     droppedReference?: boolean;
-    /** Set when the invention door rescued this reading — see the type. */
+    /** Set when a door rescued this reading — see the type. */
     door?: InventionDoorOutcome;
+    /** Which door — see `DoorAt`. Always present when `door` is. */
+    doorAt?: DoorAt;
   }
   /** Bare "undo" / "go back" — free navigation, never a render. */
   | { ok: true; intent: "navigate" }
@@ -367,8 +384,10 @@ export type RefineParse =
   | {
     ok: false;
     refusal: RefineRefusal;
-    /** Set when the invention door upheld this refusal — see the type. */
+    /** Set when a door upheld this refusal — see the type. */
     door?: InventionDoorOutcome;
+    /** Which door — see `DoorAt`. Always present when `door` is. */
+    doorAt?: DoorAt;
   };
 
 /**

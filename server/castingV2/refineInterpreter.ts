@@ -607,6 +607,16 @@ export type RefineInterpretInput = {
    * `vouched` pair and widens containment for that value and no other.
    */
   vouched?: { subject: string; value: string };
+  /**
+   * THE COLOUR-CONTEXT PASS — the content wall is being asked again with
+   * D-178's history line withheld (opus-477, fable-635).
+   *
+   * Set by this module's own door, never by a caller, exactly like `echoed` and
+   * `stageRelook`. Its presence is what stops a second withholding: a re-read
+   * that walls again falls through to the refusal that shipped before this
+   * existed.
+   */
+  colourWithheld?: boolean;
   /** What the face is NOW — relative asks resolve against this. */
   currentEyeColour: string | null;
   currentEyeShape: string | null;
@@ -680,14 +690,101 @@ export async function interpretRefinement(input: RefineInterpretInput): Promise<
         for (let echo = 1; echo <= 2; echo += 1) {
           const echoed = await runOnce(engine, { ...input, echoed: true }, instruction);
           if (echoed?.ok) return echoed;
-          if (echo === 2 && echoed) return inventionDoor(engine, input, instruction, echoed);
+          if (echo === 2 && echoed) return throughTheDoors(engine, input, instruction, echoed);
         }
       }
-      return inventionDoor(engine, input, instruction, parsed);
+      return throughTheDoors(engine, input, instruction, parsed);
     }
     if (attempt < 3) log.warn({ attempt }, "[refineInterpreter] empty reply — re-sampling");
   }
   return { ok: false, refusal: { reason: "unreadable" } };
+}
+
+/**
+ * The doors a refusal meets before it becomes an answer, in order.
+ *
+ * Each is pointed at ONE wall and is inert at every other, so they compose by
+ * passing the parse along rather than by knowing about each other.
+ */
+async function throughTheDoors(
+  engine: TextEngine,
+  input: RefineInterpretInput,
+  instruction: string,
+  parsed: RefineParse,
+): Promise<RefineParse> {
+  return colourContextDoor(engine, input, instruction, await inventionDoor(engine, input, instruction, parsed));
+}
+
+/**
+ * THE COLOUR-CONTEXT DOOR — what a content wall meets (opus-477, fable-635).
+ *
+ * # The measurement this exists for
+ *
+ * "Give her vampire fangs" walled `wall_content` on ~7% of attempts through the
+ * service and ~0% asked bare, and three shifts theorised about why. The whole
+ * difference is ONE line of the thirteen the service adds — D-178's
+ * *"the last colour they changed was the hair"* — measured five ways at n=120:
+ *
+ * ```
+ * bare 0 · her facet values 0 · everything currently filed 1 · THAT LINE 8 ·
+ * all thirteen lines together 8
+ * ```
+ *
+ * One line carries the entire effect, and it is the only line in that message
+ * that is not a fact about her face — it is an instruction about how to read an
+ * ask that has nothing to do with colour.
+ *
+ * # Why a re-ask rather than a lexicon
+ *
+ * The cheaper fix is to send the line only when the sentence looks like a
+ * colour ask. Its misses are silent and land on a paid path: *"make it darker"*
+ * is a colour ask with no colour word in it. A re-ask fails toward the refusal
+ * instead, which is the shape this file already uses three times (the echo
+ * pass, the stage re-look, the restatement pass).
+ *
+ * # It cannot soften a wall that should hold, and that is measured too
+ *
+ * A genuinely refusable ask walled **60/60 with the line and 60/60 without it**
+ * (`output/wall-strip-safety/`). Withholding a sentence about her hair does not
+ * make gore acceptable.
+ *
+ * # And it cannot misfile a colour, because the code already catches that
+ *
+ * The line is the only thing that says what "it" is in *"make it warmer"*, so a
+ * rescue could file the change against the wrong feature — and it does: the
+ * interpreter targeted her EYES on 2 of 24 served reads with the line withheld.
+ * Every one was corrected by D-178's own backstop (`redirectColourTo`,
+ * `refineService.ts:1237`), which runs on the composed delta from the service's
+ * OWN remembered facet and never from anything the interpreter was told. Driven
+ * with both controls — it moves a misfiled colour, and it stays quiet on an ask
+ * that names its own subject (`output/relative-colour-corner/`). The corner is
+ * older than this door and was already guarded.
+ *
+ * Its cost is one text call on a path that was refusing for free.
+ */
+async function colourContextDoor(
+  engine: TextEngine,
+  input: RefineInterpretInput,
+  instruction: string,
+  refused: RefineParse,
+): Promise<RefineParse> {
+  if (refused.ok || refused.refusal.reason !== "wall_content") return refused;
+  /* Never twice, and never when there is nothing to withhold — a face with no
+     colour history sends no such line, so this door does not exist for it. */
+  if (input.colourWithheld || !input.lastColourFacet) return refused;
+
+  const upheld = { ...refused, door: "upheld" as const, doorAt: "wall_content" as const };
+  const reread = await runOnce(engine, { ...input, lastColourFacet: null, colourWithheld: true }, instruction);
+  if (!reread || !reread.ok) return upheld;
+  /* Only an EDIT is rescued, for the invention door's reason beside it: the
+     measured case is an edit, and the other ok shapes carry no place to record
+     which door served them — an uncounted rescue is a rescue nobody can audit. */
+  if (!("delta" in reread)) return upheld;
+  log.info(
+    { instruction, lastColourFacet: input.lastColourFacet },
+    "[refineInterpreter] the content wall did not survive its own re-read without the colour history — serving",
+  );
+  return { ...reread, door: "rescued" as const, doorAt: "wall_content" as const };
 }
 
 /**
@@ -745,7 +842,7 @@ async function inventionDoor(
        COUNT it (fable-498 §4). A log line is not an artifact — this shift
        proved that on this very guard — so the outcome travels to the one place
        that knows the user and the candidate. */
-    return { ...refused, door: "upheld" as const };
+    return { ...refused, door: "upheld" as const, doorAt: "wall_unfileable" as const };
   }
   log.info(
     { asked, value },
@@ -754,8 +851,10 @@ async function inventionDoor(
   const vouchedRead = await runOnce(engine, { ...input, vouched: { subject: asked, value } }, instruction);
   /* Only an EDIT can be rescued: the door exists for a value containment
      refused, and a navigation carries none. */
-  if (vouchedRead?.ok && "delta" in vouchedRead) return { ...vouchedRead, door: "rescued" as const };
-  return { ...refused, door: "upheld" as const };
+  if (vouchedRead?.ok && "delta" in vouchedRead) {
+    return { ...vouchedRead, door: "rescued" as const, doorAt: "wall_unfileable" as const };
+  }
+  return { ...refused, door: "upheld" as const, doorAt: "wall_unfileable" as const };
 }
 
 /**

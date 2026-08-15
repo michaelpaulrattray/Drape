@@ -1024,7 +1024,17 @@ async function refineCandidateCounted(
     await countRefusal({
       userId: input.userId,
       candidateId: input.candidatePublicId,
-      reason: "wall_unfileable",
+      /*
+        THE DOOR SAYS WHICH WALL IT STOOD AT (fable-635 §2c).
+
+        This reason was hard-coded on the day the invention door was the only
+        door, and it was right then. The colour-context door also rescues, at
+        `wall_content`, and filing its rescues under `wall_unfileable` would sum
+        two different populations into one rate that describes neither. The
+        fallback keeps every parse written before the field existed reading the
+        way it always did.
+      */
+      reason: parsed.doorAt ?? "wall_unfileable",
       facet: null,
       outcome: "rescued",
     });
