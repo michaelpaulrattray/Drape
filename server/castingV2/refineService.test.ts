@@ -2967,6 +2967,58 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
     storageKey: "casting-v2/library/hair.png",
   });
 
+  /**
+   * THE CLASS, PROVEN AT THE WIRE (fable-599 §2).
+   *
+   * Fix A lands in the one reference-line writer every kind shares, so hair,
+   * eyes, horns and every kind added later inherit it in the same commit. That
+   * is an argument about construction; this is the assertion, and it is on the
+   * outgoing dispatch rather than on a constant near it (working law 5).
+   *
+   * NO carried reference of ANY kind restates its description. Each says the
+   * slot, its side where it has one, and the claim — and the crop is the
+   * description. A future kind cannot quietly reintroduce the second author
+   * without this failing, and it does not need a court of its own to do so.
+   *
+   * Words-only carriers are a different thing and are deliberately not here:
+   * skin has no crop to argue with and rides its sentence by founder ruling.
+   */
+  it("lets NO carried kind restate itself beside its own crop", async () => {
+    const kinds = [
+      { slot: "hair", tier: "anatomy", noun: "hair", words: ["auburn-brown, shoulder length"] },
+      { slot: "lips", tier: "anatomy", noun: "lips", words: ["a fuller cupid's bow"] },
+      { slot: "eye@left", tier: "anatomy", noun: "left eye", words: ["deep green with a pale limbal ring"] },
+      { slot: "horns@right", tier: "item", noun: "right horn", words: ["a curved, ridged, tan-brown horn"] },
+      { slot: "earring@left", tier: "item", noun: "left earring", words: ["a small silver cross on a thin chain"] },
+    ];
+    lineageReferences = kinds.map((kind, index) => carryRow({
+      id: 20 + index,
+      publicId: `ref-${20 + index}`,
+      slot: kind.slot,
+      tier: kind.tier,
+      noun: kind.noun,
+      words: kind.words,
+      storageKey: `casting-v2/library/${kind.slot.replace("@", "-")}.png`,
+    }));
+
+    await refineCandidate(
+      { ...repainting, interpret: async () => ({ ok: true as const, delta: { free: { skinTone: "a warm tan" } } }) },
+      { ...input, instruction: "give her a warm tan" },
+    );
+
+    const { prompt } = painted[0]!;
+    for (const kind of kinds) {
+      expect(
+        prompt,
+        `${kind.slot} rode as a crop, so the prompt must not describe it again`,
+      ).not.toContain(kind.words[0]!);
+      expect(prompt).toContain(`is the exact ${kind.noun} she has — the same ${kind.noun}, unchanged.`);
+    }
+    /* And the crops really did ride — an assertion about what is ABSENT from a
+       prompt passes just as well when nothing was carried at all. */
+    expect(painted[0]!.references).toHaveLength(kinds.length + 1);
+  });
+
   it("PAINTS the second edit of a carried slot, without sending that slot its own crop", async () => {
     lineageReferences = [hairCarryRow()];
 
