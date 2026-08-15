@@ -183,7 +183,6 @@ import { pronounsForSex } from "./castPronouns";
 import {
   captureCastingReferenceLibraryEnabled,
   captureCastingRepaintEnabled,
-  captureCastingSegmentsEnabled,
 } from "./castingV2Scope";
 import { isUpsweptAsk, readCanthalTilt } from "./eyeShapeRouting";
 import { alreadyUpswept, wearsGlassesByPixels } from "./canthalTilt";
@@ -2721,22 +2720,40 @@ async function refineCandidateCounted(
         from one global live-list. A fork from an older edit must not inherit a
         newer one's glasses.
 
-        **Only while the store is armed**, and only then does the column get
-        named at all (see `claimVariant`). The lineage exists to be read by the
-        store; recording it while the store is dark would buy nothing and would
-        put a brand-new column into the one INSERT every paid refinement runs.
-      */
-      /*
+        RECORDED ALWAYS, and it used to be recorded only while the segment
+        store was armed. **Both halves of that gate's reason were stale, and the
+        second one cost four renders to find.**
+
+        It was never a deploy defence: Drizzle names every column in the schema
+        and passes `default` for the ones a caller leaves out, so the column is
+        in the INSERT whether or not this line has a value for it — proved by
+        dropping the column under a real claim in
+        `castingV2-segment-store-db.test.ts`. The migration-before-code ordering
+        is what protects that deploy, and it still does.
+
+        And the lineage is no longer the store's private fact. THE CARRY READS
+        IT: `listLineageReferences` anchors on this variant and climbs its
+        parents, so a NULL here means a render whose ancestors are invisible —
+        no filed crop rides, every feature the face already had is re-issued in
+        words or lost, and the completeness guard turns the render into a
+        refund. Driven on a fixture inside the repaint and library scopes but
+        outside the segment one: two arms, two attempts each, four renders, and
+        every one came back with the earrings she had been given gone —
+        `carried: []` beside two healthy library rows. The version rail's take
+        grouping climbs the same column.
+
+        Nothing in production was ever exposed (all four scopes name the founder
+        alone), but `CASTING_V2_SCOPE` is already `all`, so widening the repaint
+        road by itself would have detonated it for everyone at once.
+
         AND A RE-ROLL TAKES THE PREDECESSOR'S PARENT, not the predecessor: it is
         the same version again, so it hangs where that version hung. Recording
         the predecessor would make take 2 a CHILD of take 1 and the two would
         never group.
       */
-      parentVariantPublicId: captureCastingSegmentsEnabled(input.userId)
-        ? (repeatsThisVersion
-          ? existing.find((row) => row.id === predecessor?.parentVariantId)?.publicId ?? null
-          : predecessor?.publicId ?? null)
-        : null,
+      parentVariantPublicId: repeatsThisVersion
+        ? existing.find((row) => row.id === predecessor?.parentVariantId)?.publicId ?? null
+        : predecessor?.publicId ?? null,
     });
   } catch (error) {
     if (error instanceof VariantOwnershipError) {
