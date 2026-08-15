@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "5a875c6f20741265"
+    "sourceFingerprint": "d66583534498f397"
   },
   "domains": [
     {
@@ -7654,6 +7654,11 @@
     {
       "id": "env:CASTING_SIDE_INFERENCE",
       "name": "CASTING_SIDE_INFERENCE",
+      "valueRecorded": false
+    },
+    {
+      "id": "env:CASTING_SIDE_PHRASING",
+      "name": "CASTING_SIDE_PHRASING",
       "valueRecorded": false
     },
     {
@@ -19326,6 +19331,11 @@
     {
       "from": "module:server/castingV2/recipeAssembler.ts",
       "to": "module:server/castingV2/declarativeState.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/recipeAssembler.ts",
+      "to": "module:server/castingV2/referenceSlotCatalogue.ts",
       "kind": "imports"
     },
     {

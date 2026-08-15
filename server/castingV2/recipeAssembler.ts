@@ -80,6 +80,7 @@ import { vacantPhraseFor } from "./vacancyPhrases";
 import type { CastPronouns } from "./castPronouns";
 import { IMPERATIVE_OPENER } from "./declarativeState";
 import { accessoryKindOfSlot } from "./slotWordShape";
+import { slotDefinition } from "./referenceSlotCatalogue";
 
 /** A library key is a PANEL SLOT — the stylist's ontology, never `facet@region`
  *  (fable-173). Bilateral features are stored per instance and spoken as pairs
@@ -393,6 +394,34 @@ const LEADING_DETERMINER = /^(?:a|an|the|her|his|their|its)\s+/i;
  * The clause states the feature's WHOLE target state — the full word stack, not
  * the delta alone — because that is what D-244 line 2 regenerates from.
  */
+/**
+ * WHERE THAT SIDE IS IN THE PICTURE — dark behind `CASTING_SIDE_PHRASING`.
+ *
+ * Her right eye is on the LEFT of the photograph, and the engine appears to
+ * paint by position rather than by anatomy: a court of twelve renders put a
+ * per-side eye edit on the named eye 6/6 when the named side was her LEFT (the
+ * image's right) and 3/6 when it was her RIGHT (the image's left) — the misses
+ * all landing on the image's right half, whatever the recipe named
+ * (`V4_SIDE_INFERENCE_COURT.md`).
+ *
+ * That is a positional bias rather than a naming confusion, and it suggests one
+ * cheap lever: say the side BOTH ways, so the anatomy the customer means and the
+ * half of the picture it lives in cannot disagree. It is an experiment, it is
+ * dark until its own court runs on the failing arm, and it says nothing this
+ * product does not already know — the sides come from the same catalogue the
+ * panel draws its boxes from.
+ */
+function whereItIs(slot: FeatureSlot): string {
+  if (process.env.CASTING_SIDE_PHRASING !== "on") return "";
+  const definition = slotDefinition(slot);
+  if (definition === null || definition.instance === null) return "";
+  /* Her left is the viewer's right. Said as the painter sees it, because the
+     painter is looking at the picture. */
+  return definition.instance === "left"
+    ? " (on the right of the picture as you look at it)"
+    : " (on the left of the picture as you look at it)";
+}
+
 function askSentence(
   asks: readonly Ask[],
   bySlot: ReadonlyMap<FeatureSlot, LibraryEntry>,
@@ -444,7 +473,7 @@ function askSentence(
        (`segmentsOnFace`'s worn-vs-hers distinction, one layer up, and the same
        reason: a stylist speaks about a thing, and about her). */
     const named = entry?.tier === "item" ? `the ${noun}` : `${possessive} ${noun}`;
-    clauses.push(`${named}: ${(wordStacks.get(ask.slot) ?? []).join(", ")}`);
+    clauses.push(`${named}${whereItIs(ask.slot)}: ${(wordStacks.get(ask.slot) ?? []).join(", ")}`);
   }
   /*
     AND THE PRESENTATION CLAUSES RIDE THE SAME SENTENCE.

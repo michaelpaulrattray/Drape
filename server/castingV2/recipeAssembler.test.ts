@@ -1071,3 +1071,80 @@ describe("a presentation clause is said and filed nowhere", () => {
     expect(withOut.ask).toBe("Change only her hair: a copper crop.");
   });
 });
+
+/**
+ * SAYING THE SIDE BOTH WAYS — dark behind `CASTING_SIDE_PHRASING`.
+ *
+ * A court of twelve renders put a per-side eye edit on the named eye 6/6 when
+ * the side was her LEFT (the image's right) and 3/6 when it was her RIGHT (the
+ * image's left), the misses all landing on the image's right half whatever the
+ * recipe named. That reads as a positional bias rather than a naming confusion,
+ * so the experiment is to say the side both ways and let the anatomy and the
+ * half of the picture agree.
+ *
+ * Off — which is every environment until its own court runs — not one character
+ * of the sentence moves.
+ */
+describe("where that side is in the picture", () => {
+  const withPhrasing = <T>(run: () => T): T => {
+    const was = process.env.CASTING_SIDE_PHRASING;
+    process.env.CASTING_SIDE_PHRASING = "on";
+    try {
+      return run();
+    } finally {
+      process.env.CASTING_SIDE_PHRASING = was;
+    }
+  };
+
+  it("says nothing extra while it is dark", () => {
+    const recipe = assembleRecipe({
+      master: MASTER, pronouns: SHE,
+      library: [],
+      asks: [{ slot: "eye@right", noun: "right eye", words: "fiery red" }],
+    });
+
+    expect(recipe.ok).toBe(true);
+    if (!recipe.ok) return;
+    expect(recipe.ask).toBe("Change only her right eye: fiery red.");
+  });
+
+  it("ARMED — names her side and the half of the picture it lives on", () => {
+    const recipe = withPhrasing(() => assembleRecipe({
+      master: MASTER, pronouns: SHE,
+      library: [],
+      asks: [{ slot: "eye@right", noun: "right eye", words: "fiery red" }],
+    }));
+
+    expect(recipe.ok).toBe(true);
+    if (!recipe.ok) return;
+    expect(recipe.ask).toBe(
+      "Change only her right eye (on the left of the picture as you look at it): fiery red.",
+    );
+  });
+
+  it("ARMED — and the mirrored half, because her left is the viewer's right", () => {
+    const recipe = withPhrasing(() => assembleRecipe({
+      master: MASTER, pronouns: SHE,
+      library: [],
+      asks: [{ slot: "eye@left", noun: "left eye", words: "fiery red" }],
+    }));
+
+    expect(recipe.ok).toBe(true);
+    if (!recipe.ok) return;
+    expect(recipe.ask).toBe(
+      "Change only her left eye (on the right of the picture as you look at it): fiery red.",
+    );
+  });
+
+  it("ARMED — a feature with one instance is left alone", () => {
+    const recipe = withPhrasing(() => assembleRecipe({
+      master: MASTER, pronouns: SHE,
+      library: [],
+      asks: [{ slot: "hair", noun: "hair", words: "copper" }],
+    }));
+
+    expect(recipe.ok).toBe(true);
+    if (!recipe.ok) return;
+    expect(recipe.ask).toBe("Change only her hair: copper.");
+  });
+});

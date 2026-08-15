@@ -169,6 +169,25 @@ const SYSTEM_PROMPT = [
   "true in this photograph. If the asked-for change is not there, say so — a description of",
   "what is there instead would be recorded as if it had been wanted.",
   "",
+  /*
+    WHOSE LEFT — AND WHY THERE IS NO SENTENCE ABOUT IT HERE (fable-611 §2,
+    courted and REVERTED).
+
+    Asked about her right eye on a frame where her right eye was correctly
+    painted, this reader answered *"Left eye (viewer's left) is pale icy blue"*
+    and refused to corroborate. The obvious fix — pin the frame in this prompt,
+    "her right is the picture's left, say her right, never the viewer's left" —
+    was written, courted on seventeen frames whose painted side the segmenter
+    had already measured, and FAILED: it refused three correct renders and
+    corroborated three that had painted the other eye. All it changed was the
+    prose, which went from disclosing its frame to being confidently wrong.
+
+    What passed, on the same specimens, was not a wording at all: ask about the
+    named side's own CUT and the side word disappears from the question. Three
+    of three wrong-eye renders were then refused, and the only refusals left
+    were honest ones about colour. **A per-side facet is corroborated from its
+    own cut; this frame-wide reader is for facets a face has one of.**
+  */
   'Reply with JSON: {"caption": "...", "matches": true|false} and nothing else.',
   "The caption is under 160 characters.",
 ].join("\n");
