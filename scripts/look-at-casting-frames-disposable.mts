@@ -17,19 +17,29 @@
  *   corners.png        the bottom corners at full resolution, which is the
  *                      resolution the claim "this is upper arm, not forearm"
  *                      actually needs. No elbow crease, no taper.
- *   arm-overlay.png    the bench's own saved masks drawn back onto the frames —
- *                      cyan "upper arm", magenta "forearm", landing on opposite
- *                      sides of one body. Run the bench first; this reads the
- *                      PNGs it wrote rather than paying for them again.
+ *   arm-overlay.png    the bench's own saved masks drawn back onto the frames,
+ *                      landing on opposite sides of one body. Run the bench
+ *                      first; this reads the PNGs it wrote rather than paying
+ *                      for them again.
+ *
+ * **The overlay is MONOCHROME** — founder ruling fable-230, *"bounding-box
+ * overlays are THIN WHITE, not red — everywhere"*, and `pnpm test` enforces it
+ * over every script under `scripts/` that composites onto an image. Two masks
+ * still have to be told apart, so this uses the house's own answer to that
+ * rather than a colour: **`upper arm` solid, `forearm` CHECKERED**, both white,
+ * which is `termsPalette`'s idiom for a second class. Its `DIMMED_FRAME_CEILING`
+ * is why the frame is dimmed first — 102 is the brightest a dimmed photograph
+ * can make, so white at 255 cannot be confused with anything underneath it.
  *
  * Costs nothing but bandwidth: no segmenter call, no credits, no writes.
  *
  *   npx tsx scripts/look-at-casting-frames-disposable.mts
  */
 import "dotenv/config";
-import { existsSync, writeFileSync } from "node:fs";
-import { mkdirSync } from "node:fs";
-import mysql from "mysql2/promise";
+import { existsSync, mkdirSync, writeFileSync } from "node:fs";
+
+import { openDatabase } from "./lib/dbConnection.mts";
+import { DIMMED_FRAME_CEILING } from "./lib/termsPalette.mts";
 
 const OUT = "output/placement-vocabulary";
 mkdirSync(OUT, { recursive: true });
@@ -75,7 +85,7 @@ async function sheetOf(cells: Buffer[], cols: number, cellW: number, cellH: numb
 
 /* 1. THE CONTACT SHEET — the population, not a chosen specimen. */
 console.log("frames-sheet: the 16 most recent masters");
-const connection = await mysql.createConnection(process.env.DATABASE_URL!);
+const connection = await openDatabase(process.env.DATABASE_URL!);
 const [rows] = await connection.execute(
   "SELECT imageKey, MAX(createdAt) AS t FROM casting_candidates" +
   " WHERE imageKey LIKE 'casting-v2/candidates/%' GROUP BY imageKey ORDER BY t DESC LIMIT 16",
@@ -120,13 +130,20 @@ for (const frame of [FOUR[0], FOUR[3]]) {
 await sheetOf(corners, 4, 340, 460, `${OUT}/corners.png`);
 
 /* 4. THE BENCH'S OWN MASKS, DRAWN BACK ON. Reads the PNGs the bench saved. */
-console.log("arm-overlay: cyan 'upper arm', magenta 'forearm'");
-const tinted = async (path: string, w: number, h: number, rgb: [number, number, number]) => {
+console.log("arm-overlay: 'upper arm' SOLID, 'forearm' CHECKERED — both white");
+/** The checker cell, in pixels of a ~1024px frame: coarse enough to read as a
+ *  treatment at contact-sheet scale rather than as a lighter grey. */
+const CHECKER = 14;
+const drawn = async (path: string, w: number, h: number, checkered: boolean) => {
   const grey = await sharp(path).resize(w, h, { fit: "fill" }).greyscale().raw().toBuffer();
   const px = Buffer.alloc(w * h * 4, 0);
-  for (let i = 0; i < w * h; i += 1) {
-    if (grey[i] === 0) continue;
-    px[i * 4] = rgb[0]; px[i * 4 + 1] = rgb[1]; px[i * 4 + 2] = rgb[2]; px[i * 4 + 3] = 190;
+  for (let y = 0; y < h; y += 1) {
+    for (let x = 0; x < w; x += 1) {
+      const i = y * w + x;
+      if (grey[i] === 0) continue;
+      if (checkered && (Math.floor(x / CHECKER) + Math.floor(y / CHECKER)) % 2 === 0) continue;
+      px[i * 4] = 255; px[i * 4 + 1] = 255; px[i * 4 + 2] = 255; px[i * 4 + 3] = 220;
+    }
   }
   return sharp(px, { raw: { width: w, height: h, channels: 4 } }).png().toBuffer();
 };
@@ -136,15 +153,24 @@ for (const frame of [FOUR[0], FOUR[2], FOUR[3]]) {
   const meta = await sharp(bytes).metadata();
   const w = meta.width!, h = meta.height!;
   const layers: Array<{ input: Buffer }> = [];
-  for (const [word, rgb] of [["upper-arm", [0, 220, 255]], ["forearm", [255, 0, 200]]] as const) {
+  for (const [word, checkered] of [["upper-arm", false], ["forearm", true]] as const) {
     const path = `${OUT}/${frame.name}-${word}.png`;
     if (!existsSync(path)) {
       console.log(`  ${frame.name}: no ${word} mask on disk — run the bench first`);
       continue;
     }
-    layers.push({ input: await tinted(path, w, h, rgb as [number, number, number]) });
+    layers.push({ input: await drawn(path, w, h, checkered) });
   }
-  const base = await sharp(bytes).modulate({ brightness: 0.75 }).png().toBuffer();
+  /* Dimmed so white reads as a mark rather than as part of the photograph —
+     `DIMMED_FRAME_CEILING` is the measured ceiling that makes that safe. */
+  const base = await sharp(bytes)
+    .linear(DIMMED_FRAME_CEILING / 255, 0)
+    .png()
+    .toBuffer();
   overlays.push(await tile(await sharp(base).composite(layers).png().toBuffer(), 380));
 }
 await sheetOf(overlays, 3, 380, 570, `${OUT}/arm-overlay.png`);
+
+/* A script ends by ending the process (fable-127): `openDatabase` and sharp
+   both leave handles that keep the event loop alive with the work finished. */
+process.exit(0);

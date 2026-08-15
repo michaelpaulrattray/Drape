@@ -259,3 +259,7 @@ say("");
 say(`THE D-213 TRAP: ${trapTotal} of ${OUT_OF_FRAME.size * FRAMES.length} reads came back with a mask for a`);
 say("region the photographs do not contain.");
 say(`Prediction was "more than half of 20" — ${trapTotal > 10 ? "HELD" : "WRONG"}.`);
+
+/* A script ends by ending the process (fable-127): sharp's workers and the
+   reader's keep-alive sockets outlive the last line otherwise. */
+process.exit(0);
