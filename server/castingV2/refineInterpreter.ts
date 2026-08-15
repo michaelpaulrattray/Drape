@@ -617,6 +617,15 @@ export type RefineInterpretInput = {
    * existed.
    */
   colourWithheld?: boolean;
+  /**
+   * THE PRIOR-CONTEXT PASS — an UNBACKED stage wall is being asked again with
+   * everything currently filed about her withheld (opus-481, fable-639).
+   *
+   * Set by this module's own door, never by a caller, exactly like
+   * `colourWithheld` beside it. Its presence is what stops a second
+   * withholding.
+   */
+  priorWithheld?: boolean;
   /** What the face is NOW — relative asks resolve against this. */
   currentEyeColour: string | null;
   currentEyeShape: string | null;
@@ -712,7 +721,81 @@ async function throughTheDoors(
   instruction: string,
   parsed: RefineParse,
 ): Promise<RefineParse> {
-  return colourContextDoor(engine, input, instruction, await inventionDoor(engine, input, instruction, parsed));
+  const invention = await inventionDoor(engine, input, instruction, parsed);
+  return priorContextDoor(engine, input, instruction, await colourContextDoor(engine, input, instruction, invention));
+}
+
+/**
+ * THE PRIOR-CONTEXT DOOR — what an UNBACKED stage wall meets (fable-639).
+ *
+ * # The measurement this exists for
+ *
+ * The same night's bisect that convicted one line of the content wall showed a
+ * second and separate pressure on the STAGE wall, and it is not one line. Stage
+ * claimed on the first read, same face, same sentence, n=120 and n=90
+ * interleaved:
+ *
+ * ```
+ * nothing at all                     0%
+ * + her five filed properties       39%     <- a SUBSET
+ * + the accessories line            17%     <- its SUPERSET
+ * + facets and the colour line      11%
+ * the live service input             7.5%
+ * ```
+ *
+ * It rises and then FALLS as context is added, so no per-line cause can explain
+ * it and no per-line cure can fix it — the clock rival was checked and killed by
+ * running the arms interleaved. What survives to the customer is
+ * *"Refining can't do vampire fangs yet — it isn't one of the things this can
+ * name"*, about a capability the product has, on 2–3% of asks to a face with
+ * history.
+ *
+ * # Why withholding all of it is safe here, when it would not be elsewhere
+ *
+ * Those lines are D-173's referent resolution: *"remove the earrings"* finds
+ * *"small gold hoops"* only because they are shown. So this door is EDIT-ONLY
+ * (fable-639) — **a removal is never rescued by it** and falls to the refusal
+ * that ships today. Three more properties make its worst case exactly today's
+ * behaviour:
+ *
+ *   - it only ever sees UNBACKED claims. A genuine stage ask names a stage word
+ *     and `stageWordIn` settles it deterministically in one call, never reaching
+ *     a re-look and never reaching here.
+ *   - withholding the prior makes containment STRICTER, not looser, because
+ *     `FreeLaneCheck.prior` is what ALLOWS a restatement to carry earlier words.
+ *     A rescue cannot smuggle an uncontained value through.
+ *   - any failure of the re-read — a wall, an unreadable reply, a removal, a
+ *     navigation — returns the refusal that was already going to be returned.
+ *
+ * Its cost is one text call, or two if that read claims the stage wall on its
+ * own account, on a path that was refusing for free.
+ */
+async function priorContextDoor(
+  engine: TextEngine,
+  input: RefineInterpretInput,
+  instruction: string,
+  refused: RefineParse,
+): Promise<RefineParse> {
+  if (refused.ok || refused.refusal.reason !== "wall_stage") return refused;
+  /* UNBACKED ONLY. `backed` absent means a refusal written before the field
+     existed, which came from a matched stage word — treated as backed, the same
+     reading `refusalMessage` gives it. */
+  if (refused.refusal.backed !== false) return refused;
+  if (input.priorWithheld) return refused;
+  const filed = Object.values(input.prior ?? {}).some((items) => (items?.length ?? 0) > 0);
+  if (!filed) return refused;
+
+  const upheld = { ...refused, door: "upheld" as const, doorAt: "wall_stage" as const };
+  const reread = await runOnce(engine, { ...input, prior: {}, priorWithheld: true }, instruction);
+  if (!reread || !reread.ok) return upheld;
+  /* EDIT ONLY (fable-639 §2). A removal read without the prior can resolve no
+     referent, so rescuing one would trade a false refusal for a wrong edit. */
+  if (!("delta" in reread)) return upheld;
+  log.info(
+    { instruction, claimed: refused.refusal.asked },
+    "[refineInterpreter] the unbacked stage wall did not survive its own re-read without her filed items — serving",
+  );
+  return { ...reread, door: "rescued" as const, doorAt: "wall_stage" as const };
 }
 
 /**

@@ -309,8 +309,9 @@ export type InventionDoorOutcome = "rescued" | "upheld";
 /**
  * WHICH WALL THE DOOR WAS STANDING AT (fable-635 §2c).
  *
- * Two doors now produce `rescued` / `upheld`: the invention door at
- * `wall_unfileable`, and the colour-context door at `wall_content`. Without
+ * Three doors now produce `rescued` / `upheld`: the invention door at
+ * `wall_unfileable`, the colour-context door at `wall_content`, and the
+ * prior-context door at an UNBACKED `wall_stage`. Without
  * this the service's rescue count would file every rescue under the first
  * one's name — it hard-coded that reason, correctly, on the day it was the
  * only door — and the honest-ask-refused rate would be reading two different
@@ -319,7 +320,7 @@ export type InventionDoorOutcome = "rescued" | "upheld";
  * A closed pair rather than the whole `reason` union, so it can only ever mean
  * "a door ran here" and never drift into a second copy of the refusal reason.
  */
-export type DoorAt = "wall_unfileable" | "wall_content";
+export type DoorAt = "wall_unfileable" | "wall_content" | "wall_stage";
 
 export type RefineParse =
   | {
