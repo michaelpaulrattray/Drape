@@ -369,6 +369,18 @@ export type TextResult = {
    * be.
    */
   truncated?: boolean;
+  /**
+   * WHAT THE READING COST, where the provider bills by token.
+   *
+   * Calls and milliseconds price a paint — a flat rate per picture, measured at
+   * $0.099 off the account balance. They cannot price a READING, and readings
+   * are a fifth of every paid render, so the money question stopped here.
+   *
+   * Absent when the provider reported no usage, or reported it in a shape this
+   * build does not recognise — absent rather than zero, because a zero we
+   * invented would be indistinguishable from one we measured.
+   */
+  tokens?: { in: number; out: number };
 };
 
 export interface TextEngine {

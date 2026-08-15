@@ -65,11 +65,16 @@ const readJson = (value: unknown): any => {
   return null;
 };
 
-type Bucket = { calls: number; ms: number };
-const add = (into: Map<string, Bucket>, key: string, ms: number) => {
-  const bucket = into.get(key) ?? { calls: 0, ms: 0 };
+type Bucket = { calls: number; ms: number; tokensIn: number; tokensOut: number; tokenCalls: number };
+const add = (into: Map<string, Bucket>, key: string, ms: number, tokens?: { in: number; out: number }) => {
+  const bucket = into.get(key) ?? { calls: 0, ms: 0, tokensIn: 0, tokensOut: 0, tokenCalls: 0 };
   bucket.calls += 1;
   bucket.ms += ms;
+  if (tokens) {
+    bucket.tokensIn += tokens.in;
+    bucket.tokensOut += tokens.out;
+    bucket.tokenCalls += 1;
+  }
   into.set(key, bucket);
 };
 
@@ -95,10 +100,16 @@ for (const row of rows as any[]) {
   perRenderSum.push(Number(census.total?.ms) || 0);
   failedCalls += Number(census.total?.failed) || 0;
   for (const call of census.calls) {
-    add(byStage, String(call.stage), Number(call.ms) || 0);
-    add(byModel, `${call.provider}:${call.model}`, Number(call.ms) || 0);
+    /* Absent, malformed or partial usage is treated as UNMEASURED rather than
+       as free — the writer refuses to invent a zero and so does the reader. */
+    const usage = call.tokens;
+    const tokens = usage && typeof usage.in === "number" && typeof usage.out === "number"
+      ? { in: usage.in, out: usage.out }
+      : undefined;
+    add(byStage, String(call.stage), Number(call.ms) || 0, tokens);
+    add(byModel, `${call.provider}:${call.model}`, Number(call.ms) || 0, tokens);
     if (typeof call.about === "string" && call.about.length > 0) {
-      add(byAbout, call.about, Number(call.ms) || 0);
+      add(byAbout, call.about, Number(call.ms) || 0, tokens);
     }
   }
 }
@@ -136,15 +147,40 @@ const parallelism = median(perRenderWall) === 0 ? 0 : median(perRenderSum) / med
 console.log(`  sum ÷ wall         ${parallelism.toFixed(2)}×  ${parallelism > 1.5 ? "— running together; the slowest call is the target" : "— serial round trips; the ORDER is the target"}`);
 if (failedCalls > 0) console.log(`  failed calls       ${failedCalls} (money out, nothing delivered by them)`);
 
+/*
+  HOW MUCH OF THIS WINDOW IS PRICEABLE, said out loud.
+
+  A token-billed model with no token counts prints no token column, and an
+  absent column reads exactly like a free one. The same trap as the unread
+  window above it: silence is not a measurement.
+*/
+const tokenCalls = [...byModel.values()].reduce((sum, one) => sum + one.tokenCalls, 0);
+const allCalls = [...byModel.values()].reduce((sum, one) => sum + one.calls, 0);
+console.log(
+  tokenCalls === 0
+    ? `  tokens             NONE of ${allCalls} calls carries a token count — an UNPRICED window,`
+      + "\n                     not a free one. The count shipped 2026-08-16."
+    : `  tokens             ${tokenCalls} of ${allCalls} calls priced`,
+);
+
 const table = (title: string, buckets: Map<string, Bucket>) => {
   console.log(`\n  ${title}`);
   const total = [...buckets.values()].reduce((sum, one) => sum + one.ms, 0);
   for (const [key, bucket] of [...buckets.entries()].sort((a, b) => b[1].ms - a[1].ms)) {
     const share = total === 0 ? 0 : (bucket.ms / total) * 100;
+    /*
+      TOKENS WITH THEIR DENOMINATOR, always. "412k tokens" over calls that half
+      of them never reported is a number that reads as a measurement and is an
+      undercount; `4/39 priced` says which it is at a glance.
+    */
+    const priced = bucket.tokenCalls === 0
+      ? ""
+      : `  ${((bucket.tokensIn + bucket.tokensOut) / 1000).toFixed(1)}k tok`
+        + ` (${bucket.tokenCalls}/${bucket.calls} priced)`;
     console.log(
       `    ${key.padEnd(34)} ${String(bucket.calls).padStart(5)} calls  `
       + `${(bucket.ms / 1000).toFixed(1).padStart(7)}s  ${share.toFixed(1).padStart(5)}%  `
-      + `${(bucket.ms / bucket.calls / 1000).toFixed(1)}s each`,
+      + `${(bucket.ms / bucket.calls / 1000).toFixed(1)}s each${priced}`,
     );
   }
 };

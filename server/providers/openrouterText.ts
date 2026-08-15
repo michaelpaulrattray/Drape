@@ -227,9 +227,32 @@ export function createOpenRouterTextEngine(config: OpenRouterTextConfig): TextEn
             */
             const truncated = payload.choices?.[0]?.finish_reason === "length";
 
+            /*
+              WHAT THIS READING COST, IN TOKENS (fable-658 §4).
+
+              Sonnet is token-billed, so calls and milliseconds cannot price it
+              — and readings are a fifth of every paid render. The provider
+              already sends the numbers and this module already parses them for
+              the empty-completion log; they were being dropped everywhere else.
+
+              Read defensively rather than trusted: a provider that changes its
+              usage shape, or omits it, yields `undefined` and the census records
+              no tokens for the call rather than a zero that would read as
+              "measured, and free".
+            */
+            const usage = payload.usage;
+            const count = (value: unknown): number | null =>
+              typeof value === "number" && Number.isFinite(value) && value >= 0 ? value : null;
+            const promptTokens = count(usage?.prompt_tokens);
+            const completionTokens = count(usage?.completion_tokens);
+            const tokens = promptTokens === null || completionTokens === null
+              ? undefined
+              : { in: promptTokens, out: completionTokens };
+
             return {
               text,
               truncated,
+              ...(tokens ? { tokens } : {}),
               latencyMs: Date.now() - startedAt,
               provenance: {
                 provider: "openrouter",
@@ -240,7 +263,12 @@ export function createOpenRouterTextEngine(config: OpenRouterTextConfig): TextEn
             };
           },
           { signal: request.signal },
-        )),
+        ),
+        /* The tokens come off the REPLY and nothing else — this extractor is
+           never handed the request, so it cannot become a route by which a
+           prompt reaches telemetry. */
+        (result) => (result.tokens ? { tokens: result.tokens } : undefined),
+        ),
       );
     },
   };

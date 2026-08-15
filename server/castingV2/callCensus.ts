@@ -60,8 +60,21 @@ export type ProviderCall = {
   ms: number;
   ok: boolean;
   /** What it was asked about, when that is a fixed word rather than a
-   *  customer's sentence — a region name, never their prose. */
+   *  customer's sentence — a region name or a `ReadPurpose`, never their
+   *  prose. */
   about?: string;
+  /**
+   * WHAT IT COST IN TOKENS, where the provider bills that way (fable-658 §4).
+   *
+   * Calls and milliseconds price an image — a paint is a flat rate per picture,
+   * measured at $0.099 off the account balance. They do not price a READING:
+   * Sonnet is token-billed, so a fifth of every render was uncountable in money
+   * even once its purposes were named. Two integers close that.
+   *
+   * Numbers only, and that is the whole content boundary — a token count is the
+   * SIZE of a sentence and carries none of it.
+   */
+  tokens?: { in: number; out: number };
 };
 
 type Census = {
@@ -112,15 +125,27 @@ export function recordProviderCall(call: ProviderCall): void {
   census.calls.push(call);
 }
 
-/** Time a call and record it, whichever way it ends. */
+/**
+ * Time a call and record it, whichever way it ends.
+ *
+ * `detail` exists because a token count is only knowable from the REPLY, and
+ * everything else about a call is knowable before it is made. It reads the
+ * returned value and nothing else — it is never handed the request, so it
+ * cannot become a route by which a prompt reaches telemetry.
+ *
+ * A failed call has no reply to read, so it records no tokens. That is honest
+ * rather than convenient: the provider may well have billed for it, and a zero
+ * we invented would be indistinguishable from one we measured.
+ */
 export async function throughCensus<T>(
   what: Omit<ProviderCall, "ms" | "ok">,
   run: () => Promise<T>,
+  detail?: (value: T) => Pick<ProviderCall, "tokens"> | undefined,
 ): Promise<T> {
   const startedAt = Date.now();
   try {
     const value = await run();
-    recordProviderCall({ ...what, ms: Date.now() - startedAt, ok: true });
+    recordProviderCall({ ...what, ...(detail?.(value) ?? {}), ms: Date.now() - startedAt, ok: true });
     return value;
   } catch (error) {
     recordProviderCall({ ...what, ms: Date.now() - startedAt, ok: false });
@@ -131,8 +156,15 @@ export async function throughCensus<T>(
 export type CallCensus = {
   /** Every call, in the order they finished. */
   calls: readonly ProviderCall[];
-  /** How many, and how long they took added up. */
-  total: { calls: number; ms: number; failed: number };
+  /**
+   * How many, how long they took added up — and the tokens, where the provider
+   * bills that way.
+   *
+   * `tokenCalls` is beside the counts on purpose: a render whose token totals
+   * come from three of its nine reads is a different number from one where all
+   * nine reported, and without the denominator the two are indistinguishable.
+   */
+  total: { calls: number; ms: number; failed: number; tokensIn: number; tokensOut: number; tokenCalls: number };
   /**
    * WALL TIME, against the sum above — the pair that says whether the minutes
    * are spent waiting on one slow thing or on many things in a row.
@@ -169,9 +201,17 @@ function summarize(census: Census): CallCensus {
   const byAbout: Record<string, { calls: number; ms: number }> = {};
   let ms = 0;
   let failed = 0;
+  let tokensIn = 0;
+  let tokensOut = 0;
+  let tokenCalls = 0;
   for (const call of census.calls) {
     ms += call.ms;
     if (!call.ok) failed += 1;
+    if (call.tokens) {
+      tokensIn += call.tokens.in;
+      tokensOut += call.tokens.out;
+      tokenCalls += 1;
+    }
     const stage = byStage[call.stage] ?? { calls: 0, ms: 0 };
     stage.calls += 1;
     stage.ms += call.ms;
@@ -191,7 +231,7 @@ function summarize(census: Census): CallCensus {
   }
   return {
     calls: census.calls,
-    total: { calls: census.calls.length, ms, failed },
+    total: { calls: census.calls.length, ms, failed, tokensIn, tokensOut, tokenCalls },
     wallMs: Date.now() - census.startedAt,
     byStage,
     byModel,

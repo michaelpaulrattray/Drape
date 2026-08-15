@@ -155,6 +155,80 @@ describe("the transports actually call it", () => {
     expect(census.calls[0]!.model).toBe("test/model");
     expect(census.calls[0]!.ok).toBe(true);
   });
+
+  /**
+   * THE TOKENS, AT THE WIRE (fable-658 §4).
+   *
+   * Calls and milliseconds price a paint — a flat rate per picture. They cannot
+   * price a READING, and readings are a fifth of every paid render, so the
+   * money question stopped at the read stage even once its purposes were named.
+   *
+   * Driven through the shipped engine with the network stubbed, because the
+   * thing under test is the parsing of a provider's reply and not a fixture's
+   * agreement with itself.
+   */
+  const replyWith = (extra: Record<string, unknown>) => (async () => new Response(
+    JSON.stringify({
+      choices: [{ message: { content: "{}" }, finish_reason: "stop" }],
+      model: "served/x",
+      ...extra,
+    }),
+    { status: 200, headers: { "content-type": "application/json" } },
+  )) as typeof fetch;
+
+  const spend = async (extra: Record<string, unknown>) => {
+    globalThis.fetch = replyWith(extra);
+    const engine = createOpenRouterTextEngine({ apiKey: "k", model: "test/model" });
+    const { census } = await withCallCensus(async () => {
+      await engine.complete({ system: "s", user: "u", about: "verify" });
+    });
+    return census;
+  };
+
+  it("records what a reading cost in tokens, from the provider's own usage", async () => {
+    const census = await spend({ usage: { prompt_tokens: 1200, completion_tokens: 45 } });
+
+    expect(census.calls[0]!.tokens).toEqual({ in: 1200, out: 45 });
+    expect(census.total.tokensIn).toBe(1200);
+    expect(census.total.tokensOut).toBe(45);
+    expect(census.total.tokenCalls).toBe(1);
+  });
+
+  /*
+    THE NEGATIVE CONTROL, and it is the one that matters for money.
+
+    A provider that reports no usage must leave the call UNMEASURED, not free.
+    Without `tokenCalls` beside the totals the two are the same number, and a
+    cost report would quietly divide a real invoice by a token count that half
+    the calls never contributed to.
+  */
+  it("leaves a reading UNMEASURED when the provider reports no usage — never zero", async () => {
+    const census = await spend({});
+
+    expect(census.calls[0]!.tokens).toBeUndefined();
+    expect(census.total.tokenCalls).toBe(0);
+    expect(census.total.tokensIn).toBe(0);
+    /* One call was made and none of it was priced — the pair that says so. */
+    expect(census.total.calls).toBe(1);
+  });
+
+  it("treats a usage shape it does not recognise as absent rather than as data", async () => {
+    const census = await spend({ usage: { prompt_tokens: "1200", completion_tokens: -3 } });
+
+    expect(census.calls[0]!.tokens).toBeUndefined();
+    expect(census.total.tokenCalls).toBe(0);
+  });
+
+  it("records no tokens for a call that failed — there was no reply to read", async () => {
+    globalThis.fetch = (async () => new Response("nope", { status: 500 })) as typeof fetch;
+    const engine = createOpenRouterTextEngine({ apiKey: "k", model: "test/model" });
+    const { census } = await withCallCensus(async () => {
+      await engine.complete({ system: "s", user: "u", about: "verify" }).catch(() => undefined);
+    });
+
+    expect(census.total.failed).toBeGreaterThanOrEqual(1);
+    expect(census.total.tokenCalls).toBe(0);
+  });
 });
 
 /**
