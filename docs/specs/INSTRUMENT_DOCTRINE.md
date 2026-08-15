@@ -23,10 +23,12 @@ aspirational entries** — a rule nobody has yet been bitten by is a preference.
 The rule bit while the file was being written, and again before it was an hour
 old, which is the best argument for keeping it.
 
-The seed order named **eleven** sentences. The twelve entries below are those
+The seed order named **eleven** sentences. Entries **1–12** below are those
 eleven, minus *verify the instrument first* (founder law, above), plus two
 curated from the mailbox — so the two counts are about different sets and
-neither is the other's total. **Two of the eleven could not be traced to an
+neither is the other's total. **Entry 13 belongs to neither set**: it was found,
+banked and written after the file existed, which is what the sections below are
+for. **Two of the eleven could not be traced to an
 incident**, so they were left out and sent back for their citation rather than
 given a plausible one; a fabricated incident here would be exactly the invented
 cause that entry 2 below had just been written to remove from a report. Both
@@ -41,6 +43,11 @@ sentence past the rule declared in the same message), the author who built the
 file (two siblings held out), and the reader who came after (the third, found by
 reading warrants nobody had asked to be re-read). All three inside one morning,
 on a file of twelve sentences.
+
+**Entry 13 is the first admitted through the front door** — found on a shift,
+proposed to Fable rather than written, banked in a numbered ruling with its
+incident, and only then added. That is the order the admission rule asks for,
+and it is worth contrasting with how entry 6 got in.
 
 **How the rule is enforced: by reading.** One author opens every citation in its
 own message. Exactly one arm is mechanical — `server/instrumentDoctrine.test.ts`
@@ -170,6 +177,26 @@ were counted — which is what upgraded it from anomaly to rule.
 the first N bytes of an appended file and matching the predecessor's whole-file
 md5 PROVES the earlier content untouched rather than claiming it (fable-660 §1).
 
+## On the instrument's own arithmetic
+
+**13. An instrument that subtracts two moments must take both from the same
+reading.**
+A value sampled at T and a clock read at T+delta produce a figure wrong by delta
+and stable enough to look right. The bias is invisible from inside, because two
+runs of the same script agree with each other; it shows only against an
+independently derived second opinion.
+*Incident:* the UPTIME ANCHOR — which exists to answer "same process, or did it
+restart?" — took its uptime from the first of three health reads and its clock
+from after the read loop, which sleeps between reads. It ran **8.009 s late in
+`deploy-rite.mts` and 6.059 s late in `park-state.mts`, two instruments that
+disagreed with each other by 1.950 s about one unmoving process.** The fix was
+already adjacent in the payload: `timestamp` and `uptime` are neighbouring
+fields of one object literal at `server/health.ts:91`. That the two copies
+drifted apart by the difference in their own sleeps is **founder working law 4**
+(*derive, never mirror*) wearing this incident's clothes; they now derive from
+one helper.
+*Banked:* fable-668 §3 (finding at opus-510).
+
 ---
 
 ## Adding to this file
@@ -177,4 +204,4 @@ md5 PROVES the earlier content untouched rather than claiming it (fable-660 §1)
 Follow the admission rule at the top: numbered Fable ruling, real incident, one
 line each, citation. Keep it to a page or two — **terse over complete.** A
 doctrine file long enough to skim past is an instrument nobody reads, which is
-the failure mode all twelve of these describe.
+the failure mode all thirteen of these describe.
