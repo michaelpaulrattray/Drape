@@ -1643,15 +1643,42 @@ export default function CastingSheet() {
             Skeletons the instant a dispatch starts — not only on first load.
             Before this, Follow left the previous roll's eight faces on screen
             with no sign anything had happened.
+
+            AND ON A COLD OPEN, BEFORE THE SESSION ITSELF HAS ANSWERED
+            (founder, 2026-08-15, on the outsider walk's measurement).
+
+            `shownRollId` comes from the session query, so on a cold load every
+            clause above was false and the grid rendered NOTHING — the page
+            painted its chrome, its brief box and its price line in 4ms and her
+            faces arrived 3,878ms later, with no skeleton, no spinner and no
+            word in between. Every instrument called that page finished; the
+            thing she opened it for was not on it.
+
+            `session.isPending` is the honest fact for that window: the sheet's
+            SHAPE is known long before its contents, and a sheet reached by URL
+            or by the unsigned-sheets card has a roll on it. The one case this
+            over-promises — a session created but never rolled — resolves to
+            "Nothing cast on this sheet yet" as soon as the query lands, and
+            that state is reachable for about a second in a flow where the
+            client already knows it is rolling (`startingRoll`).
           */}
-          {!visibleFailure && (awaitingNewRoll || (!roll.data && (startingRoll || shownRollId)))
+          {!visibleFailure
+            && (awaitingNewRoll || session.isPending || (!roll.data && (startingRoll || shownRollId)))
             ? // Eight skeletons the instant a roll is on its way — the sheet's
               // shape is known long before its contents are.
               Array.from({ length: config.data?.candidatesPerRoll ?? 8 }, (_, index) => (
                 <Skeleton
                   key={index}
                   style={{ aspectRatio: "4 / 5" }}
-                  label={`CASTING 0${index + 1}`}
+                  /*
+                    THE LABEL IS A CLAIM AND ONLY ONE OF THESE STATES CAN MAKE
+                    IT. "CASTING 01" says work is happening at the provider; on
+                    a cold open of a finished sheet nothing is being cast and
+                    the faces already exist. A placeholder that says nothing is
+                    the panel's own rule (fable-521) and it is the honest shape
+                    for a page that is only fetching.
+                  */
+                  label={awaitingNewRoll || startingRoll ? `CASTING 0${index + 1}` : undefined}
                 />
               ))
             : candidates

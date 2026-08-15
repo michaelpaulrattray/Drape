@@ -45,3 +45,5 @@ const bands = [0,1,2,3,4,5].map(i => {
 });
 console.log(`lost ${lost}px · box x ${minX}..${maxX}, y ${minY}..${maxY} of ${H}`);
 console.log(`by sixth of the frame (top→bottom): ${bands.join(", ")}`);
+
+process.exit(0);

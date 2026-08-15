@@ -36,3 +36,5 @@ tiles.push({ input: Buffer.from(`<svg width="${8 + 3 * (W + 8)}" height="30">${l
 await sharp({ create: { width: 8 + 3 * (W + 8), height: 30 + SPECS.length * (H + 8), channels: 3, background: { r: 245, g: 245, b: 245 } } })
   .composite(tiles).png().toFile(`${OUT}/horn-sheet.png`);
 console.log(`${OUT}/horn-sheet.png`);
+
+process.exit(0);
