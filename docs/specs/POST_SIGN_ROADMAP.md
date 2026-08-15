@@ -90,6 +90,59 @@ question each call asked — and every render and every face scan logs it. That
 field was recorded on every call since `aboutOf` existed and summed nowhere,
 which is why "what are the nine calls" needed a special run until today.
 
+**THE FIRST POPULATION READING, 2026-08-16 (opus, free — 56 dev renders and 4
+production ones, read off rows already paid for; `scripts/call-census-report.mts`,
+commits `ce11e3de`/`c7039b9d`/`6e155ea7`).** The five-render glance above is
+superseded by a window, and the shape held across two independent worlds:
+
+```
+                    DEV (:52008)              PRODUCTION (:23768)
+renders measured    56 of 68                  4 of 18
+wall                median 200.0s p90 242.9   median 172.2s p90 210.1
+sum ÷ wall          0.96×                     0.96×
+
+render   57 calls  56.9%  107.1s each   |  render   4 calls  60.1%  98.9s each
+segment 294 calls  21.8%    7.9s each   |  read    39 calls  31.1%   5.3s each
+read    352 calls  21.3%    6.5s each   |  segment 32 calls   8.8%   1.8s each
+```
+
+Four things this settles, and one it opens:
+
+1. **The paint is 57–60% of the clock and it is not ours.** The founder's
+   *"5 minutes"* is real but is the TAIL — the middle is ~200s dev / ~172s prod.
+2. **`sum ÷ wall` is MEAN CONCURRENCY**, not "serial round trips": the sum of
+   call durations over an interval is the integral of concurrency across it, so
+   0.96 says a render spends its clock with about ONE provider call outstanding
+   — the parallelism there is and the idle there is cancelling to one. Both
+   `censusSoFar` biases run downward, so every figure here is a FLOOR.
+3. **The axis cache is visible in the product's own rows.** `face` reads at
+   **0.59/render (dev) and 0.50 (prod)** — below one, which is fable-603's
+   per-candidate midline working. The first time this program has read one of
+   its own optimisations back off data rather than claimed it.
+4. **The read stage WAS anonymous and now is not.** Its 352 calls carried no
+   `about` at all, so a fifth of every paid edit was un-attributable while the
+   equally-sized segment stage was fully named. Twelve closed purposes now ship
+   (`ReadPurpose`), split per re-ask DOOR — the colour door fires on 21 of 360
+   attempts and its price was invisible. Readings also carry TOKENS now, since
+   Sonnet is token-billed and calls-and-milliseconds cannot price it;
+   **unmeasured is recorded as unmeasured, never as zero.**
+
+**Open, and pointing at code we control: SAM 3 costs 8.0s a call in dev and 1.8s
+in production**, uniformly across questions. Contention was the obvious
+explanation and it FAILED its own test — holding it at zero on both sides,
+dev-alone 6.99s against prod-alone 1.81s is still 3.9×
+(`scripts/sam-latency-worlds-disposable.mts`; within-dev contention is a real
+but small 1.32×). The residual leans toward payload or pixels — `face`, the only
+whole-frame read in the table, is also the slowest question in dev at 9.33s —
+and settling it needs an artifact-level read of what bytes went on the wire.
+
+**Every row above predates both the purposes and the tokens**, so this is the
+last UNPRICED reading rather than the first priced one. Cost-per-render against
+the 25-credit price becomes a query once ordinary use accumulates rows.
+A price table does exist and was overlooked once already:
+`FAL_GPT_IMAGE_2_MEASURED_USD_PER_IMAGE = 0.099`, measured off the account
+balance rather than a rate card (`server/providers/falImages.ts:88`).
+
 **Filed here by fable-132, deliberately NOT slipped in behind the D-238
 fix:** a bilateral region now costs **three** segmentation calls instead of
 two (the face, for her own midline, then the plain noun once per half) and
