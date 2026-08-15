@@ -175,6 +175,9 @@ export default function CastingSheet() {
     arithmetic rather than by an effect.
   */
   const [chosenFrame, setChosenFrame] = useState<ChosenFrame | null>(null);
+  /** The version he last CLICKED, per candidate — see `selectVariant`, where a
+   *  burst of clicks settles out of order. */
+  const selectionWanted = useRef<{ candidateId: string; variantId: string | null } | null>(null);
   /* The refine panel owns its own outcomes (D-154) — never a toast. */
   const [refineOutcome, setRefineOutcome] = useState<string | null>(null);
   /*
@@ -1082,11 +1085,42 @@ export default function CastingSheet() {
        for it: taking a step back prunes the SELECTED face's chain, so the
        selection must have landed before the prune is sent. Every other caller
        ignores the promise exactly as before. */
+    /*
+      THE LAST CLICK WINS, WHATEVER ORDER THE ANSWERS COME BACK IN
+      (founder, fable-609/610; reproduced under Fast 3G, 2 bursts in 4).
+
+      Five clicks in half a second put five writes in flight, and they settle in
+      whatever order the network decides. Measured on a throttled burst: the
+      rail and the picture came to rest AGREEING WITH EACH OTHER on a version
+      two clicks back — an earlier write had landed last and set the selection
+      behind him. Every surface was honest; the server's answer was stale.
+
+      So the newest click is remembered, and when a write settles onto anything
+      other than what he last asked for, one more write is sent. It converges in
+      one extra round trip, it cannot loop (the intent only moves when he clicks
+      again), and it needs no sequence column on the server.
+
+      The intent is per candidate, because one viewer walks a whole sheet.
+    */
+    selectionWanted.current = { candidateId: viewerCandidateId, variantId };
     return chooseVariant
       .mutateAsync({ candidateId: viewerCandidateId, variantId })
       .then(async () => {
-        await variants.refetch();
+        const wanted = selectionWanted.current;
+        /* A superseded click's answer does not get to repaint anything: a newer
+           one is already in flight and its own settle will do this. */
+        if (!wanted || wanted.candidateId !== viewerCandidateId || wanted.variantId !== variantId) return;
+        const fresh = await variants.refetch();
         await invalidate();
+        const settled = fresh.data?.selectedVariantId ?? null;
+        if (settled !== wanted.variantId) {
+          await chooseVariant.mutateAsync({
+            candidateId: wanted.candidateId,
+            variantId: wanted.variantId,
+          });
+          await variants.refetch();
+          await invalidate();
+        }
       })
       /*
         OUR SENTENCE, NEVER THE ERROR'S (run-9). This was `error.message`, so a
