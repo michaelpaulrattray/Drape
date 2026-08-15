@@ -1,5 +1,25 @@
 # Horns — the four courts, run and read
 
+> **CORRECTION, 2026-08-15 (founder ruling, fable-566): §3's tie was broken on
+> the wrong bar.** Survival crowned WORDS because both arms kept the horns
+> present and her face hers, and words is cheaper. Neither arm was asked
+> whether they are **the same horns**.
+>
+> The founder: *"horns should be carried by reference as well — it's a feature,
+> otherwise they would change on every refinement."* He is right on this
+> record's own law — a crop holds what it DEPICTS, and words are a label — and
+> on the unowned-axis-collapse class: an axis nobody pins re-rolls.
+>
+> **The tie rule is amended for feature kinds: a presence tie does not decide a
+> carrier question. Instance constancy is part of the bar.** §3's WINNER line
+> stands as what was measured and no longer stands as a recommendation.
+>
+> The reading of what is already on disk
+> (`V2_HORN_CONSTANCY_READING.md`) does not separate the arms — one specimen of
+> three visibly re-rolled under BOTH — so the ruling rests on construction
+> rather than on that evidence, which is where fable-566 §1 placed it before the
+> reading was taken.
+
 *Run 2026-08-14 by the executor against the design pre-registered in
 `V2_HORNS_COURT.md`, widened by fable-519 §3/§4 (a second reader, a second
 head situation) and re-run for both. Every number below is from a driven court;
