@@ -564,7 +564,13 @@ export const LEAVE_AS_SHE_IS = "leave her as she is";
 export function sameAgainReask(input: { asked: string; priceCredits: number }): Reask {
   return {
     kind: "same-again",
-    question: `She already has ${input.asked}. Want a fresh take of it? `
+    /*
+      THE SENTENCE QUOTES THE ASK RATHER THAN OWNING IT — because the ask is a
+      whole instruction, not a noun. "She already has make her hair jet black"
+      was on screen in the first browser check, and it is the kind of sentence
+      that makes a careful product look careless.
+    */
+    question: `You already asked for this — "${input.asked}". Want a fresh take of it? `
       + `The picture you are looking at is replaced · ${input.priceCredits} credits.`,
     options: [
       { label: `Yes — a fresh take · ${input.priceCredits} credits`, resolves: input.asked },

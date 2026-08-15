@@ -863,25 +863,6 @@ async function refineCandidateCounted(
   )) {
     priorAbsent[subject as FreeSubject] = itemsOf(value);
   }
-  /*
-    THE OFFER TRAVELS AS A THROW, because the door is called from two places and
-    both of them are deep in a parse. It is caught immediately below and turned
-    into the free "asked" outcome the near-miss questions already use — one
-    shape for every question this service raises.
-  */
-  class RefineOffer extends Error {
-    constructor(readonly reask: Reask) { super("a fresh take was offered"); }
-  }
-  const asOffer = (error: unknown): RefineResult | null => (error instanceof RefineOffer
-    ? {
-      kind: "asked" as const,
-      reask: error.reask,
-      variantId: source.variantPublicId,
-      candidateId: input.candidatePublicId,
-      imageUrl: currentImageUrl,
-      instructions: readInstructions(predecessorForParse?.instructions),
-    }
-    : null);
   const throughTheAlreadyTrueDoor = async (
     parse: Extract<Awaited<ReturnType<typeof readInstruction>>, { ok: true }>,
     mode?: "edit",
@@ -901,29 +882,6 @@ async function refineCandidateCounted(
       delta: parse.delta, prior: priorItems, priorAbsent, identity: currentIdentity,
     });
     if (!verdict.absorbed) return parse;
-    /*
-      AND HERE THE REFUSAL BECOMES AN OFFER (founder 2026-08-15, fable-575 §2).
-
-      When the ask repeats the very step that MADE the frame she is looking at,
-      "this would have changed nothing" is true of the recipe and false of what
-      she wants: she is asking for another take of it. The protection stays —
-      nothing is charged and nothing is claimed — and the sentence becomes a
-      question with the price on it.
-
-      Only for an EXACT repeat of this version's own last step, compared on the
-      parsed deltas: an ask that merely lands on something she already has (a
-      second "make her hair blonde" on a blonde) is not a re-roll of a version
-      and keeps the plain refusal.
-    */
-    const lastStep = readStepDeltas(predecessorForParse?.stepDeltas).at(-1);
-    if (!confirmedRegenerate && lastStep && sameStep(lastStep, parse.delta)) {
-      const asked = (predecessorForParse?.requestText ?? instruction).trim();
-      log.info(
-        { candidateId: input.candidatePublicId, asked },
-        "[refineService] the same ask again — offering a fresh take rather than refusing",
-      );
-      throw new RefineOffer(sameAgainReask({ asked, priceCredits: price }));
-    }
     log.warn(
       { candidateId: input.candidatePublicId, instruction, alreadyTrue: verdict.alreadyTrue },
       "[refineService] the reading kept only what she already is — asking once more before refusing",
@@ -958,15 +916,7 @@ async function refineCandidateCounted(
       }),
     });
   };
-  if (parsed.ok && "delta" in parsed) {
-    try {
-      parsed = await throughTheAlreadyTrueDoor(parsed);
-    } catch (error) {
-      const offer = asOffer(error);
-      if (offer) return offer;
-      throw error;
-    }
-  }
+  if (parsed.ok && "delta" in parsed) parsed = await throughTheAlreadyTrueDoor(parsed);
   /*
     A RESCUE IS COUNTED TOO, and it is the half that makes the ratio mean
     something: `upheld` alone would say how often the door refuses and nothing
@@ -1317,14 +1267,7 @@ async function refineCandidateCounted(
       /* The SECOND reading gets the same door as the first — including its one
          re-ask. A re-read is a parse, and a parse that loses her sentence loses
          it either time. */
-      let kept: Awaited<ReturnType<typeof throughTheAlreadyTrueDoor>>;
-      try {
-        kept = await throughTheAlreadyTrueDoor(asEdit, "edit");
-      } catch (error) {
-        const offer = asOffer(error);
-        if (offer) return offer;
-        throw error;
-      }
+      const kept = await throughTheAlreadyTrueDoor(asEdit, "edit");
       /*
         DERIVED FROM THE COMPOSITION TABLE, never from a second list of what a
         subject owns: `facetsAnsweredBy` is the same reader supersession uses,
@@ -2048,10 +1991,40 @@ async function refineCandidateCounted(
   const stepDeltas = editDelta
     ? (repeatsThisVersion ? priorSteps : [...priorSteps, editDelta])
     : chain.map((step) => step.delta);
+  /*
+    THE OFFER LIVES HERE, WHERE THE REPEAT IS DETECTED — and it used to live one
+    door down, which charged somebody 25 credits without asking.
+
+    The first version raised it inside the already-true door, on the reasoning
+    that a repeat is what that door catches. It is not always: "make her hair
+    jet black" on a jet-black head reads as a real change to `saysNothingNew`
+    (an enum axis, not a free-lane item), so the door stayed shut, the repeat
+    fell through to the branch above, and the render happened — in place, as
+    designed, and WITHOUT the question the founder's ruling is built around.
+    Driven in the browser, which is the only place it showed.
+
+    So the question is asked wherever a repeat is recognised, which is one place
+    and this one. Nothing has been claimed yet, so it costs nothing to raise.
+  */
+  if (repeatsThisVersion && !confirmedRegenerate) {
+    const asked = (predecessor?.requestText ?? instruction).trim();
+    log.info(
+      { userId: input.userId, candidate: input.candidatePublicId, asked },
+      "[refineService] the same ask again — offering a fresh take before anything is claimed",
+    );
+    return {
+      kind: "asked",
+      reask: sameAgainReask({ asked, priceCredits: price }),
+      variantId: source.variantPublicId,
+      candidateId: input.candidatePublicId,
+      imageUrl: currentImageUrl,
+      instructions: priorInstructions,
+    };
+  }
   if (repeatsThisVersion) {
     log.info(
       { userId: input.userId, candidate: input.candidatePublicId, chain: priorSteps.length },
-      "[refineService] the same ask again — re-rolling this version in place rather than adding one",
+      "[refineService] a fresh take was bought — re-rolling this version in place rather than adding one",
     );
   }
   /*
