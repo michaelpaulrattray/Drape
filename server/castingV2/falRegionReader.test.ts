@@ -2,7 +2,8 @@ import sharp from "sharp";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { LANDMARK_OF_ACCESSORY } from "./accessoryKinds";
-import { createFalRegionReader } from "./falRegionReader";
+import { catalogueSlots, isDerivedRegion } from "./referenceSlotCatalogue";
+import { askedAs, createFalRegionReader } from "./falRegionReader";
 import { MaskError, unionMasks } from "./maskGeometry";
 import type { Mask } from "./maskedComposite";
 
@@ -329,6 +330,51 @@ describe("falRegionReader cuts the frame instead of naming a side", () => {
       }
       vi.unstubAllGlobals();
     }
+  });
+
+  /**
+   * AND THE SAME, FOR ANATOMY — the test that would have caught the drift.
+   *
+   * The accessory half derived; the anatomy half was three names typed once
+   * ("ear", "eyes", "eyebrows"). The founder ruled horns bilateral, the
+   * catalogue declared `perSide`, every layer above followed — and this reader
+   * did not, so `regionSides` answered `null` and a scan filed `horns:--` on a
+   * frame with two plainly visible horns.
+   *
+   * So the catalogue's own `frame` column is the source, and this drives it in
+   * BOTH directions: an `ownSide` slot is asked once per side, a `wholeFrame`
+   * one is asked once, whole. A kind declares its shape on its card and the
+   * reader follows.
+   */
+  it("follows the catalogue's own frame column, in both directions", async () => {
+    const seen = new Set<string>();
+    for (const definition of catalogueSlots()) {
+      if (definition.question === null || isDerivedRegion(definition.question)) continue;
+      if (seen.has(definition.question)) continue;
+      seen.add(definition.question);
+      const { prompts } = stubSam3({ sides: "both" });
+      const reader = createFalRegionReader({ apiKey: "test-key" });
+      await reader.region({ image: await frame(), name: definition.question });
+
+      if (definition.frame === "ownSide") {
+        expect(prompts, `${definition.slot} is read per side, so it is asked once per half`)
+          .toEqual([
+            "face",
+            askedAs(singularOfRegion(definition.question)),
+            askedAs(singularOfRegion(definition.question)),
+          ]);
+      } else {
+        /* `askedAs` is the region card's measured phrasing — "the lips" rather
+           than "lips" — and it belongs to the WIRE, not to this rule. The rule
+           here is how many times, and of what. */
+        expect(prompts, `${definition.slot} is read whole, so it is asked once`)
+          .toEqual([askedAs(definition.question)]);
+      }
+      vi.unstubAllGlobals();
+    }
+    /* The positive control: a vacuous sweep over an empty catalogue would pass. */
+    expect(seen.size).toBeGreaterThan(6);
+    expect(seen.has("horns")).toBe(true);
   });
 
   it("gives the whole frame's coordinates back even when a side answers at the wrong size", async () => {

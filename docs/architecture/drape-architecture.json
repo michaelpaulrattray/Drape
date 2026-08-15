@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "995249f74665e011"
+    "sourceFingerprint": "1a53dd31872a07fa"
   },
   "domains": [
     {
@@ -18800,11 +18800,6 @@
     },
     {
       "from": "module:server/castingV2/falRegionReader.ts",
-      "to": "module:server/castingV2/accessoryKinds.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/falRegionReader.ts",
       "to": "module:server/castingV2/callCensus.ts",
       "kind": "imports"
     },
@@ -18826,6 +18821,11 @@
     {
       "from": "module:server/castingV2/falRegionReader.ts",
       "to": "module:server/castingV2/maskGeometry.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/falRegionReader.ts",
+      "to": "module:server/castingV2/referenceSlotCatalogue.ts",
       "kind": "imports"
     },
     {

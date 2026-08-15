@@ -21,7 +21,7 @@
  */
 import { createModuleLogger } from "../logging/logger";
 import { assertImageBytes, NotAnImageError } from "../security/trustedImageFetch";
-import { LANDMARK_OF_ACCESSORY } from "./accessoryKinds";
+import { catalogueSlots } from "./referenceSlotCatalogue";
 import { throughCensus } from "./callCensus";
 import { throughFalGate } from "./falConcurrency";
 import { REGION_CARDS, REGION_CARD_ENTRIES, type AskedAs, type RegionCard } from "./regionCards";
@@ -302,17 +302,28 @@ function assertPicture(image: Buffer, question: string): void {
   own `pair` column is now the source, and this set derives from it rather than
   restating it — add a paired accessory to that table and the reader follows.
 
+  AND THE ANATOMY HALF DERIVES TOO, since 2026-08-15 — because it drifted the
+  first time a new pair arrived. The founder ruled horns bilateral ("left and
+  right bounding boxes and edits should apply to things like horns"); the
+  catalogue declared `perSide`; every layer above followed the declaration; and
+  this hand-written list did not, so `regionSides` answered `null` and the scan
+  filed `horns:--` on a frame with two plainly visible horns. Three names typed
+  once were exactly as wrong as the accessory list they replaced.
+
+  The catalogue's `frame: "ownSide"` IS the fact ("this slot is read one half at
+  a time"), so the set is that column now: a kind declares its shape on its card
+  and the reader follows, with nothing to remember.
+
   This is D-238's class (a bilateral region answered as a single instance) and
   its sweep did not reach here: it cleared `landmark()` and `bornWornDetector`,
   both of which are anatomy. Cost is the same one extra call per bilateral
   region, now also paid on earrings — flagged to the latency-and-cost program.
 */
-const BILATERAL = new Set([
-  "ear",
-  "eyes",
-  "eyebrows",
-  ...LANDMARK_OF_ACCESSORY.filter((entry) => entry.pair).map((entry) => entry.region),
-]);
+const BILATERAL = new Set(
+  catalogueSlots()
+    .filter((definition) => definition.frame === "ownSide" && definition.question !== null)
+    .map((definition) => definition.question as string),
+);
 
 /** The noun ONE SIDE of a bilateral region is asked by. */
 function singularOf(name: string): string {
