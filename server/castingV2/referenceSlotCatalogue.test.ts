@@ -401,9 +401,16 @@ describe("a display region is shown and never carried", () => {
       it is no longer a slot whose picture and crop must differ, which is the
       only thing this list is about.
     */
+    /*
+      AND TEETH'S WORDS CHANGED (fable-619 §2, benched 2026-08-15): the bare
+      noun answered the class with an INSTANCE — one fang on his own render, 10%
+      of the mouth's width — so the row now asks for "all the teeth", which
+      returns 76–98% of it on every frame where teeth show and nothing on a
+      closed mouth. Pinned here because the words are the fix.
+    */
     expect(displayed.map((definition) => definition.slot)).toEqual(["teeth", "skin"]);
     expect(displayed.map((definition) => [definition.slot, definition.display]))
-      .toEqual([["teeth", "teeth"], ["skin", "face skin"]]);
+      .toEqual([["teeth", "all the teeth"], ["skin", "face skin"]]);
   });
 
   it("names a region the segmenter actually answers, never an invented one", () => {

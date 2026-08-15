@@ -300,7 +300,10 @@ describe("the scan carries the words", () => {
       frame,
       reader: {
         ...reader,
-        region: async ({ name }: { name: string }) => (name === "teeth" ? bare : mask),
+        /* The row's question is "all the teeth" since fable-619 §2 — the words
+           the class answers to, rather than the bare noun that answered with
+           one fang. */
+        region: async ({ name }: { name: string }) => (name === "all the teeth" ? bare : mask),
       },
       describe: async () => ({ build: "slim shoulders", skin: "warm olive", teeth: null }),
     });

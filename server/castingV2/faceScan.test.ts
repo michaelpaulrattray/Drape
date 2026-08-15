@@ -96,7 +96,10 @@ describe("what the scan asks is derived from the catalogue", () => {
       smiling mouth and "teeth" answers 1,345 — the two are different questions
       to this reader, whatever they are to a diagram.
     */
-    expect(plan.find((region) => region.feature === "teeth")?.question).toBe("teeth");
+    /* And it asks for ALL of them (fable-619 §2): the bare noun handed his
+       panel one fang, 10% of the mouth's width, on the frame he was looking
+       at. */
+    expect(plan.find((region) => region.feature === "teeth")?.question).toBe("all the teeth");
     /* A bilateral feature is one question read two-sidedly, so both its slots
        ride one plan entry rather than costing two reads. */
     const eye = plan.find((region) => region.feature === "eye");

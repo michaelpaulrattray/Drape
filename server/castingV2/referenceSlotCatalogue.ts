@@ -438,8 +438,30 @@ const ANATOMY_SLOTS: readonly CatalogueEntry[] = [
       nothing had to be gated on the describer to make that true. The note above
       still stands for CUTTING (a crop of the mouth filed as her teeth is the
       lips' crop renamed), which is why the question stays `none`.
+
+      AND THE WORD IS "ALL THE TEETH", because the bare noun answers a CLASS
+      WITH AN INSTANCE (founder, fable-619 §2: his vampire render drew the box
+      around one fang, and the describer honestly described the one tooth it
+      was handed). Benched rather than edited into place
+      (`bench-teeth-box-disposable`), bars written first, the mouth's own box as
+      the denominator so "a row of teeth" and "one tooth" are told apart by
+      measurement:
+
+        question                his fangs   even   diastema   crowded   closed×3
+        "teeth"                    10%       82%      86%       16%      silent
+        "the teeth" / "her teeth"  10%       27%      16%       16%      silent
+        "all the teeth"            76%       82%      98%       87%      silent
+        "upper and lower teeth"    78%       90%      97%       93%      silent
+                                              (box width as a share of the mouth's)
+
+      Two questions pass every arm, and the tie breaks on WHAT THEY BECAME: by
+      box area, "upper and lower teeth" occupies 70–88% of the mouth's own box
+      on the three smiles, which is the mouth wearing the teeth's name — the
+      very thing the note above refuses. "all the teeth" stays at 34–42% and is
+      still the teeth. Silent on all three closed mouths either way, so nothing
+      was traded for it.
     */
-    display: "teeth",
+    display: "all the teeth",
   },
   {
     feature: "cheekbone",
@@ -829,6 +851,15 @@ export const DISPLAY_REGION_VOCABULARY: Readonly<Record<string, string>> = {
     + "smiling frame and 0 px on his closed-mouth one, while \"lips\" answers 0 px and "
     + "2,363 px on the same two. The two are different questions to this reader, whatever "
     + "they are to a diagram — which is also why his panel had no LIPS row on the smile",
+  "all the teeth":
+    "the same question asked so that it answers the CLASS (fable-619 §2, benched "
+    + "2026-08-15 in `bench-teeth-box-disposable`): on his fanged render the bare noun "
+    + "returns a box 10% of the mouth's width — one fang, which is what his panel showed "
+    + "him — and this phrasing returns 76%. Across four frames where teeth are plainly in "
+    + "the picture it returns 76/82/98/87% of the mouth's width, and on three closed "
+    + "mouths it returns nothing at all. \"upper and lower teeth\" scores the same on the "
+    + "width arm and was rejected on a second measurement: by AREA it becomes 70–88% of "
+    + "the mouth's own box, which is the mouth wearing the teeth's name",
 };
 
 /**
