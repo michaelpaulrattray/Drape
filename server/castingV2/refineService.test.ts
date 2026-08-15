@@ -3272,6 +3272,50 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
     expect(call?.asked ?? "").toContain("fiery red");
   });
 
+  /*
+    THE SIDE CLAUSE, ASSERTED AT THE WIRE (fable-625 §3, opus-469).
+
+    The enumeration of scope-flag branch points on this road found three, and
+    two of them already took an injected predicate. This one read the flag
+    directly, so the clause could be proven inside the assembler (which takes
+    `placeSides` as an input) and inside the boot guard — and NOWHERE in
+    between. A per-user flag hides exactly that gap: the wiring is invisible to
+    every suite whose machine has the flag off, which is every machine that has
+    not gone looking for the founder's road.
+
+    Both sides, on one dispatched prompt each, because a clause that is present
+    when armed proves nothing unless it is absent when it is not.
+  */
+  it("says WHERE the side is when this account is inside the phrasing scope", async () => {
+    await refineCandidate({
+      ...repainting,
+      sidePhrasingEnabled: () => true,
+      interpret: async () => ({
+        ok: true as const,
+        delta: { free: { eyeColourFree: "her right eye fiery red" } },
+      }),
+    } as never, { ...input, instruction: "her right eye fiery red", scope: "eye@right" });
+
+    expect(painted.at(-1)?.prompt, "the recipe that actually went out")
+      .toContain("on the left of the picture as you look at it");
+  });
+
+  it("CONTROL — and says nothing about the picture's halves when it is not", async () => {
+    await refineCandidate({
+      ...repainting,
+      sidePhrasingEnabled: () => false,
+      interpret: async () => ({
+        ok: true as const,
+        delta: { free: { eyeColourFree: "her right eye fiery red" } },
+      }),
+    } as never, { ...input, instruction: "her right eye fiery red", scope: "eye@right" });
+
+    const prompt = painted.at(-1)?.prompt ?? "";
+    expect(prompt, "her own side is still named").toContain("right eye");
+    expect(prompt, "and the flag is genuinely off at the wire")
+      .not.toContain("as you look at it");
+  });
+
   it("lets NO carried kind restate itself beside its own crop", async () => {
     const kinds = [
       { slot: "hair", tier: "anatomy", noun: "hair", words: ["auburn-brown, shoulder length"] },

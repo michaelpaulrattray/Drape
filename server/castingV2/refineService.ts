@@ -446,6 +446,17 @@ export type RefineServiceDependencies = {
    * the caller's decision and the flag's answer must never be two things.
    */
   repaintEnabled?: (userId: number) => boolean;
+  /**
+   * Whether the recipe also says WHERE a named side is.
+   *
+   * The third scope flag this service branches on, and the only one that had no
+   * seam — so the clause could be proven inside the assembler (which takes
+   * `placeSides` as an input) and inside the boot guard, and NOWHERE at the
+   * wire between them. That gap is how a suite ends up asserting one road while
+   * the founder is on another: the wiring is exactly the part a per-user flag
+   * hides (opus-469, on fable-625 §3's enumeration).
+   */
+  sidePhrasingEnabled?: (userId: number) => boolean;
   /** Writes the sent recipe onto the variant at dispatch — see `recordVariantDispatch`. */
   recordDispatch?: typeof recordVariantDispatch;
   /**
@@ -3310,7 +3321,9 @@ async function refineCandidateCounted(
           pronouns are: the flag is per user and the assembler knows nothing
           about users.
         */
-        placeSides: captureCastingSidePhrasingEnabled(input.userId),
+        placeSides: (dependencies.sidePhrasingEnabled ?? captureCastingSidePhrasingEnabled)(
+          input.userId,
+        ),
         library,
         asks: asks.asks,
         /*
