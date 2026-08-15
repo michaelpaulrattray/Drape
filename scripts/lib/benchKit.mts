@@ -32,6 +32,8 @@
  * nobody declared is an error. The bench cannot quietly report a smaller truth
  * than it measured.
  */
+import { appendFileSync, mkdirSync, writeFileSync } from "node:fs";
+
 import sharp from "sharp";
 
 /* ────────────────────────────────────────────────────────────────────────────
@@ -39,6 +41,39 @@ import sharp from "sharp";
    ──────────────────────────────────────────────────────────────────────── */
 
 export type LedgerReading = { rows: number; net: number };
+
+/**
+ * EVERY LINE A SPENDING DRIVER PRINTS, ON DISK AS IT RUNS — the money guard's
+ * sibling. (Ordered in fable-565 §3, after the tuition was paid twice.)
+ *
+ * The ledger watch proves nothing moved. This one guarantees nothing NEEDS to:
+ * a run that spends real credits and prints its findings to a terminal is one
+ * `| head` away from being paid for twice, and that is exactly how 50 dev
+ * credits went on output that already existed. `tail` cut the summary off, the
+ * script was re-run to read it, and the second run rendered again.
+ *
+ * So the rule is a line of setup: `const say = teeTo(`${OUT}/run.txt`)`. Every
+ * line goes to the terminal AND to the file, appended as it happens rather than
+ * flushed at the end — a run that dies halfway still leaves what it learned.
+ *
+ * It is deliberately not a logger: no levels, no timestamps, no formatting
+ * opinion. A driver's output is prose somebody reads, and the only thing wrong
+ * with it was that it existed in one place.
+ */
+export function teeTo(file: string): (line?: string) => void {
+  const slash = Math.max(file.lastIndexOf("/"), file.lastIndexOf("\\"));
+  if (slash > 0) mkdirSync(file.slice(0, slash), { recursive: true });
+  /* Truncated once at setup, so a re-run reads as one run rather than as two
+     interleaved ones — and the PREVIOUS run's copy is what the operator still
+     has open if they were reading it. */
+  writeFileSync(file, "");
+  return (line = "") => {
+    console.log(line);
+    appendFileSync(file, `${line}
+`);
+  };
+}
+
 
 /**
  * Money before and after, on the caller's OWN connection.
