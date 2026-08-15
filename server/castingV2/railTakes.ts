@@ -195,3 +195,46 @@ export function takeShownFor(
   if (publicId === null) return null;
   return supersededBy.get(publicId) ?? publicId;
 }
+
+/**
+ * THE SHIPPED RULE: a take is replaced only when a newer row SAYS it replaced
+ * it (founder 2026-08-15; forward-only per fable-575 §3).
+ *
+ * `liveTakes` above infers supersession from chain equality, which is the right
+ * shape and the wrong risk to take on rows that already exist: two rows can
+ * share a chain by accident — a step back, then the same ask again — and
+ * inferring would hide a picture somebody paid for on the strength of a
+ * coincidence. So the render RECORDS what it replaced
+ * (`internalPrompt.regeneratedFrom`) and this reads the record.
+ *
+ * The inference stays exported and tested because the founder is being asked
+ * whether to apply it to history too; if he says yes, this function is the one
+ * line that changes.
+ */
+export function declaredTakes<T extends { publicId: string; regeneratedFrom: string | null }>(
+  rows: readonly T[],
+): { live: T[]; supersededBy: Map<string, string> } {
+  const supersededBy = new Map<string, string>();
+  for (const row of rows) {
+    if (!row.regeneratedFrom) continue;
+    supersededBy.set(row.regeneratedFrom, row.publicId);
+    /* Three takes resolve in one hop, exactly as the inferred road does. */
+    for (const [older, newer] of Array.from(supersededBy.entries())) {
+      if (newer === row.regeneratedFrom) supersededBy.set(older, row.publicId);
+    }
+  }
+  const replaced = new Set(Array.from(supersededBy.keys()));
+  /* The newest take keeps the REPLACED one's place in the rail's order — a
+     regeneration is the same version again, not a new one at the end. */
+  const live: T[] = [];
+  for (const row of rows) {
+    if (replaced.has(row.publicId)) {
+      const newest = supersededBy.get(row.publicId)!;
+      const take = rows.find((candidate) => candidate.publicId === newest);
+      if (take && !live.includes(take)) live.push(take);
+      continue;
+    }
+    if (!live.includes(row)) live.push(row);
+  }
+  return { live, supersededBy };
+}

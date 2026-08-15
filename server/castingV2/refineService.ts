@@ -126,6 +126,7 @@ import {
   colourFacetOf,
   didYouMeanReask,
   nearMiss,
+  sameAgainReask,
   needsColourReferent,
   pendingReaskFor,
   redirectColourTo,
@@ -691,11 +692,35 @@ async function refineCandidateCounted(
     resolves to nothing and simply runs as a new instruction, which is the other
     half of not dead-ending.
   */
+  /*
+    AND ONE OUTSTANDING QUESTION THAT CANNOT BE RE-DERIVED FROM THE SENTENCE.
+
+    `pendingReaskFor` re-reads the words alone, which is right for a typo or a
+    colour with no referent. The same-again OFFER is not about the words — it is
+    about what her current frame already is — so it is re-derived from the row:
+    if the sentence being answered is the one that MADE this version
+    (`requestText`, stored when it was rendered), the question in front of her
+    was the offer. Two strings this server wrote, compared; never a guess at
+    what she meant.
+  */
+  const answeringText = (input.answering ?? "").trim().toLowerCase();
+  const madeThisVersion = (predecessorForParse?.requestText ?? "").trim().toLowerCase();
+  const offeredAgain = answeringText.length > 0 && answeringText === madeThisVersion;
   const outstanding = input.answering
-    ? pendingReaskFor(input.answering, lastColourFacet != null)
+    ? (offeredAgain
+      ? sameAgainReask({ asked: input.answering.trim(), priceCredits: CASTING_V2_REFINE_PRICE_CREDITS })
+      : pendingReaskFor(input.answering, lastColourFacet != null))
     : null;
   const answered = outstanding ? resolveAnswer(outstanding, input.instruction) : null;
   const instruction = answered ?? input.instruction;
+  /*
+    SHE SAID YES TO THE OFFER. The already-true door must not refuse the very
+    thing it just offered, and the re-roll rides the version's own chain rather
+    than adding one.
+  */
+  const confirmedRegenerate = outstanding?.kind === "same-again"
+    && answered !== null
+    && answered !== LEAVE_AS_SHE_IS;
 
   /*
     "NEVER MIND" — the one answer that is not an instruction.
@@ -724,6 +749,9 @@ async function refineCandidateCounted(
     slip from a known word, and asking again would be the loop a question is
     supposed to end.
   */
+  /* Her current picture, read once in the narrowed scope: a closure loses the
+     narrowing and the offer below is raised from inside one. */
+  const currentImageUrl = storagePublicUrl(source.imageKey ?? source.candidate.imageKey);
   const miss = answered ? null : nearMiss(instruction);
   if (miss) {
     return {
@@ -835,15 +863,67 @@ async function refineCandidateCounted(
   )) {
     priorAbsent[subject as FreeSubject] = itemsOf(value);
   }
+  /*
+    THE OFFER TRAVELS AS A THROW, because the door is called from two places and
+    both of them are deep in a parse. It is caught immediately below and turned
+    into the free "asked" outcome the near-miss questions already use — one
+    shape for every question this service raises.
+  */
+  class RefineOffer extends Error {
+    constructor(readonly reask: Reask) { super("a fresh take was offered"); }
+  }
+  const asOffer = (error: unknown): RefineResult | null => (error instanceof RefineOffer
+    ? {
+      kind: "asked" as const,
+      reask: error.reask,
+      variantId: source.variantPublicId,
+      candidateId: input.candidatePublicId,
+      imageUrl: currentImageUrl,
+      instructions: readInstructions(predecessorForParse?.instructions),
+    }
+    : null);
   const throughTheAlreadyTrueDoor = async (
     parse: Extract<Awaited<ReturnType<typeof readInstruction>>, { ok: true }>,
     mode?: "edit",
   ): Promise<typeof parse> => {
     if (!("delta" in parse)) return parse;
+    /*
+      A CONFIRMED RE-ROLL WALKS STRAIGHT THROUGH.
+
+      She was shown this door's own sentence as an offer, with the price on it,
+      and said yes. Refusing her here for the reason she has just answered would
+      be the product arguing with itself — and it is the whole failure this
+      branch exists to prevent: the first driven attempt refused the very thing
+      it had offered a moment earlier.
+    */
+    if (confirmedRegenerate) return parse;
     const verdict = saysNothingNew({
       delta: parse.delta, prior: priorItems, priorAbsent, identity: currentIdentity,
     });
     if (!verdict.absorbed) return parse;
+    /*
+      AND HERE THE REFUSAL BECOMES AN OFFER (founder 2026-08-15, fable-575 §2).
+
+      When the ask repeats the very step that MADE the frame she is looking at,
+      "this would have changed nothing" is true of the recipe and false of what
+      she wants: she is asking for another take of it. The protection stays —
+      nothing is charged and nothing is claimed — and the sentence becomes a
+      question with the price on it.
+
+      Only for an EXACT repeat of this version's own last step, compared on the
+      parsed deltas: an ask that merely lands on something she already has (a
+      second "make her hair blonde" on a blonde) is not a re-roll of a version
+      and keeps the plain refusal.
+    */
+    const lastStep = readStepDeltas(predecessorForParse?.stepDeltas).at(-1);
+    if (!confirmedRegenerate && lastStep && sameStep(lastStep, parse.delta)) {
+      const asked = (predecessorForParse?.requestText ?? instruction).trim();
+      log.info(
+        { candidateId: input.candidatePublicId, asked },
+        "[refineService] the same ask again — offering a fresh take rather than refusing",
+      );
+      throw new RefineOffer(sameAgainReask({ asked, priceCredits: price }));
+    }
     log.warn(
       { candidateId: input.candidatePublicId, instruction, alreadyTrue: verdict.alreadyTrue },
       "[refineService] the reading kept only what she already is — asking once more before refusing",
@@ -878,7 +958,15 @@ async function refineCandidateCounted(
       }),
     });
   };
-  if (parsed.ok && "delta" in parsed) parsed = await throughTheAlreadyTrueDoor(parsed);
+  if (parsed.ok && "delta" in parsed) {
+    try {
+      parsed = await throughTheAlreadyTrueDoor(parsed);
+    } catch (error) {
+      const offer = asOffer(error);
+      if (offer) return offer;
+      throw error;
+    }
+  }
   /*
     A RESCUE IS COUNTED TOO, and it is the half that makes the ratio mean
     something: `upheld` alone would say how often the door refuses and nothing
@@ -1229,7 +1317,14 @@ async function refineCandidateCounted(
       /* The SECOND reading gets the same door as the first — including its one
          re-ask. A re-read is a parse, and a parse that loses her sentence loses
          it either time. */
-      const kept = await throughTheAlreadyTrueDoor(asEdit, "edit");
+      let kept: Awaited<ReturnType<typeof throughTheAlreadyTrueDoor>>;
+      try {
+        kept = await throughTheAlreadyTrueDoor(asEdit, "edit");
+      } catch (error) {
+        const offer = asOffer(error);
+        if (offer) return offer;
+        throw error;
+      }
       /*
         DERIVED FROM THE COMPOSITION TABLE, never from a second list of what a
         subject owns: `facetsAnsweredBy` is the same reader supersession uses,
@@ -1946,7 +2041,7 @@ async function refineCandidateCounted(
   */
   const repeatsThisVersion = Boolean(editDelta)
     && priorSteps.length > 0
-    && sameStep(priorSteps[priorSteps.length - 1]!, editDelta!);
+    && (confirmedRegenerate || sameStep(priorSteps[priorSteps.length - 1]!, editDelta!));
   const instructions = editDelta
     ? (repeatsThisVersion ? priorInstructions : [...priorInstructions, instruction.trim()])
     : chain.map((step) => step.instruction);
@@ -4940,6 +5035,20 @@ async function refineCandidateCounted(
         prompt,
         /* Same source as the prompt, for the same reason. */
         resolved: baseIdentity ? applyDelta(baseIdentity, filed) : null,
+        /*
+          WHICH TAKE THIS ONE REPLACES (founder, 2026-08-15).
+
+          A regeneration is an ordinary row that happens to describe the same
+          chain, and the rail shows the newest take of a version rather than
+          both. It is recorded rather than inferred from chain equality for one
+          reason: two rows CAN share a chain by accident (a step back, then the
+          same ask again), and inferring would hide a picture somebody paid for
+          on the strength of a coincidence. A row says what it was BORN as, and
+          the rail believes the row.
+        */
+        ...(repeatsThisVersion && predecessor?.publicId
+          ? { regeneratedFrom: predecessor.publicId }
+          : {}),
         ...(presentationOf(filed) ? { presentation: presentationOf(filed) } : {}),
         /*
           THE CAPTIONS, WRITTEN DOWN — and until now they never were.
@@ -5429,6 +5538,18 @@ function readInstructions(value: unknown): string[] {
  * disagree. An honest "not on this one" beats a reconstruction that is right
  * most of the time.
  */
+/**
+ * WHICH TAKE A ROW REPLACED, off its own record — or null.
+ *
+ * Read here rather than in the projection because `internalPrompt` is INTERNAL
+ * (§J): the field never crosses the boundary, only the answer does.
+ */
+export function readRegeneratedFrom(internalPrompt: unknown): string | null {
+  if (!internalPrompt || typeof internalPrompt !== "object") return null;
+  const value = (internalPrompt as { regeneratedFrom?: unknown }).regeneratedFrom;
+  return typeof value === "string" && value.length > 0 ? value : null;
+}
+
 export function readStepDeltas(value: unknown): RefineDelta[] {
   if (!Array.isArray(value)) return [];
   const steps: RefineDelta[] = [];

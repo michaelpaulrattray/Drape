@@ -46,10 +46,25 @@ import { facetOfAxis } from "./refineFacets";
  * second implementation of the other.
  */
 export type Reask = {
-  kind: "which-facet" | "did-you-mean" | "already-upswept" | "glasses-hide-eyes";
+  kind: "which-facet" | "did-you-mean" | "already-upswept" | "glasses-hide-eyes" | "same-again";
   /** The sentence, in their words. */
   question: string;
   options: Array<{ label: string; resolves: string }>;
+  /**
+   * THE SENTENCE THIS QUESTION IS ABOUT, when it is not the one they typed.
+   *
+   * A question travels back as `answering`, and the server re-derives what was
+   * asked from it. That works while the question is ABOUT their sentence — a
+   * typo, a colour with no referent. The same-again offer is about the sentence
+   * that made the VERSION, which may be worded differently from the repeat that
+   * raised it ("gold hoops please" against "give her gold hoop earrings"), and
+   * a question that cannot be answered because the words drifted is the
+   * dead-end D-180 forbids.
+   *
+   * So the question carries its own subject and the client echoes it back.
+   * Absent means "the sentence they typed", which is every other question here.
+   */
+  about?: string;
 };
 
 /**
@@ -492,6 +507,11 @@ export function resolveAnswer(reask: Reask, typed: string): string | null {
     reask.kind === "did-you-mean"
     || reask.kind === "already-upswept"
     || reask.kind === "glasses-hide-eyes"
+    /* The offer is a yes/no question like the three above it: "want a fresh
+       take of it?" is answered by tapping the chip OR by typing "yes", which is
+       D-180's rule and the reason this branch is a list rather than a special
+       case per question. */
+    || reask.kind === "same-again"
   ) {
     if (YES.includes(bare)) return reask.options[0]?.resolves ?? null;
     if (NO.includes(bare)) return reask.options[1]?.resolves ?? null;
@@ -521,6 +541,41 @@ export function resolveAnswer(reask: Reask, typed: string): string | null {
  * spelled out at each of them.
  */
 export const LEAVE_AS_SHE_IS = "leave her as she is";
+
+/**
+ * THE REFUSAL THAT BECAME AN OFFER — asking the same thing again (founder,
+ * 2026-08-15; shaped in fable-575 §2).
+ *
+ * The already-true door refuses an ask the face already satisfies, free, and
+ * that protection stays exactly where it is: an accidental repeat must never
+ * cost anybody 25 credits for the picture they are looking at.
+ *
+ * But the founder asked for a way to re-roll a version he does not like —
+ * *"allow a refresh or regeneration of the same edit"* — and the moment the
+ * door catches an EXACT repeat of the edit that made this frame is precisely
+ * when that is what he means. So the sentence stops being only a refusal and
+ * becomes a question with a price on it.
+ *
+ * Three standing rulings meet here and none of them bends: the typed box is
+ * still the interface (the chip and typing "yes" are one code path, D-180), the
+ * price is said BEFORE the money moves (D-109), and the one-way door is stated
+ * in the words he confirmed — the current picture is replaced.
+ */
+export function sameAgainReask(input: { asked: string; priceCredits: number }): Reask {
+  return {
+    kind: "same-again",
+    question: `She already has ${input.asked}. Want a fresh take of it? `
+      + `The picture you are looking at is replaced · ${input.priceCredits} credits.`,
+    options: [
+      { label: `Yes — a fresh take · ${input.priceCredits} credits`, resolves: input.asked },
+      { label: "No, leave it", resolves: LEAVE_AS_SHE_IS },
+    ],
+    /* The version's own words, so answering lands on this question however the
+       repeat that raised it was worded. */
+    about: input.asked,
+  };
+}
+
 
 /**
  * THE ALREADY-TRUE QUESTION — the third one, and the first about the FACE

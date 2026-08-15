@@ -1157,7 +1157,17 @@ export default function CastingSheet() {
           is the interface.
         */
         if (result?.kind === "asked" && result.reask) {
-          pendingReask.current = instruction;
+          /*
+            THE QUESTION'S OWN SUBJECT, when it has one.
+
+            `answering` is how the server re-derives which question is open, and
+            for every question about the WORDS that is the sentence they typed.
+            The same-again offer is about the sentence that made the version,
+            which may be worded differently from the repeat that raised it — so
+            the question carries `about` and this echoes it back. A question
+            that cannot be answered because the wording drifted is a dead end.
+          */
+          pendingReask.current = result.reask.about ?? instruction;
           setRefineOutcome(result.reask.question);
           setReaskOptions(result.reask.options);
           return;

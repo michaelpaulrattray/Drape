@@ -62,21 +62,23 @@ const candidatePublicId = (candidates as Array<{ publicId: string }>)[0]!.public
 
 const { refineCandidate } = await import("../server/castingV2/refineService.js");
 const { listCandidateVariants } = await import("../server/db/castingV2Variants.js");
-const { liveTakes, takeShownFor } = await import("../server/castingV2/railTakes.js");
-const { readStepDeltas } = await import("../server/castingV2/refineService.js");
+const { declaredTakes, takeShownFor } = await import("../server/castingV2/railTakes.js");
+const { readRegeneratedFrom, readStepDeltas } = await import("../server/castingV2/refineService.js");
 
 /** The rail as the client would see it — the same derivation the projection runs. */
 async function rail() {
   const rows = await listCandidateVariants(outsider.id, candidatePublicId);
-  const { live, supersededBy } = liveTakes(rows.map((row) => ({
+  const { live, supersededBy } = declaredTakes(rows.map((row) => ({
     publicId: row.publicId,
-    steps: readStepDeltas(row.stepDeltas),
+    regeneratedFrom: readRegeneratedFrom(row.internalPrompt),
     row,
   })));
   return { rows, live, supersededBy };
 }
 
-async function ask(instruction: string) {
+const spends: { kind: string; spent: number }[] = [];
+
+async function ask(instruction: string, answering?: string) {
   const before = await balance();
   const started = Date.now();
   const result = await refineCandidate({}, {
@@ -84,38 +86,55 @@ async function ask(instruction: string) {
     clientRequestId: randomUUID(),
     candidatePublicId,
     instruction,
+    ...(answering ? { answering } : {}),
   });
   const after = await balance();
   say(`  "${instruction}" → ${result.kind} · ${after - before === 0 ? "free" : `${before - after} credits`}`
     + ` · ${Math.round((Date.now() - started) / 1000)}s`);
+  spends.push({ kind: result.kind ?? "?", spent: before - after });
   return { result, spent: before - after };
 }
 
+
 const REPEATED = "give her a thin silver chain necklace";
-const OTHER = "give her a black beanie";
+const OTHER = "make her hair jet black";
 
 say("=".repeat(78));
 say(`cast ${candidatePublicId} · outsider ${outsider.id}`);
 
-/* ---- arm 1: a re-ask replaces in place -------------------------------- */
+/* ---- arm 1: the offer, then the re-roll in place ---------------------- */
 say("");
-say("ARM 1 — the same ask twice");
+say("ARM 1 — the same ask twice, and the offer between them");
 const first = await ask(REPEATED);
 const afterFirst = await rail();
 const chipsAfterFirst = afterFirst.live.length;
 const firstTakeId = afterFirst.live.at(-1)!.publicId;
 
-const second = await ask(REPEATED);
+const offered = await ask(REPEATED);
+check(
+  offered.result.kind === "asked" && offered.result.reask?.kind === "same-again",
+  "the same ask again OFFERS a fresh take rather than refusing",
+  `${offered.result.kind} · ${offered.result.reask?.question ?? "no question"}`,
+);
+check(offered.spent === 0, "and the offer itself costs nothing", `${offered.spent} credits`);
+check(
+  (offered.result.reask?.question ?? "").includes(`${25} credits`),
+  "with the price in the question, before the money",
+  offered.result.reask?.question ?? "no question",
+);
+
+const yes = offered.result.reask!.options[0]!;
+const second = await ask(yes.label, offered.result.reask!.about ?? REPEATED);
 const afterSecond = await rail();
 
+check(second.result.kind === "rendered", "saying yes renders", `${second.result.kind}`);
 check(
   afterSecond.live.length === chipsAfterFirst,
-  "a re-ask leaves the rail the same length",
+  "a re-roll leaves the rail the same length",
   `${chipsAfterFirst} chips before, ${afterSecond.live.length} after`,
 );
 check(
-  afterSecond.live.some((take) => take.publicId !== firstTakeId)
-    && afterSecond.supersededBy.get(firstTakeId) !== undefined,
+  afterSecond.supersededBy.get(firstTakeId) !== undefined,
   "the older take is superseded, and by the newer one",
   `${firstTakeId.slice(0, 8)} → ${(afterSecond.supersededBy.get(firstTakeId) ?? "nothing").slice(0, 8)}`,
 );
@@ -124,8 +143,18 @@ check(
   "and the row is still THERE — invisible, not absent",
   `${afterFirst.rows.length} rows before, ${afterSecond.rows.length} after`,
 );
-check(first.spent > 0 && second.spent > 0, "arm 4 — the money moved once per render",
-  `${first.spent} then ${second.spent} credits`);
+/*
+  ARM 4, IN ITS HONEST SHAPE. The first version asserted "the first ask spent
+  something" and tripped on a run where the first ask was itself an OFFER (the
+  previous run had left that necklace on her, free) — a fact about the fixture's
+  state, not about the money. What the arm means is: a rendered outcome costs
+  the price, and a question costs nothing.
+*/
+check(
+  spends.every((call) => (call.kind === "rendered" ? call.spent === 25 : call.spent === 0)),
+  "arm 4 — every render cost the price, every question cost nothing",
+  spends.map((call) => `${call.kind}:${call.spent}`).join(" · "),
+);
 
 /* ---- arm 3: a fork from the superseded take still resolves ------------ */
 const superseded = afterSecond.rows.find((row) => row.publicId === firstTakeId);

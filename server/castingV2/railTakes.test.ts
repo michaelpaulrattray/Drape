@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { liveTakes, sameChain, sameStep, takeShownFor } from "./railTakes";
+import { declaredTakes, liveTakes, sameChain, sameStep, takeShownFor } from "./railTakes";
 import type { RefineDelta } from "./refineDelta";
 
 /**
@@ -127,5 +127,59 @@ describe("the rail's live takes", () => {
       takeOf("v2", [hoops, { hairColour: "jet black" as never }]),
     ]);
     expect(live.map((take) => take.publicId)).toEqual(["v1", "v2"]);
+  });
+});
+
+/**
+ * THE SHIPPED RULE — a take is replaced only when a newer row SAYS so.
+ *
+ * The inference above is the same shape and the wrong risk to take on rows that
+ * already exist, so the render records what it replaced and this reads the
+ * record. Forward-only by construction: a row written before the ruling
+ * declares nothing and is never hidden.
+ */
+describe("the declared takes", () => {
+  const rowOf = (publicId: string, regeneratedFrom: string | null) => ({ publicId, regeneratedFrom });
+
+  it("hides a take a newer row declares it replaced", () => {
+    const { live, supersededBy } = declaredTakes([
+      rowOf("v1", null),
+      rowOf("v2", "v1"),
+    ]);
+    expect(live.map((row) => row.publicId)).toEqual(["v2"]);
+    expect(supersededBy.get("v1")).toBe("v2");
+  });
+
+  it("keeps the newest take in the REPLACED one's place", () => {
+    const { live } = declaredTakes([
+      rowOf("hoops-1", null),
+      rowOf("copper", null),
+      rowOf("hoops-2", "hoops-1"),
+    ]);
+    expect(live.map((row) => row.publicId)).toEqual(["hoops-2", "copper"]);
+  });
+
+  it("hides NOTHING on rows that declare nothing — the forward-only guarantee", () => {
+    /* Two rows that share a chain by accident (a step back, then the same ask
+       again) are two pictures somebody paid for, and neither says it replaced
+       the other. The inference would hide one; the record does not. */
+    const { live, supersededBy } = declaredTakes([
+      rowOf("v1", null),
+      rowOf("v2", null),
+      rowOf("v3", null),
+    ]);
+    expect(live.map((row) => row.publicId)).toEqual(["v1", "v2", "v3"]);
+    expect(supersededBy.size).toBe(0);
+  });
+
+  it("resolves a chain of three declarations in one hop", () => {
+    const { live, supersededBy } = declaredTakes([
+      rowOf("v1", null),
+      rowOf("v2", "v1"),
+      rowOf("v3", "v2"),
+    ]);
+    expect(live.map((row) => row.publicId)).toEqual(["v3"]);
+    expect(takeShownFor("v1", supersededBy)).toBe("v3");
+    expect(takeShownFor("v2", supersededBy)).toBe("v3");
   });
 });
