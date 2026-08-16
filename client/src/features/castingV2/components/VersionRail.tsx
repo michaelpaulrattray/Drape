@@ -123,7 +123,10 @@ export function VersionRail({
           {chipSrc({ thumbUrl: originalThumbUrl, imageUrl: originalImageUrl })
             ? <img src={chipSrc({ thumbUrl: originalThumbUrl, imageUrl: originalImageUrl })!} alt="" />
             : null}
-          <span>Original</span>
+          {/* "Original" goes with the rest of the captions (fable-753 §2c) —
+              one chip keeping a word while every other stands blank would read
+              as a mistake rather than a distinction. The screen reader keeps it
+              in `aria-label` above, and it is the first chip in the stack. */}
         </button>
       </div>
       {variants.map((variant, position) => (
@@ -145,17 +148,24 @@ export function VersionRail({
                sharpens in place (fable-503): the two are the same version, and
                a reader comparing "which version is on screen" has to know it. */
             data-thumb={variant.thumbUrl ?? undefined}
-            /* Their own words are the label — the record read back as theirs. */
+            /*
+              Their own words are the label — the record read back as theirs,
+              and now the ONLY place these words are said on this chip
+              (fable-753 §2c). A screen reader keeps what a sighted user reads
+              at the composer; nothing is lost, it moved.
+            */
             aria-label={variant.requestText ?? variant.instructions.at(-1) ?? `Version ${position + 1}`}
             /*
-              The whole stack, and WHERE it was filed, on hover (D-162). Filing
-              decides what a Follow inherits, so a misfile corrupts the record
-              and not just one picture — it stays inspectable, and stops
-              competing with the user's own words for the eye.
+              NO HOVER TOOLTIP (founder, screenshots #317–319, fable-753 §2a):
+              *"when i hover over a thumbnail it shows me filed as teeth and the
+              prompt — can we remove this."*
+
+              It carried "Filed as: TEETH" — internal taxonomy, the
+              implementation layer showing through to the customer, which law 8
+              says is never the product's language — and the whole instruction
+              stack beside it. Where filing has to be inspected it is inspected
+              in the record, not hovered over the customer's picture.
             */
-            title={variant.filedAs?.length
-              ? `${variant.instructions.join(" · ")}\nFiled as: ${variant.filedAs.join(" · ")}`
-              : variant.instructions.join(" · ")}
             onClick={() => onSelect(variant.variantId)}
           >
             {/*
@@ -179,7 +189,17 @@ export function VersionRail({
             {redrawing.has(variant.variantId)
               ? <span className="dpc-refine__ghostSpin dpc-refine__ghostSpin--onChip" aria-hidden="true" />
               : null}
-            <span>{variant.requestText ?? variant.instructions.at(-1)}</span>
+            {/*
+              AND NO CAPTION (founder, fable-753 §2c): *"means we can also
+              remove the names under the thumbnails just have them blank?"*
+
+              The words have one home now, and it is the chip at the composer
+              where they can be re-used rather than only read. A caption under
+              every thumbnail said the same sentence twice at two sizes, and the
+              small one was clamped to two lines at 72% opacity — which is a
+              sentence the product shows without expecting anyone to read it.
+              The picture is the label.
+            */}
           </button>
           {/*
             NO PER-CHIP ACTIONS — the founder's own ruling (2026-08-15):

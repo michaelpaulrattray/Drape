@@ -34,15 +34,23 @@ export type RefineVariant = {
    * Where each instruction was FILED — subject headings only (D-149, as amended
    * by D-162).
    *
-   * It shipped printed under every chip and the founder's own reaction settled
-   * it: filing is the SYSTEM explaining itself, and a permanent row of
-   * "HAIR COLOUR · HAIR WORN" under someone's own sentence competes with the
-   * sentence for a job nobody does daily. Kept — a misfile corrupts the record
-   * and not just one picture, so it has to stay inspectable — but moved to the
-   * hover tooltip, where it is there when someone goes looking and absent when
-   * they are not.
+   * It shipped printed under every chip, moved to a hover tooltip when the
+   * founder said filing is the SYSTEM explaining itself, and is now shown
+   * NOWHERE on this surface (fable-753 §2a): *"when i hover over a thumbnail it
+   * shows me filed as teeth and the prompt — can we remove this."* A misfile
+   * still corrupts the record and not just one picture, so filing stays
+   * inspectable — in the record, not hovered over the customer's own picture.
+   *
+   * The field stays on the type because the rail still receives it and the next
+   * inspection surface will want it; nothing renders it today.
    */
   filedAs?: string[];
+  /**
+   * WHAT SHE ASKED FOR, in her own words — and on a removal this is NOT the
+   * last instruction, because a removal deletes steps rather than appending
+   * one. The composer chip reads it exactly as the rail's label does.
+   */
+  requestText?: string | null;
 };
 
 /**
@@ -257,6 +265,17 @@ export function RefinePanel({
   const duplicateOf = pending.find(
     (entry) => entry.instruction.trim().toLowerCase() === trimmed.toLowerCase() && trimmed,
   );
+  /*
+    THE SENTENCE THAT MADE THE SELECTED VERSION (fable-753 §2b).
+
+    Read the way the rail's own label reads it — `requestText` first, then the
+    last surviving instruction — because those two differ on a REMOVAL and two
+    spellings of "what she asked for" is exactly the drift D-162 is made of.
+  */
+  const selected = variants.find((variant) => variant.variantId === selectedVariantId);
+  const selectedRequest = selected
+    ? (selected.requestText ?? selected.instructions.at(-1) ?? null)
+    : null;
   return (
     <div className="dpc-refine" onClick={(event) => event.stopPropagation()}>
       {/*
@@ -365,6 +384,40 @@ export function RefinePanel({
         possessive={keptPossessive}
         onPrefill={(prefill) => setInstruction(prefill)}
       />
+
+      {/*
+        WHAT MADE THE VERSION SHE IS LOOKING AT (founder, screenshots #317–319,
+        fable-753 §2b — the Grok pattern he pointed at).
+
+        The rail's captions and its hover tooltip both said this, in 10.5px at
+        72% opacity under a thumbnail and in a browser tooltip over her picture.
+        Both are gone. The sentence has one home now, next to the box it can be
+        typed back into — which is the difference between a label and a
+        capability: reading "give her vampire fangs" under a thumbnail is a
+        caption; having it beside the composer with a way to pick it up again is
+        the thing she actually wants to do with it.
+
+        PREFILL ONLY, NEVER SEND. Spending her credits is a deliberate act and
+        stays one — `Use` fills the box and stops, so the sentence is hers to
+        edit, and if she sends it unchanged the duplicate warning below still
+        fires exactly as it does for anything typed by hand.
+
+        Absent on the original, which nobody asked for and which has no sentence
+        to show.
+      */}
+      {selectedRequest ? (
+        <div className="dpc-refine__made">
+          <span className="dpc-refine__madeText">{selectedRequest}</span>
+          <button
+            type="button"
+            className="dpc-refine__madeUse"
+            disabled={busy}
+            onClick={() => setInstruction(selectedRequest)}
+          >
+            Use
+          </button>
+        </div>
+      ) : null}
 
       <form
         className="dpc-refine__ask"

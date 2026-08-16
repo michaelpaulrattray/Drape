@@ -2855,26 +2855,18 @@
 }
 
 /*
-  NOT `dp-chrome`. That class is mono, and mono is for chrome labels — "01",
-  "Roll 2" — never for sentences. What sits here is the user's OWN instruction,
-  which is content, and setting someone's words in 10px letter-spaced monospace
-  makes them harder to read than the thing they are labelling.
+  THE CHIP CAPTIONS ARE GONE (founder, fable-753 §2c): *"means we can also
+  remove the names under the thumbnails just have them blank?"*
+
+  They were the user's own sentence set at 10.5px, clamped to two lines at 72%
+  opacity — a sentence shown without expecting anyone to read it. The words now
+  live once, at the composer, where they can be picked up again instead of only
+  looked at. The rule goes rather than being emptied: a style with no element is
+  the second copy that outlives its reason.
+
+  Screen readers keep the sentence on the chip's `aria-label`, so nothing was
+  taken from them.
 */
-.dpc-refine__pick > span {
-  font-family: var(--font-sans);
-  letter-spacing: normal;
-  font-size: 10.5px;
-  line-height: 1.25;
-  max-width: 64px;
-  text-align: center;
-  /* Two lines, then ellipsis: an instruction is a sentence, and a label that
-     grows shoves the picture off the screen. */
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  opacity: 0.72;
-}
 
 .dpc-refine__ask {
   display: flex;
@@ -2943,6 +2935,62 @@
   /* Selectable, because a support conversation starts with copying it. */
   user-select: text;
 }
+
+/*
+  WHAT MADE THIS VERSION, BESIDE THE BOX THAT CAN REMAKE IT (fable-753 §2b,
+  the founder's own Grok reference in #318/#319).
+
+  One quiet row, not a card: the same hairline frame the outcome and the answer
+  chips wear, so it reads as part of the composer rather than as a notice about
+  it. No animation, no colour, no icon — his minimalism ruling on the pending
+  chip governs here too.
+
+  `Use` is set apart by SPACE rather than by weight. It is a prefill, and a
+  prefill that looked like a call to action would read as "send this again",
+  which is the one thing it deliberately does not do.
+*/
+.dpc-refine__made {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 10px;
+  border-radius: var(--r-sm);
+  border: 1px solid color-mix(in srgb, var(--onScrim) 16%, transparent);
+  color: var(--onScrim);
+}
+
+/* Her sentence, so it is set as one — sans, normal spacing, never mono. */
+.dpc-refine__madeText {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--font-sans);
+  letter-spacing: normal;
+  font-size: 11.5px;
+  line-height: 1.35;
+  opacity: 0.72;
+  /* One line: the chip sits above the box she is about to type in, and a long
+     ask that pushed the field down would be the caption's mistake again. */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dpc-refine__madeUse {
+  flex: none;
+  background: none;
+  border: 0;
+  padding: 2px 4px;
+  font-family: var(--font-sans);
+  letter-spacing: normal;
+  font-size: 11.5px;
+  color: var(--onScrim);
+  opacity: 0.6;
+  cursor: pointer;
+}
+
+.dpc-refine__madeUse:hover:not(:disabled) { opacity: 0.95; }
+.dpc-refine__madeUse:disabled { opacity: 0.3; cursor: default; }
 
 /*
   THE ANSWER CHIPS (D-180), eyeballed as a mock before they were wired.
