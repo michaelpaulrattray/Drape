@@ -789,11 +789,16 @@ for, or a carry that rides the ask rather than the library.
 >    ask-riding carry was refused for a named reason: it breaks fable-566's
 >    promise at the first reload, which is the build-lost class.
 
-The ripple is countable: **8 `slotDefinition` call sites** outside the catalogue
-and its tests — 5 in `refineService.ts`, 2 in `repaintAsks.ts`, 1 in
-`recipeAssembler.ts`. That is the whole surface that must tolerate, or answer
-for, a slot the catalogue did not author, and bound (b) makes the sweep of it a
-deliverable rather than a hope.
+**That ruling is executed in `OPEN_LANE_CARRY_DESIGN.md`** — the key form (and
+why it is `open:<noun>` rather than `open@<noun>`: `@` is the instance separator
+and its suffix is checked against a two-member closed list), the one branch's
+field-by-field answers, the five pinning tests, and all sixteen slot-keyed call
+sites walked with each decision recorded.
+
+The ripple I quoted here as *"8 `slotDefinition` call sites"* was low, in the
+same way as every other hand count in this milestone: it counted one function.
+The real surface is **16** — `slotDefinition` 8, `facetsOfSlot` 5,
+`accessoryKindOfSlot` 2, `slotsForFeature` 1.
 
 ### A footnote that discharges half of an `owed`
 
