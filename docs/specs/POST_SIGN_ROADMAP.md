@@ -215,6 +215,28 @@ scale), stale spec sections marked superseded, the seam-check death
 (fable-709 §3, §0 above) executed if repaint scope has widened by then, and the
 roadmap file itself re-audited top to bottom.
 
+⚠ **THE ATLAS HAS ONE COMMITTED ARTIFACT, and `index.html` is never a second
+opinion** (opus-611 §3, ruled fable-822 §3, 2026-08-17). `git ls-files
+docs/architecture/` returns three names — `annotations.yaml`,
+`drape-architecture.json`, `drape-architecture.schema.json`.
+**`docs/architecture/index.html` is gitignored (`.gitignore:21`, with its
+reason written above it) and `git log --all` shows zero commits touching it,
+ever.** It is regenerated locally from the tree, so it agrees with the tree by
+construction — which is the same as agreeing with nothing.
+
+This is written here because the record briefly used it as corroboration: a
+stale committed JSON was diagnosed on the ground that *"index.html already
+held"* the canonical fingerprint and was therefore *"the stronger anchor"*
+(opus-609 §4, ratified fable-818 §3). **The action was right** — the JSON was
+stale, regenerating was correct, the check is green — **and the anchor was the
+canonical tree all along.** A shift that reaches for the HTML as a second
+witness is reading its own output back.
+
+*(One consequence, since an untracked file cannot be checked out: whatever the
+Windows CRLF footgun in `7b99e466`'s commit message describes, it is not
+`index.html`. Whether it holds for the JSON has not been re-derived and is not
+claimed either way.)*
+
 **ITS FIRST CUSTOMER, AND WHAT TO BUDGET FOR IT** (fable-809 §3, filed
 2026-08-17 rather than when the milestone opens, because a scope line nobody
 wrote is how §2 and §3 of fable-710 were lost in the first place). The
