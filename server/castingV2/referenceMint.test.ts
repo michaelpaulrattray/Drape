@@ -1778,3 +1778,146 @@ describe("a lips crop and an open mouth", () => {
     expect(bench.asked).not.toContain("teeth");
   });
 });
+
+/**
+ * WHETHER THE DESCRIBER IS ASKED ONE SLOT AT A TIME (stage 3b).
+ *
+ * The mint asks the describer once per slot, across five loops, and a render
+ * with six slots used to wait through six calls in series on the customer's
+ * paid clock. Nothing in this file could tell that apart from the same calls
+ * made together: every case above drives a slot count of one or two whose
+ * answers do not depend on each other, so serial and parallel produce identical
+ * rows.
+ *
+ * So this asks the question directly, the way the caption fixture does — were
+ * two reads ever in flight at the same moment? — with a barrier that opens on
+ * ARRIVAL and, failing that, on a timer. A serial mint can only open it by the
+ * timer. The one-slot arm is the negative control: the same barrier, the same
+ * escape, a render that cannot overlap.
+ */
+describe("the words for many slots are asked together", () => {
+  const captionBarrier = (expected: number, escapeMs = 250) => {
+    const entered: string[] = [];
+    let openedBy: "arrival" | "escape" | "never" = "never";
+    let release!: () => void;
+    const opened = new Promise<void>((resolve) => { release = resolve; });
+    let escape: NodeJS.Timeout | null = null;
+    const readWords = async (input: { noun: string }) => {
+      entered.push(input.noun);
+      if (entered.length >= expected) {
+        if (escape) clearTimeout(escape);
+        if (openedBy === "never") openedBy = "arrival";
+        release();
+      } else if (!escape) {
+        escape = setTimeout(() => {
+          if (openedBy === "never") openedBy = "escape";
+          release();
+        }, escapeMs);
+      }
+      await opened;
+      return `a described ${input.noun}`;
+    };
+    return {
+      readWords,
+      entered,
+      openedBy: () => openedBy,
+      done: () => { if (escape) clearTimeout(escape); },
+    };
+  };
+
+  /* Two surface slots: words-only by construction, no cut, no guard — the
+     simplest pair of reads the mint makes, and one of the five loops. */
+  const surfaceSlot = (slot: string, noun: string): SlotSpec => hairSlot({
+    slot: slot as SlotSpec["slot"],
+    tier: "surface",
+    noun,
+    words: [`whatever ${noun} arrived with`],
+    question: null,
+    guardKind: null,
+  });
+
+  it("asks for two slots' words at once", async () => {
+    const barrier = captionBarrier(2);
+    const bench = harness();
+    const result = await mintReferencesForRender({
+      userId: 1,
+      variantId: 11,
+      frame: { bytes: await frameBytes() },
+      applied: rect({ x: 0, y: 0, width: 40, height: 40 }),
+      masterRegions: new Map([["hair", rect(HAIR)]]),
+      slots: [surfaceSlot("skin", "skin"), surfaceSlot("freckles", "freckles")],
+      dependencies: { ...bench.dependencies, readWords: barrier.readWords } as never,
+    });
+    barrier.done();
+
+    expect(barrier.entered.sort(), "both slots were described").toEqual(["freckles", "skin"]);
+    expect(barrier.openedBy(), "the second read began before the first returned").toBe("arrival");
+    /* And the rows are what they were: same slots, in the slots' own order,
+       each carrying its own read rather than its neighbour's. */
+    expect(result.slots.map((entry) => entry.slot)).toEqual(["skin", "freckles"]);
+    expect(bench.rows.map((row) => [row.slot, row.words[0]])).toEqual([
+      ["skin", "a described skin"],
+      ["freckles", "a described freckles"],
+    ]);
+  });
+
+  it("CONTROL — one slot cannot overlap, and the same barrier says so", async () => {
+    const barrier = captionBarrier(2);
+    const bench = harness();
+    await mintReferencesForRender({
+      userId: 1,
+      variantId: 11,
+      frame: { bytes: await frameBytes() },
+      applied: rect({ x: 0, y: 0, width: 40, height: 40 }),
+      masterRegions: new Map([["hair", rect(HAIR)]]),
+      slots: [surfaceSlot("skin", "skin")],
+      dependencies: { ...bench.dependencies, readWords: barrier.readWords } as never,
+    });
+    barrier.done();
+
+    expect(barrier.entered, "one slot, one read").toEqual(["skin"]);
+    expect(barrier.openedBy(), "nothing to overlap with — the barrier times out").toBe("escape");
+  });
+});
+
+/**
+ * AND THE READS THAT MUST NOT BE STARTED (stage 3b's own risk).
+ *
+ * Starting the reads before the loops is only safe while the set started
+ * matches the set the loops would ask for, predicate for predicate. A slot the
+ * loops skip — a disputed one, which files nothing and is in the list for its
+ * pixels alone — must not be described here, or the change would quietly buy a
+ * vision call per render that the serial version never made.
+ *
+ * This is the arm that would catch that: it costs nothing, it is exact, and it
+ * fails on a `filter` that drifts by one predicate.
+ */
+describe("no slot is described that the mint would not have asked about", () => {
+  it("spends one read for one askable slot, whatever else is on the list", async () => {
+    const asked: string[] = [];
+    const bench = harness();
+    await mintReferencesForRender({
+      userId: 1,
+      variantId: 11,
+      frame: { bytes: await frameBytes() },
+      applied: rect({ x: 0, y: 0, width: 40, height: 40 }),
+      masterRegions: new Map([["hair", rect(HAIR)]]),
+      slots: [
+        hairSlot({
+          slot: "skin", tier: "surface", noun: "skin", question: null, guardKind: null,
+          words: ["a warm even tan"], disputed: true,
+        }),
+        hairSlot({
+          slot: "freckles", tier: "surface", noun: "freckles", question: null, guardKind: null,
+          words: ["a light scatter across the nose"],
+        }),
+      ],
+      dependencies: {
+        ...bench.dependencies,
+        readWords: async (input: { noun: string }) => { asked.push(input.noun); return `a described ${input.noun}`; },
+      } as never,
+    });
+
+    expect(asked, "the disputed slot is not described, and is not read for either").toEqual(["freckles"]);
+  });
+});

@@ -1095,13 +1095,22 @@ export async function mintReferencesForRender(input: MintInput): Promise<MintRes
        digest hashes them, and encoding a crop twice to answer one question
        about it twice is the copy law 4 warns about wearing a performance
        costume. */
-    const encodedCuts = new Map<string, Awaited<ReturnType<typeof encodeCut>>>();
-    const encodedFor = async (cut: SegmentCut) => {
+    /*
+      THE PROMISE IS THE CACHE ENTRY, not the answer (stage 3b).
+
+      This used to store the encoded crop AFTER awaiting it, which is the same
+      thing while one caller runs at a time and a different thing the moment two
+      do: both would look, both would miss, and one crop would be encoded twice.
+      Holding the promise makes the second caller wait on the first call instead
+      of starting a second — the shape `pairWords` below already had.
+    */
+    const encodedCuts = new Map<string, Promise<Awaited<ReturnType<typeof encodeCut>>>>();
+    const encodedFor = (cut: SegmentCut) => {
       const held = encodedCuts.get(cut.facet);
       if (held) return held;
-      const encoded = await encodeCut(cut);
-      encodedCuts.set(cut.facet, encoded);
-      return encoded;
+      const encoding = encodeCut(cut);
+      encodedCuts.set(cut.facet, encoding);
+      return encoding;
     };
 
     /*
@@ -1164,16 +1173,25 @@ export async function mintReferencesForRender(input: MintInput): Promise<MintRes
       }
     }
     const pairWords = new Map<string, Promise<readonly string[] | null>>();
-    const wordsFor = async (slot: SlotSpec): Promise<readonly string[] | null> => {
+    /*
+      AND ONE ASKING PER SLOT, held as a promise for the same reason.
+
+      The five loops below each ask a disjoint set of slots, so this memo never
+      merges two questions that were meant to be two — it exists so the reads
+      can be STARTED before the loops and consumed inside them (stage 3b). A
+      loop's `await wordsFor(slot)` then resolves against a call already in
+      flight rather than opening one.
+    */
+    const wordsBySlot = new Map<FeatureSlot, Promise<readonly string[] | null>>();
+    const wordsFor = (slot: SlotSpec): Promise<readonly string[] | null> => {
+      const held = wordsBySlot.get(slot.slot);
+      if (held) return held;
       const pairKey = pairKeyBySlot.get(slot.slot);
-      if (pairKey !== undefined) {
-        const held = pairWords.get(pairKey);
-        if (held) return held;
-        const asked = readOneSlotsWords(slot);
-        pairWords.set(pairKey, asked);
-        return asked;
-      }
-      return readOneSlotsWords(slot);
+      const shared = pairKey === undefined ? undefined : pairWords.get(pairKey);
+      const asked = shared ?? readOneSlotsWords(slot);
+      if (pairKey !== undefined && !shared) pairWords.set(pairKey, asked);
+      wordsBySlot.set(slot.slot, asked);
+      return asked;
     };
     const readOneSlotsWords = async (slot: SlotSpec): Promise<readonly string[] | null> => {
       /* Not wired: the slot files the words it arrived with, byte for byte
@@ -1235,6 +1253,48 @@ export async function mintReferencesForRender(input: MintInput): Promise<MintRes
         ...(detail === undefined ? {} : { detail }),
       });
     };
+
+    /*
+      STAGE 3b — THE WORDS GO OUT TOGETHER, AND NOTHING ELSE MOVES (fable-695
+      §4c, whose condition is that each site is proven independent at the
+      artifact or stays serial with the reason said out loud).
+
+      Five loops below ask the describer one slot at a time, each on the
+      customer's paid wait, and a render with six slots waited through six calls
+      in series. They are NOT parallelised: their order, their branches and
+      every push into `rows` and `outcomes` are exactly as they were. What
+      changes is that the reads are STARTED here, all at once, and each loop's
+      `await wordsFor(slot)` then meets a call already in flight.
+
+      Doing it this way rather than by rewriting the loops is deliberate, and it
+      is what makes the change provable: the two artifacts this function
+      produces are built by the same statements in the same order, so they
+      cannot come out different — and the one genuinely order-dependent
+      decision in the whole function, the duplicate-digest rule that catches a
+      byte-identical crop BECAUSE an earlier slot is already in `digests`, is
+      untouched. A parallelised cut loop would have had to reproduce that, and
+      it is not what this stage buys.
+
+      **The asked set is computed to match the loops exactly**, predicate for
+      predicate — a slot the loops would skip must not be read here, or this
+      would spend a call the serial version never made.
+
+      One accepted cost, named: when a read fails, the serial version stopped at
+      the first failure and never made the later calls. This has already made
+      them. That is stage 1's trade — a few reads issued on a render that then
+      fails — and the failure itself is unchanged, because each loop re-awaits
+      the same rejected promise at exactly the point it would have thrown.
+    */
+    const willBeAskedForWords: SlotSpec[] = [
+      ...input.slots.filter((slot) => slot.tier === "surface" && !slot.disputed),
+      ...input.slots.filter((slot) => slot.tier !== "surface"
+        && (slot.question === null || slot.guardKind === null) && !slot.disputed),
+      ...sideless.filter(({ slot }) => !slot.disputed).map(({ slot }) => slot),
+      ...cuttable.filter((slot) => cutBySlot.has(slot.slot) || !slot.disputed),
+    ];
+    /* Settled rather than raced: a rejection here is re-thrown by the loop that
+       owns it, and no sibling may be left with nobody listening. */
+    await Promise.allSettled(willBeAskedForWords.map((slot) => wordsFor(slot)));
 
     for (const slot of input.slots) {
       if (slot.tier !== "surface") continue;
