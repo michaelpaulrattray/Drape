@@ -26,6 +26,7 @@ import { createExpressMiddleware } from "@trpc/server/adapters/express";
 
 import { castingV2Router } from "../routes/castingV2";
 import { modelCreateInputSchema } from "../routes/modelCreateInput";
+import { waitlistRouter } from "../routes/waitlist";
 import { router, publicProcedure } from "./trpc";
 import { spokenError } from "./spokenError";
 import { INVALID_INPUT_FALLBACK, invalidInputMessage } from "./invalidInputMessage";
@@ -45,11 +46,20 @@ function realInputSchema(procedureName: string) {
   return inputs[0] as never;
 }
 
+/** `waitlist.join`'s email field carries a sentence its author wrote. */
+function realWaitlistSchema() {
+  const procedures = (waitlistRouter as unknown as {
+    _def: { procedures: Record<string, { _def: { inputs: unknown[] } }> };
+  })._def.procedures;
+  return procedures.join._def.inputs[0] as never;
+}
+
 const AUTHORED_REFUSAL =
   "I can't find any glasses on this face — there's nothing to take off. Nothing was charged.";
 
 const probeRouter = router({
   createRoll: publicProcedure.input(realInputSchema("createRoll")).mutation(() => ({ ok: true })),
+  waitlistJoin: publicProcedure.input(realWaitlistSchema()).mutation(() => ({ ok: true })),
   modelCreate: publicProcedure.input(modelCreateInputSchema).mutation(() => ({ ok: true })),
   authored: publicProcedure.input(z.object({}).strict()).mutation(() => {
     throw spokenError({ code: "BAD_REQUEST", message: AUTHORED_REFUSAL });
@@ -175,6 +185,20 @@ describe("negative controls — the rewrite is narrow", () => {
     expect(readableFailure(error, "fallback")).toBe(AUTHORED_REFUSAL);
   });
 
+  it("keeps a sentence the schema's author wrote, and lifts it out of the array", async () => {
+    /*
+      A production regression this file caught: the first cut replaced EVERY
+      zod message, so `waitlist.join`'s own "Please enter a valid email
+      address" came back off the live wire as the generic fallback.
+    */
+    const error = await callOverTheWire("waitlistJoin", { email: "not-an-email" });
+
+    expect(error.message).toBe("Please enter a valid email address");
+    expect(error.message, "ours must not speak over the author's").not.toBe(INVALID_INPUT_FALLBACK);
+    // Still lifted out of the serialized array — that was always the leak.
+    expectNoMachineText(error.message ?? "");
+  });
+
   it("still lets the app-update sentinel win over the generic sentence", async () => {
     // The real models.create schema, with clientRequestId omitted — the exact
     // shape a stale tab sends after a deploy.
@@ -207,5 +231,41 @@ describe("invalidInputMessage discriminates", () => {
     const failure = z.object({ n: z.number() }).safeParse({ n: "seven" });
     expect(failure.success).toBe(false);
     expect(invalidInputMessage(failure.error)).toBe(INVALID_INPUT_FALLBACK);
+  });
+
+  /**
+   * The author-detection is a comparison against what zod would have said, and
+   * these are the kinds it has to get right. Driven directly, because the wire
+   * tests above only exercise the three that reach a customer today — a new
+   * schema using an enum or a refinement gets the same treatment tomorrow.
+   */
+  it("keeps every authored message and replaces every default one", () => {
+    const authored = [
+      z.string().refine(() => false, "That name is already taken").safeParse("x"),
+      z.object({ e: z.email("Please enter a valid email address") }).safeParse({ e: "x" }),
+    ];
+    for (const failure of authored) {
+      expect(failure.success).toBe(false);
+      if (failure.success) continue;
+      expect(invalidInputMessage(failure.error)).toBe(failure.error.issues[0]?.message);
+    }
+
+    const zodsOwn = [
+      z.object({ s: z.enum(["a", "b"]) }).safeParse({ s: "c" }),
+      z.object({ s: z.literal("a") }).safeParse({ s: "b" }),
+      z.object({ s: z.union([z.number(), z.boolean()]) }).safeParse({ s: "x" }),
+      z.string().refine(() => false).safeParse("x"),
+      // The regex leak in its other form: zod's default prints the pattern.
+      z.object({ s: z.string().regex(/^a+$/) }).safeParse({ s: "b" }),
+      // A bare type mismatch: uncomparable, so it must fall back, not pass through.
+      z.object({ n: z.number() }).safeParse({ n: "seven" }),
+    ];
+    for (const failure of zodsOwn) {
+      expect(failure.success).toBe(false);
+      if (failure.success) continue;
+      const spoken = invalidInputMessage(failure.error);
+      expect(spoken).toBe(INVALID_INPUT_FALLBACK);
+      expect(spoken).not.toContain("/^a+$/");
+    }
   });
 });

@@ -48,7 +48,7 @@
  * built from that and nothing else. Field names (`briefText`) stay out: they
  * are implementation detail leaking in the other direction.
  */
-import { ZodError } from "zod";
+import { z, ZodError } from "zod";
 
 /**
  * When the issue cannot be spoken about usefully.
@@ -61,6 +61,63 @@ import { ZodError } from "zod";
  */
 export const INVALID_INPUT_FALLBACK =
   "That didn't go through — something in what was sent wasn't valid. Please check it and try again.";
+
+/**
+ * Zod's own default-message function, asked at runtime.
+ *
+ * # Why this exists — a regression this file caused, read on production
+ *
+ * The first cut of this module replaced EVERY zod message, and
+ * `waitlist.join` writes its own: `z.email("Please enter a valid email
+ * address")`. On the production wire that good sentence came back as the
+ * generic fallback — a schema author's copy thrown away by a safety net.
+ *
+ * # Why not match on "Too big:"
+ *
+ * Zod does not record on the issue whether a human supplied its message, and
+ * the tempting test is the prefix of its defaults. That is keying a reader on
+ * a library's spelling: it breaks silently on a zod upgrade, and it fails in
+ * the dangerous direction — a changed default would be read as authored and
+ * shipped verbatim. So the default is not transcribed, it is REQUESTED: zod
+ * renders what it would have said for this exact issue, and a message that
+ * differs is one somebody wrote on purpose.
+ */
+const englishDefaults = (z as unknown as {
+  core?: { locales?: { en?: () => { localeError?: (issue: unknown) => string } } };
+}).core?.locales?.en?.();
+
+/**
+ * Did a schema author write this sentence, rather than zod?
+ *
+ * Anything unreadable answers NO, which is the safe direction: an unknown
+ * message is replaced by ours, and the worst case is a plain sentence in place
+ * of a plain sentence. Answering YES on doubt is how machine text ships.
+ */
+function isAuthoredByUs(issue: unknown, message: string): boolean {
+  if (!message) return false;
+  /*
+    `invalid_type` is the one kind that cannot be compared, and it was measured
+    rather than assumed. Its default reads "Invalid input: expected number,
+    received string" — and the "received" half is rendered from the value that
+    failed, which the issue does not carry afterwards. Re-rendering it gives
+    "received undefined", so a plain type error looks authored, and it would
+    ship as machine text. Every other kind reconstructs exactly: too_big,
+    too_small, invalid_value, invalid_union, invalid_format, unrecognized_keys,
+    custom, and a missing key (whose input really is undefined) — checked
+    across all of them on 2026-08-16.
+
+    So this one answers NO, which costs a schema author their custom sentence
+    on a bare type mismatch and never leaks. The app-update sentinel is exactly
+    that case and is read before this module.
+  */
+  if ((issue as { code?: string })?.code === "invalid_type") return false;
+  try {
+    const zodWouldSay = englishDefaults?.localeError?.(issue);
+    return typeof zodWouldSay === "string" && zodWouldSay !== message;
+  } catch {
+    return false;
+  }
+}
 
 type SpeakableIssue = {
   code?: string;
@@ -103,6 +160,14 @@ function speakIssue(raw: unknown): string | null {
 export function invalidInputMessage(cause: unknown): string | null {
   if (!(cause instanceof ZodError)) return null;
   for (const issue of cause.issues) {
+    /*
+      A sentence a schema author wrote wins over anything derived here — they
+      knew the field, we only know the shape of the failure. It still gets
+      lifted OUT of the serialized array, which is the leak: before this
+      module, "Please enter a valid email address" reached the customer as one
+      line of a JSON object inside a JSON array.
+    */
+    if (isAuthoredByUs(issue, issue.message)) return issue.message;
     const spoken = speakIssue(issue);
     if (spoken) return spoken;
   }
