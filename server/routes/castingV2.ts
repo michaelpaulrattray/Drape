@@ -643,7 +643,8 @@ export const castingV2Router = router({
             Capped and shaped here so a malformed key never reaches the
             catalogue; whether the key names anything real is the service's
             door, which refuses free. Absent on every ask the panel does not
-            scope, which is all of them until the client sends one.
+            scope — it scopes a tapped row (`FacePanel`) and a clicked
+            rectangle (`FaceRegions`), and production renders record the result.
           */
           scope: z.string().trim().min(1).max(40).optional(),
           /*

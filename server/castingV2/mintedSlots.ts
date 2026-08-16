@@ -150,8 +150,13 @@ export type MintedSlotsInput = {
    * is the fan-out this program has been paying for in other coats, arriving at
    * the one door the ruling put the memory behind.
    *
-   * Undefined is every render before the panel sends a scope, which is all of
-   * them today: the narrowing is a no-op and nothing about the fan-out changes.
+   * Undefined is a whole-face ask. **The panel DOES send one** — `FacePanel`
+   * on a tapped row, `FaceRegions` on a clicked rectangle — and production
+   * renders carry it: v#198 and v#199 on candidate 1625 both record
+   * `askScope: "eye@left"`. This line was written when nothing sent one and
+   * said so, and it went on saying so for two shifts after that stopped being
+   * true; the sentence then read as an argument that the narrowing could not
+   * matter, which is how the un-narrowed loop below survived a review.
    */
   scope?: FeatureSlot;
 };

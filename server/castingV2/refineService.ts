@@ -3382,8 +3382,10 @@ async function refineCandidateCounted(
           restore: { state: composed, slots: supersededCarrySlots(branchRows) },
           /*
             ONE INSTANCE, IF SHE POINTED AT ONE. Undefined on every ask that
-            does not come from a clicked rectangle, which is all of them until
-            the panel sends one — so this line changes nothing by itself.
+            does not come from a tapped row or a clicked rectangle — the panel
+            sends both, and production renders carry the result (`askScope` on
+            v#198/v#199). This line is load-bearing, and the docblock that used
+            to call it inert outlived the fact by two shifts.
           */
           ...(input.scope ? { scope: input.scope } : {}),
           /*
@@ -5651,9 +5653,9 @@ async function refineCandidateCounted(
           loses exactly the half the sentence cannot carry.
 
           Written here, on the row, so a fresh take of this version can be its
-          REQUEST again rather than its caption. Absent on every typed ask,
-          which is all of them until she taps a rectangle — so its presence is
-          itself the mark of a pointed one.
+          REQUEST again rather than its caption. Absent on every typed ask, so
+          its presence is itself the mark of a pointed one — and it is present
+          on real rows, which is how the eye-filing defect was located.
         */
         ...(input.scope ? { askScope: input.scope } : {}),
         /*
