@@ -32,6 +32,7 @@ import {
 import { classifyDispatchFailure, failureActionLabel } from "@/features/castingV2/dispatchFailure";
 import { cancelStory } from "@/features/castingV2/cancelNotice";
 import { refineOutcomeNote } from "@/features/castingV2/refineOutcomeNote";
+import { waitExceeds } from "@/features/castingV2/waitNotice";
 import { inFlightCandidate, refineBusy, refineWait } from "@/features/castingV2/refineBusy";
 import { bridgeWithinCandidate } from "@/features/castingV2/panelBridge";
 import { sheetExpiryNotice } from "@/features/castingV2/retentionCopy";
@@ -1427,10 +1428,14 @@ export default function CastingSheet() {
     projection carries no per-candidate clock, and the honest statement is
     about this roll's age either way. Re-evaluated on every poll tick, which is
     already running while anything is non-terminal, so it needs no timer.
+
+    THE AGE COMES FROM THE SERVER (`ageMs`, fable-670). It used to be
+    `Date.now() - Date.parse(createdAt)` — the browser's clock minus the
+    server's, so a laptop two minutes out of true either confessed on every
+    roll or never confessed at all. See `features/castingV2/waitNotice.ts`.
   */
-  const rollStartedAt = roll.data?.createdAt ? Date.parse(roll.data.createdAt) : null;
-  const rollIsOverdue =
-    rollStartedAt !== null && Number.isFinite(rollStartedAt) && Date.now() - rollStartedAt > 120_000;
+  const ROLL_OVERDUE_MS = 120_000;
+  const rollIsOverdue = waitExceeds(roll.data?.ageMs, ROLL_OVERDUE_MS);
 
   /*
     Seven quiet days is idle time, not age: `expiresAt` is pushed out every

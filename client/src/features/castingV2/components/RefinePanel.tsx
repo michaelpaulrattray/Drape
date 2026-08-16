@@ -4,6 +4,7 @@ import { Button } from "@/foundation";
 import { SegmentsOnFace, type FaceRow } from "./SegmentsOnFace";
 import { VersionRail } from "./VersionRail";
 import type { PendingStage } from "../refineBusy";
+import { waitExceeds } from "../waitNotice";
 
 /**
  * Refining one face — the panel under the expanded picture (M8).
@@ -57,6 +58,17 @@ export type PendingRefine = {
   instruction: string;
   startedAt: string | Date;
   /**
+   * How long it has waited, subtracted on the side that owns the clock
+   * (fable-670).
+   *
+   * `startedAt` stays because the caption and the rail want the moment; the
+   * DECISION below wants a duration, and a duration this side derived from
+   * `startedAt` would be the server's clock minus the browser's. Optional
+   * because a payload from before the field is not a long wait, it is an
+   * unknown one — see `waitNotice.ts`.
+   */
+  waitedMs?: number;
+  /**
    * How far along it is, from the row rather than from a guess (D-169).
    *
    * `queued` is claimed-not-yet-sent, `dispatched` is the image model has it.
@@ -88,6 +100,10 @@ export type RefineReask = {
  * The roll's own number, and the same reasoning: past this point the honest
  * thing is to say the wait is long and name the outcome, so it reads as
  * supervised rather than broken.
+ *
+ * Compared against `waitedMs`, which the server subtracts off its own clock —
+ * never against this browser's `Date.now()` minus a server timestamp. That was
+ * the defect fable-670 closed; `waitNotice.ts` carries the whole story.
  */
 const LONG_WAIT_MS = 2 * 60 * 1000;
 
@@ -246,7 +262,7 @@ export function RefinePanel({
         and it is on screen either way, so this stands down rather than being
         rewritten into a second copy of it.
       */}
-      {pending.some((entry) => Date.now() - new Date(entry.startedAt).getTime() > LONG_WAIT_MS)
+      {pending.some((entry) => waitExceeds(entry.waitedMs, LONG_WAIT_MS))
         && !pending.every((entry) => entry.stage === "settling") ? (
         <p className="dpc-refine__note">
           This one is taking longer than usual. It'll appear here when it lands, and if it

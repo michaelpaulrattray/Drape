@@ -108,6 +108,22 @@ export type RollProjection = {
   priceCredits: number;
   counts: { total: number; ready: number; casting: number; failed: number };
   createdAt: string;
+  /**
+   * HOW LONG THIS ROLL HAS BEEN WAITING, subtracted here rather than there
+   * (entry 13 of the instrument doctrine; fable-670).
+   *
+   * The sheet says so past about two minutes — the supervised-wait promise —
+   * and it used to decide that from `createdAt` minus the BROWSER's clock. Two
+   * moments off two clocks: a laptop two minutes fast confessed an unusual wait
+   * on every roll one second in, and a laptop two minutes slow never confessed
+   * one at all, which is the same silence as the promise not existing. The
+   * server holds both terms, so it does the subtraction and ships the answer.
+   *
+   * The same reasoning `variants.pending[].stage` already gives for keeping the
+   * lease decision here (`routes/castingV2.ts`): a clock question belongs to
+   * the side that owns the clock.
+   */
+  ageMs: number;
   candidates: CandidateProjection[];
 };
 
@@ -433,7 +449,18 @@ export function projectRoll(input: {
   parentRollPublicId?: string | null;
   /** Signed candidates → their Cast's public id, resolved owner-scoped. */
   castPublicIdByCandidateId?: ReadonlyMap<number, string>;
+  /**
+   * The moment this projection is made, defaulting to one reading taken here.
+   *
+   * `ageMs` subtracts it from `roll.createdAt`, which the roll's own insert
+   * wrote off this same clock (`db/castingV2.ts` supplies `createdAt`; the
+   * column's `defaultNow()` is never reached). Both terms, one clock, one
+   * reading — which is the whole of entry 13. Injectable so the test can fix
+   * the instant rather than sleep.
+   */
+  now?: Date;
 }): RollProjection {
+  const now = input.now ?? new Date();
   const candidates = input.candidates
     .map((candidate) =>
       projectCandidate(candidate, input.castPublicIdByCandidateId?.get(candidate.id) ?? null))
@@ -475,6 +502,14 @@ export function projectRoll(input: {
       failed: candidates.filter((candidate) => candidate.status === "failed-refunded").length,
     },
     createdAt: input.roll.createdAt.toISOString(),
+    /*
+      Never negative. A row written a few milliseconds ahead of this reading —
+      two app processes, or a clock nudged between the insert and the read — is
+      a roll zero seconds old, not one that started in the future. Clamping
+      here keeps a nonsense value from reaching a threshold comparison as a very
+      large negative number, which reads as "brand new" forever.
+    */
+    ageMs: Math.max(0, now.getTime() - input.roll.createdAt.getTime()),
     candidates,
   };
 }

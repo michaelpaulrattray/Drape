@@ -209,17 +209,30 @@ describe("lifecycle states collapse to the three the client knows", () => {
 
 describe("lineage", () => {
   it("carries the parent as public ids, never the internal ones", () => {
+    /*
+      `now` IS PINNED HERE, and not for tidiness.
+
+      The assertions below search the serialized projection for two internal
+      ids as SUBSTRINGS, and the projection now carries `ageMs` — a
+      free-running number, ten digits wide against this fixture's 2026-07-31
+      birth. `41` appears inside it about as often as not: the arm passed all
+      morning and failed the moment the field landed, which is a coin flip
+      wearing a green tick either way. Pinned to the row's own moment, `ageMs`
+      is 0 and the search is a reading again.
+    */
     const projected = projectRoll({
       roll: rollRow({ parentRollId: 41, parentCandidateId: 907 }),
       candidates: [candidateRow()],
       parentRollPublicId: "roll-parent",
       parentCandidatePublicId: "cand-parent",
+      now: new Date("2026-07-31T00:00:00.000Z"),
     });
 
     expect(projected.lineage).toEqual({
       fromRollId: "roll-parent",
       fromCandidateId: "cand-parent",
     });
+    expect(projected.ageMs, "a live duration would make the search below a coin flip").toBe(0);
     // The numeric ids are internal and must not appear anywhere (§J).
     expect(JSON.stringify(projected)).not.toContain("907");
     expect(JSON.stringify(projected)).not.toContain("41");
@@ -373,5 +386,63 @@ describe("a refined candidate projects its refinement", () => {
     }));
     expect(projected?.imageUrl).toBeNull();
     expect(projected?.thumbUrl).toBeNull();
+  });
+});
+
+/*
+  THE AGE IS SUBTRACTED HERE, AND BOTH TERMS COME OFF ONE CLOCK.
+
+  The sheet's supervised-wait promise — "past about two minutes a still-casting
+  tile says so" — used to be decided in the browser from `createdAt` minus
+  `Date.now()`. Two moments, two clocks: entry 13 of the instrument doctrine,
+  living in the product. These arms pin the subtraction on this side, where the
+  roll's own insert wrote the other term off the same clock.
+*/
+describe("ageMs — the wait, measured where both terms live", () => {
+  const BORN = new Date("2026-07-31T00:00:00.000Z");
+
+  it("is the elapsed milliseconds between the row and the reading", () => {
+    const projected = projectRoll({
+      roll: rollRow({ createdAt: BORN }),
+      candidates: [candidateRow()],
+      now: new Date("2026-07-31T00:02:30.000Z"),
+    });
+    expect(projected.ageMs).toBe(150_000);
+  });
+
+  /*
+    The threshold the sheet actually compares against, driven from both sides of
+    it. A test that only proves the arithmetic would pass just as well if the
+    number were shipped in seconds.
+  */
+  it("crosses the sheet's two-minute mark at two minutes and not before", () => {
+    const at = (iso: string) => projectRoll({
+      roll: rollRow({ createdAt: BORN }),
+      candidates: [candidateRow()],
+      now: new Date(iso),
+    }).ageMs;
+    expect(at("2026-07-31T00:01:59.999Z")).toBeLessThanOrEqual(120_000);
+    expect(at("2026-07-31T00:02:00.001Z")).toBeGreaterThan(120_000);
+  });
+
+  /* A row written a hair ahead of the reading is zero seconds old, never a
+     large negative number that would read as brand new for the rest of time. */
+  it("never reports a negative age", () => {
+    expect(projectRoll({
+      roll: rollRow({ createdAt: BORN }),
+      candidates: [candidateRow()],
+      now: new Date("2026-07-30T23:59:55.000Z"),
+    }).ageMs).toBe(0);
+  });
+
+  /* Nobody has to remember to pass one: the default is a reading taken inside
+     the projection, which is the same clock as the row's own insert. */
+  it("takes its own reading when none is injected", () => {
+    const projected = projectRoll({
+      roll: rollRow({ createdAt: new Date(Date.now() - 5_000) }),
+      candidates: [candidateRow()],
+    });
+    expect(projected.ageMs).toBeGreaterThanOrEqual(5_000);
+    expect(projected.ageMs).toBeLessThan(60_000);
   });
 });

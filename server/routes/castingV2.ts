@@ -781,6 +781,15 @@ export const castingV2Router = router({
       ]);
       if (!face) throw new TRPCError({ code: "NOT_FOUND", message: "That candidate is no longer available." });
       /*
+        ONE READING, for every clock question this payload answers.
+
+        Two of the pending fields are about time — how long the row has waited,
+        and whether its lease has passed — and taking `new Date()` twice would
+        answer them off two moments a few milliseconds apart. Harmless at this
+        size and exactly the shape entry 13 is about, so it is taken once.
+      */
+      const now = new Date();
+      /*
         ONE CHIP PER EDIT, NEWEST WINS (founder, 2026-08-15; `railTakes.ts`).
 
         A regeneration of the same ask is an ordinary row that describes the
@@ -842,6 +851,19 @@ export const castingV2Router = router({
             ?? "",
           startedAt: variant.createdAt,
           /*
+            AND HOW LONG IT HAS BEEN WAITING — subtracted here, off ONE clock
+            (entry 13 of the instrument doctrine; fable-670).
+
+            The panel says "this is taking longer than usual… your credits come
+            back on their own" past two minutes, and it used to reach that by
+            subtracting `startedAt` from the BROWSER's clock. Two moments, two
+            clocks: a laptop two minutes fast says it on every edit a second in,
+            a laptop two minutes slow never says it, and the second failure is
+            silent. `now` is the SAME reading `stage` takes below — one clock
+            question, one answer, taken once.
+          */
+          waitedMs: Math.max(0, now.getTime() - variant.createdAt.getTime()),
+          /*
             THE ONLY PROGRESS THERE IS (D-169) — AND WHO HOLDS THE ROW.
 
             Two real states, so the wait can say "in line" and then "being
@@ -859,7 +881,7 @@ export const castingV2Router = router({
           stage: pendingStage({
             status: variant.status,
             leaseExpiresAt: variant.leaseExpiresAt,
-            now: new Date(),
+            now,
           }),
         })),
         variants: live.map(({ variant }) => ({
