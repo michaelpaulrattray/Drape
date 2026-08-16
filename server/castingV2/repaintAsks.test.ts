@@ -555,6 +555,43 @@ describe("a presentation fact rides the words and files nowhere", () => {
     expect(result.asks.map((ask) => ask.slot)).toEqual(["hair"]);
   });
 
+  it("REPORTS a restore slot the catalogue cannot name, instead of skipping it in silence", () => {
+    /*
+      OPEN_LANE_CARRY_DESIGN.md §4 finding 2, ordered by fable-766 §3.
+
+      The skip itself is right — there is no noun to restore an unnameable slot
+      with — and its SILENCE was the defect: a restore would put back everything
+      except that feature and say nothing, which is the build-lost class. Driven
+      directly with a key no catalogue entry answers for, because the shape is
+      unreachable through today's vocabulary and a guard nothing can exercise is
+      a guard nobody has tested.
+    */
+    const result = repaintAsksFor({
+      delta: { hairColour: "copper" },
+      prose,
+      restore: { state: { hairColour: "copper" }, slots: ["open:horns", "hair"] },
+    });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    /* Named, and only the unnameable one — `hair` resolves and is restored. */
+    expect(result.unnameableRestores).toEqual(["open:horns"]);
+  });
+
+  it("CONTROL — an ordinary restore reports nothing, so the field cannot become noise", () => {
+    /* The negative half. Report unconditionally and this goes red rather than
+       every render quietly acquiring a warning about slots that were fine. */
+    const result = repaintAsksFor({
+      delta: { hairColour: "copper" },
+      prose,
+      restore: { state: { hairColour: "copper" }, slots: ["hair"] },
+    });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.unnameableRestores).toBeUndefined();
+  });
+
   it("CONTROL — a branch with no expression carries no clause at all", () => {
     /* The inert half. Make the clause unconditional and this goes red rather
        than every render quietly acquiring a sentence about her face. */

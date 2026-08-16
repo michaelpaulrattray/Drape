@@ -3364,6 +3364,28 @@ async function refineCandidateCounted(
         });
       }
       /*
+        A SLOT THE RESTORE COULD NOT NAME, SAID OUT LOUD (fable-766 §3).
+
+        `repaintAsksFor` skips a restore slot the catalogue cannot resolve — it
+        has no noun to restore it with — and until now it did so in silence.
+        Unreachable on today's vocabulary, and the class it belongs to is not:
+        a paid feature that vanishes under a later operation without a trace is
+        the build-lost shape, and this is the one line that would name it.
+
+        `warn`, not `info`: nothing here is expected, and the day one appears it
+        is a feature the customer has lost.
+      */
+      if (asks.unnameableRestores !== undefined) {
+        log.warn(
+          {
+            operationId,
+            variant: variant.publicId,
+            slots: asks.unnameableRestores,
+          },
+          "[refineService] a restore names slots the catalogue cannot, so they were not restored — a carried feature is missing from this render",
+        );
+      }
+      /*
         The library as it stood when this render started. The anchor is this
         variant — its own rows do not exist yet, so the walk climbs its parents
         — which is the same anchor the mint's duplicate check uses below, and

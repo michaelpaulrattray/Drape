@@ -220,6 +220,23 @@ export type RepaintAsksResult =
     /** Facts with no slot to file under, said in the recipe's own sentence and
      *  filed nowhere — see the presentation loop in {@link repaintAsksFor}. */
     presentation?: readonly PresentationClause[];
+    /**
+     * RESTORE SLOTS THE CATALOGUE COULD NOT NAME, and therefore did not restore.
+     *
+     * The restore loop skips a slot `slotDefinition` cannot resolve, because it
+     * has no noun to say it with. That skip is correct and it is SILENT, which
+     * is the half that is wrong: on today's vocabulary it is unreachable (every
+     * restorable slot is catalogued), and the day it is reachable — an open
+     * kind carried under a synthesized key, `OPEN_LANE_CARRY_DESIGN.md` §4
+     * finding 2 — a restore would put back everything EXCEPT that feature and
+     * say nothing about it. A paid feature disappearing under a later
+     * operation, quietly, is the build-lost class.
+     *
+     * Reported rather than logged here because this module is pure: it decides,
+     * the caller records. Present only when there is something to report, so an
+     * ordinary render carries no new field.
+     */
+    unnameableRestores?: readonly FeatureSlot[];
   }
   | RepaintAsksRefusal;
 
@@ -713,10 +730,16 @@ export function repaintAsksFor(input: RepaintAsksInput): RepaintAsksResult {
     half of this rule that always holds, and the words are the half that heals
     it.
   */
+  const unnameableRestores: FeatureSlot[] = [];
   for (const slot of input.restore?.slots ?? []) {
     if (wordsBySlot.has(slot) || vacateBySlot.has(slot)) continue;
     const definition = slotDefinition(slot);
-    if (definition === null) continue;
+    if (definition === null) {
+      /* Skipped, and SAID — see `unnameableRestores`. The skip is right (there
+         is no noun to restore it with) and its silence was not. */
+      unnameableRestores.push(slot);
+      continue;
+    }
     const phrase = (facetsOfSlot(slot) ?? [])
       .map((facet) => statePhrase(facet, input.restore!.state, input.prose))
       .find((said): said is string => said !== null && said.trim() !== "");
@@ -731,6 +754,7 @@ export function repaintAsksFor(input: RepaintAsksInput): RepaintAsksResult {
     /* Present only when there is one, so the assembler's own default (no
        clauses) is what every render that never asked for one receives. */
     ...(presentation.length > 0 ? { presentation } : {}),
+    ...(unnameableRestores.length > 0 ? { unnameableRestores } : {}),
     asks: order.map((slot) => {
       const says = vacateBySlot.get(slot);
       return {
