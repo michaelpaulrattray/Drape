@@ -3990,6 +3990,78 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
       )).rejects.toThrow();
       expect(painted).toHaveLength(0);
     });
+
+    it("KEEPS SAYING the standing presentation fact — a prune must not take her smile", async () => {
+      /*
+        THE SMILE LASTS UNTIL THE FIRST PRUNE — found by the step-4 sweep
+        (opus-569 §2), driven here before it was fixed.
+
+        A presentation fact has no library row anywhere: the composed recipe is
+        the ONLY place it is written down, and every render anchors on the
+        pristine master, so a recipe that goes quiet about her expression paints
+        the master's face back. `repaintAsksFor` re-says it from
+        `restore.state` on every ordinary render — and the PRUNE road built its
+        asks with `delta: {}` and no `restore` at all, four lines below the
+        recomposed chain it needed.
+
+        So: ask for a smile, ask for earrings, take the earrings back — and the
+        render that removes the earrings also removes the smile, silently, from
+        a customer who paid for it. The build-lost class on the one channel with
+        nothing to fall back on.
+
+        Driven through the real service to the WIRE, because the defect is at
+        the call site rather than at the door: the door has been re-saying it
+        correctly all along.
+      */
+      lineageReferences = [
+        carryRow({
+          id: 9, publicId: "ref-9", slot: "earring@left", tier: "item", noun: "left earring",
+          words: ["gold hoops"], storageKey: "casting-v2/library/earring-left.png", variantId: 5,
+        }),
+      ];
+      variantRows = [{
+        id: 703,
+        publicId: "variant-smiling",
+        candidateId: 1,
+        imageKey: "casting-v2/variants/smiling.png",
+        internalPrompt: candidateRow.internalPrompt as Record<string, unknown>,
+        instructions: ["a soft, closed-mouth smile", "gold hoop earrings"],
+        deltas: {
+          free: { expression: "a soft, closed-mouth smile", statedAccessories: ["gold hoop earrings"] },
+        },
+        stepDeltas: [
+          { free: { expression: "a soft, closed-mouth smile" } },
+          { free: { statedAccessories: ["gold hoop earrings"] } },
+        ],
+        status: "ready",
+      }];
+      candidateRow.selectedVariantPublicId = "variant-smiling";
+
+      let call = 0;
+      await refineCandidate(
+        {
+          ...repainting,
+          regions: {
+            region: async () => ({ data: Buffer.alloc(64 * 64, 0), width: 64, height: 64 }),
+            subject: async () => ({ data: Buffer.alloc(64 * 64, 0), width: 64, height: 64 }),
+            landmark: async () => [],
+          } as never,
+          interpret: (async () => {
+            call += 1;
+            return call === 1
+              ? { ok: true as const, intent: "remove" as const, subject: "statedAccessories", match: "gold hoop earrings" }
+              : { ok: true as const, delta: { free: { lips: "a fuller cupid's bow" } } };
+          }) as never,
+        },
+        { ...input, instruction: "take the earrings off" },
+      );
+
+      expect(painted).toHaveLength(1);
+      expect(
+        painted[0]!.prompt,
+        "the prune's recipe still asks for the smile the branch is carrying",
+      ).toContain("her expression: a soft, closed-mouth smile");
+    });
   });
 
   /**

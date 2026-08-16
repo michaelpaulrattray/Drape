@@ -663,10 +663,23 @@ step 2  the open-kind policy record  DONE                  — 21 tables, 9 owed
 step 3  the mint door's absence control   REMAINING        — +1 read/kind/delivery
                                                              ($0.005), a specimen
                                                              set that must be NEW
-step 4  the slotless Ask             REMAINING             — see §9.7: the scout
+step 4  the slotless Ask             PART BUILT            — see §9.7: the scout
                                                              moved this figure, and
                                                              the assembler is not
-                                                             where the work is
+                                                             where the work is.
+                                                             Built (shift 80): the
+                                                             record's `open` field,
+                                                             its composition (the
+                                                             carry, and the drop by
+                                                             recomposition), the
+                                                             reader split, the
+                                                             promotion migration,
+                                                             and the ask loop.
+                                                             REMAINING: the CROP,
+                                                             which is step 3 — with
+                                                             words alone the kind
+                                                             re-rolls, so the lane
+                                                             does not ship on this
 step 5  the acceptance path          REMAINING             — refineDelta:721 +
                                                              the interpreter's reply
                                                              shape (`delta.open`)

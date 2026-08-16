@@ -64,6 +64,8 @@
  */
 import { createModuleLogger } from "../logging/logger";
 import type { TextEngine } from "../providers/types";
+import { isOpenKindKey } from "./openKindPolicy";
+import type { OpenKindAsk } from "./refineDelta";
 import { FREE_SUBJECT_KEYS, SUBJECT_NOUNS, type FreeSubject } from "./refineSubjects";
 
 const log = createModuleLogger("openLaneKind");
@@ -271,4 +273,67 @@ export async function normalizeOpenKind(
     return { ok: false, reason: "collides", kind, noun, subject };
   }
   return { ok: true, kind, noun };
+}
+
+/**
+ * The longest an open kind's words may be — the free lane's own ceiling.
+ *
+ * Quoted rather than shared because the two are different questions asked of
+ * different writers, and the free lane's constant is not exported. If they ever
+ * need to be one number, the way to do it is to export that one, not to widen
+ * this one quietly.
+ */
+const MAX_OPEN_WORDS = 120;
+
+/**
+ * THE OPEN KINDS ON A DELTA THIS PROGRAM WROTE — read back from our own record.
+ *
+ * # Why this is not part of `readDelta`
+ *
+ * `readDelta` guards the boundary where a MODEL'S REPLY enters the record, and
+ * that boundary must stay closed to this field. A reply free to name its own
+ * kind hands the composition key to the model with no closed lane in front of
+ * it — *"give her wings"* would stop being eyeliner (§8 step 0, the one choice
+ * that cannot be retrofitted). An open kind is named by code, after the closed
+ * interpreter has declined, by {@link normalizeOpenKind}, whose answer is
+ * checked against `SUBJECT_NOUNS` before it counts as new.
+ *
+ * This guards the other boundary — our own past re-entering — where the honest
+ * reading of a key we wrote is to carry it forward. Same split, same reasons,
+ * as `refineLegacy`'s own header states them for retired subjects.
+ *
+ * # It is strict about the KEY and generous about nothing
+ *
+ * A key that is not one the normalizer could have minted is DROPPED rather than
+ * carried, because the alternative is a slot key the library will refuse after
+ * the render is paid for. In particular a key with a space is refused here:
+ * `parseSlot` has no space in its grammar, so `open:cat ears` is
+ * `slotNotAFeatureSlot` at the database door, and a reader that let one through
+ * would re-open the defect the kebab conversion closed.
+ *
+ * A kind whose noun is missing is dropped too, and that one is the sharper of
+ * the two: the noun is the ONLY thing a customer may be shown, and falling back
+ * to the key would put `cat-ears` in a paid prompt in her own sentence.
+ *
+ * Returns null when there is nothing to carry, so a caller can leave the field
+ * off entirely rather than writing an empty object into every stored delta.
+ */
+export function readOpenKinds(value: unknown): Record<string, OpenKindAsk> | null {
+  if (!value || typeof value !== "object") return null;
+  const raw = (value as { open?: unknown }).open;
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
+
+  const open: Record<string, OpenKindAsk> = {};
+  for (const [kind, entry] of Object.entries(raw as Record<string, unknown>)) {
+    if (!isOpenKindKey(kind)) continue;
+    if (!entry || typeof entry !== "object" || Array.isArray(entry)) continue;
+    const noun = (entry as { noun?: unknown }).noun;
+    const words = (entry as { words?: unknown }).words;
+    if (typeof noun !== "string" || typeof words !== "string") continue;
+    const said = words.trim();
+    const called = noun.trim().toLowerCase().replace(/\s+/g, " ");
+    if (called === "" || said === "" || said.length > MAX_OPEN_WORDS) continue;
+    open[kind] = { noun: called, words: said };
+  }
+  return Object.keys(open).length === 0 ? null : open;
 }

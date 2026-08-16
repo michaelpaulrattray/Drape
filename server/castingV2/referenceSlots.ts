@@ -74,6 +74,19 @@ export function isOpenSlot(key: string): boolean {
 }
 
 /**
+ * The slot key an open kind carries under — spelled ONCE, here.
+ *
+ * Beside the predicate that recognises one, so the lane that mints a key and
+ * the catalogue that resolves it cannot come to disagree about a prefix by one
+ * of them being written out at a call site (working law 4). It does not
+ * validate: whether `kind` is a key the open lane could have minted is
+ * `isOpenKindKey`'s question, asked where the answer is acted on.
+ */
+export function openSlotKey(kind: string): string {
+  return `${OPEN_SLOT_PREFIX}${kind}`;
+}
+
+/**
  * WHICH FRAME A SLOT'S QUESTION MAY BE ASKED OF.
  *
  * `ownSide` is not a hint. A bilateral slot asked of the WHOLE frame gets back

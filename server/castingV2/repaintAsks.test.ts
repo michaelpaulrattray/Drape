@@ -737,3 +737,257 @@ describe("the asks the assembler is actually handed", () => {
     expect(recipe.ask).toBe("Change only her nose: a slightly narrower bridge.");
   });
 });
+
+/*
+  A KIND NOBODY HAS CATALOGUED — the open lane's own loop
+  (`OPEN_LANE_DESIGN_NOTE.md` §8 step 4, shape (a) ruled in fable-760 §2).
+
+  It cannot enter through the written loop: every gate in there keys on the
+  closed union in turn and an open kind has no facet. So it has a loop of its
+  own, beside the presentation loop, reading the composed state for the same
+  reason presentation does — nothing files an open slot yet, so the composition
+  is the only place one is written down.
+
+  `cat ears` is the specimen throughout rather than `horns`, deliberately, on
+  the rule this family has now paid for twice: **pick a specimen nothing is on a
+  path to catalogue.** Horns were promoted mid-campaign; a two-word kind also
+  exercises the one thing the key form is lossy about.
+*/
+describe("an uncatalogued kind rides its own synthesized slot", () => {
+  const catEars = { noun: "cat ears", words: "soft grey cat ears set high on her head" };
+
+  it("becomes an ask on the open key, said with the STORED noun", () => {
+    const result = repaintAsksFor({ delta: { open: { "cat-ears": catEars } }, prose });
+
+    expect(result).toEqual({
+      ok: true,
+      asks: [{
+        slot: "open:cat-ears",
+        /* Her word, spaces intact — NOT the token. The key is lossy (`cat ears`
+           and `cat-ears` key the same), so the noun is carried beside it and
+           every copy path reads the record. */
+        noun: "cat ears",
+        words: "soft grey cat ears set high on her head",
+      }],
+    });
+  });
+
+  it("says it to the painter in her own words, through the real assembler", () => {
+    const recipe = recipeFrom(repaintAsksFor({ delta: { open: { "cat-ears": catEars } }, prose }));
+
+    expect(recipe.ok).toBe(true);
+    if (!recipe.ok) return;
+    /* The degenerate case, which is the road every open kind travels until
+       step 3's mint door files a crop: the master alone, plus words. */
+    expect(recipe.references).toHaveLength(1);
+    expect(recipe.references[0]!.role).toEqual({ kind: "master" });
+    expect(recipe.ask).toBe("Change only her cat ears: soft grey cat ears set high on her head.");
+  });
+
+  it("KEEPS SAYING IT on a later render that never mentioned it", () => {
+    /*
+      THE CARRY, and it is the whole of fable-566's requirement that this chunk
+      can meet. Every render anchors on the pristine master, which has no cat
+      ears — so a recipe that goes quiet about them paints them off her head.
+      The composed state is the only place the kind is written down (no facet,
+      so no library row), exactly as with a smile.
+    */
+    const result = repaintAsksFor({
+      delta: { hairColour: "copper" },
+      prose,
+      restore: { state: { hairColour: "copper", open: { "cat-ears": catEars } }, slots: [] },
+    });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.asks.map((ask) => ask.slot)).toEqual(["open:cat-ears", "hair"]);
+  });
+
+  it("CONTROL — a branch that never asked for one carries no open ask at all", () => {
+    /* The inert half. Make the loop unconditional and this goes red rather than
+       every render quietly acquiring a slot nobody asked about. */
+    const result = repaintAsksFor({
+      delta: { hairColour: "copper" },
+      prose,
+      restore: { state: { hairColour: "copper" }, slots: [] },
+    });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.asks.map((ask) => ask.slot)).toEqual(["hair"]);
+  });
+
+  it("a CARRIED kind alone is not an ask — it does not satisfy the empty-ask door", () => {
+    /*
+      opus-569 §3. The carried channels are re-said on every render forever, so
+      counting them as asks would let a kind asked three steps ago satisfy the
+      guard against *a charge for nothing* on every render after it.
+    */
+    const result = repaintAsksFor({
+      delta: {},
+      prose,
+      restore: { state: { open: { "cat-ears": catEars } }, slots: [] },
+    });
+
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.reason).toBe("nothingAsked");
+  });
+
+  it("and the SAME kind asked THIS step is a whole ask on its own", () => {
+    /* The other half, which is the one that must not refuse: a door that says
+       no to everybody would pass the arm above and take the feature away. */
+    const result = repaintAsksFor({
+      delta: { open: { "cat-ears": catEars } },
+      prose,
+      restore: { state: { open: { "cat-ears": catEars } }, slots: [] },
+    });
+
+    expect(result.ok).toBe(true);
+  });
+
+  it("a CARRIED presentation fact alone is not an ask either — the sibling", () => {
+    /*
+      The live half of the same finding, and the reason it is fixed here rather
+      than merely guarded against: `presentation` has been read from the
+      composed state since 2026-08-14, so a branch with a standing smile has
+      satisfied this door on every later render since.
+    */
+    const result = repaintAsksFor({
+      delta: {},
+      prose,
+      restore: { state: { free: { expression: "a soft, closed-mouth smile" } }, slots: [] },
+    });
+
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.reason).toBe("nothingAsked");
+  });
+
+  it("REFUSES rather than putting the key in her sentence when the noun is missing", () => {
+    /*
+      The one place a customer's sentence is composed from an open kind, and the
+      key is a token: falling back to it would dispatch *"Change only her
+      cat-ears: …"* at full price. A refusal is free.
+    */
+    const result = repaintAsksFor({
+      delta: { open: { "cat-ears": { noun: "  ", words: "soft grey cat ears" } } },
+      prose,
+    });
+
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.reason).toBe("noWords");
+    expect(result.facet).toBeNull();
+  });
+
+  it("REFUSES a key the library would refuse after the render was paid for", () => {
+    /*
+      `parseSlot` has no space in its grammar, so `open:cat ears` is
+      `slotNotAFeatureSlot` at the database door — painted, charged, never
+      filed, re-rolled on every later render. The catalogue's resolver and the
+      library's door hold ONE grammar, and this is the arm that says so from
+      the ask side.
+    */
+    const result = repaintAsksFor({
+      delta: { open: { "cat ears": catEars } },
+      prose,
+    });
+
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.reason).toBe("uncatalogued");
+  });
+
+  it("a PRUNE re-says what survives and says nothing about what did not", () => {
+    /*
+      fable-777 §1's negative bound, and it is the half that proves the prune
+      road's fix carries the SURVIVING composition rather than the old one.
+
+      `dropTheCarry` is arithmetic: `composeChain` runs over the steps that are
+      left, so a fact whose step was struck is simply not in the state this door
+      is handed, and the master — which never had it — does the removing. Hand
+      it the pre-prune composition instead and the prune would paint nothing
+      out, which is the shape that would pass every positive arm above.
+    */
+    const restate = [{ slot: "earring@left", taken: "gold hoops" }];
+
+    const survived = repaintAsksFor({
+      delta: {}, prose, restate,
+      restore: { state: { free: { expression: "a soft, closed-mouth smile" } }, slots: [] },
+    });
+    expect(survived.ok).toBe(true);
+    if (!survived.ok) return;
+    expect(survived.presentation).toEqual([{ noun: "expression", words: "a soft, closed-mouth smile" }]);
+
+    /* And the same prune against a composition the struck step is gone from. */
+    const struck = repaintAsksFor({ delta: {}, prose, restate, restore: { state: {}, slots: [] } });
+    expect(struck.ok).toBe(true);
+    if (!struck.ok) return;
+    expect(struck.presentation).toBeUndefined();
+  });
+
+  it("the empty-ask door judges the ASK, never her state — its replay class is unchanged", () => {
+    /*
+      fable-777 §2's bound (c). `nothingAsked` is money-adjacent and it is NOT
+      in `REPLAY_DOORS`, which means it is not state-comparing and a fresh take
+      meets it exactly as a first ask does. The tightening reads the composed
+      state, so this arm exists to prove the door's GROUND did not move with it:
+      the same delta gets the same verdict whether or not the branch is carrying
+      anything.
+
+      Both directions, because a door that answered the same way to everything
+      would also pass one of them.
+    */
+    const carrying = { open: { "cat-ears": catEars }, free: { expression: "a soft, closed-mouth smile" } };
+
+    for (const state of [{}, carrying]) {
+      /* Writes nothing: refused, whatever she is carrying. */
+      const empty = repaintAsksFor({ delta: {}, prose, restore: { state, slots: [] } });
+      expect(empty.ok, JSON.stringify(state)).toBe(false);
+      if (!empty.ok) expect(empty.reason).toBe("nothingAsked");
+
+      /* Writes something: served, whatever she is carrying. */
+      const asking = repaintAsksFor({
+        delta: { hairColour: "copper" }, prose,
+        restore: { state: { ...state, hairColour: "copper" }, slots: [] },
+      });
+      expect(asking.ok, JSON.stringify(state)).toBe(true);
+    }
+  });
+
+  it("CONTROL — an ordinary presentation ASK still walks through the tightened door", () => {
+    /*
+      fable-777 §2's bound (a), in the shape the service actually calls with:
+      the state is the branch composed, and this step's own smile is in it. The
+      tightening must refuse a CARRIED clause and must not refuse an ASKED one —
+      a guard that said no to both would pass the two arms above and take
+      *make her smile* away from every customer.
+    */
+    const result = repaintAsksFor({
+      delta: { free: { expression: "a wide, open smile" } },
+      prose,
+      restore: { state: { free: { expression: "a wide, open smile" } }, slots: [] },
+    });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.presentation).toEqual([{ noun: "expression", words: "a wide, open smile" }]);
+  });
+
+  it("REFUSES when the composed state it was handed dropped this step's own ask", () => {
+    /* A dropped ask is a paid picture whose instruction never reached the
+       painter — the defect class this whole module exists to close, arriving
+       through a composition rather than through a gate. */
+    const result = repaintAsksFor({
+      delta: { open: { "cat-ears": catEars } },
+      prose,
+      restore: { state: { hairColour: "copper" }, slots: [] },
+    });
+
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.reason).toBe("uncatalogued");
+    expect(result.detail).toContain("cat-ears");
+  });
+});

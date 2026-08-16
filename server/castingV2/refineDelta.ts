@@ -137,6 +137,71 @@ export type RefineDelta = {
    * this existed.
    */
   absent?: Partial<Record<FreeSubject, string[]>>;
+  /**
+   * A KIND NOBODY HAS CATALOGUED — the open lane's ask
+   * (`OPEN_LANE_DESIGN_NOTE.md` §8 step 4, shape (a) ruled in fable-760 §2).
+   *
+   * Keyed by the normalizer's TOKEN — a single lowercase word, kebabbed
+   * (`horns`, `cat-ears`) — which is also the tail of the slot key the lane
+   * synthesizes (`open:cat-ears`). A record rather than a list for the free
+   * lane's own reason: the key is the kind, so two instructions about horns
+   * cannot accumulate into a recipe that argues with itself.
+   *
+   * # It is written by CODE, never read off a model's reply
+   *
+   * The lane is a FALLBACK, not a peer (§8 step 0) — the one choice here that
+   * cannot be retrofitted. An open kind is named only after the closed
+   * interpreter has declined, by `normalizeOpenKind`, whose answer is checked
+   * against the closed vocabulary before it counts as new. So `readDelta` — the
+   * strict reader that guards the boundary where a model's reply enters the
+   * record — does NOT read this field, and must not: a reply free to name its
+   * own kind could route *"give her wings"* into the open lane before the
+   * closed lane ever declined, and wings would stop being eyeliner.
+   *
+   * `readStoredDelta` DOES read it, because that boundary is our own past
+   * re-entering and history has already been paid for. Both directions are
+   * pinned in `refineLegacy.test.ts`.
+   *
+   * # TWO READERS THAT DO NOT SEE IT, FILED RATHER THAN LEFT TO BE FOUND
+   *
+   * Both go through `readDelta` and therefore drop this field. Neither is a
+   * defect today, because nothing writes one — the acceptance path is step 5 —
+   * and both are step 5's to close, named here so that build finds them rather
+   * than rediscovering them the way `parentVariantId` was rediscovered:
+   *
+   * - `filedSubjectsOf` — the headings the customer is shown for *where your
+   *   words landed*. An open kind would land nowhere visible.
+   * - `refineService`'s wall (d) re-read of the persisted row
+   *   (`readDelta(variant.deltas)`), which feeds the paste road's prompt and
+   *   the contradiction check. The repaint recipe is built from the ask list
+   *   instead, so this one costs nothing on the road the open lane runs on.
+   *
+   * # An open kind has no facet, and that is what makes it CARRY
+   *
+   * `composeDeltas` clears a facet before the writers below run, and an open
+   * kind is in none of those tables — so it survives every later edit until
+   * something supersedes it by name. That is `openKindDeparture()`'s
+   * `dropTheCarry` stated as arithmetic rather than as machinery: it is present
+   * in a later frame only because the composition still carries it.
+   */
+  open?: Record<string, OpenKindAsk>;
+};
+
+/**
+ * ONE OPEN KIND, AS THE RECORD HOLDS IT.
+ *
+ * Two fields on purpose (fable-775 §3): the KEY is an identifier and the NOUN
+ * is the words. `cat ears` and `cat-ears` both key as `cat-ears`, so the noun
+ * cannot be recovered from the key and must never be derived from it — the
+ * reconstruction would be the second list that drifts (working law 4), and here
+ * it would drift into a customer's face. Everything a person reads comes from
+ * `noun`, spaces intact.
+ */
+export type OpenKindAsk = {
+  /** The stylist's word for it, spaces intact — the only thing copy may read. */
+  noun: string;
+  /** Her own words about it: the state this feature is to be painted in. */
+  words: string;
 };
 
 /**
@@ -1372,6 +1437,24 @@ export function composeDeltas(deltas: readonly RefineDelta[]): RefineDelta {
       }
       composed.absent = absent;
     }
+    /*
+      AND THE OPEN KINDS, WHICH NOTHING ABOVE CAN CLEAR.
+
+      Per-KIND last-writer-wins, exactly as the free lane spreads per subject
+      and for the same reason: two asks about horns overwrite, horns and a tail
+      coexist. What is different is the line above it — `clearFacets` is keyed
+      by facet and an open kind has none, so nothing any later edit writes can
+      take one away. **That is the carry**, and it is arithmetic rather than
+      machinery: an open kind is in a later frame only because this line still
+      carries it, and it leaves by not being carried (`openKindDeparture()` —
+      `dropTheCarry`, never a vacancy sentence about a thing her master never
+      had).
+
+      Which is also why a prune removes one for free: `composeChain` runs this
+      over the SURVIVING steps, so a chain without the step composes without
+      the kind and the master — which never had it — does the removing.
+    */
+    if (delta.open) composed.open = { ...(composed.open ?? {}), ...delta.open };
   }
   return composed;
 }

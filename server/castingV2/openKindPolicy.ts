@@ -455,9 +455,21 @@ export function owedByThePolicy(): Array<{ table: string; asks: string; answer: 
  * length and word count, and it is the normalizer's to enforce at the moment it
  * mints a key. This is the shape a key must still have by the time anything
  * downstream reads it.
+ *
+ * **NO SPACE, and that is the whole of what fable-775 §3 changed here.** The
+ * key is a single token from the moment the normalizer mints it (`cat ears`
+ * kebabs to `cat-ears`, and the spaced noun travels beside it), because
+ * `parseSlot` refuses a space and the library door therefore refuses a spaced
+ * key outright — `slotNotAFeatureSlot`, AFTER the render is paid for. A
+ * resolver that answered for a key the library will refuse would leave exactly
+ * the gap that finding closed, one door along: painted, charged, never filed,
+ * re-rolled on every later render.
+ *
+ * So this grammar and the library's are the same grammar. Both halves are
+ * driven — the kebab key resolves, the spaced one does not.
  */
 export function isOpenKindKey(kind: string): boolean {
-  return /^[a-z][a-z '-]*$/.test(kind);
+  return /^[a-z][a-z'-]*$/.test(kind);
 }
 
 /** The heading an open kind's prose is composed under. */

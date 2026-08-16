@@ -3334,6 +3334,29 @@ async function refineCandidateCounted(
         delta: {},
         prose: EDIT_PROSE,
         restate: slots.map((slot) => ({ slot, taken: takenBack! })),
+        /*
+          AND WHAT THE BRANCH IS STILL CARRYING WITH NOWHERE TO KEEP IT.
+
+          A presentation fact has no library row anywhere — D-136 gives it no
+          slot, so the composed recipe is the only place it is written down —
+          and every render anchors on the pristine master. A recipe that goes
+          quiet about her smile paints the master's face back.
+
+          The ordinary road passes `composed` here and re-says it on every
+          render. **This road passed nothing**, four lines below the recomposed
+          chain it needed, so taking back an unrelated step also took her smile
+          — silently, from a customer who paid for it. Found by the step-4 sweep
+          for the same shape (opus-569 §2) and driven at the wire before it was
+          fixed.
+
+          `composed` is `composeChain(chain)` on this road: the SURVIVING steps.
+          So a prune of the presentation step itself correctly says nothing —
+          the fact is gone from the composition, which is what a prune is.
+
+          No restore slots: a prune restores nothing, and this argument is here
+          for the state alone.
+        */
+        restore: { state: composed, slots: [] },
       });
     };
 

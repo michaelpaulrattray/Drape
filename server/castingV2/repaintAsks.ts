@@ -65,6 +65,7 @@ import {
 import {
   FACET_SLOTS, facetsOfSlot, narrowToScope, slotDefinition, slotsForFacet,
 } from "./referenceSlotCatalogue";
+import { isOpenSlot, openSlotKey } from "./referenceSlots";
 import { accessoryKindOf } from "./accessoryKinds";
 import { markCanDepart, markKindOf } from "./markKinds";
 import { vacantPhraseFor } from "./vacancyPhrases";
@@ -575,6 +576,102 @@ export function repaintAsksFor(input: RepaintAsksInput): RepaintAsksResult {
     spokenAsPresentation.add(facet);
   }
 
+  /*
+    A KIND NOBODY HAS CATALOGUED — the open lane's own loop
+    (`OPEN_LANE_DESIGN_NOTE.md` §8 step 4, §9.7's scout, shape (a) ruled in
+    fable-760 §2).
+
+    # Why it is a loop of its own rather than a case inside the one below
+
+    The written loop is driven by `facetsWrittenBy` and every gate inside it
+    keys on the closed union in turn — `facetOfSubject` → `FACET_SLOTS` →
+    `slotsForFacet` → `slotDefinition` → `statePhrase`. An open kind has no
+    facet and is in no delta field those read, so it cannot enter through that
+    loop at all. That is the boundary doing its job rather than a gap: the
+    scout's finding was that the work is at the ENTRY, and the entry is `Facet`.
+
+    # It reads the COMPOSED state, and that is the same decision presentation
+    # made, for the same reason one line up
+
+    An open kind has no library row — the mint is driven by `earned: Facet[]`
+    and an open kind has no facet, so nothing files one and nothing carries one.
+    The composed recipe is therefore the ONLY place it is written down, exactly
+    as with a smile, and every render anchors on the pristine master: a recipe
+    that goes quiet about her horns paints the master's face back and the horns
+    last one frame. So they are re-said on every render of the branch.
+
+    **Declared, and it is the honest limit of this chunk**: words alone are not
+    what fable-566 asks for. A crop is minted by step 3's door, which is not
+    built, and until it is an open kind is a feature carried in WORDS — which
+    re-rolls its shape between renders. The lane does not ship on this.
+
+    # The NOUN is read from the record and never from the key
+
+    `open:cat-ears` is a single token because `parseSlot` has no space in its
+    grammar, and the spelling is lossy: `cat ears` and `cat-ears` both key the
+    same way, so the noun cannot be recovered from the key. The catalogue's own
+    branch says so at the field. This is the one place a customer's sentence is
+    composed from it, so a kind whose stored noun is missing REFUSES rather than
+    falling back to the token — a refusal costs a render, and `Change only her
+    cat-ears: …` is a paid one.
+  */
+  const openState = input.restore?.state ?? input.delta;
+  /** The kinds THIS STEP asked for, struck off as the composed state accounts
+   *  for each — so anything left over is an ask that went missing. */
+  const openAskedNow = new Set(Object.keys(input.delta.open ?? {}));
+  /** Whether this step asked for an open kind AT ALL — the emptiness check's
+   *  half of the fact, read before the set above is spent. */
+  const askedAnOpenKind = openAskedNow.size > 0;
+  for (const [kind, said] of Object.entries(openState.open ?? {})) {
+    const slot = openSlotKey(kind);
+    const definition = slotDefinition(slot);
+    if (definition === null) {
+      /*
+        A KEY THE CATALOGUE WILL NOT RESOLVE, and the loud answer is the right
+        one. `readOpenKinds` drops a malformed key on the way in, so reaching
+        here means a delta was built past that door with a key the library will
+        also refuse — after the render is paid for. Refusing free is strictly
+        better than painting a feature that can never be filed.
+      */
+      return {
+        ok: false, reason: "uncatalogued", facet: null,
+        detail: `${slot} is not a key the open lane could have minted, so nothing knows what to ask for or what to call it`,
+      };
+    }
+    const noun = said.noun.trim();
+    const words = said.words.trim();
+    if (noun === "" || words === "") {
+      return {
+        ok: false, reason: "noWords", facet: null,
+        detail: `the open kind "${kind}" carries ${noun === "" ? "no noun to say it with" : "no words to say about it"}, `
+          + "so the recipe would tell the painter to change something into nothing",
+      };
+    }
+    order.push(slot);
+    wordsBySlot.set(slot, [words]);
+    /* The STORED noun, spaces intact — never `definition.noun`, which is the
+       token. The catalogue's branch carries the token deliberately and requires
+       every copy path to read the record instead. */
+    nounBySlot.set(slot, noun);
+    openAskedNow.delete(kind);
+  }
+  /*
+    AND A KIND THIS STEP ASKED FOR THAT THE COMPOSED STATE DOES NOT HOLD.
+
+    The caller's contract is that the state it passes is this step composed onto
+    the branch, so anything left in the set is a composition that dropped an ask
+    on the way — which is a paid picture whose instruction never reached the
+    painter, the exact defect this whole module exists to close. It refuses
+    rather than painting the render that is missing it.
+  */
+  if (openAskedNow.size > 0) {
+    return {
+      ok: false, reason: "uncatalogued", facet: null,
+      detail: `this step asks for ${Array.from(openAskedNow).join(", ")} and the composed state it was `
+        + "given does not carry it, so the recipe would paint a render that never mentions what was asked for",
+    };
+  }
+
   for (const facet of Array.from(facetsWrittenBy(input.delta))) {
     /* Already said above, in the one place it can be said — and said from the
        composed state, so this step's own words are in it. */
@@ -700,7 +797,44 @@ export function repaintAsksFor(input: RepaintAsksInput): RepaintAsksResult {
   */
   const restated = (input.restate ?? []).filter((one) => one.taken.trim() !== "");
 
-  if (order.length === 0 && presentation.length === 0 && restated.length === 0) {
+  /*
+    AND THE TWO CHANNELS THAT ARE RE-SAID EVERY RENDER DO NOT COUNT AS ASKS.
+
+    Presentation and the open lane are both read from the COMPOSED state,
+    because neither has a library row and the composition is the only place
+    either is written down. That makes each of them non-empty on every later
+    render of a branch that ever carried one — so counting them below would let
+    a smile asked three steps ago satisfy the guard against *a charge for
+    nothing*, forever.
+
+    So the question put to each is the one the check is actually asking: did
+    THIS step ask for it. Presentation is read through `facetsWrittenBy` on this
+    step's own delta, which is the same derivation the written loop uses to skip
+    them — not a second answer to what this step wrote (working law 4).
+
+    Found while adding the second of the two (opus-569 §3); the presentation
+    half was already live, which is why it is fixed here rather than only
+    guarded against.
+
+    **OPEN, and said here rather than left to be assumed** (fable-777 §2b):
+    whether the service can reach this door with an `editDelta` that writes
+    nothing has NOT been answered — the interpreter has walls in front of it and
+    none of them was traced. So this is a door-level fix with an unexamined
+    upstream. It is the right fix either way, because a guard that can be
+    satisfied by a fact from three steps ago is not a guard; but nobody should
+    read it as evidence that a customer was being charged for nothing.
+  */
+  const saidAPresentationFact = Array.from(facetsWrittenBy(input.delta))
+    .some((facet) => spokenAsPresentation.has(facet));
+  /* Every slot in `order` but an open one was put there by this step's own
+     delta — the vacate loop reads `delta.absent` and the written loop reads
+     `facetsWrittenBy(delta)`. Only the open slots are carried. */
+  const askedThisStep = order.some((slot) => !isOpenSlot(slot))
+    || askedAnOpenKind
+    || saidAPresentationFact
+    || restated.length > 0;
+
+  if (!askedThisStep) {
     /*
       AN EMPTY ASK LIST IS NOT AN EMPTY RENDER — it is a charge for nothing.
 

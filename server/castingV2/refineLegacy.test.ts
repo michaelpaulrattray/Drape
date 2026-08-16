@@ -93,6 +93,126 @@ describe("stored rows read through the shim", () => {
   });
 });
 
+/*
+  THE OPEN LANE'S KINDS, AND THE TWO BOUNDARIES THAT MUST ANSWER DIFFERENTLY
+  (`OPEN_LANE_DESIGN_NOTE.md` §8 steps 0 and 4).
+
+  This module's header already draws the split for retired subjects — a model
+  reply with an unknown key is a reply to distrust; a stored row with one is our
+  own past. `open` arrives at the same fork for a second reason, and it is the
+  more load-bearing of the two: the open lane is a FALLBACK, not a peer, and a
+  reply free to name its own kind would route an ask into it before the closed
+  lane ever declined.
+*/
+describe("an open kind is read from our own record and never from a reply", () => {
+  const CAT_EARS = { open: { "cat-ears": { noun: "cat ears", words: "soft grey cat ears" } } };
+
+  it("carries a stored open kind forward", () => {
+    expect(readStoredDelta(CAT_EARS)?.open).toEqual({
+      "cat-ears": { noun: "cat ears", words: "soft grey cat ears" },
+    });
+  });
+
+  it("and the STRICT reader cannot see it at all — the boundary that stays shut", () => {
+    /*
+      THE HALF THAT MATTERS MOST. `readDelta` guards the door where a model's
+      reply enters the record. If a reply may name its own kind, the interpreter
+      can file *"give her wings"* as an open kind before the closed lane has
+      declined, and wings stop being eyeliner — §8 step 0's one choice that
+      cannot be retrofitted.
+
+      An open kind is written by code, after `normalizeOpenKind` has been
+      consulted and its answer checked against the closed vocabulary.
+
+      Two arms, because one of them can pass for the wrong reason. A reply
+      naming ONLY a kind reads as null — the field contributes nothing, so the
+      delta is empty and *"an empty delta is not a delta"*. That alone would
+      also pass if the reader rejected the row for having an unknown key, so the
+      second arm puts a readable value beside it: the row is read, and the field
+      is simply not in it.
+    */
+    expect(readDelta(CAT_EARS)).toBeNull();
+    expect(readDelta({ ...CAT_EARS, free: { nose: "a narrower bridge" } }))
+      .toEqual({ free: { nose: "a narrower bridge" } });
+  });
+
+  it("drops a key the library would refuse after the render was paid for", () => {
+    /* `parseSlot` has no space in its grammar, so `open:cat ears` is
+       `slotNotAFeatureSlot` at the database door — the defect the kebab
+       conversion closed, re-entering through the stored record. */
+    expect(readStoredDelta({ open: { "cat ears": { noun: "cat ears", words: "soft grey" } } })?.open)
+      .toBeUndefined();
+  });
+
+  it("drops an entry with no noun, rather than leaving the key to be shown", () => {
+    /* The noun is the only thing a customer may be shown, and the key is a
+       token: a fallback would put `cat-ears` in a paid prompt. */
+    expect(readStoredDelta({ open: { "cat-ears": { words: "soft grey cat ears" } } })?.open)
+      .toBeUndefined();
+    expect(readStoredDelta({ open: { "cat-ears": { noun: "cat ears" } } })?.open)
+      .toBeUndefined();
+  });
+
+  it("PROMOTION: a kind the closed lane now owns moves into it", () => {
+    /*
+      The event has already happened once in this campaign — `horns` was an open
+      kind and is a catalogued subject now. A branch that carried it across that
+      day holds a record BOTH lanes answer for: the open loop paints
+      `open:horns` from her words while the closed lane owns the noun. Two
+      instructions about one feature, arriving through the record rather than
+      through an ask, on a customer's face rather than in a fixture.
+
+      A promotion is a vocabulary split pointed the other way, so it migrates in
+      the same place and by the same rules as `hair` and `eyes` did.
+    */
+    const migrated = readStoredDelta({
+      open: { horns: { noun: "horns", words: "horns curving back from her temples" } },
+    });
+
+    expect(migrated?.open).toBeUndefined();
+    expect(migrated?.free?.horns).toEqual(["horns curving back from her temples"]);
+  });
+
+  it("and never overwrites a closed answer that is already there", () => {
+    /* This file's existing rule, unchanged: the modern key already present
+       WINS, because a newer write is the more recent statement and a stored
+       open kind is by construction older than the promotion. */
+    const migrated = readStoredDelta({
+      open: { horns: { noun: "horns", words: "horns curving back from her temples" } },
+      free: { horns: "short blunt horns" },
+    });
+
+    /* A list, because `horns` is plural — the promotion goes through the closed
+       lane's own reader, so the value arrives in that lane's shape rather than
+       as the bare string a promotion written onto the finished delta would
+       leave. */
+    expect(migrated?.free?.horns).toEqual(["short blunt horns"]);
+    /*
+      AND THE OPEN ENTRY IS GONE, which is the half that makes this arm mean
+      anything. The line above is true of a row nothing happened to — with the
+      promotion switched off entirely it still reads `short blunt horns`,
+      because that is what the raw row already said. Found by sabotage, which is
+      what a sabotage is for: an arm that cannot tell "the rule was respected"
+      from "the rule never ran" is measuring the fixture.
+    */
+    expect(migrated?.open).toBeUndefined();
+  });
+
+  it("CONTROL — an unpromoted kind is left exactly where it is", () => {
+    /* The half that must not move. A migration that pulled everything into the
+       closed lane would pass the two arms above and quietly end the open lane. */
+    const migrated = readStoredDelta({
+      open: {
+        horns: { noun: "horns", words: "horns curving back from her temples" },
+        "cat-ears": { noun: "cat ears", words: "soft grey cat ears" },
+      },
+    });
+
+    expect(migrated?.open).toEqual({ "cat-ears": { noun: "cat ears", words: "soft grey cat ears" } });
+    expect(migrated?.free?.horns).toEqual(["horns curving back from her temples"]);
+  });
+});
+
 describe("composing across the eras carries every fact it still holds", () => {
   /*
     THE FOUNDER'S RENDER, RE-RUN. Before the fix this composed to

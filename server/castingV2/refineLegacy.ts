@@ -43,7 +43,9 @@
  */
 import { REFINABLE_CUT_NAMES } from "./hairStyles";
 import { EYE_SHAPES } from "../../shared/castingRealization";
-import { readDelta, type RefineDelta } from "./refineDelta";
+import { closedSubjectFor, readOpenKinds } from "./openLaneKind";
+import { readDelta, type FreeValue, type OpenKindAsk, type RefineDelta } from "./refineDelta";
+import type { FreeSubject } from "./refineSubjects";
 
 /** Subjects that no longer exist, and the modern facets they split into. */
 const RETIRED_SUBJECTS = ["hair", "eyes"] as const;
@@ -145,5 +147,116 @@ export function migrateStoredDelta(value: unknown): unknown {
  * cannot be made to have used today's names.
  */
 export function readStoredDelta(value: unknown): RefineDelta | null {
-  return readDelta(migrateStoredDelta(value));
+  /*
+    AND THE OPEN LANE'S OWN KINDS, WHICH `readDelta` DELIBERATELY CANNOT SEE.
+
+    The strict reader guards the boundary where a model's reply enters the
+    record, and it must stay closed to `open`: a reply free to name its own kind
+    routes an ask into the open lane before the closed one has declined, and the
+    lane stops being a fallback (`OPEN_LANE_DESIGN_NOTE.md` §8 step 0). This
+    reader guards our own past, where a key we wrote is a fact already paid for.
+
+    Exactly the split this module's header draws for retired subjects, arriving
+    for a second reason.
+
+    Promotion runs on the RAW object, before the strict reader, for the same
+    reason `migrateStoredDelta` does: a value moved into the closed lane must
+    pass that lane's own guards and come back in that lane's own shape. Written
+    onto the delta afterwards it would skip both — and `horns` is plural, so it
+    would arrive as a bare string where every other reader expects a list.
+  */
+  const migrated = promoteOpenKinds(migrateStoredDelta(value));
+  const open = readOpenKinds(migrated);
+  const delta = readDelta(migrated);
+  if (delta !== null) return open === null ? delta : { ...delta, open };
+  /*
+    A NULL FROM THE STRICT READER MEANS TWO DIFFERENT THINGS, and telling them
+    apart is the whole of D-182's lesson said once more.
+
+    *"An empty delta is not a delta"* — so a step whose ONLY ask was an open
+    kind reads as null, and treating that as unreadable would refuse the render
+    and lose the branch. But a row with other content that the reader rejected
+    is genuinely unreadable, and carrying the open kind out of it alone would be
+    the original defect in a new coat: eleven instructions erased, one carried,
+    and the money moving on an input the code had already decided it could not
+    read.
+
+    So the discriminator is what else is in the row.
+  */
+  if (open === null) return null;
+  const others = Object.keys(migrated as Record<string, unknown>).filter((key) => key !== "open");
+  return others.length === 0 ? { open } : null;
+}
+
+/**
+ * A STORED OPEN KIND WHOSE NOUN THE CLOSED LANE NOW OWNS — moved into it.
+ *
+ * # The event this exists for has already happened once
+ *
+ * `horns` was an open kind and is a catalogued subject now; it was promoted
+ * inside this very campaign. Every branch that carried it as an open kind
+ * across that day holds a record the two lanes both answer for: the open loop
+ * paints `open:horns` from her words while the closed lane owns the noun. Two
+ * instructions about one feature — the thing the assembler refuses everywhere
+ * else — arriving through the RECORD rather than through an ask, on a
+ * customer's face rather than in a fixture.
+ *
+ * It is the third member of the specimen-joins-the-vocabulary family in this
+ * campaign and the first one that is not a test.
+ *
+ * # And the answer was already in this file
+ *
+ * A promotion is a vocabulary split pointed the other way, so it migrates in
+ * the same place and by the same rule: **the modern key already present WINS**
+ * (a newer write is the more recent statement of that subject), the value
+ * travels rather than being dropped, and the row is never rewritten.
+ *
+ * `foldNoun` does the matching, asked of the NOUN and never of the key — the
+ * closed table's entries carry spaces and the key does not, so asking it about
+ * `cat-ears` would stop matching every multi-word noun the closed lane owns.
+ * Same sharp edge as `normalizeOpenKind`'s own collision check, and the same
+ * answer.
+ *
+ * # It rewrites the RAW row, and never the stored one
+ *
+ * Like `migrateStoredDelta` above, and for a reason beyond symmetry: a value
+ * moved into the closed lane has to go through that lane's guards and come back
+ * in that lane's shape. `horns` is a plural subject, so `readDelta` returns it
+ * as a list — a promotion written onto the finished delta would hand every
+ * downstream reader a bare string where one is never expected.
+ *
+ * **Declared**: if the closed lane then REFUSES those words, the whole row
+ * reads as unreadable and the render refuses loudly rather than painting. That
+ * is the honest outcome and not an oversight — the noun belongs to the closed
+ * lane now, and painting it through a lane that has rejected its words would be
+ * guessing. The only guard that can do it is brand-scrubbing the words to
+ * nothing; the length ceilings are the same number on both sides.
+ *
+ * `readOpenKinds` is the only validator, asked once and re-used — a second
+ * reading of the same field is how two answers to *what is stored here* come to
+ * disagree (working law 4).
+ */
+function promoteOpenKinds(value: unknown): unknown {
+  const stored = readOpenKinds(value);
+  if (stored === null) return value;
+
+  const raw = value as Record<string, unknown>;
+  const free: Record<string, unknown> = { ...(raw.free as Record<string, unknown> | undefined ?? {}) };
+  const open: Record<string, OpenKindAsk> = {};
+  let promoted = false;
+
+  for (const [kind, ask] of Object.entries(stored)) {
+    const subject = closedSubjectFor(ask.noun);
+    if (subject === null) {
+      open[kind] = ask;
+      continue;
+    }
+    promoted = true;
+    /* Her words, in the lane that owns the noun today. Only where that subject
+       has nothing to say already: a later closed ask is the more recent
+       statement and this one is, by construction, older than the promotion. */
+    if (free[subject] == null) free[subject] = ask.words;
+  }
+  if (!promoted) return value;
+  return { ...raw, free, open };
 }

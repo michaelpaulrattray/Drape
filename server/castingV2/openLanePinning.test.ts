@@ -249,9 +249,34 @@ describe("3. the branch is entered ONLY by the prefix", () => {
       "open :horns",
       "open:",
       "open::horns",
+      /*
+        A SPACED KEY, AND IT IS THE ONE THE LIBRARY WOULD REFUSE AFTER THE
+        RENDER WAS PAID FOR.
+
+        `parseSlot` has no space in its grammar, so `open:cat ears` is
+        `slotNotAFeatureSlot` at the database door — painted, charged, never
+        filed, re-rolled on every later render, which is the defect fable-775 §3
+        closed by kebabbing the key. The resolver held a LOOSER grammar than the
+        door for a day: it accepted a space, so it would have answered for a key
+        the library refuses, and the gap would have re-opened one module along.
+        Both now say the same thing (opus-570 §2).
+      */
+      "open:cat ears",
     ]) {
       expect(slotDefinition(key as FeatureSlot), key).toBeNull();
     }
+  });
+
+  it("and STILL resolves the kebab form the normalizer actually mints", () => {
+    /*
+      The half that must not go red with it. A grammar tightened by one
+      character too many would pass every arm above and silently refuse every
+      multi-word kind the lane exists to carry — the same tightening-versus-
+      widening pair that the misaimed-guard finding was made of.
+    */
+    const open = slotDefinition("open:cat-ears" as FeatureSlot);
+    expect(open).not.toBeNull();
+    expect(open!.slot).toBe("open:cat-ears");
   });
 
   it("does not hand an open key the closed catalogue's answer for the same noun", () => {

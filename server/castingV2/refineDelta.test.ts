@@ -87,6 +87,43 @@ describe("composition is mechanical, per-axis last-writer-wins", () => {
     expect(composeDeltas(stack.slice(1))).toEqual({ eyeShape: "hooded" });
     expect(composeDeltas([])).toEqual({});
   });
+
+  /*
+    THE OPEN LANE'S CARRY IS THIS SPREAD AND NOTHING ELSE
+    (`OPEN_LANE_DESIGN_NOTE.md` §8 step 4).
+
+    `openKindDeparture()` answers `dropTheCarry` — *named as a value rather than
+    a boolean so the step-4 build cannot satisfy it by reaching for the closed
+    lane's vacate machinery, which would write an absence phrase about a thing
+    her master never had.* These three arms are that answer as arithmetic: it is
+    carried because this line carries it, it survives later edits because
+    `clearFacets` is keyed by facet and an open kind has none, and it LEAVES by a
+    recomposition that does not include the step — the same road the horns
+    removal court measured at 3/3 gone and 3/3 clean.
+  */
+  const catEars = { "cat-ears": { noun: "cat ears", words: "soft grey cat ears" } };
+
+  it("carries an open kind through every later edit that never mentions it", () => {
+    const composed = composeDeltas([{ open: catEars }, { eyeColour: "green" }, { hairColour: "copper" }]);
+    expect(composed.open).toEqual(catEars);
+  });
+
+  it("supersedes per KIND, so two kinds coexist and two asks about one do not", () => {
+    const composed = composeDeltas([
+      { open: catEars },
+      { open: { "cat-ears": { noun: "cat ears", words: "long black cat ears" } } },
+      { open: { tail: { noun: "tail", words: "a long tufted tail" } } },
+    ]);
+    expect(composed.open).toEqual({
+      "cat-ears": { noun: "cat ears", words: "long black cat ears" },
+      tail: { noun: "tail", words: "a long tufted tail" },
+    });
+  });
+
+  it("and a chain recomposed WITHOUT the step carries nothing — the departure", () => {
+    const stack = [{ open: catEars }, { hairColour: "copper" as const }];
+    expect(composeDeltas(stack.slice(1)).open).toBeUndefined();
+  });
 });
 
 const ORIGINAL = {
