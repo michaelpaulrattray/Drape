@@ -2708,7 +2708,21 @@
   border: 0;
   background: none;
   cursor: pointer;
-  color: var(--onScrim);
+  /*
+    THE CAPTION IS ON THE CHROME, NOT ON THE PICTURE (fable-746 §4).
+
+    This was `--onScrim`, which is a hardcoded `#FFFFFF` for text sitting on a
+    dark scrim. The rail does not sit on the scrim — it stands beside the plate,
+    on the viewer's own chrome — and that chrome is LIGHT in the light theme. So
+    the caption was white on pale and barely readable, photographed in the
+    running app while verifying something else entirely.
+
+    `--ink` is the theme's primary text colour and is the token that already
+    answers "legible on the chrome": `#111112` light, `#EDEDEF` dark. Nothing
+    else moves — the RING and the selected chip's outline keep `--onScrim`
+    deliberately, because both of those really are drawn over the photograph.
+  */
+  color: var(--ink);
   /* So the redrawing ring can sit on the PICTURE rather than on whichever
      ancestor happened to be positioned (fable-703). */
   position: relative;
