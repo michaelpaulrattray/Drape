@@ -66,12 +66,57 @@ mailbox archive, memory, and DECISION_LOG by the lost-pin audit of
   invariant-7 shape exactly — helper written, docs written, call site
   never added.
   *Not a Tier-A blocker*, and deliberately not built inside the
-  stop-line. **Its first honest consumer is the Sign-time scan
-  (fable-092), which is ACTIVE work** — that is where the call site
-  belongs, so this is filed as a linkage rather than a task of its own.
-  The segments panel wanted a "she came with it" row and could not
-  honestly draw one (opus-094); the row returns the day the catalogue is
-  invoked.
+  stop-line. The segments panel wanted a "she came with it" row and could
+  not honestly draw one (opus-094); the row returns the day the catalogue
+  is invoked.
+
+  **The linkage this entry used to carry is DEAD, and the fork now has an
+  owner** (opus-601, ruled fable-812 §2, 2026-08-17). It read *"its first
+  honest consumer is the Sign-time scan (fable-092), which is ACTIVE
+  work — that is where the call site belongs."* Read at the artifacts:
+  `"Sign-time scan"` appears in **one line of this repository** — that
+  one; `fable-092` is cited in **one line** — the same one;
+  `M12_RECONCILIATION.md` contains the string `scan` **zero** times, as
+  does `CASTING_V2_ARCHITECTURE_PLAN.md` for `bornWorn`; the last work on
+  it was 2026-08-09/10. The entry deferred its call site not to a task
+  but **to a piece of work no document owns**, which is the orphan one
+  level of indirection out. `catalogueBornWorn`'s only importer is still
+  its own test.
+
+  **And a scan DID ship — a different one, over the same vocabulary.**
+  `CASTING_FACE_SCAN_SCOPE=users:1` is live on his account; `faceScan.ts`
+  asks accessories only when their class is ARMED
+  (`armedBornWornClasses`, the born-worn roster itself) and its first
+  stated boundary is **"IT MINTS NOTHING"** — geometry only, no rows, no
+  objects, no manifest. So the product has two readers of *what she
+  already has*: the one that would file a durable `detected_born` fact
+  and has no caller, and the one that is live, spends house money per
+  version, and deliberately keeps nothing.
+
+  **Both readings, side by side, because the record does not settle it.**
+  (a) *Unwired* — the catalogue is the durable half and still wants a call
+  site. (b) *Superseded* — `faceScan.ts` cites **fable-360 ruling 5**, the
+  founder's own (*"we dont need to reference anything if it hasnt been
+  changed from the original"*), and if that governs the durable half too
+  then `detected_born` is a vocabulary this product decided not to keep.
+  Nothing in the record says it was read that way, and
+  `CASTING_V2_SEGMENT_PERMANENCE_DESIGN.md` §12b now carries the same
+  correction rather than describing the row in the present tense.
+
+  **Owner of the fork: the CLEANUP MILESTONE (§0b).** Its triage answers
+  wire-or-retire — `catalogueBornWorn` is already on that list's floor.
+  Wiring costs house money per face for rows nothing reads today; and if
+  the triage leans RETIRE, **that goes to the founder as a card at that
+  time** — whether *"she came with it"* ever becomes a durable fact is his
+  ontology (law 8) and is never closed by deletion alone.
+
+  ⚠ **Before anyone touches this symbol either way:**
+  `catalogueBornWorn` is the **independent positive control** of the
+  uncalled-exports sweep (`scripts/sweep-uncalled-exports-disposable.mts`,
+  printed `positive catalogueBornWorn FOUND PASS`). Wiring it or deleting
+  it kills that control silently — the "specimen joins the vocabulary"
+  trap, walked into twice already in both directions. **A replacement
+  control is chosen in the same commit as any change here.**
 
 ## 0b. THE CLEANUP MILESTONE — founder-ordered, and its slot is the point
 
@@ -116,6 +161,16 @@ read tells those two apart, and each fix was minutes once the read was done.
 **The triage is the expensive half.** The sweep itself is reading-only, carries
 five printed controls (two positive, three negative) and REFUSES to report if
 one fails.
+
+**One candidate arrives already triaged, and this milestone owns its verdict**
+(opus-601, ruled fable-812 §2). `catalogueBornWorn` — §0's born-worn entry —
+has been read to the bottom: both readings are written out there, the
+supersession counter-reading is fable-360 r5, and the answer is
+**wire-or-retire, not a fix.** A RETIRE lean goes to the founder as a card at
+that time, never closed by deletion alone. Note the trap before touching it:
+that symbol is the sweep's own **independent positive control**, so any change
+to it chooses a replacement control in the same commit. No second list is kept
+here — §0 holds the reasoning, this line holds the ownership.
 
 **How it was lost, because the class outlives the item.** fable-710 carried
 three orders from one sitting. §1 — the character counter's death — is written

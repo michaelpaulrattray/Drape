@@ -415,6 +415,15 @@ ceremony's paste is now three statements: create `casting_segments` (0025), add
 *Founder ruling, fable-085: the catalogue joins slice 1, so the store is built
 as one coherent thing. Built and courted 2026-08-09.*
 
+> ⚠ **STATUS, 2026-08-17 (opus-601, ruled fable-812 §2): NO `detected_born`
+> ROW HAS EVER EXISTED, and the paragraph below describes a writer with no
+> caller.** `catalogueBornWorn`'s only importer is its own test — so what
+> follows is true of the CODE and false as a description of the store. The
+> wire-or-retire fork is owned by the cleanup milestone
+> (`POST_SIGN_ROADMAP.md` §0b), which carries the two readings, the
+> fable-360 r5 counter-reading, and the sweep-control hazard. Read this
+> section as a specification, never as a report.
+
 A `detected_born` row is a FACT: provenance `detected_born`, `variantId` NULL,
 `verdict` and `verifiedAt` NULL **enforced by the writer rather than asked of
 the caller**, and a `detector` string so a better instrument can re-earn the
