@@ -50,12 +50,23 @@ incident, and only then added. That is the order the admission rule asks for,
 and it is worth contrasting with how entry 6 got in.
 
 **How the rule is enforced: by reading.** One author opens every citation in its
-own message. Exactly one arm is mechanical — `server/instrumentDoctrine.test.ts`
-asserts that **no entry cites the message named in the `Ordered:` line above**,
-because the order that commissioned this file cannot also be a warrant for its
-contents. That arm fires on the one defect that has occurred here and on nothing
-else. It does not read the mailbox, and a green suite says nothing about whether
-a citation says what its entry claims.
+own message. **Two arms are mechanical**, both in
+`server/instrumentDoctrine.test.ts`, and each fires on a defect that has actually
+occurred here — there is no arm for a mistake nobody has made:
+
+- **No entry cites the message named in the `Ordered:` line above**, because the
+  order that commissioned this file cannot also be a warrant for its contents.
+  *(One entry of twelve did, and it was found ten minutes after the file was
+  finished.)*
+- **The closing sentence's count agrees with the number of entries**, derived
+  from the entries themselves rather than kept beside them. *(It said "fourteen"
+  over sixteen entries. The count had been maintained on all four commits where
+  adding the entry was the job, and was dropped on the one where the entry rode
+  inside a commit about something else — a step attached to a task by habit dies
+  the moment the task changes shape.)*
+
+Neither arm reads the mailbox, and a green suite says nothing about whether a
+citation says what its entry claims.
 
 **And read this before you assume the worst of the codebase.** When the rule
 below about coverage lines was swept across the program's reports, **fourteen of
@@ -258,4 +269,4 @@ one helper.
 Follow the admission rule at the top: numbered Fable ruling, real incident, one
 line each, citation. Keep it to a page or two — **terse over complete.** A
 doctrine file long enough to skim past is an instrument nobody reads, which is
-the failure mode all fourteen of these describe.
+the failure mode all sixteen of these describe.

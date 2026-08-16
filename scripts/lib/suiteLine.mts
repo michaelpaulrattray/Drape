@@ -24,6 +24,24 @@
  * `todo` alongside the other three, and a category nobody enumerated here must
  * widen the sum rather than break it — a list of expected words would be a
  * mirror of vitest's vocabulary, and mirrors drift (working law 4).
+ *
+ * # QUOTE THIS LINE VERBATIM. DO NOT RE-TYPESET IT.
+ *
+ * **A green run has THREE parts, not four** — vitest prints a `failed` part only
+ * when there is one, so `suiteVerdict` on a passing suite reads
+ * `6764 passed · 302 skipped = 7066  ✓ parts sum to the total`. **A fourth part
+ * in a report is the author's, not this reader's**, and so are thousands
+ * separators and a shortened tick.
+ *
+ * This is not pedantry about formatting. `0 failed` is the exact token that
+ * carried the 2026-08-16 lie: it was hand-typed into a line whose run had one
+ * failure, and it was hand-typed again into the two parks that shipped and
+ * ratified this file (opus-583, opus-584) — into output they had otherwise
+ * quoted. The cause was a reporting rule demanding four numbers the instrument
+ * cannot emit, which a report can only satisfy by editing what it was given
+ * (fable-791 §1, AMENDED by fable-794 §1: quote the line verbatim; hand-assembled
+ * suite lines are forbidden outright). **An instrument only removes hand-assembly
+ * from a report if the report is allowed to paste what it printed.**
  */
 
 export type SuiteReading = {

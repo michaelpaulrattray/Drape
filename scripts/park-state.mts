@@ -183,11 +183,30 @@ if (WITH_SUITE) {
      `failed |`, which on a RED run finds the `Test Files` line FIRST — file
      counts, reported as the suite, on exactly the run where it matters. */
   const output = findSuiteLine(run("npx", ["vitest", "run"], true));
+  const finished = new Date().toISOString();
   /* Not the raw line: the line WITH ITS ARITHMETIC DONE. A park once copied
      "6,754 passed · 302 skipped · 0 failed" out of a run that had one failure,
      and the parts already disagreed with the total printed beside them
-     (fable-791 §1). */
+     (fable-791 §1). **Paste this line; do not re-typeset it** — a green run has
+     three parts, and every `0 failed` in the mailbox was typed by an author
+     (fable-794 §1). */
   say(`suite     ${output ? suiteVerdict(output) : "(unreadable)"}`);
+  /* THE READING CARRIES ITS OWN CLOCK (fable-794 §2). The sum rule catches a
+     line that dropped a part; it cannot catch a line that was TRUE when it was
+     taken and went stale afterwards — that one sums perfectly. The guards sweep
+     the filesystem rather than the index, so a file written after this moment can
+     redden a suite this line still calls green, and until now the line carried no
+     datum to notice it by (vitest's own `Start at` is discarded with the rest of
+     the run).
+     This is the honest half only: a timestamp, not a gate. No sweep, no policy,
+     nothing that could false-positive on the suite's own temp files. The scope a
+     reader compares it against is WRITES UNDER THE SWEPT TREES — `scripts/` and
+     `server/`, which is what the twelve `readdirSync` guards can actually see;
+     fable-791 §1's "any later file write, tracked or not" narrows to that, and
+     narrowing matters because taken literally it invalidated every park ever
+     written, the park report itself being a later file write. */
+  say(`          run finished ${finished} — this reading is green AS OF THEN;`
+    + ` a later write under scripts/ or server/ can redden it`);
 } else {
   say("suite     NOT RUN in this park — pass --suite to read it");
 }
