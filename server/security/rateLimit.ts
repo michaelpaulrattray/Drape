@@ -341,24 +341,16 @@ export function shouldSendGlobalAttackAlert(): boolean {
 
 
 
-// Per-user rate limits for authenticated endpoints
-export const USER_RATE_LIMITS = {
-  // API calls per user per minute
-  apiGeneral: {
-    windowMs: 60 * 1000,      // 1 minute
-    maxRequests: 60,          // 60 requests per minute per user
-    keyPrefix: 'api',
-  },
-  // Generation requests per user
-  userGeneration: {
-    windowMs: 60 * 1000,      // 1 minute
-    maxRequests: 20,          // 20 generations per minute per user
-    keyPrefix: 'user_gen',
-  },
-  // Billing actions per user
-  userBilling: {
-    windowMs: 60 * 1000,      // 1 minute
-    maxRequests: 5,           // 5 billing actions per minute per user
-    keyPrefix: 'user_billing',
-  },
-} as const;
+/*
+  THERE IS NO `USER_RATE_LIMITS` TABLE, AND THAT IS THE FIX (working law 4).
+
+  One stood here until 2026-08-17 carrying three per-user buckets that nothing
+  read — not one call site, not even this module. The live per-user limiting is
+  `checkUserRateLimit(userId, config)` above, called with the limit object each
+  route declares beside itself (`IMAGE_PROXY_RATE_LIMIT`, `EVIDENCE_REFERENCE_LIMIT`,
+  `CHARACTER_SHEET_RATE_LIMIT`, …); the IP-keyed buckets are `RATE_LIMITS`.
+
+  A second table with DIFFERENT numbers on security code is worse than no table:
+  its one failure mode is a reader tightening "the user rate limits" here and
+  shipping nothing at all.
+*/

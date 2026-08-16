@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "82d579a072d89602"
+    "sourceFingerprint": "2ae8b212f03c49bf"
   },
   "domains": [
     {
@@ -108,7 +108,7 @@
     {
       "id": "domain:providers",
       "name": "providers",
-      "moduleCount": 7
+      "moduleCount": 8
     },
     {
       "id": "domain:referral",
@@ -4368,6 +4368,12 @@
       "id": "module:server/monitoring/healthMonitor.ts",
       "path": "server/monitoring/healthMonitor.ts",
       "domain": "platform",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/providers/bannedEngines.ts",
+      "path": "server/providers/bannedEngines.ts",
+      "domain": "providers",
       "lifecycle": "active"
     },
     {
@@ -9985,6 +9991,10 @@
     {
       "id": "test:server/profileVisualDefaults.test.ts",
       "path": "server/profileVisualDefaults.test.ts"
+    },
+    {
+      "id": "test:server/providers/bannedEngines.test.ts",
+      "path": "server/providers/bannedEngines.test.ts"
     },
     {
       "id": "test:server/providers/providerContract.test.ts",
@@ -22656,6 +22666,16 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/providers/bannedEngines.ts",
+      "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/providers/bannedEngines.ts",
+      "to": "module:server/providers/types.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/providers/falImages.ts",
       "to": "module:server/providers/falTransport.ts",
       "kind": "imports"
@@ -22697,6 +22717,11 @@
     },
     {
       "from": "module:server/providers/falTransport.ts",
+      "to": "module:server/providers/bannedEngines.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/providers/falTransport.ts",
       "to": "module:server/providers/types.ts",
       "kind": "imports"
     },
@@ -22708,6 +22733,11 @@
     {
       "from": "module:server/providers/openrouterImages.ts",
       "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/providers/openrouterImages.ts",
+      "to": "module:server/providers/bannedEngines.ts",
       "kind": "imports"
     },
     {
@@ -27300,10 +27330,10 @@
       "message": "Names 6 of ResolvedIdentity's 11 fields (server/castingV2/castingIntent.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/eyeShapeRouting.ts:189",
+      "id": "finding:redeclared-shape:server/castingV2/eyeShapeRouting.ts:190",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/eyeShapeRouting.ts:189",
+      "subject": "server/castingV2/eyeShapeRouting.ts:190",
       "message": "Names 2 of TiltReading's 4 fields (server/castingV2/canthalTilt.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {

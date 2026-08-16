@@ -1,6 +1,7 @@
 import { createModuleLogger } from "../logging/logger";
 import { ProviderError, type ProviderFailureClass } from "./types";
 import { throughCensus } from "../castingV2/callCensus";
+import { assertEngineNotBanned } from "./bannedEngines";
 
 const log = createModuleLogger("providers/falTransport");
 
@@ -156,6 +157,14 @@ export async function runFalImageJob(input: {
    */
   inlineResult?: boolean;
 }): Promise<FalJobResult> {
+  /*
+    THE ENGINE BAN BITES HERE, because this is the one place every fal image
+    job passes — creative rolls, creative edits and identity edits all arrive
+    at this function with their endpoint in hand. Before the census, because a
+    refused dispatch is not a call anyone made.
+  */
+  assertEngineNotBanned(input.endpoint, "fal image dispatch");
+
   /*
     COUNTED WHERE IT HAPPENS (the call census). One entry per JOB rather than
     per HTTP round trip: submit, poll and result are one question to one model

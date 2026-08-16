@@ -1,5 +1,6 @@
 import { createModuleLogger } from "../logging/logger";
 import { throughCensus } from "../castingV2/callCensus";
+import { assertEngineNotBanned } from "./bannedEngines";
 import { isContentRefusal } from "./falTransport";
 import { ProviderQueue, withRetry } from "./providerQueue";
 import {
@@ -96,6 +97,10 @@ export function createOpenRouterCreativeEngine(config: OpenRouterConfig): Creati
     id: `openrouter:${model}`,
 
     async generateCandidate(request: CandidateRequest): Promise<ImageResult> {
+      /* The ban is on the MODEL, so it has to hold on both transports — a
+         banned engine reached through OpenRouter is the same banned engine. */
+      assertEngineNotBanned(model, "openrouter image dispatch");
+
       /* Counted at the transport, like every other paid call — the image
          fallback is rare and a census that quietly omitted it would understate
          exactly the renders that went wrong. */

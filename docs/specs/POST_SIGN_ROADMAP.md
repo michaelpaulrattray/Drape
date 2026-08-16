@@ -427,14 +427,25 @@ retires until his word.**
 **And it is a family, not an instance** (working law 7). Two siblings are
 already tracked by hand: `bornWornCatalogue` has NO CALLERS (§0) and D-213's
 record gate has no call site (§9). Two more were found by the mechanical sweep
-that followed this one, and both are in this neighbourhood:
-`BANNED_ENGINES` (`providers/falImages.ts:46` — the FLUX ban, referenced by no
-production code, so the ban is prose and the eye-shape test is its only
-reader) and `USER_RATE_LIMITS` (`security/rateLimit.ts:345` — a second
-per-user limit table referenced by nothing at all, not even its own module;
-the live limiting runs off `RATE_LIMITS` and `checkUserRateLimit`, so this is
-working law 4's mirror rather than a missing control, and a future reader
-tightening "the user rate limits" would edit it and ship nothing).
+that followed this one, both in this neighbourhood, and **both are CLOSED as of
+2026-08-17** (fable-808 §2 — small enough to execute rather than overwinter to
+the cleanup milestone):
+
+- `BANNED_ENGINES` — the FLUX ban, which was a constant no production code
+  read, is now a **control**: it lives in `providers/bannedEngines.ts` and both
+  image transports call `assertEngineNotBanned` before dispatch
+  (`falTransport.runFalImageJob`, which every fal creative/identity job passes,
+  and `openrouterImages.generateCandidate`). It matches on the model slug
+  derived from the list, so the same model reached through another vendor's
+  namespace is refused too. `bannedEngines.test.ts` drives both seams with
+  counted `fetch` and a POSITIVE CONTROL per arm; each seam was sabotaged
+  separately and reddened exactly its own arm. No behaviour changes — nothing
+  selects FLUX — the ruling is simply landed in a call site instead of a file.
+- `USER_RATE_LIMITS` — **deleted**. A second per-user limit table nobody read,
+  carrying different numbers from the live path; law 4's mirror. The site now
+  carries a pointer naming the live pair (`checkUserRateLimit` with each
+  route's own limit object; `RATE_LIMITS` for the IP-keyed buckets), and
+  `docs/RATE_LIMITING.md` no longer teaches the deleted export.
 Also filed: interpreter placement field (trigger: a specimen the
 table can't place — fable-103); `earring`/`nose stud` detector
 courts; the retry-as-safety-net is CLOSED by this item (routing

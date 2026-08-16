@@ -13,7 +13,7 @@ import {
 import type { Mask } from "./maskedComposite";
 import { UPSWEPT_ALREADY, alreadyUpswept } from "./canthalTilt";
 import { alreadyUpsweptReask } from "./refineReask";
-import { BANNED_ENGINES } from "../providers/falImages";
+import { BANNED_ENGINES } from "../providers/bannedEngines";
 
 describe("the prose never says the trend word", () => {
   it("describes geometry, not a look", () => {
@@ -60,8 +60,12 @@ describe("the routing row, and its honesty about being unfinished", () => {
   });
 
   it("can never route to a banned engine", () => {
-    /* FLUX, 0-for-4, banned permanently. A ban that only lives in prose is a
-       note to someone already looking. */
+    /* FLUX, 0-for-4, banned permanently. This assertion used to be the ban's
+       ONLY reader, which is a note to someone already looking rather than a
+       control; since 2026-08-17 both image transports refuse a banned engine
+       before dispatch (`bannedEngines.test.ts` drives that seam directly, with
+       positive controls). This row still asserts what it is about: the engine
+       eye.shape routes to is not one of them. */
     expect(BANNED_ENGINES.some((engine) => engine.includes(EYE_SHAPE_ENGINE))).toBe(false);
     expect(BANNED_ENGINES).toContain("fal-ai/flux-2-pro/edit");
   });

@@ -209,16 +209,16 @@ Use per-user rate limiting for authenticated endpoints where abuse could come fr
 Use the `checkUserRateLimit` function instead of `checkRateLimit` for authenticated endpoints:
 
 ```typescript
-import { checkUserRateLimit, USER_RATE_LIMITS, rateLimitError } from "./rateLimit";
+import { checkUserRateLimit, rateLimitError } from "./rateLimit";
+
+// The limit lives beside the route it governs — one object, one reader.
+const GENERATE_IMAGE_LIMIT = { windowMs: 60_000, maxRequests: 20, keyPrefix: 'user_gen' };
 
 generateImage: protectedProcedure
   .input(z.object({ prompt: z.string() }))
   .mutation(async ({ ctx, input }) => {
     // Per-user rate limit (regardless of IP)
-    const rateCheck = checkUserRateLimit(
-      ctx.user.id,
-      USER_RATE_LIMITS.userGeneration
-    );
+    const rateCheck = checkUserRateLimit(ctx.user.id, GENERATE_IMAGE_LIMIT);
     if (!rateCheck.allowed) {
       throw new TRPCError({
         code: "TOO_MANY_REQUESTS",
@@ -230,15 +230,18 @@ generateImage: protectedProcedure
   }),
 ```
 
-### Pre-Configured Per-User Limits
+### Where a per-user limit lives
 
-The `USER_RATE_LIMITS` object provides configurations for common authenticated operations:
+**There is no shared table of per-user limits, deliberately** (removed 2026-08-17).
+One existed and nothing read it — a second set of numbers on security code whose
+only effect would have been a future reader tightening it and shipping nothing.
 
-| Category | Window | Max Requests | Use Case |
-|----------|--------|--------------|----------|
-| `apiGeneral` | 1 minute | 60 per user | General API calls |
-| `userGeneration` | 1 minute | 20 per user | AI generation requests |
-| `userBilling` | 1 minute | 5 per user | Billing and checkout actions |
+Each route declares its own limit object next to the handler it governs, and
+passes it to `checkUserRateLimit`. The live examples are
+`IMAGE_PROXY_RATE_LIMIT` (`routes/imageProxy.ts`), `EVIDENCE_REFERENCE_LIMIT` /
+`INK_WORKFLOW_LIMIT` / `INK_RESOLUTION_LIMIT` (`routes/evidence.ts`) and
+`CHARACTER_SHEET_RATE_LIMIT` (`routes/characterSheet.ts`). The IP-keyed buckets
+are the shared `RATE_LIMITS` table in `security/rateLimit.ts`.
 
 ### Combining IP and User Limits
 
@@ -252,7 +255,7 @@ if (!ipCheck.allowed) {
 }
 
 // Then check per-user limit (catches distributed attacks from one account)
-const userCheck = checkUserRateLimit(ctx.user.id, USER_RATE_LIMITS.userGeneration);
+const userCheck = checkUserRateLimit(ctx.user.id, GENERATE_IMAGE_LIMIT);
 if (!userCheck.allowed) {
   throw new TRPCError({ code: "TOO_MANY_REQUESTS", ... });
 }

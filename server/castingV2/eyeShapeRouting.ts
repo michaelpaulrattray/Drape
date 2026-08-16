@@ -92,8 +92,9 @@ export const ANATOMICAL_UPSWEPT_EDIT =
  * engine keeps every other row, and eye.shape alone comes here.
  *
  * FLUX is not a candidate and never will be again — banned 0-for-4
- * (`BANNED_ENGINES` in `providers/falImages`), having decorated rather than
- * restructured when given a caged chance at the one thing it was reputed for.
+ * (`BANNED_ENGINES` in `providers/bannedEngines`, enforced at both image
+ * dispatch seams since 2026-08-17), having decorated rather than restructured
+ * when given a caged chance at the one thing it was reputed for.
  *
  * Strength modulation — should "intense" ever bother a real face — is a future
  * refinement and explicitly NOT a condition of this row.
