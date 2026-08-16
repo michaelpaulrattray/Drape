@@ -41,7 +41,13 @@ import { execFileSync } from "node:child_process";
 
 import { openDatabase } from "./lib/dbConnection.mts";
 import { uptimeAnchor } from "./lib/uptimeAnchor.mts";
-import { balanceLine, readOpenRouterBalance, readOpenRouterUsage } from "./lib/openrouterBalance.mts";
+import {
+  balanceLine,
+  booksLine,
+  readOpenRouterActivity,
+  readOpenRouterBalance,
+  readOpenRouterUsage,
+} from "./lib/openrouterBalance.mts";
 import {
   falLine,
   priceFalCalls,
@@ -289,6 +295,14 @@ say(await (async () => {
       + (usage.isManagementKey ? "" : "  (per-day/model breakdown needs a management key)")
     : `openrouter spend UNREAD — ${usage.why}`;
 })());
+/*
+  AND THE BOOKS THEMSELVES (fable-693 §2c).
+
+  Per day and per model, from the provider rather than from us — the reading
+  that turned the whole reconciliation the right way round. Account-wide rather
+  than per-key, and the line says so where it prints.
+*/
+say(booksLine(await readOpenRouterActivity()));
 /*
   AND THE OTHER ACCOUNT (fable-684 §1).
 

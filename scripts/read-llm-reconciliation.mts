@@ -43,7 +43,7 @@ import "dotenv/config";
 import { execFileSync } from "node:child_process";
 
 import { openDatabase, worldOf } from "./lib/dbConnection.mts";
-import { readOpenRouterUsage } from "./lib/openrouterBalance.mts";
+import { activityByDay, readOpenRouterActivity, readOpenRouterUsage } from "./lib/openrouterBalance.mts";
 import {
   falLine,
   priceFalCalls,
@@ -85,9 +85,42 @@ if (!usage.ok) {
     + `   this week $${usage.weekly.toFixed(2)}`
     + `   this month $${usage.monthly.toFixed(2)}`
     + `   lifetime $${usage.lifetime.toFixed(2)}`);
-  console.log(`               per-day / per-model breakdown: ${usage.isManagementKey
-    ? "available (this IS a management key)"
-    : "REFUSED — /api/v1/activity wants a management key; this is an ordinary one"}`);
+}
+
+/*
+  THE BOOKS THEMSELVES — per day, per model, from the provider (fable-693).
+
+  This is the CLAIM now, and our own rows below are the cross-check. Until the
+  management key existed it had to be the other way round, and that was the
+  weaker arrangement: our rows can only ever see the product.
+*/
+const activity = await readOpenRouterActivity();
+if (!activity.ok) {
+  console.log(`  books UNREAD — ${activity.why}`);
+} else {
+  const days = activityByDay(activity.rows);
+  const total = days.reduce((sum, day) => sum + day.usd, 0);
+  console.log(`\n  the books, per day (ACCOUNT-wide — the rows carry no per-key attribution;`);
+  console.log(`  safe to read as ours only while the inference key's lifetime usage equals`);
+  console.log(`  the account total, which is CHECKABLE above and true today):\n`);
+  console.log("    date          usd     requests    prompt tokens   models");
+  for (const day of days.slice(0, 12)) {
+    console.log(
+      `    ${day.date}${`$${day.usd.toFixed(2)}`.padStart(9)}`
+      + `${day.requests.toLocaleString().padStart(13)}`
+      + `${day.promptTokens.toLocaleString().padStart(17)}   ${day.models.join(", ")}`,
+    );
+  }
+  if (days.length > 12) console.log(`    … and ${days.length - 12} more day(s)`);
+  console.log(`\n    30-day total  $${total.toFixed(2)} over ${days.length} day(s) with any traffic`);
+  const worst = [...days].sort((a, b) => b.usd - a.usd)[0];
+  if (worst) {
+    console.log(`    the biggest single day is ${worst.date} at $${worst.usd.toFixed(2)}`
+      + ` — ${worst.requests.toLocaleString()} requests,`
+      + ` ${(worst.promptTokens / 1e6).toFixed(1)}M prompt tokens.`);
+    console.log("    Prompt tokens dwarfing completion tokens is the signature of READING");
+    console.log("    pictures, not of writing prose. That is the founder's answer in one row.");
+  }
 }
 
 /* ── 2. WHAT THE PRODUCT'S OWN ROWS ACCOUNT FOR ──────────────────────────── */

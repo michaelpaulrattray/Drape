@@ -172,6 +172,125 @@ export async function readOpenRouterUsage(
   return { ok: true, ...numbers, isManagementKey: data.is_management_key === true };
 }
 
+/** One day of one model's traffic, as the provider's own books record it. */
+export type ActivityRow = {
+  /** `YYYY-MM-DD`, UTC, as OpenRouter groups it. */
+  date: string;
+  model: string;
+  usd: number;
+  requests: number;
+  promptTokens: number;
+  completionTokens: number;
+};
+
+export type OpenRouterActivity =
+  | { ok: true; rows: ActivityRow[] }
+  | { ok: false; why: string };
+
+/**
+ * THE BOOKS, PER DAY AND PER MODEL — the provider's own, not our arithmetic
+ * (fable-693).
+ *
+ * `/api/v1/activity` covers the last 30 completed UTC days and needs a
+ * MANAGEMENT key, which is why every earlier attempt at this question had to be
+ * a derivation. With the key set it is a reading, and it moves the
+ * reconciliation the way fable-682 §4b wanted and could not have: **the
+ * provider's books are the claim and our census is the cross-check**, rather
+ * than the other way round.
+ *
+ * TWO THINGS IT IS NOT, and both belong in any line built on it:
+ *
+ *  - **It is ACCOUNT-wide, not key-wide.** The rows carry `endpoint_id` (which
+ *    provider served the model) and no API-key attribution at all, so a second
+ *    key on the same account is inside these figures with nothing to separate
+ *    it. Today that is safe and it is CHECKABLE rather than assumed: the
+ *    inference key's own lifetime `usage` equals the account total. The day it
+ *    does not, this becomes an over-count and the line must say so.
+ *  - **It is DAILY grain.** It cannot resolve a 7¢-per-half-hour drip, and
+ *    quoting it as proof of one would be a reading pretending to a resolution
+ *    it has not got.
+ *
+ * Its own key, like fal's admin key: this reader is the only thing that touches
+ * `OPENROUTER_MANAGEMENT_KEY`, and inference keeps using `OPENROUTER_API_KEY`.
+ */
+export async function readOpenRouterActivity(
+  key: string | undefined = process.env.OPENROUTER_MANAGEMENT_KEY,
+  fetchImpl: typeof fetch = fetch,
+): Promise<OpenRouterActivity> {
+  if (!key) return { ok: false, why: "OPENROUTER_MANAGEMENT_KEY not set in this process" };
+  let response: Response;
+  try {
+    response = await fetchImpl("https://openrouter.ai/api/v1/activity", {
+      headers: { Authorization: `Bearer ${key}` },
+    });
+  } catch (error) {
+    return { ok: false, why: `unreachable (${transportCode(error)})` };
+  }
+  if (response.status === 403) {
+    return { ok: false, why: "HTTP 403 — activity wants a MANAGEMENT key; this one is not" };
+  }
+  if (!response.ok) return { ok: false, why: `HTTP ${response.status}` };
+  let body: { data?: unknown };
+  try {
+    body = await response.json() as typeof body;
+  } catch {
+    return { ok: false, why: "unparseable response" };
+  }
+  if (!Array.isArray(body?.data)) return { ok: false, why: "response carried no activity rows" };
+  const rows: ActivityRow[] = [];
+  for (const entry of body.data as Array<Record<string, unknown>>) {
+    const usd = Number(entry.usage);
+    if (typeof entry.date !== "string" || !Number.isFinite(usd)) continue;
+    rows.push({
+      /* The API returns `2026-08-15 00:00:00`; the day is the whole grain. */
+      date: entry.date.slice(0, 10),
+      model: typeof entry.model === "string" ? entry.model : "(unnamed)",
+      usd,
+      requests: Number(entry.requests) || 0,
+      promptTokens: Number(entry.prompt_tokens) || 0,
+      completionTokens: Number(entry.completion_tokens) || 0,
+    });
+  }
+  return { ok: true, rows };
+}
+
+/** Days, newest first, with each day's models folded together. */
+export function activityByDay(
+  rows: readonly ActivityRow[],
+): Array<{ date: string; usd: number; requests: number; promptTokens: number; models: string[] }> {
+  const days = new Map<string, { usd: number; requests: number; promptTokens: number; models: Set<string> }>();
+  for (const row of rows) {
+    const day = days.get(row.date)
+      ?? { usd: 0, requests: 0, promptTokens: 0, models: new Set<string>() };
+    day.usd += row.usd;
+    day.requests += row.requests;
+    day.promptTokens += row.promptTokens;
+    day.models.add(row.model);
+    days.set(row.date, day);
+  }
+  return [...days]
+    .map(([date, day]) => ({ date, ...day, models: [...day.models].sort() }))
+    .sort((a, b) => (a.date < b.date ? 1 : -1));
+}
+
+/**
+ * The books, as one receipt line: the biggest day in the window and the window's
+ * own total, because a single day's figure with no scale beside it is the shape
+ * of number that gets misread in both directions.
+ */
+export function booksLine(activity: OpenRouterActivity): string {
+  if (!activity.ok) return `openrouter books UNREAD — ${activity.why}`;
+  const days = activityByDay(activity.rows);
+  if (days.length === 0) return "openrouter books — no activity in the last 30 days";
+  const total = days.reduce((sum, day) => sum + day.usd, 0);
+  const worst = [...days].sort((a, b) => b.usd - a.usd)[0]!;
+  const latest = days[0]!;
+  return `openrouter books  ${latest.date} $${latest.usd.toFixed(2)}`
+    + ` · 30d $${total.toFixed(2)} over ${days.length} day(s)`
+    + ` · biggest ${worst.date} $${worst.usd.toFixed(2)} (${worst.requests.toLocaleString()} requests)`
+    + "  [ACCOUNT-wide, not per-key]";
+}
+
 /**
  * The one line a state block prints.
  *

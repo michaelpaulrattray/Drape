@@ -18,13 +18,16 @@
  * Driven through the real reader with a fake `fetch`. The real network is
  * never touched here and the real key is never read.
  */
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   balanceLine,
   LOW_BALANCE_USD,
   readOpenRouterBalance,
   readOpenRouterUsage,
+  readOpenRouterActivity,
+  activityByDay,
+  booksLine,
 } from "../scripts/lib/openrouterBalance.mts";
 
 const KEY = "sk-or-v1-NOT-A-REAL-KEY";
@@ -36,6 +39,34 @@ function respond(body: unknown, init: { ok?: boolean; status?: number } = {}) {
     json: async () => body,
   }) as unknown as typeof fetch;
 }
+
+/**
+ * EVERY READER HERE DEFAULTS ITS KEY OUT OF `process.env`, AND
+ * `vitest.setup.ts` LOADS `.env`.
+ *
+ * So an arm that passes `undefined` to prove the missing-key path is, on a
+ * machine that HAS the key, an assertion about the developer's machine rather
+ * than about the reader. It bit twice in one shift — once in `falSpend.test.ts`
+ * the moment a real `FAL_ADMIN_KEY` appeared, and once here the moment
+ * `OPENROUTER_MANAGEMENT_KEY` did — so the fix is at the file rather than at
+ * the two call sites that happened to be caught.
+ *
+ * Removed for every test and restored afterwards: no test in this file wants
+ * an ambient credential, and the ones that want a key pass one explicitly.
+ */
+const CREDENTIALS = ["OPENROUTER_API_KEY", "OPENROUTER_MANAGEMENT_KEY"] as const;
+let saved: Array<string | undefined> = [];
+beforeEach(() => {
+  saved = CREDENTIALS.map((name) => process.env[name]);
+  for (const name of CREDENTIALS) delete process.env[name];
+});
+afterEach(() => {
+  CREDENTIALS.forEach((name, index) => {
+    const value = saved[index];
+    if (value === undefined) delete process.env[name];
+    else process.env[name] = value;
+  });
+});
 
 describe("the OpenRouter balance is read, never remembered", () => {
   it("reads the remainder off the account's two lifetime figures", async () => {
@@ -205,5 +236,72 @@ describe("what this key has spent, in the account's own windows", () => {
       respond({ data: { ...REAL.data, is_management_key: true } }),
     );
     expect(management.ok === true && management.isManagementKey).toBe(true);
+  });
+});
+
+/**
+ * THE BOOKS — per day, per model, from the provider (fable-693).
+ *
+ * This is the reading that turns the reconciliation the right way round: the
+ * account's own figures become the CLAIM and our census becomes the
+ * cross-check. Two properties of it have to survive into every line built on
+ * it, and both are asserted here: it is ACCOUNT-wide rather than per-key, and
+ * it is DAILY grain — too coarse to prove a drip, however tempting.
+ */
+describe("the daily books, read rather than derived", () => {
+  /* Three real rows, as the endpoint returned them on 2026-08-16. */
+  const REAL = {
+    data: [
+      {
+        date: "2026-08-15 00:00:00", model: "anthropic/claude-sonnet-5",
+        usage: 98.04217, requests: 10102, prompt_tokens: 42910025, completion_tokens: 1222212,
+      },
+      {
+        date: "2026-08-15 00:00:00", model: "anthropic/claude-sonnet-5",
+        usage: 0.010066, requests: 1, prompt_tokens: 4978, completion_tokens: 11,
+      },
+      {
+        date: "2026-08-14 00:00:00", model: "anthropic/claude-sonnet-5",
+        usage: 6.476766, requests: 854, prompt_tokens: 2748563, completion_tokens: 97964,
+      },
+    ],
+  };
+
+  it("reads the rows and folds a day's endpoints together", async () => {
+    const activity = await readOpenRouterActivity(KEY, respond(REAL));
+    expect(activity.ok).toBe(true);
+    const days = activityByDay(activity.ok === true ? activity.rows : []);
+    expect(days).toHaveLength(2);
+    /* Newest first, and the two 08-15 rows are ONE day. */
+    expect(days[0]!.date).toBe("2026-08-15");
+    expect(days[0]!.usd).toBeCloseTo(98.052236, 6);
+    expect(days[0]!.requests).toBe(10103);
+  });
+
+  it("prints the biggest day beside the window's total, and says ACCOUNT-wide", async () => {
+    const line = booksLine(await readOpenRouterActivity(KEY, respond(REAL)));
+    expect(line).toContain("biggest 2026-08-15 $98.05");
+    expect(line).toContain("30d $104.53");
+    expect(line, "a per-key reading is what a reader will assume unless told")
+      .toContain("ACCOUNT-wide");
+  });
+
+  /* A management key is a different credential from the inference one, and the
+     refusal has to name WHICH — the same rule the fal 403 taught. */
+  it("names the management key when refused, and stays UNREAD everywhere else", async () => {
+    const refused = await readOpenRouterActivity(KEY, respond({}, { ok: false, status: 403 }));
+    expect(refused.ok === false && refused.why).toContain("MANAGEMENT key");
+    expect(booksLine(refused)).toContain("UNREAD");
+    expect((await readOpenRouterActivity(undefined, respond(REAL))).ok).toBe(false);
+    expect(booksLine(await readOpenRouterActivity(KEY, respond({ data: "nope" }))))
+      .toContain("no activity rows");
+  });
+
+  /* An empty window is not an unreadable one, and must not print as a failure —
+     a new account and a broken key would otherwise look identical. */
+  it("distinguishes an empty window from an unreadable one", async () => {
+    const line = booksLine(await readOpenRouterActivity(KEY, respond({ data: [] })));
+    expect(line).toContain("no activity in the last 30 days");
+    expect(line).not.toContain("UNREAD");
   });
 });
