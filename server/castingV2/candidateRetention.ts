@@ -22,6 +22,7 @@ import {
   deleteReferenceRowsIn,
   listPurgeableReferencesIn,
 } from "../db/castingV2ReferenceLibrary";
+import { deleteFaceScanRowsIn, listPurgeableFaceScansIn } from "../db/castingV2FaceScans";
 import { deleteSegmentRowsIn, listPurgeableSegmentsIn } from "../db/castingV2Segments";
 import { deleteVariantRowsIn, listPurgeableVariantsIn } from "../db/castingV2Variants";
 import { withTransaction } from "../db/connection";
@@ -39,6 +40,7 @@ import { checkCandidateInvariants } from "./candidateInvariants";
 import {
   captureCastingV2Enabled,
   castingReferenceLibraryArmed,
+  castingScanTableArmed,
   castingSegmentsArmed,
   parseCastingV2Scope,
   CASTING_V2_SCOPE_ENV,
@@ -107,6 +109,22 @@ function tolerateAbsentReferenceLibrary(error: unknown): never | [] {
   if (!isMissingTable(error) || castingReferenceLibraryArmed()) throw error;
   log.warn(
     "[candidateRetention] the reference library's table is absent — nothing can have been written to it, so nothing is being left behind. This is expected only before the library migration lands.",
+  );
+  return [];
+}
+
+/**
+ * The same tolerance, on the same terms, for the kept face scan (0032).
+ *
+ * Its table lands by ceremony too, and the window where this code knows about
+ * `casting_face_scans` and the database does not is real and empty — the flag
+ * that would write a row refuses to arm until after the ceremony. Armed, a
+ * missing table stops being an empty set and becomes a fault said out loud.
+ */
+function tolerateAbsentFaceScanStore(error: unknown): never | [] {
+  if (!isMissingTable(error) || castingScanTableArmed()) throw error;
+  log.warn(
+    "[candidateRetention] the kept-scan table is absent — nothing can have been written to it, so nothing is being left behind. This is expected only before the scan-table migration lands.",
   );
   return [];
 }
@@ -256,6 +274,34 @@ export async function runCandidateRetentionSweep(now = new Date()): Promise<Rete
         }
       }
       if (references.length > 0) await deleteReferenceRowsIn(tx, candidateIds);
+
+      /*
+        And a candidate's KEPT SCANS, on exactly the same terms (migration
+        0032).
+
+        This is the founder's storage condition made mechanical: *"as long as
+        it wont clog up storage"*. Scan rows die with their cast, so the table
+        grows with LIVING casts and never with time — and the stencils they
+        own, one small object per feature found, go into the same manifest as
+        everything else in this transaction.
+
+        UNCONDITIONAL, like the two above. `CASTING_SCAN_TABLE_SCOPE` governs
+        whether a row is written; nothing governs whether it is purged. A flag
+        turned back off after rows exist must not strand them.
+
+        A scan that found nothing still has a row and hands the worker no keys,
+        which is why the delete is keyed on the LIST being non-empty rather
+        than on any object having been collected.
+      */
+      const scans = await listPurgeableFaceScansIn(tx, candidateIds).catch(
+        (error: unknown) => tolerateAbsentFaceScanStore(error),
+      );
+      for (const scan of scans) {
+        for (const key of scan.maskKeys) {
+          storageItems.push({ storageKey: key, storageBackend: "public_r2" as const });
+        }
+      }
+      if (scans.length > 0) await deleteFaceScanRowsIn(tx, candidateIds);
 
       if (storageItems.length > 0) {
         await createStorageCleanupManifestIn(tx, {

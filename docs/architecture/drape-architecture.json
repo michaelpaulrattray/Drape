@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "837edcd792e6bf69"
+    "sourceFingerprint": "df5279bbbd1ef356"
   },
   "domains": [
     {
@@ -53,7 +53,7 @@
     {
       "id": "domain:data",
       "name": "data",
-      "moduleCount": 47
+      "moduleCount": 48
     },
     {
       "id": "domain:evidence",
@@ -4059,6 +4059,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:server/db/castingV2FaceScans.ts",
+      "path": "server/db/castingV2FaceScans.ts",
+      "domain": "data",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:server/db/castingV2ReferenceLibrary.ts",
       "path": "server/db/castingV2ReferenceLibrary.ts",
       "domain": "data",
@@ -7958,6 +7964,11 @@
       "grammar": "off|all|users:<ids>"
     },
     {
+      "id": "flag:CASTING_SCAN_TABLE_SCOPE",
+      "name": "CASTING_SCAN_TABLE_SCOPE",
+      "grammar": "off|all|users:<ids>"
+    },
+    {
       "id": "flag:CASTING_SEGMENTS_DELIVERED_SCOPE",
       "name": "CASTING_SEGMENTS_DELIVERED_SCOPE",
       "grammar": "off|all|users:<ids>"
@@ -9172,6 +9183,10 @@
     {
       "id": "test:server/castingStudio.test.ts",
       "path": "server/castingStudio.test.ts"
+    },
+    {
+      "id": "test:server/castingV2-face-scan-db.test.ts",
+      "path": "server/castingV2-face-scan-db.test.ts"
     },
     {
       "id": "test:server/castingV2-reference-library-db.test.ts",
@@ -18575,6 +18590,11 @@
     },
     {
       "from": "module:server/castingV2/candidateRetention.ts",
+      "to": "module:server/db/castingV2FaceScans.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/candidateRetention.ts",
       "to": "module:server/db/castingV2ReferenceLibrary.ts",
       "kind": "imports"
     },
@@ -21350,6 +21370,16 @@
     },
     {
       "from": "module:server/db/castingV2.ts",
+      "to": "module:server/db/connection.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/castingV2FaceScans.ts",
+      "to": "module:drizzle/schema.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/castingV2FaceScans.ts",
       "to": "module:server/db/connection.ts",
       "kind": "imports"
     },

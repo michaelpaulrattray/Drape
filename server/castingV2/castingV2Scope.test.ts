@@ -38,6 +38,13 @@ import {
   captureCastingFaceScanEnabled,
   parseCastingFaceScanScope,
   validateCastingFaceScanEnvironment,
+  CastingScanTableCleanupWorkerError,
+  CastingScanTableCoverageError,
+  CastingScanTableScopeConfigurationError,
+  captureCastingScanTableEnabled,
+  castingScanTableArmed,
+  parseCastingScanTableScope,
+  validateCastingScanTableEnvironment,
   CastingRepaintCoverageError,
   CastingSidePhrasingCoverageError,
   CastingSidePhrasingScopeConfigurationError,
@@ -642,5 +649,118 @@ describe("the side-phrasing scope", () => {
 
     process.env.CASTING_REPAINT_SCOPE = "off";
     expect(captureCastingSidePhrasingEnabled(1), "the parent going dark takes the child with it").toBe(false);
+  });
+});
+
+/**
+ * THE KEPT SCAN'S SCOPE (migration 0032).
+ *
+ * Two preconditions and one chain, each driven directly rather than through a
+ * caller: a guard proved only through the thing that uses it is a guard nobody
+ * has tested.
+ */
+describe("the scan-table scope", () => {
+  const previous = { ...process.env };
+  afterEach(() => {
+    process.env = { ...previous };
+  });
+
+  it("is off by default and refuses anything it cannot read exactly", () => {
+    expect(parseCastingScanTableScope(undefined)).toEqual({ kind: "off" });
+    for (const raw of ["ALL", "user:1", "users:", "users:0", "users:1,1", "yes"]) {
+      expect(() => parseCastingScanTableScope(raw), raw)
+        .toThrow(CastingScanTableScopeConfigurationError);
+    }
+  });
+
+  it("asserts nothing while absent", () => {
+    expect(validateCastingScanTableEnvironment({
+      scope: undefined,
+      scanScope: undefined,
+      cleanupWorker: undefined,
+    })).toEqual({ kind: "off" });
+  });
+
+  it("refuses to keep a scan without the worker that would sweep its stencils", () => {
+    /*
+      A kept scan owns one small object per feature it found. A persisted
+      artifact class whose purge is not running is precisely what the founder's
+      storage condition forbids, and the segment store's precondition exists for
+      the identical reason.
+    */
+    expect(() => validateCastingScanTableEnvironment({
+      scope: "users:1",
+      scanScope: "users:1",
+      cleanupWorker: undefined,
+    })).toThrow(CastingScanTableCleanupWorkerError);
+    expect(() => validateCastingScanTableEnvironment({
+      scope: "users:1",
+      scanScope: "users:1",
+      cleanupWorker: "TRUE",
+    })).toThrow(CastingScanTableCleanupWorkerError);
+  });
+
+  it("refuses to keep scans for a user who produces none", () => {
+    expect(() => validateCastingScanTableEnvironment({
+      scope: "users:1",
+      scanScope: undefined,
+      cleanupWorker: "true",
+    })).toThrow(CastingScanTableCoverageError);
+    expect(() => validateCastingScanTableEnvironment({
+      scope: "all",
+      scanScope: "users:1",
+      cleanupWorker: "true",
+    })).toThrow(CastingScanTableCoverageError);
+    expect(() => validateCastingScanTableEnvironment({
+      scope: "users:1,2",
+      scanScope: "users:1",
+      cleanupWorker: "true",
+    })).toThrow(/names users outside/);
+  });
+
+  it("accepts a scope its parent already covers", () => {
+    expect(validateCastingScanTableEnvironment({
+      scope: "users:1",
+      scanScope: "users:1,2",
+      cleanupWorker: "true",
+    })).toEqual({ kind: "users", userIds: [1] });
+    expect(validateCastingScanTableEnvironment({
+      scope: "users:1",
+      scanScope: "all",
+      cleanupWorker: "true",
+    })).toEqual({ kind: "users", userIds: [1] });
+  });
+
+  it("is enabled only when the WHOLE chain names the user", () => {
+    process.env[CASTING_V2_SCOPE_ENV] = "users:1";
+    process.env[CASTING_REFERENCE_LIBRARY_SCOPE_ENV] = "users:1";
+    process.env[CASTING_FACE_SCAN_SCOPE_ENV] = "users:1";
+    process.env.CASTING_SCAN_TABLE_SCOPE = "users:1";
+    expect(captureCastingScanTableEnabled(1)).toBe(true);
+    expect(captureCastingScanTableEnabled(2)).toBe(false);
+
+    process.env[CASTING_FACE_SCAN_SCOPE_ENV] = "off";
+    expect(captureCastingScanTableEnabled(1), "no scan to keep").toBe(false);
+
+    process.env[CASTING_FACE_SCAN_SCOPE_ENV] = "users:1";
+    process.env[CASTING_REFERENCE_LIBRARY_SCOPE_ENV] = "off";
+    expect(captureCastingScanTableEnabled(1), "the grandparent going dark takes it too").toBe(false);
+  });
+
+  it("is ARMED by its own flag alone — the purge may not narrow with the chain", () => {
+    /*
+      The sweep reads `castingScanTableArmed` only to decide whether a MISSING
+      table is tolerable, and it must answer for the flag itself rather than for
+      the chain above it. Rows written while the parent was on have to be
+      collectable after the parent goes off; a purge that narrows with a feature
+      flag is how objects outlive the sheet that promised to destroy them.
+    */
+    process.env.CASTING_SCAN_TABLE_SCOPE = "users:1";
+    process.env[CASTING_FACE_SCAN_SCOPE_ENV] = "off";
+    process.env[CASTING_V2_SCOPE_ENV] = "off";
+    expect(castingScanTableArmed()).toBe(true);
+
+    process.env.CASTING_SCAN_TABLE_SCOPE = "off";
+    expect(castingScanTableArmed()).toBe(false);
   });
 });

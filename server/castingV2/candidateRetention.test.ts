@@ -27,6 +27,8 @@ const calls = {
   deleteSegments: vi.fn(),
   listReferences: vi.fn(),
   deleteReferences: vi.fn(),
+  listScans: vi.fn(),
+  deleteScans: vi.fn(),
 };
 
 vi.mock("../db/castingV2", () => ({
@@ -80,6 +82,14 @@ vi.mock("../db/castingV2ReferenceLibrary", () => ({
   deleteReferenceRowsIn: (_tx: unknown, ...args: unknown[]) => calls.deleteReferences(...args),
 }));
 
+/* And the kept face scan (migration 0032), on exactly those terms again: same
+   transaction, same manifest, unconditional. Its statements are proved against
+   real MySQL in `server/castingV2-face-scan-db.test.ts`. */
+vi.mock("../db/castingV2FaceScans", () => ({
+  listPurgeableFaceScansIn: (_tx: unknown, ...args: unknown[]) => calls.listScans(...args),
+  deleteFaceScanRowsIn: (_tx: unknown, ...args: unknown[]) => calls.deleteScans(...args),
+}));
+
 const { runCandidateRetentionSweep } = await import("./candidateRetention");
 
 beforeEach(() => {
@@ -94,8 +104,11 @@ beforeEach(() => {
   calls.deleteSegments.mockResolvedValue(0);
   calls.listReferences.mockResolvedValue([]);
   calls.deleteReferences.mockResolvedValue(0);
+  calls.listScans.mockResolvedValue([]);
+  calls.deleteScans.mockResolvedValue(0);
   delete process.env.CASTING_SEGMENTS_SCOPE;
   delete process.env.CASTING_REFERENCE_LIBRARY_SCOPE;
+  delete process.env.CASTING_SCAN_TABLE_SCOPE;
 });
 
 describe("the 7-day retention sweep", () => {
@@ -314,6 +327,56 @@ describe("a candidate's segments purge with it", () => {
         { storageKey: "casting-v2/library/orphan-crop.png", storageBackend: "public_r2" },
       ]),
     }));
+  });
+
+  it("purges the kept scans whatever ITS flag says, and takes their stencils", async () => {
+    /*
+      The founder gave the scan table a condition rather than a blessing: *"as
+      long as it wont clog up storage eventually many users will be using
+      this"*. This is that condition mechanised — and the flag is OFF here on
+      purpose, because a purge that narrows with its own feature flag strands
+      every row written while it was on.
+
+      The second trap is the library case's, arrived at by a third door: a scan
+      that found nothing still has a ROW and owns no objects, so a list filtered
+      to rows-with-keys would come back empty, the delete would be skipped, and
+      the row would outlive its cast while every count read zero.
+    */
+    process.env.CASTING_SCAN_TABLE_SCOPE = "off";
+    calls.listScans.mockResolvedValue([
+      { id: 3, maskKeys: ["casting-v2/scans/eye-left.png", "casting-v2/scans/hair.png"] },
+      { id: 4, maskKeys: [] },
+    ]);
+
+    const result = await runCandidateRetentionSweep();
+
+    expect(calls.deleteScans).toHaveBeenCalledWith([1]);
+    /* The candidate's own object, plus two stencils — and nothing for the scan
+       that found nothing, which is deleted all the same. */
+    expect(result.objectsQueued).toBe(3);
+    expect(calls.queueStorageCleanup).toHaveBeenCalledWith(expect.objectContaining({
+      storageItems: expect.arrayContaining([
+        { storageKey: "casting-v2/scans/eye-left.png", storageBackend: "public_r2" },
+        { storageKey: "casting-v2/scans/hair.png", storageBackend: "public_r2" },
+      ]),
+    }));
+  });
+
+  it("tolerates an absent scan table only while the scan table is disarmed", async () => {
+    const missing = Object.assign(new Error("Table 'x.casting_face_scans' doesn't exist"), {
+      code: "ER_NO_SUCH_TABLE",
+      errno: 1146,
+    });
+    calls.listScans.mockRejectedValue(missing);
+
+    const result = await runCandidateRetentionSweep();
+    expect(result.candidatesPurged).toBe(1);
+    expect(calls.deleteScans).not.toHaveBeenCalled();
+
+    /* Armed and missing is a real fault — the ceremony has not run, or it ran
+       somewhere else. A warning would bury it. */
+    process.env.CASTING_SCAN_TABLE_SCOPE = "users:1";
+    await expect(runCandidateRetentionSweep()).rejects.toThrow(/doesn't exist/);
   });
 
   it("tolerates an absent library table only while the library is disarmed", async () => {

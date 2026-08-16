@@ -31,11 +31,13 @@ import {
   CASTING_SIDE_PHRASING_SCOPE_ENV,
   CASTING_SEGMENTS_DELIVERED_SCOPE_ENV,
   CASTING_SEGMENTS_SCOPE_ENV,
+  CASTING_SCAN_TABLE_SCOPE_ENV,
   CASTING_V2_SCOPE_ENV,
   validateCastingFaceScanEnvironment,
   validateCastingReferenceLibraryEnvironment,
   validateCastingRepaintEnvironment,
   validateCastingSidePhrasingEnvironment,
+  validateCastingScanTableEnvironment,
   validateCastingSegmentsDeliveredEnvironment,
   validateCastingSegmentsEnvironment,
   validateCastingV2Environment,
@@ -197,6 +199,18 @@ export function validateEnv(): void {
   validateCastingFaceScanEnvironment({
     scope: process.env[CASTING_FACE_SCAN_SCOPE_ENV],
     libraryScope: process.env[CASTING_REFERENCE_LIBRARY_SCOPE_ENV],
+  });
+  /*
+    And whether a finished scan is KEPT (migration 0032). Checked against the
+    scan scope — a user who produces no scans has nothing to write down — and
+    against the cleanup worker, because a kept scan owns one stencil object per
+    feature and a persisted artifact class without a running purge is exactly
+    what the founder's storage condition forbids.
+  */
+  validateCastingScanTableEnvironment({
+    scope: process.env[CASTING_SCAN_TABLE_SCOPE_ENV],
+    scanScope: process.env[CASTING_FACE_SCAN_SCOPE_ENV],
+    cleanupWorker: process.env.ENABLE_STORAGE_CLEANUP_WORKER,
   });
 
   /*

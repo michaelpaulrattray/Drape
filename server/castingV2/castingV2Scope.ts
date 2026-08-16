@@ -756,3 +756,116 @@ export function validateCastingV2Environment(input: {
   }
   return parsed;
 }
+
+/**
+ * THE KEPT SCAN (migration 0032) — whether a finished reading is written down.
+ *
+ * The scan itself is `CASTING_FACE_SCAN_SCOPE`'s business: twelve segmenter
+ * questions about a face-version, about ten cents, held in memory for as long
+ * as the process lives. This flag governs one thing on top of that — whether
+ * the answer survives the process. Off, not a row is written and not a row is
+ * read, and the panel behaves exactly as it does today.
+ *
+ * # Its parent is the SCAN scope, and that is the whole chain
+ *
+ * A kept scan is a scan that has already happened. A user outside
+ * `CASTING_FACE_SCAN_SCOPE` produces no scans to keep, so a table scope
+ * reaching past it could only ever write rows for readings that do not exist —
+ * inert, and inert is indistinguishable from mistaken from outside
+ * (invariant 7). The scan scope in turn sits inside the library scope, which
+ * sits inside `CASTING_V2_SCOPE`, so naming a user here names them all the way
+ * down.
+ *
+ * # And the cleanup worker, for the same reason segments needed it
+ *
+ * A kept scan owns OBJECTS: one stencil per feature found, under the
+ * candidate's own path. A persisted artifact class without a running purge is
+ * the thing the founder's storage condition forbids, so this refuses to boot
+ * without the worker exactly as the segment store does.
+ *
+ * Purging is deliberately NOT gated on this flag — see {@link
+ * castingScanTableArmed}.
+ */
+export const CASTING_SCAN_TABLE_SCOPE_ENV = "CASTING_SCAN_TABLE_SCOPE";
+
+export class CastingScanTableScopeConfigurationError extends Error {
+  constructor() {
+    super(
+      `${CASTING_SCAN_TABLE_SCOPE_ENV} must be "off", "all", or "users:" followed by unique positive integer user ids`,
+    );
+    this.name = "CastingScanTableScopeConfigurationError";
+  }
+}
+
+export class CastingScanTableCleanupWorkerError extends Error {
+  constructor() {
+    super(
+      `${CASTING_SCAN_TABLE_SCOPE_ENV} cannot be enabled unless ENABLE_STORAGE_CLEANUP_WORKER is exactly "true"`,
+    );
+    this.name = "CastingScanTableCleanupWorkerError";
+  }
+}
+
+export class CastingScanTableCoverageError extends Error {
+  constructor(detail: string) {
+    super(`${CASTING_SCAN_TABLE_SCOPE_ENV} ${detail}`);
+    this.name = "CastingScanTableCoverageError";
+  }
+}
+
+export function parseCastingScanTableScope(raw: string | undefined): CastingV2Scope {
+  return parseScopeGrammar(raw, () => {
+    throw new CastingScanTableScopeConfigurationError();
+  });
+}
+
+/** Whether this user's finished scans are written down and read back. */
+export function captureCastingScanTableEnabled(userId: number): boolean {
+  const table = parseCastingScanTableScope(process.env[CASTING_SCAN_TABLE_SCOPE_ENV]);
+  if (!castingV2EnabledForUser(table, userId)) return false;
+  return captureCastingFaceScanEnabled(userId);
+}
+
+/**
+ * Whether the store is armed AT ALL, regardless of user.
+ *
+ * The retention sweep reads this one, and only to decide whether a MISSING
+ * TABLE is tolerable. It never gates the purge itself: rows written while the
+ * flag was on must be collected after it goes off, and a retention path that
+ * narrows with a feature flag is how objects outlive the sheet that promised
+ * to destroy them.
+ */
+export function castingScanTableArmed(): boolean {
+  return parseCastingScanTableScope(process.env[CASTING_SCAN_TABLE_SCOPE_ENV]).kind !== "off";
+}
+
+export function validateCastingScanTableEnvironment(input: {
+  scope: string | undefined;
+  scanScope: string | undefined;
+  cleanupWorker: string | undefined;
+}): CastingV2Scope {
+  const table = parseCastingScanTableScope(input.scope);
+  if (table.kind === "off") return table;
+
+  if (input.cleanupWorker !== "true") throw new CastingScanTableCleanupWorkerError();
+
+  const scan = parseCastingFaceScanScope(input.scanScope);
+  if (scan.kind === "off") {
+    throw new CastingScanTableCoverageError(
+      `cannot be enabled while ${CASTING_FACE_SCAN_SCOPE_ENV} is off — there would be no reading to keep`,
+    );
+  }
+  if (scan.kind === "all") return table;
+  if (table.kind === "all") {
+    throw new CastingScanTableCoverageError(
+      `cannot be "all" while ${CASTING_FACE_SCAN_SCOPE_ENV} is limited to specific users`,
+    );
+  }
+  const uncovered = table.userIds.filter((userId) => !scan.userIds.includes(userId));
+  if (uncovered.length > 0) {
+    throw new CastingScanTableCoverageError(
+      `names users outside ${CASTING_FACE_SCAN_SCOPE_ENV}: ${uncovered.join(",")}`,
+    );
+  }
+  return table;
+}

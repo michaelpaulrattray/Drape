@@ -2809,3 +2809,47 @@ export const castingOpenLaneDemand = mysqlTable("casting_open_lane_demand", {
 
 export type CastingOpenLaneDemandRow = typeof castingOpenLaneDemand.$inferSelect;
 export type InsertCastingOpenLaneDemandRow = typeof castingOpenLaneDemand.$inferInsert;
+
+/**
+ * THE FACE SCAN, KEPT — one row per (candidate, version) (migration 0032).
+ *
+ * The panel scans a face-version the first time it is looked at: twelve
+ * segmenter questions, about ten cents, and until now remembered in memory
+ * alone. The memory dies with the process, and this program deploys many times
+ * a night, so the same face was bought again and again — 58 paid scans for 28
+ * distinct faces across two days of ordinary live use.
+ *
+ * The founder's yes carried a bound — *"as long as it wont clog up storage"* —
+ * and that bound is why the stencils are NOT in this row. Measured on 29 clean
+ * production scans: geometry and words are 1,212 B, the same row with stencils
+ * base64 inside is 12,365 B, which is 4.7 GB of MySQL at ten thousand users.
+ * So each slot's entry in {@link geometry} names an OBJECT key instead, swept
+ * with the candidate exactly as segment and library crops are.
+ *
+ * `versionKey` is a NOT NULL string — the variant's id, or `master` — because
+ * MySQL lets NULLs repeat inside a unique index, and a bound of one row per
+ * version enforced by a key that admits duplicates is not enforced at all. It
+ * is `casting_segments`' lesson, applied rather than re-learned.
+ */
+export const castingFaceScans = mysqlTable("casting_face_scans", {
+  id: int("id").autoincrement().primaryKey(),
+  publicId: varchar("publicId", { length: 36 }).notNull(),
+  userId: int("userId").notNull(), // denormalized — single-statement ownership
+  candidateId: int("candidateId").notNull(), // →casting_candidates
+  /** The variant's id as text, or `master` for the candidate's own frame. */
+  versionKey: varchar("versionKey", { length: 24 }).notNull(),
+  /** WHICH bytes were read: a row whose frame has moved is refused, not served. */
+  frameKey: varchar("frameKey", { length: 512 }).notNull(),
+  /** Boxes, described rows, sides and counts — each slot naming its own object. */
+  geometry: json("geometry").notNull(),
+  /** What the stencils cost, so the growth curve stays a reading. */
+  stencilBytes: int("stencilBytes").notNull(),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+}, (table) => ([
+  uniqueIndex("uq_casting_face_scans_public").on(table.publicId),
+  uniqueIndex("uq_casting_face_scans_identity").on(table.candidateId, table.versionKey),
+  index("idx_casting_face_scans_candidate").on(table.candidateId),
+]));
+
+export type CastingFaceScanRow = typeof castingFaceScans.$inferSelect;
+export type InsertCastingFaceScanRow = typeof castingFaceScans.$inferInsert;

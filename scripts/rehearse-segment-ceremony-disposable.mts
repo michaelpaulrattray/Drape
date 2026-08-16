@@ -22,6 +22,7 @@ import { readdir, readFile } from "node:fs/promises";
 import { spawn } from "node:child_process";
 import mysql from "mysql2/promise";
 import { openDatabase } from "./lib/dbConnection.mts";
+import { openServer } from "./lib/serverConnection.mts";
 
 const PREFIX = "drape_ceremony_rehearsal_";
 const SKIP = ["0025_casting_v2_segment_store", "0026_casting_v2_variant_lineage"];
@@ -49,13 +50,10 @@ if (["prod", "production"].some((marker) => url.pathname.toLowerCase().includes(
 const databaseName = `${PREFIX}${Math.random().toString(36).slice(2, 10)}`;
 if (!new RegExp(`^${PREFIX}[a-z0-9]+$`).test(databaseName)) throw new Error("generated an unsafe database name");
 
-const server = await openDatabase({
-  host: url.hostname,
-  port: Number(url.port || 3306),
-  user: decodeURIComponent(url.username),
-  password: decodeURIComponent(url.password),
-  multipleStatements: false,
-});
+/* The SERVER, not a database on it — shared, because six scripts wrote this
+   as a parts object and every one of them was dead: `openDatabase` reads
+   `options.uri`, and parts have none. See `lib/serverConnection.mts`. */
+const server = await openServer(url, { multipleStatements: false });
 
 const rehearsalUrl = new URL(active);
 rehearsalUrl.pathname = `/${databaseName}`;
