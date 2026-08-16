@@ -25,6 +25,18 @@
  *
  *   npx tsx scripts/deploy-rite.mts [--dry]
  */
+/*
+  THE RITE READS `.env` FOR ONE THING: the OpenRouter key, so the balance line
+  is a reading rather than an UNREAD. It was added when the line's first live
+  run printed `UNREAD — OPENROUTER_API_KEY not set in this process`, which was
+  the honest failure mode doing its job and not the intent.
+
+  Safe here, and checked rather than assumed: this script never reads
+  `DATABASE_URL`. Both of its database reads take the production URL explicitly
+  from `railway variables --service MySQL` and pass it to `openDatabase(url)`,
+  so nothing it does can fall back to the dev database that `.env` names.
+*/
+import "dotenv/config";
 import { execFileSync } from "node:child_process";
 
 import { openDatabase } from "./lib/dbConnection.mts";
