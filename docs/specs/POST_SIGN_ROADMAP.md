@@ -610,9 +610,95 @@ superseded it — fable-071/080).
 - **Hero assets** (L5): `hero/*` never migrated from Manus — home
   hero 502s in dev AND prod; needs founder's source files +
   `scripts/upload-hero-v3.mjs`.
-- **Stripe**: live keys **+ env-tag/account separation so cross-env
-  webhooks cannot credit prod users** (L6 — dev checkouts currently
-  fire webhooks at prod trusting `metadata.userId`).
+- **Stripe** (L6): live keys **+ env-tag/account separation**. ✅ **THE TAG
+  HALF IS BUILT 2026-08-17** (opus-610, ruled fable-821 §2); the KEY SPLIT
+  remains the founder's, beside item 2's shared R2 credential.
+
+  **The item was read at the ACCOUNT rather than at the line, and its own
+  sentence was wrong in both directions.** It used to read *"dev checkouts
+  currently fire webhooks at prod trusting `metadata.userId`"* — true at
+  `webhooks.ts:155`, and unable to settle anything, because it says nothing
+  about whether a dev event can *arrive* or whether arriving *moves money*.
+  Both are readable. Read, with controls, fingerprints rather than values:
+
+  ```
+  STRIPE_SECRET_KEY   dev and prod BYTE-IDENTICAL   sk_test_ md5:66938022b5
+  webhook endpoints registered on that ONE account: 1
+    https://drape-production-0232.up.railway.app/api/webhooks/stripe
+    enabled · subscribed to all eight handled event types
+  control  negative  we_zzz_no_such_endpoint_l6 refused (StripeInvalidRequest)
+  ```
+
+  **So production is not merely reachable from a laptop — it is the only
+  place a dev checkout goes**, and it verifies there, being signed with that
+  endpoint's own secret. The corollary nobody had stated: **development
+  receives nothing.** Dev's `STRIPE_WEBHOOK_SECRET` differs from prod's, and
+  prod's belongs to the one registered endpoint, so dev's belongs to none —
+  every dev subscription purchase has had its fulfilment run in production
+  instead. *(Bound: a `stripe listen` CLI session makes a temporary endpoint
+  that `webhookEndpoints.list()` does not return.)*
+
+  **The money line, traced forward:** `metadata.userId` reaches exactly one
+  spend — `webhooks.ts:164` → `creditReferrerOnPaidAction` →
+  `referrals.ts:386` `addCredits(referral.referrerUserId,
+  REFERRAL_REWARD_CREDITS)` = **12,500 credits**, two and a half times the
+  whole overnight campaign ceiling, paid to the named user's **REFERRER**
+  rather than to the named user. The old sentence was wrong in the target and
+  orders low in the amount.
+
+  **The other four handlers fail closed, structurally**: they resolve the
+  user through `getUserByStripeCustomerId` against the LOCAL database, so a
+  foreign customer has no row and returns "No user found" without spending.
+  Read rather than assumed — production 0 rows with a `stripeCustomerId`,
+  development 1, **overlap 0**.
+
+  **The exposure is zero-population and self-arming**: production holds 0
+  referral rows and 4 users, so nothing can be paid today — and the first
+  referral arms it. That is why the tag was built now: refusing untagged
+  objects is normally the hard half because legacy objects predate the tag,
+  and here there are none.
+
+  **What was built** (`server/stripe/environmentTag.ts`): every Stripe object
+  we create carries `metadata.env` = a tag derived from
+  `RAILWAY_ENVIRONMENT_NAME`, which the platform injects and a laptop cannot
+  set by accident — **no new variable and no founder action**. The webhook
+  refuses any tagged-family event whose tag is not this deployment's, and
+  refuses untagged too, **before the switch — before any handler, any lookup
+  and any money.** It ACKs rather than 400s: a foreign event can never
+  succeed, and Stripe retries would eventually disable the production
+  endpoint and break real fulfilment. The refusal is loud in the log and
+  **names itself** — a dashboard-created object is untagged by construction,
+  so a legitimate manual action reads as a named refusal rather than a silent
+  swallow (fable-821 §2c).
+
+  **The declared bound, not a silent narrowing:** invoices and disputes are
+  authored by Stripe and by banks, carry no metadata of ours, and are **out
+  of the tag's scope**. Their world check is the customer lookup above. The
+  customer object is tagged too, so promoting those two families to a real
+  tag check is one API read away if the overlap ever stops being zero.
+
+  **Guarded in the L8b shape, proved both directions** — each arm a full run:
+
+  ```
+  positive  the guard call deleted from webhooks.ts   -> 4 money assertions red
+                                                         (nobody paid / no tier
+                                                         changed / untagged ×2)
+  positive  one writer loses ...environmentMetadata() -> the tree-derived
+                                                         writer scan red, and
+                                                         a DIFFERENT test than
+                                                         arm A — independent
+  negative  the writer scanner made blind             -> "expected 0 to be
+                                                         greater than or equal
+                                                         to 3" — it REFUSES
+                                                         rather than passing
+                                                         vacuously
+  ```
+
+  The writer half is derived from the tree, not listed, so a Stripe call
+  written tomorrow is in scope the moment it exists. The Atlas red that
+  accompanies every arm carries no information about tags — it is the
+  source-fingerprint freshness detector, and it is named here so it is never
+  mistaken for coverage.
 - **Cookie consent** (L7): flagged 2026-07-10, never built.
 - **`mintModel` concurrency double-charge** (L8): ✅ **CLOSED 2026-08-17 —
   THE MONEY IS GUARDED FOUR DEEP, and the CAS is alive at a new address**
