@@ -12,7 +12,37 @@ mailbox archive, memory, and DECISION_LOG by the lost-pin audit of
 - **Frame-05 / removal-composite hair silhouette** (L1): owed its own
   frames before Tier A scores removals against `hairWorn`
   (fable-059/060/061). The segments pivot does NOT moot it — removals
-  still ride the departed/vacancy machinery.
+  still ride the departed/vacancy machinery. **That sentence is still
+  true and still current** — `invisibleRemoval.ts` (fable-398 §3): *"the
+  slot is retired and a vacancy is filed so every later render says the
+  absence"*, on migration 0030's `vacancy` role.
+
+  **But it answers a different question than this item's name asks, and
+  the item is PASTE-ROAD ONLY** (opus-602, ruled fable-813 §2). The check
+  fable-059 named is *"the removal **composite**'s hair silhouette at the
+  sides"* — the concern being that a wording which makes a **compositing
+  artefact** read correctly would be hiding it. **A compositing artefact
+  cannot exist where nothing is composited.** On the repaint road the
+  engine's own frame IS the delivered frame, so the frames this
+  precondition owes are **unbuyable there** and it is **LIVE for every
+  non-repaint user — today, everyone but him. It closes fully the day
+  `CASTING_REPAINT_SCOPE` widens to all users**, exactly as the
+  seam-check bullet below it does. The vacancy machinery is
+  road-independent; the composite is not.
+
+  *Its twin was ruled on this exact ground.* Frame-05 and the seam-check
+  flip were recovered TOGETHER by the lost-pin audit as the two campaign
+  gates between 2/2 and Tier A (fable-110 §1/§2, fable-111); the founder
+  then killed the seam-check in person on *nothing is pasted, so no seam
+  can exist* (fable-709 §3). This paragraph is that one, applied to its
+  sibling.
+
+  ⚠ **OPEN, and owned:** whether this gates Tier A at all depends on
+  **which road Tier A scores on**, and no document says — "Tier A"
+  against road/scope words returns only §0's own headings. If Tier A
+  scores his account the check is unrunnable there; if it scores the
+  paste road it is fully live. **Answered by whoever opens Tier A, in the
+  Tier A plan, before any scoring.**
 - **Seam-check shadow→enforce flip decision** (L12) — ⛔ **the flip decision
   is DEAD (founder in person, fable-709 §3, 2026-08-16).** His reasoning
   holds on the repaint road: nothing is pasted, so no seam can exist. Do
