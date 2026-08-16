@@ -4478,6 +4478,13 @@ itself** instead of appearing in the lineage unexplained.
 Past about two minutes the wait says so and names the outcome — the roll's own
 law, and the credits genuinely do come back.
 
+> **The figure in that last line is SUPERSEDED for the refine panel** (founder,
+> 2026-08-16, *"yes make it honest"*): the census read the median paid edit at
+> 204 s dev / 209 s prod, so two minutes was firing inside the ordinary case.
+> The note now waits for `LONG_WAIT_MS` = 5 minutes. **The roll tile's ~2
+> minutes is UNCHANGED** — a roll takes 66–82 s, and D-85's companion-UX
+> ruling above is about that surface, not this one. The rest of D-161 stands.
+
 ## D-162 — Chips carry the user's words. Filing goes to the tooltip.
 
 **Founder ruling, 2026-08-04, round 3, item 5.**

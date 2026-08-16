@@ -855,12 +855,16 @@ export const castingV2Router = router({
             (entry 13 of the instrument doctrine; fable-670).
 
             The panel says "this is taking longer than usual… your credits come
-            back on their own" past two minutes, and it used to reach that by
-            subtracting `startedAt` from the BROWSER's clock. Two moments, two
-            clocks: a laptop two minutes fast says it on every edit a second in,
-            a laptop two minutes slow never says it, and the second failure is
-            silent. `now` is the SAME reading `stage` takes below — one clock
-            question, one answer, taken once.
+            back on their own" past a threshold it owns (`LONG_WAIT_MS` in
+            `RefinePanel.tsx` — five minutes since 2026-08-16, two before that,
+            and this sentence quoted the old figure for a day afterwards). The
+            threshold is the client's to name; what is owed from here is the
+            DURATION, and it used to be reached by subtracting `startedAt` from
+            the BROWSER's clock. Two moments, two clocks: a laptop two minutes
+            fast said it on every edit a second in, a laptop two minutes slow
+            never said it, and the second failure is silent. `now` is the SAME
+            reading `stage` takes below — one clock question, one answer, taken
+            once.
           */
           waitedMs: Math.max(0, now.getTime() - variant.createdAt.getTime()),
           /*

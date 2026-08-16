@@ -259,9 +259,15 @@ export function RefinePanel({
       {/*
         A LONG WAIT SAYS SO, AND NAMES THE OUTCOME.
 
-        The roll's own law: past about two minutes the honest thing is to admit
-        the wait is unusual and say what happens if it never lands, so it reads
-        as supervised rather than broken. Credits genuinely do come back.
+        The roll's own law, on a refine's own clock: past `LONG_WAIT_MS` the
+        honest thing is to admit the wait is unusual and say what happens if it
+        never lands, so it reads as supervised rather than broken. Credits
+        genuinely do come back.
+
+        The number is NOT repeated here. This sentence said "past about two
+        minutes" and went on saying it after the constant moved to five
+        (2026-08-16) — a second copy of a fact drifting from the first, which is
+        law 4 at the scale of a comment. It names the constant instead.
       */}
       {/*
         AND IT GOES WHEN NOTHING IS COMING (fable-460's sibling, found by
