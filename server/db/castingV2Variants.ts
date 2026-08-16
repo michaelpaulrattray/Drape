@@ -20,7 +20,7 @@
  * pointer lives on the candidate and holds one value by construction.
  */
 import { randomUUID } from "node:crypto";
-import { and, asc, eq, inArray, lt, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, lt, or, sql } from "drizzle-orm";
 
 import {
   castingCandidates,
@@ -38,6 +38,25 @@ function assertPositiveId(value: number, name: string): void {
     throw new TypeError(`${name} must be a positive integer`);
   }
 }
+
+/**
+ * HOW LONG A LOST OUTCOME STAYS WORTH SAYING — `listSettledRefineFailures`.
+ *
+ * One hour rather than the operations table's own 24, and the difference is
+ * deliberate. This read exists for the customer who was told *"we lost contact"*
+ * and is still sitting in front of the face wondering what happened; an hour
+ * covers coming back from a reload, a closed tab or a coffee. A day would mean
+ * opening a face tomorrow and being told again about an edit already forgotten —
+ * and because the surface owns "have I seen this" rather than a persisted flag
+ * (see the function's own note on `landingAcknowledgedAt`), a long window is
+ * paid for in repeat announcements rather than in storage.
+ */
+const SETTLED_FAILURE_WINDOW_MS = 60 * 60 * 1000;
+
+/** A face with more than a handful of recent failures has a different problem
+ *  than a missing sentence; the surface shows the newest and this bounds the
+ *  read rather than the display. */
+const SETTLED_FAILURE_LIMIT = 10;
 
 async function requireDb() {
   const db = await getDb();
@@ -717,6 +736,107 @@ export async function listPendingVariants(
        in the WHERE, so the narrowing is a fact rather than a cast. */
     status: row.status === "dispatched" ? ("dispatched" as const) : ("queued" as const),
   }));
+}
+
+/**
+ * THE OUTCOMES THIS FACE'S EDITS ENDED IN, when the request could not say so —
+ * Landing A of `docs/specs/CASTING_V2_REFINE_DISPATCH_DESIGN.md` (fable-836).
+ *
+ * # The hole this fills
+ *
+ * A refine is one long-held mutation, and 1.7% of the founder's production
+ * refines answered past the observed ~305 s gateway wall. Past it the socket
+ * carrying the answer is gone before the answer exists: the money is safe, and
+ * **the reason and the way forward are lost.** The surface could not supply
+ * them either, because a terminal failure is in neither of the sheet's two
+ * lists — `status = 'ready'` and `status IN ('queued','dispatched')` — so
+ * `failed` and `expired` leave the payload entirely.
+ *
+ * # Why the sentence is READ rather than stored again
+ *
+ * The design priced a new column, a migration and a founder ceremony to make
+ * the sentence durable. It already is: **`generation_operations.publicMessage`**
+ * carries it, on every terminal path, and
+ * `finalizeClaimedGenerationOperationFailure` THROWS on an empty one.
+ * Verified at the artifact against production, not inferred from the code:
+ * **31 of 31 terminal refine failures carry a sentence, 0 missing**, across 6
+ * distinct lengths, every one longer than 24 characters — so the sentence
+ * varies per request and a `failureClass` could not reproduce it. The oldest
+ * refine operation row is 13.4 days old and unpurged, so retention holds for
+ * any window a panel needs.
+ *
+ * One source, a second reader — the opposite of law 4's mirror. The bridge
+ * polls the same column; this is the same fact reaching the surface that owns
+ * the face rather than a toast that dies with the tab.
+ *
+ * # Why this does NOT filter on `landingAcknowledgedAt`
+ *
+ * That flag has an owner already: `GenerationOperationBridge` acknowledges every
+ * terminal operation within one poll of it settling. Keying this read on it
+ * would empty the list within seconds of the outcome existing — and **always**
+ * after a reload, which is the exact case this read is for. The recency window
+ * bounds it instead, and the surface owns whether it has been seen.
+ *
+ * Owner-scoped AND parent-scoped in the one statement (invariant 1 and 2), like
+ * every other read here. The projection is explicit and narrow (invariant 8):
+ * the customer's own sentence, the outcome's sentence, and when — never the
+ * deltas, never the internal prompt, never the failure class, which is ours.
+ */
+export async function listSettledRefineFailures(
+  userId: number,
+  candidatePublicId: string,
+  options?: { now?: Date; windowMs?: number },
+): Promise<Array<{
+  publicId: string;
+  /** What SHE typed, so the outcome names the edit it belongs to (D-163). */
+  requestText: string | null;
+  /** The server's own sentence for this outcome. Never null in practice — see
+   *  the coverage reading above — but typed nullable because a LEFT join and a
+   *  nullable column can both say nothing, and a caller that assumes otherwise
+   *  would render "null" at a customer. */
+  publicMessage: string | null;
+  /** When it settled, for ordering and for the surface's own recency rules. */
+  completedAt: Date | null;
+}>> {
+  assertPositiveId(userId, "userId");
+  const now = options?.now ?? new Date();
+  const windowMs = options?.windowMs ?? SETTLED_FAILURE_WINDOW_MS;
+  const since = new Date(now.getTime() - windowMs);
+  const db = await requireDb();
+  const rows = await db
+    .select({
+      publicId: castingCandidateVariants.publicId,
+      requestText: castingCandidateVariants.requestText,
+      publicMessage: generationOperations.publicMessage,
+      completedAt: generationOperations.completedAt,
+    })
+    .from(castingCandidateVariants)
+    .innerJoin(castingCandidates, and(
+      eq(castingCandidates.id, castingCandidateVariants.candidateId),
+      eq(castingCandidates.publicId, candidatePublicId),
+      eq(castingCandidates.userId, userId),
+    ))
+    /*
+      INNER here, unlike the pending read's LEFT — and the difference is the
+      point of this function. Pending must never lose a row to a missing
+      operation, because a charge is out and silence reads as "nothing is
+      happening". This read has nothing to say without the operation: the
+      operation IS the sentence. A failed variant whose operation cannot be
+      found has no outcome to report, and inventing one would be worse than
+      staying quiet.
+    */
+    .innerJoin(
+      generationOperations,
+      eq(generationOperations.id, castingCandidateVariants.operationId),
+    )
+    .where(and(
+      eq(castingCandidateVariants.userId, userId),
+      inArray(castingCandidateVariants.status, ["failed", "expired"]),
+      gte(generationOperations.completedAt, since),
+    ))
+    .orderBy(desc(generationOperations.completedAt))
+    .limit(SETTLED_FAILURE_LIMIT);
+  return rows;
 }
 
 /**

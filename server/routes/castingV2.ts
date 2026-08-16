@@ -70,6 +70,7 @@ import { pendingStage } from "../castingV2/pendingStage";
 import {
   listCandidateVariants,
   listPendingVariants,
+  listSettledRefineFailures,
   recordVariantOutcome,
   selectVariant,
 } from "../db/castingV2Variants";
@@ -789,10 +790,22 @@ export const castingV2Router = router({
     .query(async ({ ctx, input }) => {
       requireCastingV2(ctx.user.id);
       enforceRateLimit(ctx.user.id, RATE_LIMITS.castingRead);
-      const [face, variants, pending] = await Promise.all([
+      const [face, variants, pending, settled] = await Promise.all([
         getOwnedCandidateWithSelectedFace(ctx.user.id, input.candidateId),
         listCandidateVariants(ctx.user.id, input.candidateId),
         listPendingVariants(ctx.user.id, input.candidateId),
+        /*
+          AND THE OUTCOMES THE REQUEST COULD NOT DELIVER — Landing A
+          (`CASTING_V2_REFINE_DISPATCH_DESIGN.md`, ruled fable-836 §3).
+
+          A refine awaits its whole render, and 1.7% of them answer past the
+          observed gateway wall — the money is safe and the REASON is lost,
+          because a terminal failure is in neither of the two lists above.
+          This is that third list: the sentence the server already wrote, on
+          the surface that owns the face, so it survives the socket and the
+          reload that today erase it.
+        */
+        listSettledRefineFailures(ctx.user.id, input.candidateId),
       ]);
       if (!face) throw new TRPCError({ code: "NOT_FOUND", message: "That candidate is no longer available." });
       /*
@@ -931,6 +944,23 @@ export const castingV2Router = router({
             leaseExpiresAt: variant.leaseExpiresAt,
             now,
           }),
+        })),
+        /*
+          THE OUTCOMES THAT REACHED NOBODY — explicit projection, three fields
+          (invariant 8). The customer's own sentence, the server's own sentence,
+          and when it settled. The `failureClass` is deliberately NOT here: it is
+          ours, for diagnosis, and it is the 24-character category the
+          `publicMessage` beside it exists to be richer than.
+        */
+        settled: settled.map((row) => ({
+          variantId: row.publicId,
+          requestText: row.requestText ?? null,
+          /* Never null in practice — every terminal refine failure carries one,
+             read at the artifact: 31 of 31 in production. Typed nullable because
+             the column is, and a surface that rendered `null` at a customer
+             would be worse than one that renders nothing. */
+          message: row.publicMessage,
+          settledAt: row.completedAt,
         })),
         variants: live.map(({ variant }) => ({
           variantId: variant.publicId,
