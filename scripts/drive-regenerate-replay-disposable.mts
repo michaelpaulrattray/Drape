@@ -182,12 +182,26 @@ seed(false);
          than assumed away — reading one layer too few reported `scope = null`
          on a body that plainly carried it. */
       const parsed = JSON.parse(body) as Record<string, { json?: Record<string, unknown> }>;
-      const ask = (Object.values(parsed)[0]?.json ?? {}) as { instruction?: string; scope?: string };
+      const ask = (Object.values(parsed)[0]?.json ?? {}) as {
+        instruction?: string; scope?: string; replayOf?: string;
+      };
       console.log(`  body: ${body}`);
       check(ask.scope === SCOPE, "the request carries the rectangle the version was pointed at",
         `scope = ${JSON.stringify(ask.scope ?? null)} (want ${SCOPE})`);
       check((ask.instruction ?? "").includes("her right eye"), "and her own words with it",
         `instruction = ${JSON.stringify(ask.instruction ?? null)}`);
+      /*
+        AND WHICH VERSION IT IS A FRESH TAKE OF (fable-733 §2) — read at the
+        wire, because a marker the server never receives is the already-has
+        door firing again. The service proves the id against its own row; what
+        a browser can settle is that the field LEAVES, and that is the half a
+        unit test cannot see.
+      */
+      check(
+        typeof ask.replayOf === "string" && ask.replayOf.length > 0,
+        "and the replay marker that stops the already-has door refusing it",
+        `replayOf = ${JSON.stringify(ask.replayOf ?? null)}`,
+      );
     }
 
     /*
@@ -283,6 +297,110 @@ seed(true);
   } finally {
     await browser.close();
   }
+}
+
+/* ---------------------------------------------------------------- ARM THREE
+   What the rail says in the SECONDS AFTER THE CLICK, before the server has a
+   row — the ten-to-twenty-second gap of his screenshot #312 (fable-738).
+
+   Arm two reads a SEEDED row, which is the server-truth ghost and proves the
+   rail can draw a ring at all. It cannot see this gap, because by the time a
+   row exists the gap is over. So this arm HOLDS the refine request open
+   instead of aborting it: the click is out, the mutation is pending, and the
+   server has no row — exactly the window the founder was looking at.
+
+   Held, not answered: the request never reaches the server, so nothing is
+   claimed and nothing is charged, the same as arm one. */
+
+/* BOTH THEMES (fable-732 §3). The ring is a hairline arc over a dimmed
+   picture, and "dimmed" is the word doing the work: a treatment tuned on a dark
+   plate can vanish on a light one, which is the whole reason that condition is
+   written into the order rather than left to taste. The theme is persisted
+   under `drape_theme` and read before first paint, so it is set on the document
+   rather than clicked afterwards — a toggle would photograph a transition. */
+for (const theme of ["dark", "light"] as const) {
+console.log(`\nARM: the seconds after the click, before the server knows — ${theme}`);
+seed(false);
+
+{
+  const { browser, page } = await openDrivenPage({ base: BASE, token, width: 1440, height: 1000 });
+  try {
+    let held = false;
+    await page.evaluateOnNewDocument(`localStorage.setItem("drape_theme", ${JSON.stringify(theme)})`);
+    await page.setRequestInterception(true);
+    page.on("request", (request) => {
+      const url = request.url();
+      if (url.includes("castingV2.refine") && request.method() === "POST") {
+        /* Neither continued nor aborted — the click stays in flight, which is
+           the state this arm exists to photograph. */
+        held = true;
+        return;
+      }
+      if (readFaceScanAsk(url, request.postData() ?? null).kind === "scanOnly") {
+        void request.abort("blockedbyclient").catch(() => {});
+        return;
+      }
+      void request.continue().catch(() => {});
+    });
+
+    await openTile(page);
+    const before = await page.evaluate(
+      `document.querySelectorAll(".dpc-refine__pick--ghost, .dpc-refine__ghostSpin--onChip").length`,
+    ) as number;
+
+    const button = await page.$('button[title^="A fresh take of"]');
+    if (button) await button.click();
+    /* One second is far inside his ten-to-twenty, and long enough for React to
+       paint. The point of the arm is that nothing is waited FOR. */
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
+    const seeded = await page.evaluate(`(() => {
+      const chips = Array.from(document.querySelectorAll(".dpc-refine__pick"));
+      const redrawing = chips.filter((chip) => chip.querySelector(".dpc-refine__ghostSpin--onChip"));
+      const ghosts = chips.filter((chip) => chip.classList.contains("dpc-refine__pick--ghost"));
+      return {
+        redrawing: redrawing.length,
+        ghosts: ghosts.length,
+        busy: redrawing[0] ? redrawing[0].getAttribute("aria-busy") : null,
+        ghostWords: ghosts.map((chip) => (chip.textContent || "").trim()).filter(Boolean),
+        theme: document.documentElement.dataset.theme || null,
+      };
+    })()`) as {
+      redrawing: number; ghosts: number; busy: string | null;
+      ghostWords: string[]; theme: string | null;
+    };
+    console.log(`  held=${held}  before=${before}  after=${JSON.stringify(seeded)}`);
+
+    check(held, "the click's request was held rather than answered",
+      held ? "refine POST held open, unsent" : "no refine POST was intercepted");
+    /* The theme is asserted, not assumed. A `localStorage` key the app stopped
+       reading would leave both passes photographing the same plate and the
+       light arm would be a duplicate wearing a different label. */
+    check(seeded.theme === theme, `CONTROL — the plate really is the ${theme} one`,
+      `data-theme = ${JSON.stringify(seeded.theme)}`);
+    /* THE NEGATIVE CONTROL IS THE BEFORE-READING. A rail that already wore a
+       ring would pass the arm below without the seed doing anything. */
+    check(before === 0, "CONTROL — the rail wore no ring before the click",
+      `${before} ring/ghost element(s) before the click`);
+    check(seeded.redrawing === 1,
+      "the version being replayed wears the ring within a second of the click (fable-738)",
+      `${seeded.redrawing} chip(s) carrying the on-chip ring`);
+    check(seeded.busy === "true", "and says so to a reader that cannot see a ring",
+      `aria-busy = ${JSON.stringify(seeded.busy)}`);
+    check(seeded.ghosts === 0,
+      "and a fresh take still stands in for nothing (fable-703)",
+      `${seeded.ghosts} ghost chip(s)`);
+    check(seeded.ghostWords.length === 0, "no words on a provisional chip either (fable-702)",
+      seeded.ghostWords.length === 0 ? "none" : seeded.ghostWords.join(" | "));
+
+    await shot(page, `05-rail-provisional-${theme}`);
+    await page.setViewport({ width: 1440, height: 1000, deviceScaleFactor: 4 });
+    await new Promise((resolve) => setTimeout(resolve, 400));
+    await shotOf(page, ".dpc-refine__pick[aria-busy='true']", `06-chip-provisional-4x-${theme}`);
+  } finally {
+    await browser.close();
+  }
+}
 }
 
 /* The fixture does not outlive the reading. */
