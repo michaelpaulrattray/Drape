@@ -106,7 +106,18 @@ export type FalBalance =
  * READING — it names which door is shut so the fix is one sentence long.
  */
 export async function readFalBalance(
-  key: string | undefined = process.env.FAL_KEY,
+  /*
+    `FAL_ADMIN_KEY` FIRST, AND IT IS A SEPARATE VARIABLE ON PURPOSE.
+
+    The balance wants an admin key; image dispatch wants the least privilege
+    that can dispatch an image. Reading the admin key out of `FAL_KEY` would
+    hand every render call an account-management credential to carry — so the
+    admin key lands in its own variable, this is the only reader of it, and
+    `FAL_KEY` stays exactly as privileged as it is today. Falls back to
+    `FAL_KEY` so the ordinary key still produces the honest 403 rather than a
+    "not set" that reads like a missing feature.
+  */
+  key: string | undefined = process.env.FAL_ADMIN_KEY ?? process.env.FAL_KEY,
   fetchImpl: typeof fetch = fetch,
 ): Promise<FalBalance> {
   if (!key) return { ok: false, why: "FAL_KEY not set in this process" };

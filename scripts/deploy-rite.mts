@@ -41,7 +41,7 @@ import { execFileSync } from "node:child_process";
 
 import { openDatabase } from "./lib/dbConnection.mts";
 import { uptimeAnchor } from "./lib/uptimeAnchor.mts";
-import { balanceLine, readOpenRouterBalance } from "./lib/openrouterBalance.mts";
+import { balanceLine, readOpenRouterBalance, readOpenRouterUsage } from "./lib/openrouterBalance.mts";
 import {
   falLine,
   priceFalCalls,
@@ -272,6 +272,23 @@ say(`**UPTIME ANCHOR ${anchor}** (uptime ${healths[0]!.uptime.toFixed(1)} s)`);
    interpreter fails and every paid roll and refine dies at dispatch, so a
    deploy is exactly the moment to look. Read here, never remembered. */
 say(balanceLine(await readOpenRouterBalance()));
+/*
+  AND THE SPEND BESIDE THE LEVEL (fable-688 §3).
+
+  A remaining balance cannot show a leak: two deploys an hour apart both print
+  "$9.68" whether nothing was spent or a cent was. The account keeps its own
+  windows, so the receipt carries today's and this week's figure next to the
+  remainder, and a drain becomes visible in ONE reading instead of needing two.
+  That is exactly the reading that attributed tonight's own 7¢ movement.
+*/
+say(await (async () => {
+  const usage = await readOpenRouterUsage();
+  return usage.ok
+    ? `openrouter spend  today $${usage.daily.toFixed(2)} · week $${usage.weekly.toFixed(2)}`
+      + ` · month $${usage.monthly.toFixed(2)}`
+      + (usage.isManagementKey ? "" : "  (per-day/model breakdown needs a management key)")
+    : `openrouter spend UNREAD — ${usage.why}`;
+})());
 /*
   AND THE OTHER ACCOUNT (fable-684 §1).
 

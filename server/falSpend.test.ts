@@ -84,8 +84,57 @@ describe("the balance is asked for, and its refusal is a reading", () => {
     expect(falLine(balance)).toContain("UNREAD");
   });
 
+  /*
+    THE ADMIN KEY GETS ITS OWN VARIABLE (fable-689 §2).
+
+    The balance wants an admin credential; image dispatch wants the least
+    privilege that can dispatch an image. Putting the admin key into `FAL_KEY`
+    would hand every render call an account-management credential to carry, so
+    `FAL_ADMIN_KEY` is read first and is the ONLY thing that reads it — and
+    `FAL_KEY` remains the fallback so an ordinary key still produces the honest
+    403 rather than a "not set" that reads like a missing feature.
+  */
+  it("prefers FAL_ADMIN_KEY, and falls back to FAL_KEY", async () => {
+    const seen: string[] = [];
+    const spy = vi.fn(async (_url: string, init: any) => {
+      seen.push(String(init.headers.Authorization));
+      return { ok: true, status: 200, json: async () => ({ credits: { current_balance: 1, currency: "USD" } }) };
+    }) as unknown as typeof fetch;
+    const previous = { admin: process.env.FAL_ADMIN_KEY, ordinary: process.env.FAL_KEY };
+    try {
+      process.env.FAL_KEY = "ORDINARY";
+      process.env.FAL_ADMIN_KEY = "ADMIN";
+      await readFalBalance(undefined, spy);
+      expect(seen.at(-1)).toBe("Key ADMIN");
+      delete process.env.FAL_ADMIN_KEY;
+      await readFalBalance(undefined, spy);
+      expect(seen.at(-1)).toBe("Key ORDINARY");
+    } finally {
+      if (previous.admin === undefined) delete process.env.FAL_ADMIN_KEY;
+      else process.env.FAL_ADMIN_KEY = previous.admin;
+      if (previous.ordinary === undefined) delete process.env.FAL_KEY;
+      else process.env.FAL_KEY = previous.ordinary;
+    }
+  });
+
   it("says UNREAD for a missing key, an unreachable host and a garbled body", async () => {
-    expect(falLine(await readFalBalance(undefined, respond({})))).toContain("FAL_KEY not set");
+    /*
+      THE MISSING-KEY ARM HAS TO REMOVE THE KEYS, not merely pass `undefined`.
+
+      `undefined` falls through to the DEFAULT PARAMETER, which reads
+      `process.env` — and `vitest.setup.ts` loads `.env`. On a machine that has
+      a key this arm silently tested the machine instead of the reader, which is
+      how it failed the moment a real `FAL_ADMIN_KEY` appeared in `.env`.
+    */
+    const previous = { admin: process.env.FAL_ADMIN_KEY, ordinary: process.env.FAL_KEY };
+    delete process.env.FAL_ADMIN_KEY;
+    delete process.env.FAL_KEY;
+    try {
+      expect(falLine(await readFalBalance(undefined, respond({})))).toContain("FAL_KEY not set");
+    } finally {
+      if (previous.admin !== undefined) process.env.FAL_ADMIN_KEY = previous.admin;
+      if (previous.ordinary !== undefined) process.env.FAL_KEY = previous.ordinary;
+    }
     const threw = vi.fn().mockRejectedValue(Object.assign(new Error("x"), { code: "ENOTFOUND" }));
     expect(falLine(await readFalBalance(KEY, threw as unknown as typeof fetch)))
       .toContain("ENOTFOUND");
