@@ -194,6 +194,66 @@ async function main(): Promise<void> {
     console.log(`  edits containing a multi-call run: ${perEdit.filter((x) => x > 0).length}/${perEdit.length}`);
   }
 
+  /*
+    THE LIMITER REPLAY — the honest figure, not the ceiling.
+
+    The bound above assumes a run of k calls costs its SLOWEST. That is only
+    true if all k may be in flight at once, and they may not: `FAL_CONCURRENCY`
+    is 6 and it is the segmenter's share of an account ceiling of 20 that four
+    paths already spend exactly (`assertFalBudget` refuses to boot otherwise).
+    The gate exists because eight panels opened at once once returned no rows
+    on five of them, with `429 concurrent_requests_limit`.
+
+    So each run is replayed through a width-6 semaphore by list scheduling:
+    hand each call to the earliest-free slot, in the order they were issued,
+    and the run's cost is when the last one finishes. For k ≤ 6 this equals the
+    slowest call and the two figures agree; above it the replay is lower than
+    the ceiling and this is where they part.
+  */
+  const throughGate = (durations: number[], width: number): number => {
+    const freeAt = new Array(Math.min(width, durations.length)).fill(0) as number[];
+    for (const d of durations) {
+      let earliest = 0;
+      for (let i = 1; i < freeAt.length; i += 1) if (freeAt[i]! < freeAt[earliest]!) earliest = i;
+      freeAt[earliest] = freeAt[earliest]! + d;
+    }
+    return Math.max(...freeAt, 0);
+  };
+
+  const FAL_CONCURRENCY = Number(process.env.FAL_CONCURRENCY ?? 6);
+  const replay = censuses.map(({ census }) => {
+    let saved = 0;
+    let run: number[] = [];
+    const closeRun = () => {
+      if (run.length > 1) saved += run.reduce((a, b) => a + b, 0) - throughGate(run, FAL_CONCURRENCY);
+      run = [];
+    };
+    for (const call of census.calls ?? []) {
+      if (call.stage === "segment") run.push(call.ms ?? 0);
+      else closeRun();
+    }
+    closeRun();
+    return saved;
+  });
+  const replayed = [...replay].sort((a, b) => a - b);
+  const ceiling = [...boundFor("segment")].sort((a, b) => a - b);
+  console.log(`\nLIMITER REPLAY — segment runs through a width-${FAL_CONCURRENCY} gate (n=${replay.length})`);
+  console.log(`  median saved ${secs(median(replayed))}s per edit`
+    + `   (ceiling said ${secs(median(ceiling))}s)`);
+  console.log(`  p90 ${secs(replayed[Math.floor(replayed.length * 0.9)] ?? 0)}s`
+    + `   max ${secs(replayed[replayed.length - 1] ?? 0)}s`);
+  const longRuns = censuses.reduce((count, { census }) => {
+    let run = 0;
+    let hit = 0;
+    for (const call of census.calls ?? []) {
+      if (call.stage === "segment") { run += 1; if (run > FAL_CONCURRENCY) hit = 1; }
+      else run = 0;
+    }
+    return count + hit;
+  }, 0);
+  console.log(`  edits with a run longer than the gate: ${longRuns}/${censuses.length}`
+    + `  (only these can differ from the ceiling)`);
+
   await db.end();
 }
 
