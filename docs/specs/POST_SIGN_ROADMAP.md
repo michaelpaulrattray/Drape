@@ -237,6 +237,13 @@ Windows CRLF footgun in `7b99e466`'s commit message describes, it is not
 `index.html`. Whether it holds for the JSON has not been re-derived and is not
 claimed either way.)*
 
+**One named candidate arrives from the L7 read** (opus-612 §4, fable-823 §2):
+`client/src/components/ui/sidebar.tsx` is a shadcn primitive **nothing in
+`client/src` imports**, and it is the only other cookie writer in the product
+(`sidebar:state`, never set). It is a client-side candidate rather than one of
+the sweep's 177, whose scope is server exports — worth a line here because the
+triage's list would not have found it.
+
 **ITS FIRST CUSTOMER, AND WHAT TO BUDGET FOR IT** (fable-809 §3, filed
 2026-08-17 rather than when the milestone opens, because a scope line nobody
 wrote is how §2 and §3 of fable-710 were lost in the first place). The
@@ -721,7 +728,43 @@ superseded it — fable-071/080).
   accompanies every arm carries no information about tags — it is the
   source-fingerprint freshness detector, and it is named here so it is never
   mistaken for coverage.
-- **Cookie consent** (L7): flagged 2026-07-10, never built.
+- **Cookie consent** (L7): ⚠ **RE-POSED 2026-08-17 — NOT A BUILD. It is one
+  card in the M13 batch** (opus-612 §4, ruled fable-823 §2). It read *"flagged
+  2026-07-10, never built"* for five weeks and nobody had asked what this app
+  actually stores. The complete inventory, derived from the tree:
+
+  ```
+  COOKIES — one, and it is the session
+    app_session_id   the JWT, set at five auth sites (emailAuth ×2,
+                     emailVerification, googleAuth ×2). Strictly necessary:
+                     without it there is no logged-in product.
+    sidebar:state    EXISTS in components/ui/sidebar.tsx and is NEVER SET —
+                     nothing in client/src imports that shadcn primitive.
+
+  BROWSER STORAGE — six keys, all first-party, all functional
+    drape_theme · drape_active_session · drape:cast-deleted ·
+    drape:cast-projection-changed · drape_draft_hint_seen ·
+    drape_has_account · drape_referral_code
+
+  THIRD PARTIES — none
+    analytics/tracking SDKs in package.json   none
+    script tags in client/index.html          two, both first-party
+  ```
+
+  **So the thing this item names — a consent banner — has nothing to ask
+  consent for.** Third instance this week of a correct pre-launch item with a
+  zero population (beside the DPR cheap fix and L6's exposure), which is worth
+  noticing as a property of a checklist written from worry rather than from
+  the tree.
+
+  **The founder card, in the M13 batch beside the key split** — no build, and
+  the legal verdict is his and his counsel's, never ours: *one
+  strictly-necessary cookie, seven functional storage keys, zero trackers —
+  does launch need a privacy statement, and does it need a banner at all?*
+  **`drape_referral_code` is named inside that card**: it persists an
+  attribution code taken from a URL until it is claimed — first-party, not a
+  tracker, and the only one of the seven whose purpose is marketing rather
+  than making the product work. Better named than found.
 - **`mintModel` concurrency double-charge** (L8): ✅ **CLOSED 2026-08-17 —
   THE MONEY IS GUARDED FOUR DEEP, and the CAS is alive at a new address**
   (opus-607, ruled fable-818 §1). The commit point was read, which is what
