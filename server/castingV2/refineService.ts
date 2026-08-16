@@ -67,7 +67,11 @@ import {
 import { getBriefForOwnedCandidate, getOwnedCandidateWithSelectedFace } from "../db/castingV2";
 import { readBriefFacts } from "./rollProjection";
 import { createModuleLogger } from "../logging/logger";
-import { ProviderError, type ProviderFailureClass } from "../providers/types";
+import {
+  ProviderError,
+  refusesAfterRender,
+  type ProviderFailureClass,
+} from "../providers/types";
 import { storagePublicUrl, storagePut, storageReadBytes } from "../storage";
 import { thumbnailOf } from "./thumbnails";
 import { withTransaction } from "../db/connection";
@@ -4309,55 +4313,84 @@ async function refineCandidateCounted(
 
     if (!verification.ok) {
       /*
-        TWICE IS THE PRODUCT'S PROBLEM, NOT THE CUSTOMER'S.
+        AND WHETHER THAT DISPUTE MOVES MONEY IS NOT THIS DOOR'S OPINION
+        (founder ruling, fable-721; the class list lives in `providers/types`).
 
-        Thrown past the charge, so the ordinary refund path gives back the whole
-        25 — the compliance risk moves off the customer permanently, which is
-        the entire point of the ruling.
+        It used to be: twice is the product's problem, thrown past the charge so
+        the ordinary refund path gives back the whole 25. The founder retired
+        that for everything below catastrophic — *"the verification layer was
+        trash… only give refunds on catastrophic failures because it couldn't
+        truly detect something as subtle as freckles"* — after his own eye
+        overturned the reader on two specimens in one sitting (law 9).
+
+        So the door asks the contract instead of holding one. `facts_missing` is
+        the reader's opinion of a HEALTHY frame: the damage detector passed this
+        picture twice, and what is in dispute is whether a subtle thing the
+        reader cannot reliably see is in it. That is the customer's judgment
+        now, and the remedy is Regenerate.
+
+        Nothing about the reading is thrown away — the checks land on the row a
+        few lines below and the reliability report reads them as
+        `delivered_absent` / `delivered_noncompliant`. The verdict became
+        telemetry; it stopped being a cashier.
       */
-      log.error(
-        {
+      const failure: ProviderFailureClass = "facts_missing";
+      if (!refusesAfterRender(failure)) {
+        log.warn(
+          {
+            operationId,
+            variant: variant.publicId,
+            attempts,
+            failureClass: failure,
+            verification: verification.checks,
+          },
+          "[refineService] verification disputes this frame — DELIVERED AND CHARGED under the catastrophic-only contract; the verdict rides the row as telemetry",
+        );
+      } else {
+        log.error(
+          {
+            operationId,
+            variant: variant.publicId,
+            attempts,
+            verification: verification.checks,
+          },
+          "[refineService] VERIFICATION FAILED TWICE — refusing and refunding",
+        );
+        /*
+          AND THE PICTURE THAT WAS REFUSED (founder-approved 2026-08-08).
+
+          Run-6's "remove her glasses" was refused twice and refunded correctly,
+          and nobody can say whether the glasses were actually still there —
+          because the frame is gone the moment this throws. This is the one
+          artifact that answers it. Dark on every account but the founder's, and
+          it can never break the refusal it is documenting.
+        */
+        await captureRefusedRender({
+          userId: input.userId,
           operationId,
-          variant: variant.publicId,
-          attempts,
-          verification: verification.checks,
-        },
-        "[refineService] VERIFICATION FAILED TWICE — refusing and refunding",
-      );
-      /*
-        AND THE PICTURE THAT WAS REFUSED (founder-approved 2026-08-08).
+          reason: failure,
+          frames: [{ name: "composite", bytes: image.bytes }],
+        });
+        throw new ProviderError(
+          /*
+            ITS OWN CLASS, because the receipt is the record (D-188).
 
-        Run-6's "remove her glasses" was refused twice and refunded correctly,
-        and nobody can say whether the glasses were actually still there —
-        because the frame is gone the moment this throws. This is the one
-        artifact that answers it. Dark on every account but the founder's, and
-        it can never break the refusal it is documenting.
-      */
-      await captureRefusedRender({
-        userId: input.userId,
-        operationId,
-        reason: "facts_missing",
-        frames: [{ name: "composite", bytes: image.bytes }],
-      });
-      throw new ProviderError(
-        /*
-          ITS OWN CLASS, because the receipt is the record (D-188).
-
-          This picture is HEALTHY — the damage detector passed it twice. Throwing
-          it as `render_fault` wrote "the image came back damaged" on eight
-          ledger rows for renders that were nothing of the kind, and the first
-          person to read those rows reported them to the founder as provider
-          damage. A refund line that misdescribes what happened is a support
-          conversation nobody can resolve from the record.
-        */
-        "facts_missing",
-        /*
-          THE CLAUSE, NOT THE READER'S PROMPT. Both consumers of this message —
-          the refusal sentence and the ledger line — say "the render came back
-          ___", and `shortfalls` is the only thing that fits there.
-        */
-        joinClauses(shortfalls(verification)),
-      );
+            This picture is HEALTHY — the damage detector passed it twice. Throwing
+            it as `render_fault` wrote "the image came back damaged" on eight
+            ledger rows for renders that were nothing of the kind, and the first
+            person to read those rows reported them to the founder as provider
+            damage. A refund line that misdescribes what happened is a support
+            conversation nobody can resolve from the record.
+          */
+          failure,
+          /*
+            THE CLAUSE, NOT THE READER'S PROMPT. Both consumers of this message —
+            the refusal sentence and the ledger line — say "the render came back
+            ___", and `shortfalls` is the only thing that fits there.
+          */
+          joinClauses(shortfalls(verification)),
+        );
+      }
     }
 
     /*
@@ -4690,6 +4723,36 @@ async function refineCandidateCounted(
         const covered = binaryCoverage(still);
         const { floor, measured, provenance } = departureFloorFor(definition.guardKind);
         if (covered > floor) {
+          /*
+            AND WHAT THAT COSTS HER IS THE CONTRACT'S CALL, NOT THIS DOOR'S
+            (founder ruling, fable-721; split countersigned in fable-723 §3).
+
+            This reads a delivered, healthy frame and says the thing she asked
+            us to take off is still in it. That is the reader's opinion of a
+            picture — the exact judgment the founder took off the money path —
+            so it delivers and charges, and Regenerate is the remedy.
+
+            **The SLOT IS NOT RETIRED when the reading disputes the removal**,
+            and that half is unchanged on purpose. Retirement is not a money
+            decision; it is a statement in her library about what her face now
+            has. Writing *the glasses are gone* off a frame our own instrument
+            says still wears them would put a false fact where every later
+            repaint reads from — and a library that lies about presence is the
+            defect that costs whole edits (`library holds presence, not
+            absence`). The money follows the founder's ruling; the record still
+            follows the reading.
+          */
+          const failure: ProviderFailureClass = "removal_not_delivered";
+          if (!refusesAfterRender(failure)) {
+            log.warn(
+              {
+                operationId, variant: variant.publicId, slot, question: definition.question,
+                coverage: covered, floor, floorMeasured: measured, failureClass: failure,
+              },
+              "[refineService] the removal did not land — DELIVERED AND CHARGED under the catastrophic-only contract, and the slot keeps its reference because the frame still wears it",
+            );
+            continue;
+          }
           log.warn(
             {
               operationId, variant: variant.publicId, slot, question: definition.question,
@@ -4697,7 +4760,7 @@ async function refineCandidateCounted(
             },
             "[refineService] the removal did not land — the thing is still in the frame, so the render is refused rather than delivered",
           );
-          throw new ProviderError("removal_not_delivered", definition.noun);
+          throw new ProviderError(failure, definition.noun);
         }
         log.info(
           {

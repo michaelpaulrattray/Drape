@@ -1785,14 +1785,22 @@ describe("the render is checked against the record before it is delivered", () =
     expect(ledger.refunds).toHaveLength(0);
   });
 
-  it("refuses and refunds the whole 25 when the retry fails too", async () => {
-    /* Confirmed missing on both attempts: two readings each. */
-    await expect(
-      refineCandidate({ ...greenEyes, verifier: verifierSaying(false, false, false, false) }, input),
-    ).rejects.toThrow();
+  it("tries twice for free and then DELIVERS, charging once (fable-721)", async () => {
+    /*
+      Confirmed missing on both attempts: two readings each. This asserted the
+      refusal and the whole 25 back until the founder retired the reader from
+      the money path — *"only give refunds on catastrophic failures because it
+      couldn't truly detect something as subtle as freckles."*
+
+      The free retry is what must survive, and it does: the product still spends
+      its own second render trying to satisfy the check. What changed is the end
+      of that road — she gets the picture and pays once, and the disputed verdict
+      rides the row as telemetry.
+    */
+    await refineCandidate({ ...greenEyes, verifier: verifierSaying(false, false, false, false) }, input);
     expect(journal.filter((entry) => entry === "generate")).toHaveLength(2);
     expect(ledger.charges.at(-1)?.amount).toBe(25);
-    expect(ledger.refunds.at(-1)?.amount).toBe(25);
+    expect(ledger.refunds, "the reader's opinion of a healthy frame moves no money").toHaveLength(0);
   });
 
   /*
@@ -1808,7 +1816,18 @@ describe("the render is checked against the record before it is delivered", () =
     An accessory is not a shade. Either the crosses are in the picture or they
     are not, which is the same test a removal has always been binding on.
   */
-  it("refunds a missing accessory instead of charging for it", async () => {
+  it("BINDS on a missing accessory — and records it, which is what binding now buys", async () => {
+    /*
+      fable-118's ruling survives the fable-721 flip, in the only place it can
+      still live. "Binding" used to mean *worth a refusal*; the founder took
+      refusals off the reader's opinion of a healthy frame, so binding now means
+      **the check is asked and its answer is kept** — the difference between an
+      accessory and a shade is still a fact on the row, and the two-column report
+      still reads it.
+
+      The money assertion is inverted deliberately: this is the arm that goes red
+      if the flip ever leaks back into a refund.
+    */
     const earrings = {
       ...greenEyes,
       interpret: async () => ({
@@ -1816,12 +1835,15 @@ describe("the render is checked against the record before it is delivered", () =
         delta: { free: { statedAccessories: "dangly cross earrings" } },
       }),
     };
-    await expect(refineCandidate(
+    await refineCandidate(
       { ...earrings, verifier: verifierSaying(false, false, false, false) },
       { ...input, instruction: "dangly cross earrings" },
-    )).rejects.toThrow();
+    );
     expect(ledger.charges.at(-1)?.amount).toBe(25);
-    expect(ledger.refunds.at(-1)?.amount).toBe(25);
+    expect(ledger.refunds).toHaveLength(0);
+    const landed = JSON.stringify(landedVariant ?? {});
+    expect(landed, "an accessory is not a shade — the check binds").toContain('"binding":true');
+    expect(landed, "and its answer is on the row").toContain('"verified":false');
   });
 
   /*
@@ -1932,7 +1954,7 @@ describe("the render is checked against the record before it is delivered", () =
     expect(hoops?.verified).toBe(true);
   });
 
-  it("refuses and refunds when the reader says the site is BARE", async () => {
+  it("records it, and charges, when the reader says the site is BARE", async () => {
     /*
       And the gate can now fail, which is the whole point of splitting it. This
       reader finds nothing on her ears at all — the answer that carries
@@ -1940,7 +1962,7 @@ describe("the render is checked against the record before it is delivered", () =
       with the glasses she is still wearing, this same reading was a pass.
     */
     const reader = measuredReader("glasses");
-    await expect(refineCandidate(
+    await refineCandidate(
       {
         harvest: unmasked,
         verifier: {
@@ -1966,9 +1988,17 @@ describe("the render is checked against the record before it is delivered", () =
         interpret: async () => ({ ok: true as const, delta: { free: { statedAccessories: twoThings } } }),
       },
       { ...input, instruction: "thin wire glasses and dangly cross earrings" },
-    )).rejects.toThrow();
+    );
+    /*
+      The gate can still FAIL — which is the whole point of splitting it — and
+      failing now means the answer is recorded rather than the money returned
+      (fable-721). A bare site and a worn one still read differently; only the
+      consequence moved.
+    */
     expect(ledger.charges.at(-1)?.amount).toBe(25);
-    expect(ledger.refunds.at(-1)?.amount).toBe(25);
+    expect(ledger.refunds).toHaveLength(0);
+    const bare = JSON.stringify(landedVariant ?? {});
+    expect(bare, "the site the reader found bare is on the row").toContain('"absent":true');
   });
 
   it("still delivers when the thing that is missing was nobody's ask this time", async () => {
@@ -2070,12 +2100,18 @@ describe("the render is checked against the record before it is delivered", () =
     expect(landed).toContain('"binding":false');
   });
 
-  it("still refuses over a value the vocabulary defines", async () => {
-    /* "green" is a word this program owns, so the reader can be held to it. */
-    await expect(
-      refineCandidate({ ...greenEyes, verifier: verifierSaying(false, false) }, input),
-    ).rejects.toThrow();
-    expect(ledger.refunds.at(-1)?.amount).toBe(25);
+  it("still BINDS over a value the vocabulary defines, and no longer refunds it", async () => {
+    /*
+      D-187's line is intact: "green" is a word this program owns, so the reader
+      can be held to it, and greenish-hazel-versus-seafoam cannot be. The pair
+      above and below is the whole ruling — one records `binding:false`, this one
+      `binding:true`. What fable-721 removed is the refund that used to hang off
+      the difference.
+    */
+    await refineCandidate({ ...greenEyes, verifier: verifierSaying(false, false) }, input);
+    expect(ledger.refunds).toHaveLength(0);
+    const landed = JSON.stringify(landedVariant ?? {});
+    expect(landed).toContain('"binding":true');
   });
 
   it("records the verdict on the row, because it is the measuring instrument", async () => {
@@ -2102,16 +2138,20 @@ describe("the render is checked against the record before it is delivered", () =
     expect(ledger.refunds).toHaveLength(0);
   });
 
-  it("breaks a split with a third reading, and refuses only on a majority", async () => {
-    /* Attempt 1: miss, hit, miss → majority missing → re-render.
-       Attempt 2: miss, miss → confirmed → refuse and refund. */
-    await expect(
-      refineCandidate({ ...greenEyes, verifier: verifierSaying(false, true, false, false, false) },
-        input,
-      ),
-    ).rejects.toThrow();
+  it("breaks a split with a third reading, and RE-RENDERS only on a majority", async () => {
+    /*
+      D-194 is untouched by fable-721, and this is where that is proved: one
+      reading still cannot spend the product's free retry. Attempt 1: miss, hit,
+      miss → majority missing → re-render. Attempt 2: miss, miss → confirmed →
+      and the picture is delivered, because a confirmed reading of a healthy
+      frame is telemetry now rather than a refund.
+    */
+    await refineCandidate(
+      { ...greenEyes, verifier: verifierSaying(false, true, false, false, false) },
+      input,
+    );
     expect(journal.filter((entry) => entry === "generate")).toHaveLength(2);
-    expect(ledger.refunds.at(-1)?.amount).toBe(25);
+    expect(ledger.refunds).toHaveLength(0);
   });
 });
 
@@ -2848,15 +2888,24 @@ describe("the order, and the money", () => {
   });
 
   /*
-    THE SAME HONESTY, ONE CLASS OVER (D-188).
+    AND THE READER'S OPINION OF A HEALTHY FRAME NO LONGER MOVES MONEY
+    (founder ruling, fable-721; the list lives in `providers/types` and is
+    pinned in `providerFailureContract.test.ts`).
 
-    A verification refusal is not damage — the detector passed the picture
-    twice. Wearing the damage class, it wrote "the image came back damaged" on
-    eight real ledger rows and the first person to read them reported provider
-    damage to the founder. The receipt is the record, and it must name what
-    actually happened.
+    > *"the verification layer was trash… only give refunds on catastrophic
+    > failures because it couldn't truly detect something as subtle as
+    > freckles."*
+
+    These two used to assert the refusal and its receipt — the D-188 honesty
+    fix, which was right about the WORDING and has been overtaken on the
+    QUESTION. The reader disputing a picture the damage detector passed twice
+    is now telemetry: the frame is delivered, the charge stands, the verdict
+    rides the row, and the remedy is Regenerate.
+
+    Driven through the real service rather than asserted on the set, because a
+    contract nothing consults is a comment (working law 7).
   */
-  it("refunds a fact-short render under its own name, and says which fact", async () => {
+  it("DELIVERS a fact-short render and charges for it, rather than refunding", async () => {
     const verifier = {
       id: "verifier",
       complete: async (request: { system: string }) => ({
@@ -2868,19 +2917,22 @@ describe("the order, and the money", () => {
       }),
     } as never;
 
-    await expect(refineCandidate({ ...greenEyes, verifier }, input)).rejects.toThrow(/without green/);
-    /*
-      "came back", not "was missing" — a removal's shortfall is not an absence.
-      The render came back WITH the thing that was supposed to go, and "the
-      render was missing with glasses still in the picture" is the grammar
-      failure that reached a real receipt in run-6.
-    */
-    expect(ledger.refunds).toEqual([
-      { amount: 25, description: "Refine refunded — the render came back without green" },
-    ]);
+    await refineCandidate({ ...greenEyes, verifier }, input);
+
+    expect(ledger.refunds, "nothing goes back on a reader's opinion").toEqual([]);
+    expect(ledger.charges, "and she is charged once, for the picture she got").toHaveLength(1);
+    expect(landedVariant, "the frame lands rather than vanishing").not.toBeNull();
+    expect(failedVariant, "and no failed row is written").toBeNull();
   });
 
-  it("files the fact-short refusal under its own failure class, never as damage", async () => {
+  it("keeps the disputed verdict on the row, where the report reads it", async () => {
+    /*
+      The half of the old behaviour that must NOT be lost. The refusal used to
+      be the only record that a check had failed; delivering it would be a
+      silent charge if the verdict went with it. `reliabilityReport` classifies
+      these rows as `delivered_absent` / `delivered_noncompliant` off exactly
+      this field, so the number survives the ruling that took away the refund.
+    */
     const verifier = {
       id: "verifier",
       complete: async (request: { system: string }) => ({
@@ -2891,10 +2943,13 @@ describe("the order, and the money", () => {
         latencyMs: 1,
       }),
     } as never;
-    await expect(refineCandidate({ ...greenEyes, verifier }, input)).rejects.toThrow();
-    /* The variant row carries the same class the ledger line describes, or the
-       two halves of the record disagree about one event. */
-    expect(failedVariant?.failureClass).toBe("facts_missing");
+    await refineCandidate({ ...greenEyes, verifier }, input);
+
+    const stored = (landedVariant?.internalPrompt as {
+      verification?: { checks?: Array<{ verified?: boolean }> };
+    })?.verification;
+    expect(stored?.checks?.some((check) => check.verified === false),
+      "the failed check is on the delivered row").toBe(true);
   });
 });
 
@@ -4222,8 +4277,11 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
       },
     } as never;
 
-    await expect(refineCandidate({ ...repainting, ...greenEyes, harvest: unmasked, verifier: disputing },
-      { ...input, scope: "eye@left" })).rejects.toThrow();
+    /* Written before the delivery rather than before the refusal now — the line
+       is about what the READ said, and fable-721 changed only what the read
+       costs her. */
+    await refineCandidate({ ...repainting, ...greenEyes, harvest: unmasked, verifier: disputing },
+      { ...input, scope: "eye@left" });
 
     const lines = narrowedLines();
     expect(lines).toHaveLength(1);
@@ -4974,21 +5032,27 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
     expect(ledger.refunds).toHaveLength(0);
   });
 
-  it("REFUSES when the thing is still in the frame — a removal that did not land", async () => {
-    /* D-246 (c) read in the mirror. The only thing changed from the test above
-       is the reader's answer; if both arms did not move, one of them would be a
-       constant. */
-    await expect(refineCandidate(removing(true), { ...input, instruction: "remove her glasses" }))
-      .rejects.toThrow(/still in the picture/);
+  it("DELIVERS when the thing is still in the frame, and still does not retire the slot", async () => {
+    /*
+      D-246 (c) read in the mirror, and then read again after fable-721. The only
+      thing changed from the test above is the reader's answer; if both arms did
+      not move, one of them would be a constant.
 
-    /* The money comes back whole, and the library is untouched — retiring the
-       crop of a thing still on her face would file a lie about the picture she
-       was charged for, on the very render that failed her. */
-    expect(ledger.refunds).toEqual([{ amount: 25, description: expect.stringContaining("glasses") }]);
-    expect(retired).toEqual([]);
-    /* And it never landed: the adjudication runs before the landing, so this
-       refunds a render nobody has seen rather than taking back one she has. */
-    expect(journal).not.toContain("land");
+      TWO HALVES THAT NOW PART COMPANY, which is why this arm is worth its
+      length. The MONEY follows the founder's ruling: a reader saying the glasses
+      are still there is an opinion about a healthy picture, so she gets the
+      frame and pays for it, with Regenerate as the remedy. The RECORD still
+      follows the reading: the slot keeps its reference, because retiring the
+      crop of a thing our own instrument says is still on her face would file a
+      lie where every later repaint reads from.
+    */
+    await refineCandidate(removing(true), { ...input, instruction: "remove her glasses" });
+
+    expect(ledger.refunds, "no refund on a reading of a healthy frame").toHaveLength(0);
+    expect(ledger.charges.at(-1)?.amount).toBe(25);
+    expect(retired, "and the library is not told the glasses are gone").toEqual([]);
+    /* And it DOES land now — she has the picture she paid for. */
+    expect(journal).toContain("land");
   });
 
   /*
@@ -5202,7 +5266,14 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
       and a bare one must be.
     */
     it("does not tell a woman wearing earrings there is nothing to take off", async () => {
-      expect(await refusalFor(0.00056)).not.toMatch(NOTHING_ON_RECORD);
+      /*
+        `null` is what a delivered render returns from this helper, and since
+        fable-721 that is the ordinary outcome here: a removal the reader
+        disputes is charged and delivered rather than refused. The claim is
+        unchanged and so is its control below — at the measured worn coverage the
+        product must not confess, and at zero it must.
+      */
+      expect(await refusalFor(0.00056) ?? "").not.toMatch(NOTHING_ON_RECORD);
     });
 
     it("still says so to a face whose lobes are bare", async () => {
@@ -5261,12 +5332,14 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
   });
 
   it("does NOT file one when the removal did not land", async () => {
-    /* The row asserts something about a delivered picture. A render that
-       refuses delivered none, and a library that recorded the absence anyway
-       would tell every later render that the glasses she is still wearing are
-       gone. Same fixture as the arm above, one reader answer changed. */
-    await expect(refineCandidate(removing(true), { ...input, instruction: "remove her glasses" }))
-      .rejects.toThrow(/still in the picture/);
+    /*
+      The row asserts something about a delivered picture: that the thing is
+      GONE. Since fable-721 the picture is delivered either way, which makes this
+      arm more load-bearing than it was — a library that recorded the absence
+      anyway would tell every later render that the glasses she is still visibly
+      wearing are gone. Same fixture as the arm above, one reader answer changed.
+    */
+    await refineCandidate(removing(true), { ...input, instruction: "remove her glasses" });
 
     expect(recorded).toEqual([]);
   });
@@ -5439,11 +5512,21 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
       earringRow("left"), earringRow("right"), disputedRow("left"), disputedRow("right"),
     ];
 
-    await expect(refineCandidate(
+    await refineCandidate(
       { ...hairDown, verifier: readerMissingTheEarrings },
       { ...input, instruction: "wear her hair down" },
-    )).rejects.toThrow();
-    expect(ledger.refunds.at(-1)?.amount).toBe(25);
+    );
+    /*
+      The difference between this arm and the innocent one above now lives on the
+      ROW rather than in the ledger (fable-721): a feature the store promised and
+      then dropped still binds — it is asked, and its answer is kept — but a
+      reader's opinion of a healthy frame no longer takes her money back. Both
+      arms charge 25; only this one records a bound failure.
+    */
+    expect(ledger.charges.at(-1)?.amount).toBe(25);
+    expect(ledger.refunds).toHaveLength(0);
+    const landed = JSON.stringify(landedVariant ?? {});
+    expect(landed).toContain('"binding":true');
   });
 
   it("CONTROL — a slot whose newest version DID file its crop carries it exactly as before", async () => {

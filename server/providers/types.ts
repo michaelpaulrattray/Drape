@@ -175,6 +175,60 @@ export function isRetryable(failure: ProviderFailureClass): boolean {
   return RETRYABLE_FAILURES.has(failure);
 }
 
+/**
+ * WHICH FAILURES TAKE THE MONEY BACK ONCE A PICTURE EXISTS — the whole list,
+ * in one place (founder ruling, fable-721; the split countersigned in
+ * fable-723 §3).
+ *
+ * > *"the verification layer was trash… only give refunds on catastrophic
+ * > failures because it couldn't truly detect something as subtle as
+ * > freckles."*
+ *
+ * The ruling is about who judges a delivered picture. A reader's opinion of a
+ * HEALTHY frame is not good enough to move money — it cannot see freckles, it
+ * over-reports absence on fine sparse surfaces, and it has been overturned at
+ * the frames by the founder's own eye (law 9). So a disputed delivery is now
+ * DELIVERED AND CHARGED, and the remedy is Regenerate: the customer's judgment,
+ * not the machine's. The verdict keeps being recorded on the row, where the
+ * reliability report reads it as `delivered_absent` / `delivered_noncompliant`
+ * — telemetry that costs nobody a refund.
+ *
+ * What stays on this list is not the reader's opinion of a picture:
+ *
+ * - `render_fault` — what came back is not a photograph of one person. Torn,
+ *   corrupt, the wrong human. Catastrophic in the founder's own sense.
+ * - `composite_fault` — the frame was fine and OUR compositor cut it. Our
+ *   damage, visible, and not a matter of opinion.
+ * - `segment_store` — we could not read what she already has, so no honest
+ *   render was ever possible (fable-723 §3: *"our own inputs failing before an
+ *   honest render exists — there is nothing trustworthy to deliver"*). It
+ *   refuses as infrastructure rather than as a judgment about her picture.
+ *
+ * **Adding a member is a founder decision, like adding a public endpoint.**
+ * `providerFailureContract.test.ts` pins this list verbatim, so a class that
+ * joins it silently fails the suite rather than quietly starting to refund.
+ *
+ * PRE-render refusals are not on this axis at all and are untouched by the
+ * ruling: `cannot_say` and the forbidden-recipe doors refuse before the
+ * provider is contacted, with no picture and no charge to argue about.
+ */
+export const REFUSES_AFTER_RENDER: ReadonlySet<ProviderFailureClass> =
+  new Set<ProviderFailureClass>([
+    "render_fault",
+    "composite_fault",
+    "segment_store",
+  ]);
+
+/**
+ * Does this failure still refuse and refund once a picture exists?
+ *
+ * Asked BY the doors rather than known by them, so the contract lives in one
+ * set and a door cannot hold a private opinion about money.
+ */
+export function refusesAfterRender(failure: ProviderFailureClass): boolean {
+  return REFUSES_AFTER_RENDER.has(failure);
+}
+
 export class ProviderError extends Error {
   readonly failureClass: ProviderFailureClass;
   /** The provider's own reference, for support. Internal — never projected. */
