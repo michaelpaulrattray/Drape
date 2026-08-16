@@ -249,6 +249,20 @@ the master's own read and with the delivered extent read off the painted
 frame. Accessories persist by PATCH from that commit. The remaining
 territories above are untouched by it.
 
+## 5b. Vague axes FAN, never collapse (founder-filed 2026-08-16; polish, V5-era)
+
+Founder's specimen: "light colored hair" → all 8 candidates blonde
+("not technically wrong, not technically right either"). Mechanism
+read at the code: a STATED fact is a lock the variance pass may not
+touch (`breakSignatureClusters` varies only unstated axes), so a
+vague stated family resolves to its modal value independently per
+candidate — the unowned-axis collapse INSIDE a stated range. The fix
+shape: when a stated fact names a RANGE ("light colored", "short
+hair", "warm skin"), the compile/taste pass fans candidates across
+the family's members instead of letting the engine's prior pick one
+for all eight — latitude spent as spread. Slots with the V5-era
+interpreter work; not in the active queue by founder's word.
+
 ## 6. Engine routing for marks (evidence exists; engineering item)
 
 NBP 6/6 at 848×1264 (its only size) vs GPT2 6/8 native; GPT2 tore
@@ -288,6 +302,20 @@ superseded it — fable-071/080).
   real-inbox Resend test; fal retention answer (founder confirms
   answered, 2026-08-09); the five inert
   security controls (CLAUDE.md's "currently not enforced" list).
+- **High-DPI image sharpness — the CHEAP FIX** (founder-ruled
+  2026-08-16, from his own report "why do the images look so
+  pixelated?"): renders are ~1 MP (1024×1536 GPT2, 848×1264 NBP)
+  and 320 px thumbs (`THUMB_MAX_SIDE`) are shown on surfaces larger
+  than they were made for, so every high-DPI screen sees upscaling
+  softness. Ruled: ship the cheap fix — audit every surface's
+  displayed size × devicePixelRatio against the asset it serves;
+  where a 320 px thumb is stretched past ~1:1 device pixels, serve
+  the full frame instead (thumbs keep the tiny chips); verified by
+  eye on a high-DPI screen (law 9). The REAL fix — a dedicated
+  upscaler pass at Sign time taking masters/views to 2–4 MP
+  (fidelity-law grade) — is NOTED, not ruled; larger render tiers
+  need a price check first. Slot: with the M13 pre-launch batch,
+  or earlier if a polish window opens.
 - Hygiene batch (L2) — ✅ **CLOSED 2026-08-16, with the guard that keeps
   it closed.** The line said **11** when it was written on 2026-08-09 and
   read **34** when it was picked up a week later, unchanged in between:
