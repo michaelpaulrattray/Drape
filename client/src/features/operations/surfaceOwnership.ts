@@ -64,6 +64,28 @@ const SELF_REPORTING_KINDS = new Set<string>([
     So the ownership is per REQUEST, not per kind, and it is produced by the
     sheet into `outcomeShown.ts`. The list keeps only the kinds whose answer
     genuinely cannot vary that way.
+
+    **AND IT STAYS OFF, even though the surface can now hold the outcome**
+    (ruled fable-838 §2, after Landing A shipped and the question was put).
+
+    Landing A gave the sheet a third list — recently settled terminal failures,
+    carrying the operation's own sentence — so the payload no longer loses a
+    failed refine, and the panel says it in place while the mark keeps the
+    bridge quiet. That looks like the condition for re-adding the entry. It is
+    not, and the reason is one word in this file's own sentence: **WHENEVER.**
+
+    The settled read is bounded by a ONE-HOUR recency window. A customer who
+    fails a refine, closes the browser and comes back tomorrow finds that list
+    empty — and if the kind were back on this list the bridge would be mute as
+    well, so the sentence would reach nobody. That is the exact class Landing A
+    closed, re-opened for the patient user. Roll and sign earn their place
+    because their failures sit on the sheet INDEFINITELY (failed-refunded
+    tiles, the failed slot); a refine's persistence is an hour.
+
+    Re-open this at the dispatch swap's retirement stage
+    (`docs/specs/CASTING_V2_REFINE_DISPATCH_DESIGN.md`), and only if the
+    durability story changes — a longer window, or a durable seen-ness mark.
+    Then the sentence above may become true for refine. It is not true today.
   */
 ]);
 
