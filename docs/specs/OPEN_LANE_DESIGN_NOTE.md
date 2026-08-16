@@ -771,19 +771,29 @@ part nothing has done before.
 
 **The design question that the line counts were hiding:** a carrying open kind
 needs a slot key, and the slot catalogue cannot answer for a noun nobody has
-catalogued. Two shapes, neither decided here:
+catalogued. Two shapes were scouted — a synthesized key the catalogue can answer
+for, or a carry that rides the ask rather than the library.
 
-- **(a) a synthesized key** the catalogue can answer for — an open kind mints
-  under a derived slot (`open@horns`) and `slotDefinition` gains one dynamic
-  branch;
-- **(b) a carry that is not slot-keyed** — the crop rides the ask itself rather
-  than the library, which keeps the catalogue closed and makes the open lane's
-  memory weaker than the closed lane's.
+> **RULED, fable-760 §2 — shape (a), synthesized keys, bounded.** Ruled rather
+> than carded because it is architecture: the founder's ontology never meets a
+> slot catalogue. The three bounds are part of the ruling:
+>
+> a. open kinds mint under a **derived namespace** (`open@<noun>`), and
+>    `slotDefinition` gains **one** dynamic branch, confined to it;
+> b. **the closed catalogue's guarantees are pinned mechanically, not hoped
+>    for** — a test proves no `open@` key can enter the closed tables, the
+>    closed union stays closed for every non-open key, and the 8 call sites are
+>    swept with each one's tolerate-or-answer decision recorded;
+> c. **open crops ride the same library lifecycle as everything else** — minted
+>    at delivery, digests, frozen bytes, purged with their candidate. The
+>    ask-riding carry was refused for a named reason: it breaks fable-566's
+>    promise at the first reload, which is the build-lost class.
 
-The ripple either way is countable: **8 `slotDefinition` call sites** outside
-the catalogue and its tests — 5 in `refineService.ts`, 2 in `repaintAsks.ts`, 1
-in `recipeAssembler.ts`. That is the whole surface that would have to tolerate,
-or answer for, a slot the catalogue did not author.
+The ripple is countable: **8 `slotDefinition` call sites** outside the catalogue
+and its tests — 5 in `refineService.ts`, 2 in `repaintAsks.ts`, 1 in
+`recipeAssembler.ts`. That is the whole surface that must tolerate, or answer
+for, a slot the catalogue did not author, and bound (b) makes the sweep of it a
+deliverable rather than a hope.
 
 ### A footnote that discharges half of an `owed`
 
