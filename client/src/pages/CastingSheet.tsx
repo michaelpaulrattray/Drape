@@ -33,7 +33,7 @@ import { classifyDispatchFailure, failureActionLabel } from "@/features/castingV
 import { cancelStory } from "@/features/castingV2/cancelNotice";
 import { refineOutcomeNote } from "@/features/castingV2/refineOutcomeNote";
 import { waitExceeds } from "@/features/castingV2/waitNotice";
-import { inFlightCandidate, refineBusy, refineWait } from "@/features/castingV2/refineBusy";
+import { inFlightCandidate, refineBusy, refineGhosts, refineWait } from "@/features/castingV2/refineBusy";
 import { bridgeWithinCandidate } from "@/features/castingV2/panelBridge";
 import { sheetExpiryNotice } from "@/features/castingV2/retentionCopy";
 import { sheetNotice } from "@/features/castingV2/sheetNotice";
@@ -206,6 +206,8 @@ export default function CastingSheet() {
     the outcome sentence — and it must not schedule a paint of its own.
   */
   const pendingReask = useRef<{ about: string; scope?: string } | null>(null);
+  /** The server's pending count at the moment of the click — see `refineGhosts`. */
+  const pendingAtClick = useRef(0);
   /* The answers, which DO render: chips under the sentence (D-180). */
   const [reaskOptions, setReaskOptions] = useState<
     ReadonlyArray<{ label: string; resolves: string }> | null
@@ -1288,6 +1290,13 @@ export default function CastingSheet() {
     const answering = pendingReask.current;
     pendingReask.current = null;
     /*
+      HOW MANY ROWS THE SERVER ALREADY HAD, so the provisional ghost knows when
+      its own has landed (fable-738). A count rather than a sentence: two edits
+      with the same words are one customer double-clicking, and a rail that
+      tells them apart by text draws one ghost for two renders.
+    */
+    pendingAtClick.current = pendingForViewer.length;
+    /*
       AND THE RECTANGLE THE ANSWER IS STILL ABOUT (fable-704).
 
       An answer is the same request arriving a second time, so it travels with
@@ -1388,6 +1397,21 @@ export default function CastingSheet() {
   }
 
   const pendingForViewer = variants.data?.pending ?? [];
+  /*
+    THE RAIL'S GHOST, SEEDED FROM THE CLICK (fable-738).
+
+    The plate narrates the click and the ghost chip waits for server truth, so
+    for ten to twenty seconds the rail read as though it had not noticed his
+    edit. `refineGhosts` closes that gap without adding a second source of
+    truth — see its own header for why the swap is counted rather than matched
+    on the sentence.
+  */
+  const ghostsForViewer = refineGhosts({
+    viewerCandidateId,
+    mutation: refine,
+    pending: pendingForViewer,
+    pendingAtClick: pendingAtClick.current,
+  });
   /*
     BUSY IS ABOUT THIS FACE, AND ABOUT A ROW SOMEBODY IS ACTUALLY RENDERING.
 
@@ -2311,7 +2335,10 @@ export default function CastingSheet() {
           before={facePanelData && viewerRefinable ? (
             <VersionRail
               variants={variants.data?.variants ?? []}
-              pending={variants.data?.pending ?? []}
+              /* The server's rows plus the provisional one seeded from the
+                 click (fable-738) — the rail is the surface his screenshot
+                 caught not noticing his edit for ten to twenty seconds. */
+              pending={ghostsForViewer}
               /*
                 ONE SOURCE OF TRUTH FOR THE SELECTION (founder bug, fable-546).
 

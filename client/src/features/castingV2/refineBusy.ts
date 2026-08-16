@@ -146,3 +146,98 @@ export function refineWait(input: {
     ? { instruction: settling.instruction, stage: settling.stage ?? "queued", extra: input.pending.length - 1 }
     : null;
 }
+
+/**
+ * THE GHOST THE RAIL DRAWS WHILE THE ROW IS STILL BEING BORN (fable-738).
+ *
+ * # The ten to twenty seconds nobody could explain
+ *
+ * Screenshot #312: the plate paints its loading state on the click, and the
+ * ghost chip appears ten to twenty seconds later. Both behaviours are
+ * individually correct and were built that way on purpose — the plate narrates
+ * the CLICK (fable-582, so the photograph and the button stop disagreeing for
+ * the length of a round trip), while the D-161 ghost is SERVER truth, because a
+ * wait that vanished when the panel unmounted is the defect that got one edit
+ * bought twice. Side by side they read as a rail that has not noticed his edit.
+ *
+ * # One seed, one swap, one removal
+ *
+ * A provisional ghost is seeded from the click — the client already holds the
+ * instruction — and it retires the moment the server has a row of its own. It
+ * is deliberately NOT a second source of truth: it cannot survive a remount, it
+ * is never written anywhere, and the server-truth ghost remains the only thing
+ * that comes back when the sheet is reopened. It is the first ten seconds of a
+ * wait the server has not heard about yet.
+ *
+ * # How it knows the row has landed, without matching sentences
+ *
+ * `pendingAtClick` is how many rows the server already had when the button was
+ * pressed. When the list grows past it, ours is in there and the provisional
+ * stands down. Reading it back off the SENTENCE would be the guess fable-703
+ * refused for exactly this surface — two edits with the same words are one
+ * customer double-clicking, and a rail that cannot tell them apart draws one
+ * ghost for two renders.
+ *
+ * If some other face's row lands in the same tick the provisional retires a
+ * moment early, and that is the safe direction: a real ghost is already on
+ * screen, so nothing goes blank.
+ *
+ * # And a REFUSED request leaves nothing behind (fable-734 §3b)
+ *
+ * The seed is bound to the mutation being in flight, which is the same latch
+ * the plate's own narration uses. A request that refuses stops being pending in
+ * the same instant, so both surfaces come back to rest together — a refused
+ * request never leaves a surface claiming work is happening.
+ */
+/**
+ * The id a provisional ghost wears. Only one request is ever out from this
+ * sheet, so a sentinel is honest and a generated id would only invite somebody
+ * to persist it.
+ */
+export const PROVISIONAL_GHOST_ID = "provisional";
+
+export function refineGhosts<T extends PendingRow & { instruction: string; variantId: string }>(input: {
+  viewerCandidateId: string | null;
+  mutation: {
+    isPending: boolean;
+    variables?: {
+      candidateId?: string;
+      instruction?: string;
+      /** Set only by Regenerate — the version this replaces (fable-733 §2). */
+      replayOf?: string;
+    } | undefined;
+  };
+  /** The server's rows for the face on screen. */
+  pending: readonly T[];
+  /** How many rows the server had when this request was submitted. */
+  pendingAtClick: number;
+}): readonly (T | {
+  variantId: string;
+  instruction: string;
+  stage: PendingStage;
+  regenerating: string | null;
+})[] {
+  const ours = input.viewerCandidateId !== null
+    && inFlightCandidate(input.mutation) === input.viewerCandidateId;
+  const instruction = input.mutation.variables?.instruction;
+  if (!ours || !instruction) return input.pending;
+  /* The server has caught up — its row is the real one, and drawing both would
+     be one edit wearing two chips. */
+  if (input.pending.length > input.pendingAtClick) return input.pending;
+  return [...input.pending, {
+    variantId: PROVISIONAL_GHOST_ID,
+    instruction,
+    stage: "queued" as const,
+    /*
+      A FRESH TAKE HAS NOWHERE TO PUT A NEW CHIP (fable-703).
+
+      Regenerate replaces a version rather than adding one, so the wait belongs
+      ON that version's chip and a ghost standing beside it would be a chip for
+      a render that is not coming. The client knows which version it replayed —
+      it is the field it just sent — so the provisional says the same thing the
+      server's row will say when it lands, and the swap changes nothing on
+      screen but where the fact came from.
+    */
+    regenerating: input.mutation.variables?.replayOf ?? null,
+  }];
+}

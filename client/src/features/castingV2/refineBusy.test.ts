@@ -2,7 +2,13 @@ import { readFile } from "node:fs/promises";
 import { describe, expect, it } from "vitest";
 
 import type { PendingStage } from "./refineBusy";
-import { inFlightCandidate, refineBusy, refineWait } from "./refineBusy";
+import {
+  PROVISIONAL_GHOST_ID,
+  inFlightCandidate,
+  refineBusy,
+  refineGhosts,
+  refineWait,
+} from "./refineBusy";
 
 /**
  * THE TWO WAYS THE SHEET LOCKED A FACE IT HAD NO BUSINESS LOCKING.
@@ -236,5 +242,120 @@ describe("the wait the picture shows", () => {
 
   it("says nothing when nothing is out", () => {
     expect(refineWait({ viewerCandidateId: HER, mutation: idle, pending: [] })).toBe(null);
+  });
+});
+
+/**
+ * THE TEN TO TWENTY SECONDS THE RAIL SPENT NOT NOTICING HIS EDIT (fable-738).
+ *
+ * Screenshot #312. The plate paints on the click and the D-161 ghost waits for
+ * a row and a poll, so the two surfaces disagreed about whether anything was
+ * happening for as long as the server took to write the row down. Every arm
+ * here has its negative control beside it, because a seed that appeared
+ * whenever the sheet felt busy would draw a ghost for somebody else's render —
+ * which is the fable-465 defect wearing the other surface's clothes.
+ */
+describe("the rail's ghost is seeded from the click and retired by the row (fable-738)", () => {
+  const HER_ROW = {
+    variantId: "v-real",
+    instruction: "copper hair",
+    stage: "queued" as PendingStage,
+    regenerating: null,
+  };
+  const out = { isPending: true, variables: { candidateId: HER, instruction: "copper hair" } };
+  const idle = { isPending: false, variables: undefined };
+
+  it("draws a provisional ghost the instant the click goes out, before any row exists", () => {
+    const ghosts = refineGhosts({
+      viewerCandidateId: HER,
+      mutation: out,
+      pending: [],
+      pendingAtClick: 0,
+    });
+    expect(ghosts).toEqual([
+      { variantId: PROVISIONAL_GHOST_ID, instruction: "copper hair", stage: "queued", regenerating: null },
+    ]);
+  });
+
+  it("stands down the moment the server has a row of its own — one edit, one chip", () => {
+    /* THE SWAP. Both drawn at once would be one render wearing two ghosts, and
+       the count is what tells them apart — never the sentence (fable-703). */
+    const ghosts = refineGhosts({
+      viewerCandidateId: HER,
+      mutation: out,
+      pending: [HER_ROW],
+      pendingAtClick: 0,
+    });
+    expect(ghosts).toEqual([HER_ROW]);
+  });
+
+  it("puts a fresh take's wait on the version it replaces, not on a chip of its own", () => {
+    /*
+      fable-703's rule, said by the client a poll earlier than the server can
+      say it. Regenerate replaces a version rather than adding one, so a ghost
+      chip beside it would stand in for a render that is not coming.
+    */
+    const ghosts = refineGhosts({
+      viewerCandidateId: HER,
+      mutation: {
+        isPending: true,
+        variables: { candidateId: HER, instruction: "copper hair", replayOf: "v-selected" },
+      },
+      pending: [],
+      pendingAtClick: 0,
+    });
+    expect(ghosts.at(-1)).toMatchObject({ regenerating: "v-selected" });
+  });
+
+  it("NEGATIVE CONTROL — a REFUSED request leaves no ghost behind (fable-734 §3b)", () => {
+    /*
+      His entangled report: the plate said "in line · usually three to four
+      minutes" for a request the already-has door was about to kill. Both
+      surfaces are latched to the same fact — the mutation being in flight — so
+      a refusal returns them to rest together. This is the arm that proves the
+      seed cannot outlive the request that made it.
+    */
+    expect(refineGhosts({
+      viewerCandidateId: HER,
+      mutation: idle,
+      pending: [],
+      pendingAtClick: 0,
+    })).toEqual([]);
+    /* And the plate, on the same latch and in the same breath. */
+    expect(refineWait({ viewerCandidateId: HER, mutation: idle, pending: [] })).toBe(null);
+  });
+
+  it("NEGATIVE CONTROL — says nothing about ANOTHER cast's click", () => {
+    expect(refineGhosts({
+      viewerCandidateId: THE_OTHER,
+      mutation: out,
+      pending: [],
+      pendingAtClick: 0,
+    })).toEqual([]);
+  });
+
+  it("NEGATIVE CONTROL — a request with no sentence seeds nothing", () => {
+    /* `variables` arrives before `instruction` is readable in some paths, and a
+       ghost with no words is a ring the founder cannot attribute to anything. */
+    expect(refineGhosts({
+      viewerCandidateId: HER,
+      mutation: { isPending: true, variables: { candidateId: HER } },
+      pending: [],
+      pendingAtClick: 0,
+    })).toEqual([]);
+  });
+
+  it("leaves OTHER faces' rows alone while seeding its own", () => {
+    /* The provisional is appended, never a replacement: a row already running
+       on this face keeps its ghost, and the count says the rest. */
+    const ghosts = refineGhosts({
+      viewerCandidateId: HER,
+      mutation: out,
+      pending: [HER_ROW],
+      pendingAtClick: 1,
+    });
+    expect(ghosts).toHaveLength(2);
+    expect(ghosts[0]).toEqual(HER_ROW);
+    expect(ghosts[1]).toMatchObject({ variantId: PROVISIONAL_GHOST_ID });
   });
 });
