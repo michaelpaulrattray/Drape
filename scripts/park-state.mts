@@ -150,7 +150,15 @@ if (Number.isFinite(healths[0]!.uptime) && healths[0]!.timestamp) {
 const flags = run("railway.cmd", ["variables", "--service", SERVICE, "--kv"], true).split("\n")
   .map((line) => line.trim())
   .filter((line) => /^(CASTING_|R7_|ENABLE_STORAGE_CLEANUP_WORKER)/.test(line));
+/* THE COUNT NAMES ITS BASIS, so successive parks are comparable at a glance
+   (fable-832 §2; owner assigned opus-622, discharged here). Two parks said
+   "13 scope keys" and "16 keys" of the SAME world on consecutive shifts —
+   one filtered to `*_SCOPE`, one counting everything this filter admits — and
+   a successor comparing them reads a change that never happened. A bare count
+   is a claim about a basis nobody wrote down. */
+const scopeKeys = flags.filter((flag) => /^[A-Z0-9_]*_SCOPE=/.test(flag)).length;
 say(`flags     READ OFF THE SERVICE — never state one from memory`);
+say(`          BASIS: ${scopeKeys} scope keys + ${flags.length - scopeKeys} operational = ${flags.length} read`);
 for (const flag of flags) say(`          ${flag}`);
 if (flags.length === 0) say("          *** UNREADABLE — do not quote flags in this park ***");
 

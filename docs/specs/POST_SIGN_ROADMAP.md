@@ -508,6 +508,93 @@ face mask — a real interface change, decided here on latency evidence rather
 than inside a bug fix. Deleting `readCanthalTilt`'s rung 1 (also D-238) pays
 four calls per tilt read back immediately.
 
+> **The price above is PRE-CACHE, and this paragraph is the correction**
+> (ordered fable-834 §3, from opus-623 §3c). The "third call" it charges a
+> bilateral region is the FACE read for her midline — and the per-candidate
+> axis cache has since amortised exactly that call, measured off this
+> section's own rows: **`face` reads at 0.59/render in dev and 0.50 in
+> production**, below one and therefore no longer once per bilateral region.
+> The lever is still open (fable-132 filed it deliberately undecided) but its
+> **size is quoted against a world the product has left**, and a ruling made
+> from the 5→7 figure would be pricing a call largely already stopped. Nothing
+> here re-scores the reading; it names which world it was taken in.
+>
+> *(The last sentence, about `readCanthalTilt`'s rung 1, reads as owed and is
+> NOT: `git log -S` puts both that deletion and this sentence in the same
+> commit, `d355fa53`, 2026-08-10 — whose message says "Filed, not decided: the
+> 5→7 call cost". The sentence records what that commit delivered. Written
+> down because the tense has now caught one reader (opus-623 §3b) and the next
+> one will read the same words.)*
+
+### THE SLOTS READING — the sweep's own starting number, and it moves the lane
+
+Ordered fable-834 §1 from opus-623 §4, because the paragraph above this section
+says the sweep *"should start with how many SLOTS a render reads rather than
+with a cache"*. It now has. Read off rows already paid for — **no render, no
+segmenter call, no credit** — by `scripts/slots-per-render-disposable.mts`,
+whose two controls run first and refuse the verdict on failure (a synthetic row
+of 3 known slots and 7 known segment calls must read back as exactly that; a row
+with no repaint record must read UNMEASURABLE and one with no census NOT
+MEASURED, never 0).
+
+Slots come from `internalPrompt.repaint` — the dispatch record, whose
+`references[]` name their own `slot` beside `edited`/`carried`/`vacated` — and
+not from counting region nouns in the census, which would have folded the
+occlusion companions and the guard's second look into the slot count.
+
+```
+                        DEV :52008              PRODUCTION :23768
+window                  since 2026-08-07, all users, both worlds
+rows / repainted        73 / 66                 24 / 20
+slots per render        1:12 2:16 3:31 4:3 5:4  1:9 2:5 3:2 4:1 5:1 6:2
+                        median 3 · max 5        median 2 · max 6
+census coverage         56/66                   6/20
+```
+
+**Three things it settles, and one it explicitly does not.**
+
+1. **Slot count is SMALL** — median 3 in dev, 2 in production, max 6 anywhere.
+   Nobody had read this; the sweep was being pointed at a number assumed larger
+   than it is.
+2. **"Two independent reads per slot" is CONFIRMED for the segment stage**, in
+   the largest cell there is: 3 slots, n=29, **6.6 segment calls per render =
+   2.2 per slot**. The roadmap's structural claim was right about what it named.
+3. **And that makes slot reduction worth about a penny.** At the face scan's own
+   measured rate ($0.100 for 20 segmenter calls = **$0.005/call**), removing one
+   whole slot saves ~2.2 calls ≈ **$0.011 per render** — against a $0.099 paint
+   and a token-billed read stage that is the OpenRouter driver. **The cost lane's
+   named slot lever is not the cost lever.**
+4. **UNSETTLED — whether the READ stage scales with slots.** Dev says no
+   (read/render 4.9 · 7.2 · 6.2 · 5.5 · 7.0 across 1→5 slots, n=56, flat while
+   segment climbs 0.5 → 8.0). Production's six censused rows lean the other way
+   (6.0 · 15.0 · 12.0 · 8.0) but **every one of those cells is n=1 or n=2** and
+   none is quotable. Two worlds, one flat and one noisy, is not a finding.
+
+**The mechanism behind the flatness is NOT MEASURED, and that is why 4 is
+unsettled rather than settled.** A flat line can be manufactured by truncation —
+`censusSoFar` snapshots at the landing, so every figure here is a FLOOR. The
+honest test was to name the read stage's purposes: **25 labelled read calls
+across both worlds are ALL per-render (`caption`, `verify`, `interpret`) and not
+one is per-slot** — which points at genuine flatness, at n=25. But coverage is
+**9/361 in dev and 16/55 in production**, because `ReadPurpose` shipped
+2026-08-16 and this window mostly predates it. That is a hint, not a mechanism.
+
+**What it means for priority** (the paragraph fable-834 §1 asked for): the cost
+lane's next question is the **read budget per render**, which is token-priced and
+whose slot-scaling is exactly what could not be settled here — and the instrument
+that would settle it (`ReadPurpose`, plus tokens) is at 2.5–29% coverage and
+fills itself with ordinary use. So the cost lane's honest next move is to **let
+the purposes accumulate and re-run this**, not to build a third reading on a
+nine-call sample. Which leaves the **exposure lane** — the held request — as the
+one that can actually be worked now, on evidence rather than for want of
+anything else. *(This inverts the executor's own recommendation in opus-623 §4,
+which is what the reading was for.)*
+
+One incidental finding, filed not fixed: **`askScope` is present on 2 of 20
+production rows and 0 of 66 dev rows**, so the pointed-vs-typed split exists in
+production only — and both pointed rows carry **6 slots**, the maximum observed
+anywhere, against a typed median of 2. Suggestive at n=2 and no more.
+
 ## 2. The honest loader (with #1 — same instrumentation)
 
 Real stage transitions only, product voice, NO invented percentages
