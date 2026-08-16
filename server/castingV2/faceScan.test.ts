@@ -629,3 +629,79 @@ describe("the scan says which slots answered nothing", () => {
     expect(empty, "and a slot that answered is not in it").not.toContain("eye@left");
   });
 });
+
+/**
+ * HALF A PAIR IS A MISSED READING (fable-749 §3a).
+ *
+ * The founder's specimen: one eye box on a frame where his own eye saw both
+ * plainly behind the lenses. The reason it had no number is the shape of the
+ * scan itself — a bilateral region is `filed` when EITHER side lands, so
+ * one-eye-found is a success to the instrument and is never re-asked. Bought in
+ * production over the whole bespectacled population: 2 of 9 half-answered
+ * against 0 of 12 bare-eyed controls, both misses LITERAL zeroes.
+ *
+ * Each arm has its control beside it, because a heal that fired on every read
+ * would double the scan's bill and pass the positive arm while doing it.
+ */
+describe("a pair that answered on one side only gets one more look", () => {
+  const ONE_SIDE = { left: maskOf({ x: 100, y: 200, width: 20, height: 20 }), right: EMPTY };
+  const BOTH = {
+    left: maskOf({ x: 100, y: 200, width: 20, height: 20 }),
+    right: maskOf({ x: 700, y: 200, width: 20, height: 20 }),
+  };
+
+  /** How many times the per-side question was asked for one region. */
+  const asksFor = (r: { sideAsked: string[] }, name: string) =>
+    r.sideAsked.filter((asked) => asked === name).length;
+
+  it("asks again, and files the side the second look found", async () => {
+    let call = 0;
+    const r = reader({
+      sides: (name) => {
+        if (name !== "eyes") return BOTH;
+        call += 1;
+        return call === 1 ? ONE_SIDE : BOTH;
+      },
+    });
+    const scan = await scanFace({ frame: FRAME, reader: r, describe: null });
+
+    expect(asksFor(r, "eyes"), "asked twice — the reading and its second look").toBe(2);
+    /* The recovered side is FILED, which is the whole point: without it the row
+       draws a single box and the founder sees one eye. */
+    expect(scan.boxes.get("eye@right")).toMatchObject({ x: 700, width: 20 });
+    expect(scan.boxes.get("eye@left")).toMatchObject({ x: 100, width: 20 });
+  });
+
+  it("keeps the good side when the second look is blind too — never trades it for a coin flip", async () => {
+    const r = reader({ sides: (name) => (name === "eyes" ? ONE_SIDE : BOTH) });
+    const scan = await scanFace({ frame: FRAME, reader: r, describe: null });
+
+    expect(asksFor(r, "eyes"), "asked twice, and stopped").toBe(2);
+    /* A second blind answer is not better information. The side that DID land
+       still lands, and the row is exactly what it would have been. */
+    expect(scan.boxes.get("eye@left")).toMatchObject({ x: 100, width: 20 });
+    expect(scan.boxes.has("eye@right")).toBe(false);
+  });
+
+  it("CONTROL — a pair that answered on BOTH sides is never asked twice", async () => {
+    const r = reader({ sides: () => BOTH });
+    await scanFace({ frame: FRAME, reader: r, describe: null });
+    /* The bill. A heal that fired on healthy reads would double the per-side
+       cost of every scan the product runs. */
+    expect(asksFor(r, "eyes")).toBe(1);
+  });
+
+  it("CONTROL — a pair that answered on NEITHER side is not healed here", async () => {
+    /*
+      Both-empty is a different failure and already has its own rule: the
+      empty-anatomy re-ask below asks the whole region once more. Firing here as
+      well would only make it careful twice — and the assertion is that this
+      heal contributes nothing, not that no second ask happens at all.
+    */
+    const r = reader({ sides: (name) => (name === "eyes" ? { left: EMPTY, right: EMPTY } : BOTH) });
+    const scan = await scanFace({ frame: FRAME, reader: r, describe: null });
+
+    expect(scan.boxes.has("eye@left")).toBe(false);
+    expect(scan.boxes.has("eye@right")).toBe(false);
+  });
+});

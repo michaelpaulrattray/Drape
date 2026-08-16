@@ -436,8 +436,83 @@ export async function scanFace(input: {
           pair goes unanswered instead, honestly.
         */
         if (sides === null) return "capability";
+        /*
+          HALF A PAIR IS A MISSED READING, AND IT GETS ONE MORE LOOK
+          (fable-749 §3a, on a rate bought in production).
+
+          The founder's specimen was a row with ONE eye box on a frame where his
+          own eye saw both plainly behind the lenses. The reason no number
+          existed is the shape of this very function: the region is recorded as
+          `filed` when EITHER side lands (the `some` below), so one-eye-found is
+          a SUCCESS to the instrument, is never re-asked by the empty-anatomy
+          rule further down, and appears in no tally of empties. **The count
+          folded the exact failure it was built to see.**
+
+          Measured 2026-08-16 against production, the whole bespectacled
+          population (9 of 9) beside 12 bare-eyed controls:
+
+              GLASSES   2/9  half-answered   (22.2%)
+              CONTROL   0/12 half-answered   ( 0.0%)
+
+          Both misses were LITERAL ZEROES — no pixels at all on the missing
+          side, not a marginal read under a floor.
+
+          # THE TRIGGER IS THE FAILURE, NOT THE GLASSES
+
+          That reading does NOT establish that glasses cause it (p≈0.17, and the
+          control's own rule-of-three bound sits above the measured rate), and
+          this heal does not need it to: it fires when exactly one side is at
+          literal zero while the other landed. A frame where BOTH sides are
+          empty is a different thing and is already served by the empty-anatomy
+          re-ask below; asking here as well would only make it careful twice.
+
+          # ONE RE-READ, AND ITS OUTCOME IS WRITTEN DOWN
+
+          Whether a re-read actually RECOVERS the side is not yet measured —
+          D-194's reader disagrees with itself 21% of the time, which is a
+          reason to expect it might, not a measurement of this question. So the
+          outcome is logged, and the recovery rate arrives free from his own use
+          rather than from another bought sitting.
+        */
+        const zeroOf = (side: Mask) => binaryCoverage(side) === 0;
+        /* The two masks this reading files, held locally: a heal replaces what
+           the slots below read, and reaching back into the reader's own return
+           value to do it would be editing somebody else's answer in place. */
+        let leftMask = sides.left;
+        let rightMask = sides.right;
+        if (region.slots.length === 2 && zeroOf(leftMask) !== zeroOf(rightMask)) {
+          const blindSide = zeroOf(leftMask) ? "left" : "right";
+          const again = await input.reader.regionSides({
+            image: input.frame.bytes,
+            name: region.question,
+            absentIsAnswer: true,
+            ...(input.frame.url ? { imageUrl: input.frame.url } : {}),
+          });
+          const healed = again !== null && !zeroOf(blindSide === "left" ? again.left : again.right);
+          log.info(
+            {
+              question: region.question,
+              blindSide,
+              healed,
+              /* Both sides of the second reading, so a re-read that moved the
+                 OTHER side is visible rather than averaged away. */
+              retryLeft: again === null ? null : binaryCoverage(again.left),
+              retryRight: again === null ? null : binaryCoverage(again.right),
+            },
+            healed
+              ? "[faceScan] half-answered pair — the second look found the missing side"
+              : "[faceScan] half-answered pair — the second look found nothing either",
+          );
+          /* Only a reading that actually recovered the side replaces the first.
+             A second answer that is also blind is not better information, and
+             swapping it in would discard a good side for a coin flip. */
+          if (healed && again !== null) {
+            leftMask = again.left;
+            rightMask = again.right;
+          }
+        }
         for (const slot of region.slots) {
-          const mask = slot.instance === "left" ? sides.left : sides.right;
+          const mask = slot.instance === "left" ? leftMask : rightMask;
           const box = binaryCoverage(mask) > floor ? boxIn(mask, frame) : null;
           /* Box and mask are set together, always: a slot with a rectangle and
              no shape would render as a hard-edged crop beside its cutout
