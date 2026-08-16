@@ -572,7 +572,36 @@ superseded it — fable-071/080).
   fire webhooks at prod trusting `metadata.userId`).
 - **Cookie consent** (L7): flagged 2026-07-10, never built.
 - **`mintModel` concurrency double-charge** (L8): fix, or record
-  that M14 legacy retirement deletes the path.
+  that M14 legacy retirement deletes the path. **⛔ NEITHER CAN BE CHOSEN
+  YET — the function this item is written about has NO PRODUCTION IMPORTER,
+  and two design documents name a call site that is not there** (opus-604,
+  ruled fable-815 §3, 2026-08-17):
+
+  ```
+  mintModelAtomically   every textual use in server/ + client/, dynamic
+                        destructuring included:
+                          server/db/models.ts   the definition
+                          server/db/index.ts    the barrel re-export
+                          *.test.ts             mocks and assertions
+                        NO PRODUCTION IMPORTER.
+  named as its live caller, in the PRESENT TENSE, by two documents:
+    CASTING_MODEL_ID_WRITER_INVENTORY.md:34             → `generation.mintPackage`
+    CASTING_SYSTEM_R7_6_EVIDENCE_COMPOSER_DESIGN.md:103 → "mint keeps
+      committing through `mintModelAtomically`'s CAS (`mintPackage.ts:502-513`)"
+  read at that file and that region: the clean-draft refusal and the §14
+  integrity gates are there. The call is not.
+  ```
+
+  **What is NOT claimed:** that the mint is unguarded, or that the
+  double-charge is fixed or unfixed. Where minting actually commits has not
+  been read, and **a half-done trace on a line about charging customers twice
+  is worse than an honest unread.**
+
+  **OWED: read the commit point.** Owner is the cleanup milestone (§0b) —
+  whose triage is exactly this reading — and this candidate **outranks the
+  rest of the 177 inside it, because it is a pre-launch MONEY line rather
+  than dead code.** The owner sets a floor, not a fence: **any quiet shift
+  may claim this read before the milestone opens.**
 - **R7 evidence migrations 0015/0016** (L9): never applied to prod
   (the 2026-07-31 crash-loop); decide re-enable-by-ceremony vs
   retire-with-legacy.

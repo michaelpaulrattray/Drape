@@ -102,6 +102,8 @@ The current identity snapshot is resolved through `currentPackageSnapshotId → 
 
 During dual-write, mint keeps committing through `mintModelAtomically`'s `expectedIdentityRevisionId` compare-and-swap (`server/casting/mintPackage.ts:502-513`); the same transition dual-writes the seal columns. Only after cutover do mint and every other canon commit CAS on `stateVersion` + snapshot IDs.
 
+> ⚠ **STATUS, 2026-08-17 (opus-604, ruled fable-815 §3): the sentence above is a SPECIFICATION, never a report.** `mintModelAtomically` has **no production importer** — every textual use in `server/` and `client/`, dynamic destructuring included, is the definition, the barrel re-export, or a test — and `server/casting/mintPackage.ts` at the named region holds the clean-draft refusal and the §14 integrity gates, not this call. Nothing here is claimed to be wrong about what the CAS *does*; what is false is that mint reaches it. Where minting actually commits is **unread and owed** — owner in `POST_SIGN_ROADMAP.md` §7 (L8), which outranks the rest of the cleanup milestone's list because it is a pre-launch money line.
+
 ### 5.2 `model_identity_snapshots`
 
 Immutable columns:
