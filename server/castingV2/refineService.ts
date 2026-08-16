@@ -4660,27 +4660,38 @@ async function refineCandidateCounted(
 
     const uncorroborated: Array<{ facet: string; asked: string; saw: string }> = [];
     /*
-      STAGE 3 OF THE LATENCY WORK STOPPED HERE, ON PURPOSE (fable-695 §4c).
+      STAGE 3a OF THE LATENCY WORK — the read-backs go out together (fable-695
+      §4c, unblocked by the two-facet fixture in `refineService.test.ts`).
 
       These are two model calls per facet — a side cut from the segmenter and a
-      caption from the text engine — running strictly one facet after another on
-      the customer's paid wait, and they ARE independent: `asked` is a pure
-      function of this facet and the identity the render already had,
+      caption from the text engine — and they used to run strictly one facet
+      after another on the customer's paid wait. They are independent: `asked`
+      is a pure function of this facet and the identity the render already had,
       `sideViewOf` reads only its own facet's region, and `captionRealization`
       is an engine call whose only reach outside itself is the
       `onUncorroborated` callback. Both transports are gated (the segmenter
-      through `throughFalGate`, the text engine through its own `ProviderQueue`).
+      through `throughFalGate`, the text engine through its own `ProviderQueue`),
+      so concurrency here asks the provider for nothing the gate has not agreed
+      to.
 
-      It was written, it typechecked, and the whole suite stayed green — and it
-      was taken out again, because green is not a control. Every caption fixture
-      in `refineService.test.ts` drives ONE facet, so nothing in this repository
-      can currently tell a parallel version of this loop from the serial one.
-      Shipping it would have put an unmeasured change on the paid path with a
-      claim about speed nobody can check, which is the shape this program
-      refuses. The unblocking test is a two-facet caption fixture; with one, the
-      loop takes ten minutes.
+      This was written once before and TAKEN OUT AGAIN, because it typechecked
+      and the whole suite stayed green — and green was not a control: every
+      caption fixture drove ONE facet, and with one facet a parallel loop and a
+      serial one make the same calls in the same order. The unblocking test now
+      exists and asks the only question that separates them — were two
+      read-backs ever in flight at the same moment — with a single-facet arm as
+      its negative control.
+
+      **Nothing observable moves but the waiting.** The captions are assigned in
+      the facets' own order after the fold, and each facet's uncorroborated
+      verdicts are collected locally and concatenated in that same order, so
+      both artifacts are byte-identical to the serial version whichever call
+      answers first. `allSettled` is deliberate (stage 1's rule): a facet that
+      throws must not leave a sibling's rejection unhandled, and the first
+      failure in facet order is re-thrown so the caller sees exactly the error
+      the serial loop gave it.
     */
-    for (const facet of Array.from(captionFacets)) {
+    const captionWork = Array.from(captionFacets).map(async (facet) => {
       const asked = currentIdentity
         ? currentValueOfFacet(applyDelta(currentIdentity, composed), facet)
         : null;
@@ -4704,16 +4715,30 @@ async function refineCandidateCounted(
         never costs a delivery.
       */
       const view = await sideViewOf(facet, asked);
+      /* This facet's own verdicts, folded into the shared list in facet order
+         below rather than in whichever order the engines answered. */
+      const mine: Array<{ facet: string; asked: string; saw: string }> = [];
       const caption = await captionRealization({
         facet,
         bytes: view?.bytes ?? image.bytes,
         contentType: view ? "image/png" : image.contentType,
-        onUncorroborated: (verdict) => uncorroborated.push(verdict),
+        onUncorroborated: (verdict) => mine.push(verdict),
         /* What this render was told to produce, so the read-back can be
            checked against it rather than describing whatever turned up. */
         asked: view ? view.asked : asked,
       });
-      if (caption) capturedCaptions[facet] = caption;
+      return { facet, caption, mine };
+    });
+
+    const captionResults = await Promise.allSettled(captionWork);
+    /* The first failure in FACET order, which is the one the serial loop would
+       have thrown — the siblings were all settled, so none is left unhandled. */
+    const captionFailure = captionResults.find((result) => result.status === "rejected");
+    if (captionFailure?.status === "rejected") throw captionFailure.reason;
+    for (const result of captionResults) {
+      if (result.status !== "fulfilled") continue;
+      if (result.value.caption) capturedCaptions[result.value.facet] = result.value.caption;
+      uncorroborated.push(...result.value.mine);
     }
 
     /*

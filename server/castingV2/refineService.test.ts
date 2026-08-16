@@ -398,9 +398,21 @@ vi.mock("./referenceMint", () => ({
  * every other case in this file sees exactly the behaviour it saw before.
  */
 let captionsRead: Partial<Record<string, string>> = {};
+/**
+ * A HOOK FOR WATCHING THE CALLS THEMSELVES, not just their answers.
+ *
+ * Null in every test but the two-facet fixture below, which installs a barrier
+ * here to ask whether two facets' read-backs are ever in flight at the same
+ * moment. Nothing else in this file can see that, which is exactly why stage 3
+ * of the latency work was taken out again rather than shipped green.
+ */
+let captionGate: ((facet: string) => Promise<void>) | null = null;
 vi.mock("./realizationCaption", async (importOriginal) => ({
   ...(await importOriginal<typeof import("./realizationCaption")>()),
-  captionRealization: vi.fn(async ({ facet }: { facet: string }) => captionsRead[facet] ?? null),
+  captionRealization: vi.fn(async ({ facet }: { facet: string }) => {
+    if (captionGate) await captionGate(facet);
+    return captionsRead[facet] ?? null;
+  }),
 }));
 
 /** The digests this branch already holds. Empty unless a test says otherwise. */
@@ -458,6 +470,7 @@ beforeEach(() => {
   lineageReferences = [];
   counted.length = 0;
   captionsRead = {};
+  captionGate = null;
   assembleAsks.length = 0;
   carriedRowsFixture = [];
   ledger.charges.length = 0;
@@ -7436,5 +7449,158 @@ describe("a later confirmation rescues a refused carrier", () => {
     );
     const asked = mintAsks.at(-1)!.slots.filter((slot) => slot.slot === "build");
     expect(asked, "filed once, by the pass that already owned it").toHaveLength(1);
+  });
+});
+
+/**
+ * THE TWO-FACET CAPTION FIXTURE — the control this file did not have.
+ *
+ * Every other caption case here drives ONE facet, so none of them can tell a
+ * parallel read-back loop from a serial one: with a single facet both shapes
+ * make exactly one call and return exactly the same answers. That gap is why
+ * stage 3 of the latency work was written, typechecked, run green and then
+ * TAKEN OUT AGAIN — a concurrency change on the paid path whose claim about
+ * speed nothing in this repository could check.
+ *
+ * So the instrument does not measure duration (which would be a race dressed
+ * as a test); it asks a question with one answer: **were two read-backs ever
+ * in flight at the same moment?** The barrier below opens the instant the
+ * second facet ARRIVES, and by a timer if it never does. A serial loop can
+ * only ever open it by the timer, because its first call cannot return until
+ * the barrier lets go and its second cannot start until the first returns.
+ *
+ * `openedBy` is therefore the reading, and the single-facet arm is its
+ * negative control: the same barrier, the same escape, on a case that cannot
+ * overlap even in principle.
+ */
+describe("two read-backs on one render, and whether they wait for each other", () => {
+  const onFlag = { referenceLibraryEnabled: () => true };
+  /*
+    A TWO-FACET RENDER ASKS THE VERIFIER TWO QUESTIONS, so this answers every
+    id it is asked about rather than only the first. The single-result reader
+    used elsewhere in this file left the second facet unverified — a property
+    of the fixture, not of the loop, and it would have read here as the change
+    losing a slot.
+  */
+  const readerSees = (saw: string) => ({
+    id: "verifier",
+    complete: async (request: { user?: string }) => ({
+      /* One numbered line per fact, exactly as `renderVerification` writes
+         them — so the answer covers however many this render asked about. */
+      text: JSON.stringify({
+        results: Array.from((request.user ?? "1. ").matchAll(/^(\d+)\. /gm))
+          .map((match) => ({ id: Number(match[1]), present: true, saw })),
+      }),
+      truncated: false,
+      latencyMs: 1,
+    }),
+  } as never);
+
+  /**
+   * A gate that lets go when `expected` callers are inside it — or, failing
+   * that, after `escapeMs`, so a serial loop fails this fixture instead of
+   * hanging the suite on it.
+   */
+  const captionBarrier = (expected: number, escapeMs = 250) => {
+    const entered: string[] = [];
+    const exited: string[] = [];
+    let openedBy: "arrival" | "escape" | "never" = "never";
+    let release!: () => void;
+    const opened = new Promise<void>((resolve) => { release = resolve; });
+    let escape: NodeJS.Timeout | null = null;
+    const gate = async (facet: string) => {
+      entered.push(facet);
+      if (entered.length >= expected) {
+        if (escape) clearTimeout(escape);
+        if (openedBy === "never") openedBy = "arrival";
+        release();
+      } else if (!escape) {
+        escape = setTimeout(() => {
+          if (openedBy === "never") openedBy = "escape";
+          release();
+        }, escapeMs);
+      }
+      await opened;
+      exited.push(facet);
+    };
+    return {
+      gate,
+      entered,
+      exited,
+      openedBy: () => openedBy,
+      /* Nothing is left ticking after the test that installed it. */
+      done: () => { if (escape) clearTimeout(escape); },
+    };
+  };
+
+  it("asks for both captions at once — two facets in flight together", async () => {
+    const barrier = captionBarrier(2);
+    captionGate = barrier.gate;
+    captionsRead = {
+      lips: "Full, with a pronounced cupid's bow",
+      statedAccessories: "Dangly gold cross earrings, one in each lobe",
+    };
+
+    await refineCandidate(
+      {
+        ...onFlag,
+        harvest: unmasked,
+        verifier: readerSees("a fuller cupid's bow, and dangly gold crosses at both lobes"),
+        interpret: async () => ({
+          ok: true as const,
+          delta: {
+            free: {
+              lips: ["a fuller cupid's bow"],
+              statedAccessories: ["dangly cross earrings"],
+            },
+          },
+        }),
+      },
+      { ...input, instruction: "give her a fuller cupid's bow and dangly cross earrings" },
+    );
+    barrier.done();
+
+    /* First: the fixture drove what it claims to drive. A one-facet render
+       would open the barrier by escape too, and for a reason that has nothing
+       to do with the loop's shape. */
+    expect(barrier.entered.sort(), "both facets were read back").toEqual(["lips", "statedAccessories"]);
+    expect(barrier.openedBy(), "the second read-back began before the first returned")
+      .toBe("arrival");
+    /* And the answers are unchanged — a faster loop that loses a caption is
+       not a faster loop. */
+    expect(mintAsks.at(-1)!.slots.map((slot) => slot.slot).sort())
+      .toEqual(["earring@left", "earring@right", "lips"]);
+  });
+
+  it("CONTROL — one facet cannot overlap, and the same barrier says so", async () => {
+    /*
+      THE NEGATIVE CONTROL FOR THE INSTRUMENT ABOVE (working law 2).
+
+      Identical barrier, identical escape, a render that writes ONE facet. If
+      this arm also read `arrival`, the reading above would be a constant and
+      would confirm a parallel loop that was never built — which is precisely
+      the failure the single-facet suite already had.
+    */
+    const barrier = captionBarrier(2);
+    captionGate = barrier.gate;
+    captionsRead = { lips: "Full, with a pronounced cupid's bow" };
+
+    await refineCandidate(
+      {
+        ...onFlag,
+        harvest: unmasked,
+        verifier: readerSees("a fuller cupid's bow"),
+        interpret: async () => ({
+          ok: true as const,
+          delta: { free: { lips: ["a fuller cupid's bow"] } },
+        }),
+      },
+      { ...input, instruction: "give her a fuller cupid's bow" },
+    );
+    barrier.done();
+
+    expect(barrier.entered, "one facet, one read-back").toEqual(["lips"]);
+    expect(barrier.openedBy(), "nothing to overlap with — the barrier times out")
+      .toBe("escape");
   });
 });
