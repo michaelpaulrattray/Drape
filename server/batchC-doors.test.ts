@@ -1406,6 +1406,50 @@ describe("mint/add-views snapshot ordering", () => {
     expect(completeDirectOperationFailure).not.toHaveBeenCalled();
     expect(deductPoints).not.toHaveBeenCalled();
   });
+
+  // L8b (opus-607 §2, ruled fable-818 §2). The structural twin of this pair
+  // lives in `operationLockWire.test.ts`; these two prove the same contract
+  // BEHAVIOURALLY, on the money path, in the shape `batchC-structured.test.ts`
+  // already uses for Canvas (`:504` the key, `:726` the refusal). Until they
+  // existed, deleting the mint's lock left 6,777 tests green.
+  it("the mint hands the model lock key to the operation gate", async () => {
+    // This fixture has no anchor, so the mint refuses at the headshot
+    // precondition — which is the sharper form of the contract: the Cast is
+    // LOCKED before any of the mint's own preconditions are consulted, so a
+    // second writer cannot slip in beside a refusal.
+    await expect(appRouter.createCaller(authCtx()).generation.mintPackage({
+      modelId: 7,
+      tier: "core",
+      characterName: "Vera",
+    })).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
+
+    expect(beginDirectOperation).toHaveBeenCalledWith(expect.objectContaining({
+      modelId: 7,
+      lockKey: "model:7",
+    }));
+    expect(markGenerationOperationRunning).toHaveBeenCalledWith(expect.objectContaining({
+      requiredLockKey: "model:7",
+    }));
+  });
+
+  it("a busy Cast refuses the mint before marking running, charging, or generating", async () => {
+    // What `acquireGenerationOperationLock` does to the loser: the operation is
+    // finalized failed and the caller sees CONFLICT.
+    vi.mocked(beginDirectOperation).mockRejectedValueOnce(new TRPCError({
+      code: "CONFLICT",
+      message: "Another operation is already changing this Cast. Wait for it to finish before retrying.",
+    }));
+
+    await expect(appRouter.createCaller(authCtx()).generation.mintPackage({
+      modelId: 7,
+      tier: "core",
+      characterName: "Vera",
+    })).rejects.toMatchObject({ code: "CONFLICT" });
+
+    expect(markGenerationOperationRunning).not.toHaveBeenCalled();
+    expect(deductPoints).not.toHaveBeenCalled();
+    expect(generateRemainingViews).not.toHaveBeenCalled();
+  });
 });
 
 describe("executeRefreshSlots consumes the §7 anchor (M9)", () => {

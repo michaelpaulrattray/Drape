@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "689c4f3e22f19ab7"
+    "sourceFingerprint": "e70569ca595eaaf4"
   },
   "domains": [
     {
@@ -9967,6 +9967,10 @@
     {
       "id": "test:server/openrouterBalance.test.ts",
       "path": "server/openrouterBalance.test.ts"
+    },
+    {
+      "id": "test:server/operationLockWire.test.ts",
+      "path": "server/operationLockWire.test.ts"
     },
     {
       "id": "test:server/pathB-completion.test.ts",
