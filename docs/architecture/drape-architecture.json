@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "8caf4f4e3a7b7f40"
+    "sourceFingerprint": "4871d7be8c11d51c"
   },
   "domains": [
     {
@@ -88,7 +88,7 @@
     {
       "id": "domain:operations",
       "name": "operations",
-      "moduleCount": 5
+      "moduleCount": 6
     },
     {
       "id": "domain:pages",
@@ -1865,6 +1865,12 @@
     {
       "id": "module:client/src/features/operations/generationOperationProjection.ts",
       "path": "client/src/features/operations/generationOperationProjection.ts",
+      "domain": "operations",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/operations/outcomeShown.ts",
+      "path": "client/src/features/operations/outcomeShown.ts",
       "domain": "operations",
       "lifecycle": "active"
     },
@@ -8713,6 +8719,10 @@
       "path": "client/src/features/operations/bridgeOwnership.test.ts"
     },
     {
+      "id": "test:client/src/features/operations/outcomeShown.test.ts",
+      "path": "client/src/features/operations/outcomeShown.test.ts"
+    },
+    {
       "id": "test:client/src/foundation/rawErrorToast.test.ts",
       "path": "client/src/foundation/rawErrorToast.test.ts"
     },
@@ -13616,6 +13626,11 @@
     },
     {
       "from": "module:client/src/features/operations/GenerationOperationBridge.tsx",
+      "to": "module:client/src/features/operations/outcomeShown.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/operations/GenerationOperationBridge.tsx",
       "to": "module:client/src/features/operations/surfaceOwnership.ts",
       "kind": "imports"
     },
@@ -15061,7 +15076,17 @@
     },
     {
       "from": "module:client/src/pages/CastingSheet.tsx",
+      "to": "module:client/src/features/operations/outcomeShown.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/CastingSheet.tsx",
       "to": "module:client/src/foundation/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/CastingSheet.tsx",
+      "to": "module:client/src/lib/failureSentence.ts",
       "kind": "imports"
     },
     {

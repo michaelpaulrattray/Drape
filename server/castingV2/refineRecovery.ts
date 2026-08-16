@@ -43,6 +43,35 @@ import { createModuleLogger } from "../logging/logger";
 
 const log = createModuleLogger("castingV2/refineRecovery");
 
+/**
+ * WHAT A CUSTOMER IS TOLD WHEN THE SWEEP TAKES A PAID REFINE OVER — one story
+ * in two beats, and NAMED so nothing can watch it by spelling.
+ *
+ * # Why it is written this way
+ *
+ * Since 2026-08-17 this sentence can reach the customer as a toast: the bridge
+ * now speaks for a terminal refine failure that no surface answered
+ * (`client/src/features/operations/outcomeShown.ts`, ruled fable-828 §3). On a
+ * swept row it FOLLOWS the viewer's own live narration — "this one didn't make
+ * it", with "your credits come back on their own"
+ * (`CandidateViewer.tsx`, `STAGE_WORDS.settling` and `SETTLING_NOTE`) — so it
+ * is written in that line's own words, in the completed tense, as its outcome.
+ * The two are never on screen at once: the settling narration needs the row in
+ * the pending list, and this write is what takes it out.
+ *
+ * # Why it is a named constant
+ *
+ * It read *"That refinement didn't come through. Your credits have been
+ * returned."* until then, and TWO things watched that spelling from outside:
+ * `cannotSayCopy.test.ts` guards that no cannot-say reason falls back to the
+ * malfunction line, and the 2026-08-17 latency reading used it as the only
+ * available discriminator for sweep-settled operations. Editing the literal in
+ * place would have left the first guard passing over a string nothing writes —
+ * a test that cannot fail — and silently retired the second. Both now read
+ * this name.
+ */
+export const RECOVERED_REFINE_SENTENCE = "That one didn't make it. Your credits are back.";
+
 export type RefineRecoveryOutcome =
   | { type: "durable_success"; chargedCredits: number; refundedCredits: number }
   | { type: "paid_failure"; chargedCredits: number; refundedCredits: number }
@@ -317,7 +346,7 @@ export async function recoverCastingV2RefineOperation(
     userId: operation.userId,
     operationId: operation.id,
     errorCode: "INTERNAL_SERVER_ERROR",
-    publicMessage: "That refinement didn't come through. Your credits have been returned.",
+    publicMessage: RECOVERED_REFINE_SENTENCE,
     chargedCredits: ledger.charge.credits,
     refundedCredits: refunded,
   });

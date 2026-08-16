@@ -171,3 +171,54 @@ export async function readAttemptRows(input: {
     await conn.end();
   }
 }
+
+/**
+ * THE PAID ATTEMPTS THE QUERY ABOVE STRUCTURALLY CANNOT SEE.
+ *
+ * `readAttemptRows` starts `FROM casting_candidate_variants`. A refine killed
+ * before its variant row was written has none — the operation was claimed and
+ * CHARGED, the recovery sweep refunded it, and nothing about it ever reaches
+ * the reliability table. Production, 2026-08-17: **15 of the founder's 199
+ * settled refines, 7.5%**, absent from the number D-236 made the sole source of
+ * the delivery rate.
+ *
+ * The exclusion itself is defensible — a deploy-collision death is not the
+ * product failing to deliver a picture, and CLAUDE.md documents that class as
+ * designed-for. What was not defensible was that nothing said so, in the one
+ * direction that flatters the figure. This counts them so the report can
+ * disclose them.
+ *
+ * The window is matched to `readAttemptRows`'s own, so the disclosure is about
+ * the same period as the table it sits under.
+ */
+export async function countRecoveredExclusions(input: {
+  since?: Date;
+  userId?: number;
+}): Promise<number> {
+  const conn = await openDatabase(databaseUrl());
+  const where: string[] = [
+    "o.kind = 'castingV2.refine'",
+    "o.completedAt IS NOT NULL",
+    /* Charged, so it was a paid attempt — the same definition `pointsCost > 0`
+       carries for the rows that DO exist. */
+    "o.chargedCredits > 0",
+    /* And no variant row at all: that absence is the whole finding, and it is
+       what makes these invisible above rather than merely classified oddly. */
+    "v.id IS NULL",
+  ];
+  const params: unknown[] = [];
+  if (input.since) { where.push("o.createdAt >= ?"); params.push(input.since); }
+  if (input.userId != null) { where.push("o.userId = ?"); params.push(input.userId); }
+  try {
+    const [rows] = await conn.query<any[]>(
+      `SELECT COUNT(*) AS n
+         FROM generation_operations o
+         LEFT JOIN casting_candidate_variants v ON v.operationId = o.id
+        WHERE ${where.join(" AND ")}`,
+      params,
+    );
+    return Number(rows[0]?.n ?? 0);
+  } finally {
+    await conn.end();
+  }
+}

@@ -20,6 +20,8 @@ import { createClientRequestId } from "@shared/clientRequestId";
 import "@/features/castingV2/castingV2.css";
 import { CandidateTile, UndoDiscard } from "@/features/castingV2/components/CandidateTile";
 import { readableFailure, refineFailureMessage } from "@/features/castingV2/failureCopy";
+import { failureIsOurs } from "@/lib/failureSentence";
+import { markOutcomeShown } from "@/features/operations/outcomeShown";
 import { useSheetSession, type UnlockableField } from "@/features/castingV2/sheetState";
 import { createDispatchLatch, type DispatchLatch } from "@/features/castingV2/singleFlight";
 import {
@@ -1397,9 +1399,19 @@ export default function CastingSheet() {
       answering && (reaskOptions ?? []).some((option) => option.label === instruction),
     );
     const sent = scope ?? (answersTheQuestion ? answering?.scope : undefined);
+    /*
+      HELD, BECAUSE BOTH SETTLEMENT PATHS HAVE TO NAME IT (opus-617, ruled
+      fable-828 §3).
+
+      This was inline in the payload below. It is hoisted so the panel can tell
+      the bridge, per request, whether what it put on screen came from the
+      server or was its own fallback — see `outcomeShown.ts` for the 1.7% that
+      makes the difference.
+    */
+    const requestId = crypto.randomUUID();
     void refine
       .mutateAsync({
-        clientRequestId: crypto.randomUUID(),
+        clientRequestId: requestId,
         candidateId: viewerCandidateId,
         instruction,
         ...(answering ? { answering: answering.about } : {}),
@@ -1407,6 +1419,15 @@ export default function CastingSheet() {
         ...(replayOf ? { replayOf } : {}),
       })
       .then(async (result) => {
+        /*
+          THE SERVER ANSWERED, so whatever the panel says next is the server's
+          own answer and the bridge has nothing to add. Marked before the
+          branches below rather than in each of them: a resolved refine may show
+          a question, a note, or nothing at all, and all three are the server's
+          outcome arriving — the mark is about WHOSE words reached the surface,
+          not about whether a sentence was drawn.
+        */
+        markOutcomeShown(requestId, "server");
         /*
           A QUESTION, NOT AN OUTCOME — and it costs nothing.
 
@@ -1475,7 +1496,22 @@ export default function CastingSheet() {
         valid JSON" — the same string already fixed once for roll
         dispatch, kept alive here because that fix was never swept.
       */
-      .catch((error: unknown) => setRefineOutcome(refineFailureMessage(error)));
+      .catch((error: unknown) => {
+        setRefineOutcome(refineFailureMessage(error));
+        /*
+          AND WHOSE SENTENCE THAT WAS.
+
+          `failureIsOurs` is the same decision `refineFailureMessage` makes
+          internally, asked directly — never a comparison against the
+          lost-contact string, which would be reading a spelling for a meaning
+          and would break the first time that copy is edited.
+
+          A `fallback` here is the case this whole path exists for: the render
+          outlived the gateway, so the panel is showing "we lost contact" over a
+          true answer that reached nobody. The bridge still holds it.
+        */
+        markOutcomeShown(requestId, failureIsOurs(error) ? "server" : "fallback");
+      });
   }
 
   const pendingForViewer = variants.data?.pending ?? [];

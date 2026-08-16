@@ -103,7 +103,7 @@
  */
 import { mkdirSync, writeFileSync } from "node:fs";
 import { formatReport, summarize } from "../server/castingV2/reliabilityReport.js";
-import { databaseUrl, settleAttemptRows } from "./lib/attemptRows.mjs";
+import { countRecoveredExclusions, databaseUrl, settleAttemptRows } from "./lib/attemptRows.mjs";
 import { createChecks, openDrivenPage } from "./lib/drivePage.mjs";
 import {
   createCurrentFaceKey, createLandedImageKey, createTrpcQuery, createViewerOpener,
@@ -768,7 +768,14 @@ try {
       + "— the table below is missing them, and this run does not count.",
     );
   }
-  report = summarize(settled.rows, { windowFrom: startedAt, windowLabel: "this walk" });
+  /* The walk's own window, counted the same way the on-demand report counts it
+     — a paid step whose variant row was never written is absent from the table
+     above, and a walk that did not say so would be the flattering read. */
+  report = summarize(settled.rows, {
+    windowFrom: startedAt,
+    windowLabel: "this walk",
+    recoveredExclusions: await countRecoveredExclusions({ since: startedAt }),
+  });
   console.log(`\n${formatReport(report)}`);
 } catch (error) {
   /*

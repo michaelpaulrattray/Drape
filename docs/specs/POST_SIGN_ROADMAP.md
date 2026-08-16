@@ -288,13 +288,121 @@ ruling against the file it governs (opus-596 §2).
 Median 39s → 151s regression (2026-08-08); founder: "5 minutes for 1
 generation is absurd." Stopwatch every stage before optimising.
 Enumerated sub-items (L3): **the gateway-outliving-refine topology**
-(~300s Railway edge timeout swallowing honest refusals — may need a
-founder Railway ask) and **the run-15 timestamp audit** (was an
-honest refusal shown as "we lost contact"? settle by artifacts —
-ordered fable-067/068, never reported done). Related: first-generation
+and **the run-15 timestamp audit** — both read at the artifacts on
+2026-08-17 (opus-614/616, ruled fable-825/827) and re-posed below.
+Related: first-generation
 paint softness (hair ~0.51–0.56, brows ~0.48–0.56 vs master, twice
 measured) → the **engine sharpness comparison** (NBP vs GPT2 on
 hair/brows) rides with item 6's routing question.
+
+### The run-15 timestamp audit — ✅ **CLOSED. It was reported done, and it shipped**
+
+The line above read *"never reported done"* for nine days. It was answered
+**opus-059 §4, 2026-08-08**, with the timestamps: run-15 step 2 completed
+honestly at **293.0 s** (`facts_missing`, refunded 25, the true sentence
+written) and the panel showed *"We lost contact while that was rendering"* at
+**323.6 s**. The mechanism was named the same night — an authored refusal thrown
+as `INTERNAL_SERVER_ERROR`, the one code the client must never trust — and the
+fix shipped: the **`spoken` marker** (`shared/spokenError.ts`,
+`server/_core/spokenError.ts`), wired into the real error formatter at
+`server/_core/trpc.ts:51` and checked FIRST in `readableFailure`
+(`client/src/lib/failureSentence.ts:89`). All five sites opus-059 named now
+throw `spokenError(...)`, `signService.ts:525`/`:533` included. Re-read at the
+artifacts 2026-08-17.
+
+### The gateway topology — ⚠ **OPEN, and now priced instead of adjectival**
+
+A refine is **one long-held mutation**: `castingV2.refine` awaits the entire
+render before it answers, so the customer's exposure is the operation's own
+life. Read off production (`scripts/read-refine-wall-clock-disposable.mts`,
+both controls printed first):
+
+```
+world :23768   199 settled refines — ALL user 1. This is a launch ESTIMATE
+               from the only usage that exists, never a customer rate.
+  worker-settled (a render)  180        recovery-sweep-settled  19
+  held-request seconds, worker-settled only (n=180)
+    median 121s · p75 151s · p90 231s · p95 276s · max 390s
+  under 240s 164 (91.1%) · 240-290s 11 (6.1%) · 290-305s 2 (1.1%)
+                                              · 305s+ 3 (1.7%)
+```
+
+**The wall is OBSERVED, not a Railway setting anyone has read**: run-9's step 5
+waited **304.9 s** and was answered by a gateway's plain-text 502
+(`failureSentence.ts` header), and run-15's 293.0 s was already too late.
+
+**Two instrument bounds, written here so they are not re-derived:**
+
+1. **`completedAt − createdAt` is two different clocks under one name.** For a
+   worker-settled operation it is the render; for a **sweep-settled** one it is
+   the recovery clock — the 300 s lease plus up to one 60 s sweep, the window
+   CLAUDE.md documents as the accepted deploy-collision cost. Pooling them
+   manufactured a cluster past the wall out of a class that never rendered:
+   the first reading of this said 4.0% past 305 s and p95 290 s, and both were
+   artefacts.
+2. **The structural discriminator is unavailable for 18 of 19 sweep rows, and
+   not because of a missing stamp.** `refineRecovery.ts:197` has the *only*
+   `failVariant` call and it fires whenever there is a live row to take over —
+   but **15 sweep-settled refines have no variant row at all** (the operation
+   was claimed and charged before one existed) and 3 had already been failed by
+   the service with a truer class, which `failVariant`'s `queued/dispatched`
+   predicate correctly refuses to overwrite. So the sweep arm is keyed on the
+   sweep's own sentence, admissible only because it was proven unique first —
+   one writer outside tests. **At the time of this reading that sentence was
+   *"That refinement didn't come through. Your credits have been returned."*;
+   it was rewritten in the same commit** (it can now reach the customer as a
+   toast, so it had to join the settling line's voice) and is a named export,
+   `RECOVERED_REFINE_SENTENCE`. A re-run must key on the constant, not on the
+   string quoted here.
+
+**What crossing the wall costs, in the customer's terms.** Three renders have
+answered past 305 s: two honest refusals carrying the *actionable* half
+(*"…so it wasn't delivered and your credits have been returned. Try saying it a
+different way."*, both 2026-08-08) and one delivered picture at 328 s. The
+`spoken` marker cannot rescue any of them — it marks a sentence on a response,
+and the socket carrying that response is already closed. **The money is covered**
+(LOST_CONTACT promises the refund and the recovery sweep keeps it); **the reason
+and the way forward are lost.**
+
+**The surface could not supply them either — ✅ FIXED 2026-08-17** (ruled
+fable-825 §2 / fable-828 §3). A terminal refine failure is in neither of the
+sheet's two lists (`status='ready'`, `status IN ('queued','dispatched')`), so it
+leaves the payload entirely, and the `GenerationOperationBridge` held
+`publicMessage` and was told not to say it — `surfaceOwnership.ts` listed
+`castingV2.refine` as owning its own outcomes, an argument true for every case
+except this one. **`castingV2.refine` is off that list**; its ownership is now
+per REQUEST (`client/src/features/operations/outcomeShown.ts`): the panel
+records whether what it showed was the server's own sentence or its fallback,
+and the bridge speaks only when the true sentence reached nobody. Roll and sign
+stay on the kind list — their surfaces genuinely can represent a terminal
+failure. Driven in the running app, both arms, with the fix sabotaged to prove
+the driver reddens.
+
+*(A row the sweep is taking over was always narrated: `CandidateViewer.tsx`
+renders the `settling` stage as "this one didn't make it" with "your credits
+come back on their own". That copy covers all 19 recovery rows; it cannot cover
+a render whose worker never died. The sweep's own sentence was rewritten into
+that line's voice — one story in two beats — since it can now follow it.)*
+
+**The real answer is to stop holding the request** — the sheet already polls, so
+the machinery exists; the mutation would dispatch and return, and the outcome
+would arrive on the surface like every other durable fact. That is an
+architecture item for this program with a price, and it is what retires the
+class. **Ruled NOT to be a founder Railway ask** (fable-825 §3): moving a
+timeout treats the percentile, making the answer arrive treats the customer.
+
+**One instrument finding, ruled DISCLOSURE rather than inclusion** (fable-828
+§2): the 15 sweep-settled refines with no variant row never enter the
+reliability report's denominator, which reads `FROM
+casting_candidate_variants`. That is **7.5% of his paid refines absent from the
+number D-236 made the sole source of the delivery rate**. Excluding them is
+arguably right for what the bar MEANS — a deploy-collision death is not the
+product failing to deliver a picture — but excluding them silently is not, and
+it flatters the figure in the one direction nobody checks. The report now
+counts and prints them with their reason (`countRecoveredExclusions`), and
+prints "NOT COUNTED" rather than a confident nought when a caller does not
+supply the number. No money is wrong: all were charged and refunded.
+
 **COST half (founder, 2026-08-10: "costs are getting ridiculous — after
 we lock everything in we need to optimize massively, both render times
 and cost"):** a per-render call census (calls × model × when), the

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { CANNOT_SAY_COPY, cannotSaySentence, type CannotSayReason } from "./cannotSayCopy";
+import { RECOVERED_REFINE_SENTENCE } from "./refineRecovery";
 
 /**
  * EVERY DOOR THAT KNOWS WHY IT REFUSED HAS A SENTENCE (fable-471 §1).
@@ -43,8 +44,17 @@ describe("the registry answers for every reason the road can refuse with", () =>
     for (const reason of REASONS) {
       const said = cannotSaySentence(reason, bare);
       expect(said.length, `${reason} says nothing`).toBeGreaterThan(20);
+      /*
+        THE MALFUNCTION SENTENCE BY NAME, NOT BY SPELLING.
+
+        This read `.not.toContain("didn't come through")` — a literal copied
+        from the sweep's sentence. That sentence was rewritten on 2026-08-17
+        and the literal would have gone on passing over a string nothing
+        writes, which is a guard that cannot fail. It now imports the constant,
+        so a future edit to the copy moves this assertion with it.
+      */
       expect(said, `${reason} falls back to the malfunction sentence`)
-        .not.toContain("didn't come through");
+        .not.toContain(RECOVERED_REFINE_SENTENCE);
       /* Every one of them ends the money question, because that is the first
          thing a person asks when a paid surface refuses. */
       expect(said, `${reason} leaves the money unsaid`).toMatch(/Nothing was charged\.|credits have been returned\./);

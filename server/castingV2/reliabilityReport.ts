@@ -514,6 +514,28 @@ export type ReliabilityReport = {
   /** Delivered renders whose own read-back could not corroborate the ask.
    *  Counted, never folded into a rate — see `StoredVerification`. */
   uncorroborated: number;
+  /**
+   * PAID ATTEMPTS THIS REPORT CANNOT SEE, disclosed rather than merely omitted
+   * (fable-828 §2, from opus-617).
+   *
+   * The rows here come `FROM casting_candidate_variants` (`attemptRows.mts`),
+   * and a refine killed before its variant row was written has none — the
+   * operation was claimed and CHARGED, the recovery sweep refunded it, and
+   * nothing about it ever reaches this table. Read on production 2026-08-17:
+   * **15 of the founder's 199 settled refines, 7.5%.**
+   *
+   * Excluding them from the delivery rate is arguably right for what D-236's
+   * bar MEANS — a deploy-collision death is not the product failing to deliver
+   * a picture, and CLAUDE.md documents that class as designed-for and accepted.
+   * Excluding them SILENTLY is not right: it is a denominator that quietly
+   * drops a class of paid attempts, and it flatters the number in the one
+   * direction nobody would check. So the count is carried and printed with its
+   * reason.
+   *
+   * Undefined means the caller did not count them — which is NOT zero, and the
+   * formatter says so rather than printing a confident nought.
+   */
+  recoveredExclusions?: number;
   /** Classes below the bar, named — they do not block the others (D-236). */
   blockers: string[];
   /**
@@ -622,7 +644,7 @@ function finish(tally: ClassTally): ClassTally {
 
 export function summarize(
   rows: ReadonlyArray<AttemptRow>,
-  options: { windowFrom?: Date; windowLabel?: string } = {},
+  options: { windowFrom?: Date; windowLabel?: string; recoveredExclusions?: number } = {},
 ): ReliabilityReport {
   const overall = emptyTally("all");
   const byClass = new Map<string, ClassTally>();
@@ -660,6 +682,7 @@ export function summarize(
     byClass: classes,
     creditsRefunded,
     uncorroborated,
+    recoveredExclusions: options.recoveredExclusions,
     blockers: classes
       .filter((tally) => tally.deliveryClaims > 0 && !tally.clearsBar)
       .map((tally) => tally.edit),
@@ -752,6 +775,27 @@ export function formatReport(report: ReliabilityReport): string {
       `carried by stored segments: ${report.overall.delivered_carried} `
       + "— correct in the picture, outside the rate's denominator, because a "
       + "carried facet is arithmetic rather than a fresh delivery",
+    );
+  }
+  /*
+    WHAT THIS TABLE COULD NOT SEE, said out loud (fable-828 §2).
+
+    A denominator that drops a class of PAID attempts without saying so is a
+    number flattering itself, and this one dropped them invisibly for as long as
+    the report has existed. Printed even when the count is zero, because "none
+    this window" and "nobody counted" are different facts and a missing line
+    reads as the first.
+  */
+  if (report.recoveredExclusions === undefined) {
+    lines.push(
+      "paid attempts settled by recovery: NOT COUNTED by this caller "
+      + "— excluded from the delivery denominator, and their number is unknown",
+    );
+  } else {
+    lines.push(
+      `paid attempts settled by recovery: ${report.recoveredExclusions} `
+      + "— deploy-collision class, charged and refunded, excluded from the "
+      + "delivery denominator because they never reached a render",
     );
   }
   lines.push(

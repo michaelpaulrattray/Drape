@@ -14,7 +14,8 @@ import {
   type GenerationOperationDto,
 } from "./generationOperationProjection";
 import { subscribeCastDeleted } from "./castDeletionSync";
-import { ownsItsOwnSurface } from "./surfaceOwnership";
+import { bridgeShouldSpeak } from "./surfaceOwnership";
+import { forgetOutcomeShown, outcomeShownFor } from "./outcomeShown";
 import {
   publishCastProjectionChanged,
   subscribeCastProjectionChanged,
@@ -236,24 +237,28 @@ export function GenerationOperationBridge() {
               /*
                 D-110: A TOAST IS THE FALLBACK CHANNEL, NEVER A SECOND COPY.
 
-                The reasoning, the kinds and the founder's own report of what
-                goes wrong live in `surfaceOwnership.ts`. It was one literal
-                here; it is a named list there because every Casting V2 surface
-                built so far confesses in place, and the next kind added should
-                have to decide rather than inherit a toast by default.
+                The reasoning, the kinds, the founder's own report of what goes
+                wrong, and now the whole decision live in `surfaceOwnership.ts`.
+                The clauses used to be inline here with the suite holding its
+                own copy of them; the predicate moved so that the test can drive
+                the thing this line calls rather than a restatement of it.
               */
-              if (
-                settled.operation.status === "failed"
-                && settled.operation.publicMessage
-                && !locallyNotifiedFailure
-                && !ownsItsOwnSurface(settled.operation.kind)
-              ) {
-                toast.error(settled.operation.publicMessage);
+              if (bridgeShouldSpeak({
+                kind: settled.operation.kind,
+                status: settled.operation.status,
+                publicMessage: settled.operation.publicMessage,
+                locallyNotifiedFailure,
+                outcomeShown: outcomeShownFor(operation.clientRequestId),
+              })) {
+                toast.error(settled.operation.publicMessage as string);
               }
             }
           }
           handledRef.current.add(dedupeKey);
           localRequestsRef.current.delete(operation.clientRequestId);
+          /* Bounded at the same point as the line above, and for the same
+             reason: the fact existed to decide THIS, and it is decided. */
+          forgetOutcomeShown(operation.clientRequestId);
         } catch {
           // Server truth remains visible. Retry after a bounded delay rather
           // than dropping the durable result or spinning an invalidation loop.

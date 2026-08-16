@@ -15,7 +15,7 @@
  *           --user 1
  */
 import { formatReport, summarize } from "../server/castingV2/reliabilityReport.js";
-import { readAttemptRows } from "./lib/attemptRows.mjs";
+import { countRecoveredExclusions, readAttemptRows } from "./lib/attemptRows.mjs";
 
 const arg = (name: string): string | undefined => {
   const index = process.argv.indexOf(`--${name}`);
@@ -41,9 +41,21 @@ const attempts = await readAttemptRows({
   process.exit(1);
 });
 
+/* AND WHAT THE QUERY ABOVE CANNOT SEE, counted rather than left implicit —
+   paid refines whose variant row was never written, so the reliability table
+   has no row for them at all. See `countRecoveredExclusions`. */
+const recoveredExclusions = await countRecoveredExclusions({
+  since,
+  userId: userId ? Number(userId) : undefined,
+}).catch((error: unknown) => {
+  console.error(error instanceof Error ? error.message : String(error));
+  process.exit(1);
+});
+
 const report = summarize(attempts, {
   windowFrom: since,
   windowLabel: since ? `since ${since.toISOString()}` : "all time",
+  recoveredExclusions,
 });
 console.log(formatReport(report));
 

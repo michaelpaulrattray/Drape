@@ -32,30 +32,80 @@
  * design. The test pins that as a rule rather than as a habit.
  */
 const SELF_REPORTING_KINDS = new Set<string>([
+  /*
+    THESE TWO STAY ON THE LIST BECAUSE THE COARSE ANSWER IS THE TRUE ONE FOR
+    THEM: their surfaces can represent a TERMINAL FAILURE, whoever was watching.
+    That is the property the list is really asserting, and it is a property of
+    the kind rather than of the request — so a standing answer is honest here.
+  */
   // The sheet: the failure banner, per-tile captions, the cancel line that
-  // counts refunds down as they land, and the notice slot.
+  // counts refunds down as they land, and the notice slot. A failed roll leaves
+  // `failed-refunded` tiles behind whether or not anyone saw it happen.
   "castingV2.roll",
   // The room: a permanently failed slot confesses in place ("this view didn't
   // arrive — refunded"), and a total loss says so at the top, server-authored
   // so the room and the ledger cannot drift.
   "castingV2.sign",
   /*
-    The refine panel owns its outcomes (D-154), and this entry is what makes
-    that true — it was missing, so the bridge toasted refine failures too.
+    `castingV2.refine` WAS HERE and is not, since 2026-08-17 (opus-614/617,
+    ruled fable-825 §2 / fable-828 §3). Kept as a comment because its removal
+    is the ruling, and a reader who re-adds it will re-open a defect the
+    founder personally lived eight times.
 
-    The founder met it as a long, leaky error pill beside a panel that was
-    already saying the same thing better. The comment above had called this
-    exact omission "almost certainly a mistake" before the kind existed; the
-    kind arrived in M8 and the entry never followed, which is the call-site-
-    never-added shape this program keeps finding, wearing a list instead of a
-    function.
+    The entry was correct about the panel and wrong about the payload. The
+    refine panel does own its outcomes (D-154) — but its ONLY channel is the
+    return value of its own mutation, and a terminal refine failure is in
+    NEITHER of the sheet's two lists (`status='ready'`,
+    `status IN ('queued','dispatched')`), so it leaves the payload entirely.
+    When the mutation is the thing that died — 1.7% of his production refines
+    answered past the ~305 s gateway wall, measured — the panel shows its
+    fallback and the server's sentence reaches nobody.
+
+    So the ownership is per REQUEST, not per kind, and it is produced by the
+    sheet into `outcomeShown.ts`. The list keeps only the kinds whose answer
+    genuinely cannot vary that way.
   */
-  "castingV2.refine",
 ]);
 
 /** True when this operation's outcome already has somewhere better to appear. */
 export function ownsItsOwnSurface(kind: string): boolean {
   return SELF_REPORTING_KINDS.has(kind);
+}
+
+/**
+ * THE WHOLE DECISION, IN THE FUNCTION THE BRIDGE ACTUALLY CALLS.
+ *
+ * It used to be four clauses inline in `GenerationOperationBridge`, with the
+ * suite carrying its own copy of three of them and importing only the fourth —
+ * so the test described the bridge rather than testing it, and would have
+ * stayed green through a wrong change to any of the restated three. That is the
+ * same mirror (law 4) this file's own ruling is about, one level up.
+ *
+ * The order is the argument:
+ *
+ *   1. only a FAILURE with a sentence to say is a candidate at all;
+ *   2. `locallyNotifiedFailure` — the legacy adapter's per-request answer,
+ *      unchanged and still first among the suppressions;
+ *   3. a kind whose surface can represent a terminal failure whoever was
+ *      watching (roll, sign) is never spoken over;
+ *   4. and otherwise the per-request fact: if a surface showed the SERVER'S own
+ *      sentence, the bridge has nothing to add. If it showed a fallback — or if
+ *      nobody was watching at all — the true sentence has reached no one, and
+ *      the bridge is the only thing that still holds it.
+ */
+export function bridgeShouldSpeak(input: {
+  kind: string;
+  status: string;
+  publicMessage: string | null;
+  /** The legacy same-tab adapter's answer, where one exists. */
+  locallyNotifiedFailure?: boolean;
+  /** What a surface put on screen for this request, from `outcomeShown.ts`. */
+  outcomeShown?: "server" | "fallback" | null;
+}): boolean {
+  if (input.status !== "failed" || !input.publicMessage) return false;
+  if (input.locallyNotifiedFailure) return false;
+  if (ownsItsOwnSurface(input.kind)) return false;
+  return input.outcomeShown !== "server";
 }
 
 /**

@@ -72,10 +72,23 @@ const OURS = new Set([
  * save, a signing that did not happen. What does NOT vary is the rule, so the
  * rule lives once and the copy lives at each call site.
  */
-export function readableFailure(error: unknown, fallback: string): string {
+/**
+ * DID THE SERVER'S OWN SENTENCE REACH US? — the same decision, asked directly.
+ *
+ * `readableFailure` already computes this and then throws the answer away,
+ * keeping only the string. A caller that must know WHICH of the two it is
+ * holding — because a fallback means the true answer never arrived and somebody
+ * else should still deliver it — would otherwise have to compare the returned
+ * string against its own fallback constant, which is reading a spelling for a
+ * meaning and breaks the first time the copy is edited.
+ *
+ * One rule, one place: `readableFailure` is written in terms of this rather
+ * than beside it, so the two can never disagree about the same error.
+ */
+export function failureIsOurs(error: unknown): boolean {
   const err = error as Trpcish;
-  const code = err?.data?.code;
   const message = typeof err?.message === "string" ? err.message.trim() : "";
+  if (!message) return false;
   /*
     TWO KINDS OF EVIDENCE THAT THE SENTENCE IS OURS, NOT TWO COPIES OF ONE LIST.
 
@@ -86,9 +99,15 @@ export function readableFailure(error: unknown, fallback: string): string {
     lost-contact line, including three that said "Nothing was charged" — so the
     marker is checked first and the list stays as the older evidence.
   */
-  if (errorIsSpoken(error) && message) return message;
-  if (code && OURS.has(code) && message) return message;
-  return fallback;
+  if (errorIsSpoken(error)) return true;
+  const code = err?.data?.code;
+  return Boolean(code && OURS.has(code));
+}
+
+export function readableFailure(error: unknown, fallback: string): string {
+  const err = error as Trpcish;
+  const message = typeof err?.message === "string" ? err.message.trim() : "";
+  return failureIsOurs(error) ? message : fallback;
 }
 
 /**
