@@ -34,13 +34,14 @@ export type KeptEntry = {
   /**
    * ALREADY SIGNED — and therefore never a Sign target (fable-729 §5).
    *
-   * The server has always sent this and said why at the projection: a signed
-   * face stays in the tray because it is part of this sheet's story, and it
-   * cannot be signed again. The client did not carry the field, so the tray
-   * drew it as an ordinary radio labelled *"Sign 03 from ROLL 02"* — and the
-   * sheet's own target list filters signed faces out, so clicking one wrote a
-   * selection nothing could honour and the accent ring stayed on a different
-   * woman. A dead click on the control that aims a 450-credit ceremony.
+   * **Optional because the server no longer sends it** (fable-744 §3b): the
+   * loader filters signed candidates out of the shortlist, so the tray only
+   * ever receives faces that can be signed. The field and its treatment stay
+   * as the honest rendering of a signed entry should one ever arrive — the
+   * defect this was written for was a signed face drawn as an ordinary radio
+   * labelled *"Sign 03 from ROLL 02"*, whose click wrote a selection nothing
+   * could honour while the accent ring stayed on a different woman. A dead
+   * click on the control that aims a 450-credit ceremony.
    */
   signed?: boolean;
 };

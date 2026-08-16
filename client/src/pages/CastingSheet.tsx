@@ -777,14 +777,14 @@ export default function CastingSheet() {
   /*
     WHO THE DOCK'S SIGN IS ABOUT.
 
-    The kept set, minus anyone already signed — a spent candidate is still part
-    of the sheet's story and stays in the tray, but she can never be a target.
     Newest keep first, because the last thing you kept is almost always the one
-    you mean.
+    you mean — and signed faces out of the aim if one ever arrives. The rule and
+    its reasoning live in `signTarget.ts`, because the TRAY asks the same
+    question and the two of them disagreeing is how a click armed a different
+    woman (fable-729 §5). Today the server's loader keeps signed candidates out
+    of the shortlist entirely (fable-744 §3b), so this filter passes everything;
+    it stays because the ceremony it aims costs 450 credits.
   */
-  /* Newest keep first, signed faces out of the aim — the rule and its reasoning
-     live in `signTarget.ts`, because the TRAY asks the same question and the two
-     of them disagreeing is how a click armed a different woman (fable-729 §5). */
   const keptTiles = signTargets(shortlist);
   const signTarget =
     keptTiles.find((entry) => entry.candidateId === signSelectionId) ?? keptTiles[0] ?? null;

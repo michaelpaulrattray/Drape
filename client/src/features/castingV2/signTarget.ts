@@ -25,9 +25,18 @@ export type SignableEntry = { signed?: boolean };
 /**
  * Can this kept face be signed?
  *
- * A signed face stays in the tray — she is part of this sheet's story, and the
- * server keeps her there deliberately — but she can never be a Sign target,
- * because the ceremony has already happened to her.
+ * **Today the answer is always yes, and that is on purpose** (fable-744 §3b).
+ * The server's loader filters signed candidates out of the shortlist before it
+ * is projected, so a signed face never reaches the tray and the flag is never
+ * set — the ruling chose the loader as the product and deleted the projection's
+ * field rather than widening the filter.
+ *
+ * The predicate stays anyway, because what it protects is the aim of a
+ * 450-credit ceremony and the thing keeping a signed face out of range is a
+ * `WHERE` clause one layer and one repository away. If that filter is ever
+ * widened — deliberately or by accident — this is the line that stops a click
+ * from arming a woman who has already been signed, instead of the defect
+ * reappearing as a ring on the wrong face.
  */
 export function canBeSigned(entry: SignableEntry): boolean {
   return entry.signed !== true;
@@ -35,13 +44,21 @@ export function canBeSigned(entry: SignableEntry): boolean {
 
 /**
  * The tray's faces in the order the dock offers them: **newest keep first**,
- * signed faces removed.
+ * signed faces removed if one ever arrives.
  *
  * The order is part of the rule rather than the caller's business — the last
  * thing you kept is almost always the one you mean, and a second caller
  * reversing it its own way is how the ring and the target come to disagree
  * again.
  */
-export function signTargets<T extends SignableEntry>(shortlist: readonly T[]): T[] {
-  return [...shortlist].reverse().filter(canBeSigned);
+export function signTargets<T extends object>(shortlist: readonly T[]): T[] {
+  /*
+    The constraint is `object`, not `SignableEntry`, and the widening is the
+    point. Since fable-744 §3b the server's shortlist row does not DECLARE a
+    `signed` field — so constraining on one made the compiler collapse every
+    caller's row to the guard's own shape and lose its real columns. Requiring
+    callers to re-declare a field the product does not send would be mirroring
+    the rule back out into the surfaces this module exists to take it away from.
+  */
+  return [...shortlist].reverse().filter((entry) => canBeSigned(entry as SignableEntry));
 }

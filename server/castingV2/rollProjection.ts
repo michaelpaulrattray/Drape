@@ -521,7 +521,6 @@ export type ShortlistEntry = {
   personaLine: string | null;
   sourceRollIndex: number;
   indexLabel: string;
-  signed: boolean;
 };
 
 export function projectShortlist(
@@ -538,9 +537,29 @@ export function projectShortlist(
     // The face's own label, so the dock's Sign can NAME who it is about to
     // spend on rather than saying "sign the selection".
     indexLabel: String(candidate.position + 1).padStart(2, "0"),
-    // A kept candidate that has already been signed stays in the tray — it is
-    // still part of this sheet's story — but it can never be a Sign target.
-    signed: candidate.status === "signed",
+    /*
+      NO `signed` FIELD, and the absence is the ruling (fable-744 §3b).
+
+      This projection used to send one, under a comment saying *"a kept
+      candidate that has already been signed stays in the tray — it is still
+      part of this sheet's story"*. The loader one layer down never honoured
+      that sentence: `listKeptCandidates` filters `status = 'ready'`, so a
+      signed candidate has never reached this function at all. Verified in the
+      running app on the one dev sheet that has both — 3 kept, 2 signed, **1
+      chip drawn**.
+
+      Asked which one was the product, the ruling took the LOADER: a signed
+      face's shortlist job is done — she graduated to the roster, and dimmed
+      residue in the tray is clutter by the founder's own minimalism law. So
+      the field went rather than the filter, because a projection carrying a
+      fact its own loader makes unreachable is a second copy waiting to drift
+      (working law 4), and the comment was already describing a product that
+      did not exist.
+
+      Reversible in one line if signed faces are ever wanted here — and the
+      dock's aim does not depend on it either way: `signTarget.ts` holds that
+      rule, and it holds it structurally rather than by trusting this row.
+    */
   }));
 }
 
