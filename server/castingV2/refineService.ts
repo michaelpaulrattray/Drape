@@ -4531,6 +4531,27 @@ async function refineCandidateCounted(
     };
 
     const uncorroborated: Array<{ facet: string; asked: string; saw: string }> = [];
+    /*
+      STAGE 3 OF THE LATENCY WORK STOPPED HERE, ON PURPOSE (fable-695 §4c).
+
+      These are two model calls per facet — a side cut from the segmenter and a
+      caption from the text engine — running strictly one facet after another on
+      the customer's paid wait, and they ARE independent: `asked` is a pure
+      function of this facet and the identity the render already had,
+      `sideViewOf` reads only its own facet's region, and `captionRealization`
+      is an engine call whose only reach outside itself is the
+      `onUncorroborated` callback. Both transports are gated (the segmenter
+      through `throughFalGate`, the text engine through its own `ProviderQueue`).
+
+      It was written, it typechecked, and the whole suite stayed green — and it
+      was taken out again, because green is not a control. Every caption fixture
+      in `refineService.test.ts` drives ONE facet, so nothing in this repository
+      can currently tell a parallel version of this loop from the serial one.
+      Shipping it would have put an unmeasured change on the paid path with a
+      claim about speed nobody can check, which is the shape this program
+      refuses. The unblocking test is a two-facet caption fixture; with one, the
+      loop takes ten minutes.
+    */
     for (const facet of Array.from(captionFacets)) {
       const asked = currentIdentity
         ? currentValueOfFacet(applyDelta(currentIdentity, composed), facet)
