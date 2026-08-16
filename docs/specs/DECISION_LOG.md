@@ -8594,4 +8594,50 @@ old contract was rewritten rather than deleted, with the ruling in its comment.
 
 ---
 
+## D-247 — IDENTITY LOCKS AT SIGN. "Takes" is an idea he has not settled, and it is not a licence to build one.
+
+**2026-08-17, founder ruling, verbatim** (given in the sitting recorded at
+fable-840 §B.4, answering `M12_RECONCILIATION.md`'s reframed question *"Once a
+Cast is Signed, can she be changed at all — and if she can, does the whole
+package follow her?"*):
+
+> *"the identity is locked but you can maybe do different takes e.g she is
+> wearing this dress or in this envrioment or wearing these earrings etc etc
+> not sure have not figured out the best usecase for takes yet. but identity
+> should be locked."*
+
+### The rule
+
+1. **Identity LOCKS at Sign.** `refineService.ts`'s `already_signed` refusal is
+   the product's answer rather than a placeholder: after Sign, who she is — her
+   eyes, her hair, her face — does not change. Editing lives before Sign, which
+   is where it lives today. This is the first of M12's three answers, and it is
+   now his rather than a recommendation.
+2. **M12 rows 4 and 5 unblock under it.** Row 5 (affected-view derivation,
+   fail-closed) and row 11 (the superseded migration) do not come back: nothing
+   re-renders a signed package because nothing changes a signed identity. Row 4's
+   `revision` destination is closed by the same sentence — there is no revision
+   to route.
+3. **"Takes" is NOT-YET-CONFIRMED and must not be built on this ruling.** He
+   named the idea (a dress, an environment, earrings — new photographs of the
+   same locked her) and said in the same breath that he has not figured out the
+   use case. Under the confirmed-before-filed rule that is an idea on the record,
+   not a decision: **a fresh founder yes is required before any Take is built**,
+   and this entry is not it. M8 is where the question returns.
+4. **One sentence of shipped copy is now wrong, and it is one word.**
+   `CastingRoom.tsx:481` reads *"Refining a signed Cast arrives with
+   refinement."* It sits inside the Takes section under the disabled "New takes"
+   button, so the surface is already right and only the verb blurs the line this
+   ruling draws — identity edits are not what arrives; takes are, if he ever
+   rules them in. The re-word rides the next commit that touches that room, and
+   until it does the room promises something the product has now decided against.
+
+**Why this is a founder entry and not a design note.** Every one of the three
+answers M12 priced was buildable and the cheapest one was the worst — a Master
+that moves while the five package views stay behind ships an incoherent person.
+Reading the code could establish that a Cast has six views; it could never
+establish which of the three he wanted. This is the fact the log exists to hold.
+
+---
+
 **End of decision log.** Ratify, amend, or veto per line; the build plan follows your pass.

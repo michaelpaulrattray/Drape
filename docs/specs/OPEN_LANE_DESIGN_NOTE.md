@@ -683,8 +683,22 @@ step 4  the slotless Ask             PART BUILT            — see §9.7: the sc
 step 5  the acceptance path          REMAINING             — refineDelta:721 +
                                                              the interpreter's reply
                                                              shape (`delta.open`)
-step 6  the demand writer            REMAINING             — after the prod ceremony
+step 6  the demand writer            REMAINING             — UNBLOCKED: the table
+                                                             already exists in
+                                                             production
 ```
+
+> **Step 6's "after the prod ceremony" is spent, and it was spent before it was
+> written** (fable-840 §B.2, confirmed 2026-08-17 against production
+> `:23768` — `casting_open_lane_demand` APPLIED, columns id/kind/outcome/
+> createdAt, **0 rows**, which is the correct newborn state because nothing
+> writes it yet). The founder ran that ceremony himself weeks ago; a later card
+> asked him for it a second time and the re-run answered ALREADY APPLIED.
+> **So the writer has no ceremony to wait for** — it goes live on this build's
+> own schedule, behind its own flag, the day step 5 gives it something to
+> record. Nothing about the privacy shape changes: the four columns ARE the
+> boundary (a word and how it went, never a sentence, an account, a cast or a
+> picture).
 
 **The nine `owed` answers ARE the step 3–5 work list**, which is what
 `owedByThePolicy()` was built to return: `FREE_SUBJECT_KIND`,
