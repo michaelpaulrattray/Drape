@@ -579,9 +579,11 @@ try {
     }
     const park = (server + 1) % chips.length;
     if (!(await press(park))) break;
-    /* Inside the round trip: long enough for the claim to paint, far short of
-       the write landing (it is ~2.7s on this machine, longer throttled). */
-    await new Promise((resolve) => setTimeout(resolve, 250));
+    /* Inside the round trip: long enough for the claim to paint — including a
+       version with no thumbnail, whose full frame has to decode before the
+       plate moves — and far short of the write landing (~2.7s on this machine,
+       longer throttled). At 250ms the park was skipped as often as it took. */
+    await new Promise((resolve) => setTimeout(resolve, Number(process.env.PARK_MS ?? 700)));
     const parkedPlate = await plateNow();
     /*
       THE FIXTURE HAS TO EXIST BEFORE ITS NULL MEANS ANYTHING.

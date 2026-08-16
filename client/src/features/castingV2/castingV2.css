@@ -743,6 +743,47 @@
   overflow: hidden;
 }
 
+/*
+  THE OUTGOING FRAME HOLDS THE BOX WHILE THE SMALL COPY IS DRAWN — the SIZER
+  half of the two-layer form (fable-729 §2), built without the fade the founder
+  dropped in fable-728: *"its polish thats not required if the click bugs are
+  fixed."*
+  --------------------------------------------------------------------------
+
+  Why it needs two elements at all is written a few rules down: a thumbnail is
+  320px on its longest side, `max-width`/`max-height` only ever shrink, and this
+  plate has no definite height of its own — so `height: 100%` has nothing to
+  resolve against and the picture COLLAPSES to the small copy's natural size on
+  every switch, then grows back when the real bytes land.
+
+  It is not a graceful-switch question. Measured with the rail recorder on
+  2026-08-16: the plate goes 420px tall → 320 → 420, and the version rail beside
+  it travels **50px vertically each way**, on one press in three. A rail that
+  moves while somebody is clicking through versions is the founder's own felt
+  bug wearing a smaller coat.
+
+  So the frame being LEFT is drawn hidden at its own size — already decoded,
+  already on screen, no second download — and the stand-in is laid over it.
+  Nothing fades and nothing transitions: the cut stays exactly as hard as it is
+  today, minus the jump.
+*/
+.dpc-viewer__sizer {
+  /* `visibility` rather than `opacity`, so it takes its space and paints
+     nothing; and rather than `display: none`, which would take no space at all
+     and is the entire job. */
+  visibility: hidden;
+}
+
+.dpc-viewer__plate[data-standin="true"] > img:not(.dpc-viewer__sizer) {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  /* The two frames are the same picture at two sizes, so `contain` lands the
+     stand-in exactly where the sharp one will arrive. */
+  object-fit: contain;
+}
+
 .dpc-viewer__frame img {
   display: block;
   /*

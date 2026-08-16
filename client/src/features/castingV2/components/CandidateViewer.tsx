@@ -167,7 +167,11 @@ const TYPICAL_WAIT = "usually three to four minutes";
  * stranded on a picture the user did not ask for because an instrument said no
  * — the same asymmetry the mint's courtesy reads use.
  */
-function useShownFrame(frame: ViewerFrame): { frame: ViewerFrame; preview: boolean } {
+function useShownFrame(frame: ViewerFrame): {
+  frame: ViewerFrame; preview: boolean;
+  /** The frame being LEFT, drawn hidden to hold the box — see the return. */
+  sizer: string | null;
+} {
   const [shown, setShown] = useState(frame);
 
   /*
@@ -288,12 +292,31 @@ function useShownFrame(frame: ViewerFrame): { frame: ViewerFrame; preview: boole
     and a ref written in the commit cannot be a render that disagrees with the
     DOM it just produced.
   */
-  if (frame.url === shown.url) return { frame, preview: false };
+  if (frame.url === shown.url) return { frame, preview: false, sizer: null };
   const standIn = frame.previewUrl
     ?? (standing.current?.forUrl === frame.url ? standing.current.previewUrl : null);
+  /*
+    AND THE FRAME BEING LEFT HOLDS THE BOX WHILE THE STAND-IN IS DRAWN
+    (fable-729 §2 — the SIZER half of the two-layer form, without the fade the
+    founder dropped in fable-728).
+
+    A thumbnail is 320px on its longest side and the full frame is ~1500;
+    `max-width`/`max-height` only ever shrink, and the plate has no definite
+    height of its own — so the picture COLLAPSED to the small copy's natural
+    size on every switch and grew back when the real bytes landed. Measured
+    with the rail recorder: the plate goes 420px tall to 320 and back, and the
+    version rail beside it moves **50px vertically each way**, on one press in
+    three. That is not a grace note; it is a thumbnail travelling under his
+    hand while he is clicking, which is the class this whole chunk is about.
+
+    So the outgoing frame — already decoded, already on screen, no second
+    download — is drawn hidden underneath at its own size and the stand-in is
+    laid over it. The box stops moving. The cut stays hard: no fade, no
+    transition, exactly the behaviour he has now, minus the jump.
+  */
   return standIn
-    ? { frame: { ...frame, url: standIn }, preview: true }
-    : { frame: shown, preview: false };
+    ? { frame: { ...frame, url: standIn }, preview: true, sizer: shown.url }
+    : { frame: shown, preview: false, sizer: null };
 }
 
 export function CandidateViewer({
@@ -360,7 +383,7 @@ export function CandidateViewer({
 }) {
   const closeRef = useRef<HTMLButtonElement>(null);
   const asked = frames[index] ?? frames[0];
-  const { frame, preview } = useShownFrame(asked);
+  const { frame, preview, sizer } = useShownFrame(asked);
   const canStep = Boolean(onIndexChange) && frames.length > 1;
 
   useEffect(() => {
@@ -532,7 +555,19 @@ export function CandidateViewer({
               An overlay measured against the figure would drift the moment a
               portrait and a landscape frame sat in the same viewer.
             */}
-            <span className="dpc-viewer__plate">
+            <span className="dpc-viewer__plate" data-standin={sizer ? "true" : "false"}>
+              {/*
+                THE OUTGOING FRAME, HIDDEN, HOLDING THE BOX (fable-729 §2).
+
+                Only while a stand-in is drawn, and always a picture that is
+                already decoded — it is the one that was on screen a moment ago
+                — so it costs no download and cannot flash. `alt=""` and
+                `aria-hidden`: it is furniture, and a screen reader hearing the
+                previous version described would be told the wrong picture.
+              */}
+              {sizer ? (
+                <img className="dpc-viewer__sizer" src={sizer} alt="" aria-hidden="true" />
+              ) : null}
               {/* Soft while it IS the small copy, sharp the moment the real
                   bytes land — one element, so there is no second decode and
                   nothing to flash between two layers. */}

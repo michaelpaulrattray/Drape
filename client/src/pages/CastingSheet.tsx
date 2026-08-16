@@ -1051,6 +1051,59 @@ export default function CastingSheet() {
   const facePanelData = scannedFaceData ?? (face.data?.enabled ? face.data : null);
   const faceRows = facePanelData?.groups.flatMap((group) => group.rows) ?? [];
   /*
+    CAN THIS FACE HAVE A COLUMN AT ALL — asked separately from what goes in it
+    (founder's felt bug; measured in opus-538 §5, ruled in fable-729 §3).
+
+    The column's existence used to include *"and while this face has no answer
+    at all yet"*, which is an answer that ARRIVES — so on an account with no
+    panel the column appeared at open and left again a moment later, and the
+    stage, which centres its row, slid the picture and the whole version rail
+    154px sideways with every chip in it. Measured at the instant it happens:
+    the dock is 292px at x=962, then absent, and the rail goes x=186 → x=340
+    (292 plus the 16px gap, halved). Someone reaching for the next version
+    while that lands presses two chips from where they looked.
+
+    So the first library read no longer opens a column. A face that cannot have
+    a panel never gets one and nothing moves; a face that can gets it when the
+    library answers, which is early and once. The WORKING LINE keeps its own
+    condition — fable-397's *"it looks like nothing is even happening"* is
+    about the scan, and the scan is inside a column that is already there.
+
+    Not the reserve-it-always fix, deliberately: that was built, photographed,
+    and rejected at the frame — an off-centre photograph beside a dead 292px
+    gutter — and it would have reopened fable-491 besides.
+  */
+  const facePanelPossible = Boolean(facePanelData)
+    || (Boolean(face.data?.scanning) && faceScan.isPending)
+    || face.isPlaceholderData
+    || faceScan.isPlaceholderData;
+  /*
+    AND ONCE IT HAS APPEARED FOR THIS FACE, IT DOES NOT LEAVE HER.
+
+    The condition above stops the column opening on a face that cannot have
+    one, and measuring it in the running app showed the other half of the same
+    shove: a face the server says IS scanning opens a column honestly, and if
+    that scan comes back with nothing to show the column leaves — 154px, mid
+    look, with the rail in it. The rule the founder's hand cares about is not
+    *when may a column appear* but *nothing moves under my aim*, so the
+    existence is latched to the face it opened on.
+
+    The cost is a face whose scan fails keeping an empty column until she steps
+    away, which is the quiet failure; the alternative is the loud one, and it
+    is the one he reported. Latched per candidate, so stepping to the next
+    woman asks the question again from scratch (the fable-465 scope).
+
+    Written from an effect rather than during the render: the only reading that
+    matters is the one AFTER the column has already been on screen, and by then
+    the commit that put it there has run.
+  */
+  const columnOpenedFor = useRef<string | null>(null);
+  useEffect(() => {
+    if (facePanelPossible && viewerCandidateId) columnOpenedFor.current = viewerCandidateId;
+  }, [facePanelPossible, viewerCandidateId]);
+  const facePanelColumn = facePanelPossible
+    || (viewerCandidateId !== null && columnOpenedFor.current === viewerCandidateId);
+  /*
     ONE DRAFT, THREE DOORS. The ask box under the picture, a row tapped in the
     panel beside it, and the feature clicked on the picture itself all write the
     same sentence — so the sentence is held here, where all three can reach it,
@@ -2273,28 +2326,10 @@ export default function CastingSheet() {
               layout="column"
             />
           ) : null}
-          /*
-            MEASURED HERE, FIXED NOWHERE YET — the panel SHOVES the rail, and
-            the shape of the answer is a design ruling rather than a patch
-            (founder's felt bug, chased from fable-727 §3c's 154px).
-
-            Read in the running app, at the instant it happens: while the panel
-            is reading, the column is 292px wide at x=962; the moment the read
-            comes back with nothing to show, the column leaves the page — and
-            this stage, which centres its row, slides the picture and the WHOLE
-            version rail 154px to the right, every chip with it (292 plus the
-            16px gap, halved). Someone aiming at the next version while the
-            panel lands presses two chips away from where they looked.
-
-            Reserving the column unconditionally was built and LOOKED AT, and it
-            buys the stability at a price the picture pays: on a face with no
-            panel at all, the photograph and its rail sit visibly left of centre
-            beside a dead 292px gutter. It also crosses fable-491, which ruled
-            that a face with nothing to say gets no column rather than an empty
-            one. So the measurement is filed with the frame and the options, and
-            the ruling is asked for rather than assumed.
-          */
-          beside={(facePanelData || faceScanWorking) && viewerRefinable ? (
+          /* Whether the column exists at all is decided at `facePanelPossible`,
+             where the reasoning lives; what goes INSIDE it is this component's
+             business, and still says nothing when it has nothing to say. */
+          beside={facePanelColumn && viewerRefinable ? (
             <FacePanel
               groups={facePanelData?.groups ?? []}
               possessive={facePanelData?.possessive ?? "their"}
