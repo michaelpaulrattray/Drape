@@ -60,7 +60,7 @@ all affected → atomic commit | full rollback."*
 | 1 | Focused editor — NL instruction, one price, Apply/Cancel | **DELIVERED** | The refine panel is that editor. `RefinePanel.tsx` carries the price stated once and never on the button (D-15/D-109), and the ask box is the NL instruction. |
 | 2 | …pan/zoom master | **[2nd] REMAINING — there is no magnification anywhere in the product** | Read properly this pass. `CandidateViewer` has no wheel handler, no drag, no transform and no zoom control; its whole interaction grammar is *click opens · ←→ walks · Esc closes · download*. Delivered frames are larger than the viewer shows: a candidate refine renders at **1K** (`refineService.ts:3840`) and a signed package view at **2K** (`packageOrchestrator.ts:377`), and the only way to see one whole is the download button. **[3rd] The CAUSE this cell first named was wrong, and it was measured before anything was built on it.** The 760 CSS px cap (`castingV2.css:722/740/808`, `object-fit: contain`) **never binds**: on a 2:3 frame the viewer runs out of *height* first. Driven in the running app (`scripts/measure-downsample-disposable.mts` → `output/downsample/downsample.json`): in a **2560×1440** window a 1024×1536 frame draws at **604×906** — 0.590 of natural, and 156 px short of the cap it was supposed to be hitting; in a 1440×1000 window it draws at **310×466**, 0.303 (opus-580, that run's file overwritten by this one). Lifting the cap would have shipped a diff and delivered zero pixels; fable-789 §1 withdrew the order to lift it. The complaint is real and the row stands — what has to change is the **height** the picture is allowed, not the width ceiling. ~~**The 2K half is UNREAD**: the fixture bot owns no signed Cast~~ — **[4th] FALSIFIED 2026-08-17 (shift 84): that was never a reading.** The query behind it named two columns that do not exist on `models` (`publicId`, `castingV2SignedAt`) inside a swallowing `.catch`, so it returned empty for every user alive; `verify-bot-local` owns **four** signed Casts. Measured now at dpr 1 and dpr 2 (`scripts/measure-dpr-sharpness-disposable.mts`): the signed package views are **1696×2528** and stay crisp (0.699 at dpr 2), while the **1024×1536 master drawn into the same box** reaches **1.158** — the softness is the master being smaller than the views beside it, not the layout. The one founder ruling nearby (`castingV2.css:2168`, 2026-08-02) rejected the `zoom-in` *cursor* on tiles because it "promises a zoom" the viewer does not keep — that is a ruling about an affordance not matching the surface, **not** a ruling that magnification is unwanted, and the first pass came close to reading it as one. |
 | 3 | …current-vs-proposed | **[3rd] SHIPPED — built as an inheritance, deployed in `80265603`** | **Built and live.** V2's viewer now holds the previous frame under press-and-hold, with the same 150 ms delay as the legacy road (read off it *by the test*, so neither side can drift alone), the same `Original`/`Previous` labels and the same badge. The previous frame is mounted and decoded as soon as one exists and only its *visibility* changes — a `src` swapped at press time is a request, not a picture — and the hold starts on the photograph only, never on a region box. Thirteen driven checks; the one that matters is pixels rather than attributes: **held differs from at rest, released is byte-identical to at rest, the box never moves** (`output/hold-to-compare/`). The legacy road's `grab` cursor is deliberately **not** inherited, under the founder's own zoom-cursor ruling. *The reading that produced it, kept:* fable-785 asked for this exact check and it paid. V1 has **hold-to-compare**: `ImageViewerPanel.tsx:172–181` derives the previous frame and labels it `Original`/`Previous`, and `StudioCanvas.tsx:217–269` swaps the plate on press-and-hold with a badge. V2's viewer has no equivalent — the refine road still shows the delivered frame *instead of* the previous one. So this is not an undesigned capability; it is one the product already proved and V2 did not inherit. Small: the plate is already two-layer (`dpc-viewer__sizer` + the frame, both `inset: 0; object-fit: contain`) and the rail already carries every version's URL on `data-frame`. |
-| 4 | Intent classifier — take / revision / fork routing | **[2nd] REMAINING in letter; two of its three destinations are delivered without it, and the third is blocked by sequence** | Read in depth this pass. The shipped kinds are `castingV2.roll`, `castingV2.refine`, `castingV2.sign` — no `.take`, no `.revision`. But a classifier is only worth what its destinations are worth, and they differ: **take** — the plan's Take (presentation-only picture off a signed Cast, own table, immutable — plan lines 147/270/318) is **not built at all**: no `takeService.ts`, no `casting_takes` table. M8 was re-scoped from Takes to Refine, and fable-707 §1 sequences Takes *after* M12. **revision** — refused at `already_signed`; this is the §3 founder question. **fork** — **delivered, twice, and neither needed a classifier**: fork-from-Cast at session create (`server/db/castingV2.ts:73/122–143`, `parentCastId` resolved through `models.userId` in the same statement — invariant 1 satisfied), and version branching pre-Sign, which the founder described in his own word: *"you just click between accumulated edits and can fork from any you choose."* |
+| 4 | Intent classifier — take / revision / fork routing | **[2nd] REMAINING in letter; two of its three destinations are delivered without it, and the third is blocked by sequence** | Read in depth this pass. The shipped kinds are `castingV2.roll`, `castingV2.refine`, `castingV2.sign` — no `.take`, no `.revision`. But a classifier is only worth what its destinations are worth, and they differ: **take** — the plan's Take (presentation-only picture off a signed Cast, own table, immutable — plan lines 147/270/318) is **not built at all**: no `takeService.ts`, no `casting_takes` table. M8 was re-scoped from Takes to Refine, and fable-707 §1 sequences Takes *after* M12 — **but not immediately after: the founder ordered a CLEANUP MILESTONE between them** (fable-710 §2, in person, `POST_SIGN_ROADMAP.md` §0b — polish queue → V5 → M12 close-out → CLEANUP → M8), which this sentence promised M8 to for a day while the milestone lived only in the mailbox. **revision** — refused at `already_signed`; this is the §3 founder question. **fork** — **delivered, twice, and neither needed a classifier**: fork-from-Cast at session create (`server/db/castingV2.ts:73/122–143`, `parentCastId` resolved through `models.userId` in the same statement — invariant 1 satisfied), and version branching pre-Sign, which the founder described in his own word: *"you just click between accumulated edits and can fork from any you choose."* |
 | 5 | Affected-view derivation, fail-closed | **[2nd] REMAINING — the first pass's "one view" premise is false** | A Cast has **six** views: the Master plus package v3.1's five (`CAST_PACKAGE_VIEWS` = closeUp, threeQuarter, frontFull, sideClose, backFull — `castViewPackage.ts:73`), minted at Sign, priced per view, live in production with signed Casts owning them. What is true is narrower and is a *sequencing* fact, not an absence: **editing and multi-view are mutually exclusive in time.** You refine a candidate (one frame), you Sign (five more are rendered), and then `refineService.ts:696` refuses any further edit — `already_signed`, nothing charged — under a comment that names this milestone: *"Post-Sign revision is M12, not this."* The clause is not superseded; it is the exact unbuilt thing, and the code says so. The founder question it raises is real but different from the one the first pass framed — see §5/8 below. |
 | 6 | NBP regeneration | **DELIVERED, by another engine** | The repaint road regenerates the whole frame from the pristine master plus cropped references (D-241, `CASTING_REPAINT_SCOPE=users:1` in production). The plan named Nano Banana Pro; the road dispatches GPT Image 2 for the edit and NBP for identity work. Same intent, different transport — flag it for him as a wording change, not a gap. |
 | 7 | Presence / absence / likeness probes | **DELIVERED** | The render verifier reads the delivered frame per facet (`verification.checks`, `read`/`verified`), the content gate reads the region, and a failed reading refunds. This is the probe taxonomy under a different name. |
@@ -277,6 +277,43 @@ new is two things:
    ruled form. This is where the design work is, and it is the only part that
    needs him.
 
+### The design conversation does NOT start at zero — his own sketch is on record
+
+*(fable-712 and fable-713, the same night as fable-711, both marked
+**NOT-YET-CONFIRMED** by the founder himself: "not sure honestly need to think
+about this". Filed here 2026-08-17; until then they lived only in the mailbox,
+while this document presented both answers as open from nothing — opus-596 §4,
+ruled fable-807 §2.)*
+
+**Nothing below is ruled, and none of it may be built.** It is where the cards
+start, so his attention is not spent re-deriving what he has already said.
+
+- **Hair — his one-shot seed, in his own words:** *"you ask for hair from
+  reference image → it crops it from the reference for the next generation →
+  when the generation lands the new crop of her with the new hair is taken from
+  her actual image for the next generation (rather than carrying the continual
+  risk of the foreign crop)."* **The assessment he was given: this IS the built
+  architecture** — mint-on-delivery already harvests every feature from HER
+  delivered frame, the foreign image is used once and discarded, and identity
+  risk exists for exactly one render, which the identity gate already judges.
+- **Makeup — his own catch, and it is the right one:** makeup carries as WORDS
+  today (his skin ruling), and words do not hold a surface. **Three candidate
+  designs are on record**, and a small court settles them rather than an
+  argument: (a) **describe-only** — his fable-713 proposal, *"the makeup could
+  merely be described, and the engine can invent it — rather than having to
+  generate a mannequin"*, which in practice means words **plus** the slot crops
+  that eyes and lips already carry for free, leaving only unslotted areas
+  (cheeks/blush, contour) on bare words; (b) **the mannequin face chart** — his
+  earlier idea (`POST_SIGN_ROADMAP.md` §3), makeup's flash sheet: nobody's
+  identity, frozen at introduction, transferable, removable as one thing;
+  (c) **hybrid** — words + slot crops, stated separately because it is what (a)
+  degenerates to. **Sized at ~$5**: same look, both carry roads, few edits,
+  measure hold, pre-registered bar, numbers pick the design.
+- **Tattoos** are already ruled — flash sheets, fable-680, D-138.
+- **The open empirical question, per type:** can the engine lift STYLE from
+  image A onto person B without contamination. A court question, per type,
+  when this work opens after V5.
+
 **The fence is the risk, not the plumbing** (fable-711 §3a). A hairstyle
 reference almost always contains a face, and the product must take the style and
 never the person. That fence has to be designed before this ships, and it is not
@@ -313,3 +350,6 @@ design answers**:
 - **Row 15's two design answers**, both his: the real-person fence (fable-711
   §3a) and the per-feature ingestion form for hair and makeup (§3b). The tattoo
   form is already ruled. The plumbing is sized and mostly built; these gate it.
+  **Neither starts at zero** — his own sketch of the second one is above ("The
+  design conversation does NOT start at zero"), unconfirmed and waiting to be
+  brought back to him as cards rather than as a blank question.

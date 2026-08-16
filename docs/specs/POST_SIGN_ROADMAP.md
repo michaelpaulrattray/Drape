@@ -73,6 +73,39 @@ mailbox archive, memory, and DECISION_LOG by the lost-pin audit of
   honestly draw one (opus-094); the row returns the day the catalogue is
   invoked.
 
+## 0b. THE CLEANUP MILESTONE — founder-ordered, and its slot is the point
+
+*(fable-710 §2, in person 2026-08-16. Filed here 2026-08-17; it had lived only
+in the mailbox until then.)*
+
+**His grounds, verbatim:** *"we have done so much testing and changing of
+systems with this design."*
+
+**The slot, which is the half that was lost:** after V5 lands and M12 is closed
+out, **BEFORE M8 starts.**
+
+```
+polish queue → V5 → M12 close-out → CLEANUP → M8
+```
+
+**Scope, drafted at ruling time precisely so it would not be reinvented**
+(fable-710 §2): disposable scripts swept (keep only what a standing instrument
+cites), probe/output directories cleared, dead flags and superseded code paths
+retired **with the Atlas as deletion authority** (nothing removed while its
+retirement view shows live callers — the M14 discipline applied early at small
+scale), stale spec sections marked superseded, the seam-check death
+(fable-709 §3, §0 above) executed if repaint scope has widened by then, and the
+roadmap file itself re-audited top to bottom.
+
+**How it was lost, because the class outlives the item.** fable-710 carried
+three orders from one sitting. §1 — the character counter's death — is written
+into §0 above and cited. §2 and §3 were not written anywhere, and
+`grep -rn "fable-710" docs/` returned exactly one line for a day. Meanwhile
+`M12_RECONCILIATION.md` told whoever closes M12 that the next thing is M8, with
+nothing in between. **One message, three orders, one landed** — a shape no
+deferral phrase and no failing check can catch, found only by reading the
+ruling against the file it governs (opus-596 §2).
+
 ## 1. Latency AND COST program (first, after the walk campaign; founder-elevated 2026-08-10)
 
 Median 39s → 151s regression (2026-08-08); founder: "5 minutes for 1
@@ -321,6 +354,87 @@ NBP 6/6 at 848×1264 (its only size) vs GPT2 6/8 native; GPT2 tore
 half its frames at 848. Routing is NOT a config change (NBP ignores
 `image_size`). **Gate: n≥20 before any routing claim goes near the
 bar** (opus-068). Over-delivery watched under item 4's principle.
+
+**LIPS ARE ALREADY ANSWERED — do not re-litigate them blind** (founder in
+person, 2026-08-16, fable-710 §3, verbatim): *"gpt image 2 won on lips because
+NBP overdid it."* **LIPS route GPT2 by founder observation** — NBP
+over-renders them — and under law 9 his eye on the frames is the highest
+evidence this program holds, so no court re-opens that row without him.
+**The open question narrows to MARKS (freckles/moles) only**; the n≥20 gate
+above is unchanged and applies to what is still open. (Filed 2026-08-17; it
+had lived only in the mailbox, alongside §0b's milestone, from the same
+message.)
+
+### ⛔ AN UNEXECUTED FOUNDER RULING ON THE PAID PATH — `EYE_SHAPE_ENGINE` has
+### never had a call site (found 2026-08-17, opus-596 §5; ruled fable-807 §3)
+
+**This is not a new question. It is a founder ruling of 2026-08-07 — his
+cross-cast matrix, judged by his eye — that was never wired**, and is now
+contradicted by two newer roads while a test asserts it true.
+
+```
+server/castingV2/eyeShapeRouting.ts:101   export const EYE_SHAPE_ENGINE = "nbp"
+  header: "THE RATIFIED ROW — Nano Banana Pro, founder ruling 2026-08-07,
+           after the cross-cast matrix… the routing table's first genuine
+           per-class payoff"
+
+importers, whole repo   eyeShapeRouting.test.ts  AND NOTHING ELSE
+  refineService.ts:195 imports `isUpsweptAsk, readCanthalTilt` from that
+  module — the gate and the instrument — never the engine.
+
+git log -S "EYE_SHAPE_ENGINE" --all  →  10143ff8, fec4f9d8
+  the two commits that WROTE it. It was never added to a consumer, so it was
+  never removed from one either.
+```
+
+**What paints an `eye.shape` refine today**, all three branches read
+(`refineService.ts:3813`, `:3828`, `:3835`):
+
+| road | engine |
+|---|---|
+| repaint on (`CASTING_REPAINT_SCOPE=users:1` — his account) | `repaintEngine ?? defaultMaskedEditEngine` → **GPT Image 2** |
+| masked path (`MASKED_EDITING_SCOPE = "users:1"`, hardcoded) | `maskedEdit ?? defaultMaskedEditEngine` → **GPT Image 2** |
+| neither | `castingIdentityEngine.editWithReferences` → NBP, 1K |
+
+So the engine his matrix chose is what a user on **no flags** gets by accident,
+and he — on the newest road — gets the engine that same matrix described as
+*"near-invisible on every cast (+1.4 to +1.7 degrees, at the edge of the
+instrument's own resolution)"* and which *"on one cast moved the corners the
+WRONG WAY"* — for the one class this program has ever failed to deliver.
+
+**The test cannot fail.** `eyeShapeRouting.test.ts:49` is
+`expect(EYE_SHAPE_ENGINE).toBe("nbp")` — a constant asserted against its own
+literal, under a describe block titled *"the routing row, and its honesty about
+being unfinished."* Three green tests about a row that does not exist at
+runtime. Invariant 7 in its quietest form; the test dies with whichever answer
+he gives.
+
+**The honest caveat, kept rather than argued away.** `842fc1bf` (2026-08-06,
+one day BEFORE the row was ratified) deliberately routed face-region masked
+edits to GPT Image 2 on the face wall's evidence, so it is *possible* someone
+took that as superseding this row. Nothing in the record says so, and
+`refineService.ts:468` still tells its reader the opposite in the present
+tense: *"Routing is per class (the recipe class on GPT2, **anatomical work on
+NBP**), so the day the repaint routes differently is a day this is configured
+differently."* The `repaintEngine` seam exists **for this** and is left at GPT2.
+
+**Status: his card, on the desk (fifth item).** Re-affirm and we wire it —
+which brings the real design question with it, since a repaint paints the whole
+frame and a per-class row has to mean something on that road — or supersede,
+and the row retires honestly with its test. **Nothing re-routes and nothing
+retires until his word.**
+
+**And it is a family, not an instance** (working law 7). Two siblings are
+already tracked by hand: `bornWornCatalogue` has NO CALLERS (§0) and D-213's
+record gate has no call site (§9). Two more were found by the mechanical sweep
+that followed this one, and both are in this neighbourhood:
+`BANNED_ENGINES` (`providers/falImages.ts:46` — the FLUX ban, referenced by no
+production code, so the ban is prose and the eye-shape test is its only
+reader) and `USER_RATE_LIMITS` (`security/rateLimit.ts:345` — a second
+per-user limit table referenced by nothing at all, not even its own module;
+the live limiting runs off `RATE_LIMITS` and `checkUserRateLimit`, so this is
+working law 4's mirror rather than a missing control, and a future reader
+tightening "the user rate limits" would edit it and ship nothing).
 Also filed: interpreter placement field (trigger: a specimen the
 table can't place — fable-103); `earring`/`nose stud` detector
 courts; the retry-as-safety-net is CLOSED by this item (routing
