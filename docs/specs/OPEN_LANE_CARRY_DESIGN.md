@@ -216,9 +216,17 @@ Three ways out, and this note picks the third:
    door reads, rather than a null nobody notices.
 
 (3) keeps the fidelity law: the shortcut is declared, and the thing that would
-have been silent becomes the input to §4's absence control instead. **It is a
-change to a closed-catalogue invariant and therefore Fable's to ratify** before
-any of it is built.
+have been silent becomes the input to §4's absence control instead.
+
+> **RATIFIED, fable-766 §2 — option 3, with one bound.** It is V1's own
+> principle applied to an invariant: silence becomes a loud, written decision.
+>
+> **The bound: the mint door must demonstrably READ the reason.** An arm has to
+> prove behaviour DIFFERS on `noSpecimen` versus a specimen present — because a
+> recorded fact nobody consults is the gate-not-reader class, and this campaign
+> has already paid for one of those (`hairWorn` charged twice while three
+> instruments said absent). A `noSpecimen` field that every reader ignores is
+> indistinguishable from the silent null it replaced.
 
 ## 6. Bound (c): the library lifecycle is unchanged, and horns already proved the
 ## hard part
