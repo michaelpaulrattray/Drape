@@ -219,6 +219,33 @@ two, and with it the sabotage reddened exactly one test.
 check the trousers fall.
 *Banked:* fable-792 §2, from the incident record at opus-583 §4.
 
+**17. A convention with no instrument is not a convention; it is a run of luck
+with a shape.**
+A step kept alive by habit attached to a task survives exactly as long as the
+task keeps its shape, and dies the first time it rides inside a different one.
+*Incident:* three findings in one shift, all the same mechanism. **The suite
+line** was mechanised precisely so a park would stop assembling it by hand — and
+the two parks that shipped and ratified the mechanism both hand-edited its
+output, inserting the one token (`0 failed`) that vitest never prints and that
+had carried a false green claim four days earlier; the habit died because the
+reporting rule demanded a fourth number the instrument cannot emit, so quoting
+was impossible and editing was the only way to comply. **The doctrine file's own
+closing count** was maintained correctly on four consecutive admissions and then
+dropped twice: first when an entry rode inside a commit whose subject was
+something else, then by the next author copying the state he found. Both were
+found the same way — opening the artifact that would have to disagree, at the
+moment its claim was repeated — and both were repaired with an instrument rather
+than a correction, because the correction is what had already been applied four
+times.
+*The cheap form of the rule:* if the only thing keeping a step alive is
+remembering to do it, count the ways the task could change shape — that is the
+list of ways the step is already gone.
+*A note on the reporting half:* check that a rule about a report can be
+satisfied by QUOTING what the instrument prints. One that cannot will be
+satisfied by editing, which is the thing the instrument was built to stop.
+*Banked:* fable-796 §2, from the incident records at opus-585 §2, opus-586 §1–2
+and opus-587 §4.
+
 *(Numbers are ADMISSION order, not reading order — 14 sits here because this is
 where it belongs, and renumbering would silently invalidate every citation that
 names an entry. Expect the sequence to run out of order as the file grows.)*
@@ -269,4 +296,4 @@ one helper.
 Follow the admission rule at the top: numbered Fable ruling, real incident, one
 line each, citation. Keep it to a page or two — **terse over complete.** A
 doctrine file long enough to skim past is an instrument nobody reads, which is
-the failure mode all sixteen of these describe.
+the failure mode all seventeen of these describe.

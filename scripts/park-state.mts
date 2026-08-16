@@ -199,14 +199,26 @@ if (WITH_SUITE) {
      datum to notice it by (vitest's own `Start at` is discarded with the rest of
      the run).
      This is the honest half only: a timestamp, not a gate. No sweep, no policy,
-     nothing that could false-positive on the suite's own temp files. The scope a
-     reader compares it against is WRITES UNDER THE SWEPT TREES — `scripts/` and
-     `server/`, which is what the twelve `readdirSync` guards can actually see;
-     fable-791 §1's "any later file write, tracked or not" narrows to that, and
-     narrowing matters because taken literally it invalidated every park ever
-     written, the park report itself being a later file write. */
+     nothing that could false-positive on the suite's own temp files.
+
+     THE SCOPE IS THE TREES THE SUITE READS, WHICH IS NOT THE TREE IT LIVES IN.
+     fable-791 §1's "any later file write, tracked or not" has to narrow to
+     something, because taken literally it invalidated every park ever written —
+     the park report itself being a later write. The narrowing first shipped on
+     this line was `scripts/` and `server/`, reasoned from the twelve
+     `readdirSync` guards, and it was FALSIFIED WITHIN THE HOUR by the very next
+     commit: one sentence written into `docs/specs/INSTRUMENT_DOCTRINE.md`
+     reddened the suite, because `instrumentDoctrine.test.ts` reads that file.
+     Three test files read under `docs/` today.
+     So do not read the trees below as a boundary. A suite reads whatever its
+     tests open; that set grows without announcing itself, and a tree is not out
+     of scope for holding no tests of its own. Compare this clock against YOUR
+     LAST WRITE ANYWHERE, and treat the named trees as the ones already known to
+     bite. (Doctrine 17, earned by this line: the reasoned-about scope was a
+     convention, the timestamp is the instrument.) */
   say(`          run finished ${finished} — this reading is green AS OF THEN;`
-    + ` a later write under scripts/ or server/ can redden it`);
+    + ` a later write can redden it (scripts/, server/ and docs/ are all read`
+    + ` by tests — compare against your last write anywhere)`);
 } else {
   say("suite     NOT RUN in this park — pass --suite to read it");
 }
