@@ -9,6 +9,16 @@
  * quoted from memory twice. So the block is now produced by a script whose
  * every line is a reading taken in this process.
  *
+ * **A PARK'S STATE BLOCK IS GENERATED, NEVER TYPED** (fable-831 §2, from
+ * opus-619 → fable-830 → opus-620). The rule above is why this script exists;
+ * this sentence is why running it is not optional. A shift wrote its block by
+ * hand and justified skipping the suite with *"a docs file no test reads"* —
+ * false, and refuted IN WRITING forty lines below, by a note earned when the
+ * very same file reddened the very same suite. **The lesson was in the right
+ * instrument and the park never asked it**, so main shipped red for a commit.
+ * The gap was bypass, not absence: every line here is a reading, and a line
+ * retyped beside them is a claim wearing their clothes.
+ *
  * # The care that matters here
  *
  * **Two databases, compared by PORT.** The dev database and production are the
