@@ -86,7 +86,10 @@ carefully rather than quickly:
 - **The whole-skin carrier** — measured, courted, and NOT SHIPPED by founder
   ruling: *"until the tattoo studio is launched we carry skin as words only
   otherwise it starts to become extremely complicated"* (fable-562). The tan
-  costs ~ΔE 5 of drift per subsequent edit under words today, on the record.
+  costs ~ΔE 5 of drift per subsequent edit under words today, on the record —
+  **quoted only with its caveat (fable-714 §1): possibly part instrument
+  (cross-frame ΔE inside a moving mask manufactures fictional drift), and
+  perceptually FINE to the founder on the sheet.**
 - **The collision rule** (fable-561) — the founder's own follow-up: when tattoos
   arrive as flash-sheet references, two references claim the same patch of skin.
 - **`marks`**, whose court came back SHORT: the freckle scaffolding is standing
@@ -244,7 +247,9 @@ fable-562 is a founder ruling and it sequences the whole thing:
 
 Step 5 is the one that pays a debt already on the record: the tan drifts ~ΔE 5
 per edit under words today, and that is the honest current state rather than a
-regression.
+regression. **Caveat, ruled (fable-714 §1): that figure is DOWNGRADED — possibly
+part instrument (cross-frame ΔE inside a moving mask manufactures fictional
+drift), and perceptually FINE to the founder on the sheet, in his own words.**
 
 ## 6. What this note deliberately does not do
 

@@ -13,11 +13,15 @@ mailbox archive, memory, and DECISION_LOG by the lost-pin audit of
   frames before Tier A scores removals against `hairWorn`
   (fable-059/060/061). The segments pivot does NOT moot it — removals
   still ride the departed/vacancy machinery.
-- **Seam-check shadow→enforce flip decision** (L12): the trigger
-  ("bring the flip decision with the second specimen") has been MET —
-  specimens: 775 torn px (opus-024) + GPT2's torn frames at 848
-  (opus-068). Raise the decision before Tier A; the manual double-read
-  that currently covers the gap ends with Tier A.
+- **Seam-check shadow→enforce flip decision** (L12) — ⛔ **the flip decision
+  is DEAD (founder in person, fable-709 §3, 2026-08-16).** His reasoning
+  holds on the repaint road: nothing is pasted, so no seam can exist. Do
+  NOT raise it before Tier A. The shadow seam-check may keep logging on any
+  paste-road render that still occurs — the paste road survives behind the
+  flag split (`CASTING_REPAINT_SCOPE=users:1`) — and **the item CLOSES
+  fully the day repaint scope widens to all users.** The specimens that met
+  the old trigger are kept for the record: 775 torn px (opus-024) + GPT2's
+  torn frames at 848 (opus-068).
 - **Truncation-notice verification** (L17) — ✅ **CLOSED 2026-08-16. It did
   not verify; it FAILED, and the fix is a class fix.** Read at the wire (real
   schema off the real `castingV2.createRoll` procedure, real error formatter,
@@ -45,11 +49,13 @@ mailbox archive, memory, and DECISION_LOG by the lost-pin audit of
   source, so the real schemas now live in `server/routes/emailAuthInput.ts`
   and the suite imports them.
 
-  *Still open, one line, optional:* a live over-count at the brief box, so
-  the limit is visible before the send rather than named after it.
-  Deliberately NOT built — `maxLength` would silently swallow a paste, which
-  is a worse defect than the rude error it replaces, and a counter is polish.
-  Behind the founder's word.
+  *The brief-box character counter is **KILLED**, not open* — the founder in
+  person, 2026-08-16 (fable-710 §1): *"skip the character counter i never
+  remember wanting that."* He never asked for it; it was our idea filed
+  behind his word, and it dies entirely. The polite over-limit refusal stays
+  exactly as it is. (`maxLength` was rejected on its own grounds too: it
+  would silently swallow a paste, a worse defect than the rude error it
+  replaced.)
 - **`bornWornCatalogue` has NO CALLERS** (opus-094, filed by
   fable-121). Built, tested, guarded by two sabotage runs, and invoked
   from nowhere in the product — so **no `detected_born` row can exist**,

@@ -13,6 +13,16 @@
 > What it costs meanwhile is on the record and in the reliability watch: a paid
 > tan drifts ~ΔE 5 per subsequent edit under words. Honest state, not a
 > regression.
+>
+> **DOWNGRADED 2026-08-16 (fable-714 §1), and the figure is never quoted
+> without this:** the founder looked at the sheet — *"the tan drift was over
+> exagerated to be honest i looked at the sheet and it was fine"* — and his eye
+> outranks the figure (law 9). It converges with a documented instrument hazard:
+> cross-frame ΔE inside a MOVING mask manufactures fictional drift. So ~ΔE 5 is
+> **possibly part instrument, and perceptually FINE to him.** Any future
+> surface-carry court is judged perceptually, side by side, with ΔE demoted to
+> supporting instrument and always read inside the mask INTERSECTION with IoU
+> quoted.
 
 *Not a design and not a commitment. The arm (S) is measured
 (`V4_TONE_CARRIER_COURT.md`), and this file collects what the design MUST answer
@@ -120,3 +130,7 @@ the same-pixel reading 1.72 against 1.66, a 0.06 miss inside the instrument's ow
 the drift — ΔE ~5 under words to ΔE ~2 — is worth a crop per render. **If he says
 no, this file is the record of what was ready rather than a plan that was
 abandoned.**
+
+**And the ΔE ~5 half of that trade is DOWNGRADED (fable-714 §1, header caveat):
+possibly part instrument, and perceptually FINE to him on the sheet. The
+decision is smaller than the numbers make it look.**

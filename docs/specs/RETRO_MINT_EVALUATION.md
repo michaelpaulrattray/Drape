@@ -131,6 +131,10 @@ The row goes on the OLD variant, which `MintInput.variantId` already supports.
 
 ## 4. The recommendation
 
+> **Re-read and ratified in the light of §4a — fable-781 §3:** shape positive,
+> population mostly elsewhere. The recommendation below stands as written; what
+> changed is who it applies to, and §4a is the population it applies to.
+
 **Build it, after the founder's gate, and build it as a walker over the existing
 door rather than as a mint of its own.** The evaluation is positive on all three
 axes fable-737 asked about:
@@ -241,3 +245,14 @@ where it does not.
 - **Whether a retro-minted row is visibly different to the customer.** It should
   be different in provenance (§3.2); whether it is ever *shown* is a product
   question nobody has asked yet.
+
+---
+
+**CLOSING — the walker is CLOSED, not deferred (fable-784 §4, 2026-08-17).**
+Measured at n=all: **nine of nine remaining slots are specimen-blocked** — the
+door would refuse every one of them again, so a walker over that door buys
+nothing. The whole fix is the founder sheet (fable-781 §2b): the refused crops
+laid out labelled, one question per kind, his answers becoming the measured
+positive specimens that unblock those slots for every future render. The
+never-renders-again case keeps its crops by design. Nothing in this document is
+withdrawn — it is **reduced to the sheet**.

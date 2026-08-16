@@ -81,6 +81,15 @@ and drifts ΔE 5 (median) each time. The best carrier measured takes that to ΔE
 2 — from *noticeable* to *the edge of noticeable* — at the cost of one crop per
 render and no identity damage worth the name.
 
+> **The ΔE 5 median is DOWNGRADED (fable-714 §1, founder in person
+> 2026-08-16):** *"the tan drift was over exagerated to be honest i looked at
+> the sheet and it was fine."* His eye outranks the figure (law 9), and it
+> converges with a known instrument hazard — cross-frame ΔE inside a MOVING
+> mask manufactures fictional drift. Quote it only as **possibly part
+> instrument, and perceptually FINE to him.** A re-run of this court is judged
+> perceptually side by side, with ΔE demoted to supporting instrument and read
+> inside the mask INTERSECTION with IoU quoted.
+
 **Whether that trade is worth shipping is not a bar this court can set**, and
 the design gate (fable-552 §3b) sends the ship design up before anything lands.
 
