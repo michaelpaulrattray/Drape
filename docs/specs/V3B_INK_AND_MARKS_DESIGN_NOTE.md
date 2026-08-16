@@ -51,10 +51,11 @@ that are taste are marked **FOUNDER** and are not answered here.*
 >    is CONVERTED into the flash sheet on arrival
 >    (`references/tattoo-flash-flat-sheet.png` shows the flat alternative he
 >    considered).
-> 4. **OPEN — mannequin sheet vs flat sheet.** He asked which is cheaper and
->    easier to keep consistent, add to, and remove from. **Fable
->    recommendation (not yet ruled): the mannequin sheet as the carried
->    reference, DERIVED rather than accumulated** — every individual design is
+> 4. **RULED, 2026-08-16 (founder: "confirmed") — the mannequin sheet, DERIVED.**
+>    The mannequin sheet is the carried reference, rebuilt from a stored
+>    per-design library on every add or remove, never edited in place
+>    repeatedly. The reasoning that carried the recommendation stands as the
+>    design's grounds: every individual design is
 >    stored on its own at upload/creation, and the zone's mannequin sheet is
 >    rebuilt from that design list whenever a tattoo is added or removed.
 >    Grounds, all from this program's measured record: a carrier pins the
