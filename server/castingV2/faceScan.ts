@@ -548,6 +548,35 @@ export async function scanFace(input: {
       asked: plan.length,
       found: boxes.size,
       empty: empty.length,
+      /*
+        AND WHICH SLOTS CAME BACK EMPTY — DERIVED, not tallied (founder reports
+        via fable-730/731, 2026-08-16).
+
+        He filed two bespectacled faces whose EYES were missing from the panel,
+        and the second was missing **one eye**: the row existed, hover drew a
+        single box, and `eye@right` had returned nothing on a frame where his
+        own eye sees both plainly behind the lenses. The question that answers
+        it — *do bespectacled eye reads miss more often, and do they skew to one
+        image half?* — is a rate over slot NAMES.
+
+        `empty` cannot answer it, and the reason is worth writing down: it holds
+        REGION questions, and a bilateral region counts as filed when EITHER
+        side lands. His exact specimen — one eye found, one missed — is recorded
+        by this scan as a success, is never re-asked, and would appear in no
+        tally of empties. The instrument folds the failure it was built to see.
+
+        So this is derived from the answer itself rather than accumulated beside
+        it (working law 4): every slot the plan asked for, minus every slot that
+        ended with a box. It cannot disagree with the panel, it needs no
+        bookkeeping in the read path, and a re-ask that rescues a slot removes
+        it from here by arithmetic.
+
+        Recording only. Whether a half-answered PAIR should get the second look
+        that a fully empty region gets is a spend decision and is filed for a
+        ruling, not decided here.
+      */
+      emptySlots: plan.flatMap((region) => region.slots.map((slot) => slot.slot))
+        .filter((slot) => !boxes.has(slot)),
       failed: failed.length,
       /*
         AND WHY, not just how many (fable-505's own cost).

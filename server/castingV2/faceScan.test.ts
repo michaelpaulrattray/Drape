@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { composedPlan, scanFace, scanPlan } from "./faceScan";
 import { armedBornWornClasses } from "./bornWornDetector";
@@ -15,6 +15,23 @@ import type { RegionReader } from "./maskedRefine";
  * asking the wrong questions, filing a box for a region that answered nothing,
  * turning a failed reading into a fact, and giving a pair one box between them.
  */
+/**
+ * WHAT THE SCAN WROTE DOWN, read back — the module is replaced for this suite
+ * exactly as `refineService.test.ts` does it, because the thing under test is
+ * the FIELDS the scan chose to write and those are ours either way.
+ */
+const logged: { fields: Record<string, unknown>; message: string }[] = [];
+vi.mock("../logging/logger", () => {
+  const record = () => (fields: unknown, message: string) => {
+    logged.push({ fields: (fields ?? {}) as Record<string, unknown>, message });
+  };
+  return {
+    createModuleLogger: () => ({
+      error: record(), warn: record(), info: record(), debug: record(),
+    }),
+  };
+});
+
 const FRAME = { bytes: Buffer.from("not really a picture"), width: 1000, height: 1500 };
 
 /** A mask claiming one rectangle, so the box it produces is predictable. */
@@ -573,5 +590,42 @@ describe("the rows that are drawn from somewhere else", () => {
       expect.arrayContaining(["boxes", "masks", "descriptions", "empty", "failed"]),
     );
     expect(scan.boxes.size).toBeGreaterThan(0);
+  });
+});
+
+/**
+ * WHICH SLOT CAME BACK EMPTY — and it has to be the NAME (fable-730/731).
+ *
+ * The founder filed two bespectacled faces whose eyes were missing from the
+ * panel, and the second was missing exactly ONE of them: the row existed, one
+ * box was drawn, and the other side had returned nothing on a frame his own eye
+ * reads plainly. Answering *"how often, and does it skew to one image half?"*
+ * is a rate over slot names — and this line carried `empty: 4`, a number with
+ * no names in it, while the names sat on the object it was summing.
+ *
+ * So the arm is the NAME, both directions: the slot that answered nothing is in
+ * the line, and a slot that answered is not.
+ */
+describe("the scan says which slots answered nothing", () => {
+  it("names the empty slot rather than counting it", async () => {
+    logged.length = 0;
+    /* One side of one pair answers; the other returns a mask of zeros, which is
+       the reader's real "nothing there". */
+    await scanFace({
+      frame: FRAME,
+      describe: null,
+      reader: reader({
+        sides: (name) => (name.includes("eye")
+          ? { left: maskOf({ x: 100, y: 20, width: 20, height: 40 }), right: EMPTY }
+          : null),
+      }),
+    } as never);
+
+    const line = logged.find((entry) => entry.message.includes("read a face"));
+    expect(line, "the scan writes one line per face").toBeTruthy();
+    const empty = line!.fields.emptySlots as string[];
+    expect(Array.isArray(empty), "names, not a tally").toBe(true);
+    expect(empty).toContain("eye@right");
+    expect(empty, "and a slot that answered is not in it").not.toContain("eye@left");
   });
 });
