@@ -797,8 +797,22 @@ it **when an occlusion-aware cutter reopens the crop-vs-cutout question**
 (`COMPOSITOR_SWAP_DESIGN.md` §5.1/§7). Until then the reference-format
 ruling stands on shape + material, and neither of those counts borrowing.
 Beside it, the **img-left/img-right hoop asymmetry** is an open row rather
-than a shelved item: test the mechanism only if the edit-law cell leans the
-same way. Both are stated as owed rather than absent.
+than a shelved item — **and it is NARROWED as of 2026-08-17** (opus-603,
+ruled fable-814 §3). Its old condition was *"test the mechanism only if the
+edit-law cell leans the same way"*; the question that condition existed to
+answer **has been answered by a court convened for a different feature.**
+`V4_SIDE_INFERENCE_COURT.md` measured per-instance asks at **her right 3/6 ·
+her left 6/6** and states *"the misses all landed on the image's RIGHT half
+whatever the recipe named"* — the image-side axis, on the same engine by
+construction. **The row's original observation confounds size, occlusion and
+image side; only the size/occlusion half remains.** No mechanism test is
+built: the standing rule contains the risk in production (per-instance
+worst-of-n, never averaged), and the narrowed remainder keeps its own trigger
+— a hoop case the per-instance rule fails to contain, or the size/occlusion
+question opening on its own evidence. Full reasoning, including why the
+edit-law cell's row d is NOT offered as the lean, lives in
+`COMPOSITOR_SWAP_DESIGN.md` §7's row. Both are stated as owed rather than
+absent.
 
 
 Hair-matting shop (trigger: strand-gap artifacts visible to the
