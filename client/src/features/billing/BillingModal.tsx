@@ -3,6 +3,7 @@ import { X, Check, Sparkles, Loader2, ArrowRight, AlertCircle, ExternalLink } fr
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { DowngradeConfirmModal } from "./DowngradeConfirmModal";
+import { logRawFailure, readableFailure } from "@/lib/failureSentence";
 
 interface BillingModalProps {
   isOpen: boolean;
@@ -46,7 +47,8 @@ export function BillingModal({ isOpen, onClose, onOpenTopup }: BillingModalProps
       setLoadingPlan(null);
     },
     onError: (error) => {
-      toast.error(error.message);
+      logRawFailure("billing.createSubscriptionCheckout", error);
+      toast.error(readableFailure(error, "Checkout could not be opened. Please try again."));
       setLoadingPlan(null);
     },
   });
@@ -57,7 +59,8 @@ export function BillingModal({ isOpen, onClose, onOpenTopup }: BillingModalProps
       toast.info("Opening billing portal...");
     },
     onError: (error) => {
-      toast.error(error.message);
+      logRawFailure("billing.createPortalSession", error);
+      toast.error(readableFailure(error, "The billing portal could not be opened. Please try again."));
     },
   });
 
@@ -70,7 +73,8 @@ export function BillingModal({ isOpen, onClose, onOpenTopup }: BillingModalProps
       utils.credits.getBalance.invalidate();
     },
     onError: (error) => {
-      toast.error(error.message);
+      logRawFailure("billing.changePlan", error);
+      toast.error(readableFailure(error, "We lost contact while changing your plan. Check your plan before trying again."));
       setConfirmingPlan(null);
     },
   });
@@ -83,7 +87,8 @@ export function BillingModal({ isOpen, onClose, onOpenTopup }: BillingModalProps
       utils.credits.getBalance.invalidate();
     },
     onError: (error) => {
-      toast.error(error.message);
+      logRawFailure("billing.cancelSubscription", error);
+      toast.error(readableFailure(error, "We lost contact while cancelling. Check your plan before trying again."));
       setIsCancelling(false);
     },
   });

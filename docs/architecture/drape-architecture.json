@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "e993ba2e105e6add"
+    "sourceFingerprint": "30093a5965c76af7"
   },
   "domains": [
     {
@@ -11320,6 +11320,11 @@
     },
     {
       "from": "module:client/src/features/billing/BillingModal.tsx",
+      "to": "module:client/src/lib/failureSentence.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/billing/BillingModal.tsx",
       "to": "module:client/src/lib/trpc.ts",
       "kind": "imports"
     },
@@ -11330,7 +11335,17 @@
     },
     {
       "from": "module:client/src/features/billing/CreditTopupModal.tsx",
+      "to": "module:client/src/lib/failureSentence.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/billing/CreditTopupModal.tsx",
       "to": "module:client/src/lib/trpc.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/billing/DowngradeConfirmModal.tsx",
+      "to": "module:client/src/lib/failureSentence.ts",
       "kind": "imports"
     },
     {

@@ -3,6 +3,7 @@ import { X, Check, Loader2, ChevronDown } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { Switch } from "@/components/ui/switch";
+import { logRawFailure, readableFailure } from "@/lib/failureSentence";
 
 interface CreditTopupModalProps {
   isOpen: boolean;
@@ -114,7 +115,8 @@ export function CreditTopupModal({ isOpen, onClose, currentBalance = 0 }: Credit
       onClose();
     },
     onError: (error) => {
-      toast.error(error.message);
+      logRawFailure("billing.createSubscriptionCheckout", error);
+      toast.error(readableFailure(error, "Checkout could not be opened. Please try again."));
       setIsUpgrading(false);
     },
   });
@@ -126,7 +128,8 @@ export function CreditTopupModal({ isOpen, onClose, currentBalance = 0 }: Credit
       onClose();
     },
     onError: (error) => {
-      toast.error(error.message);
+      logRawFailure("billing.changePlan", error);
+      toast.error(readableFailure(error, "We lost contact while changing your plan. Check your plan before trying again."));
       setIsUpgrading(false);
     },
   });

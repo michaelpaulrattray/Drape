@@ -43,11 +43,14 @@ const EXEMPT: Record<string, string> = {
   "features/admin/overview/BannerManagement.tsx": "admin support — raw error is the diagnostic",
   "features/moderator/UserInvestigationWidgets.tsx": "moderator support — raw error is the diagnostic",
   "features/moderator/ReconciliationSubTab.tsx": "moderator support — raw error is the diagnostic",
-  // PENDING, not exempt: billing is a customer money surface and the diff is
-  // under review. This group is expected to shrink to nothing.
-  "features/billing/BillingModal.tsx": "PENDING REVIEW — customer money surface",
-  "features/billing/CreditTopupModal.tsx": "PENDING REVIEW — customer money surface",
-  "features/billing/DowngradeConfirmModal.tsx": "PENDING REVIEW — customer money surface",
+  /*
+    Billing sat here for one commit as PENDING REVIEW — a customer money
+    surface whose copy Fable read before it shipped — and is now swept
+    (fable-679 §3). Nothing about money state is claimed: the three checkout
+    sites say only that checkout could not be opened, and changePlan and
+    cancelSubscription say contact was lost and to go and look, because a
+    transport failure genuinely does not know which way it went.
+  */
 };
 
 /**

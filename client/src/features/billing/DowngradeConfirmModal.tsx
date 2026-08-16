@@ -2,6 +2,7 @@ import { useState } from "react";
 import { X, Check, Loader2, Sparkles, AlertTriangle } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
+import { logRawFailure, readableFailure } from "@/lib/failureSentence";
 
 interface DowngradeConfirmModalProps {
   isOpen: boolean;
@@ -37,7 +38,8 @@ export function DowngradeConfirmModal({
       onClose();
     },
     onError: (error) => {
-      toast.error(error.message);
+      logRawFailure("billing.createSubscriptionCheckout", error);
+      toast.error(readableFailure(error, "Checkout could not be opened. Please try again."));
       setIsRedirecting(false);
     },
   });
@@ -49,7 +51,8 @@ export function DowngradeConfirmModal({
       onClose();
     },
     onError: (error) => {
-      toast.error(error.message);
+      logRawFailure("billing.changePlan", error);
+      toast.error(readableFailure(error, "We lost contact while changing your plan. Check your plan before trying again."));
       setIsRedirecting(false);
     },
   });
