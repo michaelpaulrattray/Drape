@@ -228,39 +228,59 @@ reference — per-feature slots remain the source of truth). The
 fable-168 "grouped Makeup look row" taste question folds into this
 item; both deferred together until this studio's turn.
 
-## 4. "Show her the refused frame" (walk-campaign's END; founder judges)
+## 4. "Show her the refused frame" — ✅ **RULED AND SHIPPED 2026-08-16**
 
-Founder 2026-08-09 (fable-106): option to show a twice-refused render
-("you weren't charged; keep it if you disagree"). Companion principle:
-**the checker judges EXISTENCE against her own words only;
-intensity/density belongs to her words or nobody; any widening is a
-founder gate.**
+**The reader stopped being a cashier.** Founder, in person, second statement
+of that night (fable-721): *"the verification layer was trash… only give
+refunds on catastrophic failures because it couldn't truly detect something
+as subtle as freckles."* Earlier the same night he had said it
+conditionally (fable-709 §1 — *"if refused frames are only catastrophic
+failures then it can stay, but don't show the refused frame at all"*); the
+freckle overturn at the frames met the condition, and this is the order.
 
-**RULED CONDITIONALLY, in person, 2026-08-16 (fable-709 §1) — verbatim
-intent:** *"just always give the result and never refuse, they can always
-regenerate it — if refused frames are only catastrophic failures then it
-can stay, but don't show the refused frame at all."* So the fork is: either
-refusals catch only garbage (keep refusing, never show), or they sometimes
-catch deliverable work (stop refusing, always deliver). Today's behaviour
-— refuse-and-refund — stands until the reading below goes back to him.
+**The contract now, and it is LIVE in production** (`5c5a1f3f`, countersigned
+per fable-721 §3 / fable-723 §3, deployed):
 
-**ORDERED, and not yet done: classify the refused frames on record.** Every
-refunded render whose frame survives, dev and production, with the frames
-themselves read and bucketed:
+- **Refunds after a render happen for three failures only**, named in one
+  place — `REFUSES_AFTER_RENDER` in `server/providers/types.ts` — and pinned
+  verbatim by `server/providers/providerFailureContract.test.ts`:
+  `render_fault` (not a photograph of one person: torn, corrupt, wrong
+  human), `composite_fault` (our own compositor cut a fine frame), and
+  `segment_store` (our inputs failed before an honest render was possible —
+  infrastructure, not a judgment about her picture).
+- **Everything else DELIVERS and CHARGES.** A disputed delivery is the
+  customer's judgment; the remedy is Regenerate, at a fresh charge. The
+  reader's verdict is still recorded and still read by the reliability
+  report as `delivered_absent` / `delivered_noncompliant` — telemetry that
+  costs nobody a refund.
+- **The refused frame is still never shown** (his 2026-08-09 clause, kept).
+- **Pre-render refusals are untouched**: asks the product cannot state and
+  forbidden recipes still refuse before the provider is contacted, with no
+  picture and no charge to argue about.
+- **Adding a member to that set is a founder decision**, like adding a
+  public endpoint.
+
+Companion principle, unchanged: **the checker judges EXISTENCE against her
+own words only; intensity/density belongs to her words or nobody.**
+
+**What remains is one reading, and it decides nothing** — the refused-frames
+classification, REPURPOSED by fable-721 §3 from decider to **calibration**:
+what would yesterday's refusals be under the new contract, and is
+"catastrophic" drawn in the right place? Every refunded render whose frame
+survives, dev and production, read **by eye** against the reader's stated
+reason (never by re-running the reader), and bucketed:
 
 - **catastrophic** — torn, garbage, wrong person;
 - **delivered-but-wrong** — wrong side, missing ask, drift;
 - **actually-fine** — checker false positive;
-- **describer-misread** — its own bucket, added by fable-717 §5 after the
-  founder overturned both freckle-court arms at the frames: the describer
-  denies fine sparse surfaces that are visibly there, so a refusal resting
-  on its verdict is a distinct failure from a checker false positive.
+- **describer-misread** — its own bucket (fable-715 §4): the describer denies
+  fine sparse surfaces that are visibly there, so a refusal resting on its
+  verdict is a distinct failure from a checker false positive — and if the
+  checker's reader lies the way the court's reader did, some past refunds
+  were refusals of DELIVERED work.
 
-Report rates plus example frames. **Zero new spend** — the frames are
-already on disk and in R2. **The money contract rides on this:** today
-refused = refunded, so "always deliver" means the customer PAYS for what
-today would be refunded and a regenerate is a fresh charge. That trade goes
-back to him stated plainly before anything flips.
+Report rates plus example frames. **Zero new spend** — the frames are already
+on disk and in R2.
 
 ## 5. Open-vocabulary regions — the map becomes a cache
 
