@@ -29,6 +29,7 @@ import { execFileSync } from "node:child_process";
 
 import { openDatabase } from "./lib/dbConnection.mts";
 import { uptimeAnchor } from "./lib/uptimeAnchor.mts";
+import { balanceLine, readOpenRouterBalance } from "./lib/openrouterBalance.mts";
 
 const DRY = process.argv.includes("--dry");
 const SERVICE = process.env.RAILWAY_SERVICE ?? "Drape";
@@ -248,6 +249,10 @@ say(`\`${shortSha}\` · main == local-migration · deploy SUCCESS · health ×3 
 say(`healthy · db ${latencies.map((value) => value.toFixed(2)).join(" / ")} ms ·`);
 say(`paid work at push: ${inFlight}`);
 say(`**UPTIME ANCHOR ${anchor}** (uptime ${healths[0]!.uptime.toFixed(1)} s)`);
+/* OUR OWN MONEY, beside the deploy that will spend it. At zero the
+   interpreter fails and every paid roll and refine dies at dispatch, so a
+   deploy is exactly the moment to look. Read here, never remembered. */
+say(balanceLine(await readOpenRouterBalance()));
 say("");
 say("FLAGS, read off the service:");
 for (const variable of variables) say(`  ${variable}`);

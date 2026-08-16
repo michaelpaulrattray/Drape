@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "30093a5965c76af7"
+    "sourceFingerprint": "7cd189f6f90f05a6"
   },
   "domains": [
     {
@@ -9882,6 +9882,10 @@
     {
       "id": "test:server/moderatorReconciliation.test.ts",
       "path": "server/moderatorReconciliation.test.ts"
+    },
+    {
+      "id": "test:server/openrouterBalance.test.ts",
+      "path": "server/openrouterBalance.test.ts"
     },
     {
       "id": "test:server/pathB-completion.test.ts",

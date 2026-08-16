@@ -30,6 +30,7 @@ import { execFileSync } from "node:child_process";
 
 import { openDatabase } from "./lib/dbConnection.mts";
 import { uptimeAnchor } from "./lib/uptimeAnchor.mts";
+import { balanceLine, readOpenRouterBalance } from "./lib/openrouterBalance.mts";
 
 const WITH_SUITE = process.argv.includes("--suite");
 const WITH_PROD = !process.argv.includes("--no-prod");
@@ -160,6 +161,13 @@ if (WITH_PROD) {
     say(`ledger    production ${read.where} — ${"line" in read ? read.line : `UNREAD: ${read.error}`}`);
   }
 }
+
+/* THE MONEY THAT IS NOT CREDITS. The campaign ledger above counts the
+   founder's credits; this counts OURS, and the two had never been in one
+   block — which is how he came to be $100 down on OpenRouter while every
+   shift report truthfully said "zero model calls" (fable-682). Read, never
+   remembered; the key is used and never printed. */
+say(`          ${balanceLine(await readOpenRouterBalance())}`);
 
 /* PROCESS HYGIENE — the six orphaned dev servers that lagged the founder's
    machine were invisible in every park that did not look. */
