@@ -571,11 +571,57 @@ superseded it — fable-071/080).
   webhooks cannot credit prod users** (L6 — dev checkouts currently
   fire webhooks at prod trusting `metadata.userId`).
 - **Cookie consent** (L7): flagged 2026-07-10, never built.
-- **`mintModel` concurrency double-charge** (L8): fix, or record
-  that M14 legacy retirement deletes the path. **⛔ NEITHER CAN BE CHOSEN
-  YET — the function this item is written about has NO PRODUCTION IMPORTER,
-  and two design documents name a call site that is not there** (opus-604,
-  ruled fable-815 §3, 2026-08-17):
+- **`mintModel` concurrency double-charge** (L8): ✅ **CLOSED 2026-08-17 —
+  THE MONEY IS GUARDED FOUR DEEP, and the CAS is alive at a new address**
+  (opus-607, ruled fable-818 §1). The commit point was read, which is what
+  this item was waiting on.
+
+  **Mint commits at `commitGeneratedPackageSnapshot`** —
+  `server/casting/snapshotTransitions.ts:1287-1311`, reached from
+  `mintPackage.ts:650`. Its `WHERE` is byte-for-byte the one in
+  `mintModelAtomically` (`id`, `userId`, `status='draft'`, `deletedAt IS
+  NULL`, `agencyId IS NULL`, `mintedAt IS NULL`, `identityRevisionId <=>
+  expected`; `affectedRows !== 1` → `CONFLICT`), now **inside the settlement
+  transaction** rather than beside it. The move was deliberate and is pinned
+  by a contract test — `r7-snapshot-selection-contract.test.ts:679` asserts
+  `mintPackage.ts` does not contain `mintModelAtomically`.
+
+  **Two concurrent mints on one Cast cannot both charge.** Four guards, three
+  of them ahead of the money, read at the line in call order:
+
+  ```
+  1  idempotency claim  claimGenerationOperation — UNIQUE(userId,
+                        clientRequestId) INSERT. Replay returns the stored
+                        receipt; same id + different payload = CONFLICT.
+  2  resource lock      acquireGenerationOperationLock, key "model:<id>".
+                        generation_operation_locks.lockKey is the PRIMARY KEY
+                        (drizzle/schema.ts:499) — a duplicate-key INSERT, not
+                        a check-then-write (invariant 1). The loser is
+                        finalized failed/CONFLICT, and an EXPIRED lease is
+                        still never stolen (generationOperations.ts:893).
+  3  lock re-proved     markGenerationOperationRunning({requiredLockKey}) —
+                        castingExport.ts:441. Re-reads the lock row inside
+                        the transaction, SELECT ... FOR UPDATE on the model.
+  4  ledger reference   only then deductPoints (mintPackage.ts:607), keyed on
+                        operationChargeReference(operationId); a duplicate
+                        referenceId rolls the balance update back inside the
+                        transaction (credits.ts:364).
+  ```
+
+  The second mint is refused at guard 2, **before `mintPackage` is entered**.
+
+  **The honest remainder, unread and NOT asserted:** the *sequential*
+  re-mint case — a later mint operation against an already-active model —
+  was not priced. It is not owed before launch unless someone finds a path
+  that charges there; the concurrency case was the money fear in this item,
+  and it is dead. (fable-818 §1.)
+
+  ⚠ **But the guards reach the wire by NO TEST — see the entry below.**
+
+  *(History, kept as the record of what was asked, and its premise was
+  correct: the function this item was written about has no production
+  importer, and two design documents named a call site that is not there —
+  opus-604, ruled fable-815 §3, 2026-08-17.)*
 
   ```
   mintModelAtomically   every textual use in server/ + client/, dynamic
@@ -592,16 +638,42 @@ superseded it — fable-071/080).
   integrity gates are there. The call is not.
   ```
 
-  **What is NOT claimed:** that the mint is unguarded, or that the
-  double-charge is fixed or unfixed. Where minting actually commits has not
-  been read, and **a half-done trace on a line about charging customers twice
-  is worse than an honest unread.**
+  *(That block stays exactly true of the SYMBOL. Both design documents now
+  carry the found address beside their stale one, as specifications rather
+  than reports. The owed read — "read the commit point", owner the cleanup
+  milestone with a floor-not-a-fence claim for any quiet shift — was
+  DISCHARGED on 2026-08-17 by the shift that claimed it.)*
+- **The paid paths' resource lock reaches the wire by NO TEST** (L8b,
+  opus-607 §2, ruled fable-818 §2, 2026-08-17). The guards above are real
+  and correctly built. Nothing fails when they are removed.
 
-  **OWED: read the commit point.** Owner is the cleanup milestone (§0b) —
-  whose triage is exactly this reading — and this candidate **outranks the
-  rest of the 177 inside it, because it is a pre-launch MONEY line rather
-  than dead code.** The owner sets a floor, not a fence: **any quiet shift
-  may claim this read before the milestone opens.**
+  Derived from the tree rather than listed: **12** `beginDirectOperation`
+  call sites in production server code; **11** pass a `lockKey`; the twelfth
+  is `models.ts:65` `model.create`, which has no model yet to lock and whose
+  key would be refused as naming no resource in the trusted claim. The wire
+  is healthy. The test layer is not — three sabotage arms, each a full run:
+
+  ```
+  baseline                          463 files / 6778 tests passed
+  A  mint gate loses lockKey                 1 failed | 6777 passed
+  B  mint's markGenerationOperationRunning
+     loses requiredLockKey                   1 failed | 6777 passed
+  C  REFINE and HEADSHOT lose lockKey        1 failed | 6777 passed
+  ```
+
+  **The single red in all three arms is `architectureAtlas.test.ts`, and it
+  carries no information about locks** — a `// semantically null` comment in
+  the same file reddens it identically (control run), and the Atlas contains
+  zero occurrences of `lockKey`. It is a source-fingerprint freshness
+  detector. So mint, refine and headshot can each lose their lock with 6,777
+  tests green, and refine is the founder's own daily paid path.
+
+  **The pattern exists one lane over**: `batchC-structured.test.ts:504`
+  asserts `lockKey: "model:7"` reaches the gate on `applyModelEdit`, and
+  `:726` proves a busy receipt "refuses before marking running, charging, or
+  generating" with `expect(deductPoints).not.toHaveBeenCalled()`. Canvas has
+  it; the Casting V2 paid surface does not. This is the eye-row class on a
+  money line: a real guard with nothing that fails when it is deleted.
 - **R7 evidence migrations 0015/0016** (L9): ⛔ **THE PREMISE BELOW IS FALSE
   AND THE ITEM IS RE-POSED — both migrations ARE applied to production**
   (opus-605, ruled fable-816 §2, 2026-08-17). Read against `:23768` with both
