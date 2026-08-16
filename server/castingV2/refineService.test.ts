@@ -972,6 +972,75 @@ describe("refusals land before anything is claimed", () => {
     expect(journal).not.toContain("begin");
   });
 
+  it("but STANDS ASIDE for a proven fresh take — the sibling door the sweep found", async () => {
+    /*
+      THE FOURTH STRIKE, CAUGHT BY THE SWEEP INSTEAD OF BY THE FOUNDER
+      (fable-733 §2, working law 7).
+
+      This gate is `saysNothingNew` measured off the picture rather than off the
+      recipe — its own log line says *"already-true — asking instead of
+      spending"* — so it is state-comparing, and on a replay her upswept eyes
+      are the PREMISE: she has them because of the version being regenerated.
+      Left alone it would have refused the fresh take of an eye-shape edit
+      exactly as the already-has door refused the fresh take of an eye-colour
+      one, and he would have reported it as a fourth door.
+
+      Its neighbour is deliberately NOT keyed on the marker: the glasses reading
+      below refuses because an instrument could not take a reading, which a
+      replay does not change. Two doors in one block, two classes.
+    */
+    const W = 400;
+    const H = 300;
+    const upsweptEyes = () => {
+      const data = Buffer.alloc(W * H, 0);
+      const put = (x0: number, x1: number, yAt: (x: number) => number) => {
+        for (let x = x0; x < x1; x += 1) {
+          const y = Math.round(yAt(x));
+          for (let dy = -4; dy <= 4; dy += 1) data[(y + dy) * W + x] = 255;
+        }
+      };
+      put(80, 160, (x) => 120 + (x - 80) * 0.25);
+      put(240, 320, (x) => 140 - (x - 240) * 0.25);
+      return { data, width: W, height: H };
+    };
+    const sharp = (await import("sharp")).default;
+    const face = await sharp({ create: { width: W, height: H, channels: 3, background: "#808080" } })
+      .png().toBuffer();
+
+    /* The version she is looking at, and the sentence that made it — both
+       halves, because the server proves the replay against the row rather than
+       believing the client. */
+    variantRows = [{
+      id: 612,
+      publicId: "variant-foxed",
+      candidateId: 1,
+      imageKey: "casting-v2/variants/foxed.png",
+      internalPrompt: candidateRow.internalPrompt as Record<string, unknown>,
+      instructions: ["fox eyes"],
+      requestText: "fox eyes",
+      deltas: { eyeShape: "fox eyes" },
+      stepDeltas: [{ eyeShape: "fox eyes" }],
+      status: "ready",
+    }];
+    candidateRow.selectedVariantPublicId = "variant-foxed";
+
+    const asked = await refineCandidate(
+      {
+        harvest: unmasked,
+        interpret: async () => ({ ok: true as const, delta: { eyeShape: "fox eyes" as const } }),
+        readBytes: async () => ({ bytes: face, contentType: "image/png" }),
+        regions: {
+          region: async () => upsweptEyes(),
+          subject: async () => upsweptEyes(),
+          landmark: async () => [],
+        },
+      },
+      { ...input, instruction: "fox eyes", replayOf: "variant-foxed" },
+    );
+
+    expect(asked.kind, "a picture, because asking again is the whole point").not.toBe("asked");
+  });
+
   it("ASKS INSTEAD OF SPENDING when her glasses hide the eyes it must measure", async () => {
     /*
       THE PROTECTION THAT WAS SILENTLY UNAVAILABLE TO PEOPLE IN GLASSES.
@@ -3494,6 +3563,96 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
     expect(result.kind).toBe("asked");
     expect(ledger.charges).toHaveLength(charges);
     expect(vi.mocked(claimVariant)).not.toHaveBeenCalled();
+  });
+
+  /*
+    AND THE BUTTON IS THE OTHER DOOR INTO THE SAME ROOM (fable-733).
+
+    Everything above is the REASK path — she was offered a fresh take and said
+    yes. The Regenerate BUTTON answers nothing: it sends the sentence and the
+    scope and no `answering` at all, so `confirmedRegenerate` was false on every
+    press and the already-has door told the founder *"She already has her right
+    eye fiery red — this would have changed nothing"* about the one control
+    whose entire meaning is asking again. Third strike on that journey, which is
+    why the marker exists rather than a fourth patch.
+  */
+  it("the REGENERATE BUTTON renders in place — the state doors stand aside for a proven replay", async () => {
+    const deps = repeatable();
+    const charges = ledger.charges.length;
+
+    const result = await refineCandidate({ ...repainting, ...deps } as never, {
+      ...input,
+      /* The sentence the version was made from, and the version it was made
+         for — exactly what the button sends. No `answering`: nothing was
+         asked. */
+      instruction: "icy blue eyes",
+      replayOf: "variant-selected",
+    });
+
+    expect(result.kind, "a picture, not a question").toBe("rendered");
+    expect(ledger.charges.length, "and it is a paid render like any other").toBe(charges + 1);
+    /* In PLACE — the rail replaces this version rather than growing one. */
+    expect(regenerating()).toBe("variant-selected");
+  });
+
+  it("NEGATIVE CONTROL — a typed duplicate with no marker is still offered, not rendered", async () => {
+    /*
+      fable-733 §3's condition, and the half that makes the fix a fix rather
+      than a hole: the door stays alive for its real customers. Somebody typing
+      the same sentence again has not pressed Regenerate, and the offer before
+      the charge is the whole protection.
+
+      The arm above and this one differ by ONE field. That is the discriminator,
+      and it is why they sit together.
+    */
+    const deps = repeatable();
+    const charges = ledger.charges.length;
+
+    const result = await refineCandidate({ ...repainting, ...deps } as never,
+      { ...input, instruction: "icy blue eyes" });
+
+    expect(result.kind, "the offer, exactly as before").toBe("asked");
+    expect(ledger.charges).toHaveLength(charges);
+  });
+
+  it("NEGATIVE CONTROL — a replay naming a version this render is not built on proves nothing", async () => {
+    /*
+      The marker is NAMED, not asserted. A client that could turn the state
+      doors off by sending a boolean could spend somebody's 25 credits on a
+      render that changes nothing — so the id is checked against the row this
+      render is actually built on, and a claim that does not check out simply is
+      not a replay. The ask carries on as an ordinary sentence, which here means
+      the offer.
+    */
+    const deps = repeatable();
+    const charges = ledger.charges.length;
+
+    const result = await refineCandidate({ ...repainting, ...deps } as never, {
+      ...input,
+      instruction: "icy blue eyes",
+      replayOf: "variant-she-is-not-looking-at",
+    });
+
+    expect(result.kind).toBe("asked");
+    expect(ledger.charges).toHaveLength(charges);
+  });
+
+  it("NEGATIVE CONTROL — a replay whose SENTENCE drifted from the row proves nothing", async () => {
+    /*
+      Both halves are checked, because either one alone is forgeable. Naming the
+      right version while sending a different sentence is a new ask wearing a
+      replay's clothes, and treating it as a re-roll would put a fresh edit into
+      the version it claims to be replacing.
+    */
+    const deps = repeatable();
+
+    const result = await refineCandidate({ ...repainting, ...deps } as never, {
+      ...input,
+      instruction: "emerald green eyes",
+      replayOf: "variant-selected",
+    });
+
+    expect(regenerating(), "it replaces nothing — it is a new ask").toBeNull();
   });
 
   it("records at the CLAIM which version a confirmed fresh take replaces", async () => {

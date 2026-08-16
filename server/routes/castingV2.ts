@@ -664,6 +664,19 @@ export const castingV2Router = router({
             .object({ at: z.number().int().min(0).max(200), instruction: z.string().trim().min(1).max(200) })
             .strict()
             .optional(),
+          /*
+            THE VERSION A FRESH TAKE REPLAYS (fable-733 §2) — the replay marker.
+
+            Regenerate is "the same ask again, landed differently", and three
+            separate doors that judge an ask against her CURRENT state have now
+            refused it in turn. This is what lets those doors know, and it is a
+            version id rather than a boolean on purpose: the service checks it
+            against its own rows, so a client cannot assert its way past a door
+            that exists to stop a charge for a render changing nothing.
+
+            Shaped here, proved there — the same division as `scope` above.
+          */
+          replayOf: publicId.optional(),
         })
         .strict(),
     )
@@ -679,6 +692,7 @@ export const castingV2Router = router({
         answering: input.answering,
         scope: input.scope,
         removeStep: input.removeStep,
+        replayOf: input.replayOf,
       });
     }),
 

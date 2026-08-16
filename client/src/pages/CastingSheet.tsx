@@ -1255,7 +1255,13 @@ export default function CastingSheet() {
    * nothing, because a typed sentence with no rectangle behind it is about the
    * whole feature (fable-444, ruling C).
    */
-  function askRefine(instruction: string, scope?: string) {
+  /**
+   * `replayOf` names the version a fresh take re-rolls — only the Regenerate
+   * button sends it (fable-733 §2). The server proves the name against its own
+   * row before it means anything, so this is a claim under inspection rather
+   * than a permission granted from here.
+   */
+  function askRefine(instruction: string, scope?: string, replayOf?: string) {
     if (!viewerCandidateId) return;
 
     /*
@@ -1307,6 +1313,7 @@ export default function CastingSheet() {
         instruction,
         ...(answering ? { answering: answering.about } : {}),
         ...(sent ? { scope: sent } : {}),
+        ...(replayOf ? { replayOf } : {}),
       })
       .then(async (result) => {
         /*
@@ -2415,6 +2422,11 @@ export default function CastingSheet() {
                      record existed — both mean "there is nothing pointed to
                      replay", and both send the sentence exactly as before. */
                   scope: shown.requestScope ?? null,
+                  /* WHICH version this is a fresh take of (fable-733 §2). The
+                     server proves the claim against its own row before any
+                     state-comparing door stands aside for it, so this is the
+                     name of the thing being replayed rather than a permission. */
+                  variantId: shown.variantId,
                 };
               })()}
               priceCredits={refinePrice}

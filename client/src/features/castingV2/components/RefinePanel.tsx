@@ -163,8 +163,12 @@ export function RefinePanel({
    * `scope` is the one instance the ask is about, and only a REPLAY sends one
    * from here — the box below is a typed sentence, which scopes nothing
    * (fable-444 ruling C). The picture's rectangles are the other door onto it.
+   *
+   * `replayOf` is the third thing a fresh take carries, and it travels for the
+   * same reason the scope does: a replay is not the sentence, it is the
+   * sentence PLUS what it is a replay of. Absent on every typed ask.
    */
-  onRefine: (instruction: string, scope?: string) => void;
+  onRefine: (instruction: string, scope?: string, replayOf?: string) => void;
   onSelect: (variantId: string | null) => void;
   /**
    * Remove one instruction from the middle of the stack — a PAID re-render.
@@ -209,7 +213,7 @@ export function RefinePanel({
    * at, and be refused for it. `scope` is null on every typed ask, which is
    * most of them, and on every version landed before the record existed.
    */
-  regenerates?: { instruction: string; scope: string | null } | null;
+  regenerates?: { instruction: string; scope: string | null; variantId: string } | null;
   /**
    * This face's own possessive, from the server — see `SegmentsOnFace`.
    *
@@ -415,11 +419,23 @@ export function RefinePanel({
             variant="secondary"
             size="small"
             disabled={busy}
-            /* The request, replayed — the sentence and the instance it was said
-               at. `?? undefined` because the wire has no field for "no
-               rectangle": absent IS the whole-feature ask (fable-444 ruling C),
-               and sending null would be a scope naming nothing. */
-            onClick={() => onRefine(regenerates.instruction, regenerates.scope ?? undefined)}
+            /* The request, replayed — the sentence, the instance it was said
+               at, and WHICH VERSION it is a fresh take of. `?? undefined`
+               because the wire has no field for "no rectangle": absent IS the
+               whole-feature ask (fable-444 ruling C), and sending null would be
+               a scope naming nothing.
+
+               The version id is the replay marker (fable-733 §2). Without it
+               the server cannot tell this press from somebody typing the same
+               sentence, and the doors that refuse because she already has the
+               thing fire on the one control whose whole meaning is asking
+               again. It is named, not asserted: the server checks it against
+               the row before any door listens to it. */
+            onClick={() => onRefine(
+              regenerates.instruction,
+              regenerates.scope ?? undefined,
+              regenerates.variantId,
+            )}
             title={`A fresh take of "${regenerates.instruction}"`}
           >
             <RotateCw size={12} strokeWidth={2} aria-hidden="true" />

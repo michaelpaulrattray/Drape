@@ -495,7 +495,11 @@ describe("the rectangle names what it covers (fable-378 (c))", () => {
     ]);
 
     expect(regions).toContain("onAsk(said, open.scope);");
-    expect(sheet).toContain("function askRefine(instruction: string, scope?: string)");
+    /* The third parameter is the replay marker (fable-733 §2) and it rides the
+       same handler, because a fresh take is the same paid edit arriving with
+       one more thing known about it — a second closure here is the drift this
+       file already exists to prevent. */
+    expect(sheet).toContain("function askRefine(instruction: string, scope?: string, replayOf?: string)");
     /* `sent` rather than `scope` since fable-704: the rectangle now has three
        sources — the box she taps, the version being replayed, and the question
        she is answering about one of them — and they resolve to one value before
@@ -531,7 +535,46 @@ describe("the rectangle names what it covers (fable-378 (c))", () => {
     expect(route).toContain("requestScope: readAskScope(variant.internalPrompt),");
     /* And sent again by the button, as a request rather than as a sentence. */
     expect(sheet).toContain("scope: shown.requestScope ?? null,");
-    expect(panel).toContain("onRefine(regenerates.instruction, regenerates.scope ?? undefined)");
+    expect(panel).toContain("regenerates.scope ?? undefined,");
+  });
+
+  /*
+    AND THE REPLAY SAYS WHICH VERSION IT IS A REPLAY OF (fable-733 §2).
+
+    Same law as the rectangle above, one field along, and the same failure mode:
+    each file alone is a half that silently does nothing. The rectangle taught
+    this journey that a replay is the sentence PLUS what it was said at; the
+    already-has door taught it that a replay is also the sentence plus WHAT IT
+    IS A REPLAY OF. Without this field the server cannot tell the Regenerate
+    button from somebody typing the same words, and three doors in a row have
+    refused him for the difference.
+
+    The server half is asserted here too, and it is the important one: the
+    marker is CHECKED against the row rather than believed. A trusted boolean
+    would let a client turn off the doors that stop a charge for a render
+    changing nothing.
+  */
+  it("carries the replay marker onto the request, and proves it at the server", async () => {
+    const [service, route, panel, sheet] = await Promise.all([
+      readFile(new URL("../../../../server/castingV2/refineService.ts", import.meta.url), "utf8"),
+      readFile(new URL("../../../../server/routes/castingV2.ts", import.meta.url), "utf8"),
+      readFile(new URL("./components/RefinePanel.tsx", import.meta.url), "utf8").then(withoutProse),
+      readFile(SHEET, "utf8").then(withoutProse),
+    ]);
+
+    /* The version's own id, handed to the button beside its words. */
+    expect(sheet).toContain("variantId: shown.variantId,");
+    /* Sent by the button, and only by the button. */
+    expect(panel).toContain("regenerates.variantId,");
+    /* Onto the outgoing request — working law 5, the wire itself. */
+    expect(sheet).toContain("...(replayOf ? { replayOf } : {}),");
+    /* Accepted at the door, shaped rather than trusted. */
+    expect(route).toContain("replayOf: publicId.optional(),");
+    expect(route).toContain("replayOf: input.replayOf,");
+    /* And PROVED at the service: the named version must be the one this render
+       is built on, AND its own sentence must be the one being sent. */
+    expect(service).toContain("predecessorForParse.publicId === replayNames");
+    expect(service).toContain("madeThisVersion === input.instruction.trim().toLowerCase()");
   });
 
   /*

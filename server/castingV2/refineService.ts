@@ -119,6 +119,7 @@ import {
   type RefineDelta,
 } from "./refineDelta";
 import { sameStep } from "./railTakes";
+import { skippedOnReplay } from "./replayDoors";
 import { interpretRefinement, refusalMessage } from "./refineInterpreter";
 import { readStoredDelta } from "./refineLegacy";
 import { removalEvidence } from "./removalWords";
@@ -341,6 +342,32 @@ export type RefineInput = {
    * affordance ships.
    */
   removeStep?: { at: number; instruction: string };
+  /**
+   * THE VERSION THIS IS A FRESH TAKE OF — the replay marker (fable-733 §2).
+   *
+   * Regenerate means *"the same ask again, landed differently"*, so every door
+   * that refuses because her CURRENT state already satisfies the ask is
+   * refusing on the replay's own premise: she has it BECAUSE of the version
+   * being regenerated. Three of those doors have caught the founder in
+   * sequence — the per-side gate, the confirm-chip rectangle, and the
+   * already-has door — which is why this is a marker rather than a fourth
+   * patch. `replayDoors.ts` holds the classification and pins it.
+   *
+   * **Named, not asserted.** This is the version's public id, and the server
+   * checks it rather than believing it: it must be the predecessor this render
+   * is built on, and that row's own `requestText` must be the sentence being
+   * sent. Two strings this server wrote, compared — the same shape
+   * `offeredAgain` already uses one field up.
+   *
+   * A bare `replay: true` would have been shorter and wrong. The doors it
+   * turns off exist to stop somebody being charged 25 credits for a render
+   * that changes nothing, so a client that could assert its way past them
+   * could spend a user's money on a no-op.
+   *
+   * Absent on every typed ask, and on the reask path, which sets the same
+   * marker through `answering` instead.
+   */
+  replayOf?: string;
 };
 
 export type RefineResult = {
@@ -781,9 +808,51 @@ async function refineCandidateCounted(
     thing it just offered, and the re-roll rides the version's own chain rather
     than adding one.
   */
-  const confirmedRegenerate = outstanding?.kind === "same-again"
+  const answeredTheOffer = outstanding?.kind === "same-again"
     && answered !== null
     && answered !== LEAVE_AS_SHE_IS;
+  /*
+    AND THE OTHER DOOR INTO THE SAME ROOM — the Regenerate BUTTON (fable-733).
+
+    The marker above can only be set by answering the offer, and the button
+    never answers anything: it calls `onRefine(instruction, scope)` and sends no
+    `answering` at all. So `confirmedRegenerate` was false on every press, the
+    already-true door fired, and the founder was told *"She already has her
+    right eye fiery red — this would have changed nothing"* about the one
+    control whose entire meaning is the same ask again.
+
+    PROVED RATHER THAN TRUSTED, and the shape is deliberately the one directly
+    above: the client names WHICH version it is replaying and the server checks
+    the claim against its own rows. The named version must be the predecessor
+    this render is built on, and that row's `requestText` must be the sentence
+    being sent. A bare `replay: true` would have let a client turn off the doors
+    that stop somebody paying 25 credits for a render that changes nothing.
+
+    `requestText` is null on every row landed before that column existed; those
+    versions replay exactly as they always have, through the sentence alone.
+  */
+  const replayNames = (input.replayOf ?? "").trim();
+  const replayedByButton = replayNames.length > 0
+    && predecessorForParse !== null
+    && predecessorForParse.publicId === replayNames
+    && madeThisVersion.length > 0
+    && madeThisVersion === input.instruction.trim().toLowerCase();
+  if (replayNames.length > 0 && !replayedByButton) {
+    /* Not a refusal — a replay claim that does not check out simply is not one,
+       and the ask carries on as an ordinary sentence through every door. Logged
+       because a client sending a stale version id is a real bug on the other
+       side of the wire, and silence would hide it. */
+    log.warn(
+      {
+        userId: input.userId,
+        candidate: input.candidatePublicId,
+        replayOf: replayNames,
+        predecessor: predecessorForParse?.publicId ?? null,
+      },
+      "[refineService] a replay named a version this render is not built on — treating it as an ordinary ask",
+    );
+  }
+  const confirmedRegenerate = answeredTheOffer || replayedByButton;
 
   /*
     "NEVER MIND" — the one answer that is not an instruction.
@@ -2650,7 +2719,23 @@ async function refineCandidateCounted(
         return null;
       }
     })();
-    if (reading && alreadyUpswept(reading)) {
+    /*
+      AND THE ALREADY-HAS DOOR'S SIBLING, KEYED ON THE REPLAY (fable-733 §2).
+
+      This is the same refusal as `saysNothingNew` measured off the picture
+      instead of the recipe — its own log line says *"already-true — asking
+      instead of spending"* — so it is state-comparing by the rule in
+      `replayDoors.ts`, and on a fresh take her upswept eyes are the premise: she
+      has them BECAUSE of the version being regenerated. Left alone it would
+      have been the FOURTH door to stop him on the same journey, and the sweep
+      is the part of the fix that finds those before he does.
+
+      Deliberately narrow. Its neighbour below — the glasses reading — is NOT
+      keyed on this, because its ground is that an instrument could not take a
+      reading, which a replay does not change. Two doors, one block, two
+      classes; the list says which is which.
+    */
+    if (reading && alreadyUpswept(reading) && !(confirmedRegenerate && skippedOnReplay("already-upswept"))) {
       log.info(
         /* The value the DECISION was made on, not the recipe's — they agree
            today only because the gate now requires this step to have written
