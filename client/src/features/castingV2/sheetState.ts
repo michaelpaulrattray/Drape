@@ -385,12 +385,32 @@ export const useSheetState = create<SheetState>((set) => ({
       sessions: patch(state.sessions, sessionId, () => ({ overrides: {} })),
     })),
 
+  /*
+    UNDO TAKES BACK WHAT SHE QUEUED — BOTH KINDS OF IT (founder's ontology,
+    ordered in fable-729 §4).
+
+    This deleted the override and nothing else, and the echo has TWO ways to
+    queue a change: pinning a value, and unpinning one. Tap "Let age vary" and
+    the span reads *"30s → varying · next roll"* off `unlocked`; the popover
+    then offers *"Undo — keep 30s"* — and that footer did nothing at all. No
+    override existed to delete, `unlocked` was untouched, the span kept saying
+    varying, and the next roll still shipped `unlock: ["ageBand"]`. A dead
+    control on a fact she is in the middle of correcting.
+
+    Its mirror already knew: `setOverride` clears `unlocked` for the same field
+    and says why — one decision changing its mind must not leave the server two
+    contradictory instructions. This is the same sentence read the other way
+    round, and the asymmetry was an omission rather than a decision.
+  */
   undoOverride: (sessionId, field) =>
     set((state) => ({
       sessions: patch(state.sessions, sessionId, (slice) => {
         const overrides = { ...slice.overrides };
         delete overrides[field];
-        return { overrides };
+        return {
+          overrides,
+          unlocked: slice.unlocked.filter((unlockedField) => unlockedField !== field),
+        };
       }),
     })),
 

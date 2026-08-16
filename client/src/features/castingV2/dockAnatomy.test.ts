@@ -111,7 +111,15 @@ describe("the sheet dock commits to one candidate", () => {
   it("gives the tray radio semantics and a selection ring", async () => {
     const tray = await readFile(TRAY, "utf8");
     const css = await readFile(CSS, "utf8");
-    expect(tray).toContain('role={onSelect ? "radio" : undefined}');
+    /*
+      `aimable` rather than `onSelect` since fable-729 §5: a face that has
+      already been signed is still in the tray and still openable, and is not
+      one of the choices — so the radio semantics, the ring and the selection
+      write all read one predicate rather than three. It is defined as
+      `Boolean(onSelect) && canBeSigned(entry)`, so this arm is unchanged for
+      every face that can actually be signed.
+    */
+    expect(tray).toContain('role={aimable ? "radio" : undefined}');
     expect(tray).toContain("aria-checked");
     expect(tray).toContain("is-selected");
     // The ring is the standard selection grammar, and it must survive the

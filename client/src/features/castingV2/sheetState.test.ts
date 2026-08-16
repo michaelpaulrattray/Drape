@@ -82,6 +82,58 @@ describe("state never crosses sheets", () => {
   });
 });
 
+/**
+ * UNDO TAKES BACK WHAT SHE QUEUED — WHICHEVER KIND IT WAS (fable-729 §4).
+ *
+ * The echo queues a change two ways: pinning a value, and unpinning one. Its
+ * popover offers one Undo for both — *"Undo — keep 30s"* — and that footer
+ * only ever deleted an override. On the unpinned branch there is no override,
+ * so the control did nothing at all: the span kept reading "→ varying · next
+ * roll", the popover kept saying queued, and the next roll still shipped the
+ * unlock she had just taken back.
+ *
+ * Both arms here, because a fix that cleared only the unpin would be the same
+ * defect facing the other way.
+ */
+describe("undoing a queued change", () => {
+  it("takes back an unpinned fact — the branch where it did nothing", () => {
+    const store = useSheetState.getState();
+    store.unlock(A, "ageBand");
+    expect(sliceOf(A).unlocked, "queued, so the echo says varying").toEqual(["ageBand"]);
+
+    useSheetState.getState().undoOverride(A, "ageBand");
+    expect(sliceOf(A).unlocked, "and taken back when she says so").toEqual([]);
+  });
+
+  it("still takes back a pinned value", () => {
+    const store = useSheetState.getState();
+    store.setOverride(A, "ageBand", "30s");
+    useSheetState.getState().undoOverride(A, "ageBand");
+    expect(sliceOf(A).overrides.ageBand).toBeUndefined();
+  });
+
+  it("leaves every OTHER queued fact exactly where it was", () => {
+    /* The undo names one field. Clearing the whole slice would take back
+       decisions she never mentioned — and both kinds of queue live in this
+       slice, so the arm checks both. */
+    const store = useSheetState.getState();
+    store.unlock(A, "sex");
+    store.setOverride(A, "ageBand", "30s");
+    store.unlock(A, "ageBand");
+
+    useSheetState.getState().undoOverride(A, "ageBand");
+    expect(sliceOf(A).unlocked).toEqual(["sex"]);
+  });
+
+  it("does not reach into another sheet", () => {
+    const store = useSheetState.getState();
+    store.unlock(A, "ageBand");
+    store.unlock(B, "ageBand");
+    useSheetState.getState().undoOverride(A, "ageBand");
+    expect(sliceOf(B).unlocked, "the fable-465 scope, on this control too").toEqual(["ageBand"]);
+  });
+});
+
 describe("what a cancel says", () => {
   it("does not report a bare zero when work is still arriving", () => {
     // The founder's reading: "0 credits back" looked like a failure at the

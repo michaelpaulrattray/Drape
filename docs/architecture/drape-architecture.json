@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "3a9e81060c8cb4fa"
+    "sourceFingerprint": "1b177dc5f1693eb7"
   },
   "domains": [
     {
@@ -43,7 +43,7 @@
     {
       "id": "domain:castingV2",
       "name": "castingV2",
-      "moduleCount": 35
+      "moduleCount": 36
     },
     {
       "id": "domain:client-shared",
@@ -1577,6 +1577,12 @@
     {
       "id": "module:client/src/features/castingV2/sheetState.ts",
       "path": "client/src/features/castingV2/sheetState.ts",
+      "domain": "castingV2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/castingV2/signTarget.ts",
+      "path": "client/src/features/castingV2/signTarget.ts",
       "domain": "castingV2",
       "lifecycle": "active"
     },
@@ -8638,6 +8644,10 @@
       "path": "client/src/features/castingV2/sheetState.test.ts"
     },
     {
+      "id": "test:client/src/features/castingV2/signTarget.test.ts",
+      "path": "client/src/features/castingV2/signTarget.test.ts"
+    },
+    {
       "id": "test:client/src/features/castingV2/singleFlight.test.ts",
       "path": "client/src/features/castingV2/singleFlight.test.ts"
     },
@@ -12859,6 +12869,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/features/castingV2/components/KeptTray.tsx",
+      "to": "module:client/src/features/castingV2/signTarget.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/features/castingV2/components/RefinePanel.tsx",
       "to": "module:client/src/features/castingV2/components/SegmentsOnFace.tsx",
       "kind": "imports"
@@ -14946,6 +14961,11 @@
     {
       "from": "module:client/src/pages/CastingSheet.tsx",
       "to": "module:client/src/features/castingV2/sheetState.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/CastingSheet.tsx",
+      "to": "module:client/src/features/castingV2/signTarget.ts",
       "kind": "imports"
     },
     {

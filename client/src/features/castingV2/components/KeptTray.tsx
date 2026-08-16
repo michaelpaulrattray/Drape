@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 
 import { CandidateViewer, type ViewerFrame } from "./CandidateViewer";
+import { canBeSigned } from "../signTarget";
 
 /**
  * The shortlist, at a size that can actually do its job.
@@ -30,6 +31,18 @@ export type KeptEntry = {
   /** Which roll this face came from — the shortlist spans the whole sheet. */
   sourceRollIndex: number;
   indexLabel: string;
+  /**
+   * ALREADY SIGNED — and therefore never a Sign target (fable-729 §5).
+   *
+   * The server has always sent this and said why at the projection: a signed
+   * face stays in the tray because it is part of this sheet's story, and it
+   * cannot be signed again. The client did not carry the field, so the tray
+   * drew it as an ordinary radio labelled *"Sign 03 from ROLL 02"* — and the
+   * sheet's own target list filters signed faces out, so clicking one wrote a
+   * selection nothing could honour and the accent ring stayed on a different
+   * woman. A dead click on the control that aims a 450-credit ceremony.
+   */
+  signed?: boolean;
 };
 
 /** "ROLL 02" — the useful label here, since the tray crosses rolls. */
@@ -113,34 +126,44 @@ export function KeptTray({
         {shown.map((entry) => {
           const src = entry.thumbUrl ?? entry.imageUrl ?? null;
           const selected = entry.candidateId === selectedId;
+          /*
+            A SIGNED FACE IS NOT A TARGET (fable-729 §5). She is still here —
+            the tray is the sheet's story — but she is out of the aim: no radio
+            semantics, no selection write, and dimmed so the eye knows before
+            the hand does. Her single click OPENS her instead, because the one
+            thing this sweep is closing is controls that do nothing.
+          */
+          const aimable = Boolean(onSelect) && canBeSigned(entry);
           return src ? (
             <button
               key={entry.candidateId}
               type="button"
               ref={entry.candidateId === focusCandidateId ? focusRef : undefined}
-              role={onSelect ? "radio" : undefined}
-              aria-checked={onSelect ? selected : undefined}
-              className={
-                selected
-                  ? "dpc-keptstack__chip dpc-keptstack__chip--open is-selected"
-                  : "dpc-keptstack__chip dpc-keptstack__chip--open"
-              }
+              role={aimable ? "radio" : undefined}
+              aria-checked={aimable ? selected : undefined}
+              className={[
+                "dpc-keptstack__chip dpc-keptstack__chip--open",
+                selected && aimable ? "is-selected" : "",
+                entry.signed ? "is-signed" : "",
+              ].filter(Boolean).join(" ")}
               /*
                 A single click SELECTS — the thing the dock is about to spend
                 on. Opening the viewer moved to a double click and to the
                 keyboard, because with ten keeps there was no way to lock one
                 in at all, and choosing is the more common intent by far.
               */
-              onClick={() => onSelect?.(entry.candidateId)}
+              onClick={() => (aimable ? onSelect?.(entry.candidateId) : setViewing(entry))}
               onDoubleClick={() => setViewing(entry)}
               aria-label={
-                onSelect
+                aimable
                   ? `Sign ${entry.indexLabel} from ${labelFor(entry)}`
-                  : `Open kept face from ${labelFor(entry)}`
+                  : entry.signed
+                    ? `${entry.indexLabel} from ${labelFor(entry)} — already signed`
+                    : `Open kept face from ${labelFor(entry)}`
               }
             >
               <img src={src} alt="" />
-              {selected ? <span className="dpc-keptstack__ring" aria-hidden="true" /> : null}
+              {selected && aimable ? <span className="dpc-keptstack__ring" aria-hidden="true" /> : null}
             </button>
           ) : (
             <span key={entry.candidateId} className="dpc-keptstack__chip" />

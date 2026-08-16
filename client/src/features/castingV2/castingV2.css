@@ -384,6 +384,20 @@
   display: block;
 }
 
+/*
+  ALREADY SIGNED — still here, no longer aimable (fable-729 §5).
+
+  The tray keeps her because she is part of this sheet's story, and the Sign
+  dock cannot spend on her twice. Dimmed rather than removed, and dimmed rather
+  than badged: a signed face has her own permanent home in the room, so a mark
+  here would be a second place to learn the same fact. The eye reads "not one of
+  the choices" before the hand reaches, which is the whole job.
+*/
+.dpc-keptstack__chip.is-signed > img {
+  opacity: 0.42;
+  filter: saturate(0.4);
+}
+
 /* Lifting the hovered face out of the stack is what makes it readable. */
 .dpc-keptstack__chip--open:hover,
 .dpc-keptstack__chip--open:focus-visible {

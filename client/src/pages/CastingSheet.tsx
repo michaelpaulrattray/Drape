@@ -55,6 +55,7 @@ import { prefetchFrames } from "@/features/castingV2/frameDecodes";
 import { FaceRegions } from "@/features/castingV2/components/FaceRegions";
 import { useFaceSelection } from "@/features/castingV2/components/faceSelection";
 import { KeptTray } from "@/features/castingV2/components/KeptTray";
+import { signTargets } from "@/features/castingV2/signTarget";
 import { SignConfirm } from "@/features/castingV2/components/SignConfirm";
 
 /**
@@ -781,7 +782,10 @@ export default function CastingSheet() {
     Newest keep first, because the last thing you kept is almost always the one
     you mean.
   */
-  const keptTiles = [...shortlist].reverse().filter((entry) => !entry.signed);
+  /* Newest keep first, signed faces out of the aim — the rule and its reasoning
+     live in `signTarget.ts`, because the TRAY asks the same question and the two
+     of them disagreeing is how a click armed a different woman (fable-729 §5). */
+  const keptTiles = signTargets(shortlist);
   const signTarget =
     keptTiles.find((entry) => entry.candidateId === signSelectionId) ?? keptTiles[0] ?? null;
   const candidates = roll.data?.candidates ?? [];
