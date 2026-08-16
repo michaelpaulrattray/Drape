@@ -185,11 +185,35 @@ export async function repaint(input: RepaintInput): Promise<RepaintResult> {
   const digests: string[] = [];
   const geometry: (string | null)[] = [];
 
-  for (const reference of input.recipe.references) {
-    let bytes: ReferenceBytes;
-    try {
-      bytes = await input.load(reference.image);
-    } catch (cause) {
+  /*
+    EVERY CARRIED CROP IS FETCHED AT ONCE (fable-695 §4b, stage 2).
+
+    These are storage reads of objects the recipe already names, and they are
+    independent by construction — nothing here reads a previous reference's
+    bytes. They were issued one after another on the customer's paid wait, so a
+    face carrying six features paid six round trips to R2 before the picture was
+    even asked for.
+
+    `allSettled`, and then the loop decides — which keeps two things the eager
+    version would have quietly changed. A rejected sibling keeps its handler, so
+    a storage outage refuses the render instead of crashing the process. And the
+    refusal that comes back is still the FIRST ONE IN THE RECIPE'S ORDER rather
+    than whichever failed soonest, so the same missing crop is named for the
+    same render however the network happens to schedule it.
+
+    Cost, named as in stage 1: a render that refuses has already fetched the
+    references after the one that refused it. Those are R2 GETs of crops we
+    minted, and they are cheaper than the seconds they save on every render that
+    succeeds.
+  */
+  const fetched = await Promise.allSettled(
+    input.recipe.references.map((reference) => input.load(reference.image)),
+  );
+
+  for (let index = 0; index < input.recipe.references.length; index += 1) {
+    const reference = input.recipe.references[index]!;
+    const outcome = fetched[index]!;
+    if (outcome.status === "rejected") {
       /*
         A reference the library named and storage cannot produce is not a
         degraded render to paint anyway — it is a feature about to be silently
@@ -197,9 +221,10 @@ export async function repaint(input: RepaintInput): Promise<RepaintResult> {
       */
       return {
         ok: false, reason: "referenceMissing", key: reference.image.key,
-        detail: `${reference.image.key} could not be loaded: ${(cause as Error)?.message ?? "unknown"}`,
+        detail: `${reference.image.key} could not be loaded: ${(outcome.reason as Error)?.message ?? "unknown"}`,
       };
     }
+    const bytes = outcome.value;
     const digest = digestOf(bytes.bytes);
     if (reference.image.sha !== undefined && !digestMatches(reference.image.sha, digest)) {
       /*

@@ -204,3 +204,92 @@ describe("the pixel-frozen promise is checked, not assumed", () => {
     expect(engine.sent).toHaveLength(0);
   });
 });
+
+/**
+ * THE CARRIED CROPS ARE FETCHED TOGETHER — and the refusal still names the same
+ * one (fable-695 §4b, stage 2).
+ *
+ * These are storage reads of objects the recipe already names, independent by
+ * construction, and they were issued one after another on the customer's paid
+ * wait. Issuing them together is safe in a way the provider calls are not — but
+ * it puts one guarantee at risk that nothing else here would have caught: with
+ * loads running at once, "the first one that failed" and "the first one in the
+ * recipe" stop being the same reference, and a render could name a different
+ * missing crop each time it refused.
+ */
+describe("the references are loaded at once, in the recipe's own order", () => {
+  const threeReferences = () => assembleRecipe({
+    master: MASTER, pronouns: SHE, library: [hair],
+    asks: [{ slot: "lips", noun: "lips", words: "a soft nude lip gloss" }],
+  });
+
+  it("issues the loads together rather than one after another", async () => {
+    const recipe = threeReferences();
+    if (!recipe.ok) throw new Error("the recipe must assemble");
+    expect(recipe.references.length, "more than one thing to fetch").toBeGreaterThan(1);
+
+    let inFlight = 0;
+    let peak = 0;
+    const watching = async (image: { key: string }): Promise<ReferenceBytes> => {
+      inFlight += 1;
+      peak = Math.max(peak, inFlight);
+      /* A real tick: an `async` that never yields cannot overlap with anything,
+         so a watcher without one reports "serial" whatever the caller does. */
+      await new Promise((resolve) => setTimeout(resolve, 10));
+      inFlight -= 1;
+      return load(image);
+    };
+
+    const result = await repaint({
+      recipe, engine: recordingEngine(), load: watching, width: 1024, height: 1536,
+    });
+    expect(result.ok).toBe(true);
+    expect(peak, "more than one crop on the wire at once").toBeGreaterThan(1);
+  });
+
+  it("names the FIRST missing reference in the recipe, not the first to fail", async () => {
+    /*
+      The discriminating case. The LAST reference fails immediately and the
+      FIRST fails slowly, so a loop that reported whichever rejected soonest
+      would name the wrong crop — and it would name a different one on a
+      different day, which is the sort of report nobody can act on.
+    */
+    const recipe = threeReferences();
+    if (!recipe.ok) throw new Error("the recipe must assemble");
+    const first = recipe.references[0]!.image.key;
+    const last = recipe.references[recipe.references.length - 1]!.image.key;
+    expect(first).not.toBe(last);
+
+    const perverse = async (image: { key: string }): Promise<ReferenceBytes> => {
+      if (image.key === last) throw new Error("gone immediately");
+      if (image.key === first) {
+        await new Promise((resolve) => setTimeout(resolve, 40));
+        throw new Error("gone slowly");
+      }
+      return load(image);
+    };
+
+    const result = await repaint({
+      recipe, engine: recordingEngine(), load: perverse, width: 1024, height: 1536,
+    });
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.reason).toBe("referenceMissing");
+    expect(result.key, "the recipe's order decides which crop is named").toBe(first);
+    expect(result.detail).toContain("gone slowly");
+  });
+
+  it("refuses rather than throwing when a load rejects", async () => {
+    /* `Promise.all` would reject here and leave the sibling rejections
+       unhandled — a crash in a render that was only going to refuse. */
+    const recipe = threeReferences();
+    if (!recipe.ok) throw new Error("the recipe must assemble");
+    const allGone = async (): Promise<ReferenceBytes> => { throw new Error("storage is down"); };
+    const result = await repaint({
+      recipe, engine: recordingEngine(), load: allGone, width: 1024, height: 1536,
+    });
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.reason).toBe("referenceMissing");
+  });
+});
