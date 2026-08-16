@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "87d35d07bbe5ff4e"
+    "sourceFingerprint": "988cf8c9226a71c3"
   },
   "domains": [
     {
@@ -43,7 +43,7 @@
     {
       "id": "domain:castingV2",
       "name": "castingV2",
-      "moduleCount": 34
+      "moduleCount": 35
     },
     {
       "id": "domain:client-shared",
@@ -1529,6 +1529,12 @@
     {
       "id": "module:client/src/features/castingV2/failureCopy.ts",
       "path": "client/src/features/castingV2/failureCopy.ts",
+      "domain": "castingV2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/castingV2/frameDecodes.ts",
+      "path": "client/src/features/castingV2/frameDecodes.ts",
       "domain": "castingV2",
       "lifecycle": "active"
     },
@@ -8560,6 +8566,10 @@
       "path": "client/src/features/castingV2/failureCopy.test.ts"
     },
     {
+      "id": "test:client/src/features/castingV2/frameDecodes.test.ts",
+      "path": "client/src/features/castingV2/frameDecodes.test.ts"
+    },
+    {
       "id": "test:client/src/features/castingV2/heroBox.test.ts",
       "path": "client/src/features/castingV2/heroBox.test.ts"
     },
@@ -12811,6 +12821,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/features/castingV2/components/CandidateViewer.tsx",
+      "to": "module:client/src/features/castingV2/frameDecodes.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/features/castingV2/components/DeleteCastConfirm.tsx",
       "to": "module:client/src/features/castingV2/components/CastingModal.tsx",
       "kind": "imports"
@@ -14888,6 +14903,11 @@
     {
       "from": "module:client/src/pages/CastingSheet.tsx",
       "to": "module:client/src/features/castingV2/failureCopy.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/CastingSheet.tsx",
+      "to": "module:client/src/features/castingV2/frameDecodes.ts",
       "kind": "imports"
     },
     {

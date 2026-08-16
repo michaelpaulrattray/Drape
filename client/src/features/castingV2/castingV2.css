@@ -771,6 +771,32 @@
   transform: scale(1.04);
 }
 
+/*
+  THE VERSION SWITCH — what is NOT here, and why (founder, fable-686; law 6).
+
+  The order was: switch to the version's thumbnail scaled up under the sheet's
+  blur treatment, then crossfade to the full frame. The blur was built and then
+  LOOKED AT, which is what this law is for: the small copy is a few hundred
+  pixels wide, `max-width`/`max-height` only ever shrink, and the plate has no
+  definite height of its own — so the picture COLLAPSES to the thumbnail's
+  natural size on every switch and grows back when the real bytes land. A
+  softened picture that also changes size twice per click is further from
+  graceful than the bare swap it replaced, and `height: 100%` does not fix it
+  because there is nothing for the percentage to resolve against.
+
+  So the presentation half is filed rather than shipped, with the shape it
+  needs: the frame being LEFT stays in the box as an invisible sizer and the
+  preview is laid over it — which is the two-layer crossfade the order actually
+  described, and the only version of it that can hold the box.
+
+  What DID ship is the half that needed no picture at all: the neighbouring
+  versions are decoded before they are clicked (`frameDecodes.ts`), so the
+  second click in an ordinary browse paints at once instead of waiting out a
+  2.6MB frame. Measured on Fast 3G: 494 ms to a sharp neighbour against ~12 s
+  cold. `data-preview` stays on the image because it is a true statement about
+  what is being drawn, and the drive reads it.
+*/
+
 @keyframes dpc-settle {
   0%, 100% { filter: blur(12px) saturate(0.32) brightness(0.72); }
   50%      { filter: blur(16px) saturate(0.32) brightness(0.66); }

@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from "react";
+
+import { decodeFrame } from "../frameDecodes";
 import { createPortal } from "react-dom";
 import { Download, X } from "lucide-react";
 
@@ -165,7 +167,7 @@ const TYPICAL_WAIT = "usually three to four minutes";
  * stranded on a picture the user did not ask for because an instrument said no
  * — the same asymmetry the mint's courtesy reads use.
  */
-function useShownFrame(frame: ViewerFrame): ViewerFrame {
+function useShownFrame(frame: ViewerFrame): { frame: ViewerFrame; preview: boolean } {
   const [shown, setShown] = useState(frame);
 
   /*
@@ -191,23 +193,17 @@ function useShownFrame(frame: ViewerFrame): ViewerFrame {
 
     A decode that FAILS still shows the frame, unchanged: the alternative is a
     viewer stranded on a picture nobody asked for because an instrument said no.
+
+    THE HOLDER NOW LIVES OUTSIDE THIS COMPONENT (`frameDecodes.ts`, fable-686
+    §2c) so that a version she has NOT clicked can be decoded while she looks at
+    this one. Same holder, so a prefetch and a click can never start two
+    downloads of one picture — which is the very defect it was built for.
   */
-  const pending = useRef<{ url: string; decoded: Promise<void> } | null>(null);
   useEffect(() => {
     if (frame.url === shown.url) return;
     if (frame.candidateId !== shown.candidateId) { setShown(frame); return; }
     let live = true;
-    if (pending.current?.url !== frame.url) {
-      const picture = new Image();
-      picture.src = frame.url;
-      pending.current = {
-        url: frame.url,
-        /* Swallowed here so every joiner settles the same way — the caller
-           below decides what a failure means, once. */
-        decoded: picture.decode().catch(() => undefined),
-      };
-    }
-    void pending.current.decoded.then(() => { if (live) setShown(frame); });
+    void decodeFrame(frame.url).then(() => { if (live) setShown(frame); });
     return () => { live = false; };
   }, [frame, shown]);
 
@@ -220,9 +216,18 @@ function useShownFrame(frame: ViewerFrame): ViewerFrame {
     viewer can show what they clicked immediately, soft, and sharpen in place:
     the same frame, the same box, no blank and no layout shift. Without one
     (every version delivered before thumbnails) this is exactly what it was.
+
+    AND IT SAYS WHICH IT IS (fable-686 §2a). The founder: the switch works but
+    *"could feel more graceful"* — a small picture blown up to 760px is soft
+    whatever anyone intends, and softness with no reason reads as a bad photo.
+    Marked as a preview, the same softness is the sheet's own loading state: it
+    goes sharp when the real bytes land, which is the whole of the arrival
+    moment and is the treatment he already likes on a render.
   */
-  if (frame.url === shown.url) return frame;
-  return frame.previewUrl ? { ...frame, url: frame.previewUrl } : shown;
+  if (frame.url === shown.url) return { frame, preview: false };
+  return frame.previewUrl
+    ? { frame: { ...frame, url: frame.previewUrl }, preview: true }
+    : { frame: shown, preview: false };
 }
 
 export function CandidateViewer({
@@ -289,7 +294,7 @@ export function CandidateViewer({
 }) {
   const closeRef = useRef<HTMLButtonElement>(null);
   const asked = frames[index] ?? frames[0];
-  const frame = useShownFrame(asked);
+  const { frame, preview } = useShownFrame(asked);
   const canStep = Boolean(onIndexChange) && frames.length > 1;
 
   useEffect(() => {
@@ -462,7 +467,14 @@ export function CandidateViewer({
               portrait and a landscape frame sat in the same viewer.
             */}
             <span className="dpc-viewer__plate">
-              <img src={frame.url} alt={frame.personaLine ?? frame.label} />
+              {/* Soft while it IS the small copy, sharp the moment the real
+                  bytes land — one element, so there is no second decode and
+                  nothing to flash between two layers. */}
+              <img
+                src={frame.url}
+                alt={frame.personaLine ?? frame.label}
+                data-preview={preview ? "true" : "false"}
+              />
               {/* The face's own regions, in the same box as the picture. */}
               {overlay}
               {wait ? (

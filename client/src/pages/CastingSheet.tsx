@@ -45,6 +45,7 @@ import { RefinePanel } from "@/features/castingV2/components/RefinePanel";
 import { FacePanel } from "@/features/castingV2/components/FacePanel";
 import { VersionRail } from "@/features/castingV2/components/VersionRail";
 import { frameUrlFor, selectedVariantFor, type ChosenFrame } from "@/features/castingV2/chosenFrame";
+import { prefetchFrames } from "@/features/castingV2/frameDecodes";
 import { FaceRegions } from "@/features/castingV2/components/FaceRegions";
 import { useFaceSelection } from "@/features/castingV2/components/faceSelection";
 import { KeptTray } from "@/features/castingV2/components/KeptTray";
@@ -1341,6 +1342,39 @@ export default function CastingSheet() {
   const viewerIndex = viewerFrames.findIndex(
     (frame) => frame.candidateId === viewerCandidateId,
   );
+
+  /*
+    THE NEXT CLICK, ALREADY IN HAND (fable-686 §2c).
+
+    A version's full frame is ~2.6MB and the honest wire time for it is most of
+    the wait the founder felt. While she looks at one version, its NEIGHBOURS in
+    the rail are quietly decoded through the same by-URL holder the viewer uses,
+    so the second click in any browse usually paints at once.
+
+    Neighbours only, and never the whole rail: a sheet with a dozen versions
+    would put thirty megabytes on the wire for pictures nobody asked for, and on
+    the slow connection where this matters that would compete with the one
+    picture she IS waiting for. Two is the browse she actually does — one step
+    forward, one step back.
+
+    Nothing waits on this. It cannot delay the frame on screen, and a failed
+    prefetch is a click that costs what it costs today.
+  */
+  const railOrder = [
+    variants.data?.originalImageUrl ?? null,
+    ...(variants.data?.variants ?? []).map((variant) => variant.imageUrl ?? null),
+  ];
+  const railAt = variants.data
+    ? [null, ...(variants.data.variants ?? []).map((variant) => variant.variantId)]
+      .indexOf(shownVariantId)
+    : -1;
+  useEffect(() => {
+    if (railAt < 0) return;
+    prefetchFrames([railOrder[railAt - 1], railOrder[railAt + 1]]);
+    /* Keyed on the URLs themselves: re-running because an unrelated render
+       rebuilt the array would ask the holder a question it has already
+       answered, which is free but says the wrong thing about intent. */
+  }, [railAt, railOrder[railAt - 1], railOrder[railAt + 1]]);
 
   const viewerWait = refineWait({
     viewerCandidateId,
