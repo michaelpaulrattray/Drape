@@ -126,10 +126,20 @@ non-null.**
 Ask what the fixture can EXPRESS before believing its zero. A comparison whose
 fixture cannot produce the defect reads clean over anything, so every clean cell
 carries the proof it COULD have failed — and every cell carries its own n.
+**And the confound may be the QUERY rather than the fixture: prove the
+question-shape can return rows ANYWHERE before believing a zero.**
 *Incident:* a chain read *"0 of 5 regions degraded"* twice — guaranteed before
 the first frame was painted, because that bench's regions are disjoint, on
 which ground the two anchorings build the same picture by construction. The row
 is at `ANCHORING_SIDE_BY_SIDE.md:106` and its algebra at `:118`.
+*Incident (the query half, 2026-08-17):* *"the fixture bot owns no signed Cast,
+so the 2K half is UNREAD"* stood in two specification documents for a week. The
+query behind it named two columns that do not exist on `models`, inside a
+`.catch` that turned `ER_BAD_FIELD_ERROR` into the same empty array an honestly
+castless bot produces — it could not have returned a row for ANY user alive,
+while four signed Casts sat one bot over. The fixture was innocent; the
+instrument could not ask. The control that catches it costs one query: ask the
+same question across all users and watch it return rows.
 *Banked:* fable-665 §1, with fable-126 (the audit that cleared that page to the
 founder, naming the disjoint-algebra disqualification).
 
@@ -246,6 +256,30 @@ satisfied by editing, which is the thing the instrument was built to stop.
 *Banked:* fable-796 §2, from the incident records at opus-585 §2, opus-586 §1–2
 and opus-587 §4.
 
+**18. A sweep that finds nothing owes proof it was LOOKING — an empty surface
+and an unfinished one print the same number.**
+*Incident:* the high-DPI sharpness audit swept eight surfaces at two pixel
+densities and reported the casting sheet, the boards view and the models library
+as clean, one picture each, nothing stretched. All three were **loading
+skeletons** at the moment of measurement: eight and six empty grey tiles, and an
+avatar that arrives immediately and holds a count perfectly steady while the
+photographs are still being fetched. The numbers were plausible, the sweep was
+green, and nothing in the output distinguished *"this surface has one picture on
+it"* from *"this surface has not painted yet."* What caught it was the
+screenshots — the frames, not the counts — which is law 9 turned on one's own
+instrument instead of on an engine.
+*The repair is the shape worth keeping:* not a longer clock, but the PRODUCT'S
+OWN signal that it is still working (here `.animate-pulse`, the class every
+lobby surface renders while its query is in flight), plus the surface's own
+element waited for, plus a loud `⚠ STILL PULSING` on any surface that timed out
+anyway. A stable count and a finished count are different facts. And the
+symmetry that follows is the evidence: after the repair both density passes
+agreed surface-for-surface, which no racing sweep had managed.
+*Kin to* `sampler-must-throttle` (a fast link certifying a surface that fails on
+a real one). *Distinct from entry 6:* there the world could not produce the
+finding; here the instrument was not yet looking at it.
+*Banked:* fable-799 §3b, from the incident record at opus-590 §4.
+
 *(Numbers are ADMISSION order, not reading order — 14 sits here because this is
 where it belongs, and renumbering would silently invalidate every citation that
 names an entry. Expect the sequence to run out of order as the file grows.)*
@@ -296,4 +330,4 @@ one helper.
 Follow the admission rule at the top: numbered Fable ruling, real incident, one
 line each, citation. Keep it to a page or two — **terse over complete.** A
 doctrine file long enough to skim past is an instrument nobody reads, which is
-the failure mode all seventeen of these describe.
+the failure mode all eighteen of these describe.
