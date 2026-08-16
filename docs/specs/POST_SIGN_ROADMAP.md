@@ -97,6 +97,26 @@ scale), stale spec sections marked superseded, the seam-check death
 (fable-709 §3, §0 above) executed if repaint scope has widened by then, and the
 roadmap file itself re-audited top to bottom.
 
+**ITS FIRST CUSTOMER, AND WHAT TO BUDGET FOR IT** (fable-809 §3, filed
+2026-08-17 rather than when the milestone opens, because a scope line nobody
+wrote is how §2 and §3 of fable-710 were lost in the first place). The
+mechanical sweep `scripts/sweep-uncalled-exports-disposable.mts` prints a list
+of production exports no production code references — **179 at its first run, a
+FLOOR** (three biases in the method all point toward silence: namespace
+imports, computed dynamic specifiers, barrel re-exports). Two were read and
+closed on 2026-08-17 (§6), leaving **177 candidates**.
+
+**Budget against reading them, not against fixing them.** The 179 is a
+candidate list, not a defect list: of the two entries anyone has actually read,
+one was a missing control (`BANNED_ENGINES` — a founder ruling with no call
+site) and one was a harmless-looking mirror that was the more dangerous of the
+pair (`USER_RATE_LIMITS` — security-adjacent, different numbers, a future
+reader would have tightened it and shipped nothing). Nothing but a code-first
+read tells those two apart, and each fix was minutes once the read was done.
+**The triage is the expensive half.** The sweep itself is reading-only, carries
+five printed controls (two positive, three negative) and REFUSES to report if
+one fails.
+
 **How it was lost, because the class outlives the item.** fable-710 carried
 three orders from one sitting. §1 — the character counter's death — is written
 into §0 above and cited. §2 and §3 were not written anywhere, and
