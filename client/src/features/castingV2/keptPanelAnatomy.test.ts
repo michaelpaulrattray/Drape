@@ -122,10 +122,29 @@ describe("it is wired to the version she is looking at", () => {
       fable-091's fork semantics reaching the panel: going back to an earlier
       version shows THAT version's layers. A panel keyed on the candidate would
       list a later branch's earrings on a face that never had them.
+
+      AND IT IS THE VERSION SHE IS LOOKING AT, not the one the server has
+      confirmed (fable-740/742). This read `variants.data.selectedVariantId`
+      while the photograph beside it rode the click's override — so a landing
+      left the panel describing the PREVIOUS version's features on the new
+      frame until he closed the cast and reopened it. `shownVariantId` is the
+      one derived answer the click chunk established, and this describe block's
+      own title is the argument for keying on it.
     */
     const sheet = await readFile(SHEET, "utf8");
     expect(sheet).toContain("trpc.castingV2.segmentsOnFace.useQuery");
-    expect(sheet).toContain("variantId: variants.data?.selectedVariantId ?? null");
+    expect(sheet).toContain("variantId: shownVariantId,");
+    /*
+      And the server-confirmed value is read only by the DERIVATION — twice,
+      both feeding `selectedVariantFor`: once for the frame it resolves to and
+      once for the id itself. A third reader is a surface answering "which
+      version is on screen" on its own, which is the drift this family keeps
+      producing (fable-546 → 581 → 740/742, four sweeps and counting).
+    */
+    expect(
+      sheet.split("variants.data?.selectedVariantId").length - 1,
+      "only the derivation reads the server-confirmed selection",
+    ).toBe(2);
   });
 
   it("adds no polling interval of its own", async () => {

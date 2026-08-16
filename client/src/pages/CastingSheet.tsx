@@ -890,6 +890,46 @@ export default function CastingSheet() {
   );
 
   /*
+    WHICH VERSION IS ON SCREEN — ONE ANSWER, for every surface that draws the
+    stack (founder shot 293, fable-581 §2).
+
+    fable-546 put the picture and the lit chip on one claim, and the fix reached
+    ONE of the two surfaces that draw the same versions: the rail beside the
+    picture took the override, while the stack under it kept reading the
+    server-confirmed value. Sampled through a real landing while clicking
+    between versions, that surface disagreed with the photograph in 17 of 40
+    comparable frames — the chip lit on the version he had left while the
+    picture showed the one he had just clicked, for as long as the round trip
+    took (`drive-selection-tangle-disposable.mts`).
+
+    Derived once here and handed to every reader, so the third copy cannot be
+    the one that drifts (law 4).
+
+    # AND IT IS DERIVED HERE, ABOVE THE PANEL, BECAUSE THE PANEL IS A READER TOO
+    # (fable-740/742, and it is the same family's third sweep)
+
+    The three reads below — kept segments, the library panel, the auto-scan —
+    were keyed on `variants.data.selectedVariantId`, the SERVER-confirmed value,
+    while the photograph beside them rode this override. That is fable-546's
+    defect exactly, on the surfaces nobody swept when it was fixed for the chip:
+    the founder landed a slit-pupil edit and the panel went on describing the
+    PREVIOUS version's eye on the new frame, healing only when he left the cast
+    and came back — which is precisely how long the server-confirmed value takes
+    to agree with what he is looking at.
+
+    So the derivation moved up rather than the panel growing an invalidation of
+    its own. An invalidation would have been a second mechanism racing the first;
+    keying on the one answer means the panel cannot lag the picture, because
+    they are reading the same fact.
+  */
+  const shownVariantId = selectedVariantFor({
+    candidateId: viewerCandidateId ?? "",
+    serverUrl: serverFrameFor(viewerCandidateId, viewerCandidate?.imageUrl ?? null) ?? "",
+    serverSelected: variants.data?.selectedVariantId ?? null,
+    chosen: chosenFrame,
+  });
+
+  /*
     WHAT THIS VERSION IS KEEPING (fable-113).
 
     Asked for the SELECTED version, because "what is kept" is a question about a
@@ -904,7 +944,7 @@ export default function CastingSheet() {
   const kept = trpc.castingV2.segmentsOnFace.useQuery(
     {
       candidateId: viewerCandidateId ?? "",
-      variantId: variants.data?.selectedVariantId ?? null,
+      variantId: shownVariantId,
     },
     { enabled: viewerRefinable && Boolean(viewerCandidateId) },
   );
@@ -920,7 +960,7 @@ export default function CastingSheet() {
   const face = trpc.castingV2.facePanel.useQuery(
     {
       candidateId: viewerCandidateId ?? "",
-      variantId: variants.data?.selectedVariantId ?? null,
+      variantId: shownVariantId,
     },
     {
       enabled: viewerRefinable && Boolean(viewerCandidateId),
@@ -975,7 +1015,7 @@ export default function CastingSheet() {
   const faceScan = trpc.castingV2.faceScan.useQuery(
     {
       candidateId: viewerCandidateId ?? "",
-      variantId: variants.data?.selectedVariantId ?? null,
+      variantId: shownVariantId,
     },
     {
       enabled: viewerRefinable && Boolean(viewerCandidateId) && Boolean(face.data?.scanning),
@@ -1433,28 +1473,6 @@ export default function CastingSheet() {
     disagreeing for the length of a round trip (fable-582); and a settling row
     still narrates even though the controls have come back.
   */
-  /*
-    WHICH VERSION IS ON SCREEN — ONE ANSWER, for every surface that draws the
-    stack (founder shot 293, fable-581 §2).
-
-    fable-546 put the picture and the lit chip on one claim, and the fix reached
-    ONE of the two surfaces that draw the same versions: the rail beside the
-    picture took the override, while the stack under it kept reading the
-    server-confirmed value. Sampled through a real landing while clicking
-    between versions, that surface disagreed with the photograph in 17 of 40
-    comparable frames — the chip lit on the version he had left while the
-    picture showed the one he had just clicked, for as long as the round trip
-    took (`drive-selection-tangle-disposable.mts`).
-
-    Derived once here and handed to all three readers, so the third copy cannot
-    be the one that drifts (law 4).
-  */
-  const shownVariantId = selectedVariantFor({
-    candidateId: viewerCandidateId ?? "",
-    serverUrl: serverFrameFor(viewerCandidateId, viewerCandidate?.imageUrl ?? null) ?? "",
-    serverSelected: variants.data?.selectedVariantId ?? null,
-    chosen: chosenFrame,
-  });
   const viewerFrames: ViewerFrame[] = candidates
     .filter((candidate) =>
       !optimisticDiscarded[candidate.candidateId] && candidate.imageUrl)
@@ -1992,6 +2010,33 @@ export default function CastingSheet() {
                   onOpenViewer={() => setViewerCandidateId(candidate.candidateId)}
                   candidate={{
                     ...candidate,
+                    /*
+                      THE TILE IS A READER OF THE SELECTION TOO (fable-742).
+
+                      Screenshot #314/315: the viewer showed the newest version
+                      and the sheet's own tile behind it showed an older render
+                      — smaller horns, no slit — after clicking through versions
+                      quickly. It self-healed on revisit, which is the signature
+                      of a surface reading server truth while the picture rides
+                      the click's override.
+
+                      The click chunk bound the viewer's surfaces to one derived
+                      answer and did not reach this one; law 7 says the sweep is
+                      part of the fix, so it is asked here through the SAME
+                      function the frames and the highlight ask. Only the open
+                      face can differ — every other tile keeps the roll's
+                      picture, which is the only answer that knows about them.
+                    */
+                    imageUrl: candidate.imageUrl
+                      ? frameUrlFor({
+                        candidateId: candidate.candidateId,
+                        serverUrl: serverFrameFor(
+                          candidate.candidateId,
+                          candidate.imageUrl as string,
+                        ) as string,
+                        chosen: chosenFrame,
+                      })
+                      : candidate.imageUrl,
                     kept: optimisticKept[candidate.candidateId] ?? candidate.kept,
                     /*
                       D-38 for cancel. A cancelled tile flips in the click frame
