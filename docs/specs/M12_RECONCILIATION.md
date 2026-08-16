@@ -16,6 +16,15 @@ has now been read in depth, so the reconciliation is whole. The corrections are
 marked **[2nd]** and the reasoning is in "What the second pass overturned"
 below.*
 
+*THIRD PASS, shift 83 (2026-08-17). **Not a re-reading — a repair.** Two of this
+document's rows were falsified by the work of the shift that wrote them, in the
+minutes after it was committed: row 3 was BUILT and deployed (`80265603`), and
+row 2's stated cause — a 760 px width cap — was MEASURED and found never to
+bind. Both cells said the true thing at the moment they were written and the
+wrong thing an hour later, and nothing in the document could say so, because a
+document has no instrument. Corrections are marked **[3rd]**; the two rows'
+original text is kept in place under them, since what changed is worth reading.*
+
 ## What this document is, and what it is not
 
 It lays each clause of the plan's M12 spec beside what the refine road actually
@@ -49,8 +58,8 @@ all affected → atomic commit | full rollback."*
 | # | Clause | Verdict | Evidence |
 |---|---|---|---|
 | 1 | Focused editor — NL instruction, one price, Apply/Cancel | **DELIVERED** | The refine panel is that editor. `RefinePanel.tsx` carries the price stated once and never on the button (D-15/D-109), and the ask box is the NL instruction. |
-| 2 | …pan/zoom master | **[2nd] REMAINING — there is no magnification anywhere in the product** | Read properly this pass. `CandidateViewer` has no wheel handler, no drag, no transform and no zoom control; its whole interaction grammar is *click opens · ←→ walks · Esc closes · download*. The picture is capped at **760 CSS px** (`castingV2.css:722/740/808`, `object-fit: contain`). Delivered frames are larger than that ceiling: a candidate refine renders at **1K** (`refineService.ts:3840`) and a signed package view at **2K** (`packageOrchestrator.ts:377`). So a signed view is shown at roughly a third of the pixels it was paid for, and the only way to see it whole is the download button. The one founder ruling nearby (`castingV2.css:2168`, 2026-08-02) rejected the `zoom-in` *cursor* on tiles because it "promises a zoom" the viewer does not keep — that is a ruling about an affordance not matching the surface, **not** a ruling that magnification is unwanted, and the first pass came close to reading it as one. |
-| 3 | …current-vs-proposed | **[2nd] REMAINING in V2 — but it exists in the product, under another name, on the legacy road** | fable-785 asked for this exact check and it paid. V1 has **hold-to-compare**: `ImageViewerPanel.tsx:172–181` derives the previous frame and labels it `Original`/`Previous`, and `StudioCanvas.tsx:217–269` swaps the plate on press-and-hold with a badge. V2's viewer has no equivalent — the refine road still shows the delivered frame *instead of* the previous one. So this is not an undesigned capability; it is one the product already proved and V2 did not inherit. Small: the plate is already two-layer (`dpc-viewer__sizer` + the frame, both `inset: 0; object-fit: contain`) and the rail already carries every version's URL on `data-frame`. |
+| 2 | …pan/zoom master | **[2nd] REMAINING — there is no magnification anywhere in the product** | Read properly this pass. `CandidateViewer` has no wheel handler, no drag, no transform and no zoom control; its whole interaction grammar is *click opens · ←→ walks · Esc closes · download*. Delivered frames are larger than the viewer shows: a candidate refine renders at **1K** (`refineService.ts:3840`) and a signed package view at **2K** (`packageOrchestrator.ts:377`), and the only way to see one whole is the download button. **[3rd] The CAUSE this cell first named was wrong, and it was measured before anything was built on it.** The 760 CSS px cap (`castingV2.css:722/740/808`, `object-fit: contain`) **never binds**: on a 2:3 frame the viewer runs out of *height* first. Driven in the running app (`scripts/measure-downsample-disposable.mts` → `output/downsample/downsample.json`): in a **2560×1440** window a 1024×1536 frame draws at **604×906** — 0.590 of natural, and 156 px short of the cap it was supposed to be hitting; in a 1440×1000 window it draws at **310×466**, 0.303 (opus-580, that run's file overwritten by this one). Lifting the cap would have shipped a diff and delivered zero pixels; fable-789 §1 withdrew the order to lift it. The complaint is real and the row stands — what has to change is the **height** the picture is allowed, not the width ceiling. **The 2K half is UNREAD**: the fixture bot owns no signed Cast, so every figure here is a 1K candidate frame, and M13 measures the half he paid most for. The one founder ruling nearby (`castingV2.css:2168`, 2026-08-02) rejected the `zoom-in` *cursor* on tiles because it "promises a zoom" the viewer does not keep — that is a ruling about an affordance not matching the surface, **not** a ruling that magnification is unwanted, and the first pass came close to reading it as one. |
+| 3 | …current-vs-proposed | **[3rd] SHIPPED — built as an inheritance, deployed in `80265603`** | **Built and live.** V2's viewer now holds the previous frame under press-and-hold, with the same 150 ms delay as the legacy road (read off it *by the test*, so neither side can drift alone), the same `Original`/`Previous` labels and the same badge. The previous frame is mounted and decoded as soon as one exists and only its *visibility* changes — a `src` swapped at press time is a request, not a picture — and the hold starts on the photograph only, never on a region box. Thirteen driven checks; the one that matters is pixels rather than attributes: **held differs from at rest, released is byte-identical to at rest, the box never moves** (`output/hold-to-compare/`). The legacy road's `grab` cursor is deliberately **not** inherited, under the founder's own zoom-cursor ruling. *The reading that produced it, kept:* fable-785 asked for this exact check and it paid. V1 has **hold-to-compare**: `ImageViewerPanel.tsx:172–181` derives the previous frame and labels it `Original`/`Previous`, and `StudioCanvas.tsx:217–269` swaps the plate on press-and-hold with a badge. V2's viewer has no equivalent — the refine road still shows the delivered frame *instead of* the previous one. So this is not an undesigned capability; it is one the product already proved and V2 did not inherit. Small: the plate is already two-layer (`dpc-viewer__sizer` + the frame, both `inset: 0; object-fit: contain`) and the rail already carries every version's URL on `data-frame`. |
 | 4 | Intent classifier — take / revision / fork routing | **[2nd] REMAINING in letter; two of its three destinations are delivered without it, and the third is blocked by sequence** | Read in depth this pass. The shipped kinds are `castingV2.roll`, `castingV2.refine`, `castingV2.sign` — no `.take`, no `.revision`. But a classifier is only worth what its destinations are worth, and they differ: **take** — the plan's Take (presentation-only picture off a signed Cast, own table, immutable — plan lines 147/270/318) is **not built at all**: no `takeService.ts`, no `casting_takes` table. M8 was re-scoped from Takes to Refine, and fable-707 §1 sequences Takes *after* M12. **revision** — refused at `already_signed`; this is the §3 founder question. **fork** — **delivered, twice, and neither needed a classifier**: fork-from-Cast at session create (`server/db/castingV2.ts:73/122–143`, `parentCastId` resolved through `models.userId` in the same statement — invariant 1 satisfied), and version branching pre-Sign, which the founder described in his own word: *"you just click between accumulated edits and can fork from any you choose."* |
 | 5 | Affected-view derivation, fail-closed | **[2nd] REMAINING — the first pass's "one view" premise is false** | A Cast has **six** views: the Master plus package v3.1's five (`CAST_PACKAGE_VIEWS` = closeUp, threeQuarter, frontFull, sideClose, backFull — `castViewPackage.ts:73`), minted at Sign, priced per view, live in production with signed Casts owning them. What is true is narrower and is a *sequencing* fact, not an absence: **editing and multi-view are mutually exclusive in time.** You refine a candidate (one frame), you Sign (five more are rendered), and then `refineService.ts:696` refuses any further edit — `already_signed`, nothing charged — under a comment that names this milestone: *"Post-Sign revision is M12, not this."* The clause is not superseded; it is the exact unbuilt thing, and the code says so. The founder question it raises is real but different from the one the first pass framed — see §5/8 below. |
 | 6 | NBP regeneration | **DELIVERED, by another engine** | The repaint road regenerates the whole frame from the pristine master plus cropped references (D-241, `CASTING_REPAINT_SCOPE=users:1` in production). The plan named Nano Banana Pro; the road dispatches GPT Image 2 for the edit and NBP for identity work. Same intent, different transport — flag it for him as a wording change, not a gap. |
@@ -103,22 +112,27 @@ Three groups, and they are not the same kind of work.
 3. **Genuinely not built.** Rows 2, 3, 15: magnification, current-vs-proposed,
    and reference-guided edits. Row 15 is founder-ruled as blocking. Rows 2 and 3
    are new to this list, and both are *look-closely* capabilities — see below.
+   **[3rd] Row 3 is no longer in this group: it was built and deployed hours
+   after this paragraph was written.** Two of the three are now one.
 4. **Waiting on the one question, not on engineering.** Rows 4 and 5. Row 11 is
    gone.
 
 ## The thing rows 2 and 3 have in common, which is not a coincidence
 
-Both are ways of **looking closely**, and the product has neither. There is no
-magnification, and there is no before/after. The only close look available is
-the download button.
+Both are ways of **looking closely**, and the product had neither when this was
+written. There is no magnification, and there was no before/after; the only
+close look available was the download button. **[3rd] Half of that is now
+false — row 3 shipped, so the product does have a before/after.** The argument
+below is why it did.
 
 That is worth saying plainly because of how this campaign actually runs: nearly
 every visual judgement in it has been made on contact sheets built by scripts
 into `output/` and opened outside the app. Law 9 says the founder's eyes are
-king — and the product currently caps his eyes at 760 px and shows him one frame
-at a time. The defect closed last shift surfaced *only* because a sheet put a
-kept crop beside the row that lied about it (opus-576 §8); the app could not
-have shown him that.
+king — and the product draws a 1024×1536 frame at 310×466 in a laptop window
+and shows him one frame at a time. (**[3rd]** that figure was first written here
+as "caps his eyes at 760 px"; the cap is not what does it — see row 2.) The
+defect closed last shift surfaced *only* because a sheet put a kept crop beside
+the row that lied about it (opus-576 §8); the app could not have shown him that.
 
 Neither row is expensive. Row 3 is nearly free — the plate is already two-layer
 and the rail already carries every version's URL. Together they would move the
@@ -136,6 +150,19 @@ scripts folder where only we are.
   on the legacy road, the V2 viewer is already two-layer, the rail already
   carries the URLs. It answers a plan clause with the product's own precedent
   rather than a new invention.
+
+**[3rd] Both have moved since those bullets were written, within the same
+shift:**
+
+- **Row 3 is BUILT** (`80265603`, deployed) — see the row above.
+- **Row 2 goes to M13 WHOLE, and it takes a measurement with it.** fable-787 §3
+  first ordered the 760 px cap lifted alongside row 3; the cap was measured
+  before it was lifted, found never to bind (height binds first on every 2:3
+  frame), and fable-789 §1 withdrew the order. So M13 inherits the whole row,
+  the numbers, the honest gap — **the 2K half is unread, because the fixture bot
+  owns no signed Cast** — and one founder question at its opening: *when you
+  want to look closely at a face, should the picture get bigger inside the app —
+  or is downloading it the answer?*
 
 ## What row 4 turned out to be about
 
@@ -265,19 +292,21 @@ becoming building.
 DELIVERED    1 · 6 · 7 · 9 · 10 · 12 · 14        (12 moved here this pass)
 SUPERSEDED   8 · 11                              (both with their reasons
                                                   corrected or replaced)
-REMAINING    3 · 15       — buildable now, in M12
-             2            — MOVED TO M13 (high-DPI sharpness), fable-786 §3
+SHIPPED      3            — [3rd] BUILT AND DEPLOYED (80265603), not remaining
+REMAINING    15           — buildable now, in M12, once two design answers land
+             2            — MOVED TO M13 WHOLE, with its measurement
              4 · 5        — waiting on ONE founder question, not on engineering
 ```
 
-Nothing is left to reconcile. What remains is two builds, one question, and two
-design answers:
+Nothing is left to reconcile. What remains is **one build, one question, and two
+design answers**:
 
-- **Buildable today, in this order:** row 3 (before/after — small, and an
-  inheritance from the legacy road), then row 15. **Row 2 left M12** — folded
-  into M13's high-DPI sharpness item by fable-786 §3, because a 2K view drawn at
-  a third of its pixels is the founder's own pixelation report wearing a
-  different name.
+- **[3rd] Row 3 is done** — built, driven, looked at, and deployed within the
+  shift that wrote the row above. What is left buildable in M12 is row 15 alone,
+  and it is gated on the two design answers below rather than on engineering.
+  **Row 2 left M12** — folded into M13's high-DPI sharpness item by fable-786
+  §3, because a delivered frame drawn at a fraction of its pixels is the
+  founder's own pixelation report wearing a different name.
 - **The one question:** can a signed Cast be changed? It decides rows 4 and 5
   and nothing else. Shaped by fable-786 §2 around the identity-vs-Takes split
   and with him now.
