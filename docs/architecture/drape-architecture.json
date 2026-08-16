@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "422828aabb45e750"
+    "sourceFingerprint": "3b2a4ad232014ce1"
   },
   "domains": [
     {
@@ -8601,6 +8601,10 @@
     {
       "id": "test:client/src/features/castingV2/heroBox.test.ts",
       "path": "client/src/features/castingV2/heroBox.test.ts"
+    },
+    {
+      "id": "test:client/src/features/castingV2/holdToCompare.test.ts",
+      "path": "client/src/features/castingV2/holdToCompare.test.ts"
     },
     {
       "id": "test:client/src/features/castingV2/imageGrammar.test.ts",

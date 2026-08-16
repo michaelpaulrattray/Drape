@@ -125,7 +125,22 @@ describe("the picture promises only what was measured", () => {
   it("lays the regions inside the PLATE, which is the box the picture is in", async () => {
     const viewer = await readFile(VIEWER, "utf8");
     const plate = viewer.slice(viewer.indexOf('className="dpc-viewer__plate"'));
-    expect(plate.slice(0, plate.indexOf("</span>"))).toContain("{overlay}");
+    /*
+      THE PLATE'S OWN EXTENT, not "up to the first `</span>`".
+      -----------------------------------------------------------------------
+      That bound was accidentally narrow: it held only while nothing inside the
+      plate was itself a span, and the compare badge (M12 row 3) is one. The
+      test then failed for a layout that is entirely correct — the overlay was
+      still exactly where this asserts it must be.
+
+      The caption is the first thing AFTER the plate closes, so the plate's own
+      closing tag is the last `</span>` before it. That is the real boundary,
+      and unlike the old one it cannot be moved by anything nested inside —
+      while still failing, as it must, if the overlay ever leaves the plate for
+      the figure around it.
+    */
+    const toCaption = plate.slice(0, plate.indexOf("<figcaption"));
+    expect(toCaption.slice(0, toCaption.lastIndexOf("</span>"))).toContain("{overlay}");
   });
 });
 

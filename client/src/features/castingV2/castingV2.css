@@ -788,6 +788,61 @@
   visibility: hidden;
 }
 
+/*
+  THE FRAME BEFORE THIS ONE, HELD AGAINST IT (M12 row 3).
+  --------------------------------------------------------------------------
+
+  Mounted whenever there is a previous frame and revealed only under a press.
+  `visibility` rather than `display: none` for the reason the sizer states one
+  rule up: a hidden element is still DECODED, so the swap is instant and cannot
+  flash — which matters more here than anywhere, because the whole value of
+  holding two frames against each other is that the difference between them is
+  the only thing that moves.
+
+  Absolutely positioned over the plate, so it lands exactly where the live frame
+  is whether or not a stand-in is currently sizing the box. `object-fit: contain`
+  for the same reason the frame uses it: the two are the same face and must not
+  be cropped differently, or the comparison would show a shift that is the
+  layout's and not the edit's.
+
+  It takes no pointer events: the press that reveals it is aimed at the
+  photograph, and an image that swallowed the release would strand the gesture
+  on the previous frame.
+*/
+.dpc-viewer__compare {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: var(--r-lg);
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.dpc-viewer__plate[data-comparing="true"] > .dpc-viewer__compare { visibility: visible; }
+
+/*
+  AND ITS NAME, while it is up. Top-left, because the viewer's own chrome
+  (download, close) owns top-right — and on the plate rather than in the caption
+  because it is a fact about the picture currently being shown, which is the one
+  thing that must not require looking somewhere else to establish.
+*/
+.dpc-viewer__compareBadge {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: var(--viewerScrim);
+  color: var(--onScrim);
+  pointer-events: none;
+}
+
+/* The hint lives in the caption row and inherits its chrome treatment; only the
+   opacity is stated, matching the count it stands beside. */
+.dpc-viewer__compareHint { color: var(--onScrim); opacity: 0.72; }
+
 .dpc-viewer__plate[data-standin="true"] > img:not(.dpc-viewer__sizer) {
   position: absolute;
   inset: 0;

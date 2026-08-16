@@ -95,6 +95,37 @@ export type ViewerWait = {
   extra?: number;
 };
 
+/**
+ * THE FRAME THIS ONE REPLACED, for holding against it (M12 row 3).
+ *
+ * The plan's M12 asks the focused editor for "current-vs-proposed", and the
+ * reconciliation's second pass found the capability already proven in the
+ * product — on the road V2 replaced. The legacy viewer holds the previous frame
+ * under a press (`StudioCanvas`, `ImageViewerPanel`'s `compareUrl`/
+ * `compareLabel`); V2 shipped without it, so the only way to see what an edit
+ * changed was to click between two chips and remember.
+ *
+ * **Passed in, never derived here.** Same law as `before`/`beside`/`overlay`:
+ * this component is the one image grammar and does not learn what a version is.
+ * The caller knows which frame precedes the one on screen; the viewer only
+ * knows there is one and what to call it.
+ */
+export type ViewerCompare = {
+  url: string;
+  /** "Original" or "Previous" — the legacy road's own two words. */
+  label: string;
+};
+
+/**
+ * How long the press must be held before the previous frame appears.
+ *
+ * 150ms, taken from the legacy road rather than chosen (`StudioCanvas.tsx:224`),
+ * because this is an inheritance and two viewers in one product that answer the
+ * same gesture at different speeds are two products. Long enough that an
+ * ordinary click never flickers the old frame on its way to doing nothing.
+ */
+const COMPARE_HOLD_MS = 150;
+
 /** The states, in words a person uses. */
 const STAGE_WORDS: Record<ViewerWait["stage"], string> = {
   queued: "in line",
@@ -329,6 +360,7 @@ export function CandidateViewer({
   beside,
   overlay,
   wait,
+  compare,
 }: {
   /** The set being walked. One image is a set of one. */
   frames: readonly ViewerFrame[];
@@ -380,11 +412,49 @@ export function CandidateViewer({
   overlay?: React.ReactNode;
   /** A refinement running on this face — the picture becomes its loader. */
   wait?: ViewerWait | null;
+  /** The frame this one replaced, held against it under a press. Absent on the
+   *  original, on a single-frame caller, and wherever there is no previous. */
+  compare?: ViewerCompare | null;
 }) {
   const closeRef = useRef<HTMLButtonElement>(null);
   const asked = frames[index] ?? frames[0];
   const { frame, preview, sizer } = useShownFrame(asked);
   const canStep = Boolean(onIndexChange) && frames.length > 1;
+
+  /*
+    HOLD TO SEE THE ONE BEFORE IT.
+
+    The previous frame is MOUNTED whenever there is one, and only its visibility
+    changes — the same device, and the same reason, as the sizer above: a hidden
+    element is still decoded, so the swap is instant and cannot flash. Swapping
+    `src` on the live image would fight this viewer's own founding rule, which is
+    that the picture changes when the next one can be PAINTED (`useShownFrame`).
+
+    The timer is the whole of the gesture: a click is a press that ended before
+    it, and it must leave the picture exactly as it found it.
+  */
+  const [comparing, setComparing] = useState(false);
+  const holdRef = useRef<number | null>(null);
+  const releaseCompare = () => {
+    if (holdRef.current !== null) {
+      clearTimeout(holdRef.current);
+      holdRef.current = null;
+    }
+    setComparing(false);
+  };
+  /*
+    AND THE HOLD ENDS WHEN THERE IS NOTHING LEFT TO HOLD AGAINST.
+
+    Selecting the original while the button is down removes the previous frame
+    under a live gesture. Without this the badge would name a picture that is no
+    longer mounted, which is the stalest thing a surface can say.
+  */
+  useEffect(() => {
+    if (!compare) releaseCompare();
+    return () => {
+      if (holdRef.current !== null) clearTimeout(holdRef.current);
+    };
+  }, [compare]);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -555,7 +625,39 @@ export function CandidateViewer({
               An overlay measured against the figure would drift the moment a
               portrait and a landscape frame sat in the same viewer.
             */}
-            <span className="dpc-viewer__plate" data-standin={sizer ? "true" : "false"}>
+            <span
+              className="dpc-viewer__plate"
+              data-standin={sizer ? "true" : "false"}
+              data-comparing={comparing ? "true" : "false"}
+              /* Pointer events rather than mouse: one set of handlers answers a
+                 finger and a stylus as well, and this gesture has no reason to
+                 be a desktop-only capability. */
+              onPointerDown={(event) => {
+                if (!compare || event.button !== 0) return;
+                /*
+                  ONLY ON THE PHOTOGRAPH ITSELF.
+
+                  The regions lie over this same plate and are the other door
+                  onto a paid edit; a press on one of those is aiming at a
+                  feature, not asking to see the frame before. Without this,
+                  pointing at her eye swaps her face for as long as the finger
+                  is down. The compare layer takes no pointer events and the
+                  sizer is `visibility: hidden`, so the only image a press can
+                  land on here is the one on screen.
+                */
+                if (!(event.target as HTMLElement | null)?.closest?.("img")) return;
+                holdRef.current = window.setTimeout(
+                  () => setComparing(true),
+                  COMPARE_HOLD_MS,
+                );
+              }}
+              onPointerUp={releaseCompare}
+              /* Leaving with the button still down ends it too — otherwise the
+                 previous frame stays up with nothing holding it, and the only
+                 way back is a second press. */
+              onPointerLeave={releaseCompare}
+              onPointerCancel={releaseCompare}
+            >
               {/*
                 THE OUTGOING FRAME, HIDDEN, HOLDING THE BOX (fable-729 §2).
 
@@ -576,6 +678,37 @@ export function CandidateViewer({
                 alt={frame.personaLine ?? frame.label}
                 data-preview={preview ? "true" : "false"}
               />
+              {/*
+                THE FRAME BEFORE THIS ONE — mounted whenever there is one, shown
+                only while the press is held.
+
+                `alt=""` and `aria-hidden`: while it is hidden it is not a
+                picture anyone is being shown, and while it IS shown the badge
+                below names it. A screen reader hearing two photographs
+                described in one plate would be told the face has two faces.
+              */}
+              {compare ? (
+                <img
+                  className="dpc-viewer__compare"
+                  src={compare.url}
+                  alt=""
+                  aria-hidden="true"
+                  draggable={false}
+                />
+              ) : null}
+              {/*
+                AND IT SAYS WHICH PICTURE IT IS.
+
+                A held gesture that silently swaps someone's face is a surface
+                the user has to test to trust. The badge is the legacy road's
+                own answer, in this product's chrome type — and it is the reason
+                the label travels with the URL rather than being guessed here.
+              */}
+              {compare && comparing ? (
+                <span className="dp-chrome dpc-viewer__compareBadge" role="status">
+                  {compare.label}
+                </span>
+              ) : null}
               {/* The face's own regions, in the same box as the picture. */}
               {overlay}
               {wait ? (
@@ -612,6 +745,29 @@ export function CandidateViewer({
                 <span className="dp-chrome dpc-viewer__count">
                   {index + 1} / {frames.length}
                 </span>
+              ) : null}
+              {/*
+                A GESTURE NOBODY IS TOLD ABOUT IS A GESTURE NOBODY USES — the
+                same argument that moved download off a hover.
+
+                It sits in the caption's own chrome register, beside the count,
+                rather than on the photograph: a hint drawn over someone's face
+                is furniture, and this one is only needed until the first time
+                it is tried. It stands down while the press is held, because the
+                badge is then saying the more useful half.
+
+                No cursor change goes with it. `grab` would promise dragging the
+                picture, which this viewer does not do — the exact mistake the
+                founder's 2026-08-02 ruling caught in `zoom-in`.
+
+                THE LEGACY ROAD'S OWN WORDS, not a sentence of my own: it
+                advertises this gesture as the key/label pair `Hold` · `Compare`
+                (`ImageViewerPanel.tsx:572`). Keeping them means this reads as
+                chrome — the same register as the count it stands beside, which
+                is why mono is right here and wrong on the wait's own sentence.
+              */}
+              {compare && !comparing ? (
+                <span className="dp-chrome dpc-viewer__compareHint">Hold · Compare</span>
               ) : null}
             </figcaption>
           </figure>

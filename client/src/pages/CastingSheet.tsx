@@ -39,6 +39,7 @@ import { sheetExpiryNotice } from "@/features/castingV2/retentionCopy";
 import { sheetNotice } from "@/features/castingV2/sheetNotice";
 import {
   CandidateViewer,
+  type ViewerCompare,
   type ViewerFrame,
 } from "@/features/castingV2/components/CandidateViewer";
 import { RefinePanel } from "@/features/castingV2/components/RefinePanel";
@@ -928,6 +929,47 @@ export default function CastingSheet() {
     serverSelected: variants.data?.selectedVariantId ?? null,
     chosen: chosenFrame,
   });
+
+  /*
+    THE FRAME THE SHOWN ONE REPLACED — "current-vs-proposed", answered with the
+    product's own precedent (M12 row 3, approved in fable-786 §3).
+
+    The plan asked the focused editor for a before-and-after. The road shipped
+    the delivered frame INSTEAD of the previous one, so seeing what an edit
+    actually did meant clicking between two chips and remembering — which is the
+    one thing a person cannot do about a small change to a face. The legacy road
+    has had the answer all along (`ImageViewerPanel`'s `compareUrl`, held under a
+    press), and this is that gesture inherited rather than a new invention.
+
+    # Previous means the step before it IN THE RAIL, and that is deliberate
+
+    The chain is a tree — forking from an earlier version is the whole
+    interaction — but the rail draws it as a linear strip, which is what the
+    founder described: *"you just click between accumulated edits."* So the
+    frame this holds against is the one visually before it in that strip, which
+    is the one the person is comparing against in their head. The first version
+    holds against the Original, which is also what the legacy road calls it.
+
+    Derived HERE, from the same answer `shownVariantId` came from, rather than
+    inside the viewer — the viewer is the one image grammar and does not learn
+    what a version is (its own law, and the reason `before`/`beside`/`overlay`
+    are all passed in). It is also why this cannot lag the photograph: both read
+    one fact.
+  */
+  const viewerCompare: ViewerCompare | null = (() => {
+    if (!variants.data || shownVariantId === null) return null;
+    const rail = variants.data.variants;
+    const position = rail.findIndex((row) => row.variantId === shownVariantId);
+    /* Not in the list at all: a version that landed since this payload, or one
+       already pruned. No previous is the honest answer, not the head of a list
+       it is not in. */
+    if (position < 0) return null;
+    const url = position === 0
+      ? variants.data.originalImageUrl
+      : rail[position - 1]?.imageUrl ?? null;
+    if (!url) return null;
+    return { url, label: position === 0 ? "Original" : "Previous" };
+  })();
 
   /*
     WHAT THIS VERSION IS KEEPING (fable-113).
@@ -2349,6 +2391,9 @@ export default function CastingSheet() {
             out" and the count says the rest.
           */
           wait={viewerWait}
+          /* The frame this one replaced, held against it under a press — the
+             plan's current-vs-proposed, inherited from the legacy road. */
+          compare={viewerCompare}
           /*
             THE FACE'S OWN REGIONS, over the picture (fable-200). Only where a
             box was actually measured — a rectangle over the wrong pixels is a
