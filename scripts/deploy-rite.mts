@@ -42,6 +42,13 @@ import { execFileSync } from "node:child_process";
 import { openDatabase } from "./lib/dbConnection.mts";
 import { uptimeAnchor } from "./lib/uptimeAnchor.mts";
 import { balanceLine, readOpenRouterBalance } from "./lib/openrouterBalance.mts";
+import {
+  falLine,
+  priceFalCalls,
+  readFalBalance,
+  readFalPrices,
+  readFalTraffic,
+} from "./lib/falSpend.mts";
 
 const DRY = process.argv.includes("--dry");
 const SERVICE = process.env.RAILWAY_SERVICE ?? "Drape";
@@ -265,6 +272,38 @@ say(`**UPTIME ANCHOR ${anchor}** (uptime ${healths[0]!.uptime.toFixed(1)} s)`);
    interpreter fails and every paid roll and refine dies at dispatch, so a
    deploy is exactly the moment to look. Read here, never remembered. */
 say(balanceLine(await readOpenRouterBalance()));
+/*
+  AND THE OTHER ACCOUNT (fable-684 §1).
+
+  The founder ordered fal the same rigour, and the two are not symmetrical:
+  fal's remainder is behind an admin key we do not hold (HTTP 403), while its
+  PRICE list answers to our ordinary key. So the reader asks for the balance
+  every time — the day he mints an admin key this upgrades itself, with no code
+  change and nobody remembering to come back — and derives a floor from our own
+  rows meanwhile. Priced with fal's own figures where fal states one in a unit
+  that converts, and with our measured $0.099 where its published unit is
+  opaque.
+
+  The window is SEVEN DAYS, matching the week the $100 question is about.
+*/
+say(await (async () => {
+  const balance = await readFalBalance();
+  if (balance.ok) return falLine(balance);
+  const url = productionUrl();
+  if (!url) return falLine(balance);
+  try {
+    const connection = await openDatabase(url);
+    const since = new Date(Date.now() - 7 * 86_400_000).toISOString();
+    const traffic = await readFalTraffic(connection, since);
+    await connection.end();
+    const prices = await readFalPrices(traffic.models.map((model) => model.model));
+    return falLine(balance, { traffic, priced: priceFalCalls(traffic.models, prices) });
+  } catch {
+    /* NO ERROR TEXT — same rule as the in-flight read above: this line goes
+       into a mailbox, and a driver's error can carry the DSN it was handed. */
+    return falLine(balance);
+  }
+})());
 say("");
 say("FLAGS, read off the service:");
 for (const variable of variables) say(`  ${variable}`);

@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "0ce4ee5cecc23780"
+    "sourceFingerprint": "9eae9031777fa154"
   },
   "domains": [
     {
@@ -9798,6 +9798,10 @@
     {
       "id": "test:server/exportViews.test.ts",
       "path": "server/exportViews.test.ts"
+    },
+    {
+      "id": "test:server/falSpend.test.ts",
+      "path": "server/falSpend.test.ts"
     },
     {
       "id": "test:server/floorParity.test.ts",
