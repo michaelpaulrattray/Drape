@@ -29,6 +29,46 @@ that are taste are marked **FOUNDER** and are not answered here.*
 
 ---
 
+> **FOUNDER RULINGS, 2026-08-16 (in person, filed via fable-680).** The founder
+> answered this note's questions directly, with three reference images now in
+> the repo beside it:
+>
+> 1. **Wardrobe: NOT NOW.** No vest/scoop option lands today. The placement
+>    table's contents therefore settle on the CURRENT frame (the measured
+>    survivors: `neck`, `upper arm`, `upper chest` conditional on neckline).
+> 2. **Ontology: WEARS** (delegated "whatever works best" to the standing
+>    recommendation, fable-678 §2). One row per tattoo in the panel stands.
+> 3. **The reference architecture — his own design, verbatim in intent:**
+>    tattoos are rendered as a **flash sheet on a ghost mannequin**
+>    (`references/tattoo-flash-arm-ghost-mannequin.png`,
+>    `references/tattoo-flash-torso-mannequin.png`). A tattoo that WRAPS gets
+>    **multiple views on the same sheet, like a character sheet**, so it stays
+>    consistent from any angle. References are consolidated **per body zone,
+>    never per tattoo**: TORSO (includes back and neck) is one reference;
+>    ARMS one; LEGS one — a later neck or stomach tattoo is ADDED to the
+>    existing torso sheet, never split into a new reference, "so we don't have
+>    massive amounts of tattoo reference images." A customer-uploaded tattoo
+>    is CONVERTED into the flash sheet on arrival
+>    (`references/tattoo-flash-flat-sheet.png` shows the flat alternative he
+>    considered).
+> 4. **OPEN — mannequin sheet vs flat sheet.** He asked which is cheaper and
+>    easier to keep consistent, add to, and remove from. **Fable
+>    recommendation (not yet ruled): the mannequin sheet as the carried
+>    reference, DERIVED rather than accumulated** — every individual design is
+>    stored on its own at upload/creation, and the zone's mannequin sheet is
+>    rebuilt from that design list whenever a tattoo is added or removed.
+>    Grounds, all from this program's measured record: a carrier pins the
+>    region it PICTURES (the mannequin shows placement, scale and wrap; a flat
+>    sheet pictures a page and pushes placement into words, and words do not
+>    hold a surface); the engine paints by position, so placement riding the
+>    picture is the strong side of every court run to date; and deriving the
+>    sheet from stored designs makes removal a REBUILD instead of an edit-of-
+>    an-edit, which kills the photocopy-decay failure candidate B was named
+>    for (§4). Cost is honest: a rebuild is one image call (~$0.10) per
+>    change, the same order as editing the sheet in place; the flat sheet's
+>    only real economy is mechanical paste, which is exactly the shortcut the
+>    fidelity law exists to challenge. Awaiting his word.
+
 ## 0. Why this note exists, and what it is blocking
 
 V4 closed with exactly one undischarged clause: **ink**. Its own catalogue entry
