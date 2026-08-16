@@ -71,6 +71,42 @@ describe("the keys the library will hold", () => {
     expect(reasonOf(crop({ slot: "hair" }))).toBe("accepted");
     expect(reasonOf(crop({ slot: "eye@left" }))).toBe("accepted");
   });
+
+  /*
+    AND BOUND (c) — AN OPEN KIND'S CROP IS AN ORDINARY LIBRARY ROW
+    (`OPEN_LANE_CARRY_DESIGN.md` §6, executing fable-760 §2c).
+
+    The whole reason the ruling synthesized a key rather than inventing a second
+    carrier is that an open crop then rides this door like everything else:
+    minted at delivery, digested, frozen, purged with its candidate. So this
+    door has to take one.
+
+    **The multi-word key is why the normalizer kebabs (fable-775 §3).**
+    `readKind` accepts up to three space-separated words, and this gate is
+    `parseSlot`, which refuses any key containing a space. Minted as
+    `open:cat ears` the crop is refused HERE, at the database, after the render
+    has been paid for — and a kind whose crop never mints re-rolls on every
+    later render, which is fable-566's defect arriving through the one bound
+    written to prevent it. It was found on `cat ears` because every specimen
+    this lane was reasoned on was one word.
+
+    So the key is a single token and this door needs no space-tolerance at all.
+    The control below is the half that must keep FAILING: a spaced key is still
+    refused, so the grammar was left untouched rather than loosened.
+  */
+  it("takes an open kind's key in the single-token form the normalizer mints", () => {
+    expect(reasonOf(crop({ slot: "open:horns" }))).toBe("accepted");
+    expect(reasonOf(crop({ slot: "open:cat-ears" }))).toBe("accepted");
+    expect(reasonOf(crop({ slot: "open:third-eye" }))).toBe("accepted");
+    expect(reasonOf(crop({ slot: "open:elf-ears" }))).toBe("accepted");
+  });
+
+  it("and still refuses a spaced key — the grammar was not loosened", () => {
+    /* The negative control kept after the positive passes. If this ever reads
+       `accepted`, `parseSlot` has been widened and the ledger key two tests up
+       is one edit away from being admitted too. */
+    expect(reasonOf(crop({ slot: "open:cat ears" }))).toBe("slotNotAFeatureSlot");
+  });
 });
 
 describe("what a row of each role may hold", () => {

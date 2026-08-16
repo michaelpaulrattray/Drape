@@ -42,6 +42,38 @@ export const INSTANCES = ["left", "right"] as const;
 export type Instance = (typeof INSTANCES)[number];
 
 /**
+ * THE OPEN LANE'S PREFIX — and why it is `:` rather than `@`.
+ *
+ * An uncatalogued kind carries by synthesizing a slot key (fable-760 §2, shape
+ * (a)), so that an open crop rides the ordinary library lifecycle instead of
+ * needing a second carrier. The ruling left the spelling to the code, and the
+ * code has an opinion: **`@` is not a separator in this grammar, it is the
+ * INSTANCE separator**, and `parseSlot` checks its suffix against a two-member
+ * closed list. `open@horns` therefore fails to parse outright, and the only way
+ * to make it work would be to widen `INSTANCES` — at which point `earring@horns`
+ * parses too, which is the closed grammar breached in exactly the place bound
+ * (b) exists to protect.
+ *
+ * So the prefix rides a separator the slot grammar does not use, and is
+ * recognised BEFORE `parseSlot` is ever reached. The two forms cannot be
+ * confused because they cannot both parse — which makes the separation
+ * structural rather than tested.
+ */
+export const OPEN_SLOT_PREFIX = "open:";
+
+/**
+ * Is this key in the open lane's namespace?
+ *
+ * String shape only — whether the noun after the prefix is one the open lane
+ * would accept is the normalizer's question, and it is asked one layer along in
+ * `openKindPolicy`. This answers the one thing every caller outside the
+ * catalogue needs: *is this a key the closed catalogue was never meant to own*.
+ */
+export function isOpenSlot(key: string): boolean {
+  return key.startsWith(OPEN_SLOT_PREFIX);
+}
+
+/**
  * WHICH FRAME A SLOT'S QUESTION MAY BE ASKED OF.
  *
  * `ownSide` is not a hint. A bilateral slot asked of the WHOLE frame gets back

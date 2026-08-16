@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { departureFloorFor } from "./bornWornDetector";
 import { COVERAGE_BANDS } from "./maskGeometry";
+import { slotDefinition } from "./referenceSlotCatalogue";
 
 /**
  * Refine's MONEY and its ORDER (M8 §10, §12).
@@ -453,7 +454,9 @@ vi.mock("./signEngine", () => ({
   }),
 }));
 
-const { asksToRemoveHerHair, readAskScope, refineCandidate } = await import("./refineService");
+const {
+  assertNotAnOpenDeparture, asksToRemoveHerHair, readAskScope, refineCandidate,
+} = await import("./refineService");
 /* The door itself, so the pair-vacancy rows below are checked against the rule
    that used to refuse them rather than against a copy of it. */
 const { slotWordsRefusal } = await import("./slotWordShape");
@@ -7602,5 +7605,61 @@ describe("two read-backs on one render, and whether they wait for each other", (
     expect(barrier.entered, "one facet, one read-back").toEqual(["lips"]);
     expect(barrier.openedBy(), "nothing to overlap with — the barrier times out")
       .toBe("escape");
+  });
+});
+
+/*
+  THE SCOPE DOOR, ASKED ABOUT A KEY THE CATALOGUE IS ABOUT TO LEARN
+  (`OPEN_LANE_CARRY_DESIGN.md` §3 test 4, §4 finding 1).
+
+  The open lane synthesizes `open:<noun>` so an uncatalogued kind can carry.
+  This door refuses a scope `slotDefinition` cannot resolve — so the moment the
+  open branch resolves one, the door stops refusing and an open kind silently
+  becomes scopable: *her left one, longer*. Three separate rulings withhold that
+  (`ZONE_SCOPE` is `fullFrame`, `bilateralPair` is forbidden until promotion,
+  and the one-of-a-pair ask refuses into the refund), and none of them is
+  written at this line.
+
+  So this is a CONJUNCTION and not a refusal test. Asserting the refusal alone
+  passes today for the wrong reason — the key is unknown — and would go on
+  passing right up until the branch lands, which is the one moment it is meant
+  to speak. The first expectation fails until the branch exists; after that the
+  second is doing real work.
+*/
+/*
+  AND THE VACATE PATH'S OWN DOOR, DRIVEN DIRECTLY (fable-775 §2).
+
+  Both arms, because only one of them proves anything on its own: the open key
+  must throw, and the closed keys the loop actually serves must NOT — a guard
+  that threw on everything would pass the first arm and take the removal road
+  down with it.
+*/
+describe("an open kind never departs through the vacate path", () => {
+  it("throws on an open key, loudly, before the paid reading", () => {
+    expect(() => assertNotAnOpenDeparture("open:horns" as never))
+      .toThrow(/must never reach the vacate path/);
+    expect(() => assertNotAnOpenDeparture("open:cat-ears" as never))
+      .toThrow(/must never reach the vacate path/);
+  });
+
+  it("lets every slot the loop is FOR through untouched", () => {
+    for (const slot of ["glasses", "earring@left", "earring@right", "hair"]) {
+      expect(() => assertNotAnOpenDeparture(slot as never), slot).not.toThrow();
+    }
+  });
+});
+
+describe("an open kind is never scopable — the door, at the wire", () => {
+  it("resolves the open key AND still refuses it as a scope", async () => {
+    expect(
+      slotDefinition("open:horns" as never),
+      "the open branch does not exist yet — this arm is the build's definition of done",
+    ).not.toBeNull();
+
+    await expect(refineCandidate({ harvest: unmasked,
+        interpret: async () => ({ ok: true as const, delta: { eyeColour: "green" as const } }),
+      } as never,
+      { ...input, instruction: "make them longer", scope: "open:horns" as never },
+    )).rejects.toThrow(/which part of her/);
   });
 });

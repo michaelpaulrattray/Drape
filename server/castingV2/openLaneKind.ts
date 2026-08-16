@@ -146,12 +146,29 @@ export function closedSubjectFor(kind: string): FreeSubject | null {
  * the promotion decision needs, and an exception is a number nobody counts.
  */
 export type OpenKindReading =
-  | { ok: true; kind: string }
-  | { ok: false; reason: "collides"; kind: string; subject: FreeSubject }
+  /**
+   * `kind` is the IDENTIFIER and `noun` is the WORDS — and they are two fields
+   * on purpose (fable-775 §3).
+   *
+   * The lane synthesizes a slot key from the kind, and `parseSlot` refuses any
+   * key containing a space, so a two-word kind minted as `open:cat ears` is
+   * refused at the library door AFTER the render is paid for — the crop never
+   * mints and the feature re-rolls on every later render, which is fable-566's
+   * defect arriving through the bound written to prevent it. It was found on
+   * `cat ears` because every specimen this lane was reasoned on was one word.
+   *
+   * So the key is a single token and the closed grammar is left untouched —
+   * structural rather than tested, the same reasoning that picked `open:` over
+   * `open@`. **The binding condition is that keys are identifiers, never
+   * copy**: anything a customer reads derives from `noun`, spaces intact, and
+   * never from `kind`.
+   */
+  | { ok: true; kind: string; noun: string }
+  | { ok: false; reason: "collides"; kind: string; noun: string; subject: FreeSubject }
   | { ok: false; reason: "unreadable" };
 
 /** The reply shape, parsed defensively — a model's JSON is input, not a promise. */
-function readKind(raw: string): string | null {
+function readKind(raw: string): { kind: string; noun: string } | null {
   let parsed: unknown;
   try {
     parsed = JSON.parse(raw.trim().replace(/^```(?:json)?/i, "").replace(/```$/, "").trim());
@@ -170,7 +187,17 @@ function readKind(raw: string): string | null {
   */
   if (!plain || plain.length > 40 || plain.split(" ").length > 3) return null;
   if (!/^[a-z][a-z '-]*$/.test(plain)) return null;
-  return plain;
+  /*
+    THE KEY IS A SINGLE TOKEN; THE NOUN KEEPS ITS SPACES.
+
+    Kebab is the whole conversion, and it is lossy in one direction on purpose:
+    `cat ears` and `cat-ears` both key as `cat-ears`, so the noun cannot be
+    recovered from the key and must never be derived from it. That is precisely
+    why it is returned beside the key rather than left to be reconstructed —
+    a reconstruction is the second list that drifts (working law 4), and here it
+    would drift into a customer's face.
+  */
+  return { kind: plain.replace(/ /g, "-"), noun: plain };
 }
 
 /**
@@ -219,10 +246,20 @@ export async function normalizeOpenKind(
     return { ok: false, reason: "unreadable" };
   }
 
-  const kind = readKind(raw);
-  if (kind === null) return { ok: false, reason: "unreadable" };
+  const read = readKind(raw);
+  if (read === null) return { ok: false, reason: "unreadable" };
+  const { kind, noun } = read;
 
-  const subject = closedSubjectFor(kind);
+  /*
+    THE COLLISION CHECK IS ASKED OF THE NOUN, NEVER OF THE KEY.
+
+    `CLOSED_NOUNS` is built from `SUBJECT_NOUNS`, whose entries carry spaces,
+    and `foldNoun` normalizes whitespace rather than hyphens. Asking it about
+    `cat-ears` would therefore stop matching every multi-word noun the closed
+    lane owns — the routing guard silently weakened by a spelling change, which
+    is the failure this whole finding is an instance of.
+  */
+  const subject = closedSubjectFor(noun);
   if (subject !== null) {
     /*
       NOT A NEW KIND — A ROUTING BUG, and it is logged as one. This is §1's
@@ -231,7 +268,7 @@ export async function normalizeOpenKind(
       or a real gap in the closed interpreter's routing.
     */
     log.info({ kind, subject }, "[openLaneKind] the open key names a subject the closed lane owns");
-    return { ok: false, reason: "collides", kind, subject };
+    return { ok: false, reason: "collides", kind, noun, subject };
   }
-  return { ok: true, kind };
+  return { ok: true, kind, noun };
 }

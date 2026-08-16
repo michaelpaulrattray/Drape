@@ -441,6 +441,25 @@ export function owedByThePolicy(): Array<{ table: string; asks: string; answer: 
   ─────────────────────────────────────────────────────────────────────────────
 */
 
+/**
+ * IS THIS THE NORMALIZER'S KIND OF KEY — asked without throwing.
+ *
+ * The same grammar `openKindHeading` refuses on, in one place rather than two
+ * (working law 4). The heading guard needs to fail LOUD because it stands
+ * between an invented key and a paid prompt; the slot branch needs to answer
+ * *no* quietly, because "not an open key" is an ordinary outcome there and a
+ * `null` definition is what every other unknown key gets. One rule, two
+ * manners.
+ *
+ * It is deliberately NOT the full `readKind` contract — that one also bounds
+ * length and word count, and it is the normalizer's to enforce at the moment it
+ * mints a key. This is the shape a key must still have by the time anything
+ * downstream reads it.
+ */
+export function isOpenKindKey(kind: string): boolean {
+  return /^[a-z][a-z '-]*$/.test(kind);
+}
+
 /** The heading an open kind's prose is composed under. */
 export function openKindHeading(kind: string): string {
   const plain = kind.trim();
@@ -452,13 +471,34 @@ export function openKindHeading(kind: string): string {
     this throw is unreachable from the lane and reachable from a caller that
     invented a key.
   */
-  if (!/^[a-z][a-z '-]*$/.test(plain)) {
+  if (!isOpenKindKey(plain)) {
     throw new Error(
       `"${kind}" is not an open-lane key, so it has no heading — keys are the normalizer's `
       + `single lowercase noun (openKindPolicy, FREE_SUBJECTS)`,
     );
   }
   return plain.toUpperCase();
+}
+
+/**
+ * WHY AN OPEN KIND HAS NO COMPLETENESS SPECIMEN — recorded, not left null.
+ *
+ * The catalogue's invariant is that `guardKind` is null exactly when `question`
+ * is. An open kind has a question — its own noun — and no specimen family,
+ * because a specimen family is a measurement and nobody has measured a kind
+ * nobody has catalogued. That breaks the biconditional, and fable-766 §2
+ * ratified the honest way out: state the invariant as closed-catalogue-only and
+ * have the open branch carry an explicit reason.
+ *
+ * **The bound that came with the ratification**: the mint door must
+ * demonstrably READ this. A recorded fact nobody consults is indistinguishable
+ * from the silent null it replaced — the gate-not-reader class, which this
+ * campaign has already paid for once.
+ */
+export function openKindNoSpecimenReason(kind: string): string {
+  return `no completeness specimen exists for "${kind}" — a specimen family is a measurement, and `
+    + `nobody has measured a kind nobody has catalogued. A crop may only be minted once the `
+    + `absence control has shown a segmenter a frame WITHOUT the thing and been declined`;
 }
 
 /** Whether an open ask may refuse — presence, by derivation (§6). */

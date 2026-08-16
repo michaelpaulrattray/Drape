@@ -175,6 +175,7 @@ import { assembleRecipe, type FeatureSlot } from "./recipeAssembler";
 import {
   facetsOfSlot, slotDefinition, slotsForFacet, slotsForFeature, type SlotDefinition,
 } from "./referenceSlotCatalogue";
+import { isOpenSlot } from "./referenceSlots";
 import { repaint, type ReferenceFitter, type RepaintEngine, type SentRequest } from "./repaintRender";
 import {
   RepaintCannotSayError, repaintAsksFor, repaintCannotRemove, scopedAskIsUnsayable,
@@ -553,6 +554,38 @@ function defaultRegionReader(): RegionReader {
 }
 
 /**
+ * AN OPEN KIND NEVER DEPARTS THROUGH THE VACATE PATH (fable-775 §2).
+ *
+ * `openKindDeparture()` is `dropTheCarry` — an open kind is absent from the
+ * master, so ceasing to carry it is ceasing to paint it. No vacancy row, no
+ * absence phrase about a thing her master never had. The vacate loop is the
+ * closed lane's machinery, and an open key reaching it is a defect rather than
+ * a path, which is why this is loud rather than a refusal: nothing a customer
+ * can type should be able to produce it.
+ *
+ * **It needs its own door because the guard beside it cannot see this shape.**
+ * That one fires on a slot with no `question`, and an open kind's question is
+ * its own noun — non-null by construction (`OPEN_LANE_CARRY_DESIGN.md` §2), so
+ * the guard the design read as this backstop is silent on exactly the key it
+ * was read as catching. Past it, `departureFloorFor` is handed the open kind's
+ * `guardKind: null` and returns a floor of ZERO, at which any non-empty mask
+ * reads as *still there* and the removal is disputed on a floor nobody
+ * measured — the unowned-axis class one layer below where it was looked for.
+ *
+ * Exported so it can be driven DIRECTLY rather than through a paid render
+ * (working law 3). A guard whose only test runs the whole repaint path is a
+ * guard proved by a path that usually behaves, and this is precisely the
+ * refusal a suite would otherwise "prove" by never triggering it.
+ */
+export function assertNotAnOpenDeparture(slot: FeatureSlot): void {
+  if (isOpenSlot(slot)) {
+    throw new Error(
+      `${slot} is an open kind and departs by dropping its carry — it must never reach the vacate path`,
+    );
+  }
+}
+
+/**
  * ONE PAID EDIT, WITH A STOPWATCH RUNNING ON IT (the latency-and-cost program).
  *
  * The founder's two sentences — *"5 minutes for 1 generation is absurd"* and
@@ -688,6 +721,33 @@ async function refineCandidateCounted(
     is caught downstream by `repaintAsksFor`, whose fan-out narrows to nothing
     and refuses with `notASlot` rather than painting.
   */
+  /*
+    AND THE OPEN LANE DOES NOT INHERIT SCOPABILITY BY RESOLVING ITS KEY
+    (`OPEN_LANE_CARRY_DESIGN.md` §4, finding 1).
+
+    This door was written as *the catalogue cannot name it*, and for an open
+    kind that was true only for as long as nothing could. `slotDefinition` now
+    resolves `open:<noun>` so the crop can carry — and the moment it does, an
+    uncatalogued kind silently becomes scopable through this line: *her left
+    one, longer*.
+
+    Three separate rulings withhold exactly that, and none of them is written
+    here: `ZONE_SCOPE` is `fullFrame`, `bilateralPair` is forbidden until
+    promotion, and §5 rules that the one-of-a-pair ask refuses into the refund
+    rather than guessing — the earring history not repeated. So the refusal is
+    restated in its own terms rather than left resting on a resolver that has
+    stopped answering the question it was being asked.
+
+    This is the unowned-axis class arriving through the back door: nobody would
+    DECIDE that open kinds are scopable, and without this branch nobody would
+    have decided they are not, either.
+  */
+  if (input.scope !== undefined && isOpenSlot(input.scope)) {
+    throw refusal("scope_unknown", {
+      code: "BAD_REQUEST",
+      message: "I don't know which part of her that is. Nothing was charged.",
+    });
+  }
   if (input.scope !== undefined && slotDefinition(input.scope) === null) {
     throw refusal("scope_unknown", {
       code: "BAD_REQUEST",
@@ -4811,6 +4871,7 @@ async function refineCandidateCounted(
     if (vacatedSlots.length > 0) {
       const reader = dependencies.regions ?? defaultRegionReader();
       for (const slot of vacatedSlots) {
+        assertNotAnOpenDeparture(slot);
         const definition = slotDefinition(slot);
         if (definition?.question == null) {
           /* A slot with no question cannot be confirmed either way, and an

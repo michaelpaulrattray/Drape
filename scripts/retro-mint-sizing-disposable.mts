@@ -37,3 +37,4 @@ for (const r of rows) console.log(`  ${String(r.role).padEnd(8)} ${String(r.tier
 console.log(`\nby slot:`);
 for (const s of slots) console.log(`  ${String(s.slot).padEnd(18)} rows ${String(s.n).padEnd(4)} faces ${s.faces}`);
 await db.end();
+process.exit(0);

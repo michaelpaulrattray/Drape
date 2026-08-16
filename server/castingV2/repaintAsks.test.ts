@@ -565,17 +565,27 @@ describe("a presentation fact rides the words and files nowhere", () => {
       directly with a key no catalogue entry answers for, because the shape is
       unreachable through today's vocabulary and a guard nothing can exercise is
       a guard nobody has tested.
+
+      **The specimen was `open:horns` until the open lane's branch landed, and
+      then the catalogue started answering for it** — a control whose specimen
+      has joined the vocabulary tests the vocabulary rather than the control.
+      That has now happened twice in this family, in both directions
+      (`openKindPolicy.test.ts`'s `qualifierFor` control lost `horns` to
+      promotion), so the rule is worth stating where the next one will read it:
+      **pick an unknown-key specimen that nothing is on a path to catalogue.**
+      `elbow` is not a feature this product has, is not in the open namespace,
+      and no roadmap item introduces it.
     */
     const result = repaintAsksFor({
       delta: { hairColour: "copper" },
       prose,
-      restore: { state: { hairColour: "copper" }, slots: ["open:horns", "hair"] },
+      restore: { state: { hairColour: "copper" }, slots: ["elbow@left", "hair"] },
     });
 
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     /* Named, and only the unnameable one — `hair` resolves and is restored. */
-    expect(result.unnameableRestores).toEqual(["open:horns"]);
+    expect(result.unnameableRestores).toEqual(["elbow@left"]);
   });
 
   it("CONTROL — an ordinary restore reports nothing, so the field cannot become noise", () => {

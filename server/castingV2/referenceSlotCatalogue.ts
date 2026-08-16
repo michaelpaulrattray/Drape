@@ -86,7 +86,16 @@ import { facetTableOf } from "./facetCards";
 import { regionNameOf } from "./maskedRefine";
 import type { FeatureSlot, FeatureTier } from "./recipeAssembler";
 import type { SlotSpec } from "./referenceMint";
-import { parseSlot, slotKey, INSTANCES, type Instance, type SlotFrame } from "./referenceSlots";
+import { isOpenKindKey, openKindNoSpecimenReason } from "./openKindPolicy";
+import {
+  parseSlot,
+  slotKey,
+  INSTANCES,
+  isOpenSlot,
+  OPEN_SLOT_PREFIX,
+  type Instance,
+  type SlotFrame,
+} from "./referenceSlots";
 import type { Facet } from "./refineFacets";
 
 export type { SlotFrame };
@@ -153,6 +162,22 @@ export type SlotDefinition = {
   pairNoun?: string;
   /** Present exactly when `question` is null — why, in one sentence. */
   wordsOnly?: string;
+  /**
+   * WHY THIS SLOT HAS A QUESTION AND NO GUARD — the open lane's carve-out.
+   *
+   * Present on open slots ONLY, and never on a catalogued one. The invariant
+   * above — `guardKind` is null exactly when `question` is — is stated over the
+   * CLOSED catalogue, and an open kind is the one thing that cannot satisfy it:
+   * it has a question (its own noun) and no completeness specimen, because a
+   * specimen family is a measurement nobody has taken for a kind nobody has
+   * catalogued.
+   *
+   * fable-766 §2 ratified recording the reason rather than faking a guard or
+   * falling back to words-only, on V1's own principle: silence becomes a loud,
+   * written decision. **Its bound is that the mint door must READ this** — a
+   * recorded fact nobody consults is the silent null it replaced.
+   */
+  noSpecimen?: string;
 };
 
 /**
@@ -985,6 +1010,106 @@ function definitionOf(entry: CatalogueEntry, instance: Instance | null): SlotDef
 }
 
 /**
+ * WHAT AN OPEN KIND IS, IN THE CATALOGUE'S OWN RECORD SHAPE.
+ *
+ * Every field is `openKindPolicy`'s answer or a derivation from horns — the one
+ * kind that has travelled this road for real — and the reason for each is on the
+ * line. `SlotDefinition` is a total record, so a branch that answers it at all
+ * has to answer all of it; that totality is the point of synthesizing a key
+ * rather than threading an open kind past the catalogue as a special case.
+ *
+ * The noun grammar is the normalizer's, asked without throwing: a key that is
+ * not one the open lane could have minted gets `null`, exactly like every other
+ * key the catalogue has never heard of.
+ */
+function openSlotDefinition(slot: FeatureSlot): SlotDefinition | null {
+  /*
+    THE TOKEN, AND IT IS NOT THE STYLIST'S WORD — say so here rather than let a
+    later reader assume it (found by the call-site sweep, reported in opus-568).
+
+    The design note's premise was that "the stylist's word and the model's key
+    are the same string", and that was true while every specimen was one word.
+    Once the key is a single token (fable-775 §3) it stops being true: `cat ears`
+    and `cat-ears` both key as `open:cat-ears`, so **the display noun cannot be
+    recovered from the key and must never be derived from it.** The real noun,
+    spaces intact, is stored beside the ask and on the library row.
+
+    So the fields below carry the TOKEN, and every copy path is required to read
+    the stored noun instead. `recipeAssembler` already does (`entry?.noun ??
+    ask.noun`, and it refuses outright when neither answers); the scope-copy path
+    is unreachable because the scope door refuses an open key and an open kind
+    draws no panel row to point at. The one live consumer of the token is
+    `question` — see its own note.
+  */
+  const token = slot.slice(OPEN_SLOT_PREFIX.length);
+  if (!isOpenKindKey(token)) return null;
+  const noun = token;
+  return {
+    slot,
+    feature: noun,
+    /*
+      NULL, ALWAYS. `openKindIsPlural()` is false: an open kind is singular
+      until promoted, and per-instance geometry is exactly what promotion buys.
+      This is also what keeps the kind unscopable — a scope names an instance,
+      and there is none to name.
+    */
+    instance: null,
+    /*
+      The horns precedent, and its reason transfers verbatim: horns are not
+      worn, they GROW — she is not carrying them and cannot take them off the
+      way a hoop comes out of a lobe. An open kind is asked for, not put on.
+      `anatomy` also means the words ride every render beside the crop, which is
+      what fable-566 requires of a feature that must not re-roll.
+    */
+    tier: "anatomy",
+    /*
+      STATED, NOT DERIVED — the least-wrong of four closed values. Nobody has
+      catalogued this thing, so no grouping is honest. It decides panel ordering
+      only, and an open kind draws no row, so this value is inert by
+      construction. Declared here so that the day it stops being inert, this
+      line is what gets read.
+    */
+    group: "face",
+    /* The panel draws catalogued rows. A kind nobody has catalogued has no row
+       to draw, and inventing one would put an uncourted feature in the founder's
+       face chart. */
+    panel: {
+      row: "none",
+      why: `nobody has catalogued ${noun}, so there is no courted row to draw — it is askable in the `
+        + `box and carried in the stack, and it earns a row at promotion`,
+    },
+    noun,
+    /*
+      ASKED OF THE DELIVERED FRAME, NEVER OF THE MASTER — the horns entry states
+      the reason exactly: an open kind arrives through an edit, so segmenting the
+      picture she has now asks where a thing is that she has not got.
+
+      **DECLARED: this asks the segmenter for the TOKEN, so a two-word kind is
+      asked as `cat-ears` rather than `cat ears`.** It is the one place the
+      single-token key reaches a model, it is engine-facing rather than
+      customer-facing, and whether it costs anything is a MEASUREMENT rather
+      than an argument — filed in opus-568 with the specimens to run it on.
+      Named here instead of left as a coincidence, because a question the reader
+      answers slightly worse is exactly the kind of quiet ceiling the fidelity
+      law is about.
+    */
+    question: noun,
+    /* And the one field where the closed invariant cannot hold. See
+       `noSpecimen` below and `SlotDefinition`'s own note. */
+    guardKind: null,
+    /* `openKindZoneScope()` is `fullFrame`, and `ownSide` is meaningless for a
+       slot with no instance. */
+    frame: "wholeFrame",
+    /* The default every slot should keep: `everyRender` re-buys vision calls to
+       re-photograph a feature nobody edited. */
+    remint: "whenEarned",
+    /* Drawn from the region it is cut from, like almost every slot. */
+    display: null,
+    noSpecimen: openKindNoSpecimenReason(noun),
+  };
+}
+
+/**
  * What this slot is — or `null` when the catalogue has never heard of it.
  *
  * Null rather than a default: a slot nobody catalogued is a feature nobody
@@ -992,6 +1117,17 @@ function definitionOf(entry: CatalogueEntry, instance: Instance | null): SlotDef
  * to the loudest prior on every tile at once.
  */
 export function slotDefinition(slot: FeatureSlot): SlotDefinition | null {
+  /*
+    THE ONE DYNAMIC BRANCH, AND IT IS CONFINED TO THE OPEN NAMESPACE
+    (fable-760 §2a, `OPEN_LANE_CARRY_DESIGN.md` §2).
+
+    Before `parseSlot`, deliberately: the open key rides a separator the slot
+    grammar does not use, so recognising it here is what keeps the closed
+    `feature@instance` grammar untouched. One branch, one exit, and it can only
+    ever be entered by a key carrying the prefix.
+  */
+  if (isOpenSlot(slot)) return openSlotDefinition(slot);
+
   const parsed = parseSlot(slot);
   if (parsed === null) return null;
   const entry = entryOf(parsed.feature);

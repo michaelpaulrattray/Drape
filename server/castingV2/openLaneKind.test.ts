@@ -164,21 +164,70 @@ describe("naming the thing an out-of-vocabulary ask is about", () => {
     const reading = await normalizeOpenKind("give her a curled ram's fleece", {
       engine: engineSaying('{"kind":"fleece"}'),
     });
-    expect(reading).toEqual({ ok: true, kind: "fleece" });
+    expect(reading).toEqual({ ok: true, kind: "fleece", noun: "fleece" });
   });
 
   it("reads a key out of a fenced reply, because providers add fences", async () => {
     const reading = await normalizeOpenKind("give her wings", {
       engine: engineSaying('```json\n{"kind":"wings"}\n```'),
     });
-    expect(reading).toEqual({ ok: true, kind: "wings" });
+    expect(reading).toEqual({ ok: true, kind: "wings", noun: "wings" });
   });
 
   it("refuses a key that names something the closed lane owns", async () => {
     const reading = await normalizeOpenKind("her cheeks should be covered in scales", {
       engine: engineSaying('{"kind":"cheeks"}'),
     });
-    expect(reading).toEqual({ ok: false, reason: "collides", kind: "cheeks", subject: "cheekbones" });
+    expect(reading).toEqual({
+      ok: false, reason: "collides", kind: "cheeks", noun: "cheeks", subject: "cheekbones",
+    });
+  });
+
+  /*
+    THE KEY IS A SINGLE TOKEN AND THE NOUN KEEPS ITS SPACES (fable-775 §3).
+
+    A two-word kind minted as `open:cat ears` is refused at the library door by
+    `parseSlot`'s no-space grammar — AFTER the render is paid for — so the crop
+    never mints and the feature re-rolls on every later render. Kebab keeps the
+    closed grammar untouched, which is structural rather than tested.
+
+    Both halves are asserted, because only one of them was ever going to be
+    wrong: the key must lose the space, and the noun must keep it.
+  */
+  it("kebabs a multi-word key and keeps the noun's spaces", async () => {
+    const reading = await normalizeOpenKind("give her cat ears", {
+      engine: engineSaying('{"kind":"cat ears"}'),
+    });
+    expect(reading).toEqual({ ok: true, kind: "cat-ears", noun: "cat ears" });
+  });
+
+  it("leaves a one-word kind alone, and an already-hyphenated one too", async () => {
+    /* The negative control for the conversion: a rule that rewrote every kind
+       would pass the arm above by mangling everything equally. */
+    expect(await normalizeOpenKind("give her fangs", { engine: engineSaying('{"kind":"fangs"}') }))
+      .toEqual({ ok: true, kind: "fangs", noun: "fangs" });
+    expect(await normalizeOpenKind("give her elf-ears", { engine: engineSaying('{"kind":"elf-ears"}') }))
+      .toEqual({ ok: true, kind: "elf-ears", noun: "elf-ears" });
+  });
+
+  it("still catches a multi-word collision, which the KEY alone would miss", async () => {
+    /*
+      The sharp edge of the conversion. `CLOSED_NOUNS` is built from spaced
+      nouns and `foldNoun` normalizes whitespace rather than hyphens, so a
+      collision check asked about `cat-ears` would stop matching every
+      multi-word noun the closed lane owns — the routing guard silently
+      weakened by a spelling change, which is the class this whole finding
+      belongs to. Driven on a real multi-word closed noun.
+    */
+    const multiWord = [...FREE_SUBJECT_KEYS].flatMap((subject) =>
+      SUBJECT_NOUNS[subject].filter((noun) => noun.includes(" ")).map((noun) => ({ noun, subject })));
+    expect(multiWord.length, "no multi-word closed noun exists — this control is inert").toBeGreaterThan(0);
+
+    const { noun, subject } = multiWord[0];
+    const reading = await normalizeOpenKind(`give her ${noun}`, {
+      engine: engineSaying(JSON.stringify({ kind: noun })),
+    });
+    expect(reading).toMatchObject({ ok: false, reason: "collides", subject });
   });
 
   it("refuses a sentence dressed as a key", async () => {
