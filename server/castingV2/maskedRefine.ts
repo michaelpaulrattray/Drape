@@ -875,6 +875,41 @@ export function additionDestination(input: {
  * TypeScript's exhaustiveness check does the rest — a sixth `ZoneScope` stops
  * compiling here rather than quietly taking somebody else's branch.
  */
+/**
+ * ASK FOR ALL OF THEM AT ONCE, AND THROW WHERE IT ALWAYS THREW (fable-695 §4a).
+ *
+ * The latency reading found the founder's three minutes are not a slow call —
+ * they are ~20 serial round trips, of which one is the picture. Six loops in
+ * this file each read a run of INDEPENDENT regions one after another, on the
+ * customer's paid wait, and the measured bound on issuing those runs together
+ * is **28.0 s an edit** (dev; 13.5 s prod), pre-registered before the change.
+ *
+ * What this does NOT do is as important as what it does:
+ *
+ *  - **It does not go around the gate.** Every call the reader makes is inside
+ *    `throughFalGate`, which caps arrivals at `FAL_CONCURRENCY`. Parallelising
+ *    the CALLERS changes the arrival pattern and not the provider budget — the
+ *    429 that once returned no rows on five of eight panels is the shape this
+ *    must not reproduce, and the gate is the thing that stops it.
+ *  - **It removes no read and reorders no work.** The loops below are unchanged:
+ *    their `await` becomes a cache hit because `regionOf` memoises, so the same
+ *    answers arrive in the same order and every fold happens exactly where it
+ *    did. The only thing that moved is WHEN the questions were asked.
+ *  - **`allSettled`, never `all`.** `Promise.all` rejects on the first failure
+ *    and leaves its siblings' rejections unhandled — a crash in a process that
+ *    was merely going to refuse. Settling attaches a handler to every one and
+ *    throws nothing itself, so the statement that always threw the error still
+ *    throws it, with the same message, at the same iteration.
+ *
+ * The one honest cost, named rather than discovered later: on a render that
+ * FAILS midway, the reads for the rest of that run have already been issued.
+ * A handful of half-cent segmenter calls on an edit that is about to refund,
+ * traded for seconds off every edit that succeeds.
+ */
+export async function askedTogether(reads: ReadonlyArray<Promise<unknown>>): Promise<void> {
+  await Promise.allSettled(reads);
+}
+
 async function scopedZone(facet: Facet, region: Mask): Promise<Mask> {
   const scope = zoneScopeOf(facet);
   switch (scope) {
@@ -1119,18 +1154,28 @@ export async function harvestRefinement(input: MaskedRefineInput): Promise<Maske
     up. Named here, filed into `evidence.masterRegions` below.
   */
   const placed = new Map<string, Mask>();
+  /* Every named region, asked in one breath — see `askedTogether`. */
+  await askedTogether(segmentable.map((_facet, index) => regionOf("master", names[index])));
   for (let index = 0; index < segmentable.length; index += 1) {
     const region = await regionOf("master", names[index]);
     owned.push(region);
     const scoped = await scopedZone(segmentable[index], region);
     zone = zone ? unionMasks(zone, scoped) : scoped;
   }
-  for (const facet of objects) {
+  /*
+    THE LANDMARK READS, TOGETHER. Held in an array rather than memoised like
+    `regionOf`, because the reader has no memo for landmarks and two objects
+    never ask the same question anyway — one per facet, indexed by the loop that
+    was already indexed by nothing else.
+  */
+  const landmarkReads = objects.map((facet) => input.reader.landmark({
+    image: input.master.bytes, name: landmarkNameOf(facet, input.described)!,
+  }));
+  await askedTogether(landmarkReads);
+  for (let index = 0; index < objects.length; index += 1) {
     /* Two landmarks means two corridors — the bilateral law, and the reason a
        stud's scale can be read off her face rather than guessed. */
-    const points = await input.reader.landmark({
-      image: input.master.bytes, name: landmarkNameOf(facet, input.described)!,
-    });
+    const points = await landmarkReads[index]!;
     const destination = additionDestination({
       landmarks: points,
       width: master.width,
@@ -1166,7 +1211,14 @@ export async function harvestRefinement(input: MaskedRefineInput): Promise<Maske
     perfectly. The departed thing is the territory in that case: her own frames,
     from her own master.
   */
-  for (const departedThing of (zone ? [] : input.departed ?? [])) {
+  const departedAlone = zone ? [] : input.departed ?? [];
+  /* Only the ones that HAVE a name are warmed; the loop still throws on the
+     first one that has not, in its own iteration, with its own message. */
+  await askedTogether(departedAlone
+    .map((thing) => accessoryEntry(thing))
+    .filter((gone) => Boolean(gone))
+    .map((gone) => regionOf("master", gone!.region, true)));
+  for (const departedThing of departedAlone) {
     const gone = accessoryEntry(departedThing);
     if (!gone) {
       throw new MaskError(
@@ -1272,6 +1324,10 @@ export async function harvestRefinement(input: MaskedRefineInput): Promise<Maske
     as the zone, and this is that, unioned rather than substituted so an addition
     keeps its destination allowance.
   */
+  /* The absent-on-master ones only — the same subset the loop reads. */
+  await askedTogether(questions
+    .filter((question) => question.absentOnMaster)
+    .map((question) => regionOf("master", question.name, true)));
   for (const question of questions) {
     if (!question.absentOnMaster) continue;
     const worn = await regionOf("master", question.name, true);
@@ -1310,6 +1366,16 @@ export async function harvestRefinement(input: MaskedRefineInput): Promise<Maske
     strandColour: [number, number, number];
   }[] = [];
 
+  /*
+    BOTH FRAMES, EVERY QUESTION, IN ONE BREATH — the largest of the six runs.
+    A chain past its first step asks two segmentations per region (the master's
+    and the painter's), and they were issued strictly one after another, so a
+    three-region edit spent six round trips where it needed the slowest one.
+  */
+  await askedTogether(questions.flatMap((question) => [
+    regionOf("master", question.name, question.absentOnMaster),
+    regionOf("painted", question.name, true),
+  ]));
   for (const question of questions) {
     /*
       WHERE THE THING IS *NOW* — the question that makes a shrink possible
@@ -1581,6 +1647,12 @@ export async function harvestRefinement(input: MaskedRefineInput): Promise<Maske
       ...perRegion.map((region) => region.vacancy),
       ...perRegion.map((region) => region.vacated),
     );
+    /* The neighbours' territories, together. Each read already tolerates its
+       own failure below, and warming keeps that: a rejection here is settled,
+       and the loop's own `.catch(() => null)` still turns it into "protect
+       nothing" rather than a refused render. */
+    await askedTogether(Array.from(protectedNames)
+      .map((name) => regionOf("master", name, true).catch(() => null)));
     for (const name of Array.from(protectedNames)) {
       /*
         FROM THE MASTER, ALWAYS. The painted frame is the thing under suspicion;

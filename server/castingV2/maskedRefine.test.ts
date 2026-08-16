@@ -31,9 +31,11 @@ import {
   neighbourTableNames,
   segmentableRegionNames,
   vacancyOf,
+  askedTogether,
   type RegionReader,
 } from "./maskedRefine";
 import { coverage } from "./maskGeometry";
+import { falConcurrencyLimit, throughFalGate } from "./falConcurrency";
 import { allFacets, facetOfSubject } from "./refineFacets";
 import { hasRegion } from "./zoneScope";
 import { readRaster, type Mask } from "./maskedComposite";
@@ -1639,5 +1641,176 @@ describe("the removal's own rule governs the vacancy a departure leaves", () => 
       for (let x = 0; x < W; x += 1) if (delivered.data[y * W + x]! > 0) onDrift += 1;
     }
     expect(onDrift, "the painter's own day is not this edit's to deliver").toBe(0);
+  });
+});
+
+/**
+ * THE QUESTIONS ARE ASKED TOGETHER, AND THE GATE STILL DECIDES HOW MANY LEAVE.
+ *
+ * The founder's three minutes were ~20 serial round trips, of which one is the
+ * picture. Six loops in this file each read a run of independent regions one
+ * after another on his paid wait; the measured bound on issuing those runs
+ * together is 28.0 s an edit, pre-registered before the change.
+ *
+ * Parallelising CALLERS is only safe because the gate is not bypassed. Eight
+ * panels once went out at once and five of them came back with no rows at all,
+ * with the provider saying `concurrent_requests_limit` — that incident is the
+ * negative control's shape, so the cap is asserted here on the real gate rather
+ * than argued from the fact that `falRegionReader` uses it.
+ */
+describe("the run of segmentations goes out together, and never past the gate", () => {
+  const HAIR: [number, number, number] = [40, 30, 25];
+  const SKIN: [number, number, number] = [190, 188, 186];
+  const LIP: [number, number, number] = [150, 90, 90];
+
+  /** A reader that records how many of its answers were ever in flight at once. */
+  const watching = (options: { gated?: boolean } = {}) => {
+    let inFlight = 0;
+    let peak = 0;
+    const answer = async (name: string): Promise<Mask> => {
+      inFlight += 1;
+      peak = Math.max(peak, inFlight);
+      /* A real tick. An `async` that never yields cannot overlap with anything,
+         so a reader without this would report peak 1 whatever the caller did —
+         a concurrency instrument that can only ever say "serial". */
+      await new Promise((resolve) => setTimeout(resolve, 10));
+      inFlight -= 1;
+      return name === "lips" ? box(26, 40, 40, 48) : box(20, 4, 44, 24);
+    };
+    const call = (name: string) => (options.gated === true
+      ? throughFalGate(() => answer(name))
+      : answer(name));
+    const reader: RegionReader = {
+      region: async ({ name }) => call(name),
+      subject: async () => box(0, 0, W, H),
+      landmark: async () => [{ x: 0.3, y: 0.45 }, { x: 0.7, y: 0.45 }],
+    };
+    return { reader, peak: () => peak };
+  };
+
+  const twoRegionEdit = async (reader: RegionReader) => {
+    const masterBytes = await png((x, y) => {
+      if (x >= 20 && x < 44 && y >= 4 && y < 24) return HAIR;
+      if (x >= 26 && x < 40 && y >= 40 && y < 48) return LIP;
+      return SKIN;
+    });
+    const paintedBytes = await png((x, y) => {
+      if (x >= 20 && x < 44 && y >= 4 && y < 24) return [120, 100, 80];
+      if (x >= 26 && x < 40 && y >= 40 && y < 48) return [90, 40, 45];
+      return SKIN;
+    });
+    return harvestRefinement({
+      master: { bytes: masterBytes, contentType: "image/png" },
+      painted: { bytes: paintedBytes, contentType: "image/png" },
+      facets: ["hair.colour", "lips"],
+      reader,
+      userId: 1,
+    });
+  };
+
+  it("issues a run of independent reads at once rather than one after another", async () => {
+    const watcher = watching();
+    const result = await twoRegionEdit(watcher.reader);
+    expect(result.outcome, "and the answer is the same one it always was").toBe("composited");
+    /* Two regions × two frames is the run this edit's chain produces; before the
+       change every one of them waited for the last. */
+    expect(watcher.peak(), "more than one question in flight").toBeGreaterThan(1);
+  });
+
+  it("has nothing to run together when the edit names ONE region — and says so", async () => {
+    /*
+      Written expecting overlap, and the run said one. The reason is the finding
+      and it belongs here rather than in a note: on a single-question edit the
+      harvest's master read is ALREADY IN HAND (the zone was built from it, so
+      it is a memo hit), leaving exactly one new read — the painter's. There is
+      no run to issue together, and a change that reported a saving here would
+      be reporting one it did not make.
+
+      So the saving scales with how many regions the chain touches, which is
+      what the census said from the other side: runs of consecutive segment
+      calls in 29 of 56 edits, not in all of them.
+    */
+    const watcher = watching();
+    const result = await harvestRefinement({
+      master: { bytes: await png((x, y) => (y < 24 ? HAIR : SKIN)), contentType: "image/png" },
+      painted: { bytes: await png((x, y) => (y < 24 ? [120, 100, 80] : SKIN)), contentType: "image/png" },
+      facets: ["hair.colour"],
+      reader: watcher.reader,
+      userId: 1,
+    });
+    expect(result.outcome).toBe("composited");
+    expect(watcher.peak(), "one question, one outstanding read").toBe(1);
+  });
+
+  it("CAN SAY SERIAL — the instrument, proved against a caller that waits", async () => {
+    /* The other half: a watcher that always answered "parallel" would pass the
+       test above on unchanged code. Driven through a deliberately serial
+       caller, the same reader reports a peak of exactly one. */
+    const watcher = watching();
+    for (const name of ["hair", "lips"]) {
+      await watcher.reader.region({ image: Buffer.alloc(1), name, absentIsAnswer: false });
+    }
+    expect(watcher.peak()).toBe(1);
+  });
+
+  it("NEVER PAST THE GATE — the cap, not the caller, decides how many arrive", async () => {
+    const before = process.env.FAL_CONCURRENCY;
+    process.env.FAL_CONCURRENCY = "2";
+    try {
+      expect(falConcurrencyLimit(), "the gate is really at two for this reading").toBe(2);
+      const watcher = watching({ gated: true });
+      const result = await twoRegionEdit(watcher.reader);
+      expect(result.outcome).toBe("composited");
+      /* Both halves in one reading: the caller dispatched a run (peak above
+         one), and not one arrival past the ceiling (peak at the limit). */
+      expect(watcher.peak()).toBeGreaterThan(1);
+      expect(watcher.peak(), "no arrival past FAL_CONCURRENCY").toBeLessThanOrEqual(2);
+    } finally {
+      if (before === undefined) delete process.env.FAL_CONCURRENCY;
+      else process.env.FAL_CONCURRENCY = before;
+    }
+  });
+
+  it("a gate of one serialises the same edit, and it still delivers", async () => {
+    /* The strongest form of the cap claim: turn the allowance down to one and
+       the parallel caller becomes a queue, with the picture unchanged. If the
+       reads had been issued around the gate, this would read above one. */
+    const before = process.env.FAL_CONCURRENCY;
+    process.env.FAL_CONCURRENCY = "1";
+    try {
+      const watcher = watching({ gated: true });
+      const result = await twoRegionEdit(watcher.reader);
+      expect(result.outcome).toBe("composited");
+      expect(watcher.peak()).toBe(1);
+    } finally {
+      if (before === undefined) delete process.env.FAL_CONCURRENCY;
+      else process.env.FAL_CONCURRENCY = before;
+    }
+  });
+
+  it("settles every read, so a failed sibling is thrown by whoever awaits it", async () => {
+    /*
+      `Promise.all` would reject on the first failure and leave the second one
+      unhandled — a crash in a process that was only going to refuse the render.
+      Settling attaches a handler to every read and throws nothing itself, so
+      the statement that always threw the error still throws it.
+    */
+    const first = Promise.reject(new Error("the segmenter is down"));
+    const second = Promise.reject(new Error("and so is the other one"));
+    await expect(askedTogether([first, second]), "warming never throws").resolves.toBeUndefined();
+    await expect(first).rejects.toThrow("the segmenter is down");
+    await expect(second).rejects.toThrow("and so is the other one");
+  });
+
+  it("still refuses the render when a read fails, with the reader's own error", async () => {
+    const failing: RegionReader = {
+      region: async ({ name }) => {
+        if (name === "lips") throw new ProviderError("transport", "the segmenter is down", { status: 500 });
+        return box(20, 4, 44, 24);
+      },
+      subject: async () => box(0, 0, W, H),
+      landmark: async () => [{ x: 0.3, y: 0.45 }],
+    };
+    await expect(twoRegionEdit(failing)).rejects.toThrow("the segmenter is down");
   });
 });
