@@ -961,6 +961,9 @@ export const castingV2Router = router({
              would be worse than one that renders nothing. */
           message: row.publicMessage,
           settledAt: row.completedAt,
+          /* So the panel can tell the bridge it has been said — see the column's
+             own note. The client's own id, back to the account that sent it. */
+          clientRequestId: row.clientRequestId,
         })),
         variants: live.map(({ variant }) => ({
           variantId: variant.publicId,

@@ -195,6 +195,17 @@ export default function CastingSheet() {
   /* The refine panel owns its own outcomes (D-154) — never a toast. */
   const [refineOutcome, setRefineOutcome] = useState<string | null>(null);
   /*
+    WHICH SETTLED OUTCOMES HE HAS CLOSED — see the adoption effect below.
+
+    A settled failure is server truth and keeps arriving for an hour, so unlike
+    the mutation's own outcome it CANNOT be cleared by setting the slot to null:
+    the next poll two seconds later would put it straight back, and a sentence
+    that will not go away is worse than one that never came. Add-only, and per
+    request rather than per candidate, so closing one confession never hides the
+    next one.
+  */
+  const [dismissedSettled, setDismissedSettled] = useState<ReadonlySet<string>>(() => new Set());
+  /*
     The instruction a question is still waiting on (D-180) — AND THE RECTANGLE
     THAT ASK WAS POINTED AT, when it was pointed at one (fable-704).
 
@@ -1516,6 +1527,55 @@ export default function CastingSheet() {
 
   const pendingForViewer = variants.data?.pending ?? [];
   /*
+    THE OUTCOME THE REQUEST COULD NOT DELIVER, ADOPTED BY THE PANEL — Landing A
+    (`CASTING_V2_REFINE_DISPATCH_DESIGN.md`, ruled fable-836/837 §4a).
+
+    1.7% of his production refines answered past the observed ~305 s gateway
+    wall. The socket carrying the answer was gone before the answer existed, so
+    the panel showed *"We lost contact while that was rendering"* over a true
+    sentence — carrying the actionable half, *"Try saying it a different way"* —
+    that reached nobody. The server had written it down all along, on the
+    operation row; nothing on this surface ever read it back.
+
+    Two rules, and they are the ruling:
+
+    1. **It is calm, persistent panel state, never a toast.** The same slot that
+       already holds refusals and confessions (D-154), dismissed the same way.
+       A toast for an outcome the surface can hold is D-110's second copy.
+    2. **Adopting it MARKS the request**, so the bridge yields. One voice: the
+       panel when it can, the bridge only when nobody saw. The mark is made
+       when the DATA arrives rather than when the panel renders it, because the
+       bridge is racing this on a reload and the earliest honest moment is the
+       one that wins.
+
+    Superseded, not accumulated: only the newest settled failure is adopted, and
+    only while the panel has nothing of its own to say — an outcome the user is
+    reading about the edit they just typed is never replaced by an older one.
+  */
+  const settledForViewer = variants.data?.settled ?? [];
+  const adoptedSettledRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    const newest = settledForViewer[0];
+    if (!newest?.message) return;
+    /*
+      MARKED EVEN IF IT IS NOT DRAWN. The mark says "the server's sentence
+      reached this surface for that request", and once the sheet holds it that
+      is true whether the slot is currently showing this one or a newer one —
+      the alternative is the bridge toasting an outcome the user can already
+      read one line below.
+    */
+    for (const row of settledForViewer) {
+      if (!row.message || adoptedSettledRef.current.has(row.clientRequestId)) continue;
+      adoptedSettledRef.current.add(row.clientRequestId);
+      markOutcomeShown(row.clientRequestId, "server");
+    }
+    /* Dismissal is the user's, and it stays dismissed: `dismissedSettled` is
+       only ever added to, so a poll two seconds later cannot re-raise a
+       sentence they have just closed. */
+    if (dismissedSettled.has(newest.clientRequestId)) return;
+    setRefineOutcome((current) => current ?? newest.message);
+  }, [settledForViewer, dismissedSettled]);
+  /*
     THE RAIL'S GHOST, SEEDED FROM THE CLICK (fable-738).
 
     The plate narrates the click and the ghost chip waits for server truth, so
@@ -2611,6 +2671,17 @@ export default function CastingSheet() {
                 pendingReask.current = null;
                 setReaskOptions(null);
                 setRefineOutcome(null);
+                /*
+                  AND IF WHAT HE JUST CLOSED WAS A SETTLED OUTCOME, IT STAYS
+                  CLOSED. Server truth keeps arriving for an hour; without this
+                  the next poll re-raises the sentence he has just dismissed and
+                  the close button reads as broken. Recorded for the newest one
+                  only, because that is the one the slot can be showing.
+                */
+                const newest = settledForViewer[0];
+                if (newest?.message && refineOutcome === newest.message) {
+                  setDismissedSettled((closed) => new Set(closed).add(newest.clientRequestId));
+                }
               }}
               onRefine={askRefine}
               onSelect={selectVariant}

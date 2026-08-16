@@ -797,6 +797,20 @@ export async function listSettledRefineFailures(
   publicMessage: string | null;
   /** When it settled, for ordering and for the surface's own recency rules. */
   completedAt: Date | null;
+  /**
+   * THE REQUEST THIS OUTCOME ANSWERS — the join between the panel and the
+   * bridge, and the reason one voice is possible after a reload.
+   *
+   * `outcomeShown` is keyed on the client's own request id and deliberately
+   * does not survive a reload, so a browser that comes back has no memory of
+   * having asked. Handing the id back is what lets the panel say "I showed the
+   * server's sentence for this one" and the bridge stay quiet — the composition
+   * contract, rather than two surfaces racing to narrate the same failure.
+   *
+   * It is the client's own value echoed to the account that sent it: nothing
+   * about it is anybody else's.
+   */
+  clientRequestId: string;
 }>> {
   assertPositiveId(userId, "userId");
   const now = options?.now ?? new Date();
@@ -809,6 +823,7 @@ export async function listSettledRefineFailures(
       requestText: castingCandidateVariants.requestText,
       publicMessage: generationOperations.publicMessage,
       completedAt: generationOperations.completedAt,
+      clientRequestId: generationOperations.clientRequestId,
     })
     .from(castingCandidateVariants)
     .innerJoin(castingCandidates, and(

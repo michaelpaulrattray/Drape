@@ -112,9 +112,52 @@ from the mutation exactly as it does today, and this list is drawn only when the
 panel has no answer of its own — which today is the 1.7%. **So Landing A alone
 is already a fix for the class**, without touching the paid path.
 
-### Landing B — the sentence must survive the request
+**Two decisions inside Landing A, recorded here because both are load-bearing**
+(ordered fable-837 §2):
 
-**This is the expensive landing and the one that needs the founder.**
+- **INNER join on the operation, where the pending read uses LEFT.** The
+  difference is the point. `listPendingVariants` must never lose a row to a
+  missing operation: a charge is out, and silence there reads as *"nothing is
+  happening"* — the D-161 defect that had the founder buy the same edit twice.
+  The settled read has nothing to say without the operation, because **the
+  operation IS the sentence**. A failed variant whose operation cannot be found
+  has no outcome to report, and inventing one would be worse than staying quiet.
+- **It does not filter on `landingAcknowledgedAt`.** That flag already has an
+  owner: `GenerationOperationBridge` acknowledges every terminal operation
+  within one poll of it settling. Keying the read on it would empty the list
+  seconds after the outcome exists — and **always** after a reload, which is the
+  case the read is for. A one-hour recency window bounds it instead and the
+  surface owns whether it has been seen.
+
+### Landing B — ~~the sentence must survive the request~~ **DELETED. It already does**
+
+**This landing does not exist, and with it goes the migration, the column and
+the founder ceremony.** Kept as a heading because the price changed and the
+reason is worth reading.
+
+The sentence already survives on **`generation_operations.publicMessage`** —
+written on every terminal path, and
+`finalizeClaimedGenerationOperationFailure` **throws** on an empty one. Verified
+at the artifact against production rather than read off the code:
+
+```
+RETENTION  199 refine operations · oldest 13.4 days old and UNPURGED
+           31 terminal failures still on the table, oldest settled 2026-08-04
+COVERAGE   31 of 31 terminal failures carry a sentence · 0 missing
+           6 distinct lengths, every one > 24 chars, up to 227
+```
+
+That last line also kills the cheap option on the data rather than on taste: the
+sentence **varies per request**, so the `varchar(24)` `failureClass` could never
+have reproduced it. One source, a second reader — the opposite of law 4's mirror.
+
+**Price: four shifts and a founder ceremony becomes three shifts and no founder
+gate** (four if §4's idempotency proof fails).
+
+*The original reasoning is kept below, because it is why the third option was
+worth looking for.*
+
+**~~This is the expensive landing and the one that needs the founder.~~**
 
 Today the *class* is durable (`failureClass`, `varchar(24)`) and the *sentence*
 is not. The actionable half — *"came back twice with glasses still in the
