@@ -14,6 +14,8 @@
  */
 import puppeteer, { type Browser, type Page } from "puppeteer-core";
 
+import { createFaceScanMeter, readFaceScanAsk, type FaceScanMeter } from "./faceScanWire.mts";
+
 /** The system browser. No download, no bundled Chromium, no version drift. */
 const EDGE = "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe";
 
@@ -22,7 +24,22 @@ export async function openDrivenPage(input: {
   token: string;
   width?: number;
   height?: number;
-}): Promise<{ browser: Browser; page: Page }> {
+  /**
+   * HOLD THE FACE SCAN AT THE WIRE (fable-694 §2).
+   *
+   * Off by default, because a walk that needs the panel needs the scan. On, the
+   * ask is aborted in the browser and the sheet shows what the library alone
+   * knows — nothing reaches the server, nothing is spent, and the walk's report
+   * says so.
+   *
+   * It turns on request interception, which is not free: puppeteer disables the
+   * page cache alongside it, so the cache is turned straight back on here.
+   * A driver that installs its OWN request handler must guard it with
+   * `request.isInterceptResolutionHandled()`, or the two will both try to
+   * resolve one request.
+   */
+  holdFaceScan?: boolean;
+}): Promise<{ browser: Browser; page: Page; faceScan: FaceScanMeter }> {
   /* `true`, not `"new"` — puppeteer-core dropped that string and its type says
      so. It ran anyway, which is why it survived: the scripts tree was not in
      any typecheck, so nothing ever read the type. */
@@ -31,7 +48,66 @@ export async function openDrivenPage(input: {
   await page.setViewport({ width: input.width ?? 1440, height: input.height ?? 900 });
   const { hostname } = new URL(input.base);
   await page.setCookie({ name: "app_session_id", value: input.token, domain: hostname, path: "/" });
-  return { browser, page };
+
+  const faceScan = createFaceScanMeter();
+  const hold = input.holdFaceScan === true;
+  if (hold) {
+    await page.setRequestInterception(true);
+    /* Interception turns the page cache off as a side effect, and half the
+       measurements these drivers make are about a picture already being in the
+       browser (`chosenFrame.ts`). Put it back. */
+    await page.setCacheEnabled(true);
+    page.on("request", (request) => {
+      if (request.isInterceptResolutionHandled()) return;
+      const ask = readFaceScanAsk(request.url(), request.postData() ?? null);
+      /* Only a batch that is NOTHING BUT scans may be aborted — see the module
+         comment: the alternative aborts the photograph beside it. */
+      const holdable = ask.kind === "scanOnly";
+      faceScan.saw(ask, holdable);
+      if (holdable) {
+        void request.abort("blockedbyclient").catch(() => {
+          /* The page can go while a request is in flight; a hold that throws on
+             teardown would fail a walk for finishing. */
+        });
+        return;
+      }
+      void request.continue().catch(() => {});
+    });
+  } else {
+    /* PASSIVE, and that is the point: no interception, no cache change, no
+       timing change. A walk that is not holding still declares what it spends. */
+    page.on("request", (request) => {
+      faceScan.saw(readFaceScanAsk(request.url(), request.postData() ?? null), false);
+    });
+  }
+  declareOnExit(faceScan);
+
+  return { browser, page, faceScan };
+}
+
+/**
+ * EVERY WALK DECLARES WHAT IT BOUGHT, without every walk being edited.
+ *
+ * Twenty-nine drivers open this harness and not one of them has ever printed a
+ * house-money line, because until fable-694 nobody knew there was one to print.
+ * Registering the declaration here means the next driver written gets it for
+ * free, and a driver that opens no sheet prints nothing at all — the meter
+ * returns `null` and this stays silent.
+ */
+const meters: FaceScanMeter[] = [];
+
+function declareOnExit(meter: FaceScanMeter): void {
+  meters.push(meter);
+  /* ONE listener however many pages a driver opens. Registering per page would
+     print the same walk's spend twice and, past ten pages, warn about a leak
+     that is really a harness counting itself. */
+  if (meters.length > 1) return;
+  process.on("exit", () => {
+    for (const one of meters) {
+      const line = one.line();
+      if (line !== null) console.log(`\n${line}`);
+    }
+  });
 }
 
 /**

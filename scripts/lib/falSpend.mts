@@ -63,6 +63,21 @@ import type { Connection } from "mysql2/promise";
 export const FAL_LOW_BALANCE_USD = 20;
 
 /**
+ * WHAT ONE FACE SCAN ASKS OF fal — counted, not derived.
+ *
+ * `count-scan-reads-disposable.mts` drives the real `scanFace` through a
+ * recording reader and gets **20**: twelve questions, five of them read as two
+ * half-frames, one composed below-head slot costing a head read and a subject
+ * matte, and one shared midline read. Every hand-derivation of this number
+ * before that script was wrong, which is why the figure lives in one place and
+ * carries its instrument's name.
+ *
+ * The describer call a scan also makes is NOT in here — different transport,
+ * different price — and every reader of this constant names it separately.
+ */
+export const FACE_SCAN_READS_PER_VERSION = 20;
+
+/**
  * OUR OWN MEASURED PRICES, for the endpoints whose published unit is opaque.
  *
  * Deliberately tiny, and every entry carries where it came from. This is the
@@ -399,8 +414,11 @@ export function falLine(
     ...(blind > 0
       ? [`${blind} of ${derived.traffic.refineRows} refine rows carry NO census`]
       : []),
-    /* Named every time, priced never: the scan mints nothing to count. */
-    "face scans (mint nothing, ~20 segmenter calls per version viewed)",
+    /* Named every time, priced never: the scan mints nothing to count. The
+       per-version figure comes from the constant above rather than from a
+       number typed into this sentence — the same fact in two spellings is how
+       one of them goes stale. */
+    `face scans (mint nothing, ~${FACE_SCAN_READS_PER_VERSION} segmenter calls per version viewed)`,
   ];
   return `fal DERIVED $${derived.priced.usd.toFixed(2)} over ${days}d`
     + ` from ${calls} calls on ${derived.traffic.models.length} model(s)`
