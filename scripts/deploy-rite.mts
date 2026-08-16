@@ -131,6 +131,21 @@ if (dirty.length > 0) {
  * rite REFUSES while he has casting work from the last ten minutes, and says
  * why. `--anyway` proceeds deliberately, for the case where the push IS the fix
  * he is waiting on.
+ *
+ * # WHAT THIS CAN AND CANNOT SEE — said in the receipt, not just here
+ *
+ * It reads ROWS: candidates and variants. Browsing writes neither. On
+ * 2026-08-16 this line printed *"his last casting work was 138.5 minutes ago"*
+ * while he was opening face panels — twelve production scans between 10:46Z and
+ * 10:58Z, reconciled to the cent against fal's own balance — and two deploys
+ * landed inside that session, one of them five seconds after a scan of his.
+ *
+ * The guard is unchanged, deliberately (fable-754 §4): what it protects against
+ * is a killed roll, and reading request logs per deploy to catch a browsing
+ * session buys a risk the kept-scan table is already retiring. What changes is
+ * the SENTENCE — it now says which reading it took, so nobody quotes a
+ * quietness this instrument cannot see. An instrument that overstates its own
+ * reach is the uptime-anchor family's defect wearing a politeness costume.
  */
 const founderIsActive = await (async (): Promise<{ active: boolean; note: string }> => {
   const url = productionUrl();
@@ -146,11 +161,12 @@ const founderIsActive = await (async (): Promise<{ active: boolean; note: string
     );
     await connection.end();
     const latest = rows[0]?.latest ? new Date(rows[0].latest).getTime() : 0;
-    if (!latest) return { active: false, note: "no casting work on record" };
+    const blind = "browsing writes no row and is invisible to this reading";
+    if (!latest) return { active: false, note: `no cast or version on record (${blind})` };
     const minutes = (Date.now() - latest) / 60_000;
     return {
       active: minutes <= 10,
-      note: `his last casting work was ${minutes.toFixed(1)} minutes ago`,
+      note: `his last CAST OR VERSION was ${minutes.toFixed(1)} minutes ago (${blind})`,
     };
   } catch {
     return { active: false, note: "(unread — the production ledger could not be reached)" };
