@@ -190,6 +190,24 @@ you already know INDEPENDENTLY — here, that three different regions of a real
 photograph cannot have the same mean.
 *Banked:* fable-780 §3, from the incident record at opus-571 §4.
 
+**16. A guard with two candidate mechanisms needs a fixture that separates
+them — or the test pins whichever one you did not mean.**
+Entry 9's sibling, and the harder half: there the sabotage never landed; here it
+landed, changed the mechanism, and the suite stayed green because a SECOND
+mechanism was quietly doing the work.
+*Incident:* a park instrument's suite-line finder was rewritten because its old
+predicate also matched `failed |`, which on a red run finds the `Test Files`
+line — file counts, printed as the suite, on exactly the run the check exists
+for. The new finder had a test named for that trap, and it passed. Restoring the
+old predicate as a sabotage **changed nothing**: the finder also takes the LAST
+match, which already skips that line, so the case had been passing on a
+mechanism it never named and could not have caught the trap coming back. Only a
+constructed fixture — a counting line printed AFTER the summary — separated the
+two, and with it the sabotage reddened exactly one test.
+*The cheap form of the rule:* when a fix has a belt and braces, cut the belt and
+check the trousers fall.
+*Banked:* fable-792 §2, from the incident record at opus-583 §4.
+
 *(Numbers are ADMISSION order, not reading order — 14 sits here because this is
 where it belongs, and renumbering would silently invalidate every citation that
 names an entry. Expect the sequence to run out of order as the file grows.)*
