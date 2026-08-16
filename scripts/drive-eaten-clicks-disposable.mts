@@ -53,6 +53,17 @@ import { openDrivenPage } from "./lib/drivePage.mts";
 const BASE = process.env.VERIFY_BASE_URL ?? "http://localhost:3000";
 const OUT = path.resolve("output/eaten-clicks");
 const THROTTLE = !process.argv.includes("--no-throttle");
+/**
+ * THE POSITIVE CONTROL (`--sabotage`).
+ *
+ * A clean null here means "nothing was eaten" only if this driver CAN see an
+ * eaten click. So the control manufactures one: a `pointerdown` listener
+ * replaces the chip node with a copy of itself, exactly as a re-render between
+ * the press and the release would, and the release then lands on a node that
+ * never saw the press — no click event, which is the DOM-swap signature. If the
+ * EATEN arm does not go red under this, the green run above says nothing.
+ */
+const SABOTAGE = process.argv.includes("--sabotage");
 /** How many version-to-version moves to attempt. */
 const MOVES = Number(process.env.MOVES ?? 8);
 /** How long one attempt is given before it is called a failure and repeated. */
@@ -136,7 +147,41 @@ try {
         window.__heard.push({ kind, at: Math.round(performance.now()), label: label(event.target) });
       }, true);
     }
+    /*
+      AND WHETHER THE RAIL ITSELF MOVES while the panel lands (fable-722 (b)).
+
+      A person aims at a thumbnail and presses a moment later. If the chip has
+      travelled in between — the panel's rows arriving and resizing the columns
+      — the press lands somewhere else, and to them that is a click that did
+      nothing. Recorded as the rail's own top-left over time, so the claim is a
+      distance rather than an impression.
+    */
+    window.__railBoxes = [];
+    setInterval(() => {
+      const rail = document.querySelector(".dpc-refine__stack");
+      if (!rail) return;
+      const box = rail.getBoundingClientRect();
+      window.__railBoxes.push({
+        at: Math.round(performance.now()),
+        x: Math.round(box.left), y: Math.round(box.top),
+        w: Math.round(box.width), h: Math.round(box.height),
+      });
+    }, 100);
   })()`);
+
+  if (SABOTAGE) {
+    /* The manufactured eaten click — see `SABOTAGE`. Installed on the page, in
+       the same capture phase, so the swap happens before the release. */
+    await page.evaluateOnNewDocument(`(() => {
+      document.addEventListener("pointerdown", (event) => {
+        const chip = event.target && event.target.closest
+          ? event.target.closest(".dpc-refine__pick")
+          : null;
+        if (chip && chip.parentNode) chip.parentNode.replaceChild(chip.cloneNode(true), chip);
+      }, true);
+    })()`);
+    console.log("SABOTAGE: every press replaces its chip — the EATEN arm must go red\n");
+  }
 
   await page.goto(`${BASE}/casting/s/${session}`, { waitUntil: "networkidle2", timeout: 240_000 });
   await page.waitForSelector(`button[aria-label="View candidate ${tile} larger"]`, { timeout: 240_000 });
@@ -223,6 +268,31 @@ try {
     `${ignored.length} of ${total} clicks moved nothing`);
   check(firstTry.size === moves.size, "every version selected on the FIRST click",
     `${firstTry.size} of ${moves.size} moves landed first try`);
+
+  /*
+    HOW FAR THE RAIL TRAVELLED WHILE THIS RAN — the aim-and-it-moved half.
+
+    Reported rather than asserted on: a rail that shifts is a mechanism for his
+    report, and a rail that does not shift RULES THAT MECHANISM OUT, which is
+    worth as much. The figure is the largest displacement between any two
+    consecutive readings, so a slow drift and one jump are told apart by the
+    trace beside it.
+  */
+  const boxes = await page.evaluate("window.__railBoxes ?? []") as Array<
+    { at: number; x: number; y: number; w: number; h: number }
+  >;
+  let worst = 0;
+  let worstAt = 0;
+  for (let at = 1; at < boxes.length; at += 1) {
+    const jump = Math.max(
+      Math.abs(boxes[at]!.x - boxes[at - 1]!.x),
+      Math.abs(boxes[at]!.y - boxes[at - 1]!.y),
+    );
+    if (jump > worst) { worst = jump; worstAt = boxes[at]!.at; }
+  }
+  console.log(`rail displacement: worst single jump ${worst}px at ${worstAt}ms`
+    + ` over ${boxes.length} readings`);
+  await writeFile(path.join(OUT, "rail-boxes.json"), `${JSON.stringify(boxes, null, 2)}\n`);
 
   await writeFile(path.join(OUT, "attempts.json"), `${JSON.stringify(attempts, null, 2)}\n`);
   await page.screenshot({ path: path.join(OUT, "at-rest.png") });
