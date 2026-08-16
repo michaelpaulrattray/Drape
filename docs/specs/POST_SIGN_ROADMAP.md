@@ -231,10 +231,36 @@ item; both deferred together until this studio's turn.
 ## 4. "Show her the refused frame" (walk-campaign's END; founder judges)
 
 Founder 2026-08-09 (fable-106): option to show a twice-refused render
-("you weren't charged; keep it if you disagree"). Until ruled:
-refuse-and-refund. Companion principle: **the checker judges
-EXISTENCE against her own words only; intensity/density belongs to
-her words or nobody; any widening is a founder gate.**
+("you weren't charged; keep it if you disagree"). Companion principle:
+**the checker judges EXISTENCE against her own words only;
+intensity/density belongs to her words or nobody; any widening is a
+founder gate.**
+
+**RULED CONDITIONALLY, in person, 2026-08-16 (fable-709 §1) — verbatim
+intent:** *"just always give the result and never refuse, they can always
+regenerate it — if refused frames are only catastrophic failures then it
+can stay, but don't show the refused frame at all."* So the fork is: either
+refusals catch only garbage (keep refusing, never show), or they sometimes
+catch deliverable work (stop refusing, always deliver). Today's behaviour
+— refuse-and-refund — stands until the reading below goes back to him.
+
+**ORDERED, and not yet done: classify the refused frames on record.** Every
+refunded render whose frame survives, dev and production, with the frames
+themselves read and bucketed:
+
+- **catastrophic** — torn, garbage, wrong person;
+- **delivered-but-wrong** — wrong side, missing ask, drift;
+- **actually-fine** — checker false positive;
+- **describer-misread** — its own bucket, added by fable-717 §5 after the
+  founder overturned both freckle-court arms at the frames: the describer
+  denies fine sparse surfaces that are visibly there, so a refusal resting
+  on its verdict is a distinct failure from a checker false positive.
+
+Report rates plus example frames. **Zero new spend** — the frames are
+already on disk and in R2. **The money contract rides on this:** today
+refused = refunded, so "always deliver" means the customer PAYS for what
+today would be refunded and a regenerate is a fresh charge. That trade goes
+back to him stated plainly before anything flips.
 
 ## 5. Open-vocabulary regions — the map becomes a cache
 
