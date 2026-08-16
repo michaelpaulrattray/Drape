@@ -213,6 +213,73 @@ on this procedure; **what must be proven is that a repeat of the SAME
 operation** — driven directly, not inferred from the field's presence. If that
 proof fails, it is a fourth landing and it comes before C.
 
+### ✅ THE PROOF IS DRIVEN — and it passes the question above while failing the one that matters (2026-08-17, opus-630; ordered fable-841 §3)
+
+`scripts/prove-refine-idempotency-disposable.mts`, three arms through the REAL
+claim seam (`refineCandidate` → `beginDirectOperation` →
+`claimGenerationOperation`) against the dev database, everything downstream of
+the claim stubbed so nothing is painted and no credit moves. The charge is
+COUNTED at the pinned deduct, which is where each arm's first call is held so a
+second call arrives while the first is genuinely claimed and charged.
+
+```
+CONTROLS  POSITIVE two different ids, sequential → 2 operation rows   saw 2  pass
+          NEGATIVE a face that does not exist    → 0 ops, 0 charges   saw 0/0 pass
+
+ARM 1  same id, sequential      operations 1 · variants 1 · charges 1
+       → the design's question, ANSWERED YES: the replay returns the first
+         receipt and claims nothing new.
+ARM 2  same id, concurrent      operations 1 · variants 1 · charges 1
+       → the second call is refused with "This action is already in progress.
+         Operation b041b86c…" — the network-retry case is closed too.
+ARM 3  TWO TAPS, different ids, same face, concurrent
+                                operations 2 · variants 2 · charges 2
+       → **the double tap buys twice.**
+
+LEDGER unmoved in every run (129 rows, net 26,445 both ends); every operation
+and variant the run created was deleted with the leftover count printed as 0.
+```
+
+Each arm reddens ALONE under its own sabotage — arm 1's second call given a
+fresh id (→ NOT IDEMPOTENT, others unchanged), arm 2's likewise (→ CLAIMED
+TWICE), arm 3's two taps given ONE id (→ refused the second tap) — so no
+verdict here is a shared-state artifact.
+
+**What this means for the price.** The named blocker is CLEARED: the
+`clientRequestId` machinery does exactly what the design hoped, so no fourth
+landing is owed for it. But arm 3 is the case a fast receipt actually invites,
+and idempotency is structurally blind to it: **the client mints a fresh uuid on
+every submit** (`CastingSheet.tsx:1422`), so a second tap is not a repeat of
+anything. Today that is covered by the long hold — the panel is busy for ~200 s
+and `refineBusy` folds in the server's pending list — and **the hold is what C
+removes.**
+
+### C's AMENDMENT — a `lockKey` on the candidate, and it is NOT built
+
+Filed here rather than fixed (fable-841 §3d): the machinery already exists and
+the concept is already in the tree, so this is a wiring decision that belongs to
+C's own ruling rather than to the shift that found it.
+
+- **What.** `beginDirectOperation` already takes a `lockKey` and answers
+  `resource_busy` → `CONFLICT` when another operation holds it. The whole R7
+  evidence family passes `model:<id>`. **No castingV2 caller passes one** —
+  `grep -rn "lockKey" server/castingV2/*.ts` returns nothing — so roll, sign and
+  refine are all unguarded at that seam. Refine would pass the candidate.
+- **Price.** One argument at `refineService.ts:2954`, plus the arm-3 case added
+  to this proof as a regression (it flips from 2 operations to 1), plus a
+  customer-facing sentence for the refusal — the existing one ("Another
+  operation is already changing this Cast") is written for staff, not for
+  someone who tapped twice. **Half a shift.**
+- **Not a client debounce.** The contract is at the wire; a disabled button is
+  not a guard, and a second tab, a retried request or a slow network all get
+  past it.
+- **Open, and it belongs to whoever rules C:** whether the lock is the right
+  answer at all, or whether a fast receipt should simply return the IN-FLIGHT
+  operation's receipt to the second tap — which is friendlier (the customer sees
+  their edit running rather than an error) and is the same shape as the replay
+  arm 1 already proves. That choice is a product decision about what a double
+  tap MEANS, not a mechanical one.
+
 **Acknowledgement.** A settled outcome must be shown once and then dismissed, or
 the panel re-announces a week-old failure every time the sheet opens.
 `acknowledgeGenerationOperation` and `dismissGenerationOperationLanding` already
@@ -267,7 +334,7 @@ still answers on the request and can still, in principle, lose its socket.
 |---|---|---|
 | A | settled-list projection + panel read + tests | — |
 | B | migration, writer, sentence derivation | **founder ceremony** |
-| C | the dispatch swap behind its flag + idempotency proof | — |
+| C | the dispatch swap behind its flag + ~~idempotency proof~~ **(the proof is DONE and passed, 2026-08-17 — see §4)** + the double-tap answer, which is a decision before it is a build (§4's amendment, ~half a shift if it is the `lockKey`) | — |
 | D | drive both roads in the running app, sabotage the driver, re-read the wall-crossing rate | — |
 
 **Four shifts and one founder ceremony**, assuming the idempotency proof in C
