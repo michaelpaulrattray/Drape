@@ -922,6 +922,27 @@ The candidate worker runs only when explicitly enabled. It:
 Processing candidates use the existing operation lease/recovery contract, not
 the 30-day ready expiry.
 
+### 12.2a The panel's own expiry check runs on the customer's clock
+
+Filed 2026-08-16 (fable-670 §3) for whoever reworks this surface. Not a defect
+today, and deliberately not fixed while the flag is off.
+
+The worker above never trusts client time. The PANEL does:
+`inkCandidateIsExpired` (`client/src/features/casting/evidence/inkAddUxPolicy.ts`)
+and the re-check timer in `InkAddPanel.tsx` both compare a server-written
+`expiresAt` against the browser's `Date.now()`. That is two moments taken off
+two clocks — entry 13 of `docs/specs/INSTRUMENT_DOCTRINE.md`, and the same shape
+that made the casting sheet's supervised-wait promise fire on a laptop two
+minutes fast and never fire on one two minutes slow (fixed in `f4b126e5`).
+
+**It is harmless here because the horizon is 30 days** (`CANDIDATE_EXPIRY_MS`),
+so minutes of ordinary clock error cannot change the answer. The reason it is
+written down rather than fixed: if this surface ever acquires a SHORT deadline —
+a hold, a reservation, a countdown measured in minutes — the shape becomes the
+defect on the day the number shrinks, and nothing in the code will say so. The
+fix, when it is needed, is the one the casting sheet took: the server subtracts
+and ships a duration, because the server owns both terms.
+
 ### 12.3 Cleanup reconciliation
 
 The existing storage worker deletes each explicit backend/key. A candidate
