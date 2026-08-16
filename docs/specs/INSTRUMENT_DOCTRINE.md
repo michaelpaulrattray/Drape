@@ -323,6 +323,29 @@ drifted apart by the difference in their own sleeps is **founder working law 4**
 one helper.
 *Banked:* fable-668 §3 (finding at opus-510).
 
+**14. A list that argues for itself in prose can be checked against the code
+the prose describes — and that is cheaper than any test.**
+Where a constant carries a written justification, the justification is a
+CLAIM about the tree, and it is usually two greps from being settled. No suite
+can catch a rule whose premise stopped being true, because every test agrees
+with the rule.
+*Incident:* `surfaceOwnership.ts` excluded `castingV2.refine` from the bridge's
+toast on the stated ground that *"an outcome is never lost by not being watched
+— it is sitting on the surface when you come back."* Two queries decide that
+sentence, and both refuse it: the sheet's lists are `status='ready'` and
+`status IN ('queued','dispatched')`, so a **failed** variant is in neither and
+leaves the payload entirely. The exclusion was right for two of its three
+entries and wrong for the one whose surface could not represent the outcome the
+list promised — costing eight production refusals that answered past the
+gateway, every one of them the founder's own. The suite was green throughout,
+and could not have been otherwise: it restated the rule.
+*Corollary, from the same sitting:* a test that restates some of a decision's
+clauses and imports the rest is describing the code, not testing it — the
+defect lived in the relationship between the restated clauses and the imported
+one. Move the whole decision into the function the caller calls, and add one
+arm proving the caller still calls it.
+*Banked:* fable-829 §3 (finding at opus-614, built at opus-618).
+
 ---
 
 ## Adding to this file
