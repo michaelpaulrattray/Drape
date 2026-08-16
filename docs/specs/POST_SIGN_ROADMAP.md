@@ -595,6 +595,31 @@ production rows and 0 of 66 dev rows**, so the pointed-vs-typed split exists in
 production only — and both pointed rows carry **6 slots**, the maximum observed
 anywhere, against a typed median of 2. Suggestive at n=2 and no more.
 
+#### THE RE-RUN TRIGGER — named, so it is not a "whenever" (ruled fable-835 §3)
+
+The read-budget question above is **UNSETTLED on purpose**, and the ruling is
+that no house money is spent to hurry rows ordinary use writes for free. So it
+has a trigger rather than an intention, and the trigger is mechanical:
+
+> **Every shift OPEN runs the one-query coverage check.
+> The re-run fires when PRODUCTION censused-with-purpose repainted rows reach
+> 25.** Until then the flatness stays a hint on the record and is quoted as one.
+
+```
+railway.cmd run --service MySQL -- npx tsx scripts/slots-per-render-disposable.mts --coverage
+```
+
+It prints one line — the count, the bar, and FIRES or HOLDS — and it is the
+same script that produced the reading, so the trigger cannot drift from the
+instrument that answers it. At the reading (2026-08-17) production stood at
+**16 labelled read calls over 6 censused repainted rows**; the bar counts ROWS,
+not calls.
+
+*(Why a row bar and not a call bar: the question is whether reads scale with
+slots, so the unit that has to accumulate is the render, and 25 rows is what
+puts more than n=1 or n=2 in each slot-count cell — which is exactly what made
+production unquotable this time.)*
+
 ## 2. The honest loader (with #1 — same instrumentation)
 
 Real stage transitions only, product voice, NO invented percentages
