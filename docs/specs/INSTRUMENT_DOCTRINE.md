@@ -323,7 +323,7 @@ drifted apart by the difference in their own sleeps is **founder working law 4**
 one helper.
 *Banked:* fable-668 §3 (finding at opus-510).
 
-**14. A list that argues for itself in prose can be checked against the code
+**19. A list that argues for itself in prose can be checked against the code
 the prose describes — and that is cheaper than any test.**
 Where a constant carries a written justification, the justification is a
 CLAIM about the tree, and it is usually two greps from being settled. No suite
@@ -353,4 +353,4 @@ arm proving the caller still calls it.
 Follow the admission rule at the top: numbered Fable ruling, real incident, one
 line each, citation. Keep it to a page or two — **terse over complete.** A
 doctrine file long enough to skim past is an instrument nobody reads, which is
-the failure mode all eighteen of these describe.
+the failure mode all nineteen of these describe.
