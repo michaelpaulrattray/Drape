@@ -316,6 +316,31 @@ superseded it — fable-071/080).
   (fidelity-law grade) — is NOTED, not ruled; larger render tiers
   need a price check first. Slot: with the M13 pre-launch batch,
   or earlier if a polish window opens.
+
+  **M12's row 2 lands HERE, whole** (fable-786 §3, fable-789 §2 —
+  filed into this item on 2026-08-16, having lived only in the
+  mailbox until then). There is no magnification anywhere in the
+  product: `CandidateViewer` has no wheel handler, no drag, no
+  transform and no zoom control, and the only close look it offers
+  is the download button. **The measurement, so nobody builds the
+  wrong fix:** the 760 CSS px cap (`castingV2.css:722/740/808`)
+  **never binds** — height runs out first on every 2:3 frame. Driven
+  in the running app (`output/downsample/downsample.json`): a
+  1024×1536 frame draws at **604×906** (0.590 of natural) in a
+  2560×1440 window — 156 px short of the cap — and at **310×466**
+  (0.303) in a 1440×1000 one. An ordered cap lift was withdrawn on
+  this measurement; it would have shipped a diff and delivered zero
+  pixels. **The 2K half is UNREAD:** the fixture bot owns no signed
+  Cast, so every figure above is a 1K candidate frame, and the
+  signed views — the half he paid most for — are measured for the
+  first time here. **The founder ask at this item's opening, in his
+  words rather than ours:** *when you want to look closely at a
+  face, should the picture get bigger inside the app — or is
+  downloading it the answer?* A zoom *gesture* is founder taste and
+  is not assumed; the zoom-cursor ruling (`castingV2.css:2168`,
+  2026-08-02) rejected an affordance that promised a zoom the viewer
+  did not keep, which is a ruling about a broken promise and not
+  about magnification being unwanted.
 - Hygiene batch (L2) — ✅ **CLOSED 2026-08-16, with the guard that keeps
   it closed.** The line said **11** when it was written on 2026-08-09 and
   read **34** when it was picked up a week later, unchanged in between:

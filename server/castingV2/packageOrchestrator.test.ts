@@ -139,7 +139,10 @@ beforeEach(() => {
 });
 
 describe("a package where everything lands", () => {
-  it("commits all six views and refunds nothing", async () => {
+  // Five, not six: a Cast has six views — the Master plus the package's five —
+  // and the package commits the five. The title said "six" while the assertion
+  // below said five, from the shift the walk view retired in v2.
+  it("commits all five package views and refunds nothing", async () => {
     const result = await buildCastPackage(deps(), input);
 
     expect(result.committed).toHaveLength(5);
