@@ -141,6 +141,22 @@ describe("instrument doctrine — the admission rule's one mechanical arm", () =
     }
   });
 
+  /*
+    A floor is not coverage. `>= 12` above stays green when the reader skips the
+    entry added last — which is the only entry anyone is ever unsure about, and
+    exactly the doubt that prompted this check when entry 14 landed out of
+    numeric order. So the expected set is DERIVED from the file's own headings
+    rather than pinned to a number that would need editing every time (and that
+    nobody would notice going stale).
+  */
+  it("the reader finds EVERY numbered entry the file contains", () => {
+    const headings = [...markdown.matchAll(/^\*\*(\d+)\.\s/gm)].map((m) => m[1]!);
+    const parsed = readDoctrine(markdown).entries.map((entry) => entry.entry);
+    expect(headings.length).toBeGreaterThan(0);
+    expect(parsed, "an entry the reader silently skipped has no warrant to check")
+      .toEqual(headings);
+  });
+
   it("POSITIVE CONTROL — names the entry when one cites the ordering message", () => {
     const found = circularCitations(fixture("fable-662 §3c"));
     expect(found.map((e) => e.entry)).toEqual(["2"]);

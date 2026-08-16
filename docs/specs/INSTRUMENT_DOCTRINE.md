@@ -158,6 +158,22 @@ the row said so. The sharper half: the row already held the answer, and the
 reading that should have preceded the purchase was a SELECT.
 *Banked:* fable-596 §1.
 
+**14. A probe that assumes a refusal is a mutation with extra steps.**
+Before sending a production probe that EXPECTS a gate to refuse it, read the
+gate — the schema, the guard, the flag. A probe aimed at an unread gate is a
+live request wearing a test's clothes.
+*Incident:* a smuggled-key probe at `newsletter.subscribe`, sent to watch a
+`.strict()` rejection, assumed a strictness that schema does not have — it is
+one of the ~180 that are not. The key was silently dropped, **the resolver
+ran**, and a live Klaviyo signup fired for an address nobody meant to create.
+No harm: reserved example domain, `success: false`, no row. None of that was
+designed; all of it was luck.
+*Banked:* fable-676 §5, from the unprompted report at opus-519 §6.
+
+*(Numbers are ADMISSION order, not reading order — 14 sits here because this is
+where it belongs, and renumbering would silently invalidate every citation that
+names an entry. Expect the sequence to run out of order as the file grows.)*
+
 ## On what a measurement can and cannot reach
 
 **11. A re-ask door inherits the correlation of what it re-asks.**
@@ -204,4 +220,4 @@ one helper.
 Follow the admission rule at the top: numbered Fable ruling, real incident, one
 line each, citation. Keep it to a page or two — **terse over complete.** A
 doctrine file long enough to skim past is an instrument nobody reads, which is
-the failure mode all thirteen of these describe.
+the failure mode all fourteen of these describe.
