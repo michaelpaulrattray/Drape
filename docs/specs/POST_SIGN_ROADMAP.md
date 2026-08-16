@@ -91,14 +91,57 @@ mailbox archive, memory, and DECISION_LOG by the lost-pin audit of
   from nowhere in the product — so **no `detected_born` row can exist**,
   and the whole "she came with it" half of the segment vocabulary is
   unreachable. Verified 2026-08-09: the only importers are its own test
-  and the sabotage roster; `bornWornDetector` reaches production code
-  through the catalogue alone, plus one calibration script. The
-  invariant-7 shape exactly — helper written, docs written, call site
-  never added.
+  and the sabotage roster — **that half still holds and was re-read
+  2026-08-17** — ~~`bornWornDetector` reaches production code through the
+  catalogue alone, plus one calibration script~~ **(FALSE since
+  2026-08-14; see the correction below).** The invariant-7 shape exactly —
+  helper written, docs written, call site never added.
   *Not a Tier-A blocker*, and deliberately not built inside the
   stop-line. The segments panel wanted a "she came with it" row and could
   not honestly draw one (opus-094); the row returns the day the catalogue
   is invoked.
+
+  ⚠ **The clause beside it is FALSE as of 2026-08-17** (opus-608, ruled
+  fable-819 §2). It read *"`bornWornDetector` reaches production code
+  through the catalogue alone, plus one calibration script"* — true when
+  verified on 2026-08-09, and overtaken since. The **detector** has three
+  production importers and the catalogue is not among them; all three are
+  value imports of live functions, called:
+
+  ```
+  server/castingV2/faceScan.ts:63    armedBornWornClasses, detectionFloorFor
+      :147  new Set(armedBornWornClasses().map(...))
+      :419  detectionFloorFor(region.question, bilateral ? "side" : "frame")
+      THE LIVE AUTO-SCAN — CASTING_FACE_SCAN_SCOPE=users:1 on his account
+  server/castingV2/refineService.ts:200   departureFloorFor
+      :1778 presentInBase = coverage(seen) > departureFloorFor(asked).floor
+      THE PAID REFINE PATH — the "was this already on her face" decision
+  server/castingV2/detectionUniversality.ts:40
+  ```
+
+  `faceScan.ts` did not exist on 2026-08-09. **So the catalogue is the one
+  route that is dead, and two live paid paths reach the detector around
+  it.** *(History, kept as the record: "through the catalogue alone, plus
+  one calibration script", verified 2026-08-09.)*
+
+  **The consequence, in one line: RETIRE deletes a WRAPPER, not a
+  capability.** Retiring `catalogueBornWorn` does not retire
+  `bornWornDetector`, which keeps consumers that never went through it —
+  so the founder card this fork promises must be posed as **durability**
+  (*does "she came with it" ever become a durable fact?*) and never as
+  ability, because the ability is already shipped and running on his own
+  account.
+
+  ⚠ **UNREAD, and it must not do unearned work in the lean:** whether a
+  catalogue call could ride a detector read the live scan has ALREADY
+  bought. The cost sentence below prices wiring at *"house money per face"*;
+  that was written before the scan shipped and has not been re-read against
+  it. Triage owns the question.
+
+  **Bound: importers and call sites were read.** Whether the detector's
+  three consumers survive the catalogue's deletion was **not** run — they
+  do not import it, but "nothing suggests otherwise" is not a suite run
+  against a deletion and is not offered as one.
 
   **The linkage this entry used to carry is DEAD, and the fork now has an
   owner** (opus-601, ruled fable-812 §2, 2026-08-17). It read *"its first
