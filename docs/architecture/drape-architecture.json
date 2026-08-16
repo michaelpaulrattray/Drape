@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "fbb141d7e3e759fa"
+    "sourceFingerprint": "4e0da52e9bc87898"
   },
   "domains": [
     {
@@ -10441,6 +10441,10 @@
     {
       "id": "test:server/studio.test.ts",
       "path": "server/studio.test.ts"
+    },
+    {
+      "id": "test:server/suiteLine.test.ts",
+      "path": "server/suiteLine.test.ts"
     },
     {
       "id": "test:server/uptimeAnchor.test.ts",

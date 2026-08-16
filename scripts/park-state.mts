@@ -31,6 +31,7 @@ import { execFileSync } from "node:child_process";
 import { openDatabase } from "./lib/dbConnection.mts";
 import { uptimeAnchor } from "./lib/uptimeAnchor.mts";
 import { balanceLine, readOpenRouterBalance } from "./lib/openrouterBalance.mts";
+import { findSuiteLine, suiteVerdict } from "./lib/suiteLine.mts";
 
 const WITH_SUITE = process.argv.includes("--suite");
 const WITH_PROD = !process.argv.includes("--no-prod");
@@ -178,10 +179,15 @@ say(`process   ${listeners.length} listener(s) on :300x`
   + (listeners.length ? ` — pids ${[...new Set(listeners.map((line) => line.split(/\s+/).pop()))].join(", ")}` : ""));
 
 if (WITH_SUITE) {
-  const output = run("npx", ["vitest", "run"], true).split("\n")
-    .map((line) => line.replace(/\[[0-9;]*m/g, "").trim())
-    .find((line) => /^Tests\s+\d|failed \|/.test(line));
-  say(`suite     ${output ?? "(unreadable)"}`);
+  /* `findSuiteLine`, not a local predicate: the one this replaced also matched
+     `failed |`, which on a RED run finds the `Test Files` line FIRST — file
+     counts, reported as the suite, on exactly the run where it matters. */
+  const output = findSuiteLine(run("npx", ["vitest", "run"], true));
+  /* Not the raw line: the line WITH ITS ARITHMETIC DONE. A park once copied
+     "6,754 passed · 302 skipped · 0 failed" out of a run that had one failure,
+     and the parts already disagreed with the total printed beside them
+     (fable-791 §1). */
+  say(`suite     ${output ? suiteVerdict(output) : "(unreadable)"}`);
 } else {
   say("suite     NOT RUN in this park — pass --suite to read it");
 }
