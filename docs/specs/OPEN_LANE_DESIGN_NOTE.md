@@ -663,10 +663,10 @@ step 2  the open-kind policy record  DONE                  — 21 tables, 9 owed
 step 3  the mint door's absence control   REMAINING        — +1 read/kind/delivery
                                                              ($0.005), a specimen
                                                              set that must be NEW
-step 4  the slotless Ask             REMAINING             — the majority; touches
-                                                             repaintAsks (771 lines,
-                                                             `Facet`-keyed) and
-                                                             recipeAssembler (984)
+step 4  the slotless Ask             REMAINING             — see §9.7: the scout
+                                                             moved this figure, and
+                                                             the assembler is not
+                                                             where the work is
 step 5  the acceptance path          REMAINING             — refineDelta:721 +
                                                              the interpreter's reply
                                                              shape (`delta.open`)
@@ -708,6 +708,94 @@ each with a recommendation and none of them filed:
    the thing, and it must be measured on kinds the catalogue still does not own.
    *Recommendation: `fangs`, `wings`, `tail`, `scales`, `gills` — confirmed open
    today, and `fangs` is the only one with a real customer behind it.*
+
+## 9.7 The step-4 scout — the largest build is not where the note put it
+
+*Read 2026-08-16, ordered by fable-759 §2, on the 3b-scout shape: read the code
+before sizing it. Free — no render, no call, no credit. §9.5's step-4 line was
+derived from file lengths, which is the weakest evidence in this document, and
+the scout replaces it.*
+
+### The assembler does not need to change
+
+`recipeAssembler.ts` was built facet-free **on purpose**, and it says so:
+
+```
+FeatureSlot = string                      not a union, not a catalogue key
+"facet" appears ONCE in 984 lines, in a comment: a library key is a PANEL
+  SLOT — the stylist's ontology, never `facet@region` (fable-173)
+slotDefinition() called once, in `whereItIs`, and a null definition
+  degrades to "" rather than throwing
+Ask.noun already exists, and its comment is this exact case:
+  "Needed only for a slot the library has never held"
+```
+
+An `Ask` carrying an unknown slot string is a thing this module already accepts.
+That is not luck; it is fable-173's boundary holding.
+
+### And a slotless channel is ALREADY IN PRODUCTION
+
+`expression` is the precedent, in the same function, shipped:
+
+> *"`expression` is the first specimen of an ask the road could not state: no
+> slot by decision (D-136), no zone to cut, nothing to carry. It used to meet
+> `notASlot` below and refuse into the refund, which was honest and was still a
+> customer typing *make her smile* and being told the product could not. Now it
+> rides the change clause."* — `repaintAsks.ts:521`
+
+The carrier is `PresentationClause = { noun: string; words: string }`. No slot,
+no facet, no catalogue lookup, reaching the render's change clause. **A slotless
+ask already travels this road every day.**
+
+### So the work is at the ENTRY, and the entry is `Facet`
+
+The ask loop is driven by `facetsWrittenBy(input.delta)` (`repaintAsks.ts:561`),
+and every gate inside it keys on the closed union in turn:
+
+```
+facetOfSubject → FACET_SLOTS[facet] → slotsForFacet → slotDefinition → statePhrase
+```
+
+An open kind has no facet and is not in the delta, so it cannot enter through
+that loop at all. It needs **its own loop, parallel to the presentation loop it
+would sit beside** — which is a smaller and much better-precedented build than
+"teach the recipe assembler to carry a slotless ask" implied.
+
+### The one part with no precedent: presentation does not CARRY
+
+And this is the honest remainder. Presentation is slotless **and carry-less by
+design** — D-136, a follow must never inherit a smile. An open kind is the
+opposite: fable-566 requires it to carry by reference or it re-rolls every
+render. So step 4 is *presentation's channel plus a carry*, and the carry is the
+part nothing has done before.
+
+**The design question that the line counts were hiding:** a carrying open kind
+needs a slot key, and the slot catalogue cannot answer for a noun nobody has
+catalogued. Two shapes, neither decided here:
+
+- **(a) a synthesized key** the catalogue can answer for — an open kind mints
+  under a derived slot (`open@horns`) and `slotDefinition` gains one dynamic
+  branch;
+- **(b) a carry that is not slot-keyed** — the crop rides the ask itself rather
+  than the library, which keeps the catalogue closed and makes the open lane's
+  memory weaker than the closed lane's.
+
+The ripple either way is countable: **8 `slotDefinition` call sites** outside
+the catalogue and its tests — 5 in `refineService.ts`, 2 in `repaintAsks.ts`, 1
+in `recipeAssembler.ts`. That is the whole surface that would have to tolerate,
+or answer for, a slot the catalogue did not author.
+
+### A footnote that discharges half of an `owed`
+
+`DEPARTABLE_SUBJECTS`' policy answer — removal by dropping the carry — was
+marked *a claim the step-4 build must PROVE rather than assume*. It has been
+measured since, and the proof is quoted in `recipeAssembler.ts:216`: **the horns
+removal court read 3/3 gone and 3/3 clean by dropping the carry alone.** On a
+promoted kind rather than an open one, so the mechanism is proven and its
+transfer to a slotless ask is not — which is exactly half of what was owed, and
+the half that was likeliest to be wrong.
+
+---
 
 And one dependency the note could not have known: **fable-711 put
 reference-guided edits inside M12's close-out** — the customer supplies an image
