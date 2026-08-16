@@ -95,6 +95,21 @@ export type ClaimVariantInput = {
    * would end up claiming ancestry on somebody else's face.
    */
   parentVariantPublicId?: string | null;
+  /**
+   * WHICH VERSION THIS ONE REPLACES, when it is a fresh take of one (fable-703).
+   *
+   * The same fact `landVariant` writes when the picture arrives, written four
+   * minutes earlier — at the moment the decision is made rather than at the
+   * moment its result lands. The wait is the whole reason: an in-place
+   * regenerate is not a new version, so the rail has nothing to hang a ghost
+   * chip on, and the version being redrawn sat there wearing its old render
+   * with no sign anything was happening to it. The founder reported exactly
+   * that: *"it just stayed the same."*
+   *
+   * Null on an ordinary edit, which appends a version rather than replacing
+   * one — so its presence is what tells a pending row's two shapes apart.
+   */
+  regeneratesVariantPublicId?: string | null;
   now?: Date;
 };
 
@@ -209,6 +224,22 @@ export async function claimVariant(input: ClaimVariantInput): Promise<ClaimedVar
         deltas: input.deltas,
         stepDeltas: input.stepDeltas,
         requestText: input.requestText ?? null,
+        /*
+          AND WHAT IT IS A FRESH TAKE OF, from the first instant (fable-703).
+
+          `regeneratedFrom` is the key `landVariant` writes on arrival and
+          `readRegeneratedFrom` reads; this seeds the same key with the same
+          value, so the rail can say a version is being redrawn WHILE it is
+          being redrawn. Landing rewrites this object wholesale from the same
+          condition, so the two can never disagree.
+
+          The column already exists and is nullable, so no migration and no
+          ordering hazard — the lesson above is about a NEW column, which this
+          deliberately is not.
+        */
+        internalPrompt: input.regeneratesVariantPublicId
+          ? { regeneratedFrom: input.regeneratesVariantPublicId }
+          : null,
         pointsCost: input.pointsCost,
         operationId: input.operationId,
         createdAt: input.now ?? new Date(),
@@ -613,6 +644,14 @@ export async function listPendingVariants(
    */
   status: "queued" | "dispatched";
   /**
+   * The row's own internal record — INTERNAL, and read by the caller for ONE
+   * answer: which version this row is a fresh take of (fable-703).
+   *
+   * It leaves this function and goes no further: the projection above turns it
+   * into a public id and nothing else crosses the boundary (invariant 8).
+   */
+  internalPrompt: unknown;
+  /**
    * WHEN THIS ROW STOPS BEING SOMEBODY'S PROMISE — the lease of the operation
    * that owns it (fable-467).
    *
@@ -639,6 +678,9 @@ export async function listPendingVariants(
       requestText: castingCandidateVariants.requestText,
       createdAt: castingCandidateVariants.createdAt,
       status: castingCandidateVariants.status,
+      /* Which version this one replaces, seeded at the claim — the rail draws
+         the wait on THAT chip rather than promising a new one (fable-703). */
+      internalPrompt: castingCandidateVariants.internalPrompt,
       /*
         The lease travels with the row rather than being fetched beside it: the
         question "is anyone still working on this?" is about this exact

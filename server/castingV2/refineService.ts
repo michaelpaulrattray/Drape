@@ -2885,6 +2885,16 @@ async function refineCandidateCounted(
       parentVariantPublicId: repeatsThisVersion
         ? existing.find((row) => row.id === predecessor?.parentVariantId)?.publicId ?? null
         : predecessor?.publicId ?? null,
+      /*
+        AND WHICH TAKE IT REPLACES, SAID NOW RATHER THAN ON ARRIVAL (fable-703).
+
+        The same fact `landVariant` writes when the picture lands, from the same
+        condition — written here as well because the four minutes in between are
+        exactly when somebody is watching. An in-place re-roll adds no chip, so
+        the rail had nothing to draw the wait on and the version being redrawn
+        sat there in its old render: *"it just stayed the same."*
+      */
+      regeneratesVariantPublicId: repeatsThisVersion ? predecessor?.publicId ?? null : null,
     });
   } catch (error) {
     if (error instanceof VariantOwnershipError) {
@@ -5344,6 +5354,30 @@ async function refineCandidateCounted(
           : {}),
         ...(presentationOf(filed) ? { presentation: presentationOf(filed) } : {}),
         /*
+          THE ONE INSTANCE SHE POINTED AT, WRITTEN DOWN (fable-704).
+
+          The founder hit Regenerate on *"her right eye — fiery red"* and got the
+          per-side refusal: *"That names one side of a pair…"*. The gate was
+          innocent and the input was wrong. Regenerate rebuilt the ask from the
+          words on the chip and sent it down the SENTENCE lane, where a side
+          named without a rectangle is refused by design — because a sentence
+          cannot say which of a pair, and painting both is not what was asked.
+
+          The words were the only record there was. A pointed ask travels as a
+          sentence PLUS a scope, and the scope was never written anywhere: the
+          operation payload carries the candidate and the instruction, the
+          recipe holds it only for the length of one request, and the library's
+          slots are a consequence of it rather than a record of it. So the ask
+          could not be replayed, only re-interpreted — and re-interpretation
+          loses exactly the half the sentence cannot carry.
+
+          Written here, on the row, so a fresh take of this version can be its
+          REQUEST again rather than its caption. Absent on every typed ask,
+          which is all of them until she taps a rectangle — so its presence is
+          itself the mark of a pointed one.
+        */
+        ...(input.scope ? { askScope: input.scope } : {}),
+        /*
           THE CAPTIONS, WRITTEN DOWN — and until now they never were.
 
           Recipe v3 shipped complete except for this key. `capturedCaptions` was
@@ -5847,6 +5881,26 @@ function readInstructions(value: unknown): string[] {
 export function readRegeneratedFrom(internalPrompt: unknown): string | null {
   if (!internalPrompt || typeof internalPrompt !== "object") return null;
   const value = (internalPrompt as { regeneratedFrom?: unknown }).regeneratedFrom;
+  return typeof value === "string" && value.length > 0 ? value : null;
+}
+
+/**
+ * WHICH ONE INSTANCE A ROW WAS POINTED AT — off its own record, or null
+ * (fable-704).
+ *
+ * Null means two different things and they are deliberately not told apart
+ * here: an ask that pointed at nothing (every typed sentence), and a row landed
+ * before this was written down. Both mean *there is no pointed request to
+ * replay*, and a fresh take of either is the sentence it already was — which is
+ * today's behaviour, unchanged, for every row on the record.
+ *
+ * Read here rather than in the projection for the same reason as the take
+ * above: `internalPrompt` is INTERNAL (§J). The field never crosses the
+ * boundary, only the answer does.
+ */
+export function readAskScope(internalPrompt: unknown): string | null {
+  if (!internalPrompt || typeof internalPrompt !== "object") return null;
+  const value = (internalPrompt as { askScope?: unknown }).askScope;
   return typeof value === "string" && value.length > 0 ? value : null;
 }
 

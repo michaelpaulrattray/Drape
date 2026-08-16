@@ -496,7 +496,42 @@ describe("the rectangle names what it covers (fable-378 (c))", () => {
 
     expect(regions).toContain("onAsk(said, open.scope);");
     expect(sheet).toContain("function askRefine(instruction: string, scope?: string)");
-    expect(sheet).toContain("...(scope ? { scope } : {}),");
+    /* `sent` rather than `scope` since fable-704: the rectangle now has three
+       sources — the box she taps, the version being replayed, and the question
+       she is answering about one of them — and they resolve to one value before
+       the request is built. The assertion follows the value that goes out. */
+    expect(sheet).toContain("const sent = scope ?? (answersTheQuestion ? answering?.scope : undefined);");
+    expect(sheet).toContain("...(sent ? { scope: sent } : {}),");
+  });
+
+  /*
+    AND A REPLAY SENDS THE REQUEST, NOT THE CAPTION (fable-704).
+
+    The founder's own bug: Regenerate rebuilt the ask from the words on the chip
+    and handed the sentence lane a side named with nothing pointed at, which it
+    refused — correctly, and for a question he had not asked. A pointed ask is a
+    sentence PLUS a rectangle, and re-reading the caption can only ever recover
+    the half that was written on it.
+
+    Asserted across the three files the journey crosses, because each one alone
+    is a half that silently does nothing: the row records the rectangle, the
+    projection hands it back, and the button sends it.
+  */
+  it("replays the rectangle a version was pointed at, rather than re-reading its words", async () => {
+    const [service, route, panel, sheet] = await Promise.all([
+      readFile(new URL("../../../../server/castingV2/refineService.ts", import.meta.url), "utf8"),
+      readFile(new URL("../../../../server/routes/castingV2.ts", import.meta.url), "utf8"),
+      readFile(new URL("./components/RefinePanel.tsx", import.meta.url), "utf8").then(withoutProse),
+      readFile(SHEET, "utf8").then(withoutProse),
+    ]);
+
+    /* Written onto the row it belongs to — the record that did not exist. */
+    expect(service).toContain("...(input.scope ? { askScope: input.scope } : {}),");
+    /* Handed back on the version's own projection, beside its words. */
+    expect(route).toContain("requestScope: readAskScope(variant.internalPrompt),");
+    /* And sent again by the button, as a request rather than as a sentence. */
+    expect(sheet).toContain("scope: shown.requestScope ?? null,");
+    expect(panel).toContain("onRefine(regenerates.instruction, regenerates.scope ?? undefined)");
   });
 
   /*

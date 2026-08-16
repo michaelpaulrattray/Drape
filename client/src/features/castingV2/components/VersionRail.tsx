@@ -47,6 +47,19 @@ export type RailVariant = {
 export type RailPending = {
   variantId: string;
   instruction: string;
+  /**
+   * WHICH VERSION THIS ROW IS REDRAWING (fable-703, founder shot #303).
+   *
+   * A refine usually adds a version and the ghost chip below stands in for it.
+   * A fresh take REPLACES one — same chain, same place — so nothing new is
+   * coming and there is nothing for a ghost to stand in for. The founder hit
+   * Regenerate and watched the version's own thumbnail sit there in its old
+   * render: *"it just stayed the same."*
+   *
+   * So the wait goes where the change is going: on that chip. Null on an
+   * ordinary edit, and that null is what still draws a ghost.
+   */
+  regenerating?: string | null;
 };
 
 export function VersionRail({
@@ -69,6 +82,18 @@ export function VersionRail({
   layout: "column" | "row";
 }) {
   if (variants.length === 0 && pending.length === 0) return null;
+
+  /*
+    THE VERSIONS BEING REDRAWN RIGHT NOW (fable-703).
+
+    Server truth, like every other fact about a run in flight (D-161) — the row
+    itself says which take it replaces, so this is a lookup rather than a guess
+    at which pending sentence matches which chip. A guess is what the whole
+    fable-704 class is made of.
+  */
+  const redrawing = new Set(
+    pending.map((entry) => entry.regenerating).filter((id): id is string => Boolean(id)),
+  );
 
   return (
     <div
@@ -107,6 +132,9 @@ export function VersionRail({
             type="button"
             className="dpc-refine__pick"
             aria-pressed={selectedVariantId === variant.variantId}
+            /* The ring says it to the eye; this says the same thing to a screen
+               reader, which cannot see a ring. No new words either way. */
+            aria-busy={redrawing.has(variant.variantId) || undefined}
             /* WHICH PICTURE THIS CHIP IS — the same URL the viewer draws when
                this version is the selected one. It makes "the lit chip and the
                photograph agree" a readable fact rather than an impression, which
@@ -139,6 +167,18 @@ export function VersionRail({
               the fallback is the arm, not the assumption.
             */}
             {chipSrc(variant) ? <img src={chipSrc(variant)!} alt="" /> : null}
+            {/*
+              AND THE RING, WHILE THIS ONE IS BEING REDRAWN (fable-703).
+
+              The same treatment the founder ruled for the pending chip, on the
+              version a fresh take is replacing: one state, one look, whether
+              the chip is a version being born or an old one being redone. Over
+              the picture rather than instead of it — the render on screen is
+              still the render he has, until the new one lands.
+            */}
+            {redrawing.has(variant.variantId)
+              ? <span className="dpc-refine__ghostSpin dpc-refine__ghostSpin--onChip" aria-hidden="true" />
+              : null}
             <span>{variant.requestText ?? variant.instructions.at(-1)}</span>
           </button>
           {/*
@@ -161,9 +201,25 @@ export function VersionRail({
         truth so it survives closing and reopening the sheet. Not selectable,
         because there is nothing yet to select.
       */}
-      {pending.map((entry) => (
+      {pending.filter((entry) => !entry.regenerating).map((entry) => (
         <div className="dpc-refine__step" key={entry.variantId}>
-          <div className="dpc-refine__pick dpc-refine__pick--ghost" aria-live="polite">
+          {/*
+            A GHOST STANDS IN FOR A VERSION THAT IS COMING (fable-703).
+
+            A fresh take is not coming — it is replacing something already here,
+            and its wait is drawn on that chip above. Drawing both would be two
+            marks for one render, and the ghost would then vanish at landing
+            with no new chip appearing where it stood.
+          */}
+          {/* Their own sentence is the label, and it is not printed: the founder
+              on the pending chip (fable-702) — *"just give it a spinning ring
+              centered no words why go over the top its meant to be
+              minimalist."* Said to a screen reader, which has no ring. */}
+          <div
+            className="dpc-refine__pick dpc-refine__pick--ghost"
+            aria-live="polite"
+            aria-label={entry.instruction}
+          >
             <div className="dpc-refine__ghost">
               {/*
                 NOT AN EMPTY SLOT (D-169). It holds the base under the same
@@ -183,7 +239,6 @@ export function VersionRail({
               */}
               <span className="dpc-refine__ghostSpin" aria-hidden="true" />
             </div>
-            <span>{entry.instruction}</span>
           </div>
         </div>
       ))}

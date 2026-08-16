@@ -185,12 +185,20 @@ export default function CastingSheet() {
   /* The refine panel owns its own outcomes (D-154) — never a toast. */
   const [refineOutcome, setRefineOutcome] = useState<string | null>(null);
   /*
-    The instruction a question is still waiting on (D-180).
+    The instruction a question is still waiting on (D-180) — AND THE RECTANGLE
+    THAT ASK WAS POINTED AT, when it was pointed at one (fable-704).
+
+    Both, in one ref, because they are one fact: the request the question is
+    about. A scoped ask that raises a question and is then answered has to reach
+    the server as the SAME request it was the first time — the sentence alone is
+    a side named with nothing pointed at, and the lane that receives it refuses
+    that by design. Two refs would be two answers to "what is she answering
+    about", and they would drift apart on the first path that cleared one.
 
     A ref rather than state: nothing renders from it — the question itself is
     the outcome sentence — and it must not schedule a paint of its own.
   */
-  const pendingReask = useRef<string | null>(null);
+  const pendingReask = useRef<{ about: string; scope?: string } | null>(null);
   /* The answers, which DO render: chips under the sentence (D-180). */
   const [reaskOptions, setReaskOptions] = useState<
     ReadonlyArray<{ label: string; resolves: string }> | null
@@ -1197,13 +1205,32 @@ export default function CastingSheet() {
     */
     const answering = pendingReask.current;
     pendingReask.current = null;
+    /*
+      AND THE RECTANGLE THE ANSWER IS STILL ABOUT (fable-704).
+
+      An answer is the same request arriving a second time, so it travels with
+      the same scope: without this, saying yes to *"a fresh take of her right
+      eye — fiery red?"* sends the sentence alone, and a side named with nothing
+      pointed at is refused — the founder's bug, one door further down.
+
+      Inherited only when this submission IS one of the open question's answers.
+      A sentence typed while a question happens to be on screen is a NEW ask,
+      and attaching the old rectangle to it would quietly narrow *"make her eyes
+      green"* to one eye — the silent-scope hazard the service refuses at its
+      own door. The chips and typing stay one path, as D-180 requires: the match
+      is against the labels on screen, whichever way the words arrived.
+    */
+    const answersTheQuestion = Boolean(
+      answering && (reaskOptions ?? []).some((option) => option.label === instruction),
+    );
+    const sent = scope ?? (answersTheQuestion ? answering?.scope : undefined);
     void refine
       .mutateAsync({
         clientRequestId: crypto.randomUUID(),
         candidateId: viewerCandidateId,
         instruction,
-        ...(answering ? { answering } : {}),
-        ...(scope ? { scope } : {}),
+        ...(answering ? { answering: answering.about } : {}),
+        ...(sent ? { scope: sent } : {}),
       })
       .then(async (result) => {
         /*
@@ -1225,7 +1252,13 @@ export default function CastingSheet() {
             the question carries `about` and this echoes it back. A question
             that cannot be answered because the wording drifted is a dead end.
           */
-          pendingReask.current = result.reask.about ?? instruction;
+          /* And the rectangle it is about, carried with it — see the send
+             above. `sent` rather than `scope`, so a question raised BY an
+             answer keeps the instance through a second round. */
+          pendingReask.current = {
+            about: result.reask.about ?? instruction,
+            ...(sent ? { scope: sent } : {}),
+          };
           setRefineOutcome(result.reask.question);
           setReaskOptions(result.reask.options);
           return;
@@ -2275,11 +2308,30 @@ export default function CastingSheet() {
                 version's `requestText`, so a second copy of "what did this
                 version ask for" would be the parallel list law 4 forbids.
               */
-              regenerates={
-                (variants.data?.variants ?? [])
-                  .find((entry) => entry.variantId === shownVariantId)
-                  ?.requestText ?? null
-              }
+              /*
+                AND IT IS THE REQUEST, NOT THE CAPTION (fable-704).
+
+                This handed down the words alone, and the words are only half of
+                a pointed ask: the founder hit Regenerate on "her right eye —
+                fiery red" and got the per-side refusal, because a side named in
+                a sentence with no rectangle behind it is exactly what the
+                sentence lane refuses. The gate was right; it was given the
+                wrong request. The scope comes off the version's own record now,
+                so a fresh take replays what was sent rather than re-reading
+                what was shown.
+              */
+              regenerates={(() => {
+                const shown = (variants.data?.variants ?? [])
+                  .find((entry) => entry.variantId === shownVariantId);
+                if (!shown?.requestText) return null;
+                return {
+                  instruction: shown.requestText,
+                  /* Null on every typed ask and on every row landed before the
+                     record existed — both mean "there is nothing pointed to
+                     replay", and both send the sentence exactly as before. */
+                  scope: shown.requestScope ?? null,
+                };
+              })()}
               priceCredits={refinePrice}
               /*
                 BUSY IS SERVER TRUTH TOO (D-161). `refine.isPending` alone dies

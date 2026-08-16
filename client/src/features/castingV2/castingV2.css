@@ -2654,6 +2654,9 @@
   background: none;
   cursor: pointer;
   color: var(--onScrim);
+  /* So the redrawing ring can sit on the PICTURE rather than on whichever
+     ancestor happened to be positioned (fable-703). */
+  position: relative;
 }
 
 .dpc-refine__pick > img {
@@ -2726,6 +2729,19 @@
      at this size — a full ring spinning is a ring standing still. */
   border-top-color: color-mix(in srgb, var(--onScrim) 78%, transparent);
   animation: dpc-ghost-spin 900ms linear infinite;
+}
+
+/*
+  THE SAME RING, ON A VERSION BEING REDRAWN (fable-703, founder shot #303).
+
+  One state, one look: a chip is either being made or being remade, and both
+  are a machine working on that square. The chip is a flex column of picture
+  then label, so the offsets centre the ring on the PICTURE — half of the
+  64×84 thumbnail above — rather than on the button including its words.
+*/
+.dpc-refine__ghostSpin--onChip {
+  top: 42px;
+  left: 32px;
 }
 
 @keyframes dpc-ghost-spin {

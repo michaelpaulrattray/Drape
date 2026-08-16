@@ -81,6 +81,14 @@ export type PendingRefine = {
    * it (fable-467). It is not progress; it is who holds the row.
    */
   stage?: PendingStage;
+  /**
+   * The version this one is REDRAWING, when it is redrawing one (fable-703).
+   *
+   * A fresh take replaces a version rather than adding one, so there is no new
+   * chip for a ghost to stand in for — the wait belongs on the chip already
+   * there. Null on an ordinary edit, which is the ghost's own case.
+   */
+  regenerating?: string | null;
 };
 
 /**
@@ -151,7 +159,12 @@ export function RefinePanel({
   priceCredits: number;
   /** A refine is in flight — for this face or any other on the sheet. */
   busy: boolean;
-  onRefine: (instruction: string) => void;
+  /**
+   * `scope` is the one instance the ask is about, and only a REPLAY sends one
+   * from here — the box below is a typed sentence, which scopes nothing
+   * (fable-444 ruling C). The picture's rectangles are the other door onto it.
+   */
+  onRefine: (instruction: string, scope?: string) => void;
   onSelect: (variantId: string | null) => void;
   /**
    * Remove one instruction from the middle of the stack — a PAID re-render.
@@ -187,11 +200,16 @@ export function RefinePanel({
    */
   kept?: readonly FaceRow[];
   /**
-   * The selected version's OWN request text, or null on the original — what a
-   * fresh take would ask for again. The server owns the words; this only
-   * carries them back.
+   * The selected version's OWN request, or null on the original — what a fresh
+   * take would ask for again. The server owns it; this only carries it back.
+   *
+   * The words AND the rectangle they were said at, together, because a pointed
+   * ask is both (fable-704): re-sending the sentence on its own is how
+   * Regenerate came to hand the sentence lane a side named with nothing pointed
+   * at, and be refused for it. `scope` is null on every typed ask, which is
+   * most of them, and on every version landed before the record existed.
    */
-  regenerates?: string | null;
+  regenerates?: { instruction: string; scope: string | null } | null;
   /**
    * This face's own possessive, from the server — see `SegmentsOnFace`.
    *
@@ -397,8 +415,12 @@ export function RefinePanel({
             variant="secondary"
             size="small"
             disabled={busy}
-            onClick={() => onRefine(regenerates)}
-            title={`A fresh take of "${regenerates}"`}
+            /* The request, replayed — the sentence and the instance it was said
+               at. `?? undefined` because the wire has no field for "no
+               rectangle": absent IS the whole-feature ask (fable-444 ruling C),
+               and sending null would be a scope naming nothing. */
+            onClick={() => onRefine(regenerates.instruction, regenerates.scope ?? undefined)}
+            title={`A fresh take of "${regenerates.instruction}"`}
           >
             <RotateCw size={12} strokeWidth={2} aria-hidden="true" />
             Regenerate

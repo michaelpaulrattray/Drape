@@ -65,7 +65,12 @@ import {
 const tuple = <T extends string>(values: readonly T[]) => values as unknown as [T, ...T[]];
 import { createRoll, cancelRoll } from "../castingV2/rollService";
 import { signCandidate } from "../castingV2/signService";
-import { readStepDeltas, refineCandidate } from "../castingV2/refineService";
+import {
+  readAskScope,
+  readRegeneratedFrom,
+  readStepDeltas,
+  refineCandidate,
+} from "../castingV2/refineService";
 import { pendingStage } from "../castingV2/pendingStage";
 import {
   listCandidateVariants,
@@ -849,6 +854,22 @@ export const castingV2Router = router({
               ? variant.instructions.filter((entry): entry is string => typeof entry === "string")
               : []).at(-1)
             ?? "",
+          /*
+            AND WHICH VERSION IT IS REDRAWING, when it is redrawing one
+            (fable-703).
+
+            A refine usually ADDS a version, and the rail draws a ghost chip for
+            it. A fresh take REPLACES one — same chain, same place — so there is
+            no new chip for a ghost to stand in for, and the founder watched the
+            version being redrawn sit there wearing its old render with nothing
+            to say it was busy: *"it just stayed the same."*
+
+            The public id alone, off the row's own record. What the rail does
+            with it is the rail's business; what matters here is that the fact
+            comes from the server, like every other thing about a run in flight
+            (D-161), rather than being guessed at from matching sentences.
+          */
+          regenerating: readRegeneratedFrom(variant.internalPrompt),
           startedAt: variant.createdAt,
           /*
             AND HOW LONG IT HAS BEEN WAITING — subtracted here, off ONE clock
@@ -912,6 +933,26 @@ export const castingV2Router = router({
             same question this way since D-163; the landed one now agrees.
           */
           requestText: variant.requestText ?? null,
+          /*
+            AND THE RECTANGLE IT WAS POINTED AT, when it was pointed at one
+            (fable-704).
+
+            A pointed ask is a sentence plus one instance, and the sentence
+            alone is not the request: sent again without this, *"her right eye —
+            fiery red"* is a side named with nothing pointed at, which the
+            sentence lane refuses by design. So a fresh take replays the request
+            rather than re-reading the caption.
+
+            The slot key and nothing else. It is her own ask coming back to her,
+            the same as `requestText` beside it — the recipe, the deltas and the
+            prompt stay on the inside where §J puts them.
+
+            Null on every typed ask and on every row landed before the record
+            existed, and the client sends nothing in that case — which is exactly
+            what it did before this field, so those rows regenerate as they
+            always have.
+          */
+          requestScope: readAskScope(variant.internalPrompt),
           /*
             WHERE each instruction was FILED (D-149) — subject headings only,
             never the deltas themselves.

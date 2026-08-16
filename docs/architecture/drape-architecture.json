@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "09e78e04ac3acb41"
+    "sourceFingerprint": "85485c3873744192"
   },
   "domains": [
     {
@@ -8600,6 +8600,10 @@
     {
       "id": "test:client/src/features/castingV2/railThumb.test.ts",
       "path": "client/src/features/castingV2/railThumb.test.ts"
+    },
+    {
+      "id": "test:client/src/features/castingV2/railWaitAnatomy.test.ts",
+      "path": "client/src/features/castingV2/railWaitAnatomy.test.ts"
     },
     {
       "id": "test:client/src/features/castingV2/refineBusy.test.ts",

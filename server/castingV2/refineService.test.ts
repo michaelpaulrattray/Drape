@@ -441,7 +441,7 @@ vi.mock("./signEngine", () => ({
   }),
 }));
 
-const { asksToRemoveHerHair, refineCandidate } = await import("./refineService");
+const { asksToRemoveHerHair, readAskScope, refineCandidate } = await import("./refineService");
 /* The door itself, so the pair-vacancy rows below are checked against the rule
    that used to refuse them rather than against a copy of it. */
 const { slotWordsRefusal } = await import("./slotWordShape");
@@ -3314,6 +3314,160 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
     expect(prompt, "her own side is still named").toContain("right eye");
     expect(prompt, "and the flag is genuinely off at the wire")
       .not.toContain("as you look at it");
+  });
+
+  /*
+    THE POINTED ASK, REPLAYABLE (fable-704 — the founder's own bug).
+    ---------------------------------------------------------------
+
+    He hit Regenerate on *"her right eye — fiery red"* and got the per-side
+    refusal: *"That names one side of a pair… tap it on her picture."* The gate
+    was working exactly as designed; what reached it was wrong. Regenerate
+    rebuilt the ask from the words on the chip, and the words are half of a
+    pointed request — the other half is the rectangle, which was written down
+    nowhere. A reconstruction needs an independent record and there was none.
+
+    Four tests, and the fourth is the one that matters: the third proves a
+    recovered scope reaches the painter, and the fourth proves that WITHOUT the
+    record the same replay reproduces his refusal. Together they say the record
+    is what carries it, rather than something else in the request happening to.
+  */
+  const perSideDeps = {
+    interpret: async () => ({
+      ok: true as const,
+      delta: { free: { eyeColourFree: "her right eye fiery red" } },
+    }),
+  };
+
+  it("writes the rectangle she pointed at onto the row, so a fresh take can replay it", async () => {
+    await refineCandidate({ ...repainting, ...perSideDeps } as never,
+      { ...input, instruction: "her right eye fiery red", scope: "eye@right" });
+
+    expect(readAskScope(landedVariant?.internalPrompt)).toBe("eye@right");
+  });
+
+  it("CONTROL — a typed ask that pointed at nothing writes nothing", async () => {
+    /* The discriminator for the reader above: make the write unconditional and
+       this goes red, rather than every whole-face ask quietly acquiring a
+       rectangle it never had. */
+    await refineCandidate({ ...repainting, ...greenEyes } as never, input);
+
+    expect((landedVariant?.internalPrompt as { askScope?: unknown }).askScope).toBeUndefined();
+    expect(readAskScope(landedVariant?.internalPrompt)).toBeNull();
+  });
+
+  it("REPLAYS the pointed ask from the record — one eye reaches the painter, not two", async () => {
+    /*
+      The round trip end to end: send a scope, read it back off the row the way
+      the projection does, and send THAT. The recipe the painter receives names
+      the eye she pointed at and never the other one — which is the whole of
+      fable-444 ruling C, arrived at from the record rather than from the ask.
+    */
+    await refineCandidate({ ...repainting, ...perSideDeps } as never,
+      { ...input, instruction: "her right eye fiery red", scope: "eye@right" });
+    const recovered = readAskScope(landedVariant?.internalPrompt);
+
+    painted.length = 0;
+    await refineCandidate({ ...repainting, ...perSideDeps } as never,
+      { ...input, instruction: "her right eye fiery red", scope: recovered ?? undefined });
+
+    expect(painted).toHaveLength(1);
+    const recipe = painted.at(-1)?.prompt ?? "";
+    expect(recipe).toContain("Change only her right eye");
+    expect(recipe).not.toContain("left eye");
+  });
+
+  it("REPRODUCES his bug when the record is missing — the same words alone are refused", async () => {
+    /*
+      The negative control, and it is the founder's screenshot: replay the
+      sentence with no rectangle behind it and the sentence lane refuses it,
+      because a side named in prose would tell the recipe to change BOTH. The
+      refund is the contract holding — he was charged nothing — and the refusal
+      is honest. It is simply an answer to a question he did not ask.
+
+      This is what a row landed before the record still does, and deliberately:
+      there is nothing pointed to replay, so it replays what there is.
+    */
+    painted.length = 0;
+    await expect(refineCandidate({ ...repainting, ...perSideDeps } as never,
+      { ...input, instruction: "her right eye fiery red" }))
+      .rejects.toThrow(/names one side of a pair/i);
+    expect(painted).toHaveLength(0);
+  });
+
+  /*
+    AND THE ROW SAYS WHAT IT IS REDRAWING WHILE IT IS BEING DRAWN (fable-703).
+
+    Screenshot #303: he hit Regenerate, the plate said the honest wait, and the
+    version's own rail thumbnail sat there wearing the old render. An in-place
+    re-roll adds no chip — it replaces one — so the rail had nothing to draw the
+    wait ON, and the only thing that knows which version is being replaced is
+    the row. It knew four minutes too late: `landVariant` wrote it on arrival,
+    which is precisely when nobody needs telling any more.
+  */
+  const regenerating = () => {
+    const claimed = (claimVariant as unknown as {
+      mock: { calls: Array<[Record<string, unknown>]> };
+    }).mock.calls.at(-1)?.[0];
+    return claimed?.regeneratesVariantPublicId ?? null;
+  };
+
+  const repeatable = () => {
+    variantRows.push({
+      id: 91,
+      publicId: "variant-selected",
+      imageKey: "casting-v2/variants/she-is-looking-at-this.png",
+      instructions: ["icy blue eyes"],
+      requestText: "icy blue eyes",
+      stepDeltas: [{ eyeColour: "blue" }],
+      deltas: { eyeColour: "blue" },
+      internalPrompt: {},
+    } as never);
+    candidateRow.selectedVariantPublicId = "variant-selected";
+    return {
+      interpret: async () => ({ ok: true as const, delta: { eyeColour: "blue" as const } }),
+    };
+  };
+
+  it("offers a fresh take before claiming anything, and charges nothing to ask", async () => {
+    const deps = repeatable();
+    const charges = ledger.charges.length;
+
+    const result = await refineCandidate({ ...repainting, ...deps } as never,
+      { ...input, instruction: "icy blue eyes" });
+
+    expect(result.kind).toBe("asked");
+    expect(ledger.charges).toHaveLength(charges);
+    expect(vi.mocked(claimVariant)).not.toHaveBeenCalled();
+  });
+
+  it("records at the CLAIM which version a confirmed fresh take replaces", async () => {
+    const deps = repeatable();
+
+    await refineCandidate({ ...repainting, ...deps } as never, {
+      ...input,
+      instruction: "Yes — a fresh take · 25 credits",
+      answering: "icy blue eyes",
+    });
+
+    /* The chip the rail must draw the ring on — known at the claim, four
+       minutes before the picture that used to be its only announcement. */
+    expect(regenerating()).toBe("variant-selected");
+    /* And still said on arrival, where the take grouping reads it. Two
+       writers, one condition — they cannot disagree. */
+    expect((landedVariant?.internalPrompt as { regeneratedFrom?: unknown }).regeneratedFrom)
+      .toBe("variant-selected");
+  });
+
+  it("CONTROL — an ordinary edit replaces nothing and says so", async () => {
+    /* The discriminator: an edit that ADDS a version has a ghost chip of its
+       own, and marking it as a redraw would put the wait on somebody else's
+       picture. */
+    await refineCandidate({ ...repainting, ...greenEyes } as never, input);
+
+    expect(regenerating()).toBeNull();
+    expect((landedVariant?.internalPrompt as { regeneratedFrom?: unknown }).regeneratedFrom)
+      .toBeUndefined();
   });
 
   it("lets NO carried kind restate itself beside its own crop", async () => {
