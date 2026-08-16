@@ -97,6 +97,13 @@ describe("R7-7C5A private evidence cleanup backend", () => {
       // images live in the public bucket, evidence does not, and a manifest
       // that left the backend implicit could delete from the wrong one.
       "server/castingV2/candidateRetention.ts",
+      // The kept face scan (migration 0032) registers one stencil per feature
+      // before any of them exists, and names `public_r2` for each: a stencil is
+      // the SHAPE of a feature on a person's face at a permanently public key,
+      // and without the manifest a crash between the object writes and the row
+      // insert would leave bytes nothing points at — the sweep only collects
+      // what a row names.
+      "server/castingV2/keptFaceScan.ts",
       // The reference library's mint (migration 0028) registers a crop of a
       // feature and its mask before either exists, and names `public_r2` for
       // both: a library crop is a piece of a person's face at a permanently

@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "fcaa810424e03e7c"
+    "sourceFingerprint": "cdbc4eff25375908"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 121
+      "moduleCount": 122
     },
     {
       "id": "domain:castingV2",
@@ -3551,6 +3551,12 @@
     {
       "id": "module:server/castingV2/invisibleRemoval.ts",
       "path": "server/castingV2/invisibleRemoval.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/keptFaceScan.ts",
+      "path": "server/castingV2/keptFaceScan.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -9419,6 +9425,10 @@
     {
       "id": "test:server/castingV2/invisibleRemoval.test.ts",
       "path": "server/castingV2/invisibleRemoval.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/keptFaceScan.test.ts",
+      "path": "server/castingV2/keptFaceScan.test.ts"
     },
     {
       "id": "test:server/castingV2/likenessRefusal.test.ts",
@@ -19050,6 +19060,11 @@
     },
     {
       "from": "module:server/castingV2/faceScanService.ts",
+      "to": "module:server/castingV2/castingV2Scope.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/faceScanService.ts",
       "to": "module:server/castingV2/faceDescribe.ts",
       "kind": "imports"
     },
@@ -19071,6 +19086,11 @@
     {
       "from": "module:server/castingV2/faceScanService.ts",
       "to": "module:server/castingV2/interpreter.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/faceScanService.ts",
+      "to": "module:server/castingV2/keptFaceScan.ts",
       "kind": "imports"
     },
     {
@@ -19296,6 +19316,41 @@
     {
       "from": "module:server/castingV2/invisibleRemoval.ts",
       "to": "module:server/castingV2/maskGeometry.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/keptFaceScan.ts",
+      "to": "module:server/castingV2/facePanel.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/keptFaceScan.ts",
+      "to": "module:server/castingV2/recipeAssembler.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/keptFaceScan.ts",
+      "to": "module:server/db/castingV2FaceScans.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/keptFaceScan.ts",
+      "to": "module:server/db/connection.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/keptFaceScan.ts",
+      "to": "module:server/db/storageCleanup.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/keptFaceScan.ts",
+      "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/keptFaceScan.ts",
+      "to": "module:server/storage.ts",
       "kind": "imports"
     },
     {

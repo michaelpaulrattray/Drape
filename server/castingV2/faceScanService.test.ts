@@ -604,3 +604,115 @@ describe("the scan says which sides it found", () => {
     expect(scan.sides).not.toContain("eye:LR");
   });
 });
+
+/**
+ * THE KEPT READING, AT THE WIRE (migration 0032).
+ *
+ * What is on trial here is the SERVICE's half of the bargain: when it asks the
+ * table, when it writes to it, and — the whole point of the feature — whether a
+ * kept reading actually stops the money.
+ *
+ * The module itself is proved in `keptFaceScan.test.ts` against injected
+ * dependencies. Here it is a double, because these arms are about the call
+ * sites: a table consulted in the wrong place would still pass every test the
+ * module has.
+ */
+const keptCalls = { served: [] as any[], kept: [] as any[] };
+let keptAnswer: any = null;
+vi.mock("./keptFaceScan", () => ({
+  serveKeptScan: async (input: any) => { keptCalls.served.push(input); return keptAnswer; },
+  keepScan: async (input: any) => { keptCalls.kept.push(input); return { kept: true, objects: 1 }; },
+}));
+
+describe("the reading this face has already paid for", () => {
+  const arm = (scope: string | undefined) => {
+    if (scope === undefined) delete process.env.CASTING_SCAN_TABLE_SCOPE;
+    else process.env.CASTING_SCAN_TABLE_SCOPE = scope;
+    /* The whole chain, because the flag is an AND of its parents and a test
+       that set only the leaf would be arming nothing. */
+    process.env.CASTING_V2_SCOPE = "all";
+    process.env.CASTING_REFERENCE_LIBRARY_SCOPE = "all";
+    process.env.CASTING_FACE_SCAN_SCOPE = "all";
+  };
+
+  beforeEach(() => {
+    keptCalls.served.length = 0;
+    keptCalls.kept.length = 0;
+    keptAnswer = null;
+  });
+
+  it("DARK — with the flag off it neither reads nor writes a row", async () => {
+    arm(undefined);
+    const reader = countingReader();
+    const { deps } = await dependencies(reader);
+
+    await scannedFace({ ...FACE, dependencies: deps });
+
+    expect(keptCalls.served, "nothing was asked of the table").toHaveLength(0);
+    expect(keptCalls.kept, "and nothing was written to it").toHaveLength(0);
+    expect(reader.calls(), "the scan happened exactly as it does today").toBeGreaterThan(0);
+  });
+
+  it("spends NOTHING when the table already has this face-version", async () => {
+    /*
+      The headline, and the reason the table exists: 58 paid scans for 28
+      distinct faces. The assertion is on the READER's call count, because
+      "served from the table" is only worth anything if no segmenter was rung.
+    */
+    arm("all");
+    const reader = countingReader();
+    const { deps } = await dependencies(reader);
+    keptAnswer = {
+      slots: new Map([["hair", { box: { x: 1, y: 2, width: 3, height: 4, frame: { width: 1000, height: 1500 } }, maskUrl: "data:image/png;base64,AAAA" }]]),
+      words: new Map([["skin", ["a warm even tan"]]]),
+      asked: 12,
+      empty: [],
+      stencilBytes: 8360,
+      sides: "eye:LR",
+    };
+
+    const scan = await scannedFace({ ...FACE, dependencies: deps });
+
+    expect(reader.calls(), "not one segmenter call").toBe(0);
+    expect(scan.found).toBe(1);
+    expect(scan.failed, "a kept reading is clean by construction").toEqual([]);
+    expect(scan.frameUrl).toContain(FACE.imageKey);
+    /* And the memory holds it now, so the second look does not even ask. */
+    await scannedFace({ ...FACE, dependencies: deps });
+    expect(keptCalls.served, "asked once, then held in memory").toHaveLength(1);
+  });
+
+  it("writes a CLEAN reading down, with the frame it was read from", async () => {
+    arm("all");
+    const { deps } = await dependencies(countingReader());
+
+    await scannedFace({ ...FACE, dependencies: deps });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(keptCalls.kept).toHaveLength(1);
+    expect(keptCalls.kept[0].frameKey).toBe(FACE.imageKey);
+    expect(keptCalls.kept[0].candidateId).toBe(FACE.candidateId);
+    expect(keptCalls.kept[0].scan.slots.size).toBeGreaterThan(0);
+  });
+
+  it("NEVER writes a reading that lost regions — the missing-eyes law", async () => {
+    /*
+      The negative control for the arm above, and the one that matters: a
+      damaged reading is already refused by the memory, and persisting it would
+      make one bad minute permanent instead of one process long.
+    */
+    arm("all");
+    const lossy: any = {
+      async region() { throw new MaskError("the segmenter said no", { retryable: true }); },
+      async regionSides() { throw new MaskError("the segmenter said no", { retryable: true }); },
+      async subject() { return maskOf({ x: 10, y: 20, width: 30, height: 40 }); },
+      async landmark() { return null; },
+    };
+    const { deps } = await dependencies(lossy);
+
+    await scannedFace({ ...FACE, dependencies: deps });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(keptCalls.kept, "a damaged reading is served and dropped, never kept").toHaveLength(0);
+  });
+});

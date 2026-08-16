@@ -5,19 +5,24 @@
  * that decides WHEN that read happens, WHO pays for it twice (nobody), and what
  * the panel actually receives.
  *
- * # THE CACHE IS SCAFFOLDING, AND IT IS DECLARED (fable-373 ruling 4b)
+ * # THE CACHE WAS SCAFFOLDING, AND THE TABLE HAS NOW ARRIVED (fable-373 4b,
+ * # founder yes via fable-698, migration 0032)
  *
- * The durable answer is a table — `casting_face_scans`, keyed (candidate,
- * version) — and a table is a MIGRATION, which lands before its code and takes
- * the founder's own ceremony in production. This holds the scan in memory
- * instead, which is instant, has no migration, and is lost on every deploy.
+ * The scaffolding was declared rather than drifted into: memory is instant, has
+ * no migration, and is lost on every deploy. **What promoted it was a reading,
+ * not an anecdote** — the re-scan rate this file logs said 58 paid scans for 28
+ * distinct faces across two days of ordinary use, and that number bought the
+ * table.
  *
- * That is a shortcut, so it is named as one rather than arrived at by drift.
- * What it costs when it is wrong: one re-read at roughly $0.07 for whoever
- * selects a face in the minutes after a deploy. **What promotes it is a
- * reading, not an anecdote** — every scan logs the RE-SCAN RATE (how often a
- * key we have already paid for comes back around), so the question "is the
- * table worth its migration yet" is answered by a number this file produces.
+ * So there are now THREE places an answer can come from, and the order is not
+ * arbitrary: the memory below (free), then `casting_face_scans` (a round trip),
+ * then the reader (money). `CASTING_SCAN_TABLE_SCOPE` gates the middle one; off,
+ * this file behaves exactly as it did, and the paragraphs below about writing
+ * nothing are true again.
+ *
+ * The re-scan rate keeps being logged, and it keeps meaning the MEMORY's misses
+ * — the kept-reading hit is counted separately. A figure that justified a change
+ * must remain able to show whether the change worked.
  *
  * # A SECOND CLICK MUST NOT BUY A SECOND SCAN
  *
@@ -31,9 +36,15 @@
  *
  * Boxes in the frame's own pixels, and a one-bit stencil per feature so the
  * panel can draw a masked cutout from the frame it is already showing
- * (fable-374: *"masked cutouts."*). No objects are written, so there is no
- * manifest, no purge ordering and no born-held race — the scan cannot outlive
- * or drift from its frame, because it never leaves the process.
+ * (fable-374: *"masked cutouts."*).
+ *
+ * With the table off, nothing is written and there is no manifest, no purge
+ * ordering and no born-held race — the scan cannot outlive or drift from its
+ * frame, because it never leaves the process. With it on, the stencils DO
+ * become objects, and all three of those problems come with them: they are
+ * answered in `keptFaceScan.ts` (manifest born held before the bytes are
+ * written; rows and objects swept with the candidate; a row whose `frameKey`
+ * has moved is refused rather than served).
  *
  * **The stencils are DOWNSAMPLED and that is declared too**: they are drawn at
  * 34px and travel in a query payload, so a full-resolution hair mask would be
@@ -56,6 +67,8 @@ import type { PanelBox, PanelScan } from "./facePanel";
 import type { Mask } from "./maskedComposite";
 import type { RegionReader } from "./maskedRefine";
 import type { FeatureSlot } from "./recipeAssembler";
+import { captureCastingScanTableEnabled } from "./castingV2Scope";
+import { keepScan, serveKeptScan } from "./keptFaceScan";
 import { cropMask } from "./segmentCuts";
 import sharp from "sharp";
 
@@ -147,7 +160,7 @@ type CacheEntry = {
 
 const cache = new Map<string, CacheEntry>();
 const seen = new Set<string>();
-const counters = { scans: 0, rescans: 0, hits: 0, misses: 0, failures: 0, damaged: 0 };
+const counters = { scans: 0, rescans: 0, hits: 0, misses: 0, failures: 0, damaged: 0, kept: 0 };
 
 /**
  * The key: the owner, the face, and the version.
@@ -288,6 +301,62 @@ export async function scannedFace(input: {
     cache.delete(key);
     cache.set(key, held);
     return held.promise;
+  }
+
+  /*
+    THE READING THIS FACE HAS ALREADY PAID FOR (migration 0032, founder yes via
+    fable-698).
+
+    The memory above dies with the process, and this program deploys many times
+    a night — 58 paid scans for 28 distinct faces across two days of ordinary
+    use. So before spending anything, ask the table.
+
+    It sits BELOW the memory and ABOVE the reader, which is the only place it
+    can sit: below, because a warm answer costs nothing and a database round
+    trip is not nothing; above, because everything past this line spends money.
+
+    A miss here is not counted as a re-scan and does not write the audit row —
+    both of those measure the MEMORY's misses, which is the number that bought
+    this table, and folding a second cache into them would make the figure that
+    justified the change unable to show whether it worked.
+
+    Dark until `CASTING_SCAN_TABLE_SCOPE` names the user: off, `serveKeptScan`
+    is never called and not one row is read.
+  */
+  if (captureCastingScanTableEnabled(input.userId)) {
+    const kept = await serveKeptScan({
+      userId: input.userId,
+      candidateId: input.candidateId,
+      variantId: input.variantId,
+      frameKey: input.imageKey,
+    });
+    if (kept) {
+      counters.hits += 1;
+      counters.kept += 1;
+      const publicUrl = input.dependencies?.publicUrl ?? storagePublicUrl;
+      const served: ScannedFace = {
+        frameUrl: publicUrl(input.imageKey),
+        slots: kept.slots,
+        words: kept.words,
+        asked: kept.asked,
+        found: kept.slots.size,
+        empty: kept.empty,
+        /* A kept reading is a CLEAN one by construction — nothing else is
+           written — so this is not an assumption, it is the table's own rule
+           read back. */
+        failed: [],
+        stencilBytes: kept.stencilBytes,
+        sides: kept.sides,
+      };
+      log.info(
+        { candidateId: input.candidateId, found: served.found, kept: counters.kept },
+        "[faceScanService] served a face-version from the kept reading — nothing was spent",
+      );
+      const entry: CacheEntry = { settled: served, partial: null, promise: Promise.resolve(served) };
+      hold(key, entry);
+      remember(key);
+      return served;
+    }
   }
 
   counters.misses += 1;
@@ -449,6 +518,28 @@ export async function scannedFace(input: {
         if (cache.get(key) === entry) cache.delete(key);
       } else {
         entry.settled = value;
+        /*
+          AND A CLEAN READING IS KEPT (migration 0032).
+
+          Exactly here, in the branch that already decides cleanliness — not in
+          a second place that would have to re-derive it and could disagree.
+          The damaged branch above is the missing-eyes law, and the whole reason
+          this write sits inside the `else`: persisting a reading that lost
+          regions would make one bad minute permanent.
+
+          Fire-and-forget on purpose. She already has her panel; the row is
+          bookkeeping, and `keepScan` never throws — its own failures fall back
+          to today's behaviour, which is that the next look pays again.
+        */
+        if (captureCastingScanTableEnabled(input.userId)) {
+          void keepScan({
+            userId: input.userId,
+            candidateId: input.candidateId,
+            variantId: input.variantId,
+            frameKey: input.imageKey,
+            scan: value,
+          });
+        }
       }
       log.info(
         {

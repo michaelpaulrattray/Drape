@@ -43,7 +43,13 @@ function affectedRows(result: unknown): number {
 /** One feature the scan found, as it is stored. */
 export type StoredScanSlot = {
   slot: string;
-  box: { x: number; y: number; width: number; height: number };
+  /**
+   * THE BOX AND THE FRAME IT WAS MEASURED ON, together — `PanelBox`'s own rule
+   * kept across the write: *"a box without its frame is a rectangle in an
+   * unknown space"*. A row that stored four numbers alone would be readable and
+   * wrong the first time a version was delivered at a different size.
+   */
+  box: { x: number; y: number; width: number; height: number; frame: { width: number; height: number } };
   /** The stencil's object key. Never the bytes — see the migration's note. */
   maskKey: string;
 };
