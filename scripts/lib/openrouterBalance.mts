@@ -104,6 +104,74 @@ export async function readOpenRouterBalance(
   return { ok: true, remaining, total, used, low: remaining < LOW_BALANCE_USD };
 }
 
+export type OpenRouterUsage =
+  | {
+    ok: true;
+    /** Lifetime, and the three windows the account keeps itself. */
+    lifetime: number;
+    monthly: number;
+    weekly: number;
+    daily: number;
+    /** Whether this key could ask for the per-day, per-model breakdown. */
+    isManagementKey: boolean;
+  }
+  | { ok: false; why: string };
+
+/**
+ * WHAT THIS KEY HAS SPENT, IN THE ACCOUNT'S OWN WINDOWS — the founder's
+ * "$100 in LLM credits" question, answered by a reading rather than a
+ * derivation (fable-684 §6).
+ *
+ * `/api/v1/key` describes the key you asked with, and it carries `usage`,
+ * `usage_daily`, `usage_weekly` and `usage_monthly`. That is the whole
+ * headline of the reconciliation: **it is not our arithmetic, so nothing about
+ * our own record-keeping can make it wrong.** Our rows then have the humbler
+ * and more useful job of explaining the SHAPE of it, and of saying out loud how
+ * much of it they cannot explain.
+ *
+ * `is_management_key` rides along because it is the door to the rest: the
+ * per-day, per-model breakdown lives at `/api/v1/activity`, which answers
+ * *"Only management keys can fetch activity for an account"* to this one. Same
+ * shape as fal's admin key, and the same two-minute fix.
+ */
+export async function readOpenRouterUsage(
+  key: string | undefined = process.env.OPENROUTER_API_KEY,
+  fetchImpl: typeof fetch = fetch,
+): Promise<OpenRouterUsage> {
+  if (!key) return { ok: false, why: "OPENROUTER_API_KEY not set in this process" };
+  let response: Response;
+  try {
+    response = await fetchImpl("https://openrouter.ai/api/v1/key", {
+      headers: { Authorization: `Bearer ${key}` },
+    });
+  } catch (error) {
+    return { ok: false, why: `unreachable (${transportCode(error)})` };
+  }
+  if (!response.ok) return { ok: false, why: `HTTP ${response.status}` };
+  let body: { data?: Record<string, unknown> };
+  try {
+    body = await response.json() as typeof body;
+  } catch {
+    return { ok: false, why: "unparseable response" };
+  }
+  /*
+    THE LABEL IS NEVER TOUCHED. `data.label` carries a truncated form of the key
+    itself; this reader takes the four numbers and the one boolean and leaves
+    the rest in the response object, so no caller can print what it never got.
+  */
+  const data = body?.data ?? {};
+  const numbers = {
+    lifetime: Number(data.usage),
+    monthly: Number(data.usage_monthly),
+    weekly: Number(data.usage_weekly),
+    daily: Number(data.usage_daily),
+  };
+  if (Object.values(numbers).some((value) => !Number.isFinite(value))) {
+    return { ok: false, why: "response carried no numeric usage figures" };
+  }
+  return { ok: true, ...numbers, isManagementKey: data.is_management_key === true };
+}
+
 /**
  * The one line a state block prints.
  *

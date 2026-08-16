@@ -24,6 +24,7 @@ import {
   balanceLine,
   LOW_BALANCE_USD,
   readOpenRouterBalance,
+  readOpenRouterUsage,
 } from "../scripts/lib/openrouterBalance.mts";
 
 const KEY = "sk-or-v1-NOT-A-REAL-KEY";
@@ -138,5 +139,71 @@ describe("the OpenRouter balance is read, never remembered", () => {
     const [url, init] = (spy as unknown as { mock: { calls: [string, RequestInit][] } }).mock.calls[0]!;
     expect(url).toBe("https://openrouter.ai/api/v1/credits");
     expect((init.headers as Record<string, string>).Authorization).toBe(`Bearer ${KEY}`);
+  });
+});
+
+/**
+ * THE USAGE WINDOWS — the founder's "$100 in LLM credits" question, read off
+ * the account rather than reconstructed from our rows (fable-684 §6).
+ *
+ * The reason this is a READING and not a derivation is the whole point of it:
+ * nothing about our own record-keeping can make it wrong. Our rows get the
+ * humbler job of explaining its shape, and of saying how much they cannot.
+ */
+describe("what this key has spent, in the account's own windows", () => {
+  const REAL = {
+    data: {
+      /* The truncated key OpenRouter echoes back. It must never leave here. */
+      label: "sk-or-v1-b5c...843",
+      is_management_key: false,
+      usage: 200.31760482,
+      usage_daily: 0.093356,
+      usage_weekly: 118.700916,
+      usage_monthly: 198.00078,
+    },
+  };
+
+  it("reads all four windows off the real payload", async () => {
+    const usage = await readOpenRouterUsage(KEY, respond(REAL));
+    expect(usage).toEqual({
+      ok: true,
+      lifetime: 200.31760482,
+      monthly: 198.00078,
+      weekly: 118.700916,
+      daily: 0.093356,
+      isManagementKey: false,
+    });
+  });
+
+  /*
+    THE LABEL IS A TRUNCATED KEY. It rides in the same object as the numbers,
+    and this reader's return type is the only thing standing between it and a
+    mailbox. An explicit projection, not a spread (invariant 8).
+  */
+  it("never carries the key's own label out of the reader", async () => {
+    const usage = await readOpenRouterUsage(KEY, respond(REAL));
+    expect(JSON.stringify(usage)).not.toContain("sk-or");
+    expect(Object.keys(usage)).not.toContain("label");
+  });
+
+  it("says UNREAD rather than reporting zeroes when it learns nothing", async () => {
+    expect((await readOpenRouterUsage(undefined, respond(REAL))).ok).toBe(false);
+    expect((await readOpenRouterUsage(KEY, respond({}, { ok: false, status: 401 }))).ok).toBe(false);
+    const empty = await readOpenRouterUsage(KEY, respond({ data: {} }));
+    expect(empty.ok).toBe(false);
+    expect(empty.ok === false && empty.why).toContain("no numeric usage");
+  });
+
+  /* The door to the per-day, per-model breakdown. `/api/v1/activity` refuses
+     this key with "Only management keys can fetch activity for an account", so
+     a report that wants the breakdown must say which key it lacks. */
+  it("reports whether this key could ask for the daily breakdown", async () => {
+    const ordinary = await readOpenRouterUsage(KEY, respond(REAL));
+    expect(ordinary.ok === true && ordinary.isManagementKey).toBe(false);
+    const management = await readOpenRouterUsage(
+      KEY,
+      respond({ data: { ...REAL.data, is_management_key: true } }),
+    );
+    expect(management.ok === true && management.isManagementKey).toBe(true);
   });
 });
