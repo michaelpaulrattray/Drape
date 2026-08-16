@@ -67,7 +67,7 @@ saving.** The filed duplicate-"face" ask is not visible in this window either.
 | 1 | Issue each run of consecutive **segment** calls together instead of one after another | **28.0 s** dev · 13.5 s prod (p90 54.0 s, max 157.0 s; 29/56 edits) | measured bound: sum − slowest, per run | **Nothing about the answers** — same questions, same frames, same masks. Risk is the provider budget, not the product |
 | 2 | The same for consecutive **read** calls | **21.4 s** dev · 34.4 s prod (p90 25.6 s; 56/56 edits) | measured bound, same method | Unknown until each site is read: if a later read consumes an earlier read's answer, it cannot move. **Must be proven per site, not assumed** |
 | 3 | Label the `read` stage's `about` | 0 s directly | — | Nothing. It converts the largest production pot from timed-but-anonymous into attributable, which is what candidate 2 needs to be safe |
-| 4 | The paint itself | — | 99–109 s, 57–60% of call time | The provider's, not ours. Any change here is a model or quality decision: **founder territory** |
+| 4 | ~~The paint itself~~ — **DEAD by founder ruling** | — | 99–109 s, 57–60% of call time | — |
 
 **Candidates 1 and 2 together bound at ~49 s dev / ~48 s prod — roughly a
 quarter of the wall — and neither removes a question, a check or a gate.** They
@@ -98,14 +98,30 @@ the first answer. Until the `about` labels exist (candidate 3), the census
 cannot tell an independent read from a dependent one, and parallelising a
 dependent pair would not make the edit faster, it would make it wrong.
 
+### Candidate 4 is closed — the founder ruled it out, verbatim
+
+> *"we will not test another image model there are none out there that compete
+> currently all speed gains have to be on our end"*
+
+So the ~100 s of paint is a fixed cost of the product as it stands, no
+image-model test is to be proposed now or later, and **the whole latency
+programme is the remaining candidates and nothing else.** The arithmetic that
+follows from his ruling is worth stating plainly: of a ~205 s edit, ~100 s is
+his ruled-fixed paint, and the rest is our queue.
+
 ## Recommended order
 
-1. **Candidate 3 first** (labels; no behaviour change, no risk).
+1. ~~**Candidate 3 first**~~ — **already built** at `c7039b9d` (2026-08-16
+   07:37), before this reading was taken. The "unlabelled read stage" in the
+   table above is a fact about the DATA WINDOW, not the code: every census row
+   here predates the labels by a morning. Nothing to do; the labelled rows
+   arrive with the founder's next ordinary edits.
 2. **Candidate 1**, through the existing `FAL_CONCURRENCY` gate, with the
-   before/after read taken by this same script.
+   before/after read taken by this same script. Bar pre-registered at the
+   **replayed** figure (28.0 s dev), not the ceiling.
 3. **Candidate 2** only per-site, each site proven independent by reading the
-   code, never in bulk.
-4. **Candidate 4** to the founder as a question, not a change.
+   code, never in bulk — and not before labelled rows exist to read.
+4. ~~Candidate 4~~ — closed above by founder ruling.
 
 ## Reproducing this
 
