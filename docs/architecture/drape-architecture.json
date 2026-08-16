@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "a514e9d660f282d9"
+    "sourceFingerprint": "500ce73c35f9151e"
   },
   "domains": [
     {
@@ -143,7 +143,7 @@
     {
       "id": "domain:unassigned",
       "name": "unassigned",
-      "moduleCount": 28
+      "moduleCount": 29
     },
     {
       "id": "domain:wardrobe",
@@ -2273,6 +2273,12 @@
     {
       "id": "module:client/src/index.css",
       "path": "client/src/index.css",
+      "domain": "unassigned",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/lib/failureSentence.ts",
+      "path": "client/src/lib/failureSentence.ts",
       "domain": "unassigned",
       "lifecycle": "active"
     },
@@ -8634,6 +8640,10 @@
       "path": "client/src/features/operations/bridgeOwnership.test.ts"
     },
     {
+      "id": "test:client/src/foundation/rawErrorToast.test.ts",
+      "path": "client/src/foundation/rawErrorToast.test.ts"
+    },
+    {
       "id": "test:client/src/foundation/theme.test.ts",
       "path": "client/src/foundation/theme.test.ts"
     },
@@ -11501,6 +11511,11 @@
     },
     {
       "from": "module:client/src/features/boards/BoardPage.tsx",
+      "to": "module:client/src/lib/failureSentence.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/boards/BoardPage.tsx",
       "to": "module:client/src/lib/trpc.ts",
       "kind": "imports"
     },
@@ -11846,6 +11861,11 @@
     },
     {
       "from": "module:client/src/features/boards/canvas/nodes/useSheetController.ts",
+      "to": "module:client/src/lib/failureSentence.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/boards/canvas/nodes/useSheetController.ts",
       "to": "module:client/src/lib/trpc.ts",
       "kind": "imports"
     },
@@ -11901,6 +11921,11 @@
     },
     {
       "from": "module:client/src/features/boards/canvas/useCastActions.ts",
+      "to": "module:client/src/lib/failureSentence.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/boards/canvas/useCastActions.ts",
       "to": "module:client/src/lib/trpc.ts",
       "kind": "imports"
     },
@@ -11936,7 +11961,17 @@
     },
     {
       "from": "module:client/src/features/boards/components/VersionHistoryModal.tsx",
+      "to": "module:client/src/lib/failureSentence.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/boards/components/VersionHistoryModal.tsx",
       "to": "module:client/src/lib/trpc.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/boards/hooks/useBoardMutations.ts",
+      "to": "module:client/src/lib/failureSentence.ts",
       "kind": "imports"
     },
     {
@@ -12016,6 +12051,11 @@
     },
     {
       "from": "module:client/src/features/casting/components/CastStateHistory.tsx",
+      "to": "module:client/src/lib/failureSentence.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/casting/components/CastStateHistory.tsx",
       "to": "module:client/src/lib/trpc.ts",
       "kind": "imports"
     },
@@ -12037,6 +12077,11 @@
     {
       "from": "module:client/src/features/casting/components/EngineChoiceChip.tsx",
       "to": "module:client/src/lib/utils.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/casting/components/FromPromptField.tsx",
+      "to": "module:client/src/lib/failureSentence.ts",
       "kind": "imports"
     },
     {
@@ -12187,6 +12232,11 @@
     {
       "from": "module:client/src/features/casting/components/SlotVersionHistory.tsx",
       "to": "module:client/src/features/operations/castProjectionSync.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/casting/components/SlotVersionHistory.tsx",
+      "to": "module:client/src/lib/failureSentence.ts",
       "kind": "imports"
     },
     {
@@ -12521,6 +12571,11 @@
     },
     {
       "from": "module:client/src/features/casting/hooks/useCastingPackageRefresh.ts",
+      "to": "module:client/src/lib/failureSentence.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/casting/hooks/useCastingPackageRefresh.ts",
       "to": "module:client/src/lib/trpc.ts",
       "kind": "imports"
     },
@@ -12791,7 +12846,7 @@
     },
     {
       "from": "module:client/src/features/castingV2/failureCopy.ts",
-      "to": "module:shared/spokenError.ts",
+      "to": "module:client/src/lib/failureSentence.ts",
       "kind": "imports"
     },
     {
@@ -12882,6 +12937,11 @@
     {
       "from": "module:client/src/features/home/HomeNavbar.tsx",
       "to": "module:shared/const.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/home/WaitlistModal.tsx",
+      "to": "module:client/src/lib/failureSentence.ts",
       "kind": "imports"
     },
     {
@@ -12987,6 +13047,11 @@
     {
       "from": "module:client/src/features/lobby/LibraryView.tsx",
       "to": "module:client/src/lib/trpc.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/lobby/LobbyUtilityMenu.tsx",
+      "to": "module:client/src/lib/failureSentence.ts",
       "kind": "imports"
     },
     {
@@ -13436,12 +13501,22 @@
     },
     {
       "from": "module:client/src/features/profile/ProfileTab.tsx",
+      "to": "module:client/src/lib/failureSentence.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/profile/ProfileTab.tsx",
       "to": "module:client/src/lib/imageUtils.ts",
       "kind": "imports"
     },
     {
       "from": "module:client/src/features/profile/ProfileTab.tsx",
       "to": "module:client/src/lib/trpc.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/profile/SecurityTab.tsx",
+      "to": "module:client/src/lib/failureSentence.ts",
       "kind": "imports"
     },
     {
@@ -13482,6 +13557,11 @@
     {
       "from": "module:client/src/features/referral/ReferralModal.tsx",
       "to": "module:client/src/features/referral/RedeemCodeModal.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/referral/ReferralModal.tsx",
+      "to": "module:client/src/lib/failureSentence.ts",
       "kind": "imports"
     },
     {
@@ -14271,6 +14351,11 @@
     },
     {
       "from": "module:client/src/features/wardrobe/hooks/useWardrobeInventory.ts",
+      "to": "module:client/src/lib/failureSentence.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/wardrobe/hooks/useWardrobeInventory.ts",
       "to": "module:client/src/lib/trpc.ts",
       "kind": "imports"
     },
@@ -14352,6 +14437,11 @@
     {
       "from": "module:client/src/hooks/useComposition.ts",
       "to": "module:client/src/hooks/usePersistFn.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/lib/failureSentence.ts",
+      "to": "module:shared/spokenError.ts",
       "kind": "imports"
     },
     {
@@ -14672,6 +14762,11 @@
     {
       "from": "module:client/src/pages/CastingRoom.tsx",
       "to": "module:client/src/foundation/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/CastingRoom.tsx",
+      "to": "module:client/src/lib/failureSentence.ts",
       "kind": "imports"
     },
     {

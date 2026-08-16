@@ -7,6 +7,7 @@ import { useCastingGenerationStore } from '@/features/casting/stores/useCastingG
 import { publishCastProjectionChanged } from '@/features/operations/castProjectionSync';
 import type { CanonicalViewAngle } from '@shared/boardTypes';
 import { createClientRequestId } from '@shared/clientRequestId';
+import { logRawFailure, readableFailure } from "@/lib/failureSentence";
 
 interface SlotVersionHistoryProps {
   modelId: number;
@@ -62,7 +63,10 @@ export function SlotVersionHistory({ modelId, angle, onUsed, className }: SlotVe
       onUsed?.();
       publishCastProjectionChanged(result.modelId);
     },
-    onError: (error) => toast.error(error.message),
+    onError: (error) => {
+      logRawFailure('generation.restoreSlotVersion', error);
+      toast.error(readableFailure(error, 'That version could not be used.'));
+    },
     onSettled: async (_data, _error, variables) => {
       await Promise.all([
         utils.generation.slotVersions.invalidate({ modelId: variables.modelId, angle: variables.angle }),

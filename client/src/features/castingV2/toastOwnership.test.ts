@@ -60,9 +60,9 @@ const ALLOWED: Array<{ match: string; because: string }> = [
       "A failed Sign. It navigates on success, so a failure leaves the user on a closed modal with nothing said. Ours rather than the error's since run-9; a PRECONDITION_FAILED from our own server still passes through verbatim, because that sentence names its wall.",
   },
   {
-    match: "toast.error(error.message)",
+    match: "readableFailure(error, 'That name could not be saved.')",
     because:
-      "A failed inline rename (the room). The name reverts to the old one, which is not a reason. Found by this lint rather than by the audit — the audit had missed it.",
+      "A failed inline rename (the room). The name reverts to the old one, which is not a reason. Found by this lint rather than by the audit — the audit had missed it. It showed the error's own sentence until 2026-08-16, when the run-9 sweep put it behind `readableFailure`: our server's authored refusals still pass through verbatim, and a gateway's 502 no longer does.",
   },
   // ---- CastingV2.tsx (the lobby)
   {

@@ -14,6 +14,7 @@ import {
 } from "@/features/castingV2/components/CandidateViewer";
 import { CardMenu } from "@/features/castingV2/components/CardMenu";
 import { DeleteCastConfirm } from "@/features/castingV2/components/DeleteCastConfirm";
+import { logRawFailure, readableFailure } from "@/lib/failureSentence";
 
 /**
  * The casting room (plan §F, §J; handoff chapter 07).
@@ -169,7 +170,8 @@ export default function CastingRoom() {
         },
         onError: (error) => {
           setDraftName(null);
-          toast.error(error.message);
+          logRawFailure('castingV2.renameCast', error);
+          toast.error(readableFailure(error, 'That name could not be saved.'));
         },
       },
     );

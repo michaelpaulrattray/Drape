@@ -8,6 +8,7 @@ import { useEffect, useCallback } from 'react';
 import { X, Clock, Check, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { trpc } from '@/lib/trpc';
+import { logRawFailure, readableFailure } from "@/lib/failureSentence";
 
 interface VersionHistoryModalProps {
   itemId: number;
@@ -36,7 +37,8 @@ export function VersionHistoryModal({
       onClose();
     },
     onError: (err) => {
-      toast.error(err.message || 'Failed to revert');
+      logRawFailure('boards.revertVersion', err);
+      toast.error(readableFailure(err, 'Failed to revert'));
     },
   });
 

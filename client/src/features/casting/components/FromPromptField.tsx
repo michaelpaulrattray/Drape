@@ -9,6 +9,7 @@ import { useState } from "react";
 import { ArrowUp, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
+import { logRawFailure, readableFailure } from "@/lib/failureSentence";
 
 export interface ParsePromptResult {
   intent: "parsed" | "random";
@@ -33,7 +34,10 @@ export function FromPromptField({ onParsed, variant = "panel" }: FromPromptField
       onParsed({ ...(res as ParsePromptResult), sourcePrompt: value.trim() });
       setValue("");
     },
-    onError: (err) => toast.error(err.message),
+    onError: (err) => {
+      logRawFailure('generation.parsePrompt', err);
+      toast.error(readableFailure(err, 'That prompt could not be read.'));
+    },
   });
 
   const submit = () => {

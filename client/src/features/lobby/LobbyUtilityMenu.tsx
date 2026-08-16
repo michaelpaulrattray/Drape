@@ -12,6 +12,7 @@ import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { MoreHorizontal, MessageSquare, Bug, X, Send, Loader2 } from 'lucide-react';
 import { trpc } from '@/lib/trpc';
+import { logRawFailure, readableFailure } from "@/lib/failureSentence";
 
 type FormMode = 'feedback' | 'bug';
 
@@ -39,7 +40,8 @@ export function LobbyUtilityMenu() {
       close();
     },
     onError: (err) => {
-      toast.error(err.message || 'Failed to submit. Please try again.');
+      logRawFailure('bugReports.submit', err);
+      toast.error(readableFailure(err, 'Failed to submit. Please try again.'));
     },
   });
 

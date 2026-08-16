@@ -2,6 +2,7 @@ import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { Loader2, Download, KeyRound } from "lucide-react";
+import { logRawFailure, readableFailure } from "@/lib/failureSentence";
 
 interface SecurityTabProps {
   user: {
@@ -67,7 +68,8 @@ export function SecurityTab({ user, profileEmail }: SecurityTabProps) {
         window.location.href = "/";
       }, 1500);
     } catch (err: any) {
-      toast.error(err.message || "Failed to delete account");
+      logRawFailure('profile.deleteAccount', err);
+      toast.error(readableFailure(err, "Failed to delete account"));
       setIsDeletingAccount(false);
     }
   };

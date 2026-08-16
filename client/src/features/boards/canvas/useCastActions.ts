@@ -11,6 +11,7 @@ import { trpc } from "@/lib/trpc";
 import { useGenerationJobs } from "../stores/useGenerationJobs";
 import { useOptimisticFills } from "../stores/useOptimisticFills";
 import { createClientRequestId } from "@shared/clientRequestId";
+import { logRawFailure, readableFailure } from "@/lib/failureSentence";
 
 export function useCastActions(options: { boardId: number; itemId: number }) {
   const { boardId, itemId } = options;
@@ -29,7 +30,8 @@ export function useCastActions(options: { boardId: number; itemId: number }) {
       failJob(itemId, err.message);
       // Server stamped the error status + refunded — refetch shows the error card
       utils.boards.getItems.invalidate({ boardId });
-      toast.error(err.message);
+      logRawFailure("boards.castNode", err);
+      toast.error(readableFailure(err, "That cast could not be started."));
     },
   });
 
@@ -44,7 +46,8 @@ export function useCastActions(options: { boardId: number; itemId: number }) {
     onError: (err) => {
       useOptimisticFills.getState().clearFill(itemId);
       utils.boards.getItems.invalidate({ boardId });
-      toast.error(err.message);
+      logRawFailure('boards.fillNode', err);
+      toast.error(readableFailure(err, 'That fill could not be applied.'));
     },
   });
 

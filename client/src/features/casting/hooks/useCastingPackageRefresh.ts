@@ -7,6 +7,7 @@ import { beginCastingOperation } from '@/features/casting/pendingCastRegistry';
 import { createClientRequestId } from '@shared/clientRequestId';
 import type { CanonicalViewAngle } from '@shared/boardTypes';
 import { slotFailureMessage } from '@shared/refundCopy';
+import { logRawFailure, readableFailure } from "@/lib/failureSentence";
 
 const EMPTY_REFRESHING_ANGLES: CanonicalViewAngle[] = [];
 
@@ -72,7 +73,8 @@ export function useCastingPackageRefresh(modelId: number | null) {
     },
     onError: (error, _variables, context) => {
       context?.operation.fail({ message: error.message, background: false });
-      toast.error(error.message);
+      logRawFailure('generation.refreshSlots', error);
+      toast.error(readableFailure(error, 'That refresh could not be started.'));
     },
     onSettled: async (_data, _error, variables) => {
       let localCleared = false;

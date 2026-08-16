@@ -2,6 +2,7 @@ import { useRef, useState, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { compressImage, AVATAR_COMPRESSION, BANNER_COMPRESSION } from "@/lib/imageUtils";
+import { logRawFailure, readableFailure } from "@/lib/failureSentence";
 import { ProfileAvatar, ProfileCover } from "./ProfileVisual";
 import {
   Upload,
@@ -61,7 +62,8 @@ export function ProfileTab({
       onProfileUpdate?.();
     },
     onError: (err) => {
-      toast.error(err.message);
+      logRawFailure("profile.update", err);
+      toast.error(readableFailure(err, "Your profile could not be saved."));
     },
   });
 
@@ -73,7 +75,8 @@ export function ProfileTab({
       onProfileUpdate?.();
     },
     onError: (err) => {
-      toast.error(err.message);
+      logRawFailure("profile.uploadAvatar", err);
+      toast.error(readableFailure(err, "That picture could not be uploaded."));
       setLocalAvatarPreview(null);
     },
   });
@@ -86,7 +89,8 @@ export function ProfileTab({
       onProfileUpdate?.();
     },
     onError: (err) => {
-      toast.error(err.message);
+      logRawFailure("profile.uploadBanner", err);
+      toast.error(readableFailure(err, "That banner could not be uploaded."));
       setLocalBannerPreview(null);
     },
   });

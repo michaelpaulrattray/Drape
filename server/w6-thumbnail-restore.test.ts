@@ -90,7 +90,16 @@ describe('W6-F restore refusal visibility', () => {
     const mutation = source.slice(start, end);
 
     expect(start).toBeGreaterThan(-1);
-    expect(mutation).toContain('onError: (error) => toast.error(error.message)');
+    /*
+      The guarantee is that a refusal is SHOWN, not that the raw string is. It
+      was spelled `toast.error(error.message)` until the run-9 sweep
+      (2026-08-16) put every customer toast behind `readableFailure`, which
+      passes our server's own authored refusals through verbatim and replaces a
+      gateway's or a parser's text. W6-F's promise is intact and slightly
+      stronger; only the spelling moved.
+    */
+    expect(mutation).toContain('readableFailure(error,');
+    expect(mutation).toContain('toast.error(');
     expect(mutation).toContain('onSettled:');
     expect(mutation).toContain('utils.generation.slotVersions.invalidate');
     expect(mutation).toContain('modelId: variables.modelId');

@@ -10,6 +10,7 @@ import { useCallback } from 'react';
 import { useLocation } from 'wouter';
 import { toast } from 'sonner';
 import { trpc } from '@/lib/trpc';
+import { logRawFailure, readableFailure } from "@/lib/failureSentence";
 
 export function useBoardMutations() {
   const [, navigate] = useLocation();
@@ -26,7 +27,8 @@ export function useBoardMutations() {
       navigate(`/app/board/${board.id}`);
     },
     onError: (err) => {
-      toast.error(err.message || 'Failed to create canvas');
+      logRawFailure('boards.create', err);
+      toast.error(readableFailure(err, 'Failed to create canvas'));
     },
   });
 

@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { RedeemCodeModal } from "./RedeemCodeModal";
+import { logRawFailure, readableFailure } from "@/lib/failureSentence";
 
 /* ── Status config for history items ── */
 const STATUS_CONFIG: Record<
@@ -65,7 +66,8 @@ export function ReferralModal({ open, onClose }: ReferralModalProps) {
       setEmail("");
     },
     onError: (err) => {
-      toast.error(err.message);
+      logRawFailure('referral.sendInvite', err);
+      toast.error(readableFailure(err, 'That invitation could not be sent.'));
     },
   });
 

@@ -19,6 +19,7 @@ import type { SheetTile } from "../CharacterSheetImageArea";
 import { useCastingRefreshStore } from "@/features/casting/stores/useCastingRefreshStore";
 import { createClientRequestId } from "@shared/clientRequestId";
 import { beginCastingOperation } from "@/features/casting/pendingCastRegistry";
+import { logRawFailure, readableFailure } from "@/lib/failureSentence";
 
 const EMPTY_REFRESHING_ANGLES: CanonicalViewAngle[] = [];
 
@@ -149,7 +150,8 @@ export function useSheetController(data: CastNodeData, opts: { enabled: boolean 
     },
     onError: (err, _variables, context) => {
       context?.operation.fail({ message: err.message, background: false });
-      toast.error(err.message);
+      logRawFailure('boards.refreshSlots', err);
+      toast.error(readableFailure(err, 'That refresh could not be started.'));
     },
     onSettled: (_data, _err, { modelId: targetModelId }) => {
       void utils.generation.packageState.invalidate({ modelId: targetModelId });

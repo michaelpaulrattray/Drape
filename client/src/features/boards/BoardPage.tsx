@@ -10,6 +10,12 @@ import { useRoute, useLocation } from 'wouter';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
 import { trpc } from '@/lib/trpc';
+/*
+  Our sentence, never the error's (`@/lib/failureSentence`). Ten toasts on this
+  page showed a gateway's or a parser's text verbatim — the run-9 class, swept
+  2026-08-16. The raw message still reaches the console.
+*/
+import { logRawFailure, readableFailure } from '@/lib/failureSentence';
 import { BoardCanvas, type BoardItemRecord } from './BoardCanvas';
 import { BoardHeader } from './BoardHeader';
 import { CanvasImageViewer } from './canvas/CanvasImageViewer';
@@ -222,7 +228,10 @@ function BoardPageImpl() {
         utils.boards.getItems.invalidate({ boardId }),
       ]);
     },
-    onError: (error) => toast.error(error.message),
+    onError: (error) => {
+      logRawFailure('boards.landOperationResult', error);
+      toast.error(readableFailure(error, 'That result could not be placed on the canvas.'));
+    },
   });
   const dismissOperationMutation = trpc.generation.dismissOperationResult.useMutation({
     onSuccess: (settled) => {
@@ -230,7 +239,10 @@ function BoardPageImpl() {
       if (settled.dismissedNow) toast.success('Saved in Models');
       void utils.generation.activeOperations.invalidate();
     },
-    onError: (error) => toast.error(error.message),
+    onError: (error) => {
+      logRawFailure('boards.dismissOperationResult', error);
+      toast.error(readableFailure(error, 'That result could not be dismissed.'));
+    },
   });
 
   // ── Queries ────────────────────────────────────────────────
@@ -445,7 +457,10 @@ function BoardPageImpl() {
 
   const undoDeleteMutation = trpc.boardOps.undoDelete.useMutation({
     onSettled: () => utils.boards.getItems.invalidate({ boardId }),
-    onError: (err) => toast.error(err.message),
+    onError: (err) => {
+      logRawFailure('boards.undoDelete', err);
+      toast.error(readableFailure(err, 'That could not be undone.'));
+    },
   });
 
   const undoEntry = useCallback(
@@ -512,7 +527,8 @@ function BoardPageImpl() {
         if (idx >= 0) undoStackRef.current.splice(idx, 1);
       }
       if (ctx?.prev) utils.boards.getItems.setData({ boardId }, ctx.prev);
-      toast.error(err.message || 'Failed to delete');
+      logRawFailure('boards.deleteNodes', err);
+      toast.error(readableFailure(err, 'Failed to delete'));
     },
   });
 
@@ -814,7 +830,8 @@ function BoardPageImpl() {
     },
     onError: (err) => {
       utils.boards.getItems.invalidate({ boardId });
-      toast.error(err.message);
+      logRawFailure('boards.fillFromLibrary', err);
+      toast.error(readableFailure(err, 'That Cast could not be placed on the canvas.'));
     },
   });
 
@@ -983,7 +1000,8 @@ function BoardPageImpl() {
     },
     onError: (err, _vars, ctx) => {
       if (ctx?.tempId) setPendingForks((pf) => pf.filter((p) => p.id !== ctx.tempId));
-      toast.error(err.message);
+      logRawFailure('boards.popOutView', err);
+      toast.error(readableFailure(err, 'That view could not be popped out.'));
     },
   });
 
@@ -1007,7 +1025,8 @@ function BoardPageImpl() {
     onError: (err, _vars, ctx) => {
       if (ctx?.prev) utils.boards.getItems.setData({ boardId }, ctx.prev);
       if (ctx?.prevEdges) utils.boardOps.listEdges.setData({ boardId }, ctx.prevEdges);
-      toast.error(err.message);
+      logRawFailure('boards.collapseView', err);
+      toast.error(readableFailure(err, 'That view could not be collapsed.'));
     },
     onSettled: () => utils.boards.getItems.invalidate({ boardId }),
   });
@@ -1171,7 +1190,8 @@ function BoardPageImpl() {
         failJob(vars.itemId, err.message);
       }
       utils.boards.getItems.invalidate({ boardId });
-      toast.error(err.message);
+      logRawFailure('boards.applyModelEdit', err);
+      toast.error(readableFailure(err, 'That edit could not be applied.'));
     },
   });
 
@@ -1308,7 +1328,8 @@ function BoardPageImpl() {
       );
       for (const t of temps) failJob(t.tempId, err.message);
       utils.boards.getItems.invalidate({ boardId });
-      toast.error(err.message);
+      logRawFailure('boards.runVariations', err);
+      toast.error(readableFailure(err, 'Those variations could not be started.'));
     },
   });
 
@@ -1401,7 +1422,8 @@ function BoardPageImpl() {
     },
     onError: (err, _vars, ctx) => {
       if (ctx?.prev) utils.boards.getItems.setData({ boardId }, ctx.prev);
-      toast.error(err.message);
+      logRawFailure('boards.createNode', err);
+      toast.error(readableFailure(err, 'That node could not be duplicated.'));
     },
   });
 

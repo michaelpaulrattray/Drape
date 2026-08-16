@@ -11,6 +11,7 @@ import { X, ArrowRight, Check, Loader2, Sparkles } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
+import { logRawFailure, readableFailure } from "@/lib/failureSentence";
 
 /* ─── constants ─── */
 
@@ -58,7 +59,8 @@ export function WaitlistModal({ open, onClose }: WaitlistModalProps) {
       }
     },
     onError: (err) => {
-      toast.error(err.message || "Something went wrong. Please try again.");
+      logRawFailure('waitlist.join', err);
+      toast.error(readableFailure(err, "Something went wrong. Please try again."));
     },
   });
 

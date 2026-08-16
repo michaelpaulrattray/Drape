@@ -20,6 +20,7 @@ import {
   SMART_DETECT_THRESHOLD,
 } from "../constants";
 import type { GarmentSlotType } from "../types";
+import { logRawFailure, readableFailure } from "@/lib/failureSentence";
 
 /** Convert a File to base64 data URL */
 async function fileToBase64(file: File): Promise<string> {
@@ -72,7 +73,8 @@ export function useWardrobeInventory() {
       utils.wardrobe.garments.list.invalidate();
     },
     onError: (err) => {
-      toast.error(err.message || "Failed to upload garment");
+      logRawFailure('wardrobe.garments.upload', err);
+      toast.error(readableFailure(err, "Failed to upload garment"));
     },
   });
 

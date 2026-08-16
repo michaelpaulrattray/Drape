@@ -5,6 +5,7 @@ import { trpc } from '@/lib/trpc';
 import { cn } from '@/lib/utils';
 import { createClientRequestId } from '@shared/clientRequestId';
 import { publishCastProjectionChanged } from '@/features/operations/castProjectionSync';
+import { logRawFailure, readableFailure } from "@/lib/failureSentence";
 
 interface CastStateHistoryProps {
   modelId: number;
@@ -53,7 +54,10 @@ export function CastStateHistory({ modelId, className }: CastStateHistoryProps) 
         utils.generation.activeOperations.invalidate(),
       ]);
     },
-    onError: (error) => toast.error(error.message),
+    onError: (error) => {
+      logRawFailure('generation.restoreCastState', error);
+      toast.error(readableFailure(error, 'That version could not be restored.'));
+    },
   });
 
   useEffect(() => setSelectedId(null), [modelId]);
