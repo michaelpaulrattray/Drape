@@ -172,6 +172,59 @@ describe("the one image grammar", () => {
     expect(room).toContain("View ${data.name");
   });
 
+  it("never lets a late decode paint over a newer click", async () => {
+    /*
+      THE OTHER HALF OF "sometimes it doesn't switch" (founder, via fable-701 §4;
+      the fix ruled in fable-725 §2).
+      ------------------------------------------------------------------------
+
+      The burst watch caught the plate coming back to an abandoned version eight
+      seconds after the click, with the lit chip never moving — so the override
+      was applying all along and what moved was the viewer's own held frame: a
+      decode started earlier in the burst settled after a later click had taken
+      over, and painted the picture it had been started for.
+
+      The effect's cleanup cannot close that window, because it only runs when
+      React flushes the NEXT render's passive effects — after paint, and behind
+      whatever the burst is doing to the main thread. So the settle itself asks
+      whether its picture is still the one being asked for, off a ref written in
+      a LAYOUT effect: that runs synchronously inside the commit, before any
+      promise callback can run, so there is no window at all.
+
+      Pinned as anatomy because this is React timing rather than logic — there
+      is no pure function to drive. The behaviour is proved in the browser by
+      `drive-burst-clicks-disposable.mts`, which is where it was caught.
+    */
+    const viewer = await readFile(VIEWER, "utf8");
+    const settle = viewer.slice(viewer.indexOf("void decodeFrame("));
+    expect(settle.slice(0, settle.indexOf("});"))).toContain("wanted.current === frame.url");
+    expect(viewer).toContain("useLayoutEffect(() => { wanted.current = frame.url; }");
+  });
+
+  it("keeps the small copy until the real bytes land, whatever the sheet says", async () => {
+    /*
+      THE ABANDONED VERSION'S COMEBACK, read at the trace and closed here
+      (founder report; burst watch `drive-burst-clicks-disposable.mts`).
+
+      The plate held the last click's small copy for 11.4 seconds and then
+      showed a DIFFERENT version's full frame, with the lit chip never moving.
+      The small copy reaches this component through `previewUrl`, which the
+      sheet fills only while the click's claim still applies — and that claim is
+      spent the instant the server catches up. So the stand-in was withdrawn
+      eight seconds into a 2.6MB download, and the viewer fell back to whatever
+      it had decoded last: a version she passed through two clicks ago.
+
+      The rule: what is drawn changes when the PICTURE changes, never when
+      somebody else's question gets a new answer. Two arms, because the fix is
+      only a fix if the stand-in is both remembered and matched to the URL it
+      stands in for — a remembered preview reused for a different picture would
+      be the previous version wearing this one's name.
+    */
+    const viewer = await readFile(VIEWER, "utf8");
+    expect(viewer).toContain("standing.current?.forUrl === frame.url");
+    expect(viewer).toContain("standing.current = { forUrl: frame.url, previewUrl: frame.previewUrl }");
+  });
+
   it("offers the package in bulk as a real control", async () => {
     const room = await readFile(ROOM, "utf8");
     expect(room).toContain("Download package");

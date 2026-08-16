@@ -45,10 +45,10 @@ import { RefinePanel } from "@/features/castingV2/components/RefinePanel";
 import { FacePanel } from "@/features/castingV2/components/FacePanel";
 import { VersionRail } from "@/features/castingV2/components/VersionRail";
 import {
+  claimFor,
   frameUrlFor,
   overrideApplies,
   selectedVariantFor,
-  supersededBy,
   type ChosenFrame,
 } from "@/features/castingV2/chosenFrame";
 import { prefetchFrames } from "@/features/castingV2/frameDecodes";
@@ -1086,31 +1086,32 @@ export default function CastingSheet() {
     const showing = serverFrameFor(viewerCandidateId, candidates.find(
       (candidate) => candidate.candidateId === viewerCandidateId,
     )?.imageUrl ?? null);
-    if (picked && showing && picked !== showing) {
-      setChosenFrame((previous) => ({
-        candidateId: viewerCandidateId,
-        /* The version this pick IS — the rail's highlight reads it, so the chip
-           and the photograph are one claim (fable-546). */
-        variantId,
-        url: picked,
-        /* The chip they clicked is already in the browser, so the viewer can
-           show the right picture immediately and sharpen in place. */
-        previewUrl: chosen.thumb,
-        /*
-          EVERY FRAME THIS BURST HAS LEFT BEHIND, not just the one on screen
-          (fable-701 §4). Taken from the claim being replaced — the updater form
-          rather than `chosenFrame`, because five clicks in half a second are
-          five renders' worth of stale closure otherwise, and the burst is the
-          exact case this exists for.
-        */
-        insteadOf: supersededBy({
-          candidateId: viewerCandidateId,
-          showing,
-          picked,
-          previous,
-        }),
-      }));
-    }
+    /*
+      AND IT CLAIMS SOMETHING EVERY TIME (founder bug, fable-726).
+
+      This used to be `if (picked && showing && picked !== showing)`, and that
+      middle clause was his intermittent dead click: when the server's frame was
+      already the version he clicked, no claim was written and the claim ALREADY
+      STANDING went on painting the version he had left. The click did everything
+      else — the write went, the selection moved — and the picture did not.
+
+      The rule and its reasoning live in `chosenFrame.ts` beside the two it
+      already owns; the updater form is kept because five clicks in half a second
+      are five renders' worth of stale closure otherwise, and the burst is the
+      exact case this exists for.
+    */
+    setChosenFrame((previous) => claimFor({
+      candidateId: viewerCandidateId,
+      showing,
+      picked,
+      /* The version this pick IS — the rail's highlight reads it, so the chip
+         and the photograph are one claim (fable-546). */
+      variantId,
+      /* The chip they clicked is already in the browser, so the viewer can
+         show the right picture immediately and sharpen in place. */
+      previewUrl: chosen.thumb,
+      previous,
+    }));
     /* Returned rather than fired and forgotten, because ONE caller has to wait
        for it: taking a step back prunes the SELECTED face's chain, so the
        selection must have landed before the prune is sent. Every other caller
@@ -2272,6 +2273,27 @@ export default function CastingSheet() {
               layout="column"
             />
           ) : null}
+          /*
+            MEASURED HERE, FIXED NOWHERE YET — the panel SHOVES the rail, and
+            the shape of the answer is a design ruling rather than a patch
+            (founder's felt bug, chased from fable-727 §3c's 154px).
+
+            Read in the running app, at the instant it happens: while the panel
+            is reading, the column is 292px wide at x=962; the moment the read
+            comes back with nothing to show, the column leaves the page — and
+            this stage, which centres its row, slides the picture and the WHOLE
+            version rail 154px to the right, every chip with it (292 plus the
+            16px gap, halved). Someone aiming at the next version while the
+            panel lands presses two chips away from where they looked.
+
+            Reserving the column unconditionally was built and LOOKED AT, and it
+            buys the stability at a price the picture pays: on a face with no
+            panel at all, the photograph and its rail sit visibly left of centre
+            beside a dead 292px gutter. It also crosses fable-491, which ruled
+            that a face with nothing to say gets no column rather than an empty
+            one. So the measurement is filed with the frame and the options, and
+            the ruling is asked for rather than assumed.
+          */
           beside={(facePanelData || faceScanWorking) && viewerRefinable ? (
             <FacePanel
               groups={facePanelData?.groups ?? []}

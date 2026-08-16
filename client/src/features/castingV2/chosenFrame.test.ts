@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  claimFor,
   frameUrlFor,
   overrideApplies,
   selectedVariantFor,
@@ -94,6 +95,131 @@ describe("the rail lights the version the picture is showing", () => {
 });
 
 /**
+ * THE CLICK THAT DID NOTHING — the founder's own report, mapped in fable-726
+ * and ruled there: *a click on ANY tile paints that tile.*
+ *
+ * His words: *"sometimes it works fine, sometimes i have to click a few times…
+ * say im on the original thumbnail and theres 3 total, if the middle one isnt
+ * working for me to click onto it, the third one will"* — and after the third
+ * works, the middle works.
+ *
+ * The whole defect was one clause on the write: the claim was only recorded
+ * when the picked frame DIFFERED from the server's. Line the two up — the
+ * override drawing the original while the server's own frame is the middle
+ * version — and clicking the middle wrote nothing, so the claim already
+ * standing kept drawing the original. Clicking the third is a real switch and
+ * works; the alignment then moves and the middle takes.
+ *
+ * Every test here is written as the pair of surfaces, because a click that
+ * moves the highlight and not the photograph is the same bug with one half
+ * showing.
+ */
+describe("a click on the version the server is already showing", () => {
+  /** His exact arrangement: the plate is drawing the ORIGINAL (V1) because she
+   *  picked it, while the server's frame for this face is the middle one (V2). */
+  const standing: ChosenFrame = {
+    candidateId: "face-a", url: V1, insteadOf: [V2], variantId: null, previewUrl: null,
+  };
+
+  it("moves the picture to that version — the assertion that was FALSE", () => {
+    const claim = claimFor({
+      candidateId: "face-a", showing: V2, picked: V2, variantId: "variant-2",
+      previewUrl: null, previous: standing,
+    });
+    /* Under the old guard this was `standing`, and `frameUrlFor` therefore
+       answered V1: the click went to the server, the selection moved, and the
+       photograph stayed exactly where it was. */
+    expect(frameUrlFor({ candidateId: "face-a", serverUrl: V2, chosen: claim })).toBe(V2);
+  });
+
+  it("moves the highlight with it, never one without the other", () => {
+    const claim = claimFor({
+      candidateId: "face-a", showing: V2, picked: V2, variantId: "variant-2",
+      previewUrl: null, previous: standing,
+    });
+    expect(selectedVariantFor({
+      candidateId: "face-a", serverUrl: V2, serverSelected: "variant-2", chosen: claim,
+    })).toBe("variant-2");
+  });
+
+  it("still holds that version if the server slips BACK to what it replaced", () => {
+    /*
+      The claim written here is not a no-op wearing a new name. It is inert
+      exactly while the server agrees, and it speaks the moment a draining write
+      answers with a frame this click left behind — which is the same
+      self-limiting rule every other claim follows.
+    */
+    const claim = claimFor({
+      candidateId: "face-a", showing: V2, picked: V2, variantId: "variant-2",
+      previewUrl: null, previous: standing,
+    });
+    expect(frameUrlFor({ candidateId: "face-a", serverUrl: V1, chosen: claim })).toBe(V2);
+  });
+
+  it("and the ORIGINAL is a version like any other — his own starting chip", () => {
+    /* He reports this walking away from the original, so the original must be
+       able to take a click back onto itself while an override stands. */
+    const onward: ChosenFrame = {
+      candidateId: "face-a", url: V3, insteadOf: [V1], variantId: "variant-3", previewUrl: null,
+    };
+    const claim = claimFor({
+      candidateId: "face-a", showing: V1, picked: V1, variantId: null,
+      previewUrl: null, previous: onward,
+    });
+    expect(frameUrlFor({ candidateId: "face-a", serverUrl: V1, chosen: claim })).toBe(V1);
+    expect(selectedVariantFor({
+      candidateId: "face-a", serverUrl: V1, serverSelected: null, chosen: claim,
+    })).toBeNull();
+  });
+
+  it("withdraws a stale claim when the rail has no picture to draw", () => {
+    /*
+      The one case nothing can be claimed — a version whose URL has not arrived.
+      We cannot paint what we do not have; what we must not do is leave the
+      previous claim painting a version she did not click.
+    */
+    expect(claimFor({
+      candidateId: "face-a", showing: V2, picked: null, variantId: "variant-9",
+      previewUrl: null, previous: standing,
+    })).toBeNull();
+  });
+
+  it("and leaves ANOTHER face's claim alone while doing it", () => {
+    /* The fable-465 scope: this click is not about that tile. */
+    const elsewhere: ChosenFrame = {
+      candidateId: "face-b", url: V3, insteadOf: [V1], variantId: "variant-3", previewUrl: null,
+    };
+    expect(claimFor({
+      candidateId: "face-a", showing: V2, picked: null, variantId: "variant-9",
+      previewUrl: null, previous: elsewhere,
+    })).toBe(elsewhere);
+  });
+
+  it("carries the small copy so the switch is instant either way", () => {
+    const claim = claimFor({
+      candidateId: "face-a", showing: V1, picked: V2, variantId: "variant-2",
+      previewUrl: "https://pub.example/v2-thumb.png", previous: null,
+    })!;
+    expect(claim.previewUrl).toBe("https://pub.example/v2-thumb.png");
+    expect(claim.insteadOf).toEqual([V1]);
+  });
+
+  it("claims the pick even before any answer has come back for this face", () => {
+    /* `showing` null is "nothing has answered yet", not "the same frame" — the
+       claim is still written, with nothing to expire against until one does. */
+    const claim = claimFor({
+      candidateId: "face-a", showing: null, picked: V2, variantId: "variant-2",
+      previewUrl: null, previous: null,
+    })!;
+    expect(claim.url).toBe(V2);
+    expect(claim.insteadOf).toEqual([]);
+    /* And an empty history is inert rather than sticky: the server's own answer
+       is what paints, whatever it turns out to be. */
+    expect(frameUrlFor({ candidateId: "face-a", serverUrl: V3, chosen: claim })).toBe(V3);
+  });
+});
+
+/**
  * THE ABANDONED VERSION COMING BACK — the founder's own report, granted in
  * fable-701 §4 and reproduced twice before it was believed.
  *
@@ -175,6 +301,23 @@ describe("a burst of clicks — the last one owns the plate throughout", () => {
     /* Back to V1 and away again — the history is a set, not a tally. */
     expect(supersededBy({ candidateId: "face-a", showing: V1, picked: V3, previous: first }))
       .toEqual([V1, V2]);
+  });
+
+  it("keeps its history when a click lands on the server's own frame", () => {
+    /*
+      The fable-726 case INSIDE a burst: she passes through the version the
+      server happens to be showing. The claim for it must still carry every
+      frame the burst has left behind, or the abandoned-version comeback this
+      whole block exists for walks straight back in through the one click that
+      used to write nothing at all.
+    */
+    const claim = claimFor({
+      candidateId: "face-a", showing: V3, picked: V3, variantId: "variant-3",
+      previewUrl: null, previous: burst(),
+    })!;
+    expect(claim.insteadOf).toEqual(expect.arrayContaining([V1, V2, V4]));
+    expect(claim.insteadOf).not.toContain(V3);
+    expect(frameUrlFor({ candidateId: "face-a", serverUrl: V2, chosen: claim })).toBe(V3);
   });
 
   it("asks ONE question, so the three surfaces cannot answer differently", () => {

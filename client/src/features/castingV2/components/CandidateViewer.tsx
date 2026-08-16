@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 import { decodeFrame } from "../frameDecodes";
 import { createPortal } from "react-dom";
@@ -199,11 +199,48 @@ function useShownFrame(frame: ViewerFrame): { frame: ViewerFrame; preview: boole
     this one. Same holder, so a prefetch and a click can never start two
     downloads of one picture — which is the very defect it was built for.
   */
+  /*
+    AND A LATE SETTLE NEVER PAINTS OVER A NEWER CLICK (founder bug, fable-701 §4
+    / fable-725 §2 — the OTHER half of "sometimes it doesn't switch").
+
+    The burst watch caught the plate coming back to an abandoned version eight
+    seconds after the click, with the lit chip never moving: both surfaces read
+    the same override through one function, so the override was applying
+    throughout and what moved was this held frame.
+
+    The effect's own cleanup (`live`, below) is not enough on its own, and the
+    gap is exactly one commit wide. Cleanup runs when React FLUSHES the next
+    render's passive effects, which happens after paint and can be many
+    milliseconds behind the click during a burst — and a decode that settles
+    inside that window finds `live` still true and paints the frame it was
+    started for, which by then is a version she has already clicked past.
+
+    So the settle asks the question the cleanup cannot: **is this still the
+    picture being asked for?** Held in a ref written from a LAYOUT effect, which
+    React runs synchronously inside the commit — before any promise callback can
+    run — so there is no window at all between the click's render landing and
+    this being true. A settle for a superseded version is dropped, and the frame
+    it wanted arrives when its own decode lands.
+  */
+  const wanted = useRef(frame.url);
+  useLayoutEffect(() => { wanted.current = frame.url; }, [frame.url]);
+
+  /** The small copy standing in for a picture that is still downloading, and
+   *  the picture it stands in for. See the return below. */
+  const standing = useRef<{ forUrl: string; previewUrl: string } | null>(null);
+  useLayoutEffect(() => {
+    if (frame.previewUrl) standing.current = { forUrl: frame.url, previewUrl: frame.previewUrl };
+  }, [frame.url, frame.previewUrl]);
+
   useEffect(() => {
     if (frame.url === shown.url) return;
     if (frame.candidateId !== shown.candidateId) { setShown(frame); return; }
+    /* `live` stays for what it is good at: one paint per picture rather than one
+       per render that joined the same download. `wanted` is the ordering rule. */
     let live = true;
-    void decodeFrame(frame.url).then(() => { if (live) setShown(frame); });
+    void decodeFrame(frame.url).then(() => {
+      if (live && wanted.current === frame.url) setShown(frame);
+    });
     return () => { live = false; };
   }, [frame, shown]);
 
@@ -224,9 +261,38 @@ function useShownFrame(frame: ViewerFrame): { frame: ViewerFrame; preview: boole
     goes sharp when the real bytes land, which is the whole of the arrival
     moment and is the treatment he already likes on a render.
   */
+  /*
+    AND THE SMALL COPY DOES NOT LEAVE BEFORE THE REAL ONE ARRIVES (founder's
+    abandoned-version comeback, reproduced by the burst watch and read at the
+    trace: the plate held the last click's small copy for 11.4 seconds and then
+    showed an ENTIRELY DIFFERENT VERSION's full frame, with the lit chip never
+    moving).
+
+    The small copy on screen is the picture she clicked. It arrives here through
+    `previewUrl`, which the sheet fills only WHILE THE OVERRIDE APPLIES — and
+    the override is spent the moment the server catches up. So the sequence was:
+    she clicks, the small copy paints instantly, the 2.6MB frame starts
+    downloading, and eight seconds later the write lands, the claim is spent,
+    `previewUrl` goes null — and this returned `shown`, which is whatever was
+    decoded LAST, a version she passed through two clicks ago. It sat there
+    until the real bytes finished.
+
+    Nothing about the picture on screen changed at that moment. What changed was
+    the answer to a different question — has the server caught up — and a
+    surface that redraws on someone else's news is the mirror law wearing a
+    different coat. So the stand-in is remembered HERE, against the URL it
+    stands in for, and it holds until that URL's own bytes land.
+
+    Written from a layout effect: it is only ever read on a later render (the
+    render that loses `previewUrl` is by definition after the one that had it),
+    and a ref written in the commit cannot be a render that disagrees with the
+    DOM it just produced.
+  */
   if (frame.url === shown.url) return { frame, preview: false };
-  return frame.previewUrl
-    ? { frame: { ...frame, url: frame.previewUrl }, preview: true }
+  const standIn = frame.previewUrl
+    ?? (standing.current?.forUrl === frame.url ? standing.current.previewUrl : null);
+  return standIn
+    ? { frame: { ...frame, url: standIn }, preview: true }
     : { frame: shown, preview: false };
 }
 

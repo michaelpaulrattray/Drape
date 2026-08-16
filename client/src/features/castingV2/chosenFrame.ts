@@ -140,8 +140,9 @@ export function overrideApplies(input: {
  */
 export function supersededBy(input: {
   candidateId: string;
-  /** The picture on screen at this click. */
-  showing: string;
+  /** The picture the SERVER says this face has at this click. Null when nothing
+   *  has answered for this face yet, and then it contributes nothing. */
+  showing: string | null;
   /** The frame being picked now. */
   picked: string;
   /** The claim this one replaces, if a burst is already running on this face. */
@@ -151,7 +152,73 @@ export function supersededBy(input: {
   const carried = previous && previous.candidateId === candidateId
     ? [...previous.insteadOf, previous.url]
     : [];
-  return Array.from(new Set([showing, ...carried])).filter((url) => url !== picked);
+  return Array.from(new Set([...(showing === null ? [] : [showing]), ...carried]))
+    .filter((url) => url !== picked);
+}
+
+/**
+ * WHAT A CLICK CLAIMS — and it claims something EVERY time (founder bug,
+ * fable-726; the fix ruled in §4).
+ *
+ * His report: *"sometimes it works fine, sometimes i have to click a few
+ * times… say im on the original thumbnail and theres 3 total, if the middle
+ * one isnt working for me to click onto it, the third one will"* — and after
+ * the third works, the middle works.
+ *
+ * That is this defect's exact fingerprint, and the guard that caused it was one
+ * clause: the claim was only written when the picked frame differed from the
+ * server's. So when the server's frame was already the version she clicked, no
+ * new claim was written — and the claim ALREADY STANDING went on painting the
+ * version she had left. The click did everything else it does (the write went,
+ * the selection moved on the server) and the picture did not move, which is a
+ * dead click to the only judge who matters.
+ *
+ * Intermittent for a reason that reads as randomness from the outside: it
+ * needs the shown override and the server's own frame to be pointing at
+ * different versions, which is true only while a write is in flight or a poll
+ * is behind — and that alignment shifts every time an edit lands or a panel
+ * refreshes. Clicking the third chip is a real switch, so it works; the
+ * alignment then changes and the middle one takes.
+ *
+ * **A click on ANY tile paints that tile.** There is no case where skipping the
+ * claim is the right answer, because the claim is what the three surfaces read:
+ * writing it when the server already agrees costs one inert object (its history
+ * cannot contain the frame it draws, so `overrideApplies` is false and the
+ * server's own answer — the same picture — is what paints), and skipping it
+ * leaves a stale claim speaking for a click that never made it.
+ */
+export function claimFor(input: {
+  candidateId: string;
+  /** What the server currently says this candidate's picture is. */
+  showing: string | null;
+  /** The picture the clicked chip draws — null when the rail has no URL for
+   *  that version yet, which is the one case nothing can be claimed. */
+  picked: string | null;
+  variantId: string | null;
+  /** Its small copy, if that version has one. */
+  previewUrl: string | null;
+  /** The claim on screen at this click, whoever it belongs to. */
+  previous: ChosenFrame | null;
+}): ChosenFrame | null {
+  const { candidateId, showing, picked, variantId, previewUrl, previous } = input;
+  if (picked === null) {
+    /*
+      NOTHING TO PAINT — so nothing is claimed, and the stale claim for THIS
+      face is withdrawn rather than left standing. We cannot draw a picture we
+      do not have a URL for; what we can do is stop drawing the wrong one, and
+      let the server's own frame answer when the write lands. A claim on
+      another face is untouched — it speaks for a tile this click is not about
+      (the fable-465 scope).
+    */
+    return previous && previous.candidateId !== candidateId ? previous : null;
+  }
+  return {
+    candidateId,
+    variantId,
+    url: picked,
+    previewUrl,
+    insteadOf: supersededBy({ candidateId, showing, picked, previous }),
+  };
 }
 
 export function selectedVariantFor(input: {
