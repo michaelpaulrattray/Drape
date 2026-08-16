@@ -602,13 +602,65 @@ superseded it — fable-071/080).
   rest of the 177 inside it, because it is a pre-launch MONEY line rather
   than dead code.** The owner sets a floor, not a fence: **any quiet shift
   may claim this read before the milestone opens.**
-- **R7 evidence migrations 0015/0016** (L9): never applied to prod
-  (the 2026-07-31 crash-loop); decide re-enable-by-ceremony vs
-  retire-with-legacy.
-- **Refine deferred-delete determination** (L10): image-referenced
-  edits were owed a deferred-delete migration (no `notBefore`
-  concept exists); record whether D-192's frozen-reference rule
-  moots it.
+- **R7 evidence migrations 0015/0016** (L9): ⛔ **THE PREMISE BELOW IS FALSE
+  AND THE ITEM IS RE-POSED — both migrations ARE applied to production**
+  (opus-605, ruled fable-816 §2, 2026-08-17). Read against `:23768` with both
+  controls printed before any verdict counted:
+
+  ```
+  world  hayabusa.proxy.rlwy.net:23768  db railway
+    model_identity_feature_projection_evidence  13 columns · declared 13 ·
+                                    marker "acceptedCandidatePlateId" PRESENT
+    casting_evidence_candidate_feature_targets  10 columns · declared 10 ·
+                                    marker "coverageBasis"           PRESENT
+    zzz_no_such_table_0015                      ABSENT   ← negative control
+    models                                      resolved ← positive control
+  ```
+
+  Not "a table with that name": the counts are the exact ones declared in
+  `drizzle/0015_r7_all_body_ink.sql` and `0016_…_projection_targets.sql`, and
+  each marker column only that DDL produces.
+
+  **So "re-enable by ceremony" has nothing to run.** What is off is the CODE,
+  not the schema: `R7_EVIDENCE_COMPOSER_SCOPE=off` and
+  `R7_EVIDENCE_PACKAGE_SCOPE=off`, read off the Drape service — the pair the
+  2026-07-31 crash-loop ended with. **The real question is a FLAG-AND-CODE
+  decision, re-enable versus retire-with-legacy, and it is NOT a production
+  migration and NOT founder-gated as it was posed** — which is why it sat for
+  weeks under a heading nobody could act on.
+  **Owner: the M14 legacy-retirement register**, with the **Atlas retirement
+  view as the deciding instrument** (nothing removed while it shows live
+  callers). **Recorded lean: retire-with-legacy** — deliberately undecided
+  here, because the Atlas is the authority and a reading of two tables is
+  not. If the founder ever revives the composer ambition, his word reopens
+  it. *(History, now false, kept as the record of what was asked: "never
+  applied to prod (the 2026-07-31 crash-loop); decide re-enable-by-ceremony
+  vs retire-with-legacy.")*
+- **Refine deferred-delete determination** (L10): ✅ **CLOSED 2026-08-17 —
+  MOOT, and D-192 is implemented rather than merely ruled** (opus-605, ruled
+  fable-816 §3). The three readings the item asked for:
+  1. **The premise holds** — `notBefore` returns **zero** occurrences in
+     `server/`. No deferred-delete concept exists.
+  2. **A creation-time user reference cannot exist at all** —
+     `server/routes/modelCreateInput.ts:77`: *"Batch C (§10.3, M22):
+     `referenceImage` is GONE and the object is STRICT — a creation reference
+     is schema-REJECTED, never silently ignored."*
+  3. **A post-headshot reference holds its OWN BYTES** —
+     `server/castingV2/referenceMint.ts:532` is
+     `storagePut(input.key, input.bytes, input.contentType)`. The library
+     mints a crop as a new object under the candidate's own purge path; it
+     does not point at a source object somebody else can delete.
+
+  So D-192's *"promoted to an immutable asset… frozen at introduction"* is
+  implemented **by a byte copy at mint time**, a reference cannot dangle, and
+  **there is nothing for a deferred delete to defer.**
+
+  ⚠ **What would REVIVE it**, and it is a design condition on work not yet
+  built: a reference-guided edit (M12 row 15) that attaches a user's upload
+  **by pointer instead of by copy**. Row 15's ruled design already intends
+  copy-into-the-candidate's-purge-path; this is the sentence its builder must
+  meet. *(Bound stated honestly: the mint's own write was read, not every
+  path that could ever attach an image to an edit.)*
 - Shared R2 credential split (founder re-prioritized here);
   real-inbox Resend test; fal retention answer (founder confirms
   answered, 2026-08-09); the five inert

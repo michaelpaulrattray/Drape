@@ -255,6 +255,19 @@ lineage. So a distilled upload **cannot be written straight in as a carry row** 
 and it should not be, which is the same conclusion fable-711 §2 reached from the
 other direction ("the upload is a SEED, never a straight carrier").
 
+⚠ **A design condition this build inherits from a CLOSED item, and it is one
+sentence** (opus-605, ruled fable-816 §3, 2026-08-17). `POST_SIGN_ROADMAP.md`
+§7's L10 — the refine deferred-delete determination — closed as MOOT on the
+grounds that **a reference holds its own bytes**: `referenceMint.ts:532` is
+`storagePut(input.key, input.bytes, …)`, so every reference today is a copy
+under the candidate's own purge path and cannot dangle when anything else is
+deleted. **The one thing that reopens L10 is an upload attached BY POINTER
+rather than by copy.** The design above already intends copy (the upload is
+distilled, not linked); this makes it a condition rather than an intention, and
+the builder of this row is who meets it. A pointer-shaped attachment brings the
+whole deferred-delete question back with it, and there is still no `notBefore`
+concept anywhere in `server/`.
+
 That makes the build much smaller than it looks, because it needs no new carry
 machinery at all:
 
