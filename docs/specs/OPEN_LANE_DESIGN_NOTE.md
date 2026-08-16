@@ -513,3 +513,206 @@ control should still be *offered* (words-only, delivered, charged) or refused
 until someone promotes it — that is a product call about how much a
 words-only render is worth, and §7's `unreadable` outcome is designed to give
 him the number before he has to answer.
+
+---
+
+# §9 — V5 PREP: this note reconciled against the world that was built under it
+
+*Written 2026-08-16, shift 79, ordered by fable-757 §4. **No build and no spend
+in this section** — every figure below is read off the source, the suite or a
+report already on file, and each row says which. The shape is V4's close
+(`VOCABULARY_OVERHAUL_REVIEW.md`): clause, state, evidence.*
+
+The note was written 2026-08-13 and immediately went to the bottom of a queue
+that then ran for three days. What ran instead was the compositor detour — the
+repaint road, the reference library and its mint door, the segment store, the
+face scan and its table — plus **V1's card registry**, **V4's detection map**,
+and one thing nobody planned: **the note's own worked example shipped down the
+other road.**
+
+## 9.1 The headline: horns is a CLOSED subject now
+
+Read off the source today, not from a report:
+
+```
+free subjects   29   (the note counted 23)
+horns           nouns ["horns","horn","antlers"] · kind `presence`
+                subject card · facet · a per-side reference-library slot
+                and it is IN the guidance string the interpreter is sent
+```
+
+That last line is the one that matters, because it is the assertion at the wire:
+`freeSubjectGuidance()` names `horns` to the model, so *"give her horns"* is a
+filed ask today rather than the `wall_content` refusal §2 measured.
+
+**Four things follow, and they reshape V5 rather than decorate it.**
+
+1. **§1's discrimination bar has lost its specimens.** `horns` and `antlers`
+   were the deliberately-near pair that proved the normalizer discriminates;
+   both now fold to the closed subject `horns`, so `closedSubjectFor` returns a
+   collision for each. Any re-measurement of the three bars needs concepts the
+   catalogue still does not own. Checked today: `fangs`, `wings`, `tail`,
+   `scales`, `pointed ears`, `gills` are all still open; `freckles` folds to
+   `marks` and `cheeks` to `cheekbones`, which is §1's measured site/thing
+   confusion arriving exactly where it was predicted.
+2. **§2's part-A numbers are stale in a known direction.** Twenty-one of those
+   forty-five refusals were horns and antlers. The measurement is not wrong —
+   it is a photograph of a vocabulary that has since grown by six subjects.
+3. **The promotion path got cheap, and it is the open lane's competitor.** V1
+   made a kind one card feeding every table; the horns court measured it; the
+   founder's fable-566 ruling gave it a reference slot. That is the whole
+   pipeline for *a kind somebody names in advance*, and it now runs in one
+   shift.
+4. **So V5's warrant narrows to the kind nobody named in advance** — and there
+   is a measured number for that, below.
+
+## 9.2 The demand, measured — and what it does to the founder gate
+
+From the corpus reader (opus-489, `read-vocabulary-demand-disposable.mts`;
+production, 205 briefs + 55 refine instructions):
+
+```
+ASKS NAMING NOTHING THE VOCABULARY KNOWS
+  EDITS  1 of 55  (1.8%)   — and in full: "give her vampire fangs"
+```
+
+**One paid production ask, ever, that the closed lane could not name.** Verified
+today that `fangs` is still open, so the number has not been absorbed by a
+promotion since it was taken.
+
+The reader's limits are its own and they are declared: a floor on demand rather
+than a measurement, and blind to any kind asked for in words nobody registered.
+It is also the instrument that exists *because* `casting_open_lane_demand` has
+no writer — the table cannot report demand for a lane that has never run, which
+is the disjoint-chain trap and the reason this figure is a floor.
+
+**The founder gate — *the first spendable open-lane render class* — sits
+exactly here, and this is the reading it should be brought with**, per fable-708
+§2. My recommendation, offered as a recommendation and not filed as a ruling: it
+is a genuine question whether V5 should ship the lane before promoting fangs
+through the path that has just been proven on horns, and he should be shown both
+prices rather than one.
+
+## 9.3 The clause table
+
+| The note's clause | State | Evidence |
+|---|---|---|
+| §0 the closed list is a KEY SPACE — every table that decides by type, and the three that decide by silence | **DELIVERED** | `openKindPolicy.ts`, keyed by each table's own symbol, with `derived` vs `stated` on every answer; `openKindPolicy.test.ts` scans the source on every run so the count cannot drift |
+| §0 *"eleven tables"* | **SUPERSEDED — twice.** 11 (hand count) → 18 (the module's header) → **21 today**: 3 `policy`, 9 `silence`, **9 `owed`** | `owedByThePolicy()` run today. The drift is the argument for the scan, and the scan caught it |
+| §1 the normalizer, and its three bars | **DELIVERED as a module**, bars measured before it existed (15/15 · 4/5 · 4 keys 0 collisions) | `openLaneKind.ts`; `openLaneKind.test.ts` 20 tests green today |
+| §1 the specimen set the bars were measured on | **SUPERSEDED** — `horns`/`antlers` are closed; a re-measurement needs new concepts (§9.1) | `closedSubjectFor("antlers") → horns`, run today |
+| §1 every key checked against the closed vocabulary before it counts as new | **DELIVERED** | `closedSubjectFor` + `foldNoun`, exact-after-folding, with the not-a-stemmer reasoning declared |
+| §2 **the open lane is a FALLBACK, not a peer** | **DELIVERED as the decision, REMAINING as enforcement** — recorded in `openLaneKind`'s header; there is no routing code yet because there is no lane yet | module header; no caller of `normalizeOpenKind` outside its own tests |
+| §2 the wrong wall (*"give her horns"* → `wall_content`, told the user it can never be rendered) | **DELIVERED** — the content wall now carves out fantastical anatomy, and `wall_stage`'s unbacked half stopped claiming antlers are a prop | `refineRefusals.ts:56`; `stageWallBackstop.test.ts:291` asserts the sentence **in the prompt actually sent** |
+| §2 the acceptance path — a third kind of entry, `delta.open` | **REMAINING** | not built |
+| §2 the whole-delta `null` (one unknown noun discards every facet in the instruction) | **REMAINING, and still latent rather than live** — the line moved from `refineDelta.ts:638` to **`:721`** and is unchanged | read today |
+| §3 `openKind` as its own `UnfiledReason`, never `notASlot` | **DELIVERED** as declared scaffolding, landed before anything can produce it, with a negative control that today's producer cannot emit it | `mintedSlots.ts:184–220`; `mintedSlots.test.ts` 33 tests green today |
+| §3 the slotless `Ask` in the recipe assembler — *"the largest build, and the majority of the work"* | **REMAINING** — `repaintAsks` still refuses `uncatalogued`, and that refusal is `RepaintCannotSayError`, non-retryable, settling into a refund | `repaintAsks.ts:190, 509, 659` |
+| §4 the mint door's per-kind absence control | **REMAINING — and PROMOTED in importance** (§9.4) | the phrase appears in one file in the repository, and it is the policy record describing what is owed |
+| §5 open kinds are singular until promoted; one-of-a-pair refuses into refund | **DELIVERED as policy** | `openKindIsPlural() → false`, with §5's reasoning as its basis |
+| §5 the pair trap in the flagship instance | **SUPERSEDED** — horns arrived as a pair and got **per-side geometry** through promotion, not through the open lane | `referenceSlotCatalogue.ts:612–655`, `perSide` |
+| §6 open kinds are `presence` by derivation; D-246 class (c) applies | **DELIVERED as policy, REMAINING as enforcement** (`FREE_SUBJECT_KIND` is one of the nine `owed`) | `openKindBinds()`; `owedByThePolicy()` |
+| §7 the demand table, and nothing else in it | **DELIVERED in dev** — migration `0031`, schema, ceremony with a positive control on the existence reader and a check that none of the four forbidden columns appeared | `drizzle/0031_casting_open_lane_demand.sql`; opus-307 §2 |
+| §7 the same table in production | **REMAINING — an open founder-queue item since shift 72b**, one idempotent command, nothing waiting on it | `founder-queue.md:997` |
+| §7 the writer | **REMAINING** — three files name the table: the schema, the migration, the ceremony. Nothing inserts a row | grep, run today |
+| §7 *"migration before code"* | **HELD** | the table landed first, by ceremony, as the rule requires |
+| §8 the recommended order (steps 0–6) | **steps 0, 1, 2 DELIVERED · steps 3, 4, 5, 6 REMAINING** | this table |
+
+## 9.4 The one clause whose STATUS changed, not just its state
+
+§4's absence control was written as a **safeguard on** the mint door: without it
+the library acquires permanent references to things that were never there, and
+that is *"the one failure in this design that is not self-correcting."* It is
+now a **gate on the lane itself**, because of a founder ruling that landed
+after the note:
+
+> **Founder, fable-566:** *"horns should be carried by reference as well — it's
+> a feature, otherwise they would change on every refinement."*
+
+The horns court had crowned WORDS on survival, and the ruling overturned the
+tie-break: a presence tie does not decide a carrier question, because neither
+arm was ever asked whether they are **the same horns**. An axis nobody pins
+re-rolls — this campaign's own unowned-axis-collapse class.
+
+So a words-only open kind is not a cheaper delivery of the same thing. **It is a
+kind that changes on every subsequent render**, which is the defect the ruling
+exists to prevent. That lands directly on the note's closing question to the
+founder — *should a kind that fails the absence control still be offered,
+words-only and charged?* — and it moves the honest recommendation. I would put
+it to him as: **refuse rather than sell a feature that will not hold still**,
+with `words_only` kept as an outcome the table can record if he decides
+otherwise. Recommendation only; not filed.
+
+**And it is now sizeable rather than hand-waved.** The note priced the control
+at *"one extra segmenter call per kind per delivery … house-money noise"*. The
+scan economy has since measured that call: **20 segmenter reads at $0.100 per
+version scanned, so $0.005 a read** (counted through `scanFace` with a recording
+reader, after two hand-derivations were wrong in a row). One extra read per kind
+per delivery is half a cent. The note's instinct was right and now it has a
+figure.
+
+## 9.5 The size
+
+Stated in the note's own step numbering, with the derived counts rather than an
+adjective:
+
+```
+step 0  fallback-not-peer            DECIDED, unenforced   — routing, ~1 site
+step 1  the normalizer               DONE                  — 0 callers
+step 2  the open-kind policy record  DONE                  — 21 tables, 9 owed
+step 3  the mint door's absence control   REMAINING        — +1 read/kind/delivery
+                                                             ($0.005), a specimen
+                                                             set that must be NEW
+step 4  the slotless Ask             REMAINING             — the majority; touches
+                                                             repaintAsks (771 lines,
+                                                             `Facet`-keyed) and
+                                                             recipeAssembler (984)
+step 5  the acceptance path          REMAINING             — refineDelta:721 +
+                                                             the interpreter's reply
+                                                             shape (`delta.open`)
+step 6  the demand writer            REMAINING             — after the prod ceremony
+```
+
+**The nine `owed` answers ARE the step 3–5 work list**, which is what
+`owedByThePolicy()` was built to return: `FREE_SUBJECT_KIND`,
+`SUBJECT_QUALIFIER`, `ZONE_SCOPE`, `MOVES_ITS_EDGE`, `FACET_SLOTS`,
+`DEPARTABLE_SUBJECTS`, `OUT_OF_FRAME`, `REGION_OF_FACET`, `OPEN_QUESTIONS`. A
+build that closes one has to name it, so the list shrinks by construction
+rather than by anybody remembering.
+
+Two of them carry a warning worth repeating here, because they are the two most
+likely to be satisfied wrongly:
+
+- **`DEPARTABLE_SUBJECTS`** — its own basis says the dropped-carry removal is
+  *"a claim about the repaint road that the step-4 build must PROVE rather than
+  assume."* The library-holds-presence-not-absence defect was exactly this
+  reasoning being right about the architecture and wrong about the code.
+- **`OUT_OF_FRAME`** — *"give her a tail"* is below the crop line of every frame
+  this product makes, the fifth door cannot decline it, and the render gets
+  bought. Declared, unfixed, and the demand table is where it would show up.
+
+## 9.6 What V5 owes a decision on before it builds
+
+Not decisions made here — the three questions the reconciliation surfaced,
+each with a recommendation and none of them filed:
+
+1. **Promote fangs, or ship the lane?** The measured production demand is one
+   kind, and the promotion path has just been proven end-to-end on horns in a
+   single shift. *Recommendation: bring both prices to the founder gate rather
+   than treating V5's ordering as settled by the plan that predates the horns
+   promotion.*
+2. **The words-only question, re-asked under fable-566** (§9.4). *Recommendation:
+   refuse rather than charge for a feature that re-rolls.*
+3. **New specimens for §1's bars and §4's absence control.** Horns and antlers
+   are closed; the control's whole point is a frame that does **not** contain
+   the thing, and it must be measured on kinds the catalogue still does not own.
+   *Recommendation: `fangs`, `wings`, `tail`, `scales`, `gills` — confirmed open
+   today, and `fangs` is the only one with a real customer behind it.*
+
+And one dependency the note could not have known: **fable-711 put
+reference-guided edits inside M12's close-out** — the customer supplies an image
+and the edit takes the feature from it. Its plumbing is the same mint door and
+the same carry machinery this section is about, and fable-711 §4 says so
+explicitly. Whatever step 3 decides about a crop minted from a frame, the
+reference-edit era will ask the same question about a crop distilled from an
+upload.

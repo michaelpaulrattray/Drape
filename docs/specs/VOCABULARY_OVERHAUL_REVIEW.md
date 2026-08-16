@@ -115,6 +115,16 @@ promotions begin — makeup enters here as one promotion among many, per the
 founder's "makeup is too narrow." **Founder gate: first spendable open-lane
 render class.**
 
+> **V5 PREP, 2026-08-16 (fable-757 §4): the reconciliation lives in
+> `OPEN_LANE_DESIGN_NOTE.md` §9** — the clause table (DELIVERED / REMAINING /
+> SUPERSEDED), the size in the note's own step numbering, and the founder gate
+> with the reading it should be brought with. One pointer rather than a second
+> copy: the table is derived from the source and would drift here. Its headline:
+> **`horns` was promoted into the CLOSED lane** (subject #29, per-side slot,
+> in the guidance the interpreter is sent), so the open lane's worked example
+> shipped down the other road — and the measured open demand in production is
+> **one paid ask, ever** ("give her vampire fangs").
+
 **Sequencing with the live queue:** the executor's current run finishes first
 (scan descriptions → carrier bench → per-eye bench) — the carrier bench is
 V2's prototype court, so nothing waits idle. V1 starts on this plan's
