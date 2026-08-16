@@ -388,8 +388,25 @@ export function mintedSlotsForRender(input: MintedSlotsInput): MintedSlotsResult
     The confirmation must come from this render's own reading of this render's
     frame — a fact about the picture in hand, not a re-reading of the dispute.
   */
+  /*
+    AND IT NARROWS TO THE SCOPE, through the SAME helper `collect` uses.
+
+    This loop was written after the scope narrowing and reached the catalogue
+    directly, so a per-eye render narrowed correctly in the earned pass and then
+    filed the other eye here. Production v#199 on candidate 1625 is the
+    specimen: `askScope` eye@left, the ask wrote `eye.shape`, the carried
+    `eye.colour` was confirmed, `eye@right` was awaiting a carrier — and both
+    eye rows were filed carrying one whole-face sentence, onto a face whose
+    right eye is fiery red. The assembler then told her next render to keep that
+    eye "pale grey with a vertical slit pupil".
+
+    One definition of *the fan-out, cut to the instance she pointed at*, and
+    every pass that files a row goes through it — which is the only version of
+    this rule that a fourth pass cannot be written beside.
+  */
   for (const facet of input.confirmed ?? []) {
-    for (const definition of slotsForFacet(facet, { accessoryKind: input.accessoryKind ?? null })) {
+    const catalogued = slotsForFacet(facet, { accessoryKind: input.accessoryKind ?? null });
+    for (const definition of narrowToScope(catalogued, input.scope)) {
       if (seen.has(definition.slot)) continue;
       if (!input.awaitingCarrier?.has(definition.slot)) continue;
       file(definition, stackOf(definition) ?? [], false);

@@ -35,13 +35,15 @@
  *                                          [--bucket <base url>] [--out <dir>]
  */
 import "dotenv/config";
+import { config as readDotenv } from "dotenv";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import sharp from "sharp";
 
-import { openDatabase, utc } from "./lib/dbConnection.mjs";
+import { openDatabase, resolveDatabaseUrl, utc, worldOf } from "./lib/dbConnection.mjs";
 import { fetchImageBytes } from "./lib/imageBytes.mjs";
 import { boxOutlineSvg } from "./lib/termsPalette.mts";
+import { assertOneWorld } from "./lib/worldGuard.mts";
 
 function flag(name: string): string | undefined {
   const index = process.argv.indexOf(`--${name}`);
@@ -51,11 +53,52 @@ function flag(name: string): string | undefined {
 const userId = Number(flag("user") ?? 1);
 if (!Number.isSafeInteger(userId) || userId <= 0) throw new Error("--user must be a positive integer");
 const candidatePublicId = flag("candidate") ?? null;
-const bucket = (flag("bucket") ?? process.env.R2_PUBLIC_URL ?? "").replace(/\/+$/, "");
+const bucketFlag = flag("bucket");
+const bucket = (bucketFlag ?? process.env.R2_PUBLIC_URL ?? "").replace(/\/+$/, "");
 if (!bucket) throw new Error("no bucket — pass --bucket or set R2_PUBLIC_URL");
 const outDir = flag("out") ?? "output/refusals";
 
-const connection = await openDatabase();
+/*
+  THIS INSTRUMENT READS TWO WORLDS AND THEY ARE SET BY DIFFERENT VARIABLES.
+
+  The rows come from a database and the pixels come from a bucket, and nothing
+  ties one to the other. `railway run --service MySQL` injects that service's
+  variables and no `R2_PUBLIC_URL`, so `.env`'s DEV bucket fills the gap — which
+  is how ten production keys were once fetched from the dev bucket, 404'd, and
+  came within one `console.log` of being reported as objects that had gone
+  missing (shift 65). A 404 here arrives as a claim about the OBJECT when it is
+  a claim about the BASE.
+
+  `assertOneWorld` is that control and it already exists, so this declares its
+  DEPENDENCIES to it rather than growing a second copy beside it (working law
+  4). The declaration is exact in both directions: the database leg is whichever
+  variable `resolveDatabaseUrl` will actually read, and the bucket leg is
+  declared only when this run is relying on the ambient one — a `--bucket` names
+  the base itself, so `R2_PUBLIC_URL` is then not a thing the answer rests on
+  and refusing over it would be the false refusal that teaches people to stop
+  declaring.
+*/
+const databaseUrl = resolveDatabaseUrl();
+console.log(`WORLD: rows ${worldOf(databaseUrl)}  ·  pixels ${bucket}`);
+assertOneWorld([
+  process.env.MYSQL_PUBLIC_URL ? "MYSQL_PUBLIC_URL" : "DATABASE_URL",
+  ...(bucketFlag === undefined ? ["R2_PUBLIC_URL"] : []),
+]);
+/*
+  AND THE ONE CASE THE SHARED GUARD CANNOT SEE, because it is inert outside a
+  Railway run: a `DATABASE_URL=<production> npx tsx …` prefix moves the rows and
+  leaves the bucket on `.env`. The complement, not a copy — the file is the same
+  fact from a direction the wrapper's absence cannot hide.
+*/
+const fileEnv = readDotenv().parsed ?? {};
+if (bucketFlag === undefined && databaseUrl !== undefined && databaseUrl !== fileEnv.DATABASE_URL) {
+  throw new Error(
+    "REFUSING: the rows are not coming from the world `.env` names, and the bucket was taken from "
+    + "the ambient environment anyway. Name it with --bucket so the two legs are one world.",
+  );
+}
+
+const connection = await openDatabase(databaseUrl);
 let written = 0;
 let skipped = 0;
 try {

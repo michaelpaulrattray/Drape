@@ -116,6 +116,66 @@ describe("the slots a render files", () => {
     expect(slots.map((slot) => slot.slot)).toEqual(["eye@left", "eye@right"]);
   });
 
+  /*
+    AND THE SCOPE HAS TO HOLD IN THE OTHER LOOP TOO — the production instance,
+    reproduced from its own dispatch record.
+
+    The narrowing above was built for the EARNED pass and tested there. Ruling
+    (b)'s pass — a slot still awaiting a carrier, minted on a later render whose
+    reader confirms one of its facets — was written afterwards and reaches
+    `slotsForFacet` directly. So a per-eye render narrows correctly, files
+    `eye@left`, and then files `eye@right` from the loop below it.
+
+    Every value here is off production v#199 on candidate 1625 (2026-08-16):
+
+      askScope        eye@left           — recorded on the render itself
+      the ask wrote   eye.shape          "her left eye vertical slit pupil like a cats"
+      confirmed       eye.colour         carried, and the reader agreed — "Right eye
+                                          glows fiery red-orange with dark pupil"
+      awaiting        eye@right          its newest live row holds no pixels
+                                          (refused `noSpecimen/eyes`)
+
+    What it filed: `eye@left` v2 AND `eye@right` v3, carrying the SAME sentence
+    — on a face whose right eye is fiery red. The assembler then tells her next
+    render "Keep her right eye exactly: Pale grey iris with a vertical slit
+    pupil", and the eye she paid for is repainted.
+  */
+  it("keeps the scope in the AWAITING-CARRIER pass, not only in the earned one", () => {
+    const { slots } = mintedSlotsForRender({
+      earned: ["eye.shape"],
+      confirmed: ["eye.colour"],
+      awaitingCarrier: new Set(["eye@right"]),
+      captions: {
+        "eye.shape": "Pale grey iris with a vertical slit pupil",
+        "eye.colour": "Right eye glows fiery red-orange; left eye is pale grey-blue",
+      },
+      scope: "eye@left",
+    });
+
+    expect(slots.map((slot) => slot.slot)).toEqual(["eye@left"]);
+    /* The absence is the whole point, and it is asserted over the serialized
+       result rather than the keys: a row that names the eye she did not point
+       at is wrong however it got there. */
+    expect(JSON.stringify(slots)).not.toContain("eye@right");
+  });
+
+  it("CONTROL — the same confirmation UNSCOPED still reaches the awaiting slot", () => {
+    /*
+      The other half, and the sabotage detector: ruling (b) exists to mint a
+      carrier a branch never got, and a narrowing that swallowed the unscoped
+      case would silently switch the whole mechanism off. A render that scopes
+      nothing must still file the awaiting slot.
+    */
+    const { slots } = mintedSlotsForRender({
+      earned: [],
+      confirmed: ["eye.colour"],
+      awaitingCarrier: new Set(["eye@right"]),
+      captions: { "eye.colour": "Right eye glows fiery red-orange" },
+    });
+
+    expect(slots.map((slot) => slot.slot)).toContain("eye@right");
+  });
+
   it("names a facet the scope excluded as OUTSIDE SCOPE, never as an uncatalogued one", () => {
     /*
       It should be unreachable — `repaintAsksFor` refuses the render with
@@ -349,6 +409,29 @@ describe("the slots re-cut every render", () => {
     expect(slots.map((slot) => slot.slot)).toEqual(["eye@left", "eye@right", "build"]);
     expect(unfiled).toEqual([]);
     expect(slots[2]!.disputed).toBeUndefined();
+  });
+
+  /*
+    AND THE RE-MINT PASS IS DELIBERATELY *NOT* SCOPED — pinned, because the
+    sweep that scoped the other two passes had to decide about this one.
+
+    A scope names the instance an ASK was about. `build` is re-cut every render
+    because its crop is a photograph of her torso in whatever she is wearing, so
+    a crop kept across somebody else's clothing edit is a picture of last week's
+    top (fable-424 §4) — that has nothing to do with which eye she pointed at.
+    Narrowing here would return no definitions for any scoped render and switch
+    the whole re-mint off silently, which is the sabotage the control below
+    would not have caught.
+  */
+  it("re-cuts her build even on a render scoped to one eye", () => {
+    const { slots } = mintedSlotsForRender({
+      earned: ["eye.colour"],
+      captions: { "eye.colour": "Green" },
+      held: new Set(["build"]),
+      scope: "eye@left",
+    });
+
+    expect(slots.map((slot) => slot.slot)).toEqual(["eye@left", "build"]);
   });
 
   it("files NOTHING before the library keeps anything for her build", () => {
