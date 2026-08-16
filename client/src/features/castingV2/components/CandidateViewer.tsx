@@ -103,7 +103,7 @@ const STAGE_WORDS: Record<ViewerWait["stage"], string> = {
 /**
  * What is true INSTEAD of the typical wait, once nobody is rendering.
  *
- * "Usually a minute or two" is a promise about a render in progress. Over a
+ * The typical-wait line is a promise about a render in progress. Over a
  * row the sweep has taken, it is a promise about nothing — and the only thing
  * the customer actually needs at that moment is where their credits went. It
  * is the same sentence the long-wait copy and the lost-contact line already
@@ -126,16 +126,28 @@ const SETTLING_NOTE = "your credits come back on their own";
  * then; it is a lie on the current build, and a walk step delivered honestly in
  * 327.8s while the product promised half a minute.
  *
- * "A minute or two" covers both populations without promising either, and it
- * hands off exactly where the panel's supervised-wait sentence takes over past
- * two minutes. Founder-approved via voice check, 2026-08-08.
+ * "A minute or two" covered both populations without promising either, and was
+ * founder-approved via voice check on 2026-08-08.
+ *
+ * RE-MEASURED AND MOVED AGAIN, 2026-08-16 — founder: *"yes make it honest."*
+ * The call census now reads the median paid edit at **204 s in dev (n=56) and
+ * 209 s in production (n=4)**, off the rows themselves rather than a sample
+ * (`docs/specs/EDIT_LATENCY_READING_2026-08-16.md`). So "a minute or two" was
+ * under by a factor of two, and the customer met the panel's *"taking longer
+ * than usual"* note while still inside the ordinary case — two sentences on one
+ * screen disagreeing about the same wait.
+ *
+ * THIS LINE AND `LONG_WAIT_MS` IN `RefinePanel.tsx` ARE ONE PAIR. They moved in
+ * one commit and are **re-measured and re-tuned together whenever the speed
+ * changes** — the promise made to the founder when he ruled on the wording.
  *
  * It stays a constant rather than a query because a number that moves on its
  * own is a number nobody has checked; re-measuring and editing this line is a
  * deliberate act. **The latency itself is a named program item** — the honest
- * answer is to make it faster, not to widen the sentence again.
+ * answer is to make it faster, not to widen the sentence again, and the cut
+ * list that will shorten it is in that same document.
  */
-const TYPICAL_WAIT = "usually a minute or two";
+const TYPICAL_WAIT = "usually three to four minutes";
 
 /**
  * THE PICTURE CHANGES WHEN THE NEW ONE CAN BE PAINTED (fable-501 §a).

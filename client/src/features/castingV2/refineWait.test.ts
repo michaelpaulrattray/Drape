@@ -139,6 +139,42 @@ describe("the wait says only what the row knows", () => {
     expect(constant).toMatch(/2026-08-05/);
     expect(constant).toMatch(/median 31s/);
     expect(constant).toMatch(/deliberate/);
+    /*
+      AND THE DATE OF THE READING THAT JUSTIFIES THE LINE ON SCREEN TODAY.
+
+      The three above are history — the line has now gone stale twice (half a
+      minute → a minute or two → three to four minutes), and each time the
+      block kept its old provenance while the sentence moved. Requiring the
+      CURRENT measurement's date and its n means the next person to edit the
+      copy has to bring a reading with them, which is the whole argument for
+      keeping this a constant.
+    */
+    expect(constant, "the current line needs the reading that justifies it")
+      .toMatch(/2026-08-16/);
+    expect(constant).toMatch(/n=56/);
+  });
+
+  /*
+    THE PAIR, DISCOVERABLE FROM EITHER SIDE.
+
+    The defect the founder ruled on was two sentences on one screen disagreeing
+    about the same wait: the viewer promised "a minute or two" while the panel
+    called two minutes "longer than usual". They are one pair and they drifted
+    because nothing said so in either file. Now each names the other, so
+    whoever edits one is told the other exists.
+  */
+  it("the typical wait and the long-wait threshold name each other", async () => {
+    const viewer = await readFile(VIEWER, "utf8");
+    const panel = await readFile(
+      new URL("./components/RefinePanel.tsx", import.meta.url),
+      "utf8",
+    );
+    expect(viewer, "the viewer must point at its pair").toMatch(/LONG_WAIT_MS/);
+    expect(panel, "the panel must point at its pair").toMatch(/TYPICAL_WAIT/);
+    /* And the threshold must sit ABOVE the wait the viewer calls typical —
+       otherwise "longer than usual" fires inside the usual case again. */
+    expect(panel).toMatch(/const LONG_WAIT_MS = 5 \* 60 \* 1000;/);
+    expect(viewer).toMatch(/const TYPICAL_WAIT = "usually three to four minutes";/);
   });
 
   it("shows the user's own words, from the record", async () => {

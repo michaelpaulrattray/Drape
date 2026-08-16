@@ -105,7 +105,19 @@ export type RefineReask = {
  * never against this browser's `Date.now()` minus a server timestamp. That was
  * the defect fable-670 closed; `waitNotice.ts` carries the whole story.
  */
-const LONG_WAIT_MS = 2 * 60 * 1000;
+/*
+  MOVED 2 min → 5 min, 2026-08-16 (founder: *"yes make it honest"*).
+
+  At two minutes this note fired inside the ORDINARY case: the census reads the
+  median edit at 204 s dev / 209 s prod, so "taking longer than usual" was the
+  usual, printed under a viewer line that said "usually a minute or two". Both
+  halves were wrong in opposite directions and they shared a screen.
+
+  Five minutes is past the p90 of the measured distribution, so the note now
+  means what it says. Its PAIR is `TYPICAL_WAIT` in `CandidateViewer.tsx`; they
+  moved in one commit and are re-measured together whenever the speed changes.
+*/
+const LONG_WAIT_MS = 5 * 60 * 1000;
 
 export function RefinePanel({
   variants,
