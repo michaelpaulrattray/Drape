@@ -7,6 +7,7 @@
 import Stripe from "stripe";
 import { ENV } from "../_core/env";
 import { SUBSCRIPTION_PRODUCTS, SubscriptionPlan } from "./stripeProducts";
+import { environmentMetadata } from "./environmentTag";
 import { PLAN_TIERS, PlanTier } from "../../drizzle/schema";
 import { createModuleLogger } from "../logging/logger";
 const log = createModuleLogger("stripe/stripeService");
@@ -43,6 +44,7 @@ export async function getOrCreateStripeCustomer(
     name: name || undefined,
     metadata: {
       userId: userId.toString(),
+      ...environmentMetadata(),
     },
   });
 
@@ -102,12 +104,14 @@ export async function createSubscriptionCheckoutSession(
       plan,
       interval,
       type: "subscription",
+      ...environmentMetadata(),
     },
     subscription_data: {
       metadata: {
         userId: userId.toString(),
         plan,
         interval,
+        ...environmentMetadata(),
       },
     },
   });
@@ -373,6 +377,7 @@ export async function updateSubscriptionPlan(
       metadata: {
         userId: userId.toString(),
         plan: newPlan,
+        ...environmentMetadata(),
       },
     });
 
@@ -565,6 +570,9 @@ export async function issueStripeRefund(
     const refundParams: Stripe.RefundCreateParams = {
       payment_intent: paymentIntentId,
       reason: "requested_by_customer",
+      metadata: {
+        ...environmentMetadata(),
+      },
     };
 
     if (amountCents && amountCents > 0) {
@@ -572,7 +580,7 @@ export async function issueStripeRefund(
     }
 
     if (reason) {
-      refundParams.metadata = { reason };
+      refundParams.metadata = { reason, ...environmentMetadata() };
     }
 
     const refund = await stripe.refunds.create(refundParams);

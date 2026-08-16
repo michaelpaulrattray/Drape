@@ -233,6 +233,31 @@ export function validateEnv(): void {
   }
 }
 
+/**
+ * WHICH WORLD THIS PROCESS IS — derived, never configured (L6).
+ *
+ * Development and production share ONE Stripe account (the secret keys are
+ * byte-identical) and that account has exactly ONE registered webhook
+ * endpoint, pointing at production. So every checkout completed on a
+ * developer laptop is delivered to production, verifies against production's
+ * own secret, and is fulfilled against the production database. The tag is
+ * what lets the receiving process tell those apart; it is stamped into the
+ * metadata of every Stripe object we create and re-proved on the way in.
+ *
+ * Read fresh from the environment rather than frozen into ENV, so a test can
+ * drive both worlds in one process.
+ *
+ * `RAILWAY_ENVIRONMENT_NAME` is injected by the platform and cannot be set by
+ * accident on a laptop. Absent, this reads `local` — which REFUSES production
+ * events rather than mis-processing them, the safe direction to fail.
+ */
+export function deploymentTag(): string {
+  const railway = process.env.RAILWAY_ENVIRONMENT_NAME || process.env.RAILWAY_ENVIRONMENT;
+  if (railway) return `railway:${railway}`;
+  if (process.env.NODE_ENV === "production") return "node:production";
+  return "local";
+}
+
 export const ENV = {
   appId: process.env.VITE_APP_ID ?? "",
   cookieSecret: process.env.JWT_SECRET ?? "",

@@ -28,6 +28,8 @@ import { SlackAlerts } from "../slack/slackNotification";
 import { SubscriptionPlan } from "./stripeProducts";
 import { PlanTier, stripeWebhookEvents } from "../../drizzle/schema";
 import { createModuleLogger } from "../logging/logger";
+import { checkEventEnvironment } from "./environmentTag";
+import { deploymentTag } from "../_core/env";
 import { getDb } from "../db/connection";
 import { eq } from "drizzle-orm";
 const log = createModuleLogger("stripe/webhooks");
@@ -36,6 +38,14 @@ export interface WebhookResult {
   success: boolean;
   message: string;
   error?: string;
+  /**
+   * Set when the event was DELIBERATELY not fulfilled (the environment tag).
+   * It rides on `success: true` so the endpoint ACKs and Stripe stops
+   * redelivering — a foreign event will never succeed here, and retries would
+   * eventually get the production endpoint disabled, which would break real
+   * fulfilment. The refusal is loud in the log, not in the status code.
+   */
+  refused?: true;
 }
 
 /**
@@ -60,6 +70,19 @@ export async function handleStripeWebhook(
   if (event.id.startsWith('evt_test_')) {
     log.info('[Webhook] Test event detected, returning verification response');
     return { success: true, message: 'Test event verified' };
+  }
+
+  // WHICH WORLD MADE THIS? (L6) Development and production share one Stripe
+  // account whose single registered endpoint is production's, so a dev
+  // checkout arrives here, verifies here, and would be fulfilled here. Refused
+  // BEFORE the switch — that is before any handler, any lookup and any money.
+  const environment = checkEventEnvironment(event);
+  if (!environment.accepted) {
+    log.error(
+      { eventId: event.id, eventType: event.type, deployment: deploymentTag() },
+      `[Webhook] REFUSED — ${environment.reason}`,
+    );
+    return { success: true, refused: true, message: environment.reason };
   }
 
   // Idempotency check: skip if already processed
