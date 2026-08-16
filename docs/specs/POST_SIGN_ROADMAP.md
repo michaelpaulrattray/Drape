@@ -317,6 +317,58 @@ superseded it — fable-071/080).
   need a price check first. Slot: with the M13 pre-launch batch,
   or earlier if a polish window opens.
 
+  **THE AUDIT HE ORDERED HAS BEEN RUN — 2026-08-17, shift 84, zero
+  spend** (`scripts/measure-dpr-sharpness-disposable.mts`, rows in
+  `output/sharpness/sharpness.json`, screenshots beside them). Eight
+  surfaces, **142 measurements**, each one at **dpr 1 AND dpr 2** —
+  the variable his ruling names, and the one every previous reading
+  here had pinned at 1. The instrument passes a positive and a
+  negative control on every page before any verdict is printed.
+
+  **The cheap fix has no population.** Not one thumb is stretched
+  anywhere in the product, at either density: only **10 of the 142**
+  measurements are thumbs at all, and the worst of them sits at
+  **ratio 0.4** — two and a half times more asset than the screen
+  asks for. The thumbnail is used exactly where it belongs (30×30
+  avatars, 26×26 board chips). *"Where a 320 px thumb is stretched,
+  serve the full frame instead"* is a correct rule with nowhere to
+  apply, so it would ship a diff and deliver zero pixels — the same
+  outcome as the withdrawn 760 px cap lift, one line above.
+
+  **What IS stretched is the master, and only at dpr 2** — two rows
+  out of 142, both full frames, both his own complaint:
+
+  | surface | asset | drawn | device px | ratio |
+  |---|---|---|---|---|
+  | cast room viewer | 1024×1536 | 593×889 | 1186×1779 | **1.158** |
+  | casting sheet viewer | 1024×1536 | 526×789 | 1052×1578 | **1.027** |
+
+  **And the sharpest form of it, measured inside ONE viewer box:**
+  the signed Cast's package views are **1696×2528** and its master is
+  **1024×1536**, drawn into the same 593×889 box. At dpr 2 the views
+  land at 0.699 (crisp, every device pixel backed) and the master at
+  1.158 (upscaled, visibly soft). The softness is not the layout and
+  not the thumbnails — **it is that the master is smaller than the
+  views sitting beside it**, and no substitution reaches that. Only
+  the NOTED real fix does (or a layout that refuses to draw a frame
+  past its own pixels, which trades size for sharpness and is his
+  taste to rule, not ours). Window was 1440×1000; his 2560×1440
+  window draws the same viewer at 604×906, so these ratios are the
+  floor, not the ceiling.
+
+  **The 2K half is no longer unread** — the sentence below it ("the
+  fixture bot owns no signed Cast") was produced by a query naming
+  two columns that do not exist on `models`, inside a `.catch` that
+  turned the error into an empty result. `verify-bot-local` owns
+  **four** signed Casts and always did; the reading above is taken on
+  one of them (`KI-QNW6-37KK-RVS9-XMKD`), and the broken query is
+  fixed at its source.
+
+  **Open for the founder, and NOT decided here:** the cheap fix is
+  ruled but has no work to do, and the fix that reaches his complaint
+  is the one he explicitly did not rule. His word decides whether
+  that promotes.
+
   **M12's row 2 lands HERE, whole** (fable-786 §3, fable-789 §2 —
   filed into this item on 2026-08-16, having lived only in the
   mailbox until then). There is no magnification anywhere in the
@@ -330,10 +382,17 @@ superseded it — fable-071/080).
   2560×1440 window — 156 px short of the cap — and at **310×466**
   (0.303) in a 1440×1000 one. An ordered cap lift was withdrawn on
   this measurement; it would have shipped a diff and delivered zero
-  pixels. **The 2K half is UNREAD:** the fixture bot owns no signed
-  Cast, so every figure above is a 1K candidate frame, and the
-  signed views — the half he paid most for — are measured for the
-  first time here. **The founder ask at this item's opening, in his
+  pixels. ~~**The 2K half is UNREAD:** the fixture bot owns no signed
+  Cast, so every figure above is a 1K candidate frame~~ — **FALSIFIED
+  2026-08-17 (shift 84): that sentence was never a reading.** The
+  query behind it selected `m.publicId` and filtered on
+  `m.castingV2SignedAt`, neither of which exists on `models`, inside a
+  `.catch` that turned the error into an empty result — it could not
+  have returned a row for any user alive. `verify-bot-local` owns
+  **four** signed Casts. The 2K half is now READ and is written up at
+  this item's opening: the package views are 1696×2528 and stay crisp
+  at dpr 2; it is the **1024×1536 master beside them** that goes soft.
+  **The founder ask at this item's opening, in his
   words rather than ours:** *when you want to look closely at a
   face, should the picture get bigger inside the app — or is
   downloading it the answer?* A zoom *gesture* is founder taste and

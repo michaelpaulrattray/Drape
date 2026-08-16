@@ -25,6 +25,19 @@ export async function openDrivenPage(input: {
   width?: number;
   height?: number;
   /**
+   * THE SCREEN'S OWN PIXEL DENSITY, which until now was silently 1.
+   *
+   * `setViewport` defaults `deviceScaleFactor` to 1, so every driver that has
+   * ever run here measured a standard-density screen. That is invisible until a
+   * measurement DEPENDS on it, and one does: the founder's "why do the images
+   * look so pixelated?" is a question about device pixels, and the reading taken
+   * for it (`output/downsample/downsample.json`, every row `"dpr": 1`) answered
+   * at the one value where nothing can be stretched.
+   *
+   * Left undefined it stays 1 — no existing driver changes behaviour.
+   */
+  deviceScaleFactor?: number;
+  /**
    * HOLD THE FACE SCAN AT THE WIRE (fable-694 §2).
    *
    * Off by default, because a walk that needs the panel needs the scan. On, the
@@ -45,7 +58,11 @@ export async function openDrivenPage(input: {
      any typecheck, so nothing ever read the type. */
   const browser = await puppeteer.launch({ executablePath: EDGE, headless: true });
   const page = await browser.newPage();
-  await page.setViewport({ width: input.width ?? 1440, height: input.height ?? 900 });
+  await page.setViewport({
+    width: input.width ?? 1440,
+    height: input.height ?? 900,
+    deviceScaleFactor: input.deviceScaleFactor ?? 1,
+  });
   const { hostname } = new URL(input.base);
   await page.setCookie({ name: "app_session_id", value: input.token, domain: hostname, path: "/" });
 
