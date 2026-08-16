@@ -31,7 +31,7 @@ import { UNLOCKABLE_FIELDS } from "../castingV2/briefCompiler";
 import { listLineageSegments, resolveOwnedCandidateId } from "../db/castingV2Segments";
 import { maskFetchUrl, segmentsOnFace } from "../castingV2/segmentsOnFace";
 import { facePanel, type PanelScan } from "../castingV2/facePanel";
-import { liveTakes, takeShownFor } from "../castingV2/railTakes";
+import { declaredTakes, takeShownFor } from "../castingV2/railTakes";
 import { listLineageReferences } from "../db/castingV2ReferenceLibrary";
 import {
   captureCastingFaceScanEnabled,
@@ -65,12 +65,7 @@ import {
 const tuple = <T extends string>(values: readonly T[]) => values as unknown as [T, ...T[]];
 import { createRoll, cancelRoll } from "../castingV2/rollService";
 import { signCandidate } from "../castingV2/signService";
-import {
-  readAskScope,
-  readRegeneratedFrom,
-  readStepDeltas,
-  refineCandidate,
-} from "../castingV2/refineService";
+import { readAskScope, readRegeneratedFrom, refineCandidate } from "../castingV2/refineService";
 import { pendingStage } from "../castingV2/pendingStage";
 import {
   listCandidateVariants,
@@ -798,18 +793,31 @@ export const castingV2Router = router({
         ONE CHIP PER EDIT, NEWEST WINS (founder, 2026-08-15; `railTakes.ts`).
 
         A regeneration of the same ask is an ordinary row that describes the
-        same chain, so the rail shows the newest take of each distinct chain and
-        the older ones become invisible. Derived here rather than stored: the
-        rows already answer the question, and a supersession column would be a
-        second answer free to disagree with them (law 4).
+        same chain, so the rail shows the newest take of it and the older one
+        becomes invisible — not deleted, not rewritten, so a fork made from it
+        still resolves its own chain.
+
+        **A ROW SAYS WHAT IT REPLACED; THE RAIL BELIEVES THE ROW** — forward
+        only, per fable-575 §3, executed here on fable-717 §4. This read
+        `liveTakes`, which INFERS supersession from chain equality, and the
+        inference is the same shape carrying a risk its own module calls
+        "severe, silent, and unrecoverable from the UI": two rows can describe
+        one chain by accident — a step back, then the same ask again — and each
+        is a picture somebody paid for. Inferring would take one off the rail on
+        the strength of a coincidence, with no way for her to get it back.
+
+        The compatibility case needs no branch, which is what makes forward-only
+        honest here: a row written before regenerations declared anything
+        declares nothing, supersedes nothing, and keeps its own chip. Nothing on
+        the record moves; only rows born saying so group.
 
         The SELECTION is remapped through the same map. Without it, stepping
         back onto a take that has since been re-rolled would show a picture with
         no chip lit — the exact mismatch the rail's highlight work closed.
       */
-      const { live, supersededBy } = liveTakes(variants.map((variant) => ({
+      const { live, supersededBy } = declaredTakes(variants.map((variant) => ({
         publicId: variant.publicId,
-        steps: readStepDeltas(variant.stepDeltas),
+        regeneratedFrom: readRegeneratedFrom(variant.internalPrompt),
         variant,
       })));
       return {

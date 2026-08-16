@@ -2732,6 +2732,34 @@
 }
 
 /*
+  AND THE PICTURE UNDER IT STANDS DOWN WHILE IT IS BEING REDRAWN
+  (FOUNDER RULING, fable-718).
+
+  The ring alone was shipped first and photographed at 4× (law 6), and the
+  photograph is what raised the question: a monochrome arc sized for the ghost
+  chip's dimmed, desaturated plate lands on a SHARP thumbnail as a white smudge
+  on her mouth. Legible, and reading as a mark on her face rather than as a
+  machine working. He chose the fix himself: the chip being redrawn wears what
+  the pending chip already wears, so the ring is chrome again.
+
+  **Dimmed and desaturated, and NOT blurred** — the one declaration of the ghost
+  chip's treatment deliberately left behind. The ghost blurs because its base is
+  a stand-in: the master standing where a picture that does not exist yet will
+  go. This chip's picture is not a stand-in — it is the version she still has
+  until the new one lands — and blurring it would claim it had gone. (The scale
+  goes with the blur: it exists to keep blurred edges off the corner radius, and
+  this chip has no clipping box of its own to hold it.)
+
+  The selector carries the pressed state too, because the version being redrawn
+  is usually the selected one and `[aria-pressed]` sets its own opacity.
+*/
+.dpc-refine__pick[aria-busy="true"] > img,
+.dpc-refine__pick[aria-pressed="true"][aria-busy="true"] > img {
+  opacity: 0.55;
+  filter: saturate(0.3) brightness(0.8);
+}
+
+/*
   THE SAME RING, ON A VERSION BEING REDRAWN (fable-703, founder shot #303).
 
   One state, one look: a chip is either being made or being remade, and both

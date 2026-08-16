@@ -72,6 +72,20 @@ it be challenged before it ships, not after.
    mathematical one, and nobody put the two in one room. When scoping
    any edit, ask first: how would the user describe what changes? That
    description is the spec; the math proves it happened.
+9. **The founder's eyes are king — always.** (Founder, 2026-08-16,
+   verbatim: "do NOT trust the engine my eyes are king. ALWAYS. the
+   engine lies and cannot be trusted.") A model's reading of an image
+   — describer, verification reader, any vision judge — is never the
+   final word on what a frame shows. A reader's output is a pointer to
+   look, not a fact to file: no claim about a visible surface closes
+   on reader prose alone; frames go in front of eyes, and reports
+   quote what was seen. Where a reader and his eye have ever
+   disagreed on a class, the reader is presumed wrong on that class
+   until re-proven with a control he has seen. Origin: the freckle
+   court — both arms overturned at the frames in one sitting
+   (fable-714/715/716): the reader called freckles absent on frames
+   that visibly held them, after the tan-drift figure had already
+   fallen to a moving-mask measurement artifact.
 
 ## Advisor protocol
 

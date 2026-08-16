@@ -18,9 +18,19 @@
  * read from the same DOM at the same instant, so a split state is a fact rather
  * than an impression.
  *
- * It costs nothing: no render, no credits, only clicks.
+ * # The slow-write arm (fable-701 §4)
  *
- *   npx tsx scripts/drive-burst-clicks-disposable.mts
+ * Reading the surfaces AT REST was never the whole answer. While the serialized
+ * writes drain, the server can honestly answer with a version she passed
+ * through two clicks ago, and the plate used to stand down for it — the last
+ * click won in 15ms, lost the plate for about sixteen seconds, and won again.
+ * Every at-rest reading calls that agreement. So each burst is now WATCHED for
+ * twenty seconds after the last click's picture first appears, and one sample
+ * showing anything else is a comeback.
+ *
+ * It costs nothing: no render, no credits, only clicks and looking.
+ *
+ *   npx tsx scripts/drive-burst-clicks-disposable.mts --throttle
  */
 import "dotenv/config";
 import { mkdir, writeFile } from "node:fs/promises";
@@ -152,7 +162,7 @@ try {
     /* FIVE CLICKS IN ~2 SECONDS, ending on a deliberately chosen chip so the
        assertion has a name to check rather than "whatever was last". */
     const GAP = Number(process.env.CLICK_GAP_MS ?? 120);
-    const last = await page.evaluate(`(async () => {
+    const lastClick = await page.evaluate(`(async () => {
       const picks = () => Array.from(document.querySelectorAll(".dpc-refine__stack .dpc-refine__pick"))
         .filter((pick) => pick.tagName === "BUTTON");
       /* Spread across the WHOLE rail, not the first four chips: a burst
@@ -162,16 +172,23 @@ try {
       const far = [0, Math.floor(all.length / 2), 1, all.length - 1, ${burst % 2 === 0 ? 2 : 3}];
       const order = far;
       let name = null;
+      let frame = null;
+      let thumb = null;
       for (const at of order) {
         const all = picks();
         const pick = all[Math.min(at, all.length - 1)];
         if (!pick) continue;
         pick.click();
         name = pick.querySelector("span")?.textContent?.trim() ?? null;
+        /* The chip's OWN pictures, so the watch below knows what "the last
+           click" looks like without asking a surface that might be wrong. */
+        frame = pick.getAttribute("data-frame");
+        thumb = pick.getAttribute("data-thumb");
         await new Promise((resolve) => setTimeout(resolve, ${GAP}));
       }
-      return name;
-    })()`) as string | null;
+      return { name, frame, thumb };
+    })()`) as { name: string | null; frame: string | null; thumb: string | null };
+    const last = lastClick.name;
 
     /*
       AT REST — and "rest" is measured rather than assumed. Under Fast 3G a
@@ -207,6 +224,96 @@ try {
           + `${one.failed ? " (failed)" : ""}`);
       }
     }
+
+    /*
+      THE SLOW WRITE — the arm fable-701 §4 attached to the comeback fix.
+      -------------------------------------------------------------------
+
+      The state at rest was never the whole reading. A burst puts five writes in
+      a queue that runs ONE at a time, and while that queue drains the sheet's
+      poll can hear the server honestly answering with a version she passed
+      through two clicks ago. Under the old single-URL claim the plate stood
+      down for that answer: the last click won in 15ms, LOST the plate for about
+      sixteen seconds, and won again when the final write landed. Every reading
+      taken at rest says "agreed" through all of it.
+
+      So this watches the plate for twenty seconds AFTER it first shows the last
+      click's own picture, and a single sample showing anything else is a
+      comeback. Before the frame first appears, a different picture is the
+      decode gate holding the previous one — legitimate, and not counted.
+
+      It costs nothing but seconds: no render, no credits, only looking.
+    */
+    /*
+      THE RAIL'S OWN NAMES, so a comeback is a VERSION rather than a URL suffix.
+
+      A hex tail proves nothing about which picture came back — and the first
+      run of this arm spent a whole cycle guessing whether a PNG was the last
+      click sharpening or an abandoned version returning. The chips answer it:
+      every one carries its label and both spellings of its picture.
+    */
+    const chips = await page.evaluate(`(() => Array.from(
+      document.querySelectorAll(".dpc-refine__stack .dpc-refine__pick"),
+    ).map((pick) => ({
+      label: pick.querySelector("span")?.textContent?.trim() ?? null,
+      frame: pick.getAttribute("data-frame"),
+      thumb: pick.getAttribute("data-thumb"),
+    })))()`) as Array<{ label: string | null; frame: string | null; thumb: string | null }>;
+    const nameOf = (url: string | null): string => {
+      if (url === null) return "(no picture)";
+      const chip = chips.find((one) => one.frame === url || one.thumb === url);
+      if (!chip) return `NOT A CHIP ON THIS RAIL — …${url.slice(-26)}`;
+      return `"${chip.label}" (${chip.thumb === url ? "small copy" : "full frame"})`;
+    };
+
+    const WATCH_MS = Number(process.env.COMEBACK_WATCH_MS ?? 20_000);
+    const isLast = (url: string | null) => url !== null
+      && (url === lastClick.frame || url === lastClick.thumb);
+    /*
+      THE PLATE AND THE CHIP, IN ONE SAMPLE — which half moved.
+
+      A comeback can be two entirely different defects wearing one symptom: the
+      client's instant-frame override letting go of the plate (the lit chip
+      stays on the last click and only the picture moves), or the SERVER
+      settling its selection on an earlier write (both surfaces move together,
+      which is the fable-609 class and not this one). Recording only the plate
+      cannot tell them apart, and one run was spent guessing.
+    */
+    const trace: Array<{ at: number; plate: string | null; lit: string | null }> = [];
+    let arrived = false;
+    let comeback: { at: number; plate: string | null } | null = null;
+    const watchFrom = Date.now();
+    while (Date.now() - watchFrom < WATCH_MS) {
+      const read = await page.evaluate(
+        `(() => {
+           const img = document.querySelector(".dpc-viewer__plate img");
+           const lit = Array.from(document.querySelectorAll(".dpc-refine__stack .dpc-refine__pick"))
+             .find((pick) => pick.getAttribute("aria-pressed") === "true") ?? null;
+           return {
+             plate: img ? (img.currentSrc || img.src) : null,
+             lit: lit ? (lit.querySelector("span")?.textContent?.trim() ?? null) : null,
+           };
+         })()`,
+      ) as { plate: string | null; lit: string | null };
+      const plate = read.plate;
+      const sample = { at: Date.now() - watchFrom, plate, lit: read.lit };
+      trace.push(sample);
+      if (isLast(plate)) arrived = true;
+      else if (arrived && comeback === null) comeback = sample;
+      await new Promise((resolve) => setTimeout(resolve, 250));
+    }
+    if (comeback) {
+      await writeFile(`${OUT}/burst-${burst + 1}-comeback.json`, `${JSON.stringify(trace, null, 2)}\n`);
+      await page.screenshot({ path: `${OUT}/burst-${burst + 1}-comeback.png` });
+    }
+    check(arrived && comeback === null,
+      `burst ${burst + 1}: an abandoned version never comes back while the writes drain`,
+      arrived
+        ? (comeback
+          ? `at ${comeback.at}ms the plate was ${nameOf(comeback.plate)}`
+          + ` — the last click was "${last}"`
+          : `${trace.length} samples over ${WATCH_MS}ms, all the last click's picture`)
+        : `the last click's picture never reached the plate in ${WATCH_MS}ms`);
 
     check(at.litLabel === last,
       `burst ${burst + 1}: the lit chip is the last click`,

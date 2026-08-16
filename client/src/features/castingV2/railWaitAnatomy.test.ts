@@ -103,6 +103,24 @@ describe("a version being redrawn says so on its own chip (fable-703)", () => {
     expect(rail).toContain("pending.filter((entry) => !entry.regenerating).map((entry) =>");
   });
 
+  it("stands the picture down under the ring, dimmed and desaturated (fable-718)", async () => {
+    /*
+      His own ruling, after looking at the 4× capture of the ring on a sharp
+      thumbnail: the chip being redrawn wears what the pending chip already
+      wears, so the arc reads as machinery rather than as a mark on her face.
+      NOT blurred — the ghost blurs because its base is a stand-in, and this
+      chip's picture is the version she still has.
+    */
+    const css = await readFile(CSS, "utf8");
+    const rule = css.slice(css.indexOf('.dpc-refine__pick[aria-busy="true"] > img'));
+
+    expect(rule).toContain("opacity: 0.55;");
+    expect(rule).toContain("filter: saturate(0.3) brightness(0.8);");
+    /* And the selected chip is the usual case, so it must out-specify
+       `[aria-pressed="true"] > img { opacity: 1 }` rather than lose to it. */
+    expect(css).toContain('.dpc-refine__pick[aria-pressed="true"][aria-busy="true"] > img');
+  });
+
   it("centres that ring on the picture, not on the button and its label", async () => {
     const css = await readFile(CSS, "utf8");
 

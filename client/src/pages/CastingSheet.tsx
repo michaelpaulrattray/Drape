@@ -44,7 +44,13 @@ import {
 import { RefinePanel } from "@/features/castingV2/components/RefinePanel";
 import { FacePanel } from "@/features/castingV2/components/FacePanel";
 import { VersionRail } from "@/features/castingV2/components/VersionRail";
-import { frameUrlFor, selectedVariantFor, type ChosenFrame } from "@/features/castingV2/chosenFrame";
+import {
+  frameUrlFor,
+  overrideApplies,
+  selectedVariantFor,
+  supersededBy,
+  type ChosenFrame,
+} from "@/features/castingV2/chosenFrame";
 import { prefetchFrames } from "@/features/castingV2/frameDecodes";
 import { FaceRegions } from "@/features/castingV2/components/FaceRegions";
 import { useFaceSelection } from "@/features/castingV2/components/faceSelection";
@@ -1081,7 +1087,7 @@ export default function CastingSheet() {
       (candidate) => candidate.candidateId === viewerCandidateId,
     )?.imageUrl ?? null);
     if (picked && showing && picked !== showing) {
-      setChosenFrame({
+      setChosenFrame((previous) => ({
         candidateId: viewerCandidateId,
         /* The version this pick IS — the rail's highlight reads it, so the chip
            and the photograph are one claim (fable-546). */
@@ -1090,8 +1096,20 @@ export default function CastingSheet() {
         /* The chip they clicked is already in the browser, so the viewer can
            show the right picture immediately and sharpen in place. */
         previewUrl: chosen.thumb,
-        insteadOf: showing,
-      });
+        /*
+          EVERY FRAME THIS BURST HAS LEFT BEHIND, not just the one on screen
+          (fable-701 §4). Taken from the claim being replaced — the updater form
+          rather than `chosenFrame`, because five clicks in half a second are
+          five renders' worth of stale closure otherwise, and the burst is the
+          exact case this exists for.
+        */
+        insteadOf: supersededBy({
+          candidateId: viewerCandidateId,
+          showing,
+          picked,
+          previous,
+        }),
+      }));
     }
     /* Returned rather than fired and forgotten, because ONE caller has to wait
        for it: taking a step back prunes the SELECTED face's chain, so the
@@ -1363,9 +1381,15 @@ export default function CastingSheet() {
       /* Only the picked version's own small copy — a thumbnail of the frame
          BEFORE the switch would be the previous picture wearing this one's
          name, which is the error the decode gate exists to avoid. */
-      previewUrl: chosenFrame?.candidateId === candidate.candidateId
-        && serverFrameFor(candidate.candidateId, candidate.imageUrl as string) === chosenFrame.insteadOf
-        ? chosenFrame.previewUrl ?? null
+      /* The same rule the frame and the highlight use, asked of the same
+         function — a third spelling of it is the copy that drifts (fable-701
+         §4 widened it, and this is where a missed copy would have shown). */
+      previewUrl: overrideApplies({
+        candidateId: candidate.candidateId,
+        serverUrl: serverFrameFor(candidate.candidateId, candidate.imageUrl as string) as string,
+        chosen: chosenFrame,
+      })
+        ? chosenFrame?.previewUrl ?? null
         : null,
       label: candidate.indexLabel,
       personaLine: candidate.personaLine,

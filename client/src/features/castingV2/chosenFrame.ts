@@ -55,8 +55,32 @@ export type ChosenFrame = {
    * the viewer holds the previous frame exactly as it did.
    */
   previewUrl?: string | null;
-  /** The picture that was on screen when they chose it. */
-  insteadOf: string;
+  /**
+   * EVERY PICTURE THIS BURST HAS LEFT BEHIND — not merely the one on screen at
+   * the click (founder bug, granted in fable-701 §4).
+   *
+   * It was a single URL, and a burst of clicks broke it in a way that looked
+   * like the product losing her work. Five clicks put five writes in a queue
+   * that runs one at a time; the sheet's own poll lands somewhere in the middle
+   * of that queue and the server honestly answers with an INTERMEDIATE version —
+   * one she passed through two clicks ago. That URL was not the single frame
+   * this override was watching for, so the override stood down and the
+   * abandoned version came back onto the plate for about sixteen seconds,
+   * before the last write finally landed and it changed again by itself.
+   * Reproduced twice.
+   *
+   * So the claim widens to exactly the thing it was always trying to say:
+   * *while the server is still showing ANY picture this burst has superseded,
+   * draw the last one she clicked.* Each click in a burst carries the previous
+   * claim's list forward, plus the frame that claim was drawing — so the set is
+   * the burst's own history and nothing else.
+   *
+   * **It stays self-limiting, which is the whole reason `insteadOf` exists.**
+   * A refine landing mid-switch delivers a picture NOBODY clicked, so it is in
+   * no burst's history, so the override dies on the instant with no timer and
+   * no cleanup — exactly as it did when this was one URL.
+   */
+  insteadOf: readonly string[];
   /**
    * WHICH VERSION THIS PICK IS — so the rail's highlight and the photograph are
    * ONE claim rather than two (founder bug, fable-546).
@@ -83,6 +107,53 @@ export type ChosenFrame = {
  * mid-switch included — this falls back to the confirmed selection with no
  * timer and no cleanup, exactly as the frame does.
  */
+/**
+ * DOES THE CLICK STILL SPEAK FOR THIS FACE? — the one rule, in one place.
+ *
+ * Three surfaces ask it: the photograph, the rail's lit chip, and the small
+ * copy the viewer shows while the full frame decodes. They were three copies of
+ * `serverUrl === chosen.insteadOf`, which is the mirror law waiting to happen —
+ * and the moment `insteadOf` became a set, a copy left behind would have been a
+ * surface still obeying the old rule while the other two obeyed the new one.
+ */
+export function overrideApplies(input: {
+  candidateId: string;
+  /** What the server currently says this candidate's picture is. */
+  serverUrl: string;
+  chosen: ChosenFrame | null;
+}): boolean {
+  const { chosen, candidateId, serverUrl } = input;
+  if (!chosen || chosen.candidateId !== candidateId) return false;
+  return chosen.insteadOf.includes(serverUrl);
+}
+
+/**
+ * THE BURST'S HISTORY, ONE CLICK LONGER — what the next claim supersedes.
+ *
+ * Everything the live claim was already watching for, plus the frame it was
+ * drawing, which the new click has just left behind. The picked frame is kept
+ * OUT of its own history: an override that superseded itself would never be
+ * spent by the server catching up, and being spent is how it ends.
+ *
+ * Handed the previous claim rather than reading state, so the rule is testable
+ * without a browser and the caller cannot accumulate it a second way.
+ */
+export function supersededBy(input: {
+  candidateId: string;
+  /** The picture on screen at this click. */
+  showing: string;
+  /** The frame being picked now. */
+  picked: string;
+  /** The claim this one replaces, if a burst is already running on this face. */
+  previous: ChosenFrame | null;
+}): string[] {
+  const { candidateId, showing, picked, previous } = input;
+  const carried = previous && previous.candidateId === candidateId
+    ? [...previous.insteadOf, previous.url]
+    : [];
+  return Array.from(new Set([showing, ...carried])).filter((url) => url !== picked);
+}
+
 export function selectedVariantFor(input: {
   candidateId: string;
   /** What the server currently says this candidate's picture is. */
@@ -91,9 +162,8 @@ export function selectedVariantFor(input: {
   serverSelected: string | null;
   chosen: ChosenFrame | null;
 }): string | null {
-  const { chosen, candidateId, serverUrl, serverSelected } = input;
-  if (!chosen || chosen.candidateId !== candidateId) return serverSelected;
-  return serverUrl === chosen.insteadOf ? chosen.variantId : serverSelected;
+  const { chosen, serverSelected } = input;
+  return overrideApplies(input) ? chosen!.variantId : serverSelected;
 }
 
 export function frameUrlFor(input: {
@@ -102,7 +172,6 @@ export function frameUrlFor(input: {
   serverUrl: string;
   chosen: ChosenFrame | null;
 }): string {
-  const { chosen, candidateId, serverUrl } = input;
-  if (!chosen || chosen.candidateId !== candidateId) return serverUrl;
-  return serverUrl === chosen.insteadOf ? chosen.url : serverUrl;
+  const { chosen, serverUrl } = input;
+  return overrideApplies(input) ? chosen!.url : serverUrl;
 }

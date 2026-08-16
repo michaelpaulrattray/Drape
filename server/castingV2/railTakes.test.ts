@@ -183,3 +183,61 @@ describe("the declared takes", () => {
     expect(takeShownFor("v2", supersededBy)).toBe("v3");
   });
 });
+
+/**
+ * AND THE RAIL ACTUALLY READS IT (fable-717 §4, executing fable-575 §3).
+ *
+ * The rule above was written, tested and documented in this module as "THE
+ * SHIPPED RULE" — and the route went on calling the INFERENCE for a day. A
+ * control that is not invoked does not exist (invariant 7), and this is that
+ * class exactly: two readers, one of them correct, and the wrong one wired.
+ *
+ * The risk it was carrying is the one `liveTakes`' own comment names as
+ * "severe, silent, and unrecoverable from the UI": two rows can describe one
+ * chain by accident — a step back, then the same ask again — and each is a
+ * picture somebody paid for. The behaviour is proved above; this proves the
+ * caller asks it.
+ */
+describe("the shipped rule is the one the rail is given", () => {
+  const routeSource = async () => {
+    const { readFile } = await import("node:fs/promises");
+    return readFile(new URL("../routes/castingV2.ts", import.meta.url), "utf8");
+  };
+
+  it("groups the rail by what a row DECLARES, never by inference", async () => {
+    const route = await routeSource();
+
+    expect(route).toContain("const { live, supersededBy } = declaredTakes(");
+    expect(route).toContain("regeneratedFrom: readRegeneratedFrom(variant.internalPrompt),");
+  });
+
+  it("and the inference is not wired anywhere on the request path", async () => {
+    const route = await routeSource();
+    /* Prose is allowed to name it — the comment there explains why it went. A
+       CALL is not. */
+    expect(route).not.toContain("liveTakes(");
+  });
+
+  it("the accident case, end to end: neither paid picture leaves the rail", () => {
+    /*
+      A step back, then the same ask again. Both rows describe one chain and
+      neither declares it replaced the other, so both stay — which is the
+      forward-only guarantee doing the only job it exists for.
+    */
+    const { live, supersededBy } = declaredTakes([
+      { publicId: "paid-1", regeneratedFrom: null },
+      { publicId: "paid-2", regeneratedFrom: null },
+    ]);
+    expect(live.map((row) => row.publicId)).toEqual(["paid-1", "paid-2"]);
+    expect(takeShownFor("paid-1", supersededBy)).toBe("paid-1");
+
+    /* The inference, on the same two rows, takes one of them off the rail —
+       named here so the difference between the two readers is a fact in this
+       file rather than an argument about it. */
+    const inferred = liveTakes([
+      { publicId: "paid-1", steps: [hoops] },
+      { publicId: "paid-2", steps: [hoopsAgain] },
+    ]);
+    expect(inferred.live.map((row) => row.publicId)).toEqual(["paid-2"]);
+  });
+});
