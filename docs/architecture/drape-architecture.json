@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "4056a58801269d8a"
+    "sourceFingerprint": "a1d731b37ce34449"
   },
   "domains": [
     {
@@ -18,7 +18,7 @@
     {
       "id": "domain:api",
       "name": "api",
-      "moduleCount": 38
+      "moduleCount": 39
     },
     {
       "id": "domain:billing",
@@ -98,7 +98,7 @@
     {
       "id": "domain:platform",
       "name": "platform",
-      "moduleCount": 14
+      "moduleCount": 15
     },
     {
       "id": "domain:profile",
@@ -2451,6 +2451,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:server/_core/invalidInputMessage.ts",
+      "path": "server/_core/invalidInputMessage.ts",
+      "domain": "platform",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:server/_core/notification.ts",
       "path": "server/_core/notification.ts",
       "domain": "platform",
@@ -4505,6 +4511,12 @@
     {
       "id": "module:server/routes/emailAuth.ts",
       "path": "server/routes/emailAuth.ts",
+      "domain": "api",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/routes/emailAuthInput.ts",
+      "path": "server/routes/emailAuthInput.ts",
       "domain": "api",
       "lifecycle": "active"
     },
@@ -8628,6 +8640,10 @@
     {
       "id": "test:client/src/foundation/token-guard.test.ts",
       "path": "client/src/foundation/token-guard.test.ts"
+    },
+    {
+      "id": "test:server/_core/invalidInputWire.test.ts",
+      "path": "server/_core/invalidInputWire.test.ts"
     },
     {
       "id": "test:server/access.test.ts",
@@ -15276,6 +15292,11 @@
     {
       "from": "module:server/_core/trpc.ts",
       "to": "module:server/_core/context.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/_core/trpc.ts",
+      "to": "module:server/_core/invalidInputMessage.ts",
       "kind": "imports"
     },
     {
@@ -23276,6 +23297,11 @@
     {
       "from": "module:server/routes/emailAuth.ts",
       "to": "module:server/db/validateInviteCode.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/emailAuth.ts",
+      "to": "module:server/routes/emailAuthInput.ts",
       "kind": "imports"
     },
     {

@@ -24,25 +24,13 @@ import { getDb } from "../db/connection";
 import { users } from "../../drizzle/schema";
 import { eq } from "drizzle-orm";
 import { generateVerificationToken, sendVerificationEmail, storeVerificationToken } from "./emailVerification";
+import { loginSchema, registerSchema } from "./emailAuthInput";
 
 const BCRYPT_ROUNDS = 12;
 
-const registerSchema = z.object({
-  email: z.string().email("Invalid email address").max(255),
-  password: z
-    .string()
-    .min(8, "Password must be at least 8 characters")
-    .max(128)
-    .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
-    .regex(/[0-9]/, "Password must contain at least one number"),
-  name: z.string().min(1, "Name is required").max(100),
-  betaCode: z.string().min(1, "Beta code is required").max(64),
-});
+// The wire schemas live in `./emailAuthInput` so the validation suite can
+// import the real ones instead of transcribing a copy that drifts.
 
-const loginSchema = z.object({
-  email: z.string().email("Invalid email address").max(255),
-  password: z.string().min(1, "Password is required").max(128),
-});
 
 export const emailAuthRouter = Router();
 

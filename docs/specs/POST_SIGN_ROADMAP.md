@@ -18,8 +18,38 @@ mailbox archive, memory, and DECISION_LOG by the lost-pin audit of
   specimens: 775 torn px (opus-024) + GPT2's torn frames at 848
   (opus-068). Raise the decision before Tier A; the manual double-read
   that currently covers the gap ends with Tier A.
-- **Truncation-notice verification** (L17): confirm the >2000-char
-  brief rejection surfaces honestly in the client; close or fix.
+- **Truncation-notice verification** (L17) — ✅ **CLOSED 2026-08-16. It did
+  not verify; it FAILED, and the fix is a class fix.** Read at the wire (real
+  schema off the real `castingV2.createRoll` procedure, real error formatter,
+  real express adapter): a 2,001-character brief was refused correctly and
+  put zod's serialized issue array on the customer's screen, verbatim, under
+  the action "Edit the brief" — `[{"origin":"string","code":"too_big",…,
+  "path":["briefText"]}]`. An invalid sessionId printed the validation regex.
+
+  Both client rules were reasoning from a premise true against gateways and
+  false against our own framework: `failureCopy.ts` states it — *"the code
+  list is the structural argument that a gateway cannot forge a 400"* — but
+  tRPC authors a `BAD_REQUEST` for every input failure and fills its message
+  with machine text. The `spoken` marker, built for exactly this, was absent
+  and correct, and the older code-list evidence overrode it.
+
+  Fixed at the errorFormatter (`server/_core/invalidInputMessage.ts`), not at
+  the ~30 `toast.error(err.message)` call sites — that is the mirror law 4
+  forbids and it reopens with the next `onError` written. One place, all 260
+  procedures, every consumer present and future. Guarded at the wire by
+  `server/_core/invalidInputWire.test.ts`, both sabotages reddening only
+  their own arm. Sibling swept in the same commit: the Express signup/login
+  routes surface `issues[0].message` directly and all six `.max()` ceilings
+  had no authored message — and `emailAuth.test.ts` was asserting a
+  **transcribed copy** of the schema that had already drifted from its
+  source, so the real schemas now live in `server/routes/emailAuthInput.ts`
+  and the suite imports them.
+
+  *Still open, one line, optional:* a live over-count at the brief box, so
+  the limit is visible before the send rather than named after it.
+  Deliberately NOT built — `maxLength` would silently swallow a paste, which
+  is a worse defect than the rude error it replaces, and a counter is polish.
+  Behind the founder's word.
 - **`bornWornCatalogue` has NO CALLERS** (opus-094, filed by
   fable-121). Built, tested, guarded by two sabotage runs, and invoked
   from nowhere in the product — so **no `detected_born` row can exist**,

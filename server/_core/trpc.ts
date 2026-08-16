@@ -6,6 +6,7 @@ import type { TrpcContext } from "./context";
 import { validateAdminAccess, logUnauthorizedAdminAccess } from "../security/adminSecurity";
 import { APP_UPDATE_REQUIRED_MESSAGE } from "@shared/clientRequestId";
 import { withSpokenFlag } from "./spokenError";
+import { invalidInputMessage } from "./invalidInputMessage";
 
 export function appUpdateRequiredMessage(cause: unknown): string | null {
   if (!(cause instanceof ZodError)) return null;
@@ -17,7 +18,22 @@ export function appUpdateRequiredMessage(cause: unknown): string | null {
 const t = initTRPC.context<TrpcContext>().create({
   transformer: superjson,
   errorFormatter({ shape, error }) {
-    const updateMessage = appUpdateRequiredMessage(error.cause);
+    /*
+      MACHINE TEXT NEVER LEAVES THE SERVER (see `./invalidInputMessage`).
+
+      tRPC fills an input-validation error's message with zod's serialized
+      issue array, and `BAD_REQUEST` is on every client's "this sentence is
+      ours" list — so a 2,001-character brief put a JSON array on the
+      customer's screen under the action "Edit the brief". Rewritten here
+      rather than at the dozens of `toast.error(err.message)` call sites,
+      because this is the one place that covers every procedure and every
+      consumer that has not been written yet.
+
+      The update-required sentinel is checked FIRST: it is a specific zod
+      issue carrying its own authored sentence, and the general rewrite would
+      otherwise speak over it.
+    */
+    const updateMessage = appUpdateRequiredMessage(error.cause) ?? invalidInputMessage(error.cause);
     /*
       THE MARKER RIDES THE OUTGOING PAYLOAD (see `shared/spokenError`).
 
@@ -25,6 +41,12 @@ const t = initTRPC.context<TrpcContext>().create({
       for every procedure — so the client can tell it from a gateway's or a
       parser's sentence without keeping a list of codes that drifts. Applied
       last so it survives the update-required rewrite above.
+
+      A rewritten input message is deliberately NOT marked spoken. The marker
+      means a human authored THIS refusal for THIS situation; these sentences
+      are a generic safety net, and the client's existing code-list rule
+      already shows them. Marking them would spend the marker's meaning on the
+      one case it was not built for.
     */
     return withSpokenFlag(updateMessage ? { ...shape, message: updateMessage } : shape, error);
   },

@@ -5,28 +5,18 @@
  * beta code enforcement, password hashing, and session creation.
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { z } from "zod";
 import { isDisposableEmail } from "../security/disposableEmails";
 import { checkRateLimit } from "../security/rateLimit";
 
-// ─── Validation schema tests (mirrors emailAuth.ts schemas) ─────────────
+/*
+  ─── Validation schema tests — THE REAL SCHEMAS, NOT A TRANSCRIPTION ───
 
-const registerSchema = z.object({
-  email: z.string().email("Invalid email address").max(255),
-  password: z
-    .string()
-    .min(8, "Password must be at least 8 characters")
-    .max(128)
-    .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
-    .regex(/[0-9]/, "Password must contain at least one number"),
-  name: z.string().min(1, "Name is required").max(100),
-  betaCode: z.string().min(1, "Beta code is required").max(64),
-});
-
-const loginSchema = z.object({
-  email: z.string().email("Invalid email address").max(255),
-  password: z.string().min(1, "Password is required").max(128),
-});
+  These used to be a copy, headed "mirrors emailAuth.ts schemas". It had
+  already drifted: the ceilings gained authored messages in the source and the
+  copy kept the bare ones, so every assertion below was green about a schema no
+  request is ever validated against. Working law 4 — derive, never mirror.
+*/
+import { loginSchema, registerSchema } from "./emailAuthInput";
 
 describe("Email Auth — Registration Validation", () => {
   it("accepts valid registration input", () => {
@@ -224,6 +214,53 @@ describe("Email Auth — Login Validation", () => {
       password: "weak",
     });
     expect(result.success).toBe(true);
+  });
+});
+
+/**
+ * Both routes send `parsed.error.issues[0].message` to the screen verbatim, so
+ * a constraint without an authored message puts zod's own prose — "Too big:
+ * expected string to have <=255 characters" — on the signup page, which is the
+ * first surface a new customer meets.
+ *
+ * Every field is driven rather than a sample: the omission was uniform across
+ * all six ceilings, so testing one would have proved only that one was
+ * remembered.
+ */
+describe("Email Auth — every ceiling speaks to a person", () => {
+  const validRegistration = {
+    email: "user@example.com",
+    password: "SecurePass1",
+    name: "Test User",
+    betaCode: "BETA123",
+  };
+
+  const ceilings = [
+    { field: "email", value: `${"a".repeat(250)}@example.com`, says: "Email address is too long" },
+    { field: "password", value: `A1${"a".repeat(127)}`, says: "Password must be 128 characters or fewer" },
+    { field: "name", value: "a".repeat(101), says: "Name must be 100 characters or fewer" },
+    { field: "betaCode", value: "a".repeat(65), says: "Beta code is too long" },
+  ] as const;
+
+  for (const ceiling of ceilings) {
+    it(`says what is wrong when ${ceiling.field} is over its limit`, () => {
+      const result = registerSchema.safeParse({ ...validRegistration, [ceiling.field]: ceiling.value });
+      expect(result.success).toBe(false);
+      if (result.success) return;
+      const message = result.error.issues[0]?.message ?? "";
+      expect(message).toBe(ceiling.says);
+      expect(message, "zod's own prose must never reach the signup page").not.toContain("expected string");
+    });
+  }
+
+  it("says what is wrong when a login field is over its limit", () => {
+    const result = loginSchema.safeParse({
+      email: "user@example.com",
+      password: `${"a".repeat(129)}`,
+    });
+    expect(result.success).toBe(false);
+    if (result.success) return;
+    expect(result.error.issues[0]?.message).toBe("Password must be 128 characters or fewer");
   });
 });
 
