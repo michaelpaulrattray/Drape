@@ -26,6 +26,14 @@ import { castingCandidates, castingCandidateVariants, users } from "../drizzle/s
 import { interpretRefinement } from "../server/castingV2/refineInterpreter";
 import { refineCandidate } from "../server/castingV2/refineService";
 import { selectVariant } from "../server/db/castingV2Variants";
+import { assertOneWorld } from "./lib/worldGuard.mts";
+
+/*
+  One world per process (scripts/lib/worldGuard.mts). Inert outside a Railway
+  run; inside one it refuses when dotenv has filled a gap the service does not
+  define, which is how a "production" read gets taken from dev.
+*/
+assertOneWorld(["DATABASE_URL"]);
 
 let failures = 0;
 function check(label: string, ok: boolean, detail = ""): void {

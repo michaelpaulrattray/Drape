@@ -27,6 +27,14 @@ import { getDb } from "../../server/db/connection";
 import { castingCandidateVariants, castingCandidates, users } from "../../drizzle/schema";
 import { castingIdentityEngine } from "../../server/castingV2/signEngine";
 import { storagePublicUrl } from "../../server/storage";
+import { assertOneWorld } from "../lib/worldGuard.mts";
+
+/*
+  One world per process (scripts/lib/worldGuard.mts). Inert outside a Railway
+  run; inside one it refuses when dotenv has filled a gap the service does not
+  define, which is how a "production" read gets taken from dev.
+*/
+assertOneWorld(["DATABASE_URL"]);
 
 const OUT = "output/quality-unit/specimens";
 mkdirSync(OUT, { recursive: true });

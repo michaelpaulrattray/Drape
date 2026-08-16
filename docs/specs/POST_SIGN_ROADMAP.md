@@ -288,9 +288,31 @@ superseded it — fable-071/080).
   real-inbox Resend test; fal retention answer (founder confirms
   answered, 2026-08-09); the five inert
   security controls (CLAUDE.md's "currently not enforced" list).
-- Hygiene batch (L2): **11 dev-fixture `getDb()` scripts still lack
-  world guards** (list in the 2026-08-09 audit) — guard when next
-  touched, or burn down in one sitting.
+- Hygiene batch (L2) — ✅ **CLOSED 2026-08-16, with the guard that keeps
+  it closed.** The line said **11** when it was written on 2026-08-09 and
+  read **34** when it was picked up a week later, unchanged in between:
+  a burn-down without a guard is a burn-down with a schedule for coming
+  back.
+
+  Twenty-one permanent `getDb()` scripts — the audits, backfills,
+  repairs, converges, calibrations and drives — now call
+  `assertOneWorld(["DATABASE_URL"])`. The one-shot `*-disposable.mts`
+  benches deliberately do not: that suffix is the repo's own convention
+  for a bench that ran once, and `worldGuard.mts`'s own header makes the
+  argument — *"a guard people learn to work around is a guard that is
+  off."*
+
+  `server/scriptWorldGuard.test.ts` derives both halves of the scope
+  from the tree (calls `getDb()`; is not named `-disposable.mts`) rather
+  than from a list, so a script written tomorrow is in scope the moment
+  it exists. Its exemption map is empty, and an entry would have to
+  carry a reason.
+
+  **The checker was wrong when first written, and the sabotage is what
+  said so:** it matched the bare identifier `assertOneWorld`, which the
+  IMPORT line satisfies — deleting the call and leaving the import left
+  it green. It now requires the call, and that case is pinned as its own
+  test. Invariant 7, applied to the guard for a guard.
 - Hygiene batch (L2, added 2026-08-10, fable-127): **a script that
   touches an app service never exits** — ✅ **CLOSED 2026-08-11
   (burn-down ordered in fable-246).** `getDb()` hands out a

@@ -26,6 +26,14 @@ import { castingCandidates, castingCandidateVariants, users } from "../drizzle/s
 import { refineCandidate } from "../server/castingV2/refineService";
 import { selectVariant } from "../server/db/castingV2Variants";
 import { storagePublicUrl } from "../server/storage";
+import { assertOneWorld } from "./lib/worldGuard.mts";
+
+/*
+  One world per process (scripts/lib/worldGuard.mts). Inert outside a Railway
+  run; inside one it refuses when dotenv has filled a gap the service does not
+  define, which is how a "production" read gets taken from dev.
+*/
+assertOneWorld(["DATABASE_URL"]);
 
 /**
  * THE FIXED PAIR — one that must NOW pass, one that must STILL pass.

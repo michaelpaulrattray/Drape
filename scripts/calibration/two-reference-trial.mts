@@ -43,6 +43,14 @@ import { verifyRender } from "../../server/castingV2/renderVerification";
 import { castingIdentityEngine } from "../../server/castingV2/signEngine";
 import { storagePublicUrl } from "../../server/storage";
 import type { Facet } from "../../server/castingV2/refineFacets";
+import { assertOneWorld } from "../lib/worldGuard.mts";
+
+/*
+  One world per process (scripts/lib/worldGuard.mts). Inert outside a Railway
+  run; inside one it refuses when dotenv has filled a gap the service does not
+  define, which is how a "production" read gets taken from dev.
+*/
+assertOneWorld(["DATABASE_URL"]);
 
 /**
  * THE ROLE DISTINCTION — founder directive, law for this trial, verbatim.

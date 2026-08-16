@@ -10,6 +10,14 @@ import {
   parseEvidenceIdentityRevisionRepairArgs,
   planEvidenceIdentityRevisionRepair,
 } from "../server/casting/evidence/evidenceIdentityRevisionRepair";
+import { assertOneWorld } from "./lib/worldGuard.mts";
+
+/*
+  One world per process (scripts/lib/worldGuard.mts). Inert outside a Railway
+  run; inside one it refuses when dotenv has filled a gap the service does not
+  define, which is how a "production" read gets taken from dev.
+*/
+assertOneWorld(["DATABASE_URL"]);
 
 async function closeSharedDatabase(): Promise<void> {
   const db = await (await import("../server/db/connection")).getDb();

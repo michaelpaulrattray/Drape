@@ -19,6 +19,14 @@ import { readFileSync, writeFileSync } from "node:fs";
 
 import { getDb } from "../../server/db/connection";
 import { castingCandidateVariants, castingCandidates, users } from "../../drizzle/schema";
+import { assertOneWorld } from "../lib/worldGuard.mts";
+
+/*
+  One world per process (scripts/lib/worldGuard.mts). Inert outside a Railway
+  run; inside one it refuses when dotenv has filled a gap the service does not
+  define, which is how a "production" read gets taken from dev.
+*/
+assertOneWorld(["DATABASE_URL"]);
 
 const OUT = "output/two-reference-trial";
 type Cell = {

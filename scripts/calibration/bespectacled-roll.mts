@@ -34,6 +34,14 @@ import { getDb } from "../../server/db/connection";
 import { castingCandidates, users } from "../../drizzle/schema";
 import { createCastingSession } from "../../server/db/castingV2";
 import { createRoll } from "../../server/castingV2/rollService";
+import { assertOneWorld } from "../lib/worldGuard.mts";
+
+/*
+  One world per process (scripts/lib/worldGuard.mts). Inert outside a Railway
+  run; inside one it refuses when dotenv has filled a gap the service does not
+  define, which is how a "production" read gets taken from dev.
+*/
+assertOneWorld(["DATABASE_URL"]);
 
 /* Founder-verified verbatim — see the header. Do not "improve" this on a paid path. */
 const BRIEF = "a woman in her 40s wearing chunky glasses";

@@ -3,6 +3,14 @@ import mysql from 'mysql2/promise';
 import { bootstrapModelSnapshot } from '../server/casting/snapshotBootstrap';
 import { getDb } from '../server/db/connection';
 import { openDatabase } from "./lib/dbConnection.mts";
+import { assertOneWorld } from "./lib/worldGuard.mts";
+
+/*
+  One world per process (scripts/lib/worldGuard.mts). Inert outside a Railway
+  run; inside one it refuses when dotenv has filled a gap the service does not
+  define, which is how a "production" read gets taken from dev.
+*/
+assertOneWorld(["DATABASE_URL"]);
 
 const DATABASE_URL = process.env.DATABASE_URL;
 const APP_ID = process.env.VITE_APP_ID ?? '';
