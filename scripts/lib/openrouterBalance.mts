@@ -302,8 +302,23 @@ export function balanceLine(balance: OpenRouterBalance): string {
   if (!balance.ok) return `openrouter UNREAD — ${balance.why}`;
   const figures = `$${balance.remaining.toFixed(2)} remaining of $${balance.total.toFixed(2)}`
     + ` (spent $${balance.used.toFixed(2)})`;
+  /*
+    THE CONSEQUENCE CLAUSE MOVED WHEN THE WORLD DID (founder, 2026-08-16 —
+    auto top-up is ON for both providers; fable-692 §1).
+
+    It used to end "every paid roll and refine dies at dispatch", which was the
+    truth when a low balance stranded the product. It no longer strands: the
+    account refills itself. Leaving the outage sentence in place would be this
+    week's third instance of a line going on saying a thing after the thing
+    stopped being true — so it now names what a low balance actually means
+    today, which is a top-up about to fire and a reason to look at WHY.
+
+    The line itself stays, loudly, because its job was never only runway: it is
+    the leak detector, and the founder's own cast-browsing drip is exactly what
+    it exists to make visible.
+  */
   return balance.low
     ? `openrouter *** LOW: ${figures} — below $${LOW_BALANCE_USD}. `
-      + `At zero the interpreter fails and every paid roll and refine dies at dispatch. ***`
+      + `Auto top-up covers the outage; a low balance now means money is MOVING — look at the spend line. ***`
     : `openrouter ${figures}`;
 }

@@ -4,9 +4,13 @@
  * The founder was ~$100 down on OpenRouter while every shift report truthfully
  * said "zero model calls" (fable-682): the per-shift figure was honest and the
  * week had spent $118.62 on courts, benches and his own edits. The account was
- * at **$9.76 of $210.00** when it was finally read — and at zero the
- * interpreter and treatment stage fail, so every paid roll and refine dies at
- * dispatch.
+ * at **$9.76 of $210.00** when it was finally read — and at that time zero meant
+ * an outage: the interpreter and treatment stage fail, so every paid roll and
+ * refine dies at dispatch. **That consequence was retired on 2026-08-16**, when
+ * the founder turned auto top-up on for both providers; the line's shout now
+ * names what a low balance means today, which is money MOVING. The line itself
+ * stays exactly as loud, because runway was never its only job — it is the leak
+ * detector, and it earned that on its first night.
  *
  * The fix is a line in the park block and the deploy receipt that is READ
  * every time, and the thing that must never happen is the one this suite
@@ -82,8 +86,17 @@ describe("the OpenRouter balance is read, never remembered", () => {
   it("SHOUTS below the floor, and names the consequence", () => {
     const line = balanceLine({ ok: true, remaining: 9.76, total: 210, used: 200.24, low: true });
     expect(line).toContain("LOW");
+    /* The consequence MOVED on 2026-08-16 when auto top-up went on for both
+       providers: a low balance no longer strands the product, it means money is
+       moving. The assertion is that the line still carries A consequence and
+       still points at the reading that explains it — never that it carries the
+       superseded one. */
     expect(line, "a number without its consequence is a number nobody acts on")
-      .toContain("dies at dispatch");
+      .toContain("money is MOVING");
+    expect(line, "and it must point at where the answer is")
+      .toContain("spend line");
+    expect(line, "the outage sentence is superseded, not merely reworded")
+      .not.toContain("dies at dispatch");
   });
 
   it("is quiet above the floor", async () => {

@@ -287,13 +287,23 @@ say(balanceLine(await readOpenRouterBalance()));
   remainder, and a drain becomes visible in ONE reading instead of needing two.
   That is exactly the reading that attributed tonight's own 7¢ movement.
 */
+const books = await readOpenRouterActivity();
 say(await (async () => {
   const usage = await readOpenRouterUsage();
-  return usage.ok
-    ? `openrouter spend  today $${usage.daily.toFixed(2)} · week $${usage.weekly.toFixed(2)}`
-      + ` · month $${usage.monthly.toFixed(2)}`
-      + (usage.isManagementKey ? "" : "  (per-day/model breakdown needs a management key)")
-    : `openrouter spend UNREAD — ${usage.why}`;
+  if (!usage.ok) return `openrouter spend UNREAD — ${usage.why}`;
+  /*
+    THE "NEEDS A MANAGEMENT KEY" NOTE BELONGS TO THE BOOKS, NOT TO THIS KEY.
+
+    `isManagementKey` is a property of the INFERENCE key and is correctly false
+    — but the breakdown now arrives on a different credential, on the next
+    line. Printing the note off this flag alone told the reader a capability was
+    missing while it sat directly underneath. Same class as the three threshold
+    sentences swept earlier tonight: a fact restated somewhere it cannot see
+    whether it is still true.
+  */
+  return `openrouter spend  today $${usage.daily.toFixed(2)} · week $${usage.weekly.toFixed(2)}`
+    + ` · month $${usage.monthly.toFixed(2)}`
+    + (books.ok ? "" : "  (per-day/model breakdown needs a management key)");
 })());
 /*
   AND THE BOOKS THEMSELVES (fable-693 §2c).
@@ -302,7 +312,7 @@ say(await (async () => {
   that turned the whole reconciliation the right way round. Account-wide rather
   than per-key, and the line says so where it prints.
 */
-say(booksLine(await readOpenRouterActivity()));
+say(booksLine(books));
 /*
   AND THE OTHER ACCOUNT (fable-684 §1).
 

@@ -66,8 +66,10 @@ describe("the balance is asked for, and its refusal is a reading", () => {
   it("SHOUTS below the floor and names the consequence", () => {
     const line = falLine({ ok: true, remaining: 4, currency: "USD", low: true });
     expect(line).toContain("LOW");
+    /* Same amendment, same day, both providers (fable-692 §1). */
     expect(line, "a number without its consequence is a number nobody acts on")
-      .toContain("dies at dispatch");
+      .toContain("money is MOVING");
+    expect(line).not.toContain("dies at dispatch");
     expect(FAL_LOW_BALANCE_USD).toBe(20);
   });
 
