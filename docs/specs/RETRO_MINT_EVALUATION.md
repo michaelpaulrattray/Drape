@@ -148,11 +148,96 @@ the drift fixed. The population is small enough that the temptation is real, and
 a backfill nobody can re-run is a backfill nobody can verify — the same shape as
 the six dead ceremony rehearsals this campaign found last shift.
 
+## 4a. THE WORK LIST, MEASURED — and it is not the population above
+
+*Read 2026-08-17, shift 80, closing §1's declared limit and §5's second open
+item. Read-only production query, free. Reader:
+`scripts/retro-mint-worklist-disposable.mts`.*
+
+The question was asked in its OBSERVABLE form rather than by promotion date —
+*did this render deliver a feature that has no crop on its branch?* — because
+the promotion date is a proxy for exactly that and lives in git rather than the
+database. Every derivation runs through the product's own doors
+(`readStoredDelta`, `facetsWrittenBy`, `slotsForFacet`, `accessoryKindOf`), so
+this count and the rows the mint files cannot disagree.
+
+```
+variants 24 · library rows 29 (carry 27 · vacancy 2) · readable 18 of 24
+                               6 skipped, each naming its reason: status failed
+
+THE WORK LIST   13 (variant × slot) pairs · 8 variants · 4 casts · 1 user
+
+by slot     eye@left 4 · eye@right 4 · lips 1 · skin 1 ·
+            horns@left 1 · horns@right 1 · teeth 1
+by reason   no row at all 3 · a row with no pixels 10
+```
+
+**Only 3 of 13 are the population §2 and §3 were written about.** The other ten
+already have rows — rows the mint looked at and REFUSED, and the door recorded
+why:
+
+```
+noSpecimen/eyes         5     (one beside a disputedDelivery)
+noSpecimen/horns        2
+disputedDelivery/eyes   2
+no refusal recorded     2     (skin, teeth) — UNEXPLAINED, see below
+```
+
+### What that does to §2's shape
+
+*"A walker that finds pre-promotion features, loads their old frame, buys the
+reads, and calls the existing mint through the existing door"* is right for the
+three. For the seven `noSpecimen` members it calls a door that has already
+refused those exact slots, and gets the same answer — or falls to words and
+reports success, which is **§3.1's quiet risk arriving through a route §3.1 did
+not consider**.
+
+### And those seven do not need a mint at all
+
+`noSpecimen` is not a failure to read the frame. The column's own header:
+
+> *"the one refusal that exists in order to produce the specimen — the kind has
+> no measured positive, so no number here is earned, so the guard refuses and a
+> human must look at the pixels to say what complete means for it. These columns
+> are those pixels and that reading."*
+
+`refusedContentKey` and `refusedMaskKey` hold those pixels, in R2, for seven
+slots across two kinds (`eyes`, `horns`). **Nobody has looked.** A human saying
+what a complete `eyes` and a complete `horns` crop is unblocks those slots on
+the next ordinary render — no walker, no backfill, no segmenter spend — and
+unblocks them for every FUTURE render too, which a backfill does not.
+
+The gate-not-reader family, in its purest form: a record written specifically to
+be consulted, consulted by nobody.
+
+### The other two populations
+
+- **`disputedDelivery` × 2** already have a healing path (fable-468 ruling (b):
+  `awaitingCarrier` + `confirmed` mints the carrier on a later render whose own
+  reader confirms the facet). Whether it has fired for these two is unasked. If
+  it has not, that mechanism is the thing to look at, not a backfill.
+- **`no refusal recorded` × 2** — a row with no pixels and no refusal is a third
+  thing and **it is not understood**. It may predate the refusal columns
+  (migration 0029) or be a `noWords` path. Two rows, one query, and it is
+  written down as unexplained rather than guessed.
+
+### One instrument correction, for the record
+
+The first cut of the reader SELECTed `role` and never used it. Two of the
+twenty-nine rows are `vacancy` — a slot deliberately empty because she took the
+thing off, which has no `storageKey` **by design** — so counted naively, *"the
+glasses she removed"* lands on a list of features to re-photograph. It did not
+change this total (every pixel-less member here is anatomy and both vacancy rows
+are `item`), and that is exactly why it was worth fixing: an instrument that is
+wrong and happens to agree is the one that gets trusted next time on a corpus
+where it does not.
+
 ## 5. What this evaluation does not decide
 
 - **When.** It sits behind the V5 gate in his sequence; nothing here jumps it.
-- **Whether the exact work list is 24 or 4.** §1's declared limit — one more
-  query, and the build's first step.
+- ~~**Whether the exact work list is 24 or 4.**~~ **Answered in §4a: 13 pairs
+  over 8 variants**, and the more useful half of the answer is that the majority
+  of them are a different problem.
 - **Whether a retro-minted row is visibly different to the customer.** It should
   be different in provenance (§3.2); whether it is ever *shown* is a product
   question nobody has asked yet.

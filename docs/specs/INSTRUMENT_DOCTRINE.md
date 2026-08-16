@@ -170,6 +170,26 @@ No harm: reserved example domain, `success: false`, no row. None of that was
 designed; all of it was luck.
 *Banked:* fable-676 §5, from the unprompted report at opus-519 §6.
 
+**15. A control built out of a library call needs its own control.**
+Law 2 says verify the instrument before believing its finding, and the place it
+actually bites is the RULER — because the ruler is the thing you reached for in
+order to check something else, and nobody checks the thing they are checking
+with.
+*Incident:* a mask-overlay painter got a positive control before its output
+counted — a synthetic mask over the top-left quarter and nothing else — and the
+control failed. It went on failing through two rebuilds of the painter, because
+**`sharp(file).extract(box).stats()` ignores the extract and reports over the
+whole image**: every quadrant of every image measured identically, so the
+control could not have passed on a correct painter either. Two rounds were spent
+diagnosing a painter with a broken ruler. It was caught by printing the
+ORIGINAL's quadrants beside the painted one and seeing a photograph with a white
+t-shirt, a grey background and a face read `R204 G191 B189` in all three. The
+check reads its own pixels in a loop now.
+*The cheap form of the rule:* a control should measure something whose answer
+you already know INDEPENDENTLY — here, that three different regions of a real
+photograph cannot have the same mean.
+*Banked:* fable-780 §3, from the incident record at opus-571 §4.
+
 *(Numbers are ADMISSION order, not reading order — 14 sits here because this is
 where it belongs, and renumbering would silently invalidate every citation that
 names an entry. Expect the sequence to run out of order as the file grows.)*
