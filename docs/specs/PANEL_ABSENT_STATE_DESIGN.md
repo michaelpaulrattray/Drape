@@ -36,6 +36,11 @@ a state, and it decides that conservatively and says why.*
 > shows **Hair · bald** and **Facial hair · clean-shaven** beside the man they
 > are true of, settled and tappable. The fixture's rows were removed afterwards
 > by the ids the seeder printed.
+>
+> **Both themes are on the record** (fable-894 §3): `panel-bald-row-light.png`
+> beside the default dark one. The stated absence takes the same treatment as
+> every other row's words in each — which is the point, since a state drawn
+> more faintly than a description would read as *"we could not read this"*.
 
 > **FOUNDER RULING, fable-889** — asked whether hair should appear on his bald
 > cyborg cast or only once asked for: **"yes show bald"**.
@@ -200,8 +205,14 @@ printed. No new call.
   deliberate exception to fable-414 and is written at `hasContent` where the
   rule lives. A bald head has nothing to point at, and the row is not offering
   a picture of his hair — it is telling him there is none.
-- **The third fact still has no channel.** The panel can now tell FOUND-NOTHING
-  from STILL-COMING and from NEVER-ASKED. It still cannot say *"this question
-  errored"* — `failed` stops at `panelScanOf`, deliberately, because nothing has
-  ruled what a customer should be told about a reader that fell over. Named here
-  so the next person finds a decision rather than a gap.
+- **The third fact is RULED, and the answer is that it stays server-side**
+  (fable-894 §2, on this note's own question). A question that FAILED renders as
+  the row **absent** — today's behaviour for everything — never as a none-state
+  word and never as a perpetual still-coming. Two grounds, and the first is the
+  law: *a broken reader may never produce "bald"*, because the none-words are
+  claims about his photograph and an errored read has no standing to make one.
+  The second is the product: *"our reader fell over"* is noise in a visual
+  studio — the heal and re-ask machinery owns recovery, the logs own diagnosis.
+  So `failed` stops at `panelScanOf` deliberately, and the projection excludes
+  it from `absent` for exactly that reason. Founder-overrulable if he ever wants
+  visible degraded states.
