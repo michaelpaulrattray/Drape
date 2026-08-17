@@ -74,7 +74,7 @@ for (const specimen of SPECIMENS) {
     continue;
   }
   const bytes = Buffer.from(await response.arrayBuffer());
-  const sides = await reader.regionSides({ image: bytes, name: "earring", absentIsAnswer: true });
+  const sides = await reader.regionSides!({ image: bytes, name: "earring", absentIsAnswer: true });
   if (sides === null) {
     console.log(`${specimen.label.padEnd(8)}reader gave no sides for this name`);
     continue;

@@ -51,7 +51,7 @@ import { EDIT_PROSE } from "../server/castingV2/refineService";
 import { repaint, type ReferenceBytes } from "../server/castingV2/repaintRender";
 import { createFalMaskedEditEngine } from "../server/providers/falImages";
 import { verifyRender, isRefusableMiss } from "../server/castingV2/renderVerification";
-import { vacantPhraseFor } from "../server/castingV2/accessoryKinds";
+import { vacantPhraseFor } from "../server/castingV2/vacancyPhrases";
 import { facetOfSubject } from "../server/castingV2/refineFacets";
 import { storageReadBytes } from "../server/storage";
 

@@ -36,8 +36,8 @@ import {
   coverage,
   occludedShare,
   unionMasks,
-  type Mask,
 } from "../../server/castingV2/maskGeometry";
+import type { Mask } from "../../server/castingV2/maskedComposite";
 import { pointAt, sam3 } from "./lib/segment.mts";
 
 const OUT = "output/masked/visibility-gate";

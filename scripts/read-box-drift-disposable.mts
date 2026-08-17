@@ -78,6 +78,7 @@ let reads = 0;
 /* Same world guard as the eye rate, and for the same reason: the rows and the
    bytes must be in one world or the reading is of a world nobody chose. */
 const url = resolveDatabaseUrl();
+if (!url) throw new Error("no database url — pass one, or run under the service that injects it");
 const bucket = process.env.R2_BUCKET ?? "";
 const rowsProd = url.includes(":23768");
 const bytesProd = bucket === "drape-production";

@@ -35,7 +35,7 @@ import { createCastingSession } from "../server/db/castingV2";
 import { createRoll } from "../server/castingV2/rollService";
 import { refineCandidate } from "../server/castingV2/refineService";
 import { selectVariant } from "../server/db/castingV2Variants";
-import { vacantPhraseFor } from "../server/castingV2/accessoryKinds";
+import { vacantPhraseFor } from "../server/castingV2/vacancyPhrases";
 import { slotWordsRefusal } from "../server/castingV2/slotWordShape";
 import { storageReadBytes } from "../server/storage";
 import { assertOneWorld } from "./lib/worldGuard.mts";
@@ -76,7 +76,7 @@ if (process.argv[2] === "cast") {
       .from(castingCandidates)
       .where(eq(castingCandidates.sessionId, session.id));
     const ready = rows.filter((row) => row.status === "ready");
-    const settled = rows.filter((row) => row.status !== "queued" && row.status !== "generating");
+    const settled = rows.filter((row) => row.status !== "queued" && row.status !== "dispatched");
     console.log(`  ${ready.length} ready / ${settled.length} settled of ${rows.length}`);
     if (rows.length > 0 && settled.length === rows.length) {
       console.log(`\nready candidates (their faces are written out so the hoops can be LOOKED at):`);

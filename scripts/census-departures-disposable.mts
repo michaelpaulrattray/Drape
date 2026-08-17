@@ -20,7 +20,8 @@
 import { repaintAsksFor } from "../server/castingV2/repaintAsks";
 import { EDIT_PROSE } from "../server/castingV2/refineService";
 import { DEPARTABLE_SUBJECTS } from "../server/castingV2/refineSubjects";
-import { LANDMARK_OF_ACCESSORY, accessoryKindOf, vacantPhraseFor } from "../server/castingV2/accessoryKinds";
+import { LANDMARK_OF_ACCESSORY, accessoryKindOf } from "../server/castingV2/accessoryKinds";
+import { vacantPhraseFor } from "../server/castingV2/vacancyPhrases";
 import { BORN_WORN_CLASSES } from "../server/castingV2/bornWornDetector";
 
 /**

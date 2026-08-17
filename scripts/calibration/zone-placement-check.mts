@@ -12,7 +12,8 @@
 import "dotenv/config";
 import sharp from "sharp";
 import { readFileSync, writeFileSync } from "node:fs";
-import { coverage, placeDestinationZone, unionMasks, type Mask } from "../../server/castingV2/maskGeometry";
+import { coverage, placeDestinationZone, unionMasks } from "../../server/castingV2/maskGeometry";
+import type { Mask } from "../../server/castingV2/maskedComposite";
 
 const apiKey = process.env.FAL_KEY!;
 const OUT = "output/masked/finish-pass";

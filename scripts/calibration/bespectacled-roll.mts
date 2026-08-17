@@ -71,7 +71,7 @@ for (let attempt = 0; attempt < 90; attempt += 1) {
     .from(castingCandidates)
     .where(eq(castingCandidates.sessionId, session.id));
   const ready = rows.filter((row) => row.status === "ready");
-  const settled = rows.filter((row) => row.status !== "queued" && row.status !== "generating");
+  const settled = rows.filter((row) => row.status !== "queued" && row.status !== "dispatched");
   console.log(`  ${ready.length} ready / ${settled.length} settled of ${rows.length}`);
   if (rows.length > 0 && settled.length === rows.length) {
     console.log("\nready candidates:");

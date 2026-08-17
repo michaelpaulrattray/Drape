@@ -33,6 +33,23 @@
  * It is invariant 1's shape — scope the thing in the statement that writes —
  * arriving in the one place nobody thought of as production code.
  *
+ * # AND `-disposable` NAMES A PROBE, NOT AN UNTRACKED FILE
+ *
+ * Written here for the same reason as the rule above: this is the header a
+ * script author reads, and the suffix has been read two ways by two shifts.
+ *
+ * **Measured 2026-08-17: 266 tracked files carry it and 254 untracked ones do**
+ * — so the suffix has never meant "this is not committed", and half the tree
+ * would have to move to make it mean that. What it means, as practised and as
+ * it should be: **a script written to answer ONE question, which the product
+ * does not call and no other script imports.** It is committed when its answer
+ * is evidence somebody will want to re-read — a court, a bench, a ledger
+ * reading — and left untracked when it is scaffolding for a single sitting.
+ *
+ * Two things follow, and they are the whole rule: a `-disposable` file may be
+ * deleted without reading its callers, because it has none; and it is never
+ * imported by product code or by another script. Neither of those is about git.
+ *
  * # Why the check reads the AST and not the text
  *
  * The first attempt at this scope was a grep, and it was wrong in both

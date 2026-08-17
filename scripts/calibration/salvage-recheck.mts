@@ -74,7 +74,7 @@ async function score(left: Buffer, right: Buffer) {
 
 /** Three readings, because one reading of an inconsistent reader is an anecdote. */
 async function scoreThrice(label: string, left: Buffer, right: Buffer) {
-  const runs = [];
+  const runs: Array<Awaited<ReturnType<typeof score>>> = [];
   for (let index = 0; index < 3; index += 1) runs.push(await score(left, right));
   const counts = runs.map((run) => run.differs.length);
   const union = [...new Set(runs.flatMap((run) => run.differs))].sort();

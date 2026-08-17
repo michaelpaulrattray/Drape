@@ -84,9 +84,39 @@ export function resolveDatabaseUrl(): string | undefined {
   return process.env.MYSQL_PUBLIC_URL ?? process.env.PUBLIC_DATABASE_URL ?? process.env.DATABASE_URL;
 }
 
+/**
+ * THE CONNECTION AS A SCRIPT USES IT — the same object, with `query` typed for
+ * the one thing every probe here does.
+ *
+ * mysql2 constrains its generic to `QueryResult`, a union built for the
+ * difference between rows and an `OkPacket`, so a probe that says what shape it
+ * expects back —
+ *
+ *   `const [rows] = await connection.query<Array<{ openId: string }>>(sql)`
+ *
+ * — is a type error, and it was **42 of the 128** errors standing between this
+ * tree and `pnpm check`. Forty-two sites, one shape, no bug among them: every
+ * one is a correct read whose declared row type mysql2 will not accept without
+ * `& RowDataPacket` welded onto it.
+ *
+ * So it is answered ONCE, here, where the timezone is answered — rather than by
+ * an intersection typed into forty-two probes and remembered in every future
+ * one. What a caller declares is what it gets back; nothing is widened to
+ * `any`, and a script that asks for `<any>` (to read an `insertId`) still gets
+ * exactly that.
+ *
+ * **What this trades away, said out loud:** mysql2's constraint would stop a
+ * script typing an INSERT's result as rows. That distinction is worth having in
+ * application code and is not what these files are — they are read probes, and
+ * `server/db` reaches this database through Drizzle, never through this door.
+ */
+export type ScriptConnection = mysql.Connection & {
+  query<T = mysql.RowDataPacket[]>(sql: string, values?: unknown): Promise<[T, mysql.FieldPacket[]]>;
+};
+
 export function openDatabase(
   input: string | mysql.ConnectionOptions | undefined = process.env.DATABASE_URL,
-): Promise<mysql.Connection> {
+): Promise<ScriptConnection> {
   const options = typeof input === "string" || input === undefined
     ? { uri: input }
     : { ...input };

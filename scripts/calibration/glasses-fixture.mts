@@ -52,7 +52,8 @@ import "dotenv/config";
 import sharp from "sharp";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 
-import { coverage, subtractMask, unionMasks, type Mask } from "../../server/castingV2/maskGeometry";
+import { coverage, subtractMask, unionMasks } from "../../server/castingV2/maskGeometry";
+import type { Mask } from "../../server/castingV2/maskedComposite";
 import {
   compositeMasked,
   featherMask,

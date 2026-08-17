@@ -39,7 +39,8 @@ import "dotenv/config";
 import sharp from "sharp";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 
-import { harvestMatteFrom, type Mask } from "../../server/castingV2/maskGeometry";
+import { harvestMatteFrom } from "../../server/castingV2/maskGeometry";
+import type { Mask } from "../../server/castingV2/maskedComposite";
 import { readRaster, type Raster } from "../../server/castingV2/maskedComposite";
 import { birefnetMatte, sam3 } from "./lib/segment.mts";
 

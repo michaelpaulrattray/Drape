@@ -49,7 +49,8 @@
 import sharp from "sharp";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 
-import { coverage, dilateMask, type Mask } from "../../server/castingV2/maskGeometry";
+import { coverage, dilateMask } from "../../server/castingV2/maskGeometry";
+import type { Mask } from "../../server/castingV2/maskedComposite";
 import { featherMask } from "../../server/castingV2/maskedComposite";
 
 const SHOP = "output/masked/segmentation-shop-2";

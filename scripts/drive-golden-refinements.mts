@@ -48,7 +48,7 @@ for (const golden of GOLDEN_REFINEMENTS) {
         failures.push({
           instruction: golden.instruction,
           run,
-          problem: `expected a refusal, got ${JSON.stringify(parsed.delta)}`,
+          problem: `expected a refusal, got ${JSON.stringify("delta" in parsed ? parsed.delta : parsed)}`,
         });
         continue;
       }

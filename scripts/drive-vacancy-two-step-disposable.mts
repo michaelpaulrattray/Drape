@@ -50,7 +50,7 @@ import { refineCandidate } from "../server/castingV2/refineService";
 import { selectVariant } from "../server/db/castingV2Variants";
 import { verifyRender } from "../server/castingV2/renderVerification";
 import { facetOfSubject } from "../server/castingV2/refineFacets";
-import { vacantPhraseFor } from "../server/castingV2/accessoryKinds";
+import { vacantPhraseFor } from "../server/castingV2/vacancyPhrases";
 import { storageReadBytes } from "../server/storage";
 
 const OUT = "output/shift64-paid-two-step";

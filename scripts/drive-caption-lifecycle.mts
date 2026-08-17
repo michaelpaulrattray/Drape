@@ -36,8 +36,10 @@ import { assertOneWorld } from "./lib/worldGuard.mts";
 */
 assertOneWorld(["DATABASE_URL"]);
 
-const db = await getDb();
-if (!db) throw new Error("no db");
+const maybeDb = await getDb();
+if (!maybeDb) throw new Error("no db");
+/* Aliased after the guard so every closure below holds a non-null handle. */
+const db = maybeDb;
 const [bot] = await db.select().from(users).where(eq(users.openId, "verify-bot-local")).limit(1);
 
 const all = await db

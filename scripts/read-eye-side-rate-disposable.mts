@@ -103,6 +103,7 @@ const FLOOR = detectionFloorFor(eye.question, "side").floor;
   confident reading of a world nobody chose.
 */
 const url = resolveDatabaseUrl();
+if (!url) throw new Error("no database url — pass one, or run under the service that injects it");
 const bucket = process.env.R2_BUCKET ?? "";
 const publicUrl = process.env.R2_PUBLIC_URL ?? "";
 const rows_are_prod = url.includes(":23768");

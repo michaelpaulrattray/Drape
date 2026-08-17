@@ -62,7 +62,7 @@ if (process.argv[2] === "cast") {
       .from(castingCandidates)
       .where(eq(castingCandidates.sessionId, session.id));
     const ready = rows.filter((r) => r.status === "ready");
-    const settled = rows.filter((r) => r.status !== "queued" && r.status !== "generating");
+    const settled = rows.filter((r) => r.status !== "queued" && r.status !== "dispatched");
     console.log(`  ${ready.length} ready / ${settled.length} settled of ${rows.length}`);
     if (rows.length > 0 && settled.length === rows.length) {
       console.log("\nready candidates:");

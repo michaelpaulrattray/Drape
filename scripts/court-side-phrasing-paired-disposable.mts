@@ -222,11 +222,15 @@ const RATIO_BAR = 2.0;
 console.log("");
 console.log("THE COURT");
 for (const armName of ["plain", "placed"] as const) {
-  const side = "right" as const;
+  /* THE ASKED SIDE IS HER RIGHT on every arm of this court — the two ternaries
+     that used to stand here read a `side` pinned to "right", so their left
+     branches could never be taken. Removed rather than kept as a parameter
+     nobody varies: a dead branch in an instrument is a reading nobody has ever
+     taken. */
   const arm = results.filter((row) => row.arm === armName && Number.isFinite(row.leftChange as number));
   const ratios = arm.map((row) => {
-    const named = side === "left" ? Number(row.leftChange) : Number(row.rightChange);
-    const other = side === "left" ? Number(row.rightChange) : Number(row.leftChange);
+    const named = Number(row.rightChange);
+    const other = Number(row.leftChange);
     return other === 0 ? Number.POSITIVE_INFINITY : named / other;
   });
   const passed = ratios.filter((ratio) => ratio >= RATIO_BAR).length;

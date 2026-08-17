@@ -85,7 +85,7 @@ for (const specimen of SPECIMENS) {
   }
   const bytes = Buffer.from(await response.arrayBuffer());
   try {
-    const sides = await reader.regionSides({ image: bytes, name: REGION, absentIsAnswer: true });
+    const sides = await reader.regionSides!({ image: bytes, name: REGION, absentIsAnswer: true });
     if (sides === null) {
       rows.push({ specimen, left: null, right: null, note: "reader gave no sides for this name" });
       continue;

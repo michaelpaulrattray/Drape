@@ -70,8 +70,10 @@ const databaseUrl = process.env[databaseKey];
 if (!databaseUrl) throw new Error("no database URL");
 const where = new URL(databaseUrl.replace(/^mysql:/, "http:"));
 
-const engine = interpreterEngine();
-if (!engine) throw new Error("no text transport (OPENROUTER_API_KEY) — the arms would both answer null");
+const transport = interpreterEngine();
+if (!transport) throw new Error("no text transport (OPENROUTER_API_KEY) — the arms would both answer null");
+/* Aliased after the guard so every closure below holds a non-null engine. */
+const engine = transport;
 
 const lines: string[] = [];
 function say(line = "") {

@@ -36,7 +36,7 @@ import { openDatabase } from "./lib/dbConnection.mts";
 import { assertOneWorld } from "./lib/worldGuard.mts";
 import { refineCandidate } from "../server/castingV2/refineService";
 import { selectVariant } from "../server/db/castingV2Variants";
-import { vacantPhraseFor } from "../server/castingV2/accessoryKinds";
+import { vacantPhraseFor } from "../server/castingV2/vacancyPhrases";
 import { slotWordsRefusal } from "../server/castingV2/slotWordShape";
 import { storageReadBytes } from "../server/storage";
 

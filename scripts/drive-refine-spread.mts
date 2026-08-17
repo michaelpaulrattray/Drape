@@ -63,6 +63,14 @@ for (const entry of SPREAD) {
     continue;
   }
 
+  /* A NAVIGATE REPLY CARRIES NO DELTA — `{ ok: true, intent: "navigate" }` is
+     a member of this union, so an ask the interpreter read as navigation would
+     have reached the line below with `delta` undefined. Named and skipped,
+     never measured as an edit. */
+  if (!("delta" in parsed)) {
+    console.log(`SKIP  ${label} — read as navigation, not an edit`);
+    continue;
+  }
   const delta = parsed.delta;
   const usedGuaranteed = Boolean(
     delta.eyeColour ?? delta.eyeShape ?? delta.hairStyle ?? delta.hairColour ?? delta.hairTexture,
