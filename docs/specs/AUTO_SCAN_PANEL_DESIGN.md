@@ -274,16 +274,38 @@ promoted open kind — each arrives with its anchor or does not arrive. The bald
 shipped words-only on 2026-08-17 and this ruling is what it produced; a row is not
 finished until somebody has looked at it beside its neighbours.
 
-### THE SCALP BOX IS DECIDED, and it is the law's first instance
+### AND THE NONE-STATE NEVER REACHES THE LAW — his final ruling, same sitting
 
-When hair reads EMPTY, **one additional scan question locates the crown**, and the
-bald row gains its rectangle and a scalp cutout as its row picture. It is a
-CONDITIONAL read: a haired face never buys it, so the cost lands only on the faces
-that need it (~$0.005 per fire, on the scan's own budget line and never a
-customer's credits).
+> *"now im conflicted — i mean if he's bald i guess it doesnt need to appear right
+> there's no feature until there is one same rule goes for clean shaven"*
 
-**Clean-shaven gets the same treatment** — the jaw and chin region — because the
-law covers it identically and the two none-states are the same shape.
+**NO FEATURE, NO ROW.** A none-state row does not render at all — bald and
+clean-shaven alike. The panel is the record of what the cast HAS, and the
+photograph carries the absence; this is the product's own earlier philosophy (*her
+record, not her options*) reasserting itself, and it is final over the show-bald
+ruling of the same day (fable-904, superseding fable-889 §2).
+
+So the visual-anchor law above stands for **every row that renders**, and the
+question it was first asked about — how do you box an absence — is now a question
+nobody has to answer.
+
+> **THE SCALP BOX IS DEAD, UNBUILT, AND NOTHING WAS SPENT ON IT.** It was decided
+> at fable-903 §2b and killed at fable-904 §2c within one sitting of the founder's
+> dogfooding. Recorded rather than deleted, because the next person to look at a
+> boxless row will have the same idea and should find the ruling instead of
+> rediscovering the offer. The flip-flop cost nothing: the words had shipped, the
+> read was never bought.
+
+**What the build owes instead**, and it is smaller than what it replaced: the
+panel skips none-state rows, and the HAIR section header collapses rather than
+sitting over zero rows. One screenshot per theme on the cyborg cast, per the
+evidence discipline.
+
+**And the machinery UNDER the row is KEPT** (fable-904 §2b): the scan's
+*found-none* versus *could-not-look* distinction, the `whenAbsent` catalogue
+knowledge, and the projection field all stay. Only the RENDER changes, so a future
+flip is one line — and the honest distinction goes on guarding edits and diagnosis
+server-side, where it was always doing the load-bearing work.
 
 ### The bounds the build carries
 
@@ -292,8 +314,8 @@ law covers it identically and the two none-states are the same shape.
    proportions. That is the whole reason the row can carry a box honestly, and it
    is why the answer to *"bald has no extent"* is a scalp read rather than a
    drawn rectangle.
-2. **Two controls before the word ships** (the bald row's own discipline): the box
-   lands on the crown for a bald face, and it is judged BY EYE on the founder's
-   cyborg cast before shipping — law 6 renders it, law 9 closes it.
+2. **Two controls before anything ships** (the bald row's own discipline): the
+   anchor lands where the edit would paint, judged BY EYE on the founder's own
+   cast — law 6 renders it, law 9 closes it.
 3. **Both themes screenshotted**, per the UI evidence discipline.
 4. It is a panel/scan build and belongs after the open lane's carry work.
