@@ -253,3 +253,47 @@ No body row — that has its own note. No engine or routing change — closed on
 founder's own eye (fable-371). No new charged action: **a scan is house money on
 a read the user did not ask to pay for**, and nothing here touches the refund
 law or the credit path.
+
+---
+
+## 9. THE VISUAL-ANCHOR LAW — founder ruling, 2026-08-17 (via fable-903)
+
+> *"my rule was never have a feature in the right panel if it has no bounding box
+> or picture with it otherwise it looks odd against everything else if anything do
+> it for the UX and consistency"*
+
+**STANDING LAW, and it governs every row this panel will ever gain: no feature
+row ships without a visual anchor** — a bounding box on the frame, a row picture,
+or both. A row of words beside eight rows that each carry a cutout does not read
+as information; it reads as the one row that is broken. His reason is consistency
+and it is a design reason, not a technical one, so it outranks any argument about
+what is convenient to compute.
+
+**Obeyed from birth, not retrofitted.** A none-state, a new catalogued feature, a
+promoted open kind — each arrives with its anchor or does not arrive. The bald row
+shipped words-only on 2026-08-17 and this ruling is what it produced; a row is not
+finished until somebody has looked at it beside its neighbours.
+
+### THE SCALP BOX IS DECIDED, and it is the law's first instance
+
+When hair reads EMPTY, **one additional scan question locates the crown**, and the
+bald row gains its rectangle and a scalp cutout as its row picture. It is a
+CONDITIONAL read: a haired face never buys it, so the cost lands only on the faces
+that need it (~$0.005 per fire, on the scan's own budget line and never a
+customer's credits).
+
+**Clean-shaven gets the same treatment** — the jaw and chin region — because the
+law covers it identically and the two none-states are the same shape.
+
+### The bounds the build carries
+
+1. **The box stays a READING.** It is the region a hair edit would actually paint,
+   located by a segmenter on this frame — never geometry invented from a face's
+   proportions. That is the whole reason the row can carry a box honestly, and it
+   is why the answer to *"bald has no extent"* is a scalp read rather than a
+   drawn rectangle.
+2. **Two controls before the word ships** (the bald row's own discipline): the box
+   lands on the crown for a bald face, and it is judged BY EYE on the founder's
+   cyborg cast before shipping — law 6 renders it, law 9 closes it.
+3. **Both themes screenshotted**, per the UI evidence discipline.
+4. It is a panel/scan build and belongs after the open lane's carry work.
