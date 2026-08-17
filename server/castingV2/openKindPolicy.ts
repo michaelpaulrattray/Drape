@@ -241,7 +241,12 @@ export const OPEN_KIND_POLICY: Record<string, OpenKindAnswer> = {
         + "promotion signal (§3). The label is already landed with its negative control. "
         + "A crop may only be minted for an open kind once §4's absence control has shown "
         + "the segmenter a frame WITHOUT the thing and been declined — a false crop of "
-        + "nothing is a permanent instruction to paint nothing, in a place, forever",
+        + "nothing is a permanent instruction to paint nothing, in a place, forever. "
+        + "**And a second condition since fable-872 §2: the kind must not be PAIRED.** A "
+        + "whole-frame read of a pair returns one instance (measured on wings: the mask the "
+        + "mint would have carried is the image-left wing to 13 pixels), so a paired kind's "
+        + "crop is half a picture wearing the whole picture's name. Paired open kinds are "
+        + "words-only until promoted; see `PLURAL_SUBJECTS`",
     },
     /* STILL OWED, and it is the FILING half that is owed rather than the crop
        half. The crop condition this basis names is discharged — step 3 built
@@ -256,12 +261,42 @@ export const OPEN_KIND_POLICY: Record<string, OpenKindAnswer> = {
   PLURAL_SUBJECTS: {
     file: "refineSubjects.ts",
     asks: "is this one slot holding a whole SET, restated absolutely each time",
-    answer: "no — singular until promoted",
+    answer: "no — singular until promoted, and a PAIRED kind carries no crop at all",
     basis: {
       derived: "*give her horns* is one ask, one value, one carried crop of the whole "
         + "thing (§5), and the pair is the thing. It breaks only on *make the left one "
         + "longer*, and the ruling already answers that: the one-of-a-pair ask refuses "
         + "into the refund rather than guessing, which is the earring history not repeated",
+      /*
+        AND THE CROP DOES NOT FOLLOW FROM THE SLOT — measured 2026-08-17, and it
+        is the half of §5 that was reasoned rather than read.
+
+        "One carried crop of the whole thing" assumed a whole-frame read RETURNS
+        the whole thing. For a pair it does not. On the specimen court's wings
+        frame the reader answered 7.3277% of frame and it was ONE wing; the same
+        reader, on the same frame cut at her face's centroid and asked one side
+        to a picture, answered on BOTH halves — 115,268 px and 104,569 px. The
+        whole-frame mask and the image-left half agree to **13 pixels**, so what
+        the mint would have carried is one instance, exactly, under a noun that
+        means two. The overlay is what says so; the number alone reads as a pass
+        (`output/wings-per-side/PANEL-wings-per-side.png`).
+
+        **FOUNDER-DELEGATED RULING, fable-872 §2: a paired open kind is
+        WORDS-ONLY UNTIL PROMOTED.** No crop of one instance ever files under a
+        name that means both — that is the earring history and it does not get a
+        second run in a new lane. Per-instance geometry is what promotion buys,
+        and the split-frame measure above is PROMOTION-DESIGN data proving the
+        capability exists at that point; it is not a mint route, and `regionSides`
+        answers `null` for an open kind by construction (`BILATERAL` derives from
+        the catalogue's `frame: "ownSide"` column and an open kind has no card).
+
+        What the code does NOT yet have is the property itself: *is this kind
+        paired* is not something the lane can answer today, and it joins
+        *does-it-extend* as a kind-property the interpreter answers in ONE design
+        (fable-872 §2, fable-868 §4) — designed together, costed together. Until
+        that lands, no open kind mints a crop, because a lane that cannot tell a
+        pair from a single would file the pair's half under the pair's name.
+      */
     },
     standing: "silence",
   },

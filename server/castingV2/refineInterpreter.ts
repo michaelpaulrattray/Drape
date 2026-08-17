@@ -32,9 +32,14 @@ import { createModuleLogger } from "../logging/logger";
 import type { ReadPurpose, TextEngine } from "../providers/types";
 import { interpreterEngine } from "./interpreter";
 import { declarativeStateRule } from "./declarativeState";
-import { readDelta, stageWordIn, type FreeLaneCheck, type RefineParse } from "./refineDelta";
+import {
+  readDelta, stageWordIn,
+  type FreeLaneCheck, type RefineDelta, type RefineParse,
+} from "./refineDelta";
 import { freeSubjectGuidance } from "./refineSubjects";
 import { closedSubjectFor } from "./openLaneKind";
+import { acceptOpenKind } from "./openLaneAccept";
+import { recordOpenLaneDemand } from "../db/castingV2OpenLaneDemand";
 import { REFINE_REFUSALS } from "./refineRefusals";
 import { readRemovalSubject } from "./refineRemoval";
 import { namesUnknownProperNoun } from "./properNouns";
@@ -1248,7 +1253,65 @@ async function runOnce(
   };
   const delta = readDelta(reply, check);
   /* A WALL is an answer, not a hiccup — it must not be re-sampled. */
-  if (!delta) return check.wall ? { ok: false, refusal: check.wall } : null;
+  if (check.wall) return { ok: false, refusal: check.wall };
+  /*
+    THE OPEN LANE'S DOOR, AND IT IS HERE RATHER THAN IN THE READER
+    (OPEN_LANE_DESIGN_NOTE §8 step 5; the shape ordered in fable-874 §3a).
+
+    `readDelta` recorded the subjects it does not own and filed nothing for
+    them. This is where the closed lane has finished declining, so it is the
+    only place an open kind may be named — and it is named by CODE, from the
+    customer's sentence, with the answer checked against the closed vocabulary
+    before it counts as new. A reader that did this itself would let the model
+    choose its own composition key with nothing in front of it.
+
+    The wall check moved ABOVE this deliberately: a wall is an answer about
+    something the customer said, and it outranks a fallback.
+
+    **Nothing routes in here today.** The interpreter is not told it may name a
+    kind outside the vocabulary, so its replies key onto the nearest closed
+    subject — which is what §2 measured and why the whole-delta null was latent
+    rather than live. The prompt clause is its own step, behind its own
+    measurement, for the reason `context-is-not-additive` names: a sentence
+    added to this prompt moves routing for asks that have nothing to do with
+    this lane. Until then this door is written, driven at its own seam, and
+    walked by nothing that was paid for.
+  */
+  const opened = await acceptOpenKind({
+    instruction,
+    unowned: check.unowned ?? [],
+    ...(engine ? { engine } : {}),
+    ...(input.signal ? { signal: input.signal } : {}),
+  });
+  if (opened) {
+    /*
+      DEMAND IS RECORDED FOR THE REFUSALS TOO — they are the more useful half. A
+      kind that collided with a closed subject is a promotion signal (and a
+      routing bug), and a table holding only successes would report the lane
+      working perfectly on exactly the asks it happened to manage.
+      Fire-and-forget: the writer cannot reject, and a promotion signal may
+      never cost somebody their picture (§7).
+
+      **NO KIND, NO ROW.** When the normalizer could not name the thing at all
+      there is nothing honest to put in the one column that is not a timestamp,
+      and a placeholder noun would be a word nobody asked for sitting in the
+      table built to hold only words people did ask for. It is a log line
+      instead. `unreadable` stays for the case that column CAN hold — a kind
+      that was named and that the reader cannot see on a frame that holds it
+      (the scales-and-gills class, §7).
+    */
+    if (opened.kind === undefined) {
+      log.info({}, "[refineInterpreter] an out-of-vocabulary ask could not be named at all — no demand row");
+    } else {
+      void recordOpenLaneDemand(opened.kind, opened.outcome);
+    }
+    if (opened.ok) {
+      const filed: RefineDelta = delta ?? {};
+      filed.open = { ...(filed.open ?? {}), [opened.kind]: opened.ask };
+      return { ok: true, delta: filed };
+    }
+  }
+  if (!delta) return null;
   /*
     THE BACKSTOP FOR A HYBRID LIKENESS ASK (D-181).
 

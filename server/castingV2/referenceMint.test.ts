@@ -2135,4 +2135,42 @@ describe("the open lane's absence control", () => {
     expect(calls).toEqual([{ question: "hair", onAnchor: false }]);
     expect(bench.rows[0]!.image!.guard).toMatchObject({ kind: "hair", threshold: 9460 });
   });
+
+  /*
+    AND THE CROP NO BAR DIVIDED SAYS SO — fable-306's clause, made keepable
+    (fable-872 §5).
+
+    The clause promised `ceilingAccepted` would mark the crop "so a later count
+    of bar-measured specimens cannot silently include crops no bar ever
+    divided". It marked an in-process verdict that nothing read. It could not be
+    put on the ROW — the library persists no instrument, so a ceiling acceptance
+    and a `derived-geometry` pass both land as 10000/10000 and are
+    indistinguishable afterwards — so it is carried onto the render's own
+    outcome, which is the level a promotion decision reads at.
+
+    It matters because of step 3: an open kind has no specimen family by
+    definition, so EVERY open kind that ever carries is a ceiling acceptance.
+    Without this, the first count of what the library has measured would report
+    the open lane's crops as bar-measured.
+  */
+  it("marks a crop NO BAR divided — the open kind's carry is a ceiling acceptance", async () => {
+    const { result } = await mintOpen({ beforeRead: null });
+
+    expect(result.slots[0]).toMatchObject({
+      slot: "open:fangs", outcome: "stored", ceilingAccepted: true,
+    });
+  });
+
+  it("CONTROL — a crop a real bar DID divide is not marked", async () => {
+    /*
+      Without this arm the assertion above passes on a mint that marks
+      everything, which is the same verdict wearing a different word. Hair is
+      judged at 9460 — a measured family, a real shortfall for the bar to
+      divide — and it must come back with no mark at all.
+    */
+    const { result } = await mintOpen({ slots: [hairSlot()] });
+
+    expect(result.slots[0]).toMatchObject({ slot: "hair", outcome: "stored" });
+    expect(result.slots[0]).not.toHaveProperty("ceilingAccepted");
+  });
 });

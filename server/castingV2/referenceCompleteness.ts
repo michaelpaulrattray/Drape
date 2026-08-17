@@ -879,9 +879,32 @@ export function guardReference(input: GuardInput): GuardVerdict {
     would be an affirmative with no possible negative wearing a measured bar's
     name — the class this campaign exists to kill. So:
 
-      - it ACCEPTS, and says so. `ceilingAccepted` marks the row, so a later
-        count of bar-measured specimens cannot silently include crops no bar
-        ever divided.
+      - it ACCEPTS, and says so. `ceilingAccepted` marks the verdict, and the
+        mint carries it onto the render's `stored` outcome and names the slots
+        in its log line — so a count of bar-measured specimens taken from a
+        render cannot silently include crops no bar ever divided.
+
+        **CORRECTED 2026-08-17 (fable-872 §5), and the correction is the
+        interesting half.** This clause used to say the flag *marks the row*. It
+        did not: it lived on an in-process verdict, `grep` found it read by
+        nothing but its own tests, and the library's columns are
+        `guardKind/Coverage/Spill/Threshold` — no INSTRUMENT — so a ceiling
+        acceptance and a `derived-geometry` pass both persist as coverage 10000
+        against threshold 10000 and are indistinguishable on the row forever
+        after. `guardThreshold == 10000` is therefore NOT this claim; it is a
+        strictly weaker one that also catches every composed crop.
+
+        The claim was harmless while the exemption was scoped to kinds with a
+        measured family. **Step 3 made it load-bearing**: an open kind has no
+        specimen family by definition, so every open kind that ever carries is a
+        ceiling acceptance, and a count that could not see them would be a count
+        of the closed lane wearing the whole library's name.
+
+        What a ROW-level answer would cost, filed rather than assumed: one
+        nullable column on `casting_reference_library`, migration-before-code,
+        and a production ceremony — which is a founder gate, not a shift's work.
+        The render-level mark is what this build can honestly keep, and it is
+        the level a promotion decision actually reads at.
       - it invents no number. The bar it reports is the ceiling itself — 1.0
         against a reading of 1.0 — which is the comparison that actually
         happened.

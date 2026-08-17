@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "fdc6ea7f18a87104"
+    "sourceFingerprint": "aa5d40a4777395e3"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 122
+      "moduleCount": 123
     },
     {
       "id": "domain:castingV2",
@@ -53,7 +53,7 @@
     {
       "id": "domain:data",
       "name": "data",
-      "moduleCount": 48
+      "moduleCount": 49
     },
     {
       "id": "domain:evidence",
@@ -3615,6 +3615,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:server/castingV2/openLaneAccept.ts",
+      "path": "server/castingV2/openLaneAccept.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:server/castingV2/openLaneKind.ts",
       "path": "server/castingV2/openLaneKind.ts",
       "domain": "casting-v2",
@@ -4079,6 +4085,12 @@
     {
       "id": "module:server/db/castingV2FaceScans.ts",
       "path": "server/db/castingV2FaceScans.ts",
+      "domain": "data",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/db/castingV2OpenLaneDemand.ts",
+      "path": "server/db/castingV2OpenLaneDemand.ts",
       "domain": "data",
       "lifecycle": "active"
     },
@@ -9523,6 +9535,10 @@
     {
       "id": "test:server/castingV2/openKindPolicy.test.ts",
       "path": "server/castingV2/openKindPolicy.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/openLaneAccept.test.ts",
+      "path": "server/castingV2/openLaneAccept.test.ts"
     },
     {
       "id": "test:server/castingV2/openLaneKind.test.ts",
@@ -19554,6 +19570,31 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/castingV2/openLaneAccept.ts",
+      "to": "module:server/castingV2/brandScrub.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/openLaneAccept.ts",
+      "to": "module:server/castingV2/openLaneKind.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/openLaneAccept.ts",
+      "to": "module:server/castingV2/refineDelta.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/openLaneAccept.ts",
+      "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/openLaneAccept.ts",
+      "to": "module:server/providers/types.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/castingV2/openLaneKind.ts",
       "to": "module:server/castingV2/openKindPolicy.ts",
       "kind": "imports"
@@ -20100,6 +20141,11 @@
     },
     {
       "from": "module:server/castingV2/refineInterpreter.ts",
+      "to": "module:server/castingV2/openLaneAccept.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/refineInterpreter.ts",
       "to": "module:server/castingV2/openLaneKind.ts",
       "kind": "imports"
     },
@@ -20126,6 +20172,11 @@
     {
       "from": "module:server/castingV2/refineInterpreter.ts",
       "to": "module:server/castingV2/refineSubjects.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/refineInterpreter.ts",
+      "to": "module:server/db/castingV2OpenLaneDemand.ts",
       "kind": "imports"
     },
     {
@@ -21561,6 +21612,21 @@
     {
       "from": "module:server/db/castingV2FaceScans.ts",
       "to": "module:server/db/connection.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/castingV2OpenLaneDemand.ts",
+      "to": "module:drizzle/schema.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/castingV2OpenLaneDemand.ts",
+      "to": "module:server/db/connection.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/castingV2OpenLaneDemand.ts",
+      "to": "module:server/logging/logger.ts",
       "kind": "imports"
     },
     {
@@ -27446,10 +27512,10 @@
       "message": "Names 3 of Raster's 3 fields (server/castingV2/maskedComposite.ts), 3 of Mask's 3 fields (server/castingV2/maskedComposite.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/referenceMint.ts:935",
+      "id": "finding:redeclared-shape:server/castingV2/referenceMint.ts:947",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/referenceMint.ts:935",
+      "subject": "server/castingV2/referenceMint.ts:947",
       "message": "Names 2 of RecipeRefusal's 4 fields (server/castingV2/recipeAssembler.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {

@@ -285,6 +285,51 @@ describe("the free lane files, or it refuses", () => {
     expect(readDelta({ free: { backdrop: "blue" } }, check("blue backdrop"))).toBeNull();
   });
 
+  /*
+    AND SINCE STEP 5 IT SAYS WHICH SUBJECT, TO THE CALLER ONLY.
+
+    The refusal above is unchanged — nothing is filed for an unowned subject
+    here, and never will be. What changed is that a caller which asked to be
+    told (`check`) learns the subject, so the open lane can be tried where the
+    closed vocabulary is consulted first. The reader still names no kind: a
+    reader free to accept a model-authored key hands the composition key to the
+    model with no closed lane in front of it.
+  */
+  it("RECORDS the subject it did not own, for the caller to decide", () => {
+    const c = check("give him long slender fangs");
+    expect(readDelta({ free: { fangs: "long slender fangs" } }, c)).toBeNull();
+    expect(c.unowned).toEqual([{ subject: "fangs", value: "long slender fangs" }]);
+  });
+
+  /*
+    §2's STANDING DEFECT, closed: one unknown noun used to discard every facet
+    in the same instruction — including the ones read correctly — and the user
+    was told their ask did not come through clearly.
+  */
+  it("keeps the facets it DID read when one subject is unowned", () => {
+    const c = check("give him long slender fangs and thick straight brows");
+    const delta = readDelta(
+      { free: { fangs: "long slender fangs", brows: "thick and straight" } },
+      c,
+    );
+
+    expect(delta?.free).toEqual({ brows: "thick and straight" });
+    expect(c.unowned).toEqual([{ subject: "fangs", value: "long slender fangs" }]);
+  });
+
+  /*
+    THE OTHER HALF OF THE READER SPLIT, and it is the half that must not move.
+
+    A caller with no `check` is our own record re-entering — the persisted
+    re-read, the paste road, the legacy migration — where an unowned subject is
+    CORRUPTION rather than an ask. Partially accepting corruption is worse than
+    refusing it, so the whole delta still nulls and nothing is recorded.
+  */
+  it("CONTROL — with NO check the whole delta still nulls, and records nothing", () => {
+    expect(readDelta({ free: { fangs: "long slender fangs", brows: "thick and straight" } }))
+      .toBeNull();
+  });
+
   it("refuses scenery smuggled into a person subject", () => {
     const c = check("photograph her skin against a red backdrop");
     expect(readDelta({ free: { skinTone: "against a red backdrop" } }, c)).toBeNull();

@@ -406,6 +406,46 @@ open kinds are singular until promoted, per-instance geometry is what promotion
 buys, and the one-of-a-pair ask refuses into refund rather than guessing.**
 That is not a compromise; it is the earring history not repeated.
 
+> ### CORRECTED 2026-08-17 — *"one carried crop of the whole thing"* was the half nobody measured
+>
+> **RULING, fable-872 §2: a paired open kind is WORDS-ONLY UNTIL PROMOTED.** No
+> crop of one instance ever files under a name that means both.
+>
+> The paragraph above is right about the SLOT and was wrong about the CROP, and
+> the two were joined by an assumption rather than a reading: that a whole-frame
+> read returns the whole thing. For a pair it does not.
+>
+> ```
+> the court's wings frame, one reader, one sitting
+>   whole frame, as the mint asks it     115,255 px   7.3277% of frame — ONE wing
+>   cut at her face's centroid, per half 115,268 px   the image-left wing
+>                                        104,569 px   the image-right wing
+>   whole − image-left                       −13 px   the SAME mask
+> ```
+>
+> Thirteen pixels in 115,268. What the mint would have carried is one instance,
+> exactly, under a noun that means two — and the number alone reads like a clean
+> pass, which is why the finding is in an overlay
+> (`output/wings-per-side/PANEL-wings-per-side.png`) and not in a table.
+>
+> **The split-frame measure is PROMOTION-DESIGN data and not a mint route.** It
+> says the capability exists for whoever promotes a paired kind: the closed
+> lane's own method — cut at her midline, ask each half — finds the second
+> instance, with both halves declining on a frame of the same subject wearing
+> none. It cannot be reached from the lane as it stands: `regionSides` answers
+> `null` for an open kind **before spending a call**, because `BILATERAL` derives
+> from the slot catalogue's `frame: "ownSide"` column and an open kind has no
+> card. That is the door being shut by construction rather than by a frame.
+>
+> **And the property is the open question, not the policy.** *Is this kind
+> paired* is not something the lane can answer today. It joins *does-it-extend*
+> (fable-868 §4) as a kind-property the interpreter answers in ONE design —
+> designed together and costed together, per fable-872 §2. Until that lands the
+> safe reading is the conservative one: **no open kind mints a crop**, because a
+> lane that cannot tell a pair from a single would file the pair's half under the
+> pair's name. That is where step 3's door already stands (inert), so it costs
+> nothing today and it is the sentence step 5 has to honour.
+
 ---
 
 ## 6. Verification — the one column where the open lane is better off
@@ -463,6 +503,35 @@ Two things the build must honour, both from this campaign's own scar tissue:
 
 The table is the promotion instrument, and per ruling 5 promotion stays a human
 decision reading it.
+
+### The class the promotion queue has to budget for: FINE SURFACE TEXTURE DEFEATS READERS
+
+*Named here on fable-872 §3's order, because this is where the promotion queue
+lives and a class named anywhere else is a class the next promoter does not
+read.*
+
+Two of the five specimen kinds were delivered by the engine, are unmistakable to
+an eye, and read **0.0000%** to the segmenter: `scales` (a plain reptilian
+pattern across his neck and jaw) and `gills` (three slits each side of the
+throat). That is not two instances, it is a **class**, and it has already been
+paid for once on a different modality — the DESCRIBER failed the same way on
+freckles, which is the origin of the founder's law 9. Fine, sparse, low-contrast
+surface texture is what readers of every kind under-report.
+
+Three consequences, and they are cheap to honour now and expensive to discover
+later:
+
+- **a promotion of such a kind budgets for reader blindness from day one.** The
+  reader is not a detail that gets tuned afterwards; for this class it is the
+  binding constraint on whether the kind can carry at all, and a plan that
+  assumes a working reader is a plan with no delivery road.
+- **no reader verdict ever closes a surface-texture court without an eye.** Law
+  9 is general, and this class is where it bites hardest: on scales the reading
+  and the frame said opposite things, and only the frame was right.
+- **the demand table's `unreadable` outcome is where these surface**, and it is
+  the more useful signal of the two it can record. A kind with demand and no
+  reader is a promotion that has to buy a reader; a kind with demand and a
+  reader is a promotion that only has to buy a court.
 
 ---
 
@@ -605,7 +674,7 @@ prices rather than one.
 | §2 **the open lane is a FALLBACK, not a peer** | **DELIVERED as the decision, REMAINING as enforcement** — recorded in `openLaneKind`'s header; there is no routing code yet because there is no lane yet | module header; no caller of `normalizeOpenKind` outside its own tests |
 | §2 the wrong wall (*"give her horns"* → `wall_content`, told the user it can never be rendered) | **DELIVERED** — the content wall now carves out fantastical anatomy, and `wall_stage`'s unbacked half stopped claiming antlers are a prop | `refineRefusals.ts:56`; `stageWallBackstop.test.ts:291` asserts the sentence **in the prompt actually sent** |
 | §2 the acceptance path — a third kind of entry, `delta.open` | **REMAINING** | not built |
-| §2 the whole-delta `null` (one unknown noun discards every facet in the instruction) | **REMAINING, and still latent rather than live** — the line moved from `refineDelta.ts:638` to **`:721`** and is unchanged | read today |
+| §2 the whole-delta `null` (one unknown noun discards every facet in the instruction) | **DELIVERED 2026-08-17 (step 5a), for the live boundary only** — a caller that passes a `check` gets the unowned subject recorded and skipped and keeps the facets that read; a caller with no `check` (our own record re-entering) still nulls the whole delta, because there an unowned subject is corruption. Both halves driven, each sabotaged | `refineDelta.ts`, `FreeLaneCheck.unowned`; `refineDelta.test.ts` |
 | §3 `openKind` as its own `UnfiledReason`, never `notASlot` | **DELIVERED** as declared scaffolding, landed before anything can produce it, with a negative control that today's producer cannot emit it | `mintedSlots.ts:184–220`; `mintedSlots.test.ts` 33 tests green today |
 | §3 the slotless `Ask` in the recipe assembler — *"the largest build, and the majority of the work"* | **REMAINING** — `repaintAsks` still refuses `uncatalogued`, and that refusal is `RepaintCannotSayError`, non-retryable, settling into a refund | `repaintAsks.ts:190, 509, 659` |
 | §4 the mint door's per-kind absence control | **REMAINING — and PROMOTED in importance** (§9.4) | the phrase appears in one file in the repository, and it is the policy record describing what is owed |
@@ -614,7 +683,7 @@ prices rather than one.
 | §6 open kinds are `presence` by derivation; D-246 class (c) applies | **DELIVERED as policy, REMAINING as enforcement** (`FREE_SUBJECT_KIND` is one of the nine `owed`) | `openKindBinds()`; `owedByThePolicy()` |
 | §7 the demand table, and nothing else in it | **DELIVERED in dev** — migration `0031`, schema, ceremony with a positive control on the existence reader and a check that none of the four forbidden columns appeared | `drizzle/0031_casting_open_lane_demand.sql`; opus-307 §2 |
 | §7 the same table in production | **REMAINING — an open founder-queue item since shift 72b**, one idempotent command, nothing waiting on it | `founder-queue.md:997` |
-| §7 the writer | **REMAINING** — three files name the table: the schema, the migration, the ceremony. Nothing inserts a row | grep, run today |
+| §7 the writer | **DELIVERED 2026-08-17 (step 6), landed WITH the acceptance path rather than behind it** (fable-874 §3b: no window where the lane sells untracked). Fails soft and loud, refuses a key that is not the normalizer's, and writes no row at all when no kind could be named | `server/db/castingV2OpenLaneDemand.ts`; called from the acceptance door |
 | §7 *"migration before code"* | **HELD** | the table landed first, by ceremony, as the rule requires |
 | §8 the recommended order (steps 0–6) | **steps 0, 1, 2 DELIVERED · steps 3, 4, 5, 6 REMAINING** | this table |
 
@@ -689,12 +758,30 @@ step 4  the slotless Ask             PART BUILT            — see §9.7: the sc
                                                              producer is the slot
                                                              that walks through it,
                                                              and that is step 5**
-step 5  the acceptance path          REMAINING             — refineDelta:721 +
-                                                             the interpreter's reply
-                                                             shape (`delta.open`)
-step 6  the demand writer            REMAINING             — UNBLOCKED: the table
-                                                             already exists in
-                                                             production
+step 5a the acceptance path          BUILT 2026-08-17      — the whole-delta null
+                                                             closed at the live
+                                                             boundary, the door at
+                                                             the CALLER
+                                                             (`openLaneAccept.ts`),
+                                                             every free-lane guard
+                                                             carried across
+                                                             INCLUDING the stage
+                                                             wall. **DARK**: the
+                                                             interpreter is not told
+                                                             it may name a new kind,
+                                                             so nothing routes in —
+                                                             see §9.11
+step 5b the mint wire                BLOCKED               — on the kind-property
+                                                             design (paired +
+                                                             does-it-extend, one
+                                                             design, costed together
+                                                             — fable-872 §2). The
+                                                             pair door before the
+                                                             first crop, never after
+step 6  the demand writer            BUILT 2026-08-17      — landed WITH 5a, not
+                                                             behind it (fable-874
+                                                             §3b). The table was
+                                                             already in production
 ```
 
 > **Step 6's "after the prod ceremony" is spent, and it was spent before it was
@@ -996,6 +1083,14 @@ words-only until promoted, or to route it through the per-side reader the
 closed lane already has (`regionSides`), which is a capability question rather
 than a policy one.
 
+> **RULED, fable-872 §2 — the first option, and the second is measured as
+> promotion-design data rather than taken.** *"Paired open kinds are WORDS-ONLY
+> UNTIL PROMOTED. No crop of one instance ever files under a name that means
+> both."* Grounds: §5's singular rule is design law for open kinds precisely
+> because pairedness is CATALOGUE knowledge, and an open kind by definition has
+> no catalogue. The ruling's full text and its consequence for step 5 are at
+> §5 above; the measure it ordered is §9.10 below.
+
 **And the founder's own tail question is answered by a frame** (fable-868 §1).
 Asked for a tail on our standard head-and-shoulders framing, the engine painted
 one **floating beside his shoulder, anchored to nothing** — the hip it grows
@@ -1014,3 +1109,129 @@ gets a region either. The classification now needs both arms and prints
 run at all — since a clean absence control and a reader with no concept of the
 word are indistinguishable without it. The per-kind rows above were correct
 throughout; only the sentence over them was wrong.
+
+## 9.10 The per-side measure — ordered fable-872 §2, and it moved a sentence in §5
+
+*Run 2026-08-17 (shift 92) on the specimen the court had already bought, so the
+frames cost nothing twice. DEV world, house money, **7 segmenter reads at
+$0.005 = $0.035 modelled** (the order said $0.01 for two reads; the control and
+the two midline reads are the difference, and they are named below because a
+positive without them is worth nothing). Zero credits, no render, no row.
+Driver: `scripts/measure-wings-per-side-disposable.mts`; panel and masks in
+`output/wings-per-side/`.*
+
+**PROMOTION-DESIGN DATA. Not a mint route** — the ruling it serves is already
+made and is not in question: paired open kinds are words-only until promoted.
+What this settles is whether the capability the ruling defers to promotion
+actually exists.
+
+```
+1. regionSides("wings")          null, BEFORE any call is spent
+                                 BILATERAL derives from the catalogue's
+                                 `frame: "ownSide"` column; an open kind has no
+                                 card. The door is shut by construction.
+2. whole frame, as the mint asks 115,255 px · 7.3277% — ONE wing
+3. control: the same subject wearing none (the court's `scales` frame)
+     image-left   0.0000%  declines
+     image-right  0.0000%  declines          both halves must decline — pass
+4. the specimen, cut at her face's centroid (519 px), one side to a picture
+     image-left   115,268 px · 14.4594% of its half   ANSWERS
+     image-right  104,569 px · 13.4809% of its half   ANSWERS
+```
+
+**The arithmetic is the finding, and it is taken off the mask bytes rather than
+off the percentages.** The whole-frame mask and the image-left half differ by
+**13 pixels in 115,268** — they are the same wing, not "one wing and a bit". So
+the mint's read is one instance exactly, and the split adds 104,569 px it never
+returned: a second wing 90.7% the size of the first. **I opened the panel.**
+Cell 2 paints the viewer's-left wing and leaves the other white; cell 3 paints
+both. Law 9's point, on a frame where the number was never going to say it.
+
+**The control is why the positive counts.** Two halves both answering is also
+what a reader that answers something to every crop looks like — the vacuous
+shape this program met on the earring reader (fable-378 §3) and the exact
+failure the absence control exists for. Asked of the same subject wearing no
+wings, both halves read 0.0000%.
+
+**Two substitutions, declared** (court-must-assert-its-road). `bilateralHalves`
+is module-private, so the halves are cut here and asked through the reader's
+public `region`, which asks a non-bilateral name in instance mode `"first"`
+where the real path asks a half in `"all"`. `first ⊆ all`, so the substitution
+can only ever UNDERSTATE a half — a positive finding is safe in this direction
+and a null one would have been ambiguous, and the verdict leans only on the
+positive. The midline comes from a `face` read taken the same way. It is not an
+end-to-end proof of anything on the product path and nothing here mints, files
+or writes.
+
+**What it means for whoever promotes a paired kind:** the closed lane's method
+transfers. Cut at her midline and ask each half and both instances come back,
+on a kind the catalogue has never heard of, with the negative arm clean. What
+does NOT transfer is the *knowledge that the kind is a pair* — that is
+catalogue knowledge, it is what promotion buys, and it is why the ruling is
+words-only in the meantime.
+
+## 9.11 Step 5a and step 6 as built — the door, and the sentence it is waiting for
+
+*Built 2026-08-17 (shift 92), ordered fable-874 §3. No spend of any kind: this
+is code and tests, no render, no read, no credit, no row in either world.*
+
+**What shipped.**
+
+| the piece | where | what it does |
+|---|---|---|
+| the unowned subject is RECORDED, not fatal | `refineDelta.ts`, `FreeLaneCheck.unowned` | §2's standing defect closed at the live boundary: one unknown noun no longer discards the facets read correctly beside it |
+| the acceptance door | `openLaneAccept.ts` | names the kind from the customer's SENTENCE, after the closed lane has declined, and files `delta.open` |
+| the demand writer | `server/db/castingV2OpenLaneDemand.ts` | one row per open ask: the normalized noun and how it went, and nothing else |
+
+**The decision is at the CALLER and that is the whole architecture of it.**
+`readDelta` guards the boundary where a model's reply enters the record and it
+stays closed to open kinds — a reader free to accept a model-authored subject
+key hands the composition key to the model with no closed lane in front of it,
+and *"give her wings"* stops being eyeliner (§8 step 0). So the reader carries
+the FACT and never the verdict, `refineInterpreter` runs `normalizeOpenKind`,
+and that answer is checked against the closed vocabulary before it counts as
+new. **A collision refuses.** It is a routing bug, not a new kind, and each one
+names either a missing entry in `SUBJECT_NOUNS` or a real gap in the closed
+interpreter.
+
+**The reader split is pinned in BOTH directions, and each was sabotaged.** A
+caller with no `check` — the persisted re-read, the paste road, the legacy
+migration — still nulls the whole delta, because there an unowned subject is
+corruption rather than an ask and partially accepting corruption is worse than
+refusing it. Recording without a `check` reddens exactly the control; recording
+without continuing reddens exactly the facets-survive arm.
+
+**WALL (b) NEARLY FELL HERE, and the arm that caught it was an existing one.**
+The closed reader refuses a garment by having no subject to file it under — so
+`{coat: "red"}` arrives at this door as an unowned subject exactly like
+`{fangs: …}` does, and the first cut of the acceptance would have minted
+`open:coat`. The one wall that keeps a face edit from repainting the room would
+have become the new lane's front door. The lexicon is now asked of the NOUN as
+well as the words, because in that ask the garment is the key and the value is
+just *"red"*; the accessory carve-out travels with it, so *"wearing small gold
+hoops"* is untouched. §2's property 3 — *the open lane widens what may be named
+and must widen nothing else* — was right to be written down, and it was one
+test away from being written down and not kept.
+
+**IT IS DARK, and this is the honest state.** The interpreter is not told it may
+name a kind outside its vocabulary, so its replies still key onto the nearest
+closed subject — which is exactly what §2's part A measured, and why the
+whole-delta null was latent rather than live in the first place. **Nothing in
+production routes into this door today.** The prompt clause that would open it
+is its own step behind its own measurement, for the reason
+`context-is-not-additive` names: a sentence added to that prompt moves routing
+for asks that have nothing to do with this lane, and this program has already
+measured a SUBSET of prompt context raising a wall twice as often as its
+superset. A door built and driven at its own seam is the same shape step 3
+landed in, deliberately.
+
+**What the demand table can and cannot say today.** At the acceptance point the
+knowable outcomes are `words_only` (accepted — and that is not a placeholder:
+under the pair ruling's conservative interim an accepted open kind carries no
+crop, so words are what it is), `refused` (collided, or a guard turned the words
+away) and `unreadable`. `delivered` and `refunded` are render outcomes and are
+reachable only when 5b wires the render's own result back. **And no kind means
+no row**: when the normalizer could not name the thing at all there is nothing
+honest to put in the one column that is not a timestamp, and a placeholder noun
+would be a word nobody asked for sitting in the table built to hold only words
+people did ask for. It is a log line instead.

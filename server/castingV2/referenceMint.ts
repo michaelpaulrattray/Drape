@@ -279,6 +279,18 @@ export type MintedSlot =
      *  settled it (fable-429 §3). Absent on an undisputed pass, which is every
      *  other stored crop in the product. */
     adjudicated?: true;
+    /**
+     * NO BAR DIVIDED THIS CROP — it read the ceiling exactly and was accepted on
+     * that ground (`ceilingAccepted`, referenceCompleteness §2.4b).
+     *
+     * Carried out of the guard rather than left on the verdict, because the ROW
+     * cannot say it: the library persists `guardKind/Coverage/Spill/Threshold`
+     * and not the INSTRUMENT, so a ceiling acceptance and a derived-geometry
+     * pass both land as coverage 10000 / threshold 10000 and are
+     * indistinguishable afterwards. This is the flag's only durable reader, and
+     * it is the render's own log line.
+     */
+    ceilingAccepted?: true;
   }
   | {
     slot: FeatureSlot;
@@ -1839,6 +1851,10 @@ export async function mintReferencesForRender(input: MintInput): Promise<MintRes
         outcome: "stored",
         coverage: verdict.reading.coverage,
         ...(slot.adjudicated ? { adjudicated: true as const } : {}),
+        /* From the verdict, unchanged: the guard is the only thing that knows
+           whether a bar divided this crop, and after this line nothing can
+           recover it from the row. */
+        ...(verdict.ceilingAccepted ? { ceilingAccepted: true as const } : {}),
       });
     }
 
@@ -1894,6 +1910,20 @@ export async function mintReferencesForRender(input: MintInput): Promise<MintRes
            them. This is the line an adoption sitting starts from. */
         keptForAdoption: outcomes
           .filter((slot) => slot.outcome === "words-only" && slot.keptForAdoption)
+          .map((slot) => slot.slot),
+        /*
+          THE CROPS NO BAR DIVIDED — §2.4b's ceiling acceptance, named per slot.
+
+          fable-306's clause promised this mark so a later count of bar-measured
+          specimens could not silently include them, and until this line the mark
+          existed only on an in-process verdict that nothing read. It cannot go
+          on the row (the row keeps no instrument; see `MintedSlot`), so it goes
+          where the render's other declared costs go. It matters more since step
+          3: EVERY open kind that carries is a ceiling acceptance, because an
+          open kind has no specimen family for a bar to be drawn from.
+        */
+        ceilingAccepted: outcomes
+          .filter((slot) => slot.outcome === "stored" && slot.ceilingAccepted)
           .map((slot) => slot.slot),
         /* THE DISPUTED FACETS AND WHAT THEY COST, declared rather than implied
            (fable-220 §3, condition 2). `disputedReads` is one vision call each,

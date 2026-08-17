@@ -493,6 +493,38 @@ export type FreeLaneCheck = {
   vouched?: { subject: string; value: string };
   /** Set when the value hit a wall, so the caller can name which one. */
   wall?: RefineRefusal;
+  /**
+   * SUBJECTS THIS READER DOES NOT OWN — recorded here, decided by the CALLER
+   * (the open lane's acceptance path, `OPEN_LANE_DESIGN_NOTE` §8 step 5).
+   *
+   * # Why the decision cannot live in `readDelta`
+   *
+   * This reader guards the boundary where a MODEL'S REPLY enters the record,
+   * and the open lane is a FALLBACK rather than a peer (§8 step 0 — the one
+   * choice that cannot be retrofitted). A reader that minted an open kind from
+   * an unknown key would let the model name its own composition key with no
+   * closed lane in front of it, and *"give her wings"* would stop being
+   * eyeliner. So this field carries the FACT and never the verdict: the caller
+   * runs `normalizeOpenKind`, whose answer is checked against the closed
+   * vocabulary before it counts as new, and only then is anything filed.
+   *
+   * It is the same shape as `wall` one line up, for the same reason.
+   *
+   * # And its PRESENCE is what changes the whole-delta null
+   *
+   * §2's standing defect: one unknown noun discarded every facet in the same
+   * instruction, including the ones read correctly, and the user was told their
+   * ask did not come through clearly. A caller that passes a `check` is asking
+   * to be told — so for that caller the unowned subject is recorded and SKIPPED
+   * and the rest of the delta survives.
+   *
+   * **A caller with no `check` is unchanged: the whole delta still nulls.**
+   * Those callers are our own record re-entering (`refineService`'s persisted
+   * re-read, `refineLegacy`, the paste road), where an unowned subject is
+   * corruption rather than an ask, and partially accepting corruption is worse
+   * than refusing it. That is the reader split, and both halves are driven.
+   */
+  unowned?: Array<{ subject: string; value: unknown }>;
 };
 
 /** One adjustment per subject, not a paragraph. */
@@ -782,8 +814,23 @@ export function readDelta(value: unknown, check?: FreeLaneCheck): RefineDelta | 
         filed, and wall (d) says an ask that cannot be filed refuses. This is
         also what stops a model-authored subject key from becoming a
         composition key — D-89's gate on the free lane.
+
+        SINCE STEP 5 IT IS RECORDED BEFORE IT REFUSES, and only for a caller
+        that asked to be told (`check`). The refusal above is unchanged for
+        every reader of our own record; what changes is that the live
+        interpreter now learns WHICH subject it did not own, so the open lane
+        can be tried at the caller — where the closed vocabulary is consulted
+        first — instead of the ask dying here as "that didn't come through
+        clearly". The whole-delta null was §2's standing defect: one unknown
+        noun discarded every facet in the same instruction.
+
+        This site still files NOTHING for the subject. It records and skips.
       */
-      if (!FREE_SUBJECT_KEYS.includes(subject as FreeSubject)) return null;
+      if (!FREE_SUBJECT_KEYS.includes(subject as FreeSubject)) {
+        if (!check) return null;
+        (check.unowned ??= []).push({ subject, value: entry });
+        continue;
+      }
       /*
         A PLURAL SUBJECT MAY ARRIVE AS A LIST (D-171), and the ITEMS are what
         every guard below runs against. The interpreter splits, because a code
