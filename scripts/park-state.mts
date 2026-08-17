@@ -37,10 +37,13 @@
  */
 import "dotenv/config";
 import { execFileSync } from "node:child_process";
+import { createHash } from "node:crypto";
+import { readFileSync } from "node:fs";
 
 import { openDatabase } from "./lib/dbConnection.mts";
 import { uptimeAnchor } from "./lib/uptimeAnchor.mts";
 import { balanceLine, readOpenRouterBalance } from "./lib/openrouterBalance.mts";
+import { falLine, readFalBalance } from "./lib/falSpend.mts";
 import { findSuiteLine, suiteVerdict } from "./lib/suiteLine.mts";
 
 const WITH_SUITE = process.argv.includes("--suite");
@@ -187,6 +190,49 @@ if (WITH_PROD) {
    shift report truthfully said "zero model calls" (fable-682). Read, never
    remembered; the key is used and never printed. */
 say(`          ${balanceLine(await readOpenRouterBalance())}`);
+/*
+  AND THE OTHER ACCOUNT, AT OPEN AS WELL AS AT CLOSE (fable-852 §2, from the
+  opus-633 §3 miss).
+
+  A shift spent house money on segmenter reads and could only quote it as a
+  BAND, because the only fal figure it held was the one the deploy rite took
+  afterwards — the before-reading was never bought, and a subtraction with one
+  end missing is not a subtraction (subtract-from-the-same-reading). The rite
+  already prints this line at deploy time; printing it here too means every
+  shift opens and closes with a fal figure of its own, so the next spend is
+  quotable to the cent without anybody remembering to look first.
+*/
+say(`          ${falLine(await readFalBalance())}`);
+
+/*
+  THE FOUNDER QUEUE'S BYTES BESIDE ITS HASH (fable-852 §2, from opus-633 §4).
+
+  A park closed its custody arithmetic on one end only: the md5 was recorded at
+  open and the SIZE was not, so "+2,057 B across two moves" could be proved for
+  the second move and not the first. A hash says whether the file changed; only
+  the byte count says by how much, and the pair is what makes a custody claim
+  checkable by the next hand. Both are readings taken here.
+
+  The queue lives under `.agents/`, which is never committed — so an absent file
+  is a legitimate state (a fresh clone), and it says UNREAD rather than throwing
+  a park block away over it.
+*/
+say(`queue     ${(() => {
+  try {
+    const bytes = readFileSync(".agents/mailbox/founder-queue.md");
+    /* NEWLINES, which is `wc -l`'s count and therefore the one every custody
+       figure already in the record was taken with. `split("\n").length` is one
+       MORE than this on any file that ends in a newline, and a park comparing
+       its own 2,463 against the previous park's 2,462 would read a line that
+       was never written. */
+    let lines = 0;
+    for (const byte of bytes) if (byte === 0x0a) lines += 1;
+    return `founder-queue.md ${bytes.length.toLocaleString()} B · ${lines.toLocaleString()} lines`
+      + ` · md5 ${createHash("md5").update(bytes).digest("hex")}`;
+  } catch {
+    return "founder-queue.md UNREAD — not present in this tree";
+  }
+})()}`);
 
 /* PROCESS HYGIENE — the six orphaned dev servers that lagged the founder's
    machine were invisible in every park that did not look. */

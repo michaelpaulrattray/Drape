@@ -156,11 +156,69 @@ export const COMPLETENESS_SPECIMENS: Readonly<Record<string, CompletenessSpecime
       + "looked-at mis-cut at 83.7% (V2_HORNS_SPECIMEN_CALIBRATION.md)",
   },
   /*
-    EYES — settled by the founder's own eye on 2026-08-17 (fable-843 §1), which
-    is the only thing that could settle it: no crop of an eye had ever been
-    called complete, so every eye crop in production was refused `noSpecimen`
-    and the slot rode on WORDS — and words re-roll an eye's shape between
-    renders. Eight crop-less eye slots were waiting on this one number.
+    EYES — PULLED on 2026-08-17, the day it shipped, because the carry it
+    unblocked was MEASURED and it loses the feature (fable-853 §3b, on
+    opus-635's frames).
+
+    ────────────────────────────────────────────────────────────────────────
+    THE MEASUREMENT, and it is the reason there is no `eyes` entry below.
+
+    Two courts, two casts, one variable — a slot's eye carried as its minted
+    CROP against the same eye carried as its WORDS, with the other eye edited
+    so the carry is what is being measured. Both anchor on a master that
+    disagrees with the carry, so the recipe has to win an argument rather than
+    keep something already on the frame:
+
+      35x24 crop (d93149f2)   crop 0/3 held her grey-blue eye · words 3/3
+      56x33 crop (f51386fc)   crop 0/2 held her SLIT PUPIL   · words 2/2
+
+    Ten frames, every one of them looked at at 3x by two pairs of eyes
+    (opus-634/635, panels in `output/eye-carry-court/`). The second cast's crop
+    is one of the four the founder himself called complete, and it is 56 px —
+    ABOVE the >=45 px resolution floor that was drafted to save this class. So
+    the floor does not save it, and shipping the bar with a floor would have
+    been a bar that still loses eyes.
+
+    WHY it loses is NOT YET SETTLED, and the entry is out under either answer.
+    Two mechanisms are live, and the courts above cannot separate them because
+    both arms rode the same packing (fable-859 §2):
+
+      THE CARRIER RULE   a slot that sends a crop is given NO standing sentence
+                         (`recipeAssembler.ts`, "POINT, DON'T DESCRIBE",
+                         fable-598) — the crop REPLACES the words rather than
+                         assisting them. Right for a horn that fills a fifth of
+                         the frame; possibly wrong for an eye that is 0.1% of it.
+      THE PACKING        `padToFrame` composites a crop onto a master-sized
+                         canvas AT ITS ORIGINAL SIZE (`referenceFit.ts`, built
+                         and measured for 484×617 HAIR crops). At eye scale that
+                         is a 35 px speck on a blank grey field — "this is her
+                         eye" beside a picture of a wall with a fly on it. The
+                         treatment that saves hair may erase eyes.
+
+    THE FOUNDER'S OWN COUNTER-EVIDENCE is why the second is the prime suspect:
+    he ran this very 35 px crop through Nano Banana Pro outside the app, handed
+    over as its own clean image, and it DELIVERED the grey-blue eye (fable-856).
+    So the pixels carry signal when presented legibly, and neither court has yet
+    shown that they do not — they showed that OUR packing of them does not.
+
+    So eyes stay on words, which is what every eye in production has always
+    ridden. That is the safe state under both theories: a minted eye crop today
+    would replace words with a carrier measured 0 for 5.
+
+    Do not re-add this entry because the coverage numbers look good. Coverage
+    was never the failing half: all six crops read 100.00%, his rejects
+    included. What would justify an entry is a MEASURED fix to whichever
+    mechanism the separation matrix pins (fable-858 §3b — GPT Image 2 against
+    padded-as-shipped, clean crop, scaled-to-legible, and crop-plus-words),
+    re-run through these same two courts. The pixels are all still on the rows
+    (`refused*`), and the bench is `scripts/eye-carry-court-disposable.mts`.
+    ────────────────────────────────────────────────────────────────────────
+
+    (history) Settled by the founder's own eye on 2026-08-17 (fable-843 §1),
+    which was the only thing that could settle it: no crop of an eye had ever
+    been called complete, so every eye crop in production was refused
+    `noSpecimen` and the slot rode on WORDS. Eight crop-less eye slots were
+    waiting on this one number.
 
     Its anchors, each a reading somebody took:
 
@@ -193,15 +251,6 @@ export const COMPLETENESS_SPECIMENS: Readonly<Record<string, CompletenessSpecime
     pasting their pixels, and that is a testable claim rather than something to
     legislate. The carry test decides it; his eyes are the court.
   */
-  eyes: {
-    positive: 1,
-    negative: 0.728,
-    provisionalFloor: 0.95,
-    source: "fable-843 §1 (his verdict on crops 3/4/5/6) with the measured "
-      + "negative from fable-850 §4: `calibrate-eyes-specimen-disposable.mts` on "
-      + "production v#74359d57, two independent region reads, complete 100.0% "
-      + "both sides against outer-third-gone 72.8%/72.0%, both looked at",
-  },
 };
 
 /**

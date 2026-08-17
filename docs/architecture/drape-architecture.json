@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "1e42249481b5f483"
+    "sourceFingerprint": "0d0a1ab5d5f80f6a"
   },
   "domains": [
     {
@@ -88,7 +88,7 @@
     {
       "id": "domain:operations",
       "name": "operations",
-      "moduleCount": 6
+      "moduleCount": 7
     },
     {
       "id": "domain:pages",
@@ -1871,6 +1871,12 @@
     {
       "id": "module:client/src/features/operations/outcomeShown.ts",
       "path": "client/src/features/operations/outcomeShown.ts",
+      "domain": "operations",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/operations/outcomeSlot.ts",
+      "path": "client/src/features/operations/outcomeSlot.ts",
       "domain": "operations",
       "lifecycle": "active"
     },
@@ -8723,6 +8729,10 @@
       "path": "client/src/features/operations/outcomeShown.test.ts"
     },
     {
+      "id": "test:client/src/features/operations/outcomeSlot.test.ts",
+      "path": "client/src/features/operations/outcomeSlot.test.ts"
+    },
+    {
       "id": "test:client/src/foundation/rawErrorToast.test.ts",
       "path": "client/src/foundation/rawErrorToast.test.ts"
     },
@@ -15081,6 +15091,11 @@
     {
       "from": "module:client/src/pages/CastingSheet.tsx",
       "to": "module:client/src/features/operations/outcomeShown.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/CastingSheet.tsx",
+      "to": "module:client/src/features/operations/outcomeSlot.ts",
       "kind": "imports"
     },
     {

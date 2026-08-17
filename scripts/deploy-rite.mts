@@ -16,6 +16,18 @@
  * what it SAW: every line is a reading taken in this process, and any step that
  * cannot be read fails the run rather than being omitted from the block.
  *
+ * # THERE IS NO SUCH THING AS A DEPLOY TOO SMALL FOR THE CEREMONY
+ *
+ * Ordered into this header by fable-852 §4, banked to opus-630 §1 and opus-633
+ * §6, because the temptation lives here rather than in a mailbox. A shift
+ * hand-pushed a DOCS-ONLY commit — reasoning, correctly, that no code moved —
+ * and killed a paid render the founder was watching. The freeze below would
+ * have said GO, so nothing was broken that the design had not already accepted:
+ * the failure was the DISCIPLINE, not the outcome. The whole point of the rite
+ * is that *"was he working?"* gets asked by a script rather than by a judgement
+ * about what counts as a risky commit — and the judgement is exactly the part
+ * that is wrong when it is wrong. Running it costs ninety seconds.
+ *
  * # What it will not do
  *
  * It pushes `main` and `main:local-migration` and it reads. It never sets a
@@ -186,11 +198,38 @@ const inFlight = await (async (): Promise<string> => {
         WHERE status NOT IN ('ready', 'failed', 'discarded')
           AND createdAt >= (NOW() - INTERVAL 20 MINUTE)`,
     );
+    /*
+      THE FREEZE'S THIRD READING (fable-847 §1, granted).
+
+      The line above counts CANDIDATES, which is a roll's unit of work — and a
+      REFINE mints no candidate at all. So a founder halfway through a paid
+      edit was invisible to this reading, and a deploy that killed it would have
+      printed "nothing in flight" on its own receipt. A live operation holds a
+      lease it renews every 30 s, so `claimed`/`running` with an unexpired lease
+      is exactly the set whose process this push is about to replace.
+
+      SAID OUT LOUD, because a guard credited with a save it could not have made
+      is worse than no guard: **this would NOT have saved last night.** His
+      render began 51 seconds AFTER the push landed, and no reading taken before
+      a push can see work that has not started. That future hole is D-85's
+      accepted cost and stays accepted. This closes the other one — the edit
+      already under way while the rite says the coast is clear.
+    */
+    const [operationRows] = await connection.query<any[]>(
+      `SELECT COUNT(*) AS live FROM generation_operations
+        WHERE status IN ('claimed', 'running')
+          AND leaseExpiresAt > NOW()`,
+    );
     await connection.end();
     const open = Number(rows[0]?.open ?? 0);
-    return open === 0
-      ? "nothing in flight"
-      : `${open} candidate(s) IN FLIGHT — this deploy costs their wait (accepted class, D-85)`;
+    const live = Number(operationRows[0]?.live ?? 0);
+    const parts = [
+      ...(open > 0 ? [`${open} candidate(s)`] : []),
+      ...(live > 0 ? [`${live} live operation(s) (unexpired lease — a refine is here and nowhere else)`] : []),
+    ];
+    return parts.length === 0
+      ? "nothing in flight — no candidate of the last 20 minutes, no operation on an unexpired lease"
+      : `${parts.join(" + ")} IN FLIGHT — this deploy costs their wait (accepted class, D-85)`;
   } catch {
     /* NO ERROR TEXT. A driver's connection error can carry the DSN it was
        handed, and this line goes into a mailbox report — the reading is

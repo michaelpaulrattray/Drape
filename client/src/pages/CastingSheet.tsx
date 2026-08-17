@@ -22,6 +22,11 @@ import { CandidateTile, UndoDiscard } from "@/features/castingV2/components/Cand
 import { readableFailure, refineFailureMessage } from "@/features/castingV2/failureCopy";
 import { failureIsOurs } from "@/lib/failureSentence";
 import { markOutcomeShown } from "@/features/operations/outcomeShown";
+import {
+  adoptSettledOutcome,
+  settledDismissalFor,
+  type HeldOutcome,
+} from "@/features/operations/outcomeSlot";
 import { useSheetSession, type UnlockableField } from "@/features/castingV2/sheetState";
 import { createDispatchLatch, type DispatchLatch } from "@/features/castingV2/singleFlight";
 import {
@@ -192,8 +197,16 @@ export default function CastingSheet() {
   const selectionWanted = useRef<{ candidateId: string; variantId: string | null } | null>(null);
   /** The write loop, while one is running — joined rather than raced. */
   const selectionLoop = useRef<Promise<void> | null>(null);
-  /* The refine panel owns its own outcomes (D-154) — never a toast. */
-  const [refineOutcome, setRefineOutcome] = useState<string | null>(null);
+  /*
+    The refine panel owns its own outcomes (D-154) — never a toast.
+
+    The slot holds WHOSE SENTENCE IT IS as well as the sentence, in one piece of
+    state rather than two that must be kept in step (working law 4). The panel
+    already made that judgement at every write — it is the same `failureIsOurs`
+    it marks the request with — and keeping it meant a settled row could stop
+    throwing itself away against a fallback. See `outcomeSlot.ts`.
+  */
+  const [refineOutcome, setRefineOutcome] = useState<HeldOutcome>(null);
   /*
     WHICH SETTLED OUTCOMES HE HAS CLOSED — see the adoption effect below.
 
@@ -1319,7 +1332,14 @@ export default function CastingSheet() {
         gateway's plain-text 502 reached the panel as "Unexpected token 'u',
         "upstream error" is not valid JSON".
       */
-      .catch((error: unknown) => setRefineOutcome(refineFailureMessage(error)))
+      .catch((error: unknown) => setRefineOutcome({
+        text: refineFailureMessage(error),
+        origin: failureIsOurs(error) ? "server" : "fallback",
+        /* A selection failure belongs to no refine, so no settled row can ever
+           answer it — `null` is the honest value and it keeps this sentence out
+           of the supersede path entirely. */
+        requestId: null,
+      }))
       .finally(() => { selectionLoop.current = null; });
     selectionLoop.current = loop;
     return loop;
@@ -1465,7 +1485,9 @@ export default function CastingSheet() {
             about: result.reask.about ?? instruction,
             ...(sent ? { scope: sent } : {}),
           };
-          setRefineOutcome(result.reask.question);
+          /* The server asked it, so it stands until he answers or dismisses it
+             — a settled row may not speak over an open question. */
+          setRefineOutcome({ text: result.reask.question, origin: "server", requestId });
           setReaskOptions(result.reask.options);
           return;
         }
@@ -1484,7 +1506,7 @@ export default function CastingSheet() {
           The panel owns the saying, like every other outcome (D-154).
         */
         const said = refineOutcomeNote(result);
-        if (said) setRefineOutcome(said);
+        if (said) setRefineOutcome({ text: said, origin: "server", requestId });
         await variants.refetch();
         await invalidate();
       })
@@ -1508,7 +1530,21 @@ export default function CastingSheet() {
         dispatch, kept alive here because that fix was never swept.
       */
       .catch((error: unknown) => {
-        setRefineOutcome(refineFailureMessage(error));
+        /*
+          ONE JUDGEMENT, WRITTEN INTO BOTH PLACES IT IS NEEDED.
+
+          `failureIsOurs` decides whose sentence this is; the mark below tells
+          the bridge, and the slot now carries the same answer so a settled row
+          can tell a fallback from a refusal. Asked once rather than twice —
+          two calls could not disagree today, and the day one of them moved
+          they would.
+        */
+        const ours = failureIsOurs(error);
+        setRefineOutcome({
+          text: refineFailureMessage(error),
+          origin: ours ? "server" : "fallback",
+          requestId,
+        });
         /*
           AND WHOSE SENTENCE THAT WAS.
 
@@ -1521,7 +1557,7 @@ export default function CastingSheet() {
           outlived the gateway, so the panel is showing "we lost contact" over a
           true answer that reached nobody. The bridge still holds it.
         */
-        markOutcomeShown(requestId, failureIsOurs(error) ? "server" : "fallback");
+        markOutcomeShown(requestId, ours ? "server" : "fallback");
       });
   }
 
@@ -1548,9 +1584,17 @@ export default function CastingSheet() {
        bridge is racing this on a reload and the earliest honest moment is the
        one that wins.
 
-    Superseded, not accumulated: only the newest settled failure is adopted, and
-    only while the panel has nothing of its own to say — an outcome the user is
-    reading about the edit they just typed is never replaced by an older one.
+    Superseded, not accumulated: only the newest settled failure is adopted into
+    an empty slot, and an outcome the user is reading about the edit they just
+    typed is never replaced by an older one.
+
+    **THE ONE EXCEPTION IS THE HAZARD THIS SHIPPED WITH** (fable-847 §3): the
+    slot is NOT empty in his lived sequence — it holds the panel's own *"we lost
+    contact"* — so `current ?? newest.message` threw the true sentence away on
+    exactly the 1.7% Landing A was built for, while the mark above told the
+    bridge to stand down. A settled row now supersedes a FALLBACK about the same
+    request, which makes the mark honest by construction. The whole decision
+    lives in `outcomeSlot.ts`, with the founder's sequence driven both ways.
   */
   const settledForViewer = variants.data?.settled ?? [];
   const adoptedSettledRef = useRef<Set<string>>(new Set());
@@ -1569,11 +1613,15 @@ export default function CastingSheet() {
       adoptedSettledRef.current.add(row.clientRequestId);
       markOutcomeShown(row.clientRequestId, "server");
     }
-    /* Dismissal is the user's, and it stays dismissed: `dismissedSettled` is
-       only ever added to, so a poll two seconds later cannot re-raise a
-       sentence they have just closed. */
-    if (dismissedSettled.has(newest.clientRequestId)) return;
-    setRefineOutcome((current) => current ?? newest.message);
+    /* Dismissal is the user's and it stays dismissed — carried inside the
+       decision now, because it applies to the superseding row as well as to the
+       newest one, and a rule half here and half there is the shape doctrine 19
+       is about. */
+    setRefineOutcome((current) => adoptSettledOutcome({
+      held: current,
+      settled: settledForViewer,
+      dismissed: dismissedSettled,
+    }));
   }, [settledForViewer, dismissedSettled]);
   /*
     THE RAIL'S GHOST, SEEDED FROM THE CLICK (fable-738).
@@ -1711,11 +1759,20 @@ export default function CastingSheet() {
     const last = arrived.at(-1);
     if (last) {
       const words = last.instructions.at(-1);
-      setRefineOutcome(
-        words
+      /*
+        `server`, because this sentence is a report of server truth — a row that
+        landed — and not a stand-in for an answer nobody heard. A settled failure
+        must not speak over the news that an edit ARRIVED; the two would be
+        contradicting each other about the same face. It belongs to no single
+        request from this session's point of view, so it carries no id.
+      */
+      setRefineOutcome({
+        text: words
           ? `The edit you started earlier — "${words}" — just arrived and was added to this face.`
           : "An edit you started earlier just arrived and was added to this face.",
-      );
+        origin: "server",
+        requestId: null,
+      });
     }
   }, [variants.data]);
 
@@ -2649,7 +2706,7 @@ export default function CastingSheet() {
                 and got bought twice.
               */
               busy={viewerBusy}
-              outcome={refineOutcome}
+              outcome={refineOutcome?.text ?? null}
               /* Empty until the segment store is armed for this account — and
                  empty by construction whenever panel v2 is, since v2 replaces v1
                  rather than joining it. An empty list renders nothing at all. */
@@ -2663,7 +2720,7 @@ export default function CastingSheet() {
               /* Drawn in the rail beside the picture whenever the three-column
                  shape is on — the same component, not a second stack. */
               stackHoisted={Boolean(facePanelData)}
-              reask={reaskOptions ? { question: refineOutcome ?? "", options: reaskOptions } : null}
+              reask={reaskOptions ? { question: refineOutcome?.text ?? "", options: reaskOptions } : null}
               onDismissOutcome={() => {
                 // Dismissing the question withdraws it. The next sentence is a
                 // fresh instruction, not a late answer to something gone from
@@ -2675,12 +2732,17 @@ export default function CastingSheet() {
                   AND IF WHAT HE JUST CLOSED WAS A SETTLED OUTCOME, IT STAYS
                   CLOSED. Server truth keeps arriving for an hour; without this
                   the next poll re-raises the sentence he has just dismissed and
-                  the close button reads as broken. Recorded for the newest one
-                  only, because that is the one the slot can be showing.
+                  the close button reads as broken.
+
+                  Matched on the REQUEST and the words rather than on the words
+                  alone (`settledDismissalFor`), and no longer only on the newest
+                  row: a superseded fallback can be showing an older request's
+                  answer, and comparing against `settled[0]` would record nothing
+                  for exactly the sentence this shift taught the slot to display.
                 */
-                const newest = settledForViewer[0];
-                if (newest?.message && refineOutcome === newest.message) {
-                  setDismissedSettled((closed) => new Set(closed).add(newest.clientRequestId));
+                const closing = settledDismissalFor(refineOutcome, settledForViewer);
+                if (closing) {
+                  setDismissedSettled((closed) => new Set(closed).add(closing));
                 }
               }}
               onRefine={askRefine}

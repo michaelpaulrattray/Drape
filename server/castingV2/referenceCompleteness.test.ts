@@ -726,39 +726,33 @@ describe("a ruled floor, where the positive cannot be the bar", () => {
   });
 
   /*
-    EYES — his verdict, and the negative that gives it a noise floor.
+    EYES — an ABSENCE test, and it can fail.
 
-    These assert the two halves separately on purpose: the positive is HIS
-    (crops 3/4/5/6, 2026-08-17), the negative is a measurement taken through an
-    independent pair of region reads on his own production frame. A bar with one
-    of those and not the other is the thing this suite exists to catch.
+    The bar shipped on 2026-08-17 and was pulled the same day (fable-853 §3b):
+    the carry it unblocked was measured on ten frames across two casts and it
+    LOSES the feature — 0/3 at 35 px and 0/2 at 56 px, against words holding it
+    3/3 and 2/2. The 56 px crop is one of the four the founder himself called
+    complete, so the drafted >=45 px resolution floor would not have saved the
+    class either.
+
+    This is not "eyes were never calibrated". It is a kind whose calibration was
+    bought, shipped and then withdrawn on evidence, so the test that guards it
+    has to be able to FAIL — an absence nothing asserts is indistinguishable
+    from an absence nobody noticed (D-248's shape, the same week).
   */
-  it("carries the eyes bar he settled, with its measured negative", () => {
-    expect(thresholdFor("eyes")).toBe(0.95);
-    expect(COMPLETENESS_SPECIMENS.eyes!.positive).toBe(1);
-    expect(COMPLETENESS_SPECIMENS.eyes!.negative).toBeCloseTo(0.728, 3);
+  it("has NO eyes entry — the bar was measured and withdrawn, and stays out", () => {
+    expect(COMPLETENESS_SPECIMENS.eyes).toBeUndefined();
+    /* And the consequence, at the function the mint actually calls: an eye crop
+       has no bar to clear, so it is refused `noSpecimen`, keeps its pixels, and
+       the slot rides on words. */
+    expect(thresholdFor("eyes")).toBeNull();
   });
 
-  it("gives eyes more daylight than horns, and refuses the outer-third mis-cut", () => {
-    const floor = thresholdFor("eyes")!;
-    expect(COMPLETENESS_SPECIMENS.eyes!.negative).toBeLessThan(floor);
-    /* 22.2 points, against horns' 11. Asserted as a floor on the margin rather
-       than as the figure, so a re-measurement that improves it does not redden. */
-    expect(floor - COMPLETENESS_SPECIMENS.eyes!.negative).toBeGreaterThan(0.2);
-  });
-
-  it("does NOT pretend to judge resolution — the crops he called pixelated pass it", () => {
-    /*
-      HELD, not shipped (fable-851 §3). He rejected two crops for pixelation
-      (29x24 and 35x24) and BOTH measure 100.00% coverage, because coverage is
-      about extent and blind to how many pixels carry it. This test pins that
-      blindness so nobody reads the eyes bar as carrying the whole of his
-      ruling: a 30 px crop clears this floor, and whether it SHOULD is the carry
-      test's question, not this table's.
-    */
-    const floor = thresholdFor("eyes")!;
-    const pixelatedButComplete = 1;
-    expect(pixelatedButComplete).toBeGreaterThanOrEqual(floor);
+  it("keeps the kinds whose carry IS measured — the pull is about eyes, not the table", () => {
+    /* A withdrawal that quietly emptied the table would pass the test above and
+       break every carrier this product has proven. */
+    expect(thresholdFor("horns")).toBe(0.95);
+    expect(Object.keys(COMPLETENESS_SPECIMENS).length).toBeGreaterThan(0);
   });
 
   it("never rules a floor ABOVE the crop it was ruled from", () => {

@@ -84,6 +84,51 @@ export const FACE_SCAN_READS_PER_VERSION = 20;
  * table that has to be maintained by hand, so the rule is that nothing joins it
  * without a measurement or a published per-call figure behind it.
  */
+/**
+ * WHAT A REPAINT-ROAD RENDER REALLY COSTS — measured 2026-08-17, and NOT yet
+ * written into the table below (fable-859 §4).
+ *
+ * The constant beside it, `$0.099`, was measured on 2026-07-30 over nine
+ * SINGLE-REFERENCE images. A repaint carries the master plus every carried
+ * crop, each PADDED TO THE FULL FRAME — so a render on that road puts two to
+ * six 1024×1536 images on the wire, and the price moves with them:
+ *
+ *   6 renders, 2–3 references   $1.29 total   $0.215 each   (opus-634, corrected)
+ *   4 renders, 5–6 references   $0.94 total   $0.235 each   (opus-635)
+ *
+ * **Recorded here rather than replacing the constant**, because these are not
+ * the same measurement: an ordinary refine carries fewer references than either
+ * bench, and swapping one wrong figure for another wrong figure would leave
+ * every derived line just as confidently wrong in the other direction. What is
+ * certain is the direction — **every `fal DERIVED` figure built on $0.099 is a
+ * FLOOR for the repaint road, low by roughly half.**
+ *
+ * # AND THE ACCOUNT SETTLES LATE — read this before taking any subtraction
+ *
+ * Measured the same night: the balance read `$12.12` the moment a run's last
+ * render returned and `$11.89` four minutes later, with nothing rendering and
+ * the founder eleven hours quiet — **$0.23, one render's worth, arriving after
+ * the fact.** Three readings thirty seconds apart with nothing in flight were
+ * flat, so this is settlement lag rather than drift.
+ *
+ * Two consequences, both paid for once already:
+ *
+ *   1. A before/after subtraction closed AT the last render is a floor. The
+ *      first court reported $1.10 and had really spent $1.29.
+ *   2. A per-render subtraction is offset by about one render, so a column of
+ *      per-render prices attributes each cost to the render AFTER the one that
+ *      incurred it. Price a render by giving it its own settle window, or do
+ *      not price it per render at all.
+ *
+ * (`subtract-from-the-same-reading`, one level deeper: subtract at the same
+ * SETTLEMENT STATE, not merely from the same instrument.)
+ */
+export const FAL_REPAINT_MEASURED_2026_08_17 = {
+  twoToThreeReferences: { usd: 0.215, renders: 6, source: "opus-634 court, corrected for settle lag" },
+  fiveToSixReferences: { usd: 0.235, renders: 4, source: "opus-635 court, settled reading" },
+  settleLagUsd: 0.23,
+} as const;
+
 export const FAL_MEASURED_USD: Record<string, { usd: number; source: string }> = {
   /* $0.8912 across 9 medium 1024×1536 images, read off the account balance
      before and after on 2026-07-30. List arithmetic said $0.084 — 18% low.

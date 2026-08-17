@@ -7,6 +7,39 @@ POINT here — this file is the survivor. Reconciled against the full
 mailbox archive, memory, and DECISION_LOG by the lost-pin audit of
 2026-08-09; items marked (L#) were recovered by that audit.
 
+## THE BRIEF DISCIPLINE — a known degraded path is told, not discovered
+
+**Ruled fable-851 §4, filed 2026-08-17.** When a whole FEATURE CLASS is
+known to be riding a degraded path, that fact goes to the founder in a
+brief **at the time it is known** — not when he finds it through
+symptoms, and not never.
+
+*The incident:* eyes had never carried a crop. Every eye edit on every
+cast rode words alone, and the reason was in our own rows all along —
+every eye crop the library ever minted was REFUSED (`noSpecimen`), so
+nothing ever rode. **He did not learn this until 2026-08-16**, and by
+then he had spent weeks debugging its symptoms one at a time: a cat-eye
+that came back hazel, a panel with empty slots, a per-eye edit that
+would not hold. Each was investigated as its own mystery. The cause was
+already written down.
+
+*The cost of the silence was not the bug — it was his time spent
+looking for a cause we could have named in a sentence.* A degraded path
+is often the right engineering call; keeping it to ourselves never is.
+
+*How to apply it.* Ask, when a class is found riding a lesser road:
+**would he be surprised to learn this?** If yes, it is a brief — one
+paragraph, what the class is, what it rides instead, and what it costs
+him — filed to `founder-queue.md` as an FYI (never a blocker) or said
+in the morning report. The bar is that he should never be the one to
+discover it.
+
+*Its own corollary, earned the same week:* when the degraded path is
+then MEASURED, the measurement goes to him too, even when it says he
+was wrong. The 2026-08-17 carry court (opus-634/635) refuted his own
+claim about pixelated eye crops, and it reached him as his test
+answering rather than as a loss.
+
 ## 0. CAMPAIGN PRECONDITIONS — owed BEFORE Tier A scores (not post-Sign)
 
 - **Frame-05 / removal-composite hair silhouette** (L1): owed its own
