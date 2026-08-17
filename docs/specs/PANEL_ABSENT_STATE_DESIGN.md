@@ -5,6 +5,38 @@ only — no render, no call, no credit. The ruling is the founder's and this not
 executes it; the one thing it decides on its own is which features may hold such
 a state, and it decides that conservatively and says why.*
 
+> ## ✅ BUILT — shift 83, 2026-08-17
+>
+> Shipped as designed: `whenAbsent` on the catalogue (hair → *"bald"*, facial
+> hair → *"clean-shaven"*, each carrying its reason), `PanelScan.absent` derived
+> in `panelScanOf` from the scan's own `empty`, `PanelRow.absent` on the panel,
+> and one line in the browser. §7's two opens were answered by **fable-893
+> ruling 3** — the row is CLICKABLE (yes), and hair states ONE consolidated
+> row (yes, and it needed no work: the catalogue has a single `hair` slot, so
+> the "three word rows" the question feared do not exist — its facets share one
+> row already).
+>
+> **§5's control ran BEFORE the word reached any screen**, off 14 production
+> readings in `casting_face_scans` — no segmenter call, no credit — and **every
+> frame was opened by eye rather than taken from the reader's prose** (law 9):
+>
+> | arm | reading | verified |
+> |---|---|---|
+> | POSITIVE | 8 of 8 haired readings returned a hair REGION | 2 opened, incl. a close-cropped grey buzz cut — the nearest thing to bald that still has hair |
+> | NEGATIVE | 6 of 6 empty readings are visibly bald | all 6 opened; every one a bald man from his cyborg roll |
+>
+> Facial hair was answered by the same pass: FOUND on 5 visibly bearded faces,
+> EMPTY on the clean-shaven and the female ones.
+>
+> **And it was rendered before it shipped** (working law 6). The dev world had
+> no bald face — all sixteen ready candidates were opened as a contact sheet and
+> every one has hair — so one of his own bald production masters was copied into
+> the dev bucket as a fixture cast, scanned live by the real reader on house
+> money, and photographed: `output/bald-control-2026-08-17/panel-bald-row.png`
+> shows **Hair · bald** and **Facial hair · clean-shaven** beside the man they
+> are true of, settled and tappable. The fixture's rows were removed afterwards
+> by the ids the seeder printed.
+
 > **FOUNDER RULING, fable-889** — asked whether hair should appear on his bald
 > cyborg cast or only once asked for: **"yes show bald"**.
 >
@@ -148,14 +180,28 @@ printed. No new call.
 - **The scan's questions.** No new region, no extra call — the fact is already
   in `empty` and is being thrown away one function later.
 
-## 7. Open, and named rather than assumed
+## 7. Open, and named rather than assumed — BOTH ANSWERED (fable-893 ruling 3)
 
-1. **Whether a stated absence is CLICKABLE like a filled row.** The founder's
-   grounds — *"the row is the click target"* — suggest yes, and it is the
-   difference between naming a state and offering to change it. Not decided here.
-2. **Whether the words row and the picture row differ.** Hair has both a stencil
-   row and word rows (`hair.cut`, `hair.colour`, `hair.texture`); a bald head
-   has no cut and no colour. Whether one *"bald"* replaces all of them, or each
-   states its own finding, is a panel-composition question this note leaves to
-   the build with the bias toward ONE statement — three rows each saying nothing
-   is the wall of blanks the founder complained about, wearing words.
+1. ~~**Whether a stated absence is CLICKABLE like a filled row.**~~ **YES.** The
+   founder's own grounds — *"the row is the click target"* — were half the
+   reason the ruling exists, and a stated *"bald"* that invites *"give him a
+   mohawk"* is the row doing its job. Built: the row carries its slot and its
+   prefill like every other, and the drive read `tappable=true` on it.
+2. ~~**Whether the words row and the picture row differ.**~~ **ONE row**, and it
+   cost nothing: the catalogue has a single `hair` slot whose facets are
+   `hair.cut`, `hair.colour`, `hair.texture`, `hairFinish` and `hairWorn`, so
+   the three word rows this question feared were never three rows. One *"bald"*
+   states the state; the words return the moment there is hair to describe,
+   because they are the same row's `words`.
+
+## 8. What the build left standing, said plainly
+
+- **A stated absence is the one row admitted without a rectangle**, which is a
+  deliberate exception to fable-414 and is written at `hasContent` where the
+  rule lives. A bald head has nothing to point at, and the row is not offering
+  a picture of his hair — it is telling him there is none.
+- **The third fact still has no channel.** The panel can now tell FOUND-NOTHING
+  from STILL-COMING and from NEVER-ASKED. It still cannot say *"this question
+  errored"* — `failed` stops at `panelScanOf`, deliberately, because nothing has
+  ruled what a customer should be told about a reader that fell over. Named here
+  so the next person finds a decision rather than a gap.

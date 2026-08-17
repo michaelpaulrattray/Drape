@@ -57,7 +57,23 @@ describe("what a slot is", () => {
          is cut from — `skin` and `teeth` do, each because the two genuinely
          come apart there. */
       display: null,
+      /* And what the row says when the scan asks and finds nothing — hair is
+         the founder's own case (fable-889: "yes show bald"). The reason
+         travels ON the slot, because the admission IS the reason: an empty
+         read here cannot mean "hidden". */
+      whenAbsent: {
+        says: "bald",
+        why: expect.stringContaining("the crown is in frame"),
+      },
     });
+  });
+
+  it("carries NO absent state on a slot nobody admitted one for", () => {
+    /* The other half of the record above, and the one that keeps the field
+       honest: it is present exactly where it was authored, and a slot without
+       it does not carry the key at all. */
+    expect(slotDefinition("lips")).toMatchObject({ slot: "lips" });
+    expect(Object.keys(slotDefinition("lips")!)).not.toContain("whenAbsent");
   });
 
   it("names an instance on its own side, and never in the question", () => {
@@ -455,6 +471,63 @@ describe("a display region is shown and never carried", () => {
     for (const definition of displayed) {
       expect(isAskable(definition)).toBe(false);
       expect(definition.wordsOnly).toBeTypeOf("string");
+    }
+  });
+});
+
+/**
+ * A STATED ABSENCE IS ADMITTED PER SLOT, IN WRITING, OR IT DOES NOT HAPPEN
+ * (founder ruling fable-889, `PANEL_ABSENT_STATE_DESIGN.md`).
+ *
+ * *"Yes show bald"* — and the same ruling's scope note is the reason this file
+ * has a case at all: *"do not invent none-states for features the scan cannot
+ * honestly assert none about."* `empty` is one field carrying two facts (she
+ * has none of it · I could not see it), and which one it is depends on the pose
+ * and the hair. So the admission is authored beside its reason and the default
+ * is silence — the discipline `panel` and `display` already follow.
+ */
+describe("which features may state a finding of nothing", () => {
+  const admitted = catalogueSlots().filter((definition) => definition.whenAbsent !== undefined);
+
+  it("is hair and facial hair, and nothing else", () => {
+    /* The positive control, and the enumeration is the point: a third member
+       arriving without a court is what this case is here to make visible. */
+    expect(admitted.map((definition) => [definition.slot, definition.whenAbsent!.says]))
+      .toEqual([["hair", "bald"], ["facial-hair", "clean-shaven"]]);
+  });
+
+  it("carries the reason it is safe, on the slot", () => {
+    /* Not decoration: the reason is the whole admission — the crown and the jaw
+       are in frame on every casting framing and nothing hides them. A member
+       with no argument beside it is a member somebody added by pattern. */
+    for (const definition of admitted) {
+      expect(definition.whenAbsent!.why.length).toBeGreaterThan(60);
+      expect(definition.whenAbsent!.says.length).toBeGreaterThan(0);
+    }
+  });
+
+  it("is never a per-side slot, because a hidden side is not an absent one", () => {
+    /*
+      THE NEGATIVE CONTROL, and it closes a silent gap rather than a loud one:
+      the panel builds a stated absence only on the single-instance branch, so
+      `whenAbsent` on a bilateral slot would do NOTHING and say nothing about
+      doing nothing. An ear behind her hair and an ear she does not have are the
+      same empty read; eyes, brows and lashes are the same argument.
+    */
+    for (const definition of admitted) expect(definition.instance).toBeNull();
+    /* And the fixture that proves this case can fail: the catalogue does have
+       per-side slots, so an admission on one is expressible. */
+    expect(catalogueSlots().some((definition) => definition.instance !== null)).toBe(true);
+  });
+
+  it("is a slot the scan actually asks about, and draws a row of its own", () => {
+    /* An admission on a slot with no question could never be reached — the fact
+       is derived from an empty ANSWER — and one on a slot the panel does not
+       draw would be a state nobody can see. Both are inert admissions, which
+       read as decisions until somebody looks. */
+    for (const definition of admitted) {
+      expect(definition.question).not.toBeNull();
+      expect(definition.panel.row).toBe("own");
     }
   });
 });

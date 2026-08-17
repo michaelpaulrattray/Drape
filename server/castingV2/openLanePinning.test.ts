@@ -176,6 +176,13 @@ describe("2. the closed grammar is unchanged for every non-open key", () => {
       you added or edited a slot on purpose: read the diff, satisfy yourself
       that the open branch is not what moved it, and update the constant in the
       same commit that moved the catalogue.
+
+      MOVED 2026-08-17, `036df24c52c83d00` → `5a5d1dca79131a23`, by the bald
+      row (founder ruling fable-889): `whenAbsent` was authored on `hair` and
+      `facial-hair`. Read before re-pinning — still 25 slots, exactly those two
+      carry the new field, an ordinary slot does not carry the key at all, and
+      the open branch is not in this list to move: `openSlotDefinition`
+      synthesizes its record outside `catalogueSlots()` and admits no absence.
     */
     const digest = crypto
       .createHash("sha256")
@@ -183,7 +190,7 @@ describe("2. the closed grammar is unchanged for every non-open key", () => {
       .digest("hex")
       .slice(0, 16);
     expect(catalogueSlots()).toHaveLength(25);
-    expect(digest).toBe("036df24c52c83d00");
+    expect(digest).toBe("5a5d1dca79131a23");
   });
 });
 

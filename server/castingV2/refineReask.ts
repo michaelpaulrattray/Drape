@@ -352,6 +352,14 @@ const VALID_IN_CONTEXT: readonly string[] = [
      `ears`. An ordinary English word, so the rule is absolute — the question
      never fires on it. */
   "errs",
+  /*
+    AND `pose` ONE SLIP FROM `rose` — the nose/rose neighbourhood again, caught
+    by the same guard on 2026-08-17 the moment the bald row's catalogue note
+    wrote "hidden by hair or pose". It is a word a photographer says all day,
+    and "keep the pose, change the hair" is a sentence this product exists to
+    receive.
+  */
+  "pose", "poses", "posed",
 ];
 
 /**

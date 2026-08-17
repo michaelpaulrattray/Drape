@@ -635,9 +635,63 @@ export function scanProgressOf(input: {
   return held.partial === null ? null : { scan: held.partial, done: false };
 }
 
-/** The panel's view of a scan — boxes, stencils and the two described rows. */
+/**
+ * WHICH SLOTS WERE ASKED ABOUT AND ANSWERED NOTHING, CLEANLY.
+ *
+ * The fact the bald row is made of (founder ruling fable-889, design note
+ * `PANEL_ABSENT_STATE_DESIGN.md`), and it has to be DERIVED here because
+ * `empty` holds region QUESTIONS while the panel is a list of SLOTS.
+ *
+ * Three conditions, and each one is a different way of not being an absence:
+ *
+ *   in `empty`     the question was asked and answered nothing. A question that
+ *                  FAILED is in `failed` instead and is filtered below anyway —
+ *                  belt and braces, because "could not look" is precisely the
+ *                  fact this must never be confounded with
+ *   no box         a bilateral region counts as filed when EITHER side lands,
+ *                  so the region-level answer is not per-slot enough on its own.
+ *                  The eyes court is the specimen: one eye found and one missed
+ *                  is recorded as a success (`faceScan`'s own `emptySlots`
+ *                  note), and a slot with a box is present whatever the region
+ *                  said
+ *   in the plan    a slot nobody asked about is not an absence, it is silence
+ *
+ * It reports the FACT for every slot. WHICH facts may be spoken is the
+ * catalogue's decision (`whenAbsent`), authored per slot beside its reason, and
+ * the panel is where the two meet — one place deciding what is true, another
+ * deciding what may be said about it.
+ */
+function absentSlotsOf(scan: ScannedFace): ReadonlySet<FeatureSlot> {
+  if (scan.empty.length === 0) return new Set();
+  const empty = new Set(scan.empty);
+  const failed = new Set(scan.failed.map((one) => one.question));
+  const absent = new Set<FeatureSlot>();
+  for (const region of scanPlan()) {
+    if (!empty.has(region.question) || failed.has(region.question)) continue;
+    for (const slot of region.slots) {
+      if (!scan.slots.has(slot.slot)) absent.add(slot.slot);
+    }
+  }
+  return absent;
+}
+
+/** The panel's view of a scan — boxes, stencils, the described rows, and what
+ *  came back empty. */
 export function panelScanOf(scan: ScannedFace): PanelScan {
-  return { frameUrl: scan.frameUrl, slots: scan.slots, words: scan.words };
+  return {
+    frameUrl: scan.frameUrl,
+    slots: scan.slots,
+    words: scan.words,
+    /*
+      A PARTIAL SCAN CLAIMS NO ABSENCE, AND IT DOES SO BY CONSTRUCTION: the
+      in-flight `partial` carries `empty: []` because a question still in the
+      air has answered neither way. So a row that will end up saying "bald" is
+      simply not there yet while the scan runs, and `scanning` draws it as a
+      place for something — which is the difference the panel already knew how
+      to make.
+    */
+    absent: absentSlotsOf(scan),
+  };
 }
 
 /** For tests and for the reliability report. */

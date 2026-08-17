@@ -606,6 +606,97 @@ describe("the scan says which sides it found", () => {
 });
 
 /**
+ * WHAT CAME BACK EMPTY, AS THE PANEL RECEIVES IT (founder ruling fable-889,
+ * `PANEL_ABSENT_STATE_DESIGN.md`).
+ *
+ * The bald row is made of this projection, and it is a derivation rather than a
+ * field — `empty` holds region QUESTIONS and the panel is a list of SLOTS — so
+ * it is driven directly on a constructed reading rather than through a scan.
+ * That is deliberate: what is on trial is the arithmetic, and a reading built
+ * by a fake reader can only produce the cases that reader happens to make.
+ *
+ * The three arms are the three ways a slot can be missing from `slots`, and
+ * telling them apart is the entire ruling: FOUND-NOTHING may be spoken about,
+ * COULD-NOT-LOOK may not, and NEVER-ASKED is not even a question.
+ */
+describe("what the scan asked about and found nothing of", () => {
+  const reading = (over: Partial<Parameters<typeof panelScanOf>[0]>) => panelScanOf({
+    frameUrl: "https://bucket.example/casting/master.jpg",
+    slots: new Map(),
+    words: new Map(),
+    asked: 12,
+    found: 0,
+    empty: [],
+    failed: [],
+    stencilBytes: 0,
+    sides: "",
+    ...over,
+  } as any);
+
+  it("names the slot behind a question that was asked and answered nothing", () => {
+    const panel = reading({ empty: ["hair"] });
+    expect(panel.absent?.has("hair" as any)).toBe(true);
+  });
+
+  it("does NOT name a slot whose question failed — that is could-not-look", () => {
+    /* The negative control, and it is the one that matters: a reader that
+       errored on hair produces the same missing row as a bald head, and only
+       one of them may be told she is bald. */
+    const panel = reading({
+      empty: [],
+      failed: [{ question: "hair", why: "Reached concurrent requests limit of 20", retryable: true }],
+    });
+    expect(panel.absent?.has("hair" as any)).toBe(false);
+
+    /*
+      AND AGAIN WITH THE QUESTION IN BOTH LISTS, which is the arm that actually
+      drives the filter.
+
+      Said plainly, because the arm above passes for a weaker reason than it
+      looks: `scanFace` never writes a question to both, so the case above is
+      already excluded by `empty` alone and would pass with no failure check at
+      all. This one cannot — remove the `failed` filter and it names hair. It
+      is the lock on a class rather than on today's writer: the day something
+      appends to both lists, the panel must go on refusing to say "bald" over a
+      read that errored.
+    */
+    const both = reading({
+      empty: ["hair"],
+      failed: [{ question: "hair", why: "the segmenter said no" }],
+    });
+    expect(both.absent?.has("hair" as any)).toBe(false);
+  });
+
+  it("does NOT name a slot nobody asked about", () => {
+    /* Never-ran is the third fact. An empty list is silence, and silence is not
+       a finding — the whole set is empty here, which is what a face read by
+       nothing looks like. */
+    expect(reading({ empty: [] }).absent?.size).toBe(0);
+  });
+
+  it("does not call a feature absent on the frame it was just found on", () => {
+    /* Belt and braces against the region-level answer: a bilateral question
+       counts as filed when EITHER side lands, so presence is decided per slot,
+       from the boxes, and a slot with a box is present whatever `empty` says. */
+    const box = { x: 1, y: 2, width: 3, height: 4, frame: FRAME };
+    const panel = reading({
+      empty: ["hair"],
+      slots: new Map([["hair" as any, { box, maskUrl: "data:image/png;base64,AA" }]]),
+    });
+    expect(panel.absent?.has("hair" as any)).toBe(false);
+  });
+
+  it("names both sides of a bilateral region that answered nothing at all", () => {
+    /* The FACT is reported for every slot; whether anything may be SAID about
+       it is the catalogue's decision, and no per-side slot admits one. Driven
+       so the projection is honest rather than quietly single-instance. */
+    const panel = reading({ empty: ["eyes"] });
+    expect(panel.absent?.has("eye@left" as any)).toBe(true);
+    expect(panel.absent?.has("eye@right" as any)).toBe(true);
+  });
+});
+
+/**
  * THE KEPT READING, AT THE WIRE (migration 0032).
  *
  * What is on trial here is the SERVICE's half of the bargain: when it asks the

@@ -355,8 +355,16 @@ describe("the panel's copy, classified", () => {
     /* Matched where a TEXT NODE begins, so an attribute carrying a count
        (`data-parts`) is not mistaken for copy. What is read out loud is what
        this law is about. */
+    /*
+      THREE NOW (founder ruling fable-889, 2026-08-17): `row.absent` is what a
+      row states when the scan asked and found nothing — *"bald"*. It belongs in
+      this set for the same reason the other two do: the SERVER wrote it. The
+      word is authored in the catalogue beside the argument that an empty read
+      there cannot mean "hidden", so the browser composes nothing and this file
+      can go on proving that.
+    */
     const rendered = panel.match(/>\{row\.[a-zA-Z.]+\}/g) ?? [];
-    expect(new Set(rendered)).toEqual(new Set([">{row.name}", ">{row.from}"]));
+    expect(new Set(rendered)).toEqual(new Set([">{row.name}", ">{row.from}", ">{row.absent}"]));
   });
 
   it("shows NOTHING where there is no crop — his words were 'never as empty squares'", async () => {

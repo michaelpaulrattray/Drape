@@ -766,3 +766,131 @@ describe("one green eye is never spoken of as two", () => {
     expect(named(remerged, "Eyes")?.words.join(" ")).not.toContain("left ");
   });
 });
+
+/**
+ * THE ROW STATES A FINDING OF NOTHING — founder ruling, fable-889.
+ *
+ * Asked whether hair should appear on his bald cyborg cast or only once asked
+ * for: **"yes show bald"**. A finding of nothing is a look, not a gap (working
+ * law 8 — a stylist names bald, clean-shaven, no makeup), and a row that
+ * vanishes says nothing at all where the product should be saying something
+ * true about his photograph.
+ *
+ * The whole risk of the ruling is in its scope note, verbatim: *"do not invent
+ * none-states for features the scan cannot honestly assert none about"* — so
+ * half of what is driven here is the panel REFUSING to speak. The design and
+ * the controls behind the two admitted features are
+ * `PANEL_ABSENT_STATE_DESIGN.md`.
+ */
+describe("a row states a finding of nothing", () => {
+  const nothingFound = (absent: string[], rows: StoredReference[] = [], scanning?: boolean) => facePanel({
+    rows,
+    pronouns: HE,
+    contentUrl: (key) => `https://bucket.example/${key}`,
+    maskUrl: (key) => `/api/image-proxy?url=${encodeURIComponent(`https://bucket.example/${key}`)}`,
+    scan: {
+      frameUrl: "https://bucket.example/casting/master.jpg",
+      slots: new Map(),
+      absent: new Set(absent as any),
+    },
+    scanning,
+  }).groups.flatMap((group) => group.rows);
+
+  it("says BALD on a face whose hair read came back empty", () => {
+    const hair = nothingFound(["hair"]).find((row) => row.name === "Hair");
+    expect(hair).toBeDefined();
+    expect(hair!.absent).toBe("bald");
+    /* And it is FULL STRENGTH: this is the version's own confirmed reading, not
+       a place kept for one. */
+    expect(hair!.state).toBe("settled");
+  });
+
+  it("keeps the row on the panel although there is nothing to point at", () => {
+    /* The deliberate exception to fable-414. A bald head has no hair to draw a
+       rectangle around, and the row is not offering a picture of his hair — it
+       is telling him there is none. Everything else still leaves the panel. */
+    const hair = nothingFound(["hair"]).find((row) => row.name === "Hair")!;
+    expect(hair.regions).toEqual([]);
+    expect(hair.cutouts).toEqual([]);
+  });
+
+  it("is TAPPABLE, so the state is an invitation (fable-893 ruling 3a)", () => {
+    /* His own grounds for the ruling were that the row is the click target. A
+       stated "bald" that invites "give him a mohawk" is the row doing its job,
+       and the prefill is the same sentence-opening every other row carries. */
+    const hair = nothingFound(["hair"]).find((row) => row.name === "Hair")!;
+    expect(hair.slots).toEqual(["hair"]);
+    expect(hair.prefill).toBe("his hair — ");
+  });
+
+  it("says CLEAN-SHAVEN for facial hair, the same argument one jaw down", () => {
+    const beard = nothingFound(["facial-hair"]).find((row) => row.name === "Facial hair")!;
+    expect(beard.absent).toBe("clean-shaven");
+  });
+
+  it("REFUSES on a feature an empty read cannot honestly mean nothing about", () => {
+    /*
+      The negative control, and it is the ruling's own scope note. An empty ear
+      read means "he has no ear" or "I could not see it", and which one depends
+      on the pose and the hair — neither of which the scan knows. The same is
+      true of eyes behind glasses, brows, lashes.
+
+      Driven on the SAME projection that says "bald" one row above, so this is
+      the catalogue's admission doing the work rather than a coincidence of
+      fixtures.
+    */
+    const absent = ["ear@left", "ear@right", "eye@left", "eye@right", "nose", "lips"];
+
+    /* First on a bare face: not one of them draws a row, so nothing was
+       invented — the panel is unchanged for every unadmitted feature. */
+    expect(nothingFound(absent).map((row) => row.name)).toEqual([]);
+
+    /*
+      And then on rows that DO exist, because the arm above cannot fail on its
+      own: those rows draw nothing today for a different reason (no box), so an
+      admission slipped into the catalogue would hide behind the old rule. Give
+      each one a library row with geometry and the row is on the panel — and it
+      must still say nothing about being absent.
+    */
+    const drawn = nothingFound(absent, [
+      row({ slot: "ear@left", noun: "left ear", words: ["a small lobe"] }),
+      row({ slot: "ear@right", noun: "right ear", words: ["a small lobe"] }),
+      row({ slot: "nose", words: ["a straight nose"] }),
+      row({ slot: "lips", words: ["a fuller lip"] }),
+    ]);
+    expect(drawn.map((one) => one.name).sort()).toEqual(["Ears", "Lips", "Nose"]);
+    expect(drawn.every((one) => one.absent === null)).toBe(true);
+  });
+
+  it("says nothing at all when nobody looked", () => {
+    /* No scan is not an empty scan. A panel built without one has never asked,
+       and never-asked may not be drawn as found-nothing — which is the fact
+       `panelScanOf` is careful to keep separate upstream. */
+    expect(allRows([]).filter((row) => row.absent !== null)).toEqual([]);
+  });
+
+  it("does not say BALD over words the library already holds", () => {
+    /*
+      Whatever she has bought wins whole, exactly as words and pictures already
+      merge. A described or minted hair row is the answer; a thin read of
+      today's frame does not overturn it and tell her she is bald.
+    */
+    const held = nothingFound(["hair"], [row({ slot: "hair", words: ["a copper shag"] })]);
+    const hair = held.find((one) => one.name === "Hair")!;
+    expect(hair.absent).toBeNull();
+    expect(hair.words).toEqual(["a copper shag"]);
+  });
+
+  it("does not say BALD while the read is still running", () => {
+    /*
+      A row with nothing yet is a PLACE for something while the scan is in
+      flight (fable-521), and that is exactly the state a bald row must not be
+      confused with. Belt and braces at this layer: the projection upstream
+      already claims no absence from a partial reading, because a question still
+      in the air has answered neither way.
+    */
+    const pending = nothingFound([], [], true).find((one) => one.name === "Hair")!;
+    expect(pending.state).toBe("pending");
+    expect(pending.absent).toBeNull();
+  });
+});

@@ -163,6 +163,14 @@ export type SlotDefinition = {
   /** Present exactly when `question` is null — why, in one sentence. */
   wordsOnly?: string;
   /**
+   * WHAT THIS ROW STATES WHEN THE SCAN ASKED AND FOUND NOTHING — *"bald"*.
+   *
+   * See {@link CatalogueEntry.whenAbsent}. Absent on almost every slot, and
+   * absent is the safe answer: a slot without it draws no row when its read
+   * comes back empty, which is what every slot did before this field existed.
+   */
+  whenAbsent?: { says: string; why: string };
+  /**
    * WHY THIS SLOT HAS A QUESTION AND NO GUARD — the open lane's carve-out.
    *
    * Present on open slots ONLY, and never on a catalogued one. The invariant
@@ -326,6 +334,37 @@ type CatalogueEntry = {
    * crop. `referenceSlotCatalogue.test.ts` drives that it cannot.
    */
   display?: string;
+  /**
+   * WHAT THE ROW SAYS WHEN THE SCAN ASKED AND FOUND NOTHING — founder ruling,
+   * fable-889: asked whether hair should appear on his bald cyborg cast,
+   * **"yes show bald"**.
+   *
+   * A finding of nothing is a LOOK, not a gap (working law 8 — a stylist names
+   * bald, clean-shaven, no makeup), so the row stays and states it rather than
+   * vanishing. The design and its grounds are `PANEL_ABSENT_STATE_DESIGN.md`.
+   *
+   * # ABSENCE MUST NOT BE CONFOUNDED WITH OCCLUSION, WHICH IS WHY IT IS
+   * # AUTHORED HERE AND NEVER DERIVED
+   *
+   * The scan's own header says the trap in one sentence: an empty read is
+   * *"an honest answer on a face with an ear behind her hair and a finding on a
+   * face looking straight at the camera."* One field, two facts. So a feature
+   * is admitted by somebody deciding it, in writing, beside the reason — the
+   * discipline `panel` and `display` already follow — and the default is
+   * SILENCE. Ears, eyes, brows and lashes are routinely hidden by hair or pose
+   * and may never hold one; nose, lips and teeth have nothing to state, and
+   * *"nose: none"* would be a bug wearing a caption.
+   *
+   * Named `whenAbsent` rather than anything containing "none", because
+   * {@link PanelPlacement} already has `row: "none"` and it means DRAW NO ROW —
+   * the exact opposite. Two meanings of "none" one field apart would be read
+   * wrong inside a month.
+   *
+   * The words are the panel's own statement about the photograph and are never
+   * the customer's: not a delta, not an ask, and nothing carries them into a
+   * recipe or files them in the library.
+   */
+  whenAbsent?: { says: string; why: string };
 };
 
 const STRUCTURE_IS_WORDS = (part: string): PanelPlacement => ({
@@ -353,6 +392,29 @@ const ANATOMY_SLOTS: readonly CatalogueEntry[] = [
     facets: ["hair.cut", "hair.colour", "hair.texture", "hairFinish", "hairWorn"],
     instances: { of: "one" },
     question: { from: "facetRegion" },
+    /*
+      THE FOUNDER'S OWN CASE, and the reason it is safe here: the crown is in
+      frame on every casting framing this product produces, and hair is not
+      something another feature hides. An empty hair read is bald or broken —
+      never hidden — which is the one thing that makes stating it honest.
+
+      CONTROLLED ON PRODUCTION READINGS BEFORE THE WORD SHIPPED (§5 of the
+      design note, run 2026-08-17 off `casting_face_scans`, every frame opened
+      by eye rather than taken from the reader's prose — law 9):
+        POSITIVE  8 of 8 haired readings returned a hair REGION, including a
+                  close-cropped grey buzz cut, which is the nearest thing to
+                  bald that still has hair
+        NEGATIVE  6 of 6 readings that returned EMPTY are visibly bald men
+                  (his cyborg roll) — not one confident patch of scalp
+    */
+    whenAbsent: {
+      says: "bald",
+      why:
+        "the crown is in frame on every casting framing this product produces and nothing occludes "
+        + "it, so an empty hair read is bald or broken and never hidden — the founder's own case "
+        + "(fable-889: \"yes show bald\"), controlled 8/8 positive and 6/6 negative on production "
+        + "readings before the word shipped",
+    },
   },
   {
     feature: "facial-hair",
@@ -364,6 +426,19 @@ const ANATOMY_SLOTS: readonly CatalogueEntry[] = [
     facets: ["facialHair"],
     instances: { of: "one" },
     question: { from: "facetRegion" },
+    /*
+      The same argument, and the same reading answered it in the same pass: the
+      jaw is in frame, nothing occludes it, and clean-shaven is a look a stylist
+      names. On those 14 production readings the beard question came back FOUND
+      on 5 visibly bearded faces and EMPTY on the clean-shaven and female ones.
+    */
+    whenAbsent: {
+      says: "clean-shaven",
+      why:
+        "the jaw is in frame and nothing occludes it, so an empty read is clean-shaven rather than "
+        + "hidden, and clean-shaven is a look a stylist names — fable-889's own generalisation, "
+        + "controlled on the same production readings as hair",
+    },
   },
   {
     feature: "eye",
@@ -957,6 +1032,9 @@ function definitionOf(entry: CatalogueEntry, instance: Instance | null): SlotDef
     frame: entry.instances.of === "perSide" ? ("ownSide" as const) : ("wholeFrame" as const),
     remint: entry.remint ?? ("whenEarned" as const),
     display: entry.display ?? null,
+    /* Carried only where it was authored: a slot with nothing here says nothing
+       when its read is empty, which is what every slot did before this field. */
+    ...(entry.whenAbsent ? { whenAbsent: entry.whenAbsent } : {}),
     ...(entry.instances.of === "perSide" ? { pairNoun: entry.instances.pairNoun } : {}),
   };
 

@@ -121,6 +121,22 @@ export type PanelScan = {
    * row, so it is never carried into a recipe or checked in a render.
    */
   words?: ReadonlyMap<FeatureSlot, readonly string[]>;
+  /**
+   * WHAT THE SCAN ASKED ABOUT AND FOUND NOTHING OF (founder ruling fable-889,
+   * `PANEL_ABSENT_STATE_DESIGN.md`).
+   *
+   * A third channel because it is a third fact, and the whole ruling turns on
+   * telling it from the other two: a slot missing from `slots` used to be one
+   * thing from this side — nothing — whether the reader asked and got a clean
+   * nothing, errored on that question, or never ran at all. FOUND-NOTHING is
+   * what a bald head produces, and it is the only one of the three a row may
+   * speak about.
+   *
+   * Derived in `panelScanOf` from the scan's own `empty`, never accumulated
+   * beside it. Absent (rather than empty) on a panel built without a scan, so
+   * "nobody looked" cannot be read as "nothing is there".
+   */
+  absent?: ReadonlySet<FeatureSlot>;
 };
 
 /**
@@ -207,6 +223,22 @@ export type PanelRow = {
   name: string;
   /** Everything ever accepted about it, oldest first. Empty until something is. */
   words: readonly string[];
+  /**
+   * WHAT THIS ROW STATES INSTEAD OF DISAPPEARING — *"bald"* (founder ruling,
+   * fable-889: **"yes show bald"**).
+   *
+   * Non-null only when all four hold: the scan finished, it asked about this
+   * feature, it found nothing, and the catalogue admits a stated absence for it
+   * (`whenAbsent` — hair and facial hair, and nothing else today). Null on
+   * every other row, which is almost all of them.
+   *
+   * It is the PANEL's statement about the photograph, deliberately not
+   * {@link PanelRow.words}: her words are what she asked for and what the
+   * library filed, and a reading of nothing is neither. Keeping the two
+   * channels apart is what stops "bald" travelling into a recipe as though
+   * somebody had asked for it.
+   */
+  absent: string | null;
   /** "she came with it", "from an edit" — null when nothing has happened to it. */
   from: string | null;
   /** The opening of their own sentence, written into the ask box on a tap. */
@@ -540,6 +572,43 @@ export function facePanel(input: {
     };
   };
 
+  /**
+   * WHAT THIS ROW STATES WHEN THE SCAN FOUND NOTHING — or null, which is almost
+   * always (founder ruling fable-889, `PANEL_ABSENT_STATE_DESIGN.md`).
+   *
+   * Four conditions, and each removes a different way of being wrong:
+   *
+   *   the catalogue admits it   `whenAbsent`, authored per slot beside the
+   *                             reason. Hair and facial hair today, because the
+   *                             crown and the jaw are in frame on every casting
+   *                             framing and nothing hides them. An empty EAR
+   *                             read is a fact about her hair or her pose, and
+   *                             painting "ears: none" onto it is the product
+   *                             asserting something false from a blank
+   *   the scan says so          `absent` is asked-and-answered-nothing, told
+   *                             apart from errored and from never-ran in
+   *                             `panelScanOf`. A partial scan carries none, so
+   *                             a row in flight stays a place for something
+   *   the library has nothing   whatever she has bought or been described wins
+   *                             whole, exactly as the words and the pictures
+   *                             already merge. A face with hair words does not
+   *                             get told it is bald because today's frame read
+   *                             thin
+   *   nothing is pictured       a crop or a box means the feature IS on this
+   *                             frame, whatever the region-level answer said
+   */
+  const absentSays = (
+    definition: SlotDefinition,
+    words: readonly string[],
+    state: SlotState,
+  ): string | null => {
+    const says = definition.whenAbsent?.says;
+    if (says === undefined) return null;
+    if (scan === null || scan.absent?.has(definition.slot) !== true) return null;
+    if (words.length > 0 || state.thumb !== null || state.box !== null) return null;
+    return says;
+  };
+
   const definitions = catalogueSlots();
 
   /**
@@ -590,13 +659,15 @@ export function facePanel(input: {
     if (definition.instance === null) {
       spoken.add(definition.slot);
       const spokenName = spokenOf(definition, input.pronouns.possessive, false);
+      const words = wordsFor(definition.feature, state.words);
       push({
         state: "settled",
         slots: [definition.slot],
         group: definition.group,
         name: labelOf(definition, false),
         spoken: spokenName,
-        words: wordsFor(definition.feature, state.words),
+        words,
+        absent: absentSays(definition, words, state),
         from: state.from,
         prefill: prefillFor(spokenName),
         cutouts: state.thumb ? [state.thumb] : [],
@@ -677,6 +748,18 @@ export function facePanel(input: {
             { noun: right.instance!, words: wordsFor(right.feature, rightState.words) },
           )
           : wordsFor(left.feature, leftState.words),
+        /*
+          AND A PAIR NEVER STATES AN ABSENCE.
+
+          Not an omission: every bilateral feature in the catalogue is one the
+          design note excludes by name — eyes, brows, ears, lashes are routinely
+          hidden by hair or by pose, so an empty read of one is a fact about the
+          photograph rather than about her. The catalogue is where that is
+          decided, and `referenceSlotCatalogue.test.ts` drives that no
+          per-side slot carries `whenAbsent` — so this null cannot quietly
+          swallow an admission somebody meant to make.
+        */
+        absent: null,
         /* And where it came from is only sayable when both sides came from the
            same place. Two different provenances is not a fact about the pair. */
         from: leftState.from === rightState.from ? leftState.from : null,
@@ -774,7 +857,23 @@ export function facePanel(input: {
    * A group whose rows all fell away disappears with them, which the filter
    * below already did for the group with no rows at all.
    */
-  const hasContent = (row: PanelRow): boolean => row.regions.length > 0;
+  /**
+   * AND A STATED ABSENCE IS THE ONE ROW WITH NOTHING TO POINT AT (founder
+   * ruling, fable-889: **"yes show bald"**).
+   *
+   * It reads as an exception to the rule above and it is one, so it is written
+   * here rather than discovered: a bald head has no hair to draw a rectangle
+   * around, and the row's whole content is saying so. fable-414's rule exists
+   * because *"nothing should ride words alone"* — a name with nowhere to point
+   * is a promise of a picture that does not exist. This row makes no such
+   * promise: it is not offering a picture of her hair, it is telling her there
+   * is none.
+   *
+   * Its bound is `whenAbsent`'s: two slots, authored, each beside the argument
+   * that an empty read there cannot mean "hidden". Everything else still leaves
+   * the panel exactly as it did.
+   */
+  const hasContent = (row: PanelRow): boolean => row.regions.length > 0 || row.absent !== null;
 
   /*
     WHILE THE SCAN IS STILL RUNNING, A ROW WITH NOTHING IS A PLACE FOR SOMETHING

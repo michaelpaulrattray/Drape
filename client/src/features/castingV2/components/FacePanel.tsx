@@ -111,6 +111,17 @@ export type FacePanelRow = {
   slots: readonly string[];
   name: string;
   words: readonly string[];
+  /**
+   * WHAT THIS ROW STATES INSTEAD OF DISAPPEARING — "bald" (founder ruling,
+   * fable-889: **"yes show bald"**).
+   *
+   * The server decides it and only two features may hold one (hair, facial
+   * hair): a finding of nothing is a LOOK, not a gap, and a row that vanishes
+   * says nothing at all. Kept apart from `words` because her words are what she
+   * asked for and this is what the photograph shows — the row is still tappable,
+   * so "bald" is an invitation to say what she wants instead.
+   */
+  absent?: string | null;
   from: string | null;
   prefill: string;
   /**
@@ -352,7 +363,9 @@ export function FacePanel({
                     /* Their own words for the thing, then what it currently is —
                        the whole label, because the thumbnail is a shape and most
                        rows do not have one at all. */
-                    aria-label={`${row.name}${row.words.length ? `, ${row.words.join(", ")}` : ""}. Talk about it.`}
+                    /* A stated absence is read out the same way her words are:
+                       it is what this row currently says about her. */
+                    aria-label={`${row.name}${row.words.length ? `, ${row.words.join(", ")}` : row.absent ? `, ${row.absent}` : ""}. Talk about it.`}
                     aria-pressed={active}
                     onMouseEnter={() => selection.hover(row.slots)}
                     onMouseLeave={() => selection.hover(null)}
@@ -400,6 +413,20 @@ export function FacePanel({
                       */}
                       {row.words.length > 0 && row.state !== "pending" && !carried ? (
                         <span className="dpc-face__words">{row.words.join(", ")}</span>
+                      ) : null}
+                      {/*
+                        AND A ROW WITH NOTHING FOUND SAYS SO (founder, fable-889).
+
+                        Only where the words are empty — her own words win the
+                        line whenever she has any, and the server has already
+                        made that decision, so this cannot draw both. Under the
+                        same two guards as the words above: a pending or carried
+                        row is another version's reading or none yet, and
+                        "bald" claimed about a frame that was never read is the
+                        exact falsehood `state` exists to prevent.
+                      */}
+                      {row.words.length === 0 && row.absent && row.state !== "pending" && !carried ? (
+                        <span className="dpc-face__words dpc-face__words--absent">{row.absent}</span>
                       ) : null}
                       {row.state === "pending" || carried
                         ? <span className="dpc-face__words" aria-hidden="true">&nbsp;</span>
