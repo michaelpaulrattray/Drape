@@ -179,6 +179,19 @@ export type RepaintAsksInput = {
    * definition of what "her right eye" means and not two.
    */
   inferSideFromWords?: boolean;
+  /**
+   * WHICH SLOTS THE LIBRARY CAN CARRY BY CROP THIS RENDER — the open lane's
+   * carry/edit split (D-244, ruled fable-909 §1).
+   *
+   * Absent is *nothing carries*, which is exactly today's behaviour and the
+   * road every cast without a reference library is on. See the split's own
+   * note in the open loop below.
+   *
+   * Derived by the CALLER from the library it is about to hand the assembler,
+   * and never re-derived here (working law 4): two answers to *can this feature
+   * carry itself* drift, and the drift is invisible because both are plausible.
+   */
+  cropped?: ReadonlySet<FeatureSlot>;
 };
 
 export type RepaintAsksRefusal = {
@@ -647,13 +660,48 @@ export function repaintAsksFor(input: RepaintAsksInput): RepaintAsksResult {
           + "so the recipe would tell the painter to change something into nothing",
       };
     }
+    /*
+      THE CARRY/EDIT SPLIT — D-244's two directions, ruled in fable-909 §1.
+
+      Checked AFTER the two refusals above and not before them: they validate
+      the composed record itself, and a malformed row is a defect on either
+      road. A kind carried by crop still has to be a kind the library could
+      file, and finding out at mint time instead is how a paid feature goes
+      missing quietly.
+
+      **The condition is THIS STEP'S DELTA, never the crop alone.** A split
+      keyed on "does a crop exist" would take the edit away from the kinds that
+      have one: she types *make the cat ears black*, the recipe carries a
+      photograph of the grey ones, and the ask says nothing. That is the
+      misaimed-guard class, which this program has paid for twice, and its
+      control is driven beside the positive arm.
+
+      - **asked this step** → an EDIT. It falls through and is re-said, and its
+        own crop is refused by the assembler (D-244 line 2). Correct: the
+        customer is changing the thing, and an edit regenerates from the anchor
+        plus the full word stack.
+      - **carried, with a crop** → the LIBRARY carries it, and this loop says
+        nothing. An open slot is `anatomy` in the catalogue, so the crop rides
+        AND its read-back words stand — the configuration measured at 5 of 5,
+        against 0 of 5 for a crop with no words beside it.
+      - **carried, no crop** → falls through to the words carrier below,
+        unchanged. The fallback that stops a cropless kind vanishing, and the
+        road every open kind travels until the mint files one.
+
+      Saying it as well as carrying it is what would break the carry: an open
+      kind that is re-said is an EDIT, and an edit's own crop never rides. So
+      the sentence that was preserving the feature before crops existed is
+      exactly the thing that now drops the crop paid for to preserve it.
+    */
+    const askedThisStep = openAskedNow.has(kind);
+    openAskedNow.delete(kind);
+    if (!askedThisStep && input.cropped?.has(slot) === true) continue;
     order.push(slot);
     wordsBySlot.set(slot, [words]);
     /* The STORED noun, spaces intact — never `definition.noun`, which is the
        token. The catalogue's branch carries the token deliberately and requires
        every copy path to read the record instead. */
     nounBySlot.set(slot, noun);
-    openAskedNow.delete(kind);
   }
   /*
     AND A KIND THIS STEP ASKED FOR THAT THE COMPOSED STATE DOES NOT HOLD.

@@ -991,3 +991,174 @@ describe("an uncatalogued kind rides its own synthesized slot", () => {
     expect(result.detail).toContain("cat-ears");
   });
 });
+
+/*
+  THE CARRY/EDIT SPLIT FOR AN OPEN KIND — D-244's two directions, ruled in
+  fable-909 §1 and built here.
+
+  The loop above says every open kind in the COMPOSED state, on every render of
+  the branch, forever. That was the only carrier there was while nothing minted
+  a crop for one. Now that step 3's door files them, saying it again is not
+  merely redundant — it is the thing that STOPS the crop riding: an open kind
+  re-said is an EDIT, and D-244 line 2 is that a feature's own crop never rides
+  in its own edit. So a paid crop was minted and then dropped by the very
+  sentence that was preserving the feature before it existed.
+
+  The split the ruling draws, and each arm below is one line of it:
+
+    (a) named in THIS step's `delta.open` → an EDIT. Re-said in the change
+        clause, D-244 applies, its own crop does not ride. The customer is
+        changing the thing; regenerating it from the anchor plus the full word
+        stack is exactly right.
+    (b) present only in the COMPOSED state, and a crop exists → a CARRY. The
+        crop rides as a reference AND its read-back words ride as the standing
+        sentence — the ANATOMY configuration, which is what an open slot's
+        catalogue entry already says it is. Justified by this program's own
+        courts: crop alone with no words delivered 0 of 5, words present 5 of 5.
+    (c) present only in the composed state and NO crop exists → re-said from the
+        composed state exactly as today. The words carrier, unchanged, and the
+        fallback that stops a cropless kind vanishing.
+
+  `cropped` is the set of slots the LIBRARY can actually carry by crop this
+  render, derived once by the caller from the library it is about to hand the
+  assembler. Derived once rather than twice on purpose (working law 4): two
+  answers to *can this feature carry itself* would drift, and the drift would be
+  invisible because both are plausible.
+*/
+describe("an open kind splits into a CARRY and an EDIT (D-244, fable-909 §1)", () => {
+  const catEars = { noun: "cat ears", words: "soft grey cat ears set high on her head" };
+  const openSlot = "open:cat-ears";
+  const openCrop = { key: "casting-v2/library/open-cat-ears.png" };
+  /*
+    The library's words are DELIBERATELY not the ask's words. They are the
+    render's read-back — what the painter actually delivered, which is the whole
+    reason the mint reads the frame — so an arm that passed by quoting the ask
+    back at itself would fail here.
+  */
+  const carriedLibrary = [{
+    slot: openSlot,
+    tier: "anatomy" as const,
+    noun: "cat ears",
+    words: ["soft grey cat ears, tall and tufted, set high on her head"],
+    carry: openCrop,
+  }];
+
+  const carryingBranch = (cropped?: ReadonlySet<string>) => repaintAsksFor({
+    delta: { hairColour: "copper" },
+    prose,
+    restore: { state: { hairColour: "copper", open: { "cat-ears": catEars } }, slots: [] },
+    ...(cropped ? { cropped } : {}),
+  });
+
+  it("(b) a CARRIED kind whose crop exists is not an ask at all", () => {
+    const result = carryingBranch(new Set([openSlot]));
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    /* Only the hair. The cat ears are the LIBRARY's to carry this render. */
+    expect(result.asks.map((ask) => ask.slot)).toEqual(["hair"]);
+  });
+
+  it("(b) and through the REAL assembler the crop rides AND its words stand", () => {
+    const asks = carryingBranch(new Set([openSlot]));
+    expect(asks.ok).toBe(true);
+    if (!asks.ok) return;
+
+    const recipe = assembleRecipe({
+      master, pronouns: her, library: carriedLibrary, asks: asks.asks,
+    });
+
+    expect(recipe.ok).toBe(true);
+    if (!recipe.ok) return;
+    /* THE CROP IS ON THE WIRE — the fact C1 went looking for and did not find. */
+    expect(recipe.references.map((reference) => reference.role)).toEqual([
+      { kind: "master" },
+      { kind: "carry", slot: openSlot },
+    ]);
+    expect(recipe.references[1]!.image).toBe(openCrop);
+    expect(recipe.carried).toContain(openSlot);
+    /* AND THE WORDS RIDE BESIDE IT. An open slot is `anatomy` in the catalogue,
+       and anatomy's crop wins about a third of the distance on its own — the
+       sentence is what carried the fact 5 of 5. */
+    expect(recipe.prompt).toContain("Reference 2 is the exact cat ears she has");
+    expect(recipe.prompt)
+      .toContain("Keep her cat ears exactly: soft grey cat ears, tall and tufted, set high on her head.");
+    /* And the change clause is about the HAIR alone — a carried kind is not an
+       edit, and saying it in the ask is what put it in `edited` before. */
+    expect(recipe.ask).toBe("Change only her hair: coloured colour prose for copper.");
+    expect(recipe.edited).toEqual(["hair"]);
+  });
+
+  it("(a) the SAME kind asked THIS STEP is an EDIT, and its own crop is REFUSED", () => {
+    /*
+      D-244 line 2 in the direction that must not move. The service drops an
+      edited slot's crop before the assembler sees it; this drives the guard
+      DIRECTLY with the crop present (working law 3), because a backstop whose
+      only test runs through a caller that already prevents the case is a
+      backstop nothing has tested.
+    */
+    const asks = repaintAsksFor({
+      delta: { open: { "cat-ears": catEars } },
+      prose,
+      restore: { state: { open: { "cat-ears": catEars } }, slots: [] },
+      cropped: new Set([openSlot]),
+    });
+
+    expect(asks.ok).toBe(true);
+    if (!asks.ok) return;
+    /* Re-said, crop or no crop: the customer is changing this thing. */
+    expect(asks.asks.map((ask) => ask.slot)).toEqual([openSlot]);
+
+    const recipe = assembleRecipe({
+      master, pronouns: her, library: carriedLibrary, asks: asks.asks,
+    });
+    expect(recipe.ok).toBe(false);
+    if (recipe.ok) return;
+    expect(recipe.reason).toBe("carriesItsOwnEdit");
+    expect(recipe.slot).toBe(openSlot);
+  });
+
+  it("(c) a CARRIED kind with NO crop is re-said from the composed state, as before", () => {
+    const result = carryingBranch(new Set());
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.asks.map((ask) => ask.slot)).toEqual([openSlot, "hair"]);
+  });
+
+  it("CONTROL — a caller that says nothing about crops gets exactly today's behaviour", () => {
+    /*
+      The inertness half. `cropped` absent must be indistinguishable from an
+      empty library, so the change cannot alter one render on any road that has
+      not opted into it — and so the fallback is the words carrier rather than
+      silence.
+    */
+    const result = carryingBranch();
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.asks.map((ask) => ask.slot)).toEqual([openSlot, "hair"]);
+  });
+
+  it("CONTROL — the split keys on THIS STEP's delta and never on the crop alone", () => {
+    /*
+      The misaimed-guard class, which has cost this program twice. If the split
+      keyed on "does a crop exist" alone, the arm above would still pass and an
+      EDIT to a kind that already has a crop would silently stop being said —
+      the customer types "make the cat ears black" and the recipe carries a
+      photograph of the grey ones and asks for nothing.
+    */
+    const edited = repaintAsksFor({
+      delta: { open: { "cat-ears": { noun: "cat ears", words: "sleek black cat ears" } } },
+      prose,
+      restore: { state: { open: { "cat-ears": { noun: "cat ears", words: "sleek black cat ears" } } }, slots: [] },
+      cropped: new Set([openSlot]),
+    });
+
+    expect(edited.ok).toBe(true);
+    if (!edited.ok) return;
+    expect(edited.asks).toEqual([{
+      slot: openSlot, noun: "cat ears", words: "sleek black cat ears",
+    }]);
+  });
+});

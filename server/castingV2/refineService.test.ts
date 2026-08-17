@@ -3927,6 +3927,118 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
     expect(bytes.some((one) => one.includes("earring"))).toBe(false);
   });
 
+  /*
+    THE OPEN LANE'S CARRY/EDIT SPLIT, AT THE WIRE (D-244, ruled fable-909 §1).
+
+    The unit arms are in `repaintAsks.test.ts`; this is the one place the split
+    is proved on the request the painter was HANDED. It exists because of this
+    campaign's most expensive shape — a suite asserting one road while the
+    founder is on another — and because the defect it closes was invisible from
+    inside the ask builder: the crop was minted, the recipe was assembled, the
+    render landed, and the paid crop simply never reached the array.
+
+    Both directions, on ONE fixture, because a split has two sides and a guard
+    that answered the same way to both would pass either arm alone.
+  */
+  describe("an open kind the customer is not changing carries by its CROP", () => {
+    /** A branch that already asked for fangs, and a library that minted one. */
+    const carryingFangs = () => {
+      lineageReferences = [carryRow({
+        id: 11, publicId: "ref-11", slot: "open:fangs", tier: "anatomy", noun: "fangs",
+        /* The MINT's read-back, not the ask's words — so an arm that passed by
+           quoting the customer's own sentence back at itself fails here. */
+        words: ["long white pointed vampire fangs"],
+        storageKey: "casting-v2/library/open-fangs.png", variantId: 5,
+      })];
+      variantRows = [{
+        id: 702,
+        publicId: "variant-fangs",
+        candidateId: 1,
+        imageKey: "casting-v2/variants/fangs.png",
+        internalPrompt: candidateRow.internalPrompt as Record<string, unknown>,
+        instructions: ["give her vampire fangs"],
+        /* `{ open: … }` with nothing else — the shape an ordinary open ask
+           actually persists, and the one wall (d) had to learn to read. */
+        deltas: { open: { fangs: { noun: "fangs", words: "vampire fangs" } } },
+        stepDeltas: [{ open: { fangs: { noun: "fangs", words: "vampire fangs" } } }],
+        status: "ready",
+      }];
+      candidateRow.selectedVariantPublicId = "variant-fangs";
+    };
+
+    const dispatched = () => dispatchRecords[0]!.repaint as {
+      references: Array<{ kind: string | null; slot: string | null }>;
+      edited: string[];
+      carried: string[];
+    };
+
+    it("puts the CROP on the wire on a later render that never mentions it", async () => {
+      carryingFangs();
+
+      await refineCandidate(hairDown, { ...input, instruction: "wear her hair down" });
+
+      /* THE FACT C1 WENT LOOKING FOR. Before the split this array held the
+         master alone: the kind was re-said, a re-said kind is an edit, and an
+         edited slot gives up its crop one line before the recipe is built. */
+      expect(painted[0]!.references.map((reference) => String(reference.bytes)))
+        .toContain("crop:casting-v2/library/open-fangs.png");
+      expect(dispatched().references.map((reference) => [reference.kind, reference.slot]))
+        .toEqual([["master", null], ["carry", "open:fangs"]]);
+      expect(dispatched().carried).toContain("open:fangs");
+      /* And it is a CARRY rather than an edit — the hair is what she changed. */
+      expect(dispatched().edited).toEqual(["hair"]);
+      /* The words ride beside the crop: an open slot is `anatomy`, and anatomy
+         with a bare reference sentence delivered 0 of 5. */
+      expect(painted[0]!.prompt).toContain("Reference 2 is the exact fangs she has");
+      expect(painted[0]!.prompt)
+        .toContain("Keep her fangs exactly: long white pointed vampire fangs.");
+    });
+
+    it("and REFUSES that same crop when the customer edits the fangs themselves", async () => {
+      /*
+        D-244 line 2, at the wire and in the direction that must not move. The
+        edit regenerates from the anchor plus the full word stack; handing it a
+        photograph of the fangs she is changing is the recipe the law forbids.
+      */
+      carryingFangs();
+
+      await refineCandidate({
+        ...repainting,
+        interpret: async () => ({
+          ok: true as const,
+          delta: { open: { fangs: { noun: "fangs", words: "longer curved fangs" } } },
+        }),
+      }, { ...input, instruction: "make the fangs longer" });
+
+      expect(painted[0]!.references.map((reference) => String(reference.bytes)))
+        .not.toContain("crop:casting-v2/library/open-fangs.png");
+      expect(dispatched().references.map((reference) => reference.kind)).toEqual(["master"]);
+      expect(dispatched().edited).toContain("open:fangs");
+      expect(dispatched().carried).not.toContain("open:fangs");
+      /* And her new words DID reach the painter — a render that quietly carried
+         nothing and asked nothing would satisfy every line above it. */
+      expect(painted[0]!.prompt).toContain("longer curved fangs");
+    });
+
+    it("CONTROL — with NO crop minted, the kind is still re-said in words", async () => {
+      /*
+        Line (c) of the ruling, and the arm that keeps the split from being a
+        way to lose a feature. Every open kind on every cast whose library has
+        minted nothing is on this road, which is production today.
+      */
+      carryingFangs();
+      lineageReferences = [];
+
+      await refineCandidate(hairDown, { ...input, instruction: "wear her hair down" });
+
+      expect(dispatched().references.map((reference) => reference.kind)).toEqual(["master"]);
+      /* Said as an edit, exactly as it was before crops existed — because words
+         are the only carrier there is when there is no crop. */
+      expect(dispatched().edited).toContain("open:fangs");
+      expect(painted[0]!.prompt).toContain("vampire fangs");
+    });
+  });
+
   /**
    * WHAT A PRUNE DOES ON THE REPAINT ROAD — and this block is the RED-FLIP
    * fable-534 asked for, now flipped (V3(c), fable-536 §2).

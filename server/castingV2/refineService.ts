@@ -3437,6 +3437,65 @@ async function refineCandidateCounted(
     };
 
     const repaintOnce = async () => {
+      /*
+        THE LIBRARY AS IT STANDS, READ BEFORE THE ASKS ARE BUILT.
+
+        It used to be derived below, after the asks, because nothing above
+        needed it. The open lane's carry/edit split does (D-244, fable-909 §1):
+        whether a carried open kind is re-said in the change clause or carried
+        by its crop depends on whether a crop EXISTS, and that is the library's
+        answer, not a second one computed beside it (working law 4).
+
+        Nothing here depends on the asks — `carriesAfterPruning` reads the rows
+        and the surviving chain, `deriveLibrary` reads the rows — so hoisting it
+        changes no value, only the order they are read in. The one thing that
+        does depend on the asks is `libraryWithoutEditedCrops`, and it stays
+        below with them.
+      */
+      /*
+        AND A CROP WHOSE ASK HAS BEEN TAKEN BACK STOPS RIDING (V3(c) step 2).
+
+        The chain already prunes and the library does not, so the two answer
+        "what does she have" by different routes and a prune moves only one of
+        them. This derives the carry list from BOTH — live rows ∩ what the
+        surviving chain still names — and it deletes nothing, retires nothing
+        and writes nothing: re-adding the step brings the crop back because the
+        crop was never destroyed.
+
+        On an ordinary render it changes nothing, because the chain names every
+        crop the library holds; that is asserted rather than hoped in
+        `prunedCarries.test.ts`, along with the two exemptions that matter more
+        than the rule (a master-minted row belongs to every branch, and a slot
+        re-cut every render is minted by the render rather than by an ask).
+
+        `branchRows` itself is left whole on purpose: the geometry lookup and
+        the per-instance memory below are asking a different question — what
+        this face's rows SAY — and pruning an ask does not unsay it.
+      */
+      const carried = carriesAfterPruning({ rows: branchRows, composed });
+      if (carried.dropped.length > 0) {
+        log.info(
+          {
+            operationId,
+            variant: variant.publicId,
+            dropped: carried.dropped.map((one) => one.slot),
+          },
+          "[refineService] a crop stopped riding because the chain no longer asks for it",
+        );
+      }
+      /*
+        The library as it stood when this render started. The anchor is this
+        variant — its own rows do not exist yet, so the walk climbs its parents
+        — which is the same anchor the mint's duplicate check uses below, and
+        for the same reason.
+      */
+      const libraryBeforeAsks = deriveLibrary(carried.rows);
+      /** The slots that can carry themselves by crop on THIS render — the
+       *  library's own answer, handed to the ask builder rather than recomputed
+       *  there from a second source. */
+      const croppedSlots = new Set(
+        libraryBeforeAsks.filter((entry) => entry.carry !== undefined).map((entry) => entry.slot),
+      );
       const asks = editDelta
         ? repaintAsksFor({
           delta: editDelta,
@@ -3475,6 +3534,22 @@ async function refineCandidateCounted(
             goes away — one default, one line — the day the court passes.
           */
           inferSideFromWords: process.env.CASTING_SIDE_INFERENCE === "on",
+          /*
+            AND WHICH FEATURES THE LIBRARY CAN CARRY BY CROP — the open lane's
+            carry/edit split (D-244, ruled fable-909 §1).
+
+            An open kind the customer is NOT changing this step stops being
+            re-said in the change clause once a crop exists for it, because a
+            re-said kind is an EDIT and D-244 line 2 is that a feature's own
+            crop never rides in its own edit. Without this the mint filed a
+            crop and the very next render dropped it — the sentence that
+            preserved the feature before crops existed being the thing that
+            throws the crop away.
+
+            A kind with no crop is unaffected and still re-said, which is every
+            open kind on every cast whose library has not minted one.
+          */
+          cropped: croppedSlots,
         })
         /*
           A PRUNE ASKS SOMETHING AFTER ALL — the narrow lift (fable-536 §2/§3).
@@ -3547,12 +3622,6 @@ async function refineCandidateCounted(
         );
       }
       /*
-        The library as it stood when this render started. The anchor is this
-        variant — its own rows do not exist yet, so the walk climbs its parents
-        — which is the same anchor the mint's duplicate check uses below, and
-        for the same reason.
-      */
-      /*
         AND THE EDITED SLOTS GIVE UP THEIR CROPS BEFORE THE RECIPE SEES THEM.
 
         D-244 line 2: a feature's own crop never rides in its own edit. The
@@ -3572,38 +3641,7 @@ async function refineCandidateCounted(
         `deriveLibrary` warns about one layer down.
       */
       const editedSlots = new Set(asks.asks.map((ask) => ask.slot));
-      /*
-        AND A CROP WHOSE ASK HAS BEEN TAKEN BACK STOPS RIDING (V3(c) step 2).
-
-        The chain already prunes and the library does not, so the two answer
-        "what does she have" by different routes and a prune moves only one of
-        them. This derives the carry list from BOTH — live rows ∩ what the
-        surviving chain still names — and it deletes nothing, retires nothing
-        and writes nothing: re-adding the step brings the crop back because the
-        crop was never destroyed.
-
-        On an ordinary render it changes nothing, because the chain names every
-        crop the library holds; that is asserted rather than hoped in
-        `prunedCarries.test.ts`, along with the two exemptions that matter more
-        than the rule (a master-minted row belongs to every branch, and a slot
-        re-cut every render is minted by the render rather than by an ask).
-
-        `branchRows` itself is left whole on purpose: the geometry lookup and
-        the per-instance memory below are asking a different question — what
-        this face's rows SAY — and pruning an ask does not unsay it.
-      */
-      const carried = carriesAfterPruning({ rows: branchRows, composed });
-      if (carried.dropped.length > 0) {
-        log.info(
-          {
-            operationId,
-            variant: variant.publicId,
-            dropped: carried.dropped.map((one) => one.slot),
-          },
-          "[refineService] a crop stopped riding because the chain no longer asks for it",
-        );
-      }
-      const library = libraryWithoutEditedCrops(deriveLibrary(carried.rows), editedSlots);
+      const library = libraryWithoutEditedCrops(libraryBeforeAsks, editedSlots);
       const recipe = assembleRecipe({
         /* The master is the base this render is anchored on, by key. Every
            render is `edit(original, …)` and `claimVariant` proved that base
