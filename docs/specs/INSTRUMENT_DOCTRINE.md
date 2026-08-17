@@ -346,6 +346,24 @@ one. Move the whole decision into the function the caller calls, and add one
 arm proving the caller still calls it.
 *Banked:* fable-829 §3 (finding at opus-614, built at opus-618).
 
+**20. A verdict on a structural feature change is taken at a magnification
+matched to the feature, not at viewing size.**
+A change to the SHAPE of something small is carried by a few dozen pixels; the
+frame it lives in is a thousand across. Looking at the delivered frame the way a
+customer looks at it answers a different question — *does this read as her?* —
+and answers the one that was asked, *did the thing change?*, with a confident
+no.
+*Incident:* the founder's *"give her fox eyes"* (production, 2026-08-16
+23:48:12Z). At full frame I could not see it and was about to report a paid
+render as invisible; at **3× on the eye region, nearest-neighbour**, it is
+unmistakable — both eye openings longer and narrower, the outer corners drawn
+toward the temples and lifted. Eye shape is the one class this program has
+historically failed, so a viewing-size verdict would have been a false negative
+on exactly the class where a false negative is most expensive. It also
+retroactively glosses the 2026-08-07 court's *"near-invisible"* eye-shape
+scores — noted, not re-litigated.
+*Banked:* fable-849 §3 (finding at opus-631 §2).
+
 ---
 
 ## Adding to this file
@@ -353,4 +371,4 @@ arm proving the caller still calls it.
 Follow the admission rule at the top: numbered Fable ruling, real incident, one
 line each, citation. Keep it to a page or two — **terse over complete.** A
 doctrine file long enough to skim past is an instrument nobody reads, which is
-the failure mode all nineteen of these describe.
+the failure mode all twenty of these describe.

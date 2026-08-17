@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "60fe993db976eab4"
+    "sourceFingerprint": "70a144cf39aa74a2"
   },
   "domains": [
     {
@@ -27403,10 +27403,10 @@
       "message": "Names 6 of ResolvedIdentity's 11 fields (server/castingV2/castingIntent.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/eyeShapeRouting.ts:190",
+      "id": "finding:redeclared-shape:server/castingV2/eyeShapeRouting.ts:193",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/eyeShapeRouting.ts:190",
+      "subject": "server/castingV2/eyeShapeRouting.ts:193",
       "message": "Names 2 of TiltReading's 4 fields (server/castingV2/canthalTilt.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {

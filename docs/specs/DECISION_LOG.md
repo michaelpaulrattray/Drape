@@ -8640,4 +8640,48 @@ establish which of the three he wanted. This is the fact the log exists to hold.
 
 ---
 
+## D-248 — THE EYE-SHAPE ENGINE ROW IS RETIRED. The 2026-08-07 matrix is re-read, not overturned.
+
+**2026-08-17, founder ruling (fable-848 §1), verbatim:**
+
+> *"our entire processs runs on gpt image 2 so yes retire it , and if things
+> genuinely start failing we can look at NBP later - i honestly think the only
+> difference between gpt image 2 and NBP on the original sheets was NBP had a
+> more severe drawing han gpt image 2 which was the same for ther lips tests
+> where NPB went a bit overboard"*
+
+**Supersedes the 2026-08-07 ruling** (his cross-cast matrix, six faces, which
+chose Nano Banana Pro for `eye.shape`). That ruling has no D-entry of its own —
+it lived in `eyeShapeRouting.ts`'s header and in `POST_SIGN_ROADMAP.md` §6 — so
+this entry is the pointer both of those now carry.
+
+### What changed, and what did not
+
+1. **`EYE_SHAPE_ENGINE` and `EYE_SHAPE_ROUTING_IS_PROVISIONAL` are deleted, and
+   no behaviour changes with them, because nothing ever read them.** The
+   constant had no call site for its entire life (found opus-596 §5, ruled
+   fable-807 §3) while three green tests asserted it against its own literal.
+   Every `eye.shape` refine this product has painted went to GPT Image 2 — so
+   the retirement makes the code honest rather than making it different.
+2. **The test retires with it, and its replacement can fail.** An absence test
+   now asserts neither export exists; it was sabotaged (the constant re-added)
+   and reddened exactly that arm before being restored by inverse edit. Its
+   predecessor could not have failed for any reason.
+3. **His re-read of the old evidence is filed WITH the ruling**, because it is
+   the part that makes it coherent: the NBP advantage on the eye sheets was a
+   more severe drawing hand — the same temperament the lips court saw when *"NBP
+   overdid it"* (2026-08-16, fable-710 §3). One engine fact seen twice, not two
+   verdicts pointing opposite ways. **The Aug-7 specimens and the sheet stay on
+   record.**
+4. **The evidence that the surviving road delivers this class is his own, in
+   production:** *"give her fox eyes"*, 2026-08-16 23:48:12Z, GPT Image 2,
+   charged and delivered — and it was **invisible at full frame and unmistakable
+   at 3×**, which is doctrine entry 20 and retroactively glosses the Aug-7
+   court's *"near-invisible"* GPT2 scores. Noted, not re-litigated.
+5. **The re-open condition is his own sentence** — *"if things genuinely start
+   failing we can look at NBP later"* — and it is written into the module
+   header. A future per-class engine row is a new decision, not a restoration.
+
+---
+
 **End of decision log.** Ratify, amend, or veto per line; the build plan follows your pass.

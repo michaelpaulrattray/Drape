@@ -4,8 +4,6 @@ import sharp from "sharp";
 
 import {
   ANATOMICAL_UPSWEPT_EDIT,
-  EYE_SHAPE_ENGINE,
-  EYE_SHAPE_ROUTING_IS_PROVISIONAL,
   isUpsweptAsk,
   mentionsUpsweptAsk,
   readCanthalTilt,
@@ -44,29 +42,35 @@ describe("the prose never says the trend word", () => {
   });
 });
 
-describe("the routing row, and its honesty about being unfinished", () => {
-  it("routes to this round's winner", () => {
-    expect(EYE_SHAPE_ENGINE).toBe("nbp");
+describe("the routing row is RETIRED, and its absence is the assertion", () => {
+  /*
+    These three tests used to assert `EYE_SHAPE_ENGINE === "nbp"` — a constant
+    against its own literal, under a describe block titled "the routing row, and
+    its honesty about being unfinished". They were green for ten days about a row
+    that did not exist at runtime: nothing imported the constant, so every
+    eye.shape refine went to GPT Image 2 regardless.
+
+    The founder retired it on 2026-08-17 (fable-848): "our entire processs runs
+    on gpt image 2 so yes retire it". The module's own header carries his words
+    and his re-open condition.
+
+    So what replaces them is an ABSENCE test. A test that asserts a deleted
+    export is gone is worth more than the one it replaces, because this family
+    has restored a dead constant before — and unlike its predecessor it can fail:
+    re-add either export and this reddens.
+  */
+  it("does not export an engine row for eye.shape any more", async () => {
+    const module = await import("./eyeShapeRouting") as Record<string, unknown>;
+    expect(Object.keys(module)).not.toContain("EYE_SHAPE_ENGINE");
+    expect(Object.keys(module)).not.toContain("EYE_SHAPE_ROUTING_IS_PROVISIONAL");
   });
 
-  it("is RATIFIED — the matrix closed it, and only the matrix could", () => {
-    /* It was provisional while one face had been tested. Six casts spanning
-       baseline, gender and ethnicity, judged on realism for the subject, closed
-       it: NBP is the same person with restructured eyes; GPT2 was near-invisible
-       and once went backwards. The flag stays as a named constant so the next
-       class to earn a row remembers this one went through a provisional state
-       on purpose. */
-    expect(EYE_SHAPE_ROUTING_IS_PROVISIONAL).toBe(false);
-  });
-
-  it("can never route to a banned engine", () => {
-    /* FLUX, 0-for-4, banned permanently. This assertion used to be the ban's
-       ONLY reader, which is a note to someone already looking rather than a
-       control; since 2026-08-17 both image transports refuse a banned engine
-       before dispatch (`bannedEngines.test.ts` drives that seam directly, with
-       positive controls). This row still asserts what it is about: the engine
-       eye.shape routes to is not one of them. */
-    expect(BANNED_ENGINES.some((engine) => engine.includes(EYE_SHAPE_ENGINE))).toBe(false);
+  it("still bans FLUX, which never depended on that row", () => {
+    /* The ban was once asserted only here, which made it a note rather than a
+       control. Since 2026-08-17 both image transports call
+       `assertEngineNotBanned` before dispatch and `bannedEngines.test.ts` drives
+       those seams with positive controls. This row survives the retirement
+       because it was never about the routing constant. */
     expect(BANNED_ENGINES).toContain("fal-ai/flux-2-pro/edit");
   });
 });

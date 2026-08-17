@@ -78,38 +78,41 @@ export const ANATOMICAL_UPSWEPT_EDIT =
   + "exactly as they are.";
 
 /**
- * THE RATIFIED ROW — Nano Banana Pro, founder ruling 2026-08-07, after the
- * cross-cast matrix.
+ * THE ROUTING ROW IS RETIRED — founder ruling, 2026-08-17 (fable-848 §1-2).
  *
- * Judged on REALISM FOR THE SUBJECT across six casts spanning baseline tilt,
- * gender and ethnicity, which was always the deciding criterion rather than the
- * tilt number: **NBP is the same person with genuinely restructured eyes.** GPT
- * Image 2 was near-invisible on every cast (+1.4 to +1.7 degrees, at the edge of
- * the instrument's own resolution) and on one cast moved the corners the WRONG
- * WAY.
+ * `EYE_SHAPE_ENGINE = "nbp"` and `EYE_SHAPE_ROUTING_IS_PROVISIONAL` stood here
+ * from 2026-08-07 to 2026-08-17. **Both are deleted, and nothing changes at
+ * runtime, because nothing ever read them** — the constant had no call site for
+ * its whole life (found opus-596 §5, ruled fable-807 §3), while three tests
+ * asserted it against its own literal. Every eye.shape refine this product has
+ * ever painted went to GPT Image 2.
  *
- * This is the routing table's first genuine per-class payoff: the identity
- * engine keeps every other row, and eye.shape alone comes here.
+ * His words, closing it:
  *
- * FLUX is not a candidate and never will be again — banned 0-for-4
- * (`BANNED_ENGINES` in `providers/bannedEngines`, enforced at both image
- * dispatch seams since 2026-08-17), having decorated rather than restructured
- * when given a caged chance at the one thing it was reputed for.
+ * > *"our entire processs runs on gpt image 2 so yes retire it , and if things
+ * > genuinely start failing we can look at NBP later - i honestly think the
+ * > only difference between gpt image 2 and NBP on the original sheets was NBP
+ * > had a more severe drawing han gpt image 2 which was the same for ther lips
+ * > tests where NPB went a bit overboard"*
  *
- * Strength modulation — should "intense" ever bother a real face — is a future
- * refinement and explicitly NOT a condition of this row.
+ * So the 2026-08-07 matrix is not overturned — it is **re-read**: one fact
+ * about engine temperament, seen twice (eyes and lips), rather than two
+ * verdicts pointing opposite ways. The specimens and the sheet stay on record.
+ *
+ * The evidence that the surviving road delivers this class is his own, in
+ * production: *"give her fox eyes"* on 2026-08-16 at 23:48:12Z, painted by GPT
+ * Image 2, charged and delivered — invisible at full frame and unmistakable at
+ * 3× (doctrine entry 20).
+ *
+ * **The re-open condition is his and it is written here so it is not folklore:**
+ * *"if things genuinely start failing we can look at NBP later."* Until then
+ * there is no per-class engine row, and a future one is a new decision rather
+ * than a restoration.
+ *
+ * FLUX remains banned 0-for-4, and that ban is a CONTROL rather than a constant:
+ * `assertEngineNotBanned` runs at both image dispatch seams
+ * (`providers/bannedEngines`). It never depended on this row.
  */
-export const EYE_SHAPE_ENGINE = "nbp" as const;
-
-/**
- * RATIFIED. Was `true` while one face had been tested; the matrix closed it.
- *
- * Kept as a named constant rather than deleted, because the thing worth
- * remembering is that this row went through a provisional state on purpose and
- * only hardened on evidence — and the next class to earn a row should do the
- * same.
- */
-export const EYE_SHAPE_ROUTING_IS_PROVISIONAL = false;
 
 /**
  * THE ALREADY-TRUE GATE, fourth member of the refuse-before-dispatch family.

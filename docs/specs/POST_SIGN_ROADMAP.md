@@ -762,7 +762,31 @@ above is unchanged and applies to what is still open. (Filed 2026-08-17; it
 had lived only in the mailbox, alongside §0b's milestone, from the same
 message.)
 
-### ⛔ AN UNEXECUTED FOUNDER RULING ON THE PAID PATH — `EYE_SHAPE_ENGINE` has
+### ✅ CLOSED 2026-08-17 — HE RETIRED IT (D-248, fable-848). The row is deleted,
+### its test is an absence test that can fail, and no behaviour changed.
+
+**Nothing below is owed.** The founder answered the card in person — *"our
+entire processs runs on gpt image 2 so yes retire it , and if things genuinely
+start failing we can look at NBP later"* — which is the "**the face wall won**"
+branch this section itself described. `EYE_SHAPE_ENGINE` and
+`EYE_SHAPE_ROUTING_IS_PROVISIONAL` are gone from `eyeShapeRouting.ts`; the three
+tests that asserted a constant against its own literal are replaced by one that
+asserts the exports are absent (sabotaged and reddened before it was trusted).
+
+**Nothing re-routes, because nothing ever did** — that is the whole finding
+below and it survives as the record. His own re-read is filed with the ruling:
+NBP's advantage on the Aug-7 sheets was a **more severe drawing hand**, the same
+temperament the lips court saw, rather than a contradiction between two of his
+verdicts. The Aug-7 specimens stay on record and the re-open condition is his
+sentence, in the module header.
+
+**And the class is delivering on the surviving road, measured on his own paid
+render:** *"give her fox eyes"*, 2026-08-16 23:48:12Z, GPT Image 2 — invisible
+at full frame, unmistakable at 3× (doctrine entry 20).
+
+The finding is kept below, unchanged, because it is why the card existed.
+
+### (history) AN UNEXECUTED FOUNDER RULING ON THE PAID PATH — `EYE_SHAPE_ENGINE` has
 ### never had a call site (found 2026-08-17, opus-596 §5; ruled fable-807 §3)
 
 **This is not a new question. It is a founder ruling of 2026-08-07 — his
