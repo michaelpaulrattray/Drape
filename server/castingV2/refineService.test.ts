@@ -4291,6 +4291,65 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
     });
   });
 
+  /*
+    THE OPEN LANE'S FIRST PAID STEP, ON THE ROAD THE ONLY ARMED USER IS ON.
+
+    `CASTING_OPEN_LANE_SCOPE=users:1` went on 2026-08-17 and its parent is
+    `CASTING_REPAINT_SCOPE`, so the one person who can produce a `delta.open`
+    is on the REPAINT road and nowhere else. Everything proven about the open
+    lane before this arm stopped at the interpreter: the routing bench measured
+    which lane an ask lands in, `repaintAsks.test.ts` measures the ask, and the
+    wall-(d) arm proves the row survives being re-read. **None of them puts the
+    customer's own words on the wire.**
+
+    That gap is this campaign's most expensive shape — a suite asserting one
+    road while the founder is on another — so the assertion is on the string the
+    painter was HANDED, and it is compared against the dispatch record rather
+    than against a second read of the recipe.
+  */
+  describe("an ask nobody catalogued reaches the paint in the customer's own words", () => {
+    const fangs = {
+      ...repainting,
+      interpret: async () => ({
+        ok: true as const,
+        delta: { open: { fangs: { noun: "fangs", words: "vampire fangs" } } },
+      }),
+    };
+
+    it("paints it, and HIS WORDS are in the recipe that was sent", async () => {
+      const result = await refineCandidate(fangs,
+        { ...input, instruction: "give her vampire fangs" });
+
+      expect(result.imageUrl).toBeTruthy();
+      expect(painted.length, "it went through the painter rather than an earlier free exit")
+        .toBeGreaterThan(0);
+
+      const record = dispatchRecords[0]!.repaint as { prompt: string };
+      /* One string, two places — the recipe that was recorded IS the recipe
+         that was painted, which is the only version of this claim that means
+         anything (the same discipline the hair-down arm above uses). */
+      expect(record.prompt).toBe(painted[0]!.prompt);
+      /* AND IT SAYS THE THING. A recipe that renders happily while never
+         mentioning fangs is the failure this arm exists for: she is charged,
+         she gets a picture, and nothing in it is what she asked for. */
+      expect(record.prompt).toContain("vampire fangs");
+    });
+
+    it("CONTROL — the words are not there when the ask is not", async () => {
+      /*
+        Without this the arm above passes on a prompt that happens to contain
+        the noun for some unrelated reason, which is the substring trap this
+        programme has met on a hex alphabet and on a duration. An ordinary hair
+        ask through the same fixtures must NOT carry it.
+      */
+      await refineCandidate(hairDown, { ...input, instruction: "wear her hair down" });
+      const record = dispatchRecords[0]!.repaint as { prompt: string };
+      expect(record.prompt).not.toContain("vampire fangs");
+      expect(record.prompt, "and the control is a real recipe, not an empty string")
+        .toContain("Reference 1 is the photograph of this person");
+    });
+  });
+
   const mintingLibrary = {
     referenceLibraryEnabled: () => true,
     verifier: {
