@@ -26,6 +26,7 @@ import {
 } from "../casting/snapshotRestoreScope";
 import {
   CASTING_FACE_SCAN_SCOPE_ENV,
+  CASTING_OPEN_LANE_SCOPE_ENV,
   CASTING_REFERENCE_LIBRARY_SCOPE_ENV,
   CASTING_REPAINT_SCOPE_ENV,
   CASTING_SIDE_PHRASING_SCOPE_ENV,
@@ -34,6 +35,7 @@ import {
   CASTING_SCAN_TABLE_SCOPE_ENV,
   CASTING_V2_SCOPE_ENV,
   validateCastingFaceScanEnvironment,
+  validateCastingOpenLaneEnvironment,
   validateCastingReferenceLibraryEnvironment,
   validateCastingRepaintEnvironment,
   validateCastingSidePhrasingEnvironment,
@@ -211,6 +213,17 @@ export function validateEnv(): void {
     scope: process.env[CASTING_SCAN_TABLE_SCOPE_ENV],
     scanScope: process.env[CASTING_FACE_SCAN_SCOPE_ENV],
     cleanupWorker: process.env.ENABLE_STORAGE_CLEANUP_WORKER,
+  });
+  /*
+    Whether an ask nobody catalogued may name its own kind. Checked against the
+    REPAINT scope rather than the casting scope, and the difference is the
+    finding that bought this flag: the paste road composes its prompt from
+    wall (d)'s re-read, which drops `open` by construction, so a paste-road user
+    would be charged for a render whose prompt never said what they asked for.
+  */
+  validateCastingOpenLaneEnvironment({
+    scope: process.env[CASTING_OPEN_LANE_SCOPE_ENV],
+    repaintScope: process.env[CASTING_REPAINT_SCOPE_ENV],
   });
 
   /*

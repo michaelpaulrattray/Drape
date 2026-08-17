@@ -1235,3 +1235,116 @@ no row**: when the normalizer could not name the thing at all there is nothing
 honest to put in the one column that is not a timestamp, and a placeholder noun
 would be a word nobody asked for sitting in the table built to hold only words
 people did ask for. It is a log line instead.
+
+## 9.12 The clause and its flag — built 2026-08-17 (shift 93), DARK
+
+*Countersigned fable-878. No spend of any kind: code, tests and one read-only
+database select. The flag is `off`, no Railway variable is set, and nothing in
+production behaves differently because of this commit.*
+
+### The corpus is 23 asks, and the figure this note carried was a different thing
+
+`scripts/scout-open-lane-clause-disposable.mts`, read-only against production:
+
+```
+variant rows with instructions:      27
+SUM of chain lengths (with repeats): 63     <- the shape the "55" figure had
+DISTINCT ATOMS — what the interpreter is ever called with: 23
+```
+
+`casting_candidate_variants.instructions` holds the **cumulative chain**, not
+the ask. opus-489's *"55 refine instructions"* answered *how much has been
+typed* and was right about that; quoted as *how many prompts an arm costs* it
+overstates by the depth of the chains. The distinct-atom table is the corpus of
+record, and two of its twenty-three are open-lane asks already — *"give her
+vampire fangs"* and *"give her horns and dangly cross earrings"*.
+
+### THE LANE HAD NO FLAG, and the casting scope is `all`
+
+Found before the sentence was written, not after. The acceptance door (§9.11)
+shipped ungated: it was dark only because no reply emitted an unknown subject
+key. With `CASTING_V2_SCOPE=all` in production that made the clause **a one-line
+prompt edit away from opening this lane for every user in a single deploy**, and
+it left the door reachable — rarely — by a reply that named an unknown key of
+its own accord.
+
+`CASTING_OPEN_LANE_SCOPE` now gates **both halves**: the prompt gains the clause
+only when it is on, and the door is consulted only when it is on. Gating the
+prompt alone would have been the difference between *dark* and *nearly always
+dark*, which is not a difference a money path should rest on.
+
+**Its parent is the REPAINT scope, not the casting scope** — see the next
+section for why, and it is the reason this flag is stricter than its siblings'
+convention required.
+
+### The clause is TWO edits, and the second is why it was never additive
+
+The addition is the last resort at the end of the free-lane rules. Three of its
+sentences are load-bearing and each answers a measured failure: *a listed
+subject that is genuinely about it always wins* (§2 — the lane is a FALLBACK,
+never a peer, or *"give her wings"* stops being winged eyeliner); *the key is
+the THING, never where it goes* (§1's one non-convergence, 3/3 the other way,
+where *"scales on her cheeks"* keyed `cheeks` — a hair's breadth from a subject
+the closed lane owns); and *widens what may be NAMED and nothing else* (§2
+property 3, the sentence wall (b) nearly fell through on the 5a build).
+
+The swap is the half that is not additive. The walls block routes fantastical
+anatomy to the STAGE wall — a repair this programme measured 3/3 six days ago,
+replacing a CONTENT wall that told the user it could never be rendered — and
+**the wall check sits above the acceptance door**. Left alone, the addition is
+inert for exactly the population the lane exists for.
+
+**The OFF prompt is byte-identical to the one that shipped**, held to a fixture
+captured from the code before the clause was written and never regenerated. The
+routing bench's before arm IS this function with the flag off, so a drift of one
+character would turn the measurement into a comparison of two things neither of
+which ships. Three sabotages, each reddening only its own arms: the door's gate
+removed (2 arms), the OFF prompt given the clause (5), the runtime parent AND
+removed (1).
+
+## 9.13 WALL (d) DROPS AN OPEN KIND — the re-read, read, and it is a BLOCKER
+
+*The second of the two readers `refineDelta`'s header named as step 5's to
+close. `filedSubjectsOf` was closed; this one was not, and the header's estimate
+of it was too kind.*
+
+The header said it *"costs nothing on the road the open lane runs on"*. Driven
+rather than read (`scripts/probe-wall-d-open-disposable.mts`):
+
+```
+readDelta       on { free, open }  →  free survives, open ABSENT     (drops)
+readStoredDelta on { free, open }  →  both kept                      (keeps)
+readStoredDelta on { open }        →  kept
+readDelta       on { open }        →  NULL
+```
+
+`refineService.ts:3148` re-reads the persisted row with **`readDelta`**, and
+line 3149 throws when it is null. That line sits **above** the road split, so
+it is not paste-road-only:
+
+- **the ordinary open ask has no other content.** *"Give her vampire fangs"* is
+  one ask and it is the open one, so the row is `{ open: … }` and wall (d)'s
+  reader returns null → `"the refinement was not recorded in a readable shape"`.
+  The throw settles into the request's own catch, which refunds — so the money
+  is safe and the picture is not. **Sell-don't-refuse would become sell,
+  then-refund** on the lane's headline ask;
+- **on a face with prior edits the row survives and the open kind is silently
+  dropped** from the composed prompt — the paste road's failure, and the worse
+  of the two because nothing sees it.
+
+**What the flag can and cannot do about it.** Making the parent the REPAINT
+scope removes the silent-drop half by construction (the repaint recipe reads
+`delta.open` and the composed state's, so the kind reaches the paint) and it is
+why the parent is what it is. **It does not remove the throw**, which is above
+the split and hits both roads.
+
+**So this is a blocker on turning the flag on, and it is named as one here
+rather than left in a header.** It does not block the routing bench, which
+drives `interpretRefinement` and never reaches this line.
+
+The fix is a choice about which reader guards this boundary, and it is an
+architectural one on a money path: wall (d) re-reads OUR OWN PERSISTED ROW,
+which is precisely the boundary `readStoredDelta` exists for — but that reader
+also migrates retired subjects and promotes open kinds, so adopting it changes
+behaviour for legacy rows that today throw here. Recommended, and put to Fable
+rather than taken.

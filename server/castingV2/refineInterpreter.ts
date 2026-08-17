@@ -97,7 +97,21 @@ function firstObject(text: string): string {
  * was asked rather than saying "unsupported" — a refusal that does not
  * demonstrate it understood reads as a bug rather than as a boundary.
  */
-const BASE_PROMPT = [
+/**
+ * THE PROMPT, AS A FUNCTION OF ONE FLAG — `CASTING_OPEN_LANE_SCOPE`.
+ *
+ * `openLane` false must be byte-identical to the prompt that shipped before the
+ * clause existed, and that is a checked-in fixture rather than a promise
+ * (`refineOpenLaneClause.test.ts`). The routing bench's "before" arm IS this
+ * function with the flag off, so a drift of one character there would silently
+ * turn the measurement into a comparison of two things neither of which ships.
+ *
+ * Two edits, and the second is why the clause was never additive: the walls
+ * block currently routes fantastical anatomy to the stage wall, and the wall
+ * check sits ABOVE the acceptance door — so without the swap the addition is
+ * inert for the whole population the lane exists for.
+ */
+const basePromptLines = (openLane: boolean) => [
   "You read ONE short instruction from someone adjusting a face they are casting, and you",
   "translate it into a structured edit. You never write prose and you never explain.",
   "",
@@ -190,6 +204,39 @@ const BASE_PROMPT = [
   '    and drop only the name. "miu miu styled glasses" files ["styled glasses"],',
   '    never ["glasses"]; "chanel inspired pearl earrings" files ["inspired pearl',
   '    earrings"]. Losing their description is losing their ask.',
+  /*
+    THE LAST RESORT — the open lane's opening sentence (OPEN_LANE_DESIGN_NOTE
+    §8, countersigned fable-878 §2). Three of its lines are load-bearing and
+    each answers something this programme measured:
+
+     - *"a listed subject that is genuinely about it ALWAYS wins"* — §2's
+       finding that the lane is a FALLBACK, never a peer. Without it,
+       *"give her wings"* stops being winged eyeliner for the user who meant
+       eyeliner, and the closed lane's best readings are re-routed by a change
+       that was only supposed to widen what may be named.
+     - *"the key is THE THING, never where it goes"* — §1's one
+       non-convergence, which was not drift but 3/3 the other way: *"her cheeks
+       should be covered in scales"* keyed `cheeks`, a hair's breadth from
+       `cheekbones`, a subject the closed lane owns. An open key shadowing a
+       closed subject is a routing bug wearing a new kind's clothes.
+     - *"widens what may be NAMED and nothing else"* — §2 property 3, the
+       sentence wall (b) nearly fell through on the step-5a build.
+  */
+  ...(openLane
+    ? [
+      "  - WHEN NO SUBJECT ABOVE IS ABOUT IT — and only then — key the free lane with your own",
+      '    noun for the thing:  free: { "fangs": "vampire fangs" }',
+      "    Work the list first. A listed subject that is genuinely about what they named ALWAYS",
+      "    wins and stays the answer. This is the last resort, never a shortcut past a near fit.",
+      '    THE KEY IS THE THING — never where it goes, never the change. "Scales across her',
+      '    cheeks" keys scales, not cheeks. "Longer horns" keys horns, not length. One plain',
+      "    lowercase noun, no adjectives: their describing words go in the value, in their own",
+      "    words, under every rule above.",
+      "    It must be part of the PERSON. This widens what may be NAMED and nothing else —",
+      "    garments, headwear, the backdrop, props and the scene are the stage wall exactly as",
+      "    they were, and so are a judgement, an age, a heritage and a sex.",
+    ]
+    : []),
   "",
   "ADORNMENT IS THE PERSON, NOT THE STAGE. Earrings, hoops, studs, a nose ring, a septum ring,",
   "glasses, a chain, a wedding ring, any piercing — things worn ON them — are ordinary refinements",
@@ -222,10 +269,34 @@ const BASE_PROMPT = [
     after rather than asserted; the honest destination is the unbacked stage
     sentence, which is code and does not depend on the model obeying this.
   */
-  "    NOR IS FANTASTICAL ANATOMY. Horns, antlers, wings, a tail, scales, pointed ears —",
-  "    those are things on the PERSON that this simply cannot name yet, not unsafe ones.",
-  '    Reply {"wall": "stage", "asked": "<the thing, in their words>"} and the code says the',
-  "    honest sentence. Sending them here tells the user it can never be rendered.",
+  /*
+    AND THE SWAP THE CLAUSE MAKES HERE, which is the half that is not additive.
+
+    With the lane shut, this block routes fantastical anatomy to the STAGE wall,
+    where the code turns it into the honest "cannot name this yet" sentence —
+    the repair measured 3/3 on the real transport six days ago, replacing a
+    CONTENT wall that told the user it could never be rendered.
+
+    With the lane open that destination is wrong in a new way: the product CAN
+    name it now, through the last resort above. And the swap is not optional —
+    the wall check at `runOnce` sits ABOVE the acceptance door, so a reply
+    claiming the stage wall returns before the open lane is ever consulted.
+    Leaving this line as it is would make the clause inert for exactly the
+    population it was written for.
+  */
+  ...(openLane
+    ? [
+      "    NOR IS FANTASTICAL ANATOMY. Horns, antlers, wings, a tail, scales, pointed ears —",
+      "    those are things on the PERSON, not unsafe ones, and they have no subject of their",
+      "    own. They take the LAST RESORT at the end of the free-lane rules: key the free lane",
+      "    with the plain noun. Sending them here tells the user it can never be rendered.",
+    ]
+    : [
+      "    NOR IS FANTASTICAL ANATOMY. Horns, antlers, wings, a tail, scales, pointed ears —",
+      "    those are things on the PERSON that this simply cannot name yet, not unsafe ones.",
+      '    Reply {"wall": "stage", "asked": "<the thing, in their words>"} and the code says the',
+      "    honest sentence. Sending them here tells the user it can never be rendered.",
+    ]),
   "",
   "SUBJECTIVE asks are a wall too — prettier, hotter, better looking, more attractive. They name",
   'a judgement rather than a feature, so reply {"wall": "stage", "asked": "how attractive they look"}.',
@@ -300,7 +371,11 @@ const BASE_PROMPT = [
   "  because a pale face under unchanged dark hair is not what they asked for.",
   "",
   'If the instruction is empty or you genuinely cannot tell what is wanted, reply {"unclear": true}.',
-].join("\n");
+];
+
+const BASE_PROMPT = basePromptLines(false).join("\n");
+/** The same prompt with the open lane's last resort in it — `CASTING_OPEN_LANE_SCOPE`. */
+const BASE_PROMPT_OPEN = basePromptLines(true).join("\n");
 
 /*
   THE REMOVAL SECTION, WITHHELD ON THE FALL-THROUGH PASS (D-163 rule 3).
@@ -347,6 +422,7 @@ const REMOVAL_PROMPT = [
 ].join("\n");
 
 const SYSTEM_PROMPT = BASE_PROMPT + REMOVAL_PROMPT;
+const SYSTEM_PROMPT_OPEN = BASE_PROMPT_OPEN + REMOVAL_PROMPT;
 
 /**
  * THE PARSER'S TOKEN CEILING — and why it is no longer 600.
@@ -374,7 +450,11 @@ export const REFINE_PARSE_MAX_TOKENS = 4000;
 /** Test seam: the bench measures the REAL prompt, or it measures nothing. A
  *  small hand-written prompt does not make this model reason, and a driver that
  *  cannot reproduce the failure cannot measure the fix. */
-export function refineParseSystemPrompt(mode?: "classify" | "edit"): string {
+export function refineParseSystemPrompt(
+  mode?: "classify" | "edit",
+  options?: { openLane?: boolean },
+): string {
+  if (options?.openLane) return mode === "edit" ? BASE_PROMPT_OPEN : SYSTEM_PROMPT_OPEN;
   return mode === "edit" ? BASE_PROMPT : SYSTEM_PROMPT;
 }
 
@@ -561,6 +641,20 @@ export type RefineInterpretInput = {
    * way forever and rule 3 becomes "that didn't come through clearly".
    */
   mode?: "classify" | "edit";
+  /**
+   * WHETHER THIS USER'S OUT-OF-VOCABULARY ASK MAY NAME A KIND —
+   * `CASTING_OPEN_LANE_SCOPE`, decided by the caller from `input.userId`.
+   *
+   * It gates BOTH halves, and both are needed. The prompt gains the last-resort
+   * clause (and loses the stage-wall routing for fantastical anatomy), and the
+   * acceptance door below is consulted at all. Gating only the prompt would
+   * leave the door reachable by a reply that named an unknown key of its own
+   * accord — rare, and the difference between "dark" and "nearly always dark".
+   *
+   * Absent means off. A caller that has never heard of this flag — every test,
+   * every bench, every legacy path — gets exactly today's behaviour.
+   */
+  openLane?: boolean;
   /** What each subject already held — containment's second source (D-171). */
   prior?: Partial<Record<string, string[]>>;
   /**
@@ -1038,7 +1132,7 @@ async function runOnce(
   try {
     const reply = await engine.complete({
       about: purpose,
-      system: (input.mode === "edit" ? BASE_PROMPT : SYSTEM_PROMPT)
+      system: refineParseSystemPrompt(input.mode, { openLane: input.openLane === true })
         + (input.echoed ? ECHO_CONSTRAINT : "")
         + (input.hybrid ? HYBRID_CONSTRAINT : "")
         + (input.stageRelook ? STAGE_RELOOK_CONSTRAINT : "")
@@ -1268,16 +1362,21 @@ async function runOnce(
     The wall check moved ABOVE this deliberately: a wall is an answer about
     something the customer said, and it outranks a fallback.
 
-    **Nothing routes in here today.** The interpreter is not told it may name a
-    kind outside the vocabulary, so its replies key onto the nearest closed
-    subject — which is what §2 measured and why the whole-delta null was latent
-    rather than live. The prompt clause is its own step, behind its own
-    measurement, for the reason `context-is-not-additive` names: a sentence
-    added to this prompt moves routing for asks that have nothing to do with
-    this lane. Until then this door is written, driven at its own seam, and
-    walked by nothing that was paid for.
+    **IT IS BEHIND `CASTING_OPEN_LANE_SCOPE`, AND SO IS THE CLAUSE THAT FEEDS
+    IT.** With the flag off the interpreter is not told it may name a kind
+    outside the vocabulary, so its replies key onto the nearest closed subject —
+    which is what §2 measured and why the whole-delta null was latent rather
+    than live. The clause is its own step behind its own measurement, for the
+    reason `context-is-not-additive` names: a sentence added to this prompt
+    moves routing for asks with nothing to do with this lane.
+
+    The FLAG is checked here as well as at the prompt, and that is not belt and
+    braces. A reply may name an unknown key without being invited to; gating the
+    prompt alone would leave this door reachable, rarely, for every user of a
+    product whose casting scope is `all`. Off, the unowned subject is still
+    RECORDED and skipped — §2's defect stays closed — and nothing is filed.
   */
-  const opened = await acceptOpenKind({
+  const opened = input.openLane !== true ? null : await acceptOpenKind({
     instruction,
     unowned: check.unowned ?? [],
     ...(engine ? { engine } : {}),

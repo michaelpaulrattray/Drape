@@ -797,6 +797,34 @@ the family's members instead of letting the engine's prior pick one
 for all eight — latitude spent as spread. Slots with the V5-era
 interpreter work; not in the active queue by founder's word.
 
+## 5c. AUTO-DISCOVERY SCAN — founder demand, quality-gated (filed 2026-08-17, fable-880)
+
+His words: *"well id like for it to automatically pick features up on its
+own doesnt that just make sense? as long as its good at what it does
+e.g after fixing the two wings thing etc"*
+
+The panel's scan should discover a cast's **uncatalogued** features on
+its own — a sci-fi cast's born horns, scales, extras — not only the
+fixed anatomy list. Shape: a discovery pass (*"what unusual features
+does this person have?"*) feeding the existing locator per answer,
+filling panel rows like the standard set.
+
+**His gate is part of the demand, not a caveat on it** — *"as long as
+its good at what it does"*. So it ships only after:
+
+- the **kind-property design** (pairs and extension — his "two wings
+  thing") lands and proves itself;
+- the **fine-texture blindness class** (fable-872 §3) is budgeted in
+  the design from day one: the scan must DECLARE what it cannot see
+  rather than silently miss it;
+- its **own court with both controls** — a cast with known features it
+  must find, and a plain cast it must not invent on (the absence
+  discipline step 3 built).
+
+Sequenced after the open lane is live and the kind-property design
+lands; the demand tally will also say which discoveries matter to real
+users. Not started, nothing spent.
+
 ## 6. Engine routing for marks (evidence exists; engineering item)
 
 NBP 6/6 at 848×1264 (its only size) vs GPT2 6/8 native; GPT2 tore

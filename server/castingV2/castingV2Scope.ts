@@ -869,3 +869,106 @@ export function validateCastingScanTableEnvironment(input: {
   }
   return table;
 }
+
+/* --------------------------------------------- the open-lane sub-flag */
+
+/**
+ * THE OPEN LANE'S OWN SWITCH — the one flag this lane never had.
+ *
+ * Off, the interpreter is not told it may name a kind outside its vocabulary,
+ * so its replies key onto the nearest closed subject and the acceptance door at
+ * `refineInterpreter` is not consulted at all. On, the prompt carries the
+ * last-resort clause and the door decides.
+ *
+ * # It was found missing, and the finding is the reason it exists
+ *
+ * The door (`openLaneAccept`, step 5a) shipped ungated, dark only because no
+ * reply ever emitted an unknown subject key. With `CASTING_V2_SCOPE=all` in
+ * production that made the clause a one-line prompt edit away from opening this
+ * lane for every user of the product in a single deploy — and it also left the
+ * door reachable, rarely, by a reply that named an unknown key of its own
+ * accord. This closes both: the prompt AND the door are behind it.
+ *
+ * # Why the parent is the REPAINT scope and not the casting scope
+ *
+ * Because the two roads do not both carry an open kind, and the difference is
+ * measured rather than assumed:
+ *
+ *  - the repaint road builds its recipe from the ask (`repaintAsksFor` reads
+ *    `delta.open` and the composed state's), so the kind reaches the paint;
+ *  - the paste road composes its prompt from `readDelta(variant.deltas)` —
+ *    wall (d) — and that reader DROPS `open` by construction, because it is the
+ *    strict reader guarding the boundary where a model's reply enters the
+ *    record. A paste-road user would be charged for a render whose prompt never
+ *    mentioned the thing they asked for.
+ *
+ * So a user armed here and not on the repaint road is armed for a lane that
+ * cannot deliver their ask. Strictly stronger than the casting scope, which is
+ * this one's grandparent by way of the library.
+ */
+export const CASTING_OPEN_LANE_SCOPE_ENV = "CASTING_OPEN_LANE_SCOPE";
+
+export class CastingOpenLaneScopeConfigurationError extends Error {
+  constructor() {
+    super(
+      `${CASTING_OPEN_LANE_SCOPE_ENV} must be "off", "all", or "users:" followed by unique positive integer user ids`,
+    );
+    this.name = "CastingOpenLaneScopeConfigurationError";
+  }
+}
+
+export class CastingOpenLaneCoverageError extends Error {
+  constructor(detail: string) {
+    super(`${CASTING_OPEN_LANE_SCOPE_ENV} ${detail}`);
+    this.name = "CastingOpenLaneCoverageError";
+  }
+}
+
+export function parseCastingOpenLaneScope(raw: string | undefined): CastingV2Scope {
+  return parseScopeGrammar(raw, () => {
+    throw new CastingOpenLaneScopeConfigurationError();
+  });
+}
+
+/**
+ * Whether this user's out-of-vocabulary asks may name a kind.
+ *
+ * An AND of the whole chain, for `captureCastingSidePhrasingEnabled`'s reason:
+ * the boot check already refuses a scope reaching past its parent, and this is
+ * that same rule enforced where it is used, because a boot check nobody invoked
+ * is the second way a flag pair goes wrong.
+ */
+export function captureCastingOpenLaneEnabled(userId: number): boolean {
+  const child = parseCastingOpenLaneScope(process.env[CASTING_OPEN_LANE_SCOPE_ENV]);
+  if (!castingV2EnabledForUser(child, userId)) return false;
+  return captureCastingRepaintEnabled(userId);
+}
+
+export function validateCastingOpenLaneEnvironment(input: {
+  scope: string | undefined;
+  repaintScope: string | undefined;
+}): CastingV2Scope {
+  const child = parseCastingOpenLaneScope(input.scope);
+  if (child.kind === "off") return child;
+
+  const parent = parseCastingRepaintScope(input.repaintScope);
+  if (parent.kind === "off") {
+    throw new CastingOpenLaneCoverageError(
+      `cannot be enabled while ${CASTING_REPAINT_SCOPE_ENV} is off — the paste road's wall-(d) re-read `
+      + "drops an open kind, so the ask would be charged for and never said in the prompt",
+    );
+  }
+  if (parent.kind === "all") return child;
+  if (child.kind === "all") {
+    throw new CastingOpenLaneCoverageError(
+      `cannot be "all" while ${CASTING_REPAINT_SCOPE_ENV} is limited to specific users`,
+    );
+  }
+  const uncovered = child.userIds.filter((userId) => !parent.userIds.includes(userId));
+  if (uncovered.length > 0) {
+    throw new CastingOpenLaneCoverageError(
+      `names users outside ${CASTING_REPAINT_SCOPE_ENV}: ${uncovered.join(",")}`,
+    );
+  }
+  return child;
+}

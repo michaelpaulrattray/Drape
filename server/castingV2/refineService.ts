@@ -189,6 +189,7 @@ import { padToFrame, studioBackgroundOf, type StudioBackground } from "./referen
 import { pronounsForSex } from "./castPronouns";
 import {
   captureCastingReferenceLibraryEnabled,
+  captureCastingOpenLaneEnabled,
   captureCastingRepaintEnabled,
   captureCastingSidePhrasingEnabled,
 } from "./castingV2Scope";
@@ -489,6 +490,15 @@ export type RefineServiceDependencies = {
    * hides (opus-469, on fable-625 §3's enumeration).
    */
   sidePhrasingEnabled?: (userId: number) => boolean;
+  /**
+   * Whether an out-of-vocabulary ask may name its own kind — the open lane.
+   *
+   * A predicate for the same reason as its three siblings, and it reaches the
+   * interpreter rather than the painter: it decides the SYSTEM PROMPT the
+   * customer's sentence is read with, and whether the acceptance door is
+   * consulted at all.
+   */
+  openLaneEnabled?: (userId: number) => boolean;
   /** Writes the sent recipe onto the variant at dispatch — see `recordVariantDispatch`. */
   recordDispatch?: typeof recordVariantDispatch;
   /**
@@ -976,6 +986,13 @@ async function refineCandidateCounted(
   const readInstruction = (extra: { mode?: "edit"; restated?: boolean } = {}) =>
     (dependencies.interpret ?? interpretRefinement)({
       instruction,
+      /*
+        WHETHER AN ASK NOBODY CATALOGUED MAY NAME ITS OWN KIND —
+        `CASTING_OPEN_LANE_SCOPE`, read here rather than inside the interpreter
+        so the decision is made once, from `input.userId`, in the same place the
+        repaint road's admission is decided.
+      */
+      openLane: (dependencies.openLaneEnabled ?? captureCastingOpenLaneEnabled)(input.userId),
       prior: priorItems,
       lastColourFacet: lastColourFacet ? colourFacetLabel(lastColourFacet) : null,
       currentEyeColour: currentValueOfFacet(currentIdentity, "eye.colour"),
