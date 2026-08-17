@@ -176,6 +176,32 @@ export function createChecks(): {
   const records: CheckRecord[] = [];
 
   const check = (ok: boolean, law: string, saw: string): boolean => {
+    /*
+      THE ARGUMENT ORDER DEFENDS ITSELF, because getting it wrong is SILENT and
+      passes everything (opus-654, found in a driver of my own).
+
+      `check(law, ok, saw)` reads perfectly naturally and is what a shift writes
+      at 2am. It puts a non-empty STRING in `ok` — truthy — so every assertion in
+      that driver passes by construction, prints `ok`, and the run ends "ALL
+      CHECKS HELD". The measurements underneath can be perfectly good; the
+      verdict layer is simply not connected to them.
+
+      TypeScript would catch it, and does not: `scripts/` is outside the two
+      projects `pnpm check` compiles, so no driver in this directory is ever
+      typechecked. Until that changes this is the only thing standing between a
+      transposed call and a green report.
+
+      A guard that refuses by ACTING rather than by absence — it throws rather
+      than recording a failure, because a driver that cannot state its own
+      assertions has not produced a weaker reading, it has produced none.
+    */
+    if (typeof ok !== "boolean") {
+      throw new TypeError(
+        `check() takes (ok, law, saw) and was given ${typeof ok} for \`ok\` — `
+        + `almost certainly check(law, ok, saw), which passes every assertion silently. `
+        + `Received: ${JSON.stringify(ok)}`,
+      );
+    }
     records.push({ law, ok, saw, armed: true });
     console.log(`  ${ok ? "ok  " : "FAIL"} ${law} — saw: ${saw}`);
     return ok;

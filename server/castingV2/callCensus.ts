@@ -84,12 +84,52 @@ type Census = {
 
 const store = new AsyncLocalStorage<Census>();
 
+/*
+  ─────────────────────────────────────────────────────────────────────────────
+  A CENSUS OPENED **AROUND** A SERVICE THAT OPENS ITS OWN READS ZERO — and zero
+  is indistinguishable from a free operation.
+
+  Banked from the carry walk (opus-654), where it was found by arithmetic rather
+  than by suspicion: the wrapper printed `calls 0 · failed 0` for a render whose
+  wall clock was 196 seconds and whose fal balance had just moved $0.18.
+
+  `recordProviderCall` writes to the INNERMOST store. `refineCandidate` and
+  `dispatchCandidate` each open their own census (`refineService.ts:630`,
+  `rollService.ts:485`), so a driver that wraps either one to price it gets a
+  store that is shadowed for the whole call and summarizes an empty list. There
+  is no error, no warning, and the shape of the answer is right.
+
+  **The hazard is now standing rather than hypothetical**, which is why it is
+  written here: fable-890 §2 ruled the census the only honest per-operation
+  instrument — a shared account's balance cannot price one operation while
+  somebody else is spending from it — so the next bench author will reach for
+  exactly this function around exactly those services.
+
+  So, for a driver outside the service:
+
+    DON'T   const { census } = await censusOfAttempt(() => refineCandidate(…))
+            // shadowed; reads 0 calls for a render that made 10
+
+    DO      read the service's OWN census, which it already logs in full —
+            `[refineService] what this edit cost in calls and seconds` carries
+            calls, failedCalls, callMs, wallMs, byStage, byModel and byAbout.
+
+  The rule generalizes past this module: **an instrument wrapped around
+  something that already carries one measures the wrapper, not the work.** A
+  zero from an instrument that never opened is the false-pass shape — it needs a
+  positive control (a number that could not be zero, here the wall clock and the
+  balance) before it counts as a reading.
+*/
+
 /**
  * Run something with a census open, and hand back what it cost.
  *
  * The result comes back beside the value rather than through a mutable the
  * caller passes in, so a caller cannot half-read a census that is still
  * filling — the shape that makes a partial reading look like a cheap render.
+ *
+ * NESTS BY SHADOWING, never by merging — see the block above before wrapping a
+ * service in one of these.
  */
 export async function withCallCensus<T>(
   run: () => Promise<T>,

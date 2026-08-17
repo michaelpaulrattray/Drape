@@ -328,3 +328,38 @@ describe("the question table carries its own denominator", () => {
     expect(Object.keys(census.byAbout)).not.toContain("");
   });
 });
+
+/*
+  THE SHADOWING IS PINNED, because it is documented behaviour that a driver will
+  meet as a silent zero (opus-654, and the block above `withCallCensus`).
+
+  Not a wish that nesting worked — an assertion of what it actually does, so
+  that the day somebody makes an inner census merge upward, this reddens and the
+  docblock gets corrected with it rather than quietly becoming a lie.
+*/
+describe("a census nested inside another", () => {
+  it("SHADOWS it — the outer one reads zero for work the inner one counted", async () => {
+    const { census: outer, value: inner } = await withCallCensus(async () => {
+      /* Exactly the shape of a service that opens its own: `refineCandidate`
+         at refineService.ts:630, `dispatchCandidate` at rollService.ts:485. */
+      const { census } = await withCallCensus(async () => {
+        recordProviderCall({ stage: "render", provider: "fal", model: "gpt-image-2/edit", ms: 117942, ok: true });
+      });
+      return census;
+    });
+
+    expect(inner.total.calls).toBe(1);
+    /* The whole point: a real render, and the wrapper says nothing happened. */
+    expect(outer.total.calls).toBe(0);
+    expect(outer.total.failed).toBe(0);
+    expect(outer.byModel).toEqual({});
+  });
+
+  it("POSITIVE CONTROL — the same call with no inner census DOES reach the outer one", async () => {
+    const { census: outer } = await withCallCensus(async () => {
+      recordProviderCall({ stage: "render", provider: "fal", model: "gpt-image-2/edit", ms: 117942, ok: true });
+    });
+
+    expect(outer.total.calls).toBe(1);
+  });
+});
