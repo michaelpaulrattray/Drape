@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 
+import { facetsWrittenBy } from "./refineDelta";
+
 import {
   FRAMING_PREMISE,
   nameWhatIsMissing,
@@ -86,6 +88,29 @@ describe("what the photograph does not contain leaves the ask", () => {
     const { delta, dropped } = withoutWhatIsOutOfFrame(asked);
     expect(dropped).toEqual([]);
     expect(delta).toEqual(asked);
+  });
+
+  it("keeps an OPEN KIND, so a servable half is not counted as nothing", () => {
+    /*
+      THE SWEEP'S SECOND FIND (fable-900 §2b). The caller decides whether
+      anything survives, and it counted FACETS — which an open kind has none of.
+      So *"give her a halo"* beside an out-of-shot waist read as nothing
+      surviving and the whole ask was refused, including the half this product
+      could serve. The strip itself was innocent: it spreads the delta, so `open`
+      was always carried through. This arm pins that, and the caller's own
+      condition is asserted beside it.
+    */
+    const { delta, dropped } = withoutWhatIsOutOfFrame({
+      open: { halo: { noun: "halo", words: "a halo" } },
+      free: { waist: "a smaller waist" },
+    });
+    expect(dropped).toEqual(["her waist"]);
+    expect(delta.free?.waist).toBeUndefined();
+    expect(delta.open?.halo).toEqual({ noun: "halo", words: "a halo" });
+    /* And the count the caller uses: facets alone say nothing survives, which is
+       exactly the reading that refused the halo. */
+    expect(facetsWrittenBy(delta).size).toBe(0);
+    expect(Object.keys(delta.open ?? {}).length).toBe(1);
   });
 
   it("does not mutate the delta it was handed", () => {

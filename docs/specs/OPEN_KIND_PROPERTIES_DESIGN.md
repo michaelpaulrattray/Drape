@@ -544,3 +544,65 @@ one that discovers it in a ratio.
   in production reads or writes the table while `CASTING_OPEN_LANE_SCOPE` is off,
   so nothing waits on it.
 
+---
+
+## 11. THE CARRY DROP — the defect 5b's own walk found, and the sweep that came
+## with the fix (2026-08-17, ruled fable-900 §2)
+
+*Found by a paid dev render, not by reading. Fixed with its class, per law 7.*
+
+### What happened
+
+5b minted the first crop this product has ever held for an uncatalogued word —
+a halo on dev #375. The very next edit, *"give her copper hair"*, dispatched
+**one reference: the master.** The persisted dispatch record is the evidence:
+
+```
+references: [ { key: casting-v2/candidates/0cacbf7d….png, kind: "master",
+                digest 681c16a7…, sentGeometry 1024x1536 } ]
+the halo crop by KEY:    false      the halo crop by DIGEST: false
+```
+
+The service's own log named the cause while the render was in flight:
+`dropped: ["open:halo"]` · *"a crop stopped riding because the chain no longer
+asks for it"*. **And the delivered frame had no halo at all** — not re-rolled,
+absent — while the recipe said *"Change only her halo: a halo"*. Charged 25,
+refunded 0.
+
+### The cause is a derivation
+
+`prunedCarries.slotsNamedByChain(composed)` built its set from
+`facetsWrittenBy(composed)` — facets only — and an open kind has none, by the
+open lane's own premise. So `open:<kind>` could never be named; its row is not
+master-minted and not re-minted every render; **every open kind's crop was
+dropped on every subsequent render, by construction.** Two answers to *what does
+this recipe name* with the second invisible to the first (working law 4).
+
+The repair derives from the same delta the carry reads (`composed.open`) rather
+than exempting the namespace — an open kind whose step is PRUNED must still lose
+its crop, and that arm sits beside the regression arm in
+`prunedCarries.test.ts`. Both were written RED and seen to fail on the old
+derivation.
+
+### THE SWEEP — every consumer of `facetsWrittenBy`, classified
+
+Law 7's requirement, and it found a second live instance:
+
+| site | verdict |
+|---|---|
+| `prunedCarries.ts` — the carry list | **FIXED**, this commit. The defect above |
+| `refineService.ts` — the out-of-frame survival test | **FIXED**, this commit. `survives = facetsWrittenBy(inFrame).size > 0` counted an open-kind-only remainder as nothing, so *"give her a halo"* beside an out-of-shot waist refused the WHOLE ask including the half we could serve |
+| `refineService.ts` — `writtenFacets`, `deliveredByChain`, `composedFacets` | NOT APPLICABLE, and it is a fact rather than an assumption: all three feed CAPTION machinery, and an open kind produces no caption (no facet, so no caption reader is ever asked). Nothing to drop, keep or invalidate |
+| `refineService.ts` — the verification `facts` list | **A REAL GAP, ALREADY DECLARED**: an open kind gets no verification fact, so its presence is never checked and D-246 class (c) cannot fire for the one lane whose money story IS presence. This is `FREE_SUBJECT_KIND` standing `owed` in `openKindPolicy`, refiled by fable-900 §3 at the head of the post-fix queue with its true exposure — the lane is LIVE for user 1 |
+| `refineService.ts` — `removedFacets` on a prune | NOT APPLICABLE. A pruned open-only step contributes no facets and needs to: its crop drops correctly because the RECOMPOSED chain no longer holds the kind, which is the negative-control arm |
+| `refineService.ts` — the `rephrased` telemetry | FILED, not fixed. Two consecutive open-only asks about one kind are not marked `rephrased`, which costs a satisfaction signal and nothing else. Named so it is a decision rather than an oversight |
+| `refineDelta.ts` — `composePreservation` | NOT APPLICABLE. The preservation clause names facets to hold still; an open kind is held by its own carry clause, which `repaintAsks` builds from `delta.open` directly |
+| `refineDelta.ts` — the departure list | FILED with the departure gap: `DEPARTABLE_SUBJECTS` is `owed`, and its own basis says the drop-the-carry claim *"must be PROVED rather than assumed"*. Removing an open kind is not this commit and now has a second reason to be courted |
+| `refineRemoval.ts` — `facetsOfStep` | FILED, same gap. The matcher narrows by a CLOSED subject's facet, so *"remove her halo"* has no facet to narrow on. It cannot silently drop the wrong step (an open kind's facet set is empty, so it matches nothing rather than everything), which is the safe direction |
+| `repaintAsks.ts` | ALREADY HANDLED. It reads `delta.open` explicitly and its own comment says so — the one consumer that was written after the open lane existed |
+
+**The pattern worth carrying out of this**: `facetsWrittenBy` is how this codebase
+answers *what does this recipe name*, and the open lane's premise is a key with no
+facet. Every list built on it is a place where a delivered open kind can quietly
+stop existing, and the two that mattered were both about what a render is ALLOWED
+TO DO rather than about what it says.

@@ -2222,7 +2222,19 @@ async function refineCandidateCounted(
   if (editDelta) {
     const { delta: inFrame, dropped: notInShot } = withoutWhatIsOutOfFrame(editDelta);
     if (notInShot.length > 0) {
-      const survives = facetsWrittenBy(inFrame).size > 0;
+      /*
+        AND AN OPEN KIND SURVIVES ON ITS OWN — the sweep's second find
+        (fable-900 §2b, law 7: fix the class, not the instance).
+
+        `facetsWrittenBy` counts FACETS and an open kind has none, so an ask
+        naming *"give her a halo"* beside a closed facet that is out of shot
+        counted as nothing surviving and the WHOLE ask was refused — including
+        the half this product could have served. Same blindness as the carry
+        drop, one door along, and it is why the sweep was part of the fix rather
+        than a follow-up.
+      */
+      const survives = facetsWrittenBy(inFrame).size > 0
+        || Object.keys(inFrame.open ?? {}).length > 0;
       if (!survives) {
         log.info({ notInShot }, "[refineService] the ask is outside the frame — refusing before dispatch");
         /*

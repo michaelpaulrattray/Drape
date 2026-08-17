@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "d4c40f461d32d19c"
+    "sourceFingerprint": "69e5e1c8316f8ee6"
   },
   "domains": [
     {
@@ -19810,6 +19810,11 @@
     {
       "from": "module:server/castingV2/prunedCarries.ts",
       "to": "module:server/castingV2/referenceSlotCatalogue.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/prunedCarries.ts",
+      "to": "module:server/castingV2/referenceSlots.ts",
       "kind": "imports"
     },
     {

@@ -57,7 +57,9 @@ import type { FeatureSlot } from "./recipeAssembler";
 import {
   FACET_SLOTS,
   catalogueSlots,
+  slotDefinition,
 } from "./referenceSlotCatalogue";
+import { openSlotKey } from "./referenceSlots";
 import type { StoredReference } from "./referenceLibrary";
 
 /**
@@ -73,6 +75,34 @@ import type { StoredReference } from "./referenceLibrary";
  */
 export function slotsNamedByChain(composed: RefineDelta): Set<FeatureSlot> {
   const named = new Set<FeatureSlot>();
+  /*
+    THE OPEN KINDS FIRST, BECAUSE THE FACET LOOP CANNOT SEE THEM — and a paid
+    render is the specimen (5b, 2026-08-17; fable-900 §2a).
+
+    `facetsWrittenBy` answers *what does this recipe name* in FACETS, and an open
+    kind has none by construction — that is the open lane's whole premise. So
+    every crop minted for an uncatalogued word was invisible here, was not
+    master-minted and was not re-minted every render, and **was dropped on every
+    subsequent render.** The first one this product ever minted (a halo) was
+    dropped by the very next edit: one reference went out, the master, and the
+    delivered frame had no halo at all — charged, unrefused.
+
+    Two answers to one question with the second invisible to the first, which is
+    working law 4 in its usual coat. The repair is to derive from the same delta
+    the carry itself reads (`composed.open`), not to exempt the namespace: an open
+    kind whose step has been PRUNED must still lose its crop, exactly like a
+    closed feature, and `prunedCarries.test.ts` holds that arm beside this one.
+  */
+  for (const kind of Object.keys(composed.open ?? {})) {
+    /*
+      Through the catalogue rather than by string concatenation: a key the
+      catalogue cannot resolve is one `parseSlot` refuses at the library door, so
+      naming it here would put a name in the set that nothing can ever file
+      against — and a mismatch between the two grammars would hide behind it.
+    */
+    const slot = openSlotKey(kind);
+    if (slotDefinition(slot as FeatureSlot) !== null) named.add(slot as FeatureSlot);
+  }
   const facets = facetsWrittenBy(composed);
   const slots = catalogueSlots();
   for (const facet of Array.from(facets)) {

@@ -137,3 +137,82 @@ describe("a crop rides only while its ask does", () => {
     expect(result.dropped).toEqual([]);
   });
 });
+
+/**
+ * AN OPEN KIND IS NAMED BY THE CHAIN TOO — the 5b defect, driven (fable-900 §2a).
+ *
+ * # The specimen, and it was a paid render
+ *
+ * 5b minted the first crop this product has ever held for an uncatalogued word:
+ * a halo, on dev candidate #375. The very next edit — *"give her copper hair"* —
+ * dispatched **one reference, the master**, and the service's own log said why:
+ * `dropped: ["open:halo"]` · *"a crop stopped riding because the chain no longer
+ * asks for it"*. The delivered frame had no halo at all, charged and unrefused.
+ *
+ * # The cause is a DERIVATION, which is why these arms are here and not there
+ *
+ * `slotsNamedByChain` built its set from `facetsWrittenBy(composed)` — facets
+ * only — and an open kind has no facet. So `open:<kind>` could never be named,
+ * the row is not master-minted and not re-minted every render, and every open
+ * kind's crop was dropped on every subsequent render **by construction**.
+ *
+ * Two answers to *what does this recipe name*, one derived from facets and one
+ * living in `delta.open`, with the second invisible to the first (working law 4).
+ * These arms were written RED, before the fix, and they fail on the old
+ * derivation for exactly the reason the paid render did.
+ */
+describe("an open kind's crop rides while the chain still carries it", () => {
+  it("names the open slot of a kind the composed delta holds", () => {
+    const named = slotsNamedByChain({ open: { halo: { noun: "halo", words: "a halo" } } });
+    expect([...named]).toContain("open:halo");
+  });
+
+  it("names it BESIDE the facets, never instead of them", () => {
+    /* The composed delta of the specimen render: an open kind carried from an
+       earlier step and a closed facet written by this one. */
+    const named = slotsNamedByChain({
+      open: { halo: { noun: "halo", words: "a halo" } },
+      /* `hairColour` is a top-level AXIS, not a free subject — this is the walk's
+         own composed delta, copied from the row rather than invented. */
+      hairColour: "copper",
+    });
+    expect([...named]).toContain("open:halo");
+    expect([...named]).toContain("hair");
+  });
+
+  it("KEEPS a minted open-kind crop while the chain carries the kind", () => {
+    /* The regression arm for the paid render. `variantId` is non-null — the crop
+       was minted by a variant, not the master — so no exemption saves it and the
+       naming is the only thing that can. */
+    const halo = row({ slot: "open:halo", noun: "halo", words: ["a halo"], variantId: 455 });
+    const { rows, dropped } = carriesAfterPruning({
+      rows: [halo],
+      composed: { open: { halo: { noun: "halo", words: "a halo" } }, hairColour: "copper" },
+    });
+    expect(dropped).toEqual([]);
+    expect(rows.map((one) => one.slot)).toEqual(["open:halo"]);
+  });
+
+  it("still DROPS an open-kind crop the chain no longer carries", () => {
+    /* The negative control, and it is what keeps the fix from being "never drop
+       an open kind": removing the step that added the halo must still take its
+       crop off the next render, exactly as it does for a closed feature. Without
+       this arm the fix would be indistinguishable from an exemption. */
+    const halo = row({ slot: "open:halo", noun: "halo", words: ["a halo"], variantId: 455 });
+    const { rows, dropped } = carriesAfterPruning({
+      rows: [halo],
+      composed: { hairColour: "copper" },
+    });
+    expect(rows).toEqual([]);
+    expect(dropped.map((one) => one.slot)).toEqual(["open:halo"]);
+  });
+
+  it("names nothing for a malformed open key", () => {
+    /* `readOpenKinds` refuses a spaced key on the way in, so this should be
+       unreachable — and a key the catalogue cannot resolve must not enter the
+       named set, because `parseSlot` refuses it at the library door and a name
+       nothing can file is a name that hides a mismatch. */
+    const named = slotsNamedByChain({ open: { "cat ears": { noun: "cat ears", words: "pointed cat ears" } } });
+    expect([...named].filter((slot) => slot.startsWith("open:"))).toEqual([]);
+  });
+});
