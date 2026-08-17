@@ -137,6 +137,7 @@ import {
   duplicateSlotFor,
   mintGuardedReference,
   refusalKeepsItsCrop,
+  type GuardRefusal,
   type GuardRefusalReason,
   type GuardVerdict,
   type RegionReader,
@@ -177,8 +178,28 @@ export type SlotSpec = {
    */
   question: string | null;
   /** The completeness specimen family whose threshold applies (`hair`, `lips`).
-   *  Null exactly when {@link SlotSpec.question} is. */
+   *  Null exactly when {@link SlotSpec.question} is — for every slot the
+   *  CATALOGUE owns. See {@link SlotSpec.noSpecimen} for the one branch where
+   *  that biconditional cannot hold. */
   guardKind: string | null;
+  /**
+   * WHY THIS SLOT HAS A QUESTION AND NO SPECIMEN FAMILY — the open lane's one
+   * field, and the reason it is a sentence rather than a flag.
+   *
+   * An open kind (`open:fangs`) has a question — its own noun — and no
+   * completeness family, because a family is a MEASUREMENT and nobody has
+   * measured a kind nobody has catalogued. That breaks the catalogue's
+   * biconditional, and fable-766 §2 ratified the honest way out: state the
+   * invariant as closed-catalogue-only and have the open branch carry an
+   * explicit reason.
+   *
+   * **Its presence is what routes this slot to the absence-control door**, so
+   * the recorded fact is READ rather than merely written — the bound that came
+   * with that ratification, and the gate-not-reader class it exists to avoid.
+   * Absent, a slot with no `guardKind` is exactly what it has always been: a
+   * feature the region vocabulary cannot name, carried by words.
+   */
+  noSpecimen?: string;
   /**
    * The frame this slot's question may be asked of.
    *
@@ -679,6 +700,87 @@ export function composeBelowHeadCut(input: {
 }
 
 /**
+ * THE OPEN LANE'S SLOT, TOLD APART FROM A SLOT THE VOCABULARY CANNOT NAME.
+ *
+ * Both arrive with `guardKind: null`, and they are opposite situations. Her jaw
+ * has no QUESTION — no region the segmenter can be asked for names it — so
+ * there is nothing to cut and words are the whole of the answer. An open kind
+ * has a perfectly good question, its own noun, and no measured FAMILY to score
+ * the crop against; the catalogue records that as a reason rather than leaving
+ * it a null (fable-766 §2), and the reason's presence is what routes the slot
+ * to the absence-control door.
+ *
+ * One predicate, because three loops have to agree about it — the cut list, the
+ * words-only list and the batched word read, which the file's own comment
+ * requires to match "predicate for predicate". Three copies of this expression
+ * is the shape where one of them keeps the old answer and a slot files twice.
+ */
+function isOpenKindSlot(slot: SlotSpec): slot is SlotSpec & { question: string; noSpecimen: string } {
+  return slot.question !== null && slot.guardKind === null && slot.noSpecimen !== undefined;
+}
+
+/**
+ * THE ABSENCE CONTROL — the door in FRONT of the door, for a kind nobody
+ * catalogued (OPEN_LANE_DESIGN_NOTE §4, step 3).
+ *
+ * An open kind's crop has two ways of being worthless and they need two
+ * different instruments:
+ *
+ *   is it a picture of ANYTHING      the segmenter answers *something* on every
+ *                                    face, and a reader asked where the fangs
+ *                                    are on a face with none returns a small
+ *                                    confident region of mouth. **This control.**
+ *   is it the WHOLE of the thing     the completeness guard's question, and it
+ *                                    is answered at the ceiling — see the mint
+ *                                    call's own note.
+ *
+ * The control is the shape this program uses everywhere: *an affirmative from an
+ * instrument never seen to decline is not evidence.* The same reader is asked
+ * the same question of the frame this render was painted FROM — which, for an
+ * additive ask, cannot hold the thing. It returns the refusal, or `null` to mean
+ * the crop may go on to be judged on its merits.
+ */
+function absenceRefusal(input: {
+  kind: string;
+  /** What the same reader answered on the before-picture. `null` is the clean
+   *  decline this control is looking for; `undefined` is a control that could
+   *  not be run at all, which is a different failure and not a pass. */
+  before: Mask | null | undefined;
+}): GuardRefusal | null {
+  if (input.before === undefined) {
+    return {
+      ok: false, reason: "absenceUnread", kind: input.kind,
+      detail: `nothing could be shown to the reader as a frame WITHOUT ${input.kind}, so whether it can decline for this kind is unknown`,
+    };
+  }
+  /*
+    ANY ANSWER AT ALL IS AN ANSWER, and the floor is zero on purpose.
+
+    The one time this procedure has been run on a real kind it read
+    **0.0000% on three visibly bare frames** against 0.39–0.87% on twelve worn
+    ones (the horns detection court, quoted in OPEN_LANE_CARRY_DESIGN §6) — so
+    zero is what a reader that can decline actually does, measured, rather than
+    a bar chosen for tidiness. A floor above zero would be a number nobody has
+    measured for a kind nobody has catalogued, which is the borrowed-specimen
+    defect one layer along.
+
+    It errs toward words, never toward a crop: a stray pixel on the
+    before-picture costs this kind its carry for this render and costs nobody a
+    picture. The specimen court is what says whether real unarmed kinds read
+    clean zeroes; until it has, this is the strict direction and it is declared
+    as one.
+  */
+  if (input.before !== null && input.before.data.some((value) => value !== 0)) {
+    return {
+      ok: false, reason: "absenceUnproven", kind: input.kind,
+      detail: `the reader answered "${input.kind}" on the frame this render was painted FROM, which does not `
+        + `hold it — so its answer on the delivered frame cannot be told from a confident region of nothing`,
+    };
+  }
+  return null;
+}
+
+/**
  * THE GEOMETRIC DOOR — what stands in for the guard on a composed region.
  *
  * The measured door (`mintGuardedReference`) buys a second, independent read of
@@ -806,6 +908,20 @@ export async function mintReferencesForRender(input: MintInput): Promise<MintRes
        * region has no specimen family for a measured guard to consult.
        */
       composed?: { complete: boolean; outside: number };
+      /**
+       * A KIND NOBODY CATALOGUED, and this is what routes it through the
+       * absence control (§4, step 3).
+       *
+       * A marker rather than a re-derivation, for the reason `composed` is one:
+       * by the time a slot is in this list its `guardKind` has been filled in
+       * with the noun so the row can name what was judged, and the very
+       * property that identified it — a question with a null family — is no
+       * longer readable off the record. A predicate that quietly stopped
+       * matching would route every open kind to the measured door, where it
+       * would refuse `noSpecimen` and the lane would go back to words with
+       * nothing in the log to say why.
+       */
+      openKind?: true;
       /** THE READER WAS OVERRULED BY A CALIBRATED RULER (fable-429 §3), so this
        *  slot's crop is judged on its own merits from here on. The dispute is
        *  not erased — it rides on {@link MintResult.adjudications} and onto the
@@ -829,6 +945,11 @@ export async function mintReferencesForRender(input: MintInput): Promise<MintRes
       would have done.
     */
     let groundReads = 0;
+    /* The open lane's own price, counted apart from the ground's: one read per
+       open kind that cut a crop, on the before-picture (§4, step 3). Separate
+       because "what did the absence control cost" is a question the promotion
+       decision asks, and a figure folded into another one cannot answer it. */
+    let absenceReads = 0;
     const readGround = input.dependencies?.readGround;
     const groundFor = async (question: string, side: Instance | null): Promise<Mask | null> => {
       if (!readGround) return null;
@@ -854,15 +975,32 @@ export async function mintReferencesForRender(input: MintInput): Promise<MintRes
 
     for (const slot of input.slots) {
       if (slot.tier === "surface") continue;
-      if (slot.question === null || slot.guardKind === null) continue;
+      if (slot.question === null) continue;
+      /*
+        AN OPEN KIND IS CUT, and the recorded reason is what says so. A slot
+        with no `guardKind` and no reason is the catalogue's ordinary null —
+        her jaw — and still files words without a call being spent on it.
+      */
+      const openKind = isOpenKindSlot(slot);
+      if (slot.guardKind === null && !openKind) continue;
       if (isDerivedRegion(slot.question)) { derived.push(slot); continue; }
-      const { question, guardKind } = slot;
+      const question = slot.question;
+      /*
+        THE RECORD'S KIND, WHICH IS NOT A SPECIMEN FAMILY HERE. For a closed
+        slot this is the family the crop is scored against. For an open one
+        there is no family — that is the whole situation — and this is the noun
+        the refusal and the reading are filed UNDER, so a row still says what
+        was judged rather than leaving the column null. Nothing adopts it as a
+        specimen, because the open door records no coverage on a refusal and
+        the readings it does record are ceiling readings no bar divided.
+      */
+      const guardKind = slot.guardKind ?? question;
       if (slot.frame !== "ownSide") {
         if (!regionsToCut.has(question)) {
           const ground = await groundFor(question, null);
           if (ground) regionsToCut.set(question, ground);
         }
-        cuttable.push({ ...slot, question, guardKind, regionKey: question, side: null });
+        cuttable.push({ ...slot, question, guardKind, regionKey: question, side: null, ...(openKind ? { openKind } : {}) });
         continue;
       }
 
@@ -911,14 +1049,14 @@ export async function mintReferencesForRender(input: MintInput): Promise<MintRes
           continue;
         }
         regionsToCut.set(key, ground);
-        cuttable.push({ ...slot, question, guardKind, regionKey: key, side });
+        cuttable.push({ ...slot, question, guardKind, regionKey: key, side, ...(openKind ? { openKind } : {}) });
         continue;
       }
 
       regionsToCut.set(key, sides[side]);
       const delivered = input.deliveredSideRegions?.get(question);
       if (delivered) deliveredToCut.set(key, delivered[side]);
-      cuttable.push({ ...slot, question, guardKind, regionKey: key, side });
+      cuttable.push({ ...slot, question, guardKind, regionKey: key, side, ...(openKind ? { openKind } : {}) });
     }
     /*
       THE CUTS, TAKEN BEFORE ANY ROW IS FILED.
@@ -1288,7 +1426,8 @@ export async function mintReferencesForRender(input: MintInput): Promise<MintRes
     const willBeAskedForWords: SlotSpec[] = [
       ...input.slots.filter((slot) => slot.tier === "surface" && !slot.disputed),
       ...input.slots.filter((slot) => slot.tier !== "surface"
-        && (slot.question === null || slot.guardKind === null) && !slot.disputed),
+        && (slot.question === null || (slot.guardKind === null && !isOpenKindSlot(slot)))
+        && !slot.disputed),
       ...sideless.filter(({ slot }) => !slot.disputed).map(({ slot }) => slot),
       ...cuttable.filter((slot) => cutBySlot.has(slot.slot) || !slot.disputed),
     ];
@@ -1318,7 +1457,11 @@ export async function mintReferencesForRender(input: MintInput): Promise<MintRes
     */
     for (const slot of input.slots) {
       if (slot.tier === "surface") continue;
-      if (slot.question !== null && slot.guardKind !== null) continue;
+      /* An open kind is NOT one of these — it has a question, it is in the cut
+         list, and it files its row there. The predicate is shared with that
+         list rather than restated, because a slot both loops claim files
+         twice. */
+      if (slot.question !== null && (slot.guardKind !== null || isOpenKindSlot(slot))) continue;
       if (slot.disputed) {
         disputedNothingKept(
           slot,
@@ -1435,7 +1578,41 @@ export async function mintReferencesForRender(input: MintInput): Promise<MintRes
       const mouthIsOpen = slot.slot === "lips" && read !== undefined
         ? await teethAreShowing(read, input.frame.bytes)
         : false;
-      const verdict = mouthIsOpen
+      /*
+        THE ABSENCE CONTROL, BOUGHT ONLY WHERE IT DECIDES SOMETHING (§4, step 3).
+
+        One read, on an open kind that actually cut a crop this render — a kind
+        the delivered frame said nothing about never reaches here, and nothing
+        is spent proving the absence of a thing nobody found. The reader is the
+        GROUND reader, deliberately: the control's question is whether the
+        instrument that produced this region can decline for this kind, and
+        asking a different instrument would answer about a different one.
+
+        The before-picture is the frame this render was painted FROM, which the
+        mint is already handed for the ruler — so this costs no plumbing and no
+        second fetch. If either the frame or the reader is missing the control
+        is UNRUN, which is its own refusal and not a pass.
+      */
+      const absence = slot.openKind
+        ? absenceRefusal({
+          kind: slot.guardKind,
+          before: input.anchorFrame && readGround
+            ? await (async () => {
+              absenceReads += 1;
+              try {
+                return await readGround({ frame: input.anchorFrame!.bytes, question: slot.question });
+              } catch {
+                /* A throw is a reading that did not happen. `undefined` is
+                   `absenceUnread`, which is the honest outcome — the same rule
+                   `mintGuardedReference` applies to its own reader. */
+                return undefined;
+              }
+            })()
+            : undefined,
+        })
+        : null;
+      const verdict = absence
+        ?? (mouthIsOpen
         ? {
           /* NO NUMBER. Nothing measured this crop's completeness — the mouth
              was asked before the door was — and a zero here would be a figure
@@ -1484,8 +1661,22 @@ export async function mintReferencesForRender(input: MintInput): Promise<MintRes
                this is a real, unique picture of the subject come FIRST, and a
                dispute only ever displaces a completeness verdict. */
             ...(slot.disputed ? { disputed: true } : {}),
+            /*
+              THE OPEN KIND'S ONE ASSERTION, AND IT IS ABOUT THE CONTROL RATHER
+              THAN ABOUT THE CROP.
+
+              Reached only past `absence` above, so by construction the reader
+              has been shown a frame without the thing and declined. That
+              retires the half of `noSpecimen` a family would have answered —
+              at a reading of exactly 1.0 there is no shortfall for any bar to
+              divide — and leaves the other half to the control that just ran.
+              Below the ceiling nothing changes: the crop still refuses
+              `noSpecimen`, still keeps its pixels, and still waits for the
+              specimen only a human can supply.
+            */
+            ...(slot.openKind ? { ceilingIsTheBar: true as const } : {}),
           }, read);
-        })();
+        })());
       /* Counted on the MEASURED door only: the geometric one spends nothing, and
          a composed slot's dispute costs a vision call nowhere. */
       if (slot.disputed && !slot.composed) disputedReads += 1;
@@ -1713,6 +1904,11 @@ export async function mintReferencesForRender(input: MintInput): Promise<MintRes
            Zero on every render that did — which is every render on the old road
            — so a non-zero here is the repaint paying its declared price. */
         groundReads,
+        /* AND WHAT THE ABSENCE CONTROL COST — one read on the before-picture
+           per open kind that cut a crop (§4, step 3). Zero on every render of
+           a face nobody has asked an out-of-vocabulary question about, which
+           today is every render in production. */
+        absenceReads,
         /* AND WHAT THE COMPOSER COST — two reads on the delivered frame per
            derived slot, spent only on a face that has a build to keep. Zero on
            every render of a face nobody has body-edited, which is most of them. */

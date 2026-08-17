@@ -11,7 +11,7 @@ import sharp from "sharp";
 import { describe, expect, it } from "vitest";
 
 import { mintReferencesForRender, type SlotSpec } from "./referenceMint";
-import { slotDefinition } from "./referenceSlotCatalogue";
+import { slotDefinition, slotSpecFor } from "./referenceSlotCatalogue";
 import { unionMasks } from "./maskGeometry";
 import type { Mask } from "./maskedComposite";
 
@@ -1919,5 +1919,220 @@ describe("no slot is described that the mint would not have asked about", () => 
     });
 
     expect(asked, "the disputed slot is not described, and is not read for either").toEqual(["freckles"]);
+  });
+});
+
+/**
+ * THE OPEN LANE'S ABSENCE CONTROL — the door a kind nobody catalogued goes
+ * through (OPEN_LANE_DESIGN_NOTE §4, step 3; the `noSpecimen` bound of
+ * fable-766 §2).
+ *
+ * The measured door scores a crop against a specimen family. An open kind has
+ * no family, because a family is a measurement and nobody has measured a kind
+ * nobody has catalogued — so the catalogue records that as an explicit reason
+ * rather than a silent null, and **the bound that came with that ratification
+ * is that the mint door must demonstrably READ it.** A recorded fact nobody
+ * consults is the gate-not-reader class, which this campaign has already paid
+ * for once.
+ *
+ * What stands at the door instead is §4's control, and its shape is the one
+ * this program uses everywhere: *an affirmative from an instrument never seen
+ * to decline is not evidence.* A segmenter asked where the fangs are on a face
+ * with none will return a small confident region of mouth, and a crop of that
+ * is not a diagnostic — it is a permanent instruction to paint nothing, in a
+ * place, forever.
+ *
+ * So the same reader is asked the same question of the BEFORE-picture, which
+ * the mint is already handed for the ruler. Decline there and the crop mints;
+ * answer there and the kind falls to words with its reason on the row.
+ */
+describe("the open lane's absence control", () => {
+  /** Where the reader claims to find fangs on the delivered frame. */
+  const FANGS = { x: 17, y: 24, width: 6, height: 4 };
+
+  /** A frame the anchor read can be told apart from — a different colour, so an
+   *  assertion about WHICH bytes were handed over cannot pass by accident. */
+  async function anchorBytes(): Promise<Buffer> {
+    return sharp({
+      create: { width: 40, height: 40, channels: 3, background: { r: 10, g: 20, b: 30 } },
+    }).png().toBuffer();
+  }
+
+  /** The slot as the real catalogue makes it — question, no guard kind, and the
+   *  recorded reason. Built rather than typed, so a change to the catalogue's
+   *  open branch reaches these arms instead of passing them by. */
+  function openSlot(): SlotSpec {
+    const spec = slotSpecFor("open:fangs" as never, ["long slender fangs"]);
+    if (spec === null) throw new Error("the catalogue no longer makes a spec for an open kind");
+    return spec;
+  }
+
+  /**
+   * A mint on the repaint's own terms — no harvest map, a ground reader, and
+   * the before-picture the ruler is already given.
+   *
+   * `beforeRead` is what the reader answers when handed the ANCHOR bytes: null
+   * is a clean decline, a mask is the reader answering on a frame that does not
+   * hold the thing.
+   */
+  async function mintOpen(options: {
+    beforeRead?: Mask | null;
+    withAnchor?: boolean;
+    slots?: SlotSpec[];
+  } = {}) {
+    const bench = harness({ guardRead: rect(FANGS) });
+    const anchor = await anchorBytes();
+    const delivered = await frameBytes();
+    const calls: Array<{ question: string; onAnchor: boolean }> = [];
+    const result = await mintReferencesForRender({
+      userId: 1,
+      variantId: 11,
+      frame: { bytes: delivered },
+      applied: null,
+      masterRegions: new Map(),
+      slots: options.slots ?? [openSlot()],
+      ...(options.withAnchor === false ? {} : { anchorFrame: { bytes: anchor } }),
+      dependencies: {
+        ...bench.dependencies,
+        readGround: async (ask: { frame: Buffer; question: string }) => {
+          const onAnchor = ask.frame.equals(anchor);
+          calls.push({ question: ask.question, onAnchor });
+          if (onAnchor) return options.beforeRead === undefined ? null : options.beforeRead;
+          return rect(FANGS);
+        },
+      } as never,
+    });
+    return { bench, result, calls };
+  }
+
+  it("mints the crop when the reader DECLINES on the before-picture", async () => {
+    const { bench, result, calls } = await mintOpen({ beforeRead: null });
+
+    expect(result.slots[0]).toMatchObject({ slot: "open:fangs", outcome: "stored" });
+    expect(bench.stored).toHaveLength(2);
+    /* ONE ROW. The open kind left the words-only loop and joined the cut list,
+       and a slot both loops claim files its slot twice — a second version of
+       the same feature in the same render, which the fold would then read as
+       history. */
+    expect(bench.rows).toHaveLength(1);
+    expect(result.slots).toHaveLength(1);
+
+    /*
+      THE BAR ON THE ROW IS THE CEILING, and no row claims a family that does
+      not exist: the crop holds every pixel of an independent second read of its
+      own region, so 1.0 is measured against 1.0 — the comparison that actually
+      happened — and `fangs` names what was judged rather than a specimen family
+      anybody has calibrated.
+    */
+    expect(bench.rows[0]!.image!.guard).toEqual({
+      kind: "fangs", coverage: 10_000, spill: 0, threshold: 10_000,
+    });
+
+    /* Same reader, same question, both frames — one extra call and no more. */
+    expect(calls).toEqual([
+      { question: "fangs", onAnchor: false },
+      { question: "fangs", onAnchor: true },
+    ]);
+  });
+
+  it("files words and stores NOTHING when the reader answers on the before-picture", async () => {
+    /* The measured failure this control exists for: a confident small region on
+       a frame that cannot contain the thing. */
+    const { bench, result } = await mintOpen({ beforeRead: rect({ x: 16, y: 23, width: 7, height: 5 }) });
+
+    expect(result.slots[0]).toMatchObject({
+      slot: "open:fangs",
+      outcome: "words-only",
+      reason: "guardRefused",
+    });
+    expect(bench.stored).toEqual([]);
+    expect(bench.manifests).toEqual([]);
+
+    /* The words still file — the carrier of record — and the refusal says which
+       control turned it away, with NO coverage number, because nothing here
+       measured this crop's completeness. */
+    expect(bench.rows[0]!.words).toEqual(["long slender fangs"]);
+    expect(bench.rows[0]!.refusal).toEqual({ reason: "absenceUnproven", kind: "fangs" });
+  });
+
+  it("refuses when the control cannot be RUN — a no-read is not a pass", async () => {
+    /* D-235's asymmetry, at the one door where a missing before-picture would
+       otherwise become a confident yes. */
+    const { bench, result } = await mintOpen({ withAnchor: false });
+
+    expect(result.slots[0]).toMatchObject({ outcome: "words-only", reason: "guardRefused" });
+    expect(bench.stored).toEqual([]);
+    expect(bench.rows[0]!.refusal).toEqual({ reason: "absenceUnread", kind: "fangs" });
+  });
+
+  it("CONTROL — BELOW the ceiling an open kind still refuses `noSpecimen`", async () => {
+    /*
+      The scope of the whole amendment, driven. `ceilingIsTheBar` widens ONE
+      clause: at exactly 1.0 there is no shortfall for a bar to divide, so a
+      family would add nothing. One pixel below that and there is a shortfall,
+      nobody has measured what share of a fang a complete crop of one holds,
+      and the door refuses exactly as it does today — keeping its pixels,
+      because that crop is the only thing that can ever teach the bar.
+
+      Without this arm the flag could be accepting everything and the arm above
+      would still be green.
+    */
+    const bench = harness({
+      /* The guard's own read finds fangs across four times the crop, so the
+         crop covers a quarter of what it claims to be. */
+      guardRead: rect({ x: 17, y: 24, width: 12, height: 8 }),
+    });
+    const anchor = await anchorBytes();
+    const result = await mintReferencesForRender({
+      userId: 1,
+      variantId: 11,
+      frame: { bytes: await frameBytes() },
+      applied: null,
+      masterRegions: new Map(),
+      slots: [openSlot()],
+      anchorFrame: { bytes: anchor },
+      dependencies: {
+        ...bench.dependencies,
+        /* Declines cleanly on the before-picture — so the absence control
+           PASSES and the refusal below can only come from the bar. */
+        readGround: async (ask: { frame: Buffer }) => (ask.frame.equals(anchor) ? null : rect(FANGS)),
+      } as never,
+    });
+
+    expect(result.slots[0]).toMatchObject({
+      slot: "open:fangs", outcome: "words-only", reason: "guardRefused",
+    });
+    expect(bench.rows[0]!.refusal).toMatchObject({ reason: "noSpecimen", kind: "fangs" });
+    /* And its pixels ARE kept, because this is the refusal that exists to
+       produce the specimen — the open lane inherits that unchanged. */
+    expect(bench.stored).toHaveLength(2);
+  });
+
+  it("CONTROL — a slot with NO question is untouched, and buys no read", async () => {
+    /*
+      The bound's own control (fable-766 §2): behaviour must DIFFER on a
+      recorded `noSpecimen` versus the catalogue's ordinary null. Her jaw has no
+      question at all — the region vocabulary does not name it — and it files
+      exactly the row it has always filed, having bought nothing.
+    */
+    const jaw = hairSlot({
+      slot: "jaw", noun: "jaw", question: null, guardKind: null, words: ["a soft jawline"],
+    });
+    const { bench, result, calls } = await mintOpen({ slots: [jaw] });
+
+    expect(result.slots[0]).toMatchObject({ slot: "jaw", outcome: "words-only", reason: "noQuestion" });
+    expect(calls).toEqual([]);
+    expect(bench.stored).toEqual([]);
+  });
+
+  it("CONTROL — a CLOSED slot never buys an absence read", async () => {
+    /* The property that makes this safe to land on a live path: every kind the
+       catalogue owns is judged by its own measured family, exactly as before,
+       and cannot pay for this door even by accident. */
+    const { bench, result, calls } = await mintOpen({ slots: [hairSlot()] });
+
+    expect(result.slots[0]).toMatchObject({ slot: "hair", outcome: "stored" });
+    expect(calls).toEqual([{ question: "hair", onAnchor: false }]);
+    expect(bench.rows[0]!.image!.guard).toMatchObject({ kind: "hair", threshold: 9460 });
   });
 });

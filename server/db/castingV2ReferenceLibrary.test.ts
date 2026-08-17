@@ -325,6 +325,15 @@ describe("what a refused crop may say about itself", () => {
          are tempting: `lips` has no specimen, so a kept smiling crop would
          become the candidate the lips bar is derived from (fable-493). */
       "mouthOpen",
+      /* THE OPEN LANE'S TWO, and they keep nothing for the same reason
+         `subjectAbsent` does not (OPEN_LANE_DESIGN_NOTE §4, step 3). Both are
+         refusals of a crop nobody can say contains its subject: one because the
+         reader answered on a frame WITHOUT the thing, one because the control
+         could not be run at all. A kept crop is one a human may adopt as a
+         specimen, and a gallery of maybe-nothing is exactly what that door
+         exists to prevent. `noSpecimen` keeps its pixels because the crop can
+         TEACH the bar; here there is no bar being taught. */
+      "absenceUnproven", "absenceUnread",
     ]);
     for (const reason of notKept) {
       expect(reasonOf(refused({

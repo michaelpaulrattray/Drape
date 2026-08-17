@@ -660,9 +660,13 @@ adjective:
 step 0  fallback-not-peer            DECIDED, unenforced   — routing, ~1 site
 step 1  the normalizer               DONE                  — 0 callers
 step 2  the open-kind policy record  DONE                  — 21 tables, 9 owed
-step 3  the mint door's absence control   REMAINING        — +1 read/kind/delivery
-                                                             ($0.005), a specimen
-                                                             set that must be NEW
+step 3  the mint door's absence control   BUILT 2026-08-17  — +1 read/kind/delivery
+                                                             ($0.005) as designed,
+                                                             and INERT until step 5
+                                                             hands the mint an open
+                                                             slot. The specimen set
+                                                             is still owed: see
+                                                             §9.8
 step 4  the slotless Ask             PART BUILT            — see §9.7: the scout
                                                              moved this figure, and
                                                              the assembler is not
@@ -679,7 +683,12 @@ step 4  the slotless Ask             PART BUILT            — see §9.7: the sc
                                                              which is step 3 — with
                                                              words alone the kind
                                                              re-rolls, so the lane
-                                                             does not ship on this
+                                                             does not ship on this.
+                                                             **The DOOR is built;
+                                                             what still has no
+                                                             producer is the slot
+                                                             that walks through it,
+                                                             and that is step 5**
 step 5  the acceptance path          REMAINING             — refineDelta:721 +
                                                              the interpreter's reply
                                                              shape (`delta.open`)
@@ -846,3 +855,81 @@ the same carry machinery this section is about, and fable-711 §4 says so
 explicitly. Whatever step 3 decides about a crop minted from a frame, the
 reference-edit era will ask the same question about a crop distilled from an
 upload.
+
+## 9.8 Step 3 as built — the door, its two declared choices, and what is still owed
+
+*Built 2026-08-17 (shift 91). Red-first: five arms written and watched failing
+before a line of the door existed; three sabotages, each reddening only its own
+arm. Nothing on the paid path can reach it yet — see "inert", below.*
+
+**What the door is.** An open kind's crop has two ways of being worthless, and
+they need two instruments rather than one:
+
+| failure | instrument | where |
+|---|---|---|
+| the crop is a picture of NOTHING — the segmenter answers *something* on every face | **the absence control**: the same reader, the same question, asked of the frame this render was painted FROM | `absenceRefusal`, `referenceMint.ts` |
+| the crop is part of the thing wearing the whole thing's name | **the ceiling**: the crop holds every pixel of an independent second read of its own region | `guardReference`'s ceiling clause, via `ceilingIsTheBar` |
+
+Two refusals were added to the guard's own derived table, and neither keeps its
+pixels: `absenceUnproven` (the reader answered on the before-picture, so its
+answer on the delivered frame cannot be told from a confident region of nothing)
+and `absenceUnread` (the control could not be RUN — no before-picture, or no
+reader — which is a NO-READ and therefore not a pass).
+
+**Declared choice 1 — the floor is ZERO, and it is the strict direction.** Any
+non-empty answer on the before-picture refuses. The one time this procedure has
+been run on a real kind it read *0.0000% on three visibly bare frames* against
+0.39–0.87% on twelve worn ones (§6's horns court), so zero is what a reader that
+can decline actually does — measured, rather than chosen for tidiness. A floor
+above zero would be a number nobody has measured for a kind nobody has
+catalogued. It errs toward words and never toward a crop: a stray pixel costs a
+kind its carry for one render and costs nobody a picture.
+
+**Declared choice 2 — the ceiling exemption widens by ONE case, and it is a
+policy the caller asserts rather than a name the guard recognises.** fable-306's
+`ceilingAccepted` clause was scoped to kinds with a measured family, on the
+ground that *"for that kind we cannot yet say what complete means at all."* That
+is right about the family and over-reaches by exactly this case: at a reading of
+1.0 there is no shortfall left for any bar to divide, so a family would add
+nothing a second read has not already said. What a family would still have
+caught is the other failure — and that failure now has its own instrument, in
+front of this one. **Below the ceiling nothing changes**: an open kind's
+sub-1.0 crop still refuses `noSpecimen`, still keeps its pixels, and still waits
+for the specimen only a human can supply. That negative is a driven arm, because
+without it the flag could be accepting everything.
+
+**The before-picture costs no plumbing.** `MintInput.anchorFrame` is the frame
+the render was anchored on — the pristine master under recipe v3 — and
+`refineService` already passes it on every render for the delivery court's
+ruler. The control is bought lazily: only for an open kind that actually cut a
+crop this render, so a kind the delivered frame said nothing about spends
+nothing proving the absence of a thing nobody found. `absenceReads` is counted
+apart from `groundReads` in the mint's log line, because *what did the absence
+control cost* is a question the promotion decision asks.
+
+**IT IS INERT, AND THAT IS THE HONEST STATE.** `mintedSlotsForRender` builds the
+mint's slot list from FACETS, and an open kind is not a facet — so nothing in
+production hands the mint an `open:` slot today, and the `openKind` unfiled
+reason in `mintedSlots.ts` is still the declared scaffolding its own comment says
+it is. **The wire lands in step 5**, and it lands at `mintedSlots` rather than at
+the mint. Until then this door is written and driven at its own seam, and it has
+never been walked through on a paid render — which is the sentence any later
+reader should hold it to.
+
+**Still owed, and unchanged by this build: the specimen court** (§9.6 question 3).
+The runtime control makes every render SAFE regardless of the answer — a reader
+that cannot decline simply costs that kind its crop — but whether real unarmed
+kinds read clean zeroes is what says whether the lane delivers crops at all or
+falls back to words in practice. That is a measurement on kinds the catalogue
+does not own (`fangs`, `wings`, `tail`, `scales`, `gills`), it is house money at
+$0.005 a read, and it wants frames that hold the thing as well as frames that do
+not.
+
+**One finding filed on the way past, not fixed here.** fable-306's clause says
+*"`ceilingAccepted` marks the row, so a later count of bar-measured specimens
+cannot silently include crops no bar ever divided."* It marks the VERDICT: no
+column, no consumer, and `grep` finds it read by nothing but its own tests. The
+claim was harmless while the exemption was scoped to kinds with families; step 3
+makes it load-bearing, because every open kind that carries will now be a
+ceiling acceptance. The nearest honest derivation from what IS persisted is
+`guardThreshold == 10000`, which is not the same claim.

@@ -216,6 +216,12 @@ say(`          ${falLine(await readFalBalance())}`);
   The queue lives under `.agents/`, which is never committed — so an absent file
   is a legitimate state (a fresh clone), and it says UNREAD rather than throwing
   a park block away over it.
+
+  **LINE-ENDING FIGURES ARE MEASURED AT THIS PARK, NEVER INHERITED** (fable-865
+  §2, from opus-640 §4). A park recorded this file as "CRLF 0 — uniform LF" for
+  a file that is 97% CRLF; the figure had been carried from a predecessor and
+  nobody had taken it. Same class as the uniform-file bound: a custody claim may
+  not carry a number its own sitting did not read.
 */
 say(`queue     ${(() => {
   try {

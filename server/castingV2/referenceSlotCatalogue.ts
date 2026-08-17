@@ -1274,6 +1274,12 @@ export function slotSpecFor(slot: FeatureSlot, words: readonly string[]): SlotSp
     words,
     question: definition.question,
     guardKind: definition.guardKind,
+    /* DERIVED, NEVER MIRRORED. The reason lives on the definition; this hands
+       it to the mint door, which is the reader fable-766 §2's bound requires.
+       A spec that dropped it would leave an open kind indistinguishable from a
+       jaw — a question the vocabulary cannot name — and it would file words
+       forever while looking configured. */
+    ...(definition.noSpecimen === undefined ? {} : { noSpecimen: definition.noSpecimen }),
     frame: definition.frame,
   };
 }

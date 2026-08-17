@@ -596,6 +596,40 @@ export const GUARD_REFUSALS = {
       + "smuggling an expression into an identity reference (fable-493). The row files "
       + "its words and the crop waits for the next closed-mouth render",
   },
+  /*
+    THE OPEN LANE'S TWO, AND THEY ARE DIFFERENT FAILURES (OPEN_LANE_DESIGN_NOTE
+    §4, step 3).
+
+    A kind nobody catalogued has no specimen family, so nothing here can say
+    what complete looks like. What CAN be asked is whether the reader is a
+    reader for this kind at all: the same question, of a frame that does not
+    hold the thing. Decline there and the crop is a picture of something;
+    answer there and it is a small confident region of forehead that would ride
+    every later render as a permanent instruction to paint nothing, in a place,
+    forever.
+
+    Neither keeps its pixels, and that is deliberate rather than incidental. A
+    kept crop is one a human may adopt as a specimen — and both of these are
+    crops nobody can say contain their subject, which is the same ground
+    `subjectAbsent` is refused on. `noSpecimen` keeps its pixels because the
+    crop is the only thing that can TEACH the bar; here there is no bar being
+    taught, and a gallery of maybe-nothing is the one thing §4 exists to
+    prevent.
+  */
+  absenceUnproven: {
+    keepsCrop: false,
+    evidenceOnly: false,
+    why: "the same reader answered this question on a frame that does not hold the thing, "
+      + "so an answer on the delivered frame is not evidence — an affirmative from an "
+      + "instrument never seen to decline is not evidence either",
+  },
+  absenceUnread: {
+    keepsCrop: false,
+    evidenceOnly: false,
+    why: "the control could not be RUN — no before-picture, or no reader to ask it of. A "
+      + "no-read is evidence of nothing, and the one door where that would otherwise "
+      + "become a confident yes is this one",
+  },
   brokenOutline: {
     keepsCrop: true,
     evidenceOnly: false,
@@ -680,6 +714,23 @@ export type GuardInput = {
    * about delivery.
    */
   disputed?: boolean;
+  /**
+   * THE CEILING IS THE WHOLE BAR FOR THIS CROP — the open lane's one input
+   * (OPEN_LANE_DESIGN_NOTE §4, step 3).
+   *
+   * Set by a caller that has ALREADY run the absence control and had the
+   * reader decline on a frame without the thing. It widens exactly one clause
+   * — the ceiling exemption — and it widens it by a policy the caller can
+   * justify rather than by a name this module would have to recognise. Below
+   * the ceiling it changes nothing: a sub-1.0 reading on a kind with no family
+   * still refuses `noSpecimen`, keeps its pixels, and waits for the specimen
+   * only a human can supply.
+   *
+   * It is an assertion about a CONTROL HAVING RUN, so it is deliberately not
+   * derivable here: this module cannot see the before-picture and must not
+   * infer that somebody looked at one.
+   */
+  ceilingIsTheBar?: true;
 };
 
 /**
@@ -842,7 +893,25 @@ export function guardReference(input: GuardInput): GuardVerdict {
         sliver through a disc scores high by LENGTH and cannot read 1.0 by AREA,
         so it can never arrive here.
   */
-  if (reading.coverage >= 1 && CENTRELINE_SPECIMENS[input.kind]) {
+  /*
+    AND THE OPEN LANE ARRIVES AT THE SAME CLAUSE FROM THE OTHER SIDE
+    (OPEN_LANE_DESIGN_NOTE §4 / OPEN_LANE_CARRY_DESIGN §5, ruled fable-766 §2).
+
+    The scope bullet above says a kind with no specimen anywhere refuses at
+    100% "because for that kind we cannot yet say what complete means at all."
+    That is right about the FAMILY and it over-reaches by one case, and the
+    case is the whole open lane: at a reading of exactly 1.0 the crop holds
+    every pixel of an independent second read of its own region, so there is no
+    shortfall left for any bar to divide — a family would tell us nothing we do
+    not already know. What a family WOULD still catch is the other failure, the
+    one where both reads are answering about nothing; and that failure has its
+    own instrument now, in front of this one, which is what `ceilingIsTheBar`
+    says has already run.
+
+    So the caller asserts the control, never the kind: no name is special here,
+    and a kind that acquires a family later simply stops needing the flag.
+  */
+  if (reading.coverage >= 1 && (CENTRELINE_SPECIMENS[input.kind] || input.ceilingIsTheBar)) {
     return {
       ok: true,
       kind: input.kind,
@@ -978,6 +1047,9 @@ export type MintInput = {
   mintedDigests?: ReadonlyMap<string, string>;
   /** This ask wrote the facet and the render's reader disputed the delivery. */
   disputed?: boolean;
+  /** The absence control has run and the reader declined — see
+   *  {@link GuardInput.ceilingIsTheBar}. */
+  ceilingIsTheBar?: true;
 };
 
 /**
@@ -1005,5 +1077,6 @@ export async function mintGuardedReference(
     guardRead,
     mintedDigests: input.mintedDigests,
     disputed: input.disputed,
+    ...(input.ceilingIsTheBar ? { ceilingIsTheBar: input.ceilingIsTheBar } : {}),
   });
 }

@@ -42,9 +42,14 @@
  *
  * # NOTHING CALLS THESE ANSWERS YET, AND THAT IS DECLARED
  *
- * The acceptance path (§8 step 5), the slotless `Ask` (step 4) and the mint
- * door's absence control (step 3) are separate builds and are not started. This
- * module is the DECISION, landed before the code that must honour it, for the
+ * The acceptance path (§8 step 5) and the slotless `Ask` (step 4) are separate
+ * builds. **The mint door's absence control (step 3) is BUILT** — an open kind
+ * is cut, the same reader is asked its question of the frame the render was
+ * painted from, and a crop mints only where that reader declined
+ * (`referenceMint.ts`, `absenceRefusal`). So one of the answers below has moved
+ * from `owed` to `policy` and the rest have not; the list is the record of
+ * which. This module is the DECISION, landed before the code that must honour
+ * it, for the
  * same reason `openKind` landed in `mintedSlots` before anything could produce
  * it: the alternative is eighteen small choices made in a hurry inside a build
  * that is already large, each of them invisible.
@@ -238,6 +243,12 @@ export const OPEN_KIND_POLICY: Record<string, OpenKindAnswer> = {
         + "the segmenter a frame WITHOUT the thing and been declined — a false crop of "
         + "nothing is a permanent instruction to paint nothing, in a place, forever",
     },
+    /* STILL OWED, and it is the FILING half that is owed rather than the crop
+       half. The crop condition this basis names is discharged — step 3 built
+       the absence control — but what this table decides is where a FACET goes,
+       and nothing produces an `openKind` unfiled reason until the acceptance
+       path (step 5) routes an ask into the lane. Pinned as owed by
+       `openKindPolicy.test.ts`, so this cannot be tidied off the list. */
     standing: "owed",
   },
 
@@ -359,7 +370,11 @@ export const OPEN_KIND_POLICY: Record<string, OpenKindAnswer> = {
         + "no crop mints until the absence control has been declined on a frame without "
         + "the thing",
     },
-    standing: "owed",
+    /* BUILT (step 3). The mint asks the reader the kind's own noun and refuses
+       the crop unless the same reader declined on the before-picture —
+       `absenceRefusal` in `referenceMint.ts`, driven both ways with a control
+       that no closed slot ever buys the read. */
+    standing: "policy",
   },
   SHARED_FACETS: {
     file: "refineFacets.ts",
