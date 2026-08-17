@@ -381,6 +381,32 @@ exhibit, three courts and $4.25 of house money — and every layer suspected on
 the way (the crop, its size, the packing, the engine) was innocent.
 *Banked:* fable-864 §2 (finding at opus-639 §3).
 
+**22. A meter that is correct but LATE reads as headroom — a self-metering run
+whose meter lags is not self-metering.**
+The live guard prices the unit at the wire, from what the call itself reports;
+the account balance is a RECONCILIATION after the fact and must never be the
+guard. A late meter does not look broken from inside, because every reading it
+gives is true — it is true about a moment that has passed, and the difference
+between "spent" and "settled" is exactly the budget a run will overspend.
+*Two incidents, one class.* **fal's settlement lag:** the account read $12.12 the
+instant the last render returned and $11.89 four minutes later with nothing in
+flight, so a court reported at **$1.10 was really $1.29** — 29% over a $1 cap
+rather than 10%, and the per-render column derived from those subtractions was
+invalid throughout, every figure being the previous render's price (opus-635 §4).
+**OpenRouter's credits endpoint:** the open-lane routing bench priced its own
+pilot by reading the balance seconds after eleven calls, computed **$0.00183 a
+call against a true $0.0148 — eight-fold low** — and then used the same lagging
+figure at every abort check, so the guard that existed to stop the run reported
+headroom that was already spent and the run passed its $1.50 ceiling by $0.41.
+*Corollary, from the repair:* the wire meter's first backstop threw from inside
+the engine wrapper and **never fired** — `interpretRefinement` catches every
+engine error and returns null, so the stop signal was swallowed by the code
+under test and logged as a bad reply; driven at a $2.45 ceiling the run reached
+$2.689 with the guard in place. A budget guard belongs where the caller can see
+it throw, and its overshoot should be bounded by one UNIT of work rather than
+one batch: checked between atoms instead, the same case stops at $2.4525.
+*Banked:* fable-882 §3 (findings at opus-635 §4 and opus-650 §1).
+
 ---
 
 ## Adding to this file
@@ -388,4 +414,4 @@ the way (the crop, its size, the packing, the engine) was innocent.
 Follow the admission rule at the top: numbered Fable ruling, real incident, one
 line each, citation. Keep it to a page or two — **terse over complete.** A
 doctrine file long enough to skim past is an instrument nobody reads, which is
-the failure mode all twenty-one of these describe.
+the failure mode all twenty-two of these describe.

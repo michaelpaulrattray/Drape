@@ -1366,3 +1366,101 @@ sabotage that reddened it reddened nothing else.
 
 **The lane is now turnable, and turning it on is still a deliberate recorded
 act** — it waits on the routing bench, not on this.
+
+## 9.14 THE ROUTING BENCH — run 2026-08-17, and the clause is safe behind `users:1`
+
+*Countersigned fable-878 §4. Corpus: the 23 production atoms (A), a collateral
+set of seven (B), a positive control of three (C). Both arms are the SHIPPED
+code path with `CASTING_OPEN_LANE_SCOPE` off and on — nothing reconstructed.
+**n=2 per arm**; the run aborted before sample 3 on its ceiling.*
+
+**The money first, because it went wrong.** $1.9143 against a $1.50 ceiling — a
+$0.41 breach, declared in flight, ratified after the fact (fable-882 §1). The
+cause is doctrine entry 22: the bench metered itself off the account balance,
+which lags, so its pilot priced a call at $0.00183 when the truth is **$0.0148**
+and every abort check read the same late figure. **The honest per-call cost of a
+refine interpretation is $0.0148** — above even the $0.0123 list-rate ceiling
+this note's §9.12 sizing used. There is no caching discount on this path.
+
+### A — the production corpus: 19 of 23 did not move at all
+
+```
+4 of 23 moved · 4 of 23 unstable WITHIN an arm (the noise floor)
+```
+
+**Only ONE of the four moves is stable in both arms**, and it is the intended
+behaviour rather than collateral: *"give her vampire fangs"* goes
+`free.teeth` → `OPEN:fangs`. The other three sit inside the floor —
+*"her left eye — cat eye"* and *"her left eye — vertical slit pupil like a
+cats"* were already flipping between two readings with the lane OFF, and
+*"remove her hair"* is unstable in both arms.
+
+Everything a customer actually types stayed exactly where it was: hair colour,
+build (three phrasings), lips, lip gloss, glasses (worn and removed), fox eyes,
+vitiligo, ears, accessories, eye colour (two phrasings), expression, hairWorn,
+bald. **The anti-regression bar holds**, with the caveat that a 17% within-arm
+instability at n=2 is a thin basis for any claim about a single atom.
+
+### B — the collateral is much smaller than §2 predicted, and for a reason
+
+§2's part A measured wings → makeup, tail → hairCut, scales → ink, and this note
+has argued ever since that the clause's price is those correct readings being
+re-routed. **That is no longer what the closed lane does.** The
+fantastical-anatomy line added six days ago sends them to the STAGE WALL, so:
+
+```
+give her wings                        refused:wall_stage → OPEN:wings
+give her a tail                       refused:wall_stage → OPEN:tail
+add reptile scales across her face    refused:wall_stage → OPEN:scales
+her cheeks should be covered in scales refused:wall_stage → OPEN:scales
+```
+
+Four refusals become four filed asks. That is not a price — it is the whole
+point, and **§1's site/thing failure is repaired at the same time**: *"her
+cheeks should be covered in scales"* keys `scales`, not `cheeks`. The clause's
+third load-bearing sentence earned its place.
+
+**`give her a crown` refuses at the stage wall in BOTH arms.** Headwear is still
+walled with the lane open — wall (b) holds under the clause, driven rather than
+asserted.
+
+**The one true collateral move is `give her a mane`**: `free.hairFinish` →
+`free.hairCut`, both arms stable, neither an open kind. A closed reading
+perturbed by the clause's presence, which is `context-is-not-additive` doing
+exactly what it was expected to do. One atom in seven.
+
+### C — the positive control mostly FAILED, and the failure is a known class
+
+```
+give her antlers                      free.horns → free.horns   (no move)
+give her horns coming out of forehead  free.horns → free.horns   (no move)
+give her pointed ears                 refused:wall_stage → free.ears
+```
+
+**`horns` is a catalogued subject now** — it was promoted inside this campaign —
+and `ears` has always been one. So two of the three control atoms test the
+CLOSED lane, and the third resolves into a closed subject. This is the third
+instance in Casting V2 of *a specimen the roadmap later catalogues stops testing
+the control*, and it was avoidable: the promotion is recorded in §9.1 of this
+very note.
+
+**The control's job is nonetheless discharged, by the data rather than by the
+design**: five clean `OPEN:` mints appear with the flag on (fangs, wings, tail,
+scales ×2) and **not one appears with it off**. A future re-run picks its
+controls from kinds the catalogue does not own on the day it runs.
+
+### The recommendation, in flag terms
+
+**`CASTING_OPEN_LANE_SCOPE=users:1` first — not `all`.** Grounds:
+
+- closed routing on the real corpus is unmoved outside the noise floor, which is
+  what the bench was bought to establish, and it establishes it;
+- but two stable re-routings exist — `fangs` leaves `free.teeth` and `mane`
+  moves between two hair subjects — and both are readings the closed lane was
+  making for somebody;
+- and n=2 against a 17% within-arm floor prices those two as *seen twice*, not
+  as *measured*. The demand table (§7) is the instrument that turns them into a
+  rate, and it only fills once the lane is on for somebody.
+
+Turning it on for the founder is a deliberate recorded act and has not been
+taken here.
