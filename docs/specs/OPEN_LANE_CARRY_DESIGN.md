@@ -252,6 +252,85 @@ a new idea** — its remaining unknown is whether a reader declines as cleanly o
 a kind nobody armed as it does on one somebody courted, which is a measurement,
 and it needs specimens the catalogue does not own.
 
+## 6b. THE CARRY WAS WALKED, and the words half works — 2026-08-17, opus-654
+
+Authorized fable-890 §4(3). One paid dev step on candidate #376, the face the
+first open ask (opus-653) had already given fangs, `words_only`, no crop minted.
+The second ask was **"give her copper hair"** — closed lane, loud, and nowhere
+near her mouth, so anything that happened to the fangs was the carry's doing.
+
+**Pre-registered before a credit moved**, and every bar read:
+
+| | asked | answer |
+|---|---|---|
+| C1 | does the recipe RE-SAY the fangs? | **yes**, in her own words |
+| C2 | has she still got them? | **YES** — my eye, 3× on the mouth |
+| C3 | did the new ask land? | yes, copper |
+| C4 | is she still herself? | yes, judged against the branch state |
+| C5 | did the SHAPE re-roll? | **YES, visibly** — see below |
+| C6 | charged once? | 25, refunded 0, one ledger row |
+
+The whole sentence the second ask produced, with the carried half first:
+
+> *…Change only her **fangs: vampire fangs**; her hair: coloured copper — bright
+> orange-red with real saturation…*
+
+She had never mentioned fangs in that instruction. The composed delta on the new
+row is `{"open":{"fangs":…},"hairColour":"copper"}`, and the service's own log
+names what it painted: `edited: ["open:fangs","hair"]`, `carried: []`.
+
+**The negative control is the master itself** and it is unusually clean: the
+pristine anchor is closed-mouthed with no teeth anywhere, so a carry that failed
+would have painted a mouth with nothing in it. There is no way to score this
+one wrong by accident.
+
+### C5 is the finding: the KIND survives, the INSTANCE does not
+
+§2's `remint: whenEarned` row and the design note's declared limit — *"an open
+kind is a feature carried in WORDS, which re-rolls its shape between renders"* —
+now have a specimen. Both frames hold two fangs; **they are not the same
+fangs.** The first pair are long, tapered and curved, hanging well over the
+lower lip; the second are distinctly shorter, blunter, straighter and cooler in
+tone, sitting higher on the lip. At viewing size a customer would say "she still
+has fangs". At 3× they are a different pair of teeth.
+
+So the two halves of fable-566's requirement separate cleanly, and this is the
+sentence to carry forward: **the words carry the FACT and cannot carry the
+FORM.** Nothing in this note's §2–§6 is contradicted — it is the crop half,
+unbuilt, being measured by its absence. A customer who asks for something twice
+and gets a different answer each time is the earring history (one gold hoop
+moving ear to ear between v#156 and v#157), and the crop is what ended that.
+
+**n=1.** One face, one kind, one pair of renders. It is a specimen, not a rate,
+and the carry noise floor (the same recipe twice drifting 0.0% vs 21.3%) says a
+rate would need arms this walk did not buy.
+
+### And the pair held again, unprompted
+
+Two fangs, symmetric, on both renders — nothing tells the engine that fangs come
+in twos (`openKindIsPlural()` answers the same for every open kind). That is the
+**second** friendly specimen on the founder's *"two wings rather than just 1"*
+demand, and the first one where the pair survived a render that was not about it.
+Still n=2, still a specimen; `OPEN_KIND_PROPERTIES_DESIGN.md` §4's D1 control is
+what would turn it into a reading.
+
+### What it cost, priced the honest way
+
+```
+census   10 calls · 0 failed · wall 196s
+           fal:openai/gpt-image-2/edit      1 call   118s   the paint
+           openrouter:anthropic/sonnet-5    7 calls   41s   interpret, captions, verify
+           fal:fal-ai/sam-3/image           2 calls   11s   hair
+ledger   25 dev credits · refunded 0
+fal      $26.8033 → $26.6158 after a 4m settle
+```
+
+The balance figure is corroboration and **not** a per-operation price (fable-890
+§2): the account is shared. The census is the instrument — and the first attempt
+to read it returned `0 calls` for this very render, because a census opened
+around `refineCandidate` is shadowed by the one `refineCandidate` opens itself.
+That trap is now written on `callCensus.ts` with a test pinning it.
+
 ## 7. What this note does not decide
 
 - **Whether V5 is built at all** — the founder's gate card, and nothing here
