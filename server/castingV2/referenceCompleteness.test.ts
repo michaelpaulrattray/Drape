@@ -725,6 +725,42 @@ describe("a ruled floor, where the positive cannot be the bar", () => {
     expect(floor - COMPLETENESS_SPECIMENS.horns!.negative).toBeGreaterThan(0.11);
   });
 
+  /*
+    EYES — his verdict, and the negative that gives it a noise floor.
+
+    These assert the two halves separately on purpose: the positive is HIS
+    (crops 3/4/5/6, 2026-08-17), the negative is a measurement taken through an
+    independent pair of region reads on his own production frame. A bar with one
+    of those and not the other is the thing this suite exists to catch.
+  */
+  it("carries the eyes bar he settled, with its measured negative", () => {
+    expect(thresholdFor("eyes")).toBe(0.95);
+    expect(COMPLETENESS_SPECIMENS.eyes!.positive).toBe(1);
+    expect(COMPLETENESS_SPECIMENS.eyes!.negative).toBeCloseTo(0.728, 3);
+  });
+
+  it("gives eyes more daylight than horns, and refuses the outer-third mis-cut", () => {
+    const floor = thresholdFor("eyes")!;
+    expect(COMPLETENESS_SPECIMENS.eyes!.negative).toBeLessThan(floor);
+    /* 22.2 points, against horns' 11. Asserted as a floor on the margin rather
+       than as the figure, so a re-measurement that improves it does not redden. */
+    expect(floor - COMPLETENESS_SPECIMENS.eyes!.negative).toBeGreaterThan(0.2);
+  });
+
+  it("does NOT pretend to judge resolution — the crops he called pixelated pass it", () => {
+    /*
+      HELD, not shipped (fable-851 §3). He rejected two crops for pixelation
+      (29x24 and 35x24) and BOTH measure 100.00% coverage, because coverage is
+      about extent and blind to how many pixels carry it. This test pins that
+      blindness so nobody reads the eyes bar as carrying the whole of his
+      ruling: a 30 px crop clears this floor, and whether it SHOULD is the carry
+      test's question, not this table's.
+    */
+    const floor = thresholdFor("eyes")!;
+    const pixelatedButComplete = 1;
+    expect(pixelatedButComplete).toBeGreaterThanOrEqual(floor);
+  });
+
   it("never rules a floor ABOVE the crop it was ruled from", () => {
     /* A floor over the positive would refuse the specimen itself — the shape of
        a bar that cannot be passed, which is what this whole split exists to

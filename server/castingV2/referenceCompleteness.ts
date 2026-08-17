@@ -155,6 +155,53 @@ export const COMPLETENESS_SPECIMENS: Readonly<Record<string, CompletenessSpecime
       + "earring@left/right, 2026-08-15), the identity control at 100.0%, and the "
       + "looked-at mis-cut at 83.7% (V2_HORNS_SPECIMEN_CALIBRATION.md)",
   },
+  /*
+    EYES — settled by the founder's own eye on 2026-08-17 (fable-843 §1), which
+    is the only thing that could settle it: no crop of an eye had ever been
+    called complete, so every eye crop in production was refused `noSpecimen`
+    and the slot rode on WORDS — and words re-roll an eye's shape between
+    renders. Eight crop-less eye slots were waiting on this one number.
+
+    Its anchors, each a reading somebody took:
+
+      HIS FOUR POSITIVES   100.00%  crops 3/4/5/6 of the specimen sheet
+                                    (library rows 53/61/62/63 on cast
+                                    f51386fc, 56-59 x 30-33 px), each measured
+                                    by the area instrument at mint time
+      re-measured          100.0%   two of them cut and scored again through a
+                                    fresh INDEPENDENT pair of region reads on
+                                    their own frame (v#74359d57), left and right
+      the mis-cut           72.8%   the same crop with its OUTER third gone —
+                                    the corner every upswept ask is about —
+                                    looked at, and it is unmistakably a part of
+                                    an eye rather than an eye (72.0% on the
+                                    other side; the HIGHER of the two is taken,
+                                    because the negative nearest to passing is
+                                    the one a floor has to clear)
+
+    The floor is 95% for horns' reason rather than a new one: the mint's cut IS
+    the region here, so a real crop reads 100.0 and a bar AT 100 refuses 99.9 for
+    nothing. The margin it buys is **22.2 points**, twice horns'.
+
+    WHAT THIS BAR DELIBERATELY DOES NOT DO, and it is his open question: it
+    cannot see RESOLUTION. He rejected two further crops (29x24 and 35x24) as
+    "more pixelated" — and both measure 100.00% here, because coverage is a
+    question about extent and says nothing about how many pixels carry it. A
+    resolution floor was drafted (>=45 px long edge, derived from a split with no
+    overlap) and is HELD, not shipped (fable-851 §3): he believes the engine
+    would handle a 30 px crop fine, the repaint interprets references rather than
+    pasting their pixels, and that is a testable claim rather than something to
+    legislate. The carry test decides it; his eyes are the court.
+  */
+  eyes: {
+    positive: 1,
+    negative: 0.728,
+    provisionalFloor: 0.95,
+    source: "fable-843 §1 (his verdict on crops 3/4/5/6) with the measured "
+      + "negative from fable-850 §4: `calibrate-eyes-specimen-disposable.mts` on "
+      + "production v#74359d57, two independent region reads, complete 100.0% "
+      + "both sides against outer-third-gone 72.8%/72.0%, both looked at",
+  },
 };
 
 /**
