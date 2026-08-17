@@ -323,3 +323,74 @@ half of a pair before it fills a panel row.
 **And it does not decide promotion.** Which kinds get catalogued is the demand
 table's job and stays there. This design tells the product what it does not know
 about a kind; the table tells it which unknowns are worth buying.
+
+---
+
+## 9. STAGE A AS BUILT — the store, 2026-08-17 (shift 94)
+
+*Countersigned fable-896. No spend of any kind: a migration, a schema entry, a db
+module, eight unit tests, and a rehearsal against throwaway tables. No render, no
+model call, no credit.*
+
+| the piece | where |
+|---|---|
+| the table | `drizzle/0033_casting_open_kind_properties.sql` |
+| the typed schema | `drizzle/schema.ts`, `castingOpenKindProperties` |
+| the two doors | `server/db/castingV2OpenKindProperties.ts` |
+| the ceremony | `scripts/ceremony-open-kind-properties.mts` (dev APPLIED, production owed) |
+| the shape check | `scripts/lib/openKindPropertyShape.mts` — shared, so the rehearsal drives the ceremony's own assertions |
+
+**§5's shape, with two decisions it left open now made and written where the next
+reader is.**
+
+1. **The unique key is `kind` ALONE, not `(kind, promptVersion)`.** The tempting
+   key lets a re-ask under a better prompt land beside the old answer. That is
+   two rows for one question, which forces every reader to invent a rule for
+   picking — and a rule that can differ between readers is how a property that
+   must be stable per kind starts wobbling per caller, which is the exact defect
+   §2 rejected the interpreter's own reply for. The answering model and prompt
+   ride on the row as provenance; a re-ask is an UPDATE by a build that decided
+   to re-ask.
+2. **Both properties are NOT NULL, and a DECLINED READ WRITES NO ROW.** The
+   absence of a row is the third state. A nullable `paired` read by a gate that
+   treats null as false would mint a crop of one wing under the name of two —
+   fable-872 §2's own prohibition, arriving through the store rather than the
+   gate. Its cost is stated on the migration: while the text transport is down,
+   a kind with no row re-buys the read and gets nothing, which is bounded by the
+   render needing the same transport.
+
+**`extendsOutOfFrame` LANDS STORED AND UNREAD, AND ITS HEIR IS NAMED** (the bound
+fable-896 §2 attached to the approval). P1's consumer is the mint gate, in this
+build. P2's consumer is the **out-of-frame build** — the one deciding whether an
+invisible-now ask is accepted free (fable-869 §2, fable-876 §1) or dispatched.
+The condition under which storing it becomes a defect is exact and is written on
+the module: *that build shipping while it still decides class (b) from anything
+other than this column.* A fact collected and never asserted is the `about`-column
+incident; the way that is not repeated is naming the heir in the store.
+
+### The instrument was proved before its greens counted
+
+The ceremony applied on dev (`:52008`), printed its three lines, and said ALREADY
+APPLIED on the re-run. That is worth nothing on its own, so the same three
+assertions were driven against four throwaway tables
+(`scripts/rehearse-open-kind-properties-disposable.mts`, dev only, dropped by the
+names it minted):
+
+```
+RIGHT     expected PASS    → PASS
+NO KEY    expected REFUSE  → REFUSE — uq_…_kind is not a UNIQUE index on `kind`
+NULLABLE  expected REFUSE  → REFUSE — `paired` is nullable
+EXTRA     expected REFUSE  → REFUSE — columns nobody designed: userId
+```
+
+And the store's own key guard was sabotaged before it was believed: widening
+`isKey` to admit spaces and 640 characters reddened **exactly** the two arms that
+assert it and no others. The reason those arms assert *the database was never
+reached* rather than a `null` return is that with no pool a refused key and a
+missing database are the same return value — the misaimed-guard shape, which
+would have shipped a green guard that had never fired.
+
+**The production ceremony is owed, not run.** It is a production-database change
+and therefore founder-run or delegated by name; nothing in production reads or
+writes this table while `CASTING_OPEN_LANE_SCOPE` is off, so there is nothing
+waiting on it. Rehearsal now, ceremony the day the lane opens for anybody.

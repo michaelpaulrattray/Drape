@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "4acfeab94dffe0cc"
+    "sourceFingerprint": "3ea97a5a086c0303"
   },
   "domains": [
     {
@@ -53,7 +53,7 @@
     {
       "id": "domain:data",
       "name": "data",
-      "moduleCount": 49
+      "moduleCount": 50
     },
     {
       "id": "domain:evidence",
@@ -4085,6 +4085,12 @@
     {
       "id": "module:server/db/castingV2FaceScans.ts",
       "path": "server/db/castingV2FaceScans.ts",
+      "domain": "data",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/db/castingV2OpenKindProperties.ts",
+      "path": "server/db/castingV2OpenKindProperties.ts",
       "domain": "data",
       "lifecycle": "active"
     },
@@ -9904,6 +9910,10 @@
     {
       "id": "test:server/creditsSQL.test.ts",
       "path": "server/creditsSQL.test.ts"
+    },
+    {
+      "id": "test:server/db/castingV2OpenKindProperties.test.ts",
+      "path": "server/db/castingV2OpenKindProperties.test.ts"
     },
     {
       "id": "test:server/db/castingV2ReferenceLibrary.test.ts",
@@ -21630,6 +21640,21 @@
     {
       "from": "module:server/db/castingV2FaceScans.ts",
       "to": "module:server/db/connection.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/castingV2OpenKindProperties.ts",
+      "to": "module:drizzle/schema.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/castingV2OpenKindProperties.ts",
+      "to": "module:server/db/connection.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/castingV2OpenKindProperties.ts",
+      "to": "module:server/logging/logger.ts",
       "kind": "imports"
     },
     {

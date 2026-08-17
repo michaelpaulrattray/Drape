@@ -2853,3 +2853,46 @@ export const castingFaceScans = mysqlTable("casting_face_scans", {
 
 export type CastingFaceScanRow = typeof castingFaceScans.$inferSelect;
 export type InsertCastingFaceScanRow = typeof castingFaceScans.$inferInsert;
+
+/**
+ * WHAT THE CATALOGUE WOULD HAVE KNOWN ABOUT A KIND NOBODY CATALOGUED —
+ * one row per open-lane noun, ever (migration 0033,
+ * `OPEN_KIND_PROPERTIES_DESIGN.md` §5).
+ *
+ * Two properties, both facts about the WORD rather than about any picture or any
+ * person: `paired` (does the noun denote a matched set) and
+ * `extendsOutOfFrame` (anchored outside this framing, does it present inside
+ * it). They are answered by one text call the first time a noun is seen and
+ * never again, which is what makes a per-kind table the right home: written onto
+ * every ask instead, the same fact would be stored N times waiting to disagree
+ * with itself.
+ *
+ * **The unique key is `kind` alone, on purpose.** Two rows for one kind is two
+ * answers to one question and a per-reader rule for picking between them; the
+ * answering model and prompt ride ON the row as provenance instead, and a
+ * re-ask under a new prompt is an UPDATE by a build that decided to re-ask.
+ *
+ * **Both properties are NOT NULL and a declined read writes NO ROW.** The
+ * absence of a row is the third state. A nullable `paired` read by a gate that
+ * treats null as false mints a crop of one wing under the name of two, which is
+ * exactly what fable-872 §2 forbids.
+ */
+export const castingOpenKindProperties = mysqlTable("casting_open_kind_properties", {
+  id: int("id").autoincrement().primaryKey(),
+  /** The NORMALIZED key the open lane minted — a single lowercase token. */
+  kind: varchar("kind", { length: 64 }).notNull(),
+  /** P1 — the KIND's question, never "did this render make two" (that is D1). */
+  paired: boolean("paired").notNull(),
+  /** P2 — `tail` presents on a waist-up frame; `nails` does not. */
+  extendsOutOfFrame: boolean("extendsOutOfFrame").notNull(),
+  /** Which model answered, so a later reading is a delta rather than an anecdote. */
+  model: varchar("model", { length: 128 }).notNull(),
+  /** Which prompt asked — a property that moved because the question moved. */
+  promptVersion: varchar("promptVersion", { length: 32 }).notNull(),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+}, (table) => ([
+  uniqueIndex("uq_casting_open_kind_properties_kind").on(table.kind),
+]));
+
+export type CastingOpenKindPropertiesRow = typeof castingOpenKindProperties.$inferSelect;
+export type InsertCastingOpenKindPropertiesRow = typeof castingOpenKindProperties.$inferInsert;
