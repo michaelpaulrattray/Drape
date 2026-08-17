@@ -1338,13 +1338,31 @@ scope removes the silent-drop half by construction (the repaint recipe reads
 why the parent is what it is. **It does not remove the throw**, which is above
 the split and hits both roads.
 
-**So this is a blocker on turning the flag on, and it is named as one here
-rather than left in a header.** It does not block the routing bench, which
-drives `interpretRefinement` and never reaches this line.
+**FIXED 2026-08-17 in the same shift, ruled fable-881 §3.** Wall (d) re-reads
+**our own persisted row**, which is exactly the boundary `readStoredDelta`
+exists for — its own header draws that split. So the reader at
+`refineService.ts` is `readStoredDelta` now, and the two rejected alternatives
+are on the record with it: a hand re-attach of `open` beside `readDelta` would
+have been seventeen copied lines of a discriminator that already exists, waiting
+to drift on a money path (working law 4), and exporting the discriminator is the
+fallback only if the legacy behaviour below ever proves wrong.
 
-The fix is a choice about which reader guards this boundary, and it is an
-architectural one on a money path: wall (d) re-reads OUR OWN PERSISTED ROW,
-which is precisely the boundary `readStoredDelta` exists for — but that reader
-also migrates retired subjects and promotes open kinds, so adopting it changes
-behaviour for legacy rows that today throw here. Recommended, and put to Fable
-rather than taken.
+**The declared behaviour change, driven both ways.** `readStoredDelta` also
+migrates retired subjects, so a legacy row naming `free.hair` **threw here
+before and composes now**. That is the defensible direction, and the reason is
+that the throw was never a judgement about that row — it was the strict reader
+refusing a vocabulary that predates it, which is the exact thing
+`readStoredDelta` was written to stop one boundary over. Both directions are
+arms in `wallDOpenKind.test.ts`, with a negative control: a row whose other
+content is genuinely unreadable still returns null, so the fix cannot have
+quietly removed the guard.
+
+**Proven at the money, not only at the reader** (fable-881 §3c — the
+harness-supplied-argument class, where a reader arm passes on a value the caller
+never hands it). `refineService.test.ts` drives *"give her vampire fangs"* — one
+ask, and it is the open one — through the service: it lands, it charges, and it
+refunds nothing. That arm was **red before the fix and green after**, and the
+sabotage that reddened it reddened nothing else.
+
+**The lane is now turnable, and turning it on is still a deliberate recorded
+act** — it waits on the routing bench, not on this.

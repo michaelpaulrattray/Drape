@@ -805,6 +805,39 @@ describe("refusals land before anything is claimed", () => {
     expect(ledger.charges).toHaveLength(0);
   });
 
+  /*
+    WALL (d) READS OUR OWN ROW WITH OUR OWN ROW'S READER — asserted HERE, at the
+    money, and not only at the reader (ruled fable-881 §3c).
+
+    `wallDOpenKind.test.ts` proves the two readers disagree about an open kind.
+    This proves the SERVICE survives one, which is the harness-supplied-argument
+    class: a reader arm passes on a value the caller may never hand it, and the
+    caller is where the throw was.
+
+    RED BEFORE THE FIX, GREEN AFTER, and the red was total: *"give her vampire
+    fangs"* is one ask and it is the open one, so the persisted row is
+    `{ open: … }` with nothing else. The strict reader nulls that, and the line
+    under wall (d) threw ABOVE the road split — every road, every user, 100% of
+    the ordinary open ask. It refunded, so nobody lost money and everybody lost
+    the picture.
+  */
+  it("renders an ask whose ONLY content is an open kind, rather than calling the row unreadable", async () => {
+    const result = await refineCandidate(
+      {
+        harvest: unmasked,
+        interpret: async () => ({
+          ok: true as const,
+          delta: { open: { fangs: { noun: "fangs", words: "vampire fangs" } } },
+        }),
+      },
+      { ...input, instruction: "give her vampire fangs" },
+    );
+    expect(result).toBeTruthy();
+    expect(journal, "the picture was made").toContain("land");
+    expect(ledger.charges.length, "and paid for like any other edit").toBeGreaterThan(0);
+    expect(ledger.refunds, "and nothing came back — this used to refund every time").toHaveLength(0);
+  });
+
   it("SERVES a sentence whose other half is in the picture", async () => {
     /*
       The must-not-fire half. Refusing "a smaller waist and bigger arms" for the

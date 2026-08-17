@@ -114,7 +114,12 @@ import {
   withoutFacets,
   presentationOf,
   presentationWordsOfFacet,
-  readDelta,
+  /* `readDelta` is deliberately NOT imported here any more. This module reads
+     its own persisted rows, and the strict reader — which guards the boundary
+     where a MODEL'S REPLY enters the record — is the wrong instrument for that
+     boundary; using it at wall (d) cost the open lane its headline ask
+     (fable-881 §3). If a future line here wants it, that is the question to
+     answer first. */
   REFINABLE_AXES,
   type RefineDelta,
 } from "./refineDelta";
@@ -3162,7 +3167,32 @@ async function refineCandidateCounted(
       match it — so a filing failure degrades to filed-but-not-rendered, which
       the sweep can see, and never to rendered-but-not-filed, which nothing can.
     */
-    const filed = readDelta(variant.deltas);
+    /*
+      AND THE READER IS `readStoredDelta`, NOT `readDelta` (ruled fable-881 §3).
+
+      This line re-reads OUR OWN PERSISTED ROW, which is exactly the boundary
+      `readStoredDelta` exists for — its own header draws the split: the strict
+      reader guards where a MODEL'S REPLY enters the record and must stay closed
+      to open kinds, this one guards where our history re-enters, "where a key
+      we wrote is a fact already paid for."
+
+      It was the strict reader, and driven rather than read that cost the open
+      lane its headline ask. `readDelta` returns NULL for a row whose only
+      content is an open kind — *"give her vampire fangs"* is one ask and it is
+      the open one — so the throw below fired on the ordinary shape, ABOVE the
+      road split, on the repaint road as well as the paste road. It settles into
+      the request's catch and refunds, so the money was never at risk; the
+      picture was. Sell-don't-refuse would have been sell-then-refund on 100% of
+      open asks. On a face with prior edits the row survived instead and the
+      open kind was dropped from the composed prompt SILENTLY, which is worse.
+
+      What else changes, declared: this reader also migrates retired subjects.
+      A legacy row naming `free.hair` threw here before and composes now —
+      driven both ways in `wallDOpenKind.test.ts`, and the after-behaviour is
+      the honest one, because the throw was never a decision about that row. It
+      was the strict reader refusing a vocabulary that predates it.
+    */
+    const filed = readStoredDelta(variant.deltas);
     if (!filed) throw new Error("the refinement was not recorded in a readable shape");
     const engine = (dependencies.engine ?? castingIdentityEngine)();
     /*
