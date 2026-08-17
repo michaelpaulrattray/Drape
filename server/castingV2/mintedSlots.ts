@@ -57,6 +57,7 @@ import {
   type SlotDefinition,
 } from "./referenceSlotCatalogue";
 import type { FeatureSlot } from "./recipeAssembler";
+import { openSlotKey } from "./referenceSlots";
 import { captionWording, type RealizationCaptions } from "./realizationCaption";
 import type { SlotSpec } from "./referenceMint";
 import type { Facet } from "./refineFacets";
@@ -159,6 +160,41 @@ export type MintedSlotsInput = {
    * matter, which is how the un-narrowed loop below survived a review.
    */
   scope?: FeatureSlot;
+  /**
+   * THE OPEN KINDS THIS ASK WROTE — the slots that walk through the mint's
+   * open-kind door (5b, `OPEN_LANE_DESIGN_NOTE` §9.5 step 5b).
+   *
+   * The door has existed since step 3 and nothing has ever walked through it,
+   * because every input to this function is a `Facet` and an open kind has none.
+   * This is the producer.
+   *
+   * **THE ASK'S OWN DELTA, NEVER THE COMPOSED RECIPE.** A composed recipe carries
+   * every open kind this face has ever been given, so composing the list from it
+   * would re-file — and re-cut, and re-buy a vision read for — a kind three edits
+   * old on every later render. The same rule the facet passes obey through
+   * `earned`.
+   */
+  open?: readonly OpenKindToFile[];
+};
+
+/**
+ * One open kind, as this ask wrote it, with the one property that decides
+ * whether it may carry pixels.
+ */
+export type OpenKindToFile = {
+  /** The normalizer's key — a single lowercase token (`fangs`, `cat-ears`). */
+  kind: string;
+  /** The customer's own words for it. The only words an open kind ever has. */
+  words: string;
+  /**
+   * P1, from the kind-property store — **or `null`, which is not `false`**.
+   *
+   * `null` is nobody having answered: no row, no engine, a reader that declined.
+   * It refuses the crop exactly as a `true` does, because a gate treating
+   * unknown as *single* files one wing under the name of two — but it files a
+   * different reason, because only one of the two is a finding worth chasing.
+   */
+  paired: boolean | null;
 };
 
 export type MintedSlotsResult = {
@@ -171,6 +207,15 @@ export type MintedSlotsResult = {
    * prior on every tile at once. The caller logs these.
    */
   unfiled: Array<{ facet: Facet; reason: UnfiledReason }>;
+  /**
+   * OPEN KINDS THIS ASK WROTE THAT FILED NOTHING, with the reason.
+   *
+   * Its own field rather than an entry in {@link MintedSlotsResult.unfiled},
+   * because that one is keyed by `Facet` and an open kind has none — and a union
+   * there would make every existing reader ask which shape it is holding. Two
+   * different things, two names.
+   */
+  unfiledOpen: Array<{ kind: string; reason: UnfiledReason }>;
 };
 
 /**
@@ -186,24 +231,52 @@ export type MintedSlotsResult = {
  * soft, which costs later precision and nothing today.
  */
 /*
-  `openKind` — DECLARED SCAFFOLDING, and it lands before anything can produce it.
+  `openKind` — RESERVED FOR THE DEFECT, now that the open lane has a producer
+  (5b, 2026-08-17).
 
-  Nothing returns it today. The open lane's acceptance path and its slotless
-  `Ask` are separate builds (OPEN_LANE_DESIGN_NOTE §8 steps 4–5) and are not
-  started. The label is reserved here, with its reason, because of what it costs
-  to add late.
+  It landed as declared scaffolding with the note that *"the day the assembler
+  files an open ask, reaching for `notASlot` is a visibly wrong choice rather
+  than the only one available."* That day is this one, and the label's meaning
+  narrowed rather than widened: the two ordinary outcomes for an open kind that
+  files nothing have their own words below, and this one is left for the case
+  that should be unreachable — the catalogue declining to synthesize a definition
+  for a key the normalizer minted (`slotSpecFor` returning null).
 
-  An open kind is a FOURTH situation and it must not wear `notASlot`'s label.
-  `notASlot` means "this rides somewhere else, and here is where" — three decided
-  absences, each with a written reason. An open kind means "nobody has catalogued
-  this yet, and it may get its own slot when it promotes". Filed under the first,
-  the second is invisible at exactly the place it exists to be seen: **the count
-  of asks with nowhere to go is the promotion signal**, and it cannot be read out
-  of a bucket that also holds three permanent residents.
+  Kept rather than deleted, and reported rather than skipped, for the reason
+  `uncataloguedFeature` is: a key that reached here and cannot be filed is a
+  disagreement between the normalizer's grammar and the catalogue's, and it must
+  arrive as a named finding in the log rather than as an ask that quietly filed
+  nothing.
 
-  `openLaneKind.test.ts` holds the negative control that today's producer cannot
-  emit it. The day the assembler files an open ask, reaching for `notASlot` is a
-  visibly wrong choice rather than the only one available.
+  An open kind is still a FOURTH situation and must never wear `notASlot`'s
+  label. `notASlot` means "this rides somewhere else, and here is where" — three
+  decided absences with written reasons. Filed under the first, **the count of
+  asks with nowhere to go is invisible at exactly the place it exists to be
+  seen**, and that count is the promotion signal.
+*/
+/*
+  `openKindPaired` and `openKindPairUnread` — TWO WORDS, because they are two
+  facts and only one of them is a finding (fable-872 §2, countersigned
+  fable-896 §3).
+
+  A paired open kind carries NO CROP until promotion: a whole-frame read of a
+  pair returns one instance — measured on the court's wings frame, where the mask
+  the mint would have carried is the image-left wing to thirteen pixels — so the
+  crop would be half a picture wearing the whole picture's name. That is the
+  earring history and it does not get a second run in a new lane.
+
+  `openKindPaired` is that ruling honoured: the property was answered, the answer
+  was *pair*, and words are the honest carrier. Nothing to chase.
+
+  `openKindPairUnread` is nobody having answered at all — no row, no engine, a
+  reader that declined. It refuses the crop identically, because a gate treating
+  unknown as *single* files one wing under the name of two. **But it is a
+  finding**: a kind stuck here is a kind whose property read is failing, and
+  every ask for it is silently getting the conservative path forever.
+
+  One word for both would make an unread property indistinguishable from a
+  ruling being honoured — the two-meanings-of-none defect the bald row's
+  `whenAbsent` was split to avoid, at a different door.
 */
 /*
   `outsideScope` — a facet this render earned whose slots do not include the one
@@ -223,6 +296,8 @@ export type UnfiledReason =
   | "uncataloguedFeature"
   | "noWords"
   | "openKind"
+  | "openKindPaired"
+  | "openKindPairUnread"
   | "outsideScope";
 
 function unfiledReasonFor(facet: Facet): UnfiledReason {
@@ -243,6 +318,7 @@ function unfiledReasonFor(facet: Facet): UnfiledReason {
 export function mintedSlotsForRender(input: MintedSlotsInput): MintedSlotsResult {
   const slots: SlotSpec[] = [];
   const unfiled: MintedSlotsResult["unfiled"] = [];
+  const unfiledOpen: MintedSlotsResult["unfiledOpen"] = [];
   const seen = new Set<string>();
 
   /**
@@ -418,5 +494,62 @@ export function mintedSlotsForRender(input: MintedSlotsInput): MintedSlotsResult
     }
   }
 
-  return { slots, unfiled };
+  /*
+    AND THE OPEN KINDS THIS ASK WROTE — step 5b, the producer the mint's own
+    open-kind door has been waiting for since step 3.
+
+    LAST, and it needs no `seen` ordering argument to be there: an open key
+    carries a prefix the closed `feature@instance` grammar cannot produce, so it
+    can never collide with a slot the passes above filed. `seen` is still
+    consulted, because the same kind arriving twice in one list would file the
+    same words twice under one key — the duplicate this whole function's ordering
+    rule exists to prevent.
+
+    THE GATES ARE IN THIS ORDER ON PURPOSE: structure first, policy second.
+
+    A key the catalogue cannot define, or an ask with no words, is a DEFECT — the
+    normalizer's grammar and the catalogue's disagreeing, or a stored ask that
+    should not exist (`readOpenKinds` refuses empty words on the way in). Judged
+    after the pair ruling, such an ask would be counted as *"words-only, because
+    it is a pair"*, which is a true sentence about the wrong thing: it would
+    inflate the one number the promotion decision reads and hide a bug behind a
+    policy. So the count of `openKindPaired` is a count over WELL-FORMED asks,
+    which is what makes it worth reading.
+
+    AND A SCOPE DOES NOT NARROW AN OPEN KIND, declared rather than omitted. A
+    scope names one INSTANCE of a catalogued feature; `openSlotDefinition` sets
+    `instance: null` because an open kind has none, so there is nothing for a
+    scope to select or exclude. The render painted what the recipe said, and the
+    recipe said this kind.
+  */
+  for (const ask of input.open ?? []) {
+    const slot = openSlotKey(ask.kind);
+    if (seen.has(slot)) continue;
+    const words = ask.words.trim();
+    if (words === "") {
+      unfiledOpen.push({ kind: ask.kind, reason: "noWords" });
+      continue;
+    }
+    const spec = slotSpecFor(slot, [words]);
+    if (spec === null) {
+      /* Should be unreachable: `readOpenKinds` and `normalizeOpenKind` mint only
+         keys `openSlotDefinition` can define. Reported rather than skipped, for
+         the reason `uncataloguedFeature` is — it is a disagreement between two
+         grammars and it must arrive as a finding. */
+      unfiledOpen.push({ kind: ask.kind, reason: "openKind" });
+      continue;
+    }
+    if (ask.paired === null) {
+      unfiledOpen.push({ kind: ask.kind, reason: "openKindPairUnread" });
+      continue;
+    }
+    if (ask.paired) {
+      unfiledOpen.push({ kind: ask.kind, reason: "openKindPaired" });
+      continue;
+    }
+    seen.add(slot);
+    slots.push(spec);
+  }
+
+  return { slots, unfiled, unfiledOpen };
 }

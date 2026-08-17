@@ -14,6 +14,8 @@ import {
 } from "drizzle-orm/mysql-core";
 import { sql } from "drizzle-orm";
 
+import { BODY_ANCHOR_REGIONS } from "../shared/bodyAnchorRegions";
+
 /**
  * Core user table backing auth flow.
  * Extended with role-based access control for Drape.
@@ -2860,12 +2862,18 @@ export type InsertCastingFaceScanRow = typeof castingFaceScans.$inferInsert;
  * `OPEN_KIND_PROPERTIES_DESIGN.md` §5).
  *
  * Two properties, both facts about the WORD rather than about any picture or any
- * person: `paired` (does the noun denote a matched set) and
- * `extendsOutOfFrame` (anchored outside this framing, does it present inside
- * it). They are answered by one text call the first time a noun is seen and
- * never again, which is what makes a per-kind table the right home: written onto
- * every ask instead, the same fact would be stored N times waiting to disagree
- * with itself.
+ * person: `paired` (does the noun denote a matched set) and `anchorRegion` (where
+ * on a body the thing is anchored). They are answered by one text call the first
+ * time a noun is seen and never again, which is what makes a per-kind table the
+ * right home: written onto every ask instead, the same fact would be stored N
+ * times waiting to disagree with itself.
+ *
+ * **`anchorRegion` is a PLACE and not a boolean** (ruled fable-897 §3). The
+ * property it stands in for — *does this thing present inside the frame* — has a
+ * different answer in each of the product's eight framings (the waist-up master,
+ * a close-up, three head-and-shoulders views, three head-to-feet views), and a
+ * row cannot hold eight answers. So the model answers the kind and
+ * `bodyAnchorRegions.ts` derives the frame.
  *
  * **The unique key is `kind` alone, on purpose.** Two rows for one kind is two
  * answers to one question and a per-reader rule for picking between them; the
@@ -2883,8 +2891,10 @@ export const castingOpenKindProperties = mysqlTable("casting_open_kind_propertie
   kind: varchar("kind", { length: 64 }).notNull(),
   /** P1 — the KIND's question, never "did this render make two" (that is D1). */
   paired: boolean("paired").notNull(),
-  /** P2 — `tail` presents on a waist-up frame; `nails` does not. */
-  extendsOutOfFrame: boolean("extendsOutOfFrame").notNull(),
+  /** P2's per-kind half — `belowWaist` for a tail, `hands` for nails. Derived
+   *  from `BODY_ANCHOR_REGIONS` rather than retyped, so the enum and the
+   *  vocabulary cannot come apart. */
+  anchorRegion: mysqlEnum("anchorRegion", BODY_ANCHOR_REGIONS).notNull(),
   /** Which model answered, so a later reading is a delta rather than an anecdote. */
   model: varchar("model", { length: 128 }).notNull(),
   /** Which prompt asked — a property that moved because the question moved. */

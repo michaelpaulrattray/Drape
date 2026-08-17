@@ -4,11 +4,11 @@
  *
  * # What one row is
  *
- * `paired` — does this noun denote a matched SET? `extendsOutOfFrame` — anchored
- * outside this product's framing, does the thing present inside it? Both are
- * facts about the WORD, answered once per noun ever, and neither is a fact about
- * a picture or a person. `wings are a pair` is not a fact about whoever asked
- * for wings, which is why this table has no owner column to leave out.
+ * `paired` — does this noun denote a matched SET? `anchorRegion` — where on a
+ * body is the thing anchored? Both are facts about the WORD, answered once per
+ * noun ever, and neither is a fact about a picture or a person. `wings are a
+ * pair` is not a fact about whoever asked for wings, which is why this table has
+ * no owner column to leave out.
  *
  * # THE THIRD STATE IS THE ABSENCE OF A ROW, and every caller must honour it
  *
@@ -19,15 +19,18 @@
  * whose pairing is unknown carries no crop, because a gate treating unknown as
  * *not paired* files one wing under the name of two (fable-872 §2).
  *
- * # `extendsOutOfFrame` IS STORED AND NOT YET READ, AND ITS HEIR IS NAMED
+ * # `anchorRegion` IS STORED AND NOT YET READ, AND ITS HEIR IS NAMED
  *
  * P1 (`paired`) has a consumer in this build: the mint gate. P2
- * (`extendsOutOfFrame`) does not — **its consumer is the out-of-frame build**,
+ * (`anchorRegion`) does not — **its consumer is the out-of-frame build**,
  * the one that decides whether an ask whose region is not visible in the current
  * frame is accepted free (fable-869 §2 and fable-876 §1) or dispatched, which is
  * fable-868's class (b) versus class (c). It is written here because one text
  * call answers both properties and asking twice would buy the same question at
- * per-ask frequency (`OPEN_KIND_PROPERTIES_DESIGN.md` §2).
+ * per-ask frequency (`OPEN_KIND_PROPERTIES_DESIGN.md` §2). It stores a PLACE
+ * rather than a boolean because *does it present in the frame* has a different
+ * answer in each of the product's eight framings; that derivation is
+ * `shared/bodyAnchorRegions.ts` and needs no model (ruled fable-897 §3).
  *
  * **The condition under which storing it becomes a defect is exact**: the
  * out-of-frame build shipping while still deciding class (b) from anything other
@@ -45,6 +48,8 @@
  */
 import { eq } from "drizzle-orm";
 
+import type { BodyAnchorRegion } from "../../shared/bodyAnchorRegions";
+
 import { createModuleLogger } from "../logging/logger";
 import { getDb } from "./connection";
 import { castingOpenKindProperties } from "../../drizzle/schema";
@@ -54,7 +59,7 @@ const log = createModuleLogger("db/castingV2OpenKindProperties");
 /** What a kind's row says — the two properties, with the provenance of both. */
 export type OpenKindPropertiesRow = {
   readonly paired: boolean;
-  readonly extendsOutOfFrame: boolean;
+  readonly anchorRegion: BodyAnchorRegion;
   readonly model: string;
   readonly promptVersion: string;
 };
@@ -92,7 +97,7 @@ export async function readOpenKindProperties(kind: string): Promise<OpenKindProp
     const [row] = await db
       .select({
         paired: castingOpenKindProperties.paired,
-        extendsOutOfFrame: castingOpenKindProperties.extendsOutOfFrame,
+        anchorRegion: castingOpenKindProperties.anchorRegion,
         model: castingOpenKindProperties.model,
         promptVersion: castingOpenKindProperties.promptVersion,
       })
@@ -121,7 +126,7 @@ export async function readOpenKindProperties(kind: string): Promise<OpenKindProp
 export async function writeOpenKindProperties(input: {
   kind: string;
   paired: boolean;
-  extendsOutOfFrame: boolean;
+  anchorRegion: BodyAnchorRegion;
   model: string;
   promptVersion: string;
 }): Promise<boolean> {
@@ -143,12 +148,12 @@ export async function writeOpenKindProperties(input: {
     await db.insert(castingOpenKindProperties).values({
       kind: input.kind,
       paired: input.paired,
-      extendsOutOfFrame: input.extendsOutOfFrame,
+      anchorRegion: input.anchorRegion,
       model: input.model,
       promptVersion: input.promptVersion,
     }).onDuplicateKeyUpdate({ set: { kind: input.kind } });
     log.info(
-      { kind: input.kind, paired: input.paired, extendsOutOfFrame: input.extendsOutOfFrame },
+      { kind: input.kind, paired: input.paired, anchorRegion: input.anchorRegion },
       "[openKindProperties] recorded what this kind is",
     );
     return true;

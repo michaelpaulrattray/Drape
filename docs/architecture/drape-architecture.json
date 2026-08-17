@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "3ea97a5a086c0303"
+    "sourceFingerprint": "d4c40f461d32d19c"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 123
+      "moduleCount": 124
     },
     {
       "id": "domain:castingV2",
@@ -123,7 +123,7 @@
     {
       "id": "domain:shared",
       "name": "shared",
-      "moduleCount": 20
+      "moduleCount": 21
     },
     {
       "id": "domain:studio",
@@ -3615,6 +3615,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:server/castingV2/openKindProperties.ts",
+      "path": "server/castingV2/openKindProperties.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:server/castingV2/openLaneAccept.ts",
       "path": "server/castingV2/openLaneAccept.ts",
       "domain": "casting-v2",
@@ -4967,6 +4973,12 @@
     {
       "id": "module:shared/boardTypes.ts",
       "path": "shared/boardTypes.ts",
+      "domain": "shared",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:shared/bodyAnchorRegions.ts",
+      "path": "shared/bodyAnchorRegions.ts",
       "domain": "shared",
       "lifecycle": "active"
     },
@@ -9304,6 +9316,10 @@
       "path": "server/castingV2/biasTierAxes.test.ts"
     },
     {
+      "id": "test:server/castingV2/bodyAnchorRegions.test.ts",
+      "path": "server/castingV2/bodyAnchorRegions.test.ts"
+    },
+    {
       "id": "test:server/castingV2/bornWornCatalogue.test.ts",
       "path": "server/castingV2/bornWornCatalogue.test.ts"
     },
@@ -9546,6 +9562,10 @@
     {
       "id": "test:server/castingV2/openKindPolicy.test.ts",
       "path": "server/castingV2/openKindPolicy.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/openKindProperties.test.ts",
+      "path": "server/castingV2/openKindProperties.test.ts"
     },
     {
       "id": "test:server/castingV2/openLaneAccept.test.ts",
@@ -15418,6 +15438,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:drizzle/schema.ts",
+      "to": "module:shared/bodyAnchorRegions.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/_core/context.ts",
       "to": "module:drizzle/schema.ts",
       "kind": "imports"
@@ -19569,6 +19594,11 @@
     },
     {
       "from": "module:server/castingV2/mintedSlots.ts",
+      "to": "module:server/castingV2/referenceSlots.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/mintedSlots.ts",
       "to": "module:server/castingV2/refineFacets.ts",
       "kind": "imports"
     },
@@ -19590,6 +19620,26 @@
     {
       "from": "module:server/castingV2/openKindPolicy.ts",
       "to": "module:server/castingV2/zoneScope.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/openKindProperties.ts",
+      "to": "module:server/db/castingV2OpenKindProperties.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/openKindProperties.ts",
+      "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/openKindProperties.ts",
+      "to": "module:server/providers/types.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/openKindProperties.ts",
+      "to": "module:shared/bodyAnchorRegions.ts",
       "kind": "imports"
     },
     {
@@ -20169,6 +20219,11 @@
     },
     {
       "from": "module:server/castingV2/refineInterpreter.ts",
+      "to": "module:server/castingV2/openKindProperties.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/refineInterpreter.ts",
       "to": "module:server/castingV2/openLaneAccept.ts",
       "kind": "imports"
     },
@@ -20484,6 +20539,11 @@
     },
     {
       "from": "module:server/castingV2/refineService.ts",
+      "to": "module:server/castingV2/openLaneAccept.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/refineService.ts",
       "to": "module:server/castingV2/presentationState.ts",
       "kind": "imports"
     },
@@ -20670,6 +20730,16 @@
     {
       "from": "module:server/castingV2/refineService.ts",
       "to": "module:server/db/castingV2.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/refineService.ts",
+      "to": "module:server/db/castingV2OpenKindProperties.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/refineService.ts",
+      "to": "module:server/db/castingV2OpenLaneDemand.ts",
       "kind": "imports"
     },
     {
@@ -21655,6 +21725,11 @@
     {
       "from": "module:server/db/castingV2OpenKindProperties.ts",
       "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/castingV2OpenKindProperties.ts",
+      "to": "module:shared/bodyAnchorRegions.ts",
       "kind": "imports"
     },
     {
@@ -25388,6 +25463,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:shared/bodyAnchorRegions.ts",
+      "to": "module:shared/boardTypes.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:shared/castingClarification.ts",
       "to": "module:shared/castingOptions.ts",
       "kind": "imports"
@@ -27562,17 +27642,17 @@
       "message": "Names 2 of RecipeRefusal's 4 fields (server/castingV2/recipeAssembler.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/refineService.ts:451",
+      "id": "finding:redeclared-shape:server/castingV2/refineService.ts:454",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/refineService.ts:451",
+      "subject": "server/castingV2/refineService.ts:454",
       "message": "Names 3 of Thumbnail's 3 fields (server/castingV2/thumbnails.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/refineService.ts:519",
+      "id": "finding:redeclared-shape:server/castingV2/refineService.ts:522",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/refineService.ts:519",
+      "subject": "server/castingV2/refineService.ts:522",
       "message": "Names 3 of Thumbnail's 3 fields (server/castingV2/thumbnails.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {

@@ -39,6 +39,7 @@ import {
 import { freeSubjectGuidance } from "./refineSubjects";
 import { closedSubjectFor } from "./openLaneKind";
 import { acceptOpenKind } from "./openLaneAccept";
+import { ensureKindProperties } from "./openKindProperties";
 import { recordOpenLaneDemand } from "../db/castingV2OpenLaneDemand";
 import { REFINE_REFUSALS } from "./refineRefusals";
 import { readRemovalSubject } from "./refineRemoval";
@@ -1399,12 +1400,50 @@ async function runOnce(
       that was named and that the reader cannot see on a frame that holds it
       (the scales-and-gills class, §7).
     */
+    /*
+      AND AN ACCEPTED ASK'S ROW IS WRITTEN WHERE THE ASK ENDS, not here (5b
+      Stage D, ruled fable-896 §4).
+
+      Until the mint could file a crop for an open kind, `words_only` at this
+      door was true by construction. It is now a PREDICTION — the column means
+      *served without a reference crop*, which is a fact about a render that has
+      not happened yet. A refusal is different and stays here: for a refusal this
+      door IS terminal, and nothing later will ever have anything to add.
+
+      One ask, one row. Writing here as well would give every accepted ask two
+      rows and leave the promotion decision dividing by a denominator holding
+      both halves of the same ask.
+    */
     if (opened.kind === undefined) {
       log.info({}, "[refineInterpreter] an out-of-vocabulary ask could not be named at all — no demand row");
-    } else {
+    } else if (!opened.ok) {
       void recordOpenLaneDemand(opened.kind, opened.outcome);
     }
     if (opened.ok) {
+      /*
+        AND WHAT THIS KIND *IS* IS BOUGHT HERE, ONCE PER NOUN EVER (5b Stage B,
+        `OPEN_KIND_PROPERTIES_DESIGN.md` §2).
+
+        Here rather than at the mint, for a reason that is about the OTHER
+        property: `paired` is wanted after the render, but `anchorRegion` is
+        wanted before it — it is what the out-of-frame build will decide
+        accept-free against — and one call answers both. Every ask after the
+        first for a given noun is a table read.
+
+        Awaited, and that is deliberate: the mint gate needs the row on disk by
+        the time this render lands, and a text read is seconds against a render's
+        minutes. It cannot fail the ask — `null` means nobody answered, the mint
+        reads that as *do not mint a crop*, and the kind carries words exactly as
+        it does today.
+      */
+      await ensureKindProperties({
+        kind: opened.kind,
+        /* The NOUN, not the key: `cat-ears` is an identifier and `cat ears` is
+           the word English has an answer about. */
+        noun: opened.ask.noun,
+        ...(engine ? { engine } : {}),
+        ...(input.signal ? { signal: input.signal } : {}),
+      });
       const filed: RefineDelta = delta ?? {};
       filed.open = { ...(filed.open ?? {}), [opened.kind]: opened.ask };
       return { ok: true, delta: filed };

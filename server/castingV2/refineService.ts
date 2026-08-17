@@ -180,7 +180,10 @@ import { assembleRecipe, type FeatureSlot } from "./recipeAssembler";
 import {
   facetsOfSlot, slotDefinition, slotsForFacet, slotsForFeature, type SlotDefinition,
 } from "./referenceSlotCatalogue";
-import { isOpenSlot } from "./referenceSlots";
+import { isOpenSlot, openSlotKey } from "./referenceSlots";
+import { openLaneOutcomeOf } from "./openLaneAccept";
+import { recordOpenLaneDemand } from "../db/castingV2OpenLaneDemand";
+import { readOpenKindProperties } from "../db/castingV2OpenKindProperties";
 import { repaint, type ReferenceFitter, type RepaintEngine, type SentRequest } from "./repaintRender";
 import {
   RepaintCannotSayError, repaintAsksFor, repaintCannotRemove, scopedAskIsUnsayable,
@@ -2222,6 +2225,20 @@ async function refineCandidateCounted(
       const survives = facetsWrittenBy(inFrame).size > 0;
       if (!survives) {
         log.info({ notInShot }, "[refineService] the ask is outside the frame — refusing before dispatch");
+        /*
+          AND AN OPEN KIND RIDING THAT REFUSAL FILES ITS OWN ROW (5b Stage D).
+
+          This exit is BEFORE `admit`, so nothing is charged and nothing reaches
+          the refund catch — which is where every other terminal outcome writes
+          its demand row. Without this line an accepted open kind that arrived
+          beside closed facets all out of shot would end here having filed
+          nothing, and the tally would be short by a whole class of ask rather
+          than by the occasional process death.
+
+          `refused` is the honest word: the table's own definition is *a door
+          turned it away for free*, and this is that door.
+        */
+        recordOpenLaneOutcomes(editDelta, { settled: false, cropsStored: new Set(), refusedFree: true });
         throw spokenError({
           code: "PRECONDITION_FAILED",
           message: outOfFrameMessage(nameWhatIsMissing(notInShot)),
@@ -5370,6 +5387,20 @@ async function refineCandidateCounted(
       progress should live.
     */
     let adjudications: DeliveryAdjudication[] | null = null;
+    /*
+      WHICH OPEN KINDS THIS RENDER ACTUALLY FILED A CROP FOR — the discriminator
+      between `delivered` and `words_only` on the demand row (5b Stage D).
+
+      Read off the mint's own answer rather than re-derived from the pair
+      property: the property says whether a crop was ALLOWED, and this says
+      whether one landed. They differ whenever a door in between refused — the
+      absence control declining, a duplicate digest, a guard — and it is exactly
+      those cases the promotion decision wants counted as `words_only`.
+
+      Empty when the mint did not run at all, which reads as `words_only` and is
+      correct: no crop was filed.
+    */
+    const openCropsStored = new Set<string>();
     if (libraryEnabled(input.userId)) {
       try {
         /* The other half of the same derivation, and the reason it is a `Set`
@@ -5412,10 +5443,33 @@ async function refineCandidateCounted(
         const known = new Map<string, string>();
         for (const row of live) if (row.digest) known.set(row.slot, row.digest);
 
-        const { slots, unfiled } = mintedSlotsForRender({
+        /*
+          THE OPEN KINDS THIS ASK WROTE, WITH THE ONE PROPERTY THAT GATES THEM
+          (5b Stage C, fable-872 §2).
+
+          `editDelta`, never the composed recipe: a composed recipe carries every
+          open kind this face has ever been given, so composing from it would
+          re-cut and re-buy a vision read for a kind three edits old on every
+          later render — the same rule the facet passes obey through `earned`.
+
+          The property is READ, never re-derived: the acceptance door bought it
+          once for this noun and wrote it down. `null` here is *nobody answered*,
+          and `mintedSlotsForRender` files that as `openKindPairUnread` and cuts
+          nothing — the conservative side, because a gate treating unknown as
+          singular files one wing under the name of two.
+        */
+        const openAsks = await Promise.all(
+          Object.entries(editDelta?.open ?? {}).map(async ([kind, ask]) => ({
+            kind,
+            words: ask.words,
+            paired: (await readOpenKindProperties(kind))?.paired ?? null,
+          })),
+        );
+        const { slots, unfiled, unfiledOpen } = mintedSlotsForRender({
           earned,
           disputed,
           captions: capturedCaptions,
+          open: openAsks,
           /* What the instruction said the worn object IS — derived once above,
              beside the region override that has to name the same object. */
           accessoryKind: accessoryRegion,
@@ -5465,6 +5519,19 @@ async function refineCandidateCounted(
           log.info(
             { operationId, variant: variant.publicId, unfiled },
             "[refineService] a facet this render wrote had no library slot to file in",
+          );
+        }
+        /*
+          AND THE OPEN KINDS THAT FILED NOTHING, with the reason NAMED — because
+          the two reasons are two facts and only one of them is a bug.
+          `openKindPaired` is fable-872 §2 honoured; `openKindPairUnread` is a
+          kind whose property read is failing, which is silently taking the
+          conservative path on every ask forever and is worth chasing.
+        */
+        if (unfiledOpen.length > 0) {
+          log.info(
+            { operationId, variant: variant.publicId, unfiledOpen },
+            "[refineService] an open kind this render wrote filed no crop — the reason is the finding",
           );
         }
         if (disputed.length > 0) {
@@ -5633,6 +5700,9 @@ async function refineCandidateCounted(
              court was asked, which is every render that disputed nothing a
              ruler measures — so the key's presence is itself the signal. */
           adjudications = minted.adjudications ?? null;
+          for (const slot of minted.slots) {
+            if (slot.outcome === "stored" && isOpenSlot(slot.slot)) openCropsStored.add(slot.slot);
+          }
           log.info(
             {
               operationId,
@@ -5901,6 +5971,20 @@ async function refineCandidateCounted(
       imageUrl: stored.url,
       instructions,
     };
+    /*
+      THE OPEN LANE'S DEMAND ROW, WRITTEN WHERE THE ASK ENDED (5b Stage D).
+
+      One row per open kind THIS ask wrote — `editDelta`, never the composed
+      recipe, or a face given fangs three edits ago would file a fresh demand row
+      on every later render and the promotion tally would count one customer's
+      chain as a queue of people.
+
+      Fire-and-forget, after the money is settled: this is telemetry riding a paid
+      path and it may never take a picture back (§7). The row lost to a process
+      death between here and the insert is the accepted fail-soft the writer
+      already has.
+    */
+    recordOpenLaneOutcomes(editDelta, { settled: true, cropsStored: openCropsStored });
     await completeDirectOperationSuccess({
       userId: input.userId,
       operationId,
@@ -5930,6 +6014,11 @@ async function refineCandidateCounted(
       },
       "[refineService] REFINEMENT FAILED — refunding; this line is the only record of why",
     );
+    /* AND THE SAME ROW ON THE OTHER OUTCOME (5b Stage D). A kind whose asks are
+       refunds is the loudest promotion case there is — *reached but not served* —
+       so a table holding only the successes would report the lane working
+       perfectly on exactly the asks it happened to manage. */
+    recordOpenLaneOutcomes(editDelta, { settled: false, cropsStored: new Set() });
     /* WHOLE charge back — one image, one unit, nothing partial to keep. */
     const refund = await (dependencies.refund ?? recordRefund)(
       input.userId,
@@ -5979,6 +6068,36 @@ async function refineCandidateCounted(
       chargedCredits: price,
       refundedCredits: refund.recorded ? price : 0,
     });
+  }
+}
+
+/**
+ * ONE DEMAND ROW PER OPEN KIND THIS ASK WROTE, at the moment the ask ended
+ * (5b Stage D, ruled fable-896 §4).
+ *
+ * Both terminal sites call this rather than composing the outcome themselves, so
+ * the delivered path and the refund path cannot come to disagree about what a
+ * stored crop means — the outcome itself is decided once, in
+ * {@link openLaneOutcomeOf}, beside the acceptance that named the kind.
+ *
+ * **`editDelta`, never the composed recipe.** A composed recipe carries every
+ * open kind this face has ever been given, so a face given fangs three edits ago
+ * would file a fresh demand row on every later render and the promotion tally
+ * would read one customer's chain as a queue of people.
+ *
+ * Fire-and-forget by construction: the writer cannot reject, and a promotion
+ * signal may never cost somebody their picture (design note §7).
+ */
+function recordOpenLaneOutcomes(
+  delta: RefineDelta | null,
+  render: { settled: boolean; cropsStored: ReadonlySet<string>; refusedFree?: boolean },
+): void {
+  for (const kind of Object.keys(delta?.open ?? {})) {
+    void recordOpenLaneDemand(kind, openLaneOutcomeOf({
+      settled: render.settled,
+      cropStored: render.cropsStored.has(openSlotKey(kind)),
+      ...(render.refusedFree ? { refusedFree: true } : {}),
+    }));
   }
 }
 

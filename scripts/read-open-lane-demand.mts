@@ -9,6 +9,24 @@
  * `delivered` row has not failed ten times; it has been accepted ten times by a
  * lane that could not yet record what happened next.
  *
+ * # 5b WIRED THE RENDER BACK, AND THE ERAS ARE TOLD APART BY THE ROW ITSELF
+ *
+ * From 2026-08-17 an accepted ask writes ONE row when the ask ENDS: `delivered`
+ * when a crop was filed, `words_only` when it was served without one, `refunded`
+ * when the money went back. `refused` still writes at the door. So a delivery
+ * ratio becomes readable — for rows created after that date, and only those.
+ * Before it, every accepted ask wrote `words_only` at the acceptance door before
+ * any render had happened, so the two eras' `words_only` rows mean different
+ * things and the timestamp is the only thing that separates them.
+ *
+ * **AND THIS TALLY UNDERCOUNTS, by design and in one direction.** A row is
+ * written after the render settles, so a process death in between — a deploy
+ * landing mid-render, a refund settled later by the recovery sweep — loses the
+ * row entirely. The writer fails soft on purpose: a promotion signal may never
+ * cost somebody the picture they paid for. The loss is unbiased (it does not
+ * prefer one outcome) and it is small, but it is real, and a reader that knows
+ * its own hole beats one that discovers it inside a ratio.
+ *
  * And `unreadable` is not a failure of the customer's ask — it is the
  * scales-and-gills class, where the thing was delivered and the READER could
  * not see it (fable-872 §3). Counting it against a kind's viability inverts

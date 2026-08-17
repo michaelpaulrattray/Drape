@@ -24,6 +24,7 @@
  *    treating a null `paired` as false mints a crop of one wing under the name
  *    of two, which is precisely what fable-872 §2 forbids.
  */
+import { BODY_ANCHOR_REGIONS } from "../../shared/bodyAnchorRegions";
 import type { CeremonyWorld } from "./ceremony.mts";
 
 export const OPEN_KIND_PROPERTY_TABLE = "casting_open_kind_properties";
@@ -34,7 +35,7 @@ export const OPEN_KIND_PROPERTY_COLUMNS = [
   "id",
   "kind",
   "paired",
-  "extendsOutOfFrame",
+  "anchorRegion",
   "model",
   "promptVersion",
   "createdAt",
@@ -69,13 +70,33 @@ export async function assertKindPropertyShape(
   }
   proved.push(`key: ${key} UNIQUE (kind) — one row per kind, enforced`);
 
-  for (const property of ["paired", "extendsOutOfFrame"] as const) {
+  for (const property of ["paired", "anchorRegion"] as const) {
     const row = columns.find((entry) => String(entry.Field) === property);
     if (String(row?.Null) !== "NO") {
       throw new Error(`\`${property}\` is nullable — a declined read must write NO ROW, never a row with a null in it`);
     }
   }
   proved.push("both properties NOT NULL — the absence of a ROW is the only third state");
+
+  /*
+    THE ENUM AGAINST THE TYPESCRIPT LIST, because a hand-written DDL beside a
+    constant is the parallel copy that drifts — and this drift would be silent
+    until a framing derivation was asked about a place the column had never heard
+    of. Compared as SETS in both directions: a missing member cannot be stored,
+    and an extra one is a place nobody designed a framing answer for.
+  */
+  const declared = String(columns.find((entry) => String(entry.Field) === "anchorRegion")?.Type ?? "");
+  const stored = Array.from(declared.matchAll(/'([^']+)'/g)).map((match) => match[1]!);
+  const expected = [...BODY_ANCHOR_REGIONS];
+  const absent = expected.filter((region) => !stored.includes(region));
+  const invented = stored.filter((region) => !expected.includes(region as never));
+  if (absent.length > 0 || invented.length > 0) {
+    throw new Error(
+      `the anchorRegion enum does not match BODY_ANCHOR_REGIONS — missing ${absent.join(", ") || "none"}`
+      + `, unknown ${invented.join(", ") || "none"}`,
+    );
+  }
+  proved.push(`anchorRegion: ${stored.length} regions, matching BODY_ANCHOR_REGIONS exactly`);
 
   return proved;
 }

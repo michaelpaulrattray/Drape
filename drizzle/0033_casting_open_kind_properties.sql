@@ -4,8 +4,28 @@
 -- One row is: **a fact about a KIND that the catalogue would have held, which
 -- nobody has catalogued.** Two of them, answered once per noun ever:
 --
---   paired              does the noun denote a matched SET — wings, antlers
---   extendsOutOfFrame   anchored outside this framing, does it present inside it
+--   paired         does the noun denote a matched SET — wings, antlers
+--   anchorRegion   where on a body the thing is anchored — `belowWaist` for a
+--                  tail, `hands` for nails
+--
+-- ============================================================================
+-- WHY THE SECOND PROPERTY IS A PLACE AND NOT A BOOLEAN (ruled fable-897 §3)
+-- ============================================================================
+--
+-- It was designed as *"does this kind extend — anchored outside the frame, does
+-- it present inside it?"*, a boolean. **That question contains a framing, and
+-- this table holds one row per kind.** The product has EIGHT framings: the refine
+-- road's waist-up master, and a signed Cast's close-up, three head-and-shoulders
+-- views and three head-to-feet views. So *does a tail present in the frame* is NO
+-- on the road that paints it and YES on the full-length views, and one boolean
+-- would force one of those answers onto the other seven — surfacing, of all
+-- places, in the founder's own obligation court.
+--
+-- So the model answers the KIND (where is this thing anchored) and the CODE
+-- answers the FRAME (`bodyAnchorRegions.ts`, a total table over every framing, so
+-- a new view does not compile until somebody decides what it shows). Same one
+-- call per kind, one fewer model opinion in the product, and a control that can
+-- be answered wrong in an obvious way — `nails → hands`, never `nails → head`.
 --
 -- PURELY ADDITIVE. One new table. No column of any existing table changes, and
 -- **nothing reads or writes it in this commit** — the reader is its own step and
@@ -55,6 +75,13 @@
 -- nullable `paired` read by a gate that treats null as false would mint a crop
 -- of one wing under the name of two — precisely the thing fable-872 §2 forbade.
 --
+-- `anchorRegion` is an ENUM of the eight places `bodyAnchorRegions.ts` lists, so
+-- a region nobody designed cannot be stored even if a reader invents one. The
+-- ceremony reads the enum's members back and compares them against that list,
+-- because a hand-written DDL beside a TypeScript constant is the parallel copy
+-- that drifts (working law 4) — and here the drift would be silent until a
+-- framing derivation asked about a place the table had never heard of.
+--
 -- The cost of that choice, stated: while the text transport is down, every ask
 -- for a kind with no row re-buys the read and gets nothing. That is bounded by
 -- the render itself needing the same transport, and it is cheaper than a
@@ -77,9 +104,11 @@ CREATE TABLE `casting_open_kind_properties` (
 	-- render produced two of them, which is a fact about a frame (D1) and lives
 	-- with the delivery.
 	`paired` boolean NOT NULL,
-	-- P2. Anchored outside this product's framing, does the thing present inside
-	-- it? `tail` yes, `nails` on a waist-up frame no.
-	`extendsOutOfFrame` boolean NOT NULL,
+	-- P2. WHERE on a body the thing is anchored — the per-kind half. Whether that
+	-- place is inside a given framing is derived in `bodyAnchorRegions.ts` and is
+	-- deliberately not stored, because the answer differs across the product's
+	-- eight framings and a row cannot hold eight answers.
+	`anchorRegion` enum('head','neck','torso','arms','hands','belowWaist','feet','wholeBody') NOT NULL,
 	-- Provenance, so a later reading is a delta rather than an anecdote: WHICH
 	-- model answered and WHICH prompt asked. A property whose answer changed
 	-- because the question changed is otherwise indistinguishable from a property

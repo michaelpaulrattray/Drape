@@ -283,7 +283,7 @@ describe("the slots a render files", () => {
 
   it("files nothing at all for a render that earned nothing", () => {
     expect(mintedSlotsForRender({ earned: [], captions: { lips: "Full" } }))
-      .toEqual({ slots: [], unfiled: [] });
+      .toEqual({ slots: [], unfiled: [], unfiledOpen: [] });
   });
 });
 
@@ -601,5 +601,149 @@ describe("the slots re-cut every render", () => {
       captions: { shoulders: "Narrower shoulders" },
     });
     expect(slots[0]!.disputedFacets).toBeUndefined();
+  });
+});
+
+/**
+ * THE OPEN LANE'S SLOT — step 5b, the producer the mint's door has been waiting
+ * for since step 3.
+ *
+ * Every rule here is a ruling rather than a preference, so each arm names the
+ * one it drives: a SINGULAR open kind may carry pixels, a PAIRED one may not
+ * (fable-872 §2 — a whole-frame read of a pair returns one instance), and an
+ * UNANSWERED property refuses exactly like a pair while reporting a different
+ * word, because only one of those two is a bug (fable-896 §3).
+ */
+describe("the open kinds a render files", () => {
+  it("files an open:<kind> slot for a SINGULAR kind, carrying the customer's own words", () => {
+    const { slots, unfiledOpen } = mintedSlotsForRender({
+      earned: [],
+      captions: {},
+      open: [{ kind: "tail", words: "a long scaled tail", paired: false }],
+    });
+
+    expect(unfiledOpen).toEqual([]);
+    expect(slots.map((slot) => slot.slot)).toEqual(["open:tail"]);
+    const spec = slots[0]!;
+    /* The words are the ASK'S, because they are the only words an open kind ever
+       has — no facet means no caption reader ever wrote a sentence about it. */
+    expect(spec.words).toEqual(["a long scaled tail"]);
+    expect(spec.noun).toBe("tail");
+    /* The question IS the noun (§4), and `guardKind` is null with a REASON —
+       which is what routes this slot to the absence-control door rather than to
+       the measured completeness guard. */
+    expect(spec.question).toBe("tail");
+    expect(spec.guardKind).toBeNull();
+    expect(spec.noSpecimen).toBeTruthy();
+    expect(spec.tier).toBe("anatomy");
+  });
+
+  it("refuses a PAIRED kind its crop, and says which ruling did it", () => {
+    /* fable-872 §2. The mask the mint would have carried on the court's wings
+       frame was the image-left wing to thirteen pixels — half a picture under the
+       whole picture's name, which is the earring history. */
+    const { slots, unfiledOpen } = mintedSlotsForRender({
+      earned: [],
+      captions: {},
+      open: [{ kind: "wings", words: "enormous feathered wings", paired: true }],
+    });
+
+    expect(slots).toEqual([]);
+    expect(unfiledOpen).toEqual([{ kind: "wings", reason: "openKindPaired" }]);
+  });
+
+  it("refuses an UNANSWERED property its crop under a DIFFERENT word", () => {
+    /* The two-meanings-of-none split. `null` is nobody having answered — no row,
+       no engine, a reader that declined — and it must refuse identically while
+       being countable separately, because a kind stuck here is silently getting
+       the conservative path forever. */
+    const { slots, unfiledOpen } = mintedSlotsForRender({
+      earned: [],
+      captions: {},
+      open: [{ kind: "gills", words: "gills on her neck", paired: null }],
+    });
+
+    expect(slots).toEqual([]);
+    expect(unfiledOpen).toEqual([{ kind: "gills", reason: "openKindPairUnread" }]);
+  });
+
+  it("judges STRUCTURE before POLICY, so the pair count is over well-formed asks", () => {
+    /* An ask with no words is a defect — `readOpenKinds` refuses empty words on
+       the way in — and reported as "words-only because it is a pair" it would
+       inflate the one number the promotion decision reads while hiding a bug
+       behind a ruling. */
+    const { slots, unfiledOpen } = mintedSlotsForRender({
+      earned: [],
+      captions: {},
+      open: [{ kind: "wings", words: "   ", paired: true }],
+    });
+
+    expect(slots).toEqual([]);
+    expect(unfiledOpen).toEqual([{ kind: "wings", reason: "noWords" }]);
+  });
+
+  it("reports a key the catalogue cannot define rather than skipping it", () => {
+    /* Should be unreachable — the normalizer mints only keys the catalogue can
+       synthesize — so it is a disagreement between two grammars and must arrive
+       as a named finding. `openKind` is the label kept for exactly this. */
+    const { slots, unfiledOpen } = mintedSlotsForRender({
+      earned: [],
+      captions: {},
+      open: [{ kind: "cat ears", words: "pointed cat ears", paired: false }],
+    });
+
+    expect(slots).toEqual([]);
+    expect(unfiledOpen).toEqual([{ kind: "cat ears", reason: "openKind" }]);
+  });
+
+  it("files one row for a kind named twice in one list", () => {
+    const { slots, unfiledOpen } = mintedSlotsForRender({
+      earned: [],
+      captions: {},
+      open: [
+        { kind: "tail", words: "a long scaled tail", paired: false },
+        { kind: "tail", words: "a long scaled tail", paired: false },
+      ],
+    });
+    expect(slots.map((slot) => slot.slot)).toEqual(["open:tail"]);
+    expect(unfiledOpen).toEqual([]);
+  });
+
+  it("files an open kind BESIDE the facets the same render earned", () => {
+    /* The two passes are independent: an open key carries a prefix the closed
+       `feature@instance` grammar cannot produce, so it can never displace or be
+       displaced by a catalogued slot. */
+    const { slots, unfiledOpen } = mintedSlotsForRender({
+      earned: ["hair.colour"],
+      captions: { "hair.colour": "Copper, warm at the ends" },
+      open: [{ kind: "tail", words: "a long scaled tail", paired: false }],
+    });
+
+    expect(slots.map((slot) => slot.slot)).toEqual(["hair", "open:tail"]);
+    expect(unfiledOpen).toEqual([]);
+  });
+
+  it("does not narrow an open kind to a scope", () => {
+    /* Declared rather than omitted: a scope names one INSTANCE of a catalogued
+       feature and an open kind has none, so there is nothing to select or
+       exclude — and the render painted what the recipe said. */
+    const { slots } = mintedSlotsForRender({
+      earned: [],
+      captions: {},
+      scope: "eye@left",
+      open: [{ kind: "tail", words: "a long scaled tail", paired: false }],
+    });
+    expect(slots.map((slot) => slot.slot)).toEqual(["open:tail"]);
+  });
+
+  it("files nothing at all when no open kind was asked for", () => {
+    /* The negative control on the whole pass: the field being absent must be
+       indistinguishable from the behaviour before this build existed. */
+    const { slots, unfiledOpen } = mintedSlotsForRender({
+      earned: ["hair.colour"],
+      captions: { "hair.colour": "Copper" },
+    });
+    expect(slots.map((slot) => slot.slot)).toEqual(["hair"]);
+    expect(unfiledOpen).toEqual([]);
   });
 });

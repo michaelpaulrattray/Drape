@@ -49,7 +49,7 @@ They are not the three the order names, because one of them is two.
 | | the question | when it is asked | who it is about |
 |---|---|---|---|
 | **P1** | is this kind **paired** — does the noun denote a matched set? | once per kind, ever | the KIND |
-| **P2** | does this kind **extend** — anchored outside the frame, does it present inside it? | once per kind, ever | the KIND |
+| **P2** | **where on a body is this kind anchored?** | once per kind, ever | the KIND |
 | **D1** | did this delivery produce the **right count**? | every delivery of a paired kind | the FRAME |
 | **D2** | is this recorded fact **shown** in this frame? | every view that carries words | the FRAME |
 
@@ -64,6 +64,41 @@ painted one.
 Likewise **P2 is prospective and D2 is retrospective**: P2 decides whether to
 sell at all (fable-868's class (b) versus class (c)); D2 decides what words a
 later view must carry because the anchor could not show them.
+
+> **CORRECTED 2026-08-17 (shift 94, ruled fable-897 §3): P2 IS A PLACE, NOT A
+> BOOLEAN — and the sentence it replaced was wrong for seven of this product's
+> eight framings.**
+>
+> P2 was written above as *does this kind extend — anchored outside the frame,
+> does it present inside it?* **That question contains a framing and this table
+> holds one row per kind.** The premise was checked before the prompt was
+> written, and the product does not have one framing:
+>
+> ```
+> the REFINE road   waist-up, "from mid-torso up in a 2:3 portrait"
+>                   (`cohortPhotorealHuman` FRAMING — and `castingFrame.ts` leans
+>                    on exactly this: one framing, one answer, no read)
+> a SIGNED cast     closeUp                                 eyebrows-to-chin
+>                   frontClose / threeQuarter / sideClose    head-and-shoulders
+>                   frontFull / sideFull / backFull          HEAD TO FEET
+> ```
+>
+> So *does a tail present in the frame* is **no** on the road that paints it and
+> **yes** on three of the views a Cast is signed into. A single boolean forces one
+> of those answers onto the other seven, and the place it would have surfaced is
+> §7 — the founder's own obligation court, which is the worst place to discover a
+> schema mistake.
+>
+> **The repair splits the question along the line between a fact and a
+> derivation**: the model answers WHERE the thing is anchored, from a closed list
+> of eight places, and the code answers whether that place is inside a given
+> framing (`shared/bodyAnchorRegions.ts`, a total table over all eight framings,
+> so a new view does not compile until somebody decides what it shows). Same one
+> call per kind, one fewer model opinion in the product, and a control that can be
+> answered wrong in an obvious way — `nails → hands`, never `nails → head`.
+>
+> It is `castingFrame.ts`'s own method — a table of regions against a framing —
+> generalized to a kind that has no facet.
 
 ## 2. Where the answers come from — and the one place they must not
 
@@ -231,7 +266,7 @@ that a reader never seen to decline is not a reader (design note §4, law 9).
 | answer | the control that could redden | what it costs |
 |---|---|---|
 | **P1** paired | kinds that are definitely singular — `tail`, `halo`, `beak`, `horn` (singular) — must come back NOT paired. A reader that pairs everything is the earring reader's vacuous shape (fable-378 §3) | one text call each, once |
-| **P2** extends | `nails` on a waist-up framing must come back NOT extending — fable-868's own class (c) example | one text call, once |
+| **P2** anchor | `nails` must come back `hands` — fable-868's class (c) example, restated as a place. Answerable wrong in an obvious way, which is what the boolean form was not | one text call, once |
 | **D1** count | **a frame holding ONE of a pair must read one.** This is the hard control and the specimen already exists: it is the founder's own one-winged frame, which is what produced the demand | a frame he has already paid for |
 | **D2** shown | the absence control's existing shape: the reader must decline on a frame that does not hold the thing, or its answer on one that does cannot be told from a confident region of nothing | one read, already budgeted by §9.8 |
 
@@ -359,7 +394,7 @@ reader is.**
    a kind with no row re-buys the read and gets nothing, which is bounded by the
    render needing the same transport.
 
-**`extendsOutOfFrame` LANDS STORED AND UNREAD, AND ITS HEIR IS NAMED** (the bound
+**`anchorRegion` LANDS STORED AND UNREAD, AND ITS HEIR IS NAMED** (the bound
 fable-896 §2 attached to the approval). P1's consumer is the mint gate, in this
 build. P2's consumer is the **out-of-frame build** — the one deciding whether an
 invisible-now ask is accepted free (fable-869 §2, fable-876 §1) or dispatched.
@@ -394,3 +429,118 @@ would have shipped a green guard that had never fired.
 and therefore founder-run or delegated by name; nothing in production reads or
 writes this table while `CASTING_OPEN_LANE_SCOPE` is off, so there is nothing
 waiting on it. Rehearsal now, ceremony the day the lane opens for anybody.
+
+---
+
+## 10. STAGES B, C AND D AS BUILT — 2026-08-17 (shift 94)
+
+*Countersigned fable-896, fable-897 and fable-898. Spend: **nine text calls plus
+a four-call stability pass, ≈$0.18 of house money, and not one credit.** No
+render, no production change, no flag set.*
+
+| the piece | where |
+|---|---|
+| the read | `server/castingV2/openKindProperties.ts` — the prompt, the parse, the cache |
+| the derivation | `shared/bodyAnchorRegions.ts` — eight places against eight framings |
+| the mint's producer | `mintedSlots.ts` — the `open` input, `unfiledOpen`, the two reasons |
+| the wire | `refineInterpreter.ts` buys the property; `refineService.ts` reads it at the mint |
+| the outcome | `openLaneAccept.openLaneOutcomeOf`, called from three terminal sites |
+| the court | `scripts/court-kind-properties-disposable.mts` |
+
+### The court, and ONE BAR WAS CORRECTED POST-HOC — here is the audit trail
+
+Nine arms, `anthropic/claude-sonnet-5`, bars written into the script above the
+spend, scoring dry-run first with a deliberately wrong canned answer so the
+comparison was seen to fail before the money moved.
+
+```
+tail     single  belowWaist    P1 negative · P2 positive
+halo     single  head          P1 negative
+beak     single  head          P1 negative
+crest    single  head          P1 negative (replaces `horn`)
+wings    paired  torso         P1 positive
+fangs    paired  head          P1 positive
+horn     paired  head          P1 positive — the catalogue's own pair
+nails    paired  hands         P2 negative — the design's own control
+scales   paired  wholeBody     the `many` fold
+```
+
+**`horn` was written as a NEGATIVE and the reader answered PAIRED.** The bar was
+wrong, and the thing that settles it predates the court: **this product's own
+catalogue holds `horns@left` and `horns@right`** — `referenceSlotCatalogue.ts`,
+`instances: { of: "perSide", pairNoun: "horns" }`, with `noun: "horn"` singular
+beside it, declared by founder ruling on 2026-08-15 and minted from real renders
+on his own cast. The product's lived answer to *how many horns does someone who
+has them have* is two. The reader agreed with the product; the bar did not.
+
+Corrected on that ground alone, ruled fable-898 §2a, and recorded here rather
+than quietly: **re-arguing a bar from the court's own data would be optional
+stopping; moving one against independent prior evidence, with the evidence named,
+is not.** `crest` replaces it as the fourth negative — unambiguously one thing,
+absent from the prompt, and the catalogue holds no crest.
+
+**The stability pass was pre-registered before it was bought** (fable-898 §2b),
+with dispositions that did not depend on which way it fell: `3/3` the same answer
+means a considered one; MIXED is a stop on P1 whatever the majority says, because
+a gate on a property that wobbles per call is the unowned-axis collapse with a
+coin flip in it.
+
+```
+horn ×3: paired, paired, paired    STABLE
+```
+
+### What the build honours, in the order it would break if it did not
+
+1. **A SINGULAR open kind mints a crop; a PAIRED one does not.** fable-872 §2,
+   and the gate is a pure function so it is driven without a database, a frame or
+   a vision call.
+2. **`null` is not `false`.** A kind nobody has answered for files
+   `openKindPairUnread` and cuts nothing. Two words rather than one, because
+   *"we asked and it is a pair"* and *"we never got an answer"* are two facts and
+   only the second is worth chasing.
+3. **Structure is judged before policy.** A malformed key or an ask with no words
+   is a DEFECT, and counted as *"words-only because it is a pair"* it would
+   inflate the one number the promotion decision reads while hiding a bug behind
+   a ruling. So `openKindPaired`'s count is a count over well-formed asks.
+4. **The prompt asks WHERE and never whether the thing extends** (fable-897 §3c),
+   and it names none of the control specimens. Both are asserted mechanically,
+   with a positive control that the prompt does carry the examples it should —
+   `not.toContain` over an empty string is the assertion that cannot fail.
+5. **The property is a CACHE and the arms count the calls.** One text read per new
+   noun ever; every ask after that is a table read. Asserted at the seam, because
+   a cache that silently re-bought would look identical from the return value —
+   the shape the face-scan re-buy wore for two days.
+
+### The demand row moved to the terminal moment, and one hole was closed
+
+`words_only` at the acceptance door was true by construction while no crop could
+ever mint. It is now a PREDICTION, so an accepted ask writes ONE row when its ask
+ENDS — `delivered` (a crop filed), `words_only` (served, no crop), `refunded`
+(money back) — and a refusal still writes at the door, where the door is terminal.
+
+Closed in the same sitting: the out-of-frame refusal at `refineService` is BEFORE
+`admit`, so it reaches neither the delivered path nor the refund catch. An
+accepted open kind arriving beside closed facets all out of shot would have ended
+there having filed **nothing**, leaving the tally short by a whole class of ask
+rather than by the occasional process death. It now files `refused`, which is the
+table's own word for *a door turned it away for free*.
+
+**The undercount that REMAINS is named**: a row lost to a process death between
+the render settling and the insert — a deploy landing mid-render, a sweep-settled
+refund. It is unbiased, it is the fail-soft the writer has by design, and the
+demand reader's own header now says so, because a reader that knows its hole beats
+one that discovers it in a ratio.
+
+### What is still owed after this
+
+- **D1, the count**, and it is a court rather than a build: §8's condition for a
+  PAIRED kind's crop is *P1 plus a passing D1*, and D1's control is the founder's
+  own one-winged frame. 5b opens the singular kinds; the paired half stays
+  words-only with its reason now NAMED rather than blanket.
+- **`anchorRegion`'s consumer** — the out-of-frame build. Stored and unread, with
+  its heir named on the module and the exact condition under which storing it
+  becomes a defect.
+- **The production ceremony for 0033**, founder-run or delegated by name. Nothing
+  in production reads or writes the table while `CASTING_OPEN_LANE_SCOPE` is off,
+  so nothing waits on it.
+

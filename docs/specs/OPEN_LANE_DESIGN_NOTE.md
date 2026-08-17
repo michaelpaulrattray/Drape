@@ -771,17 +771,43 @@ step 5a the acceptance path          BUILT 2026-08-17      — the whole-delta n
                                                              it may name a new kind,
                                                              so nothing routes in —
                                                              see §9.11
-step 5b the mint wire                BLOCKED               — on the kind-property
-                                                             design (paired +
-                                                             does-it-extend, one
-                                                             design, costed together
-                                                             — fable-872 §2). The
-                                                             pair door before the
-                                                             first crop, never after
+step 5b the mint wire                BUILT 2026-08-17      — the kind-property
+                                                             design is built and
+                                                             courted, so the pair
+                                                             door exists before the
+                                                             first crop rather than
+                                                             after (fable-872 §2).
+                                                             A SINGULAR open kind
+                                                             now files `open:<kind>`
+                                                             and walks through step
+                                                             3's door; a PAIRED one
+                                                             is refused
+                                                             `openKindPaired`, and an
+                                                             UNANSWERED property
+                                                             `openKindPairUnread` —
+                                                             two words, because only
+                                                             one of them is a bug.
+                                                             **DARK**: still behind
+                                                             `CASTING_OPEN_LANE_SCOPE`,
+                                                             which is off
+                                                             everywhere. The PAIRED
+                                                             half stays words-only
+                                                             until D1's court passes
+                                                             his eye — see
+                                                             `OPEN_KIND_PROPERTIES_DESIGN`
+                                                             §10
 step 6  the demand writer            BUILT 2026-08-17      — landed WITH 5a, not
                                                              behind it (fable-874
                                                              §3b). The table was
-                                                             already in production
+                                                             already in production.
+                                                             5b moved an ACCEPTED
+                                                             ask's row to the moment
+                                                             the ask ENDS, so
+                                                             `delivered`/`refunded`
+                                                             are reachable and
+                                                             `words_only` is a
+                                                             reading rather than a
+                                                             prediction
 ```
 
 > **Step 6's "after the prod ceremony" is spent, and it was spent before it was

@@ -87,6 +87,47 @@ export type OpenLaneAcceptance =
   };
 
 /**
+ * THE OUTCOME OF AN ACCEPTED ASK IS WRITTEN WHERE THE ASK ENDS — not here (5b
+ * Stage D, ruled fable-896 §4).
+ *
+ * Until 5b there was nothing to wait for: no crop could ever mint, so
+ * `words_only` at the acceptance door was true by construction. Now it is a
+ * PREDICTION, and migration 0031's own prose says what the column means —
+ * *"words_only: served without a reference crop … the number that answers the
+ * founder's one open question"*. A row written before the render cannot say that.
+ *
+ * So: **a refusal writes at the door**, because there the door IS terminal, and
+ * an accepted ask writes ONE row when its render settles — `delivered` (a crop
+ * filed), `words_only` (served, no crop) or `refunded`. One ask, one row, or the
+ * promotion decision divides by a denominator holding both halves of the same
+ * ask.
+ *
+ * {@link openLaneOutcomeOf} is that decision, here rather than at the two call
+ * sites, so the delivered path and the refund path cannot come to disagree about
+ * what a stored crop means (working law 4).
+ */
+export function openLaneOutcomeOf(input: {
+  /** Whether the render settled at all, or handed the money back. */
+  settled: boolean;
+  /** True when the mint stored a crop for this kind on this render. */
+  cropStored: boolean;
+  /**
+   * A DOOR TURNED IT AWAY BEFORE ANYTHING WAS CHARGED.
+   *
+   * `refused` and `refunded` are two different facts and the table keeps them
+   * apart on purpose: one cost the customer nothing and one moved money and gave
+   * it back. Collapsed into `refunded`, a lane refusing everything for free would
+   * read as a lane charging and refunding — the loudest promotion case there is,
+   * manufactured out of a lane that never spent a credit.
+   */
+  refusedFree?: boolean;
+}): "delivered" | "words_only" | "refunded" | "refused" {
+  if (input.refusedFree) return "refused";
+  if (!input.settled) return "refunded";
+  return input.cropStored ? "delivered" : "words_only";
+}
+
+/**
  * Name and file the thing an out-of-vocabulary ask is about.
  *
  * Spends one text call and never a credit. Fails CLOSED at every door: no

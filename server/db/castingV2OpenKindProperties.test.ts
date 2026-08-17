@@ -61,9 +61,9 @@ beforeEach(() => {
 
 describe("the kind-property store", () => {
   it("reads a kind's two properties back", async () => {
-    rowToReturn = { paired: true, extendsOutOfFrame: false, model: "m", promptVersion: "p1" };
+    rowToReturn = { paired: true, anchorRegion: "torso", model: "m", promptVersion: "p1" };
     const read = await readOpenKindProperties("wings");
-    expect(read).toEqual({ paired: true, extendsOutOfFrame: false, model: "m", promptVersion: "p1" });
+    expect(read).toEqual({ paired: true, anchorRegion: "torso", model: "m", promptVersion: "p1" });
     expect(selects).toHaveLength(1);
   });
 
@@ -106,7 +106,7 @@ describe("the kind-property store", () => {
     const wrote = await writeOpenKindProperties({
       kind: "wings",
       paired: true,
-      extendsOutOfFrame: true,
+      anchorRegion: "torso",
       model: "anthropic/claude-sonnet-5",
       promptVersion: "kp-1",
     });
@@ -114,7 +114,7 @@ describe("the kind-property store", () => {
     expect(inserts).toEqual([{
       kind: "wings",
       paired: true,
-      extendsOutOfFrame: true,
+      anchorRegion: "torso",
       model: "anthropic/claude-sonnet-5",
       promptVersion: "kp-1",
     }]);
@@ -124,7 +124,7 @@ describe("the kind-property store", () => {
     const wrote = await writeOpenKindProperties({
       kind: "give her wings",
       paired: true,
-      extendsOutOfFrame: false,
+      anchorRegion: "torso",
       model: "m",
       promptVersion: "kp-1",
     });
@@ -137,7 +137,7 @@ describe("the kind-property store", () => {
     const wrote = await writeOpenKindProperties({
       kind: "wings",
       paired: true,
-      extendsOutOfFrame: false,
+      anchorRegion: "torso",
       model: "m",
       promptVersion: "kp-1",
     });

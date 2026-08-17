@@ -8,6 +8,7 @@ import {
   validateCastingOpenLaneEnvironment,
 } from "./castingV2Scope";
 import { OPEN_KIND_SYSTEM } from "./openLaneKind";
+import { KIND_PROPERTY_SYSTEM } from "./openKindProperties";
 import { interpretRefinement, refineParseSystemPrompt } from "./refineInterpreter";
 
 /**
@@ -179,8 +180,22 @@ describe("the acceptance door is behind the flag too, not only the prompt", () =
     expect(parse.ok).toBe(true);
     if (!parse.ok || !("delta" in parse)) throw new Error("expected a delta");
     expect(parse.delta.open?.fangs).toEqual({ noun: "fangs", words: "vampire fangs" });
-    /* The parse and the normalizer — the second call is the door working. */
-    expect(engine.seen).toHaveLength(2);
+    /*
+      THREE CALLS, AND THE THIRD IS 5b's PROPERTY READ — the parse, the
+      normalizer, and *what is this kind* (`OPEN_KIND_PROPERTIES_DESIGN` §2).
+      Named rather than counted, because a number alone would not notice a third
+      call arriving from somewhere else.
+
+      **This is the NO-STORE count.** With no database the property cache can
+      never hit, so every ask re-buys the read; in production the row is written
+      on the first ask for a noun and every later one is a table read, which is
+      two calls. The cache itself is asserted at its own seam in
+      `openKindProperties.test.ts`, by counting model calls rather than by
+      inspecting a return value.
+    */
+    expect(engine.seen).toHaveLength(3);
+    expect(engine.seen[1]!.system).toBe(OPEN_KIND_SYSTEM);
+    expect(engine.seen[2]!.system).toBe(KIND_PROPERTY_SYSTEM);
   });
 
   it("sends the clause on the wire when on, and never when off", async () => {
