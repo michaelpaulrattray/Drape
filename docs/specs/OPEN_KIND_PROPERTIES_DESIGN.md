@@ -203,12 +203,25 @@ carries a tattoo, judged on whether the graphic is the SAME design. If the judge
 cannot tell them apart, the reference is doing nothing and must not be sold as
 if it were.
 
-**Open, and named rather than assumed:** whether the flash sheet exists as a
-stored artifact at Sign time for every inked cast, or only for casts inked
-through the flash-sheet road (D-138). A cast whose tattoo arrived by words has no
-sheet to reference, and this requirement cannot invent one — that case falls back
-to the anchor and the honest statement is that it will drift. Filed for the
-view-carry build rather than answered here.
+### The wordside tattoo is a NAMED GAP, not a silence — ruled fable-892 §3
+
+A cast whose tattoo arrived by WORDS has no flash sheet to reference, and this
+requirement cannot invent one. The ruling is that this case is **recorded rather
+than dropped**: when a graphic-class feature is delivered wordside, the record
+files it toward the flash-sheet mint (D-138 lineage — a sheet is derivable from
+the delivered frame later) and says **the sheet is owed.**
+
+The distinction is the whole of it. "No sheet, so the anchor alone" is a silent
+degradation that will read as working until a back view paints a design nobody
+chose. "No sheet, and one is owed" is a fact the view-carry build can act on and
+the conformance control can look for. No inventing, no silent drop — the same
+shape as `noSpecimen` in `OPEN_LANE_CARRY_DESIGN` §5, where silence became a
+loud written decision.
+
+**Still open for the build:** whether the sheet is minted at the moment the
+wordside graphic is delivered, or lazily at Sign when the views are about to be
+rendered. This note does not decide it; the ruling requires only that the debt
+is written down.
 
 ## 4. The controls, and each one can fail
 

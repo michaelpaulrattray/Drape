@@ -16,6 +16,23 @@
  * is the "helper written, docs written, call site never added" shape (invariant
  * 7's family), and the answer to a class is never "remember harder".
  *
+ * # AND A CLEANUP SCRIPT SCOPES ITS DELETE BY THE IDS IT MINTED, NEVER BY A
+ * # PROPERTY (ruled fable-892 §5, from opus-654 §5)
+ *
+ * Written here rather than in a mailbox because this is the header a script
+ * author reads before touching a database. A fixture teardown was scoped as
+ * *"delete the sessions that have no rolls"* — true of the two rows it had just
+ * created, and true of seven older ones it knew nothing about. It removed nine.
+ *
+ * It cost nothing that time (dev only, verify-bot's own empty shells, audited
+ * afterwards at 0 orphaned candidates and 0 orphaned rolls) and the next one
+ * will not be so lucky. **Keep the ids you inserted and delete those** — a
+ * property is a description of your fixture at the moment you wrote it, not an
+ * identity, and anything that later matches the description is collateral.
+ *
+ * It is invariant 1's shape — scope the thing in the statement that writes —
+ * arriving in the one place nobody thought of as production code.
+ *
  * # Why the check reads the AST and not the text
  *
  * The first attempt at this scope was a grep, and it was wrong in both
