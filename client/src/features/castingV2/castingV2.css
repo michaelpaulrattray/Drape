@@ -333,6 +333,35 @@
   width: 100%;
 }
 
+/*
+  THE BRIEF IS A TITLE HERE, NOT THE BRIEF (founder, fable-891 §2, from his own
+  cyborg sheet — image #325).
+
+  The card printed `briefText` unclamped, and a brief is as long as its author
+  wants it: his ran to a wall of text down a 210–268px column, so one card set
+  the height of the whole row and the sheets beside it read as an afterthought.
+  What the card is FOR is telling one sheet from another at a glance, and two
+  lines does that.
+
+  Clamped on the SPAN rather than on `.dpc-sheetcard__open` or the card, and the
+  reason is written at `.dpc-echo` further down: `overflow: hidden` on an
+  ancestor clips an absolutely-positioned popover descendant. The card's menu is
+  a SIBLING of the button, so clamping this span cannot reach it — but clamping
+  either box above would have.
+
+  Two rather than three, matching `.dpc-face__words`, which is the nearest
+  precedent on this page and made the same call for the same reason.
+*/
+.dpc-sheetcard__brief {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  /* Long single words (a pasted URL, a run-on) must not push the column out. */
+  overflow-wrap: anywhere;
+}
+
 /* ---- the dock's kept stack: the shortlist, where Sign will sit ---- */
 
 .dpc-keptstack {

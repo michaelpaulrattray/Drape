@@ -146,6 +146,70 @@ Mechanically, that is three properties of the clause and each is checkable:
    record holds an invisible fact, the clause is doing nothing and must not be
    sold as if it were.
 
+## 3b. A WORN GRAPHIC RIDES AS AN IMAGE, NEVER AS WORDS — founder requirement,
+## fable-891 §1
+
+> *"tatoo flash sheets will need to be referenced when creating the different
+> cast angles also after signing also otherwise they will be hallucinated."*
+
+**REQUIREMENT.** Any worn graphic — tattoos first, with the flash sheet as the
+canonical reference — rides into view generation as an **image reference beside
+the anchor**, not as a sentence in the clause §3 governs.
+
+The grounds are already measured on our own record: opus-642 §3 proved a view
+renders from the anchor plus a constant. A tattoo is a precise graphic seen from
+exactly ONE angle in the anchor, so a three-quarter or back view has nothing to
+copy from and the engine invents one. That is not a likeness drift the clause
+can fix by describing the design harder — a description of a graphic is a brief
+for a *different* graphic.
+
+### This is the bound applied, not an exception to it
+
+The temptation is to read this as a carve-out from *the reference is king*. It is
+the opposite, and the distinction decides how it gets built: **where the anchor
+cannot show something, the answer is another REFERENCE, never a description.**
+The founder's bound says pixels win over words; this requirement supplies pixels
+for the one case where the anchor has none to offer. The sheet references the
+GRAPHIC and never re-describes the person — the same likeness-drift guard, on
+the same side of the argument.
+
+### The two carriers must not be conflated — and §3's subtraction proves it
+
+§3.1 builds the word clause by subtraction: *(everything recorded) minus
+(everything D2 found in the anchor)*. **A tattoo IS in the anchor** — that is the
+whole problem — so subtraction correctly strikes it from the word clause, and
+§3.2 strikes it again for being a closed facet rather than an open kind. Under
+§3 alone a tattoo is therefore silent in every view, which reads as correct
+right up until the back view paints a design nobody chose.
+
+So the two mechanisms answer different questions and neither substitutes:
+
+| | what the anchor is missing | the carrier |
+|---|---|---|
+| §3's clause | a FACT the anchor cannot show (an out-of-frame open kind) | words, built by subtraction |
+| this section | a GRAPHIC the anchor shows from one angle only | the sheet, as an image reference |
+
+The trigger is therefore **not** "D2 could not find it". It is "the record holds
+a graphic", which is a property of the recipe rather than a reading of the frame
+— and that means this requirement needs no vision call to decide it fires.
+
+### It is covered by the control that already exists
+
+No new control (fable-891 §1, and fable-871 §3 governs): the conformance pass
+proves a clause LANDED rather than assuming it, and an image reference is a
+clause like any other. The shape transfers with one substitution — a view
+rendered without the sheet beside one rendered with it, on a cast whose anchor
+carries a tattoo, judged on whether the graphic is the SAME design. If the judge
+cannot tell them apart, the reference is doing nothing and must not be sold as
+if it were.
+
+**Open, and named rather than assumed:** whether the flash sheet exists as a
+stored artifact at Sign time for every inked cast, or only for casts inked
+through the flash-sheet road (D-138). A cast whose tattoo arrived by words has no
+sheet to reference, and this requirement cannot invent one — that case falls back
+to the anchor and the honest statement is that it will drift. Filed for the
+view-carry build rather than answered here.
+
 ## 4. The controls, and each one can fail
 
 Every answer above is a reader's answer, and this campaign's standing rule is

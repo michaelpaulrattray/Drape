@@ -665,7 +665,18 @@ export default function CastingV2() {
                       ))}
                     </span>
                   ) : null}
-                  <span className="dp-label">{entry.briefText ?? "Untitled sheet"}</span>
+                  {/*
+                    Two lines, then an ellipsis (fable-891 §2). The `title`
+                    keeps the whole brief one hover away rather than losing it
+                    — and the card's menu label already carries the full string,
+                    so a screen reader was never reading the clamp.
+                  */}
+                  <span
+                    className="dp-label dpc-sheetcard__brief"
+                    title={entry.briefText ?? undefined}
+                  >
+                    {entry.briefText ?? "Untitled sheet"}
+                  </span>
                   <span className="dp-secondary">
                     {entry.rollCount} roll{entry.rollCount === 1 ? "" : "s"}
                     {entry.keptCount > 0 ? ` · ${entry.keptCount} kept` : ""}
