@@ -364,6 +364,23 @@ retroactively glosses the 2026-08-07 court's *"near-invisible"* eye-shape
 scores — noted, not re-litigated.
 *Banked:* fable-849 §3 (finding at opus-631 §2).
 
+**21. A test whose comment and assertion disagree is a regression with a green
+light.**
+The comment is a claim about what the assertion checks. When they split, one of
+them is the bug — and the suite will never tell you which, because it only ever
+runs the assertion.
+*Incident:* `recipeAssembler.test.ts` asserted `expect(recipe.standing).toEqual([])`
+directly underneath a comment quoting fable-192 — *"the words are the carrier of
+record, and they ride whether or not this render is about the hair."* The test
+DESCRIBED the law and ENFORCED its opposite. So when fable-598's item rule
+(POINT, DON'T DESCRIBE) was applied to every carried slot rather than to items
+alone, nothing went red, and every anatomy slot with a crop stopped saying what
+the feature was. Eyes never carried a picture in the product's whole life
+because of it. Finding it took two founder challenges, an outside-the-app
+exhibit, three courts and $4.25 of house money — and every layer suspected on
+the way (the crop, its size, the packing, the engine) was innocent.
+*Banked:* fable-864 §2 (finding at opus-639 §3).
+
 ---
 
 ## Adding to this file
@@ -371,4 +388,4 @@ scores — noted, not re-litigated.
 Follow the admission rule at the top: numbered Fable ruling, real incident, one
 line each, citation. Keep it to a page or two — **terse over complete.** A
 doctrine file long enough to skim past is an instrument nobody reads, which is
-the failure mode all twenty of these describe.
+the failure mode all twenty-one of these describe.

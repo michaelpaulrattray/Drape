@@ -13,6 +13,9 @@
 import { describe, expect, it } from "vitest";
 
 import type { Mask } from "./maskedComposite";
+/* The real assembler, driven rather than described — see the eyes entry's own
+   condition test at the foot of this file. */
+import { assembleRecipe } from "./recipeAssembler";
 import { measureCentreline } from "./referenceCentreline";
 import {
   adjudicatedGapFor,
@@ -726,33 +729,69 @@ describe("a ruled floor, where the positive cannot be the bar", () => {
   });
 
   /*
-    EYES — an ABSENCE test, and it can fail.
+    EYES — pulled and restored on one day, and the entry is only safe because of
+    something in another file.
 
-    The bar shipped on 2026-08-17 and was pulled the same day (fable-853 §3b):
-    the carry it unblocked was measured on ten frames across two casts and it
-    LOSES the feature — 0/3 at 35 px and 0/2 at 56 px, against words holding it
-    3/3 and 2/2. The 56 px crop is one of the four the founder himself called
-    complete, so the drafted >=45 px resolution floor would not have saved the
-    class either.
+    It shipped, the carry it unblocked delivered nothing (0 of 8 across two
+    casts and three presentations of the crop), it was pulled inside the hour,
+    and it came back once the cause was found: `recipeAssembler` had stopped
+    saying an anatomy slot's words beside its crop, so a minted eye crop
+    replaced the sentence that was carrying the eye. With the words back, the
+    same padded crop delivers 3 of 3.
 
-    This is not "eyes were never calibrated". It is a kind whose calibration was
-    bought, shipped and then withdrawn on evidence, so the test that guards it
-    has to be able to FAIL — an absence nothing asserts is indistinguishable
-    from an absence nobody noticed (D-248's shape, the same week).
+    That is why the LAST assertion here is about the assembler and not about
+    this table. Re-adding the entry while a crop still silences its words would
+    put the product back exactly where the pull found it, and nothing in this
+    file could see it.
   */
-  it("has NO eyes entry — the bar was measured and withdrawn, and stays out", () => {
-    expect(COMPLETENESS_SPECIMENS.eyes).toBeUndefined();
-    /* And the consequence, at the function the mint actually calls: an eye crop
-       has no bar to clear, so it is refused `noSpecimen`, keeps its pixels, and
-       the slot rides on words. */
-    expect(thresholdFor("eyes")).toBeNull();
+  it("carries the eyes bar he settled, with its measured negative", () => {
+    expect(thresholdFor("eyes")).toBe(0.95);
+    expect(COMPLETENESS_SPECIMENS.eyes!.positive).toBe(1);
+    expect(COMPLETENESS_SPECIMENS.eyes!.negative).toBeCloseTo(0.728, 3);
   });
 
-  it("keeps the kinds whose carry IS measured — the pull is about eyes, not the table", () => {
-    /* A withdrawal that quietly emptied the table would pass the test above and
-       break every carrier this product has proven. */
-    expect(thresholdFor("horns")).toBe(0.95);
-    expect(Object.keys(COMPLETENESS_SPECIMENS).length).toBeGreaterThan(0);
+  it("gives eyes more daylight than horns, and refuses the outer-third mis-cut", () => {
+    const floor = thresholdFor("eyes")!;
+    expect(COMPLETENESS_SPECIMENS.eyes!.negative).toBeLessThan(floor);
+    /* 22.2 points, against horns' 11. A floor on the margin rather than the
+       figure, so a re-measurement that improves it does not redden. */
+    expect(floor - COMPLETENESS_SPECIMENS.eyes!.negative).toBeGreaterThan(0.2);
+  });
+
+  it("does NOT pretend to judge resolution — and no longer needs to", () => {
+    /*
+      The crops he called pixelated (29×24, 35×24) both measure 100.00% here,
+      because coverage is about extent and blind to how many pixels carry it.
+      The ≥45 px sharpness floor drafted to refuse them is DEAD (fable-863 §2):
+      it was aimed at the crop when the defect was the missing sentence, and the
+      35 px crop now delivers 3 of 3 through the shipped packing.
+    */
+    const floor = thresholdFor("eyes")!;
+    expect(1).toBeGreaterThanOrEqual(floor);
+  });
+
+  it("is only safe because a carried ANATOMY crop still says its words", () => {
+    /*
+      THE CONDITION OF THIS ENTRY, asserted where the entry lives (fable-863 §4).
+
+      An eye crop entering the library is harmless only while the recipe keeps
+      saying the slot's word stack beside it. This drives the real assembler —
+      it does not restate the rule — so if the carrier regresses, the kind whose
+      bar depends on it goes red here as well as in its own suite.
+    */
+    const recipe = assembleRecipe({
+      master: { key: "master.png" },
+      pronouns: { subject: "she", object: "her", possessive: "her", plural: false },
+      library: [{
+        slot: "eye@left", tier: "anatomy", noun: "left eye",
+        words: ["a pale grey-blue iris"], carry: { key: "mint/eye-left.png" },
+      }],
+      asks: [{ slot: "lips", noun: "lips", words: "fuller" }],
+    });
+    expect(recipe.ok).toBe(true);
+    if (!recipe.ok) return;
+    expect(recipe.prompt).toContain("Reference 2 is the exact left eye she has");
+    expect(recipe.prompt).toContain("Keep her left eye exactly: a pale grey-blue iris.");
   });
 
   it("never rules a floor ABOVE the crop it was ruled from", () => {

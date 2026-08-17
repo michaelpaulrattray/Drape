@@ -150,20 +150,26 @@ describe("the prompt a paid render carries", () => {
     const prompt = promptForEarringEdit([earring("left", [CLEAN_ROW]), earring("right", [CLEAN_ROW]), hair]);
 
     /*
-      AND SINCE fable-598 IT IS SAID ZERO TIMES FOR A CARRIED SLOT.
+      SAID ONCE — which is what this case has always been about, and from
+      2026-08-17 it is once rather than zero.
 
-      This hair entry has a crop, and a carried crop is no longer re-described
-      in the prompt: the picture is the description (POINT, DON'T DESCRIBE,
-      ruled from his own dispatched prompt, where one object rode with two
-      different sentences and the delivery followed the disagreement).
+      Between fable-598 and fable-863 a carried ANATOMY slot said its words zero
+      times: the picture was held to be the whole description. Measured on an
+      eye, that costs the feature — crop alone delivered 0 of 5, words present 5
+      of 5 — so anatomy's word stack rides beside its crop again (fable-192
+      restored). An ITEM's crop still speaks alone, and the earrings in this
+      same prompt are the control for it.
 
-      The rule this case was written for is stronger than ever — a slot's state
-      cannot be a pile that argues with itself if the prompt never states it —
-      and the stale caption is still what must not appear.
+      The defect this case exists for is untouched and is now checkable in the
+      text rather than by its absence: the stack holds ONE state sentence, so
+      the prompt says the current caption and never the stale one it used to
+      pile beside it.
     */
-    expect(prompt).not.toContain("auburn-brown");
+    expect(prompt).toContain("Keep her hair exactly: Long auburn-brown hair worn down, center-parted, past the shoulders.");
     expect(prompt).not.toContain("reddish-copper");
     expect(prompt).toContain("Reference 2 is the exact hair she has — the same hair, unchanged.");
+    /* The item control, in the same prompt: the earring crops say nothing. */
+    expect(prompt).not.toContain("Keep the left earring exactly");
   });
 
   it("carries no pair claim into a per-instance slot's own sentence", () => {

@@ -106,10 +106,17 @@ export const FACE_SCAN_READS_PER_VERSION = 20;
  * # AND THE ACCOUNT SETTLES LATE — read this before taking any subtraction
  *
  * Measured the same night: the balance read `$12.12` the moment a run's last
- * render returned and `$11.89` four minutes later, with nothing rendering and
- * the founder eleven hours quiet — **$0.23, one render's worth, arriving after
- * the fact.** Three readings thirty seconds apart with nothing in flight were
- * flat, so this is settlement lag rather than drift.
+ * render returned and `$11.89` four minutes later, with nothing of ours
+ * rendering — **$0.23, one render's worth, arriving after the fact.** Three
+ * readings thirty seconds apart with nothing in flight were flat, so this is
+ * settlement lag rather than drift.
+ *
+ * The founder's account is a confound this cannot fully exclude and does not
+ * pretend to: his last row was 23:48Z, about an hour before the run, and a
+ * face-panel SCAN writes no row at all (`read-recent-founder-work-disposable`
+ * says so on its own face). What carries the finding is not his quietness but
+ * the arithmetic: the late $0.23 is one render's price to the cent, and it
+ * arrived while three consecutive readings of an idle account were flat.
  *
  * Two consequences, both paid for once already:
  *
@@ -122,6 +129,22 @@ export const FACE_SCAN_READS_PER_VERSION = 20;
  *
  * (`subtract-from-the-same-reading`, one level deeper: subtract at the same
  * SETTLEMENT STATE, not merely from the same instrument.)
+ *
+ * # AND A SUBTRACTION IS VOID ACROSS AN AUTO TOP-UP
+ *
+ * Auto top-up is ON for both providers (founder, 2026-08-16). It fired in the
+ * middle of a three-render proof on 2026-08-17 and the bench printed a render
+ * price of **$-19.79** — the balance had gone UP by $20 while the render was
+ * being paid for.
+ *
+ * A negative price is the honest tell and it must never be averaged away. The
+ * arithmetic that survives a top-up needs the top-up as a term:
+ *
+ *   spent = opening − closing + (top-ups in the window)
+ *
+ * and the top-up's size is read from the jump, not assumed — the one measured
+ * here was exactly $20.00. Any bench that quotes a spend across a window long
+ * enough to top up must either say the term or say it cannot see it.
  */
 export const FAL_REPAINT_MEASURED_2026_08_17 = {
   twoToThreeReferences: { usd: 0.215, renders: 6, source: "opus-634 court, corrected for settle lag" },

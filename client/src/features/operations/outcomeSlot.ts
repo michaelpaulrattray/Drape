@@ -45,6 +45,31 @@
  * the edit somebody is reading right now is never replaced by a settled row,
  * which is D-154's "until dismissed, or until superseded by their own next ask".
  *
+ * # WHAT HAS TO HAPPEN FOR THIS TO RUN AT ALL — measured, 2026-08-17
+ *
+ * This decision only fires when the sheet's `variants` query answers again, and
+ * that query polls only while a refine is out or a pending row sits in its last
+ * answer (`CastingSheet.tsx`). So the delivery has a precondition, and it is
+ * worth knowing which side of it production sits on
+ * (`read-refine-poll-window-disposable.mts`, 27 settled refines):
+ *
+ *   median 122 s · p90 264 s · max 383 s that a pending row was visible
+ *   4 of 27 settled inside a single 4 s poll interval
+ *
+ * The ~305 s gateway class this whole road exists for is deeply on the safe
+ * side: the row is in the client's hands for minutes before the socket dies, so
+ * the poll survives the death and the answer arrives. The fast settlements are
+ * fast REFUSALS, which come back on the mutation itself and never reach a
+ * fallback.
+ *
+ * The residual case — a sub-4 s settlement AND a dead socket — leaves nothing
+ * polling, and the true sentence then waits for the next thing that makes the
+ * query run: a focus, or a reload. It is not lost, and this rule is what makes
+ * it land when it does arrive rather than being thrown away against a fallback.
+ * Said here because the next person to read this will want to know whether the
+ * rule is enough on its own. It is not; it is the half that decides what to do
+ * with an answer once something asks for it.
+ *
  * **And only by the row about the SAME request** — a narrowing of fable-847's
  * words, stated here so the next reader meets the reason rather than the rule:
  * this file is keyed per request everywhere else for one incident's sake

@@ -277,13 +277,49 @@ describe("the carry contract, per tier (fable-192 — measured, not precautionar
     expect(recipe.references.map((reference) => reference.role)).toEqual([
       { kind: "master" }, { kind: "carry", slot: "hair" },
     ]);
-    /* And the words ride ON that reference — the founder's confirmed format,
-       named then described — so the two halves of the carry contract are one
-       sentence about one thing rather than two instructions. */
-    expect(recipe.standing).toEqual([]); /* the words rode on the reference */
+    /*
+      BOTH HALVES, and this assertion was the regression's own pin.
+
+      It used to read `expect(recipe.standing).toEqual([])` — directly under a
+      comment saying the words "ride whether or not this render is about the
+      hair". The test described fable-192 and asserted its opposite, so the day
+      fable-598 made a carried crop skip its sentence, nothing went red.
+
+      Measured on 2026-08-17 (opus-638): with the crop alone and no words, a
+      delivered eye colour came back 0 times in 5, across three different
+      presentations of the same crop; with the words present it came back 5 of
+      5. The crop is the assist. The words are the carrier of record.
+    */
     expect(recipe.references[1]!.sentence).toBe(
       "Reference 2 is the exact hair she has — the same hair, unchanged.",
     );
+    expect(recipe.standing.map((standing) => standing.sentence)).toEqual([
+      "Keep her hair exactly: worn down, a blunt fringe.",
+    ]);
+    /* And it is IN THE PROMPT, not merely in a field beside it. */
+    expect(recipe.prompt).toContain("Reference 2 is the exact hair she has");
+    expect(recipe.prompt).toContain("Keep her hair exactly: worn down, a blunt fringe.");
+  });
+
+  it("ITEM: a carried crop still says NOTHING — fable-598 kept, for its own reason", () => {
+    /*
+      The other direction, pinned so the anatomy fix cannot quietly widen into
+      the rule it was carved out of. An item's crop carried outright, and a
+      description beside it is a second author arguing with the picture: his two
+      34 px crosses drifted worst on the side whose sentence sat furthest from
+      its own crop.
+    */
+    const recipe = assembleRecipe({
+      master: MASTER, pronouns: SHE, library: [hoop], asks: [{ slot: "lips", noun: "lips", words: "fuller" }],
+    });
+    expect(recipe.ok).toBe(true);
+    if (!recipe.ok) return;
+    expect(recipe.references.map((reference) => reference.role)).toEqual([
+      { kind: "master" }, { kind: "carry", slot: "earring@left" },
+    ]);
+    expect(recipe.standing).toEqual([]);
+    expect(recipe.prompt).not.toContain("Keep the left earring");
+    expect(recipe.prompt).not.toContain("a wide gold hoop");
   });
 
   it("SURFACE: the words ride and nothing else does — there is no crop to send", () => {
@@ -387,8 +423,9 @@ describe("the carry contract, per tier (fable-192 — measured, not precautionar
       { kind: "carry", slot: "earring@left" },
       { kind: "carry", slot: "hair" },
     ]);
-    /* Only the surface stands alone: the hair said its words on reference 3. */
-    expect(recipe.standing.map((standing) => standing.slot)).toEqual(["skin"]);
+    /* The ITEM says nothing beside its crop; the ANATOMY slot and the SURFACE
+       both speak — in library order, which is the order the prompt reads. */
+    expect(recipe.standing.map((standing) => standing.slot)).toEqual(["hair", "skin"]);
     expect(recipe.carried).toEqual(["earring@left", "hair", "skin"]);
   });
 });
@@ -435,6 +472,11 @@ describe("THE PROMPT IS THE WIRE — the sentences and the array are one artifac
       " same face, same pose, same lighting, same framing, same background." +
       " Reference 2 is the exact left earring she has — the same left earring, unchanged." +
       " Reference 3 is the exact hair she has — the same hair, unchanged." +
+      /* THE ANATOMY SENTENCE, ON THE WIRE (fable-863 §3c). The measurement that
+         put it back is in the assembler's own comment; this is the proof that
+         the assembler EMITS it, in the prompt that actually goes out, rather
+         than a bench appending it afterwards. */
+      " Keep her hair exactly: worn down." +
       " Keep her skin exactly: an even golden tan." +
       " Change only her lips: noticeably fuller.",
     );
@@ -529,7 +571,10 @@ describe("THE PROMPT IS THE WIRE — the sentences and the array are one artifac
     expect(recipe.ok).toBe(true);
     if (!recipe.ok) return;
     expect(recipe.ask).toBe("");
-    expect(recipe.prompt.endsWith("Reference 2 is the exact hair she has — the same hair, unchanged.")).toBe(true);
+    expect(recipe.prompt).toContain("Reference 2 is the exact hair she has — the same hair, unchanged.");
+    /* A pure carry render still SAYS what it is carrying — the standing
+       sentence is the last thing in the prompt when there is no ask. */
+    expect(recipe.prompt.endsWith("Keep her hair exactly: worn down.")).toBe(true);
   });
 });
 

@@ -930,12 +930,40 @@ export function assembleRecipe(input: AssembleInput): AssembleResult {
     */
     if (entry.words.length === 0) continue;
     /*
-      A slot that sent a reference has already said its words, on that
-      reference's own sentence. This list is what must stand ALONE: a surface,
-      which never sends a crop at all, and an anatomy slot nothing has delivered
-      yet. Saying it twice in one prompt is not emphasis, it is two instructions.
+      A SLOT THAT SENT A CROP STILL SAYS ITS WORDS — IF IT IS ANATOMY.
+      (Measured 2026-08-17, opus-638; ruled fable-863 §3.)
+
+      This line used to skip EVERY slot holding a reference, on the reasoning
+      that its words had already been said on the reference's own sentence. For
+      an ITEM that is right and it is fable-598's earned rule: a carried crop is
+      the fact, a description beside it is a second author arguing with the
+      picture, and his two 34 px crosses drifted worst on the side whose sentence
+      sat furthest from its own crop. So POINT, DON'T DESCRIBE — for items.
+
+      For ANATOMY it silently overrode fable-192, which requires the word stack
+      in every recipe because *anatomy's crop wins about a third of the distance
+      against a master that disagrees with it*. The reference sentence a carried
+      crop gets is bare by design — "the same left eye, unchanged" — so an
+      anatomy slot with a crop was saying NOTHING about what the feature is.
+
+      What that cost, measured on one cast across three presentations of the
+      same crop (padded to the frame, clean, and scaled to 512 px):
+
+        crop alone, no words       her delivered eye colour came back  0 of 5
+        words present (with or
+        without the crop)                                              5 of 5
+
+      The presentation moved three ways and changed nothing; the sentence
+      changed everything. The founder's own outside-the-app exhibit is the same
+      shape — his prompt named what the crop was for ("@Image 1 is her left eye
+      COLOUR"), which is a crop-plus-words render on another engine, and it
+      delivered.
+
+      Keyed on the TIER, which is the catalogue's own class for the slot, and
+      never on a list of slot names: a name list is a second source of truth that
+      every new slot joins by being forgotten.
     */
-    if (ordinalOf.has(entry.slot)) continue;
+    if (ordinalOf.has(entry.slot) && entry.tier === "item") continue;
     if (entry.tier === "item") continue;
     standing.push({
       slot: entry.slot,

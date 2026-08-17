@@ -3304,13 +3304,23 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
        claim checkable rather than plausible. */
     expect(request.prompt).toContain("Reference 2 is the exact lips she has");
     /*
-      AND THE WORDS ARE NOT BESIDE IT (fable-598). The reference names the slot
-      and the claim; the crop is the description. His own dispatched prompt is
-      why: one object rode with two different sentences and the delivery
-      followed the disagreement rather than the pictures.
+      AND FOR AN ANATOMY SLOT, THE WORDS RIDE BESIDE IT — at the wire, which is
+      where this proof has to be (fable-863 §3c).
+
+      This assertion read `not.toContain("a fuller cupid's bow")` until
+      2026-08-17, carrying fable-598's item rule onto a slot it was never
+      measured on. `lips` is ANATOMY: its crop is an assist worth about a third
+      of the distance against a master that disagrees with it, and the word
+      stack is the carrier of record (fable-192). Measured the same day on an
+      eye, which is the same class: crop alone 0 of 5 across three
+      presentations, words present 5 of 5.
+
+      The item half of the rule keeps its own arm in `recipeAssembler.test.ts` —
+      an earring's crop still says nothing beside itself, for the reason it
+      earned.
     */
     expect(request.prompt).toContain("the same lips, unchanged");
-    expect(request.prompt).not.toContain("a fuller cupid's bow");
+    expect(request.prompt).toContain("Keep her lips exactly: a fuller cupid's bow.");
   });
 
   /**
@@ -3700,7 +3710,7 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
       .toBeUndefined();
   });
 
-  it("lets NO carried kind restate itself beside its own crop", async () => {
+  it("lets an ITEM's crop speak alone and makes ANATOMY say its words too", async () => {
     const kinds = [
       { slot: "hair", tier: "anatomy", noun: "hair", words: ["auburn-brown, shoulder length"] },
       { slot: "lips", tier: "anatomy", noun: "lips", words: ["a fuller cupid's bow"] },
@@ -3723,13 +3733,33 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
       { ...input, instruction: "give her a warm tan" },
     );
 
+    /*
+      BOTH DIRECTIONS, SWEPT ACROSS BOTH TIERS, at the wire (fable-863 §3b/c).
+
+      Until 2026-08-17 this loop asserted the SAME thing for every kind — no
+      slot restates itself beside its crop — which is fable-598's item rule
+      applied to anatomy, where it was never measured. It cost the eyes their
+      carrier: an anatomy slot with a crop said nothing about what the feature
+      IS, and the delivered colour came back 0 times in 5.
+
+      Now the sweep is the discriminator. An item that starts describing itself
+      reddens; an anatomy slot that goes quiet reddens. Neither direction can
+      drift without this failing.
+    */
     const { prompt } = painted[0]!;
     for (const kind of kinds) {
+      expect(prompt).toContain(`is the exact ${kind.noun} she has — the same ${kind.noun}, unchanged.`);
+      if (kind.tier === "item") {
+        expect(
+          prompt,
+          `${kind.slot} is an ITEM: its crop is the fact and a sentence beside it is a second author`,
+        ).not.toContain(kind.words[0]!);
+        continue;
+      }
       expect(
         prompt,
-        `${kind.slot} rode as a crop, so the prompt must not describe it again`,
-      ).not.toContain(kind.words[0]!);
-      expect(prompt).toContain(`is the exact ${kind.noun} she has — the same ${kind.noun}, unchanged.`);
+        `${kind.slot} is ANATOMY: its words are the carrier of record and ride beside the crop`,
+      ).toContain(`Keep her ${kind.noun} exactly: ${kind.words[0]!}.`);
     }
     /* And the crops really did ride — an assertion about what is ABSENT from a
        prompt passes just as well when nothing was carried at all. */
