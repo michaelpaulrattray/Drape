@@ -825,6 +825,45 @@ Sequenced after the open lane is live and the kind-property design
 lands; the demand tally will also say which discoveries matter to real
 users. Not started, nothing spent.
 
+## 5d. THE SCI-FI NORTH STAR — his specimen, and the sheets CAN birth it
+
+Founder-supplied reference, 2026-08-17, filed at
+`docs/specs/references/scifi-north-star-founder-2026-08-17.jpeg`: a bald
+cyborg bust — cranial ports and seams, jaw plating, one lit eye, an
+armoured collar, cinematic dark lighting.
+
+**The decomposition, agreed with him** (fable-886 §1): person-attached
+cyber features are the **open lane**; the armour is **wardrobe's**
+territory and the stage wall correctly refuses it in refine; the
+cinematic mood is his **"takes"** idea, which is NOT-YET-CONFIRMED and
+unchanged.
+
+### "The sheets cannot create sci-fi" is DISPROVEN — n=1, his credits
+
+He ran it himself rather than taking the queued dev probe (fable-887).
+Result filed at `references/scifi-north-star-roll-result-2026-08-17.png`,
+first attempt: implant plates riveted into the scalp with visible seams,
+a jaw plate following the bone line, wire traces at the eye socket, one
+glowing amber-red eye — **and the grey tee, the studio backdrop and the
+standard framing all held.** The brief interpreter neither refused the
+sci-fi content nor normalised it away. fable-886 §3's question is
+answered: **accepted and delivered.**
+
+**One observation filed with it, seen at the frame** (fable-888 §2): the
+glowing eye landed on the IMAGE's right — his LEFT — against a brief that
+said his right. That is `per-side-paint-favours-image-right` appearing at
+**birth** rather than only in edits. Worth one line wherever the roll
+prompt's side language is next touched; not worth work now.
+
+### The path today, and its one gate
+
+birth by brief (**proven**) → born features safe in the anchor
+(**structural** — the anchor carries them) → open-lane edits (**live**,
+`users:1`) → the panel as a first-class experience (**waits on the
+discovery scan**, §5c, and his own sequencing: *"once our detector
+actually can detect his features naturally that would be a better
+starting point"*) → armour is wardrobe, mood is "takes".
+
 ## 6. Engine routing for marks (evidence exists; engineering item)
 
 NBP 6/6 at 848×1264 (its only size) vs GPT2 6/8 native; GPT2 tore

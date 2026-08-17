@@ -1464,3 +1464,100 @@ controls from kinds the catalogue does not own on the day it runs.
 
 Turning it on for the founder is a deliberate recorded act and has not been
 taken here.
+
+## 9.15 THE FIRST OPEN ASK, WALKED — 2026-08-17, dev, and it delivers
+
+*Ordered fable-885 §3: drive one open ask end to end through the REAL service in
+dev, before the founder's money is the first walker. Face #376, user 1, zero
+prior variants — nothing about this face had ever been asked, so the row's delta
+is this walk's and nothing else. One paid step: 25 dev credits and one fal
+render.*
+
+The five bars were written into the script before the credit was spent.
+
+| | what it asked | answer |
+|---|---|---|
+| **S1** | does the ask FILE as an open kind? | `{"open":{"fangs":{"noun":"fangs","words":"vampire fangs"}}}` |
+| **S2** | does the RECIPE say it? | *"Change only her fangs: vampire fangs."* |
+| **S3** | does it land and charge once? | `ready` · charged 25 · **refunded 0** |
+| **S4** | is demand recorded? | one row — `fangs` · `words_only` |
+| **S5** | **has she got fangs?** | **yes — and she is still herself** |
+
+**The recipe is the finding of the walk.** The whole sentence a slotless ask
+produces is:
+
+> *Reference 1 is the photograph of this person — reproduce her exactly: same
+> face, same pose, same lighting, same framing, same background. Change only her
+> fangs: vampire fangs.*
+
+That is the compositor swap's own shape carrying a kind the catalogue has never
+heard of, with the customer's two words in the only place they belong. The
+design note's §3 warning — *"the more successfully the interpreter accepts an
+open ask, the more reliably the repaint road refuses it and hands the money
+back"* — **does not fire.** `RepaintCannotSayError` was the predicted failure and
+it did not happen; the assembler builds a sayable ask from `delta.open` and the
+render goes out.
+
+### S5 read at magnification, because that is the rule for a small feature
+
+At viewing size she plainly has fangs. At **3× on the mouth, nearest-neighbour**
+(doctrine entry 20) the reading is unambiguous: two upper canines, elongated and
+pointed, descending over the lower lip, in a plausible ivory. Everything else in
+the crop is hers — the mole on her left cheek, the lip shape and colour, the
+nose, the fine lines around the mouth. **The likeness held.**
+
+**Three things worth naming, and the first is the founder's own question.**
+
+1. **IT DELIVERED A PAIR, UNPROMPTED.** Two fangs, one each side, symmetric. The
+   product does not know `fangs` is paired — `openKindIsPlural()` answers the
+   same for every open kind — so nothing told the engine to make two. On this
+   kind it got the count right by itself. That is one specimen and not a rate,
+   but it is the first evidence on his *"detect two wings rather than just 1"*
+   question and it points the friendlier way.
+2. **The engine parted her lips to show them**, and it had to: the master is
+   closed-mouthed with no teeth visible anywhere. A recipe reading *"change only
+   her fangs"* on a closed mouth could honestly have produced a frame with
+   nothing visible in it — a paid render delivering an invisible feature. It
+   solved the presentation problem itself, which is fable-868's class (b)
+   behaviour on a feature nobody classified.
+3. **`words_only` is the true outcome and the table says so.** No crop was
+   minted, because the pair ruling's conservative interim holds until the
+   kind-property design lands. The fangs in this frame ride words alone, and the
+   next edit on this face is the first test of whether they survive one.
+
+### What this walk does NOT settle
+
+It is **one ask, one kind, one face, one render.** It says the road is open and
+walkable; it says nothing about a rate. And it leaves the carry question
+untouched — whether an open kind delivered by words alone survives the NEXT
+edit is the question `library-holds-presence-not-absence` has already bitten
+this program on, and it wants its own walk.
+
+### The money, and a balance subtraction could not have told you this
+
+```
+fal at open              $28.0713
+fal immediately after    $27.0555     (-$1.0158)
+fal after a 4m settle    $26.8033     (-$1.2680)   entry 22 again, a third time
+```
+
+**And $1.2680 is NOT what this walk cost.** The account is shared, and the
+founder was running a paid sci-fi roll on production in the same window — so a
+balance subtraction attributes his eight candidates to my one ask. That is the
+`ACCOUNT-wide, not per-key` caveat the OpenRouter reader's own docblock carries,
+met on the other transport where I had not thought to apply it.
+
+**The service's own census settles it, and it is the instrument to quote:**
+
+```
+calls 6 · failedCalls 0 · callMs 141,532 · wallMs 158,799
+  openrouter:anthropic/claude-sonnet-5   5 calls   25,414 ms   (the reads)
+  fal:openai/gpt-image-2/edit            1 call   116,118 ms   (the paint)
+```
+
+**One fal call.** One gpt-image-2 edit, which the cost table prices near $0.10.
+So the honest sentence is that the walk spent one render and five text reads,
+and that the $1.27 the balance moved is an upper bound containing somebody
+else's work. A per-operation cost comes from the per-operation record; a
+subtraction over a shared account cannot produce one, however patiently it
+waits for the settle.
