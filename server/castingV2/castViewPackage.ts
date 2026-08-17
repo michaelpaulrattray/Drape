@@ -443,6 +443,40 @@ export function castPackageLabel(
  * everything above it. The anchor image travels separately as a reference —
  * this text never describes the person, because describing them is how a
  * likeness drifts into a lookalike.
+ *
+ * # WHAT A VIEW IS RENDERED FROM TODAY, and the gap it leaves
+ *
+ * The anchor's PIXELS plus this constant. **No customer words reach a view** —
+ * not the open field, not a refine delta, not `identityText` (which is stamped
+ * on the asset record and never enters a prompt). Verified at the wire,
+ * 2026-08-17. So whatever is visible in the signed portrait carries into the
+ * fuller views through the reference image, and whatever is not visible in it
+ * carries by nothing at all.
+ *
+ * That is deliberate — it is the sentence above — and it is also a GAP the
+ * moment the product accepts an ask about something the portrait cannot show
+ * (a vampire's hands, an ankle tattoo). The founder has ruled such asks are
+ * accepted, free, and *"for now"* pending exactly this test.
+ *
+ * # THE FOUNDER'S BOUND ON CLOSING IT — fable-876 §2, verbatim
+ *
+ * > *"i think yes i just dont know what to expect obviously the reference is
+ * > still king."*
+ *
+ * **THE REFERENCE IS STILL KING.** The anchor image remains the identity
+ * authority. A clause added here may supply ONLY facts the anchor cannot show;
+ * it may never re-describe the person; and where words and pixels could
+ * disagree, **the pixels win**. That is the same likeness-drift guard this
+ * comment has always stated — his ruling makes it a founder bound rather than
+ * an engineering preference, which means it is not a tradeoff a later build
+ * gets to re-weigh.
+ *
+ * Two things must exist before any such clause rides six paid views: the
+ * how-does-the-code-know-a-fact-is-not-shown answer (designed once, with the
+ * does-it-extend and is-it-paired kind-properties — fable-872 §2), and a
+ * CONTROL on `packageViewExpectation`, which is assembled from the view spec
+ * alone and today has no opinion about a clause at all (invariant 7 —
+ * fable-871 §3).
  */
 export function composePackageViewPrompt(angle: CastViewAngle): string {
   const view = VIEWS[angle];

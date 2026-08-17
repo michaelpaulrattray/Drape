@@ -8,6 +8,7 @@ import {
   composeEditPrompt,
   composeRenderPrompt,
   contradictedFacets,
+  filedSubjectsOf,
   identityDetailsOf,
   presentationOf,
   readDelta,
@@ -328,6 +329,53 @@ describe("the free lane files, or it refuses", () => {
   it("CONTROL — with NO check the whole delta still nulls, and records nothing", () => {
     expect(readDelta({ free: { fangs: "long slender fangs", brows: "thick and straight" } }))
       .toBeNull();
+  });
+
+  /*
+    THE CHIP FOR AN OPEN KIND — `refineDelta`'s own header named this reader as
+    step 5's to close rather than leaving it to be rediscovered.
+
+    Without it, somebody who paid for an open ask sees every OTHER subject their
+    instruction touched and no sign of the thing they actually asked for, which
+    reads as "we filed your edit somewhere else".
+  */
+  it("shows an open kind on the chips, under the customer's own word", () => {
+    expect(filedSubjectsOf({
+      free: { brows: "thick and straight" },
+      open: { "cat-ears": { noun: "cat ears", words: "small grey cat ears" } },
+    })).toEqual(["BROWS", "CAT EARS"]);
+  });
+
+  /*
+    AN OPEN-ONLY DELTA IS THE ORDINARY SHAPE, not a corner: *"give him fangs"*
+    writes nothing else. `readDelta` cannot see `open`, so such a delta reads as
+    EMPTY — and this arm exists because the chip loop used to sit behind that
+    emptiness check and was unreachable for exactly the ask it was written for.
+  */
+  it("shows an open kind when it is the ONLY thing the instruction filed", () => {
+    expect(filedSubjectsOf({
+      open: { "cat-ears": { noun: "cat ears", words: "small grey cat ears" } },
+    })).toEqual(["CAT EARS"]);
+  });
+
+  it("CONTROL — the chip comes from the NOUN, never from the kebabbed key", () => {
+    /*
+      fable-775 §3's binding condition: keys are identifiers, never copy. A chip
+      derived from the key would put `CAT-EARS` in a customer's face for an ask
+      they typed as *cat ears* — and the key cannot be un-kebabbed back into the
+      noun, which is exactly why the noun travels beside it.
+
+      Asserted against a delta that DOES produce a chip. The first draft of this
+      arm used an open-only delta and passed while the loop it guards was
+      unreachable: `not.toContain` on an empty array cannot fail, which is a
+      control that certifies whatever it is pointed at.
+    */
+    const chips = filedSubjectsOf({
+      open: { "cat-ears": { noun: "cat ears", words: "small grey cat ears" } },
+    });
+
+    expect(chips).toHaveLength(1);
+    expect(chips).not.toContain("CAT-EARS");
   });
 
   it("refuses scenery smuggled into a person subject", () => {

@@ -41,6 +41,9 @@ import {
 import { HAIR_COLOURS, type HairColour } from "../../shared/castingVocabularies";
 import { REFINABLE_CUT_NAMES, hairStyleByName } from "./hairStyles";
 import { scrubBrands } from "./brandScrub";
+/* Value import, and the edge back is TYPE-ONLY (`OpenKindAsk`), so it is erased
+   and there is no runtime cycle. */
+import { readOpenKinds } from "./openLaneKind";
 import { classifyInkPlacement, namesDesign, placementClause } from "./inkPlacement";
 import { namesUnknownProperNoun } from "./properNouns";
 import { tokensComeFromBrief } from "./castingIntent";
@@ -594,6 +597,49 @@ export function namesHairColour(text: string): boolean {
 /** And a set is a handful, not a second brief arriving as a list (D-171). */
 const MAX_ITEMS = 8;
 
+/*
+  ─────────────────────────────────────────────────────────────────────────────
+  A GUARD THAT REFUSES BY **ABSENCE** PROTECTS NOTHING ONCE A FALLBACK LANE
+  STANDS BEHIND IT. A GUARD THAT REFUSES BY **ACTING** TRAVELS.
+
+  Ordered onto the record by fable-875 §3, from the open lane's step-5a build,
+  and written here because this is the wall it happened to.
+
+  The rule that used to keep a garment out of a face edit was *"a red coat has
+  no subject to file under"* — enforcement by there being no home for it. That
+  is airtight for as long as an unfiled ask DIES. The open lane is a fallback
+  whose entire job is to catch what no closed subject claimed, so the day it
+  opened, `{coat: "red"}` arrived at its door in exactly the shape `{fangs: …}`
+  does, and the first cut of the acceptance would have minted `open:coat` — the
+  one wall keeping a face edit from repainting the room, turned into the new
+  lane's front door.
+
+  **The three-wall audit, run rather than reasoned** (law 7 — the class, not the
+  instance):
+
+    stage wall          refuses by ABSENCE  → BROKE. Fixed by asking this
+                        lexicon of the open kind's NOUN as well as its words,
+                        because in that ask the garment is the KEY and the value
+                        is merely "red"
+    source containment  refuses by ACTING   → travels. It measures a value
+                        against the customer's sentence, and the open lane runs
+                        it on the words it files
+    brand scrub         refuses by ACTING   → travels. Same reason: it operates
+                        on the text rather than on where the text was filed
+
+  **And the way it was caught belongs in the rule.** Nothing failed. The arm
+  that found it — *"refuses a subject the code does not own"*, asserting `coat`
+  and `backdrop` — still passes and was never going to fail, because `readDelta`
+  files nothing either way. It was read to confirm the change had not moved it,
+  and the sentence read to confirm it is what said the new door had a hole. A
+  test that cannot fail can still be a READING; that is not a reason to keep
+  one, and it is a reason to read the ones you have when a lane opens behind
+  them.
+
+  Before adding any lane that catches what nothing else claimed, walk the guards
+  in front of it and sort them into these two piles.
+  ─────────────────────────────────────────────────────────────────────────────
+*/
 /**
  * Words that are about the STAGE, not the person — wall (b)'s second half.
  *
@@ -601,6 +647,9 @@ const MAX_ITEMS = 8;
  * to file under), but a model can also smuggle scenery into a person subject:
  * "skin" carrying "against a red backdrop". Cheap to check, and the failure it
  * prevents is a paid edit that repaints the room.
+ *
+ * **Since step 5a it is also asked of an open kind's noun** — see the block
+ * above for why, and for the class that made it necessary.
  */
 const STAGE_WORDS = [
   "backdrop", "background", "wall", "studio", "set", "scene", "location",
@@ -1783,9 +1832,29 @@ export function applyDelta(original: ResolvedIdentity, delta: RefineDelta): Reso
  * will overwrite.
  */
 export function filedSubjectsOf(deltas: unknown): string[] {
-  const delta = readDelta(deltas);
-  if (!delta) return [];
   const subjects: string[] = [];
+  /*
+    AN OPEN KIND IS READ FIRST, AND THAT ORDER IS THE WHOLE FIX.
+
+    `readDelta` does not see `open` at all, so a delta holding ONLY an open kind
+    — *"give him fangs"*, which is the ordinary shape of an open ask rather than
+    a corner — reads as an EMPTY delta and nulls. Behind the early return that
+    used to sit here, the customer with the purest open ask in the product got
+    no chip whatsoever.
+
+    Found by sabotage rather than by reading: the control arm for this loop was
+    written against an open-only delta and passed while the loop was
+    unreachable, because `not.toContain` on an empty array cannot fail. An
+    assertion that cannot fail on a blank surface is the class this campaign has
+    already paid for; it caught itself here only because the positive arm beside
+    it carried a second subject.
+  */
+  const open = Object.values(readOpenKinds(deltas) ?? {}).map((ask) => ask.noun.toUpperCase());
+  const delta = readDelta(deltas);
+  /* Its CHIPS stay in the order they have always been shown in — last, after
+     the subjects the closed lane names — but the READ has to happen above,
+     because the delta being empty is the very case this closes. */
+  if (!delta) return Array.from(new Set(open));
   if (delta.eyeColour) subjects.push("EYE COLOUR");
   if (delta.eyeShape) subjects.push("EYE SHAPE");
   if (delta.hairStyle) subjects.push("HAIR CUT");
@@ -1800,6 +1869,7 @@ export function filedSubjectsOf(deltas: unknown): string[] {
   for (const subject of Object.keys(delta.absent ?? {})) {
     subjects.push(FREE_SUBJECTS[subject as FreeSubject]);
   }
+  subjects.push(...open);
   return Array.from(new Set(subjects));
 }
 

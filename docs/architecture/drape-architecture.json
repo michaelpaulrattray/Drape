@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "aa5d40a4777395e3"
+    "sourceFingerprint": "5f17a4eb935bc8b5"
   },
   "domains": [
     {
@@ -20067,6 +20067,11 @@
     {
       "from": "module:server/castingV2/refineDelta.ts",
       "to": "module:server/castingV2/inkPlacement.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/refineDelta.ts",
+      "to": "module:server/castingV2/openLaneKind.ts",
       "kind": "imports"
     },
     {

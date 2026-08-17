@@ -390,6 +390,33 @@ export const OPEN_KIND_POLICY: Record<string, OpenKindAnswer> = {
         + "already declares it is not. §7's demand table is where a below-the-crop kind "
         + "shows up: a kind whose outcomes are refunds is one of the things the promotion "
         + "decision is reading for",
+      /*
+        AND THE FOUNDER HAS RULED WHAT HAPPENS TO SUCH AN ASK — twice, and the
+        second ruling is the one that costs money.
+
+        **fable-869 §2: NOTHING REFUSES ON VISIBILITY.** *"i think we stick to my
+        original just sell and dont refuse anything unless the image is truely
+        severely broken."* An ask whose region is not visible in the current
+        frame is ACCEPTED and rides as words in the cast's record. Law 8's
+        grounds: a cast is a CHARACTER, not a photograph — the vampire's hands
+        exist off-frame.
+
+        **fable-876 §1: AND IT IS ACCEPTED FREE, for now.** His words: *"we will
+        need to test how it renders once you sign the cast so for now yes."* So
+        an invisible-now ask is an accept-WITHOUT-dispatch: the words join the
+        record, no render is bought, and the copy says honestly where it will
+        show. The reason it is the only honest option today is measured rather
+        than argued — a render of an invisible region returns a
+        pixel-identical frame, so charging 25 credits for it would be charging
+        for the picture she already had.
+
+        **HIS CONDITION RIDES WITH IT, and it is an obligation on a later
+        build**: when a cast carrying invisible-recorded facts is SIGNED, the
+        render of the fuller views must be TESTED against those facts. The
+        free-accept is *"for now"* until that test passes his eyes. It is not
+        satisfied by this table and it is not satisfied by the acceptance path;
+        it is the view-carry work's, and it is why that work is not optional.
+      */
     },
     standing: "owed",
   },
