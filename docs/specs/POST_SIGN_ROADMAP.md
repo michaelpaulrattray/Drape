@@ -239,6 +239,25 @@ out, **BEFORE M8 starts.**
 polish queue → V5 → M12 close-out → CLEANUP → M8
 ```
 
+> **Re-confirmed by the founder in person, 2026-08-17** (fable-870 §1, verbatim:
+> *"after m12 closeup we go to m13 no we dont we continue through to m8 as thats
+> the official milestone in the plan we would be up to for casting studio v2 we
+> just skipped to m12 by design and made the plan shorter"*). **Nothing new sits
+> between M12 and the cleanup, and nothing between the cleanup and M8.** Cited
+> here so the next restatement of the ordering has a ruling to diff against
+> rather than a memory to consult.
+>
+> ⚠ **`M13` is a live label on TWO different things and neither reading is
+> wrong** — read which one a sentence means before acting on it. In the
+> **canonical plan** (`CASTING_V2_ARCHITECTURE_PLAN.md:442`) M13 is a real
+> milestone — *Cutover & observation*, scope→all with a 14-day window and a
+> founder sign-off. In **this file** (§7) "the M13 batch" is the pre-launch
+> checklist that gate stands on, plus the polish items slotted into the same
+> window. They are consistent; what is NOT is treating M13 as a step that
+> follows M12, which is the thing the founder just corrected. Where the two ever
+> disagree, fable-870 §3 rules that the canonical plan outranks any summary of
+> it — including this paragraph.
+
 **Scope, drafted at ruling time precisely so it would not be reinvented**
 (fable-710 §2): disposable scripts swept (keep only what a standing instrument
 cites), probe/output directories cleared, dead flags and superseded code paths

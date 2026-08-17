@@ -933,3 +933,84 @@ claim was harmless while the exemption was scoped to kinds with families; step 3
 makes it load-bearing, because every open kind that carries will now be a
 ceiling acceptance. The nearest honest derivation from what IS persisted is
 `guardThreshold == 10000`, which is not the same claim.
+
+## 9.9 The specimen court — run 2026-08-17, and it changes what step 5 can promise
+
+*Ordered fable-866 §3c, extended by fable-868 §3. DEV world, house money
+$0.66 of a $3.00 ceiling (33 reads at $0.005, 5 transport frames at $0.099),
+zero credits, no production write. Driver:
+`scripts/court-open-absence-disposable.mts` (untracked, per the standing
+disposable convention); artifacts and the co-sign panel in
+`output/open-absence-court/`.*
+
+**What it does not prove, stated first** (fable-871 §4): the positive specimens
+are made through the image transport DIRECTLY, because no ask path into the
+lane exists until step 5. This court reads the mint door's instrument on
+delivered-shaped frames. It is not an end-to-end proof of the product path, and
+no sentence from it may stand in for one.
+
+**The controls, both green, printed before any verdict.** `hair` must ANSWER on
+every frame (4.5176% · 4.9739% · 5.8818% · 4.5525%) — without it a reader that
+had quietly stopped answering anything would score a perfect absence control.
+`horns` must DECLINE on every frame (0.0000% ×4) — it is the catalogued,
+courted kind whose 0.0000%-on-bare-frames reading the absence control's floor
+was derived from, so it is the one kind whose expected answer was already on the
+record.
+
+```
+                bare masters (n=4)        a frame MADE to hold it
+fangs           declined 4/4  0.0000%     ANSWERS   0.0549%
+wings           declined 4/4  0.0000%     ANSWERS   7.3277%
+tail            declined 4/4  0.0000%     ANSWERS   1.6935%
+scales          declined 4/4  0.0000%     declines  0.0000%
+gills           declined 4/4  0.0000%     declines  0.0000%
+```
+
+**§4's central worry is REFUTED for all five kinds.** The note reasoned that a
+segmenter asked *"where are the horns"* on a face with none *"will, on that
+evidence, return something — a small confident region of forehead."* On this
+reader, on these nouns, it returns exactly nothing: twenty bare-frame readings,
+every one 0.0000%. The absence control will not be the thing that stops an open
+kind carrying.
+
+**But three of five carry and two are INVISIBLE TO THE READER, and that is the
+finding.** `scales` and `gills` were delivered by the engine and are plainly
+there — I looked at both frames — and the reader answered 0.0000% on each. A
+kind the reader cannot see on a frame that holds it gets no region on the
+delivered frame either, so it falls to `noRegion` and files words. **It is not a
+safety failure and it is not the control's doing**; it is a delivery ceiling,
+and it is the promotion signal the demand table exists to collect. Both failures
+are fine-grained surface texture on the neck, which is a CLASS rather than two
+instances — the same class the describer failed on the freckle court, arriving
+now on the segmenter.
+
+**The bilateral finding, which only the frames show.** On `wings` the reader
+found ONE wing (7.33% of frame, the image's left) and not the other, and the
+number alone reads like a clean pass. §5 rules open kinds SINGULAR until
+promoted — *"one slot holding one value, one carried crop of the whole thing"* —
+and the whole thing is not what a whole-frame read returns for a pair. **A
+paired open kind would carry a crop of one instance under a name that means
+both.** That is the earring history in a new lane, and it wants a ruling before
+step 5 files a pair: the honest options are to treat a paired open kind as
+words-only until promoted, or to route it through the per-side reader the
+closed lane already has (`regionSides`), which is a capability question rather
+than a policy one.
+
+**And the founder's own tail question is answered by a frame** (fable-868 §1).
+Asked for a tail on our standard head-and-shoulders framing, the engine painted
+one **floating beside his shoulder, anchored to nothing** — the hip it grows
+from is out of frame, so what arrives is a detached appendage rather than
+anatomy. The reader found it perfectly. So class (b) *"extends into frame"* is
+real and is not automatically SELLABLE: a stylist would not keep this frame.
+Wings, by contrast, present naturally past the silhouette and read as worn.
+Observed, not built for.
+
+**One instrument defect, mine, found by reading my own output.** The court's
+summary line printed `CARRIES fangs, wings, tail, scales, gills` off the
+bare-frame arm alone, because passing the absence control had been coded as
+carrying. It is not: a kind that declines on a frame that HOLDS the thing never
+gets a region either. The classification now needs both arms and prints
+`CARRIES` / `BLIND` / `REFUSED`, plus `UNPROVEN` when the positive arm was not
+run at all — since a clean absence control and a reader with no concept of the
+word are indistinguishable without it. The per-kind rows above were correct
+throughout; only the sentence over them was wrong.
