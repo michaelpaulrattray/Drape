@@ -224,8 +224,17 @@ describe("which surfaces can ride a package view at all", () => {
   });
 
   it("says the upper arm and the neck can", () => {
-    /* The crew tee leaves both bare in the package's own framings, which is what
-       the court's passing arm actually demonstrated. */
+    /*
+      The crew tee leaves both bare in the package's own framings.
+
+      When this was written only the upper ARM had a passing arm behind it and
+      the sentence claimed both. **The neck now has its own court** (2026-08-19,
+      ordered fable-1008 §4a): three arms, all must-SHOW, all passed by eye —
+      `closeUp` (the crop's own subject), `frontFull` (bare above the crew neck)
+      and `backFull` (the plate inks the nape, so must-not there would have been
+      a mislabel). Nothing appeared anywhere else in any of the three, which is
+      the must-not this placement can honestly carry.
+    */
     expect(placementRidesPackageViews("upperArm")).toBe(true);
     expect(placementRidesPackageViews("neck")).toBe(true);
   });

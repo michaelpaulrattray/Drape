@@ -83,6 +83,41 @@ describe("the blank forms a design is plated onto", () => {
     expect(inkTemplateFor("upperChest").kind).toBe("body");
   });
 
+  it("gives the NECK a form with a BACK view — which is why a nape tattoo rides backFull", () => {
+    /*
+      MEASURED, the neck court (2026-08-19, ordered fable-1008 §4a).
+
+      The neck is the released vocabulary's third placement and no arm had ever
+      been run on it. The plate was minted and LOOKED AT before any arm was
+      written, which is the round-one mislabel lesson applied at scoping time:
+      the body form has a front view and a back view, the plate prompt draws the
+      design on each so a wrap-around design reads as one design from every
+      angle, and the minted neck plate therefore carries the artwork on the
+      FRONT of the neck and again on the NAPE.
+
+      So `backFull` is a must-SHOW arm for a neck design, not a must-not — and
+      the render agreed: the sprig and its lettering arrived on the nape, ink on
+      skin, the tee untouched. Had the arm been labelled must-not from the
+      placement's name, a correct frame would have been filed as a bleed.
+      (`output/view-reference-court/r6-neck-backFull.png`; closeUp and frontFull
+      passed in the same sitting.)
+
+      **THIS IS THE PIN, AND IT HAS A LIVE THREAT.** What put ink on the nape is
+      not prose — it is `views` carrying "back". The universal single-view
+      template spec (§7.10 of `V3B_INK_AND_MARKS_DESIGN_NOTE.md`, founder
+      rulings fable-989/990) retires the front-and-back sheet for two separate
+      one-view plates. A neck design routed to the FRONT blank alone loses the
+      nape half of its own tattoo, `backFull` silently stops showing it, and
+      nothing else in the suite would notice. That commit must decide what a
+      neck design plates onto; this test goes red when it changes, which is the
+      whole point of it.
+    */
+    const template = inkTemplateFor("neck");
+    expect(template.kind).toBe("body");
+    expect(template.views).toContain("front");
+    expect(template.views).toContain("back");
+  });
+
   it("points at the code-owned path, never at the evidence directory", () => {
     /* fable-958 §1: moved, not duplicated. The prompt, the pre-crop source and
        the candidates panel stay in `docs/specs/references/templates/` as

@@ -764,3 +764,19 @@ approval lands, the same commit must:
    earned, which is a declared state rather than an oversight.
 5. **Carry the crop-line question.** fable-997 §4 re-anchored it on the new
    blanks: it is asked (or visibly moot) when they go to his eye.
+6. **Decide what a NECK design plates onto, because the single-view spec takes
+   its nape away.** Found by the neck court (2026-08-19): the neck routes to the
+   `body` form, whose sheet has a front view AND a back view, so the plate
+   prompt draws the artwork on both — the minted plate carries it on the front
+   of the neck and again on the NAPE. That is not decoration: a `backFull`
+   package view renders the nape ink correctly today, looked at by eye
+   (`output/view-reference-court/r6-neck-backFull.png`).
+
+   Two separate one-view plates mean a neck design lands on ONE of them. Routed
+   to the front blank alone it loses half of its own tattoo and `backFull`
+   silently stops showing it. The options are a neck design plating onto both
+   blanks, a neck-specific blank that shows the neck from an angle carrying
+   both, or an accepted narrowing recorded as a decision. **Do not let it be
+   settled by which blank `TEMPLATE_FOR` happens to name.**
+   `inkTemplates.test.ts` goes red when the views change, so this cannot pass
+   unnoticed.
