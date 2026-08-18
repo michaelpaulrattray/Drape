@@ -1691,6 +1691,29 @@ table moves.
 
 An out-of-vocabulary feature with **no crop** rides on words alone and may still
 vanish on a later edit; what has changed is that the frame is now ASKED about it
-and the miss is on the record. Production mints no open crops (no property
-table), so production is on the words road throughout and this build is inert
-there.
+and the miss is on the record.
+
+### WHERE IT FIRES — corrected at the rows the day it shipped
+
+The first draft of this section said *"production mints no open crops, so
+production is on the words road throughout and this build is inert there."*
+**That sentence was carried from a report about the CARRY/EDIT SPLIT and is the
+wrong premise for this build.** The split's inertness comes from crops; this
+gate is the REPAINT ROAD, and `CASTING_REPAINT_SCOPE` is `users:1` in
+production — the founder's own refines run straight through it.
+
+What is actually true, read off rows rather than reasoned
+(`scripts/read-open-kind-rows-disposable.mts`, both controls printed first — an
+invented kind must return 0 and the closed lane must return more than 0):
+
+```
+                              variants carrying delta.open
+PRODUCTION :23768             0   (closed-lane control 21)
+DEV        :52008             6   (closed-lane control 65) — all user 1,
+                                  2026-08-17, the open lane's own walk
+```
+
+So the verifier asks nothing in production **today**, and the reason is that no
+open ask has ever been filed there — not that the code cannot reach it. The
+first open kind the founder files in production is asked about and recorded from
+that moment, which is the intent rather than a surprise.
