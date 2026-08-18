@@ -876,6 +876,61 @@ type), it touches the module the fidelity law is named for, and §14b's question
 has a clean answer for once: *what was this for?* — it was the road before the
 mattes. Held for ratification rather than taken on one shift's reading.
 
+### 15d. ⚠ §15c's DISPOSITION IS WITHDRAWN — the island is a declared test
+### vocabulary, and I had not read the module's own header
+
+**The import facts in §15c stand. The verdict built on them does not.**
+
+Two things were found on the way to executing the retirement, both inside files
+§15c had not opened:
+
+**1. The module header declares the shape machinery, in the same breath as the
+fidelity law.** `maskGeometry.ts:28`:
+
+> *"Everything below therefore operates on MASKS, from any source. **The shape
+> rasteriser at the bottom exists to build fixtures for tests that must not cost
+> a credit**; it is not a way to make a mask for a paying user, and it says so."*
+
+So the authored shapes were not corrected-and-abandoned. They were **demoted on
+purpose**, in writing, at the top of the file that carries the founder rider
+about where masks come from. §15c read that demotion as an unfinished
+retirement because it read the import graph and the live road and not the
+prose above them.
+
+**2. The fixtures those builders produce are what several LIVE functions are
+tested with.** `rasterise` takes a `RegionSpec`, so the two types cannot leave
+while the declared fixture facility stays — and the region builders are the
+vocabulary the fixtures are written in:
+
+```
+const checked: UsableMask = assertUsable(rasterise(hairRegion(GEOMETRY), W, H), "hair");
+expect(() => assertUsable(empty, "eyes")).toThrow(/selects nothing/);
+expect(coverage(mask)).toBeGreaterThan(0.01);
+```
+
+`assertUsable` has live production callers. So does `coverage`. Counted rather
+than eyeballed, the fixtures built through a region builder exercise
+`assertUsable` (×2), `compositeMasked`, `coverage` and `outsideMaskUnchanged`.
+
+**That is §8c's class, aimed at me**: *"when a dead road's tests are deleted,
+ask which of them were testing the LIVE road through the dead one."* The
+milestone wrote that rule after the ink-intent removal and I proposed a
+retirement eight symbols wide without applying it.
+
+**Status: HELD, and the disposition is re-opened rather than re-decided here.**
+What is still true and worth keeping: `FaceGeometry` has no producer in
+production, nothing outside the module names any of these, and the live paste
+road builds its zones from segmenter mattes. What is now also true: the
+region API is the declared vocabulary of a declared test-fixture facility, and
+some of its tests are the only coverage of live algebra.
+
+> **The class, and it is the same one twice in one shift:** §15a found an
+> instrument counting prose as a caller; this is a READER counting an import
+> graph as an intention. **An import graph says who calls a symbol. It cannot
+> say what the symbol is for — and in this repository the answer is usually
+> written at the top of the file.** Read the module's own header before
+> proposing to retire anything in it.
+
 ---
 
 ## 16. A SENTENCE STATED ON THE SERVER AND WRITTEN AGAIN ON THE CLIENT —
