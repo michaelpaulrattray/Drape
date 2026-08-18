@@ -61,3 +61,6 @@ if (open > 0) {
 }
 
 await connection.end();
+/* A pooled connection keeps the event loop alive; the repository rule is that a
+   script ends by ENDING, so a reader is never left watching a finished run. */
+process.exit(0);
