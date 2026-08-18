@@ -4,11 +4,11 @@
  *
  * # What one row is
  *
- * `paired` — does this noun denote a matched SET? `anchorRegion` — where on a
- * body is the thing anchored? Both are facts about the WORD, answered once per
- * noun ever, and neither is a fact about a picture or a person. `wings are a
- * pair` is not a fact about whoever asked for wings, which is why this table has
- * no owner column to leave out.
+ * `locality` — can ONE CROP hold every instance of this thing? `anchorRegion` —
+ * where on a body is the thing anchored? Both are facts about the WORD, answered
+ * once per noun ever, and neither is a fact about a picture or a person. `wings
+ * are on opposite sides` is not a fact about whoever asked for wings, which is
+ * why this table has no owner column to leave out.
  *
  * # THE THIRD STATE IS THE ABSENCE OF A ROW, and every caller must honour it
  *
@@ -16,12 +16,12 @@
  * row holding nulls, and there is no row holding a guess. `null` out of
  * {@link readOpenKindProperties} therefore means *nobody has answered this*, and
  * the only safe reading of it at the mint gate is the conservative one — a kind
- * whose pairing is unknown carries no crop, because a gate treating unknown as
- * *not paired* files one wing under the name of two (fable-872 §2).
+ * whose locality is unknown carries no crop, because a gate treating unknown as
+ * croppable files one wing under the name of two (fable-872 §2).
  *
  * # `anchorRegion` IS STORED AND NOT YET READ, AND ITS HEIR IS NAMED
  *
- * P1 (`paired`) has a consumer in this build: the mint gate. P2
+ * P1 (`locality`) has a consumer in this build: the mint gate. P2
  * (`anchorRegion`) does not — **its consumer is the out-of-frame build**,
  * the one that decides whether an ask whose region is not visible in the current
  * frame is accepted free (fable-869 §2 and fable-876 §1) or dispatched, which is
@@ -49,6 +49,7 @@
 import { eq } from "drizzle-orm";
 
 import type { BodyAnchorRegion } from "../../shared/bodyAnchorRegions";
+import type { KindLocality } from "../../shared/kindLocality";
 
 import { createModuleLogger } from "../logging/logger";
 import { getDb } from "./connection";
@@ -58,7 +59,7 @@ const log = createModuleLogger("db/castingV2OpenKindProperties");
 
 /** What a kind's row says — the two properties, with the provenance of both. */
 export type OpenKindPropertiesRow = {
-  readonly paired: boolean;
+  readonly locality: KindLocality;
   readonly anchorRegion: BodyAnchorRegion;
   readonly model: string;
   readonly promptVersion: string;
@@ -96,7 +97,7 @@ export async function readOpenKindProperties(kind: string): Promise<OpenKindProp
     if (!db) return null;
     const [row] = await db
       .select({
-        paired: castingOpenKindProperties.paired,
+        locality: castingOpenKindProperties.locality,
         anchorRegion: castingOpenKindProperties.anchorRegion,
         model: castingOpenKindProperties.model,
         promptVersion: castingOpenKindProperties.promptVersion,
@@ -125,7 +126,7 @@ export async function readOpenKindProperties(kind: string): Promise<OpenKindProp
  */
 export async function writeOpenKindProperties(input: {
   kind: string;
-  paired: boolean;
+  locality: KindLocality;
   anchorRegion: BodyAnchorRegion;
   model: string;
   promptVersion: string;
@@ -147,13 +148,13 @@ export async function writeOpenKindProperties(input: {
     */
     await db.insert(castingOpenKindProperties).values({
       kind: input.kind,
-      paired: input.paired,
+      locality: input.locality,
       anchorRegion: input.anchorRegion,
       model: input.model,
       promptVersion: input.promptVersion,
     }).onDuplicateKeyUpdate({ set: { kind: input.kind } });
     log.info(
-      { kind: input.kind, paired: input.paired, anchorRegion: input.anchorRegion },
+      { kind: input.kind, locality: input.locality, anchorRegion: input.anchorRegion },
       "[openKindProperties] recorded what this kind is",
     );
     return true;

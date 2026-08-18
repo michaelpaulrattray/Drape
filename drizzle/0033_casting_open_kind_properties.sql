@@ -4,7 +4,8 @@
 -- One row is: **a fact about a KIND that the catalogue would have held, which
 -- nobody has catalogued.** Two of them, answered once per noun ever:
 --
---   paired         does the noun denote a matched SET — wings, antlers
+--   locality       can one crop hold every instance — `single`, `coLocated`
+--                  (fangs), `distributed` (wings)
 --   anchorRegion   where on a body the thing is anchored — `belowWaist` for a
 --                  tail, `hands` for nails
 --
@@ -100,10 +101,27 @@ CREATE TABLE `casting_open_kind_properties` (
 	-- match `kind` on the demand table and `noun` on the reference library, which
 	-- are the same word in the same ontology.
 	`kind` varchar(64) NOT NULL,
-	-- P1. Does the noun denote a matched set? NOT the question of whether THIS
-	-- render produced two of them, which is a fact about a frame (D1) and lives
-	-- with the delivery.
-	`paired` boolean NOT NULL,
+	-- P1. WHERE the instances of this kind sit relative to each other. NOT the
+	-- question of whether THIS render produced two of them, which is a fact about
+	-- a frame (D1) and lives with the delivery.
+	--
+	-- It was `paired boolean` until the founder's fangs ruling (fable-951): *"fangs
+	-- are apart of teeth as a whole though right? no need for a left and right
+	-- fang?"*, with the instruction that it *"must not be just a fang upgrade it
+	-- must apply to anything of the sort."* What decides whether a crop may carry a
+	-- kind is not how many instances there are — it is whether ONE CROP CAN HOLD
+	-- THEM. `single` and `coLocated` may be cropped; `distributed` is counting-
+	-- gated, because a whole-frame read of two things on opposite sides returns one
+	-- of them wearing the plural's name.
+	--
+	-- AMENDED IN PLACE rather than followed by an ALTER, under the same two facts
+	-- as when this file was written: the table is dev-only and PRODUCTION HAS NEVER
+	-- TAKEN 0033. The dev database is re-taken by dropping the table and re-running
+	-- this file, and existing rows are re-read under the new vocabulary rather than
+	-- mapped from the old one — a boolean cannot say which side of the new split a
+	-- kind falls on, and inventing that answer is the mirror of the fold this
+	-- ruling removed.
+	`locality` enum('single','coLocated','distributed') NOT NULL,
 	-- P2. WHERE on a body the thing is anchored — the per-kind half. Whether that
 	-- place is inside a given framing is derived in `bodyAnchorRegions.ts` and is
 	-- deliberately not stored, because the answer differs across the product's

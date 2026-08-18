@@ -15,10 +15,15 @@
  *
  * # THE QUESTION IS ASKED IN A FORM THAT CANNOT BE ANSWERED WRONG
  *
- * Not *"is it paired?"*, which invites a yes — a forced COUNT with three named
- * alternatives, each carrying its own examples. That is the shape this campaign
- * named on SAM3's laterality, where a reader asked a yes/no about a class
- * answered yes about an instance.
+ * Not *"is it paired?"*, which invites a yes — a forced choice between three
+ * named alternatives, each carrying its own examples. That is the shape this
+ * campaign named on SAM3's laterality, where a reader asked a yes/no about a
+ * class answered yes about an instance.
+ *
+ * And the locality question is asked in the terms of the thing it decides: *could
+ * one tightly cropped photograph show all of it at once*. That is what the crop
+ * road needs to know, so the reader is not asked an abstraction and trusted to
+ * have meant the same thing by it.
  *
  * The same for the place: a closed list of eight, refused rather than folded if
  * the reply is outside it, so the reader cannot invent anatomy the framing table
@@ -32,15 +37,24 @@
  * `specimen-joins-the-vocabulary` defect, which this campaign has now committed in
  * both directions. The examples are deliberately other words entirely.
  *
- * # THE THREE-WAY COUNT IS FOLDED TO A BOOLEAN, and that is declared
+ * # THE QUESTION IS LOCALITY, NOT COUNT — and the fold is gone (fable-951)
  *
- * The store holds `paired`, and P1's own definition is *does the noun denote a
- * matched SET* — so `many` folds in beside `pair`: both are nouns meaning more
- * than one thing, and both would have a whole-frame read returning some of it
- * under a name that means all of it. The distinction is not stored, which throws
- * away part of a paid answer; the compensation is that `promptVersion` records
- * which prompt answered, so a promotion design that needs the three-way can
- * re-ask for $0.0148 rather than guess.
+ * It asked HOW MANY and folded three answers into a boolean `paired`, and the
+ * founder took that apart on fangs: *"fangs are apart of teeth as a whole though
+ * right? no need for a left and right fang?"* — with the instruction that the
+ * repair *"must not be just a fang upgrade it must apply to anything of the
+ * sort."*
+ *
+ * The old question measured the wrong thing. What decides whether a crop may
+ * carry a kind is not how many instances exist but **whether one crop can hold
+ * them**. Fangs are several and sit together; wings are two and sit on opposite
+ * sides. A count cannot tell those apart, so when it answered the gate's
+ * question it did so by accident.
+ *
+ * So the reader is asked the locality directly, in the same forced-choice shape,
+ * and the three answers are STORED as they come — no fold, nothing thrown away
+ * from a paid answer. `shared/kindLocality.ts` holds the vocabulary and the one
+ * derivation that reads it.
  *
  * # WHAT IT DOES NOT DO
  *
@@ -53,6 +67,7 @@
 import { createModuleLogger } from "../logging/logger";
 import type { TextEngine } from "../providers/types";
 import { isBodyAnchorRegion, type BodyAnchorRegion } from "../../shared/bodyAnchorRegions";
+import { isKindLocality, type KindLocality } from "../../shared/kindLocality";
 import { readOpenKindProperties, writeOpenKindProperties } from "../db/castingV2OpenKindProperties";
 
 const log = createModuleLogger("castingV2/openKindProperties");
@@ -65,24 +80,28 @@ const log = createModuleLogger("castingV2/openKindProperties");
  * indistinguishable from a property that was never stable — and that is the
  * distinction the whole store rests on.
  */
-export const KIND_PROPERTY_PROMPT_VERSION = "kp-1";
+export const KIND_PROPERTY_PROMPT_VERSION = "kp-2";
 
 /**
  * The instruction, and every line of it is load-bearing.
  *
  * No control specimen appears anywhere in it — see the header. The examples are
- * a snout, a trunk, tusks, freckles and quills, none of which any control uses.
+ * a snout, a trunk, whiskers, quills and tusks, none of which any control uses.
+ * `freckles` left with the count question that needed it (fable-951).
  */
 export const KIND_PROPERTY_SYSTEM = [
   "You answer two questions about a NOUN naming something on a person's body.",
   "You are given the noun alone — no picture, no sentence, no context.",
   "",
-  "Reply with JSON only: {\"count\": \"<one word>\", \"anchor\": \"<one word>\"}",
+  "Reply with JSON only: {\"locality\": \"<one word>\", \"anchor\": \"<one word>\"}",
   "",
-  "count — HOW MANY of the thing someone who has them has:",
-  "  \"single\"  exactly one          (a snout, a trunk)",
-  "  \"pair\"    a matched two        (tusks)",
-  "  \"many\"    no fixed number      (freckles, quills)",
+  "locality — could ONE PHOTOGRAPH, cropped tightly, show ALL of the thing at",
+  "once on a person who has it:",
+  "  \"single\"       there is only one of it           (a snout, a trunk)",
+  "  \"coLocated\"    several, close together in one place, so one tight crop",
+  "                 holds every one of them           (whiskers, quills)",
+  "  \"distributed\"  two of them on OPPOSITE SIDES of the body, so no single",
+  "                 tight crop can hold both          (tusks)",
   "",
   "anchor — WHERE ON THE BODY the thing is attached. Exactly one of:",
   "  \"head\"        on or in the head or face",
@@ -96,6 +115,9 @@ export const KIND_PROPERTY_SYSTEM = [
   "",
   "RULES:",
   "  - answer about the WORD as it is ordinarily used, never about a picture",
+  "  - locality is about WHERE they sit, not how many there are: several things",
+  "    growing side by side are \"coLocated\"; two things on opposite sides of the",
+  "    body are \"distributed\"",
   "  - where a thing is attached in one place and reaches well beyond it, answer",
   "    where it is ATTACHED: tusks grow from the jaw, so they are \"head\"",
   "  - both answers must be one of the words listed above. Never invent one, and",
@@ -104,18 +126,16 @@ export const KIND_PROPERTY_SYSTEM = [
 
 /** What one kind is, as the reader answered it. */
 export type KindProperties = {
-  /** True for `pair` and for `many` — see the header's fold. */
-  readonly paired: boolean;
+  /** Stored as answered — three states, no fold (fable-951). */
+  readonly locality: KindLocality;
   readonly anchorRegion: BodyAnchorRegion;
   /** The model that answered, for the row's provenance. */
   readonly model: string;
   readonly promptVersion: string;
 };
 
-const COUNTS = ["single", "pair", "many"] as const;
-
 /** The reply shape, parsed defensively — a model's JSON is input, not a promise. */
-function readReply(raw: string): { count: (typeof COUNTS)[number]; anchor: BodyAnchorRegion } | null {
+function readReply(raw: string): { locality: KindLocality; anchor: BodyAnchorRegion } | null {
   let parsed: unknown;
   try {
     parsed = JSON.parse(raw.trim().replace(/^```(?:json)?/i, "").replace(/```$/, "").trim());
@@ -123,11 +143,15 @@ function readReply(raw: string): { count: (typeof COUNTS)[number]; anchor: BodyA
     return null;
   }
   if (!parsed || typeof parsed !== "object") return null;
-  const count = (parsed as { count?: unknown }).count;
+  const locality = (parsed as { locality?: unknown }).locality;
   const anchor = (parsed as { anchor?: unknown }).anchor;
-  if (typeof count !== "string" || typeof anchor !== "string") return null;
-  const counted = count.trim().toLowerCase();
-  if (!(COUNTS as readonly string[]).includes(counted)) return null;
+  if (typeof locality !== "string" || typeof anchor !== "string") return null;
+  /* Trimmed but NOT case-folded, for the same reason the place below is not: the
+     vocabulary is one spelling and `coLocated` is the spelling. A reader that
+     answers `colocated` has not obeyed an instruction that lists the words, and
+     folding it here would hide that from the control run. */
+  const named = locality.trim();
+  if (!isKindLocality(named)) return null;
   /*
     REFUSED, NEVER FOLDED TO THE NEAREST. A reply of `elbows` or `back` is a place
     the framing table has no row for, and mapping it onto a neighbour would be the
@@ -137,7 +161,7 @@ function readReply(raw: string): { count: (typeof COUNTS)[number]; anchor: BodyA
   */
   const place = anchor.trim();
   if (!isBodyAnchorRegion(place)) return null;
-  return { count: counted as (typeof COUNTS)[number], anchor: place };
+  return { locality: named, anchor: place };
 }
 
 /**
@@ -197,7 +221,7 @@ export async function readKindProperties(
     return null;
   }
   return {
-    paired: read.count !== "single",
+    locality: read.locality,
     anchorRegion: read.anchor,
     model,
     promptVersion: KIND_PROPERTY_PROMPT_VERSION,
@@ -239,7 +263,7 @@ export async function ensureKindProperties(input: {
      next ask, and this is the one path where a paid render is waiting. */
   void writeOpenKindProperties({
     kind: input.kind,
-    paired: read.paired,
+    locality: read.locality,
     anchorRegion: read.anchorRegion,
     model: read.model,
     promptVersion: read.promptVersion,

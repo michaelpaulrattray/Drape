@@ -61,6 +61,7 @@ import { openSlotKey } from "./referenceSlots";
 import { captionWording, type RealizationCaptions } from "./realizationCaption";
 import type { SlotSpec } from "./referenceMint";
 import type { Facet } from "./refineFacets";
+import { cropMayCarry, type KindLocality } from "../../shared/kindLocality";
 
 export type MintedSlotsInput = {
   /** The facets this render wrote, verified and did not carry. */
@@ -187,14 +188,14 @@ export type OpenKindToFile = {
   /** The customer's own words for it. The only words an open kind ever has. */
   words: string;
   /**
-   * P1, from the kind-property store — **or `null`, which is not `false`**.
+   * P1, from the kind-property store — **or `null`, which is not a locality**.
    *
    * `null` is nobody having answered: no row, no engine, a reader that declined.
-   * It refuses the crop exactly as a `true` does, because a gate treating
-   * unknown as *single* files one wing under the name of two — but it files a
+   * It refuses the crop exactly as `distributed` does, because a gate treating
+   * unknown as croppable files one wing under the name of two — but it files a
    * different reason, because only one of the two is a finding worth chasing.
    */
-  paired: boolean | null;
+  locality: KindLocality | null;
 };
 
 export type MintedSlotsResult = {
@@ -255,23 +256,33 @@ export type MintedSlotsResult = {
   seen**, and that count is the promotion signal.
 */
 /*
-  `openKindPaired` and `openKindPairUnread` — TWO WORDS, because they are two
-  facts and only one of them is a finding (fable-872 §2, countersigned
-  fable-896 §3).
+  `openKindDistributed` and `openKindLocalityUnread` — TWO WORDS, because they
+  are two facts and only one of them is a finding (fable-872 §2, countersigned
+  fable-896 §3; renamed with the locality class, fable-951).
 
-  A paired open kind carries NO CROP until promotion: a whole-frame read of a
-  pair returns one instance — measured on the court's wings frame, where the mask
-  the mint would have carried is the image-left wing to thirteen pixels — so the
-  crop would be half a picture wearing the whole picture's name. That is the
-  earring history and it does not get a second run in a new lane.
+  A DISTRIBUTED open kind carries NO CROP until the counting instrument gates a
+  mint: a whole-frame read of two things on opposite sides returns one instance —
+  measured on the court's wings frame, where the mask the mint would have carried
+  is the image-left wing to thirteen pixels — so the crop would be half a picture
+  wearing the whole picture's name. That is the earring history and it does not
+  get a second run in a new lane.
 
-  `openKindPaired` is that ruling honoured: the property was answered, the answer
-  was *pair*, and words are the honest carrier. Nothing to chase.
+  **These two words were `openKindPaired` and `openKindPairUnread` until the
+  founder's fangs ruling, and the rename is not cosmetic**: the gate used to
+  refuse every kind whose noun meant more than one thing, which took fangs and
+  whiskers down with wings. What it was always reaching for is whether ONE CROP
+  CAN HOLD THE SET, and `coLocated` kinds now pass it — the completeness and
+  ceiling instruments decide whether the crop holds the whole thing, which is
+  what they are for.
 
-  `openKindPairUnread` is nobody having answered at all — no row, no engine, a
-  reader that declined. It refuses the crop identically, because a gate treating
-  unknown as *single* files one wing under the name of two. **But it is a
-  finding**: a kind stuck here is a kind whose property read is failing, and
+  `openKindDistributed` is that ruling honoured: the property was answered, the
+  instances sit on opposite sides, and words are the honest carrier. Nothing to
+  chase.
+
+  `openKindLocalityUnread` is nobody having answered at all — no row, no engine,
+  a reader that declined. It refuses the crop identically, because a gate
+  treating unknown as croppable files one wing under the name of two. **But it
+  is a finding**: a kind stuck here is a kind whose property read is failing, and
   every ask for it is silently getting the conservative path forever.
 
   One word for both would make an unread property indistinguishable from a
@@ -296,8 +307,8 @@ export type UnfiledReason =
   | "uncataloguedFeature"
   | "noWords"
   | "openKind"
-  | "openKindPaired"
-  | "openKindPairUnread"
+  | "openKindDistributed"
+  | "openKindLocalityUnread"
   | "outsideScope";
 
 function unfiledReasonFor(facet: Facet): UnfiledReason {
@@ -513,7 +524,7 @@ export function mintedSlotsForRender(input: MintedSlotsInput): MintedSlotsResult
     after the pair ruling, such an ask would be counted as *"words-only, because
     it is a pair"*, which is a true sentence about the wrong thing: it would
     inflate the one number the promotion decision reads and hide a bug behind a
-    policy. So the count of `openKindPaired` is a count over WELL-FORMED asks,
+    policy. So the count of `openKindDistributed` is a count over WELL-FORMED asks,
     which is what makes it worth reading.
 
     AND A SCOPE DOES NOT NARROW AN OPEN KIND, declared rather than omitted. A
@@ -539,12 +550,15 @@ export function mintedSlotsForRender(input: MintedSlotsInput): MintedSlotsResult
       unfiledOpen.push({ kind: ask.kind, reason: "openKind" });
       continue;
     }
-    if (ask.paired === null) {
-      unfiledOpen.push({ kind: ask.kind, reason: "openKindPairUnread" });
+    if (ask.locality === null) {
+      unfiledOpen.push({ kind: ask.kind, reason: "openKindLocalityUnread" });
       continue;
     }
-    if (ask.paired) {
-      unfiledOpen.push({ kind: ask.kind, reason: "openKindPaired" });
+    /* The one derivation that reads the locality, and it lives beside the
+       vocabulary rather than here — `distributed` is the only no, and it is a no
+       about GEOMETRY: one rectangle cannot hold two things on opposite sides. */
+    if (!cropMayCarry(ask.locality)) {
+      unfiledOpen.push({ kind: ask.kind, reason: "openKindDistributed" });
       continue;
     }
     seen.add(slot);

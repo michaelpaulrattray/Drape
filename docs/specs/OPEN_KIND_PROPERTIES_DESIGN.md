@@ -48,7 +48,7 @@ They are not the three the order names, because one of them is two.
 
 | | the question | when it is asked | who it is about |
 |---|---|---|---|
-| **P1** | is this kind **paired** — does the noun denote a matched set? | once per kind, ever | the KIND |
+| **P1** | what is this kind's **locality** — can ONE CROP hold every instance? | once per kind, ever | the KIND |
 | **P2** | **where on a body is this kind anchored?** | once per kind, ever | the KIND |
 | **D1** | did this delivery produce the **right count**? | every delivery of a paired kind | the FRAME |
 | **D2** | is this recorded fact **shown** in this frame? | every view that carries words | the FRAME |
@@ -145,8 +145,9 @@ delivered frame, and refuses a crop when the reader answers on both. D1 and D2
 are that instrument pointed one surface along:
 
 - **D1** is the same read, counting instances rather than asserting presence.
-  Gated on P1: a kind that is not paired is never counted, so nothing is spent
-  asking how many tails she has.
+  Gated on P1: a kind that is not `distributed` is never counted, so nothing is
+  spent asking how many tails she has — nor, since fable-951, how many fangs,
+  because one crop holds those and the completeness instruments judge it.
 - **D2** is the same read asking presence on the view being rendered. A fact the
   read cannot find in this frame is a fact the anchor cannot show, which is
   exactly the set the view-carry clause is allowed to speak about.
@@ -265,7 +266,7 @@ that a reader never seen to decline is not a reader (design note §4, law 9).
 
 | answer | the control that could redden | what it costs |
 |---|---|---|
-| **P1** paired | kinds that are definitely singular — `tail`, `halo`, `beak`, `horn` (singular) — must come back NOT paired. A reader that pairs everything is the earring reader's vacuous shape (fable-378 §3) | one text call each, once |
+| **P1** paired *(the question as it stood before the locality class — see below)* | kinds that are definitely singular — `tail`, `halo`, `beak`, `horn` (singular) — must come back NOT paired. A reader that pairs everything is the earring reader's vacuous shape (fable-378 §3) | one text call each, once |
 | **P2** anchor | `nails` must come back `hands` — fable-868's class (c) example, restated as a place. Answerable wrong in an obvious way, which is what the boolean form was not | one text call, once |
 | **D1** count | **a frame holding ONE of a pair must read one.** This is the hard control and the specimen already exists: it is the founder's own one-winged frame, which is what produced the demand | a frame he has already paid for |
 | **D2** shown | the absence control's existing shape: the reader must decline on a frame that does not hold the thing, or its answer on one that does cannot be told from a confident region of nothing | one read, already budgeted by §9.8 |
@@ -334,18 +335,20 @@ Both halves matter and the second is the bound: a view that grows the wings and
 loses the woman has failed, and only his eye closes that. Law 9 governs — no
 reader verdict closes this court.
 
-**It is also the natural home for D1's control**, because a paired open kind
-carried into six views is six independent chances to observe the count, on
+**It is also the natural home for D1's control**, because a distributed open
+kind carried into six views is six independent chances to observe the count, on
 frames somebody was going to look at anyway.
 
 ## 8. What this unblocks, and what it does not
 
 **Unblocks 5b.** The pair ruling's conservative interim — *no open kind mints a
 crop, words only, until promoted* (fable-872 §2) — exists precisely because
-nothing can tell a pair from a single. P1 answers that, and P1 plus a passing D1
-is the condition under which a crop of a paired kind may file under a name that
-means both. Until D1's control passes, **the interim stands and the honest
-answer is still words.**
+nothing can tell a pair from a single. P1 answers that — and since fable-951 it
+answers it in the form that actually decides the question, the LOCALITY. A
+`coLocated` kind mints now; a `distributed` one needs P1 plus a passing D1 before
+a crop may file under a name that means both. Until D1's control passes, **the
+interim stands for the distributed class and the honest answer there is still
+words.**
 
 **Unblocks the view-carry clause**, whose whole content is D2's subtraction and
 whose bound is §3.
@@ -387,8 +390,8 @@ reader is.**
    ride on the row as provenance; a re-ask is an UPDATE by a build that decided
    to re-ask.
 2. **Both properties are NOT NULL, and a DECLINED READ WRITES NO ROW.** The
-   absence of a row is the third state. A nullable `paired` read by a gate that
-   treats null as false would mint a crop of one wing under the name of two —
+   absence of a row is the third state. A nullable `locality` read by a gate that
+   treats null as croppable would mint a crop of one wing under the name of two —
    fable-872 §2's own prohibition, arriving through the store rather than the
    gate. Its cost is stated on the migration: while the text transport is down,
    a kind with no row re-buys the read and gets nothing, which is bounded by the
@@ -407,15 +410,18 @@ incident; the way that is not repeated is naming the heir in the store.
 
 The ceremony applied on dev (`:52008`), printed its three lines, and said ALREADY
 APPLIED on the re-run. That is worth nothing on its own, so the same three
-assertions were driven against four throwaway tables
+assertions were driven against throwaway tables
 (`scripts/rehearse-open-kind-properties-disposable.mts`, dev only, dropped by the
-names it minted):
+names it minted). **Re-run at the locality class, six arms, each refusing for its
+OWN reason** (2026-08-18):
 
 ```
-RIGHT     expected PASS    → PASS
-NO KEY    expected REFUSE  → REFUSE — uq_…_kind is not a UNIQUE index on `kind`
-NULLABLE  expected REFUSE  → REFUSE — `paired` is nullable
-EXTRA     expected REFUSE  → REFUSE — columns nobody designed: userId
+RIGHT         expected PASS    → PASS
+NO KEY        expected REFUSE  → REFUSE — uq_…_kind is not a UNIQUE index on `kind`
+NULLABLE      expected REFUSE  → REFUSE — `locality` is nullable
+EXTRA         expected REFUSE  → REFUSE — columns nobody designed: userId
+BAD ENUM      expected REFUSE  → REFUSE — anchorRegion does not match BODY_ANCHOR_REGIONS
+BAD LOCALITY  expected REFUSE  → REFUSE — locality does not match KIND_LOCALITIES
 ```
 
 And the store's own key guard was sabotaged before it was believed: widening
@@ -452,6 +458,9 @@ render, no production change, no flag set.*
 Nine arms, `anthropic/claude-sonnet-5`, bars written into the script above the
 spend, scoring dry-run first with a deliberately wrong canned answer so the
 comparison was seen to fail before the money moved.
+
+**Read under the question as it stood then — `paired`, not the locality class**
+(fable-951 replaced it on 2026-08-18; `fangs` is the row that ruling overturns):
 
 ```
 tail     single  belowWaist    P1 negative · P2 positive
@@ -491,17 +500,18 @@ horn ×3: paired, paired, paired    STABLE
 
 ### What the build honours, in the order it would break if it did not
 
-1. **A SINGULAR open kind mints a crop; a PAIRED one does not.** fable-872 §2,
+1. **A SINGLE or CO-LOCATED open kind mints a crop; a DISTRIBUTED one does not.**
+   fable-872 §2 as amended by the locality class (fable-951),
    and the gate is a pure function so it is driven without a database, a frame or
    a vision call.
-2. **`null` is not `false`.** A kind nobody has answered for files
-   `openKindPairUnread` and cuts nothing. Two words rather than one, because
+2. **`null` is not a locality.** A kind nobody has answered for files
+   `openKindLocalityUnread` and cuts nothing. Two words rather than one, because
    *"we asked and it is a pair"* and *"we never got an answer"* are two facts and
    only the second is worth chasing.
 3. **Structure is judged before policy.** A malformed key or an ask with no words
    is a DEFECT, and counted as *"words-only because it is a pair"* it would
    inflate the one number the promotion decision reads while hiding a bug behind
-   a ruling. So `openKindPaired`'s count is a count over well-formed asks.
+   a ruling. So `openKindDistributed`'s count is a count over well-formed asks.
 4. **The prompt asks WHERE and never whether the thing extends** (fable-897 §3c),
    and it names none of the control specimens. Both are asserted mechanically,
    with a positive control that the prompt does carry the examples it should —
@@ -531,12 +541,75 @@ refund. It is unbiased, it is the fail-soft the writer has by design, and the
 demand reader's own header now says so, because a reader that knows its hole beats
 one that discovers it in a ratio.
 
+### THE LOCALITY CLASS — P1 SPLIT THREE WAYS (founder ruling, fable-951)
+
+**His question, on fangs:** *"fangs are apart of teeth as a whole though right?
+no need for a left and right fang?"* **And his instruction with it:** *"agreed
+but this must not be just a fang upgrade it must apply to anything of the sort."*
+
+**P1 was the wrong question and the founder found it by looking at one word.**
+It asked HOW MANY and folded three answers to a boolean, and the gate then
+refused a crop to every kind whose noun meant more than one thing. That is right
+for wings and wrong for fangs, and the difference is not the count — it is
+**whether one crop can hold them**.
+
+| | what it means | the crop road |
+|---|---|---|
+| `single` | one instance | open, unchanged |
+| `coLocated` | several, sharing one region — one tight crop holds the set | **OPEN** — the completeness and ceiling instruments govern whether the crop holds the whole thing, which is what they are for |
+| `distributed` | two on opposite sides — no one crop holds both | counting-gated exactly as built; his wing-panel verdict wires it |
+
+**The failure the old gate existed to prevent cannot structurally arise in the
+co-located case.** One instance minted under a plural name needs the instances to
+be somewhere the crop is not; when one crop holds the set, there is nowhere for
+the missing one to be. So `coLocated` kinds graduate to crop-carrying **without
+waiting on the counting machinery** (fable-951 §4).
+
+**What was built (2026-08-18):**
+
+- `shared/kindLocality.ts` — the three-way vocabulary and the single derivation
+  that reads it (`cropMayCarry`), so no caller re-decides what `distributed`
+  costs;
+- the reader asks the locality DIRECTLY, in the terms of the thing it decides —
+  *could one tightly cropped photograph show all of it at once* — rather than an
+  abstraction it is trusted to have meant the same way. Prompt `kp-2`;
+- the store's column is an ENUM of the three, migration 0033 **amended in place**
+  under the same two facts as when it was written: dev-only, and production has
+  never taken it. Its shape check now compares BOTH enums against their
+  TypeScript lists, and the rehearsal grew a sixth arm that proves the new one
+  can redden;
+- the mint gate's two reasons are renamed to what they now mean —
+  `openKindDistributed` and `openKindLocalityUnread`. **Not cosmetic**: the old
+  words described a question the product no longer asks.
+
+**THE CONTROLS, on the real transport, before any verdict of this reader counts**
+(fable-951 §3, `scripts/kind-locality-controls-disposable.mts`):
+
+```
+fangs   expected coLocated    got coLocated    anchor head
+wings   expected distributed  got distributed  anchor torso
+halo    expected single       got single       anchor head
+3 of 3 arms hold — prompt kp-2
+```
+
+Three arms that DISAGREE with each other, deliberately: a classifier answering
+`distributed` to everything passes a one-arm court and is useless, and one
+answering `coLocated` to everything opens the crop road to wings. None of the
+three words appears in the prompt, and the suite asserts that separately.
+
+**The one row the dev table held was RE-READ, never mapped** (law 7). A boolean
+cannot say which side of the new split a kind falls on — `paired = true` is
+`coLocated` or `distributed` and choosing one would be the removed fold with a
+guess inside it. `halo` came back `single · head` under `kp-2`.
+
 ### What is still owed after this
 
 - **D1, the count**, and it is a court rather than a build: §8's condition for a
-  PAIRED kind's crop is *P1 plus a passing D1*, and D1's control is the founder's
-  own one-winged frame. 5b opens the singular kinds; the paired half stays
-  words-only with its reason now NAMED rather than blanket.
+  DISTRIBUTED kind's crop is *P1 plus a passing D1*, and D1's control is the
+  founder's own one-winged frame — **the counting court passed on 2026-08-17
+  (2/1/0 discriminated) and now waits only on his eye.** 5b opens the single and
+  co-located kinds; the distributed half stays words-only with its reason now
+  NAMED rather than blanket.
 - **`anchorRegion`'s consumer** — the out-of-frame build. Stored and unread, with
   its heir named on the module and the exact condition under which storing it
   becomes a defect.

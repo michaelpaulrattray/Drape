@@ -64,12 +64,12 @@ function engineSaying(text: string, extra: { truncated?: boolean; served?: strin
 }
 
 describe("the kind-property read", () => {
-  it("reads a count and a place, and folds the count to `paired`", async () => {
-    const { engine, asked } = engineSaying('{"count":"pair","anchor":"torso"}');
+  it("reads a locality and a place, and stores the locality as answered", async () => {
+    const { engine, asked } = engineSaying('{"locality":"distributed","anchor":"torso"}');
     const read = await readKindProperties("wings", { engine });
 
     expect(read).toEqual({
-      paired: true,
+      locality: "distributed",
       anchorRegion: "torso",
       model: "anthropic/claude-sonnet-5",
       promptVersion: KIND_PROPERTY_PROMPT_VERSION,
@@ -81,23 +81,43 @@ describe("the kind-property read", () => {
     expect(asked[0]!.user).toBe("wings");
   });
 
-  it("calls a SINGLE kind unpaired and a MANY kind paired", async () => {
+  /*
+    THE THREE ANSWERS SURVIVE THE READ, which is the whole of the founder's fangs
+    ruling (fable-951). The old question asked HOW MANY and folded three answers
+    to a boolean, so `coLocated` and `distributed` arrived at the gate wearing
+    one word — and fangs were refused a crop for being several, when several
+    things sitting together is exactly the case one crop CAN hold.
+  */
+  it("keeps all three localities apart — the fold is gone", async () => {
     const single = await readKindProperties("tail", {
-      engine: engineSaying('{"count":"single","anchor":"belowWaist"}').engine,
+      engine: engineSaying('{"locality":"single","anchor":"belowWaist"}').engine,
     });
-    expect(single).toMatchObject({ paired: false, anchorRegion: "belowWaist" });
+    expect(single).toMatchObject({ locality: "single", anchorRegion: "belowWaist" });
 
-    /* `many` folds in beside `pair` — P1's own definition is *does the noun mean
-       more than one thing*, and a whole-frame read of many returns some of it
-       under a name that means all of it. */
-    const many = await readKindProperties("scales", {
-      engine: engineSaying('{"count":"many","anchor":"wholeBody"}').engine,
+    const together = await readKindProperties("scales", {
+      engine: engineSaying('{"locality":"coLocated","anchor":"wholeBody"}').engine,
     });
-    expect(many).toMatchObject({ paired: true, anchorRegion: "wholeBody" });
+    expect(together).toMatchObject({ locality: "coLocated", anchorRegion: "wholeBody" });
+
+    const apart = await readKindProperties("wings", {
+      engine: engineSaying('{"locality":"distributed","anchor":"torso"}').engine,
+    });
+    expect(apart).toMatchObject({ locality: "distributed", anchorRegion: "torso" });
+  });
+
+  /*
+    NOT CASE-FOLDED, and this is the one that would hide a disobedient reader:
+    the instruction lists the words and `coLocated` is the spelling. A reply of
+    `colocated` is a reader that did not obey, and folding it here would make the
+    control run print a pass it did not earn.
+  */
+  it("refuses a locality that is spelled differently from the one word asked for", async () => {
+    const { engine } = engineSaying('{"locality":"colocated","anchor":"head"}');
+    expect(await readKindProperties("fangs", { engine })).toBeNull();
   });
 
   it("names the SERVED snapshot when the provider reports one", async () => {
-    const { engine } = engineSaying('{"count":"single","anchor":"head"}', { served: "sonnet-5-20260801" });
+    const { engine } = engineSaying('{"locality":"single","anchor":"head"}', { served: "sonnet-5-20260801" });
     expect(await readKindProperties("halo", { engine })).toMatchObject({ model: "sonnet-5-20260801" });
   });
 
@@ -105,12 +125,12 @@ describe("the kind-property read", () => {
     /* The bound: a reader may not invent anatomy. `elbows` is a place the framing
        table has no row for, and mapping it onto `arms` would be the unowned-axis
        collapse with a model's guess inside it. */
-    const { engine } = engineSaying('{"count":"pair","anchor":"elbows"}');
+    const { engine } = engineSaying('{"locality":"distributed","anchor":"elbows"}');
     expect(await readKindProperties("wings", { engine })).toBeNull();
   });
 
-  it("refuses a count outside the three", async () => {
-    const { engine } = engineSaying('{"count":"two","anchor":"torso"}');
+  it("refuses a locality outside the three", async () => {
+    const { engine } = engineSaying('{"locality":"pair","anchor":"torso"}');
     expect(await readKindProperties("wings", { engine })).toBeNull();
   });
 
@@ -119,21 +139,21 @@ describe("the kind-property read", () => {
       "wings are a pair, on the back",
       "",
       "{}",
-      '{"count":"pair"}',
+      '{"locality":"distributed"}',
       '{"anchor":"torso"}',
-      '{"count":null,"anchor":"torso"}',
+      '{"locality":null,"anchor":"torso"}',
     ]) {
       expect(await readKindProperties("wings", { engine: engineSaying(reply).engine })).toBeNull();
     }
   });
 
   it("reads a fenced reply, because a model that obeys in markdown still obeyed", async () => {
-    const { engine } = engineSaying('```json\n{"count":"single","anchor":"head"}\n```');
-    expect(await readKindProperties("halo", { engine })).toMatchObject({ paired: false, anchorRegion: "head" });
+    const { engine } = engineSaying('```json\n{"locality":"single","anchor":"head"}\n```');
+    expect(await readKindProperties("halo", { engine })).toMatchObject({ locality: "single", anchorRegion: "head" });
   });
 
   it("answers nothing when the reply was TRUNCATED — our ceiling, not their sentence", async () => {
-    const { engine } = engineSaying('{"count":"pair","anch', { truncated: true });
+    const { engine } = engineSaying('{"locality":"distributed","anch', { truncated: true });
     expect(await readKindProperties("wings", { engine })).toBeNull();
   });
 
@@ -142,7 +162,7 @@ describe("the kind-property read", () => {
     expect(await readKindProperties("wings", { engine: throwing })).toBeNull();
     expect(await readKindProperties("wings", {})).toBeNull();
     expect(await readKindProperties("wings", { engine: null })).toBeNull();
-    expect(await readKindProperties("   ", { engine: engineSaying('{"count":"pair","anchor":"torso"}').engine })).toBeNull();
+    expect(await readKindProperties("   ", { engine: engineSaying('{"locality":"distributed","anchor":"torso"}').engine })).toBeNull();
   });
 
   it("NAMES NO CONTROL SPECIMEN IN THE PROMPT", async () => {
@@ -178,8 +198,8 @@ describe("the kind-property read", () => {
  */
 describe("the kind-property cache", () => {
   it("asks NOBODY when the store already holds the kind", async () => {
-    kept = { paired: true, anchorRegion: "torso", model: "m", promptVersion: "kp-1" };
-    const { engine, asked } = engineSaying('{"count":"single","anchor":"head"}');
+    kept = { locality: "distributed", anchorRegion: "torso", model: "m", promptVersion: "kp-1" };
+    const { engine, asked } = engineSaying('{"locality":"single","anchor":"head"}');
     const got = await ensureKindProperties({ kind: "wings", noun: "wings", engine });
     expect(got).toEqual(kept);
     /* THE ARM THAT MAKES IT A CACHE. Not the return value — the absence of a
@@ -189,13 +209,13 @@ describe("the kind-property cache", () => {
 
   it("asks, and WRITES, when the store holds nothing", async () => {
     kept = null;
-    const { engine, asked } = engineSaying('{"count":"single","anchor":"belowWaist"}');
+    const { engine, asked } = engineSaying('{"locality":"single","anchor":"belowWaist"}');
     const got = await ensureKindProperties({ kind: "tail", noun: "tail", engine });
-    expect(got).toMatchObject({ paired: false, anchorRegion: "belowWaist" });
+    expect(got).toMatchObject({ locality: "single", anchorRegion: "belowWaist" });
     expect(asked).toHaveLength(1);
     expect(written).toEqual([{
       kind: "tail",
-      paired: false,
+      locality: "single",
       anchorRegion: "belowWaist",
       model: "anthropic/claude-sonnet-5",
       promptVersion: KIND_PROPERTY_PROMPT_VERSION,
@@ -207,15 +227,15 @@ describe("the kind-property cache", () => {
        about. Asking the reader the key would be asking about a token nobody
        says. */
     kept = null;
-    const { engine, asked } = engineSaying('{"count":"pair","anchor":"head"}');
+    const { engine, asked } = engineSaying('{"locality":"distributed","anchor":"head"}');
     await ensureKindProperties({ kind: "cat-ears", noun: "cat ears", engine });
     expect(asked[0]!.user).toBe("cat ears");
     expect(written[0]!.kind).toBe("cat-ears");
   });
 
   it("writes NOTHING when the reader declined, and answers unknown", async () => {
-    /* The conservative side: no row, so the mint gate reads `openKindPairUnread`
-       and cuts no crop. A row holding a guess is what would file one wing under
+    /* The conservative side: no row, so the mint gate reads
+       `openKindLocalityUnread` and cuts no crop. A row holding a guess is what would file one wing under
        the name of two. */
     kept = null;
     const { engine } = engineSaying("wings are a pair");

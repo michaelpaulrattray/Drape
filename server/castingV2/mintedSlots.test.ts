@@ -619,7 +619,7 @@ describe("the open kinds a render files", () => {
     const { slots, unfiledOpen } = mintedSlotsForRender({
       earned: [],
       captions: {},
-      open: [{ kind: "tail", words: "a long scaled tail", paired: false }],
+      open: [{ kind: "tail", words: "a long scaled tail", locality: "single" }],
     });
 
     expect(unfiledOpen).toEqual([]);
@@ -638,18 +638,40 @@ describe("the open kinds a render files", () => {
     expect(spec.tier).toBe("anatomy");
   });
 
-  it("refuses a PAIRED kind its crop, and says which ruling did it", () => {
+  it("refuses a DISTRIBUTED kind its crop, and says which ruling did it", () => {
     /* fable-872 §2. The mask the mint would have carried on the court's wings
        frame was the image-left wing to thirteen pixels — half a picture under the
        whole picture's name, which is the earring history. */
     const { slots, unfiledOpen } = mintedSlotsForRender({
       earned: [],
       captions: {},
-      open: [{ kind: "wings", words: "enormous feathered wings", paired: true }],
+      open: [{ kind: "wings", words: "enormous feathered wings", locality: "distributed" }],
     });
 
     expect(slots).toEqual([]);
-    expect(unfiledOpen).toEqual([{ kind: "wings", reason: "openKindPaired" }]);
+    expect(unfiledOpen).toEqual([{ kind: "wings", reason: "openKindDistributed" }]);
+  });
+
+  /*
+    AND THE OTHER HALF OF THE FOUNDER'S RULING (fable-951) — the arm that would
+    have been missing if the rename had been cosmetic.
+
+    *"fangs are apart of teeth as a whole though right? no need for a left and
+    right fang?"* Fangs are several and they sit together, so ONE CROP HOLDS THE
+    SET and the failure the old gate existed to prevent — one instance minted
+    under a plural name — cannot structurally arise. The completeness and ceiling
+    instruments decide whether the crop holds the whole of it, which is what they
+    are for.
+  */
+  it("MINTS a co-located kind, because one crop holds the whole set", () => {
+    const { slots, unfiledOpen } = mintedSlotsForRender({
+      earned: [],
+      captions: {},
+      open: [{ kind: "fangs", words: "long pointed fangs", locality: "coLocated" }],
+    });
+
+    expect(unfiledOpen).toEqual([]);
+    expect(slots.map((slot) => slot.slot)).toEqual(["open:fangs"]);
   });
 
   it("refuses an UNANSWERED property its crop under a DIFFERENT word", () => {
@@ -660,14 +682,14 @@ describe("the open kinds a render files", () => {
     const { slots, unfiledOpen } = mintedSlotsForRender({
       earned: [],
       captions: {},
-      open: [{ kind: "gills", words: "gills on her neck", paired: null }],
+      open: [{ kind: "gills", words: "gills on her neck", locality: null }],
     });
 
     expect(slots).toEqual([]);
-    expect(unfiledOpen).toEqual([{ kind: "gills", reason: "openKindPairUnread" }]);
+    expect(unfiledOpen).toEqual([{ kind: "gills", reason: "openKindLocalityUnread" }]);
   });
 
-  it("judges STRUCTURE before POLICY, so the pair count is over well-formed asks", () => {
+  it("judges STRUCTURE before POLICY, so the refusal count is over well-formed asks", () => {
     /* An ask with no words is a defect — `readOpenKinds` refuses empty words on
        the way in — and reported as "words-only because it is a pair" it would
        inflate the one number the promotion decision reads while hiding a bug
@@ -675,7 +697,7 @@ describe("the open kinds a render files", () => {
     const { slots, unfiledOpen } = mintedSlotsForRender({
       earned: [],
       captions: {},
-      open: [{ kind: "wings", words: "   ", paired: true }],
+      open: [{ kind: "wings", words: "   ", locality: "distributed" }],
     });
 
     expect(slots).toEqual([]);
@@ -689,7 +711,7 @@ describe("the open kinds a render files", () => {
     const { slots, unfiledOpen } = mintedSlotsForRender({
       earned: [],
       captions: {},
-      open: [{ kind: "cat ears", words: "pointed cat ears", paired: false }],
+      open: [{ kind: "cat ears", words: "pointed cat ears", locality: "single" }],
     });
 
     expect(slots).toEqual([]);
@@ -701,8 +723,8 @@ describe("the open kinds a render files", () => {
       earned: [],
       captions: {},
       open: [
-        { kind: "tail", words: "a long scaled tail", paired: false },
-        { kind: "tail", words: "a long scaled tail", paired: false },
+        { kind: "tail", words: "a long scaled tail", locality: "single" },
+        { kind: "tail", words: "a long scaled tail", locality: "single" },
       ],
     });
     expect(slots.map((slot) => slot.slot)).toEqual(["open:tail"]);
@@ -716,7 +738,7 @@ describe("the open kinds a render files", () => {
     const { slots, unfiledOpen } = mintedSlotsForRender({
       earned: ["hair.colour"],
       captions: { "hair.colour": "Copper, warm at the ends" },
-      open: [{ kind: "tail", words: "a long scaled tail", paired: false }],
+      open: [{ kind: "tail", words: "a long scaled tail", locality: "single" }],
     });
 
     expect(slots.map((slot) => slot.slot)).toEqual(["hair", "open:tail"]);
@@ -731,7 +753,7 @@ describe("the open kinds a render files", () => {
       earned: [],
       captions: {},
       scope: "eye@left",
-      open: [{ kind: "tail", words: "a long scaled tail", paired: false }],
+      open: [{ kind: "tail", words: "a long scaled tail", locality: "single" }],
     });
     expect(slots.map((slot) => slot.slot)).toEqual(["open:tail"]);
   });

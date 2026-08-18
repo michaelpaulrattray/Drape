@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "f572dfef41832c5d"
+    "sourceFingerprint": "8f0bc5b27f1af306"
   },
   "domains": [
     {
@@ -123,7 +123,7 @@
     {
       "id": "domain:shared",
       "name": "shared",
-      "moduleCount": 25
+      "moduleCount": 26
     },
     {
       "id": "domain:studio",
@@ -5099,6 +5099,12 @@
     {
       "id": "module:shared/inkReleasedPlacements.ts",
       "path": "shared/inkReleasedPlacements.ts",
+      "domain": "shared",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:shared/kindLocality.ts",
+      "path": "shared/kindLocality.ts",
       "domain": "shared",
       "lifecycle": "active"
     },
@@ -15600,6 +15606,11 @@
     },
     {
       "from": "module:drizzle/schema.ts",
+      "to": "module:shared/kindLocality.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:drizzle/schema.ts",
       "to": "module:shared/referenceIntents.ts",
       "kind": "imports"
     },
@@ -19864,6 +19875,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/castingV2/mintedSlots.ts",
+      "to": "module:shared/kindLocality.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/castingV2/openKindPolicy.ts",
       "to": "module:server/castingV2/changeAmplitude.ts",
       "kind": "imports"
@@ -19901,6 +19917,11 @@
     {
       "from": "module:server/castingV2/openKindProperties.ts",
       "to": "module:shared/bodyAnchorRegions.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/openKindProperties.ts",
+      "to": "module:shared/kindLocality.ts",
       "kind": "imports"
     },
     {
@@ -22061,6 +22082,11 @@
     {
       "from": "module:server/db/castingV2OpenKindProperties.ts",
       "to": "module:shared/bodyAnchorRegions.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/castingV2OpenKindProperties.ts",
+      "to": "module:shared/kindLocality.ts",
       "kind": "imports"
     },
     {

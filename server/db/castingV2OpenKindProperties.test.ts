@@ -61,13 +61,13 @@ beforeEach(() => {
 
 describe("the kind-property store", () => {
   it("reads a kind's two properties back", async () => {
-    rowToReturn = { paired: true, anchorRegion: "torso", model: "m", promptVersion: "p1" };
+    rowToReturn = { locality: "distributed", anchorRegion: "torso", model: "m", promptVersion: "p1" };
     const read = await readOpenKindProperties("wings");
-    expect(read).toEqual({ paired: true, anchorRegion: "torso", model: "m", promptVersion: "p1" });
+    expect(read).toEqual({ locality: "distributed", anchorRegion: "torso", model: "m", promptVersion: "p1" });
     expect(selects).toHaveLength(1);
   });
 
-  it("answers UNKNOWN — not `not paired` — when no row exists", async () => {
+  it("answers UNKNOWN — not `croppable` — when no row exists", async () => {
     /* The whole gate depends on this being null rather than a default: a kind
        nobody has answered for must not read as singular, or the mint files one
        wing under the name of two (fable-872 §2). */
@@ -105,7 +105,7 @@ describe("the kind-property store", () => {
   it("writes the two properties with the provenance of both", async () => {
     const wrote = await writeOpenKindProperties({
       kind: "wings",
-      paired: true,
+      locality: "distributed",
       anchorRegion: "torso",
       model: "anthropic/claude-sonnet-5",
       promptVersion: "kp-1",
@@ -113,7 +113,7 @@ describe("the kind-property store", () => {
     expect(wrote).toBe(true);
     expect(inserts).toEqual([{
       kind: "wings",
-      paired: true,
+      locality: "distributed",
       anchorRegion: "torso",
       model: "anthropic/claude-sonnet-5",
       promptVersion: "kp-1",
@@ -123,7 +123,7 @@ describe("the kind-property store", () => {
   it("refuses to write a key that is not the normalizer's, and writes nothing", async () => {
     const wrote = await writeOpenKindProperties({
       kind: "give her wings",
-      paired: true,
+      locality: "distributed",
       anchorRegion: "torso",
       model: "m",
       promptVersion: "kp-1",
@@ -136,7 +136,7 @@ describe("the kind-property store", () => {
     dbIsThere = false;
     const wrote = await writeOpenKindProperties({
       kind: "wings",
-      paired: true,
+      locality: "distributed",
       anchorRegion: "torso",
       model: "m",
       promptVersion: "kp-1",

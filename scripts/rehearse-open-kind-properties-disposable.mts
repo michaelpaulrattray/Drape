@@ -9,16 +9,18 @@
  * indistinguishable from one that examines nothing (working law 2, and the
  * `accept-arm-inert-by-construction` habit).
  *
- * So this builds five throwaway tables in the DEV database, each wrong in one
+ * So this builds six throwaway tables in the DEV database, each wrong in one
  * way, and drives `assertKindPropertyShape` — the ceremony's own function, not a
  * copy of it — at each:
  *
- *   RIGHT      the real DDL, replayed under another name      must PASS
- *   NO KEY     every column, no unique index                  must REFUSE
- *   NULLABLE   the key, and `paired` nullable                 must REFUSE
- *   EXTRA      a column nobody designed                       must REFUSE
- *   BAD ENUM   anchorRegion missing a region and holding an
- *              invented one                                   must REFUSE
+ *   RIGHT         the real DDL, replayed under another name   must PASS
+ *   NO KEY        every column, no unique index               must REFUSE
+ *   NULLABLE      the key, and `locality` nullable            must REFUSE
+ *   EXTRA         a column nobody designed                    must REFUSE
+ *   BAD ENUM      anchorRegion missing a region and holding
+ *                 an invented one                             must REFUSE
+ *   BAD LOCALITY  the same, on the enum `locality` became
+ *                 when it stopped being a boolean             must REFUSE
  *
  * **EACH ARM ASSERTS ITS OWN REFUSAL MESSAGE**, and that is not decoration. The
  * first run of this rehearsal after the anchor-region ruling showed all three
@@ -60,6 +62,7 @@ const MINTED = [
   "zz_rehearse_okp_nullable",
   "zz_rehearse_okp_extra",
   "zz_rehearse_okp_badenum",
+  "zz_rehearse_okp_badlocality",
 ] as const;
 
 const conn = await openDatabase(url);
@@ -87,18 +90,18 @@ try {
   await conn.query(`CREATE TABLE \`zz_rehearse_okp_nokey\` (
     \`id\` int AUTO_INCREMENT NOT NULL,
     \`kind\` varchar(64) NOT NULL,
-    \`paired\` boolean NOT NULL,
+    \`locality\` enum('single','coLocated','distributed') NOT NULL,
     \`anchorRegion\` enum('head','neck','torso','arms','hands','belowWaist','feet','wholeBody') NOT NULL,
     \`model\` varchar(128) NOT NULL,
     \`promptVersion\` varchar(32) NOT NULL,
     \`createdAt\` timestamp NOT NULL DEFAULT (now()),
     PRIMARY KEY(\`id\`))`);
 
-  /* NULLABLE — the key is there and `paired` admits a null. */
+  /* NULLABLE — the key is there and `locality` admits a null. */
   await conn.query(`CREATE TABLE \`zz_rehearse_okp_nullable\` (
     \`id\` int AUTO_INCREMENT NOT NULL,
     \`kind\` varchar(64) NOT NULL,
-    \`paired\` boolean NULL,
+    \`locality\` enum('single','coLocated','distributed') NULL,
     \`anchorRegion\` enum('head','neck','torso','arms','hands','belowWaist','feet','wholeBody') NOT NULL,
     \`model\` varchar(128) NOT NULL,
     \`promptVersion\` varchar(32) NOT NULL,
@@ -110,7 +113,7 @@ try {
   await conn.query(`CREATE TABLE \`zz_rehearse_okp_extra\` (
     \`id\` int AUTO_INCREMENT NOT NULL,
     \`kind\` varchar(64) NOT NULL,
-    \`paired\` boolean NOT NULL,
+    \`locality\` enum('single','coLocated','distributed') NOT NULL,
     \`anchorRegion\` enum('head','neck','torso','arms','hands','belowWaist','feet','wholeBody') NOT NULL,
     \`model\` varchar(128) NOT NULL,
     \`promptVersion\` varchar(32) NOT NULL,
@@ -124,13 +127,29 @@ try {
   await conn.query(`CREATE TABLE \`zz_rehearse_okp_badenum\` (
     \`id\` int AUTO_INCREMENT NOT NULL,
     \`kind\` varchar(64) NOT NULL,
-    \`paired\` boolean NOT NULL,
+    \`locality\` enum('single','coLocated','distributed') NOT NULL,
     \`anchorRegion\` enum('head','neck','torso','arms','hands','belowWaist','feet','elbows') NOT NULL,
     \`model\` varchar(128) NOT NULL,
     \`promptVersion\` varchar(32) NOT NULL,
     \`createdAt\` timestamp NOT NULL DEFAULT (now()),
     PRIMARY KEY(\`id\`),
     UNIQUE KEY \`uq_zz_rehearse_okp_badenum_kind\` (\`kind\`))`);
+
+  /* BAD LOCALITY — the enum check `locality` earned the moment it stopped being
+     a boolean (fable-951). One member missing and one invented, same as above,
+     so both directions of the set comparison are exercised here too. A column
+     that can store `colocated` while the code spells it `coLocated` is a kind
+     that never reaches the crop road and never reports why. */
+  await conn.query(`CREATE TABLE \`zz_rehearse_okp_badlocality\` (
+    \`id\` int AUTO_INCREMENT NOT NULL,
+    \`kind\` varchar(64) NOT NULL,
+    \`locality\` enum('single','colocated','paired') NOT NULL,
+    \`anchorRegion\` enum('head','neck','torso','arms','hands','belowWaist','feet','wholeBody') NOT NULL,
+    \`model\` varchar(128) NOT NULL,
+    \`promptVersion\` varchar(32) NOT NULL,
+    \`createdAt\` timestamp NOT NULL DEFAULT (now()),
+    PRIMARY KEY(\`id\`),
+    UNIQUE KEY \`uq_zz_rehearse_okp_badlocality_kind\` (\`kind\`))`);
 
   /* `because` is the arm's OWN reason, asserted. An arm refusing on somebody
      else's complaint has stopped testing its own — which is exactly what
@@ -151,7 +170,7 @@ try {
       table: "zz_rehearse_okp_nullable",
       key: "uq_zz_rehearse_okp_nullable_kind",
       expected: "REFUSE",
-      because: "`paired` is nullable",
+      because: "`locality` is nullable",
     },
     {
       arm: "EXTRA",
@@ -166,6 +185,13 @@ try {
       key: "uq_zz_rehearse_okp_badenum_kind",
       expected: "REFUSE",
       because: "does not match BODY_ANCHOR_REGIONS",
+    },
+    {
+      arm: "BAD LOCALITY",
+      table: "zz_rehearse_okp_badlocality",
+      key: "uq_zz_rehearse_okp_badlocality_kind",
+      expected: "REFUSE",
+      because: "does not match KIND_LOCALITIES",
     },
   ];
 

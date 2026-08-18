@@ -15,6 +15,7 @@ import {
 import { sql } from "drizzle-orm";
 
 import { BODY_ANCHOR_REGIONS } from "../shared/bodyAnchorRegions";
+import { KIND_LOCALITIES } from "../shared/kindLocality";
 import { INK_PLACEMENTS } from "../shared/inkPlacementVocabulary";
 import { INK_SIDES } from "../shared/inkReleasedPlacements";
 import { INK_PROVENANCES } from "../shared/inkProvenance";
@@ -2943,8 +2944,13 @@ export const castingOpenKindProperties = mysqlTable("casting_open_kind_propertie
   id: int("id").autoincrement().primaryKey(),
   /** The NORMALIZED key the open lane minted — a single lowercase token. */
   kind: varchar("kind", { length: 64 }).notNull(),
-  /** P1 — the KIND's question, never "did this render make two" (that is D1). */
-  paired: boolean("paired").notNull(),
+  /** P1 — the KIND's question, never "did this render make two" (that is D1).
+   *  A LOCALITY rather than a boolean since the founder's fangs ruling
+   *  (fable-951): what decides whether a crop may carry a kind is not how many
+   *  instances there are but whether ONE CROP CAN HOLD THEM. Derived from
+   *  `KIND_LOCALITIES` rather than retyped, so the enum and the vocabulary
+   *  cannot come apart. */
+  locality: mysqlEnum("locality", KIND_LOCALITIES).notNull(),
   /** P2's per-kind half — `belowWaist` for a tail, `hands` for nails. Derived
    *  from `BODY_ANCHOR_REGIONS` rather than retyped, so the enum and the
    *  vocabulary cannot come apart. */

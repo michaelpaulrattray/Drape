@@ -5611,15 +5611,15 @@ async function refineCandidateCounted(
 
           The property is READ, never re-derived: the acceptance door bought it
           once for this noun and wrote it down. `null` here is *nobody answered*,
-          and `mintedSlotsForRender` files that as `openKindPairUnread` and cuts
-          nothing — the conservative side, because a gate treating unknown as
-          singular files one wing under the name of two.
+          and `mintedSlotsForRender` files that as `openKindLocalityUnread` and
+          cuts nothing — the conservative side, because a gate treating unknown
+          as croppable files one wing under the name of two.
         */
         const openAsks = await Promise.all(
           Object.entries(editDelta?.open ?? {}).map(async ([kind, ask]) => ({
             kind,
             words: ask.words,
-            paired: (await readOpenKindProperties(kind))?.paired ?? null,
+            locality: (await readOpenKindProperties(kind))?.locality ?? null,
           })),
         );
         const { slots, unfiled, unfiledOpen } = mintedSlotsForRender({
@@ -5688,9 +5688,10 @@ async function refineCandidateCounted(
         /*
           AND THE OPEN KINDS THAT FILED NOTHING, with the reason NAMED — because
           the two reasons are two facts and only one of them is a bug.
-          `openKindPaired` is fable-872 §2 honoured; `openKindPairUnread` is a
-          kind whose property read is failing, which is silently taking the
-          conservative path on every ask forever and is worth chasing.
+          `openKindDistributed` is fable-872 §2 honoured under the locality class
+          (fable-951); `openKindLocalityUnread` is a kind whose property read is
+          failing, which is silently taking the conservative path on every ask
+          forever and is worth chasing.
         */
         if (unfiledOpen.length > 0) {
           log.info(

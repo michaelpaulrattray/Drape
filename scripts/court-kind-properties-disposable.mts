@@ -1,5 +1,19 @@
 /**
- * THE COURT — can a reader answer *how many* and *where* about a bare noun?
+ * THE COURT — can a reader answer *what shape is this kind* and *where* about a
+ * bare noun?
+ *
+ * # RE-ARMED FOR THE LOCALITY CLASS ON 2026-08-18, AND NOT YET RE-RUN
+ *
+ * The founder's fangs ruling (fable-951) replaced P1's question: not HOW MANY
+ * but whether ONE CROP CAN HOLD THE SET. The nine bars below are re-registered
+ * in the new vocabulary — **pre-registered and unspent**, which is the right
+ * order and is said out loud so nobody reads a bar as a result. What HAS been
+ * run is fable-951 §3's three-arm control
+ * (`kind-locality-controls-disposable.mts`): fangs -> coLocated, wings ->
+ * distributed, halo -> single, 3/3 on prompt `kp-2`.
+ *
+ * The row this ruling overturns is `fangs`. It was a P1 POSITIVE — several, so
+ * no crop — and under the locality class it is `coLocated`, which mints.
  *
  * One question, no callers, no importers. House money only: eight text calls at
  * roughly $0.0148 each, so **≈$0.12 and not one credit**. Declared and authorized
@@ -11,10 +25,15 @@
  * single. So the stop-condition was written into the plan before any of it was
  * built, and it is mechanical here:
  *
- *   P1 NEGATIVES  tail · halo · beak · crest     must ALL come back NOT paired
- *   P1 POSITIVES  wings · fangs · horn           must ALL come back paired
+ *   SINGLE        tail · halo · beak · crest     must ALL come back `single`
+ *   DISTRIBUTED   wings · horn                   must ALL come back `distributed`
+ *   CO-LOCATED    fangs · scales                 must ALL come back `coLocated`
  *   P2 PLACES     nails → hands, tail → belowWaist
- *   THE FOLD      scales → paired (many) and wholeBody
+ *
+ * Three groups that DISAGREE with each other, which is what a constant cannot
+ * pass: a reader answering `distributed` to everything fails the co-located
+ * group, and one answering `coLocated` to everything opens the crop road to
+ * wings and fails the distributed group.
  *
  * # ONE BAR WAS CORRECTED AFTER THE FIRST RUN, and here is the audit trail
  *
@@ -57,6 +76,7 @@ import "dotenv/config";
 import { createOpenRouterTextEngine } from "../server/providers/openrouterText";
 import { readKindProperties } from "../server/castingV2/openKindProperties";
 import type { BodyAnchorRegion } from "../shared/bodyAnchorRegions";
+import type { KindLocality } from "../shared/kindLocality";
 import type { TextEngine } from "../server/providers/types";
 
 const DRY = process.argv.includes("--dry");
@@ -65,21 +85,21 @@ type Arm = {
   noun: string;
   role: string;
   /** The bar. `null` means informational — recorded, never scored. */
-  paired: boolean | null;
+  locality: KindLocality | null;
   anchorRegion: BodyAnchorRegion | null;
 };
 
 /** THE BARS, above the spend. */
 const ARMS: readonly Arm[] = [
-  { noun: "tail", role: "P1 negative · P2 positive", paired: false, anchorRegion: "belowWaist" },
-  { noun: "halo", role: "P1 negative", paired: false, anchorRegion: null },
-  { noun: "beak", role: "P1 negative", paired: false, anchorRegion: null },
-  { noun: "crest", role: "P1 negative (replaces `horn`)", paired: false, anchorRegion: null },
-  { noun: "wings", role: "P1 positive", paired: true, anchorRegion: null },
-  { noun: "fangs", role: "P1 positive", paired: true, anchorRegion: null },
-  { noun: "horn", role: "P1 positive — the catalogue's own pair", paired: true, anchorRegion: null },
-  { noun: "nails", role: "P2 negative — the design's own control", paired: null, anchorRegion: "hands" },
-  { noun: "scales", role: "the `many` fold", paired: true, anchorRegion: null },
+  { noun: "tail", role: "single · P2 positive", locality: "single", anchorRegion: "belowWaist" },
+  { noun: "halo", role: "single", locality: "single", anchorRegion: null },
+  { noun: "beak", role: "single", locality: "single", anchorRegion: null },
+  { noun: "crest", role: "single (replaced `horn` here, fable-898 §2a)", locality: "single", anchorRegion: null },
+  { noun: "wings", role: "distributed — the case the gate was built for", locality: "distributed", anchorRegion: null },
+  { noun: "horn", role: "distributed — the catalogue's own horns@left/right", locality: "distributed", anchorRegion: null },
+  { noun: "fangs", role: "co-located — THE ROW fable-951 OVERTURNS", locality: "coLocated", anchorRegion: null },
+  { noun: "scales", role: "co-located — many, spread but never opposite", locality: "coLocated", anchorRegion: null },
+  { noun: "nails", role: "P2 negative — the design's own control", locality: null, anchorRegion: "hands" },
 ];
 
 /**
@@ -91,15 +111,15 @@ const ARMS: readonly Arm[] = [
  * comparison below cannot fail.
  */
 const DRY_ANSWERS: Record<string, string> = {
-  tail: '{"count":"single","anchor":"belowWaist"}',
-  halo: '{"count":"single","anchor":"head"}',
-  beak: '{"count":"pair","anchor":"head"}',
-  crest: '{"count":"single","anchor":"head"}',
-  horn: '{"count":"pair","anchor":"head"}',
-  wings: '{"count":"pair","anchor":"torso"}',
-  fangs: '{"count":"pair","anchor":"head"}',
-  nails: '{"count":"many","anchor":"hands"}',
-  scales: '{"count":"many","anchor":"wholeBody"}',
+  tail: '{"locality":"single","anchor":"belowWaist"}',
+  halo: '{"locality":"single","anchor":"head"}',
+  beak: '{"locality":"distributed","anchor":"head"}',
+  crest: '{"locality":"single","anchor":"head"}',
+  horn: '{"locality":"distributed","anchor":"head"}',
+  wings: '{"locality":"distributed","anchor":"torso"}',
+  fangs: '{"locality":"coLocated","anchor":"head"}',
+  nails: '{"locality":"coLocated","anchor":"hands"}',
+  scales: '{"locality":"coLocated","anchor":"wholeBody"}',
 };
 
 const dryEngine: TextEngine = {
@@ -151,8 +171,8 @@ for (const arm of running) {
   if (got === null) {
     problems.push("NO READING");
   } else {
-    if (arm.paired !== null && got.paired !== arm.paired) {
-      problems.push(`paired ${got.paired}, bar ${arm.paired}`);
+    if (arm.locality !== null && got.locality !== arm.locality) {
+      problems.push(`locality ${got.locality}, bar ${arm.locality}`);
     }
     if (arm.anchorRegion !== null && got.anchorRegion !== arm.anchorRegion) {
       problems.push(`anchor ${got.anchorRegion}, bar ${arm.anchorRegion}`);
@@ -161,26 +181,27 @@ for (const arm of running) {
   const verdict = problems.length === 0 ? "HELD" : `**FAILED** — ${problems.join("; ")}`;
   rows.push({ arm, got, verdict });
   console.log(
-    `${arm.noun.padEnd(8)} ${(got === null ? "—" : `${got.paired ? "paired " : "single "} ${got.anchorRegion}`).padEnd(22)}`
+    `${arm.noun.padEnd(8)} ${(got === null ? "—" : `${got.locality.padEnd(12)} ${got.anchorRegion}`).padEnd(26)}`
     + ` ${verdict.padEnd(40)} ${arm.role}`,
   );
 }
 
 console.log("");
 const failed = rows.filter((row) => row.verdict !== "HELD");
-const negatives = rows.filter((row) => row.arm.paired === false);
-const positives = rows.filter((row) => row.arm.paired === true);
-console.log(`P1 negatives  ${negatives.filter((r) => r.verdict === "HELD").length}/${negatives.length} held`);
-console.log(`P1 positives  ${positives.filter((r) => r.verdict === "HELD").length}/${positives.length} held`);
+for (const group of ["single", "coLocated", "distributed"] as const) {
+  const arms = rows.filter((row) => row.arm.locality === group);
+  if (arms.length === 0) continue;
+  console.log(`${group.padEnd(12)}  ${arms.filter((r) => r.verdict === "HELD").length}/${arms.length} held`);
+}
 console.log(`models        ${Array.from(new Set(rows.map((r) => r.got?.model ?? "none"))).join(", ")}`);
 console.log("");
 
 /* The stability pass's own reading, printed whatever the bars said: the question
    is whether the answers AGREE with each other, not whether they match a bar. */
 if (process.argv.includes("--stability")) {
-  const horns = rows.filter((row) => row.arm.noun === "horn").map((row) => row.got?.paired ?? null);
+  const horns = rows.filter((row) => row.arm.noun === "horn").map((row) => row.got?.locality ?? null);
   const agree = new Set(horns.map(String)).size === 1;
-  console.log(`horn ×${horns.length}: ${horns.map((p) => (p === null ? "—" : p ? "paired" : "single")).join(", ")}`);
+  console.log(`horn ×${horns.length}: ${horns.map((p) => p ?? "—").join(", ")}`);
   console.log(agree
     ? "STABLE — one answer three times. A gate may key on this property."
     : "**MIXED — a STOP on P1**, whichever answer is right: the property wobbles per call.");

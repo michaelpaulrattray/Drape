@@ -21,10 +21,15 @@
  *    row per kind*. With the columns and without the key, a second answer for
  *    `wings` lands and every reader needs a rule for choosing between them;
  *  - both properties NOT NULL — a declined read must write NO ROW. A gate
- *    treating a null `paired` as false mints a crop of one wing under the name
- *    of two, which is precisely what fable-872 §2 forbids.
+ *    treating a null `locality` as croppable mints a crop of one wing under the
+ *    name of two, which is precisely what fable-872 §2 forbids;
+ *  - and BOTH ENUMS against their TypeScript lists. `locality` earned that check
+ *    the moment it stopped being a boolean (fable-951): a column that can store
+ *    `coLocated` while the code spells it `colocated` is a kind that never
+ *    reaches the crop road and never reports why.
  */
 import { BODY_ANCHOR_REGIONS } from "../../shared/bodyAnchorRegions";
+import { KIND_LOCALITIES } from "../../shared/kindLocality";
 import type { CeremonyWorld } from "./ceremony.mts";
 
 export const OPEN_KIND_PROPERTY_TABLE = "casting_open_kind_properties";
@@ -34,7 +39,7 @@ export const OPEN_KIND_PROPERTY_KEY = "uq_casting_open_kind_properties_kind";
 export const OPEN_KIND_PROPERTY_COLUMNS = [
   "id",
   "kind",
-  "paired",
+  "locality",
   "anchorRegion",
   "model",
   "promptVersion",
@@ -70,7 +75,7 @@ export async function assertKindPropertyShape(
   }
   proved.push(`key: ${key} UNIQUE (kind) — one row per kind, enforced`);
 
-  for (const property of ["paired", "anchorRegion"] as const) {
+  for (const property of ["locality", "anchorRegion"] as const) {
     const row = columns.find((entry) => String(entry.Field) === property);
     if (String(row?.Null) !== "NO") {
       throw new Error(`\`${property}\` is nullable — a declined read must write NO ROW, never a row with a null in it`);
@@ -85,18 +90,24 @@ export async function assertKindPropertyShape(
     of. Compared as SETS in both directions: a missing member cannot be stored,
     and an extra one is a place nobody designed a framing answer for.
   */
-  const declared = String(columns.find((entry) => String(entry.Field) === "anchorRegion")?.Type ?? "");
-  const stored = Array.from(declared.matchAll(/'([^']+)'/g)).map((match) => match[1]!);
-  const expected = [...BODY_ANCHOR_REGIONS];
-  const absent = expected.filter((region) => !stored.includes(region));
-  const invented = stored.filter((region) => !expected.includes(region as never));
-  if (absent.length > 0 || invented.length > 0) {
-    throw new Error(
-      `the anchorRegion enum does not match BODY_ANCHOR_REGIONS — missing ${absent.join(", ") || "none"}`
-      + `, unknown ${invented.join(", ") || "none"}`,
-    );
-  }
-  proved.push(`anchorRegion: ${stored.length} regions, matching BODY_ANCHOR_REGIONS exactly`);
+  const enumOf = (column: string): string[] => {
+    const declared = String(columns.find((entry) => String(entry.Field) === column)?.Type ?? "");
+    return Array.from(declared.matchAll(/'([^']+)'/g)).map((match) => match[1]!);
+  };
+  const matchEnum = (column: string, expected: readonly string[], against: string) => {
+    const stored = enumOf(column);
+    const absent = expected.filter((member) => !stored.includes(member));
+    const invented = stored.filter((member) => !expected.includes(member));
+    if (absent.length > 0 || invented.length > 0) {
+      throw new Error(
+        `the ${column} enum does not match ${against} — missing ${absent.join(", ") || "none"}`
+        + `, unknown ${invented.join(", ") || "none"}`,
+      );
+    }
+    proved.push(`${column}: ${stored.length} members, matching ${against} exactly`);
+  };
+  matchEnum("anchorRegion", BODY_ANCHOR_REGIONS, "BODY_ANCHOR_REGIONS");
+  matchEnum("locality", KIND_LOCALITIES, "KIND_LOCALITIES");
 
   return proved;
 }
