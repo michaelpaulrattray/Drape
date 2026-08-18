@@ -55,6 +55,12 @@ import {
   captureCastingRepaintEnabled,
   parseCastingRepaintScope,
   validateCastingRepaintEnvironment,
+  CASTING_REFINE_DISPATCH_SCOPE_ENV,
+  CastingRefineDispatchScopeConfigurationError,
+  CastingRefineDispatchCoverageError,
+  parseCastingRefineDispatchScope,
+  captureCastingRefineDispatchEnabled,
+  validateCastingRefineDispatchEnvironment,
 } from "./castingV2Scope";
 
 /**
@@ -762,5 +768,67 @@ describe("the scan-table scope", () => {
 
     process.env.CASTING_SCAN_TABLE_SCOPE = "off";
     expect(castingScanTableArmed()).toBe(false);
+  });
+});
+
+describe("the refine dispatch scope — whether the paid half stops holding the request", () => {
+  it("is off by default and refuses anything it cannot read exactly", () => {
+    expect(parseCastingRefineDispatchScope(undefined)).toEqual({ kind: "off" });
+    for (const raw of ["ALL", "user:1", "users:", "users:0", "users:1,1", "true"]) {
+      expect(() => parseCastingRefineDispatchScope(raw), raw)
+        .toThrow(CastingRefineDispatchScopeConfigurationError);
+    }
+  });
+
+  it("asserts nothing while absent", () => {
+    expect(validateCastingRefineDispatchEnvironment({
+      scope: undefined,
+      castingScope: undefined,
+    })).toEqual({ kind: "off" });
+  });
+
+  it("refuses to dispatch for a user who cannot reach a refine at all", () => {
+    /*
+      Its parent is the CASTING scope and not the repaint one, and the
+      difference is deliberate: the swap is road-independent — it moves WHEN the
+      answer arrives, never what is painted — so a paste-road user is a
+      legitimate subject. What it cannot be is a user with no refine to
+      dispatch, which is a flag armed over a door that is shut.
+    */
+    expect(() => validateCastingRefineDispatchEnvironment({
+      scope: "users:1",
+      castingScope: undefined,
+    })).toThrow(CastingRefineDispatchCoverageError);
+    expect(() => validateCastingRefineDispatchEnvironment({
+      scope: "all",
+      castingScope: "users:1",
+    })).toThrow(CastingRefineDispatchCoverageError);
+    expect(() => validateCastingRefineDispatchEnvironment({
+      scope: "users:1,2",
+      castingScope: "users:1",
+    })).toThrow(/names users outside/);
+  });
+
+  it("accepts a scope its parent already covers", () => {
+    expect(validateCastingRefineDispatchEnvironment({
+      scope: "users:1",
+      castingScope: "users:1,2",
+    })).toEqual({ kind: "users", userIds: [1] });
+    expect(validateCastingRefineDispatchEnvironment({
+      scope: "users:1",
+      castingScope: "all",
+    })).toEqual({ kind: "users", userIds: [1] });
+  });
+
+  it("is enabled only when the whole chain names the user", () => {
+    process.env[CASTING_V2_SCOPE_ENV] = "users:1";
+    process.env[CASTING_REFINE_DISPATCH_SCOPE_ENV] = "users:1";
+    expect(captureCastingRefineDispatchEnabled(1)).toBe(true);
+    expect(captureCastingRefineDispatchEnabled(2)).toBe(false);
+
+    /* The point-of-use AND, driven on its own link: a boot check nobody
+       invoked is the second way a flag pair goes wrong. */
+    process.env[CASTING_V2_SCOPE_ENV] = "off";
+    expect(captureCastingRefineDispatchEnabled(1)).toBe(false);
   });
 });

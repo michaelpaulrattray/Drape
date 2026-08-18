@@ -185,7 +185,35 @@ receipt in a different register, written for support and reconciliation, and
 binding the panel's copy to it would be a mirror that drifts (law 4) — and it
 would put a money artifact on the rendering path.
 
-### Landing C — the dispatch swap itself
+### Landing C — the dispatch swap itself — ✅ **BUILT, flag-dark (countersigned fable-973)**
+
+**What shipped, and where the seam actually went.** The paid block is three
+thousand lines inside one `try`, so lifting it into a deferred function would
+have re-indented all of them to express one sentence — *answer now, finish
+afterwards*. Instead the attempt signals **outward**: `RefineAttempt` carries a
+`dispatched` callback, fired at the first moment the receipt is TRUE (straight
+after `markVariantDispatched`, which is when the row the panel's pending list
+draws says so), and `refineCandidate` races that announcement against the
+settled render. Flag off, nothing is ever set, nothing announces, and the code
+that runs is the code that shipped.
+
+Five arms in `refineService.test.ts`, each reddening alone under its own
+sabotage: the held path unchanged with the flag off; the receipt arriving with
+the **paint held open on a latch the test opens itself** (a receipt that merely
+arrives fast is a receipt that might have waited); a background failure landing
+durably on the rows; the census logged at SETTLEMENT with the render's own wall
+clock; and the catch at the top of detached work.
+
+⚠ **Two instrument notes worth more than the arms.** (1) A dying render does
+**not** reject the detached promise — `censusOfAttempt` returns the failure as a
+value — so an arm that only kills the paint passes with every guard deleted.
+(2) Even a genuine post-receipt rejection is not an *unhandled* one: the receipt
+arrived through `Promise.race`, which has already attached handlers to the same
+promise, so a late fault is **silently discarded** rather than thrown. The catch
+therefore exists for the RECORD, not for the crash, and its arm asserts the log
+line. Both were found by driving the sabotage rather than by reasoning.
+
+
 
 Only now does the mutation stop holding. Behind its own scope flag
 (`CASTING_REFINE_DISPATCH_SCOPE`, `users:1`, off by default and inert when off),
@@ -273,7 +301,29 @@ C's own ruling rather than to the shift that found it.
 - **Not a client debounce.** The contract is at the wire; a disabled button is
   not a guard, and a second tab, a retried request or a slow network all get
   past it.
-- **Open, and it belongs to whoever rules C:** whether the lock is the right
+- #### ⚠ THE AMENDMENT'S PRICE WAS READ OFF A SIGNATURE — the lock refuses a refine
+
+Driven 2026-08-18 (`scripts/prove-refine-lockkey-disposable.mts`, controls
+first, rows deleted): `beginDirectOperation` takes a `lockKey`, and **the lock
+itself would refuse every refine at two gates** — `assertOperationLockKey`
+admits `^(model|board-item):[1-9][0-9]*$` and nothing else, and
+`acquireGenerationOperationLock` builds its allowlist from the operation ROW's
+`modelId`/`originItemId`, both of which a `castingV2.refine` claim leaves null.
+Both refusals are plain errors rather than the translated `resource_busy`, and
+both fire AFTER the claim: the one-argument version would have answered **500 on
+every refine**. The negative control (a well-formed `model:<real id>` key against
+that same claim) separates the empty row from the key's shape.
+
+**Ruled fable-974 §2: the DERIVED candidate lock.** The caller passes the
+candidate's `publicId`; a new function beside the existing one resolves it to a
+row owned by the operation's user *in the statement that reads it* and takes
+`casting-candidate:<internal id>` — one alternative added to the validator's
+grammar, a key the caller never supplies and cannot forge. Stronger than the
+road it copies (the `model:` path trusts a number the caller handed the claim);
+release needs nothing new, because all four finalizers already delete the lock
+row with the operation. Price: **about one shift, not half.**
+
+**Open, and it belongs to whoever rules C:** whether the lock is the right
   answer at all, or whether a fast receipt should simply return the IN-FLIGHT
   operation's receipt to the second tap — which is friendlier (the customer sees
   their edit running rather than an error) and is the same shape as the replay

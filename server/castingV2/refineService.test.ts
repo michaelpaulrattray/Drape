@@ -43,6 +43,16 @@ let failedVariant: Record<string, unknown> | null = null;
 const dispatchRecords: Array<Record<string, unknown>> = [];
 let engineThrows: Error | null = null;
 /**
+ * A PAINT HELD OPEN, for the dispatch swap's arms at the bottom of this file.
+ *
+ * Landing C's whole claim is that the answer arrives BEFORE the render, so the
+ * only honest way to assert it is to make the render unable to finish until the
+ * test says so. Gating an earlier read would not do: the service reads bytes
+ * three times before the claim, and a latch on those would prove nothing about
+ * where the receipt sits relative to the PAINT.
+ */
+let renderGate: Promise<void> | null = null;
+/**
  * EVERY STRING THE PAINTER WAS ACTUALLY SENT.
 
  * Assert at the wire (invariant 5): what a render asks for is a property of the
@@ -247,6 +257,7 @@ vi.mock("../providers/falImages", async (importOriginal) => ({
     edit: vi.fn(async (request: { prompt: string }) => {
       sentPrompts.push(request.prompt);
       journal.push("generate");
+      if (renderGate) await renderGate;
       if (engineThrows) throw engineThrows;
       return {
         bytes: Buffer.from("refined"),
@@ -480,6 +491,8 @@ beforeEach(() => {
   ledger.refunds.length = 0;
   chargeSucceeds = true;
   engineThrows = null;
+  costLineThrows = false;
+  renderGate = null;
   renderFault = false;
   landedVariant = null;
   atLanding.length = 0;
@@ -541,8 +554,24 @@ const unmasked = async (input: { painted: { bytes: Buffer; contentType: string }
  * ours either way.
  */
 const logged: { level: string; fields: Record<string, unknown>; message: string }[] = [];
+/**
+ * MAKE THE PRICING ITSELF FAIL — the only way to test the catch at the top of
+ * detached work (Landing C, fable-973 §3c).
+ *
+ * `censusOfAttempt` returns a failure rather than throwing one, so a render
+ * that dies does NOT reject the detached promise: an arm that only kills the
+ * paint would pass with the guard deleted, which is a test that cannot fail.
+ * What CAN reject that promise is the settlement work wrapped around it, and
+ * this is the cheapest honest way to make it do so.
+ */
+let costLineThrows = false;
+
 vi.mock("../logging/logger", () => {
   const record = (level: string) => (fields: unknown, message: string) => {
+    if (costLineThrows && message.includes("what this edit cost")) {
+      costLineThrows = false;
+      throw new Error("the cost line could not be written");
+    }
     logged.push({ level, fields: (fields ?? {}) as Record<string, unknown>, message });
   };
   return {
@@ -8117,5 +8146,178 @@ describe("an open kind is never scopable — the door, at the wire", () => {
       } as never,
       { ...input, instruction: "make them longer", scope: "open:horns" as never },
     )).rejects.toThrow(/which part of her/);
+  });
+});
+
+/**
+ * THE DISPATCH SWAP — Landing C (`CASTING_V2_REFINE_DISPATCH_DESIGN.md` §3,
+ * countersigned fable-973).
+ *
+ * A refine is one long-held mutation: the customer's exposure is the
+ * operation's own life — median 121 s, p95 276 s, and 1.7% answered past the
+ * observed ~305 s gateway wall, where the socket is gone before the answer
+ * exists. Behind `CASTING_REFINE_DISPATCH_SCOPE` the paid half returns a
+ * receipt the moment the work is genuinely under way and the outcome arrives on
+ * the surface like every other durable fact.
+ *
+ * What these arms hold the swap to, and each is a bound rather than a nicety:
+ *
+ *   1. flag OFF is today's product, byte for byte — the held path stays
+ *      reachable at every moment, so a park mid-item leaves a working thing;
+ *   2. the receipt arrives BEFORE the render, proven by holding the render on a
+ *      latch the test opens itself — a receipt that merely arrives is a receipt
+ *      that might have waited;
+ *   3. a background failure lands DURABLY (refund, failed variant) and never as
+ *      an unhandled rejection — the catch at the top of detached work;
+ *   4. the census is logged at SETTLEMENT and carries the render's own wall
+ *      clock, never the receipt's 200 ms (fable-973 §3b). The cost lane is
+ *      built on that instrument and a swap that quietly makes every render look
+ *      instant would corrupt it in the one direction nobody checks.
+ */
+describe("the dispatch swap — WHEN the answer arrives, never what is painted", () => {
+  /** A paint held open until the test decides to let it finish. */
+  const latch = () => {
+    let release!: () => void;
+    renderGate = new Promise<void>((resolve) => { release = resolve; });
+    return { release };
+  };
+
+  const censusLines = () =>
+    logged.filter((line) => line.message.includes("what this edit cost in calls and seconds"));
+
+  beforeEach(() => {
+    /* This suite's logger mock accumulates for the whole file, so the census
+       arms count THEIR OWN lines or they read the previous test's render. */
+    logged.length = 0;
+    process.env.CASTING_V2_SCOPE = "users:1";
+  });
+
+  afterEach(() => {
+    delete process.env.CASTING_REFINE_DISPATCH_SCOPE;
+    delete process.env.CASTING_V2_SCOPE;
+  });
+
+  it("holds the request while the flag is off — the picture, on the request, as today", async () => {
+    const result = await refineCandidate({ ...greenEyes }, input);
+
+    expect(result.kind, "the delivered picture answers the mutation").toBe("rendered");
+    expect(result.variantId).toBeTruthy();
+    expect(landedVariant, "and it had already landed when the request answered").not.toBeNull();
+    expect(ledger.charges).toHaveLength(1);
+  });
+
+  it("answers with a receipt BEFORE the render, and the picture lands afterwards", async () => {
+    process.env.CASTING_REFINE_DISPATCH_SCOPE = "users:1";
+    const render = latch();
+
+    const result = await refineCandidate({ ...greenEyes }, input);
+
+    /*
+      The latch is still shut at this line, so this is not a fast render — it is
+      an answer that did not wait for one. The charge is already out, which is
+      what makes the receipt honest: the money moved and the work is under way.
+    */
+    expect(result.kind).toBe("dispatched");
+    expect(result.variantId, "the row the panel's pending list already draws").toBeTruthy();
+    expect(result.operationId, "and the operation support would be quoted").toBeTruthy();
+    expect(landedVariant, "nothing has been painted at the moment of the receipt").toBeNull();
+    expect(ledger.charges, "charged once, before the receipt").toHaveLength(1);
+    expect(censusLines(), "and the cost line has not been written yet").toHaveLength(0);
+
+    render.release();
+    await vi.waitFor(() => expect(landedVariant, "the picture arrives on the rows").not.toBeNull());
+    expect(ledger.charges, "and it is still one charge").toHaveLength(1);
+    expect(ledger.refunds).toHaveLength(0);
+  });
+
+  it("lands a background failure DURABLY — on the rows, where the surface reads it", async () => {
+    process.env.CASTING_REFINE_DISPATCH_SCOPE = "users:1";
+    const render = latch();
+    const unhandled: unknown[] = [];
+    const watch = (reason: unknown) => unhandled.push(reason);
+    process.on("unhandledRejection", watch);
+
+    try {
+      const result = await refineCandidate({ ...greenEyes }, input);
+      expect(result.kind).toBe("dispatched");
+
+      engineThrows = new Error("the paint never came back");
+      render.release();
+
+      await vi.waitFor(() => expect(ledger.refunds, "the whole charge came back").toHaveLength(1));
+      expect(failedVariant, "and the row says so, for the surface to read").not.toBeNull();
+      await new Promise((resolve) => setImmediate(resolve));
+      /* A belt, not the discriminator: the render's own failure is caught
+         INSIDE the attempt and handed back as a value, so this could not fail
+         even with every guard deleted. The arm below is the one that can. */
+      expect(unhandled).toEqual([]);
+    } finally {
+      process.off("unhandledRejection", watch);
+    }
+  });
+
+  it("logs the census at SETTLEMENT, carrying the render's wall clock and not the receipt's", async () => {
+    process.env.CASTING_REFINE_DISPATCH_SCOPE = "users:1";
+    const render = latch();
+
+    const started = Date.now();
+    await refineCandidate({ ...greenEyes }, input);
+    expect(censusLines(), "nothing is priced while the render is still running").toHaveLength(0);
+
+    await new Promise((resolve) => setTimeout(resolve, 60));
+    render.release();
+    await vi.waitFor(() => expect(censusLines()).toHaveLength(1));
+
+    const [census] = censusLines();
+    expect(census.fields.delivered).toBe(true);
+    expect(
+      Number(census.fields.wallMs),
+      "the wall is the RENDER's, so the cost lane cannot read a dispatched refine as instant",
+    ).toBeGreaterThanOrEqual(60);
+    expect(Number(census.fields.wallMs)).toBeLessThanOrEqual(Date.now() - started + 50);
+  });
+
+  it("WRITES DOWN a settlement that throws — the catch at the top of detached work", async () => {
+    /*
+      What this arm is for, having been built once against the wrong claim and
+      driven until it could fail.
+    
+      A render that dies is caught INSIDE the attempt and handed back as a
+      value, so the detached promise resolves either way — an arm that only
+      kills the paint passes with every guard deleted. What can reject that
+      promise is the settlement work wrapped around it, and here the cost line
+      refuses to be written.
+    
+      And the rejection is not an unhandled one even then: the receipt arrived
+      through `Promise.race`, which has already attached handlers to the same
+      promise, so a fault after the race is SILENTLY DISCARDED rather than
+      thrown. That is the defect the catch exists to stop — not a crash, a
+      disappearance — so this arm asserts the RECORD. Deleting the catch reddens
+      it and nothing else.
+    */
+    process.env.CASTING_REFINE_DISPATCH_SCOPE = "users:1";
+    const render = latch();
+    const unhandled: unknown[] = [];
+    const watch = (reason: unknown) => unhandled.push(reason);
+    process.on("unhandledRejection", watch);
+
+    try {
+      const result = await refineCandidate({ ...greenEyes }, input);
+      expect(result.kind).toBe("dispatched");
+
+      costLineThrows = true;
+      render.release();
+
+      await vi.waitFor(() => expect(landedVariant, "the picture still landed").not.toBeNull());
+      await new Promise((resolve) => setImmediate(resolve));
+      await new Promise((resolve) => setImmediate(resolve));
+      expect(costLineThrows, "the cost line really did refuse — the arm is driving something").toBe(false);
+      const written = logged.filter((line) =>
+        line.message.includes("failed outside its own compensation"));
+      expect(written, "the fault is on the record rather than lost after the race").toHaveLength(1);
+      expect(unhandled).toEqual([]);
+    } finally {
+      process.off("unhandledRejection", watch);
+    }
   });
 });

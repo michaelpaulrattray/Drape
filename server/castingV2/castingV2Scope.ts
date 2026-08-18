@@ -1104,3 +1104,107 @@ export function validateCastingInkStudioEnvironment(input: {
   }
   return child;
 }
+
+/* ------------------------------------------- the dispatch sub-flag */
+
+/**
+ * WHETHER THE PAID HALF STOPS HOLDING THE REQUEST (Landing C,
+ * `CASTING_V2_REFINE_DISPATCH_DESIGN.md` §3; countersigned fable-973).
+ *
+ * Off — and absent means off — `castingV2.refine` awaits the entire render
+ * before it answers, so the customer's exposure is the operation's own life:
+ * median 121 s, p95 276 s, and 1.7% of them answered past the observed ~305 s
+ * gateway wall, where the socket carrying the answer is gone before the answer
+ * exists. On, the paid half returns a receipt the moment the work is genuinely
+ * under way, and the outcome arrives on the surface like every other durable
+ * fact — the rows, the sweep and the three lists that read them are all already
+ * live, which is why this is a flag rather than a rebuild.
+ *
+ * # Its parent is the CASTING scope, and that choice is the road question
+ *
+ * Every other sub-flag on this road hangs off the repaint scope because it
+ * changes what is PAINTED. This one changes only WHEN THE ANSWER ARRIVES: the
+ * same render, the same recipe, the same bytes, on whichever road the user is
+ * already travelling. A paste-road customer is a legitimate subject and gains
+ * exactly what a repaint-road one gains. What it cannot be armed over is a user
+ * with no refine to dispatch, so the parent is the scope that opens the door at
+ * all.
+ *
+ * # What is NOT gated on it, deliberately
+ *
+ * The settled list (Landing A) is unconditional and already shipped: a terminal
+ * refine failure reaches the surface whether or not the request was still
+ * holding. That is the ordering this design turns on — take the socket away
+ * before the surface can represent its own terminal outcome and the outcome
+ * reaches nobody ALWAYS, which is strictly worse than the 1.7% being fixed.
+ *
+ * # Turning it on is its own recorded decision
+ *
+ * Off everywhere at landing. A dev walk comes before any thought of `users:1`,
+ * and that step is a separate, written act rather than a consequence of this
+ * code existing (fable-973 §3e).
+ */
+export const CASTING_REFINE_DISPATCH_SCOPE_ENV = "CASTING_REFINE_DISPATCH_SCOPE";
+
+export class CastingRefineDispatchScopeConfigurationError extends Error {
+  constructor() {
+    super(
+      `${CASTING_REFINE_DISPATCH_SCOPE_ENV} must be "off", "all", or "users:" followed by unique positive integer user ids`,
+    );
+    this.name = "CastingRefineDispatchScopeConfigurationError";
+  }
+}
+
+export class CastingRefineDispatchCoverageError extends Error {
+  constructor(detail: string) {
+    super(`${CASTING_REFINE_DISPATCH_SCOPE_ENV} ${detail}`);
+    this.name = "CastingRefineDispatchCoverageError";
+  }
+}
+
+export function parseCastingRefineDispatchScope(raw: string | undefined): CastingV2Scope {
+  return parseScopeGrammar(raw, () => {
+    throw new CastingRefineDispatchScopeConfigurationError();
+  });
+}
+
+/**
+ * Whether this user's paid refine returns a receipt instead of a picture.
+ *
+ * An AND of the chain at the point of use, for its siblings' reason: the boot
+ * check refuses a scope reaching past its parent, and a boot check nobody
+ * invoked is the second way a flag pair goes wrong.
+ */
+export function captureCastingRefineDispatchEnabled(userId: number): boolean {
+  const child = parseCastingRefineDispatchScope(process.env[CASTING_REFINE_DISPATCH_SCOPE_ENV]);
+  if (!castingV2EnabledForUser(child, userId)) return false;
+  return captureCastingV2Enabled(userId);
+}
+
+export function validateCastingRefineDispatchEnvironment(input: {
+  scope: string | undefined;
+  castingScope: string | undefined;
+}): CastingV2Scope {
+  const child = parseCastingRefineDispatchScope(input.scope);
+  if (child.kind === "off") return child;
+
+  const parent = parseCastingV2Scope(input.castingScope);
+  if (parent.kind === "off") {
+    throw new CastingRefineDispatchCoverageError(
+      `cannot be enabled while ${CASTING_V2_SCOPE_ENV} is off — there is no refine to dispatch`,
+    );
+  }
+  if (parent.kind === "all") return child;
+  if (child.kind === "all") {
+    throw new CastingRefineDispatchCoverageError(
+      `cannot be "all" while ${CASTING_V2_SCOPE_ENV} is limited to specific users`,
+    );
+  }
+  const uncovered = child.userIds.filter((userId) => !parent.userIds.includes(userId));
+  if (uncovered.length > 0) {
+    throw new CastingRefineDispatchCoverageError(
+      `names users outside ${CASTING_V2_SCOPE_ENV}: ${uncovered.join(",")}`,
+    );
+  }
+  return child;
+}

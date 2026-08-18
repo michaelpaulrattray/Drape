@@ -29,6 +29,7 @@ import {
   CASTING_INK_STUDIO_SCOPE_ENV,
   CASTING_OPEN_LANE_SCOPE_ENV,
   CASTING_REFERENCE_LIBRARY_SCOPE_ENV,
+  CASTING_REFINE_DISPATCH_SCOPE_ENV,
   CASTING_REPAINT_SCOPE_ENV,
   CASTING_SIDE_PHRASING_SCOPE_ENV,
   CASTING_SEGMENTS_DELIVERED_SCOPE_ENV,
@@ -39,6 +40,7 @@ import {
   validateCastingInkStudioEnvironment,
   validateCastingOpenLaneEnvironment,
   validateCastingReferenceLibraryEnvironment,
+  validateCastingRefineDispatchEnvironment,
   validateCastingRepaintEnvironment,
   validateCastingSidePhrasingEnvironment,
   validateCastingScanTableEnvironment,
@@ -239,6 +241,17 @@ export function validateEnv(): void {
     scope: process.env[CASTING_INK_STUDIO_SCOPE_ENV],
     repaintScope: process.env[CASTING_REPAINT_SCOPE_ENV],
     cleanupWorker: process.env.ENABLE_STORAGE_CLEANUP_WORKER,
+  });
+  /*
+    Whether the paid half of a refine stops holding the request. Checked against
+    the CASTING scope rather than the repaint one, and that is the road question
+    answered: the swap changes WHEN the answer arrives and never what is
+    painted, so a paste-road customer is a legitimate subject — what it cannot
+    be armed over is a user with no refine to dispatch.
+  */
+  validateCastingRefineDispatchEnvironment({
+    scope: process.env[CASTING_REFINE_DISPATCH_SCOPE_ENV],
+    castingScope: process.env[CASTING_V2_SCOPE_ENV],
   });
 
   /*

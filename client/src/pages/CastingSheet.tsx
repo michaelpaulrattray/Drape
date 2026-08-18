@@ -1470,6 +1470,32 @@ export default function CastingSheet() {
           outcome arriving — the mark is about WHOSE words reached the surface,
           not about whether a sentence was drawn.
         */
+        /*
+          A RECEIPT IS NOT AN OUTCOME (Landing C, behind
+          `CASTING_REFINE_DISPATCH_SCOPE`).
+
+          When the paid half stops holding the request, the mutation resolves in
+          milliseconds with the row it just dispatched — the render has not
+          happened, so there is nothing on this screen yet that came from the
+          server about how it went. Two consequences, and both are the reason
+          this branch sits ABOVE the mark rather than inside the ones below.
+
+          It must NOT `markOutcomeShown`. That mark tells the bridge the true
+          sentence reached somebody; claiming it here would silence the one
+          voice left for a render that fails after the request is gone. The
+          outcome arrives on the surface — the settled list within the hour, the
+          bridge otherwise — which is the ordering Landing A bought.
+
+          And the row is added to `boughtHere` exactly as a delivered one is, so
+          when the picture lands it is her own edit arriving and not a stranger
+          from another tab (D-161).
+        */
+        if (result?.kind === "dispatched") {
+          if (result.variantId) boughtHere.current.add(result.variantId);
+          await variants.refetch();
+          await invalidate();
+          return;
+        }
         markOutcomeShown(requestId, "server");
         /*
           A QUESTION, NOT AN OUTCOME — and it costs nothing.

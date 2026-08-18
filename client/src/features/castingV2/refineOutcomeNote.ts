@@ -27,7 +27,15 @@
 
 /** Only what this decision reads. The rest of the result is none of its business. */
 export type RefineOutcomeLike = {
-  kind?: "rendered" | "selected" | "asked";
+  /*
+    `dispatched` is a RECEIPT rather than an outcome (Landing C): the render is
+    under way and nothing has happened yet to confess. It is listed so the union
+    is the server's union — a kind this reader has never heard of is how a future
+    confession goes quiet, which is the defect in the header — and the rule
+    below still holds without an edit: a receipt carries no note, so it says
+    nothing, and when the render lands the surface says what it did.
+  */
+  kind?: "rendered" | "selected" | "asked" | "dispatched";
   note?: string;
 };
 

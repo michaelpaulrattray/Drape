@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "30f9cc7aed6a29f6"
+    "sourceFingerprint": "5f09fe12a0bffc2c"
   },
   "domains": [
     {
@@ -8176,6 +8176,11 @@
     {
       "id": "flag:CASTING_REFERENCE_LIBRARY_SCOPE",
       "name": "CASTING_REFERENCE_LIBRARY_SCOPE",
+      "grammar": "off|all|users:<ids>"
+    },
+    {
+      "id": "flag:CASTING_REFINE_DISPATCH_SCOPE",
+      "name": "CASTING_REFINE_DISPATCH_SCOPE",
       "grammar": "off|all|users:<ids>"
     },
     {
@@ -28324,17 +28329,17 @@
       "message": "Names 2 of RecipeRefusal's 4 fields (server/castingV2/recipeAssembler.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/refineService.ts:461",
+      "id": "finding:redeclared-shape:server/castingV2/refineService.ts:470",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/refineService.ts:461",
+      "subject": "server/castingV2/refineService.ts:470",
       "message": "Names 3 of Thumbnail's 3 fields (server/castingV2/thumbnails.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/refineService.ts:529",
+      "id": "finding:redeclared-shape:server/castingV2/refineService.ts:538",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/refineService.ts:529",
+      "subject": "server/castingV2/refineService.ts:538",
       "message": "Names 3 of Thumbnail's 3 fields (server/castingV2/thumbnails.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {

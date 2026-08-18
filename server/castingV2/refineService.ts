@@ -191,7 +191,7 @@ import {
   RepaintCannotSayError, repaintAsksFor, repaintCannotRemove, scopedAskIsUnsayable,
 } from "./repaintAsks";
 import { cannotSaySentence, likenessSetAsideNote } from "./cannotSayCopy";
-import { censusOfAttempt, censusSoFar } from "./callCensus";
+import { censusOfAttempt, censusSoFar, type CallCensus } from "./callCensus";
 import { carriesAfterPruning } from "./prunedCarries";
 import { countRefusal } from "./refusalCounter";
 import { refusal, refusalOf } from "./refusalTag";
@@ -200,6 +200,7 @@ import { pronounsForSex } from "./castPronouns";
 import {
   captureCastingReferenceLibraryEnabled,
   captureCastingOpenLaneEnabled,
+  captureCastingRefineDispatchEnabled,
   captureCastingRepaintEnabled,
   captureCastingSidePhrasingEnabled,
 } from "./castingV2Scope";
@@ -395,7 +396,7 @@ export type RefineResult = {
    * so they were given it and charged nothing. Absent on the rows replayed from
    * operations written before typed removal, which were all renders.
    */
-  kind?: "rendered" | "selected" | "asked";
+  kind?: "rendered" | "selected" | "asked" | "dispatched";
   /**
    * A question, not an outcome (D-178/D-179/D-180).
    *
@@ -422,6 +423,14 @@ export type RefineResult = {
    * is what had happened to the dropped reference for its whole life.
    */
   note?: string;
+  /**
+   * The operation this ask is being rendered under — only on a RECEIPT.
+   *
+   * Landing C's dispatched answer names it for the same reason the failure
+   * sentences do: it is the one string support can act on, and the panel that
+   * shows a render running should be able to quote what is running.
+   */
+  operationId?: string;
 };
 
 export type RefineServiceDependencies = {
@@ -637,9 +646,89 @@ export async function refineCandidate(
     readable and putting it in this tally would mix two questions.
   */
   const attempt: RefineAttempt = { claimed: false };
-  const { value, error, census } = await censusOfAttempt(
+  /*
+    LANDING C — WHO IS STILL WAITING WHEN THE RENDER STARTS.
+
+    Off (everywhere, at landing), `dispatched` is never set, nothing announces
+    anything, and the two lines below are the two lines that shipped: one
+    attempt, awaited whole, priced and answered on the request.
+
+    On, the attempt announces its receipt the moment the row is dispatched, and
+    this function races that announcement against the settled render. Whichever
+    arrives first is what the customer is handed; the census and the pricing
+    below run at SETTLEMENT either way, which is the bound the cost lane needs —
+    a dispatched refine must never be read as a 200 ms render.
+  */
+  let announce: ((receipt: DispatchedReceipt) => void) | null = null;
+  const receipt = new Promise<DispatchedReceipt>((resolve) => { announce = resolve; });
+  /* Nothing is ever awaited on this promise when the flag is off, so it is
+     never settled and never observed — an ordinary unresolved promise, not a
+     leak. */
+  if (captureCastingRefineDispatchEnabled(input.userId)) {
+    attempt.dispatched = (given) => announce?.(given);
+  }
+
+  const settled = censusOfAttempt(
     () => refineCandidateCounted(dependencies, input, attempt),
-  );
+  ).then(async (outcome) => {
+    await priceTheAttempt(input, attempt, outcome);
+    return outcome;
+  });
+
+  if (attempt.dispatched) {
+    const first = await Promise.race([
+      settled.then((outcome) => ({ arrived: "render" as const, outcome })),
+      receipt.then((given) => ({ arrived: "receipt" as const, given })),
+    ]);
+    if (first.arrived === "receipt") {
+      /*
+        THE CATCH AT THE TOP OF DETACHED WORK.
+
+        `censusOfAttempt` already returns a failure rather than throwing one, so
+        this guards the pricing and the impossible rest — and it exists because
+        "impossible" is how an unhandled rejection takes a process down with a
+        paid render inside it. The OUTCOME is not swallowed here: every terminal
+        path has already written its own sentence to `publicMessage`, which is
+        the surface's source and the reason Landing A came first.
+      */
+      void settled.catch((fault) => {
+        log.error(
+          { userId: input.userId, candidate: input.candidatePublicId, err: fault },
+          "[refineService] a dispatched refine failed outside its own compensation — the row is the record",
+        );
+      });
+      return {
+        kind: "dispatched",
+        variantId: first.given.variantId,
+        candidateId: input.candidatePublicId,
+        imageUrl: first.given.imageUrl,
+        instructions: first.given.instructions,
+        operationId: first.given.operationId,
+      };
+    }
+    return answerOnTheRequest(first.outcome);
+  }
+
+  return answerOnTheRequest(await settled);
+}
+
+/** What the receipt carries out of the attempt (Landing C). */
+type DispatchedReceipt = { variantId: string; operationId: string; imageUrl: string; instructions: string[] };
+
+/**
+ * THE PRICE OF ONE ATTEMPT, WRITTEN WHEREVER IT ENDED.
+ *
+ * Lifted out of the entry point unchanged when the dispatch swap landed: with a
+ * receipt the request is long gone by the time the render settles, and a cost
+ * line that only fires while someone is waiting would have priced exactly the
+ * refines nobody was waiting on at zero.
+ */
+async function priceTheAttempt(
+  input: RefineInput,
+  attempt: RefineAttempt,
+  outcome: { value?: RefineResult; error?: unknown; census: CallCensus },
+): Promise<void> {
+  const { error, census } = outcome;
   log.info(
     {
       userId: input.userId,
@@ -674,26 +763,50 @@ export async function refineCandidate(
     the day it is written, and an untagged one is counted as a GAP rather than
     dropped. It cannot double-count: no free refusal counts itself any more.
   */
-  if (error !== undefined) {
-    if (!attempt.claimed) {
-      const named = refusalOf(error);
-      if (named) {
-        await countRefusal({
-          userId: input.userId,
-          candidateId: input.candidatePublicId,
-          reason: named.reason,
-          facet: named.facet,
-          outcome: named.outcome,
-        });
-      }
+  if (error !== undefined && !attempt.claimed) {
+    const named = refusalOf(error);
+    if (named) {
+      await countRefusal({
+        userId: input.userId,
+        candidateId: input.candidatePublicId,
+        reason: named.reason,
+        facet: named.facet,
+        outcome: named.outcome,
+      });
     }
-    throw error;
   }
-  return value as RefineResult;
 }
 
-/** What the attempt tells the seam about itself. */
-type RefineAttempt = { claimed: boolean };
+/**
+ * The answer for whoever is still holding the request.
+ *
+ * Only reached when someone IS: a dispatched refine has already answered, and
+ * its failure is a durable sentence on the operation row rather than a throw
+ * into a socket that closed minutes ago.
+ */
+function answerOnTheRequest(
+  outcome: { value?: RefineResult; error?: unknown },
+): RefineResult {
+  if (outcome.error !== undefined) throw outcome.error;
+  return outcome.value as RefineResult;
+}
+
+/**
+ * What the attempt tells the seam about itself.
+ *
+ * `claimed` answers whether the money was ever at risk. `dispatched` is Landing
+ * C's seam, and it is a signal OUTWARD rather than a cut: the paid block is
+ * three thousand lines of one `try`, and lifting it into a function to defer it
+ * would have re-indented all of them for a change that is really one sentence —
+ * *answer now, finish afterwards*. So the attempt announces the receipt at the
+ * first moment it is TRUE, and the entry point decides whether anyone is still
+ * waiting on the request. Absent when the flag is off, which is when nothing
+ * about this path differs from the one that shipped.
+ */
+type RefineAttempt = {
+  claimed: boolean;
+  dispatched?: (receipt: { variantId: string; operationId: string; imageUrl: string; instructions: string[] }) => void;
+};
 
 async function refineCandidateCounted(
   dependencies: RefineServiceDependencies,
@@ -3157,6 +3270,27 @@ async function refineCandidateCounted(
 
   try {
     await markVariantDispatched({ userId: input.userId, variantId: variant.id });
+    /*
+      THE RECEIPT, AT THE FIRST MOMENT IT IS TRUE (Landing C).
+
+      Not one line earlier: this is where the row the panel's pending list draws
+      says `dispatched`, so a customer handed a receipt before it would be told
+      her edit is running by a surface that cannot yet see it. And not one line
+      later either — everything below is the render, which is the whole thing
+      she has stopped waiting on.
+
+      A no-op when the flag is off, and that is the entire difference between
+      the two roads: the same claim, the same charge, the same paint, the same
+      rows. What moves is who is still holding the socket while it happens.
+    */
+    attempt.dispatched?.({
+      variantId: variant.publicId,
+      operationId,
+      /* The picture she is looking at — the one being redrawn — because a
+         receipt is not a new frame and must never look like one. */
+      imageUrl: storagePublicUrl(variant.baseImageKey),
+      instructions,
+    });
 
     const base = await (dependencies.readBytes ?? storageReadBytes)(variant.baseImageKey);
     /*
