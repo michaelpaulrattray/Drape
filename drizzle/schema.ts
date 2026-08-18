@@ -18,6 +18,7 @@ import { BODY_ANCHOR_REGIONS } from "../shared/bodyAnchorRegions";
 import { INK_PLACEMENTS } from "../shared/inkPlacementVocabulary";
 import { INK_SIDES } from "../shared/inkReleasedPlacements";
 import { INK_PROVENANCES } from "../shared/inkProvenance";
+import type { ReferenceIntent } from "../shared/referenceIntents";
 
 /**
  * Core user table backing auth flow.
@@ -2956,6 +2957,14 @@ export const castingInkDesigns = mysqlTable("casting_ink_designs", {
   side: mysqlEnum("side", INK_SIDES).notNull(),
   /** What was CLAIMED about where the design came from. Never guessed. */
   provenance: mysqlEnum("provenance", INK_PROVENANCES).notNull(),
+  /**
+   * WHAT THIS REFERENCE WAS UPLOADED FOR (migration 0035, ruled fable-937).
+   *
+   * A set rather than a value: "take the tattoo and the hair from this one" is
+   * a legal ask. The members are `shared/referenceIntents.ts`; the shape is
+   * enforced at the door, where each refusal can be driven.
+   */
+  intents: json("intents").$type<readonly ReferenceIntent[]>().notNull(),
   /** Our copy of the bytes, under the candidate's purge path. Never a pointer. */
   storageKey: varchar("storageKey", { length: 512 }).notNull(),
   /** sha256 of the object's bytes — byte identity, as the library does it. */

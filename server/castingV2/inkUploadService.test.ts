@@ -38,6 +38,7 @@ function harness(overrides: Partial<InkUploadDependencies> = {}) {
         placement: one.placement,
         side: one.side,
         provenance: one.provenance,
+        intents: one.intents,
         storageKey: one.storageKey,
         createdAt: new Date("2026-08-18T00:00:00Z"),
       };
@@ -53,6 +54,7 @@ const ask = {
   placement: "upperArm" as const,
   side: "left" as const,
   provenance: "consented" as const,
+  intents: ["tattoo"] as const,
 };
 
 describe("attaching a design to a Cast", () => {
@@ -73,6 +75,9 @@ describe("attaching a design to a Cast", () => {
     expect(stored[0]!.bytes.equals(bytes)).toBe(true);
     expect(recorded[0]).toMatchObject({
       userId: 1,
+      /* What she said she was taking, on the row — never inferred from the fact
+         that this door files tattoos. */
+      intents: ["tattoo"],
       candidatePublicId: ask.candidatePublicId,
       storageKey: stored[0]!.key,
       mime: "image/png",
@@ -104,6 +109,41 @@ describe("attaching a design to a Cast", () => {
        releases the hold. A row filed against a different batch would leave the
        design scheduled for deletion. */
     expect(recorded[0]!.cleanupBatchId).toBe(manifests[0]!.id);
+  });
+
+  it("asks what she is taking BEFORE it looks at her picture", async () => {
+    /*
+      The founder's catch (fable-937): a reference uploaded for the HAIR, of a
+      person who happens to have tattoos. Nothing is reserved, nothing stored,
+      nothing written — and the sentence names the feature rather than the
+      photograph.
+    */
+    const { dependencies, order } = harness();
+
+    const outcome = await uploadInkDesign(
+      { ...ask, intents: ["hair"], bytes: await pngOf(512, 512) },
+      dependencies,
+    );
+
+    expect(outcome).toMatchObject({ ok: false, refusal: { code: "intentNotOpen" } });
+    if (outcome.ok) return;
+    expect(outcome.refusal.message).toContain("her hair");
+    expect(order).toEqual([]);
+  });
+
+  it("refuses an undeclared upload before anything else can go wrong", async () => {
+    /* Empty is the amendment's own line: no extraction without intent. It is
+       answered ahead of a picture that is ALSO unacceptable, so the customer
+       hears the thing she can act on. */
+    const { dependencies, order } = harness();
+
+    const outcome = await uploadInkDesign(
+      { ...ask, intents: [], bytes: Buffer.from("not an image either") },
+      dependencies,
+    );
+
+    expect(outcome).toMatchObject({ ok: false, refusal: { code: "intentMissing" } });
+    expect(order).toEqual([]);
   });
 
   it("costs nothing at all when the door refuses", async () => {

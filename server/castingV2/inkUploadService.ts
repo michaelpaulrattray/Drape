@@ -48,6 +48,7 @@ import sharp from "sharp";
 import type { InkPlacement } from "../../shared/inkPlacementVocabulary";
 import type { InkProvenance } from "../../shared/inkProvenance";
 import type { InkSide } from "../../shared/inkReleasedPlacements";
+import type { ReferenceIntent } from "../../shared/referenceIntents";
 import { withTransaction } from "../db/connection";
 import {
   recordInkDesign,
@@ -63,6 +64,7 @@ import {
   inkDesignBytesRefusal,
   inkDesignContentType,
   inkDesignKey,
+  inkIntentRefusal,
   inkPlacementRefusal,
   isInkDesignFormat,
   type InkUploadRefusal,
@@ -74,6 +76,8 @@ export type InkUploadRequest = {
   placement: InkPlacement;
   side: InkSide;
   provenance: InkProvenance;
+  /** What is being taken from this picture (fable-937). Never inferred. */
+  intents: readonly ReferenceIntent[];
   bytes: Buffer;
 };
 
@@ -138,6 +142,16 @@ export async function uploadInkDesign(
   dependencies: InkUploadDependencies = REAL,
 ): Promise<InkUploadOutcome> {
   /*
+    THE DECLARATION FIRST, before the placement and long before the bytes.
+
+    "No extraction without intent" reads backwards if the picture is examined
+    first: a customer who declared a feature this product cannot take yet should
+    hear that, rather than a verdict about her photograph.
+  */
+  const declared = inkIntentRefusal(request.intents);
+  if (declared) return { ok: false, refusal: declared };
+
+  /*
     THE FRAME IS THE MASTER, and it is stated rather than passed in. A Cast's
     photograph is `cohortPhotorealHuman`'s waist-up portrait until it is signed,
     and the placement vocabulary was measured on exactly those frames. When a
@@ -176,6 +190,7 @@ export async function uploadInkDesign(
     placement: request.placement,
     side: request.side,
     provenance: request.provenance,
+    intents: request.intents,
     storageKey,
     digest: createHash("sha256").update(request.bytes).digest("hex"),
     mime: contentType,

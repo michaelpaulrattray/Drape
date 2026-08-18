@@ -55,6 +55,7 @@ const ask = {
   placement: "upperArm" as const,
   side: "left" as const,
   provenance: "consented" as const,
+  intents: ["tattoo"] as const,
   imageBase64: PNG_BASE64,
 };
 
@@ -81,6 +82,7 @@ beforeEach(() => {
       placement: "upperArm",
       side: "left",
       provenance: "consented",
+      intents: ["tattoo"],
       storageKey: "casting-v2/ink/abc.png",
       createdAt: new Date("2026-08-18T00:00:00Z"),
       width: 900,
@@ -161,6 +163,30 @@ describe("what the wire accepts", () => {
     await expect(caller().ink.upload({ ...ask, provenance: "found online" } as never))
       .rejects.toMatchObject({ code: "BAD_REQUEST" });
     expect(uploaded).not.toHaveBeenCalled();
+  });
+
+  it("demands a declaration, and refuses one it has never heard of", async () => {
+    /*
+      Ruled fable-937: the schema carries the intent field now. An upload with
+      no declaration is refused at the wire; an unknown feature name is refused
+      by the closed vocabulary rather than stored as a string somebody typed.
+    */
+    const { intents: _dropped, ...undeclared } = ask;
+    await expect(caller().ink.upload(undeclared as never))
+      .rejects.toMatchObject({ code: "BAD_REQUEST" });
+    await expect(caller().ink.upload({ ...ask, intents: [] } as never))
+      .rejects.toMatchObject({ code: "BAD_REQUEST" });
+    await expect(caller().ink.upload({ ...ask, intents: ["freckles"] } as never))
+      .rejects.toMatchObject({ code: "BAD_REQUEST" });
+    expect(uploaded).not.toHaveBeenCalled();
+  });
+
+  it("hands the declaration to the service exactly as it arrived", async () => {
+    /* Multi-intent is legal at the wire; whether both halves are BUILT is the
+       door's question, one layer in. Asserted at the wire rather than beside
+       the schema (invariant 5). */
+    await caller().ink.upload({ ...ask, intents: ["tattoo", "hair"] } as never);
+    expect(uploaded.mock.calls[0]![0]).toMatchObject({ intents: ["tattoo", "hair"] });
   });
 
   it("refuses bytes that are not base64 at all", async () => {

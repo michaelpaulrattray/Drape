@@ -71,6 +71,7 @@ describeWithDatabase("the ink design store (disposable DB)", () => {
       placement: "upperArm" as const,
       side: "left" as const,
       provenance: "consented" as const,
+      intents: ["tattoo"] as const,
       storageKey,
       digest: randomUUID().replace(/-/g, "").repeat(2).slice(0, 64),
       mime: "image/png",
@@ -121,6 +122,25 @@ describeWithDatabase("the ink design store (disposable DB)", () => {
       width: 900,
       height: 1200,
     });
+    /* THE DECLARATION SURVIVES THE ROUND TRIP (migration 0035). A JSON column
+       comes back parsed on one driver path and as text on another, so this is
+       the assertion that would catch a reader handing a caller a string that
+       merely looks like a list. */
+    expect(listed[0]!.intents).toEqual(["tattoo"]);
+  });
+
+  it("keeps a multi-feature declaration as the set it was given", async () => {
+    /* fable-937: multi-intent uploads run each declared form independently.
+       Whether a form is BUILT is the door's question; the store keeps what was
+       declared, in order, without collapsing it. */
+    const cast = await newCast(owner);
+    await designs.recordInkDesign({
+      ...design(cast.publicId, owner, `casting-v2/ink/${randomUUID()}.png`),
+      intents: ["tattoo", "hair"] as const,
+    });
+
+    const listed = await designs.listInkDesigns({ userId: owner, candidatePublicId: cast.publicId });
+    expect(listed[0]!.intents).toEqual(["tattoo", "hair"]);
   });
 
   /**

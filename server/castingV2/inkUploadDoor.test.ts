@@ -14,6 +14,7 @@ import { describe, expect, it } from "vitest";
 
 import { INK_PLACEMENTS } from "../../shared/inkPlacementVocabulary";
 import { INK_SIDES, everyInkTuple } from "../../shared/inkReleasedPlacements";
+import { REFERENCE_INTENTS } from "../../shared/referenceIntents";
 import {
   INK_DESIGNS_PER_CANDIDATE,
   INK_DESIGN_FORMATS,
@@ -22,6 +23,7 @@ import {
   inkDesignBytesRefusal,
   inkDesignContentType,
   inkDesignKey,
+  inkIntentRefusal,
   inkPlacementRefusal,
 } from "./inkUploadDoor";
 
@@ -127,6 +129,55 @@ describe("what may be uploaded as a design", () => {
     expect(second).not.toBe(first);
     expect(inkDesignKey("jpeg")).toMatch(/\.jpg$/);
     expect(inkDesignContentType("webp")).toBe("image/webp");
+  });
+});
+
+describe("what this reference is being taken FOR", () => {
+  it("admits a tattoo declaration — the one form that is built", () => {
+    expect(inkIntentRefusal(["tattoo"])).toBeNull();
+  });
+
+  it("turns down a feature whose form is ruled but not built, by name", () => {
+    /*
+      His catch (fable-937): a reference may be uploaded for the HAIR while the
+      person in it happens to have tattoos. Hair's form is ruled — a segmented
+      crop — and it is not built, so the honest answer names the feature and
+      promises the money rather than accepting a declaration nothing acts on.
+    */
+    expect(inkIntentRefusal(["hair"])).toMatchObject({ code: "intentNotOpen" });
+    expect(inkIntentRefusal(["hair"])!.message).toContain("her hair");
+    expect(inkIntentRefusal(["makeup"])).toMatchObject({ code: "intentNotOpen" });
+    expect(inkIntentRefusal(["eyeColour"])).toMatchObject({ code: "intentNotOpen" });
+  });
+
+  it("turns down a mixed declaration on the unbuilt half, not on the built one", () => {
+    /* Multi-intent is legal and each form runs independently, so a declaration
+       is only as open as its least-open member. Naming the closed one is what
+       stops "we took part of it" being a silent outcome. */
+    const refusal = inkIntentRefusal(["tattoo", "hair"]);
+    expect(refusal).toMatchObject({ code: "intentNotOpen" });
+    expect(refusal!.message).toContain("her hair");
+  });
+
+  it("refuses a declaration this door cannot serve at all", () => {
+    /* An empty declaration is no intent, which is the amendment's own line. A
+       declaration with no tattoo in it does not belong on THIS door: the row it
+       would file carries a placement and a side, which are tattoo facts. */
+    expect(inkIntentRefusal([])).toMatchObject({ code: "intentMissing" });
+  });
+
+  it("refuses the same feature declared twice", () => {
+    /* A set, not a list. Two of the same intent would be counted twice by the
+       demand tally this field exists to feed. */
+    expect(inkIntentRefusal(["tattoo", "tattoo"])).toMatchObject({ code: "intentRepeated" });
+  });
+
+  it("reads the vocabulary rather than keeping a copy of it", () => {
+    /* Law 4 again: every member of the shared vocabulary is answerable here,
+       with no list in this file to fall behind. */
+    for (const intent of REFERENCE_INTENTS) {
+      expect(() => inkIntentRefusal([intent])).not.toThrow();
+    }
   });
 });
 

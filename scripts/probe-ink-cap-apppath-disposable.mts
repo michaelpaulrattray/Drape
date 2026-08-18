@@ -51,6 +51,7 @@ function ask() {
     placement: "upperArm" as const,
     side: "left" as const,
     provenance: "consented" as const,
+    intents: ["tattoo"] as const,
     storageKey: `casting-v2/ink/${randomUUID()}.png`,
     digest: randomUUID().replace(/-/g, "").repeat(2).slice(0, 64),
     mime: "image/png",

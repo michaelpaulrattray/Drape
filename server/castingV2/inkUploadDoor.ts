@@ -40,6 +40,11 @@ import {
   sidesForInkPlacement,
   type InkSide,
 } from "../../shared/inkReleasedPlacements";
+import {
+  referenceIntentIsOpen,
+  referenceIntentNotOpen,
+  type ReferenceIntent,
+} from "../../shared/referenceIntents";
 
 /**
  * How many designs one Cast may hold.
@@ -71,6 +76,9 @@ export type InkDesignFormat = (typeof INK_DESIGN_FORMATS)[number];
 export const INK_KEY_PREFIX = "casting-v2/ink";
 
 export type InkUploadRefusalCode =
+  | "intentMissing"
+  | "intentRepeated"
+  | "intentNotOpen"
   | "sideNotOnPlacement"
   | "outOfFrame"
   | "unreadable"
@@ -191,6 +199,54 @@ export function inkDesignContentType(format: InkDesignFormat): string {
 export function inkDesignKey(format: InkDesignFormat): string {
   const extension = format === "jpeg" ? "jpg" : format;
   return `${INK_KEY_PREFIX}/${randomUUID()}.${extension}`;
+}
+
+/**
+ * WHAT THIS REFERENCE IS BEING TAKEN FOR — the declaration, ruled fable-937.
+ *
+ * His catch is the whole reason: a customer may upload a picture for the HAIR,
+ * and the person in it may happen to have tattoos. Extracting what was not
+ * asked for spends money on nobody's behalf, so nothing is taken from a
+ * reference that was not declared.
+ *
+ * Three refusals, and the middle one is the one that keeps this honest:
+ *
+ *   intentMissing   nothing declared, or nothing this door can serve — the row
+ *                   it would file carries a placement and a side, which are
+ *                   facts about a TATTOO
+ *   intentRepeated  a set, not a list; a doubled member would be counted twice
+ *                   by the demand tally this field exists to feed
+ *   intentNotOpen   the form is RULED and not BUILT — named, with the money
+ *                   promised, instead of accepted and silently ignored
+ *
+ * A declaration is only as open as its least-open member: `[tattoo, hair]` is
+ * refused on the hair, because "we took part of it" must never be a silent
+ * outcome.
+ */
+export function inkIntentRefusal(
+  intents: readonly ReferenceIntent[],
+): InkUploadRefusal | null {
+  if (new Set(intents).size !== intents.length) {
+    return {
+      code: "intentRepeated",
+      message: "That feature is listed twice — say each one once.",
+    };
+  }
+  const closed = intents.find((intent) => !referenceIntentIsOpen(intent));
+  if (closed) return { code: "intentNotOpen", message: referenceIntentNotOpen(closed) };
+  /*
+    LAST, and deliberately after the closed check: a hair-only declaration is
+    turned down for the reason a customer can act on ("that one opens later"),
+    not for an internal one about which door they reached. Only a declaration
+    with nothing recognisable in it falls through to here.
+  */
+  if (!intents.includes("tattoo")) {
+    return {
+      code: "intentMissing",
+      message: "Say what you're taking from this picture.",
+    };
+  }
+  return null;
 }
 
 /** What a customer is told when this Cast already holds as many as it may. */

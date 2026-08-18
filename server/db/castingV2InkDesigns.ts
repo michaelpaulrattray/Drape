@@ -46,6 +46,7 @@ import {
 import type { InkPlacement } from "../../shared/inkPlacementVocabulary";
 import type { InkProvenance } from "../../shared/inkProvenance";
 import type { InkSide } from "../../shared/inkReleasedPlacements";
+import { isReferenceIntent, type ReferenceIntent } from "../../shared/referenceIntents";
 import { INK_DESIGNS_PER_CANDIDATE } from "../castingV2/inkUploadDoor";
 import { getDb, withTransaction, type TransactionHandle } from "./connection";
 import { undischargedStorageCleanupBatchWhere } from "./storageCleanup";
@@ -83,6 +84,14 @@ export type InkDesignToRecord = {
   placement: InkPlacement;
   side: InkSide;
   provenance: InkProvenance;
+  /**
+   * What this reference is being taken FOR (ruled fable-937).
+   *
+   * Never defaulted here. The door decides what a legal declaration is, and a
+   * writer that invented one would be filing an answer to a question nobody was
+   * asked, which is the defect `provenance` exists to avoid one column along.
+   */
+  intents: readonly ReferenceIntent[];
   /** Our object, under the candidate's purge path. Never a pointer. */
   storageKey: string;
   /** sha256 of the stored bytes — byte identity, as the library does it. */
@@ -107,6 +116,7 @@ export type RecordedInkDesign = {
   placement: InkPlacement;
   side: InkSide;
   provenance: InkProvenance;
+  intents: readonly ReferenceIntent[];
   storageKey: string;
   createdAt: Date;
 };
@@ -149,6 +159,7 @@ export async function recordInkDesign(input: InkDesignToRecord): Promise<Recorde
       placement: input.placement,
       side: input.side,
       provenance: input.provenance,
+      intents: input.intents,
       storageKey: input.storageKey,
       digest: input.digest,
       mime: input.mime,
@@ -182,6 +193,7 @@ export async function recordInkDesign(input: InkDesignToRecord): Promise<Recorde
       placement: input.placement,
       side: input.side,
       provenance: input.provenance,
+      intents: input.intents,
       storageKey: input.storageKey,
       createdAt: now,
     };
@@ -214,6 +226,7 @@ export async function listInkDesigns(input: {
       placement: castingInkDesigns.placement,
       side: castingInkDesigns.side,
       provenance: castingInkDesigns.provenance,
+      intents: castingInkDesigns.intents,
       storageKey: castingInkDesigns.storageKey,
       digest: castingInkDesigns.digest,
       mime: castingInkDesigns.mime,
@@ -233,7 +246,28 @@ export async function listInkDesigns(input: {
       eq(castingInkDesigns.userId, input.userId),
     ))
     .orderBy(castingInkDesigns.id);
-  return rows.map((row) => ({ ...row, createdAt: new Date(row.createdAt) }));
+  /* The driver hands JSON back parsed on one path and as text on another, so
+     it is normalized here and no caller has to know which one it got. The
+     reference library's `words` are read back the same way. */
+  return rows.map((row) => ({
+    ...row,
+    intents: parseIntents(row.intents),
+    createdAt: new Date(row.createdAt),
+  }));
+}
+
+/** JSON as either shape, read back as the set it is. */
+function parseIntents(value: unknown): readonly ReferenceIntent[] {
+  const raw = typeof value === "string" ? safeParseIntents(value) : value;
+  return Array.isArray(raw) ? raw.filter(isReferenceIntent) : [];
+}
+
+function safeParseIntents(value: string): unknown {
+  try {
+    return JSON.parse(value);
+  } catch {
+    return null;
+  }
 }
 
 /* ------------------------------------------------------------ retention */

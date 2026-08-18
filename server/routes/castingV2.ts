@@ -33,6 +33,7 @@ import {
 } from "../castingV2/castingV2Scope";
 import { INK_PLACEMENTS } from "../../shared/inkPlacementVocabulary";
 import { INK_PROVENANCES } from "../../shared/inkProvenance";
+import { REFERENCE_INTENTS } from "../../shared/referenceIntents";
 import { INK_SIDES } from "../../shared/inkReleasedPlacements";
 import {
   INK_DESIGNS_PER_CANDIDATE_REFUSAL,
@@ -338,6 +339,15 @@ const inkRouter = router({
          real-person fence cannot tolerate (`shared/inkProvenance.ts`). */
       provenance: z.enum(INK_PROVENANCES),
       /*
+        WHAT IS BEING TAKEN FROM THIS PICTURE (ruled fable-937). A set, because
+        "the tattoo and the hair from this one" is a legal ask, and required,
+        because his catch is a reference uploaded for a feature nobody would
+        have guessed. Which members are servable TODAY is the door's question
+        and not the schema's: a closed feature earns a sentence naming it rather
+        than an unreadable enum error.
+      */
+      intents: z.array(z.enum(REFERENCE_INTENTS)).min(1).max(REFERENCE_INTENTS.length),
+      /*
         A COARSE WIRE BOUND, not the real one. This stops a payload too large
         to be worth decoding; whether the BYTES are acceptable is decided
         after decoding, by what they turn out to be.
@@ -364,6 +374,7 @@ const inkRouter = router({
           placement: input.placement,
           side: input.side,
           provenance: input.provenance,
+          intents: input.intents,
           bytes,
         });
         if (!outcome.ok) {
@@ -378,6 +389,7 @@ const inkRouter = router({
           placement: outcome.design.placement,
           side: outcome.design.side,
           provenance: outcome.design.provenance,
+          intents: outcome.design.intents,
           width: outcome.design.width,
           height: outcome.design.height,
         };

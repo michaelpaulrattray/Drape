@@ -31,6 +31,11 @@ if (!url) throw new Error("no disposable database handed to this probe");
 
 const CAP = 8;
 
+/* The intent declaration (migration 0035) as JSON text, bound rather than
+   inlined — a JSON literal inside a TS string inside SQL is three escapes deep
+   and reads as noise. */
+const DECLARED = JSON.stringify(["tattoo"]);
+
 /* Through the one door: it welds `timezone: "Z"` on and refuses to open a
    world other than the one this process was wrapped for. */
 async function open(): Promise<ScriptConnection> {
@@ -58,9 +63,9 @@ async function seed(connection: ScriptConnection, held: number): Promise<{ candi
   );
   for (let at = 0; at < held; at += 1) {
     await connection.execute(
-      "INSERT INTO casting_ink_designs (publicId, userId, candidateId, placement, side, provenance, storageKey, digest, mime, byteSize, width, height)"
-        + " VALUES (?, ?, ?, 'upperArm', 'left', 'consented', ?, ?, 'image/png', 1, 900, 1200)",
-      [randomUUID(), user.insertId, candidate.insertId, `casting-v2/ink/${randomUUID()}.png`, randomUUID().replace(/-/g, "")],
+      "INSERT INTO casting_ink_designs (publicId, userId, candidateId, placement, side, provenance, intents, storageKey, digest, mime, byteSize, width, height)"
+        + " VALUES (?, ?, ?, 'upperArm', 'left', 'consented', ?, ?, ?, 'image/png', 1, 900, 1200)",
+      [randomUUID(), user.insertId, candidate.insertId, DECLARED, `casting-v2/ink/${randomUUID()}.png`, randomUUID().replace(/-/g, "")],
     );
   }
   return { candidateId: candidate.insertId, userId: user.insertId };
@@ -93,9 +98,9 @@ async function writer(
       return "refused";
     }
     await connection.execute(
-      "INSERT INTO casting_ink_designs (publicId, userId, candidateId, placement, side, provenance, storageKey, digest, mime, byteSize, width, height)"
-        + " VALUES (?, ?, ?, 'upperArm', 'left', 'consented', ?, ?, 'image/png', 1, 900, 1200)",
-      [randomUUID(), userId, candidateId, `casting-v2/ink/${randomUUID()}.png`, randomUUID().replace(/-/g, "")],
+      "INSERT INTO casting_ink_designs (publicId, userId, candidateId, placement, side, provenance, intents, storageKey, digest, mime, byteSize, width, height)"
+        + " VALUES (?, ?, ?, 'upperArm', 'left', 'consented', ?, ?, ?, 'image/png', 1, 900, 1200)",
+      [randomUUID(), userId, candidateId, DECLARED, `casting-v2/ink/${randomUUID()}.png`, randomUUID().replace(/-/g, "")],
     );
     await connection.commit();
     return "wrote";

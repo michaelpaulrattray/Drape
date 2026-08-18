@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "c6707251d1cf9d4c"
+    "sourceFingerprint": "bcaa42d6b6efe8ca"
   },
   "domains": [
     {
@@ -15563,6 +15563,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:drizzle/schema.ts",
+      "to": "module:shared/referenceIntents.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/_core/context.ts",
       "to": "module:drizzle/schema.ts",
       "kind": "imports"
@@ -19563,6 +19568,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/castingV2/inkUploadDoor.ts",
+      "to": "module:shared/referenceIntents.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/castingV2/inkUploadService.ts",
       "to": "module:server/castingV2/inkUploadDoor.ts",
       "kind": "imports"
@@ -19600,6 +19610,11 @@
     {
       "from": "module:server/castingV2/inkUploadService.ts",
       "to": "module:shared/inkReleasedPlacements.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/inkUploadService.ts",
+      "to": "module:shared/referenceIntents.ts",
       "kind": "imports"
     },
     {
@@ -21953,6 +21968,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/db/castingV2InkDesigns.ts",
+      "to": "module:shared/referenceIntents.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/db/castingV2OpenKindProperties.ts",
       "to": "module:drizzle/schema.ts",
       "kind": "imports"
@@ -24085,6 +24105,11 @@
     {
       "from": "module:server/routes/castingV2.ts",
       "to": "module:shared/inkReleasedPlacements.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/castingV2.ts",
+      "to": "module:shared/referenceIntents.ts",
       "kind": "imports"
     },
     {
