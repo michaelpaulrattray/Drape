@@ -734,24 +734,21 @@
 
 - symbol: recordGlobalFailedLogin
   file: server/security/rateLimit.ts
-  verdict: HELD
-  why: a deleted alert and an alert that never fires look identical; wire-or-delete is the founder's call
+  verdict: KEEP
+  why: WIRED 2026-08-19 by founder ruling ("wire and explain in plain english") — server/security/loginAttackAlert.ts is the call site the helper never had, reached from both failed-login exits
   argued: 9/13b
-  blocker: founder card — the security wire-or-delete decision
 
 - symbol: markGlobalAttackAlertSent
   file: server/security/rateLimit.ts
-  verdict: HELD
-  why: a deleted alert and an alert that never fires look identical; wire-or-delete is the founder's call
+  verdict: KEEP
+  why: WIRED 2026-08-19 by founder ruling ("wire and explain in plain english") — server/security/loginAttackAlert.ts is the call site the helper never had, reached from both failed-login exits
   argued: 9/13b
-  blocker: founder card — the security wire-or-delete decision
 
 - symbol: shouldSendGlobalAttackAlert
   file: server/security/rateLimit.ts
-  verdict: HELD
-  why: a deleted alert and an alert that never fires look identical; wire-or-delete is the founder's call
+  verdict: KEEP
+  why: WIRED 2026-08-19 by founder ruling ("wire and explain in plain english") — server/security/loginAttackAlert.ts is the call site the helper never had, reached from both failed-login exits
   argued: 9/13b
-  blocker: founder card — the security wire-or-delete decision
 
 - symbol: _clearPendingActions
   file: server/slack/slackApproval.ts

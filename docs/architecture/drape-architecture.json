@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "a80f86f3bbe71350"
+    "sourceFingerprint": "af8e9158c0232a31"
   },
   "domains": [
     {
@@ -118,7 +118,7 @@
     {
       "id": "domain:security",
       "name": "security",
-      "moduleCount": 8
+      "moduleCount": 9
     },
     {
       "id": "domain:shared",
@@ -4877,6 +4877,12 @@
     {
       "id": "module:server/security/disposableEmails.ts",
       "path": "server/security/disposableEmails.ts",
+      "domain": "security",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/security/loginAttackAlert.ts",
+      "path": "server/security/loginAttackAlert.ts",
       "domain": "security",
       "lifecycle": "active"
     },
@@ -10754,6 +10760,10 @@
     {
       "id": "test:server/security/deleteUserData.test.ts",
       "path": "server/security/deleteUserData.test.ts"
+    },
+    {
+      "id": "test:server/security/loginAttackAlert.test.ts",
+      "path": "server/security/loginAttackAlert.test.ts"
     },
     {
       "id": "test:server/security/rateLimit.test.ts",
@@ -24691,6 +24701,11 @@
     },
     {
       "from": "module:server/routes/emailAuth.ts",
+      "to": "module:server/security/loginAttackAlert.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/emailAuth.ts",
       "to": "module:server/security/rateLimit.ts",
       "kind": "imports"
     },
@@ -25862,6 +25877,21 @@
     {
       "from": "module:server/security/deleteUserData.ts",
       "to": "module:server/stripe/stripeService.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/security/loginAttackAlert.ts",
+      "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/security/loginAttackAlert.ts",
+      "to": "module:server/security/rateLimit.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/security/loginAttackAlert.ts",
+      "to": "module:server/slack/slackNotification.ts",
       "kind": "imports"
     },
     {

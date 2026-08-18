@@ -212,6 +212,10 @@ Documented and believed working; verified inert. Fixes are queued post-R7:
 
 Most of these followed the same path: helper or rule written, docs written, todo ticked, call site never added — and the last is the nastier variant, invoked but inert under the current configuration. Invariants 7 and 8 exist because of them. The grid above was re-verified cell-by-cell against the code on 2026-07-25.
 
+**One has left this list — and it was never on it, which is the part worth noticing.** The site-wide login-attack detector (`recordGlobalFailedLogin` / `shouldSendGlobalAttackAlert` / `markGlobalAttackAlertSent`) had no call site anywhere in the product for months, and **this list did not name it** while `docs/RATE_LIMITING.md` carried a worked example of the wiring that had never been done. So the honest record was incomplete and the dishonest one was confident. **Wired 2026-08-19** by founder ruling (*"wire and explain in plain english"*): `server/security/loginAttackAlert.ts` is the call site, and the login route calls it from **both** failed-login exits — including the unknown-email exit, which is the one credential stuffing mostly hits. Its limit is stated rather than shipped quietly: **the counter is in memory and resets on every deploy**, so it catches a fast, loud attack and would miss a slow, patient one. `server/security/loginAttackAlert.test.ts` drives it directly, including the concurrent case that a sequential test cannot see.
+
+**The credit-purchase velocity pair above stays inert on purpose** — blocking a paying customer's top-up is a product decision (what counts as too fast, what happens when someone hits it) and not a switch, so it awaits a design rather than a wire-up.
+
 ## Design system conventions
 
 - Design tokens in `client/src/styles/tokens.css`: monochrome palette (black `#0A0A0A`, surface `#EBEBEB`, white), 4px spacing grid, Inter font. Reference via `var(--token-name)`; don't hardcode colors/spacing.

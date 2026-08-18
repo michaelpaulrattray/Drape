@@ -25,6 +25,7 @@ import { users } from "../../drizzle/schema";
 import { eq } from "drizzle-orm";
 import { generateVerificationToken, sendVerificationEmail, storeVerificationToken } from "./emailVerification";
 import { loginSchema, registerSchema } from "./emailAuthInput";
+import { noteFailedLogin } from "../security/loginAttackAlert";
 
 const BCRYPT_ROUNDS = 12;
 
@@ -229,6 +230,17 @@ emailAuthRouter.post("/login", async (req: Request, res: Response) => {
     // Find user by email
     const user = await getUserByEmail(email);
     if (!user) {
+      /*
+        COUNTED, and this is the exit that matters most for the alarm.
+        Credential stuffing works from a leaked list, so most of its attempts
+        name addresses we have never seen — an alarm wired only to the
+        wrong-password exit below would sleep through the commonest attack
+        there is. The count is global and carries no email, so the enumeration
+        defence (one generic sentence for both exits) is untouched.
+
+        Fire-and-forget: a broken alarm may never slow or break a login.
+      */
+      void noteFailedLogin();
       // Generic error to prevent email enumeration
       res.status(401).json({ error: "Invalid email or password" });
       return;
@@ -275,6 +287,10 @@ emailAuthRouter.post("/login", async (req: Request, res: Response) => {
     if (!passwordValid) {
       // Record failed login
       await db.recordFailedLogin(user.openId);
+      /* The per-account lockout above and the site-wide alarm here are
+         different controls: one slows an attack on ONE person, the other says
+         out loud that the whole front door is being tried. */
+      void noteFailedLogin();
 
       await logAuditEvent({
         userId: user.id,

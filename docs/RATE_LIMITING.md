@@ -273,57 +273,72 @@ The global attack detection system tracks failed login attempts across all users
 
 | Level | Threshold | Action |
 |-------|-----------|--------|
-| Warning | 50 failed logins in 5 min | Log `abuse.global_attack_detected` event |
-| Critical | 100 failed logins in 5 min | Log event + notify owner via `notifyOwner` |
+| Warning | 50 failed logins in 5 min | Slack alert to #security-alerts, once per window |
+| Critical | 100 failed logins in 5 min | The same alert, marked CRITICAL |
 
 ### Implementation
 
-The OAuth callback automatically records failed logins and checks for attack patterns:
+**Wired 2026-08-19** by founder ruling (*"wire and explain in plain english"*).
+Before that date this section carried a worked example of wiring that had never
+been done, and the three helpers it named had no call site anywhere in the
+product — so an auditor reading this page saw a live control where there was
+none. What is written below is what the code does.
+
+The call site is `server/security/loginAttackAlert.ts`, and the login route
+calls it from **both** failed-login exits (`server/routes/emailAuth.ts`):
 
 ```typescript
-import { 
-  recordGlobalFailedLogin, 
-  shouldSendGlobalAttackAlert, 
-  markGlobalAttackAlertSent 
-} from "./rateLimit";
+import { noteFailedLogin } from "../security/loginAttackAlert";
 
-// After a failed login attempt
-const attackStatus = recordGlobalFailedLogin();
-
-if (attackStatus.underAttack && shouldSendGlobalAttackAlert()) {
-  markGlobalAttackAlertSent();
-  
-  await notifyOwner({
-    title: `🚨 ${attackStatus.severity === 'critical' ? 'CRITICAL' : 'WARNING'}: Possible Attack Detected`,
-    content: `${attackStatus.failedCount} failed login attempts detected in the last 5 minutes.`,
-  });
-  
-  await logAuditEvent({
-    action: AUDIT_ACTIONS.ABUSE_GLOBAL_ATTACK,
-    severity: "critical",
-    metadata: { failedCount: attackStatus.failedCount },
-  });
-}
+// at the unknown-email exit AND at the wrong-password exit
+void noteFailedLogin();
 ```
 
-### Checking Attack Status
+Three things about that, each of which is a decision rather than a detail:
 
-You can check the current attack status programmatically:
+- **Both exits, including the one where the email is not a real account.**
+  Credential stuffing works from a leaked list, so most of its attempts name
+  addresses we have never seen. An alarm wired only to the wrong-password
+  branch would sleep through the commonest attack there is. The count is global
+  and carries no email, so the enumeration defence (one generic sentence at both
+  exits) is untouched.
+- **Fire-and-forget, and every failure inside is swallowed.** A Slack outage may
+  not turn "your password was wrong" into a 500, and may not make a login slow.
+- **The window is marked as alerted BEFORE the send, not after.** Two failures
+  arriving while a slow send is in flight would otherwise both find an unmarked
+  window and both alert — under a real attack that is a flood, and a flood is
+  how an alarm gets muted by the person it is alarming. A lost Slack message
+  costs one alert; the other ordering costs the channel.
 
-```typescript
-import { isSystemUnderAttack } from "./rateLimit";
+### The honest limit of this control
 
-const status = isSystemUnderAttack();
-// Returns: { underAttack: boolean, severity: 'none' | 'warning' | 'critical', failedCount: number, windowRemaining: number }
+`globalAttackWindow` lives **in memory, in one process, and resets on every
+deploy** — and this product deploys several times a day.
 
-if (status.underAttack) {
-  console.warn(`System under ${status.severity} attack: ${status.failedCount} failed logins`);
-}
-```
+So it catches a **fast, loud** attack (50 failures inside five minutes) and
+would **miss a slow, patient one** that spreads its attempts across a deploy.
+That is worth having and it is not worth overselling. Anyone assessing this
+control should read this paragraph as part of it.
 
-### Alert Deduplication
+### Alert deduplication
 
-To prevent alert fatigue, the system only sends one notification per attack window. The `markGlobalAttackAlertSent()` function marks that an alert has been sent, and `shouldSendGlobalAttackAlert()` returns false until the window resets.
+One notification per attack window. `markGlobalAttackAlertSent()` marks the
+window; `shouldSendGlobalAttackAlert()` returns false until the window resets.
+Driven directly in `server/security/loginAttackAlert.test.ts`, including the
+concurrent case — that test exists because the sequential ones all stayed green
+when the mark/send ordering was deliberately reversed.
+
+### Two symbols this page used to document that do not exist
+
+Removed 2026-08-19 rather than left to be searched for:
+
+- **`isSystemUnderAttack`** — a "Checking Attack Status" section documented this
+  import with a return shape including `windowRemaining`. There is no such
+  export in `server/security/rateLimit.ts` and there never has been.
+- **`AUDIT_ACTIONS.ABUSE_GLOBAL_ATTACK`** — the thresholds table promised an
+  `abuse.global_attack_detected` audit event. No such action is defined and
+  nothing writes one. The alert goes to Slack; the audit log is not part of this
+  control, and the table above now says so.
 
 ## IP Blocking
 
