@@ -1343,6 +1343,30 @@ export async function mintReferencesForRender(input: MintInput): Promise<MintRes
       wordsBySlot.set(slot.slot, asked);
       return asked;
     };
+    /**
+     * THE WORDS A ROW FILES, and the one case where they are not a reading.
+     *
+     * A slot whose reading was DISPUTED files the words it ARRIVED with — the
+     * ask — and buys no vision call to describe itself (fable-927 §3, swept to
+     * every member of the class by fable-930 §2). Two reasons, and they are the
+     * same reason from two ends:
+     *
+     *   the money      the reads are started in one batch before these loops,
+     *                  from a predicate that excludes disputed slots. A loop
+     *                  that asked for one anyway would buy a call per render
+     *                  the batched version never made — the drift
+     *                  `no slot is described that the mint would not have
+     *                  asked about` exists to catch.
+     *   the meaning    the reading that would supply a description is the very
+     *                  one under dispute. On a fine sparse surface the founder's
+     *                  eye has overturned that reader twice (working law 9), so
+     *                  describing the frame again would file the denial. The ask
+     *                  is what she paid for.
+     */
+    const wordsForRow = async (slot: SlotSpec): Promise<readonly string[] | null> => {
+      if (!slot.disputed) return wordsFor(slot);
+      return slot.words.length > 0 ? slot.words : null;
+    };
     const readOneSlotsWords = async (slot: SlotSpec): Promise<readonly string[] | null> => {
       /* Not wired: the slot files the words it arrived with, byte for byte
          today's behaviour. */
@@ -1449,11 +1473,11 @@ export async function mintReferencesForRender(input: MintInput): Promise<MintRes
 
     for (const slot of input.slots) {
       if (slot.tier !== "surface") continue;
-      if (slot.disputed) {
-        disputedNothingKept(slot, "surface");
-        continue;
-      }
-      const said = await wordsFor(slot);
+      /* A surface has no crop by construction, so a dispute has no pixels to
+         withhold — see the class note at the `noQuestion` loop below. Its words
+         are the whole carrier, and they are the ASK when the reading is
+         disputed (fable-927 §3, swept to this member by fable-930 §2). */
+      const said = await wordsForRow(slot);
       if (said === null) { unread(slot); continue; }
       rows.push({ role: "carry", slot: slot.slot, tier: slot.tier, noun: slot.noun, words: said });
       outcomes.push({ slot: slot.slot, outcome: "words-only", reason: "surface" });
@@ -1508,7 +1532,7 @@ export async function mintReferencesForRender(input: MintInput): Promise<MintRes
         the outcome below is labelled `disputed` so the row never claims to be a
         confirmed reading.
       */
-      const said = await wordsFor(slot);
+      const said = await wordsForRow(slot);
       if (said === null) { unread(slot); continue; }
       rows.push({ role: "carry", slot: slot.slot, tier: slot.tier, noun: slot.noun, words: said });
       outcomes.push({
@@ -1547,11 +1571,12 @@ export async function mintReferencesForRender(input: MintInput): Promise<MintRes
       if (!cut) {
         /* No evidence about this slot on this frame. Not a failure: the words
            still record, and the next render treats it exactly as today. */
-        if (slot.disputed) {
-          disputedNothingKept(slot, "noRegion");
-          continue;
-        }
-        const said = await wordsFor(slot);
+        /* Same class again, and this is the member most likely to fire: it
+           happens whenever a segmenter comes back empty on a frame, which is
+           not a judgement about her picture at all. Withholding the words
+           there would let one blank read delete a paid feature from every
+           render after it (fable-930 §2). */
+        const said = await wordsForRow(slot);
         if (said === null) { unread(slot); continue; }
         rows.push({ role: "carry", slot: slot.slot, tier: slot.tier, noun: slot.noun, words: said });
         outcomes.push({

@@ -139,6 +139,39 @@ wrong, §3 and §4 both change shape.
 
 ## 2. The marks half — and why it is NOT the same problem
 
+> **THE RECIPE-SILENCE INVESTIGATION, 2026-08-18 — the mechanism behind the
+> sentence below, found and fixed** (opus-682/683/685, ruled fable-927/930).
+> The freckle court measured that a words-carried surface survives one render
+> of three. This is WHY, and it was never a capability floor:
+>
+> - **Born survives, paid does not.** Her born freckling rides the master's own
+>   pixels through every repaint, untouched. The intensification she paid for
+>   rode words that were never written again. **The only part of her face that
+>   reverted was the part a customer bought.**
+> - **Nothing measures a sentence that stopped being written.** The paste road
+>   said *"the same skin tone, the same skin texture"*; the repaint swap dropped
+>   it; no instrument anywhere noticed, because no instrument watches for absent
+>   prose.
+> - **The reader was wrong again on a fine sparse surface** — and its verdict
+>   was the GATE on minting, so the class where the reader is least reliable is
+>   exactly the class where its verdict silently deleted the record.
+> - **Production reach: zero.** No production render has ever stated marks. The
+>   fix landed before the first person could be first.
+>
+> The mechanism: `skin` has no segmentation question, so nothing can be cut for
+> it and its words are the whole carrier; the repaint recipe's standing clauses
+> are built from library rows alone; and a disputed reading made the mint file
+> nothing at all — not even the words. Fixed at that branch for all three
+> members of the class (`noQuestion`, `surface`, `noRegion`), with the words
+> filed being **the ask** rather than a re-description of a frame the reader
+> denied.
+>
+> **What this does NOT do, and it matters to §5 below:** it does not give skin a
+> carrier. The founder's ruling stands untouched — skin carries as words until
+> the tattoo studio launches — and what changed is that the words now actually
+> ride. Step 5's re-decision is still owed and still comes after §4's court.
+
+
 `marks` (freckles, moles, beauty spots) reads like ink's little sibling and is
 not. The freckle court settled that with measurement:
 

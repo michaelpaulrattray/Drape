@@ -352,19 +352,19 @@ describe("what the mint does with a disputed delivery", () => {
 
   it("writes no row for a disputed slot nothing can be cut for, and spends no vision call", async () => {
     /*
-      A surface and a slot this frame has no region for. Each files words when
-      it is earned; each files nothing when it is disputed, because the row
-      would carry no picture and the words would assert a delivery the reader
-      denied.
+      ALL THREE MEMBERS OF THE CLASS NOW FILE THEIR WORDS (fable-927 §3 for
+      `noQuestion`, fable-930 §2 for these two).
 
-      ⚠ **The third member of this list moved** (fable-927 §3, 2026-08-18): a
-      slot with NO QUESTION now files its words when disputed — see "STILL files
-      the words when a question-less slot's reading was disputed" below, and the
-      recipe-silence receipt in `referenceMint.ts`. The two arms kept here are
-      its unswept SIBLINGS, deliberately: the same argument applies to both (a
-      row with no picture whose words are its only carrier), and widening past
-      the ruled scope is a decision rather than a tidy-up. They are named in
-      opus-685 with a recommendation.
+      This test used to assert the opposite for all three: a disputed slot with
+      no crop kept nothing, "because the row would carry no picture and the
+      words would assert a delivery the reader denied". That reasoning is right
+      about pixels and wrong about the row — where there is no crop the words
+      are not the assist, they are the only carrier, and the recipe's standing
+      clauses are built from library rows alone. A slot that files nothing is a
+      feature the next render is never told about.
+
+      So what is asserted here now is that each still spends NO vision call and
+      stores NO object; what it files is one words-only row apiece.
     */
     let reads = 0;
     const bench = harness();
@@ -373,17 +373,24 @@ describe("what the mint does with a disputed delivery", () => {
       dependencies: { ...bench.dependencies, read: async () => { reads += 1; return rect(HAIR); } },
     };
     const result = await mint([
-      hairSlot({ slot: "skin", tier: "surface", noun: "skin", question: "face skin", guardKind: "skin", disputed: true }),
-      hairSlot({ slot: "eyebrows", noun: "eyebrows", question: "eyebrows", guardKind: "eyebrows", disputed: true }),
+      hairSlot({ slot: "skin", tier: "surface", noun: "skin", words: ["a light tan"], question: "face skin", guardKind: "skin", disputed: true }),
+      hairSlot({ slot: "eyebrows", noun: "eyebrows", words: ["fuller brows"], question: "eyebrows", guardKind: "eyebrows", disputed: true }),
     ], counted);
 
-    expect(result.outcome).toBe("nothing-to-keep");
+    expect(result.outcome).toBe("stored");
     expect(result.slots).toEqual([
-      { slot: "skin", outcome: "disputed", kept: false, reason: "surface" },
-      { slot: "eyebrows", outcome: "disputed", kept: false, reason: "noRegion" },
+      { slot: "skin", outcome: "words-only", reason: "surface" },
+      expect.objectContaining({ slot: "eyebrows", outcome: "words-only", reason: "noRegion" }),
     ]);
+    /* Still no reading bought and still no object stored — a disputed slot with
+       no crop was never going to have pixels, and this fix does not give it
+       any. What changed is that its WORDS survive. */
     expect(reads).toBe(0);
-    expect(bench.rows).toEqual([]);
+    expect(bench.stored).toEqual([]);
+    expect(bench.rows).toEqual([
+      expect.objectContaining({ slot: "skin", words: ["a light tan"] }),
+      expect.objectContaining({ slot: "eyebrows", words: ["fuller brows"] }),
+    ]);
   });
 
   it("files one render's earned slot and its disputed slot side by side", async () => {
