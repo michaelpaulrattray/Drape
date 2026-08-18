@@ -2,12 +2,10 @@ import { randomUUID } from "node:crypto";
 import type { GenerateContentConfig } from "@google/genai";
 import { TRPCError } from "@trpc/server";
 import {
-  commitBeginInkAddIntent,
   commitBeginInkAnywhereIntent,
   findActiveOwnedInkIntent,
   inspectOwnedInkAnywhereAvailability,
   InkAddIntentStateError,
-  type BeginInkAddIntentResult,
   type BeginInkAnywhereIntentResult,
   type OwnedInkAddAvailability,
   type OwnedPendingInkIntent,
@@ -33,14 +31,8 @@ import {
   INK_ADD_PRICE_CREDITS,
 } from "./evidenceCandidateContract";
 import {
-  authorizeInkAddDescription,
   type InkAuthorizationRequest,
-  type InkAuthorizationResult,
 } from "./composer/inkAuthorization";
-import {
-  assertInkAddSide,
-  type InkAddSide,
-} from "./composer/inkAddRecipe";
 import { readActiveInkCandidate } from "./inkCandidateGeneration";
 import { createModuleLogger } from "../../logging/logger";
 import {
@@ -104,29 +96,27 @@ export interface InkAddCapabilityDto {
 type BeginOperation = (input: Parameters<typeof beginDirectOperation>[0]) =>
   Promise<DirectOperationGate>;
 
-export interface InkAddIntentDependencies {
-  enabledForUser?: (userId: number) => boolean;
-  authorize?: (input: {
-    description: unknown;
-    classify(request: InkAuthorizationRequest): Promise<unknown>;
-  }) => Promise<InkAuthorizationResult>;
-  classify?: (request: InkAuthorizationRequest) => Promise<unknown>;
-  warnAuthorizationUnknown?: (input: {
-    userId: number;
-    modelId: number;
-    provider: InkProviderTelemetry | null;
-  }) => void;
-  begin?: BeginOperation;
-  commit?: typeof commitBeginInkAddIntent;
-  generateId?: () => string;
-}
+/**
+ * The diagnostic an unavailable authorization writes.
+ *
+ * It used to be reached as `InkAddIntentDependencies["warnAuthorizationUnknown"]`
+ * — that interface belonged to `beginInkAddIntent`, the placement-picker
+ * intent the instruction road superseded, and it went with it (cleanup
+ * milestone, 2026-08-18). The shape is the same; only the door it was borrowed
+ * through is gone.
+ */
+type WarnAuthorizationUnknown = (input: {
+  userId: number;
+  modelId: number;
+  provider: InkProviderTelemetry | null;
+}) => void;
 
 export interface InkAnywhereIntentDependencies {
   enabledForUser?: (userId: number) => boolean;
   plan?: typeof planInkAddInstruction;
   authoringTupleReleased?: typeof isInkAuthoringTupleReleased;
   classify?: (request: InkInstructionPlanningRequest) => Promise<unknown>;
-  warnAuthorizationUnknown?: InkAddIntentDependencies["warnAuthorizationUnknown"];
+  warnAuthorizationUnknown?: WarnAuthorizationUnknown;
   begin?: BeginOperation;
   commit?: typeof commitBeginInkAnywhereIntent;
   generateId?: () => string;
@@ -222,35 +212,11 @@ export function buildInkInstructionProviderConfig(
   };
 }
 
-async function classifyInkAdd(
-  request: InkAuthorizationRequest,
-  observe: (provider: InkProviderTelemetry) => void,
-): Promise<unknown> {
-  const ai = getAiClient();
-  try {
-    const response = await withTextQueue(
-      () => withTimeout(
-        ai.models.generateContent({
-          model: request.model,
-          contents: [{ parts: [{ text: request.prompt }] }],
-          config: buildInkAuthorizationProviderConfig(request),
-        }),
-        15_000,
-        "InkAuthorization",
-      ),
-      "inkAuthorization",
-    );
-    const text = safeResponseText(response);
-    observe(extractInkProviderTelemetry({
-      response,
-      textLength: text.length,
-    }));
-    return text;
-  } catch (error) {
-    observe(extractInkProviderTelemetry({ error }));
-    throw error;
-  }
-}
+/*
+ * `classifyInkAdd` stood here — the provider call that judged a placement-picker
+ * DESCRIPTION. It died with `beginInkAddIntent`, its only caller. The
+ * instruction road's own `classifyInkInstruction` is below, unchanged.
+ */
 
 async function classifyInkInstruction(
   request: InkInstructionPlanningRequest,
@@ -282,20 +248,6 @@ async function classifyInkInstruction(
   }
 }
 
-function closedIntentResult(value: unknown): BeginInkAddIntentResult {
-  if (
-    !value
-    || typeof value !== "object"
-    || Array.isArray(value)
-    || typeof (value as Record<string, unknown>).intentId !== "string"
-  ) {
-    throw new TRPCError({
-      code: "INTERNAL_SERVER_ERROR",
-      message: INK_INTENT_TEMPORARILY_UNAVAILABLE,
-    });
-  }
-  return { intentId: (value as Record<string, string>).intentId };
-}
 
 function closedAnywhereIntentResult(
   value: unknown,
@@ -366,96 +318,19 @@ function requireEnabled(
   }
 }
 
-export async function beginInkAddIntent(
-  input: {
-    userId: number;
-    modelId: number;
-    sourceAssetId: number;
-    side: InkAddSide;
-    description: string;
-    clientRequestId: string;
-  },
-  dependencies: InkAddIntentDependencies = {},
-): Promise<BeginInkAddIntentResult> {
-  const enabledForUser =
-    dependencies.enabledForUser ?? captureEvidenceComposerEnabled;
-  requireEnabled(input.userId, enabledForUser);
-  try {
-    assertInkAddSide(input.side);
-  } catch {
-    throw new TRPCError({ code: "BAD_REQUEST", message: "Choose a valid tattoo placement." });
-  }
-
-  let providerTelemetry: InkProviderTelemetry | null = null;
-  const authorization = await (
-    dependencies.authorize ?? authorizeInkAddDescription
-  )({
-    description: input.description,
-    classify: dependencies.classify ?? ((request) =>
-      classifyInkAdd(request, (provider) => {
-        providerTelemetry = provider;
-      })),
-  });
-  if (!authorization.ok) {
-    if (authorization.code === "authorization_unknown") {
-      const diagnostic = {
-        userId: input.userId,
-        modelId: input.modelId,
-        provider: providerTelemetry,
-      };
-      if (dependencies.warnAuthorizationUnknown) {
-        dependencies.warnAuthorizationUnknown(diagnostic);
-      } else {
-        log.warn(
-          diagnostic,
-          "Ink authorization returned unavailable",
-        );
-      }
-    }
-    throw new TRPCError({
-      code: authorization.code === "authorization_unknown"
-        ? "PRECONDITION_FAILED"
-        : "BAD_REQUEST",
-      message: authorization.code === "authorization_unknown"
-        ? INK_INTENT_TEMPORARILY_UNAVAILABLE
-        : INK_INTENT_UNSUPPORTED,
-    });
-  }
-
-  const begin = dependencies.begin ?? beginDirectOperation;
-  const gate = await begin({
-    userId: input.userId,
-    clientRequestId: input.clientRequestId,
-    kind: "evidence_intent_begin",
-    modelId: input.modelId,
-    payload: {
-      modelId: input.modelId,
-      sourceAssetId: input.sourceAssetId,
-      side: input.side,
-      normalizedDescriptor: authorization.normalizedDescriptor,
-    },
-    lockKey: modelOperationLockKey(input.modelId),
-  });
-  if (gate.type === "replay") return closedIntentResult(gate.result);
-
-  try {
-    return await (dependencies.commit ?? commitBeginInkAddIntent)({
-      userId: input.userId,
-      modelId: input.modelId,
-      operationId: gate.operationId,
-      intentId: (dependencies.generateId ?? randomUUID)(),
-      sourceAssetId: input.sourceAssetId,
-      side: input.side,
-      normalizedDescriptor: authorization.normalizedDescriptor,
-    });
-  } catch (error) {
-    return failClaimedDirectOperation({
-      userId: input.userId,
-      operationId: gate.operationId,
-      error: stateError(error),
-    });
-  }
-}
+/*
+ * `beginInkAddIntent` stood here — the placement-picker intent: pick a source
+ * asset, pick a SIDE, describe the piece. The instruction road superseded it,
+ * and the supersession is in the signatures: the route that still carries its
+ * NAME (`evidence.beginInkAddIntent`, kept because the client calls it) has
+ * validated an `instruction` and called `beginInkAnywhereIntent` since that
+ * landed. Nothing but its own tests had called this since.
+ *
+ * Removed by the cleanup milestone, 2026-08-18. Its learnings are already in
+ * the ink design notes; what went was weight, and a function whose name is
+ * also a live procedure key — which reads as alive from every direction
+ * except an import graph.
+ */
 
 export async function beginInkAnywhereIntent(
   input: {

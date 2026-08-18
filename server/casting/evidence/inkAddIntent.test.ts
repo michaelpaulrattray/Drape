@@ -1,6 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
 import {
-  beginInkAddIntent,
   beginInkAnywhereIntent,
   buildInkAuthorizationProviderConfig,
   buildInkInstructionProviderConfig,
@@ -87,104 +86,85 @@ describe("R7-7D D4A ink intent service", () => {
     });
   });
 
-  it("keeps the product door closed before any classifier or operation work", async () => {
-    const authorize = vi.fn();
+  /*
+   * The three tests below were written against `beginInkAddIntent` — the
+   * placement-picker intent the instruction road superseded, removed by the
+   * cleanup milestone (2026-08-18). They are RE-POINTED rather than deleted,
+   * because each drives a branch that exists in the LIVE function and was
+   * covered nowhere else: the flag door, the operation replay, and warn-once
+   * on unavailable authorization truth. Deleting the dead road's tests would
+   * have taken three live branches' only coverage with it.
+   */
+
+  it("keeps the product door closed before any planner or operation work", async () => {
+    const plan = vi.fn();
     const begin = vi.fn();
-    await expect(beginInkAddIntent(request, {
+    await expect(beginInkAnywhereIntent({
+      userId: 7,
+      modelId: 14,
+      instruction: "Add a blackwork full sleeve to his right arm",
+      clientRequestId: request.clientRequestId,
+    }, {
       enabledForUser: () => false,
-      authorize,
+      plan,
       begin,
     })).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
-    expect(authorize).not.toHaveBeenCalled();
+    expect(plan).not.toHaveBeenCalled();
     expect(begin).not.toHaveBeenCalled();
   });
 
-  it("claims a normalized closed payload and commits the server-owned intent", async () => {
-    const authorize = vi.fn(async () => authorization);
-    const warnAuthorizationUnknown = vi.fn();
-    const begin = vi.fn(async () => ({
-      type: "execute" as const,
-      operationId: "22222222-2222-4222-8222-222222222222",
-    }));
-    const commit = vi.fn(async () => ({
-      intentId: "33333333-3333-4333-8333-333333333333",
-    }));
-
-    await expect(beginInkAddIntent(request, {
-      enabledForUser: () => true,
-      authorize,
-      warnAuthorizationUnknown,
-      begin,
-      commit,
-      generateId: () => "33333333-3333-4333-8333-333333333333",
-    })).resolves.toEqual({
-      intentId: "33333333-3333-4333-8333-333333333333",
-    });
-    expect(begin).toHaveBeenCalledWith({
-      userId: 7,
-      clientRequestId: request.clientRequestId,
-      kind: "evidence_intent_begin",
-      modelId: 14,
-      payload: {
-        modelId: 14,
-        sourceAssetId: 28,
-        side: "left",
-        normalizedDescriptor: "fine-line Gemini twins",
-      },
-      lockKey: "model:14",
-    });
-    expect(commit).toHaveBeenCalledWith({
-      userId: 7,
-      modelId: 14,
-      operationId: "22222222-2222-4222-8222-222222222222",
-      intentId: "33333333-3333-4333-8333-333333333333",
-      sourceAssetId: 28,
-      side: "left",
-      normalizedDescriptor: "fine-line Gemini twins",
-    });
-    expect(warnAuthorizationUnknown).not.toHaveBeenCalled();
-  });
-
-  it("replays the closed intent id without another database mutation", async () => {
+  it("replays the intent id without another database mutation", async () => {
     const commit = vi.fn();
-    await expect(beginInkAddIntent(request, {
+    await expect(beginInkAnywhereIntent({
+      userId: 7,
+      modelId: 14,
+      instruction: "Add a blackwork full sleeve to his right arm",
+      clientRequestId: request.clientRequestId,
+    }, {
       enabledForUser: () => true,
-      authorize: async () => authorization,
+      plan: async () => ({
+        ok: true,
+        normalizedDescriptor: "Add a blackwork full sleeve to his right arm",
+        anatomy: {
+          zone: "full_arm",
+          surface: "circumferential",
+          side: "right",
+        },
+        locationLabel: "Right arm · full sleeve",
+        recipeVersion: "ink.add.anywhere.authorization.v1",
+      }),
       begin: async () => ({
         type: "replay",
         operationId: "22222222-2222-4222-8222-222222222222",
-        result: { intentId: "33333333-3333-4333-8333-333333333333" },
+        result: {
+          intentId: "33333333-3333-4333-8333-333333333333",
+          sourceViewAngle: "frontFull",
+          sourceAssetId: 28,
+        },
       }),
       commit,
-    })).resolves.toEqual({
+    })).resolves.toMatchObject({
       intentId: "33333333-3333-4333-8333-333333333333",
     });
     expect(commit).not.toHaveBeenCalled();
   });
 
-  it("refuses an unsupported request before creating an operation", async () => {
-    const begin = vi.fn();
-    await expect(beginInkAddIntent(request, {
-      enabledForUser: () => true,
-      authorize: async () => ({
-        ok: false,
-        code: "unsupported_request",
-        recipeVersion: "ink.add.authorization.v1",
-      }),
-      begin,
-    })).rejects.toMatchObject({ code: "BAD_REQUEST" });
-    expect(begin).not.toHaveBeenCalled();
-  });
-
   it("warns once only when authorization truth is unavailable", async () => {
     const warnAuthorizationUnknown = vi.fn();
     const begin = vi.fn();
-    await expect(beginInkAddIntent(request, {
+    const ask = {
+      userId: 7,
+      modelId: 14,
+      instruction: "Add a blackwork full sleeve to his right arm",
+      clientRequestId: request.clientRequestId,
+    };
+
+    await expect(beginInkAnywhereIntent(ask, {
       enabledForUser: () => true,
-      authorize: async () => ({
+      plan: async () => ({
         ok: false,
         code: "authorization_unknown",
-        recipeVersion: "ink.add.authorization.v1",
+        recipeVersion: "ink.add.anywhere.authorization.v1",
       }),
       warnAuthorizationUnknown,
       begin,
@@ -198,12 +178,12 @@ describe("R7-7D D4A ink intent service", () => {
     expect(begin).not.toHaveBeenCalled();
 
     warnAuthorizationUnknown.mockClear();
-    await expect(beginInkAddIntent(request, {
+    await expect(beginInkAnywhereIntent(ask, {
       enabledForUser: () => true,
-      authorize: async () => ({
+      plan: async () => ({
         ok: false,
         code: "unsupported_request",
-        recipeVersion: "ink.add.authorization.v1",
+        recipeVersion: "ink.add.anywhere.authorization.v1",
       }),
       warnAuthorizationUnknown,
       begin,
