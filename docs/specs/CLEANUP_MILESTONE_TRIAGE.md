@@ -472,3 +472,29 @@ and an alert that never fires look identical**.
 Both are already in CLAUDE.md's *"Currently not enforced — do not rely on these"*
 list. **A deletion changes what that list means**, so the choice is the founder's:
 wire them, or delete them and say so in that list.
+
+## 10. THE CLASS both §7 findings belong to (ruled fable-980)
+
+> **A policy stated in one place and implemented in another, with a comment as
+> the only join — the record and the behaviour agree today and nothing holds
+> them together.**
+
+Two instances found in one pass, and both cite this line: `INSTRUCTION_MAY_OVERRIDE`
+(§7a) and the `openKind*` accessor family (§7b). It is law 4's cousin: not a second
+LIST shadowing a source of truth, but a second STATEMENT of a rule, in prose or in
+a table, that no execution path consults. It fails the same way — silently, at the
+moment somebody changes one side.
+
+**Where to look for more of it:** any table or accessor whose only importer is a
+test, whose values are ALSO quoted in a comment somewhere in the production path.
+The comment is the tell — it is what a developer writes when they have read the
+policy, agreed with it, and implemented it by hand.
+
+### 10a. §7a's card carries one more fact than the finding does (fable-980)
+
+`scopedZone` is on the **PASTE road**, and the paste road is the legacy one —
+`CASTING_REPAINT_SCOPE` supersedes it, and a repaint renders full-frame with no
+mask scoping at all. So the honest repair may be **"the road retires"** rather
+than **"the override wires"**, and that choice belongs to the road's own
+planning, not to a cleanup milestone. The finding is filed; the fix is not this
+milestone's to choose.
