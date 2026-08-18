@@ -27,7 +27,6 @@ import {
   captureEvidenceComposerEnabled,
 } from "./evidenceComposerScope";
 import {
-  INK_ADD_CAPABILITY_KEY,
   INK_ADD_PRICE_CREDITS,
 } from "./evidenceCandidateContract";
 import {
@@ -485,8 +484,4 @@ export async function readInkAddCapability(
         }
       : null,
   };
-}
-
-export function inkAddCapabilityKey(): typeof INK_ADD_CAPABILITY_KEY {
-  return INK_ADD_CAPABILITY_KEY;
 }

@@ -870,7 +870,11 @@ live road implements both — the frames case at length, in `maskedRefine`'s
 removal-territory and corridor logic — by a different mechanism. The finding is a
 dead island, not a missing guard.
 
-**Disposition: RETIRE the island — proposed, not taken.** It is the largest
+**Disposition: superseded by §15d — the island is KEEP, WHOLE.** What follows
+is the proposal as written, kept because the correction is only legible beside
+it.
+
+~~RETIRE the island — proposed, not taken.~~ It is the largest
 single deletion the milestone has found (eight symbols, their tests, and a public
 type), it touches the module the fidelity law is named for, and §14b's question
 has a clean answer for once: *what was this for?* — it was the road before the
@@ -917,7 +921,12 @@ ask which of them were testing the LIVE road through the dead one."* The
 milestone wrote that rule after the ink-intent removal and I proposed a
 retirement eight symbols wide without applying it.
 
-**Status: HELD, and the disposition is re-opened rather than re-decided here.**
+**Status: KEEP, WHOLE — closed fable-991 §3.** The header is the evidence: a
+declared fixture facility whose vocabulary tests live algebra. The three-symbol
+residual (`mergeRegions`, `eyewearRegion`, `browRegion` — the ones whose tests
+were not shown to touch live code) was offered and **DECLINED**: they cost
+nothing while the facility stays, and an hour that changes nothing is not
+spent.
 What is still true and worth keeping: `FaceGeometry` has no producer in
 production, nothing outside the module names any of these, and the live paste
 road builds its zones from segmenter mattes. What is now also true: the
@@ -1131,3 +1140,18 @@ the three of §17's candidates taken below.
 > the same repair, and each found it independently. **Strip the prose before you
 > count, or the milestone's own document becomes the reason a symbol looks
 > alive.**
+
+### 18a. §18's five, dispositioned — ruled fable-991 §4
+
+- **TAKEN**: `compressImageUrlForApi` and `inkAddCapabilityKey()`, with the
+  four of §17 (`INK_ADD_CAPABILITY_KEY`'s import went with the accessor). No
+  test drove either.
+- **`createInkCalibrationRecorder` / `evaluateInkCalibrationGate` go WITH the
+  composer road**, not alone. They are instruments for a calibration command
+  that does not exist, on the placement-picker road §8d already has marked
+  retire — a module-sized disposition, like `composer/inkAuthorization.ts`.
+- **`roleForAuthorizedResult` joins the anchor trio for M14's owner**, in one
+  sitting: it, `commitIdentityEdit` and `commitAnchorReRoll` are three uncalled
+  symbols about **who may stamp an anchor**. That is a road's design question.
+  A cleanup pass picking them off one at a time would be deciding it by
+  accident, which is the opposite of what this milestone is for.

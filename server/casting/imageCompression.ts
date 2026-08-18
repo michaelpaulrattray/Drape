@@ -78,26 +78,3 @@ export async function compressImageForApi(imageData: string): Promise<string> {
   );
   return `data:image/jpeg;base64,${lastResort.toString("base64")}`;
 }
-
-/**
- * Compress a URL-based image by fetching it first, then compressing.
- * Returns a data-URL string.
- */
-export async function compressImageUrlForApi(imageUrl: string): Promise<string> {
-  if (imageUrl.startsWith("data:")) {
-    return compressImageForApi(imageUrl);
-  }
-
-  const response = await fetch(imageUrl);
-  if (!response.ok) {
-    throw new Error(`Failed to fetch image for compression: ${response.status}`);
-  }
-  const buffer = Buffer.from(await response.arrayBuffer());
-
-  if (buffer.length <= MAX_BYTES) {
-    const contentType = response.headers.get("content-type") || "image/jpeg";
-    return `data:${contentType};base64,${buffer.toString("base64")}`;
-  }
-
-  return compressImageForApi(buffer.toString("base64"));
-}
