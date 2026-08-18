@@ -553,6 +553,18 @@ export const castingV2Router = router({
       it, which is fable-525's doctrine applied to a surface.
     */
     stepBackEnabled: captureCastingRepaintEnabled(ctx.user.id),
+    /*
+      WHETHER THIS ACCOUNT MAY TAKE A LOOK FROM A PHOTOGRAPH (fable-940/941).
+
+      The same doctrine as `stepBackEnabled` one surface along: `reference.readMakeup`
+      answers NOT_FOUND outside the ink studio's scope, so an affordance drawn
+      without this gate would be a control that refuses. One gate, not two lists
+      — when the road widens the affordance widens with it.
+
+      It is named for the CAPABILITY rather than for the flag, because a client
+      has no business knowing which environment variable governs it.
+    */
+    makeupFromReferenceEnabled: captureCastingInkStudioEnabled(ctx.user.id),
   })),
 
   createSession: protectedProcedure

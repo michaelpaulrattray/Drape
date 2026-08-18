@@ -3077,6 +3077,111 @@
 .dpc-refine__madeUse:disabled { opacity: 0.3; cursor: default; }
 
 /*
+  TAKING A LOOK FROM A PHOTOGRAPH — the third door onto the ask box.
+
+  It borrows `__made`'s chip for the sentence itself rather than growing a
+  second one, because the two do exactly the same thing (prefill and stop) and
+  two controls that behave identically must read identically.
+
+  What is its own is the door and the two notes: a quiet action that looks like
+  the meta line beneath it rather than like the Refine button, because it spends
+  nothing — and the price law runs the other way too. A control that costs
+  nothing must not wear the weight of one that does.
+*/
+.dpc-refine__read {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+}
+
+/* The picker itself is never seen; the button is the door. */
+.dpc-refine__readInput {
+  display: none;
+}
+
+/*
+  CENTRED WITH THE META LINES, AND NOT UNDERLINED AT REST.
+
+  Photographed in the running app first: left-aligned and underlined, it read as
+  a raw hyperlink pinned to the left edge of a stack whose every other line is
+  centred — the generic-web look the house style exists to avoid. It belongs to
+  the quiet family beneath the box, one step brighter than those lines because
+  it is the only door onto the feature, with the underline arriving on hover to
+  say it can be pressed.
+*/
+.dpc-refine__readAction {
+  align-self: center;
+  background: none;
+  border: 0;
+  padding: 0;
+  font-family: var(--font-sans);
+  letter-spacing: normal;
+  font-size: 11.5px;
+  line-height: 1.35;
+  color: var(--onScrim);
+  opacity: 0.72;
+  cursor: pointer;
+  text-decoration: none;
+  text-underline-offset: 3px;
+}
+
+.dpc-refine__readAction:hover:not(:disabled) {
+  opacity: 0.95;
+  text-decoration: underline;
+}
+.dpc-refine__readAction:disabled { opacity: 0.3; cursor: default; }
+
+.dpc-refine__readResult {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+}
+
+.dpc-refine__readCaption,
+.dpc-refine__readNote { text-align: center; }
+
+/*
+  THE READ SENTENCE WRAPS, and the version-request chip above still does not.
+
+  `__madeText` is one line on purpose: it sits ABOVE the box, and a long ask
+  that pushed the field down was a mistake this panel has already made. This
+  chip sits BELOW the box and pushes nothing — and the sentence is a whole
+  face, four surfaces long. Photographed truncated at a third of its length,
+  which fails the bound it exists to meet: she is meant to READ it before
+  anything is spent.
+*/
+.dpc-refine__readResult .dpc-refine__madeText {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+}
+
+/* Above the sentence, and quieter than it: it is the frame, not the content. */
+.dpc-refine__readCaption {
+  margin: 0;
+  font-family: var(--font-sans);
+  letter-spacing: normal;
+  font-size: 11px;
+  line-height: 1.35;
+  color: var(--onScrim);
+  opacity: 0.5;
+}
+
+/* What did not come across, and every refusal. Same voice as the meta line. */
+.dpc-refine__readNote {
+  margin: 0;
+  font-family: var(--font-sans);
+  letter-spacing: normal;
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--onScrim);
+  opacity: 0.62;
+}
+
+/*
   THE ANSWER CHIPS (D-180), eyeballed as a mock before they were wired.
 
   Same frame as the sentence above them, and deliberately not buttons with

@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "f05d70b99ee9ebf3"
+    "sourceFingerprint": "dc5dbfd99400d08c"
   },
   "domains": [
     {
@@ -43,7 +43,7 @@
     {
       "id": "domain:castingV2",
       "name": "castingV2",
-      "moduleCount": 36
+      "moduleCount": 38
     },
     {
       "id": "domain:client-shared",
@@ -1485,6 +1485,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:client/src/features/castingV2/components/ReferenceMakeupChip.tsx",
+      "path": "client/src/features/castingV2/components/ReferenceMakeupChip.tsx",
+      "domain": "castingV2",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:client/src/features/castingV2/components/RefinePanel.tsx",
       "path": "client/src/features/castingV2/components/RefinePanel.tsx",
       "domain": "castingV2",
@@ -1547,6 +1553,12 @@
     {
       "id": "module:client/src/features/castingV2/railThumb.ts",
       "path": "client/src/features/castingV2/railThumb.ts",
+      "domain": "castingV2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/castingV2/referenceReadCopy.ts",
+      "path": "client/src/features/castingV2/referenceReadCopy.ts",
       "domain": "castingV2",
       "lifecycle": "active"
     },
@@ -8839,6 +8851,10 @@
       "path": "client/src/features/castingV2/railWaitAnatomy.test.ts"
     },
     {
+      "id": "test:client/src/features/castingV2/referenceReadCopy.test.ts",
+      "path": "client/src/features/castingV2/referenceReadCopy.test.ts"
+    },
+    {
       "id": "test:client/src/features/castingV2/refineBusy.test.ts",
       "path": "client/src/features/castingV2/refineBusy.test.ts"
     },
@@ -13242,6 +13258,16 @@
     {
       "from": "module:client/src/features/castingV2/components/KeptTray.tsx",
       "to": "module:client/src/features/castingV2/signTarget.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/castingV2/components/ReferenceMakeupChip.tsx",
+      "to": "module:client/src/features/castingV2/referenceReadCopy.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/castingV2/components/RefinePanel.tsx",
+      "to": "module:client/src/features/castingV2/components/ReferenceMakeupChip.tsx",
       "kind": "imports"
     },
     {

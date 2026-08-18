@@ -1,6 +1,7 @@
 import { RotateCw } from "lucide-react";
 
 import { Button } from "@/foundation";
+import { ReferenceMakeupChip, type MakeupReadResult } from "./ReferenceMakeupChip";
 import { SegmentsOnFace, type FaceRow } from "./SegmentsOnFace";
 import { VersionRail } from "./VersionRail";
 import type { PendingStage } from "../refineBusy";
@@ -155,6 +156,7 @@ export function RefinePanel({
   onDraft,
   stackHoisted = false,
   regenerates = null,
+  readMakeupFromPhoto = null,
 }: {
   variants: readonly RefineVariant[];
   /** Refinements still running, from server truth — survives remount (D-161). */
@@ -249,6 +251,19 @@ export function RefinePanel({
    * rendered by whoever owns the column it stands in.
    */
   stackHoisted?: boolean;
+  /**
+   * TAKING A LOOK FROM A PHOTOGRAPH — absent unless the road serves this
+   * account (`config.makeupFromReferenceEnabled`).
+   *
+   * ABSENT rather than disabled, for the reason the Regenerate button is: a
+   * control that can never apply to the account looking at it is not a control
+   * that is temporarily unavailable. And the gate is the server's — the client
+   * asks, it never decides.
+   *
+   * It is a FUNCTION rather than a flag so this panel stays presentational: the
+   * page owns the mutation, this owns where the sentence appears.
+   */
+  readMakeupFromPhoto?: ((imageBase64: string) => Promise<MakeupReadResult>) | null;
 }) {
   const instruction = draft;
   const setInstruction = onDraft;
@@ -496,6 +511,24 @@ export function RefinePanel({
           </Button>
         ) : null}
       </form>
+
+      {/*
+        THE THIRD DOOR ONTO THE ASK BOX — a photograph (fable-940/941).
+
+        It sits BELOW the box rather than above it, because the chip above is
+        about the version already on screen and this is about a picture she has
+        not chosen yet. Same promise either way: it fills the box and stops.
+
+        Absent unless the road serves this account — the page passes nothing at
+        all outside the scope, so there is no control here to be refused.
+      */}
+      {readMakeupFromPhoto ? (
+        <ReferenceMakeupChip
+          busy={busy}
+          onRead={readMakeupFromPhoto}
+          onUse={(sentence) => setInstruction(sentence)}
+        />
+      ) : null}
 
       {/*
         The quiet meta line. It says what refining can do BEFORE someone types

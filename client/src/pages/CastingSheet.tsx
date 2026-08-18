@@ -262,6 +262,18 @@ export default function CastingSheet() {
   const [signSelectionId, setSignSelection] = useState<string | null>(null);
 
   const config = trpc.castingV2.config.useQuery({});
+  /*
+    THE MAKEUP READ — one look at a photograph she supplies, and nothing kept.
+
+    Declared here rather than inside the panel so the panel stays presentational
+    (it is handed a function, not a client), and because this page already owns
+    every other paid and unpaid call the viewer makes.
+
+    It costs her nothing and writes nothing: the reference is read and dropped —
+    no object, no row, no digest. What comes back is a SUGGESTION she adopts or
+    edits, and only then does it travel as an ordinary makeup ask.
+  */
+  const readMakeup = trpc.castingV2.reference.readMakeup.useMutation();
   const session = trpc.castingV2.getSession.useQuery(
     { sessionId },
     {
@@ -2643,6 +2655,33 @@ export default function CastingSheet() {
           */
           below={viewerRefinable ? (
             <RefinePanel
+              /*
+                TAKING A LOOK FROM A PHOTOGRAPH — passed only where the road
+                serves this account (fable-940/941, position pinned fable-957).
+
+                NULL rather than a disabled control outside the scope: the
+                procedure answers NOT_FOUND there, so an affordance would be a
+                control that refuses. The server owns the gate; this asks.
+
+                The mutation is owned here and the panel is handed a function,
+                so the panel stays presentational and the whole surface can be
+                driven in a test without a network.
+              */
+              readMakeupFromPhoto={
+                config.data?.makeupFromReferenceEnabled && viewerCandidateId
+                  ? async (imageBase64: string) => {
+                    const answer = await readMakeup.mutateAsync({
+                      candidateId: viewerCandidateId,
+                      imageBase64,
+                    });
+                    return {
+                      sentence: answer.sentence,
+                      surfacesRead: answer.surfacesRead,
+                      surfacesDropped: answer.surfacesDropped,
+                    };
+                  }
+                  : null
+              }
               /*
                 Keyed by the face. Without it, walking the viewer with ←/→
                 carries a half-typed instruction from one candidate to the next,
