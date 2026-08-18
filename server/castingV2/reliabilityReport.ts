@@ -816,6 +816,30 @@ export function formatReport(report: ReliabilityReport): string {
     );
   }
   /*
+    AND THE ERA A MARKS NUMBER WAS TAKEN IN (ruled fable-927 §5).
+
+    Until 2026-08-18 a question-less slot whose reading was DISPUTED filed
+    nothing at all — not even its words. `skin` owns `marks` and has no
+    segmentation question, so a marks ask the reader denied left no library row;
+    the repaint recipe's standing clauses are built from library rows alone; and
+    every render after the one that bought the marks therefore said nothing
+    about them while the checker went on ASKING about them. A guaranteed
+    `delivered_absent`, manufactured by the gap rather than by the painter.
+
+    Printed only when the class is in the window, because a caveat on every
+    report is a caveat nobody reads — and printed at all because the next person
+    to open a marks court will read this table first, and a rate with no era on
+    it is the number they will quote.
+  */
+  if (report.byClass.some((tally) => tally.edit === "marks" || tally.edit.startsWith("marks"))) {
+    lines.push(
+      "marks: rows before 2026-08-18 sit inside the RECIPE SILENCE era — `skin` "
+      + "filed no row when its reading was disputed, so later renders never said "
+      + "the marks they were then checked for. Those misses are a reading about "
+      + "that gap, not about the painter; exclude them from any marks court.",
+    );
+  }
+  /*
     WHAT THIS TABLE COULD NOT SEE, said out loud (fable-828 §2).
 
     A denominator that drops a class of PAID attempts without saying so is a

@@ -712,6 +712,40 @@ describe("carried facets are never fresh deliveries", () => {
     expect(text).toContain("carried only: marks");
   });
 
+  it("names the ERA on the marks class, because its misses were manufactured by a gap", () => {
+    /*
+      Until 2026-08-18 a question-less slot whose reading was disputed filed
+      NOTHING — not even its words — so `skin` (which owns `marks`) never got a
+      library row, and the recipe's standing clauses are built from library rows
+      alone. Every render after the one that bought the marks therefore said
+      nothing about them and was then ASKED about them by the checker: a
+      guaranteed `delivered_absent`.
+
+      So a marks rate taken across that era is a reading about the gap and not
+      about the painter. Printed rather than remembered, because the next person
+      to open a marks court will read this table first — and a number with no era
+      on it is the one they will quote.
+    */
+    const text = formatReport(summarize([
+      attempt({
+        operationId: "marks-1",
+        verification: {
+          checks: [check({ facet: "marks", asked: "freckles across her nose and cheeks", verified: false, binding: false, saw: "no visible freckles" })],
+        },
+      }),
+    ]));
+    expect(text).toContain("marks");
+    expect(text).toContain("2026-08-18");
+    expect(text.toLowerCase()).toContain("recipe silence");
+  });
+
+  it("says nothing about the era when no marks class is in the window", () => {
+    /* The negative control: a caveat printed on every report is a caveat nobody
+       reads, and it would attach the marks story to classes it is not true of. */
+    const text = formatReport(summarize([attempt()]));
+    expect(text.toLowerCase()).not.toContain("recipe silence");
+  });
+
   it("treats every legacy row as painted, because nothing could have been carried", () => {
     // No `carried` field at all — the honest default, and the one that cannot
     // retroactively empty a historical denominator.

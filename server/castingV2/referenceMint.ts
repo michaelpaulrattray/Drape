@@ -1474,14 +1474,40 @@ export async function mintReferencesForRender(input: MintInput): Promise<MintRes
          list rather than restated, because a slot both loops claim files
          twice. */
       if (slot.question !== null && (slot.guardKind !== null || isOpenKindSlot(slot))) continue;
-      if (slot.disputed) {
-        disputedNothingKept(
-          slot,
-          "noQuestion",
-          "no segmentation question names this slot, so there is nothing to cut and nothing a human could settle",
-        );
-        continue;
-      }
+      /*
+        AND A DISPUTE DOES NOT SILENCE A SLOT WHOSE ONLY CARRIER IS ITS WORDS.
+
+        Everywhere else, `disputed` means: keep the refused CROP so a human can
+        settle reader-versus-painter, and file no words that would assert a
+        feature the reader says is not there. Here there is no crop — and this
+        branch used to conclude from that "nothing a human could settle" and
+        keep NOTHING at all.
+
+        That reasoning is right about pixels and wrong about the row. The
+        paragraph above this loop is the argument: for a question-less slot the
+        words are the CARRIER OF RECORD, and the recipe's standing clauses are
+        built from library rows alone (`recipeAssembler.ts`). A slot that files
+        nothing is not a slot recorded as uncertain — it is a feature the next
+        render is never told about, on a road that anchors every render on the
+        pristine master.
+
+        WHAT IT COST, measured on the chain (opus-682/683, ruled fable-927 §3):
+        `skin` holds `marks`; freckles were asked for and paid for on v#457; the
+        delivery reader called them absent — wrongly, they are visibly there at
+        native pixels and the caption reader on the same frame saw them; the
+        slot filed nothing; and v#458's recipe said not one word about her skin.
+        Her BORN freckles ride the master's own pixels and survived. The ones
+        she paid for did not. **The only part of her face that reverted was the
+        part a customer bought.**
+
+        THE WORDS ARE THE ASK, and only for this case. The library's discipline
+        is to describe what was DELIVERED, and it stands everywhere else. Here
+        the reading that would supply the delivered description is the very one
+        under dispute, on a class the founder's eye has overturned twice
+        (working law 9) — so the words that ride are the ones she paid for, and
+        the outcome below is labelled `disputed` so the row never claims to be a
+        confirmed reading.
+      */
       const said = await wordsFor(slot);
       if (said === null) { unread(slot); continue; }
       rows.push({ role: "carry", slot: slot.slot, tier: slot.tier, noun: slot.noun, words: said });
@@ -1489,7 +1515,11 @@ export async function mintReferencesForRender(input: MintInput): Promise<MintRes
         slot: slot.slot,
         outcome: "words-only",
         reason: "noQuestion",
-        detail: "no segmentation question names this slot, so there is nothing honest to cut",
+        detail: slot.disputed
+          ? "no segmentation question names this slot, so there is nothing honest to cut — and the "
+            + "reading was DISPUTED, so these are the words she asked for rather than a description "
+            + "of the delivered frame (working law 9, fable-927 3)"
+          : "no segmentation question names this slot, so there is nothing honest to cut",
       });
     }
     for (const { slot, detail } of sideless) {

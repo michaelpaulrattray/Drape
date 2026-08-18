@@ -351,10 +351,21 @@ describe("what the mint does with a disputed delivery", () => {
   });
 
   it("writes no row for a disputed slot nothing can be cut for, and spends no vision call", async () => {
-    /* A surface, a slot with no question, and a slot this frame has no region
-       for. Each files words when it is earned; each files nothing when it is
-       disputed, because the row would carry no picture and the words would
-       assert a delivery the reader denied. */
+    /*
+      A surface and a slot this frame has no region for. Each files words when
+      it is earned; each files nothing when it is disputed, because the row
+      would carry no picture and the words would assert a delivery the reader
+      denied.
+
+      ⚠ **The third member of this list moved** (fable-927 §3, 2026-08-18): a
+      slot with NO QUESTION now files its words when disputed — see "STILL files
+      the words when a question-less slot's reading was disputed" below, and the
+      recipe-silence receipt in `referenceMint.ts`. The two arms kept here are
+      its unswept SIBLINGS, deliberately: the same argument applies to both (a
+      row with no picture whose words are its only carrier), and widening past
+      the ruled scope is a decision rather than a tidy-up. They are named in
+      opus-685 with a recommendation.
+    */
     let reads = 0;
     const bench = harness();
     const counted = {
@@ -363,20 +374,12 @@ describe("what the mint does with a disputed delivery", () => {
     };
     const result = await mint([
       hairSlot({ slot: "skin", tier: "surface", noun: "skin", question: "face skin", guardKind: "skin", disputed: true }),
-      hairSlot({ slot: "jaw", noun: "jaw", question: null, guardKind: null, disputed: true }),
       hairSlot({ slot: "eyebrows", noun: "eyebrows", question: "eyebrows", guardKind: "eyebrows", disputed: true }),
     ], counted);
 
     expect(result.outcome).toBe("nothing-to-keep");
     expect(result.slots).toEqual([
       { slot: "skin", outcome: "disputed", kept: false, reason: "surface" },
-      {
-        slot: "jaw",
-        outcome: "disputed",
-        kept: false,
-        reason: "noQuestion",
-        detail: expect.stringContaining("nothing a human could settle"),
-      },
       { slot: "eyebrows", outcome: "disputed", kept: false, reason: "noRegion" },
     ]);
     expect(reads).toBe(0);
@@ -461,6 +464,45 @@ describe("what the mint never cuts", () => {
     expect(bench.stored).toEqual([]);
     expect(bench.rows[0]).toMatchObject({ slot: "jaw", words: ["a softer jawline"] });
     expect(bench.rows[0]!.image).toBeUndefined();
+  });
+
+  it("STILL files the words when a question-less slot's reading was disputed", async () => {
+    /*
+      THE RECIPE-SILENCE DEFECT, at the line that caused it (opus-682/683).
+
+      A disputed slot keeps its refused CROP so a human can settle
+      reader-versus-painter. For a question-less slot there is no crop — and the
+      branch concluded from that "nothing a human could settle", so it kept
+      NOTHING. But the words are not the assist here, they are the only carrier:
+      the recipe's standing clauses are built from library rows alone, so a slot
+      that files nothing is a feature the next render never hears about.
+
+      Measured on the real chain: `skin` holds `marks`, her freckles were asked
+      for and paid for on v#457, the delivery reader called them absent (wrongly
+      — they are visibly there at native pixels), the slot filed nothing, and
+      v#458's recipe said not one word about her skin. Born freckles ride the
+      master's pixels and survived; the ones she paid for did not.
+
+      So a disputed question-less slot files its words. There is no crop to
+      argue about, so there is nothing for the dispute to withhold.
+    */
+    const bench = harness();
+    const result = await mint(
+      [{
+        ...hairSlot({ slot: "skin", noun: "skin", words: ["freckles across her nose and cheeks"], question: null, guardKind: null }),
+        disputed: true,
+        disputedFacets: ["marks"],
+      } as never],
+      bench,
+    );
+
+    expect(result.outcome).toBe("stored");
+    expect(bench.rows[0]).toMatchObject({
+      slot: "skin",
+      words: ["freckles across her nose and cheeks"],
+    });
+    expect(bench.rows[0]!.image).toBeUndefined();
+    expect(bench.stored).toEqual([]);
   });
 
   it("NEVER sends a derived region key to a reader, and files her build's words", async () => {

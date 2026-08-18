@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "4a4098d92844b137"
+    "sourceFingerprint": "fda9e56cf1e37e65"
   },
   "domains": [
     {
@@ -10503,6 +10503,10 @@
     {
       "id": "test:server/scriptExitDiscipline.test.ts",
       "path": "server/scriptExitDiscipline.test.ts"
+    },
+    {
+      "id": "test:server/scriptWorldDoor.test.ts",
+      "path": "server/scriptWorldDoor.test.ts"
     },
     {
       "id": "test:server/scriptWorldGuard.test.ts",
