@@ -49,6 +49,25 @@
  * other three still refuse. The milestone is finished the day `--strict` is
  * green, and it is the reading — not this file — that gets it there.
  *
+ * # WHY `pnpm check` PASSES `--strict` (ruled fable-999 §2, 2026-08-19)
+ *
+ * It did not, for a while, and both governing documents said it did:
+ * `POST_SIGN_ROADMAP.md` §0b and `CLEANUP_MILESTONE_TRIAGE.md` §23 each stated
+ * the completion bar AS `--strict` being green and then claimed `pnpm check`
+ * enforced it. **`pnpm check` ran this file bare**, so the gate held the three
+ * rot refusals and not the bar the same sentence stated.
+ *
+ * It was priced within the hour. Executing the nine TAKE rows MINTED a new
+ * symbol — `AMBIGUOUS_WORDS_FOR_CORPUS`, the corpus seam the surviving test
+ * needed once `namesRemoval` was cut — and no row was written for it. The
+ * reading list went 115 → 116 with an unread symbol on it and `pnpm check`
+ * stayed GREEN. (Triage §24d.)
+ *
+ * That is invariant 7 verbatim: a control that reports and does not refuse is
+ * not a control. The friction this adds is real and it is exactly the four
+ * lines of YAML the knife skipped — which is the bar working, not the bar
+ * failing.
+ *
  * # Controls (law 2)
  *
  * Driven DIRECTLY against synthetic tables rather than against today's real

@@ -1618,8 +1618,69 @@ entries   3, read back from the zip — `0` 678 B · errfiles.tmp 1034 B ·
 *about* it being a false citation — commentary on a death warrant is not a
 citation either.
 
-**Still open: whether `pnpm check` should pass `--strict`.** It is the only thing
-standing between the completion bar and a silent regression, and the incident
-above is what its absence costs. Filed for a ruling rather than flipped, because
-making `unread` fatal blocks every developer's typecheck on any new uncalled
-export — a friction decision, not a correctness one.
+✅ **CLOSED — `pnpm check` now passes `--strict`** (ruled fable-999 §2; see
+§24h for the flip and the sabotage that proved the gate can refuse). It was filed
+here as an open friction decision; the ruling was that it is not a new bar at all
+— fable-992 §2b had already ADOPTED `--strict`-green as the completion bar, and a
+gate weaker than its adopted bar is invariant 7 verbatim.
+
+
+### 24g. THE 180-VERSUS-143 ARITHMETIC — the missing 37 were a FILTER, not a loss
+
+§24a's knife took 143 of a DELETE bucket that read 182, less two refusals — 180
+planned. The 37 were never lost and never deleted. They were still on disk, cold,
+and the reason is the best thing that happened in this milestone: **bound one had
+already been applied at knife time and was never written down.**
+
+The evidence is an asymmetry no coincidence produces. Sweeping the same
+mailbox-and-memory citer surface across both populations, over the SAME date
+range (2026-08-11 … 2026-08-17):
+
+```
+of the 143 DELETED      3 named by the coordination surface   (2.1%)
+of the 39 LEFT BEHIND  35 named by the coordination surface  (89.7%)
+```
+
+A knife that had ignored the mailbox would have left the two populations alike.
+These are near-perfect complements, which is what a filter looks like from the
+far side. **The act was right and only its record was missing** — the reverse of
+this milestone's usual finding, and worth stating in that direction.
+
+⚠ **The instrument was contaminated mid-reading and caught it.** The negative
+control — a stem git has never seen — went from 0 to **1**, because the sweep's
+own report had by then been filed in the mailbox WITH THE CONTROL'S NAME IN IT.
+The specimen joined the vocabulary inside one shift. Re-run with an unpublished
+token: negative 0, positive 5, and three deleted stems spot-read at 0 by hand.
+
+**The close, at a fresh reading with every remaining path assigned:**
+
+```
+THE UNTRACKED HALF — 114 paths
+  CITED   3   ·   FRESH 74   ·   HAND 1   ·   DELETE 36
+  DELETE 36 = 1 refusal (the hash-named mp4) + 35 courtesy-HELD
+```
+
+The four that were cold AND unnamed by every surface — `survey-bot-fixtures`,
+`survey-cast-assets`, `survey-signed-bot`, `survey-verify-bot` — are archived to
+`C:\Users\Admin\drape-untracked-tail-2026-08-19.zip` (4 entries, all 4 read back
+byte-for-byte) and taken. The 35 are HELD as courtesy citations: the evidence rule
+is unchanged, the delete list is not.
+
+The buckets sum across the shift boundary and not merely within a run, which is
+the form the ruling asked for.
+
+### 24h. THE GATE NOW REFUSES — `pnpm check` passes `--strict` (ruled fable-999 §2)
+
+§24d's open question is closed in the direction the incident argued. `pnpm check`
+now runs the door with `--strict`, so `unread` is fatal and the completion bar
+stated in `POST_SIGN_ROADMAP.md` §0b is the bar the gate actually holds.
+
+**Proved able to fail before it was believed** (law 2): the
+`AMBIGUOUS_WORDS_FOR_CORPUS` row was removed from a copy of the table, the strict
+door exited **1**, the table was restored from that copy — not from git, which
+would have taken the working tree with it — and the door exited **0**, with the
+file byte-identical to `HEAD`.
+
+The friction is real and named rather than hidden: any new export used only by its
+own test now blocks `pnpm check` until four lines of YAML exist. Those are exactly
+the four lines the knife skipped.
