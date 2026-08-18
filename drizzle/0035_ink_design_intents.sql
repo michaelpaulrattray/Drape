@@ -1,0 +1,64 @@
+-- WHAT THIS REFERENCE WAS UPLOADED FOR — the intent declaration, ruled by the
+-- founder at fable-937 as an amendment to fable-936's flow ruling.
+--
+-- ============================================================================
+-- HIS CATCH, VERBATIM
+-- ============================================================================
+--
+--   "someone might upload a reference who has tattoos but only wants the hair
+--    transferred and we just wasted money on generating the tattoo onto a
+--    manequinn?"
+--
+-- A reference is a photograph of a whole person and contains things nobody
+-- asked for. The flow ruling one message earlier (fable-936 §2) mints the
+-- mannequin plate AT UPLOAD rather than at the ask, so the customer is not left
+-- waiting twice — and that is precisely the flow his catch makes dangerous,
+-- because minting on upload alone spends money on a feature nobody wanted.
+--
+-- So the declaration rides on the row: **no extraction without intent, and no
+-- money moves for a feature nobody asked to take.**
+--
+-- ============================================================================
+-- WHY A COLUMN NOW, WHEN NOTHING EXTRACTS YET
+-- ============================================================================
+--
+-- Same argument as `provenance` one migration ago, and it is the argument this
+-- program keeps being right about: a field added AFTER rows exist has to be
+-- back-filled with a guess. A guessed provenance is a lie about consent; a
+-- guessed intent is a lie about what somebody asked for. Both are the values
+-- their column exists to be trusted about.
+--
+-- It is also the demand tally's natural input (fable-937 §3): what references
+-- are uploaded FOR is a fact about customers, and it is only ever recorded by
+-- being asked at the moment somebody uploads.
+--
+-- ============================================================================
+-- THE VALUES, AND WHY JSON RATHER THAN AN ENUM
+-- ============================================================================
+--
+-- A declaration is a SET — "take the tattoo and the hair from this one" is a
+-- legal ask (fable-937: multi-intent uploads run each declared form
+-- independently). An enum holds one value; MySQL's own SET type has no Drizzle
+-- column, and a comma-joined varchar is a set pretending to be a string.
+--
+-- The members are `shared/referenceIntents.ts` — tattoo, hair, makeup,
+-- eyeColour — and the shape is validated at the door
+-- (`castingV2/inkUploadDoor.ts`) rather than by the column, which is why the
+-- door's test drives every refusal it makes.
+--
+-- ============================================================================
+-- THE DEFAULT IS NOT A GUESS
+-- ============================================================================
+--
+-- `["tattoo"]`, and it is the one value those rows can possibly have: this
+-- table's every row carries a `placement` and a `side` from the tattoo
+-- vocabulary, so a row that predates this column is a tattoo attachment and
+-- nothing else. (Measured before writing it: dev holds 0 rows and production
+-- has not taken 0034 at all, so the default covers an empty set today. It is
+-- here for the shape of the statement, not for the rows.)
+--
+-- PURELY ADDITIVE. One column on a table nothing has written to; no existing
+-- column changes. It lands ahead of its writer for the standing reason — a new
+-- column is in every INSERT the moment the writer ships, and there is no dark
+-- landing for one.
+ALTER TABLE `casting_ink_designs` ADD COLUMN `intents` json NOT NULL DEFAULT ('["tattoo"]');

@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "4b525e4a58a7eddf"
+    "sourceFingerprint": "c6707251d1cf9d4c"
   },
   "domains": [
     {
@@ -123,7 +123,7 @@
     {
       "id": "domain:shared",
       "name": "shared",
-      "moduleCount": 24
+      "moduleCount": 25
     },
     {
       "id": "domain:studio",
@@ -5103,6 +5103,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:shared/referenceIntents.ts",
+      "path": "shared/referenceIntents.ts",
+      "domain": "shared",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:shared/refreshPolicy.ts",
       "path": "shared/refreshPolicy.ts",
       "domain": "shared",
@@ -9741,6 +9747,10 @@
     {
       "id": "test:server/castingV2/referenceFit.test.ts",
       "path": "server/castingV2/referenceFit.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/referenceIntents.test.ts",
+      "path": "server/castingV2/referenceIntents.test.ts"
     },
     {
       "id": "test:server/castingV2/referenceLibrary.test.ts",
