@@ -415,8 +415,15 @@ at upload, so still ahead of the ask; still once per design).
 form is ruled-but-not-built is refused by name, and a mixed declaration is
 refused on its unbuilt half so that "we took part of it" is never silent.
 
-**Not built:** the plate itself. Nothing plates before the template exists
-(§7.6).
+**The plate is wired as of 2026-08-18** (fable-968 §2). `uploadInkDesign` mints
+it as step 5, after the row commits, on the ruled engine (`INK_PLATE_ENGINE` —
+Nano Banana Pro, fable-963 §2) through its own declared fal allowance
+(`INK_PLATE_CONCURRENCY`, one slot, taken from the courtesy pool). It is
+**synchronous** — ~37s measured, against a paid refine that already holds its
+request for a production median of 173.3s — because fire-and-forget is the shape
+with no owner. A refused mint does not fail the upload: her design is stored and
+the plate is a second fact travelling beside it, and a re-drive writes no second
+row (the mint is idempotent per design and engine, and says `reused`).
 
 **One gap, named rather than papered over:** a refused declaration writes no
 row, so a hair-only upload is not in the demand tally fable-937 §3 asked for —

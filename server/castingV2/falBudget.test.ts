@@ -61,6 +61,29 @@ describe("the arithmetic", () => {
     expect(() => assertFalBudget()).not.toThrow();
   });
 
+  it("spends the WHOLE ceiling, and the plate mint's slot came out of courtesy", () => {
+    /*
+      THE RE-CUT, PINNED (2026-08-18). The fifth path could not be declared out
+      of thin air — the four before it spent 20 of 20 — so the arithmetic of who
+      paid is a contract rather than a memory: the courtesy pool went 6 to 5 and
+      not one paid path moved.
+
+      A future path that quietly takes its slot from `roll images` would still
+      satisfy the sum check above and would still boot. This is the assertion
+      that would redden instead.
+    */
+    const budget = assertFalBudget();
+    expect(budget.total).toBe(20);
+    expect(falAllowanceOf("ROLL_IMAGE_CONCURRENCY")).toBe(8);
+    expect(falAllowanceOf("SIGN_VIEW_CONCURRENCY")).toBe(3);
+    expect(falAllowanceOf("REFINE_EDIT_CONCURRENCY")).toBe(3);
+    expect(falAllowanceOf("FAL_CONCURRENCY")).toBe(5);
+    expect(falAllowanceOf("INK_PLATE_CONCURRENCY")).toBe(1);
+    /* And the mint is house money, which is the argument for where the slot
+       came from — a kind, not a comment. */
+    expect(FAL_ALLOWANCES.find((one) => one.env === "INK_PLATE_CONCURRENCY")?.kind).toBe("courtesy");
+  });
+
   it("reads every allowance from the table, and refuses one that is not in it", () => {
     process.env.SIGN_VIEW_CONCURRENCY = "5";
     expect(falAllowanceOf("SIGN_VIEW_CONCURRENCY")).toBe(5);

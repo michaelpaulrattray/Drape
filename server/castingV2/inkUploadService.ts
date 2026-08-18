@@ -38,9 +38,27 @@
  * This is an ingestion path, not a reference path. The founder's architecture
  * re-draws ink onto a neutral ghost mannequin (D-138, fable-684 §2), and it is
  * that PLATE the engine is shown — which is how the real-person fence is met by
- * construction rather than by a filter. The distiller that makes the plate is
- * the next build, with its own court: a face-bearing reference must produce a
- * plate with ZERO person content, proven at the frames (fable-919 §3).
+ * construction rather than by a filter. The fence held on both engines at the
+ * founder's own eye (fable-963), and the plate is minted HERE, as step 5.
+ *
+ * # WHY THE MINT IS INSIDE THE UPLOAD, AND WHY IT WAITS FOR IT
+ *
+ * fable-936 §2 ruled that a plate is drawn at UPLOAD rather than at the ask, so
+ * the customer is not made to wait twice; fable-937 narrowed it to DECLARED
+ * INTENT, so no money moves for a feature nobody asked to take. Both are
+ * satisfied by minting once, here, after the row exists.
+ *
+ * It is synchronous, and that is a decision rather than an omission (fable-968
+ * §2 as filed in opus-710 §2). A mint is ~37s measured on the ruled engine,
+ * against a paid refine that already holds its request for a production median
+ * of 173.3s — this is not a new shape for the product. The alternative,
+ * fire-and-forget, is the shape with NO OWNER: a mint that dies with the
+ * process leaves no plate, no error, and nobody whose job it is to notice.
+ *
+ * **A refused mint does not fail the upload.** Her design is stored and hers;
+ * whether a plate was drawn from it is a second fact, and it travels beside the
+ * first. Re-driving is free of a second row: the mint is idempotent per
+ * (design, engine) and answers `reused`.
  */
 import { createHash, randomUUID } from "node:crypto";
 import sharp from "sharp";
@@ -60,6 +78,8 @@ import {
   storageCleanupManifestHeldUntil,
 } from "../db/storageCleanup";
 import { storagePut } from "../storage";
+import { inkPlateEngine } from "./inkPlateEngine";
+import { mintInkPlate, type InkPlateMintOutcome } from "./inkPlateMint";
 import {
   inkDesignBytesRefusal,
   inkDesignContentType,
@@ -81,14 +101,42 @@ export type InkUploadRequest = {
   bytes: Buffer;
 };
 
+/**
+ * WHETHER A PLATE WAS DRAWN, and it is never inferred from the design's row.
+ *
+ * `reused` distinguishes *drawn now* from *already there*, because the mint is
+ * idempotent and a caller that could not tell them apart would report a second
+ * upload as a second $0.15.
+ */
+export type InkUploadPlate =
+  | { minted: true; plateId: string; reused: boolean; engine: string; width: number; height: number }
+  /** The mint's own sentence, unchanged — a client that re-worded it is how two
+   *  surfaces come to say different things about one wall. */
+  | { minted: false; note: string };
+
 export type InkUploadOutcome =
-  | { ok: true; design: RecordedInkDesign & { width: number; height: number } }
+  | {
+    ok: true;
+    design: RecordedInkDesign & { width: number; height: number };
+    /** Her design is stored either way; this says what became of the plate. */
+    plate: InkUploadPlate;
+  }
   | { ok: false; refusal: InkUploadRefusal };
 
 export type InkUploadDependencies = {
   manifest: (input: { id: string; userId: number; storageKeys: readonly string[] }) => Promise<void>;
   store: (input: { key: string; bytes: Buffer; contentType: string }) => Promise<{ key: string; url: string }>;
   record: (input: InkDesignToRecord) => Promise<RecordedInkDesign>;
+  /**
+   * DRAWING THE DESIGN ONTO THE BLANK FORM — injected so this file keeps owning
+   * the ORDER and nothing else, and so a suite can drive the whole upload
+   * without a provider, a key or a network.
+   *
+   * The real one carries the RULED engine (`inkPlateEngine()`), which is `null`
+   * on a deployment with no transport — and the mint turns that absence into a
+   * sentence rather than a crash.
+   */
+  mint: (input: { userId: number; designPublicId: string }) => Promise<InkPlateMintOutcome>;
 };
 
 async function defaultManifest(input: {
@@ -115,10 +163,24 @@ async function defaultManifest(input: {
   }));
 }
 
+/**
+ * The real mint, exported so a suite can assert THIS — the thing the upload
+ * actually calls — rather than a double that agrees with it.
+ *
+ * The engine is read per mint rather than captured at module load, so a
+ * deployment that gains its key does not stay stuck with the absence.
+ */
+export function defaultMintPlate(
+  input: { userId: number; designPublicId: string },
+): Promise<InkPlateMintOutcome> {
+  return mintInkPlate({ ...input, engine: inkPlateEngine() });
+}
+
 const REAL: InkUploadDependencies = {
   manifest: defaultManifest,
   store: (one) => storagePut(one.key, one.bytes, one.contentType),
   record: recordInkDesign,
+  mint: defaultMintPlate,
 };
 
 /**
@@ -200,8 +262,32 @@ export async function uploadInkDesign(
     cleanupBatchId,
   });
 
+  /*
+    STEP 5 — THE PLATE, and it is the only step here that spends.
+
+    After the row, never before it: the mint reads the design by its public id
+    and re-proves ownership in its own statement, so there is nothing to mint
+    from until the row is committed. It also means a mint that fails leaves a
+    stored design rather than orphaned bytes — the receipt was discharged one
+    line above.
+  */
+  const plate = await dependencies.mint({
+    userId: request.userId,
+    designPublicId: design.publicId,
+  });
+
   return {
     ok: true,
     design: { ...design, width: decoded.width ?? 0, height: decoded.height ?? 0 },
+    plate: plate.ok
+      ? {
+        minted: true,
+        plateId: plate.plate.publicId,
+        reused: plate.reused,
+        engine: plate.plate.engine,
+        width: plate.plate.width,
+        height: plate.plate.height,
+      }
+      : { minted: false, note: plate.refusal.message },
   };
 }

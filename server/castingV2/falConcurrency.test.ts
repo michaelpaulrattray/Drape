@@ -59,7 +59,13 @@ describe("how many at once", () => {
     process.env.FAL_CONCURRENCY = "11";
     expect(falConcurrencyLimit()).toBe(11);
     process.env.FAL_CONCURRENCY = "nonsense";
-    expect(falConcurrencyLimit()).toBe(6);
+    /* FIVE since 2026-08-18, when the plate mint became the fifth declared path
+       and its slot came out of this — the courtesy — pool rather than a paid
+       one. The panel pays nothing for it at the size it runs: a scan is 20
+       calls, and ceil(20/6) and ceil(20/5) are both four waves. The number
+       lives in `FAL_ALLOWANCES` and is read from there, so this arm moves when
+       the budget does rather than describing an older one. */
+    expect(falConcurrencyLimit()).toBe(5);
     delete process.env.FAL_CONCURRENCY;
     /* Below the account's twenty on purpose: the roll engine's own dispatch
        spends from the same allowance. */

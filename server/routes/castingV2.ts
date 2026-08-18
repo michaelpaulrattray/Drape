@@ -393,10 +393,22 @@ const inkRouter = router({
           throw spokenError({ code: "BAD_REQUEST", message: outcome.refusal.message });
         }
         /* An explicit projection (invariant 8): what she attached and where.
-           The object's key is deliberately not in it — nothing renders yet,
-           so a URL here would be a permanently public address handed out for
-           no reason anybody can name. */
+           Neither object's key is in it — not the design's and not the
+           plate's. A URL here would be a permanently public address handed
+           out before anything renders, for no reason anybody can name. */
         return {
+          /*
+            WHETHER A PLATE WAS DRAWN FROM IT, and it is a second fact rather
+            than a property of the design (fable-968 §2). Her picture is stored
+            either way; a transport that was down for ninety seconds must not
+            read as an upload that failed.
+
+            The engine and the plate's size are here because they are what the
+            court and the founder ask of a plate — which model drew it and
+            whether the shape survived — and both come off the row rather than
+            from what was asked for.
+          */
+          plate: outcome.plate,
           designId: outcome.design.publicId,
           placement: outcome.design.placement,
           side: outcome.design.side,

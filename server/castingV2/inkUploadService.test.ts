@@ -13,7 +13,8 @@ import sharp from "sharp";
 import { describe, expect, it, vi } from "vitest";
 
 import { INK_DESIGN_MIN_EDGE } from "./inkUploadDoor";
-import { uploadInkDesign, type InkUploadDependencies } from "./inkUploadService";
+import { resetInkPlateEngineForTests } from "./inkPlateEngine";
+import { defaultMintPlate, uploadInkDesign, type InkUploadDependencies } from "./inkUploadService";
 
 async function pngOf(width: number, height: number): Promise<Buffer> {
   return sharp({
@@ -26,6 +27,7 @@ function harness(overrides: Partial<InkUploadDependencies> = {}) {
   const manifests: Array<{ id: string; userId: number; storageKeys: readonly string[] }> = [];
   const stored: Array<{ key: string; bytes: Buffer; contentType: string }> = [];
   const recorded: Array<Record<string, unknown>> = [];
+  const minted: Array<{ userId: number; designPublicId: string }> = [];
   const dependencies: InkUploadDependencies = {
     manifest: vi.fn(async (one) => { order.push("manifest"); manifests.push(one); }),
     store: vi.fn(async (one) => { order.push("store"); stored.push(one); return { key: one.key, url: `https://cdn.test/${one.key}` }; }),
@@ -43,9 +45,31 @@ function harness(overrides: Partial<InkUploadDependencies> = {}) {
         createdAt: new Date("2026-08-18T00:00:00Z"),
       };
     }),
+    mint: vi.fn(async (one) => {
+      order.push("mint");
+      minted.push(one);
+      return {
+        ok: true as const,
+        reused: false,
+        plate: {
+          publicId: "plate-public-id",
+          designPublicId: one.designPublicId,
+          engine: "fal:fal-ai/nano-banana-pro",
+          templateKind: "arm" as const,
+          templateDigest: "t".repeat(64),
+          storageKey: "casting/ink/plates/plate.png",
+          digest: "d".repeat(64),
+          mime: "image/png",
+          byteSize: 1234,
+          width: 1152,
+          height: 1024,
+          createdAt: new Date("2026-08-18T00:00:00Z"),
+        },
+      };
+    }),
     ...overrides,
   };
-  return { dependencies, order, manifests, stored, recorded };
+  return { dependencies, order, manifests, stored, recorded, minted };
 }
 
 const ask = {
@@ -102,7 +126,9 @@ describe("attaching a design to a Cast", () => {
 
     await uploadInkDesign({ ...ask, bytes: await pngOf(512, 512) }, dependencies);
 
-    expect(order).toEqual(["manifest", "store", "record"]);
+    /* And the MINT is last, after the row is committed — the only step that
+       spends, and it has nothing to read until the design exists. */
+    expect(order).toEqual(["manifest", "store", "record", "mint"]);
     expect(manifests[0]!.storageKeys).toEqual([stored[0]!.key]);
     expect(manifests[0]!.userId).toBe(1);
     /* And the row is filed against THAT manifest, so committing the row is what
@@ -117,6 +143,11 @@ describe("attaching a design to a Cast", () => {
       person who happens to have tattoos. Nothing is reserved, nothing stored,
       nothing written — and the sentence names the feature rather than the
       photograph.
+
+      Since the mint landed in this order, the empty list also carries his
+      actual worry in his own words — *"we just wasted money on generating the
+      tattoo onto a manequinn"* — because `mint` is one of the steps that would
+      appear in it, and it is the one that spends.
     */
     const { dependencies, order } = harness();
 
@@ -229,5 +260,113 @@ describe("attaching a design to a Cast", () => {
     expect(stored[0]!.contentType).toBe("image/jpeg");
     expect(stored[0]!.key).toMatch(/\.jpg$/);
     expect(recorded[0]!.mime).toBe("image/jpeg");
+  });
+});
+
+describe("the plate, drawn at upload (fable-936 §2, wired fable-968 §2)", () => {
+  it("mints from the design that was just filed, and says what came back", async () => {
+    /* The mint is handed the design's OWN public id and this account's id —
+       never the candidate, never anything from the caller's request — because
+       the mint re-proves ownership in its own statement from exactly those two.
+       Asserted at the wire rather than at a constant beside it (invariant 5). */
+    const { dependencies, minted, recorded } = harness();
+
+    const outcome = await uploadInkDesign({ ...ask, bytes: await pngOf(600, 800) }, dependencies);
+
+    expect(outcome.ok).toBe(true);
+    if (!outcome.ok) return;
+    expect(minted).toEqual([{ userId: 1, designPublicId: "design-public-id" }]);
+    expect(recorded).toHaveLength(1);
+    expect(outcome.plate).toEqual({
+      minted: true,
+      plateId: "plate-public-id",
+      reused: false,
+      engine: "fal:fal-ai/nano-banana-pro",
+      width: 1152,
+      height: 1024,
+    });
+  });
+
+  it("carries REUSED rather than reporting a second mint as a first", async () => {
+    /* The mint is idempotent per (design, engine). A caller that could not tell
+       drawn-now from already-there would read a re-drive as a second $0.15. */
+    const { dependencies } = harness({
+      mint: async (one) => ({
+        ok: true,
+        reused: true,
+        plate: {
+          publicId: "plate-public-id",
+          designPublicId: one.designPublicId,
+          engine: "fal:fal-ai/nano-banana-pro",
+          templateKind: "arm",
+          templateDigest: "t".repeat(64),
+          storageKey: "casting/ink/plates/plate.png",
+          digest: "d".repeat(64),
+          mime: "image/png",
+          byteSize: 1234,
+          width: 1152,
+          height: 1024,
+          createdAt: new Date("2026-08-18T00:00:00Z"),
+        },
+      }),
+    });
+
+    const outcome = await uploadInkDesign({ ...ask, bytes: await pngOf(600, 800) }, dependencies);
+
+    expect(outcome.ok).toBe(true);
+    if (!outcome.ok) return;
+    expect(outcome.plate).toMatchObject({ minted: true, reused: true });
+  });
+
+  it("does NOT fail the upload when the plate refuses — her design is still hers", async () => {
+    /*
+      The two facts travel separately on purpose. She attached a design and it
+      is stored; whether a plate was drawn from it is a second thing, and an
+      upload that threw here would delete a picture she gave us over a transport
+      that was down for ninety seconds.
+    */
+    const { dependencies, stored, recorded } = harness({
+      mint: async () => ({
+        ok: false,
+        refusal: { code: "noTransport", message: "We can't draw designs right now." },
+      }),
+    });
+
+    const outcome = await uploadInkDesign({ ...ask, bytes: await pngOf(600, 800) }, dependencies);
+
+    expect(outcome.ok).toBe(true);
+    if (!outcome.ok) return;
+    expect(stored).toHaveLength(1);
+    expect(recorded).toHaveLength(1);
+    /* The mint's own sentence, unchanged — not a second wording of one wall. */
+    expect(outcome.plate).toEqual({ minted: false, note: "We can't draw designs right now." });
+  });
+
+  it("the REAL dependency goes through the real mint, not a double that agrees with it", async () => {
+    /*
+      THE WIRE, in the caller's own suite. Both benches once passed while the
+      thing under them was inert, because every arm was handed its argument by
+      the harness. This drives the function the upload ACTUALLY calls.
+
+      With no `FAL_KEY` there is no transport, and the mint answers that with
+      its own sentence before a database is touched — so this proves the wiring
+      end to end without a network, a key or a row.
+    */
+    const key = process.env.FAL_KEY;
+    delete process.env.FAL_KEY;
+    /* The engine is memoized process-wide, and `.env` is loaded for the suite —
+       so without this the arm could read an engine some earlier test built and
+       pass for the wrong reason. */
+    resetInkPlateEngineForTests();
+    try {
+      const outcome = await defaultMintPlate({ userId: 1, designPublicId: "design-public-id" });
+      expect(outcome.ok).toBe(false);
+      if (outcome.ok) return;
+      expect(outcome.refusal.code).toBe("noTransport");
+    } finally {
+      if (key === undefined) delete process.env.FAL_KEY;
+      else process.env.FAL_KEY = key;
+      resetInkPlateEngineForTests();
+    }
   });
 });
