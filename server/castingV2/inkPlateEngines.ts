@@ -43,6 +43,26 @@
  * because the court's other axis is wall-clock, and if 2K is slow enough to hurt
  * the wait the founder named, that is a reading rather than an argument.
  *
+ * # THE ENGINE IS RULED: NANO BANANA PRO (founder, fable-963 §2)
+ *
+ * His word, on the court's own sheet: *"NBP wins"*. The readings behind it,
+ * census-measured on two specimens:
+ *
+ * ```
+ *                     specimen A       specimen B
+ * Nano Banana Pro     38.3s $0.15      36.8s $0.15     lettering crisp
+ * GPT Image 2        125.7s ~$0.20    125.3s ~$0.20    lettering softer
+ * ```
+ *
+ * Three times faster on his own latency-critical requirement, a quarter cheaper,
+ * and at least equal by his eye. Both engines held the fence (no person content
+ * from a face-bearing photograph) and both kept the design at the named
+ * placement.
+ *
+ * `platesByMaskedEdit` STAYS — it is not dead code and it is not a fallback. It
+ * is the other arm of a court that will be re-run whenever either engine moves,
+ * and a comparison whose loser has been deleted cannot be re-run at all.
+ *
  * # THE ASPECT RATIO IS A PARAMETER, AND IT STARTED AS AN ABSENCE
  *
  * The first cut sent none: nothing in the product had ever set one, and
@@ -155,6 +175,15 @@ export function platesByMaskedEdit(engine: {
  * and the view verb would fold an angle sentence into a prompt whose every line
  * is load-bearing.
  */
+/**
+ * THE RULED ENGINE (fable-963 §2). The wiring builds this one.
+ *
+ * Named as a constant rather than left to each caller to remember, because the
+ * next thing to be built is the upload wiring and the ruling has to be where
+ * that person will be standing.
+ */
+export const INK_PLATE_ENGINE = "nanoBananaPro" as const;
+
 export function platesByIdentityEngine(
   engine: Pick<IdentityEngine, "id" | "editWithReferences">,
   options: {
