@@ -498,3 +498,72 @@ mask scoping at all. So the honest repair may be **"the road retires"** rather
 than **"the override wires"**, and that choice belongs to the road's own
 planning, not to a cleanup milestone. The finding is filed; the fix is not this
 milestone's to choose.
+
+---
+
+## 11. THE CORRECTION — the reading list is 98, not 118, and the recon's own
+## finding is why
+
+**§1 above is wrong, and it is wrong in the way §1 itself warned about.** The
+recon proved that 100% of the sweep's *named-by-nobody* list (64) had production
+mentions — and it did not re-run that check against the sweep's OTHER list. **It
+fixed the instance and not the class** (law 7).
+
+The arithmetic hid it. The sweep prints a TEST-ONLY list that was **111** long.
+The triage reader classifies all 175 into four buckets, and its **NONE** bucket
+was **also 111** at that moment. They are different sets. §1's *"the reading list
+is 118 — the 111 test-only plus seven of the OTHER"* silently used one 111 where
+it meant the other.
+
+Crossed properly:
+
+```
+sweep TEST-ONLY 111  →  NONE 75 · OTHER 21 · BARREL 11 · DYNAMIC 4
+```
+
+### 11a. Thirteen entries on the reading list have live production callers
+
+Verified at the call site, not from the reader's classification:
+
+| symbol | live caller |
+|---|---|
+| `adjustUserCredits` | `lib/adminActions/directActions.ts:219`, `changeRequestActions.ts:288` |
+| `updateUserRole` | `routes/admin/roles.ts:35` |
+| `listAllUsers` | `routes/admin/users.ts:296`, `routes/moderator.ts:137` |
+| `getUserFullDetails` | `routes/admin/users.ts:331` |
+| `getUserStatistics` | `routes/admin/users.ts:323`, `routes/moderator.ts:182` |
+| `unblockIp` | `routes/admin/ipBlocking.ts:81`, `directActions.ts:180` |
+| `getBlockedIps` | `routes/admin/ipBlocking.ts:134`, `routes/moderator.ts:107` |
+| `getFlaggedReferrals` | `routes/moderator.ts:403` |
+| `expireStalePendingReferrals` | `_core/index.ts:307` |
+| `getFilteredAuditLogs` | `routes/admin/auditLogs.ts:17,65` |
+| `getAbuseAlertsSummary` | `routes/admin/auditLogs.ts:36`, `routes/moderator.ts:36` |
+| `getAuditStatistics` | `routes/admin/auditLogs.ts:43`, `routes/moderator.ts:43` |
+| `getAuditLogById` | `routes/admin/auditLogs.ts:51` |
+
+Every one is reached as `const { X } = await import("../../db")` — a **dynamic
+barrel import**, which is the sweep's declared bias arriving on the list it was
+not checked against.
+
+**Admin credit adjustment and admin role changes are live.** A triage opened
+against the uncorrected list would have spent its first hour proving that, which
+is the recon's three-security-controls finding one size larger.
+
+### 11b. Two BARREL entries are NOT live, and both are findings
+
+- **`mintModelAtomically`** (`db/models.ts:134`) — no mention anywhere outside its
+  own file and the barrel, and its docblock reads *"Mint a model on export —
+  assigns agencyId and locks the identity. **Called when a user exports their
+  model for the first time.**"* **A docblock asserting a call site that does not
+  exist** — the same shape as `docs/RATE_LIMITING.md`'s worked example of wiring
+  that was never done, this time on a mint that claims to lock an identity.
+- **`markModelAssetsStale`** (`db/models.ts`) — one COMMENT mention in
+  `mintPackage.ts:805`, no caller.
+
+### 11c. The class, for anyone building the next sweep
+
+> **Two lists that are the same LENGTH are not the same LIST.** The conflation
+> survived a written recon because both numbers were 111 and the sentence joining
+> them read as arithmetic. Where two instruments' outputs are combined, combine
+> them **mechanically and print the intersection** — a number carried across a
+> paragraph in prose is a claim about a join nobody performed.
