@@ -113,6 +113,27 @@ export function inkViewReferenceClause(input: {
     + "background and its lighting must not appear anywhere in the photograph, and it must never "
     + "change her skin, her build or her pose.",
   );
+  /*
+    INK IS ON SKIN, AND A COVERED SURFACE MEANS ABSENT — the first conformance
+    court's own finding (2026-08-19), and it cost a render to learn.
+
+    Handed an upper-chest plate and a `frontFull` view whose wardrobe is a
+    crew-neck tee, the engine printed the design ON THE SHIRT: the artwork
+    reproduced faithfully, in the wrong material. It was the only way to satisfy
+    what it had been told — the upper chest is COVERED on a crew neck, which the
+    placement vocabulary states in its own table, so there was no skin in that
+    frame to put it on.
+
+    And it is a money defect rather than a cosmetic one: the package's wardrobe
+    check calls printed text or a logo on the garment a failure WHEREVER it
+    appears, so that view would have been refused and its slice refunded. An
+    upper-chest tattoo would have cost a slice of every Sign it rode.
+  */
+  lines.push(
+    "It is ink on her skin — never printed, embroidered or otherwise placed on her clothing, and "
+    + "never added to a garment as a graphic. Where the surface a tattoo sits on is covered by "
+    + "clothing in a view, the tattoo is simply not visible in that view.",
+  );
   lines.push(
     "Each tattoo sits where it is named and nowhere else — do not move one to a nearby part of the "
     + "body, do not mirror it to her other side, and do not draw a second copy of it. Where a view "

@@ -95,6 +95,30 @@ describe("the clause that rides beside the anchor", () => {
     expect(clause).toContain("do not draw a second copy of it");
   });
 
+  it("forbids the tattoo being printed on CLOTHING — the court's own finding", () => {
+    /*
+      MEASURED, on the first conformance court (2026-08-19). Handed an
+      upper-chest plate and a `frontFull` view whose wardrobe is a crew-neck tee,
+      the engine printed "SEMPRE" and its olive sprig ON THE SHIRT — faithfully
+      drawn, in the wrong material. It is the obvious resolution of an
+      instruction it could not otherwise satisfy: the upper chest is COVERED on a
+      crew neck (the placement vocabulary says so in its own table), so the only
+      place that artwork could go in that frame was the garment.
+
+      It is not a cosmetic miss. The package's wardrobe check calls printed text
+      or a logo on the garment a failure WHEREVER it appears, so that view would
+      have been refused and refunded — an upper-chest tattoo would have cost a
+      slice of every Sign it rode.
+
+      So the clause says the thing the engine needed told: ink goes on skin, and
+      a covered surface means the tattoo is simply absent from that frame.
+    */
+    const clause = inkViewReferenceClause({ plates: [plate()], firstOrdinal: 2 });
+    expect(clause).toContain("It is ink on her skin");
+    expect(clause).toContain("never printed, embroidered or otherwise placed on her clothing");
+    expect(clause).toContain("covered by clothing in a view");
+  });
+
   it("tells the engine that a view which cannot show a tattoo simply does not", () => {
     /*
       The ruling rides the reference into EVERY view, so the prompt must say what
