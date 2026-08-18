@@ -138,9 +138,47 @@ export function referenceIntentIngestionForm(key: ReferenceIntent): IngestionFor
  * The distinction is worth the sentence: *"say what you're taking"* to somebody
  * who just said it is the product failing to understand a correct answer, which
  * is a worse experience than being turned down.
+ *
+ * # The sentence derives from the FORM, and it did not always
+ *
+ * This function used to pick its subject by key and then say one hard-coded
+ * thing: *"…isn't attached to a Cast — we read it from the picture and hand you
+ * the words."* That was true of the only feature which could reach it, because
+ * `inkIntentRefusal` checks OPENNESS first and makeup was the only open feature
+ * served elsewhere.
+ *
+ * **The day hair's `open` flips, that ordering reverses and the sentence goes
+ * out about a CROP** — telling a customer her hair is not attached to a Cast
+ * (it is; a crop is kept under the candidate's purge path) and that she will be
+ * handed words (there are none). A derivation pointed at the key while the
+ * content assumed the form: the defect is invisible until the flag that arms it.
+ *
+ * So the `switch` is exhaustive on `IngestionForm` and returns `never` for an
+ * unhandled one — a fifth form added to the map cannot compile until somebody
+ * decides what this door says about it.
  */
 export function referenceIntentWrongDoor(key: ReferenceIntent): string {
-  return `${capitalize(ENTRIES[key].noun)} isn't attached to a Cast — we read it from the picture and hand you the words. Nothing was charged.`;
+  const noun = ENTRIES[key].noun;
+  switch (ENTRIES[key].form) {
+    case "words":
+      /* Nothing is kept at all, and saying so is the point: she is not being
+         asked to hand over a picture of a person for us to hold. */
+      return `${capitalize(noun)} isn't attached to a Cast — we read it from the picture and hand you the words. Nothing was charged.`;
+    case "crop":
+      /* Bytes ARE kept, so the honest difference is not keeping-vs-dropping —
+         it is that a cut of her hair is not a design placed on a body, which is
+         the only thing this door knows how to file. */
+      return `${capitalize(noun)} comes across as a cut from the picture rather than a design placed on her, so it goes through its own step. Nothing was charged.`;
+    case "mannequinPlate":
+      /* Unreachable from the ink door, which IS the plate door — but a total
+         function beats a `!` and an assumption, and the day a SECOND
+         plate-form feature exists this is the sentence it needs. */
+      return `${capitalize(noun)} is attached to a Cast somewhere else. Nothing was charged.`;
+    default: {
+      const unhandled: never = ENTRIES[key].form;
+      throw new Error(`unhandled ingestion form: ${String(unhandled)}`);
+    }
+  }
 }
 
 function capitalize(text: string): string {

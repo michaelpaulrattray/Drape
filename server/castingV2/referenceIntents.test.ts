@@ -66,6 +66,54 @@ describe("the ingestion map — his words, pinned", () => {
     expect(wrongDoor).toMatch(/read it from the picture/i);
   });
 
+  it("does not promise WORDS about a feature that travels as a CROP", () => {
+    /*
+      THE DEFECT THIS PINS, which was invisible until the flag that arms it.
+
+      `referenceIntentWrongDoor` picked its subject by key and then said one
+      hard-coded thing — *"we read it from the picture and hand you the words"*.
+      Reachable only by makeup today, because `inkIntentRefusal` checks OPENNESS
+      before it checks the door and hair is closed. **The day hair opens, that
+      ordering reverses** and a crop feature is told it keeps nothing and will be
+      handed words. Both halves false: a crop IS kept, and there are none.
+
+      Driven directly rather than through the door, precisely because the door
+      cannot reach this branch yet — a guard whose only test runs through the
+      caller that currently refuses first is a guard with no test at all.
+    */
+    const hair = referenceIntentWrongDoor("hair");
+    expect(referenceIntentIngestionForm("hair")).toBe("crop");
+    expect(hair).toContain("Her hair");
+    expect(hair).toContain("Nothing was charged");
+    /* The two false promises, named as absences so this cannot pass by accident
+       on some future rewording that reintroduces either. */
+    expect(hair).not.toMatch(/hand you the words/i);
+    expect(hair).not.toMatch(/isn't attached to a Cast/i);
+    /* And it says what a crop actually is, so the refusal is actionable. */
+    expect(hair).toMatch(/cut from the picture/i);
+  });
+
+  it("has a sentence for EVERY form, derived rather than listed", () => {
+    /*
+      Law 4 at the sentence rather than at the list. The exhaustive `switch`
+      makes a fifth ingestion form a compile error; this makes a fourth INTENT
+      whose form nobody wrote a sentence for a red test. Both halves are needed:
+      the compiler guards the form axis, this guards the intent axis.
+    */
+    const forms = new Set<string>();
+    for (const key of REFERENCE_INTENTS) {
+      const said = referenceIntentWrongDoor(key);
+      forms.add(referenceIntentIngestionForm(key));
+      expect(said).toContain("Nothing was charged");
+      /* It never blames the picture, on any road. */
+      expect(said).not.toMatch(/invalid|unsupported|error/i);
+    }
+    /* The map covers all three forms, so this loop really did exercise each
+       branch — without that assertion a form could go unvisited and the test
+       would still be green. */
+    expect([...forms].sort()).toEqual(["crop", "mannequinPlate", "words"]);
+  });
+
   it("derives the open list rather than keeping a second one", () => {
     /* Law 4. A form that ships flips one flag on its entry and this follows —
        there is no list to remember to edit. */
