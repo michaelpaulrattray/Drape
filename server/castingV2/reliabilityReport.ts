@@ -733,29 +733,6 @@ export function summarize(
   };
 }
 
-/**
- * One line, for a heartbeat:
- * `delivery rate 96.2% (25 of 26 attempts claimed a delivery) · 0 false passes`.
- *
- * It said "(25 attempts)" beside a percentage that was never of attempts. A
- * number that misnames its own population is how a reader draws the wrong
- * conclusion from a correct figure, so the denominator says what it is —
- * especially now that refusals sit outside it.
- */
-export function heartbeatLine(report: ReliabilityReport): string {
-  const { overall } = report;
-  if (overall.total === 0) return "delivery rate — (no attempts yet)";
-  if (overall.deliveryClaims === 0) {
-    return `delivery rate — (no delivery claimed in ${overall.total} attempt`
-      + `${overall.total === 1 ? "" : "s"}) · blockers ${report.blockers.join(", ") || "none"}`;
-  }
-  const falsePasses = overall.delivered_noncompliant;
-  const blockers = report.blockers.length === 0 ? "none" : report.blockers.join(", ");
-  return `delivery rate ${overall.deliveryRate}% `
-    + `(${overall.deliveryClaims} of ${overall.total} attempts claimed a delivery) · `
-    + `${falsePasses} false pass${falsePasses === 1 ? "" : "es"} · blockers ${blockers}`;
-}
-
 /** The full table, for a walk report or an on-demand read. */
 export function formatReport(report: ReliabilityReport): string {
   const lines: string[] = [];

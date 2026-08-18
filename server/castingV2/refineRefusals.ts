@@ -135,13 +135,3 @@ export const REFINE_REFUSALS = {
 
 /** Every refusal reason the product can return — derived, never a second list. */
 export const REFUSAL_REASONS = Object.keys(REFINE_REFUSALS) as Array<RefineRefusal["reason"]>;
-
-/** What this refusal costs her. */
-export function refusalCharge(reason: RefineRefusal["reason"]): RefusalCharge {
-  return REFINE_REFUSALS[reason].charge;
-}
-
-/** Which class the reliability report counts it under. */
-export function refusalReportClass(reason: RefineRefusal["reason"]): RefusalReportClass {
-  return REFINE_REFUSALS[reason].report;
-}

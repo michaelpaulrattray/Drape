@@ -47,11 +47,13 @@ const REPO = resolve(import.meta.dirname, "..");
 const TABLE = resolve(REPO, "docs/specs/cleanup-dispositions.yaml");
 
 /*
-  FIVE, AND THE FIFTH IS NOT A CONVENIENCE. `verifyBackView` was ruled a
-  deletion by the reading and has not been executed yet; with four verdicts it
-  had to read as unread, which is false — it has been read, and carefully. TAKE
-  is "ruled for removal, not yet done", and its count is the milestone's own
-  outstanding queue rather than a state hidden inside a prose paragraph.
+  FIVE, AND THE FIFTH IS NOT A CONVENIENCE. A symbol ruled for removal but not
+  yet cut had to read as unread with four verdicts, which is false — it has been
+  read, and carefully. TAKE is "ruled for removal, not yet done", and its count
+  is the milestone's own outstanding queue rather than a state hidden inside a
+  prose paragraph. It is currently zero, and the checker is what made that true:
+  the nine cuts each had to come back and flip their own row to TAKEN, because
+  a deleted symbol whose row still said TAKE reads as STALE and refuses.
 */
 const VERDICTS = ["KEEP", "TAKE", "TAKEN", "HELD", "FILED"] as const;
 type Verdict = (typeof VERDICTS)[number];

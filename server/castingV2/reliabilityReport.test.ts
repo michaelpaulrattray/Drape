@@ -10,7 +10,6 @@ import {
   classifyAttemptForClass,
   DELIVERY_RATE_BAR,
   formatReport,
-  heartbeatLine,
   summarize,
   unsettledAttempts,
   type AttemptRow,
@@ -370,21 +369,6 @@ describe("the cut is derived from the rows, never declared", () => {
 });
 
 describe("the report says the ugly number out loud", () => {
-  it("puts the rate, the false passes and the blockers in one heartbeat line", () => {
-    const report = summarize([
-      attempt(),
-      attempt({ verification: { checks: [check({ facet: "hairWorn", verified: false, saw: "hair loose" })] } }),
-    ]);
-    const line = heartbeatLine(report);
-    expect(line).toContain("delivery rate 50%");
-    expect(line).toContain("1 false pass");
-    expect(line).toContain("hairWorn");
-  });
-
-  it("reports no attempts as no rate, rather than as a clean sheet", () => {
-    expect(heartbeatLine(summarize([]))).toContain("no attempts yet");
-  });
-
   it("renders a table that shows the false-pass column even when it is zero", () => {
     const table = formatReport(summarize([attempt()]));
     expect(table).toContain("FALSE");

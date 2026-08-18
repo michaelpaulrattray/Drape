@@ -320,9 +320,3 @@ export function censusSoFar(): CallCensus | null {
   const census = store.getStore();
   return census === undefined ? null : summarize(census);
 }
-
-/** True while a census is open — for a caller that wants to skip building a
- *  description nobody will read. */
-export function censusIsOpen(): boolean {
-  return store.getStore() !== undefined;
-}

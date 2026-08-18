@@ -15,8 +15,6 @@ import { describe, expect, it } from "vitest";
 import {
   REFINE_REFUSALS,
   REFUSAL_REASONS,
-  refusalCharge,
-  refusalReportClass,
 } from "./refineRefusals";
 import { refusalMessage } from "./refineInterpreter";
 import type { RefineRefusal } from "./refineDelta";
@@ -44,7 +42,7 @@ describe("every refusal answers all three questions", () => {
       money and the only thing worse than not making it is making it falsely.
     */
     for (const reason of REFUSAL_REASONS) {
-      expect(refusalCharge(reason), reason).toBe("free");
+      expect(REFINE_REFUSALS[reason].charge, reason).toBe("free");
     }
     /* The two that deliberately do NOT say it are the two that never reached a
        charge in the first place: an empty box and an unreadable sentence are
@@ -58,10 +56,10 @@ describe("every refusal answers all three questions", () => {
   });
 
   it("classes them for the report without inventing a fourth family", () => {
-    expect(refusalReportClass("wall_stage")).toBe("wall");
-    expect(refusalReportClass("gate_ink_document")).toBe("gate");
-    expect(refusalReportClass("absorbed_departure")).toBe("absorbed");
-    expect(refusalReportClass("unreadable")).toBe("unread");
+    expect(REFINE_REFUSALS.wall_stage.report).toBe("wall");
+    expect(REFINE_REFUSALS.gate_ink_document.report).toBe("gate");
+    expect(REFINE_REFUSALS.absorbed_departure.report).toBe("absorbed");
+    expect(REFINE_REFUSALS.unreadable.report).toBe("unread");
   });
 });
 

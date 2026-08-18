@@ -10,55 +10,9 @@ import { describe, expect, it } from "vitest";
 
 import {
   AMBIGUOUS_WORDS_FOR_CORPUS,
-  namesRemoval,
   readsAsNegation,
   removalEvidence,
 } from "./removalWords";
-
-describe("subtraction is stated", () => {
-  it("does not see a removal in a bare noun phrase", () => {
-    /* THE TRIAL'S SENTENCE. */
-    expect(namesRemoval("small gold hoop earrings")).toBe(false);
-    expect(namesRemoval("a warm open smile")).toBe(false);
-    expect(namesRemoval("copper hair")).toBe(false);
-    expect(namesRemoval("seafoam green eyes")).toBe(false);
-    expect(namesRemoval("a small scar on her cheek")).toBe(false);
-  });
-
-  /*
-    EVERY REMOVAL PHRASING THIS PROGRAM HAS ACTUALLY SEEN — from the drivers,
-    the corpora and the founder's own walks. A backstop that reclassified one of
-    these would break typed removal, which is the failure worth guarding
-    against far more than the one it fixes.
-  */
-  it("sees a removal in every phrasing the product has met", () => {
-    for (const phrase of [
-      "remove the earrings",
-      "remove earrings",
-      "take the hoops off",
-      "get rid of the glasses",
-      "lose the glasses",
-      "no earrings",
-      "no more freckles",
-      "undo",
-      "undo the fringe",
-      "go back",
-      "revert",
-      "nevermind",
-      "without the necklace",
-      "take those off",
-      "drop the lipstick",
-      "erase the tattoo",
-    ]) {
-      expect(namesRemoval(phrase), `"${phrase}" must read as a removal`).toBe(true);
-    }
-  });
-
-  it("is case and punctuation blind", () => {
-    expect(namesRemoval("REMOVE THE EARRINGS!")).toBe(true);
-    expect(namesRemoval("Take them off, please.")).toBe(true);
-  });
-});
 
 /**
  * AND THE WORD THAT COST 25 CREDITS (fable-473/481).
@@ -73,7 +27,37 @@ describe("a word that also describes a look is not evidence on its own", () => {
   });
 
   it("calls a bare noun phrase what it always was", () => {
+    /* THE TRIAL'S SENTENCE, then the four other bare phrases the coarse
+       question held alone — somebody naming a thing they WANT. */
     expect(removalEvidence("small gold hoop earrings")).toBe("none");
+    expect(removalEvidence("a warm open smile")).toBe("none");
+    expect(removalEvidence("copper hair")).toBe("none");
+    expect(removalEvidence("seafoam green eyes")).toBe("none");
+    expect(removalEvidence("a small scar on her cheek")).toBe("none");
+  });
+
+  /*
+    THE SIX THAT `namesRemoval` HELD ALONE. The coarse question was one bit —
+    `removalEvidence(x) !== "none"` — so its corpus could not tell `stated` from
+    `ambiguous`, and six phrasings the product has met lived only in its test.
+    They are carried here under the verdict the live reader ACTUALLY returns,
+    read off it rather than assumed: two of the six are `ambiguous`, which the
+    one-bit question was structurally unable to say.
+  */
+  it("carries the coarse question's own corpus, each under its real verdict", () => {
+    expect(removalEvidence("remove earrings")).toBe("stated");
+    expect(removalEvidence("no more freckles")).toBe("stated");
+    expect(removalEvidence("undo the fringe")).toBe("stated");
+    expect(removalEvidence("go back")).toBe("stated");
+    /* `no` and `drop` also describe a look ("a no-makeup makeup look", "a
+       dropped shoulder"), so the re-read runs and the code decides. */
+    expect(removalEvidence("no earrings")).toBe("ambiguous");
+    expect(removalEvidence("drop the lipstick")).toBe("ambiguous");
+  });
+
+  it("is case and punctuation blind", () => {
+    expect(removalEvidence("REMOVE THE EARRINGS!")).toBe("stated");
+    expect(removalEvidence("Take them off, please.")).toBe("stated");
   });
 
   it("still hears a plain removal, in every phrasing the product has met", () => {
@@ -119,11 +103,6 @@ describe("a word that also describes a look is not evidence on its own", () => {
       expect(sentence, `${word} needs a stylist's sentence in this test`).toBeTruthy();
       expect(removalEvidence(sentence!), `"${sentence}" must be AMBIGUOUS`).toBe("ambiguous");
     }
-  });
-
-  it("keeps `namesRemoval` answering the coarse question for its old callers", () => {
-    expect(namesRemoval("clear rimmed glasses")).toBe(true);
-    expect(namesRemoval("small gold hoop earrings")).toBe(false);
   });
 });
 

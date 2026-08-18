@@ -46,7 +46,7 @@ export {
 } from "./geminiPrompts";
 
 // Generation functions
-export { generateMasterPrompt, enhanceUserPrompt, generateCastingImage, clearCastingSession, castingSessionKey, deleteCastingSessionsFor, stopSessionEviction, getSessionCount } from "./geminiGeneration";
+export { generateMasterPrompt, enhanceUserPrompt, generateCastingImage, clearCastingSession, castingSessionKey, deleteCastingSessionsFor } from "./geminiGeneration";
 
 // Schema reconciliation
 export { updateSchemaForIteration, reconcileSchemaWithImage } from "./geminiSchemaUpdater";

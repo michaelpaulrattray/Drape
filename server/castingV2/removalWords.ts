@@ -158,14 +158,3 @@ export function removalEvidence(instruction: string): RemovalEvidence {
   if (words.some((word) => AMBIGUOUS_REMOVAL_WORDS.includes(word))) return "ambiguous";
   return "none";
 }
-
-/**
- * Does this sentence ask for something to go away?
- *
- * Kept as the coarse question for callers that only need one bit. The service's
- * backstop uses `removalEvidence`, because "said it plainly" and "used a word
- * that can also describe rims" are the two cases it now has to tell apart.
- */
-export function namesRemoval(instruction: string): boolean {
-  return removalEvidence(instruction) !== "none";
-}

@@ -131,14 +131,6 @@ function evictStaleSessions(): void {
 const evictionTimer = setInterval(evictStaleSessions, EVICTION_INTERVAL_MS);
 evictionTimer.unref(); // Don't prevent process exit
 
-/** Clear the eviction timer (for graceful shutdown) */
-export const stopSessionEviction = () => {
-  clearInterval(evictionTimer);
-};
-
-/** Get current session count (for monitoring) */
-export const getSessionCount = () => sessionMap.size;
-
 /** Clear the chat session for a specific user (e.g. when starting a new casting) */
 export const clearCastingSession = (userId: string, modelId?: string | number) => {
   if (modelId !== undefined) {

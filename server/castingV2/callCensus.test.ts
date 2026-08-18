@@ -14,7 +14,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
-  censusIsOpen,
   censusOfAttempt,
   censusSoFar,
   recordProviderCall,
@@ -108,7 +107,6 @@ describe("what one request spent", () => {
        without opening a census. They must be untouched, and "untouched" has to
        be asserted rather than assumed: a store that threw or leaked here would
        take down paths that never asked for a stopwatch. */
-    expect(censusIsOpen()).toBe(false);
     expect(censusSoFar()).toBeNull();
     expect(() => recordProviderCall({
       stage: "render", provider: "fal", model: "nobody-is-counting", ms: 5, ok: true,

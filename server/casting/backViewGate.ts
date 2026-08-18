@@ -101,8 +101,3 @@ export async function verifyViewIdentity(
     return { ok: true, checked: false };
   }
 }
-
-/** Back-compat alias (pre-D-46 callers/tests). */
-export function verifyBackView(headshotUrl: string, backViewUrl: string): Promise<BackViewVerdict> {
-  return verifyViewIdentity(headshotUrl, backViewUrl, "backFull");
-}

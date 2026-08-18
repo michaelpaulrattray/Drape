@@ -6707,11 +6707,6 @@ function plainWords(sentence: string): string[] {
   return cleaned.split(" ").filter((word) => word !== "");
 }
 
-export function namesHerHairItself(match: string | null | undefined): boolean {
-  const words = plainWords(String(match ?? "")).filter((word) => !HAIR_MATCH_FILLER.has(word));
-  return words.length === 1 && (words[0] === "hair" || words[0] === "hairs");
-}
-
 /**
  * IS THIS SENTENCE "TAKE HER HAIR AWAY", AND NOTHING ELSE?
  *

@@ -17,7 +17,7 @@
 
 - symbol: verifyBackView
   file: server/casting/backViewGate.ts
-  verdict: TAKE
+  verdict: TAKEN
   why: its own docblock says "Back-compat alias (pre-D-46 callers/tests)"; the real gate verifyViewIdentity is wired at mintPackage.ts:41
   argued: 14b
 
@@ -160,14 +160,14 @@
 
 - symbol: getSessionCount
   file: server/casting/geminiGeneration.ts
-  verdict: TAKE
-  why: its docblock says for monitoring and no monitor reads it; a door re-exported by geminiService that nobody imports from
+  verdict: TAKEN
+  why: its docblock says for monitoring and no monitor reads it; a door re-exported by geminiService that nobody imports from. TAKEN — with two tests, one of which cleared a key that did not exist on an empty map and could never fail
   argued: 20/17-family
 
 - symbol: stopSessionEviction
   file: server/casting/geminiGeneration.ts
-  verdict: TAKE
-  why: a graceful-shutdown hook nothing calls, and redundant by construction — the timer two lines above it is already unref'd so it never holds the process open
+  verdict: TAKEN
+  why: a graceful-shutdown hook nothing calls, and redundant by construction — the timer two lines above it is already unref'd so it never holds the process open. TAKEN — with its one test, which asserted only that it did not throw
   argued: 20/17-family
 
 - symbol: roleForAuthorizedResult
@@ -261,8 +261,8 @@
 
 - symbol: censusIsOpen
   file: server/castingV2/callCensus.ts
-  verdict: TAKE
-  why: an unused convenience beside the live censusSoFar; the caller it was written for never arrived
+  verdict: TAKEN
+  why: an unused convenience beside the live censusSoFar; the caller it was written for never arrived. TAKEN — its line left the negative control, which keeps censusSoFar() === null saying the same thing
   argued: 17-family
 
 - symbol: FRAMING_PREMISE
@@ -537,19 +537,19 @@
 
 - symbol: refusalCharge
   file: server/castingV2/refineRefusals.ts
-  verdict: TAKE
-  why: an accessor over REFINE_REFUSALS, which the live path (refineInterpreter) indexes directly
+  verdict: TAKEN
+  why: an accessor over REFINE_REFUSALS, which the live path (refineInterpreter) indexes directly. TAKEN — its test was a MONEY promise over every reason and was re-pointed onto REFINE_REFUSALS[…].charge, not deleted
   argued: 17-family
 
 - symbol: refusalReportClass
   file: server/castingV2/refineRefusals.ts
-  verdict: TAKE
-  why: an accessor over REFINE_REFUSALS, which the live path indexes directly
+  verdict: TAKEN
+  why: an accessor over REFINE_REFUSALS, which the live path indexes directly. TAKEN — its four mappings were re-pointed onto REFINE_REFUSALS[…].report
   argued: 17-family
 
 - symbol: namesHerHairItself
   file: server/castingV2/refineService.ts
-  verdict: TAKE
+  verdict: TAKEN
   why: no caller and no test, beside the live asksToRemoveHerHair built from the same word sets; the road asks the sibling's question, never this one
   argued: 17-family
 
@@ -561,14 +561,14 @@
 
 - symbol: heartbeatLine
   file: server/castingV2/reliabilityReport.ts
-  verdict: TAKE
-  why: a one-line formatter beside the live formatReport; the tracked report script never calls it — and it was CORRECTED once for a defect it could never have shown anyone
+  verdict: TAKEN
+  why: a one-line formatter beside the live formatReport; the tracked report script never calls it — and it was CORRECTED once for a defect it could never have shown anyone. TAKEN — with its two formatter arms; the rate, false passes and blockers are asserted on the report object elsewhere
   argued: 17-family
 
 - symbol: namesRemoval
   file: server/castingV2/removalWords.ts
-  verdict: TAKE
-  why: its own docblock says the service's backstop uses removalEvidence, which is live; this is the superseded coarse question
+  verdict: TAKEN
+  why: its own docblock says the service's backstop uses removalEvidence, which is live; this is the superseded coarse question. TAKEN — ten phrasings lived only in its test and were carried onto removalEvidence under the verdict it ACTUALLY returns; two of the six positives are ambiguous, which the one-bit question could not say
   argued: 17-family
 
 - symbol: facetsWithUnreliabilityPrior

@@ -107,30 +107,9 @@ describe("Gemini Queue", () => {
 // ============================================================================
 
 describe("Session Eviction", () => {
-  it("clearCastingSession removes a session", async () => {
-    const { clearCastingSession, getSessionCount } = await import(
-      "./casting/geminiGeneration"
-    );
-    // clearCastingSession should not throw even for non-existent sessions
-    clearCastingSession("nonexistent-user");
-    expect(getSessionCount()).toBe(0);
-  });
-
-  it("stopSessionEviction clears the interval without error", async () => {
-    const { stopSessionEviction } = await import(
-      "./casting/geminiGeneration"
-    );
-    // Should not throw
-    expect(() => stopSessionEviction()).not.toThrow();
-  });
-
-  it("getSessionCount returns a number", async () => {
-    const { getSessionCount } = await import(
-      "./casting/geminiGeneration"
-    );
-    const count = getSessionCount();
-    expect(typeof count).toBe("number");
-    expect(count).toBeGreaterThanOrEqual(0);
+  it("clearCastingSession is safe on a user with no session", async () => {
+    const { clearCastingSession } = await import("./casting/geminiGeneration");
+    expect(() => clearCastingSession("nonexistent-user")).not.toThrow();
   });
 });
 
