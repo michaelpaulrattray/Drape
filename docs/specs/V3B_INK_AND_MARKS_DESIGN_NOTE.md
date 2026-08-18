@@ -764,19 +764,45 @@ approval lands, the same commit must:
    earned, which is a declared state rather than an oversight.
 5. **Carry the crop-line question.** fable-997 §4 re-anchored it on the new
    blanks: it is asked (or visibly moot) when they go to his eye.
-6. **Decide what a NECK design plates onto, because the single-view spec takes
-   its nape away.** Found by the neck court (2026-08-19): the neck routes to the
-   `body` form, whose sheet has a front view AND a back view, so the plate
-   prompt draws the artwork on both — the minted plate carries it on the front
-   of the neck and again on the NAPE. That is not decoration: a `backFull`
-   package view renders the nape ink correctly today, looked at by eye
-   (`output/view-reference-court/r6-neck-backFull.png`).
+6. **Decide what a NECK design plates onto — and the measurement says the
+   single-view spec is the FIX here, not the loss.** Found by the neck court
+   over two sittings (2026-08-19).
 
-   Two separate one-view plates mean a neck design lands on ONE of them. Routed
-   to the front blank alone it loses half of its own tattoo and `backFull`
-   silently stops showing it. The options are a neck design plating onto both
-   blanks, a neck-specific blank that shows the neck from an angle carrying
-   both, or an accepted narrowing recorded as a decision. **Do not let it be
-   settled by which blank `TEMPLATE_FOR` happens to name.**
-   `inkTemplates.test.ts` goes red when the views change, so this cannot pass
-   unnoticed.
+   The neck routes to the `body` form, whose sheet has a front view AND a back
+   view, so the plate prompt draws the artwork on both: the minted plate carries
+   it on the front of the neck and again on the NAPE.
+
+   **First sitting, and it read as a feature.** Three arms — `closeUp`,
+   `frontFull`, `backFull` — all showed the tattoo correctly, one copy each, ink
+   on skin, garment untouched. The nape ink rendered properly in the back view
+   (`output/view-reference-court/r6-neck-backFull.png`), and the obvious reading
+   was that a one-view plate would take that away.
+
+   **Second sitting overturned it, and the overturning arm is the one the plate
+   has no artwork for.** `sideClose` and `threeQuarter` show the neck TURNING, so
+   both of the plate's surfaces are plausibly in frame at once — and the engine
+   drew **both**. A complete "SEMPRE" and sprig on the side of the neck and a
+   second "SEM" and sprig behind it, two distinct pieces with bare skin between
+   them; the same doubling across the front on the three-quarter.
+   (`output/view-reference-court/r7-neck-sideClose.png`, `…-threeQuarter.png`,
+   cropped at full resolution and looked at.)
+
+   **The customer's ONE tattoo becomes TWO on two of the five package views.**
+   The clause's own *"do not draw a second copy of it"* does not prevent it, and
+   could not: from the engine's side nothing is being duplicated — the reference
+   picture simply contains the artwork twice, and it is copying the picture, the
+   same carrier law that decides the arm's side.
+
+   **So this is the wrap court, answered by accident and answered NO**: a
+   multi-view sheet does not read as one design, it reads as one design per
+   view. The three passing arms were passing because only one of the plate's two
+   surfaces was visible in each of them, which is a property of those framings
+   and not of the plate.
+
+   That reframes the decision rather than settling it. One-view plates remove
+   the doubling; what they cost is the back half of a genuine wrap, which then
+   needs an answer of its own — a neck-specific blank showing the neck from an
+   angle that carries the whole wrap, a design that declares whether it wraps,
+   or an accepted narrowing recorded as a decision. **Do not let it be settled
+   by which blank `TEMPLATE_FOR` happens to name.** `inkTemplates.test.ts` goes
+   red when the views change, so this cannot pass unnoticed.

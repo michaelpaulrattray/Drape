@@ -83,7 +83,7 @@ describe("the blank forms a design is plated onto", () => {
     expect(inkTemplateFor("upperChest").kind).toBe("body");
   });
 
-  it("gives the NECK a form with a BACK view — which is why a nape tattoo rides backFull", () => {
+  it("gives the NECK a form with TWO views — which is why one tattoo can arrive as two", () => {
     /*
       MEASURED, the neck court (2026-08-19, ordered fable-1008 §4a).
 
@@ -102,15 +102,29 @@ describe("the blank forms a design is plated onto", () => {
       (`output/view-reference-court/r6-neck-backFull.png`; closeUp and frontFull
       passed in the same sitting.)
 
-      **THIS IS THE PIN, AND IT HAS A LIVE THREAT.** What put ink on the nape is
-      not prose — it is `views` carrying "back". The universal single-view
-      template spec (§7.10 of `V3B_INK_AND_MARKS_DESIGN_NOTE.md`, founder
-      rulings fable-989/990) retires the front-and-back sheet for two separate
-      one-view plates. A neck design routed to the FRONT blank alone loses the
-      nape half of its own tattoo, `backFull` silently stops showing it, and
-      nothing else in the suite would notice. That commit must decide what a
-      neck design plates onto; this test goes red when it changes, which is the
-      whole point of it.
+      **AND THE SECOND SITTING OVERTURNED WHAT THAT SEEMED TO MEAN.** The two
+      views the plate carries are not only why the nape is inked — they are why
+      the tattoo can arrive TWICE. `sideClose` and `threeQuarter` show the neck
+      turning, so both plate surfaces are plausibly in frame at once, and the
+      engine drew both: a complete "SEMPRE" and sprig on the side of the neck
+      and a second "SEM" and sprig behind it, bare skin between them. One
+      tattoo, two copies, on two of the five package views
+      (`output/view-reference-court/r7-neck-sideClose.png`).
+
+      The clause's own "do not draw a second copy of it" cannot prevent it: from
+      the engine's side nothing is duplicated — the reference picture contains
+      the artwork twice and it is copying the picture, the same carrier law that
+      decides which arm the side rides on. The three passing arms passed because
+      only ONE plate surface was visible in each framing, which is a property of
+      those framings rather than of the plate.
+
+      **THIS IS THE PIN.** What decides both behaviours is `views`, not prose.
+      The universal single-view spec (§7.10 of
+      `V3B_INK_AND_MARKS_DESIGN_NOTE.md`, founder rulings fable-989/990) retires
+      the front-and-back sheet for one-view plates — which removes the doubling
+      and costs the back half of a genuine wrap. That is a decision the template
+      commit must make out loud, and this test goes red the moment `views`
+      moves, which is the whole point of it.
     */
     const template = inkTemplateFor("neck");
     expect(template.kind).toBe("body");
