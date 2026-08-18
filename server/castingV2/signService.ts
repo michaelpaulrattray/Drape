@@ -66,6 +66,26 @@ import { createModuleLogger } from "../logging/logger";
 import { storageCopyExact, storageReadBytes } from "../storage";
 import { listCandidateInkPlates, type CandidateInkPlate } from "../db/castingV2InkPlates";
 import type { CarriedInkPlate } from "./inkViewReferences";
+
+/**
+ * WHETHER A DESIGN'S ARTWORK REACHED THIS CAST'S VIEWS, AND IF NOT WHY — one
+ * shape for every way it can fail (ordered fable-1005 §2).
+ *
+ * `noPlate` — uploaded and never plated, so there is nothing an engine may be
+ * shown (D-138 forbids the customer's own photograph absolutely).
+ * `engineUndecided` — plated by more than one engine, and which artwork is HER
+ * tattoo is the plate court's open question; picking one by array order is the
+ * quiet dispatch fallback this product has already paid for.
+ * `bytesUnreadable` — the row is there and the object is not.
+ */
+export type InkDesignDisposition =
+  | { designPublicId: string; rode: true }
+  | {
+    designPublicId: string;
+    rode: false;
+    reason: "noPlate" | "engineUndecided" | "bytesUnreadable";
+    engines?: readonly string[];
+  };
 import { CASTING_V2_SIGN_PRICE_CREDITS } from "./castViewPackage";
 import { buildCastPackage, type PackageOrchestratorDependencies } from "./packageOrchestrator";
 import { assertNotFrozen } from "./spendGuards";
@@ -441,11 +461,15 @@ function detach(run: () => Promise<void>): void {
  * A failure here NEVER fails the Sign. The Cast exists, the views are worth
  * having, and a tattoo missing from five frames is a smaller harm than five
  * frames nobody gets — so this returns what it could read and reports the rest.
+ *
+ * **Exported to be driven** (working law 3): every refusal here is reachable
+ * only through a whole Sign, and a backstop whose only test runs through a
+ * caller that usually behaves is a backstop nothing has tested.
  */
-async function carriedInkPlates(
+export async function carriedInkPlates(
   dependencies: SignServiceDependencies,
   input: { userId: number; candidateId: number; operationId: string },
-): Promise<readonly CarriedInkPlate[]> {
+): Promise<{ plates: readonly CarriedInkPlate[]; dispositions: readonly InkDesignDisposition[] }> {
   let rows: readonly CandidateInkPlate[];
   try {
     rows = await (dependencies.listInkPlates ?? listCandidateInkPlates)({
@@ -455,11 +479,11 @@ async function carriedInkPlates(
   } catch (error) {
     log.error(
       { operationId: input.operationId, err: error },
-      "[signService] her plated tattoos could not be read — the package renders without them",
+      "[signService] her tattoos could not be read — the package renders without them",
     );
-    return [];
+    return { plates: [], dispositions: [] };
   }
-  if (rows.length === 0) return [];
+  if (rows.length === 0) return { plates: [], dispositions: [] };
 
   const byDesign = new Map<string, CandidateInkPlate[]>();
   for (const row of rows) {
@@ -468,35 +492,59 @@ async function carriedInkPlates(
     byDesign.set(row.designPublicId, held);
   }
 
-  const carried: CarriedInkPlate[] = [];
+  const plates: CarriedInkPlate[] = [];
+  const dispositions: InkDesignDisposition[] = [];
   const read = dependencies.readBytes ?? storageReadBytes;
-  for (const [designPublicId, plates] of Array.from(byDesign.entries())) {
-    if (plates.length > 1) {
-      log.warn(
-        { operationId: input.operationId, designPublicId, engines: plates.map((plate) => plate.engine) },
-        "[signService] this design has a plate from more than one engine, so which artwork is her "
-        + "tattoo is not settled — it rides no view rather than riding an arbitrary one",
-      );
+  for (const [designPublicId, rowsOfDesign] of Array.from(byDesign.entries())) {
+    const minted = rowsOfDesign.filter((row) => row.storageKey !== null);
+    if (minted.length === 0) {
+      dispositions.push({ designPublicId, rode: false, reason: "noPlate" });
       continue;
     }
-    const plate = plates[0]!;
+    if (minted.length > 1) {
+      dispositions.push({
+        designPublicId,
+        rode: false,
+        reason: "engineUndecided",
+        engines: minted.map((row) => row.engine ?? "unnamed"),
+      });
+      continue;
+    }
+    const plate = minted[0]!;
     try {
-      const bytes = await read(plate.storageKey);
-      carried.push({
+      const bytes = await read(plate.storageKey!);
+      plates.push({
         designPublicId,
         placement: plate.placement,
         side: plate.side,
         bytes: bytes.bytes,
         contentType: bytes.contentType,
       });
+      dispositions.push({ designPublicId, rode: true });
     } catch (error) {
+      dispositions.push({ designPublicId, rode: false, reason: "bytesUnreadable" });
       log.error(
         { operationId: input.operationId, designPublicId, err: error },
-        "[signService] a plate's own bytes could not be read — that tattoo rides no view of this Cast",
+        "[signService] a plate's own bytes could not be read",
       );
     }
   }
-  return carried;
+
+  /*
+    ONE LINE, EVERY DESIGN, RODE OR NOT — the amendment fable-1005 §2 ordered.
+
+    As first built the three refusals reported at two different altitudes: a
+    design with no plate produced nothing at all (it was invisible to a reader
+    that started from plates), and the other two produced log lines of their own.
+    Two refusals of the same promise on two surfaces is how a fact ends up
+    collected and never asserted. This is the single surface: every design on the
+    Cast, whether it rode, and if not, why.
+  */
+  log.info(
+    { operationId: input.operationId, dispositions },
+    "[signService] the tattoos this Cast's views carry — every design, rode or not",
+  );
+  return { plates, dispositions };
 }
 
 /**
@@ -523,7 +571,7 @@ async function completeSignPackage(
 ): Promise<void> {
   try {
     const anchorBytes = await (dependencies.readBytes ?? storageReadBytes)(input.anchorStorageKey);
-    const inkPlates = await carriedInkPlates(dependencies, {
+    const ink = await carriedInkPlates(dependencies, {
       userId: input.userId,
       candidateId: input.candidateId,
       operationId: input.operationId,
@@ -535,7 +583,7 @@ async function completeSignPackage(
       identityRevisionId: input.identityRevisionId,
       identityText: input.identityText,
       anchor: anchorBytes,
-      inkPlates,
+      inkPlates: ink.plates,
     });
 
     if (result.refundUnrecorded) {

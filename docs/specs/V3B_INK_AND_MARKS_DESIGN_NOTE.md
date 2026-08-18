@@ -682,3 +682,62 @@ docs/specs/references/ink-court/containment-a-as-shipped.png
 docs/specs/references/ink-court/containment-b-boundary.png
 docs/specs/references/ink-court/containment-c-boundary-and-scale.png
 ```
+
+### 7.10 THE UNIVERSAL TEMPLATE SPEC — single view, greyscale (founder rulings
+### fable-989 and fable-990, filed 2026-08-19)
+
+**His words, on the arm**: *"not multiple different angles as its confusing to
+the image engine wrapping is just difficult to understand"*; *"greyscale like
+this also same background, same colors, unless the tattoo is specified to be
+colorful"*; *"a right facing and left facing arm… same proportions as in the
+examples"*; *"take this image clean it up and thats your manequin arm same
+colors everything then flip it to make it the other arm."* **And the extension**:
+*"all other tatto references like front/back or legs should follow this aswell."*
+
+**The spec, for every form the product will ever plate onto:**
+
+- ONE VIEW PER PLATE. One form, one angle, one image. The turnarounds are
+  superseded — the arm's three rotations and the body's front-and-back sheet
+  both retire, and the wrap court's n=1 stands as data rather than as a road.
+- GREYSCALE, on his example's tones and its white background, **unless the ask
+  specifies a colourful tattoo** — which is a PLATE-PROMPT rule as well as an
+  asset spec.
+- The arm is one full limb, shoulder to wrist, **right-facing and left-facing**,
+  the second taken as a MIRROR of the first rather than generated again.
+- Code-owned and checksum-pinned like their predecessors, after his eye.
+
+**The build as it stands (2026-08-19):** the arm blank was made by cleaning his
+own reference — every tattoo and the monogram removed, everything else held —
+and mirrored locally; the body front and back are generations to the same style
+with the approved body sheet as the authority for the FORM, because his torso
+reference is a MALE mannequin on black and the product has no male form
+(fable-934 §1a). All four are with him. **Nothing is pinned before his eye.**
+
+#### THE TEMPLATE COMMIT'S OWN CHECKLIST — what must move WITH the assets
+
+Pinned here rather than remembered, because a stale sentence about a live asset
+is the wire-honest defect in prompt form (ordered fable-1005 §4). When his
+approval lands, the same commit must:
+
+1. **Re-write `inkPlatePrompt`'s sheet sentence.** It says *"one near-white
+   sheet"* and the new plates are greyscale. A prompt describing the retired
+   asset is a prompt about a picture that no longer exists.
+2. **Check the views-as-data derivation reads ONE.** `InkTemplate.views` drives
+   the prompt's count, its names and its meet-correctly clause; at one view per
+   plate, the multi-view sentences must fall out rather than be silenced by
+   hand.
+3. **Decide the template KIND vocabulary.** `INK_TEMPLATE_KINDS` is `arm` and
+   `body` today and the plate table's enum derives from it. Single-view plates
+   mean four assets, and whether that is four kinds or two kinds with a side is
+   a decision with a MIGRATION behind it — `casting_ink_plates.templateKind` is
+   a written column. Production has never taken the ink migrations, so an
+   amend-in-place is legitimate; that it is legitimate must be re-verified
+   against the deployed variables at the time, not assumed from this sentence.
+4. **Route the placements.** `TEMPLATE_FOR` is a total function over the
+   placement vocabulary; per-side arm plates make it a function of placement AND
+   side. Note the consequence honestly: **no placement in today's vocabulary
+   routes to the body BACK plate** — neck, upper arm and upper chest are all
+   front surfaces — so that asset lands with no caller until a back placement is
+   earned, which is a declared state rather than an oversight.
+5. **Carry the crop-line question.** fable-997 §4 re-anchored it on the new
+   blanks: it is asked (or visibly moot) when they go to his eye.

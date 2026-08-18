@@ -294,10 +294,20 @@ export type CandidateInkPlate = {
   readonly designPublicId: string;
   readonly placement: InkPlacement;
   readonly side: InkSide;
-  readonly engine: string;
-  readonly storageKey: string;
-  readonly digest: string;
-  readonly mime: string;
+  /**
+   * NULL when the design has no plate at all — the row is the DESIGN's and the
+   * plate half is absent.
+   *
+   * A LEFT JOIN rather than two statements, and the difference is the whole
+   * point: a caller that read plates alone cannot see the design that has none,
+   * and "this design did not ride" is exactly the fact that has to be sayable
+   * (fable-1005 §2). Two reads would also be two moments, and a design uploaded
+   * between them would appear in one and not the other.
+   */
+  readonly engine: string | null;
+  readonly storageKey: string | null;
+  readonly digest: string | null;
+  readonly mime: string | null;
 };
 
 export async function listCandidateInkPlates(input: {
@@ -315,12 +325,18 @@ export async function listCandidateInkPlates(input: {
       digest: castingInkPlates.digest,
       mime: castingInkPlates.mime,
     })
-    .from(castingInkPlates)
-    .innerJoin(castingInkDesigns, eq(castingInkDesigns.id, castingInkPlates.designId))
+    .from(castingInkDesigns)
     .innerJoin(castingCandidates, eq(castingCandidates.id, castingInkDesigns.candidateId))
+    /* LEFT, so a design with no plate still arrives — see the type's own note.
+       The owner is carried on the JOIN rather than in the WHERE, because a
+       plate belonging to somebody else must not silence this design; it must
+       fail to join at all. */
+    .leftJoin(castingInkPlates, and(
+      eq(castingInkPlates.designId, castingInkDesigns.id),
+      eq(castingInkPlates.userId, input.userId),
+    ))
     .where(and(
       eq(castingInkDesigns.candidateId, input.candidateId),
-      eq(castingInkPlates.userId, input.userId),
       eq(castingInkDesigns.userId, input.userId),
       eq(castingCandidates.userId, input.userId),
     ))

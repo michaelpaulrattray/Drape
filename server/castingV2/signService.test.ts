@@ -238,7 +238,7 @@ vi.mock("../storage", () => ({
   storagePublicUrl: (key: string) => `https://cdn.example/${key}`,
 }));
 
-const { signCandidate } = await import("./signService");
+const { carriedInkPlates, signCandidate } = await import("./signService");
 const { CASTING_V2_SIGN_PRICE_CREDITS } = await import("./castViewPackage");
 
 /** A package that behaves however the case needs it to. */
@@ -766,5 +766,99 @@ describe("the tattoos a Sign carries into its views", () => {
     const sent = buildPackage.mock.calls[0]![1];
     expect(sent.inkPlates).toEqual([]);
     expect(journal).toContain("package");
+  });
+});
+
+/**
+ * EVERY DESIGN GETS ONE DISPOSITION, RODE OR NOT — driven directly
+ * (ordered fable-1005 §2).
+ *
+ * Driven rather than reached through a Sign, because three of the four answers
+ * are unreachable from a caller that behaves: a design with no plate, a design
+ * plated twice, and a plate whose object is gone. A backstop whose only test
+ * runs through the happy path is a backstop nothing has tested.
+ */
+describe("what a Cast's views carry, design by design", () => {
+  const designRow = (over: Record<string, unknown> = {}) => ({
+    designPublicId: "design-1",
+    placement: "upperArm" as const,
+    side: "left" as const,
+    engine: "fal-ai/nano-banana-pro",
+    storageKey: "casting-v2/candidates/plate-1.png",
+    digest: "d".repeat(64),
+    mime: "image/png",
+    ...over,
+  });
+
+  const drive = async (rows: unknown[], readBytes?: (key: string) => Promise<{ bytes: Buffer; contentType: string }>) =>
+    carriedInkPlates({
+      listInkPlates: async () => rows as never,
+      readBytes: readBytes ?? (async (key: string) => ({
+        bytes: Buffer.from(`bytes:${key}`), contentType: "image/png",
+      })),
+    } as never, { userId: 1, candidateId: 9, operationId: "op-1" });
+
+  it("says RODE for a design with exactly one plate", async () => {
+    const { plates, dispositions } = await drive([designRow()]);
+    expect(plates.map((plate) => plate.designPublicId)).toEqual(["design-1"]);
+    expect(dispositions).toEqual([{ designPublicId: "design-1", rode: true }]);
+  });
+
+  it("says noPlate for a design that was never plated — the case a plate-only read cannot see", async () => {
+    /*
+      The LEFT JOIN's whole purpose. Read from the plates table alone, this
+      design does not exist: an uploaded tattoo that never reached a view would
+      be indistinguishable from a Cast that never had one.
+    */
+    const { plates, dispositions } = await drive([
+      designRow({ engine: null, storageKey: null, digest: null, mime: null }),
+    ]);
+    expect(plates).toEqual([]);
+    expect(dispositions).toEqual([{ designPublicId: "design-1", rode: false, reason: "noPlate" }]);
+  });
+
+  it("says engineUndecided, and NAMES the engines, for a design plated twice", async () => {
+    const { plates, dispositions } = await drive([
+      designRow(),
+      designRow({ engine: "gpt-image-2", storageKey: "casting-v2/candidates/plate-1b.png" }),
+    ]);
+    expect(plates).toEqual([]);
+    expect(dispositions).toEqual([{
+      designPublicId: "design-1",
+      rode: false,
+      reason: "engineUndecided",
+      engines: ["fal-ai/nano-banana-pro", "gpt-image-2"],
+    }]);
+  });
+
+  it("says bytesUnreadable when the row is there and the object is not", async () => {
+    const { plates, dispositions } = await drive([designRow()], async () => {
+      throw new Error("NoSuchKey");
+    });
+    expect(plates).toEqual([]);
+    expect(dispositions).toEqual([{
+      designPublicId: "design-1", rode: false, reason: "bytesUnreadable",
+    }]);
+  });
+
+  it("reports all four side by side, and one bad answer never silences a good one", async () => {
+    const { plates, dispositions } = await drive([
+      designRow(),
+      designRow({ designPublicId: "d2", engine: null, storageKey: null }),
+      designRow({ designPublicId: "d3" }),
+      designRow({ designPublicId: "d3", engine: "gpt-image-2", storageKey: "b.png" }),
+      designRow({ designPublicId: "d4", storageKey: "gone.png" }),
+    ], async (key: string) => {
+      if (key === "gone.png") throw new Error("NoSuchKey");
+      return { bytes: Buffer.from(`bytes:${key}`), contentType: "image/png" };
+    });
+
+    expect(plates.map((plate) => plate.designPublicId)).toEqual(["design-1"]);
+    expect(dispositions).toEqual([
+      { designPublicId: "design-1", rode: true },
+      { designPublicId: "d2", rode: false, reason: "noPlate" },
+      { designPublicId: "d3", rode: false, reason: "engineUndecided", engines: ["fal-ai/nano-banana-pro", "gpt-image-2"] },
+      { designPublicId: "d4", rode: false, reason: "bytesUnreadable" },
+    ]);
   });
 });
