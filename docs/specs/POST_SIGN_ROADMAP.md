@@ -436,6 +436,26 @@ come back on their own". That copy covers all 19 recovery rows; it cannot cover
 a render whose worker never died. The sweep's own sentence was rewritten into
 that line's voice — one story in two beats — since it can now follow it.)*
 
+> ### ✅ THE HELD REQUEST IS RETIRED IN CODE — flag-dark, 2026-08-18
+>
+> Landings A, B and C are all answered (`CASTING_V2_REFINE_DISPATCH_DESIGN.md`).
+> **A** shipped (the settled list). **B** was DELETED on two facts read against
+> production — the sentence already survives on
+> `generation_operations.publicMessage`, so the migration and its founder
+> ceremony went with it. **C** is built behind `CASTING_REFINE_DISPATCH_SCOPE`,
+> **off everywhere**, with the double-tap guard (`one face, one render` — a
+> derived candidate lock, ruled fable-974) beside it on both roads.
+>
+> Walked in the running app on a real paid dev refine: the request's life fell
+> from **79 s to 20 s**, the panel said the edit was running at the receipt, and
+> the picture landed with nobody holding anything. What remains synchronous is
+> the FREE half — the interpreter and the doors — by design.
+>
+> **What is left is a decision, not a build:** turning the flag on is a Railway
+> variable and therefore the founder's, and it is on his queue with a
+> recommendation. Until he does, this paragraph's ~305 s tail is still live for
+> every refine.
+
 **The real answer is to stop holding the request** — the sheet already polls, so
 the machinery exists; the mutation would dispatch and return, and the outcome
 would arrive on the surface like every other durable fact. That is an

@@ -204,6 +204,38 @@ arrives fast is a receipt that might have waited); a background failure landing
 durably on the rows; the census logged at SETTLEMENT with the render's own wall
 clock; and the catch at the top of detached work.
 
+#### ✅ WALKED IN THE RUNNING APP — one real paid refine, and one honest number
+
+`scripts/drive-refine-dispatch-walk-disposable.mts`, against a dev server with
+the flag armed, on the dev fixture account (verify-bot — never a customer):
+25 dev credits and one render of house money.
+
+```
+ok  the answer came back before the render could have — the refine response
+    arrived after 20.0s (a render is 120-280s)
+ok  and it is a RECEIPT rather than a picture — the body carried "kind":"dispatched"
+ok  the panel says the edit is running — the submit button reads "Refining…"
+ok  and it does NOT claim an outcome it has not got — the outcome slot held null
+ok  the render finished with nobody holding the request — the newest variant
+    settled READY 79s after the ask, 59s after the answer
+ok  and it was charged exactly once — balance 445375 → 445350
+```
+
+**The honest number is the 20 seconds, and it is not a disappointment — it is
+the design.** The free half stays synchronous on purpose (a re-ask is a question
+with an answer path, and D-180 forbids one that cannot be answered), so what the
+customer still waits on is the interpreter and the doors, not the paint. On this
+walk the request's life fell from 79s to 20s; on the population it falls from a
+median of 121s and a p95 of 276s to whatever the free half costs — and the
+**tail past the gateway wall goes away entirely**, which is the thing this
+landing was bought for.
+
+Photographed at both ends and looked at (law 6): at the receipt the blurred
+frame carries her own sentence — *"colour her hair copper · in line · usually
+three to four minutes"* — with the ghost chip spinning in the rail; afterwards
+the picture is there, copper, same face, two takes in the rail, the box empty
+and no stale outcome. `output/refine-dispatch-walk/`.
+
 ⚠ **Two instrument notes worth more than the arms.** (1) A dying render does
 **not** reject the detached promise — `censusOfAttempt` returns the failure as a
 value — so an arm that only kills the paint passes with every guard deleted.
