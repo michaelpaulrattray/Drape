@@ -1,0 +1,6 @@
+# The pre-push gate is executed by `sh`, and `core.autocrlf=true` on this
+# machine would hand a fresh clone a script with CRLF line endings. A shell
+# refusing its own shebang is a guard that is silently absent — the shape
+# invariant 7 exists for — so the one file whose LINE ENDINGS are load-bearing
+# says so here rather than depending on whoever clones it next.
+.githooks/** text eol=lf
