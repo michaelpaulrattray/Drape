@@ -317,3 +317,167 @@ drift), and perceptually FINE to the founder on the sheet, in his own words.**
   (fable-414), so it needs a placement region a reader can find — which step 2
   either delivers or honestly fails to.
 - **It costs nothing yet.** No transport has been touched writing it.
+
+---
+
+## 7. THE INGESTION MAP, THE PLATE, AND THE ENGINE QUESTION
+
+*Filed 2026-08-18 from five founder rulings taken in one sitting (relayed
+fable-933, 934, 935, 936, 937). The mailbox is the record; this section is the
+instruction, which is why the rulings are written HERE rather than cited from
+there.*
+
+### 7.1 What each feature ingests AS — his ruling, not an implementation choice
+
+> *"i hair crop will work fine i promise only thing that needs to go on a
+> manequinn is tattoos at this point everything else either runs as descriptive
+> words such as copy her makeup the image is looked at it describes her makeup
+> in words. to carry through , eye color can be cropped etc"* (fable-933 §1)
+
+```
+tattoo      MANNEQUIN PLATE   the plate peels the design off the skin, so the
+                              uploaded photograph never reaches a render
+hair        CROP              the SEGMENTED hair region — a reader's cut, the
+                              same artifact this product already mints from her
+                              own renders. NEVER a rectangle containing a face
+makeup      WORDS             one describer read of the reference; the words
+                              carry, the picture does not
+eyeColour   CROP              the product's own proven eye-crop road
+```
+
+The general rule: **each feature class ingests by the form that carries it
+best, and the mannequin is reserved for on-skin graphics.** The real-person
+fence is met by the FORM in every row — a person cannot ride along a plate, a
+segmented cut, or a sentence.
+
+This is live in code as `shared/referenceIntents.ts`, where each entry carries
+its form and whether that form is BUILT. Today exactly one is.
+
+**PER-CLASS FIRST-RUN CONTROL stands (fable-933 §3):** the first reference of
+each class that contains a person produces its artifact — hair crop, makeup
+words — in front of the founder's eyes before that class opens. Law 9 applied
+once at each door, then the door is open.
+
+### 7.2 The plate is DESIGN-PURE, and the tone question left the render path
+
+> *"the engine model will already render the tattoo from the reference onto deep
+> skin if the cast has deep skin this is an engine capaBILITY the reference is
+> purely design"* (fable-935 §1)
+
+- **ENGINE REFERENCE: one neutral template carrying the design alone.** No
+  tone-matched engine references, no per-cast engine asset. The engine adapts
+  ink to the cast's own skin as native capability.
+- **PREVIEW (customer-facing sheet): the tone ladder stands** on D-138's own
+  dignity line, display-side only, unless he rules otherwise.
+- The template asset set therefore shrinks to **one engine plate per form**
+  (torso / arm), with the ladder on the preview alone.
+- **Male form: absent** — female torso + arm only, drawn when needed or at his
+  word (fable-934 §1a).
+- **The template is a pre-stored, code-owned asset**; runtime only plates the
+  design onto it. What rebuilds at runtime is the SHEET (template + designs),
+  never the template (fable-934 §1b).
+
+**Registered prediction #3** (his engine-capability calls; the first two —
+fox-eyes-delivered and crop-is-innocent — are both scored): *ink from a neutral
+plate renders correctly onto deep skin.* fable-934's comparison court collapses
+to a **first-plate confirmation** — the first real plate render on a deep-skin
+cast goes in front of his eye once, on ink fidelity and skin fidelity. If it
+ever misses, the tone-matched arm is the ready fallback, already designed in
+fable-934's record.
+
+### 7.3 The plate mints on DECLARED INTENT — never on upload alone
+
+fable-936 §2 ruled that the plate generates at UPLOAD rather than at the ask, so
+the customer is not made to wait twice; the double-wait then exists only in the
+ask-immediately-after-upload case. His own amendment one message later
+(fable-937) is what makes that safe:
+
+> *"someone might upload a reference who has tattoos but only wants the hair
+> transferred and we just wasted money on generating the tattoo onto a
+> manequinn?"*
+
+So: **the upload declares which features are being taken, and only the declared
+features are ever extracted. No extraction without intent; no money moves for a
+feature nobody asked to take.** The plate mints at intent-declaration (normally
+at upload, so still ahead of the ask; still once per design).
+
+**Built as of 2026-08-18** — `castingV2.ink.upload` carries `intents` (migration
+0035), the declaration is asked BEFORE the picture is examined, a feature whose
+form is ruled-but-not-built is refused by name, and a mixed declaration is
+refused on its unbuilt half so that "we took part of it" is never silent.
+
+**Not built:** the plate itself. Nothing plates before the template exists
+(§7.6).
+
+**One gap, named rather than papered over:** a refused declaration writes no
+row, so a hair-only upload is not in the demand tally fable-937 §3 asked for —
+it is a log line. When a second form is built the refusal stops happening and
+the tally becomes rows; until then this is the honest state.
+
+### 7.4 The price and latency census — from receipts, ordered fable-936 §3
+
+He set the requirement plainly: *"we need it to be cheap and fast and produce
+good results so we need to know whether we use NBP or GPT image 2 for this as
+the user will be waiting."*
+
+**List prices, read from fal's own model pages on 2026-08-18:**
+
+| | list |
+|---|---|
+| `fal-ai/nano-banana-pro/edit` | **$0.15/image** standard; 4K at double = $0.30 |
+| `fal-ai/gpt-image-2/edit` | per size × quality: 1024×1024 **$0.015 low / $0.061 medium / $0.219 high**; 1024×768 $0.011 / $0.043 / $0.151; 3840×2160 $0.024 / $0.113 / $0.413. Longer prompts cost more |
+
+Neither page publishes an inference time. NBP's says outright that generation
+times are not benchmarked and the model is optimised for quality over speed.
+
+**Our own receipts, which are the half that counts:**
+
+| measurement | figure | instrument |
+|---|---|---|
+| GPT Image 2, medium, 1024×1536 | **$0.099** per image | M3 calibration, fal account balance read around a clean run (list estimate $0.084, +18%) |
+| Nano Banana Pro, 2K | **$0.124** per image | same run (list $0.150, −17%) |
+| all image calls, mixed engines, n=205 | p50 **54s**, p90 74s, min 31s, max 94s | M3 calibration manifest |
+| 8 parallel candidates, wall clock | 66–82s | M3 calibration |
+| **GPT Image 2 edit, in PRODUCTION** | **94.7s per call**, 9 calls, 64.2% of a paid edit's wall clock | `scripts/call-census-report.mts` against the production database, window from 2026-07-01, read 2026-08-18 |
+| a paid edit end to end, production | median wall **173.3s**, p90 228.0s; median 15 calls, p90 33 | same census (8 of 23 renders in the window carry one) |
+
+**The reading:**
+
+1. **On cost at plate size the two are close, with GPT Image 2 ahead** — $0.099
+   against $0.124 measured, both at roughly a plate's resolution. A plate is one
+   image call, so a design costs about a dime either way. Cost is not the
+   deciding axis.
+2. **On speed we have a production figure for ONE of them.** GPT Image 2's edit
+   is 94.7s per call on our own transport, today, in production. **We have no
+   measured NBP wall-clock for a single edit on our transport at all** — M3's
+   p50 54s is a mixed-engine figure and cannot be attributed. That gap is the
+   census's finding, and it is not closable for free: it needs a paid render,
+   which belongs to the plate court's own budget rather than being smuggled into
+   a reading.
+3. **The flow ruling has already absorbed most of the latency requirement.** A
+   plate is minted ONCE per design at intent-declaration and reused by every
+   later render, so even a 95s mint is paid once and off the ask path — except
+   in the ask-immediately-after-upload case. What is left of "the user will be
+   waiting" is that one case.
+
+### 7.5 The plate court, declared (fable-936 §4)
+
+Runs when the plate machinery and the template exist; not before.
+
+- One design plated by **both engines**.
+- **Speed and cost from the census above**, plus the missing NBP single-edit
+  wall-clock measured in the same sitting.
+- **Quality by his eye** — line fidelity, and D-140's lettering rules where the
+  design carries text (law 9: no vision reader closes this).
+- Budget declared at its sitting.
+- **Temperament prior, on the record:** NBP's heavier drawing hand may SUIT bold
+  graphic work on a neutral form — the one job where *"overdoes it"* becomes
+  *"draws it properly."*
+- It picks the **plate** engine only. Cast renders stay on the product's own
+  road.
+
+### 7.6 What is still the founder's
+
+**The template pick** — background, layout, tones. It is the one thing between
+the built upload and a plate that can exist, and one word closes it. Nothing
+plates, and no charge path opens, until it does.
