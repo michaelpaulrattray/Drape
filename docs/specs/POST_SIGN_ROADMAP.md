@@ -232,6 +232,13 @@ in the mailbox until then.)*
 **His grounds, verbatim:** *"we have done so much testing and changing of
 systems with this design."*
 
+**THE COMPLETION BAR, adopted 2026-08-19 (fable-992 §2b):** the reading is
+finished when every row of `docs/specs/cleanup-dispositions.yaml` carries a
+verdict and `npx tsx scripts/check-cleanup-dispositions.mts --strict` is green.
+The checker runs inside `pnpm check`, so the door cannot be a door nobody
+invokes. Reasoning lives in `CLEANUP_MILESTONE_TRIAGE.md`, which each row
+cites by section; the table is the index and the document is not.
+
 **The slot, which is the half that was lost:** after V5 lands and M12 is closed
 out, **BEFORE M8 starts.**
 

@@ -1,4 +1,26 @@
-# The cleanup milestone — RECON, and nothing else yet
+# The cleanup milestone — the reasoning. THE INDEX IS ELSEWHERE.
+
+> **THIS DOCUMENT IS NOT THE DELETION DOOR** (ruled fable-992 §2c). The door is
+> `docs/specs/cleanup-dispositions.yaml`, checked by
+> `scripts/check-cleanup-dispositions.mts`, which runs inside `pnpm check` —
+> one row per symbol on the sweep's reading list, each naming the section
+> BELOW that argues it. This file keeps the reasoning and has lost the index
+> role, because a prose list of verdicts beside seven sections of argument is
+> a second list shadowing a source of truth, which is the law this milestone
+> spent a week measuring.
+>
+> **The completion bar** (adopted fable-992 §2b): every row's verdict
+> non-empty and `check-cleanup-dispositions.mts --strict` green. Nothing else
+> counts as finishing the reading.
+>
+> **An uncalled export is a QUESTION, not a verdict** — the milestone's motto,
+> and the question is *what was this for?* Two ways of getting it wrong were
+> paid for here: an instrument counting prose as a caller (§19), and a reader
+> counting an import graph as an intention (§15d). **An import graph says who
+> calls a symbol; it cannot say what the symbol is FOR, and in this repository
+> that is usually written at the top of the file.**
+
+## The recon that opened it
 
 **Read-only reconnaissance, ordered fable-975 §5, taken 2026-08-18.** The
 founder ordered this milestone in person (fable-710 §2, *"we have done so much
@@ -1210,3 +1232,70 @@ look like numbers. **The sweep now refuses to print a verdict whose buckets do
 not sum to the count it flagged**, which is the suite-reading rule
 (passed + skipped + failed must equal the printed total) arriving on an
 instrument of our own.
+
+---
+
+## 21. THE DELETION DOOR IS A TABLE AND A CHECK, not a document
+
+The seam ordered *"the disposition document — the single deletion door"*.
+Written as prose it would be **a second list shadowing a source of truth**:
+every verdict already has a home in §6, §7, §8, §13, §14, §17 and §18, and a
+document restating them drifts from those sections inside a shift. That is
+law 4, and this milestone has spent the night quoting it.
+
+So the door is `docs/specs/cleanup-dispositions.yaml` plus
+`scripts/check-cleanup-dispositions.mts`. One row per symbol on the sweep's
+current reading list: a verdict, the reason in a sentence, **the triage section
+that argues it** — and for a HELD row, the blocker BY NAME. This document keeps
+the reasoning and stops being the index.
+
+```
+THE TABLE — 124 rows against a reading list of 124
+  KEEP     71
+  TAKE     1
+  TAKEN    0
+  HELD     14
+  FILED    2
+
+  unread       36
+  stale        0
+  blockerless  0
+  unknown      0
+```
+
+**The milestone finally has an exit condition that is a number**: it is finished
+when `--strict` is green. Thirty-six symbols remain unread — the honest count,
+down from "96 left" which was an estimate against a list two corrections old.
+
+### 21a. What it refuses, and why each refusal is there
+
+| refusal | why |
+|---|---|
+| `unread` | the sweep lists a symbol no row dispositions, or a row's verdict is blank. **Nothing is deleted while something is unread.** |
+| `stale` | a row names a symbol that no longer exists. The Atlas refuses a stale annotation for the same reason — a table that can rot quietly is worse than no table. |
+| `blockerless` | a HELD row with no blocker named. *"A deferral to when next touched has no owner and is not a deferral — it is a drop."* |
+| `unknown` | a verdict outside the closed set, which is how a table grows a sixth meaning nobody agreed to. |
+
+**Each is driven directly by a synthetic fixture that must trip it**, and the
+clean table must pass — a checker whose only exercise is a table that happens
+to be clean has never been shown to fail. Two arms exist because getting them
+wrong is easy and silent:
+
+- **a TAKEN row is exempt from `stale`** — the whole point of TAKEN is that the
+  symbol is gone, and without the arm the table would refuse the moment it
+  recorded a successful deletion, which is the one thing it exists to record;
+- **an EMPTY verdict is `unread`, not `unknown`** — a row nobody has filled in
+  is remaining work; a row with a verdict nobody agreed to is rot. The first
+  draft conflated them and reported a sound table as broken.
+
+### 21b. The fifth verdict is not a convenience
+
+`verifyBackView` was ruled a deletion by §14b and has not been executed. With
+four verdicts it had to read as *unread*, which is false — it has been read,
+and carefully. **TAKE** is *ruled for removal, not yet done*, and its count is
+the milestone's outstanding queue rather than a state buried in a paragraph.
+
+`TAKEN` reads zero, and that is correct rather than unused: a symbol removed by
+an earlier shift is no longer on the sweep's list, so it has no row. The verdict
+is for the row flipped in the same commit that deletes its symbol. Git and the
+sections above hold the history; the table holds the door.

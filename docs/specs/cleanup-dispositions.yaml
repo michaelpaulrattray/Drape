@@ -1,0 +1,772 @@
+# THE CLEANUP MILESTONE'S DELETION DOOR.
+#
+# One row per symbol on the sweep's reading list. The verdict is the door;
+# `argued` names the section of CLEANUP_MILESTONE_TRIAGE.md that argues it, and
+# that section — not this line — is the reasoning. A HELD row names its blocker.
+#
+# Verdicts: KEEP · TAKE (ruled for removal, not yet done) · TAKEN · HELD · FILED. An EMPTY verdict is the honest record
+# of a symbol nobody has read yet, and `check-cleanup-dispositions.mts --strict`
+# is green only when there are none left.
+#
+# TAKEN reads zero and that is correct rather than unused: a symbol removed by a
+# previous shift is no longer on the sweep's list, so it has no row. The verdict
+# exists for the row that is flipped in the same commit that deletes its symbol —
+# git and the triage sections hold the history, and this table holds the door.
+
+- symbol: verifyBackView
+  file: server/casting/backViewGate.ts
+  verdict: TAKE
+  why: its own docblock says "Back-compat alias (pre-D-46 callers/tests)"; the real gate verifyViewIdentity is wired at mintPackage.ts:41
+  argued: 14b
+
+- symbol: CAST_PUBLIC_ID_PATTERN
+  file: server/casting/castPublicId.ts
+  verdict: 
+  why: 
+  argued: 
+
+- symbol: INK_ADD_RECIPE
+  file: server/casting/evidence/composer/inkAddRecipe.ts
+  verdict: HELD
+  why: the placement-picker composer road, already marked retire in the Atlas
+  argued: 8d/14a
+  blocker: the composer road's module-sized disposition
+
+- symbol: authorizeInkAddDescription
+  file: server/casting/evidence/composer/inkAuthorization.ts
+  verdict: HELD
+  why: the placement-picker road's whole authorization module, with its own suite
+  argued: 8d
+  blocker: a module-sized retirement, not a symbol-sized one
+
+- symbol: createInkCalibrationRecorder
+  file: server/casting/evidence/composer/inkCalibration.ts
+  verdict: HELD
+  why: an instrument for a calibration command that does not exist
+  argued: 18a
+  blocker: goes with the composer road's module-sized disposition
+
+- symbol: evaluateInkCalibrationGate
+  file: server/casting/evidence/composer/inkCalibration.ts
+  verdict: HELD
+  why: an instrument for a calibration command that does not exist
+  argued: 18a
+  blocker: goes with the composer road's module-sized disposition
+
+- symbol: probeOutcomeAllowsCanon
+  file: server/casting/evidence/composer/inkRetryDecision.ts
+  verdict: KEEP
+  why: the retry decision's own predicate, in a module the composer road drives
+  argued: 18
+
+- symbol: assertEvidenceIntentStatus
+  file: server/casting/evidence/evidenceCandidateContract.ts
+  verdict: KEEP
+  why: the state machine written whole in one place while the SQL writers enforce it at every write
+  argued: 6b
+
+- symbol: assertEvidenceCandidateStatus
+  file: server/casting/evidence/evidenceCandidateContract.ts
+  verdict: KEEP
+  why: the state machine written whole in one place while the SQL writers enforce it at every write
+  argued: 6b
+
+- symbol: assertEvidenceCandidateAttemptStatus
+  file: server/casting/evidence/evidenceCandidateContract.ts
+  verdict: KEEP
+  why: the state machine written whole in one place while the SQL writers enforce it at every write
+  argued: 6b
+
+- symbol: assertEvidenceProbeOutcome
+  file: server/casting/evidence/evidenceCandidateContract.ts
+  verdict: KEEP
+  why: the state machine written whole in one place while the SQL writers enforce it at every write
+  argued: 6b
+
+- symbol: canTransitionEvidenceIntent
+  file: server/casting/evidence/evidenceCandidateContract.ts
+  verdict: KEEP
+  why: the state machine written whole in one place while the SQL writers enforce it at every write
+  argued: 6b
+
+- symbol: canTransitionEvidenceCandidate
+  file: server/casting/evidence/evidenceCandidateContract.ts
+  verdict: KEEP
+  why: the state machine written whole in one place while the SQL writers enforce it at every write
+  argued: 6b
+
+- symbol: canTransitionEvidenceCandidateAttempt
+  file: server/casting/evidence/evidenceCandidateContract.ts
+  verdict: KEEP
+  why: the state machine written whole in one place while the SQL writers enforce it at every write
+  argued: 6b
+
+- symbol: evidenceCandidateAttemptCost
+  file: server/casting/evidence/evidenceCandidateContract.ts
+  verdict: KEEP
+  why: the state machine written whole in one place while the SQL writers enforce it at every write
+  argued: 6b
+
+- symbol: deriveEvidenceCandidateBillingTruth
+  file: server/casting/evidence/evidenceCandidateContract.ts
+  verdict: KEEP
+  why: the state machine written whole in one place while the SQL writers enforce it at every write
+  argued: 6b
+
+- symbol: planEvidenceMint
+  file: server/casting/evidence/evidenceMint.ts
+  verdict: KEEP
+  why: the async wrapper its own module calls internally; its tests drive live planning through it
+  argued: 18
+
+- symbol: planEvidencePackageSync
+  file: server/casting/evidence/evidencePackageAuthority.ts
+  verdict: KEEP
+  why: the async wrapper its own module calls internally; its tests drive live planning through it
+  argued: 18
+
+- symbol: buildInkAuthorizationProviderConfig
+  file: server/casting/evidence/inkAddIntent.ts
+  verdict: HELD
+  why: arrived on the next sweep exactly as 8d predicted, when beginInkAddIntent was removed
+  argued: 8d/14a
+  blocker: the composer road's module-sized disposition
+
+- symbol: ALL_SUPPORTED_INK_ANATOMY_TUPLES
+  file: server/casting/evidence/inkAnatomyRegistry.ts
+  verdict: KEEP
+  why: a derived view the test asserts the TABLE through; deleting it pushes its test onto a hardcoded list
+  argued: 6a
+
+- symbol: isLimbInkZone
+  file: server/casting/evidence/inkAnatomyRegistry.ts
+  verdict: KEEP
+  why: a derived view the test asserts the TABLE through; deleting it pushes its test onto a hardcoded list
+  argued: 6a
+
+- symbol: INK_RELEASE_POLICY_VERSION
+  file: server/casting/evidence/inkReleasePolicy.ts
+  verdict: KEEP
+  why: what the policy's test pins so a policy change is a visible diff; the module is live in three places
+  argued: 18
+
+- symbol: stageCanonicalReferencePlate
+  file: server/casting/evidence/referencePlateIngestion.ts
+  verdict: KEEP
+  why: its docblock FORBIDS callers until the reviewed C4 capability
+  argued: 18
+
+- symbol: getSessionCount
+  file: server/casting/geminiGeneration.ts
+  verdict: 
+  why: 
+  argued: 
+
+- symbol: stopSessionEviction
+  file: server/casting/geminiGeneration.ts
+  verdict: 
+  why: 
+  argued: 
+
+- symbol: roleForAuthorizedResult
+  file: server/casting/identity/anchorSelector.ts
+  verdict: HELD
+  why: an unused convenience over the §7.2 role mapping; the live writers pass a literal
+  argued: 18/18a
+  blocker: M14's owner, with the other two anchor symbols
+
+- symbol: commitAnchorReRoll
+  file: server/casting/identity/identityCommit.ts
+  verdict: HELD
+  why: one of three uncalled symbols about who may stamp an anchor
+  argued: 18a
+  blocker: M14's owner, in one sitting with commitIdentityEdit and roleForAuthorizedResult
+
+- symbol: commitIdentityEdit
+  file: server/casting/identity/identityCommit.ts
+  verdict: HELD
+  why: one of three uncalled symbols about who may stamp an anchor
+  argued: 18a
+  blocker: M14's owner, in one sitting with commitAnchorReRoll and roleForAuthorizedResult
+
+- symbol: compareModelSnapshotShadow
+  file: server/casting/snapshotShadow.ts
+  verdict: HELD
+  why: its tests drive live code through it; re-pointing them is an unverified rewrite here
+  argued: 17
+  blocker: a disposable database — there is no docker on this machine
+
+- symbol: assertStorageCleanupItemStatus
+  file: server/casting/storageCleanupContract.ts
+  verdict: KEEP
+  why: a closed-value assertion beside assertStorageCleanupBatchStatus; the pair is the contract
+  argued: 18
+
+- symbol: resetStorageCleanupHealthReport
+  file: server/casting/storageCleanupWorker.ts
+  verdict: KEEP
+  why: a seam whose own NAME says test-only; the sweep cannot see a convention and a human can
+  argued: 6c/13a
+
+- symbol: CROSS_AXIS_IMPLICATIONS
+  file: server/castingV2/axisRegistry.ts
+  verdict: KEEP
+  why: the axis sweep the suite drives over really-composed prompts, with sabotage arms that redden the right axis
+  argued: 17
+
+- symbol: suppressorsFor
+  file: server/castingV2/axisRegistry.ts
+  verdict: KEEP
+  why: the axis sweep the suite drives over really-composed prompts, with sabotage arms that redden the right axis
+  argued: 17
+
+- symbol: axesOnShelf
+  file: server/castingV2/axisRegistry.ts
+  verdict: KEEP
+  why: a derived view the test asserts the TABLE through; deleting it pushes its test onto a hardcoded list
+  argued: 6a
+
+- symbol: sweepComposedPrompt
+  file: server/castingV2/axisRegistry.ts
+  verdict: KEEP
+  why: the axis sweep the suite drives over really-composed prompts, with sabotage arms that redden the right axis
+  argued: 17
+
+- symbol: isTasteWritable
+  file: server/castingV2/axisRegistry.ts
+  verdict: 
+  why: 
+  argued: 
+
+- symbol: AXIS_REGISTRY_BINDINGS
+  file: server/castingV2/axisRegistry.ts
+  verdict: KEEP
+  why: the axis sweep the suite drives over really-composed prompts, with sabotage arms that redden the right axis
+  argued: 17
+
+- symbol: catalogueBornWorn
+  file: server/castingV2/bornWornCatalogue.ts
+  verdict: HELD
+  why: wire-or-retire, and it is this sweep's second positive control
+  argued: 1b
+  blocker: a replacement control must land in the same commit
+
+- symbol: deterministicBriefCompiler
+  file: server/castingV2/briefCompiler.ts
+  verdict: 
+  why: 
+  argued: 
+
+- symbol: censusIsOpen
+  file: server/castingV2/callCensus.ts
+  verdict: 
+  why: 
+  argued: 
+
+- symbol: FRAMING_PREMISE
+  file: server/castingV2/castingFrame.ts
+  verdict: 
+  why: 
+  argued: 
+
+- symbol: unmeasuredAmplitudes
+  file: server/castingV2/changeAmplitude.ts
+  verdict: KEEP
+  why: a derived view the test asserts the TABLE through; deleting it pushes its test onto a hardcoded list
+  argued: 6a
+
+- symbol: COHORT_CONSTANT_MARKERS
+  file: server/castingV2/cohortPhotorealHuman.ts
+  verdict: KEEP
+  why: a derived view the test asserts the TABLE through; deleting it pushes its test onto a hardcoded list
+  argued: 6a
+
+- symbol: courtSeparationFor
+  file: server/castingV2/deliveryCourt.ts
+  verdict: KEEP
+  why: a derived view the test asserts the TABLE through; deleting it pushes its test onto a hardcoded list
+  argued: 6a
+
+- symbol: pairSlots
+  file: server/castingV2/facePanel.ts
+  verdict: 
+  why: 
+  argued: 
+
+- symbol: faceScanCacheStats
+  file: server/castingV2/faceScanService.ts
+  verdict: 
+  why: 
+  argued: 
+
+- symbol: resetFaceScanCache
+  file: server/castingV2/faceScanService.ts
+  verdict: KEEP
+  why: a seam whose own NAME says test-only; the sweep cannot see a convention and a human can
+  argued: 6c/13a
+
+- symbol: FACET_KEYS
+  file: server/castingV2/facetCards.ts
+  verdict: KEEP
+  why: a derived view the test asserts the TABLE through; deleting it pushes its test onto a hardcoded list
+  argued: 6a
+
+- symbol: falGateStats
+  file: server/castingV2/falConcurrency.ts
+  verdict: 
+  why: 
+  argued: 
+
+- symbol: measuredPhrasings
+  file: server/castingV2/falRegionReader.ts
+  verdict: KEEP
+  why: a derived view the test asserts the TABLE through; deleting it pushes its test onto a hardcoded list
+  argued: 6a
+
+- symbol: arrangementsWithPrecedent
+  file: server/castingV2/hairArrangement.ts
+  verdict: KEEP
+  why: a derived view the test asserts the TABLE through; deleting it pushes its test onto a hardcoded list
+  argued: 6a
+
+- symbol: HAIR_STYLE_NAMES
+  file: server/castingV2/hairStyles.ts
+  verdict: 
+  why: 
+  argued: 
+
+- symbol: neighbourPairs
+  file: server/castingV2/heritageNeighbourhoods.ts
+  verdict: KEEP
+  why: a derived view the test asserts the TABLE through; deleting it pushes its test onto a hardcoded list
+  argued: 6a
+
+- symbol: splitByInheritance
+  file: server/castingV2/inheritedVerdict.ts
+  verdict: KEEP
+  why: a derived view the test asserts the TABLE through; deleting it pushes its test onto a hardcoded list
+  argued: 6a
+
+- symbol: resetInkPlateEngineForTests
+  file: server/castingV2/inkPlateEngine.ts
+  verdict: KEEP
+  why: a seam whose own NAME says test-only; the sweep cannot see a convention and a human can
+  argued: 6c/13a
+
+- symbol: interpreterParseStats
+  file: server/castingV2/interpreter.ts
+  verdict: 
+  why: 
+  argued: 
+
+- symbol: SYSTEM_PROMPT_FOR_TESTS
+  file: server/castingV2/interpreter.ts
+  verdict: 
+  why: 
+  argued: 
+
+- symbol: resetInterpreterForTests
+  file: server/castingV2/interpreter.ts
+  verdict: KEEP
+  why: a seam whose own NAME says test-only; the sweep cannot see a convention and a human can
+  argued: 6c/13a
+
+- symbol: neighbourTableNames
+  file: server/castingV2/maskedRefine.ts
+  verdict: KEEP
+  why: a derived view the test asserts the TABLE through; deleting it pushes its test onto a hardcoded list
+  argued: 6a
+
+- symbol: edgeTableNames
+  file: server/castingV2/maskedRefine.ts
+  verdict: KEEP
+  why: a derived view the test asserts the TABLE through; deleting it pushes its test onto a hardcoded list
+  argued: 6a
+
+- symbol: segmentableRegionNames
+  file: server/castingV2/maskedRefine.ts
+  verdict: KEEP
+  why: a derived view the test asserts the TABLE through; deleting it pushes its test onto a hardcoded list
+  argued: 6a
+
+- symbol: fringeTableNames
+  file: server/castingV2/maskedRefine.ts
+  verdict: KEEP
+  why: a derived view the test asserts the TABLE through; deleting it pushes its test onto a hardcoded list
+  argued: 6a
+
+- symbol: rasterise
+  file: server/castingV2/maskGeometry.ts
+  verdict: KEEP
+  why: the declared fixture facility for tests that must not cost a credit; its vocabulary tests live algebra
+  argued: 15d
+
+- symbol: hairMaskFrom
+  file: server/castingV2/maskGeometry.ts
+  verdict: KEEP
+  why: the declared fixture facility for tests that must not cost a credit; its vocabulary tests live algebra
+  argued: 15d
+
+- symbol: eyeMaskFrom
+  file: server/castingV2/maskGeometry.ts
+  verdict: KEEP
+  why: the declared fixture facility for tests that must not cost a credit; its vocabulary tests live algebra
+  argued: 15d
+
+- symbol: requestMatte
+  file: server/castingV2/maskGeometry.ts
+  verdict: KEEP
+  why: the declared fixture facility for tests that must not cost a credit; its vocabulary tests live algebra
+  argued: 15d
+
+- symbol: eyeRegion
+  file: server/castingV2/maskGeometry.ts
+  verdict: KEEP
+  why: the declared fixture facility for tests that must not cost a credit; its vocabulary tests live algebra
+  argued: 15d
+
+- symbol: eyewearRegion
+  file: server/castingV2/maskGeometry.ts
+  verdict: KEEP
+  why: the declared fixture facility for tests that must not cost a credit; its vocabulary tests live algebra
+  argued: 15d
+
+- symbol: mergeRegions
+  file: server/castingV2/maskGeometry.ts
+  verdict: KEEP
+  why: the declared fixture facility for tests that must not cost a credit; its vocabulary tests live algebra
+  argued: 15d
+
+- symbol: openKindQualifier
+  file: server/castingV2/openKindPolicy.ts
+  verdict: KEEP
+  why: the open lane's written answer sheet, quoted by the code that implements it independently
+  argued: 7b/10
+
+- symbol: openKindAmplitude
+  file: server/castingV2/openKindPolicy.ts
+  verdict: KEEP
+  why: the open lane's written answer sheet, quoted by the code that implements it independently
+  argued: 7b/10
+
+- symbol: openKindZoneScope
+  file: server/castingV2/openKindPolicy.ts
+  verdict: KEEP
+  why: the open lane's written answer sheet, quoted by the code that implements it independently
+  argued: 7b/10
+
+- symbol: openKindMovesItsEdge
+  file: server/castingV2/openKindPolicy.ts
+  verdict: KEEP
+  why: the open lane's written answer sheet, quoted by the code that implements it independently
+  argued: 7b/10
+
+- symbol: openKindUnfiledReason
+  file: server/castingV2/openKindPolicy.ts
+  verdict: KEEP
+  why: the open lane's written answer sheet, quoted by the code that implements it independently
+  argued: 7b/10
+
+- symbol: openKindIsPlural
+  file: server/castingV2/openKindPolicy.ts
+  verdict: KEEP
+  why: the open lane's written answer sheet, quoted by the code that implements it independently
+  argued: 7b/10
+
+- symbol: openKindFilesAsIdentity
+  file: server/castingV2/openKindPolicy.ts
+  verdict: KEEP
+  why: the open lane's written answer sheet, quoted by the code that implements it independently
+  argued: 7b/10
+
+- symbol: openKindDeparture
+  file: server/castingV2/openKindPolicy.ts
+  verdict: KEEP
+  why: the open lane's written answer sheet, quoted by the code that implements it independently
+  argued: 7b/10
+
+- symbol: openKindSegmenterQuestion
+  file: server/castingV2/openKindPolicy.ts
+  verdict: KEEP
+  why: the open lane's written answer sheet, quoted by the code that implements it independently
+  argued: 7b/10
+
+- symbol: shapePixels
+  file: server/castingV2/referenceCentreline.ts
+  verdict: 
+  why: 
+  argued: 
+
+- symbol: DISPLAY_REGION_VOCABULARY
+  file: server/castingV2/referenceSlotCatalogue.ts
+  verdict: 
+  why: 
+  argued: 
+
+- symbol: isFeatureSlot
+  file: server/castingV2/referenceSlots.ts
+  verdict: 
+  why: 
+  argued: 
+
+- symbol: presentPair
+  file: server/castingV2/referenceSlots.ts
+  verdict: 
+  why: 
+  argued: 
+
+- symbol: axesOfFacet
+  file: server/castingV2/refineFacets.ts
+  verdict: KEEP
+  why: a derived view the test asserts the TABLE through; deleting it pushes its test onto a hardcoded list
+  argued: 6a
+
+- symbol: unprotectedFacets
+  file: server/castingV2/refinePreservation.ts
+  verdict: KEEP
+  why: a derived view the test asserts the TABLE through; deleting it pushes its test onto a hardcoded list
+  argued: 6a
+
+- symbol: REFUSAL_REASONS
+  file: server/castingV2/refineRefusals.ts
+  verdict: KEEP
+  why: a derived view the test asserts the TABLE through; deleting it pushes its test onto a hardcoded list
+  argued: 6a
+
+- symbol: refusalCharge
+  file: server/castingV2/refineRefusals.ts
+  verdict: 
+  why: 
+  argued: 
+
+- symbol: refusalReportClass
+  file: server/castingV2/refineRefusals.ts
+  verdict: 
+  why: 
+  argued: 
+
+- symbol: namesHerHairItself
+  file: server/castingV2/refineService.ts
+  verdict: 
+  why: 
+  argued: 
+
+- symbol: refusalTallies
+  file: server/castingV2/refusalCounter.ts
+  verdict: 
+  why: 
+  argued: 
+
+- symbol: heartbeatLine
+  file: server/castingV2/reliabilityReport.ts
+  verdict: 
+  why: 
+  argued: 
+
+- symbol: namesRemoval
+  file: server/castingV2/removalWords.ts
+  verdict: 
+  why: 
+  argued: 
+
+- symbol: facetsWithUnreliabilityPrior
+  file: server/castingV2/renderVerification.ts
+  verdict: KEEP
+  why: a derived view the test asserts the TABLE through; deleting it pushes its test onto a hardcoded list
+  argued: 6a
+
+- symbol: unreadFacts
+  file: server/castingV2/renderVerification.ts
+  verdict: KEEP
+  why: a derived view the test asserts the TABLE through; deleting it pushes its test onto a hardcoded list
+  argued: 6a
+
+- symbol: resetCastingEngineForTests
+  file: server/castingV2/rollEngine.ts
+  verdict: KEEP
+  why: a seam whose own NAME says test-only; the sweep cannot see a convention and a human can
+  argued: 6c/13a
+
+- symbol: pruneSegmentFacet
+  file: server/castingV2/segmentPrune.ts
+  verdict: HELD
+  why: a declared half-landing whose user promise removeStep already serves
+  argued: 17
+  blocker: the face chart's owner — does the segment-drop road still have a job
+
+- symbol: namingTableFacets
+  file: server/castingV2/segmentsOnFace.ts
+  verdict: KEEP
+  why: a derived view the test asserts the TABLE through; deleting it pushes its test onto a hardcoded list
+  argued: 6a
+
+- symbol: ACCESSORY_FACET
+  file: server/castingV2/segmentsOnFace.ts
+  verdict: 
+  why: 
+  argued: 
+
+- symbol: resetSignEnginesForTests
+  file: server/castingV2/signEngine.ts
+  verdict: KEEP
+  why: a seam whose own NAME says test-only; the sweep cannot see a convention and a human can
+  argued: 6c/13a
+
+- symbol: BIAS_DEFERRAL_CLAUSE
+  file: server/castingV2/stylingResolution.ts
+  verdict: 
+  why: 
+  argued: 
+
+- symbol: exemptSubjects
+  file: server/castingV2/subjectQualifiers.ts
+  verdict: KEEP
+  why: a derived view the test asserts the TABLE through; deleting it pushes its test onto a hardcoded list
+  argued: 6a
+
+- symbol: VACANCY_KINDS
+  file: server/castingV2/vacancyPhrases.ts
+  verdict: KEEP
+  why: a derived view the test asserts the TABLE through; deleting it pushes its test onto a hardcoded list
+  argued: 6a
+
+- symbol: facetsNeedingMagnification
+  file: server/castingV2/verificationDetail.ts
+  verdict: KEEP
+  why: a derived view the test asserts the TABLE through; deleting it pushes its test onto a hardcoded list
+  argued: 6a
+
+- symbol: INSTRUCTION_MAY_OVERRIDE
+  file: server/castingV2/zoneScope.ts
+  verdict: FILED
+  why: a rule declared, tested and applied by nothing; the honest repair may be that the road retires
+  argued: 7a/10a
+
+- symbol: OPEN_QUESTIONS
+  file: server/castingV2/zoneScope.ts
+  verdict: KEEP
+  why: an empty map kept deliberately, founder-ruled 2026-08-06
+  argued: 7c
+
+- symbol: isDistributed
+  file: server/castingV2/zoneScope.ts
+  verdict: 
+  why: 
+  argued: 
+
+- symbol: isBilateral
+  file: server/castingV2/zoneScope.ts
+  verdict: 
+  why: 
+  argued: 
+
+- symbol: scopedFacets
+  file: server/castingV2/zoneScope.ts
+  verdict: KEEP
+  why: a derived view the test asserts the TABLE through; deleting it pushes its test onto a hardcoded list
+  argued: 6a
+
+- symbol: removeEdgesForItems
+  file: server/db/boardEdges.ts
+  verdict: FILED
+  why: not debris — the missing half of a live deletion path; wiring it is a build with an owner
+  argued: 13c
+
+- symbol: listSegmentHistory
+  file: server/db/castingV2Segments.ts
+  verdict: 
+  why: 
+  argued: 
+
+- symbol: listOrphanedVariants
+  file: server/db/castingV2Variants.ts
+  verdict: 
+  why: 
+  argued: 
+
+- symbol: dbReferencePlateIngestionPersistence
+  file: server/db/evidenceIngestion.ts
+  verdict: 
+  why: 
+  argued: 
+
+- symbol: inspectOwnedInkAddAvailability
+  file: server/db/inkAddIntents.ts
+  verdict: 
+  why: 
+  argued: 
+
+- symbol: getStorageCleanupBatchByOperation
+  file: server/db/storageCleanup.ts
+  verdict: 
+  why: 
+  argued: 
+
+- symbol: getStorageCleanupItemsForBatch
+  file: server/db/storageCleanup.ts
+  verdict: 
+  why: 
+  argued: 
+
+- symbol: _clearCooldowns
+  file: server/monitoring/healthMonitor.ts
+  verdict: KEEP
+  why: a seam whose own NAME says test-only; the sweep cannot see a convention and a human can
+  argued: 6c/13a
+
+- symbol: _getCooldownCount
+  file: server/monitoring/healthMonitor.ts
+  verdict: KEEP
+  why: a seam whose own NAME says test-only; the sweep cannot see a convention and a human can
+  argued: 6c/13a
+
+- symbol: recordGlobalFailedLogin
+  file: server/security/rateLimit.ts
+  verdict: HELD
+  why: a deleted alert and an alert that never fires look identical; wire-or-delete is the founder's call
+  argued: 9/13b
+  blocker: founder card — the security wire-or-delete decision
+
+- symbol: markGlobalAttackAlertSent
+  file: server/security/rateLimit.ts
+  verdict: HELD
+  why: a deleted alert and an alert that never fires look identical; wire-or-delete is the founder's call
+  argued: 9/13b
+  blocker: founder card — the security wire-or-delete decision
+
+- symbol: shouldSendGlobalAttackAlert
+  file: server/security/rateLimit.ts
+  verdict: HELD
+  why: a deleted alert and an alert that never fires look identical; wire-or-delete is the founder's call
+  argued: 9/13b
+  blocker: founder card — the security wire-or-delete decision
+
+- symbol: _clearPendingActions
+  file: server/slack/slackApproval.ts
+  verdict: KEEP
+  why: a seam whose own NAME says test-only; the sweep cannot see a convention and a human can
+  argued: 6c/13a
+
+- symbol: _clearDedupCache
+  file: server/slack/slackCore.ts
+  verdict: KEEP
+  why: a seam whose own NAME says test-only; the sweep cannot see a convention and a human can
+  argued: 6c/13a
+
+- symbol: getDedupCacheSize
+  file: server/slack/slackCore.ts
+  verdict: 
+  why: 
+  argued: 
+
+- symbol: allowColdImports
+  file: server/testing/coldImportTimeout.ts
+  verdict: 
+  why: 
+  argued: 
+
+- symbol: clearAllUserSessions
+  file: server/wardrobe/vtoSession.ts
+  verdict: 
+  why: 
+  argued:
