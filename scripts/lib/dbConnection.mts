@@ -84,6 +84,50 @@ export function resolveDatabaseUrl(): string | undefined {
   return process.env.MYSQL_PUBLIC_URL ?? process.env.PUBLIC_DATABASE_URL ?? process.env.DATABASE_URL;
 }
 
+export class WrongWorldError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "WrongWorldError";
+  }
+}
+
+/**
+ * REFUSE TO OPEN ONE WORLD FROM INSIDE THE OTHER.
+ *
+ * `resolveDatabaseUrl` above is the right answer and it is **used by 4 of 404
+ * callers** (measured 2026-08-18). `scripts/lib/worldGuard.mts` is the other
+ * right answer and must be imported and called per script. Both are opt-in, and
+ * a control that is not invoked does not exist — which is the same sentence
+ * that put the timezone at this door instead of in a documented helper, one
+ * paragraph up.
+ *
+ * So the check lives HERE, and it fails CLOSED. `MYSQL_PUBLIC_URL` is only ever
+ * present because somebody deliberately wrapped the command in the production
+ * MySQL service; opening a DIFFERENT url in that process is never what they
+ * meant. It refuses rather than silently switching worlds, because choosing on
+ * the caller's behalf would be the same surprise pointing the other way.
+ *
+ * **What it cost before it existed:** an investigation into a founder-reported
+ * defect read its rows from dev, reported them as production, and stated what
+ * he had been charged. The rows were right; the world was wrong. The `[db]`
+ * line below printed `hayabusa.proxy.rlwy.net:52008` at the time — and since
+ * the two worlds share a host and a database name and differ only by PORT, the
+ * line written to prevent exactly this was read straight past.
+ */
+export function assertSameWorld(
+  uri: string,
+  env: Record<string, string | undefined> = process.env,
+): void {
+  const injected = env.MYSQL_PUBLIC_URL;
+  if (!injected || uri === injected) return;
+  throw new WrongWorldError(
+    `this process is inside a Railway production run, but the url being opened is a different world: `
+    + `opening ${worldOf(uri)} while MYSQL_PUBLIC_URL points at ${worldOf(injected)}. `
+    + `Use openDatabase(resolveDatabaseUrl()) so the wrapped command reads the world it was wrapped for — `
+    + `or drop the "railway run --service MySQL" prefix if you meant the local one.`,
+  );
+}
+
 /**
  * THE CONNECTION AS A SCRIPT USES IT — the same object, with `query` typed for
  * the one thing every probe here does.
@@ -121,6 +165,7 @@ export function openDatabase(
     ? { uri: input }
     : { ...input };
   if (!options.uri) throw new Error("no DATABASE_URL — pass one explicitly for a production ceremony");
+  assertSameWorld(options.uri);
   /* Every opened connection says which world it opened, on STDERR so a script
      whose stdout is a report or a JSON payload is not disturbed by it. The
      silent version of this line cost a wrong reading tonight. */
@@ -151,6 +196,9 @@ export function openPool(
     ? { uri: input }
     : { ...input };
   if (!options.uri) throw new Error("no DATABASE_URL — pass one explicitly for a production ceremony");
+  /* The same door for a pool. Sweeping only the connections would leave half of
+     the class behind, which is how the last one survived a documented helper. */
+  assertSameWorld(options.uri);
   return mysql.createPool({ ...options, timezone: "Z" } as mysql.PoolOptions);
 }
 
