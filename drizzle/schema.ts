@@ -18,7 +18,7 @@ import { BODY_ANCHOR_REGIONS } from "../shared/bodyAnchorRegions";
 import { INK_PLACEMENTS } from "../shared/inkPlacementVocabulary";
 import { INK_SIDES } from "../shared/inkReleasedPlacements";
 import { INK_PROVENANCES } from "../shared/inkProvenance";
-import type { ReferenceIntent } from "../shared/referenceIntents";
+import { REFERENCE_INTENTS, type ReferenceIntent } from "../shared/referenceIntents";
 
 /**
  * Core user table backing auth flow.
@@ -2815,6 +2815,56 @@ export const castingOpenLaneDemand = mysqlTable("casting_open_lane_demand", {
 
 export type CastingOpenLaneDemandRow = typeof castingOpenLaneDemand.$inferSelect;
 export type InsertCastingOpenLaneDemandRow = typeof castingOpenLaneDemand.$inferInsert;
+
+/**
+ * How a read of a customer's reference ended.
+ *
+ * One value per way the reader can finish, taken from the reader's own refusal
+ * codes rather than invented here, so a tally can tell *we could not see any
+ * makeup* apart from *the transport was down* — two rows that would otherwise
+ * both read as "it did not work" and send a reviewer to the wrong repair.
+ *
+ * `referenceReadDemand.test.ts` asserts that every refusal code the reader can
+ * produce has a value here, so adding a refusal without a migration reddens the
+ * suite rather than writing a value MySQL truncates to the empty string.
+ */
+export const CASTING_REFERENCE_READ_OUTCOMES = [
+  "delivered",
+  "no_transport",
+  "unreadable",
+  "no_makeup_visible",
+  "names_hair",
+] as const;
+
+/**
+ * WHAT CUSTOMERS TAKE FROM REFERENCES, AND HOW IT GOES (migration 0036, ruled
+ * fable-941 §3a).
+ *
+ * One row is: somebody took a declared feature from a reference, and this is
+ * how it went. It exists because the forms that keep NOTHING — makeup travels
+ * as words, and the picture is read and discarded — have no row for the intent
+ * declaration to ride on, so without this their demand would be invisible while
+ * the one form that keeps bytes was counted. That is backwards, and fable-937
+ * §3's tally is the thing it would have been backwards for.
+ *
+ * **The column list is the privacy boundary.** The sentence the reader produced
+ * is the sharpest exclusion: a makeup note read off her own reference describes
+ * a real person's face. It is absent from the row, not omitted from a
+ * projection. So is the account, the cast, and any key.
+ */
+export const castingReferenceReads = mysqlTable("casting_reference_reads", {
+  id: int("id").autoincrement().primaryKey(),
+  /** Which feature was taken — the ruled vocabulary, even where unbuilt. */
+  intent: mysqlEnum("intent", REFERENCE_INTENTS).notNull(),
+  outcome: mysqlEnum("outcome", CASTING_REFERENCE_READ_OUTCOMES).notNull(),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+}, (table) => ([
+  index("idx_casting_reference_reads_intent").on(table.intent, table.outcome),
+  index("idx_casting_reference_reads_created").on(table.createdAt),
+]));
+
+export type CastingReferenceReadRow = typeof castingReferenceReads.$inferSelect;
+export type InsertCastingReferenceReadRow = typeof castingReferenceReads.$inferInsert;
 
 /**
  * THE FACE SCAN, KEPT — one row per (candidate, version) (migration 0032).
