@@ -52,6 +52,40 @@
  * naming another untracked disposable is not a citation, it is two pieces of
  * debris agreeing with each other.
  *
+ * # THE COORDINATION SURFACE — the citer universe the tracked corpus cannot see
+ *
+ * "Named by something tracked" is the right evidence bar for KEEPING and the
+ * WRONG completeness bar for DELETING (ruled fable-998 §2, measured). This
+ * program's standing instruments are cited by the mailbox, the founder queue and
+ * the memory files — none of which are in `git ls-files`, by construction. The
+ * measured case: the campaign ledger pair was eight days cold and squarely in
+ * DELETE, while being the instrument every campaign state block re-runs.
+ *
+ * So a second surface is read, and a hit there is COURTESY: held, printed with
+ * its citers, and NOT deleted. It does not change the evidence rule — a courtesy
+ * citer never promotes anything — it changes the delete list.
+ *
+ * Until 2026-08-19 this pass was a shell loop typed by hand at the knife, and
+ * **its first run returned a false zero**: a malformed `grep -c … || echo 0`
+ * emitted two lines and the integer comparison collapsed every condition to
+ * false. It reads 0-of-143 exactly as a working sweep that found nothing reads.
+ * That is why it lives here now, with controls, instead of in a shell.
+ *
+ * ## And why the negative control does not PRINT its own token
+ *
+ * The hand-run version was contaminated inside one shift: the control token — a
+ * name git has never seen — was quoted in the report filed to the mailbox, and
+ * the next run grepped the mailbox and found it. The specimen joined the
+ * vocabulary. So the token is declared HERE, in tracked source that the surface
+ * reader does not read, and the control line prints its VERDICT without ever
+ * printing the string. An instrument that publishes its own control specimen
+ * into the corpus it searches is an instrument with an expiry date.
+ *
+ * Memory lives outside the repository at a machine-specific path, so it is not
+ * hardcoded: set `CLEANUP_COORDINATION_DIRS` (comma- or semicolon-separated) to
+ * add surfaces. Absent, the surface is `.agents/` — which holds the mailbox and
+ * the founder queue, the two that matter most.
+ *
  * # The date fence
  *
  * §2 kept the last two days' worth because they belong to work in flight. That
@@ -60,7 +94,8 @@
  * is held regardless of citation.
  */
 import { execFileSync } from "node:child_process";
-import { readFileSync, statSync } from "node:fs";
+import { readdirSync, readFileSync, statSync } from "node:fs";
+import type { Dirent } from "node:fs";
 import { basename, resolve } from "node:path";
 
 const REPO = resolve(import.meta.dirname, "..");
@@ -117,8 +152,62 @@ function citers(name: string): string[] {
     && tokenIn(sources[index]!, name));
 }
 
+/*
+  THE SECOND SURFACE. Read once, concatenated once — same reason as the tracked
+  corpus above: a sweep too slow to re-run is how a list goes stale.
+*/
+function surfaceRoots(): string[] {
+  const extra = (process.env.CLEANUP_COORDINATION_DIRS ?? "")
+    .split(/[,;]/).map((entry) => entry.trim()).filter((entry) => entry !== "");
+  return [resolve(REPO, ".agents"), ...extra];
+}
+
+function walkText(dir: string, out: Array<{ path: string; text: string }> = []): Array<{ path: string; text: string }> {
+  let entries: Dirent[];
+  try { entries = readdirSync(dir, { withFileTypes: true }); } catch { return out; }
+  for (const entry of entries) {
+    const full = resolve(dir, entry.name);
+    if (entry.isDirectory()) { walkText(full, out); continue; }
+    if (!/\.(md|txt)$/i.test(entry.name)) continue;
+    try {
+      const stat = statSync(full);
+      if (stat.size > 4 * 1024 * 1024) continue;
+      out.push({ path: full, text: readFileSync(full, "utf8") });
+    } catch { /* unreadable is not a citation */ }
+  }
+  return out;
+}
+
+const surface = surfaceRoots().flatMap((root) => walkText(root));
+
+/** WHO on the coordination surface names it — never merely whether. */
+function courtesyCiters(name: string): string[] {
+  return surface
+    .filter((file) => tokenIn(file.text, name))
+    .map((file) => file.path.slice(REPO.length + 1).split("\\").join("/"));
+}
+
+/*
+  CONTROLS, BOTH DIRECTIONS, AND THE READER REFUSES RATHER THAN GOES BLIND.
+  This predicate can only ever move files OUT of DELETE, so its silent failure
+  mode is a surface that reads as empty — which deletes the very instruments it
+  exists to protect. An empty surface is therefore fatal, not quiet.
+*/
+const COURTESY_POSITIVE = "campaign-ledger-window-disposable";
+/* Declared here on purpose — see the header. Never printed. */
+const COURTESY_NEGATIVE = "zz-no-such-instrument-7f31b9-disposable";
+const courtesyPositive = courtesyCiters(COURTESY_POSITIVE).length > 0;
+const courtesyNegative = courtesyCiters(COURTESY_NEGATIVE).length === 0;
+console.log(`  surface   ${surface.length} coordination files read`);
+console.log(`  control   positive ${COURTESY_POSITIVE} ${courtesyPositive ? "FOUND     PASS" : "NOT FOUND  FAIL"}`);
+console.log(`  control   negative (token withheld by design) ${courtesyNegative ? "absent    PASS" : "PRESENT — CORPUS CONTAMINATED  FAIL"}`);
+if (surface.length === 0 || !courtesyPositive || !courtesyNegative) {
+  console.log("REFUSED — the coordination surface cannot be trusted, so nothing here may be called deletable.");
+  process.exit(1);
+}
+
 const now = Date.now();
-type Verdict = "CITED" | "FRESH" | "HAND" | "DELETE";
+type Verdict = "CITED" | "FRESH" | "HAND" | "COURTESY" | "DELETE";
 const rows: Array<{ path: string; verdict: Verdict; ageHours: number; by: string[] }> = [];
 for (const entry of untracked) {
   /* git reports a directory as `output/`; the trailing slash is not a name. */
@@ -127,11 +216,13 @@ for (const entry of untracked) {
   try { ageHours = (now - statSync(resolve(REPO, path)).mtimeMs) / 3_600_000; } catch { /* gone */ }
   const name = basename(path);
   const by = distinctive(name) ? citers(name) : [];
+  const courtesy = distinctive(name) && by.length === 0 ? courtesyCiters(name) : [];
   const verdict: Verdict = !distinctive(name) ? "HAND"
     : by.length > 0 ? "CITED"
     : ageHours < FRESH_HOURS ? "FRESH"
+    : courtesy.length > 0 ? "COURTESY"
     : "DELETE";
-  rows.push({ path, verdict, ageHours, by });
+  rows.push({ path, verdict, ageHours, by: by.length > 0 ? by : courtesy });
 }
 
 const count = (verdict: Verdict) => rows.filter((row) => row.verdict === verdict).length;
@@ -139,18 +230,19 @@ console.log(`THE UNTRACKED HALF — ${rows.length} paths, against ${tracked.leng
 console.log(`  CITED   ${count("CITED")}   named by something tracked — promote or retire the citation`);
 console.log(`  FRESH   ${count("FRESH")}   touched inside ${FRESH_HOURS}h — work in flight, held`);
 console.log(`  HAND    ${count("HAND")}   basename too generic to auto-decide — read below`);
-console.log(`  DELETE  ${count("DELETE")}   named by nothing tracked, and cold`);
+console.log(`  COURTESY ${count("COURTESY")}  cold, but the mailbox/queue names it — HELD, not deleted`);
+console.log(`  DELETE  ${count("DELETE")}   named by nothing tracked OR coordinating, and cold`);
 /*
   THE BUCKETS MUST SUM (cec38827's rule, on this instrument): a verdict whose
   parts do not add up to what it read is not a reading.
 */
-if (count("CITED") + count("FRESH") + count("HAND") + count("DELETE") !== rows.length) {
+if (count("CITED") + count("FRESH") + count("HAND") + count("COURTESY") + count("DELETE") !== rows.length) {
   console.log("REFUSED — the buckets do not sum to what was swept.");
   process.exit(1);
 }
 
 const KILL_LIST = "docs/specs/CLEANUP_MILESTONE_TRIAGE.md";
-for (const verdict of ["HAND", "CITED", "FRESH"] as const) {
+for (const verdict of ["HAND", "CITED", "COURTESY", "FRESH"] as const) {
   console.log(`\n${verdict}`);
   for (const row of rows.filter((r) => r.verdict === verdict)) {
     console.log(`  ${row.path}`);

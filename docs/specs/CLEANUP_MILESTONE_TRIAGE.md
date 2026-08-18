@@ -1656,9 +1656,17 @@ token: negative 0, positive 5, and three deleted stems spot-read at 0 by hand.
 
 ```
 THE UNTRACKED HALF — 114 paths
-  CITED   3   ·   FRESH 74   ·   HAND 1   ·   DELETE 36
-  DELETE 36 = 1 refusal (the hash-named mp4) + 35 courtesy-HELD
+  CITED 3  ·  FRESH 74  ·  HAND 1 (`output/`)  ·  COURTESY 36  ·  DELETE 0
 ```
+
+⚠ **One correction to my own hand count, made by the machine that replaced it**
+(§24i). By hand I read this as *"36 = 1 refusal (the mp4) + 35 courtesy-held"*.
+The mechanized pass puts all **36** in COURTESY, the mp4 included — because the
+coordination surface DOES name it: the message asking the founder what it is, is
+itself a citation. The refusal I made by judgement is now made by rule, which is
+the better outcome and not the one I predicted.
+
+**`DELETE` is 0. There is nothing left in the untracked half to take.**
 
 The four that were cold AND unnamed by every surface — `survey-bot-fixtures`,
 `survey-cast-assets`, `survey-signed-bot`, `survey-verify-bot` — are archived to
@@ -1684,3 +1692,48 @@ file byte-identical to `HEAD`.
 The friction is real and named rather than hidden: any new export used only by its
 own test now blocks `pnpm check` until four lines of YAML exist. Those are exactly
 the four lines the knife skipped.
+
+
+### 24i. BOUND ONE IS NOW A MECHANISM, NOT A SHELL LOOP I TYPED
+
+The courtesy pass lived in a hand-typed `grep` loop at the knife, and §24g
+records that its first run returned a false zero. An instrument that can return
+0-of-143 when the answer is 3, and looks identical either way, does not get to be
+re-typed by the next shift. It is now inside
+`scripts/sweep-untracked-disposables-disposable.mts` as a fifth bucket:
+
+```
+CITED     named by TRACKED content            → promote or retire the citation
+FRESH     touched inside 48h                  → work in flight
+HAND      basename too generic to auto-decide → a person reads it
+COURTESY  cold, but the MAILBOX/QUEUE names it → HELD, not deleted
+DELETE    named by nothing, tracked or coordinating, and cold
+```
+
+A courtesy citer never promotes anything — the evidence rule for KEEPING is
+unchanged. It only removes a path from the delete list, which is exactly the
+scope fable-998 §2 gave it. Citers are printed by name for COURTESY as they are
+for CITED, because the death-warrant rule applies on this surface too: a message
+ordering a file deleted names it.
+
+**It refuses rather than going blind.** This predicate can only move files OUT of
+DELETE, so its silent failure is a surface that reads empty — which would delete
+the very instruments it exists to protect. Both arms are driven:
+
+```
+ARM A  surface pointed at an empty directory
+       → "surface 0 coordination files read" · REFUSED · exit 1
+ARM B  the negative control's token planted on the surface
+       → "PRESENT — CORPUS CONTAMINATED  FAIL" · REFUSED · exit 1
+normal 1739 coordination files · positive FOUND · negative absent · exit 0
+```
+
+Arm A's sabotage was reverted from a `cp` backup and verified byte-identical —
+never with `git checkout`, which would have taken the whole working tree.
+
+**And the contamination trap is designed out rather than documented.** The
+negative control's token is declared in tracked source, which the surface reader
+does not read, and **the control line prints its verdict without ever printing
+the string.** The hand-run version was contaminated within one shift precisely
+because its report quoted the token into the corpus it searches. An instrument
+that publishes its own control specimen has an expiry date.
