@@ -235,6 +235,65 @@ export type FacePanelGroup = {
   rows: readonly FacePanelRow[];
 };
 
+/**
+ * NO FEATURE, NO ROW — the founder's final ruling on the none-state
+ * (fable-904, superseding fable-889 §2's show-bald).
+ *
+ * *"if he's bald i guess it doesnt need to appear — there's no feature until
+ * there is one, same rule goes for clean shaven."* The panel is the record of
+ * what the cast HAS; the photograph carries the absence. So a row whose only
+ * content is a finding of nothing does not draw at all.
+ *
+ * **Only the RENDER changes.** The server goes on deciding `absent`, the scan
+ * goes on telling found-none apart from could-not-look, and the catalogue goes
+ * on knowing `whenAbsent` — because that distinction still guards edits and
+ * diagnosis server-side. Throwing the field away to hide the row would be
+ * deleting the knowledge in order to change the view.
+ *
+ * **Flipping back is two named edits and not one**, and it is worth saying so
+ * rather than leaving a line that pretends otherwise: drop the filter in
+ * `drawnGroups`, and restore the absent line where its own comment now sits in
+ * the JSX below. fable-904 §2b hoped for one line; one line was only reachable
+ * by keeping a branch the filter makes unreachable, which is a branch no test
+ * can fail — a shape this codebase has already paid for. The logic itself is
+ * driven directly by the suite rather than through a render, so the flip is
+ * cheap in the way that actually matters.
+ *
+ * Its two guards are the ones that keep it honest, and both are about what the
+ * panel actually KNOWS:
+ *
+ *   pending  a read still running has found nothing YET, which is not the same
+ *            as having found nothing. Hiding it would take away the place kept
+ *            for an answer that is on its way.
+ *   carried  another version's reading. "Bald" claimed about a frame nobody has
+ *            read is the exact falsehood `state` exists to prevent.
+ */
+export function isNoneStateRow(row: FacePanelRow, carried: boolean): boolean {
+  return row.words.length === 0
+    && Boolean(row.absent)
+    && row.state !== "pending"
+    && !carried;
+}
+
+/**
+ * The groups as the panel DRAWS them: none-state rows gone, and any heading
+ * left standing over zero rows gone with them.
+ *
+ * A "Hair" header above nothing is a promise of content that does not exist —
+ * the same restraint that makes an empty panel render as nothing at all, one
+ * level in. Derived here rather than filtered inline in the JSX so the panel's
+ * own emptiness test below asks about what will be DRAWN rather than about what
+ * it was handed.
+ */
+export function drawnGroups(
+  groups: readonly FacePanelGroup[],
+  carried: boolean,
+): FacePanelGroup[] {
+  return groups
+    .map((group) => ({ ...group, rows: group.rows.filter((row) => !isNoneStateRow(row, carried)) }))
+    .filter((group) => group.rows.length > 0);
+}
+
 export function FacePanel({
   groups,
   possessive,
@@ -312,7 +371,8 @@ export function FacePanel({
     heading and "Reading her features…", not the previous woman's rows and not a
     blank column either.
   */
-  if (groups.length === 0 && !working) return null;
+  const drawn = drawnGroups(groups, carried);
+  if (drawn.length === 0 && !working) return null;
 
   return (
     <div className="dpc-face" aria-labelledby="dpc-face-title">
@@ -324,7 +384,7 @@ export function FacePanel({
             arriving are their own announcement. */}
         {working ? <p className="dpc-face__working" role="status">Reading {possessive} features…</p> : null}
       </div>
-      {groups.map((group) => (
+      {drawn.map((group) => (
         <section className="dpc-face__group" key={group.group}>
           <p className="dpc-face__groupName">{group.heading}</p>
           <ul className="dpc-face__rows">
@@ -415,19 +475,20 @@ export function FacePanel({
                         <span className="dpc-face__words">{row.words.join(", ")}</span>
                       ) : null}
                       {/*
-                        AND A ROW WITH NOTHING FOUND SAYS SO (founder, fable-889).
+                        AND A ROW WITH NOTHING FOUND DRAWS NOTHING — because it
+                        is not here at all (founder, fable-904).
 
-                        Only where the words are empty — her own words win the
-                        line whenever she has any, and the server has already
-                        made that decision, so this cannot draw both. Under the
-                        same two guards as the words above: a pending or carried
-                        row is another version's reading or none yet, and
-                        "bald" claimed about a frame that was never read is the
-                        exact falsehood `state` exists to prevent.
+                        This is where "bald" used to be said, under fable-889's
+                        *"yes show bald"*. `isNoneStateRow` now takes the whole
+                        row out one level up, so there is no line to write: the
+                        photograph carries the absence and the panel is the
+                        record of what the cast HAS.
+
+                        Deleted rather than left behind a false condition. A
+                        branch the filter above can never reach is a branch no
+                        test can fail, and this codebase has already paid for
+                        one of those.
                       */}
-                      {row.words.length === 0 && row.absent && row.state !== "pending" && !carried ? (
-                        <span className="dpc-face__words dpc-face__words--absent">{row.absent}</span>
-                      ) : null}
                       {row.state === "pending" || carried
                         ? <span className="dpc-face__words" aria-hidden="true">&nbsp;</span>
                         : null}

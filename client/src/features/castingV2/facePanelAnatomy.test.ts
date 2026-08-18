@@ -356,15 +356,25 @@ describe("the panel's copy, classified", () => {
        (`data-parts`) is not mistaken for copy. What is read out loud is what
        this law is about. */
     /*
-      THREE NOW (founder ruling fable-889, 2026-08-17): `row.absent` is what a
-      row states when the scan asked and found nothing — *"bald"*. It belongs in
-      this set for the same reason the other two do: the SERVER wrote it. The
-      word is authored in the catalogue beside the argument that an empty read
-      there cannot mean "hidden", so the browser composes nothing and this file
-      can go on proving that.
+      BACK TO TWO (founder ruling fable-904, 2026-08-17, final over fable-889).
+
+      `row.absent` was briefly a third: the word a row stated when the scan
+      asked and found nothing — *"bald"*. It is gone from this set because the
+      ROW is gone, not because the field is: *"there's no feature until there is
+      one, same rule goes for clean shaven."* The panel is the record of what
+      the cast HAS and the photograph carries the absence, so a none-state row
+      is filtered out one level up (`isNoneStateRow`) and there is no line left
+      to write.
+
+      **The field itself is untouched**, and this set is exactly why that
+      distinction is worth keeping visible: the server still decides `absent`,
+      the scan still tells found-none from could-not-look, and the catalogue
+      still knows `whenAbsent` — because that guards edits and diagnosis
+      server-side. What changed is one view, and this line is the pin that
+      would notice it changing back by accident.
     */
     const rendered = panel.match(/>\{row\.[a-zA-Z.]+\}/g) ?? [];
-    expect(new Set(rendered)).toEqual(new Set([">{row.name}", ">{row.from}", ">{row.absent}"]));
+    expect(new Set(rendered)).toEqual(new Set([">{row.name}", ">{row.from}"]));
   });
 
   it("shows NOTHING where there is no crop — his words were 'never as empty squares'", async () => {

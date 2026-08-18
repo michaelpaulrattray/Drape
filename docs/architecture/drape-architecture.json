@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "92c79d77777f1b5e"
+    "sourceFingerprint": "a97c2c13868eb3e9"
   },
   "domains": [
     {
@@ -8658,6 +8658,10 @@
     {
       "id": "test:client/src/features/castingV2/facePanelAnatomy.test.ts",
       "path": "client/src/features/castingV2/facePanelAnatomy.test.ts"
+    },
+    {
+      "id": "test:client/src/features/castingV2/facePanelNoneState.test.ts",
+      "path": "client/src/features/castingV2/facePanelNoneState.test.ts"
     },
     {
       "id": "test:client/src/features/castingV2/failureCopy.test.ts",
