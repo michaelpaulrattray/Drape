@@ -1299,3 +1299,61 @@ the milestone's outstanding queue rather than a state buried in a paragraph.
 an earlier shift is no longer on the sweep's list, so it has no row. The verdict
 is for the row flipped in the same commit that deletes its symbol. Git and the
 sections above hold the history; the table holds the door.
+
+---
+
+## 22. THE APPARATUS COUNTED ITSELF A THIRD TIME — and the third repair is a
+## rule about what a mention IS, not a list of files
+
+The disposition table was seeded and committed. The next run of the door read:
+
+```
+THE TABLE — 124 rows against a reading list of 96
+```
+
+**Ninety-six.** Twenty-eight symbols left the reading list the moment the
+seeder that records their dispositions became a tracked file — because that
+seeder holds their names as quoted strings, and the classifier counted a quoted
+name as a production mention.
+
+- §19: an instrument's **docblock** promoted three symbols off the list.
+- §22: a disposition table's **data** promoted twenty-eight.
+
+Both times the milestone's own writing became evidence about the code it was
+writing about.
+
+**The first two repairs named files.** `SELF` was two filenames, then a family
+pattern. That does not hold, because the next instrument has a new name — and
+the next one arrived within the hour, with a name (`seed-cleanup-dispositions`)
+that no pattern written for `sweep-*`/`triage-*` could have anticipated.
+
+**So the third repair is a rule about what a mention is:**
+
+> **A name inside quotes is DATA, not a call.** A table entry, a test title, a
+> config key. The classifier blanks string literals before it decides, exactly
+> as it blanks comments — the sibling rule to §19a's, and it covers every
+> instrument that will ever be written, including ones nobody has thought of.
+
+Both directions are controlled on one synthetic line, so a stripper that
+blanked everything would fail the second arm:
+
+```
+INTERSECTION CONTROLS
+  positive  shouldSendGlobalAttackAlert → none    PASS
+  negative  isAccountLocked             → barrel  PASS
+  synthetic a name only DISCUSSED is not a mention  PASS
+  synthetic a call after a URL survives stripping   PASS
+  synthetic a name inside QUOTES is data, not a call PASS
+  synthetic an identifier beside it survives         PASS
+```
+
+And the list returns to **124 of 168**, unchanged from before the seeder
+existed — which is the actual proof the repair worked: the number a file's
+existence should not have moved is back where it was.
+
+> **The class, in its final form for this milestone:** an instrument that reads
+> source text has three kinds of thing in front of it — code, prose and data —
+> and only the first is evidence. Prose was §19. Data was §22. **Both were
+> found by the number moving when nothing about the product had changed**, and
+> that is the tell worth keeping: if writing a document changes what the
+> instrument says about the code, the instrument is reading the document.

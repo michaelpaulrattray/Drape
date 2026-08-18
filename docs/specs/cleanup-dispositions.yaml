@@ -4,7 +4,9 @@
 # `argued` names the section of CLEANUP_MILESTONE_TRIAGE.md that argues it, and
 # that section — not this line — is the reasoning. A HELD row names its blocker.
 #
-# Verdicts: KEEP · TAKE (ruled for removal, not yet done) · TAKEN · HELD · FILED. An EMPTY verdict is the honest record
+# Verdicts: KEEP · TAKE (read, and the reading says remove; not yet done) · TAKEN
+# · HELD · FILED. A TAKE row deletes nothing by itself — the execution is its own
+# commit, with the test question of 8c asked first, and a reviewer sees it there. An EMPTY verdict is the honest record
 # of a symbol nobody has read yet, and `check-cleanup-dispositions.mts --strict`
 # is green only when there are none left.
 #
@@ -253,21 +255,21 @@
 
 - symbol: deterministicBriefCompiler
   file: server/castingV2/briefCompiler.ts
-  verdict: 
-  why: 
-  argued: 
+  verdict: KEEP
+  why: its docblock: an explicit seam for tests and for any caller that must compile without a network round trip
+  argued: 5a
 
 - symbol: censusIsOpen
   file: server/castingV2/callCensus.ts
-  verdict: 
-  why: 
-  argued: 
+  verdict: TAKE
+  why: an unused convenience beside the live censusSoFar; the caller it was written for never arrived
+  argued: 17-family
 
 - symbol: FRAMING_PREMISE
   file: server/castingV2/castingFrame.ts
-  verdict: 
-  why: 
-  argued: 
+  verdict: KEEP
+  why: the framing sentence the out-of-frame table is keyed to — asserted, never assumed
+  argued: 5a
 
 - symbol: unmeasuredAmplitudes
   file: server/castingV2/changeAmplitude.ts
@@ -295,9 +297,9 @@
 
 - symbol: faceScanCacheStats
   file: server/castingV2/faceScanService.ts
-  verdict: 
-  why: 
-  argued: 
+  verdict: KEEP
+  why: its docblock: for tests and for the reliability report
+  argued: 6c
 
 - symbol: resetFaceScanCache
   file: server/castingV2/faceScanService.ts
@@ -313,9 +315,9 @@
 
 - symbol: falGateStats
   file: server/castingV2/falConcurrency.ts
-  verdict: 
-  why: 
-  argued: 
+  verdict: KEEP
+  why: its docblock: for the report and the tests — never a decision
+  argued: 6c
 
 - symbol: measuredPhrasings
   file: server/castingV2/falRegionReader.ts
@@ -355,15 +357,15 @@
 
 - symbol: interpreterParseStats
   file: server/castingV2/interpreter.ts
-  verdict: 
-  why: 
-  argued: 
+  verdict: KEEP
+  why: exported so a test can assert the parse-failure alarm FIRES rather than trusting it does
+  argued: 6c
 
 - symbol: SYSTEM_PROMPT_FOR_TESTS
   file: server/castingV2/interpreter.ts
-  verdict: 
-  why: 
-  argued: 
+  verdict: KEEP
+  why: the sweep's own by-construction positive control; its NAME is why it stays test-only
+  argued: 0
 
 - symbol: resetInterpreterForTests
   file: server/castingV2/interpreter.ts
@@ -499,9 +501,9 @@
 
 - symbol: DISPLAY_REGION_VOCABULARY
   file: server/castingV2/referenceSlotCatalogue.ts
-  verdict: 
-  why: 
-  argued: 
+  verdict: KEEP
+  why: a policy record, deliberately NOT a route into the mint; slotSpecFor never reads display
+  argued: 7b/10
 
 - symbol: isFeatureSlot
   file: server/castingV2/referenceSlots.ts
@@ -535,15 +537,15 @@
 
 - symbol: refusalCharge
   file: server/castingV2/refineRefusals.ts
-  verdict: 
-  why: 
-  argued: 
+  verdict: TAKE
+  why: an accessor over REFINE_REFUSALS, which the live path (refineInterpreter) indexes directly
+  argued: 17-family
 
 - symbol: refusalReportClass
   file: server/castingV2/refineRefusals.ts
-  verdict: 
-  why: 
-  argued: 
+  verdict: TAKE
+  why: an accessor over REFINE_REFUSALS, which the live path indexes directly
+  argued: 17-family
 
 - symbol: namesHerHairItself
   file: server/castingV2/refineService.ts
@@ -559,15 +561,15 @@
 
 - symbol: heartbeatLine
   file: server/castingV2/reliabilityReport.ts
-  verdict: 
-  why: 
-  argued: 
+  verdict: TAKE
+  why: a one-line formatter beside the live formatReport; the tracked report script never calls it — and it was CORRECTED once for a defect it could never have shown anyone
+  argued: 17-family
 
 - symbol: namesRemoval
   file: server/castingV2/removalWords.ts
-  verdict: 
-  why: 
-  argued: 
+  verdict: TAKE
+  why: its own docblock says the service's backstop uses removalEvidence, which is live; this is the superseded coarse question
+  argued: 17-family
 
 - symbol: facetsWithUnreliabilityPrior
   file: server/castingV2/renderVerification.ts
@@ -602,9 +604,9 @@
 
 - symbol: ACCESSORY_FACET
   file: server/castingV2/segmentsOnFace.ts
-  verdict: 
-  why: 
-  argued: 
+  verdict: KEEP
+  why: the one facet id the module is asked about by name, kept honest beside its table
+  argued: 6a
 
 - symbol: resetSignEnginesForTests
   file: server/castingV2/signEngine.ts
@@ -614,9 +616,9 @@
 
 - symbol: BIAS_DEFERRAL_CLAUSE
   file: server/castingV2/stylingResolution.ts
-  verdict: 
-  why: 
-  argued: 
+  verdict: KEEP
+  why: the clause every bias line ends on, exported so tests pin the contract
+  argued: 5a
 
 - symbol: exemptSubjects
   file: server/castingV2/subjectQualifiers.ts
@@ -761,9 +763,9 @@
 
 - symbol: allowColdImports
   file: server/testing/coldImportTimeout.ts
-  verdict: 
-  why: 
-  argued: 
+  verdict: KEEP
+  why: server/testing/ is test infrastructure by directory
+  argued: 13a
 
 - symbol: clearAllUserSessions
   file: server/wardrobe/vtoSession.ts

@@ -91,6 +91,37 @@ export function withoutComments(source: string): string {
   return out;
 }
 
+/**
+ * The line with its string literals blanked.
+ *
+ * A NAME INSIDE QUOTES IS DATA, NOT A CALL — the comment rule's sibling, found
+ * the hard way. The milestone's own disposition seeder holds a table of symbol
+ * names as quoted strings, and the moment it was committed the reading list
+ * fell from 124 to 96: twenty-eight symbols were "mentioned in production" by
+ * the very file recording that nobody calls them.
+ *
+ * That is the THIRD time this apparatus has counted itself. The first two were
+ * repaired by naming the offending files — which does not hold, because the
+ * next instrument has a new name. A rule about what a mention IS does hold.
+ */
+function withoutStrings(line: string): string {
+  const quotes = new Set(['"', "'", "`"]);
+  let out = "";
+  let index = 0;
+  while (index < line.length) {
+    const character = line[index]!;
+    if (!quotes.has(character)) { out += character; index += 1; continue; }
+    const quote = character;
+    index += 1;
+    while (index < line.length && line[index] !== quote) {
+      index += line[index] === String.fromCharCode(92) ? 2 : 1;
+    }
+    index += 1;
+    out += "QQ";
+  }
+  return out;
+}
+
 export type MentionKind = "barrel" | "dynamic" | "door" | "other" | "none";
 export type Mention = { kind: MentionKind; where: string };
 
@@ -158,6 +189,9 @@ export function buildClassifier(repoRoot: string): (symbol: string) => Mention {
       if (!word.test(text)) continue;
       for (const line of text.split(/\r?\n/)) {
         if (!word.test(line)) continue;
+        /* Data is not a call: a name that survives only inside quotes is a
+           table entry, a test title or a config key. */
+        if (!word.test(withoutStrings(line))) continue;
         /* Its own declaration is not a caller. */
         if (/^\s*export\s+(async\s+)?(function|const|class|type|interface)\s/.test(line)) continue;
         /* Nor is SOMEBODY ELSE'S declaration of the same name — a local in a
@@ -224,6 +258,14 @@ export function runMentionControls(
   const stripped = withoutComments(fixture);
   const strippedComment = !stripped.includes("zzzOnlyDiscussed");
   const keptCall = stripped.includes("zzzActuallyCalled");
+  /*
+    And the sibling rule, which cost the milestone a reading list: a name that
+    survives only inside quotes is DATA. Both directions, same line, so a
+    stripper that blanked everything would fail the second arm.
+  */
+  const dataLine = withoutStrings('  { symbol: "zzzInATable", verdict: zzzInCode },');
+  const blankedString = !dataLine.includes("zzzInATable");
+  const keptIdentifier = dataLine.includes("zzzInCode");
   log("  positive  shouldSendGlobalAttackAlert → " + positive.kind
     + "  " + (positive.kind === "none" ? "PASS" : "FAIL"));
   log("  negative  isAccountLocked             → " + negative.kind
@@ -232,8 +274,12 @@ export function runMentionControls(
     + (strippedComment ? "PASS" : "FAIL"));
   log("  synthetic a call after a URL survives stripping   "
     + (keptCall ? "PASS" : "FAIL"));
+  log("  synthetic a name inside QUOTES is data, not a call "
+    + (blankedString ? "PASS" : "FAIL"));
+  log("  synthetic an identifier beside it survives         "
+    + (keptIdentifier ? "PASS" : "FAIL"));
   return positive.kind === "none" && negative.kind !== "none"
-    && strippedComment && keptCall;
+    && strippedComment && keptCall && blankedString && keptIdentifier;
 }
 
 /**
