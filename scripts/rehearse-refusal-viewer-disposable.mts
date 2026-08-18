@@ -92,7 +92,27 @@ seededUrl.pathname = `/${databaseName}`;
 const runViewer = (label: string, out: string) => new Promise<{ code: number; output: string }>((resolve) => {
   console.log(`\n── ${label}`);
   let output = "";
-  const child = spawn("npx", ["tsx", "scripts/open-refused-crops.mts", "--user", "1", "--out", out], {
+  /*
+    `--bucket` IS NOT DECORATION HERE — it is what makes this rehearsal legal.
+
+    The viewer gained a guard (the two-legs-one-world rule): rows coming from a
+    world `.env` does not name, while the bucket is taken from the ambient
+    environment, is refused. This rehearsal does exactly that by design — it
+    points the rows at a throwaway database — so without naming the bucket it
+    gets a correct refusal on ARM 1 and reads it as the viewer being broken.
+
+    Found dead by RUNNING it (2026-08-19, the rehearse-* sweep ordered
+    fable-1011 §4). It had been failing since the guard landed; nothing was
+    wrong with the viewer, and the instrument said there was.
+
+    The bucket named is the ambient one, which is the same bucket the rows'
+    crops live in — the two legs really are one world, and now they say so.
+  */
+  const child = spawn("npx", [
+    "tsx", "scripts/open-refused-crops.mts",
+    "--user", "1", "--out", out,
+    "--bucket", process.env.R2_PUBLIC_URL ?? "",
+  ], {
     shell: process.platform === "win32",
     env: { ...process.env, DATABASE_URL: seededUrl.toString() },
   });
