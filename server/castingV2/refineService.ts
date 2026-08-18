@@ -550,7 +550,7 @@ async function defaultStoreImage(input: { key: string; bytes: Buffer; contentTyp
  * This factory ran per refine, and `createFalMaskedEditEngine` builds its own
  * `ProviderQueue` when it is handed none — so N concurrent edits meant N queues
  * of four, which is a limit that rises with load and therefore is not one. The
- * account's ceiling is spent by four paths (`falBudget.ts`) and this is one of
+ * account's ceiling is spent by five paths (`falBudget.ts`) and this is one of
  * them, so its allowance lives in the table and its queue lives here, once.
  */
 let maskedEditQueue: ProviderQueue | null = null;

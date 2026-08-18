@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { INK_PLACEMENTS } from "../../shared/inkPlacementVocabulary";
+import { inkTemplateFor } from "./inkTemplates";
 import {
   INK_PLATE_REFUSAL_CODES,
   inkPlateAlreadyMintedRefusal,
@@ -78,6 +79,49 @@ describe("the plate mint's doors", () => {
       inkPlateAlreadyMintedRefusal(true),
     ].map((refusal) => refusal!.code);
     expect(new Set(produced)).toEqual(new Set(INK_PLATE_REFUSAL_CODES));
+  });
+});
+
+describe("what the engine is told about the SHEET", () => {
+  /*
+    THE COURT'S OWN FINDING, made mechanical (2026-08-18).
+
+    Every committed template is a turnaround, and the prompt described one form.
+    The engine obeyed: the wrap court's first plate came back with the serpent
+    on the side view and two bare arms beside it — a $0.15 answer to a question
+    nobody had asked it. These arms fail if the sentence stops deriving from the
+    sheet.
+  */
+  it("names every view the placement's own template holds", () => {
+    for (const placement of INK_PLACEMENTS) {
+      const prompt = inkPlatePrompt({ placement, side: "centre" });
+      for (const view of inkTemplateFor(placement).views) {
+        expect(prompt, `${placement} must name its ${view} view`).toContain(view);
+      }
+      /* And it must ask for the design in ALL of them, which is the half a
+         list of names alone would not carry. */
+      expect(prompt).toContain("IN EVERY");
+      expect(prompt).toContain("never leave a view bare");
+    }
+  });
+
+  it("says the views are ONE body, because that is the thing being got wrong", () => {
+    const prompt = inkPlatePrompt({ placement: "upperArm", side: "left" });
+    expect(prompt).toContain("one body seen from several angles, not several different bodies");
+    /* One tattoo, not one per view — the failure on the other side of the same
+       coin, and the one that would look like success in a thumbnail. */
+    expect(prompt).toContain("It is ONE tattoo");
+    expect(prompt).toContain("Never draw a second copy");
+  });
+
+  it("COUNTS them from the template rather than from a number typed here", () => {
+    /* The two committed sheets differ in view count, so a hard-coded sentence
+       would be right for one placement and wrong for the other — which is
+       exactly the shape of the defect this replaced. */
+    expect(inkTemplateFor("upperArm").views).toHaveLength(3);
+    expect(inkTemplateFor("neck").views).toHaveLength(2);
+    expect(inkPlatePrompt({ placement: "upperArm", side: "left" })).toContain("shown three times");
+    expect(inkPlatePrompt({ placement: "neck", side: "centre" })).toContain("shown twice");
   });
 });
 

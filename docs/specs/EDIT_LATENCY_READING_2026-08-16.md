@@ -80,7 +80,10 @@ founder's money-protection, and nothing here touches it.
 The fal account ceiling is **20 concurrent requests**, and four paths already
 spend it (`assertFalBudget` refuses to boot if their sum exceeds it):
 `ROLL_IMAGE_CONCURRENCY` 8 + `SIGN_VIEW_CONCURRENCY` 3 + `REFINE_EDIT_CONCURRENCY`
-3 + `FAL_CONCURRENCY` 6 = 20. `FAL_CONCURRENCY` is the segmenter's allowance and
+3 + `FAL_CONCURRENCY` 6 = 20. *(The arithmetic above is this reading's own date.
+On 2026-08-18 the plate mint became a fifth path and the cut came out of the
+courtesy pool: `FAL_CONCURRENCY` 5 + `INK_PLATE_CONCURRENCY` 1, still 20 of 20.
+The reading is left as it was taken.)* `FAL_CONCURRENCY` is the segmenter's allowance and
 it exists because of a measured incident: eight panels opened at once returned
 **no rows at all on five of them**, with `429 concurrent_requests_limit`.
 

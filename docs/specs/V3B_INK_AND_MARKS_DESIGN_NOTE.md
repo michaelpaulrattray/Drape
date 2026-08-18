@@ -600,3 +600,50 @@ non-problem. Raised rather than acted on.
 
 **His desk now holds one item, and it is not on this road:** the R2 credential
 rotation.
+
+### 7.8 THE WRAP COURT — his core question, answered (2026-08-18)
+
+His question, verbatim (fable-964): *"what im asking is whether or not the
+reference will work at all"*. It ran through the product's own road —
+`uploadInkDesign` (which now mints), `assembleRecipe`, `repaint` — on a dev Cast,
+with one gate declared and bypassed: the released-placement table is empty, and
+this court IS the drive that would earn a tuple, so a court behind it could never
+run. House money only: two plate mints and one render, no customer credits, no
+ledger row.
+
+**IT FOUND A DEFECT BEFORE IT COULD ASK ITS QUESTION, and the defect was ours.**
+The first plate came back with the serpent on the SIDE view and two bare arms
+beside it. The engine had done exactly what it was told: the plate prompt was
+written for a template with one view — *"a plain, featureless mannequin form"*,
+then *"leave every other part of the form completely bare"* — while every
+committed template is a turnaround (the arm sheet's three views, the body
+sheet's two). **The sheet moved by ruling and the words never followed.** The
+same sentence would have left a neck design off the back view.
+
+The fix is data rather than prose: `InkTemplate.views` now carries the sheet's
+own view list, and `inkPlatePrompt` derives from it — how many views, their
+names, that they are ONE body seen from angles, that the design is ONE tattoo
+drawn in every view and must MEET correctly where it continues around the form.
+
+**Re-minted, the wrap holds.** All three views carry the design, the head reads
+once (side and middle, absent from the back, which is where a head on the outer
+surface belongs), and the body continues plausibly between angles.
+
+**And then the answer, on his frames:** a render off that three-view plate put
+**ONE coherent serpent** on the Cast's arm — not three tattoos, not a blend, not
+one view flattened on. Identity, pose, framing and background held. On this
+specimen the reference WORKS.
+
+**n = 1 per arm, and that is the honest weight of it.** One design, one Cast,
+one render each way. It is enough to say the concept is not broken and to keep
+building; it is not a delivery rate, and the frames are the evidence rather than
+this paragraph (law 9).
+
+**One thing for his eye, named rather than buried:** the corrected plate covers
+much more of the limb than the first one — the design now runs from shoulder
+past the elbow, where the single-view plate kept it on the upper arm. The wrap
+was bought and containment loosened, which is precisely the question fable-955
+§3 left open for this court (*did the design stay at the named placement?*). A
+containment clause in the plate prompt is the obvious candidate and is NOT built:
+it is prompt-tuning against one sample, and it belongs in a sitting with two or
+three mints and his taste on the result.

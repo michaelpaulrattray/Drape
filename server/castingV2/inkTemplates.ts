@@ -70,6 +70,23 @@ export type InkTemplate = {
    */
   readonly width: number;
   readonly height: number;
+  /**
+   * THE VIEWS ON THE SHEET, left to right — and this field exists because its
+   * absence cost a court (2026-08-18).
+   *
+   * Every committed template shows ONE form from several angles: the arm sheet
+   * side / middle / back, the body sheet front / back. The plate prompt was
+   * written for a template with one view and said so — *"a plain, featureless
+   * mannequin form"*, then *"leave every other part of the form completely
+   * bare"* — so the engine drew the design on the first view and left the other
+   * two blank, which is exactly what it was told to do. The wrap court's first
+   * plate came back with a serpent on the side view and two bare arms beside it.
+   *
+   * So the sheet's shape is DATA the prompt derives from rather than prose one
+   * file remembers about another. A fourth view, or a new form with one, moves
+   * the sentence by moving this list.
+   */
+  readonly views: readonly string[];
 };
 
 /**
@@ -108,6 +125,7 @@ export const INK_TEMPLATES: Readonly<Record<InkTemplateKind, InkTemplate>> = Obj
     mime: "image/png",
     width: 1152,
     height: 1024,
+    views: ["side", "middle", "back"],
   }),
   body: Object.freeze({
     kind: "body",
@@ -120,6 +138,7 @@ export const INK_TEMPLATES: Readonly<Record<InkTemplateKind, InkTemplate>> = Obj
        it was paid for; see `inkPlateEngines.ts`. */
     width: 1254,
     height: 1254,
+    views: ["front", "back"],
   }),
 });
 
