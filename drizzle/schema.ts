@@ -2267,6 +2267,38 @@ export const castingCandidateVariants = mysqlTable("casting_candidate_variants",
    */
   stepDeltas: json("stepDeltas"),
   /**
+   * WHERE EACH STEP'S WORDS CAME FROM, in order — INTERNAL, never projected
+   * (ruled fable-968 §3).
+   *
+   * Index i lines up with `instructions[i]`, the third member of the family
+   * `readChain` already pairs — so a removal reindexes it for free through
+   * machinery that exists, rather than through a second walk that would drift
+   * from the first.
+   *
+   * **A row-level flag was the obvious build and it is wrong.** A variant row
+   * carries the whole chain: "this version came from a photograph" is true the
+   * moment she adopts a read and is still sitting there, unchanged and now
+   * lying, after three edits she typed herself.
+   *
+   * **KIND, never identity, and never the sentence.** Nothing about the
+   * reference is kept — no object, no row, no digest of her photograph. A step
+   * says `{ source: "referenceRead", intent, adopted }` and nothing more,
+   * because a makeup note read off somebody's photograph is a description of a
+   * real person's face (0036's privacy note).
+   *
+   * **`adopted` is derived here, never sent.** The server compares her
+   * instruction's hash against the one inside a signed token it issued itself,
+   * so the row records a fact rather than a claim — a provenance a client can
+   * assert is a provenance that will eventually be wrong quietly, and its
+   * realistic failure is our own UI leaving a stale flag on a box she has since
+   * retyped.
+   *
+   * NULL on every row written before this column, and on every step nothing was
+   * carried for. Readers refuse rather than approximate, exactly as
+   * `stepDeltas` does above.
+   */
+  stepProvenance: json("stepProvenance"),
+  /**
    * What the user actually TYPED to produce this variant (D-163).
    *
    * For an edit it is the last entry of `instructions`. For a REMOVAL the two

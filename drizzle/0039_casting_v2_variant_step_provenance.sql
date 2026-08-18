@@ -1,0 +1,58 @@
+-- WHERE EACH STEP'S WORDS CAME FROM — the index-aligned third array
+-- (ruled fable-968 §3, designed opus-709 §3).
+--
+-- ============================================================================
+-- WHY A THIRD ARRAY AND NOT A FLAG ON THE ROW
+-- ============================================================================
+--
+-- A variant row carries the WHOLE chain, not one step. A boolean saying "this
+-- version came from a photograph" would be true of the row the moment she
+-- adopted a read, and would still be sitting there — unchanged and now lying —
+-- after three more edits she typed herself.
+--
+-- `instructions` and `stepDeltas` are already index-aligned and carried forward
+-- per row, and `readChain` refuses unless their lengths agree. Provenance is the
+-- third member of that family and it joins the same pairing, which means a
+-- REMOVAL reindexes it for free through machinery that already exists.
+--
+-- ============================================================================
+-- KIND, NEVER IDENTITY — AND NEVER THE SENTENCE
+-- ============================================================================
+--
+-- Nothing about the reference is kept: no object, no row, no digest of her
+-- photograph. What a step can say is its KIND —
+--   {"source":"referenceRead","intent":"makeup","adopted":"verbatim"|"edited"}
+-- — and the reader's own sentence is stored nowhere, in this column or any
+-- other. 0036's privacy note is the reason and it is not a nicety: a makeup
+-- note read off somebody's photograph is a description of a real person's face.
+--
+-- ============================================================================
+-- THE ROW RECORDS A FACT, NOT A CLAIM
+-- ============================================================================
+--
+-- `adopted` is DERIVED SERVER-SIDE by comparing hashes, never sent by the
+-- client. The obvious build has the client post `fromReferenceRead: true`,
+-- which is an assertion by the one party that cannot be checked — and its
+-- realistic failure is not an attacker but OUR OWN UI leaving a stale flag on a
+-- box she has since retyped. A provenance a client can assert is a provenance
+-- that will eventually be wrong quietly.
+--
+-- ============================================================================
+-- NULLABLE, AND THE NULLS REFUSE
+-- ============================================================================
+--
+-- Every row written before this column has no answer, and there is no honest
+-- backfill: whether a step's words came off a photograph is not recoverable
+-- from the words. Readers refuse rather than approximate, exactly as
+-- `stepDeltas` does on this same table.
+--
+-- ============================================================================
+-- ORDERING
+-- ============================================================================
+--
+-- Drizzle names every schema column in every INSERT, so a schema-carried column
+-- is a MERGE-time outage if the migration is not already applied — proven at
+-- `.toSQL()` with no connection. The migration lands BEFORE the code, always.
+-- In production this rides the bundled sitting with 0034, 0037 and 0038 rather
+-- than interrupting the founder a fourth time.
+ALTER TABLE `casting_candidate_variants` ADD `stepProvenance` json;

@@ -156,6 +156,8 @@ import {
   textMentions,
   type ChainStep,
 } from "./refineRemoval";
+import { readStepProvenance, verifyReadToken, type StepProvenance } from "./referenceProvenance";
+import { ENV } from "../_core/env";
 import {
   facetBindsOnPresence,
   facetHeading,
@@ -386,6 +388,21 @@ export type RefineInput = {
    * marker through `answering` instead.
    */
   replayOf?: string;
+  /**
+   * THE READ SHE ADOPTED THESE WORDS FROM, if any — opaque, and proved rather
+   * than believed (ruled fable-968 §3c).
+   *
+   * `readMakeup` hands this back with its sentence; the client may carry it
+   * into the refine that spends the sentence. The server verifies the
+   * signature, the account, the Cast and the freshness, then compares her
+   * instruction's hash to the one it sealed — so what lands in the row is a
+   * fact this server derived, never a flag the client set.
+   *
+   * A DECORATION ON A PAID OPERATION, and it behaves like one: absent, stale,
+   * or wrong, the refine proceeds exactly as an ordinary typed one and the step
+   * simply carries no provenance.
+   */
+  provenanceToken?: string;
 };
 
 export type RefineResult = {
@@ -1485,7 +1502,16 @@ async function refineCandidateCounted(
   }
 
   const predecessorChain = predecessor
-    ? readChain(readInstructions(predecessor.instructions), readStepDeltas(predecessor.stepDeltas))
+    ? readChain(
+      readInstructions(predecessor.instructions),
+      readStepDeltas(predecessor.stepDeltas),
+      /* The third array of the family, so a REMOVAL reindexes it for free
+         through the pairing rather than through a second walk. */
+      readStepProvenance(
+        predecessor.stepProvenance,
+        readInstructions(predecessor.instructions).length,
+      ),
+    )
     : [];
 
   /*
@@ -2418,6 +2444,44 @@ async function refineCandidateCounted(
     ? (repeatsThisVersion ? priorSteps : [...priorSteps, editDelta])
     : chain.map((step) => step.delta);
   /*
+    WHERE THIS STEP'S WORDS CAME FROM — composed exactly parallel to the two
+    lists above, so index i keeps meaning the same thing in all three.
+
+    A re-take of the same version writes the predecessor's array unchanged, for
+    the same reason it writes the predecessor's chain: nothing new was said. A
+    removal takes it from the pruned chain, which is where the reindexing
+    happens. And a step with no token carries `null` — most steps are typed, and
+    an absent provenance is the honest answer rather than a missing one.
+  */
+  const priorChainProvenance = readStepProvenance(predecessor?.stepProvenance, priorInstructions.length);
+  /*
+    THE TOKEN IS VERIFIED HERE, where the instruction it is a claim about is in
+    hand — and it can only ever ADD a fact. `verifyReadToken` never throws, and
+    every refusal it can return lands as `null`, because a decoration must not
+    be able to fail an operation somebody is paying for.
+  */
+  const thisStepProvenance: StepProvenance | null = (() => {
+    const token = input.provenanceToken?.trim();
+    if (!token) return null;
+    const verified = verifyReadToken({
+      secret: ENV.cookieSecret,
+      token,
+      userId: input.userId,
+      /* The Cast's ROW id, which is what the read sealed into the token — the
+         public id is what a client says, and a token bound to what a client
+         says is bound to nothing. */
+      candidateId: source.candidate.id,
+      instruction,
+      now: Date.now(),
+    });
+    return verified.ok ? verified.provenance : null;
+  })();
+  const priorProvenance = priorInstructions.map((_, index) =>
+    priorChainProvenance?.[index] ?? null);
+  const stepProvenance = editDelta
+    ? (repeatsThisVersion ? priorProvenance : [...priorProvenance, thisStepProvenance])
+    : chain.map((step) => step.provenance);
+  /*
     THE OFFER LIVES HERE, WHERE THE REPEAT IS DETECTED — and it used to live one
     door down, which charged somebody 25 credits without asking.
 
@@ -3166,6 +3230,7 @@ async function refineCandidateCounted(
       instructions,
       deltas: composed,
       stepDeltas,
+      stepProvenance,
       /*
         WHAT THEY TYPED, kept apart from the recipe (D-163).
 

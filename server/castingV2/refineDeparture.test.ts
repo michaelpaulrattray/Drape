@@ -191,8 +191,8 @@ describe("remove, then re-add, then remove again", () => {
   */
   it("3. removing the NEW pair routes via the chain prune, unchanged", () => {
     const chain = [
-      { instruction: "remove her glasses", delta: REMOVE },
-      { instruction: "round wire-frame glasses", delta: READD },
+      { instruction: "remove her glasses", delta: REMOVE, provenance: null },
+      { instruction: "round wire-frame glasses", delta: READD, provenance: null },
     ];
     const matched = matchSteps(chain, {
       subject: "statedAccessories",
@@ -208,7 +208,7 @@ describe("remove, then re-add, then remove again", () => {
     copy — so the matcher would have been blind to the removal step forever.
   */
   it("the departure step is visible to the matcher", () => {
-    const chain = [{ instruction: "remove her glasses", delta: REMOVE }];
+    const chain = [{ instruction: "remove her glasses", delta: REMOVE, provenance: null }];
     expect(matchSteps(chain, { subject: "statedAccessories", match: null, whole: true }))
       .toEqual([{ index: 0, keep: null }]);
   });

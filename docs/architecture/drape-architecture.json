@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "ae5366d8ad238b44"
+    "sourceFingerprint": "5f37ca25662f4cf4"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 135
+      "moduleCount": 136
     },
     {
       "id": "domain:castingV2",
@@ -3791,6 +3791,12 @@
     {
       "id": "module:server/castingV2/referenceMint.ts",
       "path": "server/castingV2/referenceMint.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/referenceProvenance.ts",
+      "path": "server/castingV2/referenceProvenance.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -9904,6 +9910,10 @@
     {
       "id": "test:server/castingV2/referenceMint.test.ts",
       "path": "server/castingV2/referenceMint.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/referenceProvenance.test.ts",
+      "path": "server/castingV2/referenceProvenance.test.ts"
     },
     {
       "id": "test:server/castingV2/referenceSlotCatalogue.test.ts",
@@ -20956,6 +20966,11 @@
     },
     {
       "from": "module:server/castingV2/refineRemoval.ts",
+      "to": "module:server/castingV2/referenceProvenance.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/refineRemoval.ts",
       "to": "module:server/castingV2/refineDelta.ts",
       "kind": "imports"
     },
@@ -20972,6 +20987,11 @@
     {
       "from": "module:server/castingV2/refineRemoval.ts",
       "to": "module:server/castingV2/removalWords.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/refineService.ts",
+      "to": "module:server/_core/env.ts",
       "kind": "imports"
     },
     {
@@ -21162,6 +21182,11 @@
     {
       "from": "module:server/castingV2/refineService.ts",
       "to": "module:server/castingV2/referenceMint.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/refineService.ts",
+      "to": "module:server/castingV2/referenceProvenance.ts",
       "kind": "imports"
     },
     {
@@ -24351,6 +24376,11 @@
     },
     {
       "from": "module:server/routes/castingV2.ts",
+      "to": "module:server/_core/env.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/castingV2.ts",
       "to": "module:server/_core/spokenError.ts",
       "kind": "imports"
     },
@@ -24437,6 +24467,11 @@
     {
       "from": "module:server/routes/castingV2.ts",
       "to": "module:server/castingV2/railTakes.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/castingV2.ts",
+      "to": "module:server/castingV2/referenceProvenance.ts",
       "kind": "imports"
     },
     {
@@ -28408,17 +28443,17 @@
       "message": "Names 2 of RecipeRefusal's 4 fields (server/castingV2/recipeAssembler.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/refineService.ts:470",
+      "id": "finding:redeclared-shape:server/castingV2/refineService.ts:487",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/refineService.ts:470",
+      "subject": "server/castingV2/refineService.ts:487",
       "message": "Names 3 of Thumbnail's 3 fields (server/castingV2/thumbnails.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/refineService.ts:538",
+      "id": "finding:redeclared-shape:server/castingV2/refineService.ts:555",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/refineService.ts:538",
+      "subject": "server/castingV2/refineService.ts:555",
       "message": "Names 3 of Thumbnail's 3 fields (server/castingV2/thumbnails.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
