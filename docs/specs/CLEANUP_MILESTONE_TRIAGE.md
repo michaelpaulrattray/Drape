@@ -223,3 +223,252 @@ deletion authority when the milestone opens, and nothing goes while its
 retirement view shows live callers. The only edits this recon made were to its
 own two instruments: repairing a dead control, and stopping a reader from
 counting its own prose as evidence.
+
+---
+
+# THE MILESTONE PROPER — the reading, and the first removals
+
+**Opened 2026-08-18 under fable-978/979.** The recon above is the input; this
+half is the reading it ordered, the dispositions it produced, and the two
+commits that discharged the ruled ones. Everything below was read against the
+source, not against the recon's prose.
+
+## 5. THE MECHANICAL CUT — none of the 175 is used inside its own module
+
+The cheapest reading in the milestone, and it removes a whole disposition from
+the table. For each symbol, how many lines of its OWN file name it:
+
+```
+CONTROL  positive  WORN_CLOTHING_WORDS (declared + used in-file)   2   pass
+         negative  ZZZ_NOT_A_SYMBOL                                0   pass
+RESULT   175 of 175                                                1   declaration only
+```
+
+**So "un-export it, keep the code" is never the answer for any entry on either
+list.** Every symbol is keep-for-tests or dead, with nothing in between.
+
+## 5a. THE DECLARED/SILENT SPLIT — `scripts/triage-declared-intent-disposable.mts`
+
+A large share of these symbols answer the milestone's question in their own
+docblock ("Test seam: …", "Exported for the contract test", "for the
+reverse-direction test", "never used at runtime"). The instrument reads the
+comment block immediately above each declaration and asks only whether it names
+a test, a suite or a report.
+
+```
+CONTROLS
+  positive  SYSTEM_PROMPT_FOR_TESTS    DECLARED   pass
+  negative  isBilateral                SILENT     pass
+
+111 symbols read
+  DECLARED   18   the declaration names a test, suite or report
+  SILENT     93   no stated reason — this is the reading list
+  NOT FOUND   0
+```
+
+⚠ **Its bias, stated rather than discovered: it reads only the NEAREST comment
+block, so a symbol carrying two adjacent blocks is judged on the closer one.**
+`COHORT_CONSTANT_MARKERS` reads SILENT although a block above it says "Exported
+for the contract test". **The bias runs toward SILENT** — it inflates the
+reading list and can never shrink it — which is the safe direction, the same
+way the recon's substring reader was biased toward not-dead. `DECLARED` is a
+floor; `SILENT` is a ceiling.
+
+⚠ **And the eyeball estimate this instrument was built to check was WRONG.** A
+docblock dump of the castingV2 entries read as though *most* declared their
+intent; the measurement says 16%. The dump showed the striking ones. Filed
+because the milestone's remaining budget was about to be set from that
+impression.
+
+## 5b. NO DEAD MODULES — the disposition is per-symbol
+
+| module | exports | flagged | production importers |
+|---|---|---|---|
+| `maskGeometry.ts` | 37 | 7 | 8+ |
+| `axisRegistry.ts` | 28 | 4 | 2 |
+| `maskedRefine.ts` | 23 | 4 | 8+ |
+| `openKindPolicy.ts` | 20 | 9 | 3 |
+| `zoneScope.ts` | 9 | 4 | 4 |
+
+**No file on this list can be deleted whole**, which is worth knowing before
+anyone budgets the milestone in files rather than in symbols.
+
+## 6. THE FAMILIES, with dispositions
+
+### 6a. Derived views the test asserts the TABLE through — **KEEP, as a family**
+
+`axesOnShelf`, `edgeTableNames`, `fringeTableNames`, `neighbourTableNames`,
+`segmentableRegionNames`, `namingTableFacets`, `exemptSubjects`,
+`neighbourPairs`, `arrangementsWithPrecedent`, `unmeasuredAmplitudes`,
+`unprotectedFacets`, `facetsWithUnreliabilityPrior`, `unreadFacts`,
+`splitByInheritance`, `courtSeparationFor`, `REFUSAL_REASONS`, `VACANCY_KINDS`,
+`FACET_KEYS`, `COHORT_CONSTANT_MARKERS`.
+
+One says it in its own docblock — *"Facets declared in the edge table — for the
+reverse-direction test"*. **Deleting these pushes their tests back onto
+hardcoded lists, which is law 4 in reverse** and precisely the drift the
+derivations were built to stop.
+
+### 6b. Contract assertions — **KEEP; the derive is a BUILD, filed** (fable-979)
+
+The eight assert/canTransition exports of `evidenceCandidateContract.ts` are
+imported by their own test alone, while the module around them is imported by
+**21 production files** for its status arrays and types.
+
+**The transition table is not the enforcement.** The writers enforce in SQL,
+every time:
+
+```
+inkAddCandidates.ts:1223  .set({ status: "generating" })   … WHERE status = "planned"
+                  :1319  .set({ status: "probe_failed" })  … WHERE status = "stored"
+                  :1394  .set({ status: "probe_passed" })  … WHERE status = "stored"
+```
+
+So `CANDIDATE_TRANSITIONS` is a second copy of that rule in TypeScript, proven by
+its own test and consulted by nobody. **Disposition: KEEP** — it is also the only
+place the machine is written whole, and a deleted state machine looks identical
+to one that was never specified. **Filed as a post-milestone build: make the SQL
+writers take their predecessor FROM the table**, so the mirror becomes a source.
+
+### 6c. Test seams and hooks by name — **KEEP** (9, unchanged from §1a)
+
+## 7. TWO FINDINGS ABOUT LIVE CODE, neither of them a deletion
+
+### 7a. `INSTRUCTION_MAY_OVERRIDE` is declared, tested, and applied by nothing
+
+`zoneScope.ts:99` declares that the INSTRUCTION can override a facet's scope, with
+the audit's own reasoning beside it (*"scope is a property of the facet AND the
+instruction"*):
+
+```
+marks : default distributedFacet → override "object"           (a single named scar)
+ink   : default object           → override "distributedFacet" (a sleeve)
+```
+
+**The applier does not exist.** The only production consumer of scope is
+`maskedRefine.ts` → `scopedZone(facet, region)`, which takes **no instruction
+argument at all** and switches on `zoneScopeOf(facet)` alone. The table's only
+other mentions are its own test — which asserts the table's CONTENTS, a pure
+mirror test — and a documentation row inside `openKindPolicy`.
+
+So *"a scar on her cheek"* takes the `distributedFacet` branch and is dilated 48px
+and rendered whole, where the table says it should be scoped as an object.
+**Invariant 7's shape in live geometry, not a dead export.**
+
+⚠ **NOT claimed: that this is visible.** No frame has been put in front of
+anyone, and the repaint road renders full-frame, so it is a paste-road question
+at most. What is proven is that **the rule is not invoked**; the consequence is
+unmeasured.
+
+### 7b. The `openKind*` accessors are a POLICY RECORD, not a policy engine
+
+Nine of `openKindPolicy.ts`'s twenty exports are per-property accessors.
+Production imports exactly three things from the module — `isOpenKindKey`,
+`openKindNoSpecimenReason`, `openKindPresenceBindsToday`. The nine are not
+ignored: they are **quoted in comments by the code that implements their answers
+independently**.
+
+```
+inheritedVerdict.ts:94         "…and `openKindZoneScope()` answers `fullFrame` — so there is no…"
+referenceSlotCatalogue.ts:1178 "`openKindZoneScope()` is `fullFrame`, and `ownSide` is meaningless…"
+```
+
+**Disposition: KEEP** — it is the open lane's written answer sheet and D-241's
+road is young. **Filed with 7a as one class: a policy stated in one place and
+implemented in another, with a comment as the only join.**
+
+### 7c. A disposition already written in the code, honoured
+
+`OPEN_QUESTIONS` (`zoneScope.ts:108`) is an empty map with its reason inline —
+*"Kept as an empty map rather than deleted… the next one added has somewhere to
+go"*, founder-ruled 2026-08-06. **KEEP, no further reading.**
+
+## 8. WHAT WAS REMOVED, and what each removal cost
+
+### 8a. The server's duplicate `STATED_WARDROBE_NOTICE`
+
+Declared twice, byte-identical, and only the client's was ever read:
+`rollProjection.ts:488` sends the BOOLEAN and `sheetNotice.ts` owns the sentence.
+The server's copy was imported by nothing — **not even a test**. Deleted; the
+reasoning that stood over it moved to the surviving declaration rather than being
+deleted with it.
+
+**`FELL_BACK_NOTICE` is NOT the same shape** — single-copy, declared beside the
+function that uses it. The recon flagged it as possibly a sibling; it is not.
+
+### 8b. `READ_PURPOSES` — **derived, not deleted** (fable-979)
+
+It was annotated `: readonly ReadPurpose[]`, which rejects an array member that is
+not a purpose and says **nothing** about a purpose missing from the array. A
+thirteenth `ReadPurpose` would have compiled and quietly fallen out of every
+sweep that walks the list. Now `satisfies` keeps the first direction and a
+type-level `AssertNever<Exclude<…>>` buys the second.
+
+**Its control was driven, not assumed:** removing `"gate"` from the array while it
+stays in the union gives
+
+```
+server/providers/types.ts(396,15): error TS2344: Type '"gate"' does not satisfy the constraint 'never'.
+```
+
+and restoring it returns `tsc --noEmit` to exit 0.
+
+### 8c. `beginInkAddIntent` and its private ring — its own commit (fable-979)
+
+The placement-picker intent (`{ sourceAssetId, side }`), superseded by
+`beginInkAnywhereIntent` (`{ instruction }`). The route that still carries its
+NAME — `evidence.beginInkAddIntent`, kept because the client calls it — has
+validated an `instruction` and called the successor since that landed, **which is
+why the dead function reads as alive from every direction except an import
+graph.**
+
+Removed with it: `InkAddIntentDependencies` (its one live borrower,
+`InkAnywhereIntentDependencies.warnAuthorizationUnknown`, now names a local type),
+`closedIntentResult`, and the private `classifyInkAdd` whose only caller it was.
+
+> **The tests were RE-POINTED, not deleted — and that is the finding.** Five tests
+> drove the dead function. Three of them were the only coverage anywhere of
+> branches that exist in the LIVE function: **the flag door, the operation replay,
+> and warn-once on unavailable authorization truth.** Deleting the dead road's
+> tests would have taken three live branches' only coverage with it. Each was
+> re-pointed at `beginInkAnywhereIntent` and **each reddens ALONE under its own
+> sabotage** (door removed → only the door arm fails; replay branch falling
+> through → only the replay arm; the warn call disabled → only the warn arm).
+>
+> **The class, for the rest of this milestone:** when a dead road's tests are
+> deleted, ask which of them were testing the LIVE road through the dead one. A
+> superseded function and its successor usually share their scaffolding.
+
+### 8d. THE SECOND RING — filed by name, deliberately NOT taken
+
+Deleting `beginInkAddIntent` orphans a further ring that this commit stops short
+of, because each item needs something this sitting did not have:
+
+| symbol | why it is held |
+|---|---|
+| `commitBeginInkAddIntent` (`db/inkAddIntents.ts`) | its only remaining consumer is `r7-ink-add-lifecycle-db.test.ts`, which uses it to BUILD intents for the whole downstream lifecycle — and that suite **skips without `TEST_DATABASE_URL`**. Rewriting its setup onto `commitBeginInkAnywhereIntent` would ship an unverified rewrite of a suite that cannot be run green here. **Needs a disposable database.** |
+| `BeginInkAddIntentResult` | dies with the above |
+| `buildInkAuthorizationProviderConfig` | now test-only; it will appear on the NEXT sweep, which is the honest way for it to arrive |
+| `authorizeInkAddDescription` + `composer/inkAuthorization.ts` | the placement-picker road's whole authorization module, with its own suite. A module-sized retirement, not a symbol-sized one — **and `inkAddRecipe.ts` is already marked retire with 18 remaining callers in the Atlas.** |
+
+**Not a deferral without an owner:** these are named here with their blockers, and
+the first two are unblocked by exactly one thing (a disposable database).
+
+## 9. THE SECURITY FAMILY — read, and going to the founder as ONE card (fable-979)
+
+Neither is a deletion the milestone may take on its own, because **a deleted alert
+and an alert that never fires look identical**.
+
+- **`recordGlobalFailedLogin` / `shouldSendGlobalAttackAlert` /
+  `markGlobalAttackAlertSent`** (`server/security/rateLimit.ts`) — zero production
+  mentions, and `docs/RATE_LIMITING.md:285-294` carries a worked example of the
+  wiring **that was never done**. Documentation of a call site that does not exist
+  reads as a live control to anyone auditing.
+- **`getRecentTopupCount` / `getRecentTopupCredits`** (`db/moderatorQueries.ts`) —
+  barrel-reached, no caller; `SlackAlerts.velocityLimitHit` exists with no caller;
+  and `server/velocityLimits.test.ts:108` asserts **that the alert is a function**.
+  A suite that proves a control exists and never that it fires.
+
+Both are already in CLAUDE.md's *"Currently not enforced — do not rely on these"*
+list. **A deletion changes what that list means**, so the choice is the founder's:
+wire them, or delete them and say so in that list.
