@@ -52,6 +52,7 @@ import "dotenv/config";
 import { execFileSync } from "node:child_process";
 
 import { openDatabase } from "./lib/dbConnection.mts";
+import { decideWatch, newestRow } from "./lib/deployWatch.mts";
 import { uptimeAnchor } from "./lib/uptimeAnchor.mts";
 import {
   balanceLine,
@@ -285,6 +286,17 @@ say("");
 
 /* ── 2. push both branches, and PROVE both landed ───────────────────────── */
 
+/*
+  WHOSE DEPLOYMENT IS THIS GOING TO BE? Read BEFORE the push, because after it
+  there is a window — measured at seven minutes on 2026-08-19 — in which the
+  newest row is still the PREVIOUS deploy, already SUCCESS. The watch below
+  accepted exactly that and printed `deployment 0ea3207c → SUCCESS after 2s`
+  for a commit Railway had not begun building; health, uptime and the flags
+  were then read off the OLD process and were all true of it, which is what
+  makes this class dangerous — nothing in the receipt looks wrong.
+*/
+const priorDeployment = DRY ? null : (newestRow(railway("deployment", "list"))?.id ?? null);
+
 if (!DRY) for (const branch of BRANCHES) say(`  push ${branch}: ${gitPush("origin", branch) || "ok"}`);
 
 /*
@@ -311,18 +323,25 @@ for (let attempt = 0; attempt < 90; attempt += 1) {
     ONE LINE, PARSED AS A LINE. The watched-claim incident was a pattern that
     matched a status on one line and a sha on another; the newest deployment is
     the first row of this list and its status is that row's own field.
+
+    AND IT MUST NOT BE THE ONE THAT WAS THERE BEFORE THE PUSH — see
+    `lib/deployWatch.mts`, and the receipt it printed for somebody else's
+    deployment on 2026-08-19.
   */
-  const newest = railway("deployment", "list").split("\n")
-    .map((line) => line.trim())
-    .find((line) => /^[0-9a-f-]{36} \| [A-Z]+ \|/.test(line));
-  if (newest) {
-    const [id, status, at] = newest.split("|").map((field) => field.trim());
-    deployment = { id: id!, status: status!, at: at! };
-    if (["SUCCESS", "FAILED", "CRASHED", "REMOVED"].includes(deployment.status)) break;
+  const newest = newestRow(railway("deployment", "list"));
+  const decision = decideWatch(priorDeployment, newest);
+  if (decision.kind === "settled" || decision.kind === "running") deployment = newest;
+  if (decision.kind === "settled") break;
+  if (decision.kind === "not-mine" && attempt % 6 === 5) {
+    say(`  waiting for Railway to create the deployment (${attempt * 20}s)`);
   }
   await wait(20_000);
 }
-if (!deployment) die("no deployment row could be read at all");
+if (!deployment) {
+  die(priorDeployment
+    ? `Railway never created a deployment newer than ${priorDeployment.slice(0, 8)}. The push LANDED and the build did not start — nothing here may be reported as deployed.`
+    : "no deployment row could be read at all");
+}
 const elapsed = Math.round((Date.now() - started) / 1000);
 say(`  deployment ${deployment.id.slice(0, 8)} → ${deployment.status} after ${elapsed}s`);
 if (deployment.status !== "SUCCESS") die(`the deploy ended ${deployment.status}`);

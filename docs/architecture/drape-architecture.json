@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "e5374607bd4eb8da"
+    "sourceFingerprint": "925b1043626a5977"
   },
   "domains": [
     {
@@ -10184,6 +10184,10 @@
     {
       "id": "test:server/debugUtility.test.ts",
       "path": "server/debugUtility.test.ts"
+    },
+    {
+      "id": "test:server/deployWatchDecision.test.ts",
+      "path": "server/deployWatchDecision.test.ts"
     },
     {
       "id": "test:server/discrepancyFlagging.test.ts",
