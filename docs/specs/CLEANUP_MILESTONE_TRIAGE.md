@@ -1155,3 +1155,58 @@ the three of §17's candidates taken below.
   symbols about **who may stamp an anchor**. That is a road's design question.
   A cleanup pass picking them off one at a time would be deciding it by
   accident, which is the opposite of what this milestone is for.
+
+---
+
+## 20. THE HAND PILE GOES FROM TWENTY-FOUR TO THREE — the recon's readings,
+## written as rules
+
+§19 turned one of the recon's hand rules into code (a comment is not a caller).
+Reading the twelve that survived it, **eleven were the same kind of thing**:
+not judgements, but rules the recon applied consistently and never wrote down.
+They are written down now, each with the evidence that earned it.
+
+| the recon's hand read | now |
+|---|---|
+| *"a SUBSTRING of a longer symbol (`REFUSAL_REASONS` inside `GUARD_REFUSAL_REASONS`)"* | matching is on **word boundaries**. The classifier's one declared bias is gone rather than documented. |
+| *"a same-named LOCAL in a disposable script"* (`FACET_KEYS`, `stepLabel`, `cutOf`) | a line that **declares** the name (`const X =`, `function X(`) is not a mention of somebody else's `X`. |
+| *"an object KEY spelled like the symbol"* (`INSTRUCTION_MAY_OVERRIDE`, `OPEN_QUESTIONS`) | a line matching `^\s*NAME\s*:` is a **key**, not a reference. A computed key `[NAME]:` has brackets and still counts, which is correct — that one IS a reference. |
+| *"re-exported through a module barrel and imported by NOBODY from it — a re-export is a door, not a caller"* (five symbols) | its own bucket, **`door`**, checked AFTER the barrel and counted **onto** the reading list. |
+| *"a real consumer in a TRACKED script"* — kept off the list; and §15b's untracked-only consumer, which is not a consumer at all | git decides. `git ls-files` is asked, and an untracked disposable is not evidence. |
+
+```
+THE READING LIST - 124 of 168 flagged
+  with a production mention  44  (barrel 34 - dynamic 7 - other 3)
+  nothing but a declaration  119
+  a re-export door only      5
+  THE LIST                   124
+```
+
+**The pile a person must read by hand is three**, and all three are honest:
+
+- `inspectStorageCleanupReconciliation` — a real caller in a **tracked** script
+  (`run-storage-cleanup.mts`). Correctly OFF the list, as the recon had it.
+- `commitBeginInkAddIntent` — reached by `drive-r7-ink-add-intent-disposable.mts`,
+  which is **tracked**. §8d holds it for a disposable database; it also has a
+  consumer this repository contains.
+- `stepLabel` — a same-named local in a tracked calibration script, *used* on a
+  later line. Telling that apart needs scope analysis, not a pattern, so it
+  stays a hand read with its reason stated.
+
+### 20a. The door bucket is on the list, because the recon's ruling says so
+
+A door counted as a mention would have quietly taken five symbols off the list
+the recon had deliberately kept on it. It is a separate printed bucket so the
+reason stays visible, and it is checked **after** the barrel — `server/db/index.ts`
+is the one door this product actually walks through (`db.NAME(`), and
+collapsing the two would put admin credit adjustment back on a deletion list
+(§11a, the milestone's most expensive near-miss).
+
+### 20b. And the print had stopped adding up
+
+Introducing a fifth bucket left the summary line reading `barrel 34 - dynamic 7
+- other 3` beside a total of **49**. Nobody would have noticed; the numbers
+look like numbers. **The sweep now refuses to print a verdict whose buckets do
+not sum to the count it flagged**, which is the suite-reading rule
+(passed + skipped + failed must equal the printed total) arriving on an
+instrument of our own.

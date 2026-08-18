@@ -271,18 +271,38 @@ const everyFlagged = [
   ...findings.map((f) => ({ name: f.name, file: f.file })),
   ...unimported.map((d) => ({ name: d.name, file: d.file })),
 ];
-const tally = { none: 0, other: 0, barrel: 0, dynamic: 0 };
+const tally = { none: 0, other: 0, barrel: 0, dynamic: 0, door: 0 };
 const readingList: Array<{ name: string; file: string }> = [];
 for (const entry of everyFlagged) {
   const kind = classify(entry.name).kind;
   tally[kind]++;
-  if (kind === "none") readingList.push(entry);
+  /*
+    A DOOR IS NOT A CALLER, so it reads. The recon said exactly this by hand
+    about five symbols re-exported through a module barrel nobody imports them
+    from — "a re-export is a door, not a caller" — and kept every one on the
+    list. The bucket stays separate in the print so the reason is visible, and
+    it is counted into the list so the instrument and that ruling agree.
+  */
+  if (kind === "none" || kind === "door") readingList.push(entry);
 }
 
 console.log(`\nTHE READING LIST - ${readingList.length} of ${everyFlagged.length} flagged`);
 console.log(`  with a production mention  ${everyFlagged.length - readingList.length}`
   + `  (barrel ${tally.barrel} - dynamic ${tally.dynamic} - other ${tally.other})`);
-console.log(`  nothing but a declaration  ${tally.none}   <- THE LIST`);
+/*
+  THE PARTS MUST SUM TO THE WHOLE, or the breakdown is decoration. Added the
+  day a fifth bucket (`door`) was introduced and the printed line went on
+  reading 34 - 7 - 3 beside a total of 49: a summary that does not add up is
+  how a reader is told a smaller number than the instrument found.
+*/
+const parts = tally.none + tally.other + tally.barrel + tally.dynamic + tally.door;
+if (parts !== everyFlagged.length) {
+  console.log(`REFUSED — the buckets sum to ${parts} and ${everyFlagged.length} were flagged.`);
+  process.exit(1);
+}
+console.log(`  nothing but a declaration  ${tally.none}`);
+console.log(`  a re-export door only      ${tally.door}`);
+console.log(`  THE LIST                   ${readingList.length}`);
 console.log();
 for (const entry of readingList.sort((a, b) => a.file.localeCompare(b.file))) {
   console.log(`  ${entry.name.padEnd(38)} ${show(entry.file)}`);

@@ -65,7 +65,7 @@ const symbols = readFileSync(resolve(listFile), "utf8").split(/\r?\n/)
   .map((match) => ({ symbol: match[1]!, file: match[2]! }));
 
 const byKind: Record<Kind, Array<{ symbol: string; file: string; where: string }>> = {
-  barrel: [], dynamic: [], other: [], none: [],
+  barrel: [], dynamic: [], door: [], other: [], none: [],
 };
 for (const entry of symbols) {
   const verdict = classify(entry.symbol);
@@ -73,11 +73,11 @@ for (const entry of symbols) {
 }
 
 console.log(`${symbols.length} symbols off the sweep\n`);
-for (const kind of ["none", "other", "barrel", "dynamic"] as const) {
+for (const kind of ["none", "door", "other", "barrel", "dynamic"] as const) {
   console.log(`${kind.toUpperCase()} — ${byKind[kind].length}`);
   for (const entry of byKind[kind]) {
     console.log(`  ${entry.symbol.padEnd(44)} ${entry.file}`);
-    if (kind === "other") console.log(`      ${entry.where}`);
+    if (kind === "other" || kind === "door") console.log(`      ${entry.where}`);
   }
   console.log();
 }
