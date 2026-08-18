@@ -92,14 +92,48 @@ const die: (why: string) => never = (why: string): never => {
   nothing. The first run of this script watched a deploy that had already
   succeeded for thirty minutes because of it.
 */
-const run = (command: string, args: string[], shell = false): string => {
+const run = (command: string, args: string[], shell = false, env?: NodeJS.ProcessEnv): string => {
   try {
-    return execFileSync(command, args, { encoding: "utf8", shell, maxBuffer: 32 * 1024 * 1024 });
+    return execFileSync(command, args, {
+      encoding: "utf8",
+      shell,
+      maxBuffer: 32 * 1024 * 1024,
+      ...(env ? { env } : {}),
+    });
   } catch (error: any) {
     return `${error?.stdout ?? ""}${error?.stderr ?? ""}` || String(error?.message ?? error);
   }
 };
 const git = (...args: string[]) => run("git", args).trim();
+
+/*
+  THE MARKER THE PRE-PUSH GATE LOOKS FOR (ordered fable-982).
+
+  `.githooks/pre-push` refuses any push to `main` or `local-migration` unless
+  this variable is set on the git process. It is set HERE and nowhere else, on
+  the push child alone — not exported into the shift's environment, because a
+  variable that outlives the push would be a marker any later hand-push
+  inherits, which is the gate with its own key taped to it.
+*/
+const gitPush = (...args: string[]) =>
+  run("git", ["push", ...args], false, { ...process.env, DRAPE_DEPLOY_RITE: "1" }).trim();
+
+/*
+  AND THE GATE'S OWN INSTALLATION IS CHECKED BEFORE ANYTHING ELSE.
+
+  `core.hooksPath` is local config, so a fresh clone has the hook file and not
+  the gate. A guard that is silently absent is worse than none — invariant 7 —
+  so the rite refuses to run rather than performing a ceremony whose backstop
+  is not armed.
+*/
+const hooksPath = git("config", "core.hooksPath");
+if (hooksPath !== ".githooks") {
+  console.log(
+    `REFUSED: core.hooksPath is ${hooksPath || "unset"}, not .githooks — the pre-push gate is not armed.\n`
+    + "  git config core.hooksPath .githooks",
+  );
+  process.exit(1);
+}
 const railway = (...args: string[]) => run("railway.cmd", args, true);
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -251,7 +285,7 @@ say("");
 
 /* ── 2. push both branches, and PROVE both landed ───────────────────────── */
 
-if (!DRY) for (const branch of BRANCHES) say(`  push ${branch}: ${git("push", "origin", branch) || "ok"}`);
+if (!DRY) for (const branch of BRANCHES) say(`  push ${branch}: ${gitPush("origin", branch) || "ok"}`);
 
 /*
   THE REMOTE'S OWN ANSWER, not the push command's exit code. `git push` on an

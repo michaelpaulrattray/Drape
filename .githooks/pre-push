@@ -1,0 +1,56 @@
+#!/bin/sh
+#
+# THE RITE IS THE ONLY PUSH PATH TO PRODUCTION, BY CONSTRUCTION.
+#
+# Ordered fable-982 after the SECOND hand-push in the program's record. The
+# first (opus-630) produced a sentence in the rite's own header — "there is no
+# such thing as a deploy too small for the ceremony" — and the second happened
+# with that sentence already written. A sentence did not hold; a sentence will
+# not hold. So the ceremony stops being a discipline and becomes a gate.
+#
+# `main` and `local-migration` both deploy production. A push to either without
+# the rite skips the freeze check, which is the reading that asks whether the
+# founder has paid work in flight — the judgement that is exactly wrong when it
+# is wrong.
+#
+# The marker is set by scripts/deploy-rite.mts on the git child it spawns, and
+# by nothing else. It is deliberately not a file, a flag or a branch name: those
+# can be produced by a shift that has decided its push is fine.
+#
+# THE ESCAPE IS ASKING, NOT --no-verify. If a push genuinely must bypass the
+# rite, say so in the mailbox and get a word back. Bypassing a hook silently is
+# the same act this hook exists to stop, one level down.
+#
+# Installed by:  git config core.hooksPath .githooks
+# The rite refuses to run when that config is absent, so the guard cannot be
+# quietly uninstalled by the next person who clones.
+
+protected_ref() {
+  case "$1" in
+    refs/heads/main|refs/heads/local-migration) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+while read -r _local_ref _local_sha remote_ref _remote_sha; do
+  if protected_ref "$remote_ref"; then
+    if [ -z "$DRAPE_DEPLOY_RITE" ]; then
+      echo "" >&2
+      echo "REFUSED — $remote_ref deploys production, and this push did not come from the rite." >&2
+      echo "" >&2
+      echo "  npx tsx scripts/deploy-rite.mts        (freeze check, push, watch, health)" >&2
+      echo "  npx tsx scripts/deploy-rite.mts --dry  (every reading, no push)" >&2
+      echo "" >&2
+      echo "The freeze check is the reason: it reads whether the founder has paid work" >&2
+      echo "in flight. A push that skips it is a judgement, and the judgement is the" >&2
+      echo "part that is wrong when it is wrong." >&2
+      echo "" >&2
+      echo "If this push must genuinely bypass the rite, ASK in the mailbox and get a" >&2
+      echo "word back. Never --no-verify." >&2
+      echo "" >&2
+      exit 1
+    fi
+  fi
+done
+
+exit 0
