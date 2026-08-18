@@ -33,7 +33,9 @@ import { getDb } from "../../server/db/connection";
 import { castingCandidateVariants, castingCandidates, users } from "../../drizzle/schema";
 import { castingIdentityEngine } from "../../server/castingV2/signEngine";
 import { storagePublicUrl } from "../../server/storage";
-import { verifyRender } from "../../server/castingV2/renderVerification";
+import {
+  aboutFacet, subjectHeading, verifyRender, type FactSubject,
+} from "../../server/castingV2/renderVerification";
 import type { Facet } from "../../server/castingV2/refineFacets";
 import { assertOneWorld } from "../lib/worldGuard.mts";
 
@@ -78,8 +80,8 @@ const fetchBytes = async (url: string) => Buffer.from(await (await fetch(url)).a
  * The condensed form: one clause per fact, and a preservation line that names
  * nothing (D-183 — naming a category invites it).
  */
-function condense(facts: ReadonlyArray<{ facet: Facet; asked: string }>): string {
-  const clauses = facts.map((fact) => `${fact.facet}: ${fact.asked}`).join(". ");
+function condense(facts: ReadonlyArray<{ subject: FactSubject; asked: string }>): string {
+  const clauses = facts.map((fact) => `${subjectHeading(fact.subject)}: ${fact.asked}`).join(". ");
   return `Edit this photograph of this exact person, changing ONLY the following. ${clauses}. `
     + "Everything else is identical to the reference photograph — the same person, the same "
     + "clothing, lighting, framing and background, and anything worn in it still worn and "
@@ -107,7 +109,9 @@ const rows = await db
 
 type Stored = {
   prompt?: string;
-  verification?: { checks?: Array<{ facet: Facet; asked: string; binding?: boolean }> };
+  /* Both spellings: rows written before 2026-08-18 name a facet, rows after
+     carry the discriminated subject. */
+  verification?: { checks?: Array<{ facet?: Facet; subject?: FactSubject; asked: string; binding?: boolean }> };
 };
 const deep = rows
   .filter((row) => {
@@ -124,7 +128,7 @@ const condensation: unknown[] = [];
 for (const [index, row] of deep.entries()) {
   const stored = row.internalPrompt as Stored;
   const facts = (stored.verification?.checks ?? []).map((check) => ({
-    facet: check.facet, asked: check.asked, binding: check.binding !== false,
+    subject: check.subject ?? aboutFacet(check.facet!), asked: check.asked, binding: check.binding !== false,
   }));
   const long = stored.prompt!;
   const short = condense(facts);

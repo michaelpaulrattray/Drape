@@ -39,7 +39,9 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { getDb } from "../../server/db/connection";
 import { castingCandidateVariants, castingCandidates, users } from "../../drizzle/schema";
 import { refineCandidate } from "../../server/castingV2/refineService";
-import { verifyRender } from "../../server/castingV2/renderVerification";
+import {
+  aboutFacet, subjectKey, verifyRender, type FactSubject,
+} from "../../server/castingV2/renderVerification";
 import { castingIdentityEngine } from "../../server/castingV2/signEngine";
 import { storagePublicUrl } from "../../server/storage";
 import type { Facet } from "../../server/castingV2/refineFacets";
@@ -173,7 +175,7 @@ async function identityHolds(original: Buffer, rendered: Buffer): Promise<boolea
 async function consistencyAcross(input: {
   previous: Buffer;
   current: Buffer;
-  facts: ReadonlyArray<{ facet: Facet; asked: string }>;
+  facts: ReadonlyArray<{ subject: FactSubject; asked: string }>;
 }): Promise<{ same: number; total: number; detail: Array<{ asked: string; same: boolean; why?: string }> }> {
   if (input.facts.length === 0) return { same: 0, total: 0, detail: [] };
   const { interpreterEngine } = await import("../../server/castingV2/interpreter");
@@ -218,7 +220,7 @@ type Cell = {
   chain: number;
   position: number;
   instruction: string;
-  facts: Array<{ facet: Facet; asked: string }>;
+  facts: Array<{ subject: FactSubject; asked: string }>;
   aChecks: unknown;
   bChecks: unknown;
   /** Facts that persisted from the previous position, judged across the pair. */
@@ -271,7 +273,7 @@ for (const [chainIndex, candidate] of usable.entries()) {
      true then — the pair the consistency reader is shown. */
   let previousA: Buffer | null = null;
   let previousBAccepted: Buffer | null = null;
-  let previousFacts: Array<{ facet: Facet; asked: string }> = [];
+  let previousFacts: Array<{ subject: FactSubject; asked: string }> = [];
 
   for (const [step, instruction] of EDITS.entries()) {
     /* ---------- arm (a): the real product path ---------- */
@@ -303,14 +305,14 @@ for (const [chainIndex, candidate] of usable.entries()) {
     const stored = row?.internalPrompt as {
       prompt?: string;
       verification?: {
-        checks?: Array<{ facet: Facet; asked: string; verified: boolean; binding?: boolean }>;
+        checks?: Array<{ facet?: Facet; subject?: FactSubject; asked: string; verified: boolean; binding?: boolean }>;
       };
     } | null;
     const prompt = stored?.prompt ?? "";
     /* `binding` travels, or the table cannot tell a refusable miss from a
        watched one — which is the distinction D-187 exists to draw. */
     const facts = (stored?.verification?.checks ?? []).map((check) => ({
-      facet: check.facet,
+      subject: check.subject ?? aboutFacet(check.facet!),
       asked: check.asked,
       binding: check.binding !== false,
     }));
@@ -344,7 +346,8 @@ for (const [chainIndex, candidate] of usable.entries()) {
       reader, same pairs, both arms, so the comparison stays clean.
     */
     const persisted = previousFacts.filter((earlier) =>
-      facts.some((fact) => fact.facet === earlier.facet && fact.asked === earlier.asked));
+      facts.some((fact) => subjectKey(fact.subject) === subjectKey(earlier.subject)
+        && fact.asked === earlier.asked));
     const [aSteady, bSteady] = previousA && previousBAccepted && persisted.length > 0
       ? await Promise.all([
         consistencyAcross({ previous: previousA, current: aBytes, facts: persisted }),

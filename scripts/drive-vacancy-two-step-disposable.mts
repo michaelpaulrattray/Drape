@@ -48,7 +48,7 @@ import { openDatabase } from "./lib/dbConnection.mts";
 import { assertOneWorld } from "./lib/worldGuard.mts";
 import { refineCandidate } from "../server/castingV2/refineService";
 import { selectVariant } from "../server/db/castingV2Variants";
-import { verifyRender } from "../server/castingV2/renderVerification";
+import { aboutFacet, verifyRender } from "../server/castingV2/renderVerification";
 import { facetOfSubject } from "../server/castingV2/refineFacets";
 import { vacantPhraseFor } from "../server/castingV2/vacancyPhrases";
 import { storageReadBytes } from "../server/storage";
@@ -206,7 +206,7 @@ for (const [at, entry] of walked.entries()) {
   const bytes = await storageReadBytes(entry.row.imageKey);
   const verdict = await verifyRender({
     bytes: bytes.bytes, contentType: "image/png",
-    facts: [{ facet: facetOfSubject("statedAccessories"), asked: ASKED, binding: true, absenceIsTheAsk: true }],
+    facts: [{ subject: aboutFacet(facetOfSubject("statedAccessories")), asked: ASKED, binding: true, absenceIsTheAsk: true }],
   });
   const seen = verdict.checks[0];
   const gone = seen?.verified === true;

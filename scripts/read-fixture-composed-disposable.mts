@@ -18,15 +18,15 @@
 import "dotenv/config";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 
-import { verifyRender } from "../server/castingV2/renderVerification";
+import { aboutFacet, verifyRender } from "../server/castingV2/renderVerification";
 
 const REPEAT = 10;
 
 /** The fact each arm is read for. Marks unless the arm says otherwise. */
-const MARKS = { facet: "marks", asked: "freckles", binding: false } as const;
-const HAIR = { facet: "hair.colour", asked: "copper", binding: false } as const;
-const SKIN = { facet: "skinTone", asked: "a light golden tan", binding: false } as const;
-const CHEEK = { facet: "cheekbones", asked: "higher, more defined cheekbones", binding: false } as const;
+const MARKS = { subject: aboutFacet("marks"), asked: "freckles", binding: false } as const;
+const HAIR = { subject: aboutFacet("hair.colour"), asked: "copper", binding: false } as const;
+const SKIN = { subject: aboutFacet("skinTone"), asked: "a light golden tan", binding: false } as const;
+const CHEEK = { subject: aboutFacet("cheekbones"), asked: "higher, more defined cheekbones", binding: false } as const;
 
 /** `--only hair` reads just the arms whose prefix contains it, so a new arm
     does not cost a re-read of every frame already in the record. */

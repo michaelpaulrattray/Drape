@@ -37,7 +37,7 @@
 import "dotenv/config";
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 
-import { verifyRender } from "../../server/castingV2/renderVerification";
+import { aboutFacet, verifyRender } from "../../server/castingV2/renderVerification";
 import { facetOfSubject } from "../../server/castingV2/refineFacets";
 
 const OUT = "output/tied-back-court";
@@ -109,7 +109,7 @@ for (const [key, asked] of Object.entries(WORDINGS)) {
       const verdict = await verifyRender({
         bytes,
         contentType: "image/png",
-        facts: [{ facet: HAIR_WORN, asked, binding: false }],
+        facts: [{ subject: aboutFacet(HAIR_WORN), asked, binding: false }],
       });
       const check = verdict.checks[0];
       verdicts.push(Boolean(check?.verified));

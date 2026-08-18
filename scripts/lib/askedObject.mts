@@ -1,4 +1,4 @@
-import { verifyRender } from "../../server/castingV2/renderVerification";
+import { aboutFacet, verifyRender } from "../../server/castingV2/renderVerification";
 import { facetOfSubject } from "../../server/castingV2/refineFacets";
 
 export type EarReading = {
@@ -76,7 +76,7 @@ export async function askedObjectOnEachEar(
     const verdict = await verifyRender({
       bytes: halfBytes,
       contentType: "image/png",
-      facts: [{ facet: facetOfSubject("statedAccessories"), asked, binding: true }],
+      facts: [{ subject: aboutFacet(facetOfSubject("statedAccessories")), asked, binding: true }],
     });
     const check = verdict.checks[0];
     return {

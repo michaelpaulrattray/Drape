@@ -12,7 +12,7 @@
 import "dotenv/config";
 import { existsSync, readFileSync } from "node:fs";
 
-import { verifyRender } from "../server/castingV2/renderVerification";
+import { aboutFacet, verifyRender } from "../server/castingV2/renderVerification";
 
 const REPEAT = 5;
 const ROUNDS = ["", "-r2", "-r3"];
@@ -29,7 +29,7 @@ async function present(file: string): Promise<number | null> {
   for (let reading = 0; reading < REPEAT; reading += 1) {
     const verdict = await verifyRender({
       bytes, contentType: "image/png",
-      facts: [{ facet: "marks", asked: "freckles", binding: false }],
+      facts: [{ subject: aboutFacet("marks"), asked: "freckles", binding: false }],
     });
     if (verdict.checks[0]?.verified) yes += 1;
   }

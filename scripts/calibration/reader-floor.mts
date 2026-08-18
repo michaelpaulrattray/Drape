@@ -40,7 +40,7 @@
 import "dotenv/config";
 import { existsSync, readFileSync } from "node:fs";
 
-import { verifyRender } from "../../server/castingV2/renderVerification";
+import { aboutFacet, verifyRender } from "../../server/castingV2/renderVerification";
 import { facetOfSubject } from "../../server/castingV2/refineFacets";
 
 const OUT = "output/masked/marks-prose";
@@ -86,7 +86,7 @@ for (const specimen of SPECIMENS) {
       const verdict = await verifyRender({
         bytes,
         contentType: "image/png",
-        facts: [{ facet: facetOfSubject("marks"), asked: ask, binding: false }],
+        facts: [{ subject: aboutFacet(facetOfSubject("marks")), asked: ask, binding: false }],
       });
       const check = verdict.checks[0];
       if (!check) {

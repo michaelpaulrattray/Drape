@@ -17,7 +17,7 @@ import "dotenv/config";
 
 import { openDatabase } from "./lib/dbConnection.mts";
 import { assertOneWorld } from "./lib/worldGuard.mts";
-import { verifyRender, isMiss, isOccluded, isRefusableMiss } from "../server/castingV2/renderVerification";
+import { aboutFacet, verifyRender, isMiss, isOccluded, isRefusableMiss } from "../server/castingV2/renderVerification";
 import { facetOfSubject } from "../server/castingV2/refineFacets";
 import { storageReadBytes } from "../server/storage";
 
@@ -48,7 +48,7 @@ const tally = { verified: 0, occluded: 0, miss: 0, refusable: 0 };
 for (let at = 1; at <= READINGS; at += 1) {
   const verdict = await verifyRender({
     bytes: bytes.bytes, contentType: "image/png",
-    facts: [{ facet: facetOfSubject("statedAccessories"), asked: ASKED, binding: true, absenceIsTheAsk: true }],
+    facts: [{ subject: aboutFacet(facetOfSubject("statedAccessories")), asked: ASKED, binding: true, absenceIsTheAsk: true }],
   });
   const check = verdict.checks[0];
   if (check.verified) tally.verified += 1;

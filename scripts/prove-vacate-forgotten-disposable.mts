@@ -50,7 +50,7 @@ import { deriveLibrary, libraryWithoutEditedCrops, supersededCarrySlots, type St
 import { EDIT_PROSE } from "../server/castingV2/refineService";
 import { repaint, type ReferenceBytes } from "../server/castingV2/repaintRender";
 import { createFalMaskedEditEngine } from "../server/providers/falImages";
-import { verifyRender, isRefusableMiss } from "../server/castingV2/renderVerification";
+import { aboutFacet, verifyRender, isRefusableMiss } from "../server/castingV2/renderVerification";
 import { vacantPhraseFor } from "../server/castingV2/vacancyPhrases";
 import { facetOfSubject } from "../server/castingV2/refineFacets";
 import { storageReadBytes } from "../server/storage";
@@ -75,7 +75,7 @@ await mkdir(OUT, { recursive: true });
 const judge = async (bytes: Buffer): Promise<any> => {
   const verdict = await verifyRender({
     bytes, contentType: "image/png",
-    facts: [{ facet: facetOfSubject("statedAccessories"), asked: ASKED, binding: true, absenceIsTheAsk: true }],
+    facts: [{ subject: aboutFacet(facetOfSubject("statedAccessories")), asked: ASKED, binding: true, absenceIsTheAsk: true }],
   });
   const check = verdict.checks[0];
   return {

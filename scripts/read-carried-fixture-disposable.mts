@@ -18,7 +18,7 @@
 import "dotenv/config";
 import { readFileSync } from "node:fs";
 
-import { verifyRender } from "../server/castingV2/renderVerification";
+import { aboutFacet, verifyRender } from "../server/castingV2/renderVerification";
 
 const CASES = [
   { name: "her master (negative control)", file: "output/marks-court/MASTER-run15.png" },
@@ -43,7 +43,7 @@ for (const entry of CASES) {
     const verdict = await verifyRender({
       bytes,
       contentType: "image/png",
-      facts: [{ facet: "marks", asked: "freckles", binding: false }],
+      facts: [{ subject: aboutFacet("marks"), asked: "freckles", binding: false }],
     });
     const check = verdict.checks[0];
     if (check?.verified) present += 1;

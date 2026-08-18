@@ -47,7 +47,7 @@ import { assembleRecipe } from "../server/castingV2/recipeAssembler";
 import { EDIT_PROSE } from "../server/castingV2/refineService";
 import { repaint, type ReferenceBytes } from "../server/castingV2/repaintRender";
 import { createFalMaskedEditEngine } from "../server/providers/falImages";
-import { verifyRender, isRefusableMiss } from "../server/castingV2/renderVerification";
+import { aboutFacet, verifyRender, isRefusableMiss } from "../server/castingV2/renderVerification";
 import { facetOfSubject } from "../server/castingV2/refineFacets";
 import { accessoryKindOf } from "../server/castingV2/accessoryKinds";
 import { storageReadBytes } from "../server/storage";
@@ -102,7 +102,7 @@ const engine = createFalMaskedEditEngine({ apiKey: process.env.FAL_KEY ?? "" });
 const judge = async (bytes: Buffer, asked: string): Promise<any> => {
   const verdict = await verifyRender({
     bytes, contentType: "image/png",
-    facts: [{ facet: facetOfSubject("statedAccessories"), asked, binding: true, absenceIsTheAsk: true }],
+    facts: [{ subject: aboutFacet(facetOfSubject("statedAccessories")), asked, binding: true, absenceIsTheAsk: true }],
   });
   const check = verdict.checks[0];
   return {

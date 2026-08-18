@@ -26,7 +26,7 @@ import { readFileSync } from "node:fs";
 
 import sharp from "sharp";
 
-import { verifyRender } from "../server/castingV2/renderVerification";
+import { aboutFacet, verifyRender } from "../server/castingV2/renderVerification";
 import { facetOfSubject } from "../server/castingV2/refineFacets";
 
 const facet = facetOfSubject("statedAccessories");
@@ -79,7 +79,7 @@ for (const wording of WORDINGS) {
       const verdict = await verifyRender({
         bytes: halfBytes,
         contentType: "image/png",
-        facts: [{ facet, asked: wording.of(specimen.asked), binding: true }],
+        facts: [{ subject: aboutFacet(facet), asked: wording.of(specimen.asked), binding: true }],
       });
       const check = verdict.checks[0];
       return {

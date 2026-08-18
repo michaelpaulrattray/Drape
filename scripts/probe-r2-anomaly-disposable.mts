@@ -16,7 +16,7 @@ import "dotenv/config";
 import { readFileSync } from "node:fs";
 import sharp from "sharp";
 
-import { verifyRender } from "../server/castingV2/renderVerification";
+import { aboutFacet, verifyRender } from "../server/castingV2/renderVerification";
 
 const DIR = "output/masked/freckles-written15-r2";
 const REPEAT = 10;
@@ -28,7 +28,7 @@ for (const name of ["painted", "composed"]) {
   for (let reading = 0; reading < REPEAT; reading += 1) {
     const verdict = await verifyRender({
       bytes, contentType: "image/png",
-      facts: [{ facet: "marks", asked: "freckles", binding: false }],
+      facts: [{ subject: aboutFacet("marks"), asked: "freckles", binding: false }],
     });
     if (verdict.checks[0]?.verified) yes += 1;
     saws.add(String(verdict.checks[0]?.saw ?? "—"));

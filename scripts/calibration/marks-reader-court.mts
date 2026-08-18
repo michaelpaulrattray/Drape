@@ -51,7 +51,7 @@ import "dotenv/config";
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
 import sharp from "sharp";
 
-import { verifyRender } from "../../server/castingV2/renderVerification";
+import { aboutFacet, verifyRender } from "../../server/castingV2/renderVerification";
 import { createFalRegionReader } from "../../server/castingV2/falRegionReader";
 import { boxOfMask, magnifiedDetail } from "../../server/castingV2/verificationDetail";
 
@@ -257,7 +257,7 @@ async function ask(
     bytes,
     contentType: "image/png",
     ...(detail ? { detail: { bytes: detail, contentType: "image/png", answers: ["marks"] } } : {}),
-    facts: [{ facet: "marks", asked, binding: false }],
+    facts: [{ subject: aboutFacet("marks"), asked, binding: false }],
   });
   const check = verdict.checks[0];
   if (!check) return { verified: null, saw: verdict.unavailable ? "(no reader)" : "(no check)" };
