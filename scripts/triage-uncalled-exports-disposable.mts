@@ -116,3 +116,8 @@ for (const kind of ["none", "other", "barrel", "dynamic"] as const) {
   }
   console.log();
 }
+
+/* A script ends by ending the process (`scriptExitDiscipline.test.ts`). This one
+   opens nothing but the filesystem; the rule is deliberately wider than the
+   handles a file happens to hold. */
+process.exit(0);

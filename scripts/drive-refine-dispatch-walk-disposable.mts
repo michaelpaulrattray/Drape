@@ -153,4 +153,7 @@ await writeFile(path.join(OUT, "walk.json"), JSON.stringify({ answered, atReceip
 await browser.close();
 await db.end();
 checks.print();
-if (checks.failures().length > 0) process.exit(1);
+/* A SCRIPT ENDS BY ENDING THE PROCESS (`scriptExitDiscipline.test.ts`): the
+   browser and the pool both hold the event loop open, and the failure path
+   exits nonzero so a driver that saw nothing cannot report green by finishing. */
+process.exit(checks.failures().length > 0 ? 1 : 0);
