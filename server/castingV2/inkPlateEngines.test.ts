@@ -44,7 +44,13 @@ describe("the canvas a plate is asked for", () => {
     expect(legalPlateCanvas({
       width: INK_TEMPLATES.arm.width,
       height: INK_TEMPLATES.arm.height,
-    })).toEqual({ width: 1536, height: 1024 });
+    })).toEqual({ width: INK_TEMPLATES.arm.width, height: INK_TEMPLATES.arm.height });
+    /* Derived, not retyped: the sheet's shape is a founder ruling that has
+       already moved once (four views to three, fable-964), and a literal here
+       would have to be chased every time it moves again. What is asserted is
+       the PROPERTY — a legal canvas is left alone. */
+    expect(INK_TEMPLATES.arm.width % 16).toBe(0);
+    expect(INK_TEMPLATES.arm.height % 16).toBe(0);
   });
 
   it("never returns a zero-pixel canvas", () => {

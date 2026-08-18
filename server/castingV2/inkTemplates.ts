@@ -75,18 +75,38 @@ export type InkTemplate = {
 /**
  * The two forms, and the two digests.
  *
- * `arm` is the four-rotation turnaround: a wrap-around design has to stay
- * consistent from every angle, which is the property the first near-white
- * version failed and the redo bought with the elbow (fable-949 §2, fable-954 §1).
+ * `arm` is the three-rotation turnaround — side, middle, back (founder ruling,
+ * fable-964 §2). A wrap-around design has to stay consistent from every angle,
+ * which is the property the first near-white version failed and the redo bought
+ * with the elbow (fable-949 §2, fable-954 §1); whether a SHEET of angles reads
+ * as one design at all is the wrap court, which runs after the render wiring.
  * `body` is front and back on one plate.
  */
 export const INK_TEMPLATES: Readonly<Record<InkTemplateKind, InkTemplate>> = Object.freeze({
   arm: Object.freeze({
     kind: "arm",
     file: "assets/ink/arm-template.png",
-    digest: "ab4f00a14732c4300bd2b0fe4225a75595dde3d73e6baf90a83f1432ceaca8d5",
+    /*
+      THE THREE-VIEW SHEET (founder ruling, fable-964 §2: "3 angles should be
+      locked we dont need 4"). Side, middle, back.
+
+      RE-LAID, NOT RE-DRAWN, and that is the fidelity choice: the three views
+      are the founder-approved pixels at their NATIVE size, cropped out of the
+      four-view sheet and set on a canvas a quarter narrower. Nothing is
+      interpolated, so nothing is softened — and each view occupies a third of
+      the frame rather than a quarter, which is the "bigger" that costs nothing.
+      The dropped view was the second SIDE, chosen by measurement rather than by
+      eye: it was the closest of any pair to the middle view (mean abs diff
+      27.5 against 34.7 for the side that stayed), so it carried the least new
+      information.
+
+      The superseded four-view sheet is kept in
+      `docs/specs/references/templates/superseded/` — the record says the sheet
+      changed BY RULING, not silently.
+    */
+    digest: "371e9e2461b773edfac012e5373ae4f493b24702b0d43a5f0af128b52381bd36",
     mime: "image/png",
-    width: 1536,
+    width: 1152,
     height: 1024,
   }),
   body: Object.freeze({
