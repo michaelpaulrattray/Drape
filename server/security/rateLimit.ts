@@ -210,6 +210,21 @@ export const RATE_LIMITS = {
     maxRequests: 24,
     keyPrefix: 'casting_ink_upload',
   },
+  /*
+    READING A REFERENCE FOR ITS MAKEUP — its own bucket, and tighter than the
+    upload's for the opposite reason.
+
+    This one keeps NOTHING, so there is no storage to protect. What it spends is
+    a MODEL CALL on house money, every single time, with no credit path pacing
+    it — the shape that has to be bounded by the limiter or by nothing. A
+    customer trying references picks a handful; twelve an hour is generous for
+    that and cheap to be wrong about.
+  */
+  castingReferenceRead: {
+    windowMs: 60 * 60 * 1000, // 1 hour
+    maxRequests: 12,
+    keyPrefix: 'casting_reference_read',
+  },
 } as const;
 
 /**

@@ -69,8 +69,16 @@ import {
   type RealizationCaptions,
 } from "./realizationCaption";
 
-/** One adjustment, not a paragraph — the brief box is where prose belongs. */
-const MAX_MAKEUP_LENGTH = 80;
+/**
+ * One adjustment, not a paragraph — the brief box is where prose belongs.
+ *
+ * **Exported because a second reader now writes INTO this slot** and must fit
+ * the cap it will be judged by. `makeupFromReference.ts` composes a sentence
+ * from a describer read of a customer's reference; a compose over this length
+ * is refused here and her ask dies for a reason she cannot see. So the composer
+ * imports the number rather than knowing it (law 4 — derive, never mirror).
+ */
+export const MAX_MAKEUP_LENGTH = 80;
 import type { ResolvedIdentity } from "./castingIntent";
 
 const log = createModuleLogger("castingV2/refineDelta");

@@ -171,6 +171,11 @@ describe("which bucket each casting procedure was handed", () => {
          choosing files can plausibly do rather than by what a click storm
          can. */
       upload: "castingInkUpload",
+      /* Reading a reference for its makeup — its own bucket again, and tighter,
+         for the opposite reason to the upload's. This one keeps NOTHING, so
+         there is no storage to protect; what it spends is a model call on house
+         money every time, with no credit path pacing it. */
+      readMakeup: "castingReferenceRead",
     });
   });
 

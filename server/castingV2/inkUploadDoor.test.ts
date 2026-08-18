@@ -146,8 +146,34 @@ describe("what this reference is being taken FOR", () => {
     */
     expect(inkIntentRefusal(["hair"])).toMatchObject({ code: "intentNotOpen" });
     expect(inkIntentRefusal(["hair"])!.message).toContain("her hair");
-    expect(inkIntentRefusal(["makeup"])).toMatchObject({ code: "intentNotOpen" });
     expect(inkIntentRefusal(["eyeColour"])).toMatchObject({ code: "intentNotOpen" });
+  });
+
+  it("turns down an OPEN feature this door does not serve by naming its road, never by asking again", () => {
+    /*
+      Makeup shipped 2026-08-18 (fable-940/941) and it is a WORDS form: the
+      picture is read once and dropped, so there is nothing for this door — which
+      exists to keep bytes — to attach.
+
+      The distinction is the whole point of the refusal. Before it existed, an
+      open-but-elsewhere feature fell through to "Say what you're taking from
+      this picture", which is the product failing to understand a correct answer.
+    */
+    const refusal = inkIntentRefusal(["makeup"]);
+    expect(refusal).toMatchObject({ code: "intentNotThisDoor" });
+    expect(refusal!.message).toContain("Her makeup");
+    expect(refusal!.message).toContain("Nothing was charged");
+    /* And it is NOT the sentence that reads as "you did not answer". */
+    expect(refusal!.message).not.toContain("Say what you're taking");
+  });
+
+  it("turns down a mixed declaration whose other half is served elsewhere", () => {
+    /* `[tattoo, makeup]` taken here would deliver the tattoo and silently drop
+       the makeup — the same partial take the closed check refuses, arriving by a
+       different route. */
+    const refusal = inkIntentRefusal(["tattoo", "makeup"]);
+    expect(refusal).toMatchObject({ code: "intentNotThisDoor" });
+    expect(refusal!.message).toContain("Her makeup");
   });
 
   it("turns down a mixed declaration on the unbuilt half, not on the built one", () => {
@@ -159,10 +185,10 @@ describe("what this reference is being taken FOR", () => {
     expect(refusal!.message).toContain("her hair");
   });
 
-  it("refuses a declaration this door cannot serve at all", () => {
-    /* An empty declaration is no intent, which is the amendment's own line. A
-       declaration with no tattoo in it does not belong on THIS door: the row it
-       would file carries a placement and a side, which are tattoo facts. */
+  it("refuses a declaration that is empty — no intent is the amendment's own line", () => {
+    /* Every declaration with something recognisable in it is now answered above,
+       by name and by road. What is left for this refusal is the genuinely empty
+       one, which is the only case where "say what you're taking" is true. */
     expect(inkIntentRefusal([])).toMatchObject({ code: "intentMissing" });
   });
 

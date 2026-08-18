@@ -79,7 +79,12 @@ const ENTRIES: Readonly<Record<ReferenceIntent, ReferenceIntentEntry>> = Object.
     key: "makeup",
     noun: "her makeup",
     form: "words",
-    open: false,
+    /* BUILT 2026-08-18 (ruled fable-940/941): `castingV2.reference.readMakeup`
+       reads the picture once and keeps nothing. It is a different DOOR from the
+       ink upload — a words-form reference has no bytes to attach — which is why
+       `inkIntentRefusal` now names the road instead of asking her to say what
+       she is taking. */
+    open: true,
   }),
   eyeColour: Object.freeze({
     key: "eyeColour",
@@ -107,6 +112,39 @@ export function openReferenceIntents(): readonly ReferenceIntent[] {
 
 export function referenceIntentIsOpen(key: ReferenceIntent): boolean {
   return ENTRIES[key].open;
+}
+
+/**
+ * Which door serves this feature — DERIVED from the ingestion form, never from a
+ * list of intent names kept beside it (law 4).
+ *
+ * A door is defined by what it does with the picture, and the map already says
+ * that per feature: a `mannequinPlate` feature needs the bytes KEPT (there is a
+ * plate to mint and to carry), while a `words` feature needs them READ AND
+ * DROPPED. Those are different procedures because they are different promises,
+ * not because somebody sorted them.
+ *
+ * The consequence that matters: when hair's crop form ships, it becomes
+ * not-this-door automatically, and nobody has to remember to add it anywhere.
+ */
+export function referenceIntentIngestionForm(key: ReferenceIntent): IngestionForm {
+  return ENTRIES[key].form;
+}
+
+/**
+ * What a customer is told when the feature is open but this door is not the one
+ * that serves it.
+ *
+ * The distinction is worth the sentence: *"say what you're taking"* to somebody
+ * who just said it is the product failing to understand a correct answer, which
+ * is a worse experience than being turned down.
+ */
+export function referenceIntentWrongDoor(key: ReferenceIntent): string {
+  return `${capitalize(ENTRIES[key].noun)} isn't attached to a Cast — we read it from the picture and hand you the words. Nothing was charged.`;
+}
+
+function capitalize(text: string): string {
+  return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
 /**

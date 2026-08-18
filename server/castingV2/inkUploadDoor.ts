@@ -41,8 +41,10 @@ import {
   type InkSide,
 } from "../../shared/inkReleasedPlacements";
 import {
+  referenceIntentIngestionForm,
   referenceIntentIsOpen,
   referenceIntentNotOpen,
+  referenceIntentWrongDoor,
   type ReferenceIntent,
 } from "../../shared/referenceIntents";
 
@@ -79,6 +81,7 @@ export type InkUploadRefusalCode =
   | "intentMissing"
   | "intentRepeated"
   | "intentNotOpen"
+  | "intentNotThisDoor"
   | "sideNotOnPlacement"
   | "outOfFrame"
   | "unreadable"
@@ -211,9 +214,12 @@ export function inkDesignKey(format: InkDesignFormat): string {
  *
  * Three refusals, and the middle one is the one that keeps this honest:
  *
- *   intentMissing   nothing declared, or nothing this door can serve — the row
- *                   it would file carries a placement and a side, which are
- *                   facts about a TATTOO
+ *   intentMissing   nothing declared at all
+ *   intentNotThisDoor  declared, OPEN, and served somewhere else — the row this
+ *                   door files carries a placement, a side and our copy of the
+ *                   bytes, which are facts about a TATTOO. A words-form feature
+ *                   keeps nothing, so it has its own procedure and this refusal
+ *                   names it rather than asking her to say what she just said
  *   intentRepeated  a set, not a list; a doubled member would be counted twice
  *                   by the demand tally this field exists to feed
  *   intentNotOpen   the form is RULED and not BUILT — named, with the money
@@ -235,12 +241,34 @@ export function inkIntentRefusal(
   const closed = intents.find((intent) => !referenceIntentIsOpen(intent));
   if (closed) return { code: "intentNotOpen", message: referenceIntentNotOpen(closed) };
   /*
-    LAST, and deliberately after the closed check: a hair-only declaration is
-    turned down for the reason a customer can act on ("that one opens later"),
-    not for an internal one about which door they reached. Only a declaration
-    with nothing recognisable in it falls through to here.
+    THEN: OPEN, BUT NOT THROUGH THIS DOOR (ruled fable-941 §2).
+
+    This door exists to KEEP bytes — it files a row with a placement, a side and
+    our own copy of the picture, because a plate has to be minted from it and
+    carried into later renders. A `words` feature has nothing to keep: the
+    picture is read once and dropped, which is a different procedure because it
+    is a different promise.
+
+    So the served set is DERIVED from the ingestion form (law 4) rather than
+    named `tattoo` here. When hair's crop form ships it becomes not-this-door
+    without anybody editing this function.
+
+    And a MIXED declaration is refused, on the same rule the closed check
+    follows: `[tattoo, makeup]` taken here would silently deliver half, and
+    "we took part of it" is never a silent outcome on this road.
   */
-  if (!intents.includes("tattoo")) {
+  const elsewhere = intents.find(
+    (intent) => referenceIntentIngestionForm(intent) !== "mannequinPlate",
+  );
+  if (elsewhere) {
+    return { code: "intentNotThisDoor", message: referenceIntentWrongDoor(elsewhere) };
+  }
+  /*
+    LAST: only a declaration with nothing recognisable in it falls through to
+    here. Every actionable case above is turned down for a reason a customer can
+    act on, rather than an internal one about which door they reached.
+  */
+  if (intents.length === 0) {
     return {
       code: "intentMissing",
       message: "Say what you're taking from this picture.",

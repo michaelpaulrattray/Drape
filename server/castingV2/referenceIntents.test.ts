@@ -13,6 +13,8 @@ import {
   REFERENCE_INTENTS,
   isReferenceIntent,
   openReferenceIntents,
+  referenceIntentIngestionForm,
+  referenceIntentWrongDoor,
   referenceIntentEntry,
   referenceIntentIsOpen,
   referenceIntentNotOpen,
@@ -38,11 +40,30 @@ describe("the ingestion map — his words, pinned", () => {
   });
 
   it("knows what is BUILT, which is a different question from what is ruled", () => {
-    expect(openReferenceIntents()).toEqual(["tattoo"]);
+    /* Two forms are built. TATTOO keeps bytes for a plate; MAKEUP keeps nothing
+       and reads the picture once (2026-08-18, fable-940/941). Hair and eye
+       colour are ruled — the map above pins their forms — and neither is built,
+       which is exactly the distinction this entry exists to hold. */
+    expect(openReferenceIntents()).toEqual(["tattoo", "makeup"]);
     expect(referenceIntentIsOpen("tattoo")).toBe(true);
-    for (const key of ["hair", "makeup", "eyeColour"] as const) {
+    expect(referenceIntentIsOpen("makeup")).toBe(true);
+    for (const key of ["hair", "eyeColour"] as const) {
       expect(referenceIntentIsOpen(key)).toBe(false);
     }
+  });
+
+  it("keeps the two built forms on DIFFERENT doors, because they make different promises", () => {
+    /* The whole reason `intentNotThisDoor` exists. A `mannequinPlate` feature
+       needs the bytes KEPT; a `words` feature needs them read and dropped. One
+       procedure cannot honestly do both, so the ingestion form is what decides
+       which door serves a declaration. */
+    expect(referenceIntentIngestionForm("tattoo")).toBe("mannequinPlate");
+    expect(referenceIntentIngestionForm("makeup")).toBe("words");
+    const wrongDoor = referenceIntentWrongDoor("makeup");
+    expect(wrongDoor).toContain("Her makeup");
+    expect(wrongDoor).toContain("Nothing was charged");
+    /* It says where the feature DOES go, rather than only where it does not. */
+    expect(wrongDoor).toMatch(/read it from the picture/i);
   });
 
   it("derives the open list rather than keeping a second one", () => {

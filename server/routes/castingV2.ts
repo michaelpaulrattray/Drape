@@ -35,10 +35,22 @@ import { INK_PLACEMENTS } from "../../shared/inkPlacementVocabulary";
 import { INK_PROVENANCES } from "../../shared/inkProvenance";
 import { REFERENCE_INTENTS } from "../../shared/referenceIntents";
 import { INK_SIDES } from "../../shared/inkReleasedPlacements";
+import sharp from "sharp";
 import {
   INK_DESIGNS_PER_CANDIDATE_REFUSAL,
   INK_DESIGN_MAX_BYTES,
+  inkDesignBytesRefusal,
+  inkDesignContentType,
+  isInkDesignFormat,
 } from "../castingV2/inkUploadDoor";
+import {
+  readMakeupFromReference,
+  referenceReadOutcomeFor,
+} from "../castingV2/makeupFromReference";
+import {
+  recordReferenceRead,
+  type ReferenceReadOutcome,
+} from "../db/castingV2ReferenceReads";
 import { uploadInkDesign } from "../castingV2/inkUploadService";
 import { InkDesignCapError, InkDesignOwnershipError } from "../db/castingV2InkDesigns";
 import { spokenError } from "../_core/spokenError";
@@ -408,6 +420,107 @@ const inkRouter = router({
         }
         throw error;
       }
+    }),
+});
+
+/**
+ * TAKING A FEATURE FROM A REFERENCE THAT KEEPS NOTHING — M12 row 15's WORDS
+ * form (founder ruling relayed fable-933; shape ruled fable-941).
+ *
+ * Separate from `inkRouter` because it makes a different promise. That door
+ * exists to KEEP bytes: it files a row with a placement and our own copy of the
+ * picture, because a plate has to be minted from it and carried into later
+ * renders. This one reads a photograph once and drops it.
+ *
+ * Behind the same flag, deliberately (fable-940 §4): the class stays dark until
+ * the founder has looked at the first sentence read off a real person.
+ */
+const referenceRouter = router({
+  readMakeup: protectedProcedure
+    .input(z.object({
+      /* Candidate-scoped for ownership (invariant 1) even though nothing is
+         written against it — a read this account may not make on a Cast it does
+         not own is still a read of somebody's photograph on our transport. */
+      candidateId: publicId,
+      imageBase64: z.string().max(Math.ceil(INK_DESIGN_MAX_BYTES * 4 / 3) + 256),
+    }).strict())
+    .mutation(async ({ ctx, input }) => {
+      if (!captureCastingInkStudioEnabled(ctx.user.id)) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "No such thing." });
+      }
+      enforceRateLimit(ctx.user.id, RATE_LIMITS.castingReferenceRead);
+
+      /* From the session, never from input (invariant 3); and somebody else's
+         Cast is answered the way a missing one is. */
+      const candidateId = await resolveOwnedCandidateId({
+        userId: ctx.user.id,
+        candidatePublicId: input.candidateId,
+      }).catch(() => null);
+      if (candidateId === null) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Cast not found" });
+      }
+
+      const bytes = decodeUploadedImage(input.imageBase64);
+      /*
+        THE BYTES ARE JUDGED BEFORE THEY ARE SENT, on the upload door's own
+        rules — the format is what the BYTES are, never what was claimed. A
+        reference too small to read is refused here rather than paid for and
+        then found unreadable.
+      */
+      const decoded = await sharp(bytes).metadata().catch(() => null);
+      const bytesRefusal = inkDesignBytesRefusal({
+        byteSize: bytes.length,
+        decoded: decoded ? { format: decoded.format, width: decoded.width, height: decoded.height } : null,
+      });
+      if (bytesRefusal) throw spokenError({ code: "BAD_REQUEST", message: bytesRefusal.message });
+      /* The door has already refused anything that is not one of the three
+         formats; asking the guard again is how that fact is CARRIED rather than
+         asserted with a `!`, so a future edit to the door cannot leave a lie
+         here. */
+      if (!isInkDesignFormat(decoded?.format)) {
+        throw spokenError({ code: "BAD_REQUEST", message: "That file isn't an image we can read." });
+      }
+
+      const outcome = await readMakeupFromReference({
+        bytes,
+        contentType: inkDesignContentType(decoded.format),
+      });
+
+      /*
+        THE DEMAND ROW, fire-and-forget (fable-941 §3a). It records THAT a
+        makeup read happened and how it ended — never the sentence, never the
+        account, never the cast. It cannot reject and nothing here awaits its
+        verdict: telemetry may not take an answer away from somebody who asked
+        for one.
+      */
+      void recordReferenceRead("makeup", referenceReadOutcomeFor(outcome) as ReferenceReadOutcome);
+
+      if (!outcome.ok) {
+        throw spokenError({ code: "BAD_REQUEST", message: outcome.refusal.message });
+      }
+
+      /*
+        AN EXPLICIT PROJECTION (invariant 8), and every field in it is FOR HER
+        EYES BEFORE ANYTHING IS SPENT (fable-940 bounds 3 and 4).
+
+        `sentence` is a suggestion, not a setting. The client shows it as words
+        she adopts or edits, and only then does it travel as an ordinary makeup
+        ask. That is a product promise and it is also what makes this legal:
+        `refineDelta` requires a makeup value to appear in the customer's own
+        instruction, so a sentence routed silently around her would be refused
+        by a guard that has stood there since D-172.
+
+        `readFromReference` is bound 5 — the record never claims she typed what
+        a reader wrote.
+      */
+      return {
+        sentence: outcome.sentence,
+        /* Named, so a surface that did not fit is visible rather than silently
+           absent — she can type it herself if she wants it. */
+        surfacesRead: outcome.used,
+        surfacesDropped: outcome.dropped,
+        readFromReference: true,
+      };
     }),
 });
 
@@ -1569,4 +1682,5 @@ export const castingV2Router = router({
     }),
 
   ink: inkRouter,
+  reference: referenceRouter,
 });
