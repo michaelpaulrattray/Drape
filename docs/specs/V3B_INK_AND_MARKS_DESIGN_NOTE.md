@@ -20,12 +20,23 @@ that are taste are marked **FOUNDER** and are not answered here.*
 > A segmenter read is not proof that a region is in the photograph — the
 > relabel is the demonstration. §5 gains a step 1a for it.
 >
-> **The placement table is BLOCKED**, by ruling (fable-651 §4), on a founder
-> question that did not exist when this note was written: a studio on this frame
-> has two placements, one of them conditional on a t-shirt neckline. Filed with
-> a recommendation — change the WARDROBE, not the framing. Designing the
-> vocabulary now would be designing for a photograph that may be about to
-> change. §3 and §5 below stand as written; their CONTENTS wait on him.
+> ~~**The placement table is BLOCKED**~~ — **UNBLOCKED 2026-08-16 by the
+> founder in person (fable-680 §1), and this banner did not say so for two
+> days.** The question it was blocked on — change the WARDROBE or the framing —
+> he answered: **"Wardrobe: NOT NOW."** So *"the placement table's contents
+> therefore settle on the CURRENT frame"*, and the contents are the measured
+> survivors of `V3B_PLACEMENT_VOCABULARY_READING.md`: **`neck`, `upper arm`, and
+> `upper chest` conditional on the neckline.** The FOUNDER RULINGS block
+> immediately below has said this since the day it was filed; this banner is
+> what a reader hits first, which is why the stale sentence outranked the
+> current one. (Repaired 2026-08-18, opus-677 §6.)
+>
+> *The original, kept because what it was blocked on is worth reading:* blocked
+> by ruling (fable-651 §4) on a founder question that did not exist when this
+> note was written — a studio on this frame has two placements, one of them
+> conditional on a t-shirt neckline; designing the vocabulary then would have
+> been designing for a photograph that was about to change. §3 and §5 below
+> stand as written, and their CONTENTS are now his answer rather than a wait.
 
 ---
 
@@ -68,7 +79,13 @@ that are taste are marked **FOUNDER** and are not answered here.*
 >    for (§4). Cost is honest: a rebuild is one image call (~$0.10) per
 >    change, the same order as editing the sheet in place; the flat sheet's
 >    only real economy is mechanical paste, which is exactly the shortcut the
->    fidelity law exists to challenge. Awaiting his word.
+>    fidelity law exists to challenge. ~~Awaiting his word.~~ **His word
+>    LANDED — fable-684 §2, "Mannequin flash sheets: RULED — *confirmed*."**
+>    The recommendation above is the ruling; the tail sentence is struck
+>    rather than deleted because a reader who has quoted it needs to see it
+>    move. (Repaired 2026-08-18, opus-677 §6: the block's heading already
+>    said RULED while its last line still said waiting, so where a reader
+>    stopped decided what they inherited.)
 
 ## 0. Why this note exists, and what it is blocking
 
@@ -231,9 +248,11 @@ fable-562 is a founder ruling and it sequences the whole thing:
                                    holds one row today. A placement clears the
                                    FRAME before it clears the reader, and a
                                    segmenter read is NOT that proof. Its SHAPE
-                                   is settled (this line); its CONTENTS wait on
-                                   the founder's wardrobe answer, because that
-                                   answer changes what is in the picture
+                                   is settled (this line); its CONTENTS are
+                                   ANSWERED — "Wardrobe: NOT NOW" (fable-680
+                                   §1), so the picture is the current frame and
+                                   the survivors are neck · upper arm · upper
+                                   chest-if-the-neckline-allows
 2  the placement vocabulary        a table, its names as copy, its regions
                                    proven findable by a reader — and proven
                                    IN FRAME before they are asked about
@@ -254,8 +273,11 @@ drift), and perceptually FINE to the founder on the sheet, in his own words.**
 ## 6. What this note deliberately does not do
 
 - **It does not invent a placement vocabulary.** That is step 2, and the names
-  are copy the founder should see. *(Since tested: step 2 is blocked on the
-  wardrobe answer, and the names must be surfaces rather than bones.)*
+  are copy the founder should see. *(Since tested: the names must be surfaces
+  rather than bones. Step 2 was blocked on the wardrobe answer and is NOT any
+  more — fable-680 §1 settled it on the current frame, so what this note still
+  declines to do is INVENT the table; its contents are now quoted from the
+  reading rather than waiting on him.)*
 - **It does not choose between the collision candidates.** fable-561 said
   tested, not argued, and the early lean toward A is recorded as a lean.
 - **It does not promise the panel a tattoo row.** A row needs a rectangle
