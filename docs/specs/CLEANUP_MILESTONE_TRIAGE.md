@@ -743,3 +743,224 @@ family).
 a comparison mode kept beside a live path during a migration, and a shadow whose
 migration has landed is the cleanest deletion this list holds — or the last
 instrument still watching something. One read settles which.
+
+---
+
+## 15. THE LIST'S FLOOR HAS TWO MORE HOLES IN IT, AND ONE OF THEM HID A WHOLE
+## SUB-API — `scripts/sweep-shadowed-exports-disposable.mts`
+
+§12 gave the milestone a printed list of 110 and §13 budgeted against it. The
+list is a **floor**, which the sweep says of itself — but it names three biases
+(namespace imports, dynamic specifiers, barrel re-exports) and there are
+**five**. The two undeclared ones are found here, both hiding dead code, and
+the first of them hid a symbol no list this milestone has read has ever held.
+
+### 15a. The sweep matches imported NAMES and throws the specifier away
+
+```
+import\s+(?:type\s+)?\{([^}]*)\}\s*from\s*["'][^"']+["']
+                       ^^^^^^^ kept          ^^^^^^^^ discarded
+```
+
+So one `import { hairRegion } from "./axisRegistry"` marks **every** export
+named `hairRegion` as imported. There are two: `axisRegistry.hairRegion(prompt)`
+returns the hair sentence out of a composed prompt and is live;
+`maskGeometry.hairRegion(geometry, destination)` builds a `RegionSpec` out of
+authored shapes, is imported by `maskGeometry.test.ts` and nothing else, and
+**appears on neither of the sweep's two printed lists** — not the 111, not the
+64, not the 110.
+
+Its siblings `eyeRegion`, `eyewearRegion` and `mergeRegions` are all three on
+the reading list. The one with a live twin is the one that vanished.
+
+**The repair is a resolver, scoped to where the bias can bite**: a name declared
+in exactly one production file cannot be confused with anything. Sixty-six names
+are declared in two or more, so those are the ones whose importers get their
+specifiers resolved — relative, `@/`, `@shared/`, with directory-index and
+extension resolution, and barrel re-exports followed to a fixpoint in both
+`export { x } from` and `export *` forms.
+
+Its controls are **structural** rather than specimens (§0's lesson, which cost
+this milestone its first instrument): a relative specifier must resolve, a
+directory specifier must land on `index.ts`, a bare package name must resolve to
+nothing, and — the discrimination arm — declarations known to be live must come
+back **reached**, because a resolver that reaches nothing would print the whole
+repository as dead.
+
+```
+RESOLVER CONTROLS (structural — not facts about today's dead code)
+  positive  a relative specifier resolves to its file   PASS
+  positive  a directory specifier resolves to index.ts  PASS
+  negative  a bare package name resolves to nothing     PASS
+
+  names declared in 2+ production files   66
+  of those declarations, reached by a production importer  81
+
+DECLARATIONS NO PRODUCTION IMPORTER REACHES, WHOSE NAME LIVES ELSEWHERE — 7
+```
+
+Three of the seven are declared on the server or shared side, which is the
+sweep's own scan root:
+
+| symbol | dead here | the twin that hid it |
+|---|---|---|
+| `hairRegion` | `server/castingV2/maskGeometry.ts` | `server/castingV2/axisRegistry.ts` |
+| `BRAND_NAME` | `server/casting/geminiPrompts.ts` | `client/src/foundation/brand.ts` |
+| `OverridableField` | `server/castingV2/briefCompiler.ts` | `client/src/features/castingV2/sheetState.ts` |
+
+The other four are client-side (`withRetry`, `formatRelativeTime`,
+`GeneratedAsset`, `SEVERITY_ICONS`) and out of the parent sweep's scan root, in
+the same way §3's `sidebar.tsx` is.
+
+⚠ **Two biases this pass keeps deliberately**, both toward not-dead: a namespace
+import reaches a module and is treated as reaching all of it, and so is a
+dynamic import whose names cannot be seen. A dynamic import whose names CAN be
+seen — `const { unionMasks } = await import("./maskGeometry")` — is read by
+name, and that single line in one tracked helper was what had been covering the
+whole authored-shape road.
+
+### 15b. The sweep counts `scripts/` as consumers, and 283 of them are untracked
+
+`consumerRoots = ["server", "client", "shared", "scripts"]`. Two hundred and
+eighty-three files under `scripts/` are untracked disposables (§2) — they exist
+on this machine and in no clone of this repository. A server export whose only
+non-test consumer is one of those is dead by every standard the repository
+itself can check.
+
+**Measured, with its own controls** (a known tracked script must read as
+tracked; untracked scripts must exist to be counted):
+
+```
+SERVER EXPORTS WHOSE ONLY NON-TEST CONSUMER IS AN UNTRACKED SCRIPT — 1
+  AMBIGUOUS_WORDS_FOR_CORPUS   server/castingV2/removalWords.ts   (tests too)
+```
+
+**One.** The door is real and nearly empty, which is worth knowing precisely
+because the untracked pile is 283 files: the disposables borrow from the product
+far less than their number suggests.
+
+### 15c. THE ISLAND `hairRegion` WAS HIDING — the authored-shape road, whole
+
+Once the symbol surfaced, the sub-API around it reads as one closed island.
+Every one of these has **zero** mentions anywhere outside `maskGeometry.ts`,
+counted mechanically:
+
+```
+FaceGeometry · RegionKind · RegionSpec · hairRegion · eyeRegion
+browRegion · eyewearRegion · mergeRegions
+```
+
+`FaceGeometry` is the input type and **nothing in the repository produces one**
+outside the module's own test. The live paste road builds its zones from
+segmenter mattes in `maskedRefine` (`scopedZone(facet, region: Mask)`), never
+from a `RegionSpec`.
+
+This is the authored-shape road CLAUDE.md's fidelity law is named after — *"the
+maskGeometry incident (masks built from authored shapes when segmentation models
+were the obvious source)"*. The corrected versions sit beside it in the same file
+and are also uncalled: `hairMaskFrom` and `eyeMaskFrom`, whose docblocks say
+*"Same law as `hairRegion`, with nothing hand-drawn"*. The road was corrected by
+being routed around rather than by being removed, and the sweep's blind spot is
+why nobody has been asked about it since.
+
+⚠ **NOT claimed: that anything is broken.** `mergeRegions` carries D-209's
+batching law and `eyeRegion` carries the frames-are-opaque rule, and it would be
+easy to read this as two founder rulings gone unenforced. **It is not that.** The
+live road implements both — the frames case at length, in `maskedRefine`'s
+removal-territory and corridor logic — by a different mechanism. The finding is a
+dead island, not a missing guard.
+
+**Disposition: RETIRE the island — proposed, not taken.** It is the largest
+single deletion the milestone has found (eight symbols, their tests, and a public
+type), it touches the module the fidelity law is named for, and §14b's question
+has a clean answer for once: *what was this for?* — it was the road before the
+mattes. Held for ratification rather than taken on one shift's reading.
+
+---
+
+## 16. A SENTENCE STATED ON THE SERVER AND WRITTEN AGAIN ON THE CLIENT —
+## §8a's class, swept at last
+
+§8a removed the server's duplicate `STATED_WARDROBE_NOTICE` and, for its law-7
+sweep, read **one** neighbouring constant (`FELL_BACK_NOTICE`, innocent). That is
+an instance check, not a class sweep.
+`scripts/sweep-duplicated-sentences-disposable.mts` is the sweep it owed: every
+sentence-shaped string literal in server production source, asked whether the
+same sentence appears verbatim in client source.
+
+Its matcher controls are **synthetic** — a fabricated shared sentence must be
+found, a one-word variant must not, a sentence quoted in a COMMENT must not be
+read as a literal, and a literal after a URL must survive comment-stripping — so
+no control can die when the product retires a specimen. Its corpus controls are
+counts, so a run that scanned nothing cannot report clean.
+
+```
+CORPUS CONTROLS (a run that scanned nothing is not a clean run)
+  server production files            431
+  sentence-shaped server literals    2974
+  client source files                378
+
+SENTENCES DECLARED ON THE SERVER AND WRITTEN AGAIN ON THE CLIENT — 11 → 10
+```
+
+**Ten of the eleven are two LIVE statements**, which is a different thing from
+§8a's shape and mostly legitimate: a client pre-validation toast beside a server
+validator (`"Stripe session ID is required for refund requests"`, `"Please enter
+a valid email address"`), a client access-denied toast beside a tRPC FORBIDDEN
+message, generic auth failure copy. They drift, but both copies run.
+
+Two are worth naming and neither is a deletion:
+
+- **`"Finish or discard the current evidence edit before restoring this Cast."`**
+  is §8a's exact shape with a live server copy: `wholeCastRestore.ts:641` throws
+  it as a `PRECONDITION_FAILED`, the wire carries `blockedByPendingEvidence:
+  boolean`, and `CastStateHistory.tsx:107` writes the sentence again for the
+  hint. Reword the throw and the hint keeps yesterday's words. **One promise, two
+  homes — filed, not changed**; a live error path is not a cleanup milestone's to
+  refactor.
+- **`"Tattoo previews are temporarily unavailable. Nothing was charged."`** is the
+  same duplication carrying a MONEY claim, and the client's copy is a fallback
+  for *any* error with an empty message (`publicMessage()` in
+  `useInkAddWorkflow.ts:58`). The server says it where it knows nothing was
+  charged; the client says it where it knows nothing at all. **Filed** — a false
+  reassurance is worse than no sentence, and it is a product judgement rather
+  than a deletion.
+
+### 16a. The one that WAS §8a's shape — removed
+
+`VARIANCE_CONFESSION` (`server/castingV2/varianceBudget.ts`) declared
+
+> "Most of this sheet is held — the eight will differ mainly in expression."
+
+and **nothing imported it — not even a test**, exactly as the server's
+`STATED_WARDROBE_NOTICE` was. `CastingSheet.tsx:2060` writes the same sentence
+again and shows it, gated on `varianceHeld: boolean` from `rollProjection`.
+Deleted, and the sweep's own count fell 11 → 10 with `tsc --noEmit` at exit 0.
+
+**Its docblock disagreed with the running product, and that is the part worth
+keeping.** It said *"Before the roll, not after… they are entitled to know that
+while it is still a decision"*, while the live surface says it after the eight
+faces exist — `rollService.ts:374` states that choice deliberately (*"so the
+sheet can say, after the fact"*). So the dead constant was the last written
+record of an intent the road did not take.
+
+Deleting it silently would have deleted that record. The reasoning moved to the
+surviving declaration in `CastingSheet.tsx`, with the fact that makes it
+actionable: the variance plan is computed by the brief compiler **inside roll
+creation**, so a pre-roll confession is not a copy change — it needs the brief
+compiled at echo time, which is a second text call before anyone has paid.
+
+---
+
+## 17. THIS SHIFT'S READS, against §14b's question
+
+| symbol | verdict |
+|---|---|
+| `compareModelSnapshotShadow` | **HOLD, blocked.** A single-model wrapper around `withTransaction` plus two live functions; the A4 audit script uses the cohort primitive instead, and `r7-snapshot-selection-contract.test.ts` pins the module's eight production callers, none of which is this. Its four tests exercise LIVE code through it (owner-scoped `NOT_FOUND`, the mismatch-kind vocabulary, the no-write assertion) — §8c's class — so removing it means re-pointing them, and they live in a suite that **skips without `TEST_DATABASE_URL`**. Same blocker as §8d's second ring, and it is now a measured one: **there is no `docker` on this machine** (`docker --version` → command not found), so a disposable database cannot be raised here at all. |
+| `pruneSegmentFacet` | **HOLD — a road question, not debris.** Its own docblock declares the deliberate half-landing (*"There is no tRPC procedure and no charge path here… belongs with the face chart's surface (M12)"*), and `db/castingV2Segments.retireSegmentFacet` has no other consumer either, so the pair stands or falls together. But the user promise it was built for is already served: `RefinePanel.tsx:555` offers *"take something back — 'undo', 'remove the earrings' · free when you already have it"*, and the live road is the chain-step prune (`removeStep`, wired at `routes/castingV2.ts:964`). **The question for the face chart's owner is whether the segment-drop road still has a job**, and it is not a cleanup milestone's to answer. |
+| `castImageUrl` | **DELETE candidate — debris, with a false docblock.** *"the only place the room learns an image URL"* is untrue eight lines above its own declaration: `castProjection.ts:434` calls `storagePublicUrl` directly, three times. The function is a one-line alias for `storagePublicUrl` with no caller. Joins `mintModelAtomically` (§11b) in the docblock-asserts-a-role-it-does-not-have family. |
+| `retentionSweepEnabledForUser` | **DELETE candidate**, same family: *"Exposed for the boot wiring's readability"* — the boot wiring (`_core/index.ts:343`) imports `startCandidateRetentionSweep` and nothing else. |
+| `blankSuppressed` (with `cutOf`) | **RETIRE candidates — the alternative that was not taken.** `blankSuppressed` blanks a suppressed axis out of the record; `cutOf` reads the record correctly by consulting the tiers. Neither is called. The design took the other road and says so at the call site: *"The tiers travel with the identity so no later reader has to infer where a value came from"*, and the only production reader of `realized` is the axis sweep, whose suppressor list is exactly the mechanism that excuses a silenced axis. ⚠ Checked before writing this: the user-facing hair record is already null under coverage (`hair: hairColour === null ? null : hairRecord(…)`), so no surface over-claims today. |
+| `sweepComposedPrompt`, `suppressorsFor`, `CROSS_AXIS_IMPLICATIONS`, `AXIS_REGISTRY_BINDINGS` | **KEEP — a guard the suite drives and proves.** `axisRegistry.test.ts` builds a context with `suppressorsFor` and runs the sweep over really-composed prompts, with sabotage arms (hair removed → the hair axis is caught; eyes removed → the eye axis is caught). This is invariant 7 satisfied at the suite level, not another mirror test. `AXIS_REGISTRY_BINDINGS` says in its own comment that it exists to stop a linter stripping the compile-time bindings. |
+| `deriveEvidenceCandidateBillingTruth`, `evidenceCandidateAttemptCost` | **KEEP with §6b** — and §6b's family is nine or ten, not eight. `BillingTruth` and `requiresRecovery` have no other mention in the server, so this is the same "the machine written whole in one place, enforced in SQL at every writer" shape already ruled KEEP, arriving on a billing noun. |
+| the `maskGeometry` region island | **RETIRE, proposed** — §15c. |

@@ -318,13 +318,3 @@ function adjacentCuts(identity: ResolvedIdentity, held: HairStyle): HairStyle[] 
         style.family === held.family && style.name !== held.name && !style.statement,
     );
 }
-
-/**
- * What the echo says when the sheet cannot be freed.
- *
- * Before the roll, not after. The user is about to spend credits on eight faces
- * that will differ mainly in expression, and they are entitled to know that
- * while it is still a decision.
- */
-export const VARIANCE_CONFESSION =
-  "Most of this sheet is held — the eight will differ mainly in expression.";

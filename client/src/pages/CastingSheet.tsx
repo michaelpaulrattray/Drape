@@ -2054,6 +2054,17 @@ export default function CastingSheet() {
 
           Said plainly rather than hidden: a user looking at eight near-copies
           should be told it was the locks, not the engine having a bad day.
+
+          AND IT IS SAID AFTER THE ROLL, WHICH IS NOT WHERE IT WAS MEANT TO GO.
+          The sentence lived twice — here, and as a dead `VARIANCE_CONFESSION`
+          on the server whose own docblock said "before the roll, not after…
+          while it is still a decision". Only this copy ever ran, so the server
+          one was removed rather than left to drift; the intent it carried is
+          written here instead of being deleted with it. Moving the line
+          earlier is not a copy change: the variance plan is computed by the
+          brief compiler INSIDE roll creation (`rollService`, "so the sheet can
+          say, after the fact"), so a pre-roll confession needs the brief
+          compiled at echo time — a second text call, before anyone has paid.
         */}
         {roll.data?.varianceHeld ? (
           <p className="dpc-variance-note">
