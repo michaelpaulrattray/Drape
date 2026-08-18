@@ -78,23 +78,28 @@ BACKGROUND AND COMPOSITION
 - No labels, no captions, no arrows, no numbers, no watermark, no logo, no
   borders, no letters or digits anywhere in the image.
 
-AS SHIPPED — the one mechanical step after generation
+AS SHIPPED — the generation itself, uncropped (founder ruling, fable-955)
 
-The generated frame ran a long way past the elbow, down most of a forearm. The
-placement vocabulary has no forearm in it (`neck`, `upper arm`, `upper chest`),
-so that stretch is canvas the product cannot name. Two attempts to generate a
-tighter frame were both worse — one lost the matte finish and came back as a
-glossy anatomical study, the other lost the very rotation legibility this redo
-exists to buy — so the shipped file is the good generation with its lower edge
-cut and re-faded by hand:
+The shipped file is this prompt's generation with nothing done to it. Its
+sha256 matches templates/source/ink-template-arm-nearwhite-generated.png byte
+for byte, and both are committed so the claim is checkable rather than asserted.
 
-  source   templates/source/ink-template-arm-nearwhite-generated.png (committed beside this)
-  script   scripts/crop-ink-arm-template-disposable.mts (re-running it writes the same bytes)
-  cut      row 800 of 1024
-  fade     the 110 rows above the cut, dissolved linearly to the background
-  bg       rgb(246,245,243), sampled from the frame's own corner (flat, no gradient)
-  margin   96 rows of that background below the cut
+THERE WAS A CROP, AND IT WAS REVERTED BY RULING. It is recorded here rather than
+tidied away. The generated frame runs a long way past the elbow and `forearm` is
+not in the placement vocabulary (`neck`, `upper arm`, `upper chest`), so the
+lower edge was cut at row 800 and re-faded to keep the sheet from advertising
+canvas the product cannot name. The founder saw it and asked the question that
+undid it: *"shouldnt the entire arms be on one sheet though or am i wrong?"*
 
-No anatomy is manufactured by this step: it removes canvas and softens the new
-edge to the frame's own background, which is what the generator's own
-terminations do. Declared here, in the commit, and on the founder's card.
+He is right, and the crop guarded the wrong door. A customer never draws on this
+template — the engine plates a design at the placement DECLARED AT UPLOAD, and a
+forearm ask already refuses at the vocabulary gate. The template is the anatomy
+document, and a character-sheet arm is the whole limb. It also means the
+full-sleeve expansion, when it is earned, needs no asset work at all.
+
+The bottom edge needed no re-fade: the generation terminates in a taper (the
+last subject pixels are at row 963 of 1024), never a cut against the frame edge.
+
+WHAT THE CROP WAS RIGHT ABOUT IS KEPT AS A QUESTION FOR THE PLATE COURT: with
+full-length canvas the plating engine must respect the named placement — *did the
+design stay at the upper arm?* — his eye on the first specimens (fable-955 §3).

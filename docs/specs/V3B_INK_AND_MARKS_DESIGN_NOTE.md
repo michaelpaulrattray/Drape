@@ -534,15 +534,47 @@ telling elbows zoomed).
 **Two generations were thrown away, and the reason is worth keeping**: a tighter
 frame asked for with arithmetic ("four fifths") came back as a glossy anatomical
 study with the matte finish gone, and a second single-pass attempt kept the
-finish but lost the rotation legibility. The shipped file is the good generation
-with its lower edge **cut and re-faded by hand** — parameters declared in
-`prompt-arm-nearwhite.txt`, in the commit, and on his card. It manufactures no
-anatomy: it removes canvas and dissolves the new edge to the frame's own
-background.
+finish but lost the rotation legibility.
+
+**HIS VERDICT: the four rotations read** (fable-954 §1) — *"the arm sheet looks
+good but its cut off at the forearm how would a sleeve render if it was full
+sleeve?"*
+
+**AND THE CROP IS REVERTED BY RULING** (fable-955). The shipped file was briefly
+the good generation with its lower edge cut and re-faded, on the argument that
+`forearm` is not in the placement vocabulary so the sheet should not advertise
+canvas the product cannot name. He asked *"shouldnt the entire arms be on one
+sheet though or am i wrong?"* and he is right: **the crop guarded the wrong
+door.** A customer never draws on this template — the engine plates a design at
+the placement DECLARED AT UPLOAD, and a forearm ask already refuses at the
+vocabulary gate. The template is the anatomy document, and a character-sheet arm
+is the whole limb.
+
+The revert cost nothing because the pre-crop generation was committed beside the
+asset, which is the discipline paying for itself one day later. The shipped file
+and `templates/source/ink-template-arm-nearwhite-generated.png` are now the same
+bytes (`sha256 ab4f00a1…`). No re-fade was needed: the generation terminates in a
+taper, with its last subject pixels at row 963 of 1024, never a cut.
+
+**What the crop was right about is kept as a question for the plate court**
+(fable-955 §3): with full-length canvas the plating engine must respect the named
+placement — *did the design stay at the upper arm?* — his eye on the first
+specimens.
+
+**FULL SLEEVE is filed as the next vocabulary expansion** (fable-954 §3), priced
+as: the forearm LOCATING court (can a reader find a forearm reliably now — the
+split-frame method that passed for wings is the candidate instrument); a paid
+drive earning the released tuple, never inferred; the sheet needing **no asset
+work at all**, which is the second dividend of this revert; and the wrap case
+riding the four-rotation sheet whose whole purpose this is. It slots after the
+plate road proves the three launch placements, unless he prioritizes it.
 
 **Still open on the assets, and it is his call, not a blocker:** the body sheet
 runs below the placement crop line — everything under the upper chest is surface
-the measured vocabulary cannot name. Trimming it is queued behind his look.
+the measured vocabulary cannot name. Trimming it is queued behind his look. Note
+that fable-955's reasoning may apply to it too: if the engine plates at a
+declared placement, the body sheet's reach below the crop line is the same
+non-problem. Raised rather than acted on.
 
 **His desk now holds one item, and it is not on this road:** the R2 credential
 rotation.
