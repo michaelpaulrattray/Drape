@@ -15,6 +15,9 @@ import {
 import { sql } from "drizzle-orm";
 
 import { BODY_ANCHOR_REGIONS } from "../shared/bodyAnchorRegions";
+import { INK_PLACEMENTS } from "../shared/inkPlacementVocabulary";
+import { INK_SIDES } from "../shared/inkReleasedPlacements";
+import { INK_PROVENANCES } from "../shared/inkProvenance";
 
 /**
  * Core user table backing auth flow.
@@ -2906,3 +2909,66 @@ export const castingOpenKindProperties = mysqlTable("casting_open_kind_propertie
 
 export type CastingOpenKindPropertiesRow = typeof castingOpenKindProperties.$inferSelect;
 export type InsertCastingOpenKindPropertiesRow = typeof castingOpenKindProperties.$inferInsert;
+
+/**
+ * THE INK DESIGNS A CUSTOMER HAS ATTACHED — M12 row 15's upload, tattoos first
+ * (migration 0034, `CASTING_INK_STUDIO_SCOPE`).
+ *
+ * One row is: **a design she supplied, the place on her it is meant for, and
+ * where our copy of the bytes lives.** It is not a reference the painter reads
+ * and it is not a library row — an uploaded photograph never reaches a render
+ * (D-138: ink is re-drawn onto a neutral mannequin, ruled fable-684 §2), so this
+ * table holds the SEED and the plate that comes from it is a separate artifact
+ * with its own columns when the mannequin templates exist.
+ *
+ * # COPY, NEVER POINTER — the condition this build inherited
+ *
+ * `storageKey` is OUR object, written under the candidate's own purge path with
+ * `storagePut`, exactly as `referenceMint.ts` writes a reference's bytes. It is
+ * never a URL into a customer's own storage. That is a condition rather than a
+ * preference: `POST_SIGN_ROADMAP.md` §7's L10 (the refine deferred-delete
+ * question) closed as MOOT on the grounds that *a reference holds its own
+ * bytes*, and an attachment by POINTER is the one thing that reopens it. There
+ * is still no `notBefore` concept anywhere in `server/`.
+ *
+ * # WHY THE SIDE IS PART OF THE ROW AND NOT A MODIFIER ON IT
+ *
+ * Laterality is this road's proven killer, with a receipt: the legacy ink road
+ * refunded 300 credits twice for *"wrong anatomical side"* at 90% confidence
+ * (DECISION_LOG R7-7G), and V2 measured the same failure independently three
+ * weeks later. A left upper arm and a right upper arm are two different places
+ * that earn their release separately (`shared/inkReleasedPlacements.ts`).
+ *
+ * # RETENTION
+ *
+ * Rows and their objects die with the candidate, unconditionally and NOT gated
+ * on the studio flag — the same rule the library crops and face scans follow. A
+ * customer's uploaded picture leaves with the work it was uploaded for.
+ */
+export const castingInkDesigns = mysqlTable("casting_ink_designs", {
+  id: int("id").autoincrement().primaryKey(),
+  publicId: varchar("publicId", { length: 36 }).notNull(),
+  userId: int("userId").notNull(), // denormalized — single-statement ownership
+  candidateId: int("candidateId").notNull(), // →casting_candidates
+  /** One of the three surfaces the casting frame was MEASURED to contain. */
+  placement: mysqlEnum("placement", INK_PLACEMENTS).notNull(),
+  /** Which of her, spelled out — see the header. */
+  side: mysqlEnum("side", INK_SIDES).notNull(),
+  /** What was CLAIMED about where the design came from. Never guessed. */
+  provenance: mysqlEnum("provenance", INK_PROVENANCES).notNull(),
+  /** Our copy of the bytes, under the candidate's purge path. Never a pointer. */
+  storageKey: varchar("storageKey", { length: 512 }).notNull(),
+  /** sha256 of the object's bytes — byte identity, as the library does it. */
+  digest: varchar("digest", { length: 64 }).notNull(),
+  mime: varchar("mime", { length: 64 }).notNull(),
+  byteSize: int("byteSize").notNull(),
+  width: int("width").notNull(),
+  height: int("height").notNull(),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+}, (table) => ([
+  index("ix_casting_ink_designs_candidate").on(table.candidateId),
+  uniqueIndex("uq_casting_ink_designs_publicId").on(table.publicId),
+]));
+
+export type CastingInkDesignRow = typeof castingInkDesigns.$inferSelect;
+export type InsertCastingInkDesignRow = typeof castingInkDesigns.$inferInsert;

@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "fda9e56cf1e37e65"
+    "sourceFingerprint": "af4c4b50f4c79737"
   },
   "domains": [
     {
@@ -123,7 +123,7 @@
     {
       "id": "domain:shared",
       "name": "shared",
-      "moduleCount": 23
+      "moduleCount": 24
     },
     {
       "id": "domain:studio",
@@ -5055,6 +5055,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:shared/inkProvenance.ts",
+      "path": "shared/inkProvenance.ts",
+      "domain": "shared",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:shared/inkReleasedPlacements.ts",
       "path": "shared/inkReleasedPlacements.ts",
       "domain": "shared",
@@ -9527,6 +9533,10 @@
     {
       "id": "test:server/castingV2/inheritedVerdict.test.ts",
       "path": "server/castingV2/inheritedVerdict.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/inkDesignSchema.test.ts",
+      "path": "server/castingV2/inkDesignSchema.test.ts"
     },
     {
       "id": "test:server/castingV2/inkPlacementVocabulary.test.ts",
@@ -15481,6 +15491,21 @@
     {
       "from": "module:drizzle/schema.ts",
       "to": "module:shared/bodyAnchorRegions.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:drizzle/schema.ts",
+      "to": "module:shared/inkPlacementVocabulary.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:drizzle/schema.ts",
+      "to": "module:shared/inkProvenance.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:drizzle/schema.ts",
+      "to": "module:shared/inkReleasedPlacements.ts",
       "kind": "imports"
     },
     {
