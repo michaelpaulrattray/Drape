@@ -35,6 +35,19 @@
  * history — the four things the overnight grant excludes. `--dry` performs
  * every reading and no push.
  *
+ * # NEVER PIPE THE RITE — and the receipt no longer depends on you remembering
+ *
+ * A shift ran this as `… | grep -v … | tail -18` for a tidier mailbox. The pipe
+ * ate the receipt, and — the dangerous half — a pipeline returns its LAST
+ * command's exit status, so "exit code 0" was reported while the deployment was
+ * FAILED. The one tool built to stop a green claim with no fact under it
+ * produced one.
+ *
+ * Every run now writes its full transcript and its exit status to
+ * `output/deploy-receipts/`, unconditionally and on every path, so a piped or
+ * truncated invocation still leaves the durable record. Custody blocks quote
+ * that file. Run it unpiped anyway.
+ *
  *   npx tsx scripts/deploy-rite.mts [--dry]
  */
 /*
@@ -50,6 +63,7 @@
 */
 import "dotenv/config";
 import { execFileSync } from "node:child_process";
+import { appendFileSync, mkdirSync, writeFileSync } from "node:fs";
 
 import { openDatabase } from "./lib/dbConnection.mts";
 import { decideWatch, newestRow } from "./lib/deployWatch.mts";
@@ -77,6 +91,66 @@ const BRANCHES = ["main", "main:local-migration"] as const;
 
 const lines: string[] = [];
 const say = (line = "") => { console.log(line); lines.push(line); };
+
+/*
+  THE RECEIPT DEFENDS ITSELF — ordered fable-1012 §2, from a real incident.
+
+  A shift ran this script as `npx tsx scripts/deploy-rite.mts | grep -v … |
+  tail -18` to keep the mailbox tidy. Two things died in that pipe: the receipt,
+  which is the whole point of the rite, and the EXIT CODE — a pipeline returns
+  its LAST command's status, so the harness reported "exit code 0" while the
+  deployment was FAILED. A green-looking signal with no fact under it, produced
+  by the one tool built to stop exactly that.
+
+  **NEVER PIPE THE RITE.** But a rule that has to be remembered is a rule that
+  gets forgotten at 2am, so the receipt no longer depends on anyone reading it
+  off a terminal: every run writes its full transcript AND its exit status to a
+  file, unconditionally, on every path — success, REFUSED, or a throw. A piped,
+  grepped or truncated invocation still leaves the durable record, and a custody
+  block quotes the FILE.
+
+  Registered on `exit` rather than called at the end, because the paths that
+  matter most are the ones that never reach the end. Synchronous writes for the
+  same reason: nothing async survives `process.exit`.
+*/
+/* Named rather than inlined: this file gets edited by scripts more often than
+   by hand, and an escaped newline inside a template literal is exactly what
+   the last such edit broke. */
+const NL = String.fromCharCode(10);
+const RECEIPTS = "output/deploy-receipts";
+const startedAtIso = new Date().toISOString();
+const receiptFile = `${RECEIPTS}/${startedAtIso.replace(/[:.]/g, "-")}-${process.pid}.txt`;
+process.on("exit", (code) => {
+  try {
+    mkdirSync(RECEIPTS, { recursive: true });
+    const verdict = code === 0 ? "OK" : `EXIT ${code}`;
+    writeFileSync(
+      receiptFile,
+      [
+        `deploy-rite ${startedAtIso}`,
+        `argv: ${process.argv.slice(2).join(" ") || "(none)"}`,
+        `EXIT STATUS: ${verdict}`,
+        "",
+        ...lines,
+        "",
+      ].join(NL),
+      "utf8",
+    );
+    /* One greppable line per run beside the transcripts, so the SEQUENCE of
+       deploys is readable without opening every file — which is the question
+       actually asked when something went wrong an hour ago. */
+    appendFileSync(
+      `${RECEIPTS}/index.log`,
+      `${startedAtIso}  ${verdict.padEnd(8)}  ${receiptFile}${NL}`,
+      "utf8",
+    );
+    console.log(`receipt: ${receiptFile}`);
+  } catch (error) {
+    /* A receipt that cannot be written must SAY so rather than vanish — an
+       absent record reads as a run that never happened. */
+    console.error(`[deploy-rite] could not write the receipt: ${String(error)}`);
+  }
+});
 /* Annotated on the VARIABLE, not just the arrow: TypeScript only narrows after
    a never-returning call when the binding itself carries the signature. */
 const die: (why: string) => never = (why: string): never => {
