@@ -30,65 +30,30 @@
  *
  *   npx tsx scripts/triage-uncalled-exports-disposable.mts <sweep-output-file>
  */
-import { readdirSync, readFileSync, statSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+import {
+  buildClassifier,
+  REPO_ROOT,
+  runMentionControls,
+  type MentionKind,
+} from "./lib/productionMention.mts";
 
-const repoRoot = resolve(import.meta.dirname, "..");
+/*
+  The classifier moved to `lib/productionMention.mts` so the SWEEP can print the
+  intersection itself (fable-982). This file keeps the CLI and the report; the
+  question it asks is now asked in one place by both instruments.
+*/
+const repoRoot = REPO_ROOT;
 const listFile = process.argv[2];
 if (!listFile) throw new Error("give me the sweep's saved output");
 
-const files: string[] = [];
-const walk = (dir: string): void => {
-  for (const entry of readdirSync(dir)) {
-    if (entry === "node_modules" || entry === "dist" || entry.startsWith(".")) continue;
-    const full = join(dir, entry);
-    if (statSync(full).isDirectory()) walk(full);
-    else if (/\.(ts|tsx|mts)$/.test(entry)) files.push(full);
-  }
-};
-for (const root of ["server", "client", "shared", "scripts"]) walk(join(repoRoot, root));
-
-const source = new Map<string, string>();
-for (const file of files) source.set(file, readFileSync(file, "utf8"));
-
-type Kind = "barrel" | "dynamic" | "other" | "none";
-
-function classify(symbol: string): { kind: Kind; where: string } {
-  const mentions: Array<{ file: string; line: string }> = [];
-  for (const [file, text] of source) {
-    if (/\.test\.tsx?$/.test(file)) continue;
-    /*
-      THE INSTRUMENTS ARE NOT CALLERS, and this one caught itself first: the
-      positive control failed because the control's own name appears in this
-      file's header. A reader that counts its own prose as evidence would
-      quietly promote every future control symbol out of the real list.
-    */
-    if (/(sweep|triage)-uncalled-exports-disposable\.mts$/.test(file)) continue;
-    if (!text.includes(symbol)) continue;
-    for (const line of text.split(/\r?\n/)) {
-      if (!line.includes(symbol)) continue;
-      /* Its own declaration is not a caller. */
-      if (/^\s*export\s+(async\s+)?(function|const|class|type|interface)\s/.test(line)
-        && line.includes(symbol)) continue;
-      mentions.push({ file: file.slice(repoRoot.length + 1).split("\\").join("/"), line: line.trim() });
-    }
-  }
-  if (mentions.length === 0) return { kind: "none", where: "nothing but its own declaration" };
-  const barrel = mentions.find((m) => m.file.endsWith("server/db/index.ts"));
-  const dynamic = mentions.find((m) => /await import\(|import\(/.test(m.line));
-  const first = mentions[0]!;
-  if (barrel) return { kind: "barrel", where: `${mentions.length} mention(s), incl. ${barrel.file}` };
-  if (dynamic) return { kind: "dynamic", where: `${dynamic.file}: ${dynamic.line.slice(0, 70)}` };
-  return { kind: "other", where: `${first.file}: ${first.line.slice(0, 70)}` };
-}
+const classify = buildClassifier(repoRoot);
+type Kind = MentionKind;
 
 /* ---- CONTROLS ---- */
-const positive = classify("shouldSendGlobalAttackAlert");
-const negative = classify("isAccountLocked");
 console.log("CONTROLS");
-console.log(`  positive  shouldSendGlobalAttackAlert → ${positive.kind}  ${positive.kind === "none" ? "PASS" : "FAIL"}`);
-console.log(`  negative  isAccountLocked             → ${negative.kind}  ${negative.kind !== "none" ? "PASS" : "FAIL"}`);
-if (positive.kind !== "none" || negative.kind === "none") {
+if (!runMentionControls(classify, (line) => console.log(line))) {
   console.log("\nREFUSED — the classifier failed its own controls; no verdict printed.");
   process.exit(1);
 }

@@ -45,6 +45,7 @@
  */
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative, resolve } from "node:path";
+import { buildClassifier, REPO_ROOT, runMentionControls } from "./lib/productionMention.mts";
 
 const repoRoot = resolve(import.meta.dirname, "..");
 
@@ -244,6 +245,47 @@ for (const finding of findings.sort((a, b) => a.file.localeCompare(b.file))) {
 console.log(`\nNAMED BY NOBODY — not imported anywhere at all (${unimported.length})`);
 for (const decl of unimported.sort((a, b) => a.file.localeCompare(b.file))) {
   console.log(`  ${decl.kind.padEnd(8)} ${decl.name.padEnd(38)} ${show(decl.file)}`);
+}
+
+/* -- THE READING LIST: the intersection, computed HERE -----------------------
+ *
+ * Ordered fable-982, and it exists because the join used to be done in PROSE.
+ * Both lists above are FLOORS by this sweep's own three declared biases
+ * (namespace imports, dynamic specifiers, barrel re-exports), so neither is a
+ * reading list on its own. A recon read the test-only list (111) and the
+ * classifier's `none` bucket (also 111) as one set, published 118, and left
+ * THIRTEEN symbols with live production callers on it -- among them admin
+ * credit adjustment and admin role changes.
+ *
+ * Two lists of the same LENGTH are not the same LIST. So the sweep asks the
+ * classifier itself and prints the intersection, with its own controls first.
+ */
+const classify = buildClassifier(REPO_ROOT);
+console.log("\nINTERSECTION CONTROLS");
+if (!runMentionControls(classify, (line) => console.log(line))) {
+  console.log("\nREFUSED - the classifier failed its own controls; no reading list printed.");
+  process.exit(1);
+}
+
+const everyFlagged = [
+  ...findings.map((f) => ({ name: f.name, file: f.file })),
+  ...unimported.map((d) => ({ name: d.name, file: d.file })),
+];
+const tally = { none: 0, other: 0, barrel: 0, dynamic: 0 };
+const readingList: Array<{ name: string; file: string }> = [];
+for (const entry of everyFlagged) {
+  const kind = classify(entry.name).kind;
+  tally[kind]++;
+  if (kind === "none") readingList.push(entry);
+}
+
+console.log(`\nTHE READING LIST - ${readingList.length} of ${everyFlagged.length} flagged`);
+console.log(`  with a production mention  ${everyFlagged.length - readingList.length}`
+  + `  (barrel ${tally.barrel} - dynamic ${tally.dynamic} - other ${tally.other})`);
+console.log(`  nothing but a declaration  ${tally.none}   <- THE LIST`);
+console.log();
+for (const entry of readingList.sort((a, b) => a.file.localeCompare(b.file))) {
+  console.log(`  ${entry.name.padEnd(38)} ${show(entry.file)}`);
 }
 
 process.exit(0);

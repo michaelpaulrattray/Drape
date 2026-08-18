@@ -567,3 +567,62 @@ is the recon's three-security-controls finding one size larger.
 > them read as arithmetic. Where two instruments' outputs are combined, combine
 > them **mechanically and print the intersection** — a number carried across a
 > paragraph in prose is a claim about a join nobody performed.
+
+---
+
+## 12. THE INTERSECTION IS NOW PRINTED BY THE SWEEP — and it corrects §11 too
+
+**Ordered fable-982 §3**, and building it found a SECOND error in §1, in the
+opposite direction from §11's.
+
+The classifier moved to `scripts/lib/productionMention.mts`, imported by both
+instruments, and the sweep now ends by asking it about every symbol it flagged
+and printing the join itself:
+
+```
+INTERSECTION CONTROLS
+  positive  shouldSendGlobalAttackAlert → none    PASS
+  negative  isAccountLocked             → barrel  PASS
+
+THE READING LIST - 110 of 175 flagged
+  with a production mention  65  (barrel 34 - dynamic 7 - other 24)
+  nothing but a declaration  110   <- THE LIST
+```
+
+Split by which of the sweep's two lists each came from:
+
+```
+test-only        111  →  77 on the reading list
+named-by-nobody   64  →  33 on the reading list
+```
+
+### 12a. §1's other claim was also wrong: **33 of the 64 have no mention at all**
+
+§1 says *"Every single one of the 64 'named by nobody' entries has a production
+mention."* **It is not true of 33 of them.** Hand-verified rather than taken from
+the classifier:
+
+```
+verifyBackView    declared server/casting/backViewGate.ts:106 — no other mention anywhere
+isTasteWritable   declared server/castingV2/axisRegistry.ts:1092 — no other mention
+pairSlots         declared server/castingV2/facePanel.ts:911 — no other mention
+```
+
+So the recon was wrong in **both** directions: §11 showed it kept thirteen LIVE
+symbols on the reading list; this shows it removed thirty-three DEAD ones from
+it. Both errors have the same cause — a join performed in prose — and both are
+now impossible to make, because the join is printed by the instrument.
+
+### 12b. And §11's own figure of 98 inherited the false premise
+
+§11 derived *"111 − 13 = 98"* while quoting §1's 100% claim as established. **The
+figure to use is the sweep's own printed one.** The strict reading is **110**,
+and the remaining hand work is the **OTHER bucket (24)** — a mention that is a
+COMMENT is not a caller, and only a person can tell those apart. The recon's
+OTHER pass (§1a) already did that for 23 of them and kept 20 on the list.
+
+> **The class, sharpened:** §11c said combine mechanically. This says why it
+> matters twice over — **a prose join fails in BOTH directions, and neither
+> failure announces itself.** One left admin credit adjustment on a deletion
+> list; the other hid a third of the dead code from the milestone that was
+> looking for it.
