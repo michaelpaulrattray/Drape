@@ -478,6 +478,11 @@ Runs when the plate machinery and the template exist; not before.
   wall-clock measured in the same sitting.
 - **Quality by his eye** — line fidelity, and D-140's lettering rules where the
   design carries text (law 9: no vision reader closes this).
+- **DID THE DESIGN STAY AT THE NAMED PLACEMENT?** — an explicit question of this
+  court, added by fable-955 §3 when he ruled the arm sheet back to the full limb.
+  The crop was guarding this: with full-length canvas, nothing in the asset stops
+  a plating engine from putting an upper-arm design on the forearm. The template
+  no longer answers it, so the court must, with his eye on the first specimens.
 - Budget declared at its sitting.
 - **Temperament prior, on the record:** NBP's heavier drawing hand may SUIT bold
   graphic work on a neutral form — the one job where *"overdoes it"* becomes
@@ -511,9 +516,19 @@ own declared budget — §7.4's named gap).
 
 ### 7.7 The curated assets, and the arm sheet's redo (2026-08-18)
 
-**Both near-white assets exist and are the code-owned candidates for the plate**
-(`docs/specs/references/templates/`). Neither is imported by anything yet; the
-plate mint does not exist. They were **re-produced at near-white, never
+**Both near-white assets are now CODE-OWNED and pinned by digest** — moved to
+`assets/ink/` on 2026-08-18 (ruled fable-958 §1), read server-side by
+`server/castingV2/inkTemplates.ts`, and asserted byte-for-byte by its suite. His
+approval was given by LOOKING at them, and none of that survives a file being
+swapped: a plate minted from a different template is a different artwork wearing
+the approved one's name, and nothing downstream could tell. So **a silently
+swapped template is a red suite, never a different tattoo** — proven by flipping
+one byte and watching it redden.
+
+The prompt, the pre-crop source and the candidates panel stay in
+`docs/specs/references/templates/` as provenance. Moved, never duplicated: two
+copies of an approved asset is the parallel copy that drifts, and here the drift
+is a tattoo nobody approved. They were **re-produced at near-white, never
 recoloured** — he approved a look rather than a file, and a tint of a grey render
 keeps the grey render's own shading decisions (fable-948 §4).
 

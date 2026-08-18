@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "8f0bc5b27f1af306"
+    "sourceFingerprint": "64ff51beff26977d"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 128
+      "moduleCount": 130
     },
     {
       "id": "domain:castingV2",
@@ -3551,6 +3551,18 @@
     {
       "id": "module:server/castingV2/inkPlacement.ts",
       "path": "server/castingV2/inkPlacement.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/inkPlateDoor.ts",
+      "path": "server/castingV2/inkPlateDoor.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/inkTemplates.ts",
+      "path": "server/castingV2/inkTemplates.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -9615,12 +9627,20 @@
       "path": "server/castingV2/inkPlacementVocabulary.test.ts"
     },
     {
+      "id": "test:server/castingV2/inkPlateDoor.test.ts",
+      "path": "server/castingV2/inkPlateDoor.test.ts"
+    },
+    {
       "id": "test:server/castingV2/inkReleasedPlacements.test.ts",
       "path": "server/castingV2/inkReleasedPlacements.test.ts"
     },
     {
       "id": "test:server/castingV2/inkStudioScope.test.ts",
       "path": "server/castingV2/inkStudioScope.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/inkTemplates.test.ts",
+      "path": "server/castingV2/inkTemplates.test.ts"
     },
     {
       "id": "test:server/castingV2/inkUploadDoor.test.ts",
@@ -19597,6 +19617,21 @@
     {
       "from": "module:server/castingV2/inheritedVerdict.ts",
       "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/inkPlateDoor.ts",
+      "to": "module:shared/inkPlacementVocabulary.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/inkPlateDoor.ts",
+      "to": "module:shared/inkReleasedPlacements.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/inkTemplates.ts",
+      "to": "module:shared/inkPlacementVocabulary.ts",
       "kind": "imports"
     },
     {
