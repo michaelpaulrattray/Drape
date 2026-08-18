@@ -1,5 +1,6 @@
 import { TRPCError, type TRPC_ERROR_CODE_KEY } from "@trpc/server";
 import {
+  acquireCastingCandidateOperationLock,
   acquireGenerationOperationLock,
   claimGenerationOperation,
   finalizeClaimedGenerationOperationSuccess,
@@ -16,6 +17,7 @@ import type {
   PublicOperationResult,
 } from "./operationContract";
 import { createModuleLogger } from "../logging/logger";
+import { spokenError } from "../_core/spokenError";
 
 const log = createModuleLogger("casting/directOperation");
 
@@ -45,6 +47,21 @@ export async function beginDirectOperation(input: {
   originItemId?: number | null;
   payload: unknown;
   lockKey?: string;
+  /**
+   * ONE FACE, ONE RENDER (Landing C, ruled fable-974).
+   *
+   * The candidate this ask is about, locked for the life of the operation. A
+   * held request used to be the guard: a customer who tapped twice was watching
+   * a spinner for two hundred seconds, so a second tap was rare and expensive to
+   * make. A receipt that comes back in milliseconds invites one — and the client
+   * mints a fresh request id per submit, so idempotency is structurally blind to
+   * it. Proven rather than assumed: two taps, two ids, concurrent, bought twice
+   * (`scripts/prove-refine-idempotency-disposable.mts` arm 3).
+   *
+   * Not a disabled button. The contract is at the wire, because a second tab, a
+   * retried request and a slow network all get past a client debounce.
+   */
+  candidateLockPublicId?: string;
   resumeClaimedEvidence?: boolean;
 }): Promise<DirectOperationGate> {
   const claim = await claimGenerationOperation(input);
@@ -84,6 +101,30 @@ export async function beginDirectOperation(input: {
       throw new TRPCError({
         code: "CONFLICT",
         message: "Another operation is already changing this Cast. Wait for it to finish before retrying.",
+      });
+    }
+  }
+  if (input.candidateLockPublicId) {
+    const lock = await acquireCastingCandidateOperationLock({
+      userId: input.userId,
+      operationId: claim.operationId,
+      kind: input.kind,
+      candidatePublicId: input.candidateLockPublicId,
+    });
+    if (lock.type === "resource_busy") {
+      /*
+        HER SENTENCE, NOT THE STAFF ONE (bound, fable-973 §2).
+    
+        The line above is written for whoever is reading a log: "another
+        operation", "this Cast", "before retrying". The person who meets THIS
+        one tapped a button twice and is looking at her own face, with the edit
+        she asked for already running on the panel in front of her. It is marked
+        `spoken` so the surface shows our words rather than deciding by code
+        which sentence it may trust.
+      */
+      throw spokenError({
+        code: "CONFLICT",
+        message: "That edit is already being made — it finishes before the next one starts. Nothing extra was charged.",
       });
     }
   }

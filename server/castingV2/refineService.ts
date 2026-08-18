@@ -3126,6 +3126,17 @@ async function refineCandidateCounted(
     userId: input.userId,
     clientRequestId: input.clientRequestId,
     kind: "castingV2.refine",
+    /*
+      ONE FACE, ONE RENDER (ruled fable-974).
+
+      The lock is taken here rather than guarded on the client because the
+      contract is at the wire: a second tab, a retried request and a slow
+      network all walk past a disabled button. It matters most on the dispatch
+      road — a receipt that returns in milliseconds is what makes a double tap
+      cheap — but it is taken on BOTH roads, because a guard that only exists
+      behind a flag is a guard nobody has driven when the flag turns on.
+    */
+    candidateLockPublicId: input.candidatePublicId,
     payload: {
       candidatePublicId: input.candidatePublicId,
       instruction: instruction.trim(),

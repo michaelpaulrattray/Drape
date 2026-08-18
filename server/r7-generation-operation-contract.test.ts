@@ -5,6 +5,7 @@ import {
   assertOperationLockKey,
   assertPublicOperationResult,
   boardItemOperationLockKey,
+  castingCandidateOperationLockKey,
   hashGenerationOperationClaim,
   modelOperationLockKey,
   operationChargeReference,
@@ -68,6 +69,25 @@ describe("R7-1C operation contract", () => {
     expect(boardItemOperationLockKey(8)).toBe("board-item:8");
     expect(() => assertOperationLockKey("model:0")).toThrow("Invalid");
     expect(() => assertOperationLockKey("user:12")).toThrow("Invalid");
+  });
+
+  it("locks a castingV2 candidate by its INTERNAL id, in the same numeric grammar", () => {
+    /*
+      One face, one render (ruled fable-974). The key is derived from the row's
+      internal id and never from the `publicId` a request names, so the grammar
+      stays one unambiguous numeric shape — and a caller holding only
+      customer-facing input cannot compose a key at all.
+    */
+    expect(castingCandidateOperationLockKey(41)).toBe("casting-candidate:41");
+    expect(() => assertOperationLockKey("casting-candidate:41")).not.toThrow();
+    for (const bad of [0, -1, 1.5, Number.NaN]) {
+      expect(() => castingCandidateOperationLockKey(bad), String(bad)).toThrow(TypeError);
+    }
+    /* The uuid a customer's request carries is NOT a key — the shape that would
+       have been reached for first, refused here so the ownership read stays the
+       only way to one. */
+    expect(() => assertOperationLockKey("casting-candidate:5fa47ee0-9e24-4242-9e65-b1f1f75569c2"))
+      .toThrow("Invalid");
   });
 
   it("derives the only valid charge reference from the server operation id", () => {

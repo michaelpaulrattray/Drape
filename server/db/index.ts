@@ -65,6 +65,7 @@ export { getUserDraftModelsWithThumbnail } from "./models";
 // Durable generation-operation receipts and exclusive resource locks
 export {
   claimGenerationOperation,
+  acquireCastingCandidateOperationLock,
   acquireGenerationOperationLock,
   markGenerationOperationRunning,
   handoffGenerationOperationToRecovery,

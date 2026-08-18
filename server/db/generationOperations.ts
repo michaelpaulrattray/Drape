@@ -6,6 +6,7 @@ import {
   boardItemVersions,
   boards,
   generations,
+  castingCandidates,
   generationOperationLocks,
   generationOperations,
   modelAssets,
@@ -27,6 +28,7 @@ import {
   isGenerationOperationKind,
   assertPublicOperationResult,
   boardItemOperationLockKey,
+  castingCandidateOperationLockKey,
   type GenerationOperationChildStatus,
   type GenerationOperationKind,
   type GenerationOperationOutcome,
@@ -807,10 +809,81 @@ export async function acquireGenerationOperationLock(input: {
   leaseMs?: number;
   now?: Date;
 }): Promise<AcquireGenerationOperationLockResult> {
+  const opened = await openOperationLock(input);
+  const { operation } = opened;
+  const allowedLockKeys = [
+    operation.modelId ? modelOperationLockKey(operation.modelId) : null,
+    operation.originItemId ? boardItemOperationLockKey(operation.originItemId) : null,
+  ].filter((lockKey): lockKey is string => lockKey !== null);
+  if (!allowedLockKeys.includes(input.lockKey)) {
+    throw new Error("Operation lock does not match a resource in the trusted claim");
+  }
+  return takeOperationLock({ ...opened, lockKey: input.lockKey });
+}
+
+/**
+ * ONE FACE, ONE RENDER — the lock a castingV2 refine takes on its candidate.
+ *
+ * # Why this is a second door rather than an argument on the first
+ *
+ * The door above admits a key only if it names a resource the CLAIM declared,
+ * and it reads that declaration from the operation row's `modelId` /
+ * `originItemId`. A castingV2 refine declares neither, so its allowlist is
+ * empty and every key is refused — driven, with a positive control and a
+ * negative one, in `scripts/prove-refine-lockkey-disposable.mts`. Both refusals
+ * are plain errors thrown AFTER the claim, so the obvious one-line version of
+ * this feature would have answered 500 on every refine.
+ *
+ * # What makes this key trustworthy, and it is a stronger rule than the first
+ *
+ * The caller passes the candidate's `publicId` — a customer-facing name — and
+ * this function **resolves it to a row owned by the operation's user in the
+ * statement that reads it** (invariant 1, at the lock), then derives the key
+ * from the internal id. The caller therefore cannot compose a key at all, let
+ * alone one naming somebody else's face. The `model:` path trusts a number the
+ * caller handed the claim; this one verifies ownership at the moment of
+ * locking.
+ *
+ * Release needs nothing new: all four finalizers already delete the lock row
+ * with the operation, so the lock dies on every terminal path including the
+ * recovery sweep's.
+ */
+export async function acquireCastingCandidateOperationLock(input: {
+  userId: number;
+  operationId: string;
+  kind: GenerationOperationKind;
+  candidatePublicId: string;
+  leaseMs?: number;
+  now?: Date;
+}): Promise<AcquireGenerationOperationLockResult> {
+  const opened = await openOperationLock(input);
+  const [candidate] = await opened.db
+    .select({ id: castingCandidates.id })
+    .from(castingCandidates)
+    .where(and(
+      eq(castingCandidates.publicId, input.candidatePublicId),
+      eq(castingCandidates.userId, input.userId),
+    ))
+    .limit(1);
+  if (!candidate) {
+    throw new Error("Operation lock names a candidate this user does not own");
+  }
+  return takeOperationLock({ ...opened, lockKey: castingCandidateOperationLockKey(candidate.id) });
+}
+
+/** The checks every lock shares, before either door decides on its key. */
+async function openOperationLock(input: {
+  userId: number;
+  operationId: string;
+  kind: GenerationOperationKind;
+  lockKey?: string;
+  leaseMs?: number;
+  now?: Date;
+}) {
   assertPositiveId(input.userId, "userId");
   assertOperationIdentity(input.operationId);
   assertGenerationOperationKind(input.kind);
-  assertOperationLockKey(input.lockKey);
+  if (input.lockKey !== undefined) assertOperationLockKey(input.lockKey);
   const leaseMs = input.leaseMs ?? DEFAULT_GENERATION_OPERATION_LEASE_MS;
   if (!Number.isSafeInteger(leaseMs) || leaseMs <= 0) throw new TypeError("leaseMs must be positive");
   const now = input.now ?? new Date();
@@ -824,14 +897,21 @@ export async function acquireGenerationOperationLock(input: {
   if (operation.status !== "claimed" && operation.status !== "running") {
     throw new Error("A terminal generation operation cannot acquire a lock");
   }
-  const allowedLockKeys = [
-    operation.modelId ? modelOperationLockKey(operation.modelId) : null,
-    operation.originItemId ? boardItemOperationLockKey(operation.originItemId) : null,
-  ].filter((lockKey): lockKey is string => lockKey !== null);
-  if (!allowedLockKeys.includes(input.lockKey)) {
-    throw new Error("Operation lock does not match a resource in the trusted claim");
-  }
+  return { db, operation, now, expiresAt, userId: input.userId, operationId: input.operationId, kind: input.kind };
+}
 
+/** Take the row, or say who holds it — shared by both doors above. */
+async function takeOperationLock(input: {
+  db: Awaited<ReturnType<typeof getDb>>;
+  userId: number;
+  operationId: string;
+  kind: GenerationOperationKind;
+  lockKey: string;
+  now: Date;
+  expiresAt: Date;
+}): Promise<AcquireGenerationOperationLockResult> {
+  const { db, now, expiresAt } = input;
+  if (!db) throw new Error("Database not available");
   try {
     await db.insert(generationOperationLocks).values({
       lockKey: input.lockKey,

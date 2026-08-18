@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "5f09fe12a0bffc2c"
+    "sourceFingerprint": "ee9878e71d994f23"
   },
   "domains": [
     {
@@ -16078,6 +16078,11 @@
     {
       "from": "module:server/casting/composeIdentityPayload.ts",
       "to": "module:shared/boardTypes.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/casting/directOperation.ts",
+      "to": "module:server/_core/spokenError.ts",
       "kind": "imports"
     },
     {

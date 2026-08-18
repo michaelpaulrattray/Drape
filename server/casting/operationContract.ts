@@ -330,8 +330,25 @@ export function boardItemOperationLockKey(itemId: number): string {
   return `board-item:${itemId}`;
 }
 
+/**
+ * ONE FACE, ONE RENDER — the key a castingV2 candidate is locked under.
+ *
+ * Takes the INTERNAL id rather than the `publicId` a customer's request names,
+ * for two reasons that are really one. It keeps the grammar below numeric, so
+ * the validator stays a single unambiguous shape rather than growing a uuid
+ * alternative; and the internal id is only knowable by reading a row, which is
+ * where the ownership check lives (`acquireCastingCandidateOperationLock`). A
+ * key nobody can compose from request input is a key nobody can forge.
+ */
+export function castingCandidateOperationLockKey(candidateId: number): string {
+  if (!Number.isSafeInteger(candidateId) || candidateId <= 0) {
+    throw new TypeError("candidateId must be a positive integer");
+  }
+  return `casting-candidate:${candidateId}`;
+}
+
 export function assertOperationLockKey(lockKey: string): void {
-  if (!/^(model|board-item):[1-9][0-9]*$/.test(lockKey) || lockKey.length > 96) {
+  if (!/^(model|board-item|casting-candidate):[1-9][0-9]*$/.test(lockKey) || lockKey.length > 96) {
     throw new TypeError("Invalid operation lock key");
   }
 }
