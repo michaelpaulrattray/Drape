@@ -22,6 +22,26 @@
  * `casting_segments` is not consulted, re-cut or superseded. Its rows are the
  * undo store and they are correct there.
  *
+ * # THE FOURTH SOURCE EXISTS NOW, AND IT IS NOT THIS MODULE'S
+ *
+ * "Three, and no fourth" is still true of the MINT — those are the three things
+ * a RENDER can produce, and nothing here has grown a fourth. But a reference no
+ * longer has to come from a render at all: migration 0040
+ * (`casting_reference_crops`, ruled fable-1015 §3) holds a cut taken from a
+ * picture the CUSTOMER supplied, for the crop-form features of the ingestion
+ * map — hair today, eye colour behind it.
+ *
+ * It is a different table on purpose. The library's two image-bearing roles
+ * assume a cut comes from her own delivered frame (`carry`) or that an upload
+ * is never a cut at all (`anchor`, which refuses a mask outright); a hair
+ * reference is an upload THAT IS A CUT, and neither role can hold it without
+ * costing the distinction they exist to hold (opus-751 §2).
+ *
+ * Written here rather than only there because this header is the sentence the
+ * next reader will consult when they ask *"where can a reference come from"*,
+ * and a header that answers "three" to a question whose answer is now four is
+ * how a true sentence becomes a false premise.
+ *
  * # The guard is the door, and there are TWO of them
  *
  * A crop does not enter the library because it was produced; it enters because

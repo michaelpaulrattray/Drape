@@ -20,7 +20,11 @@ import { INK_PLACEMENTS } from "../shared/inkPlacementVocabulary";
 import { INK_SIDES } from "../shared/inkReleasedPlacements";
 import { INK_PROVENANCES } from "../shared/inkProvenance";
 import { INK_TEMPLATE_KINDS } from "../shared/inkTemplateKinds";
-import { REFERENCE_INTENTS, type ReferenceIntent } from "../shared/referenceIntents";
+import {
+  REFERENCE_INTENTS,
+  referenceIntentIngestionForm,
+  type ReferenceIntent,
+} from "../shared/referenceIntents";
 
 /**
  * Core user table backing auth flow.
@@ -2661,6 +2665,15 @@ export const castingReferenceLibrary = mysqlTable("casting_reference_library", {
    *
    * NULL is meaningful rather than missing: minted from the candidate's own
    * master, so every branch of the tree inherits it.
+   *
+   * ⚠ **OPEN QUESTION, owner: the library/branching road** (filed opus-751 §3,
+   * ordered here by fable-1016 §3). fable-195's uploaded-anchor carve-out gives
+   * its row NULL too — so a branch forked BEFORE the upload existed still
+   * inherits it, and "belongs to every branch" quietly means "including the
+   * ones that predate me". **Reach measured 2026-08-19 against production: 31
+   * library rows, 0 anchors, so it is DORMANT** — a real account cannot hit it
+   * today, and the zero is against a populated table rather than an empty one.
+   * The first uploaded anchor arms it.
    */
   variantId: int("variantId"), // →casting_candidate_variants, NULL = from the master
   role: mysqlEnum("role", CASTING_REFERENCE_ROLES).notNull(),
@@ -3120,3 +3133,139 @@ export const castingInkPlates = mysqlTable("casting_ink_plates", {
 
 export type CastingInkPlateRow = typeof castingInkPlates.$inferSelect;
 export type InsertCastingInkPlateRow = typeof castingInkPlates.$inferInsert;
+
+
+/**
+ * WHICH FEATURES TRAVEL AS A CUT — DERIVED from the ingestion map, never listed
+ * beside it (law 4).
+ *
+ * `shared/referenceIntents.ts` is where the founder's ruling lives. A feature
+ * whose form changes there changes here in the same breath, and the migration's
+ * hand-written enum is compared against this at every commit
+ * (`referenceCropSchema.test.ts`) and against the DATABASE at ceremony time —
+ * because a file can be right about a table that was created from an older copy
+ * of it.
+ *
+ * The cast is to satisfy drizzle's enum signature, which wants a non-empty
+ * tuple; the VALUE is computed, and the test is what proves the cast honest.
+ */
+export const CASTING_REFERENCE_CROP_INTENTS = REFERENCE_INTENTS.filter(
+  (key) => referenceIntentIngestionForm(key) === "crop",
+) as unknown as readonly ["hair", "eyeColour"];
+
+/**
+ * WHERE A CUT CAME FROM — the FOURTH source of references, named rather than
+ * implied by which table the row is in.
+ *
+ * `referenceMint.ts` mints from three: a fresh region read on the master, the
+ * delivered-anchored cut, and a composed region. Those are the three a RENDER
+ * can produce. This is the fourth and it is not a render at all — a customer
+ * handed us a picture and we cut one feature out of it.
+ *
+ * One member today. A second (a cut taken from another Cast of her own, say) is
+ * a migration and a decision, which is the right price for a new way for
+ * somebody else's pixels to reach a render.
+ */
+export const CASTING_REFERENCE_CROP_SOURCES = ["uploadedReference"] as const;
+export type CastingReferenceCropSource = typeof CASTING_REFERENCE_CROP_SOURCES[number];
+
+/**
+ * THE REFERENCE CROP STORE — M12 row 15's CROP form (founder ruling relayed
+ * fable-933, *"i hair crop will work fine i promise"*; table ruled fable-1015
+ * §3; migration 0040).
+ *
+ * One row is: **one feature, cut out of a picture the customer supplied, and
+ * where OUR copy of that CUT lives.**
+ *
+ * # Why this is not a row in `casting_reference_library`
+ *
+ * The library has two image-bearing roles and they are defined by an assumption
+ * this feature breaks (opus-751 §2):
+ *
+ *     anchor   AN UPLOAD, AND NEVER A CUT — `assertShape` throws
+ *              `anchorIsNotACut` on a maskKey and again on a bbox, because an
+ *              anchor "was never in a frame"
+ *     carry    A CUT FROM HER OWN DELIVERED FRAME — geometry, mask and a guard
+ *              reading all REQUIRED
+ *
+ * A hair reference is **an upload that is a cut**. It has to be: the ruling is
+ * *"the SEGMENTED hair region… NEVER a rectangle containing a face"*, and a
+ * rectangle is exactly what `anchor` permits. Relaxing either rule to fit it
+ * would cost the distinction the two roles exist to hold.
+ *
+ * *(An earlier reading said the library was ruled out because `variantId` NULL
+ * would lie about provenance. That was wrong — NULL already covers "an item
+ * introduced before any edit landed", and fable-195's uploaded-anchor carve-out
+ * is live. Corrected in opus-751 §1 before this table was written, and recorded
+ * here because a table justified by a wrong sentence outlives every shift that
+ * reads it.)*
+ *
+ * # THE PHOTOGRAPH IS NOT KEPT — the fence, met by construction
+ *
+ * The uploaded picture is read once and dropped, exactly as the makeup road
+ * drops it. What persists is the CUT alone: one PNG carrying its own alpha, so
+ * the mask is not a second object and there is no rectangle of a stranger's
+ * face anywhere in this product.
+ *
+ * There is deliberately **no bbox and no frame size** here, and the absence is
+ * the point rather than an omission — geometry would locate this cut inside a
+ * photograph we do not have and must never need.
+ *
+ * # RETENTION
+ *
+ * Rows and their objects die with the candidate, **unconditionally and never
+ * gated on a feature flag** — the rule library crops, face scans and ink
+ * designs already follow. `candidateRetention.ts` is row-driven, so a row is
+ * what makes an object purgeable at all: an unrowed crop would be a
+ * photograph-derived artifact of a real person that nothing ever deletes.
+ *
+ * PURELY ADDITIVE. One new table; no column of any existing table changes; and
+ * nothing reads or writes it in this commit.
+ */
+export const castingReferenceCrops = mysqlTable("casting_reference_crops", {
+  id: int("id").autoincrement().primaryKey(),
+  publicId: varchar("publicId", { length: 36 }).notNull(),
+  userId: int("userId").notNull(), // denormalized — single-statement ownership
+  candidateId: int("candidateId").notNull(), // →casting_candidates
+  /** Which feature was taken. The declaration, not a guess about the picture. */
+  intent: mysqlEnum("intent", CASTING_REFERENCE_CROP_INTENTS).notNull(),
+  /** The fourth source — see {@link CASTING_REFERENCE_CROP_SOURCES}. */
+  source: mysqlEnum("source", CASTING_REFERENCE_CROP_SOURCES).notNull(),
+  /**
+   * What was CLAIMED about the picture this was cut from. Never guessed, never
+   * back-filled — the same column and the same two words as the ink road, for
+   * the same reason: the fence is a constraint on what a reference may BE.
+   */
+  provenance: mysqlEnum("provenance", INK_PROVENANCES).notNull(),
+  /** The segmentation question that drew the cut, so a later reader can tell
+   *  what was asked for without re-deriving it from the intent. */
+  region: varchar("region", { length: 64 }).notNull(),
+  /** OUR copy of the CUT, under the candidate's purge path. Never the upload. */
+  storageKey: varchar("storageKey", { length: 512 }).notNull(),
+  /** sha256 of the cut's own bytes: byte identity, as the library does it. */
+  digest: varchar("digest", { length: 64 }).notNull(),
+  mime: varchar("mime", { length: 64 }).notNull(),
+  byteSize: int("byteSize").notNull(),
+  width: int("width").notNull(),
+  height: int("height").notNull(),
+  /**
+   * WHAT THE COMPLETENESS GUARD READ when this cut was taken — evidence, never
+   * a gate at read time, exactly as the library records it.
+   *
+   * A cut that failed the guard is refused loudly and never stored, so every
+   * row here passed. The reading is kept because a coverage nobody wrote down
+   * is a number that has to be re-bought to be argued with, and it is in the
+   * same basis points and under the same family name as
+   * `casting_reference_library.guardCoverage` so the two can be compared.
+   */
+  guardKind: varchar("guardKind", { length: 48 }).notNull(),
+  guardCoverage: int("guardCoverage").notNull(),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+}, (table) => ([
+  /* Every read is "her crops on this cast", so the candidate is the index. */
+  index("ix_casting_reference_crops_candidate").on(table.candidateId),
+  uniqueIndex("uq_casting_reference_crops_publicId").on(table.publicId),
+]));
+
+export type CastingReferenceCropRow = typeof castingReferenceCrops.$inferSelect;
+export type InsertCastingReferenceCropRow = typeof castingReferenceCrops.$inferInsert;

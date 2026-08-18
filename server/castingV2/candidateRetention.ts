@@ -24,6 +24,15 @@ import {
 } from "../db/castingV2ReferenceLibrary";
 import { deleteFaceScanRowsIn, listPurgeableFaceScansIn } from "../db/castingV2FaceScans";
 import { deleteInkDesignRowsIn, listPurgeableInkDesignsIn } from "../db/castingV2InkDesigns";
+import {
+  deleteReferenceCropRowsIn,
+  listPurgeableReferenceCropsIn,
+} from "../db/castingV2ReferenceCrops";
+import {
+  REFERENCE_INTENTS,
+  referenceIntentIngestionForm,
+  referenceIntentIsOpen,
+} from "../../shared/referenceIntents";
 import { deleteInkPlateRowsIn, listPurgeableInkPlatesIn } from "../db/castingV2InkPlates";
 import { deleteSegmentRowsIn, listPurgeableSegmentsIn } from "../db/castingV2Segments";
 import { deleteVariantRowsIn, listPurgeableVariantsIn } from "../db/castingV2Variants";
@@ -139,6 +148,31 @@ function tolerateAbsentFaceScanStore(error: unknown): never | [] {
  * absent there — and genuinely empty, because the studio's door is off. Armed,
  * a missing table stops being an empty set and becomes a fault said out loud.
  */
+/**
+ * And again for a reference CROP (0040) — a different table, a different
+ * migration, and an arming condition that is not a flag at all.
+ *
+ * There is no `CASTING_REFERENCE_CROP_SCOPE`. What decides whether a crop can
+ * exist is the ingestion map itself: a crop-form feature whose `open` is false
+ * cannot be acted on by any door, so no row can have been written. So the
+ * tolerance is armed by the MAP, derived rather than listed (law 4) — the day
+ * somebody flips `hair.open`, a missing table stops being an empty set and
+ * becomes a fault said out loud, without anybody remembering to edit this.
+ */
+function cropStoreArmed(): boolean {
+  return REFERENCE_INTENTS.some(
+    (key) => referenceIntentIngestionForm(key) === "crop" && referenceIntentIsOpen(key),
+  );
+}
+
+function tolerateAbsentReferenceCropStore(error: unknown): never | [] {
+  if (!isMissingTable(error) || cropStoreArmed()) throw error;
+  log.warn(
+    "[candidateRetention] the reference crop table is absent — no crop-form feature is open, so nothing can have been written to it and nothing is being left behind. This is expected only before the 0040 migration lands.",
+  );
+  return [];
+}
+
 function tolerateAbsentInkDesignStore(error: unknown): never | [] {
   if (!isMissingTable(error) || castingInkStudioArmed()) throw error;
   log.warn(
@@ -382,6 +416,24 @@ export async function runCandidateRetentionSweep(now = new Date()): Promise<Rete
         storageItems.push({ storageKey: design.storageKey, storageBackend: "public_r2" as const });
       }
       if (inkDesigns.length > 0) await deleteInkDesignRowsIn(tx, candidateIds);
+
+      /*
+        THE CUTS TAKEN FROM A CUSTOMER'S OWN REFERENCE (0040).
+
+        Unconditional, on the same terms as everything above it: the ingestion
+        map governs whether a crop is ever WRITTEN and nothing governs whether
+        it is purged. This is here before there is a writer, deliberately —
+        a row-driven sweep that gains its clause when the writer lands is a
+        sweep that was missing for however long the writer shipped first, and
+        the objects it would have missed are cut-outs of a real person.
+      */
+      const referenceCrops = await listPurgeableReferenceCropsIn(tx, candidateIds).catch(
+        (error: unknown) => tolerateAbsentReferenceCropStore(error),
+      );
+      for (const crop of referenceCrops) {
+        storageItems.push({ storageKey: crop.storageKey, storageBackend: "public_r2" as const });
+      }
+      if (referenceCrops.length > 0) await deleteReferenceCropRowsIn(tx, candidateIds);
 
       if (storageItems.length > 0) {
         await createStorageCleanupManifestIn(tx, {

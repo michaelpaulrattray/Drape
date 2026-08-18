@@ -352,6 +352,29 @@ gone from this branch while a retired older one means nothing at all**. A
 branch — that half is a LEFT JOIN, and a plain join would silently drop her own
 eyes out of every library.
 
+> ⚠ **OPEN, and it belongs to this road: an uploaded anchor's NULL claims
+> branches that predate it.** fable-195's carve-out makes an uploaded reference
+> a legal anchor, and an anchor is not minted from any variant, so it gets NULL
+> — which the sentence above reads as *belongs to every branch*, including the
+> ones forked before the upload existed. Noticed from outside (opus-751 §3,
+> while building the reference-crop store, which is keyed to the candidate and
+> makes no branch claim at all) and filed here rather than only in a mailbox,
+> because the next person to read that sentence is the person who should meet
+> the question.
+>
+> **Reach, measured before shelving it** (ordered fable-1016 §4;
+> `scripts/read-uploaded-anchor-reach-disposable.mts`, read-only, one SELECT):
+>
+> ```
+> production 2026-08-19   library rows 31 · role='anchor' 0 · uploaded anchors 0
+> VERDICT  DORMANT — no branch can inherit one today
+> ```
+>
+> The zero is against a POPULATED table, so it is a finding rather than an
+> instrument with nothing to look at. **The first uploaded anchor arms it**, and
+> at that point this stops being filed and becomes scheduled. Owner: the
+> library/branching road — not the reference-crop build, which only found it.
+
 **`storageKey` NULL is the tier boundary, not missing data.** A surface is
 carried by words and never by a crop; an anatomy slot can hold words before
 anything has delivered it. The other combinations are refused at the write —

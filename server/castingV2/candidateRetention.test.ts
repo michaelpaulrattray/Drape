@@ -33,6 +33,8 @@ const calls = {
   deleteInkDesigns: vi.fn(),
   listInkPlates: vi.fn(),
   deleteInkPlates: vi.fn(),
+  listReferenceCrops: vi.fn(),
+  deleteReferenceCrops: vi.fn(),
 };
 
 vi.mock("../db/castingV2", () => ({
@@ -108,6 +110,37 @@ vi.mock("../db/castingV2InkDesigns", () => ({
    `candidateId` of its own, so the only path from a Cast to its plates runs
    through the design row — which makes the ORDER part of the contract and not
    an implementation detail. Asserted below. */
+/*
+  THE INGESTION MAP, mocked on ONE function only.
+
+  `cropStoreArmed()` derives from the map rather than from an env var, so the
+  armed arm cannot be reached by setting a variable — and an arm that cannot be
+  reached is an arm that does not exist (the bench-skips-the-gate class). The
+  default here is `importOriginal`, so every other test in this file runs
+  against the REAL map and the disarmed arm proves today's actual state; only
+  the armed test flips the switch, and it puts it back.
+*/
+const mapState = vi.hoisted(() => ({ cropOpen: null as boolean | null }));
+
+vi.mock("../../shared/referenceIntents", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../shared/referenceIntents")>();
+  return {
+    ...actual,
+    referenceIntentIsOpen: (key: Parameters<typeof actual.referenceIntentIsOpen>[0]) =>
+      mapState.cropOpen !== null && actual.referenceIntentIngestionForm(key) === "crop"
+        ? mapState.cropOpen
+        : actual.referenceIntentIsOpen(key),
+  };
+});
+
+/* The CUT taken from a customer's own reference (migration 0040). It has no
+   flag of its own: the ingestion map decides whether a crop can exist, so the
+   sweep's tolerance is armed by the map rather than by an env var. */
+vi.mock("../db/castingV2ReferenceCrops", () => ({
+  listPurgeableReferenceCropsIn: (_tx: unknown, ...args: unknown[]) => calls.listReferenceCrops(...args),
+  deleteReferenceCropRowsIn: (_tx: unknown, ...args: unknown[]) => calls.deleteReferenceCrops(...args),
+}));
+
 vi.mock("../db/castingV2InkPlates", () => ({
   listPurgeableInkPlatesIn: (_tx: unknown, ...args: unknown[]) => calls.listInkPlates(...args),
   deleteInkPlateRowsIn: (_tx: unknown, ...args: unknown[]) => calls.deleteInkPlates(...args),
@@ -133,6 +166,9 @@ beforeEach(() => {
   calls.deleteInkDesigns.mockResolvedValue(0);
   calls.listInkPlates.mockResolvedValue([]);
   calls.deleteInkPlates.mockResolvedValue(0);
+  calls.listReferenceCrops.mockResolvedValue([]);
+  calls.deleteReferenceCrops.mockResolvedValue(0);
+  mapState.cropOpen = null;
   delete process.env.CASTING_SEGMENTS_SCOPE;
   delete process.env.CASTING_REFERENCE_LIBRARY_SCOPE;
   delete process.env.CASTING_SCAN_TABLE_SCOPE;
@@ -248,6 +284,85 @@ describe("a candidate's segments purge with it", () => {
 
     expect(calls.deleteSegments).toHaveBeenCalledWith([1]);
     expect(result.objectsQueued).toBe(3);
+  });
+
+  /*
+    THE REFERENCE CROP STORE (migration 0040, ruled fable-1015 §3, obligation 2).
+
+    These exist BEFORE the writer does, deliberately. `candidateRetention.ts` is
+    row-driven, so a store whose rows nothing sweeps is a store whose objects
+    nothing deletes — and the objects here are cut-outs of a real person taken
+    from a picture a customer supplied. The founder-queue's §1a defect
+    (`captureRefusedRender` writing frames no manifest ever names) is that shape
+    exactly, and it was written into the roadmap rather than into a test.
+  */
+  it("collects a reference crop's bytes and deletes its rows with the Cast", async () => {
+    calls.listReferenceCrops.mockResolvedValue([
+      { id: 9, storageKey: "reference-crops/her-hair.png" },
+    ]);
+
+    const result = await runCandidateRetentionSweep();
+
+    expect(calls.deleteReferenceCrops).toHaveBeenCalledWith([1]);
+    expect(calls.queueStorageCleanup).toHaveBeenCalledWith(
+      expect.objectContaining({
+        storageItems: expect.arrayContaining([
+          { storageKey: "reference-crops/her-hair.png", storageBackend: "public_r2" },
+        ]),
+      }),
+    );
+    /* Two: the candidate's own image, plus this crop. Written as the sum rather
+       than as a bare number so a future object added to the default fixture
+       reads as an arithmetic change and not as a mystery. */
+    expect(result.objectsQueued).toBe(1 + 1);
+  });
+
+  it("tolerates the crop table's absence while NO crop-form feature is open", async () => {
+    /*
+      Today's real state, run against the REAL map rather than a flipped one:
+      hair and eye colour are both `open: false`, so no door can have written a
+      row and an absent table is genuinely an empty set.
+    */
+    calls.listReferenceCrops.mockRejectedValue(Object.assign(new Error("Failed query"), {
+      name: "DrizzleQueryError",
+      cause: Object.assign(new Error("Table 'railway.casting_reference_crops' doesn't exist"), {
+        code: "ER_NO_SUCH_TABLE",
+        errno: 1146,
+      }),
+    }));
+
+    const result = await runCandidateRetentionSweep();
+
+    expect(result.candidatesPurged).toBe(1);
+    expect(calls.deleteReferenceCrops).not.toHaveBeenCalled();
+  });
+
+  it("REFUSES the same absence once a crop-form feature is open", async () => {
+    /*
+      The arm that makes the tolerance a control rather than a permanent excuse.
+      It cannot be reached by setting an env var — `cropStoreArmed()` derives
+      from the ingestion map — so the map's `open` is what moves here, which is
+      the same switch the founder's first-run gate flips for real.
+
+      Without this arm the tolerance would swallow a missing table forever, and
+      a customer's crops would be stranded silently the day the door opened.
+    */
+    mapState.cropOpen = true;
+    /* The outer message names the SQL, the way drizzle's wrapper really does —
+       so the assertion below is about the fault reaching the caller intact and
+       not about a string this test invented. */
+    calls.listReferenceCrops.mockRejectedValue(Object.assign(new Error("Failed query: select `id` from `casting_reference_crops`"), {
+      name: "DrizzleQueryError",
+      cause: Object.assign(new Error("Table 'railway.casting_reference_crops' doesn't exist"), {
+        code: "ER_NO_SUCH_TABLE",
+        errno: 1146,
+      }),
+    }));
+
+    /* Armed and missing is a real fault, and a warning would bury it — the same
+       expectation the segment store's armed arm carries one flight down. */
+    await expect(runCandidateRetentionSweep()).rejects.toThrow(/casting_reference_crops/);
+    expect(calls.deleteCandidates).not.toHaveBeenCalled();
   });
 
   it("tolerates a database whose segment table does not exist yet — but only while disarmed", async () => {
