@@ -216,3 +216,80 @@ describe("an open kind's crop rides while the chain still carries it", () => {
     expect([...named].filter((slot) => slot.startsWith("open:"))).toEqual([]);
   });
 });
+
+/**
+ * A DISTRIBUTED KIND IS TWO ROWS, AND BOTH OF THEM ARE NAMED — the D1 wire
+ * (founder ruling fable-987 §1, shape ruled fable-1001).
+ *
+ * # Why the rows are per-side at all
+ *
+ * `wings` is `distributed` under the locality class (fable-951): the instances
+ * sit on opposite sides and one crop cannot hold both. The union of the two
+ * would be a rectangle spanning her whole torso filed as her wings — the
+ * wrong-boundary class — and the completeness guard cannot even fail it, since
+ * its own read finds ONE wing and any rectangle containing that wing scores
+ * 1.0. So a distributed kind mints the earring architecture instead: one row
+ * per side, each honestly a picture of what its name says.
+ *
+ * # And that is exactly where the carry drop lives
+ *
+ * The chain names an open kind through `openSlotKey(kind)` — `open:wings` — and
+ * a row filed under `open:wings@left` is a DIFFERENT STRING. Two answers to
+ * *what does this recipe name* with the second invisible to the first, which is
+ * the same shape as the halo that vanished off a paid render in 5b, one door
+ * along. These arms are written RED against the wire, per fable-1001 §3.
+ */
+describe("a DISTRIBUTED open kind's two crops both ride (D1 wire)", () => {
+  const wings = { open: { wings: { noun: "wings", words: "large black feathered wings" } } };
+
+  it("names BOTH sides of a distributed kind the composed delta holds", () => {
+    const named = slotsNamedByChain(wings);
+    expect([...named]).toContain("open:wings@left");
+    expect([...named]).toContain("open:wings@right");
+  });
+
+  it("still names the sideless key, because the locality is not known here", () => {
+    /*
+      This module reads a DELTA, and a delta says which kinds the chain carries
+      and never where their instances sit — the locality lives in the property
+      store, one read away. So the naming is deliberately generous in the
+      direction the module already documents: name the sideless key and both
+      sides, and let the mint decide which of the three it ever files under.
+      Over-supporting keeps a crop that could have been dropped; under-supporting
+      takes a feature off a customer's face.
+    */
+    expect([...slotsNamedByChain(wings)]).toContain("open:wings");
+  });
+
+  it("KEEPS both per-side crops while the chain carries the kind", () => {
+    const left = row({ slot: "open:wings@left", noun: "wings", words: ["a black wing"], variantId: 461 });
+    const right = row({ slot: "open:wings@right", noun: "wings", words: ["a black wing"], variantId: 461 });
+    const { rows, dropped } = carriesAfterPruning({
+      rows: [left, right],
+      composed: { ...wings, hairColour: "copper" },
+    });
+    expect(dropped).toEqual([]);
+    expect(rows.map((one) => one.slot)).toEqual(["open:wings@left", "open:wings@right"]);
+  });
+
+  it("still DROPS both when the chain no longer carries the kind", () => {
+    /* The negative control, and it is the arm that keeps the fix from being an
+       exemption for anything spelled `open:…@…`. Remove the step that asked for
+       wings and BOTH crops come off the next render. */
+    const left = row({ slot: "open:wings@left", noun: "wings", words: ["a black wing"], variantId: 461 });
+    const right = row({ slot: "open:wings@right", noun: "wings", words: ["a black wing"], variantId: 461 });
+    const { rows, dropped } = carriesAfterPruning({
+      rows: [left, right],
+      composed: { hairColour: "copper" },
+    });
+    expect(rows).toEqual([]);
+    expect(dropped.map((one) => one.slot)).toEqual(["open:wings@left", "open:wings@right"]);
+  });
+
+  it("names no side for a malformed open key", () => {
+    /* The same door the sideless arm guards: a key the catalogue cannot resolve
+       must not enter the named set wearing a side either. */
+    const named = slotsNamedByChain({ open: { "cat ears": { noun: "cat ears", words: "pointed cat ears" } } });
+    expect([...named]).toEqual([]);
+  });
+});

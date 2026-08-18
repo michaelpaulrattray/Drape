@@ -57,7 +57,7 @@ import {
   type SlotDefinition,
 } from "./referenceSlotCatalogue";
 import type { FeatureSlot } from "./recipeAssembler";
-import { openSlotKey } from "./referenceSlots";
+import { INSTANCES, openSideSlotKey, openSlotKey } from "./referenceSlots";
 import { captionWording, type RealizationCaptions } from "./realizationCaption";
 import type { SlotSpec } from "./referenceMint";
 import type { Facet } from "./refineFacets";
@@ -256,38 +256,38 @@ export type MintedSlotsResult = {
   seen**, and that count is the promotion signal.
 */
 /*
-  `openKindDistributed` and `openKindLocalityUnread` — TWO WORDS, because they
-  are two facts and only one of them is a finding (fable-872 §2, countersigned
-  fable-896 §3; renamed with the locality class, fable-951).
+  `openKindLocalityUnread` — nobody has answered where this kind's instances sit
+  (fable-872 §2, countersigned fable-896 §3; renamed with the locality class,
+  fable-951; narrowed to one word by the D1 wire, fable-1001).
 
-  A DISTRIBUTED open kind carries NO CROP until the counting instrument gates a
-  mint: a whole-frame read of two things on opposite sides returns one instance —
-  measured on the court's wings frame, where the mask the mint would have carried
-  is the image-left wing to thirteen pixels — so the crop would be half a picture
-  wearing the whole picture's name. That is the earring history and it does not
-  get a second run in a new lane.
-
-  **These two words were `openKindPaired` and `openKindPairUnread` until the
-  founder's fangs ruling, and the rename is not cosmetic**: the gate used to
-  refuse every kind whose noun meant more than one thing, which took fangs and
-  whiskers down with wings. What it was always reaching for is whether ONE CROP
-  CAN HOLD THE SET, and `coLocated` kinds now pass it — the completeness and
-  ceiling instruments decide whether the crop holds the whole thing, which is
-  what they are for.
-
-  `openKindDistributed` is that ruling honoured: the property was answered, the
-  instances sit on opposite sides, and words are the honest carrier. Nothing to
-  chase.
-
-  `openKindLocalityUnread` is nobody having answered at all — no row, no engine,
-  a reader that declined. It refuses the crop identically, because a gate
-  treating unknown as croppable files one wing under the name of two. **But it
-  is a finding**: a kind stuck here is a kind whose property read is failing, and
+  No row, no engine, a reader that declined. It refuses the crop, because a gate
+  treating unknown as croppable files one wing under the name of two. **And it is
+  a finding**: a kind stuck here is a kind whose property read is failing, and
   every ask for it is silently getting the conservative path forever.
 
-  One word for both would make an unread property indistinguishable from a
-  ruling being honoured — the two-meanings-of-none defect the bald row's
-  `whenAbsent` was split to avoid, at a different door.
+  # `openKindDistributed` LIVED HERE AND IS GONE, and the record says why
+
+  It was the pair ruling honoured: a distributed kind carried no crop at all,
+  because a whole-frame read of two things on opposite sides returns ONE instance
+  — measured on the court's wings frame, where the mask the mint would have
+  carried was the image-left wing to thirteen pixels. Half a picture wearing the
+  whole picture's name is the earring history, and it did not get a second run in
+  a new lane.
+
+  **The founder wired the counting instrument instead** (fable-987 §1, "yes"),
+  and a distributed kind now files ONE SLOT PER SIDE — the earring architecture,
+  whose whole purpose is this exact geometry. So the refusal moved rather than
+  disappeared: it lives at `referenceMint`, where the frame is, and it refuses
+  every count but two with the count in the reason. Keeping the word here would
+  be a reason nothing can produce, which reads to the next person as a rule still
+  in force.
+
+  **These words were `openKindPaired` and `openKindPairUnread` until the founder's
+  fangs ruling, and that rename was not cosmetic either**: the gate used to refuse
+  every kind whose noun meant more than one thing, which took fangs and whiskers
+  down with wings. What it was always reaching for is whether ONE CROP CAN HOLD
+  THE SET — `coLocated` kinds pass it, and `distributed` ones now answer it with
+  two crops rather than none.
 */
 /*
   `outsideScope` — a facet this render earned whose slots do not include the one
@@ -307,7 +307,6 @@ export type UnfiledReason =
   | "uncataloguedFeature"
   | "noWords"
   | "openKind"
-  | "openKindDistributed"
   | "openKindLocalityUnread"
   | "outsideScope";
 
@@ -524,8 +523,8 @@ export function mintedSlotsForRender(input: MintedSlotsInput): MintedSlotsResult
     after the pair ruling, such an ask would be counted as *"words-only, because
     it is a pair"*, which is a true sentence about the wrong thing: it would
     inflate the one number the promotion decision reads and hide a bug behind a
-    policy. So the count of `openKindDistributed` is a count over WELL-FORMED asks,
-    which is what makes it worth reading.
+    policy. So the count of `openKindLocalityUnread` is a count over WELL-FORMED
+    asks, which is what makes it worth reading.
 
     AND A SCOPE DOES NOT NARROW AN OPEN KIND, declared rather than omitted. A
     scope names one INSTANCE of a catalogued feature; `openSlotDefinition` sets
@@ -554,11 +553,39 @@ export function mintedSlotsForRender(input: MintedSlotsInput): MintedSlotsResult
       unfiledOpen.push({ kind: ask.kind, reason: "openKindLocalityUnread" });
       continue;
     }
-    /* The one derivation that reads the locality, and it lives beside the
-       vocabulary rather than here — `distributed` is the only no, and it is a no
-       about GEOMETRY: one rectangle cannot hold two things on opposite sides. */
+    /*
+      THE ONE DERIVATION THAT READS THE LOCALITY, and it lives beside the
+      vocabulary rather than here: `cropMayCarry` answers whether ONE crop can
+      hold the whole kind, and `distributed` is its only no — a no about
+      GEOMETRY, since one rectangle cannot hold two things on opposite sides.
+
+      That no used to end the ask, filed as `openKindDistributed` and carried by
+      words alone. It no longer does (founder verdict fable-987 §1, shape ruled
+      fable-1001): a distributed kind files the EARRING ARCHITECTURE instead —
+      one slot per side, each a picture of exactly what its name says — and the
+      count that proves there are two of them is bought at the mint, on the frame
+      the crop would be cut from, because that is the only place the question can
+      be asked of the actual delivery.
+
+      Nothing here decides the count. This door only says WHERE the pixels would
+      be filed if they exist; `referenceMint` refuses every reading but two, with
+      the count in the reason, and both rows fall back to their words.
+    */
     if (!cropMayCarry(ask.locality)) {
-      unfiledOpen.push({ kind: ask.kind, reason: "openKindDistributed" });
+      for (const side of INSTANCES) {
+        const sideSlot = openSideSlotKey(ask.kind, side);
+        if (seen.has(sideSlot)) continue;
+        const sideSpec = slotSpecFor(sideSlot, [words]);
+        if (sideSpec === null) {
+          /* The same should-be-unreachable disagreement the sideless branch
+             above reports: a key `openSlotDefinition` can define without a side
+             it cannot define with one is the two grammars drifting. */
+          unfiledOpen.push({ kind: ask.kind, reason: "openKind" });
+          continue;
+        }
+        seen.add(sideSlot);
+        slots.push(sideSpec);
+      }
       continue;
     }
     seen.add(slot);

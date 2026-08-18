@@ -638,18 +638,48 @@ describe("the open kinds a render files", () => {
     expect(spec.tier).toBe("anatomy");
   });
 
-  it("refuses a DISTRIBUTED kind its crop, and says which ruling did it", () => {
-    /* fable-872 §2. The mask the mint would have carried on the court's wings
-       frame was the image-left wing to thirteen pixels — half a picture under the
-       whole picture's name, which is the earring history. */
+  it("files a DISTRIBUTED kind ONE SLOT PER SIDE — the earring architecture", () => {
+    /*
+      THE RULING MOVED, AND THE RECORD SAYS SO. Until fable-987 §1 this arm
+      asserted the opposite: a distributed kind filed NOTHING and carried words,
+      because a whole-frame read of two things on opposite sides returns one
+      instance (measured on the court's wings frame — the mask the mint would
+      have carried was the image-left wing to thirteen pixels).
+
+      The founder wired the counting instrument ("yes"), and the shape ruled in
+      fable-1001 is the earring architecture: one row per side, each honestly a
+      picture of what its name says. A union of the two was refused on this
+      program's own banked laws — a rectangle spanning both wings pictures her
+      torso, and the completeness guard scores 1.0 on it AND on a crop of one
+      wing, which is a guard that cannot fail.
+
+      Nothing here counts anything: this door says WHERE the pixels would be
+      filed. The count is bought at the mint, on the frame, and refuses every
+      reading but two.
+    */
     const { slots, unfiledOpen } = mintedSlotsForRender({
       earned: [],
       captions: {},
       open: [{ kind: "wings", words: "enormous feathered wings", locality: "distributed" }],
     });
 
-    expect(slots).toEqual([]);
-    expect(unfiledOpen).toEqual([{ kind: "wings", reason: "openKindDistributed" }]);
+    expect(unfiledOpen).toEqual([]);
+    expect(slots.map((slot) => slot.slot)).toEqual(["open:wings@left", "open:wings@right"]);
+    /* Both sides carry the customer's own words — an open kind has no facet, so
+       no caption reader ever wrote a sentence about either of them. */
+    expect(slots.map((slot) => slot.words)).toEqual([
+      ["enormous feathered wings"], ["enormous feathered wings"],
+    ]);
+    /* `ownSide` is the whole point: asked of the WHOLE frame this question comes
+       back as the union of both wings, and a crop of it would score 100% against
+       the very mask it was cut from. */
+    expect(slots.map((slot) => slot.frame)).toEqual(["ownSide", "ownSide"]);
+    /* Still the open lane's own door — no completeness family exists for a kind
+       nobody catalogued, and the recorded reason is what routes both sides to the
+       absence control rather than to the measured guard. */
+    expect(slots.map((slot) => slot.guardKind)).toEqual([null, null]);
+    expect(slots.every((slot) => Boolean(slot.noSpecimen))).toBe(true);
+    expect(slots.map((slot) => slot.question)).toEqual(["wings", "wings"]);
   });
 
   /*

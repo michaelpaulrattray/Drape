@@ -1054,7 +1054,24 @@ export function guardReference(input: GuardInput): GuardVerdict {
  * outcome, and it is the one refusal that records no number at all.
  */
 export type RegionReader = (
-  input: { frame: Buffer; question: string; side?: Instance },
+  input: {
+    frame: Buffer;
+    question: string;
+    side?: Instance;
+    /**
+     * THIS NAME IS TWO-SIDED, AND THE CLASSIFIER SAID SO — not the reader's own
+     * vocabulary (the D1 wire, fable-1001).
+     *
+     * A reader knows a closed list of names it reads one side at a time, and an
+     * uncatalogued kind is outside it by construction. That list is the honest
+     * default: without it, a per-side crop of a nose would be a guessed split.
+     * A kind the LOCALITY classifier read as `distributed` — prompt kp-2, under
+     * three disagreeing controls — has been answered two-sided by an
+     * instrument, and this carries that answer to the reader. It is never set
+     * from a caller's expectation.
+     */
+    declaredTwoSided?: true;
+  },
 ) => Promise<Mask | null>;
 
 export type MintInput = {
@@ -1063,6 +1080,12 @@ export type MintInput = {
   question: string;
   /** Which instance of it, for a slot that is one of a pair. */
   side?: Instance;
+  /** The locality classifier answered this name two-sided — see
+   *  {@link RegionReader}'s own field. Carried so the GUARD can scope its
+   *  independent read to the same side the crop was cut from; without it the
+   *  guard reads null, files `readDidNotSettle`, and every distributed crop is
+   *  refused by the very door the count just opened. */
+  declaredTwoSided?: true;
   /** The frame the crop claims to represent — the one the guard reads. */
   frame: Buffer;
   crop: { mask: Mask; box: SegmentBox };
@@ -1089,7 +1112,12 @@ export async function mintGuardedReference(
 ): Promise<GuardVerdict> {
   let guardRead: Mask | null = null;
   try {
-    guardRead = await read({ frame: input.frame, question: input.question, side: input.side });
+    guardRead = await read({
+      frame: input.frame,
+      question: input.question,
+      side: input.side,
+      ...(input.declaredTwoSided === undefined ? {} : { declaredTwoSided: input.declaredTwoSided }),
+    });
   } catch {
     guardRead = null; /* a throw is a reading that did not happen, not a no */
   }

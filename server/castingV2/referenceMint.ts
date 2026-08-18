@@ -143,7 +143,7 @@ import {
   type RegionReader,
 } from "./referenceCompleteness";
 import { DERIVED_REGION_ASKS, DERIVED_REGION_KEY, isDerivedRegion } from "./referenceSlotCatalogue";
-import { parseSlot, type Instance, type SlotFrame } from "./referenceSlots";
+import { INSTANCES, parseSlot, type Instance, type SlotFrame } from "./referenceSlots";
 import { accessoryKindOfSlot, tidyStackWord } from "./slotWordShape";
 import type { FeatureSlot, FeatureTier } from "./recipeAssembler";
 
@@ -268,7 +268,7 @@ export type SlotWordsReader = (input: {
  *  no crop was ever cut for it. */
 export type DisputedNothingKept =
   | GuardRefusalReason
-  | "surface" | "noQuestion" | "noSide" | "noRegion";
+  | "surface" | "noQuestion" | "noSide" | "noRegion" | "notAPair";
 
 export type MintedSlot =
   | {
@@ -298,9 +298,12 @@ export type MintedSlot =
     /** `surface` — the tier never mints a crop. `noQuestion` — no segmentation
      *  question names this slot, so there is nothing honest to cut. `noSide` —
      *  the slot is one of a pair and this render has no read of its side alone.
-     *  `noRegion` — this render has no evidence about the slot. `guardRefused` —
-     *  a crop was cut and turned away. */
-    reason: "surface" | "noQuestion" | "noSide" | "noRegion" | "guardRefused";
+     *  `notAPair` — a DISTRIBUTED open kind whose two sides did not both answer
+     *  on this frame; the count is in the detail, because one wing filed under a
+     *  name that means two is the failure this gate exists to prevent (D1 wire,
+     *  fable-1001 §4). `noRegion` — this render has no evidence about the slot.
+     *  `guardRefused` — a crop was cut and turned away. */
+    reason: "surface" | "noQuestion" | "noSide" | "noRegion" | "notAPair" | "guardRefused";
     detail?: string;
     /** The refused crop's pixels were kept for a human to look at — true for the
      *  refusals in `REFUSALS_THAT_KEEP_THEIR_CROP`, which a human settles rather
@@ -589,6 +592,34 @@ async function defaultManifest(input: {
       storageBackend: "public_r2" as const,
     })),
   }));
+}
+
+/**
+ * A SLOT THAT WILL FILE WORDS, WITH THE SENTENCE SAYING WHY — one shape for the
+ * two lists that carry them.
+ *
+ * Written once rather than at each list, for the reason the Atlas states about
+ * every re-listed shape: a copy drifts by losing a field nothing can see. The
+ * lists stay SEPARATE because they are separate facts — `noSide` is nobody could
+ * read one side at a time; `notAPair` is the read succeeding and answering a
+ * count the product cannot file — and one list with a reason column would be the
+ * two-meanings-of-none defect this module has already split apart once.
+ */
+type SlotOutOfTheCut = { slot: SlotSpec; detail: string };
+
+/**
+ * DOES THIS MASK CLAIM ANYTHING AT ALL — the difference between a side that
+ * answers and a side that does not.
+ *
+ * `regionSides` returns two EMPTY masks when neither side wears the thing and
+ * the caller has said absence is an answer, so a non-null mask is not a reading
+ * of anything. Counted at the same midpoint every other mask in this module is
+ * read at, because a mask read at two thresholds is how a crop passes a check it
+ * should have failed.
+ */
+function maskHasPixels(mask: Mask): boolean {
+  for (let at = 0; at < mask.data.length; at += 1) if (mask.data[at]! > MATTE_CLAIM) return true;
+  return false;
 }
 
 /** A mask that claims the whole frame — the born read's "no edit governed this". */
@@ -944,7 +975,19 @@ export async function mintReferencesForRender(input: MintInput): Promise<MintRes
       noCutDetail?: string;
     }> = [];
     /** Per-side slots with no side to cut from, with the reason each one is out. */
-    const sideless: Array<{ slot: SlotSpec; detail: string }> = [];
+    const sideless: SlotOutOfTheCut[] = [];
+    /**
+     * DISTRIBUTED OPEN KINDS WHOSE SIDES DID NOT COUNT TWO — the D1 gate's
+     * refusal list, kept apart from `sideless` because they are two different
+     * facts (fable-1001 §4).
+     *
+     * `noSide` is *nobody could read this one side at a time*. This is the read
+     * SUCCEEDING and answering something the product cannot file: one wing, or
+     * none, or — the arm the ruling insisted on — three. A pair with a bonus is
+     * not a pair, and the count travels in the detail so the refusal names what
+     * it saw rather than that it saw wrongly.
+     */
+    const notAPair: SlotOutOfTheCut[] = [];
 
     /*
       THE GROUND THIS RENDER DID NOT BRING, asked of the frame in hand.
@@ -963,14 +1006,65 @@ export async function mintReferencesForRender(input: MintInput): Promise<MintRes
        decision asks, and a figure folded into another one cannot answer it. */
     let absenceReads = 0;
     const readGround = input.dependencies?.readGround;
-    const groundFor = async (question: string, side: Instance | null): Promise<Mask | null> => {
+    const groundFor = async (
+      question: string, side: Instance | null, declaredTwoSided?: true,
+    ): Promise<Mask | null> => {
       if (!readGround) return null;
       groundReads += 1;
       return readGround({
         frame: input.frame.bytes,
         question,
         ...(side === null ? {} : { side }),
+        /*
+          THE READER'S BILATERAL VOCABULARY IS CLOSED, AND AN OPEN KIND IS NOT IN
+          IT (the D1 wire).
+
+          `regionSides` answers `null` for a name it does not know two-sidedly —
+          a nose, a hairstyle — and that null is the honest refusal that keeps a
+          per-side crop from being guessed at. An open kind is outside that list
+          by construction, so without this the distributed road could never read
+          a side and every wing would file words forever.
+
+          It is not the mint deciding a kind is two-sided: the LOCALITY
+          CLASSIFIER decided that, on prompt kp-2, under three disagreeing
+          controls (fangs co-located, wings distributed, halo single). This flag
+          is that classification arriving at the reader, and it is only ever set
+          from `locality === "distributed"`.
+        */
+        ...(declaredTwoSided === undefined ? {} : { declaredTwoSided }),
       });
+    };
+
+    /**
+     * HOW MANY SIDES OF THIS KIND THE FRAME ANSWERS — D1, and it is the whole
+     * gate (founder verdict fable-987 §1, wired per fable-1001 §4).
+     *
+     * The instrument is the one the counting court proved and the one the
+     * product already runs: the frame is cut at her face's centroid and the
+     * plain noun is asked of each half, and the count is how many halves answer.
+     * Asking a segmenter *how many* would be buying an answer from a question it
+     * cannot answer wrong — its own header records one mask every time for a
+     * bilateral noun.
+     *
+     * Read ONCE per question and cached, because both side slots ask it and a
+     * second read would be a second opinion about the same frame — the
+     * read-the-same-pixels trap, which this program has already paid for once in
+     * fictional drift.
+     */
+    const sidesCounted = new Map<string, Promise<{ count: number; masks: Record<Instance, Mask | null> }>>();
+    const countSides = (question: string) => {
+      const held = sidesCounted.get(question);
+      if (held) return held;
+      const reading = (async () => {
+        const masks: Record<Instance, Mask | null> = { left: null, right: null };
+        for (const side of INSTANCES) {
+          const mask = await groundFor(question, side, true);
+          masks[side] = mask !== null && maskHasPixels(mask) ? mask : null;
+        }
+        return { count: INSTANCES.filter((side) => masks[side] !== null).length, masks };
+      })();
+      sidesCounted.set(question, reading);
+      return reading;
     };
 
     /*
@@ -1041,6 +1135,52 @@ export async function mintReferencesForRender(input: MintInput): Promise<MintRes
         continue;
       }
       const key = sideKey(question, side);
+      /*
+        A DISTRIBUTED OPEN KIND IS COUNTED BEFORE IT IS CUT — the D1 gate.
+
+        It takes this door rather than the two below it because neither of them
+        can answer its question. The harvest brings no map for a kind nobody
+        catalogued, and the ordinary side read would hand back one wing and cut
+        it happily: the completeness guard cannot refuse that crop, because its
+        own read finds the same one wing and any box containing it scores 1.0.
+        The count is the only instrument that can tell a pair from half of one,
+        and it must pass BEFORE a picture is filed under a name that means both.
+
+        `count !== 2` refuses every other reading and says which it saw: zero (a
+        frame that does not wear the thing), one (the failure this gate exists
+        for — a wing under the name of wings), and anything else, because a
+        three-winged read is not a pair with a bonus but a reading the product
+        cannot file. The row still files its WORDS, so the kind survives the
+        render exactly as it did before crops existed.
+      */
+      if (openKind) {
+        const counted = await countSides(question);
+        if (counted.count !== 2) {
+          notAPair.push({
+            slot,
+            detail: `${question} answered on ${counted.count} of her two sides on this frame, and a crop `
+              + `filed as ${slot.noun} needs both — one side under a name that means two is the picture `
+              + "this gate exists to refuse",
+          });
+          continue;
+        }
+        const mine = counted.masks[side];
+        if (mine === null) {
+          /* Unreachable while `count === 2` means both sides answered, and
+             reported rather than skipped for the reason every other should-be-
+             unreachable branch in this file is: it would be the count and the
+             masks disagreeing about one reading. */
+          notAPair.push({
+            slot,
+            detail: `${question} counted two sides and then had no mask for her ${side}, which is one `
+              + "reading contradicting itself",
+          });
+          continue;
+        }
+        regionsToCut.set(key, mine);
+        cuttable.push({ ...slot, question, guardKind, regionKey: key, side, openKind });
+        continue;
+      }
       const sides = input.masterSideRegions?.get(question) ?? null;
       if (!sides) {
         /*
@@ -1465,6 +1605,7 @@ export async function mintReferencesForRender(input: MintInput): Promise<MintRes
         && (slot.question === null || (slot.guardKind === null && !isOpenKindSlot(slot)))
         && !slot.disputed),
       ...sideless.filter(({ slot }) => !slot.disputed).map(({ slot }) => slot),
+      ...notAPair.filter(({ slot }) => !slot.disputed).map(({ slot }) => slot),
       ...cuttable.filter((slot) => cutBySlot.has(slot.slot) || !slot.disputed),
     ];
     /* Settled rather than raced: a rejection here is re-thrown by the loop that
@@ -1555,6 +1696,18 @@ export async function mintReferencesForRender(input: MintInput): Promise<MintRes
       if (said === null) { unread(slot); continue; }
       rows.push({ role: "carry", slot: slot.slot, tier: slot.tier, noun: slot.noun, words: said });
       outcomes.push({ slot: slot.slot, outcome: "words-only", reason: "noSide", detail });
+    }
+    /* The D1 gate's refusals, filed exactly as `noSide` is — words keep the
+       feature on her, and the reason says the count rather than "no side". */
+    for (const { slot, detail } of notAPair) {
+      if (slot.disputed) {
+        disputedNothingKept(slot, "notAPair", detail);
+        continue;
+      }
+      const said = await wordsFor(slot);
+      if (said === null) { unread(slot); continue; }
+      rows.push({ role: "carry", slot: slot.slot, tier: slot.tier, noun: slot.noun, words: said });
+      outcomes.push({ slot: slot.slot, outcome: "words-only", reason: "notAPair", detail });
     }
 
     /* Digests already spoken for, so a byte-identical crop is caught whether it
@@ -1720,6 +1873,11 @@ export async function mintReferencesForRender(input: MintInput): Promise<MintRes
               either.
             */
             ...(slot.side === null ? {} : { side: slot.side }),
+            /* The guard's read must reach the same side the crop was cut from,
+               and an open kind's name is outside the reader's bilateral list —
+               so the classifier's answer rides here too, or the door the count
+               just opened refuses every crop behind it. */
+            ...(slot.side !== null && slot.openKind ? { declaredTwoSided: true as const } : {}),
             frame: input.frame.bytes,
             crop: { mask: cut.mask, box: cut.box },
             digest,

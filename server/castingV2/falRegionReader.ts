@@ -754,9 +754,25 @@ export function createFalRegionReader(input: {
      * the same assumption the tilt reader has always made, and it is the reason
      * the mapping lives in one function instead of at four call sites.
      */
-    async regionSides({ image, name, absentIsAnswer, imageUrl, axisKey }): Promise<SideRegions | null> {
+    async regionSides({ image, name, absentIsAnswer, imageUrl, axisKey, declaredTwoSided }): Promise<SideRegions | null> {
       assertPicture(image, name);
-      if (!BILATERAL.has(name)) return null;
+      /*
+        THE CLOSED LIST IS THIS READER'S OWN KNOWLEDGE, AND IT IS NOT THE ONLY
+        WAY A NAME BECOMES TWO-SIDED (the D1 wire, fable-1001).
+
+        `BILATERAL` is the vocabulary this reader was built knowing about, and
+        refusing everything outside it is what keeps a nose from being split down
+        the middle on a guess. An open kind is outside it by construction —
+        nobody catalogued the word — so without the caller's flag the distributed
+        road could never read a side at all.
+
+        The flag is a CLASSIFIER'S ANSWER arriving, not a caller's opinion: the
+        locality read (kp-2) is controlled on three kinds that disagree with each
+        other, and only `distributed` sets it. The split itself is identical
+        either way — same midline, same halves, same question — so nothing about
+        HOW the answer is produced changes with it.
+      */
+      if (!BILATERAL.has(name) && declaredTwoSided !== true) return null;
       const halves = await bilateralHalves(image, name, imageUrl, axisKey);
       if (halves === null) return null;
 

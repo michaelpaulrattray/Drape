@@ -1162,3 +1162,59 @@ describe("an open kind splits into a CARRY and an EDIT (D-244, fable-909 §1)", 
     }]);
   });
 });
+
+/**
+ * A DISTRIBUTED KIND IS CARRIED BY TWO CROPS, AND THE ASK MUST SEE THEM — the
+ * D1 wire's second half (fable-1001 §3).
+ *
+ * `cropped` is the set of slots the library can carry by crop this render, and
+ * the carry/edit split above tests it against `open:<kind>`. A distributed kind
+ * files per side — `open:wings@left` and `open:wings@right` — so the same set
+ * arrives spelled differently, and a membership test written for the sideless
+ * key answers NO on a kind that is fully crop-carried. The consequence is not a
+ * missing crop but the opposite and worse: the kind is re-said, which makes it
+ * an EDIT, and an edit's own crops are refused by the assembler (D-244 line 2).
+ * **Both crops paid for to preserve her wings would be dropped by the sentence
+ * written to preserve them** — the same shape as the sentence/carry defect the
+ * carry split closed for the sideless case.
+ *
+ * Written RED against the wire.
+ */
+describe("a distributed open kind is carried by its two per-side crops", () => {
+  const wings = { noun: "wings", words: "large black feathered wings" };
+  const sides = new Set(["open:wings@left", "open:wings@right"]);
+
+  it("(b) a CARRIED distributed kind whose two crops exist is not an ask at all", () => {
+    const result = repaintAsksFor({
+      delta: { hairColour: "copper" },
+      prose,
+      restore: { state: { hairColour: "copper", open: { wings } }, slots: [] },
+      cropped: sides,
+    });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    /* Only the hair. Her wings are the LIBRARY's to carry this render, in two
+       pictures rather than one. */
+    expect(result.asks.map((ask) => ask.slot)).toEqual(["hair"]);
+  });
+
+  it("(c) and ONE side alone is not a carry — the kind is still re-said", () => {
+    /*
+      The control that keeps the fix from reading "any side present means
+      carried". A distributed kind whose library holds one wing is exactly the
+      half-picture the counting gate exists to refuse; the words must still ride
+      or she loses the other one.
+    */
+    const result = repaintAsksFor({
+      delta: { hairColour: "copper" },
+      prose,
+      restore: { state: { hairColour: "copper", open: { wings } }, slots: [] },
+      cropped: new Set(["open:wings@left"]),
+    });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.asks.map((ask) => ask.slot)).toEqual(["open:wings", "hair"]);
+  });
+});

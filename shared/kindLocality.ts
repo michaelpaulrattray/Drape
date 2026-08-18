@@ -47,9 +47,14 @@ export function isKindLocality(value: unknown): value is KindLocality {
  * it (law 4).
  *
  * `distributed` is the only no, and it is a no about GEOMETRY rather than about
- * count: one rectangle cannot hold two things on opposite sides of a body. The
- * counting instrument is what lifts it, and until that instrument gates a mint
- * the words carry the ask.
+ * count: one rectangle cannot hold two things on opposite sides of a body.
+ *
+ * **That no no longer ends the ask** (founder verdict fable-987 §1, shape ruled
+ * fable-1001). A distributed kind files the earring architecture instead — one
+ * library row per side, each a picture of exactly what its name says — gated on
+ * a COUNT bought at the mint, on the frame the crop would be cut from. So read
+ * this predicate as what it says rather than as *may this kind carry pixels*: it
+ * answers whether a SINGLE crop suffices, and the mint routes the no to two.
  */
 export function cropMayCarry(locality: KindLocality): boolean {
   return locality !== "distributed";

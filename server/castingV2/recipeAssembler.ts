@@ -81,6 +81,10 @@ import type { CastPronouns } from "./castPronouns";
 import { IMPERATIVE_OPENER } from "./declarativeState";
 import { accessoryKindOfSlot } from "./slotWordShape";
 import { slotDefinition } from "./referenceSlotCatalogue";
+/* The open lane's key grammar has ONE owner and this module reads it rather
+   than splitting a string (fable-1001 §1). `referenceSlots` imports nothing, so
+   there is no cycle to weigh here. */
+import { openKindOfSlot } from "./referenceSlots";
 
 /** A library key is a PANEL SLOT — the stylist's ontology, never `facet@region`
  *  (fable-173). Bilateral features are stored per instance and spoken as pairs
@@ -779,6 +783,59 @@ export function assembleRecipe(input: AssembleInput): AssembleResult {
 
   /* ---- the CARRIED slots: the minted crop, pixel-frozen ---- */
 
+  /*
+    A DISTRIBUTED OPEN KIND IS TWO PICTURES OF ONE THING, AND IS SPOKEN OF ONCE
+    (the D1 wire; ruled fable-1002 §2/§3 on the measurement in opus-737 §3).
+
+    The library files such a kind per SIDE, because one crop cannot honestly hold
+    two things on opposite sides of a body. Said with the ordinary form that
+    produced two sentences each declaring itself THE thing:
+
+      Reference 2 is the exact wings she has — the same wings, unchanged.
+      Reference 3 is the exact wings she has — the same wings, unchanged.
+
+    The earring precedent does not save it. `earring@left` carries the noun *left
+    earring* from the catalogue, so its two sentences disambiguate; an open
+    kind's noun is the CUSTOMER'S own word, identical on both rows, and no
+    singular may be derived from it (`wings` → `wing` is a guess and `cat-ears` →
+    `cat-ear` a worse one).
+
+    So the two are collapsed into one clause holding both ordinals. **It says
+    nothing about which picture is which side, deliberately**: the rows' side
+    labels come from a mask, a per-side claim in prose is the
+    image-half-not-anatomy trap, and on a CARRY the label is all risk and no
+    information — what the engine needs to know is that these are halves of one
+    feature, which the clause says.
+
+    Derived here from the entries rather than authored anywhere, exactly as the
+    wholly-vacant pair's collapse below is: the rows go on recording each side,
+    and how that state is SAID is the assembler's job.
+  */
+  const sidedOpenCarries = new Map<string, FeatureSlot[]>();
+  for (const entry of input.library) {
+    if (!entry.carry || editedSet.has(entry.slot)) continue;
+    const open = openKindOfSlot(entry.slot);
+    if (open === null || open.side === null) continue;
+    const held = sidedOpenCarries.get(open.kind) ?? [];
+    held.push(entry.slot);
+    sidedOpenCarries.set(open.kind, held);
+  }
+  /* Two, never one: the count gate refuses a crop unless both sides answered, so
+     a lone per-side row is a library holding one from an earlier render — and
+     "References 2 and 3" naming one picture would be a sentence about a
+     reference that does not exist. */
+  const collapsedOpenKinds = new Set(
+    Array.from(sidedOpenCarries.entries())
+      .filter(([, slots]) => slots.length === 2)
+      .map(([kind]) => kind),
+  );
+  /** The first side's ordinal, held until the second arrives and the clause can
+   *  name both. */
+  const openPairFirst = new Map<string, { ordinal: number; at: number }>();
+  /** Kinds whose one keep-sentence has already been said, so the second row goes
+   *  quiet — the wholly-vacant pair's own mechanism, one loop along. */
+  const openPairSaid = new Set<string>();
+
   for (const entry of input.library) {
     if (entry.carry && entry.tier === "surface") {
       /*
@@ -822,6 +879,38 @@ export function assembleRecipe(input: AssembleInput): AssembleResult {
       size are what survived (§3.0a). So it is emitted here rather than left to
       each caller's prose.
     */
+    const openSide = openKindOfSlot(entry.slot);
+    const collapses = openSide !== null
+      && openSide.side !== null
+      && collapsedOpenKinds.has(openSide.kind);
+    if (collapses) {
+      const kind = openSide!.kind;
+      const first = openPairFirst.get(kind);
+      const mine = nextOrdinal();
+      if (first === undefined) {
+        /* The first side reserves its ordinal and says nothing yet — the clause
+           cannot be written until the second picture has one. */
+        openPairFirst.set(kind, { ordinal: mine, at: references.length });
+        references.push({
+          role: { kind: "carry", slot: entry.slot },
+          image: entry.carry,
+          /* Replaced below with the joint clause, so both references carry the
+             sentence that is actually on the wire about them. */
+          sentence: "",
+        });
+        continue;
+      }
+      const clause = `References ${first.ordinal} and ${mine} are the exact ${entry.noun} `
+        + `${pronouns.subject} ${has}, one picture of each side — ${describe(entry)}.`;
+      sentences.push(clause);
+      references.push({
+        role: { kind: "carry", slot: entry.slot },
+        image: entry.carry,
+        sentence: clause,
+      });
+      references[first.at] = { ...references[first.at]!, sentence: clause };
+      continue;
+    }
     sentences.push(
       `Reference ${nextOrdinal()} is the exact ${entry.noun} ${pronouns.subject} ${has} — ${describe(entry)}.`,
     );
@@ -965,6 +1054,41 @@ export function assembleRecipe(input: AssembleInput): AssembleResult {
     */
     if (ordinalOf.has(entry.slot) && entry.tier === "item") continue;
     if (entry.tier === "item") continue;
+    /*
+      AND THE DISTRIBUTED OPEN KIND'S TWO ROWS SAY ONE SENTENCE (fable-1002 §3).
+
+      Both rows hold the render's read-back of the SAME feature, one side each,
+      so the ordinary form says "Keep her wings exactly: …" twice — and the words
+      it repeats are a single wing's description standing in for her wings. One
+      sentence per kind, and the two readings are joined rather than one of them
+      being dropped: a mismatched pair is a FEATURE in the founder's own words,
+      not a defect to reconcile.
+
+      Identical readings collapse to the stylist's own word for a pair that
+      agrees (*matching*, the word the earring row already uses). Differing ones
+      are both said, WITHOUT a laterality word — the mask's side label is not a
+      fact the prose may assert, and the carry needs no such label to work.
+    */
+    const openSide = openKindOfSlot(entry.slot);
+    if (openSide !== null && openSide.side !== null && collapsedOpenKinds.has(openSide.kind)) {
+      if (openPairSaid.has(openSide.kind)) continue;
+      openPairSaid.add(openSide.kind);
+      const sides = (sidedOpenCarries.get(openSide.kind) ?? [])
+        .map((slot) => input.library.find((row) => row.slot === slot))
+        .filter((row): row is LibraryEntry => row !== undefined)
+        .map((row) => row.words.join(", "));
+      const [first, second] = sides;
+      const said = first === second || second === undefined
+        ? `${first}, matching on both sides`
+        : `one side ${first}, the other ${second}`;
+      standing.push({
+        slot: entry.slot,
+        noun: entry.noun,
+        words: entry.words,
+        sentence: `Keep ${possessive} ${entry.noun} exactly: ${said}.`,
+      });
+      continue;
+    }
     standing.push({
       slot: entry.slot,
       noun: entry.noun,

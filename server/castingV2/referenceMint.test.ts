@@ -2223,3 +2223,192 @@ describe("the open lane's absence control", () => {
     expect(result.slots[0]).not.toHaveProperty("ceilingAccepted");
   });
 });
+
+/**
+ * THE D1 COUNT GATE — a distributed open kind is two crops or it is words
+ * (founder verdict fable-987 §1 "yes"; shape and bounds ruled fable-1001).
+ *
+ * # What is on trial
+ *
+ * Not the counter — the counting court bought that on real frames (2/1/0
+ * discriminated, its instrument the same centroid split this reader performs).
+ * What is on trial here is the GATE: that one wing can never be filed under a
+ * name that means two, that the refusal says which count it saw, and that the
+ * side a crop is filed under is the side the READER answered rather than the
+ * half of the picture it happened to land in.
+ *
+ * # Why the gate has to be here and not at the slot list
+ *
+ * `mintedSlots` says where pixels would be filed; only the mint has the frame.
+ * And the completeness guard cannot stand in for the count: handed a crop of one
+ * wing it reads its own one wing and scores 1.0 — the same number it gives the
+ * honest pair. A check that answers the same on both is not a check.
+ */
+describe("the D1 count gate for a distributed open kind", () => {
+  /*
+    THE TWO WINGS ARE DIFFERENT SIZES ON PURPOSE. The bench frame is a flat
+    colour, so two boxes of identical shape cut byte-identical crops — and the
+    duplicate door refuses the second, correctly, since two slots holding one
+    fact is D-242. A fixture that tripped that guard would be grading this gate
+    against a defect of its own making.
+  */
+  const LEFT_WING = { x: 4, y: 10, width: 8, height: 12 };
+  const RIGHT_WING = { x: 27, y: 9, width: 9, height: 13 };
+
+  function wingSlots(): SlotSpec[] {
+    return (["left", "right"] as const).map((side) => {
+      const spec = slotSpecFor(`open:wings@${side}` as never, ["enormous black wings"]);
+      if (spec === null) throw new Error("the catalogue no longer makes a spec for a distributed open kind");
+      return spec;
+    });
+  }
+
+  /**
+   * `sides` is what the reader answers for each side, so an arm can make the
+   * frame hold two wings, one, or none — and a `null` is that side declining,
+   * which is what the real reader returns for a half nothing was found in.
+   */
+  async function mintWings(sides: { left: Mask | null; right: Mask | null }) {
+    const bench = harness({ guardRead: null });
+    const ground: Array<{ question: string; side?: string; declaredTwoSided?: true }> = [];
+    const guard: Array<{ question: string; side?: string; declaredTwoSided?: true }> = [];
+    const answer = (side?: string) => (side === "left" ? sides.left : side === "right" ? sides.right : null);
+    /*
+      THE BEFORE-PICTURE, because the open lane's absence control stands in
+      front of this door and is not being retested here: a crop of an
+      uncatalogued kind is refused unless the reader has been shown a frame
+      WITHOUT the thing and declined. A different colour so an assertion about
+      which bytes were handed over cannot pass by accident, and the readers
+      answer nothing on it — the clean decline.
+    */
+    const anchor = await sharp({
+      create: { width: 40, height: 40, channels: 3, background: { r: 10, g: 20, b: 30 } },
+    }).png().toBuffer();
+    const result = await mintReferencesForRender({
+      userId: 1,
+      variantId: 11,
+      frame: { bytes: await frameBytes() },
+      anchorFrame: { bytes: anchor },
+      applied: null,
+      masterRegions: new Map(),
+      slots: wingSlots(),
+      dependencies: {
+        ...bench.dependencies,
+        /* The GUARD's own read, and it must be told the side too — a guard that
+           cannot scope answers null, files `readDidNotSettle`, and would refuse
+           every crop the count just opened the door for. */
+        read: async (ask: { question: string; side?: string; declaredTwoSided?: true }) => {
+          guard.push(ask);
+          return answer(ask.side);
+        },
+        readGround: async (
+          ask: { frame: Buffer; question: string; side?: string; declaredTwoSided?: true },
+        ) => {
+          if (ask.frame.equals(anchor)) return null;
+          ground.push(ask);
+          return answer(ask.side);
+        },
+      } as never,
+    });
+    return { bench, result, ground, guard };
+  }
+
+  it("mints ONE CROP PER SIDE when both sides answer", async () => {
+    const { bench, result } = await mintWings({ left: rect(LEFT_WING), right: rect(RIGHT_WING) });
+
+    expect(result.slots.map((slot) => slot.slot)).toEqual(["open:wings@left", "open:wings@right"]);
+    expect(result.slots.every((slot) => slot.outcome === "stored")).toBe(true);
+    /* Two rows, two crops, and each crop is its own side's pixels — the whole
+       point of refusing the union, which would have been one row holding a
+       rectangle that spans her torso. */
+    expect(bench.rows.map((row) => row.slot)).toEqual(["open:wings@left", "open:wings@right"]);
+  });
+
+  it("refuses BOTH crops when only ONE side answers, with the count in the reason", async () => {
+    /*
+      The failure the gate exists for, and the founder's own specimen: a frame
+      holding one wing. Filing it as `wings` is half a picture wearing the whole
+      picture's name — the earring history, which does not get a second run in a
+      new lane. Both rows fall to words, so the feature still survives the render.
+    */
+    const { bench, result } = await mintWings({ left: rect(LEFT_WING), right: null });
+
+    expect(result.slots.map((slot) => ({ slot: slot.slot, outcome: slot.outcome }))).toEqual([
+      { slot: "open:wings@left", outcome: "words-only" },
+      { slot: "open:wings@right", outcome: "words-only" },
+    ]);
+    for (const slot of result.slots) {
+      expect(slot).toMatchObject({ reason: "notAPair" });
+      /* The COUNT, said out loud (fable-1001 §4): a refusal that only says "no"
+         leaves the next person unable to tell a one-winged frame from a reader
+         that declined twice. */
+      expect((slot as { detail?: string }).detail).toContain("on 1 of her two sides");
+    }
+    expect(bench.stored).toEqual([]);
+    /* And the words still file, on both rows — a refused crop must never take
+       the feature off her. */
+    expect(bench.rows.map((row) => row.slot)).toEqual(["open:wings@left", "open:wings@right"]);
+  });
+
+  it("refuses when NEITHER side answers, and says zero", async () => {
+    const { bench, result } = await mintWings({ left: null, right: null });
+
+    expect(result.slots.every((slot) => slot.outcome === "words-only")).toBe(true);
+    expect((result.slots[0] as { detail?: string }).detail).toContain("on 0 of her two sides");
+    expect(bench.stored).toEqual([]);
+  });
+
+  it("files each side from the side the READER answered — driven mirrored", async () => {
+    /*
+      THE MIRROR ARM (fable-1001 §4, and the banked image-half-not-anatomy law).
+
+      A per-side claim is only proven with the mirror driven: an implementation
+      that took the image's left half and called it her left would pass the arm
+      above and be wrong on every frame shot from behind or flipped. So the same
+      two masks are handed back under SWAPPED sides, and the crops must swap with
+      them — the mint owns no midline of its own and never infers one from where
+      a mask happens to sit.
+    */
+    const straight = await mintWings({ left: rect(LEFT_WING), right: rect(RIGHT_WING) });
+    const mirrored = await mintWings({ left: rect(RIGHT_WING), right: rect(LEFT_WING) });
+
+    const digestOf = (bench: typeof straight.bench, slot: string) =>
+      bench.rows.find((row) => row.slot === slot)?.image?.digest ?? null;
+
+    expect(digestOf(straight.bench, "open:wings@left")).not.toBeNull();
+    /* Her left crop under the mirrored reading is the same bytes as her RIGHT
+       crop under the straight one, and vice versa. */
+    expect(digestOf(mirrored.bench, "open:wings@left"))
+      .toBe(digestOf(straight.bench, "open:wings@right"));
+    expect(digestOf(mirrored.bench, "open:wings@right"))
+      .toBe(digestOf(straight.bench, "open:wings@left"));
+  });
+
+  it("tells the reader the name is two-sided, and buys the count ONCE", async () => {
+    /*
+      ASSERTED AT THE WIRE, on the argument this program has banked: a contract
+      about what gets SENT is proven on the outgoing call, never on a constant
+      near it. An open kind is outside the reader's own bilateral vocabulary, so
+      without this flag on the wire `regionSides` answers null and every wing
+      files words forever — the feature would look built and be inert.
+
+      And the read is bought ONCE for the kind rather than once per side slot:
+      two reads of one frame are a second opinion about the same pixels, which is
+      how this program manufactured fictional drift once already.
+    */
+    const { ground, guard } = await mintWings({ left: rect(LEFT_WING), right: rect(RIGHT_WING) });
+
+    expect(ground.map((ask) => ({
+      question: ask.question, side: ask.side, declaredTwoSided: ask.declaredTwoSided,
+    }))).toEqual([
+      { question: "wings", side: "left", declaredTwoSided: true },
+      { question: "wings", side: "right", declaredTwoSided: true },
+    ]);
+    /* The guard's independent second read, scoped to the same side and told the
+       same fact — one per crop, and no more. */
+    expect(guard.map((ask) => ({ side: ask.side, declaredTwoSided: ask.declaredTwoSided }))).toEqual([
+      { side: "left", declaredTwoSided: true },
+      { side: "right", declaredTwoSided: true },
+    ]);
+  });
+});

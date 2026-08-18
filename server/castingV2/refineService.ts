@@ -180,7 +180,7 @@ import { assembleRecipe, type FeatureSlot } from "./recipeAssembler";
 import {
   facetsOfSlot, slotDefinition, slotsForFacet, slotsForFeature, type SlotDefinition,
 } from "./referenceSlotCatalogue";
-import { isOpenSlot, openSlotKey } from "./referenceSlots";
+import { isOpenSlot, openKindCarriedByCrops, openSlotKey } from "./referenceSlots";
 import { openLaneOutcomeOf } from "./openLaneAccept";
 import { openKindPresenceBindsToday } from "./openKindPolicy";
 import { readOpenKinds } from "./openLaneKind";
@@ -5831,12 +5831,13 @@ async function refineCandidateCounted(
           );
         }
         /*
-          AND THE OPEN KINDS THAT FILED NOTHING, with the reason NAMED — because
-          the two reasons are two facts and only one of them is a bug.
-          `openKindDistributed` is fable-872 §2 honoured under the locality class
-          (fable-951); `openKindLocalityUnread` is a kind whose property read is
-          failing, which is silently taking the conservative path on every ask
-          forever and is worth chasing.
+          AND THE OPEN KINDS THAT FILED NOTHING, with the reason NAMED.
+          `openKindLocalityUnread` is a kind whose property read is failing,
+          which is silently taking the conservative path on every ask forever and
+          is worth chasing. `openKindDistributed` used to stand beside it and no
+          longer exists: since the D1 wire (fable-987 §1, fable-1001) a
+          distributed kind files one slot per side, and the refusal that remains
+          is the COUNT'S, taken at the mint where the frame is.
         */
         if (unfiledOpen.length > 0) {
           log.info(
@@ -5861,7 +5862,7 @@ async function refineCandidateCounted(
             as `readDidNotSettle` and file "we could not tell" over a picture
             that told us plainly.
           */
-          const read: MintRegionReader = async ({ frame, question, side }) => {
+          const read: MintRegionReader = async ({ frame, question, side, declaredTwoSided }) => {
             /* HER AXIS IS HERS, not this frame's (fable-603 §3): the face read a
                bilateral question needs is bought once per candidate rather than
                once per frame, on a measurement of 0.3px across a whole chain. */
@@ -5883,6 +5884,10 @@ async function refineCandidateCounted(
             if (!reader.regionSides) return null;
             const sides = await reader.regionSides({
               image: frame, name: question, absentIsAnswer: true, axisKey,
+              /* An open kind is outside the reader's own bilateral vocabulary, so
+                 without the classifier's answer travelling this far every
+                 distributed crop would refuse at the reader (the D1 wire). */
+              ...(declaredTwoSided === undefined ? {} : { declaredTwoSided }),
             });
             return sides ? sides[side] : null;
           };
@@ -6411,7 +6416,18 @@ function recordOpenLaneOutcomes(
   for (const kind of Object.keys(delta?.open ?? {})) {
     void recordOpenLaneDemand(kind, openLaneOutcomeOf({
       settled: render.settled,
-      cropStored: render.cropsStored.has(openSlotKey(kind)),
+      /*
+        THROUGH THE GRAMMAR'S OWN DERIVATION, never a spelling (the D1 wire's
+        sweep, fable-1001 §2).
+
+        A distributed kind stores its pixels as TWO rows — `open:wings@left` and
+        `open:wings@right` — so a membership test written for the sideless key
+        would file *no crop* against a kind that just got two, and the promotion
+        tally would read the crop road as failing for exactly the class the road
+        was extended to serve. One wing alone is correctly NOT a crop here: the
+        gate refuses it, and the demand row should say so.
+      */
+      cropStored: openKindCarriedByCrops(kind, render.cropsStored),
       ...(render.refusedFree ? { refusedFree: true } : {}),
     }));
   }

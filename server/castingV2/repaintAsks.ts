@@ -65,7 +65,7 @@ import {
 import {
   FACET_SLOTS, facetsOfSlot, narrowToScope, slotDefinition, slotsForFacet,
 } from "./referenceSlotCatalogue";
-import { isOpenSlot, openSlotKey } from "./referenceSlots";
+import { isOpenSlot, openKindCarriedByCrops, openSlotKey } from "./referenceSlots";
 import { accessoryKindOf } from "./accessoryKinds";
 import { markCanDepart, markKindOf } from "./markKinds";
 import { vacantPhraseFor } from "./vacancyPhrases";
@@ -695,7 +695,24 @@ export function repaintAsksFor(input: RepaintAsksInput): RepaintAsksResult {
     */
     const askedThisStep = openAskedNow.has(kind);
     openAskedNow.delete(kind);
-    if (!askedThisStep && input.cropped?.has(slot) === true) continue;
+    /*
+      THE CARRY TEST IS ABOUT THE KIND, NEVER ABOUT ONE SPELLING OF IT
+      (the D1 wire, fable-1001 §3).
+
+      A distributed kind is carried by TWO rows, `open:wings@left` and
+      `open:wings@right`, and a membership test written for the sideless key
+      answers no on a kind that is fully crop-carried. The cost is not a missing
+      crop; it is the opposite and worse — the kind is re-said, a re-said kind is
+      an EDIT, and an edit's own crops are refused by the assembler. Both
+      pictures bought to preserve her wings would be dropped by the sentence
+      written to preserve them.
+
+      `openKindCarriedByCrops` is that question asked once, beside the grammar:
+      the sideless row carries a single or co-located kind, and a distributed one
+      is carried only when BOTH sides are in hand. One wing is the half-picture
+      the counting gate refuses, and the words must still ride.
+    */
+    if (!askedThisStep && input.cropped !== undefined && openKindCarriedByCrops(kind, input.cropped)) continue;
     order.push(slot);
     wordsBySlot.set(slot, [words]);
     /* The STORED noun, spaces intact — never `definition.noun`, which is the

@@ -93,6 +93,7 @@ import {
   INSTANCES,
   isOpenSlot,
   OPEN_SLOT_PREFIX,
+  openKindOfSlot,
   type Instance,
   type SlotFrame,
 } from "./referenceSlots";
@@ -1119,19 +1120,37 @@ function openSlotDefinition(slot: FeatureSlot): SlotDefinition | null {
     draws no panel row to point at. The one live consumer of the token is
     `question` — see its own note.
   */
-  const token = slot.slice(OPEN_SLOT_PREFIX.length);
+  /*
+    THE SIDE COMES OFF FIRST, THROUGH THE GRAMMAR'S OWN PARSER (fable-1001 §1).
+
+    A distributed kind files one row per side — `open:wings@left` — and the
+    token this branch validates is the KIND, never the key. Splitting the string
+    here would be the second speller of a grammar that has exactly one owner,
+    which is the defect fable-1001 §2 required swept rather than repeated.
+  */
+  const parsed = openKindOfSlot(slot);
+  if (parsed === null) return null;
+  const token = parsed.kind;
   if (!isOpenKindKey(token)) return null;
   const noun = token;
   return {
     slot,
     feature: noun,
     /*
-      NULL, ALWAYS. `openKindIsPlural()` is false: an open kind is singular
-      until promoted, and per-instance geometry is exactly what promotion buys.
-      This is also what keeps the kind unscopable — a scope names an instance,
-      and there is none to name.
+      NULL for every kind but a DISTRIBUTED one, and the exception is the D1
+      wire (founder ruling fable-987 §1, shape ruled fable-1001).
+
+      It read `null, ALWAYS` until 2026-08-19, on the ground that an open kind is
+      singular until promoted and *per-instance geometry is exactly what
+      promotion buys*. That sentence stays true about the SURFACE and is what
+      keeps the kind unscopable — the scope door still refuses an open key, the
+      panel still draws no per-side row, and nothing customer-facing learns to
+      say `@left`. What changed is underneath it: a kind whose instances sit on
+      opposite sides cannot be pictured by one crop, so the LIBRARY files one row
+      per side. The instance here is the storage grammar arriving, never a
+      surface promotion.
     */
-    instance: null,
+    instance: parsed.side,
     /*
       The horns precedent, and its reason transfers verbatim: horns are not
       worn, they GROW — she is not carrying them and cannot take them off the
@@ -1175,9 +1194,18 @@ function openSlotDefinition(slot: FeatureSlot): SlotDefinition | null {
     /* And the one field where the closed invariant cannot hold. See
        `noSpecimen` below and `SlotDefinition`'s own note. */
     guardKind: null,
-    /* `openKindZoneScope()` is `fullFrame`, and `ownSide` is meaningless for a
-       slot with no instance. */
-    frame: "wholeFrame",
+    /*
+      `openKindZoneScope()` is `fullFrame`, and `ownSide` is meaningless for a
+      slot with no instance — which is every open kind but a distributed one.
+
+      A side key gets `ownSide` for the same reason `earring@left` does, stated
+      at `SlotFrame`: asked of the whole frame a two-sided question comes back as
+      the union of both sides, and a crop taken from it would be a picture of
+      both wings filed as one, scoring 100% against the very mask it was cut
+      from. The mint refuses rather than cutting when the reader cannot scope to
+      a side, and that refusal is what produces the specimen.
+    */
+    frame: parsed.side === null ? "wholeFrame" : "ownSide",
     /* The default every slot should keep: `everyRender` re-buys vision calls to
        re-photograph a feature nobody edited. */
     remint: "whenEarned",

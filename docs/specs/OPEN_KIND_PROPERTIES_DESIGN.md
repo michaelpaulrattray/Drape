@@ -346,9 +346,10 @@ crop, words only, until promoted* (fable-872 §2) — exists precisely because
 nothing can tell a pair from a single. P1 answers that — and since fable-951 it
 answers it in the form that actually decides the question, the LOCALITY. A
 `coLocated` kind mints now; a `distributed` one needs P1 plus a passing D1 before
-a crop may file under a name that means both. Until D1's control passes, **the
-interim stands for the distributed class and the honest answer there is still
-words.**
+a crop may file under a name that means both. **Both halves have landed** — the
+counting court passed 2026-08-17 and the founder wired it ("yes", fable-987 §1) —
+and §10's D1 section is the wire as built: a distributed kind files ONE ROW PER
+SIDE, and the count refuses every reading but two.
 
 **Unblocks the view-carry clause**, whose whole content is D2's subtraction and
 whose bound is §3.
@@ -602,14 +603,73 @@ cannot say which side of the new split a kind falls on — `paired = true` is
 `coLocated` or `distributed` and choosing one would be the removed fold with a
 guess inside it. `halo` came back `single · head` under `kp-2`.
 
-### What is still owed after this
+### THE D1 WIRE AS BUILT — a distributed kind is TWO ROWS (2026-08-19)
 
-- **D1, the count**, and it is a court rather than a build: §8's condition for a
-  DISTRIBUTED kind's crop is *P1 plus a passing D1*, and D1's control is the
-  founder's own one-winged frame — **the counting court passed on 2026-08-17
-  (2/1/0 discriminated) and now waits only on his eye.** 5b opens the single and
-  co-located kinds; the distributed half stays words-only with its reason now
-  NAMED rather than blanket.
+**His verdict on the counting court's panel was "yes"** (fable-987 §1), and the
+shape was ruled in fable-1001 after the alternative was put on the record.
+
+**The counting instrument was already in production and had been all along.**
+`falRegionReader.bilateralHalves` cuts the frame at `axisOf` — her face's
+centroid — and asks the plain noun of each half, which is the court's method line
+for line, and it already logged `sides: <n>`. So the wire was never "build a
+counter"; it was three things:
+
+1. **The reader is told the name is two-sided.** `BILATERAL` is the reader's own
+   closed vocabulary and an open kind is outside it by construction, so
+   `regionSides` answered `null` and a wing could never be read one side at a
+   time. `declaredTwoSided` carries the LOCALITY CLASSIFIER'S answer (prompt
+   kp-2, three disagreeing controls) to the reader. It is never set from a
+   caller's expectation — only from `locality === "distributed"`.
+2. **The kind files per side.** `mintedSlots` emits `open:<kind>@left` and
+   `open:<kind>@right` — `openSideSlotKey`, composed from the open prefix and the
+   closed instance grammar, spelled in ONE module. The catalogue resolves a side
+   key, sets `instance` to the side and `frame` to `ownSide`, which is what makes
+   the guard's read scope to the same side the crop was cut from.
+3. **The gate refuses every count but two**, at the mint, on the frame the crop
+   would be cut from, with the count in the reason (`notAPair`): zero, one — the
+   failure this exists for — and anything else, because a three-winged read is
+   not a pair with a bonus. Both rows fall back to their WORDS, so a refused
+   count never takes the feature off her.
+
+**Why not one row holding the union.** A crop is stored as its RECTANGLE, and the
+bounding box of two things on opposite sides of a body contains the body: a
+picture of her torso filed as her wings, which is the wrong-boundary class this
+codebase refuses at every other door. And the completeness guard cannot catch it
+— its own read finds ONE wing, any rectangle containing that wing scores 1.0, and
+**it scores 1.0 on a crop of one wing too.** A check that answers the same on the
+honest crop and the defective one is not a check.
+
+**The surface does not learn this spelling** (fable-1001 §5). An open kind draws
+no panel row at all, the scope door refuses every key in the open namespace
+prefix-first — its own note says it refuses *in its own terms rather than resting
+on a resolver that has stopped answering* — and the verification net still asks
+one question per KIND. The catalogue's `instance: null` line said per-instance
+geometry is what promotion buys; that stays true of the surface, and what changed
+is the library underneath it.
+
+**The consumer sweep came with the wire** (law 7, ordered fable-1001 §2), because
+a consumer keyed on the sideless spelling is exactly how the first open-kind crop
+was dropped one door after minting:
+
+| site | verdict |
+|---|---|
+| `prunedCarries.slotsNamedByChain` | **FIXED** — names all three keys off `composed.open`. A delta never says where instances sit, so the naming is generous in the direction the module already documents |
+| `repaintAsks` carry/edit split | **FIXED** — the carry test is now `openKindCarriedByCrops`, so a fully carried distributed kind is not re-said. Re-saying it would make it an EDIT, and an edit's own crops are refused: both pictures dropped by the sentence written to preserve them |
+| `refineService.recordOpenLaneOutcomes` | **FIXED** — the demand row's `cropStored` read the sideless key, so the promotion tally would have read *no crop* for a kind that just stored two |
+| `assertNotAnOpenDeparture`, `aboutOpenKind` | NO CHANGE, and it is a fact rather than an assumption: both test the PREFIX, which a side key still carries |
+| the verification net's facts | NO CHANGE — one fact per kind, keyed sideless. The net asks whether she has wings, not whether she has a left one |
+| `reliabilityReport.labelOfStoredCheck` | NO CHANGE — it names whatever the fact carried, which stays sideless |
+
+**What is still owed after this**
+
+- **The recipe's own sentence for two crops.** The assembler gives one slot one
+  reference, so a carried distributed kind rides as two references. What it SAYS
+  about them is not designed yet, and the honest options differ (name the kind
+  once with both pictures attached, or say each side). Named rather than
+  defaulted.
+- **A paid drive.** Everything above is unit-driven with a fake reader. No render
+  has yet minted a per-side crop for an uncatalogued word, and until one has, the
+  wire is proven in the small.
 - **`anchorRegion`'s consumer** — the out-of-frame build. Stored and unread, with
   its heir named on the module and the exact condition under which storing it
   becomes a defect.

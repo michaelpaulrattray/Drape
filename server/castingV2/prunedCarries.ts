@@ -59,7 +59,7 @@ import {
   catalogueSlots,
   slotDefinition,
 } from "./referenceSlotCatalogue";
-import { openSlotKey } from "./referenceSlots";
+import { openSlotKeysFor } from "./referenceSlots";
 import type { StoredReference } from "./referenceLibrary";
 
 /**
@@ -100,8 +100,22 @@ export function slotsNamedByChain(composed: RefineDelta): Set<FeatureSlot> {
       naming it here would put a name in the set that nothing can ever file
       against — and a mismatch between the two grammars would hide behind it.
     */
-    const slot = openSlotKey(kind);
-    if (slotDefinition(slot as FeatureSlot) !== null) named.add(slot as FeatureSlot);
+    /*
+      ALL THREE KEYS THE KIND COULD BE FILED UNDER — sideless, and its two sides
+      (the D1 wire, fable-1001 §3).
+
+      A DELTA says which kinds the chain carries; it never says where their
+      instances sit, because the locality lives in the property store one read
+      away. A distributed kind files `open:wings@left` and `open:wings@right`,
+      and a set holding only `open:wings` would drop BOTH crops on the very next
+      render — the halo defect above, one door along and twice as expensive.
+
+      Naming a key the mint never files under costs nothing: this set only ever
+      KEEPS rows, and a name with no row behind it matches nothing.
+    */
+    for (const slot of openSlotKeysFor(kind)) {
+      if (slotDefinition(slot as FeatureSlot) !== null) named.add(slot as FeatureSlot);
+    }
   }
   const facets = facetsWrittenBy(composed);
   const slots = catalogueSlots();

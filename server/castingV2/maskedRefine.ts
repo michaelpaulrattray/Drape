@@ -313,6 +313,19 @@ export type RegionReader = {
     /** The same face hint `region` takes — and this is the road that pays for
      *  it, since a side read is what buys the axis in the first place. */
     axisKey?: string;
+    /**
+     * READ THIS NAME TWO-SIDEDLY THOUGH IT IS NOT IN THE CLOSED LIST — the open
+     * lane's distributed kinds (the D1 wire, fable-1001).
+     *
+     * `null` for an unknown name is this method's honest default and stays the
+     * default: a guessed split of a nose is exactly what it prevents. What this
+     * says is that an INSTRUMENT — the locality classifier, prompt kp-2, three
+     * disagreeing controls — has already answered the two-sidedness question for
+     * a kind the reader's own vocabulary has never heard of. A reader without
+     * the capability still answers `null`, and the caller still refuses rather
+     * than guessing.
+     */
+    declaredTwoSided?: true;
   }): Promise<SideRegions | null>;
   /** A soft whole-subject matte, for edge ramps. */
   subject(input: { image: Buffer }): Promise<Mask>;

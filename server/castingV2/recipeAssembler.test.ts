@@ -1186,3 +1186,151 @@ describe("where that side is in the picture", () => {
     expect(recipe.ask).toBe("Change only her hair: copper.");
   });
 });
+
+/**
+ * A DISTRIBUTED OPEN KIND RIDES AS TWO PICTURES AND IS SPOKEN OF ONCE
+ * (the D1 wire; ruled fable-1002 §2/§3 on the measurement in opus-737 §3).
+ *
+ * # What was measured before this existed
+ *
+ * The wire files a distributed kind — wings — as two library rows, one per
+ * side, because one crop cannot honestly hold two things on opposite sides of a
+ * body. Driven straight through this assembler, that produced:
+ *
+ *   Reference 2 is the exact wings she has — the same wings, unchanged.
+ *   Reference 3 is the exact wings she has — the same wings, unchanged.
+ *   Keep her wings exactly: a black feathered wing.
+ *   Keep her wings exactly: a black feathered wing.
+ *
+ * Two pictures each declaring itself THE wings, and the keep-sentence twice,
+ * saying "a black feathered wing" — singular — about her wings. The earring
+ * precedent does not save it: `earring@left` carries the noun *left earring*
+ * from the catalogue, so its two sentences disambiguate. An open kind's noun is
+ * the CUSTOMER'S word, identical on both rows, and no singular may be derived
+ * from it.
+ *
+ * # The rule, and what it deliberately does not say
+ *
+ * The kind is named ONCE (working law 8, and the surface stays in the stylist's
+ * ontology), both crops are attached, and the clause says they are two views of
+ * one thing rather than two things. It says nothing about WHICH picture is which
+ * side: a per-side claim in prose is the image-half-not-anatomy trap, the paint
+ * has a measured bias toward the image's right, and on a CARRY the label is all
+ * risk and no information — what the engine needs is that these are halves of
+ * one feature.
+ */
+describe("a distributed open kind is two pictures and one sentence", () => {
+  const wingRows = (left: string, right: string): LibraryEntry[] => ([
+    {
+      slot: "open:wings@left" as never, tier: "anatomy", noun: "wings",
+      words: [left], carry: { key: "lib/wings-left.png" },
+    },
+    {
+      slot: "open:wings@right" as never, tier: "anatomy", noun: "wings",
+      words: [right], carry: { key: "lib/wings-right.png" },
+    },
+  ]);
+
+  const recipeFor = (rows: LibraryEntry[]) => assembleRecipe({
+    master: MASTER, pronouns: SHE,
+    library: rows,
+    asks: [{ slot: "hair", noun: "hair", words: "coloured copper" }],
+  });
+
+  it("names the kind ONCE across both references, and attaches both crops", () => {
+    const recipe = recipeFor(wingRows("a black feathered wing", "a black feathered wing"));
+
+    expect(recipe.ok).toBe(true);
+    if (!recipe.ok) return;
+    /* BOTH pictures are on the wire — the point of filing per side at all. */
+    expect(recipe.references.map((reference) => reference.role)).toEqual([
+      { kind: "master" },
+      { kind: "carry", slot: "open:wings@left" },
+      { kind: "carry", slot: "open:wings@right" },
+    ]);
+    /* ONE naming clause, holding both ordinals. */
+    expect(recipe.prompt).toContain(
+      "References 2 and 3 are the exact wings she has, one picture of each side — the same wings, unchanged.",
+    );
+    /* And never the old form, which claimed each picture was the whole thing. */
+    expect(recipe.prompt).not.toContain("Reference 2 is the exact wings");
+    expect(recipe.prompt).not.toContain("Reference 3 is the exact wings");
+  });
+
+  it("says the keep-sentence ONCE, and DEDUPES identical words", () => {
+    const recipe = recipeFor(wingRows("a black feathered wing", "a black feathered wing"));
+
+    expect(recipe.ok).toBe(true);
+    if (!recipe.ok) return;
+    /* The stylist's own word for a pair that agrees — earrings come in matching
+       pairs, and this is that sentence for a kind nobody catalogued. */
+    expect(recipe.prompt).toContain(
+      "Keep her wings exactly: a black feathered wing, matching on both sides.",
+    );
+    expect(recipe.prompt.match(/Keep her wings exactly/g)).toHaveLength(1);
+  });
+
+  it("JOINS differing words without ever saying which side is which", () => {
+    /*
+      A mismatched pair is a FEATURE in the founder's own words, not a defect to
+      reconcile — so the two readings are both said. What must not appear is a
+      laterality word: the rows' side labels come from a mask, and a mask's side
+      is not a fact the prose may assert.
+    */
+    const recipe = recipeFor(wingRows("a black feathered wing", "a silver-tipped wing"));
+
+    expect(recipe.ok).toBe(true);
+    if (!recipe.ok) return;
+    expect(recipe.prompt).toContain(
+      "Keep her wings exactly: one side a black feathered wing, the other a silver-tipped wing.",
+    );
+    expect(recipe.prompt.match(/Keep her wings exactly/g)).toHaveLength(1);
+    expect(recipe.prompt).not.toContain("her left");
+    expect(recipe.prompt).not.toContain("her right");
+  });
+
+  it("leaves a SIDELESS open kind exactly as it was", () => {
+    /*
+      The inertness control. A single or co-located kind files one row under the
+      sideless key and must read byte-for-byte as it did before this collapse
+      existed — otherwise the fix is a change to every open kind wearing a
+      distributed kind's clothes.
+    */
+    const recipe = assembleRecipe({
+      master: MASTER, pronouns: SHE,
+      library: [{
+        slot: "open:halo" as never, tier: "anatomy", noun: "halo",
+        words: ["a thin gold halo"], carry: { key: "lib/halo.png" },
+      }],
+      asks: [{ slot: "hair", noun: "hair", words: "coloured copper" }],
+    });
+
+    expect(recipe.ok).toBe(true);
+    if (!recipe.ok) return;
+    expect(recipe.prompt).toContain("Reference 2 is the exact halo she has — the same halo, unchanged.");
+    expect(recipe.prompt).toContain("Keep her halo exactly: a thin gold halo.");
+  });
+
+  it("still speaks once when only ONE side carries a crop", () => {
+    /*
+      The gate refuses a crop unless both sides answer, so a lone per-side ROW
+      here is a library that holds one from an earlier render. It must not
+      produce the plural clause — "References 2 and 3" naming one picture would
+      be a sentence about a reference that does not exist.
+    */
+    const recipe = assembleRecipe({
+      master: MASTER, pronouns: SHE,
+      library: [{
+        slot: "open:wings@left" as never, tier: "anatomy", noun: "wings",
+        words: ["a black feathered wing"], carry: { key: "lib/wings-left.png" },
+      }],
+      asks: [{ slot: "hair", noun: "hair", words: "coloured copper" }],
+    });
+
+    expect(recipe.ok).toBe(true);
+    if (!recipe.ok) return;
+    expect(recipe.prompt).toContain("Reference 2 is the exact wings she has — the same wings, unchanged.");
+    expect(recipe.prompt.match(/Keep her wings exactly/g)).toHaveLength(1);
+    expect(recipe.prompt).not.toContain("References 2 and 3");
+  });
+});

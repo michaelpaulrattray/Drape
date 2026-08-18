@@ -49,7 +49,7 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 
-import { INSTANCES, parseSlot } from "./referenceSlots";
+import { INSTANCES, isOpenSlot, openKindOfSlot, parseSlot } from "./referenceSlots";
 import {
   FACET_SLOTS,
   catalogueSlots,
@@ -335,10 +335,48 @@ describe("4. an open kind is never scopable", () => {
     const open = slotDefinition(OPEN_KEY);
     expect(open, "the open branch does not exist yet — this is the build").not.toBeNull();
     expect(open!.instance).toBeNull();
-    expect(slotDefinition("open:horns@left" as FeatureSlot)).toBeNull();
-    expect(slotDefinition("open:horns@right" as FeatureSlot)).toBeNull();
+    /*
+      THE PIN'S MECHANISM MOVED ON 2026-08-19, AND ITS PROMISE DID NOT.
+
+      Until the D1 wire (founder verdict fable-987 §1, shape ruled fable-1001)
+      these two lines read `toBeNull()`, and the argument above was literally
+      true of the resolver: a side key did not resolve, so nothing could name an
+      instance. A DISTRIBUTED kind now files one LIBRARY row per side, because
+      one crop cannot hold two things on opposite sides of a body — so the keys
+      resolve, and the guarantee has to be stated where it actually lives.
+
+      It lives at the door. `refineService` refuses ANY scope in the open
+      namespace before the resolver is consulted at all, prefix-first, and its
+      own note says why in these terms: *the refusal is restated in its own terms
+      rather than left resting on a resolver that has stopped answering the
+      question it was being asked.* That note was written for the day the
+      resolver's answer changed, and this is the day.
+
+      So what is pinned here is the prefix half — every key a distributed kind
+      can be filed under is still recognisably open, which is the fact the
+      door's test is — and the refusal itself stays asserted at the wire.
+    */
+    for (const key of ["open:horns", "open:horns@left", "open:horns@right"]) {
+      expect(isOpenSlot(key), `${key} must be refused by the scope door's prefix test`).toBe(true);
+    }
+    /*
+      THE NEGATIVE CONTROL (ordered fable-1002 §4b), and it is the arm that keeps
+      the prefix test from being satisfied by a grammar that widened.
+
+      A key wearing a suffix the instance vocabulary does not contain must be
+      refused TWICE OVER: the grammar's own parser returns null for it, and the
+      scope door — which never consults the parser — still refuses it on the
+      prefix alone. A guard that only held in one of those two places would let a
+      malformed open key through whichever door was consulted second.
+    */
+    for (const bogus of ["open:horns@middle", "open:horns@both", "open:horns@"]) {
+      expect(openKindOfSlot(bogus), `${bogus} is not a key the grammar may parse`).toBeNull();
+      expect(isOpenSlot(bogus), `${bogus} must still be refused by the scope door`).toBe(true);
+    }
     /* `slotsForFeature` is how a caller finds the sibling instances of a
-       feature (refineService:4167). An open kind has none to find. */
+       feature (refineService:4167). It reads the CLOSED catalogue, so an open
+       kind still has none to find there — the per-side rows are the library's,
+       resolved dynamically, and no closed-catalogue reader learns about them. */
     expect(slotsForFeature("open:horns")).toBeNull();
   });
 });

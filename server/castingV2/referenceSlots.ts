@@ -87,6 +87,93 @@ export function openSlotKey(kind: string): string {
 }
 
 /**
+ * THE SAME KIND, ONE SIDE OF IT — the distributed class's key, spelled here and
+ * nowhere else (founder ruling fable-987 §1, shape ruled fable-1001 §1/§2).
+ *
+ * # Why a distributed kind is filed twice
+ *
+ * The locality class (fable-951) splits a kind three ways, and `distributed`
+ * means the instances sit on OPPOSITE SIDES — wings, not fangs. One crop cannot
+ * hold both of those honestly: the union's rectangle spans her whole torso and
+ * would be filed as her wings, and the completeness guard cannot fail it, since
+ * its own read finds ONE wing and any rectangle containing that wing scores
+ * 1.0. A guard that passes the honest crop and the defective one equally is not
+ * a guard. So a distributed kind files the earring architecture — one row per
+ * side, each a picture of exactly what its name says.
+ *
+ * # The grammar composes; it is not concatenated
+ *
+ * `open:wings@left` is `slotKey(openSlotKey("wings"), "left")` — the open lane's
+ * prefix and the closed grammar's instance suffix, in that order, and neither
+ * spelling is written out at a call site. `parseSlot` already reads it without a
+ * change: `open:wings` holds no space, so the feature half parses and the suffix
+ * is checked against the same closed two-member list every other instance is.
+ *
+ * **This is a LIBRARY key, and the distinction is load-bearing** (fable-1001
+ * §5): the sides are where the pixels are stored, never how the product speaks.
+ * The panel says *her wings* and derives its boxes from the two rows, exactly as
+ * one earring shows one box on the ear that wears it, and the scope door goes on
+ * refusing an open key — a kind nobody has catalogued stays unscopable, which is
+ * what the catalogue's `instance: null` note has always meant by *promotion buys
+ * per-instance geometry*. What promotion buys is the SURFACE; this buys the
+ * honest crop underneath it.
+ */
+export function openSideSlotKey(kind: string, side: Instance): string {
+  return slotKey(openSlotKey(kind), side);
+}
+
+/**
+ * EVERY KEY AN OPEN KIND MAY BE FILED UNDER — sideless, and its two sides.
+ *
+ * The one derivation for callers that answer *what could this kind's crops be
+ * called* without knowing its locality. A delta says which kinds a chain
+ * carries; it never says where their instances sit, because that lives in the
+ * property store one read away. So a chain-side caller names all three and lets
+ * the MINT — which has the locality in hand — decide which it ever files under.
+ *
+ * Generous in the direction this product has already chosen twice
+ * (`prunedCarries`' own note): over-supporting keeps a crop that could have been
+ * dropped, under-supporting takes a feature off a customer's face.
+ */
+export function openSlotKeysFor(kind: string): readonly string[] {
+  return [openSlotKey(kind), ...INSTANCES.map((side) => openSideSlotKey(kind, side))];
+}
+
+/**
+ * IS THIS KIND CARRIED BY CROPS THIS RENDER — one derivation, both localities.
+ *
+ * A sideless row carries a `single` or `coLocated` kind. A distributed kind is
+ * carried only when BOTH sides are present: one wing in the library is the
+ * half-picture the counting gate exists to refuse, and treating it as a carry
+ * would take the other one off her — the words must still ride.
+ *
+ * It lives beside the grammar because it is the same question the grammar
+ * answers, and a caller re-deriving it from a spelling is how the first open
+ * crop was dropped one door after it was minted.
+ */
+export function openKindCarriedByCrops(kind: string, cropped: ReadonlySet<string>): boolean {
+  if (cropped.has(openSlotKey(kind))) return true;
+  return INSTANCES.every((side) => cropped.has(openSideSlotKey(kind, side)));
+}
+
+/**
+ * THE KIND AND SIDE BEHIND A LIBRARY KEY — the parser half of the grammar.
+ *
+ * `null` for anything outside the open namespace. `side: null` is the sideless
+ * key, which is a real answer and not a missing one: a `single` kind files
+ * exactly there.
+ */
+export function openKindOfSlot(key: string): { kind: string; side: Instance | null } | null {
+  if (!isOpenSlot(key)) return null;
+  const rest = key.slice(OPEN_SLOT_PREFIX.length);
+  const at = rest.indexOf("@");
+  if (at === -1) return { kind: rest, side: null };
+  const side = rest.slice(at + 1);
+  if (!(INSTANCES as readonly string[]).includes(side)) return null;
+  return { kind: rest.slice(0, at), side: side as Instance };
+}
+
+/**
  * WHICH FRAME A SLOT'S QUESTION MAY BE ASKED OF.
  *
  * `ownSide` is not a hint. A bilateral slot asked of the WHOLE frame gets back
