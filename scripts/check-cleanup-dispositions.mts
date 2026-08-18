@@ -32,6 +32,19 @@
  *   unknown   a verdict outside the closed set, which is how a table grows a
  *             sixth meaning nobody agreed to.
  *
+ # THE PROPERTY NOBODY DESIGNED, AND IT IS THE POINT
+ *
+ * **The knife does not close until the table catches up.** Discovered by
+ * surprise executing the nine TAKE rows: the symbols were cut, the rows still
+ * said TAKE, and `pnpm check` refused with nine STALE rows — because a row
+ * naming a symbol that no longer exists is precisely the rot above. The cut
+ * could not be finished without coming back and flipping every row to TAKEN.
+ *
+ * That is derive-never-mirror enforcing itself **at the exact moment a mirror
+ * would have been born**: the instant the table and the source disagree is the
+ * instant the door shuts. It is named here because a property discovered by
+ * accident is kept only by being written down.
+ *
  * `--strict` makes `unread` fatal; without it the count is reported and the
  * other three still refuse. The milestone is finished the day `--strict` is
  * green, and it is the reading — not this file — that gets it there.
