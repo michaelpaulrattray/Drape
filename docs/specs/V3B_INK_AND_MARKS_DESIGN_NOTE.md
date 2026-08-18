@@ -647,3 +647,38 @@ was bought and containment loosened, which is precisely the question fable-955
 containment clause in the plate prompt is the obvious candidate and is NOT built:
 it is prompt-tuning against one sample, and it belongs in a sitting with two or
 three mints and his taste on the result.
+
+### 7.9 The containment sitting — three ways with the same design (2026-08-18)
+
+Ordered fable-970 §2a straight off §7.8's finding. Same design, same engine,
+same sheet; **only the words moved.** It does not go through the upload road —
+that road was proven end to end by the wrap court — so nothing is stored and the
+shipped prompt is not edited for an experiment it has not won. Arm A is the
+product's real sentence, imported rather than retyped. Three mints, ~$0.45 house,
+no credits, no rows.
+
+| arm | words added | what came back |
+|---|---|---|
+| **A** as shipped | none | the design runs **past the elbow** in all three views |
+| **B** boundary | *the upper arm is between shoulder and elbow; nothing on the forearm, the shoulder cap, the chest or the back* | **contained** — the tail ends at the elbow in all three views |
+| **C** boundary + scale | B, plus *if it is too large for that zone, scale it down rather than extend past the elbow* | **not contained** — past the elbow again |
+
+**A reproduces §7.8's finding**, which makes it two sittings out of two: with the
+three-view sentence and no boundary, this design does not stay on the upper arm.
+
+**n = 1 per arm, and the B-versus-C difference may be noise.** The engine is
+stochastic and this program has measured its own carry noise floor at 0.0% vs
+21.3% on identical recipes. So the honest reading is: *a boundary sentence
+produced a contained plate once, and permission to rescale did not help once.*
+
+**Nothing is shipped from this.** The clause is not in `inkPlatePrompt`, because
+the prior question is his: **is containment even what he wants?** A wrap that
+runs the limb may be the better product. If he wants it contained, the clause
+earns its place with a repeat arm (three of B against three of A), not with
+these three frames.
+
+```
+docs/specs/references/ink-court/containment-a-as-shipped.png
+docs/specs/references/ink-court/containment-b-boundary.png
+docs/specs/references/ink-court/containment-c-boundary-and-scale.png
+```
