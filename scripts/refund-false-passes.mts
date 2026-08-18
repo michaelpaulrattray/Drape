@@ -37,7 +37,7 @@
  */
 import "dotenv/config";
 
-import { classifyAttempt } from "../server/castingV2/reliabilityReport.js";
+import { classifyAttempt, labelOfStoredCheck } from "../server/castingV2/reliabilityReport.js";
 import { openDatabase, utc } from "./lib/dbConnection.mjs";
 import { verdictOf } from "./lib/attemptRows.mjs";
 
@@ -103,7 +103,7 @@ for (const raw of rows) {
 
   const misses = (row.verification?.checks ?? [])
     .filter((check) => check.read === true && !check.verified)
-    .map((check) => `${check.facet}="${check.asked}" saw="${check.saw ?? "?"}"`);
+    .map((check) => `${labelOfStoredCheck(check)}="${check.asked}" saw="${check.saw ?? "?"}"`);
   const asked = String(row.requestText ?? "");
   owed.push({
     variant: String(raw.publicId),

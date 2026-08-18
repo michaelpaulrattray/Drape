@@ -14,7 +14,7 @@
  * build attribution is by timestamp and what that costs in precision)
  *           --user 1
  */
-import { formatReport, summarize } from "../server/castingV2/reliabilityReport.js";
+import { formatReport, labelOfStoredCheck, summarize } from "../server/castingV2/reliabilityReport.js";
 import { countRecoveredExclusions, readAttemptRows } from "./lib/attemptRows.mjs";
 
 const arg = (name: string): string | undefined => {
@@ -70,7 +70,7 @@ if (interesting.length > 0) {
   for (const row of interesting) {
     const missed = (row.verification?.checks ?? [])
       .filter((check) => check.read === true && !check.verified)
-      .map((check) => `${check.facet}="${check.asked}" saw="${check.saw ?? "?"}"`);
+      .map((check) => `${labelOfStoredCheck(check)}="${check.asked}" saw="${check.saw ?? "?"}"`);
     console.log(
       `  ${row.createdAt.toISOString().slice(0, 19)} ${row.operationId.slice(0, 8)} `
       + `${row.status}${row.failureClass ? `/${row.failureClass}` : ""} `

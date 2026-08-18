@@ -36,13 +36,121 @@
  * and only a second failure spends the user's refusal. Repeated verify-failures
  * on a facet class whose renders look correct are a READER defect to surface,
  * not a render defect to refund — which is what the stored verdicts are for.
+ *
+ * # AND THE LINE THAT GOVERNS THE WHOLE MODULE (fable-911 §2 (3), verbatim)
+ *
+ * **A presence verdict is evidence about a FRAME and never an instruction to
+ * the library.** No miss retires a crop, drops a carry, or takes a feature away
+ * from her — only the recipe's own vacated list originates a departure. A
+ * library that retired on a reader's silence would delete her earrings for a
+ * shadowy render, and in the open lane it would destroy the only crop of a thing
+ * that cannot be re-catalogued.
  */
 import { createModuleLogger } from "../logging/logger";
 import type { TextEngine } from "../providers/types";
 import { interpreterEngine } from "./interpreter";
 import { facetHeading, facetOfSubject, type Facet } from "./refineFacets";
+import { isOpenSlot } from "./referenceSlots";
 
 const log = createModuleLogger("castingV2/renderVerification");
+
+/**
+ * WHAT ONE CHECK IS ABOUT — and it is not always a facet (fable-911 §2, shape
+ * (C)).
+ *
+ * # The boundary this replaces, and why it was doing its job
+ *
+ * `Facet` is a CLOSED union with a totality test over it, and an open kind has
+ * no facet. So an open kind could not enter this net at all — not the question,
+ * not `binding`, not the D-194 re-read, not the stored verdict, not the report.
+ * Structurally, not by omission, and exactly the same boundary the ask builder
+ * has (`facetsWrittenBy` keys on the closed union, so the open lane needs its
+ * own loop).
+ *
+ * The consequence was that **the one lane whose entire money story is *is the
+ * thing there* was the one lane with no presence check.**
+ *
+ * # Why a discriminated subject rather than a wider `Facet`
+ *
+ * Widening `Facet` to admit `open:<kind>` would put an unbounded customer string
+ * into a closed vocabulary — the precise breach `OPEN_SLOT_PREFIX` was given `:`
+ * rather than `@` to make structurally impossible, and `facetHeading` must stay
+ * total. A second verification path beside this one would be working law 4 in
+ * one line: two answers to *did the picture deliver what was promised*, drifting
+ * invisibly because both are plausible.
+ *
+ * So the SUBJECT is a union and everything downstream is one path over one
+ * list. Exactly two things branch on it — the sentence handed to the reader
+ * (`subjectHeading`) and the id checks are merged and grouped by
+ * (`subjectKey`) — and a consumer that needs a facet asks for one
+ * (`facetIn`), which answers null rather than a lookalike string.
+ */
+export type FactSubject =
+  | { readonly kind: "facet"; readonly facet: Facet }
+  /**
+   * A kind nobody has catalogued, carrying the two fields the record holds.
+   *
+   * The NOUN is here because the SLOT is lossy: `cat ears` and `cat-ears` both
+   * key as `open:cat-ears`, so the customer's word cannot be recovered from the
+   * token and must never be derived from it — the reconstruction would be the
+   * second list that drifts, and here it would drift into a paid reader's
+   * question.
+   */
+  | { readonly kind: "open"; readonly slot: string; readonly noun: string };
+
+/** The ordinary case: a check about a facet of the closed vocabulary. */
+export function aboutFacet(facet: Facet): FactSubject {
+  return { kind: "facet", facet };
+}
+
+/**
+ * A check about an open kind, refusing anything that is not one.
+ *
+ * Fails loud for `openKindHeading`'s own declared reason: a key outside the
+ * lane's namespace reaching this constructor is a caller that invented one, and
+ * the alternative is a question composed under a heading nobody can trace back
+ * to a slot. The lane's own writers cannot produce one.
+ */
+export function aboutOpenKind(input: { slot: string; noun: string }): FactSubject {
+  const noun = input.noun.trim();
+  if (!isOpenSlot(input.slot) || noun === "") {
+    throw new Error(
+      `"${input.slot}" with noun "${input.noun}" is not an open kind this net can ask about — `
+      + "a subject needs the lane's own slot key and the noun the record stores",
+    );
+  }
+  return { kind: "open", slot: input.slot, noun };
+}
+
+/**
+ * THE FACET THIS CHECK IS ABOUT, OR NULL — the one accessor a closed-lane
+ * consumer may use.
+ *
+ * Null rather than a fallback string, and that is the whole safety of shape
+ * (C): every door that could retire pixels, earn a segment or dispute a crop is
+ * keyed on a facet, so an open check cannot reach one by accident. It is the
+ * structural half of *a presence verdict is evidence about a frame and never an
+ * instruction to the library*.
+ */
+export function facetIn(subject: FactSubject): Facet | null {
+  return subject.kind === "facet" ? subject.facet : null;
+}
+
+/** The id a check is merged, keyed and grouped by — total over both lanes. */
+export function subjectKey(subject: FactSubject): string {
+  return subject.kind === "facet" ? subject.facet : subject.slot;
+}
+
+/**
+ * The heading the READER is handed the line under.
+ *
+ * The open lane's heading is the STORED noun, upper-cased to sit beside the
+ * closed lane's own headings — never `openKindHeading`, which upper-cases the
+ * kebab token and would ask about "CAT-EARS".
+ */
+export function subjectHeading(subject: FactSubject): string {
+  return subject.kind === "facet" ? facetHeading(subject.facet) : subject.noun.toUpperCase();
+}
 
 /**
  * One thing the recipe names, as handed to the reader.
@@ -52,7 +160,7 @@ const log = createModuleLogger("castingV2/renderVerification");
  * three places is a shape that will carry the flag in two of them.
  */
 export type VerifiableFact = {
-  facet: Facet;
+  subject: FactSubject;
   asked: string;
   binding?: boolean;
   shortfall?: string;
@@ -60,9 +168,9 @@ export type VerifiableFact = {
   absenceIsTheAsk?: boolean;
 };
 
-/** One facet, what it was asked to be, and whether the picture agrees. */
+/** One subject, what it was asked to be, and whether the picture agrees. */
 export type FacetCheck = {
-  facet: Facet;
+  subject: FactSubject;
   asked: string;
   verified: boolean;
   /**
@@ -490,18 +598,28 @@ export function settleCarriedChecks(
   const coveredByThisPaint = new Set((carried.superseded ?? []).map((entry) => entry.facet));
   let changed = false;
   const checks = verdict.checks.map((check) => {
-    if (!isCarried.has(check.facet) || !isMiss(check)) return check;
+    /*
+      A FACET ROAD, DECLARED RATHER THAN IMPLIED (the open-lane sweep).
+
+      Both lists here are the PASTE road's own arithmetic — segments pasted, and
+      segments this paint covered — and a segment is keyed by facet. An open
+      kind rides the repaint road, which pastes nothing and hands this function
+      an empty list, so an open check has nothing to be settled against and
+      `facetIn` says so rather than a slot key silently failing to match.
+    */
+    const facet = facetIn(check.subject);
+    if (facet === null || !isCarried.has(facet) || !isMiss(check)) return check;
     changed = true;
     return {
       ...check,
       binding: false,
-      ...(coveredByThisPaint.has(check.facet) ? { occluded: true } : {}),
+      ...(coveredByThisPaint.has(facet) ? { occluded: true } : {}),
     };
   });
   return changed ? { ...verdict, checks, ok: okOf(checks) } : verdict;
 }
 
-const keyOf = (check: FacetCheck): string => `${check.facet}|${check.asked}`;
+const keyOf = (check: FacetCheck): string => `${subjectKey(check.subject)}|${check.asked}`;
 
 /**
  * FACETS WITH A MEASURED UNRELIABILITY PRIOR (D-235).
@@ -530,6 +648,20 @@ const UNRELIABLE_FACETS: ReadonlySet<Facet> = new Set<Facet>([facetOfSubject("ha
 /** Test seam: the guard is only honest if it can be driven without an LLM. */
 export function facetsWithUnreliabilityPrior(): Facet[] {
   return Array.from(UNRELIABLE_FACETS);
+}
+
+/**
+ * Whether this check's subject has earned an extra reading.
+ *
+ * The list is a measured rap sheet over CLOSED facets — a class whose audited
+ * false-pass count is non-zero. An open kind has no audited count at all, which
+ * is the same fact that keeps it non-binding: nothing has been measured about a
+ * kind nobody has catalogued, and a hunch here would cost every user of it an
+ * extra vision call on the happy path.
+ */
+function hasUnreliabilityPrior(check: FacetCheck): boolean {
+  const facet = facetIn(check.subject);
+  return facet !== null && UNRELIABLE_FACETS.has(facet);
 }
 
 /**
@@ -615,7 +747,13 @@ export async function verifyRender(input: {
      would be paid for to merge into an empty list. */
   if (verdict.unavailable) return verdict;
   const closely = input.detail
-    ? input.facts.filter((fact) => input.detail!.answers.includes(fact.facet))
+    ? input.facts.filter((fact) => {
+      /* The crop's entitlement is declared as FACETS by its caller — it is cut
+         from a region the harvest segmented for a facet. An open kind is not on
+         that list and cannot be, so it is read at the frame's own size. */
+      const facet = facetIn(fact.subject);
+      return facet !== null && input.detail!.answers.includes(facet);
+    })
     : [];
   if (!input.detail || closely.length === 0) return verdict;
 
@@ -659,7 +797,7 @@ async function readOnce(input: {
 }): Promise<RenderVerdict> {
   const { engine } = input;
   const lines = input.facts.map((fact, index) =>
-    `${index + 1}. ${facetHeading(fact.facet)}: ${fact.asked}`);
+    `${index + 1}. ${subjectHeading(fact.subject)}: ${fact.asked}`);
 
   try {
     const reply = await engine.complete({
@@ -722,7 +860,7 @@ async function readOnce(input: {
         ? row.absent
         : undefined;
       return {
-        facet: fact.facet,
+        subject: fact.subject,
         asked: fact.asked,
         /* An unanswerable question is not a pass. It is not a miss either —
            `isMiss`/`isOccluded` are what tell the two apart downstream. */
@@ -753,7 +891,7 @@ async function readOnce(input: {
     const unread = checks.filter((check) => !check.read);
     if (unread.length > 0) {
       log.warn(
-        { unread: unread.map((check) => check.facet) },
+        { unread: unread.map((check) => subjectKey(check.subject)) },
         "[renderVerification] answers with no evidence — recorded as unread, not as passes",
       );
     }
@@ -794,7 +932,7 @@ export async function confirmVerdict(
   const bindingMisses = first.checks.filter((c) => isMiss(c) && c.binding);
   /* (b) The delivery-path half: an affirmative on a facet with a rap sheet. */
   const suspectPasses = first.checks.filter(
-    (c) => c.read && c.verified && UNRELIABLE_FACETS.has(c.facet),
+    (c) => c.read && c.verified && hasUnreliabilityPrior(c),
   );
   if ((bindingMisses.length === 0 && suspectPasses.length === 0) || first.unavailable) {
     return { ...first, readings: 1 };
@@ -853,7 +991,7 @@ export async function confirmVerdict(
     }
     log.error(
       {
-        facets: wordedAbsence.map((check) => check.facet),
+        facets: wordedAbsence.map((check) => subjectKey(check.subject)),
         saw: wordedAbsence.map((check) => check.saw ?? null),
       },
       "[renderVerification] no second opinion, and the one reading says the asked thing is ABSENT — not delivering on it",
@@ -873,11 +1011,11 @@ export async function confirmVerdict(
     majority of three below before it spends anybody's refusal.
   */
   let checks = first.checks.map((check) => {
-    if (!(check.read && check.verified && UNRELIABLE_FACETS.has(check.facet))) return check;
+    if (!(check.read && check.verified && hasUnreliabilityPrior(check))) return check;
     const other = secondBy.get(keyOf(check));
     if (!other || !other.read || other.verified) return check;
     log.warn(
-      { facet: check.facet, asked: check.asked, saw: other.saw },
+      { facet: subjectKey(check.subject), asked: check.asked, saw: other.saw },
       "[renderVerification] affirmation withdrawn on re-read — recorded as a miss, not a pass",
     );
     return { ...check, verified: false, saw: other.saw };

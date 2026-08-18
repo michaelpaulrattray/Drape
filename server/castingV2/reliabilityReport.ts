@@ -52,6 +52,7 @@
  * rather than having to guess.
  */
 import type { Facet } from "./refineFacets";
+import { subjectKey, type FactSubject } from "./renderVerification";
 
 /** What became of one paid attempt. Ordered worst-to-best for reporting. */
 export type AttemptOutcome =
@@ -68,7 +69,23 @@ export type AttemptOutcome =
 
 /** One stored check, as the verdict writes it (D-235 shape). */
 export type StoredCheck = {
-  facet: string;
+  /**
+   * WHAT THE CHECK WAS ABOUT, IN THE SPELLING THE ROW WAS WRITTEN IN.
+   *
+   * Two fields for one fact, and this is the one place in the report where that
+   * is honest rather than law 4's violation: they are the SAME question asked
+   * at two different times, and rows written before the open lane entered the
+   * net (every row up to 2026-08-18) carry `facet` alone. Nothing rewrites
+   * history, so the reader has to be total over both — and it is derived ONCE,
+   * in `labelOfStoredCheck`, which every consumer here and in the report
+   * scripts goes through.
+   *
+   * The new spelling is the discriminated subject, so an open kind names itself
+   * (`open:fangs`) instead of arriving as a string the closed vocabulary would
+   * be searched for in vain.
+   */
+  facet?: string;
+  subject?: FactSubject;
   asked: string;
   verified: boolean;
   /** Absent on rows written before D-235 — treated as unverified, never as a pass. */
@@ -433,7 +450,28 @@ function classifyChecks(row: AttemptRow, checks: ReadonlyArray<StoredCheck>): At
  * it has today. Nothing in the existing table moves.
  */
 export function classOfCheck(check: StoredCheck): string {
-  return check.absenceIsTheAsk === true ? `${check.facet} · removal` : check.facet;
+  const named = labelOfStoredCheck(check);
+  return check.absenceIsTheAsk === true ? `${named} · removal` : named;
+}
+
+/**
+ * THE ONE PLACE A STORED CHECK IS NAMED — both spellings, one derivation.
+ *
+ * An open kind names itself with its slot key (`open:fangs`), which is what
+ * makes fable-911's addition true rather than aspirational: the verdicts are
+ * READ, not merely stored, because the class table already tallies per class
+ * and `delivered_absent` already fires on a read absence *whether or not the
+ * facet was binding at the time*. So an open kind's misses land in the
+ * founder's own table, per kind, from the day the net starts asking — which is
+ * the reading the promotion-to-binding ruling will need.
+ *
+ * A row carrying neither spelling cannot come from any writer this program has
+ * ever had; it is named rather than dropped, because a check quietly grouped
+ * under somebody else's class is the failure this function exists to prevent.
+ */
+export function labelOfStoredCheck(check: StoredCheck): string {
+  if (check.subject) return subjectKey(check.subject);
+  return check.facet ?? "unnamed";
 }
 
 /**

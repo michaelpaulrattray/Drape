@@ -1587,3 +1587,110 @@ and that the $1.27 the balance moved is an upper bound containing somebody
 else's work. A per-operation cost comes from the per-operation record; a
 subtraction over a shared account cannot produce one, however patiently it
 waits for the settle.
+
+---
+
+## 9.16 THE PRESENCE VERIFIER — built 2026-08-18 (shift 96), and it is NON-BINDING
+
+Ordered by fable-911 §2, whose §2 IS the spec: shape (C), all four decisions as
+recommended, plus the addition that keeps the measurement honest.
+
+### The gap was an ENTRY boundary, not a missing check
+
+`VerifiableFact.facet` was typed `Facet`, a CLOSED union with a totality test
+over it, and an open kind has no facet. So an open kind could not enter the
+verification net **at all** — not the reader's question, not `binding`, not the
+D-194 re-read, not the stored verdict, not the reliability report. Structurally,
+not by omission, and it is the same boundary the ask builder has (§9.7).
+
+The consequence was the one that matters: **the lane whose entire money story is
+*is the thing there* was the lane with no presence check.** A customer types
+*"give her a halo"*, pays 25 credits, and if the frame comes back bare nothing
+disputes it, nothing re-reads, and nothing is recorded for anyone to count.
+
+And the policy answer already existed — `openKindBinds()` has returned
+`"presence"` since §0 was written, **to no consumer whatsoever for two weeks**.
+That is the `gate-not-reader` class, and reporting it rather than quietly wiring
+it is what let the ruling shape what it binds.
+
+### What was built
+
+- `FactSubject`, a discriminated union — `{kind:"facet"}` or
+  `{kind:"open", slot, noun}` — replacing the bare `facet` on `VerifiableFact`
+  and `FacetCheck`. Exactly two things branch on it: the sentence handed to the
+  reader (`subjectHeading`) and the id checks merge and group by (`subjectKey`).
+  Everything downstream stays ONE path over one list.
+- `facetIn(subject)` answers `null` for an open kind, and that is the safety:
+  every door that could earn a segment, dispute a crop or retire a reference is
+  facet-keyed, so an open verdict cannot reach one by accident.
+- The question is asked under the **stored noun**, never the slot key —
+  `cat ears`, not `cat-ears`. `asked` is the record's own words for the kind.
+- Both the EDIT and the CARRY ask. The defect class is a carried feature
+  vanishing, and since the D-244 split a carried kind is not even mentioned in
+  the change clause, so an edit-scoped check would be blind by construction.
+- Only on the **repaint road**: `delta.open` reaches the painter through the
+  repaint recipe and nothing else, so asking on the paste road would manufacture
+  a miss on every frame and file it against the kind.
+- It costs **zero extra model calls**. The facts ride the one pass the reader
+  already makes over the whole composed recipe.
+
+### THE LINE THAT GOVERNS IT (fable-911 §2 (3), verbatim)
+
+> **A presence verdict is evidence about a FRAME and never an instruction to the
+> library.**
+
+No miss retires a crop or drops a carry, ever; only the recipe's own `vacated`
+list originates a departure. One false ABSENT would otherwise destroy the only
+crop of a thing that cannot be re-catalogued, and the next render would paint
+the master back. This line is pinned in `renderVerification`'s module header,
+and its structural half is `facetIn` returning null.
+
+### NON-BINDING, and the promotion condition
+
+`openKindPresenceBindsToday()` returns **false**: recorded, never refunded. The
+classification is not in doubt — an open ask is presence by construction — but
+the MEASUREMENT is missing: no specimen family, no court, no audited reliability
+for a kind nobody has catalogued, which is the same fact
+`openKindNoSpecimenReason` already states. An unmeasured reader may not spend a
+customer's money being wrong (law 9), and `binding: false` (D-187) exists for
+exactly this.
+
+**Promotion to binding takes its own ruling, and two things in hand:**
+
+1. accumulated stored verdicts — the per-kind miss counts the reliability report
+   now surfaces, so the argument is a reading rather than an anecdote;
+2. a court with the FOUNDER'S EYE on the misses, because the class where a
+   reader has been overturned by his eye is precisely the class where a reader
+   must not be given teeth on prose alone.
+
+`FREE_SUBJECT_KIND`'s policy standing therefore stays `owed`: the question is
+asked, the refusal is not.
+
+### The verdicts are READ, not merely stored
+
+Data with no reader is this program's oldest sin, so the reading landed in the
+same build. A stored open check names itself with its slot key, so
+`classOfCheck` gives it its own row in the founder's per-class table
+(`open:fangs`), and `delivered_absent` already fires on a read absence *whether
+or not the facet was binding at the time* — which is exactly the case an open
+kind is in. Rows written before 2026-08-18 carry the old `facet` spelling and
+are read through one derivation (`labelOfStoredCheck`); nothing in the existing
+table moves.
+
+### The consumer sweep, each one visited
+
+| module | what it does about an open subject |
+|---|---|
+| `renderVerification` | branches in two named places; the unreliability prior is facet-only (an open kind has no audited count) |
+| `refineService` | builds the open facts; every facet-keyed consumer (segments earned, disputed, narrowed reads, carried marking, the mint's `confirmed`) drops them by `facetIn` |
+| `inheritedVerdict` | left facet-keyed ON PURPOSE — inheritance is bought with region arithmetic and an open kind has no region, so an open subject cannot be handed to it at all |
+| `reliabilityReport` | reads both spellings through one derivation; open kinds become their own classes |
+| `verificationDetail` | the magnified crop answers for facets only — it is cut from a region the harvest segmented — so an open kind is read at the frame's own size |
+
+### What is still true, and still the caution
+
+An out-of-vocabulary feature with **no crop** rides on words alone and may still
+vanish on a later edit; what has changed is that the frame is now ASKED about it
+and the miss is on the record. Production mints no open crops (no property
+table), so production is on the words road throughout and this build is inert
+there.

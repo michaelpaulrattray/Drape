@@ -48,7 +48,14 @@
  * painted from, and a crop mints only where that reader declined
  * (`referenceMint.ts`, `absenceRefusal`). So one of the answers below has moved
  * from `owed` to `policy` and the rest have not; the list is the record of
- * which. This module is the DECISION, landed before the code that must honour
+ * which.
+ *
+ * **And `FREE_SUBJECT_KIND` is now half-read, which is why it is still `owed`**
+ * (2026-08-18, fable-911 §2): the verification net ASKS the presence question of
+ * an open kind and records the answer, but `openKindPresenceBindsToday()` holds
+ * the refusal back until the promotion condition beside it is met. A question
+ * asked is not a policy honoured, and marking the entry `policy` on the strength
+ * of the reader alone would say this lane refunds when it does not. This module is the DECISION, landed before the code that must honour
  * it, for the
  * same reason `openKind` landed in `mintedSlots` before anything could produce
  * it: the alternative is eighteen small choices made in a hurry inside a build
@@ -593,6 +600,41 @@ export function openKindNoSpecimenReason(kind: string): string {
 /** Whether an open ask may refuse — presence, by derivation (§6). */
 export function openKindBinds(): "presence" | "degree" {
   return "presence";
+}
+
+/**
+ * AND WHETHER IT REFUSES **TODAY** — no, deliberately, and this is where the
+ * deviation is declared (fable-911 §2 (1)).
+ *
+ * `openKindBinds()` above is the settled POLICY and it is not wrong: an open ask
+ * asks for a thing that is not in the picture to be in it, which is presence by
+ * construction. What is missing is not the classification, it is the
+ * MEASUREMENT. The thing being asked about is a kind nobody has catalogued — no
+ * specimen family, no court, no audited reliability, which is the same fact
+ * `openKindNoSpecimenReason` states one function up. A binding refusal on an
+ * unmeasured reader spends the customer's money to be wrong, and law 9 says a
+ * reader's output is a pointer to look, never a fact to file.
+ *
+ * So the net ASKS and RECORDS, and nothing refunds on the answer. `binding:
+ * false` exists in `renderVerification` for exactly this (D-187): checked and
+ * recorded, never refunded.
+ *
+ * # THE PROMOTION CONDITION, named rather than left to a later mood
+ *
+ * This returns true only when both are in hand, as its own ruling:
+ *
+ *   1. accumulated stored verdicts — the miss counts per kind that
+ *      `reliabilityReport` now surfaces, so the argument is a reading rather
+ *      than an anecdote;
+ *   2. a court with the FOUNDER'S EYE on the misses (law 9), because the class
+ *      where a reader has been overturned by his eye is precisely the class
+ *      where a reader must not be given teeth on prose alone.
+ *
+ * Measure, then enforce — the delivery-rate bar's own discipline, and the
+ * reverse of moving a bar to fit a result.
+ */
+export function openKindPresenceBindsToday(): boolean {
+  return false;
 }
 
 /** The clause an open ask carries: the floor, and only the floor. */

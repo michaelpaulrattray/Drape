@@ -15,7 +15,9 @@ import { describe, expect, it } from "vitest";
 import type { TextEngine, TextResult } from "../providers/types";
 import { facetOfSubject } from "./refineFacets";
 import {
+  aboutFacet,
   advisoryMisses,
+  facetIn,
   confirmVerdict,
   facetsWithUnreliabilityPrior,
   joinClauses,
@@ -57,7 +59,7 @@ async function read(replies: string[], facts: Parameters<typeof verifyRender>[0]
   return { verdict, engine };
 }
 
-const HAIR_UP = [{ facet: HAIR_WORN, asked: "tied up", binding: false }] as const;
+const HAIR_UP = [{ subject: aboutFacet(HAIR_WORN), asked: "tied up", binding: false }] as const;
 
 describe("an affirmative without evidence is not a reading", () => {
   it("does not count the empty yes as a pass — the hair-up row, exactly as stored", async () => {
@@ -66,7 +68,7 @@ describe("an affirmative without evidence is not a reading", () => {
 
     expect(verdict.checks[0].read).toBe(false);
     expect(verdict.checks[0].verified).toBe(false);
-    expect(unreadFacts(verdict).map((c) => c.facet)).toEqual([HAIR_WORN]);
+    expect(unreadFacts(verdict).map((c) => facetIn(c.subject))).toEqual([HAIR_WORN]);
     /* And it is NOT reported as a miss either. Silence is silence. */
     expect(advisoryMisses(verdict)).toEqual([]);
   });
@@ -94,8 +96,8 @@ describe("an affirmative without evidence is not a reading", () => {
     const { verdict } = await read(
       ['{"results":[{"id":2,"present":true,"saw":"pale blue irises"}]}'],
       [
-        { facet: HAIR_WORN, asked: "tied up", binding: false },
-        { facet: EYE_COLOUR, asked: "pale blue", binding: true },
+        { subject: aboutFacet(HAIR_WORN), asked: "tied up", binding: false },
+        { subject: aboutFacet(EYE_COLOUR), asked: "pale blue", binding: true },
       ],
     );
     expect(verdict.checks[0].read).toBe(false);
@@ -108,8 +110,8 @@ describe("an affirmative without evidence is not a reading", () => {
     const { verdict } = await read(
       ['{"results":[{"id":1,"present":true},{"id":2,"present":true}]}'],
       [
-        { facet: HAIR_WORN, asked: "tied up", binding: false },
-        { facet: EYE_COLOUR, asked: "pale blue", binding: true },
+        { subject: aboutFacet(HAIR_WORN), asked: "tied up", binding: false },
+        { subject: aboutFacet(EYE_COLOUR), asked: "pale blue", binding: true },
       ],
     );
     /* One instrument failure, not two silences — otherwise a reader that
@@ -126,7 +128,7 @@ describe("an affirmative without evidence is not a reading", () => {
     */
     const { verdict } = await read(
       ['{"results":[{"id":1,"present":false}]}'],
-      [{ facet: EYE_COLOUR, asked: "pale blue", binding: true }],
+      [{ subject: aboutFacet(EYE_COLOUR), asked: "pale blue", binding: true }],
     );
     expect(verdict.checks[0].read).toBe(true);
     expect(verdict.checks[0].verified).toBe(false);
@@ -136,7 +138,7 @@ describe("an affirmative without evidence is not a reading", () => {
   it("still refuses on a binding miss that names what it saw", async () => {
     const { verdict } = await read(
       ['{"results":[{"id":1,"present":false,"saw":"irises are hazel"}]}'],
-      [{ facet: EYE_COLOUR, asked: "pale blue", binding: true }],
+      [{ subject: aboutFacet(EYE_COLOUR), asked: "pale blue", binding: true }],
     );
     expect(verdict.ok).toBe(false);
     expect(missingFacts(verdict)).toEqual(["pale blue"]);
@@ -156,11 +158,11 @@ describe("facets with a measured unreliability prior get a second reading", () =
 
   it("withdraws an affirmation the second reading disagrees with", async () => {
     const first = verdictOf([
-      { facet: HAIR_WORN, asked: "tied up", verified: true, read: true, binding: false, saw: "hair up" },
+      { subject: aboutFacet(HAIR_WORN), asked: "tied up", verified: true, read: true, binding: false, saw: "hair up" },
     ]);
     const second = verdictOf([
       {
-        facet: HAIR_WORN,
+        subject: aboutFacet(HAIR_WORN),
         asked: "tied up",
         verified: false,
         read: true,
@@ -182,7 +184,7 @@ describe("facets with a measured unreliability prior get a second reading", () =
 
   it("leaves an affirmation the second reading confirms", async () => {
     const check = {
-      facet: HAIR_WORN, asked: "tied up", verified: true, read: true, binding: false, saw: "low bun",
+      subject: aboutFacet(HAIR_WORN), asked: "tied up", verified: true, read: true, binding: false, saw: "low bun",
     };
     const confirmed = await confirmVerdict(verdictOf([check]), async () => verdictOf([check]));
     expect(confirmed.checks[0].verified).toBe(true);
@@ -191,7 +193,7 @@ describe("facets with a measured unreliability prior get a second reading", () =
 
   it("does NOT re-read an affirmation on a facet with no prior — the cost is targeted", async () => {
     const clean = verdictOf([
-      { facet: EYE_COLOUR, asked: "pale blue", verified: true, read: true, binding: true, saw: "pale blue irises" },
+      { subject: aboutFacet(EYE_COLOUR), asked: "pale blue", verified: true, read: true, binding: true, saw: "pale blue irises" },
     ]);
     let rereads = 0;
     const confirmed = await confirmVerdict(clean, async () => {
@@ -204,7 +206,7 @@ describe("facets with a measured unreliability prior get a second reading", () =
 
   it("does not re-read an affirmation that was never read in the first place", async () => {
     const empty = verdictOf([
-      { facet: HAIR_WORN, asked: "tied up", verified: false, read: false, binding: false },
+      { subject: aboutFacet(HAIR_WORN), asked: "tied up", verified: false, read: false, binding: false },
     ]);
     let rereads = 0;
     await confirmVerdict(empty, async () => {
@@ -217,7 +219,7 @@ describe("facets with a measured unreliability prior get a second reading", () =
   it("makes a demoted BINDING affirmation survive the majority of three", async () => {
     const asked = "tied up";
     const make = (verified: boolean) =>
-      verdictOf([{ facet: HAIR_WORN, asked, verified, read: true, binding: true, saw: "x" }]);
+      verdictOf([{ subject: aboutFacet(HAIR_WORN), asked, verified, read: true, binding: true, saw: "x" }]);
 
     /* first says yes, second says no → a split, so a third breaks the tie.
        Third says yes: one doubter out of three is not a refusal. */
@@ -234,7 +236,7 @@ describe("facets with a measured unreliability prior get a second reading", () =
   it("refuses when two of three readings agree the demoted fact is missing", async () => {
     const asked = "tied up";
     const make = (verified: boolean) =>
-      verdictOf([{ facet: HAIR_WORN, asked, verified, read: true, binding: true, saw: "x" }]);
+      verdictOf([{ subject: aboutFacet(HAIR_WORN), asked, verified, read: true, binding: true, saw: "x" }]);
 
     const confirmed = await confirmVerdict(make(true), async () => make(false));
     expect(confirmed.readings).toBe(3);
@@ -244,7 +246,7 @@ describe("facets with a measured unreliability prior get a second reading", () =
 
   it("delivers rather than refusing when the second opinion is unavailable", async () => {
     const first = verdictOf([
-      { facet: EYE_COLOUR, asked: "pale blue", verified: false, read: true, binding: true, saw: "hazel" },
+      { subject: aboutFacet(EYE_COLOUR), asked: "pale blue", verified: false, read: true, binding: true, saw: "hazel" },
     ]);
     const confirmed = await confirmVerdict(first, async () => ({
       ok: true, checks: [], unavailable: true,
@@ -337,7 +339,7 @@ describe("a refusal reads as a sentence", () => {
     const { verdict } = await read(
       ['{"results":[{"id":1,"present":false,"saw":"she is still wearing her glasses"}]}'],
       [{
-        facet: facetOfSubject("statedAccessories"),
+        subject: aboutFacet(facetOfSubject("statedAccessories")),
         asked: "no glasses — they have been taken off and are not in the picture",
         shortfall: "with glasses still in the picture",
         binding: true,
@@ -358,7 +360,7 @@ describe("a refusal reads as a sentence", () => {
   it("leaves an ordinary fact reading exactly as it always did", async () => {
     const { verdict } = await read(
       ['{"results":[{"id":1,"present":false,"saw":"smooth skin, no freckles"}]}'],
-      [{ facet: facetOfSubject("marks"), asked: "freckles", binding: true }],
+      [{ subject: aboutFacet(facetOfSubject("marks")), asked: "freckles", binding: true }],
     );
     expect(joinClauses(shortfalls(verdict))).toBe("without freckles");
   });
@@ -369,9 +371,9 @@ describe("a refusal reads as a sentence", () => {
         + '{"id":1,"present":false,"saw":"smooth skin"},'
         + '{"id":2,"present":false,"saw":"still wearing glasses"}]}'],
       [
-        { facet: facetOfSubject("marks"), asked: "freckles", binding: true },
+        { subject: aboutFacet(facetOfSubject("marks")), asked: "freckles", binding: true },
         {
-          facet: facetOfSubject("statedAccessories"),
+          subject: aboutFacet(facetOfSubject("statedAccessories")),
           asked: "no glasses — they have been taken off and are not in the picture",
           shortfall: "with glasses still in the picture",
           binding: true,
@@ -388,8 +390,8 @@ describe("a refusal reads as a sentence", () => {
         + '{"id":1,"present":false,"saw":"hair is down"},'
         + '{"id":2,"present":false,"saw":"smooth skin"}]}'],
       [
-        { facet: HAIR_WORN, asked: "tied up", binding: false },
-        { facet: facetOfSubject("marks"), asked: "freckles", binding: true },
+        { subject: aboutFacet(HAIR_WORN), asked: "tied up", binding: false },
+        { subject: aboutFacet(facetOfSubject("marks")), asked: "freckles", binding: true },
       ],
     );
     /* An advisory miss never reaches a refusal sentence, because it never
@@ -414,7 +416,7 @@ describe("a refusal reads as a sentence", () => {
 */
 describe("a pair means both ears", () => {
   const EARRINGS = [{
-    facet: facetOfSubject("statedAccessories"),
+    subject: aboutFacet(facetOfSubject("statedAccessories")),
     asked: "gold hoop earrings, one on each ear, a matching pair",
     binding: true,
   }] as const;
@@ -549,7 +551,7 @@ describe("a carried fact is recorded by the reader and never refused by it", () 
   const missOf = (facet: string): RenderVerdict => ({
     ok: false,
     checks: [{
-      facet: facet as never,
+      subject: aboutFacet(facet as never),
       asked: "gold hoop earrings, one on each ear, a matching pair",
       read: true,
       verified: false,
@@ -609,7 +611,7 @@ describe("a carried fact is recorded by the reader and never refused by it", () 
     const passed: RenderVerdict = {
       ok: true,
       checks: [{
-        facet: CARRIED as never,
+        subject: aboutFacet(CARRIED as never),
         asked: "gold hoop earrings",
         read: true,
         verified: true,
@@ -634,7 +636,7 @@ describe("a carried fact is recorded by the reader and never refused by it", () 
     const silent: RenderVerdict = {
       ok: true,
       checks: [{
-        facet: CARRIED as never,
+        subject: aboutFacet(CARRIED as never),
         asked: "gold hoop earrings",
         read: false,
         verified: false,
@@ -672,7 +674,7 @@ describe("a confirming re-read that never lands cannot deliver an evidenced abse
     ok: false,
     checks: [
       {
-        facet: ACCESSORIES,
+        subject: aboutFacet(ACCESSORIES),
         asked: "dangly cross earrings, one on each ear, a matching pair",
         saw: "left ear has a dangly gold cross; right ear has a plain hoop, not a cross",
         read: true,
@@ -681,7 +683,7 @@ describe("a confirming re-read that never lands cannot deliver an evidenced abse
         absent: true,
       },
       {
-        facet: HAIR_WORN,
+        subject: aboutFacet(HAIR_WORN),
         asked: "worn down — hanging, not gathered, tied or pinned up",
         saw: "hair falls loose to shoulder length, no ties or pins visible",
         read: true,
@@ -768,7 +770,7 @@ describe("a confirming re-read that never lands cannot deliver an evidenced abse
       three quietly degrades to a single sample.
     */
     const scoped = scopedToInstance(
-      { facet: EYE_COLOUR, asked: "green", binding: true },
+      { subject: aboutFacet(EYE_COLOUR), asked: "green", binding: true },
       { noun: "left eye", other: "right eye" },
     );
 
@@ -784,7 +786,7 @@ describe("a confirming re-read that never lands cannot deliver an evidenced abse
     /* The one fact class that authors its own customer sentence (`departedShortfall`)
        must not have it overwritten by a template about the side. */
     const scoped = scopedToInstance(
-      { facet: EYE_COLOUR, asked: "no hoop", shortfall: "with the hoop still in the picture", binding: true },
+      { subject: aboutFacet(EYE_COLOUR), asked: "no hoop", shortfall: "with the hoop still in the picture", binding: true },
       { noun: "left ear", other: "right ear" },
     );
 
@@ -798,7 +800,7 @@ describe("a confirming re-read that never lands cannot deliver an evidenced abse
       ok: false,
       checks: [{
         ...scopedToInstance(
-          { facet: EYE_COLOUR, asked: "green", binding: true },
+          { subject: aboutFacet(EYE_COLOUR), asked: "green", binding: true },
           { noun: "left eye", other: "right eye" },
         ),
         read: true,
@@ -823,7 +825,7 @@ describe("a confirming re-read that never lands cannot deliver an evidenced abse
     const removal: RenderVerdict = {
       ok: false,
       checks: [{
-        facet: ACCESSORIES,
+        subject: aboutFacet(ACCESSORIES),
         asked: "no glasses — they have been taken off and are not in the picture",
         saw: "black rectangular glasses still on her face",
         read: true,

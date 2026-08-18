@@ -25,7 +25,7 @@ import sharp from "sharp";
 import type { Mask } from "./maskedComposite";
 import { facetOfSubject } from "./refineFacets";
 import type { TextEngine, TextRequest, TextResult } from "../providers/types";
-import { verifyRender } from "./renderVerification";
+import { aboutFacet, verifyRender } from "./renderVerification";
 import {
   boxOfMask,
   detailForVerification,
@@ -224,7 +224,7 @@ describe("at the wire — what the reader was actually handed", () => {
   const SAW_THEM = '{"results":[{"id":1,"present":true,"saw":"light freckles across nose and cheeks"}]}';
   const SAW_NONE = '{"results":[{"id":1,"present":false,"saw":"clear skin, no visible freckles"}]}';
 
-  const facts = [{ facet: MARKS, asked: "freckles", binding: false }] as const;
+  const facts = [{ subject: aboutFacet(MARKS), asked: "freckles", binding: false }] as const;
   const frame = Buffer.from("the frame");
   const detail = { bytes: Buffer.from("the enlargement"), contentType: "image/png", answers: [MARKS] };
 
@@ -271,7 +271,7 @@ describe("at the wire — what the reader was actually handed", () => {
       bytes: frame,
       contentType: "image/png",
       detail,
-      facts: [{ facet: MARKS, asked: "freckles" }, { facet: HAIR_WORN, asked: "tied up" }],
+      facts: [{ subject: aboutFacet(MARKS), asked: "freckles" }, { subject: aboutFacet(HAIR_WORN), asked: "tied up" }],
       engine,
     });
 

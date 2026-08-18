@@ -37,6 +37,63 @@ const attempt = (over: Partial<AttemptRow> = {}): AttemptRow => ({
   ...over,
 });
 
+/*
+  AND A KIND NOBODY HAS CATALOGUED IS NAMED BY ITS OWN CLASS (fable-911 §2's
+  addition — the verdicts must be READ, not merely stored).
+
+  The stored verdicts are the reading that would justify promoting the open
+  lane's presence check to binding, and a reading nobody surfaces is this
+  program's oldest sin. Two facts make the surfacing real rather than promised:
+  the check names itself with its slot key, so the founder's per-class table
+  grows a row per kind; and `delivered_absent` already fires on a read absence
+  *whether or not the facet was binding at the time*, which is exactly the case
+  an open kind is in.
+*/
+describe("an open kind in the founder's own table", () => {
+  const fangs = (over: Partial<StoredCheck> = {}): StoredCheck => ({
+    subject: { kind: "open", slot: "open:fangs", noun: "fangs" },
+    asked: "vampire fangs",
+    verified: true,
+    read: true,
+    binding: false,
+    saw: "long white pointed fangs",
+    ...over,
+  });
+
+  it("names its own class rather than searching the closed vocabulary", () => {
+    expect(classesOf(attempt({ verification: { checks: [fangs()] } }))).toEqual(["open:fangs"]);
+  });
+
+  it("counts a MISS the product would not refuse over — the reading, bought", () => {
+    /*
+      Non-binding, and it still lands in the column the founder certifies on.
+      That is the whole point of the report and the gate being able to disagree:
+      a kind nobody thought to bind stays invisible exactly as long as nobody
+      thinks to bind it.
+    */
+    const row = attempt({
+      verification: { checks: [fangs({ verified: false, absent: true, saw: "ordinary teeth" })] },
+    });
+    expect(classifyAttempt(row)).toBe("delivered_absent");
+    expect(classifyAttemptForClass(row, "open:fangs")).toBe("delivered_absent");
+  });
+
+  it("POSITIVE CONTROL — the same kind delivered reads as compliant", () => {
+    /* Without this the miss above proves nothing about the instrument: a
+       classifier that answered `delivered_absent` to every open row would pass
+       the test above and measure nothing. */
+    expect(classifyAttempt(attempt({ verification: { checks: [fangs()] } })))
+      .toBe("delivered_compliant");
+  });
+
+  it("LEGACY — a row written before the subject existed keeps its old class", () => {
+    /* Every row up to 2026-08-18 carries `facet` alone, and nothing rewrites
+       history. One derivation reads both spellings; the old rows must not move. */
+    expect(classesOf(attempt({ verification: { checks: [check({ facet: "hairWorn" })] } })))
+      .toEqual(["hairWorn"]);
+  });
+});
+
 describe("what became of one paid attempt", () => {
   it("counts a confirmed delivery as compliant", () => {
     expect(classifyAttempt(attempt())).toBe("delivered_compliant");

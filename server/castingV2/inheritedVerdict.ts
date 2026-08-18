@@ -47,7 +47,7 @@
 import type { Facet } from "./refineFacets";
 import { regionNameOf, type HarvestEvidence } from "./maskedRefine";
 import type { Mask } from "./maskedComposite";
-import type { FacetCheck } from "./renderVerification";
+import { subjectKey, type FacetCheck } from "./renderVerification";
 import { createModuleLogger } from "../logging/logger";
 
 const log = createModuleLogger("castingV2/inheritedVerdict");
@@ -84,6 +84,23 @@ export function masksMeet(a: Mask, b: Mask): boolean {
   return false;
 }
 
+/**
+ * A fact this module can reason about — FACET-KEYED, and deliberately still so
+ * after the open lane entered the net (the consumer sweep, fable-911 §2).
+ *
+ * Inheritance is bought with the composite's own arithmetic: a fact may keep the
+ * master's verdict only when its REGION provably does not meet what this render
+ * changed. An open kind has no region — `regionNameOf` is keyed on the closed
+ * vocabulary and `openKindZoneScope()` answers `fullFrame` — so there is no
+ * geometry to prove anything with and the honest answer is always "look at it".
+ *
+ * Left as `Facet` rather than widened to `FactSubject` so that is STRUCTURAL:
+ * an open subject cannot be handed to this module at all, which is a stronger
+ * statement than a branch inside it that returns "live" and could be edited
+ * away by somebody who did not know why it was there. This module is not wired
+ * on the render path today (see `refineService`'s own note); when it is, the
+ * caller converts and an open fact simply stays live.
+ */
 export type Fact = { facet: Facet; asked: string; binding?: boolean; shortfall?: string };
 
 export type VerdictSplit = {
@@ -168,7 +185,7 @@ export function splitByInheritance(input: {
     log.info(
       {
         operationId: input.operationId,
-        inherited: inherited.map((check) => `${check.facet}${check.saw ? "" : " (unread)"}`),
+        inherited: inherited.map((check) => `${subjectKey(check.subject)}${check.saw ? "" : " (unread)"}`),
         live: live.map((fact) => fact.facet),
       },
       "[inheritedVerdict] facets outside what the composite changed kept the master's verdict",

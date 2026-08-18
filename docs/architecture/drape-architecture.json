@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "a97c2c13868eb3e9"
+    "sourceFingerprint": "95ee7560bff0ff15"
   },
   "domains": [
     {
@@ -9566,6 +9566,10 @@
     {
       "id": "test:server/castingV2/openKindPolicy.test.ts",
       "path": "server/castingV2/openKindPolicy.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/openKindPresence.test.ts",
+      "path": "server/castingV2/openKindPresence.test.ts"
     },
     {
       "id": "test:server/castingV2/openKindProperties.test.ts",
@@ -20548,7 +20552,17 @@
     },
     {
       "from": "module:server/castingV2/refineService.ts",
+      "to": "module:server/castingV2/openKindPolicy.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/refineService.ts",
       "to": "module:server/castingV2/openLaneAccept.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/refineService.ts",
+      "to": "module:server/castingV2/openLaneKind.ts",
       "kind": "imports"
     },
     {
@@ -20852,8 +20866,18 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/castingV2/reliabilityReport.ts",
+      "to": "module:server/castingV2/renderVerification.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/castingV2/renderVerification.ts",
       "to": "module:server/castingV2/interpreter.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/renderVerification.ts",
+      "to": "module:server/castingV2/referenceSlots.ts",
       "kind": "imports"
     },
     {
@@ -27623,13 +27647,6 @@
       "message": "Names 2 of TiltReading's 4 fields (server/castingV2/canthalTilt.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/inheritedVerdict.ts:87",
-      "severity": "warn",
-      "kind": "redeclared-shape",
-      "subject": "server/castingV2/inheritedVerdict.ts:87",
-      "message": "Names 4 of VerifiableFact's 5 fields (server/castingV2/renderVerification.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
-    },
-    {
       "id": "finding:redeclared-shape:server/castingV2/maskGeometry.ts:314",
       "severity": "warn",
       "kind": "redeclared-shape",
@@ -27651,17 +27668,17 @@
       "message": "Names 2 of RecipeRefusal's 4 fields (server/castingV2/recipeAssembler.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/refineService.ts:454",
+      "id": "finding:redeclared-shape:server/castingV2/refineService.ts:461",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/refineService.ts:454",
+      "subject": "server/castingV2/refineService.ts:461",
       "message": "Names 3 of Thumbnail's 3 fields (server/castingV2/thumbnails.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/refineService.ts:522",
+      "id": "finding:redeclared-shape:server/castingV2/refineService.ts:529",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/refineService.ts:522",
+      "subject": "server/castingV2/refineService.ts:529",
       "message": "Names 3 of Thumbnail's 3 fields (server/castingV2/thumbnails.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {

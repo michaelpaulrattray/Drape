@@ -4039,6 +4039,156 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
     });
   });
 
+  /*
+    AND THE PICTURE IS ASKED WHETHER THE OPEN KIND IS ACTUALLY THERE
+    (fable-911 §2 — the presence verifier, at the wire).
+
+    The unit arms are in `openKindPresence.test.ts`; this is the one place the
+    question is proved on the request the READER was handed, and it exists for
+    this campaign's most expensive shape — a suite asserting one road while the
+    founder is on another. Both directions of the carry/edit split ask, because
+    the defect class IS a carried feature vanishing.
+  */
+  describe("an open kind is asked of the delivered frame", () => {
+    /** A reader that records every line it was given and finds nothing. */
+    const blindReader = () => {
+      const asked: string[] = [];
+      return {
+        asked,
+        engine: {
+          id: "verifier",
+          complete: async (request: { system: string; user: string }) => {
+            if (request.system.includes("how they")) {
+              return { text: JSON.stringify({ hairWorn: "unclear" }), truncated: false, latencyMs: 1 };
+            }
+            asked.push(request.user);
+            const results = request.user.split("\n").filter(Boolean).map((_line, index) => ({
+              id: index + 1,
+              present: false,
+              absent: true,
+              saw: "nothing of the sort on her",
+            }));
+            return { text: JSON.stringify({ results }), truncated: false, latencyMs: 1 };
+          },
+        } as never,
+      };
+    };
+
+    /** A branch that already asked for fangs, and a library that minted one. */
+    const carryingFangs = () => {
+      lineageReferences = [carryRow({
+        id: 11, publicId: "ref-11", slot: "open:fangs", tier: "anatomy", noun: "fangs",
+        words: ["long white pointed vampire fangs"],
+        storageKey: "casting-v2/library/open-fangs.png", variantId: 5,
+      })];
+      variantRows = [{
+        id: 702,
+        publicId: "variant-fangs",
+        candidateId: 1,
+        imageKey: "casting-v2/variants/fangs.png",
+        internalPrompt: candidateRow.internalPrompt as Record<string, unknown>,
+        instructions: ["give her vampire fangs"],
+        deltas: { open: { fangs: { noun: "fangs", words: "vampire fangs" } } },
+        stepDeltas: [{ open: { fangs: { noun: "fangs", words: "vampire fangs" } } }],
+        status: "ready",
+      }];
+      candidateRow.selectedVariantPublicId = "variant-fangs";
+    };
+
+    const storedChecks = () => ((landedVariant?.internalPrompt as {
+      verification?: { checks?: Array<Record<string, unknown>> };
+    }).verification?.checks ?? []);
+
+    it("asks about the CARRIED kind the change clause no longer mentions", async () => {
+      /*
+        The defect this closes, at its own wire. Since the carry/edit split a
+        carried open kind rides by crop and the recipe says nothing about it —
+        so a check scoped to what this edit wrote would be blind to exactly the
+        thing that goes missing, which is this module's founding sentence one
+        lane over.
+      */
+      carryingFangs();
+      const reader = blindReader();
+
+      await refineCandidate(
+        { ...hairDown, verifier: reader.engine },
+        { ...input, instruction: "wear her hair down" },
+      );
+
+      const lines = reader.asked.join("\n").split("\n").filter(Boolean);
+      /* Anchored on the WHOLE line rather than a substring: `open:fangs`
+         upper-cased ends in "FANGS:" too, so a heading composed from the lossy
+         key would satisfy an `includes` — the sabotage arm proved that before
+         this assertion was tightened. */
+      expect(lines.some((line) => /^\d+\. FANGS: vampire fangs$/.test(line))).toBe(true);
+      /* And it is recorded under the SUBJECT, so the report names the kind
+         rather than searching the closed vocabulary for it in vain. */
+      const fangs = storedChecks().find((check) => check.asked === "vampire fangs");
+      expect(fangs?.subject).toEqual({ kind: "open", slot: "open:fangs", noun: "fangs" });
+      expect(fangs?.verified).toBe(false);
+      expect(fangs?.absent).toBe(true);
+    });
+
+    it("records the miss and DELIVERS — record, never refund", async () => {
+      /*
+        The money half (fable-911 §2 (1)). The reader above says the thing is
+        not in the picture AT ALL, which on a binding facet is the one shape
+        that refuses. An open kind is unmeasured — no specimen family, no court
+        — so it is recorded and nothing is refunded on it.
+      */
+      carryingFangs();
+      const reader = blindReader();
+
+      const result = await refineCandidate(
+        { ...hairDown, verifier: reader.engine },
+        { ...input, instruction: "wear her hair down" },
+      );
+
+      expect(result.imageUrl).toBeTruthy();
+      const fangs = storedChecks().find((check) => check.asked === "vampire fangs");
+      expect(fangs?.binding).toBe(false);
+    });
+
+    it("asks about the kind she is EDITING too, in her own new words", async () => {
+      carryingFangs();
+      const reader = blindReader();
+
+      await refineCandidate({
+        ...repainting,
+        verifier: reader.engine,
+        interpret: async () => ({
+          ok: true as const,
+          delta: { open: { fangs: { noun: "fangs", words: "longer curved fangs" } } },
+        }),
+      }, { ...input, instruction: "make the fangs longer" });
+
+      expect(reader.asked.join("\n")).toContain("FANGS: longer curved fangs");
+    });
+
+    it("CONTROL — the road that never says it does not ask about it either", async () => {
+      /*
+        The aim of the gate, driven. `delta.open` reaches the painter through
+        the repaint recipe and nothing else, so asking a reader about fangs the
+        paste road never mentioned would manufacture a miss on every frame and
+        file it against the kind. A gate that asked on both roads would pass
+        every test above.
+      */
+      carryingFangs();
+      const reader = blindReader();
+
+      await refineCandidate(
+        { ...hairDown, repaintEnabled: () => false, harvest: compositing, verifier: reader.engine },
+        { ...input, instruction: "wear her hair down" },
+      );
+
+      expect(reader.asked.join("\n")).not.toContain("FANGS");
+      expect(storedChecks().some((check) => check.asked === "vampire fangs")).toBe(false);
+      /* And the closed lane is untouched on that road — the negative control
+         for the gate's AIM, which is how the misaimed guard was caught twice. */
+      expect(reader.asked.join("\n")).toContain("HAIR WORN");
+    });
+  });
+
   /**
    * WHAT A PRUNE DOES ON THE REPAINT ROAD — and this block is the RED-FLIP
    * fable-534 asked for, now flipped (V3(c), fable-536 §2).

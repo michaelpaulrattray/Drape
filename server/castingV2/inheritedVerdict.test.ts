@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { masksMeet, splitByInheritance } from "./inheritedVerdict";
 import type { Mask } from "./maskedComposite";
-import type { FacetCheck } from "./renderVerification";
+import { aboutFacet, type FacetCheck } from "./renderVerification";
 import type { Facet } from "./refineFacets";
 
 /**
@@ -29,7 +29,7 @@ const band = (fromRow: number, toRow: number): Mask => {
 };
 
 const checkFor = (facet: Facet, over: Partial<FacetCheck> = {}): FacetCheck => ({
-  facet,
+  subject: aboutFacet(facet),
   asked: "tied back, low ponytail",
   verified: true,
   read: true,

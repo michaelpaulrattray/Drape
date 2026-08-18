@@ -182,6 +182,8 @@ import {
 } from "./referenceSlotCatalogue";
 import { isOpenSlot, openSlotKey } from "./referenceSlots";
 import { openLaneOutcomeOf } from "./openLaneAccept";
+import { openKindPresenceBindsToday } from "./openKindPolicy";
+import { readOpenKinds } from "./openLaneKind";
 import { recordOpenLaneDemand } from "../db/castingV2OpenLaneDemand";
 import { readOpenKindProperties } from "../db/castingV2OpenKindProperties";
 import { repaint, type ReferenceFitter, type RepaintEngine, type SentRequest } from "./repaintRender";
@@ -224,15 +226,20 @@ import {
 import { captureRefusedRender } from "./diagnosticCapture";
 import { detectRenderFault } from "./renderFault";
 import {
+  aboutFacet,
+  aboutOpenKind,
   advisoryMisses,
   confirmVerdict,
+  facetIn,
   joinClauses,
   missingFacts,
   settleCarriedChecks,
   shortfalls,
   scopedToInstance,
   verifyRender,
+  type FacetCheck,
   type RenderVerdict,
+  type VerifiableFact,
 } from "./renderVerification";
 import { detailForVerification } from "./verificationDetail";
 import { spokenError } from "../_core/spokenError";
@@ -4257,7 +4264,7 @@ async function refineCandidateCounted(
         const plural = presenceItemsOfFacet(composed, facet);
         if (plural === null) {
           return [{
-            facet,
+            subject: aboutFacet(facet),
             asked: `${asked}${lateralOf(asked)}`,
             binding: guaranteedFacets.has(facet) || presence,
           }];
@@ -4267,13 +4274,75 @@ async function refineCandidateCounted(
         );
         const carriedEvidence = evidencesDelivery(carriedCaptions[facet]);
         return plural.items.map((item) => ({
-          facet,
+          subject: aboutFacet(facet),
           asked: `${item}${lateralOf(item)}`,
           binding: guaranteedFacets.has(facet)
             || (facetBindsOnPresence(facet)
               && (!before.has(item.toLowerCase()) || carriedEvidence)),
         }));
       });
+    /*
+      AND THE KINDS NOBODY HAS CATALOGUED — the open lane entering the net
+      (fable-911 §2, shape (C)).
+
+      # The gap, and it was an ENTRY boundary rather than a missing check
+
+      `facetsWrittenBy` keys on the closed union and an open kind has no facet,
+      so the loop above cannot reach one. The consequence was that **the one
+      lane whose entire money story is *is the thing there* was the one lane
+      with no presence check**: a customer types *"give her a halo"*, pays 25
+      credits, and if the frame comes back bare nothing disputes it and nothing
+      is recorded for anyone to count later.
+
+      # The COMPOSED state, so a carried kind is asked about too
+
+      Both directions ask (fable-911 §2 (2)), and the reason is sharper since
+      the carry/edit split landed: the defect class IS a carried feature
+      vanishing, and a carried open kind is no longer even mentioned in the
+      change clause. A check scoped to what this edit wrote would be blind to it
+      by construction — this module's own founding sentence, one lane over.
+
+      # RECORD, NEVER REFUND — and the deviation is declared where the policy is
+
+      `openKindBinds()` says `presence` and that classification is not wrong.
+      What is missing is the MEASUREMENT: no specimen family, no court, no
+      audited reliability for a kind nobody has catalogued. An unmeasured reader
+      may not spend a customer's money being wrong (law 9), so
+      `openKindPresenceBindsToday()` holds it non-binding and names the
+      promotion condition beside the policy it deviates from.
+
+      # `asked` IS THE RECORD'S OWN WORDS, not the recipe's standing sentence
+
+      A crop-carried kind is spoken for by the library's read-back — *"Keep her
+      fangs exactly: long white pointed vampire fangs"* — and that sentence is
+      assembled inside the render, from rows this list is built before. Deriving
+      it a second time out here would be exactly the parallel copy law 4 forbids,
+      drifting into a paid reader's question. So the check records what the
+      RECORD promised — her own words, the same source the recipe composes from
+      — and the question is put under the stored NOUN. It is also the safer
+      direction for a non-binding record: the ask is broader than the mint's
+      read-back, so a reader cannot miss on an adjective nobody typed.
+
+      # ONLY ON THE ROAD THAT SAYS THEM
+
+      `delta.open` reaches the painter through the repaint recipe and nothing
+      else — the paste road composes its prompt from words the recipe never
+      carries. Asking a reader about a halo the painter was never told about
+      would manufacture a miss on every frame and file it against the kind. The
+      control for this aim is driven beside the positive arm.
+    */
+    if (repaintEnabled) {
+      for (const [kind, said] of Object.entries(readOpenKinds(composed) ?? {})) {
+        facts.push({
+          /* Through `readOpenKinds`, which is strict about the key, so a slot
+             the catalogue would refuse cannot reach the constructor. */
+          subject: aboutOpenKind({ slot: openSlotKey(kind), noun: said.noun }),
+          asked: said.words,
+          binding: openKindPresenceBindsToday(),
+        });
+      }
+    }
+
     /*
       AND THE QUESTION NARROWS WITH THE ASK (fable-444 condition 2).
 
@@ -4328,15 +4397,28 @@ async function refineCandidateCounted(
      * The instance this fact is about, or null for the whole face — and WHICH
      * of the two resolvers said so, because the log below distinguishes them.
      */
-    const sideOfFact = (fact: { facet: Facet }): { side: SlotDefinition; from: "ask" | "library" } | null => {
+    const sideOfFact = (fact: VerifiableFact): { side: SlotDefinition; from: "ask" | "library" } | null => {
+      /*
+        AND AN OPEN KIND HAS NO SIDE TO NARROW TO (the open-lane sweep).
+
+        Both resolvers below are facet-keyed — the ask's scope is a slot of a
+        CATALOGUED feature, and the library's answer comes from
+        `slotsForFacet`. An open kind is a single slot the lane synthesized, has
+        no instances, and `openKindIsPlural()` says so. Answering null here is
+        the same statement as the catalogue's own: there is one of it, and a
+        side clause about a side that does not exist is an instruction to a
+        paid reader to look for one.
+      */
+      const factFacet = facetIn(fact.subject);
+      if (factFacet === null) return null;
       if (scopedSide !== null && scopedSide.instance !== null
-        && writtenFacets.has(fact.facet) && inScope.has(fact.facet)) {
+        && writtenFacets.has(factFacet) && inScope.has(factFacet)) {
         return { side: scopedSide, from: "ask" };
       }
       /* The library's answer, which needs no scope and outlives the ask.
          `accessoryKind` is this step's own object, so a carried accessory's
          slots resolve exactly as the mint resolved them. */
-      const slots = slotsForFacet(fact.facet, { accessoryKind: accessoryRegion });
+      const slots = slotsForFacet(factFacet, { accessoryKind: accessoryRegion });
       const written = instanceLastWritten(branchRows, slots.map((it) => it.slot));
       if (written === null) return null;
       const side = slots.find((it) => it.slot === written);
@@ -4372,7 +4454,7 @@ async function refineCandidateCounted(
            whole failure mode this clause exists to avoid. */
         other: sibling?.noun ?? `other ${side.feature}`,
       });
-      narrowedReads.push({ facet: fact.facet, slot: side.slot, from });
+      narrowedReads.push({ facet: facetIn(fact.subject)!, slot: side.slot, from });
     }
     /*
       AND THE PINNED PRESENTATION (D-186), which is the fourth symptom.
@@ -4384,10 +4466,10 @@ async function refineCandidateCounted(
     */
     for (const facet of PRESENTATION_FACETS) {
       const pinned = captionWording(carriedCaptions[facet]);
-      if (pinned && !facts.some((fact) => fact.facet === facet)) {
+      if (pinned && !facts.some((fact) => facetIn(fact.subject) === facet)) {
         /* Read from a photograph rather than chosen from a vocabulary, so it is
            watched rather than enforced — same reasoning as the free lane. */
-        facts.push({ facet, asked: pinned, binding: false });
+        facts.push({ subject: aboutFacet(facet), asked: pinned, binding: false });
       }
     }
 
@@ -4418,7 +4500,7 @@ async function refineCandidateCounted(
     for (const gone of departedFromPicture) {
       const facet = facetOfSubject("statedAccessories");
       facts.push({
-        facet,
+        subject: aboutFacet(facet),
         asked: departedClause(gone),
         /*
           AND THE CUSTOMER'S VERSION OF THE SAME FAILURE.
@@ -4516,7 +4598,11 @@ async function refineCandidateCounted(
       */
       const detail = await detailForVerification({
         bytes: rendered.bytes,
-        facets: facts.map((fact) => fact.facet),
+        /* The crop answers for FACETS — it is cut from a region the harvest
+           segmented for one. An open kind has no region here and is read at the
+           frame's own size, which is where its question was always going to be
+           answered. */
+        facets: facts.flatMap((fact) => facetIn(fact.subject) ?? []),
         masterRegions: rendered.evidence?.masterRegions,
       });
       /*
@@ -4592,7 +4678,10 @@ async function refineCandidateCounted(
       seam verdict and the invisible-site note both already carry.
     */
     if (narrowedReads.length > 0) {
-      const answered = new Map(verification.checks.map((check) => [check.facet, check]));
+      const answered = new Map(verification.checks.flatMap((check) => {
+        const facet = facetIn(check.subject);
+        return facet === null ? [] : [[facet, check] as const];
+      }));
       log.info(
         {
           operationId,
@@ -4833,7 +4922,11 @@ async function refineCandidateCounted(
       facet: Facet,
       asked: string | null,
     ): Promise<{ bytes: Buffer; asked: string | null } | null> => {
-      const narrowed = sideOfFact({ facet });
+      /* The caller here holds a FACET — this is the caption road, and captions
+         are keyed by facet. Wrapped rather than widened: `sideOfFact` reads a
+         verification fact, and handing it a subject is what keeps one resolver
+         answering "which one of the pair is this about". */
+      const narrowed = sideOfFact({ subject: aboutFacet(facet), asked: asked ?? "" });
       const instance = narrowed?.side.instance ?? null;
       const question = narrowed?.side.question ?? null;
       if (instance === null || question === null) return null;
@@ -5342,18 +5435,32 @@ async function refineCandidateCounted(
       Derived once and consumed twice, because two filters over one array with
       opposite polarity are exactly the parallel copy that drifts (law 4).
     */
+    /*
+      AND AN OPEN CHECK EARNS NOTHING HERE, BY CONSTRUCTION (the open-lane
+      sweep, fable-911 §2 (3)).
+
+      `facetOfCheck` answers null for an open kind, so every filter below drops
+      it before it can name a segment. That is the same sentence as the ruling's
+      pinned line read from the other end: this block is the one that turns a
+      reading into PIXELS the store keeps, and a verdict about an open kind is
+      evidence about a frame — it may not earn a segment any more than it may
+      retire a crop.
+    */
+    const facetOfCheck = (check: FacetCheck): Facet | null => facetIn(check.subject);
     const readChecks = verification.unavailable
       ? []
-      : verification.checks.filter((check) => (
-        check.read && writtenFacets.has(check.facet) && !carriedFacets.has(check.facet)
-      ));
+      : verification.checks.filter((check) => {
+        const facet = facetOfCheck(check);
+        return facet !== null
+          && check.read && writtenFacets.has(facet) && !carriedFacets.has(facet);
+      });
     const missedFacets = new Set(
-      readChecks.filter((check) => !check.verified).map((check) => check.facet),
+      readChecks.filter((check) => !check.verified).flatMap((check) => facetOfCheck(check) ?? []),
     );
     const earned = Array.from(new Set(
       readChecks
-        .filter((check) => check.verified && !missedFacets.has(check.facet))
-        .map((check) => check.facet),
+        .filter((check) => check.verified && !missedFacets.has(facetOfCheck(check)!))
+        .flatMap((check) => facetOfCheck(check) ?? []),
     ));
     await keepSegmentsFromRender({
       userId: input.userId,
@@ -5550,8 +5657,15 @@ async function refineCandidateCounted(
           */
           confirmed: verification.unavailable ? [] : Array.from(new Set(
             verification.checks
-              .filter((check) => check.read && check.verified && !writtenFacets.has(check.facet))
-              .map((check) => check.facet),
+              .flatMap((check) => {
+                /* Facets only: this list tells the LIBRARY a fact it already
+                   holds was seen again, and the library's own key is a slot the
+                   catalogue owns. An open kind's crop is minted by its own
+                   door, from `openAsks`, and never from a reader's affirmative. */
+                const facet = facetIn(check.subject);
+                if (facet === null) return [];
+                return check.read && check.verified && !writtenFacets.has(facet) ? [facet] : [];
+              }),
           )),
           /*
             AND THE ONE INSTANCE SHE POINTED AT, so the library records what the
@@ -5911,9 +6025,15 @@ async function refineCandidateCounted(
           */
           checks: carriedFacets.size === 0
             ? verification.checks
-            : verification.checks.map((check) => (
-              carriedFacets.has(check.facet) ? { ...check, carried: true } : check
-            )),
+            : verification.checks.map((check) => {
+              /* Carried-by-PASTE, which is a facet list from the composite's own
+                 arithmetic. An open kind carried by CROP rides the repaint road,
+                 which pastes nothing and produces no such list. */
+              const facet = facetIn(check.subject);
+              return facet !== null && carriedFacets.has(facet)
+                ? { ...check, carried: true }
+                : check;
+            }),
           ...(verification.unavailable ? { unavailable: true } : {}),
           /*
             AND WHAT THE READ-BACK COULD NOT CORROBORATE. Absent on the renders

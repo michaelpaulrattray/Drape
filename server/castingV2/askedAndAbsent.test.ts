@@ -38,6 +38,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  aboutFacet,
   advisoryMisses,
   isRefusableMiss,
   okOf,
@@ -71,7 +72,7 @@ const prose = {
 
 /** v#169's own check, byte for byte, with `binding` left as the caller decides. */
 const hairDownMiss = (binding: boolean, absent?: boolean): FacetCheck => ({
-  facet: HAIR_WORN,
+  subject: aboutFacet(HAIR_WORN),
   asked: "hair down",
   saw: "hair pulled up into a high curly bun, not down",
   read: true,
@@ -146,7 +147,7 @@ describe("the gate: a miss refuses unless the reader says the thing is there", (
       specified, and it is the failure D-187 was written about.
     */
     const quibble: FacetCheck = {
-      facet: ACCESSORIES,
+      subject: aboutFacet(ACCESSORIES),
       asked: "gold hoop earrings, one on each ear, a matching pair",
       saw: "thin and understated, not bold hoops",
       read: true,
@@ -169,7 +170,7 @@ describe("the gate: a miss refuses unless the reader says the thing is there", (
       declares itself instead of being asked.
     */
     const stillWearingThem: FacetCheck = {
-      facet: ACCESSORIES,
+      subject: aboutFacet(ACCESSORIES),
       asked: "no glasses — they have been taken off and are not in the picture",
       shortfall: "with the glasses still in the picture",
       saw: "she is still wearing the glasses",
@@ -186,7 +187,7 @@ describe("the gate: a miss refuses unless the reader says the thing is there", (
 
   it("still never refuses on a DEGREE facet, however absent the reader says it is", () => {
     const marksMiss: FacetCheck = {
-      facet: MARKS,
+      subject: aboutFacet(MARKS),
       asked: "freckles",
       saw: "clear skin, no freckles anywhere",
       read: true,
@@ -200,7 +201,7 @@ describe("the gate: a miss refuses unless the reader says the thing is there", (
 
   it("still never refuses on an UNREAD check — silence is neither pass nor miss", () => {
     const silent: FacetCheck = {
-      facet: HAIR_WORN, asked: "hair down", read: false, verified: false, binding: true,
+      subject: aboutFacet(HAIR_WORN), asked: "hair down", read: false, verified: false, binding: true,
     };
     expect(isRefusableMiss(silent)).toBe(false);
     expect(okOf([silent])).toBe(true);
@@ -344,7 +345,7 @@ describe("the report can see the class that charged him", () => {
       checks: [
         { facet: "hair.colour", asked: "copper", verified: true, read: true, binding: true, carried: true },
         {
-          facet: HAIR_WORN,
+          subject: aboutFacet(HAIR_WORN),
           asked: "hair down",
           verified: false,
           read: true,
@@ -368,7 +369,7 @@ describe("the report can see the class that charged him", () => {
     */
     const report = summarize([rowOf({
       checks: [{
-        facet: HAIR_WORN,
+        subject: aboutFacet(HAIR_WORN),
         asked: "hair down",
         verified: false,
         read: true,
@@ -386,7 +387,7 @@ describe("the report can see the class that charged him", () => {
   it("still calls run-10's hoops advisory — the same tripwire, one layer up", () => {
     const row = rowOf({
       checks: [{
-        facet: ACCESSORIES,
+        subject: aboutFacet(ACCESSORIES),
         asked: "gold hoop earrings, one on each ear, a matching pair",
         verified: false,
         read: true,
@@ -404,7 +405,7 @@ describe("the report can see the class that charged him", () => {
        findings; demoting them would be losing them. */
     const row = rowOf({
       checks: [{
-        facet: HAIR_WORN, asked: "hair down", verified: false, read: true, binding: false,
+        subject: aboutFacet(HAIR_WORN), asked: "hair down", verified: false, read: true, binding: false,
         saw: "hair gathered at the nape",
       }],
     });
