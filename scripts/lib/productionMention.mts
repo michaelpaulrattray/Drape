@@ -27,6 +27,62 @@
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, resolve } from "node:path";
 
+/**
+ * The source with its comments blanked, line count preserved.
+ *
+ * A MENTION IN A COMMENT IS PROSE, NOT A CALLER — and the recon already knew
+ * it, by hand: nine of the twenty-three OTHER-bucket entries were "a sentence
+ * in a COMMENT naming the symbol", each read individually and each kept on the
+ * list (triage 1a). Nine hand reads is a rule nobody wrote down, so it is
+ * written here instead, and it fixes the class rather than the nine instances:
+ * a docblock discussing `openKindZoneScope` is the module explaining itself,
+ * and counting that as a caller is how the milestone's own writing promotes
+ * symbols out of its own list.
+ *
+ * String literals are copied through, so a `//` inside a URL cannot swallow the
+ * rest of its line.
+ */
+export function withoutComments(source: string): string {
+  const quotes = new Set(['"', "'", "`"]);
+  const BACKSLASH = String.fromCharCode(92);
+  const NEWLINE = String.fromCharCode(10);
+  let out = "";
+  let index = 0;
+  while (index < source.length) {
+    const character = source[index]!;
+    if (quotes.has(character)) {
+      const quote = character;
+      out += character;
+      index += 1;
+      while (index < source.length) {
+        const current = source[index]!;
+        out += current;
+        index += 1;
+        if (current === BACKSLASH) { out += source[index] ?? ""; index += 1; continue; }
+        if (current === quote) break;
+        if (current === NEWLINE && quote !== "`") break;
+      }
+      continue;
+    }
+    if (character === "/" && source[index + 1] === "/") {
+      while (index < source.length && source[index] !== NEWLINE) index += 1;
+      continue;
+    }
+    if (character === "/" && source[index + 1] === "*") {
+      index += 2;
+      while (index < source.length && !(source[index] === "*" && source[index + 1] === "/")) {
+        if (source[index] === NEWLINE) out += NEWLINE;
+        index += 1;
+      }
+      index += 2;
+      continue;
+    }
+    out += character;
+    index += 1;
+  }
+  return out;
+}
+
 export type MentionKind = "barrel" | "dynamic" | "other" | "none";
 export type Mention = { kind: MentionKind; where: string };
 
@@ -38,8 +94,16 @@ export type Mention = { kind: MentionKind; where: string };
  * reader that counts its own prose as evidence quietly promotes every future
  * control symbol out of the real list — so every file in this family is skipped,
  * including this one.
+ *
+ * IT CAUGHT ITSELF A SECOND TIME, and that is why the pattern is now a FAMILY
+ * rather than two filenames. A new instrument in the same family
+ * (`sweep-shadowed-exports-disposable.mts`) named three dead symbols in its own
+ * docblock, and `eyeRegion`, `eyewearRegion` and `mergeRegions` left the strict
+ * reading list the moment it was written — three of the very symbols it had
+ * been built to expose. A guard spelled as a list of names does not cover the
+ * next member; a guard spelled as the family's naming rule does.
  */
-const SELF = /(sweep|triage)-uncalled-exports-disposable\.mts$|lib[\\/]productionMention\.mts$/;
+const SELF = /[\\/](sweep|triage)-[a-z-]*disposable\.mts$|lib[\\/]productionMention\.mts$/;
 
 export function buildClassifier(repoRoot: string): (symbol: string) => Mention {
   const files: string[] = [];
@@ -54,7 +118,7 @@ export function buildClassifier(repoRoot: string): (symbol: string) => Mention {
   for (const root of ["server", "client", "shared", "scripts"]) walk(join(repoRoot, root));
 
   const source = new Map<string, string>();
-  for (const file of files) source.set(file, readFileSync(file, "utf8"));
+  for (const file of files) source.set(file, withoutComments(readFileSync(file, "utf8")));
 
   return function classify(symbol: string): Mention {
     const mentions: Array<{ file: string; line: string }> = [];
@@ -94,11 +158,32 @@ export function runMentionControls(
 ): boolean {
   const positive = classify("shouldSendGlobalAttackAlert");
   const negative = classify("isAccountLocked");
+  /*
+    The stripper's control is SYNTHETIC, so it cannot die the day the product
+    retires whichever symbol happens to be discussed in a comment today — the
+    lesson that cost this milestone its first instrument. Both directions in
+    one fixture: a name only discussed must vanish, a name actually called must
+    survive, and a `//` inside a string must not eat the call after it.
+  */
+  const fixture = [
+    "/* zzzOnlyDiscussed is explained here and called nowhere. */",
+    'const url = "https://example.invalid/x";',
+    "const value = zzzActuallyCalled();",
+    "",
+  ].join(String.fromCharCode(10));
+  const stripped = withoutComments(fixture);
+  const strippedComment = !stripped.includes("zzzOnlyDiscussed");
+  const keptCall = stripped.includes("zzzActuallyCalled");
   log("  positive  shouldSendGlobalAttackAlert → " + positive.kind
     + "  " + (positive.kind === "none" ? "PASS" : "FAIL"));
   log("  negative  isAccountLocked             → " + negative.kind
     + "  " + (negative.kind !== "none" ? "PASS" : "FAIL"));
-  return positive.kind === "none" && negative.kind !== "none";
+  log("  synthetic a name only DISCUSSED is not a mention  "
+    + (strippedComment ? "PASS" : "FAIL"));
+  log("  synthetic a call after a URL survives stripping   "
+    + (keptCall ? "PASS" : "FAIL"));
+  return positive.kind === "none" && negative.kind !== "none"
+    && strippedComment && keptCall;
 }
 
 /**

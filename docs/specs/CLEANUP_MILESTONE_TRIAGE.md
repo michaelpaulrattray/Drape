@@ -964,3 +964,115 @@ compiled at echo time, which is a second text call before anyone has paid.
 | `sweepComposedPrompt`, `suppressorsFor`, `CROSS_AXIS_IMPLICATIONS`, `AXIS_REGISTRY_BINDINGS` | **KEEP — a guard the suite drives and proves.** `axisRegistry.test.ts` builds a context with `suppressorsFor` and runs the sweep over really-composed prompts, with sabotage arms (hair removed → the hair axis is caught; eyes removed → the eye axis is caught). This is invariant 7 satisfied at the suite level, not another mirror test. `AXIS_REGISTRY_BINDINGS` says in its own comment that it exists to stop a linter stripping the compile-time bindings. |
 | `deriveEvidenceCandidateBillingTruth`, `evidenceCandidateAttemptCost` | **KEEP with §6b** — and §6b's family is nine or ten, not eight. `BillingTruth` and `requiresRecovery` have no other mention in the server, so this is the same "the machine written whole in one place, enforced in SQL at every writer" shape already ruled KEEP, arriving on a billing noun. |
 | the `maskGeometry` region island | **RETIRE, proposed** — §15c. |
+
+---
+
+## 18. `server/casting`'s §14d FIFTEEN — read, and the ink road answers most of them
+
+§14d listed fifteen symbols owed a read with §14b's question asked of each.
+`compareModelSnapshotShadow` is in §17; the other fourteen are here. **Nine of
+them are KEEP under a family already ruled** — which is itself the reading's
+result, not a shortcut: the ink and cleanup modules around them are live, with
+five to twenty production importers each, and the flagged symbol is the derived
+list or the closed-value assertion beside them.
+
+| symbol | verdict |
+|---|---|
+| `stageCanonicalReferencePlate` | **KEEP — declared, with an owner.** *"Internal C2 orchestration only. No route, worker, startup hook, or production delivery adapter may call this until the later reviewed C4 capability."* An uncalled export whose docblock forbids callers is not debris; it is a landing waiting for its gate, the same shape as `pruneSegmentFacet` (§17) and the honest version of what §8d holds. |
+| `ALL_SUPPORTED_INK_ANATOMY_TUPLES` | **KEEP with §6a** — a derived list (`allSupportedInkAnatomyTuples()` over the registry's own rules), and `inkAnatomyRegistry` has six production importers. Deleting it pushes its test back onto a hardcoded tuple list, which is §6a's argument exactly. |
+| `isLimbInkZone` | **KEEP with §6a**, same module, a predicate over the same table. |
+| `INK_RELEASE_POLICY_VERSION` | **KEEP** — `inkReleasePolicy` is live in three production modules; the version constant is what its test pins so a policy change is a visible diff. CLAUDE.md's *"the released-tuple table is EMPTY — measured is not earned"* is the reason it looks inert. |
+| `assertStorageCleanupItemStatus` | **KEEP with §6b** — a closed-value assertion beside `assertStorageCleanupBatchStatus`. The pair is the contract; one of the two happens to have a mention. |
+| `resetStorageCleanupHealthReport` | **KEEP with §6c** — *"For tests, which must not inherit a previous case's memo."* |
+| `probeOutcomeAllowsCanon` | **KEEP with §6b** — the retry decision's own predicate, in a module the composer road drives. |
+| `planEvidenceMint`, `planEvidencePackageSync` | **KEEP** — both are the async wrapper around a `compute…Plan` that their own module calls internally, and both modules are production consumers of `readSnapshotShadowStateIn`. Same shape as `compareModelSnapshotShadow` (§17) and held for the same reason: their tests drive live planning code through them. |
+
+And five that are candidates:
+
+| symbol | verdict |
+|---|---|
+| `compressImageUrlForApi` | **DELETE candidate.** Its sibling `compressImageForApi` is live (`aiService.ts:99`, a destructured dynamic import); the URL-fetching variant has no caller anywhere. |
+| `inkAddCapabilityKey()` | **DELETE candidate** — an accessor returning `INK_ADD_CAPABILITY_KEY`, while the live composer imports the CONSTANT directly (`inkAddRecipe.ts:2`). The accessor family of §7b with the difference that here the thing accessed is already imported by name. |
+| `roleForAuthorizedResult` | **DELETE candidate** — *"Convenience: the role a frontClose result takes under an authorization (§7.2 table)"*, and it is `authorization.anchorEligible ? "anchor" : "display"` with **zero mentions anywhere**, test included. ⚠ Checked for the §10 class before writing this: the live writers do NOT re-implement the mapping, they pass a literal (`identityStampFor({ role: "anchor", … })`) because an identity commit is definitionally an anchor. So it is an unused convenience, not a policy stated twice. |
+| `createInkCalibrationRecorder`, `evaluateInkCalibrationGate` | **RETIRE candidates, with the road.** *"A calibration command may persist the returned allowlisted snapshot explicitly"* — **there is no calibration command**: nothing under `scripts/` or `server/routes/` names either symbol. Instruments landed ahead of a caller that never arrived, on the placement-picker composer road that §8d already has marked retire. They go with `inkAddRecipe`, not on their own. |
+
+⚠ **The cluster this leaves is worth naming.** `roleForAuthorizedResult` sits in
+`anchorSelector` beside `commitIdentityEdit` / `commitAnchorReRoll`, which §1b
+holds as INVESTIGATE because **M14's authority decides that road, not this
+milestone**. All three are uncalled, all three are about who may stamp an
+anchor. They should be dispositioned in one sitting by whoever owns M14 — not
+picked off individually by a cleanup pass that would be guessing.
+
+---
+
+## 19. THE INSTRUMENT COUNTED THIS DOCUMENT'S OWN FAMILY AS A CALLER — and the
+## repair turns nine hand reads into a rule
+
+Building §15's instrument moved the list. `eyeRegion`, `eyewearRegion` and
+`mergeRegions` — three of the very symbols the new sweep was written to expose
+— **left the strict reading list the moment its docblock named them**.
+
+`productionMention.mts` already carried a guard for exactly this, with a
+docblock saying it *"caught itself first"*. The guard was spelled as two
+filenames:
+
+```
+const SELF = /(sweep|triage)-uncalled-exports-disposable\.mts$|…/
+```
+
+A list does not cover its next member. **A guard spelled as a list of names is
+the same defect it is guarding against** — law 4, one level up — so it is now
+spelled as the family's naming rule.
+
+### 19a. And the deeper repair: a mention in a COMMENT is prose, not a caller
+
+The self-contamination was one instance of something the recon already knew and
+had been paying for by hand. §1a read twenty-three OTHER-bucket entries and
+classified **nine** of them as *"a sentence in a COMMENT naming the symbol —
+prose, not a caller"*, one at a time, keeping every one on the list.
+
+Nine hand reads is a rule nobody wrote down. It is written down now: the
+classifier blanks comments before it counts, string literals copied through so
+a `//` inside a URL cannot swallow the call after it.
+
+**Its controls are synthetic** (§0's lesson again — a control that is a real
+specimen dies when the product retires that specimen), and they run in both
+directions in one fixture:
+
+```
+INTERSECTION CONTROLS
+  positive  shouldSendGlobalAttackAlert → none    PASS
+  negative  isAccountLocked             → barrel  PASS
+  synthetic a name only DISCUSSED is not a mention  PASS
+  synthetic a call after a URL survives stripping   PASS
+```
+
+### 19b. What it does to the list — 110 → 117, and the hand pile halves
+
+```
+THE READING LIST - 117 of 170 flagged
+  with a production mention  53  (barrel 34 - dynamic 7 - other 12)
+  nothing but a declaration  117   <- THE LIST
+```
+
+Eleven symbols joined the strict list, and **nine of them are §1a's own nine**
+— `rasterise`, `requestMatte`, `openKindZoneScope`, `openKindIsPlural`,
+`openKindDeparture`, `presentPair`, `isDistributed`, `HAIR_STYLE_NAMES`,
+`refusalTallies`. Nothing is overturned: the hand pass got all nine right. What
+changes is that the next reader does not have to repeat it, and the OTHER
+bucket a person must read fell from 24 to **12**.
+
+The other two are `SYSTEM_PROMPT_FOR_TESTS` and `isBilateral` — the two
+instruments' own control specimens, which their own prose had been promoting
+off the list. A control that quietly exempts itself from the list it controls
+is the shape §0 warned about, arriving from the other side.
+
+Four left the list because they were deleted: `VARIANCE_CONFESSION` (§16a) and
+the three of §17's candidates taken below.
+
+> **The class, for the record:** an instrument that reads source text counts the
+> writing ABOUT the code as the code. Every reader in this family — the mention
+> classifier, the in-module use counter, the duplicated-sentence sweep — needed
+> the same repair, and each found it independently. **Strip the prose before you
+> count, or the milestone's own document becomes the reason a symbol looks
+> alive.**
