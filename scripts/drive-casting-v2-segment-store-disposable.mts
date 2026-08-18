@@ -16,6 +16,16 @@
  * drop is shared rather than restated.
  */
 import "dotenv/config";
+/*
+  IT DECLARES ITS WORLD, BECAUSE THE SUFFIX NO LONGER EXCUSES IT.
+  `scriptWorldGuard` exempted every `-disposable.mts` file by SPELLING until
+  2026-08-19; it now exempts by tracking status, and this file is in the
+  repository. That is the right way round for this one in particular: it builds
+  a THROWAWAY database from the active connection and drops it again, so a
+  half-production process is not a wrong reading here — it is a wrong write.
+*/
+import { assertOneWorld } from "./lib/worldGuard.mts";
+assertOneWorld(["DATABASE_URL"]);
 import { readFileSync } from "node:fs";
 import { readdir, readFile } from "node:fs/promises";
 import { spawn } from "node:child_process";

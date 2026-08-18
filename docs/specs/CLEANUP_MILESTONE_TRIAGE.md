@@ -215,10 +215,19 @@ disposable any more — it is an instrument the repository does not contain.
    discovered: the last two days' worth (66 files) belong to work still in
    flight, so the sweep runs at the milestone's own date rather than against
    this list.
-3. `output/`, `errfiles.tmp`, `scripterrors.tmp`, `0`, and the two
-   `FABLE_R7_*_REVIEW.md` files at the repository root are untracked debris —
+3. ~~`output/`~~, `errfiles.tmp`, `scripterrors.tmp`, `0`, and the two
+   ~~`FABLE_R7_*_REVIEW.md`~~ files at the repository root are untracked debris —
    **DELETE**, after confirming the two review files are not the only copy of a
    review (nothing tracked names them).
+
+   ⚠ **This order was WRONG in two of its five items, and both are struck above
+   — see §24f.** `output/` is not debris: tracked documents name 475 distinct
+   paths inside it and 445 of them exist, including frames filed for the
+   founder's eye. The `FABLE_R7_*` pair stays too — a tracked prompt names one
+   of them as a file that must remain unstaged, so untracked-and-live is
+   deliberate in that family. The three that were genuinely uncited are taken
+   and archived. **A kill list is the one kind of list that must be re-read
+   against the evidence before it is obeyed**, and this one had outlived its.
 
 ---
 
@@ -1363,7 +1372,9 @@ existence should not have moved is back where it was.
 ## 23. THE READING IS FINISHED — `--strict` is green
 
 ```
-THE TABLE — 124 rows against a reading list of 124
+THE TABLE — as it read on 2026-08-18, when the reading closed. The nine TAKE
+rows below have since been executed; §24d carries the current reading.
+  124 rows against a reading list of 124
   KEEP     96
   TAKE     9
   TAKEN    0
@@ -1381,8 +1392,14 @@ OPEN — every symbol on the list has a disposition.
 **The completion bar adopted in fable-992 §2b is met**, on the mechanical
 reading of it: every symbol the sweep lists has a verdict, no row names a
 symbol that is gone, every HELD row names its blocker, and no verdict is
-outside the closed set. `pnpm check` runs it, so it cannot quietly stop being
-true.
+outside the closed set.
+
+⚠ **The sentence that stood here — *"`pnpm check` runs it, so it cannot quietly
+stop being true"* — was FALSE, and §24c is the incident that proves it.**
+`pnpm check` runs the door WITHOUT `--strict`, and `unread` is fatal only under
+`--strict`. So rot cannot come back quietly, but INCOMPLETENESS can: the bar
+above is the one thing the gate does not hold. It stopped being true within the
+hour, and the gate stayed green.
 
 **What "finished" does and does not mean.** It means the QUESTION has been
 asked of all 124 — *what was this for?* — and answered in a sentence that cites
@@ -1433,3 +1450,176 @@ session set).
 **Not one of them is a cleanup deletion**, and that is the milestone's own
 result rather than a caveat: the reading found more live-code questions than
 dead code.
+
+
+---
+
+## 24. THE UNTRACKED HALF, EXECUTED — and the knife's own residue was the
+## reading list's 116th symbol
+
+§2 ordered three things: promote the cited, delete what nothing names, and take
+the debris. The first two are done. This section is the receipt, and it carries
+two findings that are not about debris at all.
+
+### 24a. The promotions, and the archive
+
+**Twenty-four promoted** (`fd16e75a`), at a fresh reading rather than from §2's
+four-shift-old list — six of them cited by PRODUCTION SOURCE, not by documents.
+
+**One hundred and forty-three deleted**, and the irreversible act was made
+reversible first:
+
+```
+archive   C:\Users\Admin\drape-untracked-2026-08-19.zip
+entries   143, read back FROM THE ZIP
+on disk   0 of those 143 remain
+```
+
+The count is read out of the archive rather than asserted beside it — an archive
+asserted but never listed is a receipt that is a claim.
+
+**Two refusals, stated rather than discovered.** `docs/specs/references/…720w.mp4`
+is a hash-named media file in the directory the founder's own reference material
+lives in; nothing cites it and nobody here knows what it is, which is a reason to
+ask rather than a licence. `FABLE_R7_7D_D4D2_REVIEW.md` stays because its sibling
+is named must-remain-unstaged by a tracked prompt — untracked-and-live is a
+deliberate state in that family.
+
+### 24b. THE CITER UNIVERSE WAS BLIND TO THIS PROGRAM'S OWN COORDINATION SURFACE
+
+*"Named by something tracked"* is the right evidence bar for KEEPING and the
+wrong completeness bar for DELETING: the standing instruments of this program are
+cited by the mailbox, the founder queue and the memory files, none of which the
+sweep can see by construction. The measured case: the campaign ledger pair is
+eight days cold — squarely in the DELETE bucket — and is the instrument every
+campaign state block must re-run. **Both are promoted, not deleted.**
+
+So the 143 were swept a second time against that surface before the record
+closed, with the instrument controlled in both directions first:
+
+```
+POSITIVE  campaign-ledger-window-disposable  → 4 mailbox files   (must not be 0)
+NEGATIVE  no-such-script-a4f19c-disposable   → 0 mailbox files   (must be 0)
+RESULT    3 of 143 named by mailbox or memory
+```
+
+The control mattered: the **first** run of this sweep returned **0 of 143**, and
+0 was wrong. A malformed `grep -c … || echo 0` emitted two lines, the integer
+comparison died on the non-integer, and the loop's whole condition collapsed to
+false. A sweep that finds nothing looks exactly like a sweep that is broken —
+which is this milestone's §0 finding, arriving one last time in the milestone it
+opened.
+
+**All three hits are past-tense receipts, not standing orders**, which is the
+distinction that decides them. Two are historical readings reported once
+(`bench-teeth-box`, opus-467; `drive-version-switch-latency`, opus-379). The
+third looked like the real thing — `rehearse-repaint-boot-disposable`, ordered
+"re-run at flip" — and fable-342 §4 records that re-run as *performed at flip
+time, clean*. An order already discharged is not an outstanding claim on a file.
+
+### 24c. THE SUFFIX WAS NEVER THE SENTENCE — and the promotion proved it
+
+`scriptWorldGuard` exempted `-disposable.mts` from `assertOneWorld` **by
+spelling**. The argument for the exemption was never about letters: *a bench that
+ran once against dev and will never be run again does not need a ceremony.* A
+bench that will never be run again is a file **the repository does not contain** —
+tracking status is that sentence.
+
+They came apart the moment twenty-four of those files were promoted. Three of the
+twenty-four read the app's database, and under the spelling key they kept a
+one-shot's pass **forever**: guard calls were added to all three, and deleting
+those calls would have reddened nothing. An import without a call is not a guard.
+
+A rename would have closed it for three files and left the class open for the
+twenty-fifth promotion. The guard now keys on `git ls-files`, so the names stay
+as their citers spell them and the suffix is residue. Its predicate **refuses
+when git cannot answer** — an empty answer would exempt the entire tree and turn
+the suite green by making it blind, which is the silent direction.
+
+```
+getDb() scripts        44   tracked 36 · untracked 8
+POSITIVE CONTROL        7   untracked and unguarded — the population it needs
+TRACKED + UNGUARDED     0   the bar
+```
+
+### 24d. THE KNIFE LEFT A SYMBOL AND THE TABLE DID NOT CATCH IT
+
+`AMBIGUOUS_WORDS_FOR_CORPUS` was **born of a deletion in this milestone**: when
+`namesRemoval` was taken, its ten phrasings were carried onto `removalEvidence`,
+and the surviving corpus test needed the module's own list rather than a copy.
+The export was written; its disposition row was not.
+
+The door caught it — `NOT FINISHED — 1 unread` — and that is the door working.
+**What did not work is the gate.** `pnpm check` runs the door without `--strict`,
+and `unread` is fatal only under `--strict`, so the reading list grew from 115 to
+116 with an unread symbol on it and `pnpm check` stayed **green**. §23's claim
+that the bar "cannot quietly stop being true" is corrected there.
+
+Row added, verdict KEEP, argued 6c: the seam's alternative is a hand-copied word
+list in the test — law 4, a second list shadowing the source, which is the exact
+defect the carry existed to prevent.
+
+```
+THE TABLE — 125 rows against a reading list of 116
+  KEEP     97   ·   TAKE 0   ·   TAKEN 9   ·   HELD 14   ·   FILED 5
+  unread 0 · stale 0 · blockerless 0 · ownerless 0 · unknown 0
+  --strict exit 0 · pnpm check exit 0
+```
+
+### 24e. THE PROMOTION COMMIT SHIPPED RED, AND `pnpm check` COULD NOT SEE IT
+
+`fd16e75a` was verified with `pnpm check` — exit 0, reported as such. **The suite
+was not run, and it was failing in two places, both caused by that very commit:**
+
+```
+FAIL  server/architectureAtlas.test.ts        Atlas stale — fingerprint
+                                              36fe0782ffe2b3a5 vs source 83a70fafe092b783
+FAIL  server/scriptExitDiscipline.test.ts     sweep-untracked-disposables: last
+                                              statement does not exit
+```
+
+Neither is incidental; **both are the promotion itself**. Promoting 24 files moved
+the Atlas source fingerprint, and the second is sharper: the sweep script broke a
+tracked discipline the instant it was promoted, because that discipline only
+scans files the repository contains. **A file entering the repository acquires the
+repository's rules** — the same lesson as §24c's guard, arriving through a
+different door on the same commit. The Atlas failure is also the third appearance
+of one class in three commits: `7b41fb0d` was committed on a green door without a
+suite run, `3a1633a3` repaired it, and `fd16e75a` did it again.
+
+Both fixed here, and the commit that carries this section quotes the whole-suite
+reading taken after its last write — `pnpm check` alone cannot see either of
+them, which is the point.
+
+### 24f. WHAT `output/` TURNED OUT TO BE — and why §2's third order was refused
+
+§2's recommendation 3 lists `output/` as *"untracked debris — DELETE"*. It is not
+debris. Tracked documents name **475 distinct `output/` paths, 445 of which exist
+on disk** — evidence packs, court readings, and DECISION_LOG citations, including
+frames filed for the founder's own eye.
+
+The automation had already declined it: `output` came back HAND, *"basename too
+generic to auto-decide"*. So the machine abstained and **the prose kill list still
+said DELETE** — a directory of 445 cited artifacts, one obedient reading away from
+gone. It is the mirror of §22's rule: there, the kill list was mistaken for a
+citation; here, a kill list outlived the evidence that should have retired it.
+
+**`output/` is REFUSED, and the order in §2 is wrong rather than pending.**
+
+What was actually taken is the three genuinely uncited items, archived first:
+
+```
+archive   C:\Users\Admin\drape-debris-2026-08-19.zip
+entries   3, read back from the zip — `0` 678 B · errfiles.tmp 1034 B ·
+          scripterrors.tmp 14496 B
+```
+
+`errfiles.tmp`'s only two remaining mentions are the sweep's own docblock
+*about* it being a false citation — commentary on a death warrant is not a
+citation either.
+
+**Still open: whether `pnpm check` should pass `--strict`.** It is the only thing
+standing between the completion bar and a silent regression, and the incident
+above is what its absence costs. Filed for a ruling rather than flipped, because
+making `unread` fatal blocks every developer's typecheck on any new uncalled
+export — a friction decision, not a correctness one.

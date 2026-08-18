@@ -166,3 +166,11 @@ if (process.argv.includes("--list-delete")) {
   console.log("\nDELETE");
   for (const row of rows.filter((r) => r.verdict === "DELETE")) console.log(row.path);
 }
+
+/*
+  AND IT ENDS BY ENDING — `scriptExitDiscipline`'s rule, which this file broke
+  the moment it was PROMOTED. Untracked, nothing scanned it; tracked, it is an
+  entrypoint like any other. The scan walks the repository, so a run over a large
+  tree holds file handles the event loop will happily wait on.
+*/
+process.exit(0);

@@ -37,6 +37,23 @@
  *   railway.cmd run --service MySQL -- npx tsx scripts/supersede-library-words-disposable.mts --commit
  */
 import "dotenv/config";
+/*
+  IT DECLARES ITS WORLD NOW, BECAUSE IT IS NO LONGER A ONE-SHOT.
+  `assertOneWorld`'s exemption is for a bench run by hand in a known world.
+  This file is cited by tracked source and has been promoted into the
+  repository, so it is a standing instrument wearing a one-shot's name, and the
+  exemption stopped fitting it the moment it was committed. Calling the guard
+  makes the name residue rather than a hole.
+
+  The exemption itself was keyed on the `-disposable.mts` SPELLING until
+  2026-08-19 — which would have handed this file a one-shot's pass forever, and
+  deleting the call below would have reddened nothing. `scriptWorldGuard` now
+  keys on TRACKING STATUS instead, so the class is closed rather than this one
+  instance: see `trackedScripts` there.
+*/
+import { assertOneWorld } from "./lib/worldGuard.mts";
+assertOneWorld([process.env.MYSQL_PUBLIC_URL ? "MYSQL_PUBLIC_URL" : "DATABASE_URL"]);
+
 
 const COMMIT = process.argv.includes("--commit");
 

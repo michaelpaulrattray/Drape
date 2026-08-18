@@ -572,6 +572,12 @@
   why: its own docblock says the service's backstop uses removalEvidence, which is live; this is the superseded coarse question. TAKEN — ten phrasings lived only in its test and were carried onto removalEvidence under the verdict it ACTUALLY returns; two of the six positives are ambiguous, which the one-bit question could not say
   argued: 17-family
 
+- symbol: AMBIGUOUS_WORDS_FOR_CORPUS
+  file: server/castingV2/removalWords.ts
+  verdict: KEEP
+  why: the test seam over AMBIGUOUS_REMOVAL_WORDS, which is private; it was BORN of namesRemoval's removal, when that symbol's ten phrasings were carried onto removalEvidence and the surviving corpus test needed the module's own list. Deleting it pushes that test onto a hand-copied list — law 4, a second list shadowing the source, which is the exact defect the carry was protecting against
+  argued: 6c
+
 - symbol: facetsWithUnreliabilityPrior
   file: server/castingV2/renderVerification.ts
   verdict: KEEP

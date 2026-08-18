@@ -1,5 +1,15 @@
 /** Guarded disposable-MySQL proof for R7-7D D4A intent/reference authority. */
 import "dotenv/config";
+/*
+  IT DECLARES ITS WORLD, BECAUSE THE SUFFIX NO LONGER EXCUSES IT.
+  `scriptWorldGuard` exempted every `-disposable.mts` file by SPELLING until
+  2026-08-19; it now exempts by tracking status, and this file is in the
+  repository. That is the right way round for this one in particular: it builds
+  a THROWAWAY database from the active connection and drops it again, so a
+  half-production process is not a wrong reading here — it is a wrong write.
+*/
+import { assertOneWorld } from "./lib/worldGuard.mts";
+assertOneWorld(["DATABASE_URL"]);
 import assert from "node:assert/strict";
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { readdir, readFile } from "node:fs/promises";

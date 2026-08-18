@@ -1,3 +1,4 @@
+import { execFileSync } from "node:child_process";
 import { readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 
@@ -31,13 +32,16 @@ import { describe, expect, it } from "vitest";
  * pool, which reads `DATABASE_URL` and nothing else. The scan decides that, so
  * a script written tomorrow is in scope the moment it calls it.
  *
- * OUT of scope: a file named `*-disposable.mts`. That suffix is this
- * repository's own convention for a one-shot bench, not a category invented
- * here — 200-odd files use it. The module's own header makes the argument for
- * excluding them: *"a guard people learn to work around is a guard that is
- * off."* A bench that ran once against dev and will never be run again does
- * not need a ceremony, and requiring one on 200 files is how the ceremony stops
- * being read.
+ * OUT of scope: a file the repository does not contain — an untracked one-shot
+ * bench. The module's own header makes the argument for excluding them: *"a
+ * guard people learn to work around is a guard that is off."* A bench that ran
+ * once against dev and will never be run again does not need a ceremony, and
+ * requiring one on hundreds of files is how the ceremony stops being read.
+ *
+ * This was keyed on the `-disposable.mts` SUFFIX until 2026-08-19, and the
+ * suffix is not the sentence — see `trackedScripts` for the day the two came
+ * apart and what it cost. Both halves of the scope are now derived, and neither
+ * is a hand list.
  *
  * The residue — a permanent script that genuinely should not carry the guard —
  * goes in `EXEMPT` with a reason, and the reason is asserted to exist.
@@ -85,10 +89,54 @@ function callsTheGuard(source: string): boolean {
   return /\bassertOneWorld\s*\(/.test(source);
 }
 
+/**
+ * THE ONE-SHOTS, BY WHAT MAKES THEM ONE-SHOTS — not by how they are spelled.
+ *
+ * The exemption above used to read `relative.endsWith("-disposable.mts")`, and
+ * the argument for it was never about the letters: *"a bench that ran once
+ * against dev and will never be run again does not need a ceremony."* A bench
+ * that will never be run again is a file **the repository does not contain**.
+ * Tracking status is that sentence; the suffix is a convention that agrees with
+ * it right up until it does not.
+ *
+ * It stopped agreeing on 2026-08-19. Twenty-four `-disposable.mts` files were
+ * promoted into the repository because tracked source and standing design notes
+ * cite them by name — they are standing instruments now, and three of them read
+ * the app's database. Under the old key they kept a one-shot's exemption
+ * forever: guard calls were added to all three, and **deleting those calls
+ * would not have reddened anything.** That is invariant 7 in the same shape the
+ * sabotage found once already — an import without a call is not a guard, and a
+ * guard nothing can fail is not a control.
+ *
+ * A rename would have closed it for those three files and left the class open
+ * for the twenty-fifth promotion. This closes the class: the names stay as the
+ * citers spell them, and the suffix is now residue.
+ */
+function trackedScripts(root: string): Set<string> {
+  const listed = execFileSync("git", ["ls-files", "--", "scripts"], {
+    cwd: repoRoot,
+    encoding: "utf8",
+    maxBuffer: 32 * 1024 * 1024,
+  });
+  const names = listed
+    .split(/\r?\n/)
+    .filter((line) => line !== "")
+    .map((line) => path.relative(root, path.join(repoRoot, line)).split(path.sep).join("/"));
+  /*
+    REFUSE, DO NOT ALLOW, WHEN THE DEPENDENCY IS MISSING. This predicate decides
+    who is EXEMPT, so an empty answer — git absent, a detached export, a build
+    context that is not a checkout — would exempt every script in the tree and
+    turn the whole suite green by making it blind. Invariant 7's other half.
+  */
+  if (names.length === 0) throw new Error("git ls-files returned no scripts — the exemption cannot be decided");
+  return new Set(names);
+}
+
 /** In scope, unguarded, and not a one-shot bench. */
 export function unguardedScripts(root: string): string[] {
+  const tracked = trackedScripts(root);
   return databaseScripts(root).filter((relative) => {
-    if (relative.endsWith("-disposable.mts")) return false;
+    if (!tracked.has(relative)) return false;
     if (relative in EXEMPT) return false;
     return !callsTheGuard(readFileSync(path.join(root, relative), "utf8"));
   });
@@ -111,18 +159,41 @@ describe("a script that reads the app's database declares its world", () => {
     Without it the assertion above is what a scan that found NOTHING prints,
     and a walk that silently stopped reading — a renamed directory, a changed
     extension — is indistinguishable from a fully guarded repository. So the
-    reader is pointed at a fixture it must complain about: the one-shot
-    benches, which are unguarded on purpose and therefore always available as
+    reader is pointed at a fixture it must complain about: the untracked
+    one-shot benches, which are unguarded on purpose and therefore available as
     a known-positive population.
+
+    That population is what this milestone is emptying, so the day it hits zero
+    this control says so out loud rather than passing on nothing.
   */
   it("POSITIVE CONTROL — the reader does find unguarded getDb() scripts", () => {
+    const tracked = trackedScripts(scriptsDir);
     const benches = databaseScripts(scriptsDir)
-      .filter((relative) => relative.endsWith("-disposable.mts"))
+      .filter((relative) => !tracked.has(relative))
       .filter((relative) => !callsTheGuard(readFileSync(path.join(scriptsDir, relative), "utf8")));
     expect(
       benches.length,
       "no unguarded bench left to control against — swap this fixture for a synthetic one",
     ).toBeGreaterThan(0);
+  });
+
+  /*
+    THE EXEMPTION PREDICATE'S OWN CONTROL — and it is the one that matters most,
+    because this predicate decides who is exempt and it fails in the SILENT
+    direction. `trackedScripts` returning nothing does not redden anything: it
+    exempts the entire tree, and "every permanent getDb() script calls
+    assertOneWorld" passes because the reader has gone blind. The refusal inside
+    the function is the guard; this proves the refusal is reachable and that a
+    real answer discriminates in both directions.
+  */
+  it("the tracked/untracked split is real in both directions", () => {
+    const tracked = trackedScripts(scriptsDir);
+    /* POSITIVE: a file this suite cannot run without is tracked. */
+    expect(tracked.has("lib/worldGuard.mts"), "the guard module itself reads as untracked").toBe(true);
+    /* NEGATIVE: a name git has never seen is not tracked — the set is not "everything". */
+    expect(tracked.has("no-such-script-a4f19c-disposable.mts")).toBe(false);
+    expect(tracked.size, "suspiciously few tracked scripts — is the walk in the right tree?")
+      .toBeGreaterThan(50);
   });
 
   /* The scan must reach the tree: zero files read is zero violations found. */
