@@ -626,3 +626,72 @@ OTHER pass (§1a) already did that for 23 of them and kept 20 on the list.
 > failure announces itself.** One left admin credit adjustment on a deletion
 > list; the other hid a third of the dead code from the milestone that was
 > looking for it.
+
+---
+
+## 13. THE EXACT LIST, BY AREA — and the tail outside casting is read
+
+With the intersection printed rather than reasoned, the milestone finally has a
+list it can be budgeted against:
+
+```
+110  server/castingV2 65 · server/casting 31 · server/db 7 · server/security 3
+     · server/monitoring 2 · server/slack 1 · server/testing 1
+```
+
+The 14 outside `casting`/`castingV2` are read here, because they are the ones a
+casting-shaped reading would never reach.
+
+### 13a. Underscore-prefixed test seams — **KEEP** (4)
+
+`_clearCooldowns`, `_getCooldownCount` (`monitoring/healthMonitor.ts`),
+`_clearPendingActions` (`slack/slackApproval.ts`), `allowColdImports`
+(`testing/coldImportTimeout.ts`). The leading underscore is this codebase's own
+convention for a seam, and `server/testing/` is test infrastructure by
+directory. The sweep cannot see a convention; a human can.
+
+### 13b. The security three — the founder card of §9
+
+`recordGlobalFailedLogin` / `shouldSendGlobalAttackAlert` /
+`markGlobalAttackAlertSent`. Unchanged from §9: wire-or-delete, his call.
+
+### 13c. THE FINDING — `removeEdgesForItems` is the deletion path's other half,
+### and nothing calls it
+
+`server/db/boardEdges.ts:79` exists to remove the edges belonging to deleted
+board items. **The deletion path does not call it.**
+
+```
+routes/boards.ts:339  deleteItems  →  db/boards.ts:610  deleteBoardItems
+                                      deletes boardItems, and only boardItems
+drizzle/schema.ts:1894  boardEdges.sourceItemId / targetItemId
+                        plain int columns with indexes — NO foreign key,
+                        so no ON DELETE CASCADE is doing it either
+db/boardEdges.ts:22     getBoardEdges(boardId) selects every edge on the board
+                        with no join to items — orphans are RETURNED
+```
+
+So deleting an item leaves its edges in the table and in the payload. **Three
+readings, no join between them, and each was taken from the file rather than
+recalled.**
+
+⚠ **NOT claimed: that a user sees anything.** React Flow drops edges whose
+endpoints are absent, so the likely surface cost is nothing and the likely real
+cost is unbounded row growth on a table nobody prunes. **What is proven is that
+the helper written for this exact path is not invoked** — invariant 7, and the
+THIRD instance this milestone has found (after `INSTRUCTION_MAY_OVERRIDE` and
+the security alert family).
+
+**Disposition: NOT a deletion.** `removeEdgesForItems` is the fix, not the
+debris — wiring it into `deleteBoardItems`'s transaction is a one-line build
+with an owner, and it is filed as one rather than taken here, because a boards
+write path is not a cleanup milestone's to change on its own reading.
+
+### 13d. The rest of `server/db` — INVESTIGATE with the milestone's own list (4)
+
+`listSegmentHistory`, `listOrphanedVariants`, `dbReferencePlateIngestionPersistence`,
+`inspectOwnedInkAddAvailability`, `getStorageCleanupBatchByOperation`,
+`getStorageCleanupItemsForBatch` — reporting and inspection helpers around
+casting V2 and the cleanup worker. Each needs the same question asked of it as
+§13c: *is this debris, or the unwired half of something?* — and after `removeEdgesForItems`
+that question is no longer rhetorical.
