@@ -1,0 +1,266 @@
+/**
+ * The ink studio's database layer (migration 0034).
+ *
+ * One row is a design a customer supplied, the place on her it is meant for,
+ * and where OUR copy of the bytes lives. This file holds the STATEMENTS; the
+ * decisions — which placements exist, which sides a placement has, what a
+ * design may be — live in `castingV2/inkUploadDoor.ts`, where they can be
+ * driven without a database.
+ *
+ * # Three rules, and each of them is somebody's scar
+ *
+ * 1. **The owner is in the statement that writes** (invariant 1). The candidate
+ *    is proved by `(publicId, userId)` inside the same transaction as the
+ *    insert, and the row's `candidateId` is taken from the row just proved
+ *    rather than from anything a caller passed. A design filed against a
+ *    stranger's Cast would be a picture we keep, and eventually paint, on
+ *    somebody else's work.
+ * 2. **The cap is counted under a lock, not near one.** The candidate row is
+ *    selected `FOR UPDATE`, so two uploads racing on the same Cast queue behind
+ *    each other rather than both reading seven and both writing. A cap that can
+ *    be beaten by clicking twice is a cap in the comments.
+ * 3. **The manifest is discharged in the transaction that files the row.** The
+ *    bytes are written to a permanently public key BEFORE this runs, so they
+ *    are registered for cleanup first and released here — a crash in between
+ *    collects itself, and a row that fails to commit leaves nothing behind.
+ *    The library's own rule, and it is here for the same reason: manifest
+ *    before bytes is a race this program has already paid for.
+ *
+ * # Retention is not in this file's gift
+ *
+ * The purge helpers at the bottom take a transaction handle because they run
+ * inside the candidate sweep's own transaction, on the candidate sweep's own
+ * manifest. A design's lifetime is its Cast's, unconditionally — the studio
+ * flag governs whether a row is WRITTEN and nothing governs whether it is
+ * purged.
+ */
+import { and, eq, inArray, sql } from "drizzle-orm";
+import { randomUUID } from "node:crypto";
+
+import {
+  castingCandidates,
+  castingInkDesigns,
+  storageCleanupBatches,
+  storageCleanupItems,
+} from "../../drizzle/schema";
+import type { InkPlacement } from "../../shared/inkPlacementVocabulary";
+import type { InkProvenance } from "../../shared/inkProvenance";
+import type { InkSide } from "../../shared/inkReleasedPlacements";
+import { INK_DESIGNS_PER_CANDIDATE } from "../castingV2/inkUploadDoor";
+import { getDb, withTransaction, type TransactionHandle } from "./connection";
+import { undischargedStorageCleanupBatchWhere } from "./storageCleanup";
+
+async function requireDb() {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return db;
+}
+
+function affectedRows(result: unknown): number {
+  const header = Array.isArray(result) ? result[0] : result;
+  return (header as { affectedRows?: number })?.affectedRows ?? 0;
+}
+
+/** The Cast is not this account's — said the same way a missing one is. */
+export class InkDesignOwnershipError extends Error {
+  constructor(what: string) {
+    super(`${what} not found`);
+    this.name = "InkDesignOwnershipError";
+  }
+}
+
+/** This Cast already holds as many designs as it may. */
+export class InkDesignCapError extends Error {
+  constructor() {
+    super(`a Cast may hold ${INK_DESIGNS_PER_CANDIDATE} ink designs`);
+    this.name = "InkDesignCapError";
+  }
+}
+
+export type InkDesignToRecord = {
+  userId: number;
+  candidatePublicId: string;
+  placement: InkPlacement;
+  side: InkSide;
+  provenance: InkProvenance;
+  /** Our object, under the candidate's purge path. Never a pointer. */
+  storageKey: string;
+  /** sha256 of the stored bytes — byte identity, as the library does it. */
+  digest: string;
+  mime: string;
+  byteSize: number;
+  width: number;
+  height: number;
+  /**
+   * The manifest holding the bytes while this row is written.
+   *
+   * Optional in the type only so a caller with nothing to discharge cannot be
+   * forced to invent one; on this road there are always bytes, so the procedure
+   * always passes it.
+   */
+  cleanupBatchId?: string;
+};
+
+export type RecordedInkDesign = {
+  publicId: string;
+  candidateId: number;
+  placement: InkPlacement;
+  side: InkSide;
+  provenance: InkProvenance;
+  storageKey: string;
+  createdAt: Date;
+};
+
+export async function recordInkDesign(input: InkDesignToRecord): Promise<RecordedInkDesign> {
+  if (!Number.isInteger(input.userId) || input.userId <= 0) {
+    throw new Error("userId must be a positive integer");
+  }
+  const publicId = randomUUID();
+  const now = new Date();
+
+  return withTransaction(async (tx) => {
+    /*
+      The parent, proved and LOCKED in the same transaction as the write. The
+      lock is what makes the cap below exact: without it two uploads on one Cast
+      both read the same count and both write.
+    */
+    const [candidate] = await tx
+      .select({ id: castingCandidates.id })
+      .from(castingCandidates)
+      .where(and(
+        eq(castingCandidates.publicId, input.candidatePublicId),
+        eq(castingCandidates.userId, input.userId),
+      ))
+      .limit(1)
+      .for("update");
+    if (!candidate) throw new InkDesignOwnershipError("candidate");
+
+    const [held] = await tx
+      .select({ count: sql<number>`count(*)` })
+      .from(castingInkDesigns)
+      .where(eq(castingInkDesigns.candidateId, candidate.id));
+    if (Number(held?.count ?? 0) >= INK_DESIGNS_PER_CANDIDATE) throw new InkDesignCapError();
+
+    await tx.insert(castingInkDesigns).values({
+      publicId,
+      userId: input.userId,
+      /* From the row just proved, never from a number a caller supplied. */
+      candidateId: candidate.id,
+      placement: input.placement,
+      side: input.side,
+      provenance: input.provenance,
+      storageKey: input.storageKey,
+      digest: input.digest,
+      mime: input.mime,
+      byteSize: input.byteSize,
+      width: input.width,
+      height: input.height,
+      createdAt: now,
+    });
+
+    if (input.cleanupBatchId) {
+      /*
+        The bytes are now referenced by a row, so the manifest holding them must
+        go — in this same transaction, or the worker deletes the design a render
+        is about to be handed. Asserted rather than assumed: a manifest that does
+        not delete means something else already claimed it, and committing on top
+        of that files a row whose bytes are already scheduled to die.
+      */
+      await tx.delete(storageCleanupItems)
+        .where(eq(storageCleanupItems.batchId, input.cleanupBatchId));
+      const removed = await tx.delete(storageCleanupBatches).where(and(
+        eq(storageCleanupBatches.id, input.cleanupBatchId),
+        eq(storageCleanupBatches.userId, input.userId),
+        undischargedStorageCleanupBatchWhere(),
+      ));
+      if (affectedRows(removed) !== 1) throw new InkDesignOwnershipError("design");
+    }
+
+    return {
+      publicId,
+      candidateId: candidate.id,
+      placement: input.placement,
+      side: input.side,
+      provenance: input.provenance,
+      storageKey: input.storageKey,
+      createdAt: now,
+    };
+  });
+}
+
+export type StoredInkDesign = RecordedInkDesign & {
+  digest: string;
+  mime: string;
+  byteSize: number;
+  width: number;
+  height: number;
+};
+
+/**
+ * Every design on this Cast, oldest first — owner-scoped in the read itself.
+ *
+ * An explicit projection (invariant 8): the row is never spread across the
+ * serialization boundary, and the internal ids stay inside.
+ */
+export async function listInkDesigns(input: {
+  userId: number;
+  candidatePublicId: string;
+}): Promise<readonly StoredInkDesign[]> {
+  const db = await requireDb();
+  const rows = await db
+    .select({
+      publicId: castingInkDesigns.publicId,
+      candidateId: castingInkDesigns.candidateId,
+      placement: castingInkDesigns.placement,
+      side: castingInkDesigns.side,
+      provenance: castingInkDesigns.provenance,
+      storageKey: castingInkDesigns.storageKey,
+      digest: castingInkDesigns.digest,
+      mime: castingInkDesigns.mime,
+      byteSize: castingInkDesigns.byteSize,
+      width: castingInkDesigns.width,
+      height: castingInkDesigns.height,
+      createdAt: castingInkDesigns.createdAt,
+    })
+    .from(castingInkDesigns)
+    .innerJoin(castingCandidates, eq(castingCandidates.id, castingInkDesigns.candidateId))
+    .where(and(
+      eq(castingCandidates.publicId, input.candidatePublicId),
+      /* BOTH sides of the join carry the owner. The design row's `userId` is
+         denormalized, and a denormalized column is a claim until the parent
+         agrees with it. */
+      eq(castingCandidates.userId, input.userId),
+      eq(castingInkDesigns.userId, input.userId),
+    ))
+    .orderBy(castingInkDesigns.id);
+  return rows.map((row) => ({ ...row, createdAt: new Date(row.createdAt) }));
+}
+
+/* ------------------------------------------------------------ retention */
+
+/**
+ * Every design object belonging to these candidates — read INSIDE the sweep's
+ * transaction, so a design uploaded between the read and the delete cannot slip
+ * through and outlive the Cast it was attached to.
+ */
+export async function listPurgeableInkDesignsIn(
+  tx: TransactionHandle,
+  candidateIds: readonly number[],
+): Promise<Array<{ id: number; storageKey: string }>> {
+  if (candidateIds.length === 0) return [];
+  return tx
+    .select({ id: castingInkDesigns.id, storageKey: castingInkDesigns.storageKey })
+    .from(castingInkDesigns)
+    .where(inArray(castingInkDesigns.candidateId, [...candidateIds]));
+}
+
+export async function deleteInkDesignRowsIn(
+  tx: TransactionHandle,
+  candidateIds: readonly number[],
+): Promise<number> {
+  if (candidateIds.length === 0) return 0;
+  const result = await tx
+    .delete(castingInkDesigns)
+    .where(inArray(castingInkDesigns.candidateId, [...candidateIds]));
+  return affectedRows(result);
+}

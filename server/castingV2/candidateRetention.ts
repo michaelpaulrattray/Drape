@@ -23,6 +23,7 @@ import {
   listPurgeableReferencesIn,
 } from "../db/castingV2ReferenceLibrary";
 import { deleteFaceScanRowsIn, listPurgeableFaceScansIn } from "../db/castingV2FaceScans";
+import { deleteInkDesignRowsIn, listPurgeableInkDesignsIn } from "../db/castingV2InkDesigns";
 import { deleteSegmentRowsIn, listPurgeableSegmentsIn } from "../db/castingV2Segments";
 import { deleteVariantRowsIn, listPurgeableVariantsIn } from "../db/castingV2Variants";
 import { withTransaction } from "../db/connection";
@@ -39,6 +40,7 @@ import { createModuleLogger } from "../logging/logger";
 import { checkCandidateInvariants } from "./candidateInvariants";
 import {
   captureCastingV2Enabled,
+  castingInkStudioArmed,
   castingReferenceLibraryArmed,
   castingScanTableArmed,
   castingSegmentsArmed,
@@ -125,6 +127,22 @@ function tolerateAbsentFaceScanStore(error: unknown): never | [] {
   if (!isMissingTable(error) || castingScanTableArmed()) throw error;
   log.warn(
     "[candidateRetention] the kept-scan table is absent — nothing can have been written to it, so nothing is being left behind. This is expected only before the scan-table migration lands.",
+  );
+  return [];
+}
+
+/**
+ * The same tolerance, on the same terms, for an uploaded ink design (0034).
+ *
+ * This one's window is not hypothetical: production is running this sweep every
+ * pass right now and has NOT taken the migration, so the table is genuinely
+ * absent there — and genuinely empty, because the studio's door is off. Armed,
+ * a missing table stops being an empty set and becomes a fault said out loud.
+ */
+function tolerateAbsentInkDesignStore(error: unknown): never | [] {
+  if (!isMissingTable(error) || castingInkStudioArmed()) throw error;
+  log.warn(
+    "[candidateRetention] the ink design table is absent — nothing can have been written to it, so nothing is being left behind. This is expected only before the ink-studio migration lands.",
   );
   return [];
 }
@@ -302,6 +320,30 @@ export async function runCandidateRetentionSweep(now = new Date()): Promise<Rete
         }
       }
       if (scans.length > 0) await deleteFaceScanRowsIn(tx, candidateIds);
+
+      /*
+        And a candidate's UPLOADED INK DESIGNS, on exactly the same terms
+        (migration 0034).
+
+        This block carries the promise the upload door is allowed to make. Every
+        other artifact above is something this product MADE; a design is a
+        picture a customer handed us, kept at a permanently public URL under her
+        Cast's own path. "It leaves when your Cast does" is true because of
+        these four lines and nothing else.
+
+        UNCONDITIONAL, like the three above. `CASTING_INK_STUDIO_SCOPE` governs
+        whether a row is written; nothing governs whether it is purged. Every
+        design row owns exactly one object — there is no words-only ink row — so
+        the delete could have keyed on either, and it keys on the LIST for the
+        same reason its siblings do.
+      */
+      const inkDesigns = await listPurgeableInkDesignsIn(tx, candidateIds).catch(
+        (error: unknown) => tolerateAbsentInkDesignStore(error),
+      );
+      for (const design of inkDesigns) {
+        storageItems.push({ storageKey: design.storageKey, storageBackend: "public_r2" as const });
+      }
+      if (inkDesigns.length > 0) await deleteInkDesignRowsIn(tx, candidateIds);
 
       if (storageItems.length > 0) {
         await createStorageCleanupManifestIn(tx, {

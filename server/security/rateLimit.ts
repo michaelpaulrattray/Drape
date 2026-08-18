@@ -194,6 +194,22 @@ export const RATE_LIMITS = {
     maxRequests: 120,
     keyPrefix: 'casting_read',
   },
+  /*
+    UPLOADING AN INK DESIGN — bytes we keep, on a road with no charge path to
+    pace them (fable-921 §3b).
+
+    Its own bucket rather than the sheet's, because the two limits protect
+    different things: `castingSheet` stops a loop hammering the database, and
+    this one stops an account writing megabytes to a permanently public bucket
+    faster than a person could choose files. An hour rather than a minute for
+    the same reason — a burst of eight is a customer with a folder open, and
+    the per-candidate cap (8) already bounds how many can land on one Cast.
+  */
+  castingInkUpload: {
+    windowMs: 60 * 60 * 1000, // 1 hour
+    maxRequests: 24,
+    keyPrefix: 'casting_ink_upload',
+  },
 } as const;
 
 /**

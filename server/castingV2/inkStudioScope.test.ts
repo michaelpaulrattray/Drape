@@ -4,6 +4,7 @@ import {
   CastingInkStudioCoverageError,
   CastingInkStudioScopeConfigurationError,
   captureCastingInkStudioEnabled,
+  castingInkStudioArmed,
   parseCastingInkStudioScope,
   validateCastingInkStudioEnvironment,
 } from "./castingV2Scope";
@@ -146,5 +147,33 @@ describe("the chain is re-checked where it is used, not only at boot", () => {
     });
     expect(captureCastingInkStudioEnabled(1)).toBe(true);
     expect(captureCastingInkStudioEnabled(2)).toBe(false);
+  });
+});
+
+describe("armed at all — the retention sweep's only question", () => {
+  it("is false when absent and when off", () => {
+    setEnv({});
+    expect(castingInkStudioArmed()).toBe(false);
+    setEnv({ CASTING_INK_STUDIO_SCOPE: "off" });
+    expect(castingInkStudioArmed()).toBe(false);
+  });
+
+  it("is true for ANY named user, including one this machine is not", () => {
+    /*
+      Deliberately not a per-user question and deliberately not an AND of the
+      chain. The sweep asks it to decide whether a MISSING TABLE is tolerable,
+      and a table is missing for the whole database or for none of it. Making
+      this narrower would tolerate a real fault on the users it did not name.
+    */
+    setEnv({ CASTING_INK_STUDIO_SCOPE: "users:2" });
+    expect(castingInkStudioArmed()).toBe(true);
+    expect(captureCastingInkStudioEnabled(1)).toBe(false);
+  });
+
+  it("refuses to answer at all on a scope it cannot parse", () => {
+    /* A sweep running against an unreadable flag would tolerate a missing
+       table on the strength of a value nobody can read. */
+    setEnv({ CASTING_INK_STUDIO_SCOPE: "users:" });
+    expect(() => castingInkStudioArmed()).toThrow(CastingInkStudioScopeConfigurationError);
   });
 });

@@ -1054,6 +1054,20 @@ export function captureCastingInkStudioEnabled(userId: number): boolean {
   return captureCastingRepaintEnabled(userId);
 }
 
+/**
+ * Whether the studio is armed AT ALL, regardless of user.
+ *
+ * The retention sweep reads this one, and only to decide whether a MISSING
+ * TABLE is tolerable — production has not taken migration 0034 and sweeps every
+ * pass. It never gates the purge itself: a design uploaded while the flag was
+ * on must be collected after it goes off, and a retention path that narrows
+ * with a feature flag is how a customer's own photograph outlives the Cast it
+ * was promised to leave with.
+ */
+export function castingInkStudioArmed(): boolean {
+  return parseCastingInkStudioScope(process.env[CASTING_INK_STUDIO_SCOPE_ENV]).kind !== "off";
+}
+
 export function validateCastingInkStudioEnvironment(input: {
   scope: string | undefined;
   repaintScope: string | undefined;

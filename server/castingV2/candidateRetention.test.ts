@@ -29,6 +29,8 @@ const calls = {
   deleteReferences: vi.fn(),
   listScans: vi.fn(),
   deleteScans: vi.fn(),
+  listInkDesigns: vi.fn(),
+  deleteInkDesigns: vi.fn(),
 };
 
 vi.mock("../db/castingV2", () => ({
@@ -90,6 +92,16 @@ vi.mock("../db/castingV2FaceScans", () => ({
   deleteFaceScanRowsIn: (_tx: unknown, ...args: unknown[]) => calls.deleteScans(...args),
 }));
 
+/* And an uploaded ink design (migration 0034), on exactly those terms: same
+   transaction, same manifest, unconditional. A design is a picture a CUSTOMER
+   supplied — the one artifact class here that was never ours — so it leaving
+   with her Cast is the whole promise. Statements proved against real MySQL in
+   `server/castingV2-ink-design-db.test.ts`. */
+vi.mock("../db/castingV2InkDesigns", () => ({
+  listPurgeableInkDesignsIn: (_tx: unknown, ...args: unknown[]) => calls.listInkDesigns(...args),
+  deleteInkDesignRowsIn: (_tx: unknown, ...args: unknown[]) => calls.deleteInkDesigns(...args),
+}));
+
 const { runCandidateRetentionSweep } = await import("./candidateRetention");
 
 beforeEach(() => {
@@ -106,9 +118,12 @@ beforeEach(() => {
   calls.deleteReferences.mockResolvedValue(0);
   calls.listScans.mockResolvedValue([]);
   calls.deleteScans.mockResolvedValue(0);
+  calls.listInkDesigns.mockResolvedValue([]);
+  calls.deleteInkDesigns.mockResolvedValue(0);
   delete process.env.CASTING_SEGMENTS_SCOPE;
   delete process.env.CASTING_REFERENCE_LIBRARY_SCOPE;
   delete process.env.CASTING_SCAN_TABLE_SCOPE;
+  delete process.env.CASTING_INK_STUDIO_SCOPE;
 });
 
 describe("the 7-day retention sweep", () => {
@@ -360,6 +375,55 @@ describe("a candidate's segments purge with it", () => {
         { storageKey: "casting-v2/scans/hair.png", storageBackend: "public_r2" },
       ]),
     }));
+  });
+
+  it("purges an uploaded ink design whatever ITS flag says, and takes its bytes", async () => {
+    /*
+      A DESIGN IS THE ONE PICTURE HERE THAT WAS NEVER OURS. Everything else the
+      sweep collects — variants, segments, library crops, stencils — this
+      product made. A design is a photograph a customer handed us, and "it
+      leaves when your Cast does" is the promise the upload is allowed to make
+      only because this block exists.
+
+      The flag is OFF here on purpose, for the standing reason: the studio flag
+      governs whether a row is WRITTEN, and nothing governs whether it is
+      purged. A flag turned back off after rows exist must not strand them.
+    */
+    process.env.CASTING_INK_STUDIO_SCOPE = "off";
+    calls.listInkDesigns.mockResolvedValue([
+      { id: 9, storageKey: "casting-v2/ink/design-one.png" },
+      { id: 10, storageKey: "casting-v2/ink/design-two.jpg" },
+    ]);
+
+    const result = await runCandidateRetentionSweep();
+
+    expect(calls.deleteInkDesigns).toHaveBeenCalledWith([1]);
+    /* The candidate's own object, plus both designs. */
+    expect(result.objectsQueued).toBe(3);
+    expect(calls.queueStorageCleanup).toHaveBeenCalledWith(expect.objectContaining({
+      storageItems: expect.arrayContaining([
+        { storageKey: "casting-v2/ink/design-one.png", storageBackend: "public_r2" },
+        { storageKey: "casting-v2/ink/design-two.jpg", storageBackend: "public_r2" },
+      ]),
+    }));
+  });
+
+  it("tolerates an absent ink design table only while the studio is disarmed", async () => {
+    /* Production has NOT taken migration 0034 and runs this sweep every pass,
+       so the window where this code knows the table and the database does not
+       is live right now. Armed, the same silence would be a fault. */
+    const missing = Object.assign(new Error("Table 'x.casting_ink_designs' doesn't exist"), {
+      code: "ER_NO_SUCH_TABLE",
+      errno: 1146,
+    });
+    calls.listInkDesigns.mockRejectedValue(missing);
+
+    const result = await runCandidateRetentionSweep();
+    expect(result.candidatesPurged).toBe(1);
+    expect(calls.deleteInkDesigns).not.toHaveBeenCalled();
+
+    process.env.CASTING_INK_STUDIO_SCOPE = "users:1";
+    await expect(runCandidateRetentionSweep()).rejects.toThrow(/doesn't exist/);
   });
 
   it("tolerates an absent scan table only while the scan table is disarmed", async () => {

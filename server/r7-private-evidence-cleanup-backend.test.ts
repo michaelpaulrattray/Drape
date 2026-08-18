@@ -103,6 +103,12 @@ describe("R7-7C5A private evidence cleanup backend", () => {
       // and without the manifest a crash between the object writes and the row
       // insert would leave bytes nothing points at — the sweep only collects
       // what a row names.
+      // The ink studio's upload (migration 0034) registers the design's key
+      // BEFORE the bytes are stored and names `public_r2` for it. This one is a
+      // picture a CUSTOMER supplied, which is the only artifact class here that
+      // was never ours — bytes at a permanently public key with no row pointing
+      // at them would be somebody's photograph nobody would ever go looking for.
+      "server/castingV2/inkUploadService.ts",
       "server/castingV2/keptFaceScan.ts",
       // The reference library's mint (migration 0028) registers a crop of a
       // feature and its mask before either exists, and names `public_r2` for

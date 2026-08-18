@@ -165,6 +165,12 @@ describe("which bucket each casting procedure was handed", () => {
          it fills, not in a bucket that would let a refetch storm buy scans. */
       faceScan: "castingRead",
       cancel: "castingSheet",
+      /* The ink studio's upload — its OWN bucket, and an hourly one. It is not
+         a sheet action: it writes megabytes to a permanently public bucket and
+         has no charge path to pace it, so it is limited by what a person
+         choosing files can plausibly do rather than by what a click storm
+         can. */
+      upload: "castingInkUpload",
     });
   });
 

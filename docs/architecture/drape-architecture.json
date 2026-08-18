@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "9a4624aefe261707"
+    "sourceFingerprint": "4b525e4a58a7eddf"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 124
+      "moduleCount": 126
     },
     {
       "id": "domain:castingV2",
@@ -53,7 +53,7 @@
     {
       "id": "domain:data",
       "name": "data",
-      "moduleCount": 50
+      "moduleCount": 51
     },
     {
       "id": "domain:evidence",
@@ -3555,6 +3555,18 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:server/castingV2/inkUploadDoor.ts",
+      "path": "server/castingV2/inkUploadDoor.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/inkUploadService.ts",
+      "path": "server/castingV2/inkUploadService.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:server/castingV2/interpreter.ts",
       "path": "server/castingV2/interpreter.ts",
       "domain": "casting-v2",
@@ -4091,6 +4103,12 @@
     {
       "id": "module:server/db/castingV2FaceScans.ts",
       "path": "server/db/castingV2FaceScans.ts",
+      "domain": "data",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/db/castingV2InkDesigns.ts",
+      "path": "server/db/castingV2InkDesigns.ts",
       "domain": "data",
       "lifecycle": "active"
     },
@@ -6195,6 +6213,16 @@
       "namespace": "castingV2",
       "name": "getSession",
       "type": "query",
+      "auth": "protected",
+      "strictInput": true,
+      "rateLimited": true,
+      "file": "server/routes/castingV2.ts"
+    },
+    {
+      "id": "route:castingV2.ink.upload",
+      "namespace": "castingV2.ink",
+      "name": "upload",
+      "type": "mutation",
       "auth": "protected",
       "strictInput": true,
       "rateLimited": true,
@@ -9303,6 +9331,10 @@
       "path": "server/castingV2-face-scan-db.test.ts"
     },
     {
+      "id": "test:server/castingV2-ink-design-db.test.ts",
+      "path": "server/castingV2-ink-design-db.test.ts"
+    },
+    {
       "id": "test:server/castingV2-reference-library-db.test.ts",
       "path": "server/castingV2-reference-library-db.test.ts"
     },
@@ -9549,6 +9581,14 @@
     {
       "id": "test:server/castingV2/inkStudioScope.test.ts",
       "path": "server/castingV2/inkStudioScope.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/inkUploadDoor.test.ts",
+      "path": "server/castingV2/inkUploadDoor.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/inkUploadService.test.ts",
+      "path": "server/castingV2/inkUploadService.test.ts"
     },
     {
       "id": "test:server/castingV2/inventionDoor.test.ts",
@@ -9957,6 +9997,10 @@
     {
       "id": "test:server/castingV2/zoneScope.test.ts",
       "path": "server/castingV2/zoneScope.test.ts"
+    },
+    {
+      "id": "test:server/castingV2InkUpload.test.ts",
+      "path": "server/castingV2InkUpload.test.ts"
     },
     {
       "id": "test:server/ceremonySkeleton.test.ts",
@@ -18825,6 +18869,11 @@
     },
     {
       "from": "module:server/castingV2/candidateRetention.ts",
+      "to": "module:server/db/castingV2InkDesigns.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/candidateRetention.ts",
       "to": "module:server/db/castingV2ReferenceLibrary.ts",
       "kind": "imports"
     },
@@ -19486,6 +19535,61 @@
     {
       "from": "module:server/castingV2/inheritedVerdict.ts",
       "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/inkUploadDoor.ts",
+      "to": "module:shared/bodyAnchorRegions.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/inkUploadDoor.ts",
+      "to": "module:shared/inkPlacementVocabulary.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/inkUploadDoor.ts",
+      "to": "module:shared/inkReleasedPlacements.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/inkUploadService.ts",
+      "to": "module:server/castingV2/inkUploadDoor.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/inkUploadService.ts",
+      "to": "module:server/db/castingV2InkDesigns.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/inkUploadService.ts",
+      "to": "module:server/db/connection.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/inkUploadService.ts",
+      "to": "module:server/db/storageCleanup.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/inkUploadService.ts",
+      "to": "module:server/storage.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/inkUploadService.ts",
+      "to": "module:shared/inkPlacementVocabulary.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/inkUploadService.ts",
+      "to": "module:shared/inkProvenance.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/inkUploadService.ts",
+      "to": "module:shared/inkReleasedPlacements.ts",
       "kind": "imports"
     },
     {
@@ -21804,6 +21908,41 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/db/castingV2InkDesigns.ts",
+      "to": "module:drizzle/schema.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/castingV2InkDesigns.ts",
+      "to": "module:server/castingV2/inkUploadDoor.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/castingV2InkDesigns.ts",
+      "to": "module:server/db/connection.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/castingV2InkDesigns.ts",
+      "to": "module:server/db/storageCleanup.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/castingV2InkDesigns.ts",
+      "to": "module:shared/inkPlacementVocabulary.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/castingV2InkDesigns.ts",
+      "to": "module:shared/inkProvenance.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/castingV2InkDesigns.ts",
+      "to": "module:shared/inkReleasedPlacements.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/db/castingV2OpenKindProperties.ts",
       "to": "module:drizzle/schema.ts",
       "kind": "imports"
@@ -23750,6 +23889,11 @@
     },
     {
       "from": "module:server/routes/castingV2.ts",
+      "to": "module:server/_core/spokenError.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/castingV2.ts",
       "to": "module:server/_core/trpc.ts",
       "kind": "imports"
     },
@@ -23810,6 +23954,16 @@
     },
     {
       "from": "module:server/routes/castingV2.ts",
+      "to": "module:server/castingV2/inkUploadDoor.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/castingV2.ts",
+      "to": "module:server/castingV2/inkUploadService.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/castingV2.ts",
       "to": "module:server/castingV2/pendingStage.ts",
       "kind": "imports"
     },
@@ -23860,6 +24014,11 @@
     },
     {
       "from": "module:server/routes/castingV2.ts",
+      "to": "module:server/db/castingV2InkDesigns.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/castingV2.ts",
       "to": "module:server/db/castingV2ReferenceLibrary.ts",
       "kind": "imports"
     },
@@ -23901,6 +24060,21 @@
     {
       "from": "module:server/routes/castingV2.ts",
       "to": "module:shared/clientRequestId.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/castingV2.ts",
+      "to": "module:shared/inkPlacementVocabulary.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/castingV2.ts",
+      "to": "module:shared/inkProvenance.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/castingV2.ts",
+      "to": "module:shared/inkReleasedPlacements.ts",
       "kind": "imports"
     },
     {
