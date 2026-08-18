@@ -701,6 +701,28 @@ still promised to the founder from the paraphrase thread. Small UX
 rider (L13): the follow-up-queue chip (a refused compound chip
 queues its second half as a follow-up sentence) — filed fable-069.
 
+## 2b. The variance confession is told AFTER the roll — a line, not a card
+
+Filed by the cleanup milestone (triage §16a, ruled fable-988 §3) because the
+place it was written down was a dead constant, and deleting that would have
+deleted the only record of the intent.
+
+When a sheet's locks leave the eight faces differing mainly in expression, the
+sheet says so: *"Most of this sheet is held — the eight will differ mainly in
+expression."* The server's copy of that sentence — imported by nothing, not
+even a test — carried the intent in its docblock: *"Before the roll, not
+after… they are entitled to know that while it is still a decision."*
+
+**The product does it after, and chose that deliberately** —
+`rollService.ts:374`, *"so the sheet can say, after the fact, why eight faces
+differ mainly in expression."*
+
+**What moving it would cost, stated so nobody re-derives it:** the variance
+plan comes from the brief compiler, which runs INSIDE roll creation. Saying it
+before the roll therefore needs the brief compiled at echo time — a second text
+call, before anyone has paid, on every echo. That is the whole decision; the
+copy already exists and is one line.
+
 ## 3. The face chart + tattoo studio (post-Sign; skeleton is M12)
 
 **Panel v1 PULLED FORWARD (founder, 2026-08-09, fable-113):** a

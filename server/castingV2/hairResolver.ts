@@ -38,7 +38,7 @@
  */
 
 import type { AgeBand, HairColour, HeritageComponent, Sex } from "./castingIntent";
-import type { HairPart, HairStyle, RealizedAxes } from "../../shared/castingRealization";
+import type { HairPart, RealizedAxes } from "../../shared/castingRealization";
 
 /**
  * Where a hair value came from.
@@ -150,30 +150,6 @@ export function resolveHairAxes(input: HairResolverInput): ResolvedHair {
     realized,
     tiers,
   };
-}
-
-/**
- * Blank what the tiers say was never authored.
- *
- * The record half of the same answer, kept beside the resolution rather than in
- * the compiler, so that "what was suppressed" is decided once. Applied AFTER
- * composition, because the prompt is built from the resolved values and the
- * record must describe the prompt that was actually sent.
- */
-export function blankSuppressed(realized: RealizedAxes, tiers: HairTiers): RealizedAxes {
-  const blanked = { ...realized };
-  for (const axis of HAIR_AXES) {
-    if (axis === "hairColour") continue;
-    if (tiers[axis] === "suppressed") {
-      (blanked as Record<string, unknown>)[axis] = null;
-    }
-  }
-  return blanked;
-}
-
-/** The cut a candidate ended up with, or null when the brief owned it. */
-export function cutOf(resolved: ResolvedHair): HairStyle | null {
-  return resolved.tiers.hairStyle === "suppressed" ? null : resolved.realized.hairStyle;
 }
 
 export type { AgeBand, HeritageComponent, Sex };

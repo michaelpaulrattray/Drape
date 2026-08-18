@@ -457,8 +457,3 @@ export function projectSignedCast(input: {
 function formatCastDate(value: Date): string {
   return value.toLocaleDateString("en-GB", { day: "numeric", month: "long" });
 }
-
-/** Public URL for a stored key — the only place the room learns an image URL. */
-export function castImageUrl(key: string): string {
-  return storagePublicUrl(key);
-}

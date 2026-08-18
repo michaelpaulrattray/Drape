@@ -40,7 +40,6 @@ import {
 import { createModuleLogger } from "../logging/logger";
 import { checkCandidateInvariants } from "./candidateInvariants";
 import {
-  captureCastingV2Enabled,
   castingInkStudioArmed,
   castingReferenceLibraryArmed,
   castingScanTableArmed,
@@ -429,9 +428,4 @@ export function startCandidateRetentionSweep(): void {
   };
   setTimeout(run, FIRST_SWEEP_DELAY_MS).unref?.();
   setInterval(run, SWEEP_INTERVAL_MS).unref?.();
-}
-
-/** Exposed for the boot wiring's readability; the scope is the real switch. */
-export function retentionSweepEnabledForUser(userId: number): boolean {
-  return captureCastingV2Enabled(userId);
 }
