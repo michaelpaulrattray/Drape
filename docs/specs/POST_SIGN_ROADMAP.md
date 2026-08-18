@@ -236,17 +236,26 @@ systems with this design."*
 finished when every row of `docs/specs/cleanup-dispositions.yaml` carries a
 verdict and `npx tsx scripts/check-cleanup-dispositions.mts --strict` is green.
 
-⚠ **The sentence that stood here — *"the checker runs inside `pnpm check`, so
-the door cannot be a door nobody invokes"* — was FALSE, and it is the same
-false claim §23 of the triage carried.** `pnpm check` runs the checker
-**without `--strict`**, and `unread` is fatal ONLY under `--strict`. So the gate
-holds the half about ROT (a row naming a symbol that is gone, a HELD row with no
-blocker) and does **not** hold the bar stated in this very paragraph. It was
-measured on 2026-08-19: the reading list grew 115 → 116 with an unread symbol on
-it and `pnpm check` stayed green — see `CLEANUP_MILESTONE_TRIAGE.md` §24d.
-Whether `pnpm check` should pass `--strict` is filed for a ruling; until it
-does, **the completion bar is a command someone has to run on purpose.** Reasoning lives in `CLEANUP_MILESTONE_TRIAGE.md`, which each row
+✅ **THE GATE HOLDS THE BAR ABOVE — ruled fable-999 §2, shipped `c5cb450a`,
+and proven able to fail.** `package.json:10` reads `… && tsx
+scripts/check-cleanup-dispositions.mts --strict`, so `unread` is fatal in the
+door every change already runs. The proof is a sabotage rather than a green run
+(law 2): a row cut from the copy took `pnpm check` to exit 1 (opus-735 §1).
+**The completion bar is therefore enforced, not a command someone has to run on
+purpose.** Reasoning lives in `CLEANUP_MILESTONE_TRIAGE.md`, which each row
 cites by section; the table is the index and the document is not.
+
+> *(history, kept because the correction is the point.* A paragraph stood here
+> saying `pnpm check` ran the checker **without** `--strict` — true when it was
+> written, measured on 2026-08-19 when the reading list grew 115 → 116 with an
+> unread symbol on it and the door stayed green (`CLEANUP_MILESTONE_TRIAGE.md`
+> §24d), and it closed *"whether `pnpm check` should pass `--strict` is filed
+> for a ruling."* **It was ruled and shipped the same day and this page was
+> never updated**, so on 2026-08-19 a shift re-asked a settled question off
+> these words alone (opus-749 §5, corrected fable-1014 §1). **A stale
+> "filed for a ruling" sentence is the most expensive kind of stale doc: it
+> re-opens a closed decision in every future reader's head.** Read the script
+> the sentence describes before quoting the sentence.)*
 
 **The slot, which is the half that was lost:** after V5 lands and M12 is closed
 out, **BEFORE M8 starts.**

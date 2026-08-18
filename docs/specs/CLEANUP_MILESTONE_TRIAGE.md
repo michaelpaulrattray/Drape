@@ -1394,12 +1394,14 @@ reading of it: every symbol the sweep lists has a verdict, no row names a
 symbol that is gone, every HELD row names its blocker, and no verdict is
 outside the closed set.
 
-⚠ **The sentence that stood here — *"`pnpm check` runs it, so it cannot quietly
-stop being true"* — was FALSE, and §24c is the incident that proves it.**
-`pnpm check` runs the door WITHOUT `--strict`, and `unread` is fatal only under
-`--strict`. So rot cannot come back quietly, but INCOMPLETENESS can: the bar
-above is the one thing the gate does not hold. It stopped being true within the
-hour, and the gate stayed green.
+⚠→✅ **The sentence that stood here — *"`pnpm check` runs it, so it cannot
+quietly stop being true"* — was FALSE WHEN WRITTEN and is TRUE NOW, and both
+halves matter.** It was false because `pnpm check` ran the door WITHOUT
+`--strict`, where `unread` is not fatal: rot could not come back quietly but
+INCOMPLETENESS could, and it did, within the hour (§24d). **It was then made
+true rather than merely re-argued** — `pnpm check` passes `--strict` as of
+`c5cb450a`, ruled fable-999 §2, proved able to fail in §24h. The bar above is
+now the bar the gate holds.
 
 **What "finished" does and does not mean.** It means the QUESTION has been
 asked of all 124 — *what was this for?* — and answered in a sentence that cites
@@ -1550,10 +1552,13 @@ and the surviving corpus test needed the module's own list rather than a copy.
 The export was written; its disposition row was not.
 
 The door caught it — `NOT FINISHED — 1 unread` — and that is the door working.
-**What did not work is the gate.** `pnpm check` runs the door without `--strict`,
-and `unread` is fatal only under `--strict`, so the reading list grew from 115 to
-116 with an unread symbol on it and `pnpm check` stayed **green**. §23's claim
-that the bar "cannot quietly stop being true" is corrected there.
+**What did not work, THAT DAY, is the gate.** `pnpm check` ran the door without
+`--strict`, and `unread` is fatal only under `--strict`, so the reading list grew
+from 115 to 116 with an unread symbol on it and `pnpm check` stayed **green**.
+§23's claim that the bar "cannot quietly stop being true" is corrected there.
+**This paragraph is the INCIDENT and not the present state: the gate was flipped
+the same day and now refuses — see §24h.** Read in the past tense; it is kept
+because it is the evidence the flip was bought with.
 
 Row added, verdict KEEP, argued 6c: the seam's alternative is a hand-copied word
 list in the test — law 4, a second list shadowing the source, which is the exact
