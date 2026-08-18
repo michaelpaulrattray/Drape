@@ -23,9 +23,9 @@
 
 - symbol: CAST_PUBLIC_ID_PATTERN
   file: server/casting/castPublicId.ts
-  verdict: 
-  why: 
-  argued: 
+  verdict: KEEP
+  why: the public-id shape, pinned by its test so the alphabet and segmenting cannot drift silently
+  argued: 5a/14c
 
 - symbol: INK_ADD_RECIPE
   file: server/casting/evidence/composer/inkAddRecipe.ts
@@ -160,15 +160,15 @@
 
 - symbol: getSessionCount
   file: server/casting/geminiGeneration.ts
-  verdict: 
-  why: 
-  argued: 
+  verdict: TAKE
+  why: its docblock says for monitoring and no monitor reads it; a door re-exported by geminiService that nobody imports from
+  argued: 20/17-family
 
 - symbol: stopSessionEviction
   file: server/casting/geminiGeneration.ts
-  verdict: 
-  why: 
-  argued: 
+  verdict: TAKE
+  why: a graceful-shutdown hook nothing calls, and redundant by construction — the timer two lines above it is already unref'd so it never holds the process open
+  argued: 20/17-family
 
 - symbol: roleForAuthorizedResult
   file: server/casting/identity/anchorSelector.ts
@@ -236,9 +236,9 @@
 
 - symbol: isTasteWritable
   file: server/castingV2/axisRegistry.ts
-  verdict: 
-  why: 
-  argued: 
+  verdict: KEEP
+  why: its own docblock: derived, never declared twice — the shelf's writability read off AXIS_REGISTRY
+  argued: 6a
 
 - symbol: AXIS_REGISTRY_BINDINGS
   file: server/castingV2/axisRegistry.ts
@@ -291,9 +291,9 @@
 
 - symbol: pairSlots
   file: server/castingV2/facePanel.ts
-  verdict: 
-  why: 
-  argued: 
+  verdict: KEEP
+  why: the key a pair's row edits, derived from the slot vocabulary rather than spelled a second time
+  argued: 6a
 
 - symbol: faceScanCacheStats
   file: server/castingV2/faceScanService.ts
@@ -333,9 +333,9 @@
 
 - symbol: HAIR_STYLE_NAMES
   file: server/castingV2/hairStyles.ts
-  verdict: 
-  why: 
-  argued: 
+  verdict: KEEP
+  why: every cut name, derived from the style tables; a hardcoded copy is what 6a exists to prevent
+  argued: 6a
 
 - symbol: neighbourPairs
   file: server/castingV2/heritageNeighbourhoods.ts
@@ -495,9 +495,9 @@
 
 - symbol: shapePixels
   file: server/castingV2/referenceCentreline.ts
-  verdict: 
-  why: 
-  argued: 
+  verdict: KEEP
+  why: the measurement thinToCentreline's own controls are built on, including the arm that would otherwise pass for the identity function
+  argued: 8c
 
 - symbol: DISPLAY_REGION_VOCABULARY
   file: server/castingV2/referenceSlotCatalogue.ts
@@ -507,15 +507,15 @@
 
 - symbol: isFeatureSlot
   file: server/castingV2/referenceSlots.ts
-  verdict: 
-  why: 
-  argued: 
+  verdict: KEEP
+  why: a predicate over parseSlot; the slot vocabulary asserted through its own parser
+  argued: 6a
 
 - symbol: presentPair
   file: server/castingV2/referenceSlots.ts
-  verdict: 
-  why: 
-  argued: 
+  verdict: KEEP
+  why: its docblock: derived from the instances every time, so re-merging falls out for free — there was never a flag to clear
+  argued: 6a
 
 - symbol: axesOfFacet
   file: server/castingV2/refineFacets.ts
@@ -549,15 +549,15 @@
 
 - symbol: namesHerHairItself
   file: server/castingV2/refineService.ts
-  verdict: 
-  why: 
-  argued: 
+  verdict: TAKE
+  why: no caller and no test, beside the live asksToRemoveHerHair built from the same word sets; the road asks the sibling's question, never this one
+  argued: 17-family
 
 - symbol: refusalTallies
   file: server/castingV2/refusalCounter.ts
-  verdict: 
-  why: 
-  argued: 
+  verdict: FILED
+  why: a reporting query whose only readers are UNTRACKED benches; the question is whether the refusal report gets a tracked reader like reliability-report.mts, or the query goes with them
+  argued: 13d/15b
 
 - symbol: heartbeatLine
   file: server/castingV2/reliabilityReport.ts
@@ -652,15 +652,15 @@
 
 - symbol: isDistributed
   file: server/castingV2/zoneScope.ts
-  verdict: 
-  why: 
-  argued: 
+  verdict: KEEP
+  why: derived over ZONE_SCOPE — the facet's own scope, read rather than restated
+  argued: 6a
 
 - symbol: isBilateral
   file: server/castingV2/zoneScope.ts
-  verdict: 
-  why: 
-  argued: 
+  verdict: KEEP
+  why: derived over ZONE_SCOPE, and the declared-intent instrument's negative control
+  argued: 6a/5a
 
 - symbol: scopedFacets
   file: server/castingV2/zoneScope.ts
@@ -676,39 +676,39 @@
 
 - symbol: listSegmentHistory
   file: server/db/castingV2Segments.ts
-  verdict: 
-  why: 
-  argued: 
+  verdict: KEEP
+  why: the reader a db suite asserts the retire-not-delete asymmetry through — a retired segment's row survives as evidence of a delivered render
+  argued: 6a/8c
 
 - symbol: listOrphanedVariants
   file: server/db/castingV2Variants.ts
-  verdict: 
-  why: 
-  argued: 
+  verdict: FILED
+  why: a belt-and-braces purge sweep with NO consumer anywhere — not even a test. The 13c question, and the answer is not obvious: either the purge path should run it or it is debris the purge outgrew
+  argued: 13c/13d
 
 - symbol: dbReferencePlateIngestionPersistence
   file: server/db/evidenceIngestion.ts
-  verdict: 
-  why: 
-  argued: 
+  verdict: KEEP
+  why: the database half of the interface stageCanonicalReferencePlate takes, and that road's docblock FORBIDS callers until the reviewed C4 capability
+  argued: 18
 
 - symbol: inspectOwnedInkAddAvailability
   file: server/db/inkAddIntents.ts
-  verdict: 
-  why: 
-  argued: 
+  verdict: KEEP
+  why: read-only owner-scoped capability truth proven by its own db suite while the mutation repeats every proof under the model lock
+  argued: 6b
 
 - symbol: getStorageCleanupBatchByOperation
   file: server/db/storageCleanup.ts
-  verdict: 
-  why: 
-  argued: 
+  verdict: KEEP
+  why: inspection the deletion and worker db suites assert the live worker's writes through
+  argued: 6b/13d
 
 - symbol: getStorageCleanupItemsForBatch
   file: server/db/storageCleanup.ts
-  verdict: 
-  why: 
-  argued: 
+  verdict: KEEP
+  why: inspection the deletion and worker db suites assert the live worker's writes through
+  argued: 6b/13d
 
 - symbol: _clearCooldowns
   file: server/monitoring/healthMonitor.ts
@@ -757,9 +757,9 @@
 
 - symbol: getDedupCacheSize
   file: server/slack/slackCore.ts
-  verdict: 
-  why: 
-  argued: 
+  verdict: KEEP
+  why: the read half beside the _clearDedupCache seam; a suite that clears a cache must be able to see it emptied
+  argued: 6c
 
 - symbol: allowColdImports
   file: server/testing/coldImportTimeout.ts
@@ -769,6 +769,6 @@
 
 - symbol: clearAllUserSessions
   file: server/wardrobe/vtoSession.ts
-  verdict: 
-  why: 
-  argued:
+  verdict: FILED
+  why: the live path is per-session clearSession from the wardrobe route; nothing clears a whole user's VTO sessions, and whether account deletion should is the wardrobe road's question
+  argued: 13c/20

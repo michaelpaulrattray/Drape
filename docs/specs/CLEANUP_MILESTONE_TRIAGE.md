@@ -1357,3 +1357,79 @@ existence should not have moved is back where it was.
 > found by the number moving when nothing about the product had changed**, and
 > that is the tell worth keeping: if writing a document changes what the
 > instrument says about the code, the instrument is reading the document.
+
+---
+
+## 23. THE READING IS FINISHED — `--strict` is green
+
+```
+THE TABLE — 124 rows against a reading list of 124
+  KEEP     96
+  TAKE     9
+  TAKEN    0
+  HELD     14
+  FILED    5
+
+  unread       0
+  stale        0
+  blockerless  0
+  unknown      0
+
+OPEN — every symbol on the list has a disposition.
+```
+
+**The completion bar adopted in fable-992 §2b is met**, on the mechanical
+reading of it: every symbol the sweep lists has a verdict, no row names a
+symbol that is gone, every HELD row names its blocker, and no verdict is
+outside the closed set. `pnpm check` runs it, so it cannot quietly stop being
+true.
+
+**What "finished" does and does not mean.** It means the QUESTION has been
+asked of all 124 — *what was this for?* — and answered in a sentence that cites
+where it is argued. It does not mean the milestone's work is done: nine TAKE
+rows are removals that have been read and not yet executed, fourteen HELD rows
+are waiting on something named, and five FILED rows are findings about live
+code that belong to other roads.
+
+### 23a. The nine TAKE rows, and what they have in common
+
+`verifyBackView` · `censusIsOpen` · `namesRemoval` · `refusalCharge` ·
+`refusalReportClass` · `heartbeatLine` · `getSessionCount` ·
+`stopSessionEviction` · `namesHerHairItself`
+
+Every one is a **convenience beside a live sibling**: an accessor over a table
+the live path indexes directly, a formatter beside the one the report actually
+calls, a back-compat alias beside the real gate, a coarse predicate beside the
+sharp one the service consults. None has a test. None is the missing half of
+anything — that question was asked of each, because §13c's `removeEdgesForItems`
+is what happens when it is not.
+
+Two carry a line worth keeping when they go:
+
+- **`stopSessionEviction`** is redundant *by construction*: the timer two lines
+  above it is already `unref()`d, so it never holds the process open. A
+  graceful-shutdown hook for a thing that needs no shutting down.
+- **`heartbeatLine`** was **corrected once** — its docblock records the fix, a
+  denominator that misnamed its own population — for a defect it could never
+  have shown anyone, because nothing has ever called it. Maintenance paid on
+  dead code is the quietest cost this milestone has found.
+
+### 23b. The fourteen HELD rows all name the same three blockers
+
+A disposable database (three rows), an owner who has to decide a road (M14's
+anchor trio, the composer road's calibration pair, the face chart's segment
+prune), and the founder's security card. **Nothing is held on "later".**
+
+### 23c. The five FILED rows are findings, not deletions
+
+`removeEdgesForItems` (a live deletion path missing its other half),
+`INSTRUCTION_MAY_OVERRIDE` (a rule applied by nothing),
+`mintModelAtomically` and `markModelAssetsStale` (a docblock asserting a call
+site that does not exist), `refusalTallies` and `listOrphanedVariants` (a
+reporting query whose only readers are untracked, and a purge sweep with no
+reader at all), `clearAllUserSessions` (nothing clears a user's whole VTO
+session set).
+
+**Not one of them is a cleanup deletion**, and that is the milestone's own
+result rather than a caveat: the reading found more live-code questions than
+dead code.
