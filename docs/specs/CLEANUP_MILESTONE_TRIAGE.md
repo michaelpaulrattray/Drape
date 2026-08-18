@@ -695,3 +695,51 @@ write path is not a cleanup milestone's to change on its own reading.
 casting V2 and the cleanup worker. Each needs the same question asked of it as
 §13c: *is this debris, or the unwired half of something?* — and after `removeEdgesForItems`
 that question is no longer rhetorical.
+
+## 14. `server/casting` — 31, and the milestone's real question is now sharp
+
+### 14a. The second ring ARRIVED on its own, exactly as §8d said it would
+
+`buildInkAuthorizationProviderConfig`, `authorizeInkAddDescription` and
+`INK_ADD_RECIPE` are on this list because `beginInkAddIntent` was removed. §8d
+predicted it — *"it will appear on the NEXT sweep, which is the honest way for it
+to arrive"* — and it did, without anyone having to remember. **A retirement that
+leaves its next ring to the instrument does not need a follow-up note; it needs
+the instrument to be run.** Sixteen of these 31 are `casting/evidence`, which is
+the placement-picker road unwinding.
+
+### 14b. **The discrimination this milestone is actually for**
+
+Two symbols on the same list, both uncalled, and their dispositions are
+opposites:
+
+| symbol | reads as | is |
+|---|---|---|
+| `verifyBackView` (`backViewGate.ts:106`) | an unwired identity gate | **debris.** Its own docblock says *"Back-compat alias (pre-D-46 callers/tests)"*; the real gate `verifyViewIdentity` is wired at `mintPackage.ts:41` and is what the tests drive. **DELETE.** |
+| `removeEdgesForItems` (`boardEdges.ts:79`) | debris beside a live table | **a missing wire** (§13c). **KEEP and wire.** |
+
+**An uncalled export is a QUESTION, not a verdict** — and the question is *what
+was this for?*, which only the declaration and its neighbours answer. A milestone
+that deletes by list would have removed the boards fix and kept the alias.
+
+### 14c. Already dispositioned above, not re-argued here
+
+The eight `evidenceCandidateContract` assertions (§6b, KEEP), `commitIdentityEdit`
+/ `commitAnchorReRoll` (§1b, INVESTIGATE — M14's authority decides, not this
+milestone), `CAST_PUBLIC_ID_PATTERN` and the ink constants (§5a's constant
+family).
+
+### 14d. Owed a read, each with the §14b question asked of it
+
+`compressImageUrlForApi`, `compareModelSnapshotShadow`, `roleForAuthorizedResult`,
+`isLimbInkZone`, `probeOutcomeAllowsCanon`, `planEvidenceMint`,
+`planEvidencePackageSync`, `stageCanonicalReferencePlate`,
+`createInkCalibrationRecorder`, `evaluateInkCalibrationGate`,
+`inkAddCapabilityKey`, `resetStorageCleanupHealthReport`,
+`assertStorageCleanupItemStatus`, `ALL_SUPPORTED_INK_ANATOMY_TUPLES`,
+`INK_RELEASE_POLICY_VERSION`.
+
+**`compareModelSnapshotShadow` is named first**: "shadow" in a name usually means
+a comparison mode kept beside a live path during a migration, and a shadow whose
+migration has landed is the cleanest deletion this list holds — or the last
+instrument still watching something. One read settles which.
