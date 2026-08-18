@@ -367,10 +367,19 @@ once at each door, then the door is open.
 - **ENGINE REFERENCE: one neutral template carrying the design alone.** No
   tone-matched engine references, no per-cast engine asset. The engine adapts
   ink to the cast's own skin as native capability.
-- **PREVIEW (customer-facing sheet): the tone ladder stands** on D-138's own
-  dignity line, display-side only, unless he rules otherwise.
-- The template asset set therefore shrinks to **one engine plate per form**
-  (torso / arm), with the ladder on the preview alone.
+- **PREVIEW (customer-facing sheet): ONE NEUTRAL FORM.** ⚠ The tone ladder was
+  written here as standing, and **he overturned it on 2026-08-18** (fable-943):
+  *"id like to see if it performs on the simple version first rather than over
+  complicating it by having to test skin tone every time which could change with
+  an edit anyway."* Two reasons, both his: tone-matching is a **standing
+  maintenance promise** — skin changes with an edit, so matching means
+  re-matching forever — and simple-first measures before it complicates. D-138's
+  dignity line is not repealed; it is **deferred to demand evidence**, and the
+  ladder candidates stay archived in the template panel so the upgrade is a
+  later decision rather than a redraw.
+- The template asset set therefore shrinks **twice**: to one engine plate per
+  form (torso / arm) by fable-935, and to one neutral PREVIEW form by fable-943.
+  There is no per-tone artifact anywhere in the product.
 - **Male form: absent** — female torso + arm only, drawn when needed or at his
   word (fable-934 §1a).
 - **The template is a pre-stored, code-owned asset**; runtime only plates the
@@ -476,8 +485,29 @@ Runs when the plate machinery and the template exist; not before.
 - It picks the **plate** engine only. Cast renders stay on the product's own
   road.
 
-### 7.6 What is still the founder's
+### 7.6 What is still the founder's — ✅ **NOTHING. Gate 5.1 CLOSED 2026-08-18.**
 
-**The template pick** — background, layout, tones. It is the one thing between
-the built upload and a plate that can exist, and one word closes it. Nothing
-plates, and no charge path opens, until it does.
+**The template pick is answered, all four verdicts in** (fable-942 §1, fable-943
+§1 — his words in both):
+
+| question | his verdict |
+|---|---|
+| the sheet (front + back on one plate) | **approved** |
+| the arm sheet (one arm, four views) | **approved** |
+| the background | **NEAR-WHITE** — his eye overriding the grey recommendation |
+| the tone ladder | **NEUTRAL** — one preview form, not ten |
+
+The background verdict is worth its own line because it went against the
+written recommendation and is still legal under his own fade law: the glow
+artifact the panel showed was the BLACK background's, and near-white keeps the
+fades invisible at the cost of softer form edges — which he has now seen and
+accepted.
+
+**What that unblocks, in order:** final asset curation on near-white → the plate
+mint → the fence court (a face-bearing reference must produce a plate with ZERO
+person content, his eye on the first specimens per law 9) → the plate court (the
+engine bake-off, with the missing NBP single-edit wall-clock bought inside its
+own declared budget — §7.4's named gap).
+
+**His desk now holds one item, and it is not on this road:** the R2 credential
+rotation.
