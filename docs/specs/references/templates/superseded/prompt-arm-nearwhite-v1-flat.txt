@@ -1,0 +1,50 @@
+INTENDED USE
+
+A blank template asset for a tattoo "flash sheet" system — the ARM sheet. A
+tattoo that wraps around an arm must be drawn on several views of that same arm
+on one sheet, so the design stays consistent from any angle (like a character
+turnaround sheet). This image is a CANDIDATE for a founder's taste review of the
+template. It must contain NO tattoo, NO design, NO ink and NO text of any kind.
+
+WHAT TO PRODUCE
+
+One image containing FOUR views of the SAME single neutral, featureless ghost
+mannequin ARM, standing upright side by side in a row, evenly spaced:
+
+  1  the OUTER side of the arm
+  2  the FRONT of the arm
+  3  the INNER side of the arm
+  4  the BACK of the arm
+
+It is one arm turned through four quarter rotations — a turnaround — not four
+different arms.
+
+WHAT EACH VIEW SHOWS
+
+The arm from the top of the shoulder down to just below the elbow, including the
+deltoid and the whole upper arm. No hand, no forearm below the elbow, no torso,
+no shoulder blade, no neck.
+
+CRITICAL RULES
+
+- It is a MANNEQUIN limb, not a person's arm: no hair, no veins, no freckles, no
+  moles, no jewellery, no clothing. Smooth, anonymous, sculptural, with just
+  enough soft shading to read the muscle form.
+- All four views are IDENTICAL in size, lighting and vertical alignment.
+- MATTE and LOW-CONTRAST: soft even studio light, no gloss, no harsh shadow, no
+  rim light.
+- Both ends of every arm — the shoulder at the top and the arm at the bottom —
+  TERMINATE IN A SOFT FADE that dissolves into the background. Never a hard cut,
+  never a sliced edge, never a stand or plinth.
+- Mid-tone skin, a neutral medium beige-brown, matte.
+
+BACKGROUND AND COMPOSITION
+
+- One flat, even NEAR-WHITE background across the whole image (a very light
+  warm off-white, close to #F4F4F2 — clearly not pure white, clearly not grey),
+  with no gradient and no vignette.
+- THE FADES MUST DISAPPEAR INTO IT: no halo, no outline, no visible edge where
+  each arm's soft termination ends.
+- Landscape orientation, generous even margins, the four arms tidily aligned.
+- No labels, no captions, no arrows, no numbers, no watermark, no logo, no
+  borders.

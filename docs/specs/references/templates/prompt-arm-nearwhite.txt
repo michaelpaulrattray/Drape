@@ -3,40 +3,68 @@ INTENDED USE
 A blank template asset for a tattoo "flash sheet" system — the ARM sheet. A
 tattoo that wraps around an arm must be drawn on several views of that same arm
 on one sheet, so the design stays consistent from any angle (like a character
-turnaround sheet). This image is a CANDIDATE for a founder's taste review of the
-template. It must contain NO tattoo, NO design, NO ink and NO text of any kind.
+turnaround sheet). The whole value of this asset is that the FOUR VIEWS ARE
+VISIBLY DIFFERENT ROTATIONS OF ONE ARM. A previous attempt produced four views
+that all looked like the same view repeated; that is the failure to avoid.
+It must contain NO tattoo, NO design, NO ink and NO text of any kind.
 
 WHAT TO PRODUCE
 
 One image containing FOUR views of the SAME single neutral, featureless ghost
-mannequin ARM, standing upright side by side in a row, evenly spaced:
+mannequin LEFT ARM, hanging straight down, upright side by side in a row, evenly
+spaced. It is one arm turned through four quarter rotations — a turnaround —
+not four different arms and not the same view four times.
 
-  1  the OUTER side of the arm
-  2  the FRONT of the arm
-  3  the INNER side of the arm
-  4  the BACK of the arm
+THE FRAME OF EACH VIEW — this is what makes the rotation readable
 
-It is one arm turned through four quarter rotations — a turnaround — not four
-different arms.
+Each view runs from the top of the shoulder (deltoid) down THROUGH THE ELBOW and
+a short way onto the upper forearm. THE ELBOW MUST BE FULLY VISIBLE AND IN
+FOCUS IN ALL FOUR VIEWS — it is the one landmark that tells a viewer which way
+the arm is facing, and it must not be swallowed by the soft fade at the bottom.
+No hand, no wrist, no torso, no neck.
 
-WHAT EACH VIEW SHOWS
+WHAT EACH VIEW MUST SHOW, IN THIS ORDER LEFT TO RIGHT
 
-The arm from the top of the shoulder down to just below the elbow, including the
-deltoid and the whole upper arm. No hand, no forearm below the elbow, no torso,
-no shoulder blade, no neck.
+  1  OUTER (lateral) side — the rounded cap of the deltoid sits at the top and
+     the outer contour of the arm is one long, almost straight line from
+     shoulder to elbow. Biceps and triceps are both seen edge-on, so neither
+     bulges toward the viewer. At the bottom, the bony outer point of the elbow
+     is a small ridge on the silhouette.
+
+  2  FRONT (anterior) — the biceps is a clear soft bulge in the middle of the
+     upper arm, facing the viewer, tapering into a shallow hollow just above the
+     elbow. The inner crease of the elbow (the shallow triangular dip on the
+     front of the joint) is visible at the bottom. The overall silhouette is
+     widest at the middle and narrows toward the joint.
+
+  3  INNER (medial) side — the flattest and softest of the four. A long shallow
+     groove runs down the length of the arm between the front and back muscle
+     masses. No prominent bulge anywhere; the surface is smooth and even, and
+     the arm reads as narrower here than in view 1.
+
+  4  BACK (posterior) — the triceps forms a broad horseshoe-shaped mass in the
+     lower half of the upper arm, and immediately below it the point of the
+     elbow is a distinct rounded knob standing out from the silhouette. This is
+     the view with the strongest form at the bottom.
+
+A person who cannot see any labels must be able to look at the four and say
+which is the front and which is the back. If two of the four look the same,
+the image has failed.
 
 CRITICAL RULES
 
-- It is a MANNEQUIN limb, not a person's arm: no hair, no veins, no freckles, no
-  moles, no jewellery, no clothing. Smooth, anonymous, sculptural, with just
-  enough soft shading to read the muscle form.
-- All four views are IDENTICAL in size, lighting and vertical alignment.
+- It is a MANNEQUIN limb, not a person's arm: no hair, no veins, no freckles,
+  no moles, no jewellery, no clothing, no fingernails. Smooth, anonymous,
+  sculptural, with just enough soft shading to read the muscle form.
+- All four views are IDENTICAL in size, skin tone, lighting direction and
+  vertical alignment — the same arm, the same lamp, four rotations.
 - MATTE and LOW-CONTRAST: soft even studio light, no gloss, no harsh shadow, no
-  rim light.
-- Both ends of every arm — the shoulder at the top and the arm at the bottom —
-  TERMINATE IN A SOFT FADE that dissolves into the background. Never a hard cut,
-  never a sliced edge, never a stand or plinth.
-- Mid-tone skin, a neutral medium beige-brown, matte.
+  rim light, no cast shadow on the background.
+- The SHOULDER at the TOP and the FOREARM at the BOTTOM each TERMINATE IN A SOFT
+  FADE that dissolves into the background. Never a hard cut, never a sliced
+  edge, never a stand or plinth. The bottom fade begins BELOW the elbow, on the
+  forearm, so that the elbow itself is fully drawn.
+- Mid-tone skin, a neutral medium beige-brown, matte, identical across all four.
 
 BACKGROUND AND COMPOSITION
 
@@ -45,6 +73,28 @@ BACKGROUND AND COMPOSITION
   with no gradient and no vignette.
 - THE FADES MUST DISAPPEAR INTO IT: no halo, no outline, no visible edge where
   each arm's soft termination ends.
-- Landscape orientation, generous even margins, the four arms tidily aligned.
+- Landscape orientation, generous even margins, the four arms tidily aligned on
+  a common top line and a common bottom line.
 - No labels, no captions, no arrows, no numbers, no watermark, no logo, no
-  borders.
+  borders, no letters or digits anywhere in the image.
+
+AS SHIPPED — the one mechanical step after generation
+
+The generated frame ran a long way past the elbow, down most of a forearm. The
+placement vocabulary has no forearm in it (`neck`, `upper arm`, `upper chest`),
+so that stretch is canvas the product cannot name. Two attempts to generate a
+tighter frame were both worse — one lost the matte finish and came back as a
+glossy anatomical study, the other lost the very rotation legibility this redo
+exists to buy — so the shipped file is the good generation with its lower edge
+cut and re-faded by hand:
+
+  source   templates/source/ink-template-arm-nearwhite-generated.png (committed beside this)
+  script   scripts/crop-ink-arm-template-disposable.mts (re-running it writes the same bytes)
+  cut      row 800 of 1024
+  fade     the 110 rows above the cut, dissolved linearly to the background
+  bg       rgb(246,245,243), sampled from the frame's own corner (flat, no gradient)
+  margin   96 rows of that background below the cut
+
+No anatomy is manufactured by this step: it removes canvas and softens the new
+edge to the frame's own background, which is what the generator's own
+terminations do. Declared here, in the commit, and on the founder's card.

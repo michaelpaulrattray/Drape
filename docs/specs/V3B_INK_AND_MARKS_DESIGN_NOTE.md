@@ -509,5 +509,40 @@ person content, his eye on the first specimens per law 9) → the plate court (t
 engine bake-off, with the missing NBP single-edit wall-clock bought inside its
 own declared budget — §7.4's named gap).
 
+### 7.7 The curated assets, and the arm sheet's redo (2026-08-18)
+
+**Both near-white assets exist and are the code-owned candidates for the plate**
+(`docs/specs/references/templates/`). Neither is imported by anything yet; the
+plate mint does not exist. They were **re-produced at near-white, never
+recoloured** — he approved a look rather than a file, and a tint of a grey render
+keeps the grey render's own shading decisions (fable-948 §4).
+
+**The arm sheet was rejected by the executor's own eye and redone**
+(approved as the executor's to do, fable-949 §2). The defect: a wrap-around
+design needs the four views to be four ROTATIONS, and the first near-white arm
+sheet's four views were four readings of the same view — nothing in the frame
+said which way the arm faced.
+
+**The fix is anatomical, not stylistic: THE ELBOW IS THE LANDMARK.** On an upper
+limb it is the one feature that names a side — the crease on the front, the bony
+point on the back — and the first sheet stopped above it. The prompt now frames
+through the elbow and describes each view by what it must SHOW rather than by
+what it is called; the four are nameable at reading size
+(`docs/specs/references/arm-sheet-redo-panel.png`, before/after with the two
+telling elbows zoomed).
+
+**Two generations were thrown away, and the reason is worth keeping**: a tighter
+frame asked for with arithmetic ("four fifths") came back as a glossy anatomical
+study with the matte finish gone, and a second single-pass attempt kept the
+finish but lost the rotation legibility. The shipped file is the good generation
+with its lower edge **cut and re-faded by hand** — parameters declared in
+`prompt-arm-nearwhite.txt`, in the commit, and on his card. It manufactures no
+anatomy: it removes canvas and dissolves the new edge to the frame's own
+background.
+
+**Still open on the assets, and it is his call, not a blocker:** the body sheet
+runs below the placement crop line — everything under the upper chest is surface
+the measured vocabulary cannot name. Trimming it is queued behind his look.
+
 **His desk now holds one item, and it is not on this road:** the R2 credential
 rotation.
