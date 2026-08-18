@@ -154,7 +154,9 @@ try {
       clicks += 1;
       note = `clicked "${clicked}"`;
     }
-    samples.push({ at, ...sample, ...(note ? { note } : {}) });
+    /* `at` AFTER the spread: the sample carries its own field and the measured
+       elapsed time is the one this script means. */
+    samples.push({ ...sample, at, ...(note ? { note } : {}) });
     if (landedAt === null && sample.chips.filter((chip) => !chip.ghost).length > opening.chips.length) {
       landedAt = at;
       console.log(`the render landed at ${Math.round(at / 1000)}s`);

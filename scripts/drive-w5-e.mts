@@ -106,7 +106,7 @@ const browser = await puppeteer.launch({
 });
 const page = await browser.newPage();
 page.setDefaultTimeout(90_000);
-page.on('pageerror', (error) => console.log(`BROWSER_ERROR ${error.message}`));
+page.on('pageerror', (error) => console.log(`BROWSER_ERROR ${(error as Error).message}`));
 const cdp = await page.target().createCDPSession();
 await cdp.send('Page.setDownloadBehavior', { behavior: 'allow', downloadPath: downloadDir });
 await page.setCookie({ name: 'app_session_id', value: token, domain: 'localhost', path: '/' });

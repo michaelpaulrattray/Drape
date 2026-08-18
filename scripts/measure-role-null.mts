@@ -50,7 +50,7 @@ import "dotenv/config";
 
 import { castingBriefCompiler } from "../server/castingV2/briefCompiler";
 import { GOLDEN_BRIEFS } from "../server/castingV2/goldenBriefs";
-import { createOpenRouterTextEngine } from "../server/providers/openRouterText";
+import { createOpenRouterTextEngine } from "../server/providers/openrouterText";
 import type { TextEngine } from "../server/providers/types";
 
 const N = Number(process.env.N ?? 60);

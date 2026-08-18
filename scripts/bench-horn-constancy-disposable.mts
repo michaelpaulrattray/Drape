@@ -119,7 +119,7 @@ for (const specimen of SPECIMENS) {
   const words = await readFrame(`${IN}/words-${specimen}.png`, "chained · WORDS arm");
   const crop = await readFrame(`${IN}/crop-${specimen}.png`, "chained · CROP arm");
   if (!parent) { say("  the parent does not read — this specimen is skipped"); continue; }
-  const drift = (child: typeof parent) => child === null ? null : {
+  const drift = (child: typeof parent | null) => child === null ? null : {
     extent: Math.abs(child.extent - parent.extent) / parent.extent,
     aspect: Math.abs(child.aspect - parent.aspect) / parent.aspect,
     place: Math.hypot(child.placeX - parent.placeX, child.placeY - parent.placeY),

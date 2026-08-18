@@ -136,7 +136,9 @@ if (fresh?.imageKey) {
   const base = await fetchBytes(storagePublicUrl(fresh.imageKey));
   const baseSharp = await quality(base);
   writeFileSync(`${OUT}/built-base.png`, base);
-  let current = base;
+  /* Annotated: an engine buffer is `Buffer<ArrayBufferLike>` and the file read
+     it starts from is narrower, so inference would pin the loop to the first. */
+  let current: Buffer = base;
   for (const [index, step] of STEPS.entries()) {
     const rendered = await engine.editWithReferences({
       /* Chain-anchored on purpose: the ONLY reference is the previous output. */

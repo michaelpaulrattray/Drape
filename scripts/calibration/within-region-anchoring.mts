@@ -214,7 +214,9 @@ const finals: Record<string, Buffer[]> = { base: [baseBytes], chain: [], anchore
 
 for (const rule of ["chain", "anchored"] as const) {
   console.log(`### ${rule}`);
-  let currentMaster = baseBytes;
+  /* Annotated for the engine buffer the loop assigns back into it — see
+     `specimens.mts`, same shape, same reason. */
+  let currentMaster: Buffer = baseBytes;
   for (let round = 0; round < SEQUENCE.length; round += 1) {
     /*
       The only difference between the two rules, and it is one line each:

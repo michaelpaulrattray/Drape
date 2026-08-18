@@ -212,7 +212,11 @@ async function main(): Promise<void> {
         : `  ${slot.slot.padEnd(width)}  DISPUTED    nothing kept: ${slot.reason}${slot.detail ? ` — ${slot.detail}` : ""}`);
       continue;
     }
-    console.log(`  ${slot.slot.padEnd(width)}  words-only  ${slot.reason}${slot.detail ? ` — ${slot.detail}` : ""}`);
+    /* `unread` reached this line too once the mint grew that outcome, and it
+       carries no detail — so the field is asked for rather than assumed. */
+    const detail = "detail" in slot ? slot.detail : undefined;
+    const label = slot.outcome === "unread" ? "unread    " : "words-only";
+    console.log(`  ${slot.slot.padEnd(width)}  ${label}  ${slot.reason}${detail ? ` — ${detail}` : ""}`);
   }
   console.log(`\ncrops written to ${OUT} — LOOK AT THEM. ${written.length} file(s).`);
 }

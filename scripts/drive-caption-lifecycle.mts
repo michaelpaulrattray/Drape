@@ -128,8 +128,12 @@ async function run(candidateIndex: number, steps: string[]): Promise<{ rows: Row
       instruction,
     });
     console.log(`  OK  "${instruction}" (${Math.round((Date.now() - started) / 1000)}s)`);
-    urls.push(result.imageUrl);
-    rows.push(await readVariant(result.variantId));
+    /* A refine that delivered no URL is a step this contact sheet cannot show;
+       skipped rather than papered over with an empty string. */
+    if (result.imageUrl) urls.push(result.imageUrl);
+    /* A refine with no variant id delivered no row to read — the same
+       skip as the URL one line up, for the same reason. */
+    if (result.variantId) rows.push(await readVariant(result.variantId));
   }
   return { rows, urls };
 }

@@ -83,6 +83,6 @@ console.log('NOTE: "face" is asked TWICE per picture — once as the below-head 
 console.log("      (region:face above) and once for the midline. Same prompt, same frame,");
 console.log('      two calls, because one keeps the first component and the other keeps all.');
 console.log("");
-console.log(`(the scan filed ${result.regions?.length ?? 0} regions from that run — `
+console.log(`(the scan filed ${result.boxes.size} regions from that run — `
   + "a sanity line, not the measurement)");
 process.exit(0);

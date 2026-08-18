@@ -391,8 +391,13 @@ if (!colour || filed === 0) {
   await connection.end();
   process.exit(2);
 }
-const wireOpen = digest(`${firstOpenRequest.system}\n<<>>\n${firstOpenRequest.user}`);
-const wireShut = digest(`${firstShutRequest.system}\n<<>>\n${firstShutRequest.user}`);
+/* Hoisted out of the flow: both are assigned inside a callback the narrowing
+   cannot see, so after the guard above TypeScript believes them `never`. The
+   guard is the real proof they are present; these two lines say so in a type. */
+const openRequest: TextRequest = firstOpenRequest;
+const shutRequest: TextRequest = firstShutRequest;
+const wireOpen = digest(`${openRequest.system}\n<<>>\n${openRequest.user}`);
+const wireShut = digest(`${shutRequest.system}\n<<>>\n${shutRequest.user}`);
 say(`  first request on the wire: open ${wireOpen} · shut ${wireShut} — ${wireOpen === wireShut ? "IDENTICAL, so the arms differ only in whether a door may re-ask" : "THEY DIFFER — the arms are not the same road. STOP."}`);
 if (wireOpen !== wireShut) {
   writeFileSync(`${OUT}/doors.txt`, `${lines.join("\n")}\n`);

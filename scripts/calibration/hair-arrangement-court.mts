@@ -172,7 +172,10 @@ for (const master of masters) {
   for (let attempt = 0; attempt < repeat; attempt += 1) {
     const pinned = await capturePresentation({ bytes, contentType: "image/png" });
     const wording = pinned[HAIR_WORN];
-    answers.push(wording ? (wordingToId.get(wording) ?? `??${wording}`) : "NO PIN");
+    /* A pin is `{ wording, pin }` since D-186 — the SENTENCE is what this
+       court's table is keyed by. */
+    const said = wording?.wording ?? null;
+    answers.push(said ? (wordingToId.get(said) ?? `??${said}`) : "NO PIN");
   }
   const declared = truth[key] ?? null;
   const unanimous = new Set(answers).size === 1;

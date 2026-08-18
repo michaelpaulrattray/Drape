@@ -89,7 +89,7 @@ check(
 /* NEGATIVE 1 — a kind with no floor at all must show as unarmed, never silent. */
 const noFloor = detectionMap([
   { id: "widget", region: "widget", floor: null, sideFloor: null, pair: false, armed: false,
-    measurement: "NOT MEASURED — invented for this control", sideMeasurement: "NOT CONSIDERED" },
+    measurement: "NOT MEASURED — invented for this control", sideMeasurement: "NOT CONSIDERED", courtDeferred: null },
 ]);
 const noFloorRow = accessoryFacet(noFloor);
 check(
@@ -102,7 +102,7 @@ check(
    provenance it is convicted on is printed. */
 const unmeasured = detectionMap([
   { id: "widget", region: "widget", floor: 0.001, sideFloor: null, pair: false, armed: true,
-    measurement: "NOT MEASURED — a number typed without a court", sideMeasurement: "NOT CONSIDERED" },
+    measurement: "NOT MEASURED — a number typed without a court", sideMeasurement: "NOT CONSIDERED", courtDeferred: null },
 ]);
 const unmeasuredRow = accessoryFacet(unmeasured);
 check(
@@ -116,7 +116,7 @@ check(
 const neverAsked = detectionMap([
   { id: "widget", region: "widget", floor: 0.001, sideFloor: null, pair: false, armed: true,
     measurement: "12 worn frames 1.2–2.0% and 12 bare 0.000%, 2026-01-01 (invented for this control)",
-    sideMeasurement: "NOT CONSIDERED and never needed" },
+    sideMeasurement: "NOT CONSIDERED and never needed", courtDeferred: null },
 ]);
 const neverAskedRow = accessoryFacet(neverAsked);
 check(

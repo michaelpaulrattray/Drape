@@ -171,7 +171,7 @@ await page.evaluate(() => {
   button?.click();
 });
 const renameInput = await page.waitForSelector(`.react-flow__node[data-id="item-${firstItemId}"] input`);
-await renameInput?.click({ clickCount: 3 });
+await renameInput?.click({ count: 3 });
 await renameInput?.type('Hero placement');
 await renameInput?.press('Enter');
 for (let i = 0; i < 20; i++) {
@@ -213,7 +213,10 @@ check('B1 strip distinguishes current, stale, failed and missing states', Object
 await page.screenshot({ path: path.join(evidenceDir, 'strip-states.png') });
 
 await page.evaluate(async (mId: number) => {
-  const module = await import('/src/features/casting/stores/useCastingRefreshStore.ts');
+  /* The specifier is a BROWSER path served by Vite, not a module this script
+     can resolve — held in a variable so the compiler stops trying to. */
+  const specifier = '/src/features/casting/stores/useCastingRefreshStore.ts';
+  const module = await import(/* @vite-ignore */ specifier);
   module.useCastingRefreshStore.getState().begin(mId, ['threeQuarter']);
 }, modelId);
 await page.waitForSelector('button[aria-label^="3/4 is refreshing"][aria-busy="true"]');
@@ -225,12 +228,16 @@ const refreshingTruth = await page.evaluate(() => ({
 check('B2 refreshing overrides stale on the exact slot', refreshingTruth.refreshing && !refreshingTruth.staleDot && refreshingTruth.summary, JSON.stringify(refreshingTruth));
 await page.screenshot({ path: path.join(evidenceDir, 'strip-refreshing.png') });
 await page.evaluate(async (mId: number) => {
-  const module = await import('/src/features/casting/stores/useCastingRefreshStore.ts');
+  /* The specifier is a BROWSER path served by Vite, not a module this script
+     can resolve — held in a variable so the compiler stops trying to. */
+  const specifier = '/src/features/casting/stores/useCastingRefreshStore.ts';
+  const module = await import(/* @vite-ignore */ specifier);
   module.useCastingRefreshStore.getState().end(mId, ['threeQuarter']);
 }, modelId);
 
 await page.evaluate(async () => {
-  const module = await import('/src/features/casting/stores/useCastingGenerationStore.ts');
+  const specifier = '/src/features/casting/stores/useCastingGenerationStore.ts';
+  const module = await import(/* @vite-ignore */ specifier);
   module.useCastingGenerationStore.getState().setIdentityWarning('W5 drive warning');
 });
 await page.waitForFunction(() => document.body.textContent?.includes('W5 drive warning'));

@@ -268,7 +268,8 @@ for (const [chainIndex, candidate] of usable.entries()) {
   console.log(`\n=== CHAIN ${chainIndex + 1} · ${candidate.publicId} · base sharpness ${baseQuality.sharpness.toFixed(1)}`);
 
   /* Arm (b) walks its own history; arm (a) is the product's. */
-  let previousB = original;
+  /* Annotated for the engine buffer the loop assigns back into it. */
+  let previousB: Buffer = original;
   /* The image the previous position ACCEPTED, per arm, plus the facts that were
      true then — the pair the consistency reader is shown. */
   let previousA: Buffer | null = null;

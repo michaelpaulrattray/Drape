@@ -187,7 +187,9 @@ console.log("anchored may undershoot at step 2 by cutting from the BASE rather t
 const rows: any[] = [];
 for (const rule of ["chain", "anchored"] as const) {
   console.log(`### ${rule}`);
-  let currentMaster = baseBytes;
+  /* Annotated for the engine buffer the loop assigns back into it — see
+     `specimens.mts`, same shape, same reason. */
+  let currentMaster: Buffer = baseBytes;
   for (let round = 0; round < SEQUENCE.length; round += 1) {
     const source = rule === "chain" ? currentMaster : baseBytes;
     const prompt = rule === "chain"

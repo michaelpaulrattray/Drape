@@ -107,6 +107,10 @@ for (const face of rows) {
   const fullScan = await scanFace({
     frame: { bytes: frame.bytes, width: full.width, height: full.height, url },
     reader: createFalRegionReader({ apiKey }),
+    /* The describer is a different transport and this court measures the
+       SEGMENTER's size sensitivity — named null rather than omitted, which is
+       what `scanFace` asks of a caller that is not buying descriptions. */
+    describe: null,
   });
   const fullMs = Date.now() - startedFull;
 
@@ -115,6 +119,7 @@ for (const face of rows) {
   const cheapScan = await scanFace({
     frame: { bytes: cheapBytes, width: cheap.width!, height: cheap.height! },
     reader: createFalRegionReader({ apiKey }),
+    describe: null,
   });
   const cheapMs = Date.now() - startedCheap;
 

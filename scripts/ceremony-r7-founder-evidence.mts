@@ -538,7 +538,7 @@ async function main(): Promise<void> {
     if (connectionOpen) await connection.end();
     const db = await getDb();
     if (db) {
-      await (db as { $client: { end: () => Promise<void> } }).$client.end();
+      await (db as unknown as { $client: { end: () => Promise<void> } }).$client.end();
     }
     delete process.env.DATABASE_URL;
   }
