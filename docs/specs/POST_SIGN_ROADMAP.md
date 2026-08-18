@@ -235,8 +235,17 @@ systems with this design."*
 **THE COMPLETION BAR, adopted 2026-08-19 (fable-992 §2b):** the reading is
 finished when every row of `docs/specs/cleanup-dispositions.yaml` carries a
 verdict and `npx tsx scripts/check-cleanup-dispositions.mts --strict` is green.
-The checker runs inside `pnpm check`, so the door cannot be a door nobody
-invokes. Reasoning lives in `CLEANUP_MILESTONE_TRIAGE.md`, which each row
+
+⚠ **The sentence that stood here — *"the checker runs inside `pnpm check`, so
+the door cannot be a door nobody invokes"* — was FALSE, and it is the same
+false claim §23 of the triage carried.** `pnpm check` runs the checker
+**without `--strict`**, and `unread` is fatal ONLY under `--strict`. So the gate
+holds the half about ROT (a row naming a symbol that is gone, a HELD row with no
+blocker) and does **not** hold the bar stated in this very paragraph. It was
+measured on 2026-08-19: the reading list grew 115 → 116 with an unread symbol on
+it and `pnpm check` stayed green — see `CLEANUP_MILESTONE_TRIAGE.md` §24d.
+Whether `pnpm check` should pass `--strict` is filed for a ruling; until it
+does, **the completion bar is a command someone has to run on purpose.** Reasoning lives in `CLEANUP_MILESTONE_TRIAGE.md`, which each row
 cites by section; the table is the index and the document is not.
 
 **The slot, which is the half that was lost:** after V5 lands and M12 is closed
