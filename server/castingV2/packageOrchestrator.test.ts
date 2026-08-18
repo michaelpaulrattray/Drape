@@ -39,7 +39,8 @@ const {
   promisedPackageAngles,
   unsettledPackageAngles,
 } = await import("./packageOrchestrator");
-const { CAST_PACKAGE_VIEWS } = await import("./castViewPackage");
+const { CAST_PACKAGE_VIEWS, composePackageViewPrompt } = await import("./castViewPackage");
+import type { CastViewAngle } from "../../shared/boardTypes";
 
 const pass: ViewConformanceVerdict = {
   pass: true,
@@ -517,5 +518,152 @@ describe("zero of N — the base goes back too", () => {
     // The ruling refunds the money and KEEPS the Cast. A Cast she cannot open
     // is not a kinder outcome than one that explains itself.
     expect(result.activated).toBe(true);
+  });
+});
+
+type ViewRequest = {
+  prompt: string;
+  references: Array<{ bytes: Buffer; contentType: string }>;
+  resolution: string;
+  viewAngle: CastViewAngle;
+};
+
+/**
+ * HER TATTOOS RIDE INTO EVERY VIEW — asserted ON THE OUTGOING REQUEST
+ * (FOUNDER RULING, his words at fable-987 §3: *"tattoo reference will need to be
+ * supplied to each view generated otherwise it wont know what the tattoo is"*).
+ *
+ * At the wire rather than near it, on this program's own banked rule: a contract
+ * about what gets SENT is proven on the request, never on a constant beside it.
+ * The clause's wording is on trial in `inkViewReferences.test.ts`; what is on
+ * trial here is that the pictures and the sentence actually leave the building,
+ * on EVERY view, and that a Cast with no ink is untouched.
+ */
+describe("a signed Cast's tattoos ride into every view", () => {
+  const plate = (over: Record<string, unknown> = {}) => ({
+    designPublicId: "design-1",
+    placement: "upperArm" as const,
+    side: "left" as const,
+    bytes: Buffer.from("plate-bytes"),
+    contentType: "image/png",
+    ...over,
+  });
+
+  it("sends the plate BESIDE the anchor on all five views, with the clause", async () => {
+    /* Typed on the REQUEST, so `mock.calls` carries what was sent — an untyped
+       mock records the arguments and hands them back as `never`, which is how a
+       wire assertion turns into a cast that proves nothing. */
+    const generateView = vi.fn(async (_request: ViewRequest) => ({
+      bytes: Buffer.from("view"),
+      contentType: "image/png",
+      latencyMs: 1,
+      provenance: { provider: "fal" as const, model: "nbp", providerRef: "ref" },
+    }));
+    const identityEngine = () => ({ id: "e", editWithReferences: vi.fn(), generateView });
+
+    await buildCastPackage(deps({ identityEngine }), { ...input, inkPlates: [plate()] });
+
+    expect(generateView).toHaveBeenCalledTimes(CAST_PACKAGE_VIEWS.length);
+    for (const call of generateView.mock.calls) {
+      const request = call[0];
+      /* The anchor first and the plate second — the ordinal the clause quotes. */
+      expect(request.references).toHaveLength(2);
+      expect(request.references[0]!.bytes.toString()).toBe("anchor");
+      expect(request.references[1]!.bytes.toString()).toBe("plate-bytes");
+      /* Every view, including the ones that cannot show an upper arm: the
+         ruling is that the engine must KNOW about the tattoo, and the clause
+         tells it that a view which does not show the surface shows nothing. */
+      expect(request.prompt).toContain("Reference 2 is the tattoo at her left upper arm.");
+      expect(request.prompt).toContain("that tattoo simply does not appear in that view");
+      /* And the view's own prompt is still all there — the clause is added, never
+         substituted. */
+      expect(request.prompt).toContain("Keep this exact person unchanged");
+    }
+  });
+
+  it("carries several plates in order, and their ordinals match their slots", async () => {
+    /* Typed on the REQUEST, so `mock.calls` carries what was sent — an untyped
+       mock records the arguments and hands them back as `never`, which is how a
+       wire assertion turns into a cast that proves nothing. */
+    const generateView = vi.fn(async (_request: ViewRequest) => ({
+      bytes: Buffer.from("view"),
+      contentType: "image/png",
+      latencyMs: 1,
+      provenance: { provider: "fal" as const, model: "nbp", providerRef: "ref" },
+    }));
+    const identityEngine = () => ({ id: "e", editWithReferences: vi.fn(), generateView });
+
+    await buildCastPackage(deps({ identityEngine }), {
+      ...input,
+      inkPlates: [
+        plate({ bytes: Buffer.from("arm-plate") }),
+        plate({ designPublicId: "d2", placement: "neck", side: "centre", bytes: Buffer.from("neck-plate") }),
+      ],
+    });
+
+    const request = generateView.mock.calls[0]![0];
+    expect(request.references.map((reference) => reference.bytes.toString()))
+      .toEqual(["anchor", "arm-plate", "neck-plate"]);
+    /* The sentence for reference 3 must be about the picture actually in slot 3.
+       A clause and an array that drift apart is a prompt pointing at the wrong
+       tattoo, and nothing downstream could tell. */
+    expect(request.prompt).toContain("Reference 2 is the tattoo at her left upper arm.");
+    expect(request.prompt).toContain("Reference 3 is the tattoo at her neck.");
+  });
+
+  it("is INERT for a Cast with no ink — one reference, and not a word added", async () => {
+    /*
+      The control that matters most, because this lane reaches every package view
+      in the product. Absent plates, the request must be what it was before this
+      existed: the anchor alone, and the view prompt with nothing appended.
+    */
+    /* Typed on the REQUEST, so `mock.calls` carries what was sent — an untyped
+       mock records the arguments and hands them back as `never`, which is how a
+       wire assertion turns into a cast that proves nothing. */
+    const generateView = vi.fn(async (_request: ViewRequest) => ({
+      bytes: Buffer.from("view"),
+      contentType: "image/png",
+      latencyMs: 1,
+      provenance: { provider: "fal" as const, model: "nbp", providerRef: "ref" },
+    }));
+    const identityEngine = () => ({ id: "e", editWithReferences: vi.fn(), generateView });
+
+    await buildCastPackage(deps({ identityEngine }), input);
+
+    for (const call of generateView.mock.calls) {
+      const request = call[0];
+      expect(request.references).toHaveLength(1);
+      /*
+        Byte-for-byte the composer's own output — the honest inertness test.
+        NOT "the prompt says nothing about tattoos": the cohort block already
+        names a tattoo as a structural feature to render plainly if the
+        character has one, which is a sentence this lane agrees with rather than
+        contradicts, and an assertion against the word would have failed on the
+        product being right.
+      */
+      expect(request.prompt).toBe(composePackageViewPrompt(request.viewAngle));
+    }
+  });
+
+  it("is inert for an EMPTY plate list too, not only an absent one", async () => {
+    /* Two spellings of nothing, and a caller that loads zero rows produces the
+       second. If they behaved differently the inertness above would be a promise
+       about a field name rather than about the feature. */
+    /* Typed on the REQUEST, so `mock.calls` carries what was sent — an untyped
+       mock records the arguments and hands them back as `never`, which is how a
+       wire assertion turns into a cast that proves nothing. */
+    const generateView = vi.fn(async (_request: ViewRequest) => ({
+      bytes: Buffer.from("view"),
+      contentType: "image/png",
+      latencyMs: 1,
+      provenance: { provider: "fal" as const, model: "nbp", providerRef: "ref" },
+    }));
+    const identityEngine = () => ({ id: "e", editWithReferences: vi.fn(), generateView });
+
+    await buildCastPackage(deps({ identityEngine }), { ...input, inkPlates: [] });
+
+    const request = generateView.mock.calls[0]![0];
+    expect(request.references).toHaveLength(1);
+    expect(request.prompt).toBe(composePackageViewPrompt(request.viewAngle));
   });
 });

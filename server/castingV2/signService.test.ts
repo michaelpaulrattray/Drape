@@ -242,13 +242,28 @@ const { signCandidate } = await import("./signService");
 const { CASTING_V2_SIGN_PRICE_CREDITS } = await import("./castViewPackage");
 
 /** A package that behaves however the case needs it to. */
+/** What the package build is handed — typed so `mock.calls` carries it, rather
+ *  than recording the arguments and handing them back as `never`. */
+type PackageBuildInput = {
+  userId: number;
+  operationId: string;
+  anchor: { bytes: Buffer; contentType: string };
+  inkPlates?: ReadonlyArray<{
+    designPublicId: string;
+    placement: string;
+    side: string;
+    bytes: Buffer;
+    contentType: string;
+  }>;
+};
+
 function packageReturning(result: {
   committed?: number;
   failed?: number;
   refundedCredits?: number;
   refundUnrecorded?: boolean;
 }) {
-  return vi.fn(async () => {
+  return vi.fn(async (_dependencies: unknown, _input: PackageBuildInput) => {
     journal.push("package");
     return {
       committed: Array.from({ length: result.committed ?? 5 }, () => "frontFull" as const),
@@ -621,5 +636,135 @@ describe("Sign reads the selected face, not the candidate", () => {
       signCandidate({ schedulePackage: awaitPackage, buildPackage: packageReturning({}) }, input),
     ).rejects.toThrow();
     expect(ledger.refunds.at(-1)?.amount).toBe(ledger.charges.at(-1)?.amount);
+  });
+});
+
+/**
+ * HER PLATED TATTOOS REACH THE PACKAGE, AND EVERY WAY ONE FAILS TO IS NAMED
+ * (FOUNDER RULING, his words at fable-987 §3: *"tattoo reference will need to be
+ * supplied to each view generated otherwise it wont know what the tattoo is"*;
+ * the naming ordered fable-1004 §3).
+ *
+ * A reference that quietly did not ride is indistinguishable from a Cast with no
+ * tattoo — and the customer paid for the tattoo. So each of the three ways a
+ * plate can fail to travel has its own arm here, and each one asserts that the
+ * SIGN STILL SUCCEEDS: a tattoo missing from five frames is a smaller harm than
+ * five frames nobody gets.
+ */
+describe("the tattoos a Sign carries into its views", () => {
+  const plateRow = (over: Record<string, unknown> = {}) => ({
+    designPublicId: "design-1",
+    placement: "upperArm" as const,
+    side: "left" as const,
+    engine: "fal-ai/nano-banana-pro",
+    storageKey: "casting-v2/candidates/plate-1.png",
+    digest: "d".repeat(64),
+    mime: "image/png",
+    ...over,
+  });
+
+  it("hands the package one carried plate per design, with its surface", async () => {
+    const buildPackage = packageReturning({});
+    await signCandidate({
+      schedulePackage: awaitPackage,
+      buildPackage,
+      listInkPlates: async () => [plateRow(), plateRow({
+        designPublicId: "design-2", placement: "neck", side: "centre",
+        storageKey: "casting-v2/candidates/plate-2.png",
+      })],
+      readBytes: async (key: string) => ({
+        bytes: Buffer.from(`bytes:${key}`), contentType: "image/png",
+      }),
+    }, input);
+
+    const sent = buildPackage.mock.calls[0]![1];
+    expect(sent.inkPlates).toBeDefined();
+    if (!sent.inkPlates) return;
+    expect(sent.inkPlates.map((plate) => plate.designPublicId)).toEqual(["design-1", "design-2"]);
+    expect(sent.inkPlates.map((plate) => `${plate.side}:${plate.placement}`))
+      .toEqual(["left:upperArm", "centre:neck"]);
+    /* The PLATE's own bytes, read from the plate's key — not the anchor's, which
+       is the other thing this function reads and the easy thing to hand over by
+       accident. */
+    expect(sent.inkPlates[0]!.bytes.toString()).toContain("plate-1.png");
+  });
+
+  it("carries NOTHING, and still signs, when the candidate has no plated design", async () => {
+    const buildPackage = packageReturning({});
+    await signCandidate({
+      schedulePackage: awaitPackage, buildPackage, listInkPlates: async () => [],
+    }, input);
+
+    const sent = buildPackage.mock.calls[0]![1];
+    expect(sent.inkPlates).toEqual([]);
+    expect(journal).toContain("package");
+  });
+
+  it("REFUSES to pick between two engines' plates of one design", async () => {
+    /*
+      Which artwork is HER tattoo is the plate court's open question. Taking the
+      newest would be a quiet dispatch fallback — the class this product has
+      already paid for — so the design rides no view and the log says which
+      design and which engines. The OTHER design still rides: one ambiguous
+      answer must not silence an unambiguous one.
+    */
+    const buildPackage = packageReturning({});
+    await signCandidate({
+      schedulePackage: awaitPackage,
+      buildPackage,
+      listInkPlates: async () => [
+        plateRow(),
+        plateRow({ engine: "gpt-image-2", storageKey: "casting-v2/candidates/plate-1b.png" }),
+        plateRow({ designPublicId: "design-2", placement: "neck", side: "centre" }),
+      ],
+      readBytes: async (key: string) => ({
+        bytes: Buffer.from(`bytes:${key}`), contentType: "image/png",
+      }),
+    }, input);
+
+    const sent = buildPackage.mock.calls[0]![1];
+    expect(sent.inkPlates).toBeDefined();
+    if (!sent.inkPlates) return;
+    expect(sent.inkPlates.map((plate) => plate.designPublicId)).toEqual(["design-2"]);
+  });
+
+  it("drops a plate whose BYTES are gone, keeps the others, and still signs", async () => {
+    /* The row is there and the object is not — retention, a failed write, a
+       bucket outage. The picture cannot ride; the Cast is still worth having. */
+    const buildPackage = packageReturning({});
+    await signCandidate({
+      schedulePackage: awaitPackage,
+      buildPackage,
+      listInkPlates: async () => [
+        plateRow(),
+        plateRow({ designPublicId: "design-2", storageKey: "gone.png" }),
+      ],
+      readBytes: async (key: string) => {
+        if (key === "gone.png") throw new Error("NoSuchKey");
+        return { bytes: Buffer.from(`bytes:${key}`), contentType: "image/png" };
+      },
+    }, input);
+
+    const sent = buildPackage.mock.calls[0]![1];
+    expect(sent.inkPlates).toBeDefined();
+    if (!sent.inkPlates) return;
+    expect(sent.inkPlates.map((plate) => plate.designPublicId)).toEqual(["design-1"]);
+    expect(journal).toContain("package");
+  });
+
+  it("signs anyway when the plate STATEMENT itself fails", async () => {
+    /* A database that will not answer must never cost somebody the Cast they
+       just paid for. The views render without the tattoos and the error is
+       loud. */
+    const buildPackage = packageReturning({});
+    await signCandidate({
+      schedulePackage: awaitPackage,
+      buildPackage,
+      listInkPlates: async () => { throw new Error("Database not available"); },
+    }, input);
+
+    const sent = buildPackage.mock.calls[0]![1];
+    expect(sent.inkPlates).toEqual([]);
+    expect(journal).toContain("package");
   });
 });

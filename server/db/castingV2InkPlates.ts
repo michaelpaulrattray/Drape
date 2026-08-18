@@ -46,6 +46,8 @@ import {
   storageCleanupItems,
 } from "../../drizzle/schema";
 import type { InkTemplateKind } from "../../shared/inkTemplateKinds";
+import type { InkPlacement } from "../../shared/inkPlacementVocabulary";
+import type { InkSide } from "../../shared/inkReleasedPlacements";
 import { getDb, withTransaction, type TransactionHandle } from "./connection";
 import { undischargedStorageCleanupBatchWhere } from "./storageCleanup";
 
@@ -269,6 +271,63 @@ export async function listInkPlatesForDesign(input: {
     designPublicId: input.designPublicId,
     createdAt: new Date(row.createdAt),
   }));
+}
+
+/**
+ * EVERY PLATED TATTOO THIS CANDIDATE WEARS — what a Sign carries into its views
+ * (FOUNDER RULING, his words at fable-987 §3).
+ *
+ * Through the DESIGN rather than a mirrored candidate column on the plate, for
+ * the reason the purge reader gives one section down (working law 4): the plate
+ * hangs off the design and the design hangs off the candidate, and a second
+ * parent id on the plate row would be a copy that can disagree with its source.
+ *
+ * Owner-scoped at every link, exactly as `listInkPlatesForDesign` is: the
+ * plate's `userId` is a claim, the design's is a claim, and the candidate is
+ * where they stop being claims.
+ *
+ * It returns the DESIGN's placement and side beside the plate, because the
+ * sentence that rides with the picture names the surface, and reading it from
+ * the design's own row is what stops a caller supplying one.
+ */
+export type CandidateInkPlate = {
+  readonly designPublicId: string;
+  readonly placement: InkPlacement;
+  readonly side: InkSide;
+  readonly engine: string;
+  readonly storageKey: string;
+  readonly digest: string;
+  readonly mime: string;
+};
+
+export async function listCandidateInkPlates(input: {
+  userId: number;
+  candidateId: number;
+}): Promise<readonly CandidateInkPlate[]> {
+  const db = await requireDb();
+  const rows = await db
+    .select({
+      designPublicId: castingInkDesigns.publicId,
+      placement: castingInkDesigns.placement,
+      side: castingInkDesigns.side,
+      engine: castingInkPlates.engine,
+      storageKey: castingInkPlates.storageKey,
+      digest: castingInkPlates.digest,
+      mime: castingInkPlates.mime,
+    })
+    .from(castingInkPlates)
+    .innerJoin(castingInkDesigns, eq(castingInkDesigns.id, castingInkPlates.designId))
+    .innerJoin(castingCandidates, eq(castingCandidates.id, castingInkDesigns.candidateId))
+    .where(and(
+      eq(castingInkDesigns.candidateId, input.candidateId),
+      eq(castingInkPlates.userId, input.userId),
+      eq(castingInkDesigns.userId, input.userId),
+      eq(castingCandidates.userId, input.userId),
+    ))
+    /* Stable order, so the reference array a package sends and the sentence that
+       quotes its ordinals are built from the same list twice running. */
+    .orderBy(castingInkDesigns.id, castingInkPlates.id);
+  return rows;
 }
 
 /* ------------------------------------------------------------ retention */

@@ -57,6 +57,7 @@ import {
   castPackageView,
   composePackageViewPrompt,
 } from "./castViewPackage";
+import { inkViewReferenceClause, type CarriedInkPlate } from "./inkViewReferences";
 import { castingIdentityEngine, castingViewConformanceJudge } from "./signEngine";
 import type { ViewConformanceJudge, ViewConformanceVerdict } from "./viewConformance";
 
@@ -140,6 +141,21 @@ export type BuildPackageInput = {
   identityRevisionId: string;
   identityText: string;
   anchor: ReferenceImage;
+  /**
+   * HER TATTOOS, AS PICTURES — the view-reference lane (FOUNDER RULING, his
+   * words at fable-987 §3: *"tattoo reference will need to be supplied to each
+   * view generated otherwise it wont know what the tattoo is"*).
+   *
+   * The anchor is a chest-up photograph of her face. A tattoo on her upper arm
+   * is barely in it or outside it, so every view an engine rendered from the
+   * anchor alone was drawing that surface from nothing.
+   *
+   * What rides is the PLATE — the design already drawn onto a blank mannequin
+   * form — never the customer's uploaded photograph (D-138). Absent or empty,
+   * every view composes exactly the prompt and the single reference it composed
+   * before this existed, which is what a Cast with no ink still gets.
+   */
+  inkPlates?: readonly CarriedInkPlate[];
 };
 
 async function defaultStoreImage(input: {
@@ -370,9 +386,24 @@ async function buildOneView(
   for (let attempt = 1; attempt <= 2; attempt += 1) {
     let stored: { key: string; url: string } | null = null;
     try {
+      /*
+        THE PLATES RIDE BESIDE THE ANCHOR, INTO EVERY VIEW — his ruling, and the
+        ordinal the clause quotes is derived from the array it is quoting about
+        rather than assumed, so a sentence can never point at a slot the request
+        does not hold.
+      */
+      const plates = input.inkPlates ?? [];
+      const references: ReferenceImage[] = [
+        input.anchor,
+        ...plates.map((plate) => ({ bytes: plate.bytes, contentType: plate.contentType })),
+      ];
+      const inkClause = inkViewReferenceClause({ plates, firstOrdinal: 2 });
       const image = await engine.generateView({
-        prompt: composePackageViewPrompt(angle),
-        references: [input.anchor],
+        prompt: inkClause === ""
+          ? composePackageViewPrompt(angle)
+          : `${composePackageViewPrompt(angle)}
+${inkClause}`,
+        references,
         // §H.10: signed package views are 2K.
         resolution: "2K",
         viewAngle: angle,
