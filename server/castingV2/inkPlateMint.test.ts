@@ -172,6 +172,7 @@ describe("a design is plated ONCE PER ENGINE", () => {
       engine: "fal:openai/gpt-image-2/edit",
       templateKind: "arm",
       templateDigest: INK_TEMPLATES.arm.digest,
+      promptDigest: "p".repeat(64),
       storageKey: "casting-v2/ink/plates/old.png",
       digest: "c".repeat(64),
       mime: "image/png",
@@ -204,6 +205,7 @@ describe("a design is plated ONCE PER ENGINE", () => {
       engine: "fal:fal-ai/nano-banana-pro",
       templateKind: "arm",
       templateDigest: INK_TEMPLATES.arm.digest,
+      promptDigest: "p".repeat(64),
       storageKey: "casting-v2/ink/plates/nbp.png",
       digest: "d".repeat(64),
       mime: "image/png",
@@ -275,6 +277,31 @@ describe("the mint itself", () => {
     /* Derived from the design's placement, never passed in. */
     expect(recorded.templateKind).toBe("arm");
     expect(recorded.templateDigest).toBe(INK_TEMPLATES.arm.digest);
+  });
+
+  it("records a digest of the WORDS THAT WENT OUT, not of a second copy of them", async () => {
+    /*
+      `templateDigest` pins the sheet a plate stands on; this pins the other
+      half, and the other half moved on 2026-08-18 — the one-view sentence
+      against a turnaround template — leaving two plates indistinguishable in
+      the table across a change that produced wildly different pictures.
+
+      Asserted against the string THE ENGINE WAS HANDED rather than against a
+      second call to `inkPlatePrompt` (working law 5). A test that built its own
+      copy of the prompt would pass while the row recorded a digest of something
+      nobody sent, which is the exact failure this column exists to make
+      impossible.
+    */
+    await mintOne();
+
+    const sent = mint.mock.calls[0]![0]!.prompt;
+    const recorded = (dependencies.record as Mock).mock.calls[0]![0]!.promptDigest;
+    expect(recorded).toBe(createHash("sha256").update(sent).digest("hex"));
+    /* And it is a sha256 hex digest rather than the prompt itself: the words are
+       derived from data already on the row, so storing them would be a copy
+       that drifts. */
+    expect(recorded).toMatch(/^[0-9a-f]{64}$/);
+    expect(recorded).not.toContain(" ");
   });
 
   it("files no row when the engine returns bytes that will not decode", async () => {

@@ -3076,6 +3076,31 @@ export const castingInkPlates = mysqlTable("casting_ink_plates", {
   templateKind: mysqlEnum("templateKind", INK_TEMPLATE_KINDS).notNull(),
   /** The template bytes this plate was actually drawn on. See the header. */
   templateDigest: varchar("templateDigest", { length: 64 }).notNull(),
+  /**
+   * THE WORDS THIS PLATE WAS DRAWN FROM — sha256 of the exact prompt sent.
+   *
+   * `templateDigest` above pins the SHEET, and it paid for itself the day after
+   * it was written when the sheet moved by ruling. This pins the other half of
+   * the input, and it is here because that half moved too: on 2026-08-18 the
+   * plate prompt was rewritten (it described a one-view form while every
+   * committed template is a turnaround), and the two plates minted either side
+   * of that change are **indistinguishable in this table** — same design, same
+   * engine, same template digest, wildly different plates.
+   *
+   * A court's verdict is about an input. An input nothing records is an input
+   * that can move silently, which is the same failure the sheet's digest exists
+   * to prevent.
+   *
+   * The DIGEST rather than the prompt: the words are derived from data already
+   * on the row (placement, side, and the template's own view list), so storing
+   * them would be a mirror that drifts (law 4). A digest answers the only
+   * question a later reader actually asks — *were these two plates drawn from
+   * the same words?* — and cannot disagree with the source it hashes.
+   *
+   * NULL on the two rows minted before this column existed. They refuse rather
+   * than approximate, exactly as `stepDeltas` does on the variants table.
+   */
+  promptDigest: varchar("promptDigest", { length: 64 }),
   /** Our copy of the plate's bytes, under the candidate's purge path. */
   storageKey: varchar("storageKey", { length: 512 }).notNull(),
   /** sha256 of the plate's own bytes — byte identity, as the library does it. */

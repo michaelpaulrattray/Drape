@@ -31,6 +31,20 @@ const MIGRATION = readFileSync(
  * That is the "assert at the wire" habit one layer down: what the database is
  * told is the DDL, not the reasoning above it.
  */
+/**
+ * The prompt digest's own migration (0038), read the same way.
+ *
+ * A separate file because it is a separate landing: 0037 creates the table and
+ * this alters it, and the ordering is what the ceremony script asserts.
+ */
+const ALTER = readFileSync(
+  path.resolve(__dirname, "../../drizzle/0038_casting_ink_plate_prompt_digest.sql"),
+  "utf8",
+)
+  .split(/\r?\n/)
+  .filter((line) => !line.trimStart().startsWith("--"))
+  .join(" ");
+
 const DDL = MIGRATION
   .split(/\r?\n/)
   .filter((line) => !line.trimStart().startsWith("--"))
@@ -89,6 +103,26 @@ describe("the conditions this table carries, asserted in its own text", () => {
       eye.
     */
     expect(MIGRATION).toMatch(/`templateDigest` varchar\(64\) NOT NULL/);
+  });
+
+  it("records the PROMPT digest too, because the words moved once already", () => {
+    /*
+      The other half of the input, added by migration 0038 after the wrap court
+      (2026-08-18). The plate prompt described a one-view form while every
+      committed template is a turnaround, and the two plates minted either side
+      of the rewrite are indistinguishable in the table: same design, same
+      engine, same template digest, wildly different pictures.
+
+      NULLABLE deliberately — the rows minted before the column existed have no
+      honest value, and a backfill would have guessed which words they stood on.
+      Asserted as the ABSENCE of NOT NULL rather than trusted, with a positive
+      control beside it so the absence is an absence in the DDL.
+    */
+    expect(ALTER).toMatch(/`promptDigest` varchar\(64\)/);
+    expect(ALTER).not.toMatch(/`promptDigest` varchar\(64\) NOT NULL/);
+    /* The control: the file really did load and really does hold the statement,
+       so "no NOT NULL" is a reading rather than an empty string. */
+    expect(ALTER).toMatch(/ALTER TABLE `casting_ink_plates` ADD `promptDigest`/);
   });
 
   it("carries NO candidateId, because the sweep reaches it through its design", () => {

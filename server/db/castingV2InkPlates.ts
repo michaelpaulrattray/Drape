@@ -91,6 +91,14 @@ export type InkPlateToRecord = {
   templateKind: InkTemplateKind;
   /** The digest the mint READ off disk, never the one it expected. */
   templateDigest: string;
+  /**
+   * sha256 of the exact prompt that was SENT — the other half of the input.
+   *
+   * `templateDigest` pins the sheet; this pins the words, and the words moved
+   * once already (the one-view sentence against a turnaround sheet, 2026-08-18)
+   * leaving two plates indistinguishable in this table.
+   */
+  promptDigest: string;
   /** Our object, under the candidate's purge path. Never a pointer. */
   storageKey: string;
   /** sha256 of the plate's bytes — byte identity, as the library does it. */
@@ -114,6 +122,9 @@ export type RecordedInkPlate = {
   engine: string;
   templateKind: InkTemplateKind;
   templateDigest: string;
+  /** NULL on the rows minted before this column existed — they refuse rather
+   *  than approximate, exactly as `stepDeltas` does on the variants table. */
+  promptDigest: string | null;
   storageKey: string;
   digest: string;
   mime: string;
@@ -166,6 +177,7 @@ export async function recordInkPlate(input: InkPlateToRecord): Promise<RecordedI
       engine: input.engine,
       templateKind: input.templateKind,
       templateDigest: input.templateDigest,
+      promptDigest: input.promptDigest,
       storageKey: input.storageKey,
       digest: input.digest,
       mime: input.mime,
@@ -199,6 +211,7 @@ export async function recordInkPlate(input: InkPlateToRecord): Promise<RecordedI
       engine: input.engine,
       templateKind: input.templateKind,
       templateDigest: input.templateDigest,
+      promptDigest: input.promptDigest,
       storageKey: input.storageKey,
       digest: input.digest,
       mime: input.mime,
@@ -229,6 +242,7 @@ export async function listInkPlatesForDesign(input: {
       engine: castingInkPlates.engine,
       templateKind: castingInkPlates.templateKind,
       templateDigest: castingInkPlates.templateDigest,
+      promptDigest: castingInkPlates.promptDigest,
       storageKey: castingInkPlates.storageKey,
       digest: castingInkPlates.digest,
       mime: castingInkPlates.mime,

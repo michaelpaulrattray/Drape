@@ -1,0 +1,55 @@
+-- THE WORDS A PLATE WAS DRAWN FROM — the other half of its input, recorded.
+--
+-- ============================================================================
+-- WHY, WHEN `templateDigest` ALREADY PINS THE INPUT
+-- ============================================================================
+--
+-- Because it pins HALF of it. A plate is a function of two things the mint
+-- controls: the sheet it is drawn on and the words it is drawn from.
+-- `templateDigest` was written for the first half and paid for itself the day
+-- after, when the founder's ruling moved the arm sheet from four views to three
+-- and plates already minted carried the digest they actually stood on.
+--
+-- On 2026-08-18 the SECOND half moved, and nothing recorded it. The plate
+-- prompt described a template with one view — "a plain, featureless mannequin
+-- form", then "leave every other part of the form completely bare" — while
+-- every committed template is a turnaround. The wrap court found it at the
+-- frames: a serpent on the side view and two bare arms beside it. The prompt
+-- was rewritten to derive from the sheet's own view list, and **the two plates
+-- minted either side of that change are indistinguishable in this table**: same
+-- design, same engine, same template digest, wildly different plates.
+--
+-- A court's verdict is a verdict about an input. An input nothing records is an
+-- input that can move silently, which is precisely what the sheet's digest
+-- exists to prevent.
+--
+-- ============================================================================
+-- THE DIGEST, NOT THE PROMPT
+-- ============================================================================
+--
+-- The words are DERIVED from data this row already carries — the design's
+-- placement and side, and the template's own view list — so storing the text
+-- would be a second copy of a source of truth, which drifts (working law 4).
+-- A digest answers the only question a later reader actually asks — *were these
+-- two plates drawn from the same words?* — and it cannot disagree with the
+-- source it hashes.
+--
+-- ============================================================================
+-- NULLABLE, AND THE NULLS ARE HONEST
+-- ============================================================================
+--
+-- The rows minted before this column exists have no answer, and an honest
+-- "not on this one" beats a backfill that guesses which version of the prompt
+-- was live when a row was written. Readers refuse rather than approximate,
+-- exactly as `stepDeltas` does on the variants table.
+--
+-- ============================================================================
+-- ORDERING
+-- ============================================================================
+--
+-- A new column on a table this program's own scar is about: drizzle names every
+-- schema column in every INSERT, so the migration lands BEFORE the code, always.
+-- `casting_ink_plates` does not exist in production at all yet (0037 is
+-- unapplied there and the ink studio's flag is absent), so this rides the same
+-- bundled ceremony as 0037 rather than travelling on its own.
+ALTER TABLE `casting_ink_plates` ADD `promptDigest` varchar(64);

@@ -240,9 +240,19 @@ export async function mintInkPlate(
   });
   if (designRefusal || !fetched) return { ok: false, refusal: designRefusal! };
 
+  /*
+    THE WORDS, BUILT ONCE — sent, and hashed onto the row from the same string.
+
+    Two calls to `inkPlatePrompt` would be two chances to record a digest of
+    something other than what went out, which is the drift working law 5 is
+    about: the contract is proved on the outgoing request, not on a constant
+    near it.
+  */
+  const prompt = inkPlatePrompt({ placement: design.placement, side: design.side });
+
   /* Everything that could refuse has refused. This is where money is spent. */
   const drawn = await engine.mint({
-    prompt: inkPlatePrompt({ placement: design.placement, side: design.side }),
+    prompt,
     template: { bytes: loaded.bytes, contentType: template.mime },
     design: { bytes: fetched.bytes, contentType: design.mime },
     templateWidth: template.width,
@@ -287,6 +297,8 @@ export async function mintInkPlate(
     /* The digest MEASURED off disk, not the pin it was compared against — the
        row records what this plate actually stands on. */
     templateDigest: loaded.digest,
+    /* And the words it stood on, from the same string that was sent. */
+    promptDigest: createHash("sha256").update(prompt).digest("hex"),
     storageKey,
     digest: createHash("sha256").update(drawn.bytes).digest("hex"),
     mime: drawn.contentType,
