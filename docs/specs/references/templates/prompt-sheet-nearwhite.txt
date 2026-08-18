@@ -1,0 +1,55 @@
+INTENDED USE
+
+A blank template asset for a tattoo "flash sheet" system. A customer's tattoo
+design will later be drawn onto this blank form, and that drawing becomes the
+reference the studio carries. This image is a CANDIDATE for a founder's taste
+review of the template's look. It must contain NO tattoo, NO design, NO ink and
+NO text of any kind.
+
+WHAT TO PRODUCE
+
+A single clean studio product image of a NEUTRAL, FEATURELESS GHOST MANNEQUIN of
+a female upper body, shown as two panels side by side in one image:
+
+  LEFT PANEL   the front of the upper body
+  RIGHT PANEL  the back of the same upper body, same size, same lighting
+
+Each panel shows: the base of the neck and throat, the collarbones and upper
+chest, the shoulders, and both upper arms down to just above the elbow.
+
+CRITICAL FORM RULES
+
+- It is a MANNEQUIN, not a person: no head, no face, no hair, no nipples, no
+  navel, no body hair, no jewellery, no clothing. Smooth, anonymous, sculptural.
+- The form must be MATTE and LOW-CONTRAST — soft even studio light, gentle
+  shading that reads the anatomy, no glossy highlights, no harsh shadows, no
+  strong rim light.
+- Every limb and the bottom of the torso must TERMINATE IN A SOFT FADE that
+  dissolves into the background. Never a hard cut, never a sliced edge, never a
+  visible stand, base, plinth or pole.
+- The neck ends in a soft fade at the top. There is no head and no suggestion of
+  one.
+- One relaxed, symmetrical, canonical pose: arms hanging naturally slightly away
+  from the body so the outer upper arm is fully visible, shoulders level, chest
+  square to camera in the front panel.
+
+SKIN AND BACKGROUND
+
+- Mid-tone skin, a neutral medium beige-brown, matte, with no makeup, no
+  tattoos, no freckles, no marks of any kind.
+- Background: a flat, even, NEAR-WHITE studio background (a very light warm
+  off-white, close to #F4F4F2 — clearly not pure white, clearly not grey),
+  identical behind both panels, with no gradient banding, no vignette and no
+  floor line.
+- THE FADE MUST STILL DISAPPEAR INTO IT. The soft terminations above are the
+  reason this background tone was chosen over a dark one: on a dark field a
+  soft edge reads as a glow around the form. Against near-white the fades must
+  vanish completely, with no halo, no outline and no visible edge where the
+  form ends.
+
+COMPOSITION
+
+- Portrait or square orientation, high resolution, both panels the same scale,
+  generous even margin around and between them.
+- Nothing else in the frame. No labels, no captions, no watermark, no logo, no
+  measurement marks, no border.
