@@ -46,6 +46,16 @@ export type SheetNoticeInput = {
 export const FELL_BACK_NOTICE =
   "The brief reader was unavailable — this roll was cast from your sentence as written, with nothing pinned.";
 
+/**
+ * The line, and it says what happens rather than apologising for it.
+ *
+ * "Keep" not "ignore": the tee is a deliberate property of a casting sheet, and
+ * naming where clothes DO belong turns a refusal into a direction.
+ *
+ * This sentence was declared twice — here and in `server/castingV2/statedWardrobe.ts`
+ * — byte-identical, with only this copy ever read. The server's went in the
+ * cleanup milestone and its reasoning came here, where the sentence is.
+ */
 export const STATED_WARDROBE_NOTICE =
   "Casting sheets keep the studio tee — outfits come after Sign, in takes.";
 

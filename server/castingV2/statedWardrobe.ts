@@ -116,11 +116,13 @@ export function statesWardrobe(briefText: string | null): boolean {
   return mentionsWornClothing(briefText);
 }
 
-/**
- * The line, and it says what happens rather than apologising for it.
- *
- * "Keep" not "ignore": the tee is a deliberate property of a casting sheet, and
- * naming where clothes DO belong turns a refusal into a direction.
+/*
+ * The SENTENCE this file used to declare lives in the client, beside the
+ * precedence that decides whether it is shown at all
+ * (`client/src/features/castingV2/sheetNotice.ts`). It was declared here too —
+ * byte-identical, imported by nothing, not even a test — which is law 4's own
+ * shape waiting to drift. The boundary that survived is the right one: the
+ * server sends the FACT (`statedWardrobe`, from `statesWardrobe` above) and the
+ * client owns the VOICE. Removed by the cleanup milestone, 2026-08-18; the
+ * reasoning that stood over it moved with it rather than being deleted.
  */
-export const STATED_WARDROBE_NOTICE =
-  "Casting sheets keep the studio tee — outfits come after Sign, in takes.";

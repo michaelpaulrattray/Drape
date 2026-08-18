@@ -365,7 +365,7 @@ export type ReadPurpose =
 /** Every member, for the pinned-enumeration test and for any reader that wants
  *  to know the set without importing the type. Frozen so a caller cannot grow
  *  the vocabulary by accident. */
-export const READ_PURPOSES: readonly ReadPurpose[] = Object.freeze([
+export const READ_PURPOSES = Object.freeze([
   "interpret",
   "reask.echo",
   "reask.prior",
@@ -378,7 +378,23 @@ export const READ_PURPOSES: readonly ReadPurpose[] = Object.freeze([
   "describe",
   "classify",
   "gate",
-] as const);
+] as const) satisfies readonly ReadPurpose[];
+
+/**
+ * The list above is DERIVED from the union in the only direction a type
+ * annotation could not check.
+ *
+ * It used to read `: readonly ReadPurpose[]`, which rejects an array member
+ * that is not a purpose and says NOTHING about a purpose missing from the
+ * array. So a thirteenth `ReadPurpose` added to the union above would have
+ * compiled, shipped, and quietly fallen out of every sweep that walks this
+ * list — a second list shadowing its own source of truth, which is the shape
+ * law 4 exists to stop. `satisfies` keeps the first direction; the line below
+ * buys the second, at compile time and no runtime cost.
+ */
+type AssertNever<T extends never> = T;
+type _EveryReadPurposeIsListed =
+  AssertNever<Exclude<ReadPurpose, typeof READ_PURPOSES[number]>>;
 
 export type TextRequest = {
   system: string;
