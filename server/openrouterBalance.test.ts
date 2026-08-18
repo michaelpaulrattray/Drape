@@ -86,13 +86,24 @@ describe("the OpenRouter balance is read, never remembered", () => {
   it("SHOUTS below the floor, and names the consequence", () => {
     const line = balanceLine({ ok: true, remaining: 9.76, total: 210, used: 200.24, low: true });
     expect(line).toContain("LOW");
-    /* The consequence MOVED on 2026-08-16 when auto top-up went on for both
-       providers: a low balance no longer strands the product, it means money is
-       moving. The assertion is that the line still carries A consequence and
-       still points at the reading that explains it — never that it carries the
-       superseded one. */
+    /* The consequence has MOVED TWICE and the arm is written so it never pins
+       the current wording: 2026-08-16 auto top-up went on, so "every roll dies
+       at dispatch" stopped being true; 2026-08-19 the top-up was seen NOT to
+       fire here, so "auto top-up covers the outage" stopped being true in its
+       turn. What is asserted is that the line still carries A consequence and
+       still points at the reading that explains it. */
     expect(line, "a number without its consequence is a number nobody acts on")
-      .toContain("money is MOVING");
+      .toContain("spend line");
+    /*
+      AND THE ONE THING THE LINE MAY NOT DO AGAIN: promise what the account
+      will do next. This reader can see `total` and nothing else, so a claim
+      about a top-up firing is a claim about a thing it has not read — which is
+      exactly how the superseded sentence survived three days of being false.
+    */
+    expect(line.toLowerCase(), "the line may not promise a top-up it cannot see")
+      .not.toContain("covers the outage");
+    expect(line, "it must instead say how a top-up WOULD be visible from here")
+      .toContain("granted");
     expect(line, "and it must point at where the answer is")
       .toContain("spend line");
     expect(line, "the outage sentence is superseded, not merely reworded")

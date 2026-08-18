@@ -316,9 +316,25 @@ export function balanceLine(balance: OpenRouterBalance): string {
     The line itself stays, loudly, because its job was never only runway: it is
     the leak detector, and the founder's own cast-browsing drip is exactly what
     it exists to make visible.
+
+    AND THE CONSEQUENCE MOVED AGAIN, 2026-08-19 — the same defect, one revision
+    later, on the very line that carries a paragraph about it. "Auto top-up
+    covers the outage" was written from the founder's word that top-up is ON,
+    and it was printed as a FACT this reader had not read. It is false for this
+    provider: the balance went $8.75 (08-17) → $5.94 (08-19), both below the
+    floor, with `total` UNCHANGED at $210 — a top-up landing would have raised
+    it. fal's fired at $20 on the 17th; this one has let the balance fall
+    through it twice.
+
+    So the line no longer asserts what the account will do. `total` is what it
+    can actually see, and a top-up is the only thing that moves it — so the
+    line reports the reading and names the doubt, which is the whole difference
+    between a leak detector and a reassurance. Working law 1: this reader may
+    state what it read, never what somebody said was configured elsewhere.
   */
   return balance.low
     ? `openrouter *** LOW: ${figures} — below $${LOW_BALANCE_USD}. `
-      + `Auto top-up covers the outage; a low balance now means money is MOVING — look at the spend line. ***`
+      + `A top-up would RAISE the $${balance.total.toFixed(2)} granted figure beside it; `
+      + `if that number is not moving, the top-up is not firing. Look at the spend line. ***`
     : `openrouter ${figures}`;
 }
