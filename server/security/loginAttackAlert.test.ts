@@ -143,6 +143,81 @@ describe("the site-wide login alarm", () => {
   });
 });
 
+describe("the alarm lands where STAFF actually look (founder ruling, fable-1018)", () => {
+  /*
+    His words: "slack isnt connected needs to eb wired into admin /mod panels".
+    Production has no Slack webhook, so a Slack-only alarm is an inert control
+    wearing a finished one's clothes — and this module shipped exactly that for
+    one commit before he caught it.
+
+    Bound 2c: the wire is proven by the event ARRIVING ON THE PANEL'S READ PATH,
+    not by the writer existing. There is no test database here, so the proof is
+    in two halves that together are the path: what the writer sends, asserted at
+    the wire; and that the panel's own filter list contains that action.
+  */
+  it("writes the abuse row with what abuse work needs and nothing more", async () => {
+    const { noteFailedLogin } = await freshAlarm();
+    const { AUDIT_ACTIONS } = await import("../../drizzle/schema");
+    const logAuditEvent = vi.fn().mockResolvedValue(undefined);
+    vi.doMock("../auditLog", () => ({ logAuditEvent }));
+
+    /* Re-import so the default sender closes over the mocked writer. */
+    vi.resetModules();
+    vi.doMock("../auditLog", () => ({ logAuditEvent }));
+    const live = await import("./loginAttackAlert");
+    for (let attempt = 0; attempt < THRESHOLD; attempt += 1) {
+      await live.noteFailedLogin();
+    }
+
+    expect(logAuditEvent).toHaveBeenCalledTimes(1);
+    const row = logAuditEvent.mock.calls[0]![0] as Record<string, any>;
+    expect(row.action).toBe(AUDIT_ACTIONS.ABUSE_GLOBAL_ATTACK);
+    expect(row.severity).toBe("warning");
+    expect(row.metadata.failedCount).toBe(THRESHOLD);
+    /* NEVER an account or a credential: a staff surface reading a counter must
+       not become a staff surface reading credentials (bound 2b). */
+    expect(row.userId).toBeUndefined();
+    const serialised = JSON.stringify(row);
+    expect(serialised).not.toMatch(/password|email|passwordHash/i);
+    void noteFailedLogin;
+    vi.doUnmock("../auditLog");
+  });
+
+  it("is in the abuse CATEGORY, without which the panel filters it away", async () => {
+    /*
+      THE HALF THAT WOULD HAVE MADE THE WIRE INVISIBLE. `getAbuseAlertsSummary`
+      and the category filter both intersect against `ACTION_CATEGORIES.abuse`.
+      The action has been DEFINED in the schema all along with nothing writing
+      it — and it was never in that list, so a row written without this line
+      would exist in the table and appear on no panel.
+
+      Read from the source rather than through the query, because the query
+      needs a database this suite does not have — and the list is the thing that
+      decides.
+    */
+    const AUDIT_SOURCE = readFileSync(
+      path.resolve(__dirname, "../auditLog.ts"),
+      "utf8",
+    );
+    const abuseBlock = AUDIT_SOURCE.slice(
+      AUDIT_SOURCE.indexOf("  abuse: ["),
+      AUDIT_SOURCE.indexOf("};", AUDIT_SOURCE.indexOf("  abuse: [")),
+    );
+    expect(abuseBlock).toContain("AUDIT_ACTIONS.ABUSE_GLOBAL_ATTACK");
+  });
+
+  it("does not reach for Slack on this path at all", async () => {
+    /* Not "Slack is optional" — absent. A no-op send that logs a warning when
+       unconfigured is precisely the inert control he objected to, and leaving
+       one here would let a future reader believe two destinations exist. */
+    const MODULE = readFileSync(
+      path.resolve(__dirname, "./loginAttackAlert.ts"),
+      "utf8",
+    );
+    expect(MODULE).not.toMatch(/sendSlackAlert|notifyOwner|slackNotification/);
+  });
+});
+
 describe("the alarm is actually INVOKED — a control that is not called does not exist", () => {
   /*
     Invariant 7, asserted at the source rather than through the route. The whole

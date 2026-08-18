@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "af8e9158c0232a31"
+    "sourceFingerprint": "1bf73928f4a0503b"
   },
   "domains": [
     {
@@ -25881,17 +25881,22 @@
     },
     {
       "from": "module:server/security/loginAttackAlert.ts",
+      "to": "module:drizzle/schema.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/security/loginAttackAlert.ts",
+      "to": "module:server/auditLog.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/security/loginAttackAlert.ts",
       "to": "module:server/logging/logger.ts",
       "kind": "imports"
     },
     {
       "from": "module:server/security/loginAttackAlert.ts",
       "to": "module:server/security/rateLimit.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/security/loginAttackAlert.ts",
-      "to": "module:server/slack/slackNotification.ts",
       "kind": "imports"
     },
     {

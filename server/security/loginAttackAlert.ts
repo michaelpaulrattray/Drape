@@ -9,6 +9,29 @@
  * recorded, carrying a worked example of wiring that did not exist. This module
  * is the call site those helpers never had.
  *
+ * # WHERE THE ALARM LANDS: THE STAFF PANELS, NOT SLACK
+ *
+ * Founder ruling 2026-08-19, verbatim: *"slack isnt connected needs to eb wired
+ * into admin /mod panels"* (relayed fable-1018 §1). **Production has no Slack
+ * webhook**, so a Slack-only alarm would be one more invoked-but-inert control
+ * — the exact class `CLAUDE.md`'s "currently not enforced" list exists to name.
+ * He caught that himself, and this module briefly shipped it that way.
+ *
+ * So the alert is an AUDIT-LOG ROW, which both staff roles already read
+ * (`moderator.getAbuseAlerts`, `admin.getAbuseAlerts` → `getAbuseAlertsSummary`).
+ * No new surface, no widening of the capability grid, and — because `action` is
+ * a varchar rather than an enum — **no migration**, which matters because the
+ * delegated ceremony had already run when this ruling arrived.
+ *
+ * A panel is a PULL surface, so persistence is the point: the counter resets on
+ * deploy, but the ROW does not, and a 3am spike is still there at a 9am look.
+ *
+ * The action name was already waiting: `ABUSE_GLOBAL_ATTACK`
+ * (`abuse.global_attack_detected`) has been defined in the schema all along with
+ * nothing ever writing it. It is now written — and it is added to the abuse
+ * CATEGORY in the same commit, without which the panel's own filter would have
+ * dropped every row this writes and the wire would have been invisible.
+ *
  * # WHY A MODULE RATHER THAN FOUR LINES IN THE LOGIN ROUTE
  *
  * Working law 3: a backstop needs a test the model cannot rescue. A guard that
@@ -39,7 +62,8 @@ import {
   recordGlobalFailedLogin,
   shouldSendGlobalAttackAlert,
 } from "./rateLimit";
-import { sendSlackAlert } from "../slack/slackNotification";
+import { logAuditEvent } from "../auditLog";
+import { AUDIT_ACTIONS } from "../../drizzle/schema";
 import { createModuleLogger } from "../logging/logger";
 
 const log = createModuleLogger("security/loginAttackAlert");
@@ -50,19 +74,30 @@ export type AttackAlertSender = (input: {
   severity: "warning" | "critical";
 }) => Promise<unknown>;
 
-const slackSender: AttackAlertSender = ({ failedCount, severity }) =>
-  sendSlackAlert({
-    title: severity === "critical"
-      ? "Login attack — CRITICAL"
-      : "Login attack detected",
-    description:
-      `${failedCount} failed logins across all accounts in the last five minutes. `
-      + "The counter is in memory and resets on deploy, so this is the floor rather than the total.",
+/**
+ * THE PANEL'S ROW.
+ *
+ * `userId` is left null on purpose — this is a fact about the whole front door
+ * and not about any one account, and the failures it counts are mostly against
+ * addresses that have no account at all.
+ *
+ * The metadata carries what abuse work needs and nothing more (bound fable-1018
+ * §2b): how many, over what window, and that the figure is a floor. **No email,
+ * no password material, no per-account detail** — a staff surface reading a
+ * counter must not become a staff surface reading credentials.
+ */
+const auditSender: AttackAlertSender = ({ failedCount, severity }) =>
+  logAuditEvent({
+    action: AUDIT_ACTIONS.ABUSE_GLOBAL_ATTACK,
+    resourceType: "auth",
     severity,
-    fields: [
-      { title: "Failed logins in window", value: String(failedCount), short: true },
-      { title: "Window", value: "5 minutes", short: true },
-    ],
+    metadata: {
+      failedCount,
+      windowMinutes: 5,
+      /* Said in the row itself, because a staff member reading "51" at 9am
+         cannot otherwise know the counter restarted at every deploy overnight. */
+      countIsAFloor: "the counter is in memory and resets on every deploy",
+    },
   });
 
 /**
@@ -82,7 +117,7 @@ const slackSender: AttackAlertSender = ({ failedCount, severity }) =>
  * itself ignores it.
  */
 export async function noteFailedLogin(
-  send: AttackAlertSender = slackSender,
+  send: AttackAlertSender = auditSender,
 ): Promise<{ failedCount: number; alerted: boolean }> {
   try {
     const status = recordGlobalFailedLogin();

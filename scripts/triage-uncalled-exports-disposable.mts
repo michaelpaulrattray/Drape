@@ -22,7 +22,7 @@
  *   none      nothing but its own declaration and its tests. THE REAL LIST.
  *
  * CONTROLS (working law 2), printed first, run refuses on failure:
- *   positive  shouldSendGlobalAttackAlert  hand-read 2026-08-18: declaration
+ *   positive  allowColdImports            hand-read 2026-08-19: declaration
  *                                          only → must classify `none`
  *   negative  isAccountLocked              hand-read: reached as
  *                                          `db.isAccountLocked` from two auth

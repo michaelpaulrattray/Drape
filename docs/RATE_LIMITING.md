@@ -273,8 +273,8 @@ The global attack detection system tracks failed login attempts across all users
 
 | Level | Threshold | Action |
 |-------|-----------|--------|
-| Warning | 50 failed logins in 5 min | Slack alert to #security-alerts, once per window |
-| Critical | 100 failed logins in 5 min | The same alert, marked CRITICAL |
+| Warning | 50 failed logins in 5 min | `abuse.global_attack_detected` audit row, once per window, visible on the admin and moderator panels |
+| Critical | 100 failed logins in 5 min | The same row, severity `critical` |
 
 ### Implementation
 
@@ -302,8 +302,9 @@ Three things about that, each of which is a decision rather than a detail:
   branch would sleep through the commonest attack there is. The count is global
   and carries no email, so the enumeration defence (one generic sentence at both
   exits) is untouched.
-- **Fire-and-forget, and every failure inside is swallowed.** A Slack outage may
-  not turn "your password was wrong" into a 500, and may not make a login slow.
+- **Fire-and-forget, and every failure inside is swallowed.** A database stall
+  may not turn "your password was wrong" into a 500, and may not make a login
+  slow.
 - **The window is marked as alerted BEFORE the send, not after.** Two failures
   arriving while a slow send is in flight would otherwise both find an unmarked
   window and both alert — under a real attack that is a flood, and a flood is
@@ -328,17 +329,42 @@ Driven directly in `server/security/loginAttackAlert.test.ts`, including the
 concurrent case — that test exists because the sequential ones all stayed green
 when the mark/send ordering was deliberately reversed.
 
-### Two symbols this page used to document that do not exist
+### Where the alert LANDS — the panels, not Slack
 
-Removed 2026-08-19 rather than left to be searched for:
+Founder ruling 2026-08-19, verbatim: *"slack isnt connected needs to eb wired
+into admin /mod panels."* **Production has no Slack webhook**, so a Slack-only
+alarm would be one more invoked-but-inert control — the class `CLAUDE.md`'s
+"currently not enforced" list exists to name. This page and the first version of
+the wiring both said Slack; both are superseded.
+
+The alert is an **audit-log row**, read by both staff roles through
+`getAbuseAlertsSummary` (`moderator.getAbuseAlerts`, `admin.getAbuseAlerts`). No
+new surface, no widening of the capability grid, and no migration — `action` is
+a varchar, not an enum.
+
+A panel is a **pull** surface, which is why this is the better destination and
+not merely the available one: the in-memory counter resets on deploy, but the
+row does not, so a 3am spike is still there at a 9am look.
+
+The row carries the count, the window and a note that the count is a floor. It
+carries **no email, no account and no password material**: a staff surface
+reading a counter must not become a staff surface reading credentials.
+
+### One symbol this page documented that does not exist
 
 - **`isSystemUnderAttack`** — a "Checking Attack Status" section documented this
   import with a return shape including `windowRemaining`. There is no such
-  export in `server/security/rateLimit.ts` and there never has been.
-- **`AUDIT_ACTIONS.ABUSE_GLOBAL_ATTACK`** — the thresholds table promised an
-  `abuse.global_attack_detected` audit event. No such action is defined and
-  nothing writes one. The alert goes to Slack; the audit log is not part of this
-  control, and the table above now says so.
+  export in `server/security/rateLimit.ts`, anywhere in the repository, and
+  there never has been. Section removed 2026-08-19.
+
+> **A correction to this page's own first fix, made the same day.** That fix
+> also claimed `AUDIT_ACTIONS.ABUSE_GLOBAL_ATTACK` did not exist. **It does** —
+> `drizzle/schema.ts:1362`, defined all along with nothing ever writing it. The
+> claim came from a grep scoped to `server/`, which is where the constant is
+> *used* and not where it is *declared*; the same search would have been wrong
+> about every schema symbol in the product. The action is now the one this alarm
+> writes, so the name that was reserved and never used is finally the name on the
+> row. `ABUSE_CREDENTIAL_STUFFING` is the same shape and is still unwritten.
 
 ## IP Blocking
 

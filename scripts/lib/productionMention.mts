@@ -231,16 +231,33 @@ export function buildClassifier(repoRoot: string): (symbol: string) => Mention {
 /**
  * The two controls both instruments run before any verdict (working law 2).
  *
- * Hand-read 2026-08-18: `shouldSendGlobalAttackAlert` is a declaration and its
- * tests and nothing else; `isAccountLocked` is reached as `db.isAccountLocked`
- * from two auth routes. A classifier that cannot tell those apart cannot tell
- * anything apart.
+ * Hand-read 2026-08-19: `allowColdImports` is a declaration and its tests and
+ * nothing else; `isAccountLocked` is reached as `db.isAccountLocked` from two
+ * auth routes. A classifier that cannot tell those apart cannot tell anything
+ * apart.
+ *
+ * # THE POSITIVE CONTROL CHANGED, AND WHY THIS ONE SHOULD NOT CHANGE AGAIN
+ *
+ * It was `shouldSendGlobalAttackAlert` until 2026-08-19, when the founder ruled
+ * that alarm should be wired — so the symbol acquired a production caller and
+ * the control went FAIL, taking the whole sweep down with it (it refuses rather
+ * than reporting, which is the instrument behaving correctly).
+ *
+ * That is the `catalogueBornWorn` trap the cleanup milestone wrote down in
+ * advance — *"any change to it chooses a replacement control in the same
+ * commit"* — arriving at a different symbol. **The lesson generalises: a
+ * positive control drawn from a symbol somebody might reasonably WIRE is a
+ * control with an expiry date nobody can see.**
+ *
+ * `allowColdImports` lives in `server/testing/`, a directory whose entire
+ * purpose is to be imported by tests. It is not a control that happens to be
+ * uncalled today; it is one that production calling it would itself be the bug.
  */
 export function runMentionControls(
   classify: (symbol: string) => Mention,
   log: (line: string) => void,
 ): boolean {
-  const positive = classify("shouldSendGlobalAttackAlert");
+  const positive = classify("allowColdImports");
   const negative = classify("isAccountLocked");
   /*
     The stripper's control is SYNTHETIC, so it cannot die the day the product
@@ -266,7 +283,7 @@ export function runMentionControls(
   const dataLine = withoutStrings('  { symbol: "zzzInATable", verdict: zzzInCode },');
   const blankedString = !dataLine.includes("zzzInATable");
   const keptIdentifier = dataLine.includes("zzzInCode");
-  log("  positive  shouldSendGlobalAttackAlert → " + positive.kind
+  log("  positive  allowColdImports            → " + positive.kind
     + "  " + (positive.kind === "none" ? "PASS" : "FAIL"));
   log("  negative  isAccountLocked             → " + negative.kind
     + "  " + (negative.kind !== "none" ? "PASS" : "FAIL"));

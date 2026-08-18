@@ -356,6 +356,13 @@ const ACTION_CATEGORIES: Record<string, AuditAction[]> = {
     AUDIT_ACTIONS.ABUSE_PATTERN_CREDITS,
     AUDIT_ACTIONS.ABUSE_PATTERN_DELETION,
     AUDIT_ACTIONS.ABUSE_PATTERN_BILLING,
+    /*
+      THE SITE-WIDE LOGIN ALARM (founder ruling 2026-08-19, relayed fable-1018).
+      Without this line the panel's own abuse filter would drop every row the
+      alarm writes — the wire would exist, the row would exist, and staff would
+      never see it. `getAbuseAlertsSummary` filters on this same list.
+    */
+    AUDIT_ACTIONS.ABUSE_GLOBAL_ATTACK,
   ],
 };
 
