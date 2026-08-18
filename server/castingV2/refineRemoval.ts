@@ -31,11 +31,21 @@ import { readsAsNegation } from "./removalWords";
 import { facetOfAxis, facetOfSubject, type Facet } from "./refineFacets";
 import { FREE_SUBJECT_KEYS, isPluralSubject, type FreeSubject } from "./refineSubjects";
 import { REFINABLE_AXES, type RefinableAxis } from "./refineDelta";
+import type { StepProvenance } from "./referenceProvenance";
 
-/** One step of a variant's history — a sentence and the delta it produced. */
+/**
+ * One step of a variant's history — a sentence, the delta it produced, and
+ * where its words came from.
+ *
+ * `provenance` joins the pair rather than living beside it (ruled fable-968
+ * §3a) so that a REMOVAL reindexes it for free: the pruned chain is what the
+ * new row's three arrays are built from, and a fourth list walked separately
+ * would drift from this one at exactly the moment it mattered.
+ */
 export type ChainStep = {
   instruction: string;
   delta: RefineDelta;
+  provenance: StepProvenance | null;
 };
 
 /**
@@ -50,11 +60,22 @@ export type ChainStep = {
 export function readChain(
   instructions: readonly string[],
   stepDeltas: readonly RefineDelta[],
+  stepProvenance: readonly (StepProvenance | null)[] | null = null,
 ): ChainStep[] | null {
   if (stepDeltas.length !== instructions.length) return null;
+  /*
+    PROVENANCE IS OPTIONAL AND ITS ABSENCE IS NOT A BROKEN CHAIN.
+
+    Every row written before that column existed has none, and a chain that
+    refused without it would break removal on all of them. So a missing or
+    disagreeing list reads as "not on this one" per step — the same refusal
+    `readStepProvenance` performs, carried here rather than re-decided.
+  */
+  const provenance = stepProvenance?.length === instructions.length ? stepProvenance : null;
   return instructions.map((instruction, index) => ({
     instruction,
     delta: stepDeltas[index]!,
+    provenance: provenance?.[index] ?? null,
   }));
 }
 
@@ -331,6 +352,9 @@ export function chainAfterRemoval(
     next.push({
       instruction: step.instruction,
       delta: { ...step.delta, free: { ...step.delta.free, [subject]: match.keep } },
+      /* The step SURVIVES with fewer items in it; its sentence is untouched, so
+         where those words came from is untouched too. */
+      provenance: step.provenance,
     });
   });
   return next;

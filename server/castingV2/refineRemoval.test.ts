@@ -12,7 +12,14 @@ import {
   type ChainStep,
 } from "./refineRemoval";
 
-const step = (instruction: string, delta: ChainStep["delta"]): ChainStep => ({ instruction, delta });
+/* `provenance` defaults to null here: these fixtures are about removal
+   arithmetic, and a typed step is the ordinary case. The tests that care about
+   where words came from live in `referenceProvenance.test.ts`. */
+const step = (
+  instruction: string,
+  delta: ChainStep["delta"],
+  provenance: ChainStep["provenance"] = null,
+): ChainStep => ({ instruction, delta, provenance });
 
 /**
  * TYPED REMOVAL RESOLVES AGAINST THE RECIPE (D-163).
@@ -227,7 +234,12 @@ describe("the subject a removal names is code-owned", () => {
 describe("reading a variant's chain", () => {
   it("pairs the sentences with their own deltas", () => {
     const chain = readChain(["a mullet"], [{ hairStyle: "a mullet" }]);
-    expect(chain).toEqual([{ instruction: "a mullet", delta: { hairStyle: "a mullet" } }]);
+    /* Provenance is the third member of the family and it is absent here — an
+       older row, or simply a step she typed. Absent reads as null, never as a
+       missing key, so index i has an answer in all three lists. */
+    expect(chain).toEqual([
+      { instruction: "a mullet", delta: { hairStyle: "a mullet" }, provenance: null },
+    ]);
   });
 
   it("refuses a pre-column row rather than approximating it", () => {

@@ -2,6 +2,17 @@ import { createHash } from "node:crypto";
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+/*
+  THE PROVENANCE KEY IS DERIVED FROM `JWT_SECRET` AT IMPORT TIME, so the value
+  has to be in place before `_core/env` is evaluated — `vi.hoisted` is the only
+  thing that runs early enough. Pinned rather than borrowed from the developer's
+  own `.env`, so the token arms below prove the same thing on every machine and
+  do not quietly skip where the secret happens to be absent.
+*/
+vi.hoisted(() => {
+  process.env.JWT_SECRET = "refine-service-suite-secret-long-enough-to-be-realistic";
+});
+
 import { departureFloorFor } from "./bornWornDetector";
 import { COVERAGE_BANDS } from "./maskGeometry";
 import { slotDefinition } from "./referenceSlotCatalogue";
@@ -8319,5 +8330,109 @@ describe("the dispatch swap — WHEN the answer arrives, never what is painted",
     } finally {
       process.off("unhandledRejection", watch);
     }
+  });
+});
+
+/**
+ * WHERE A STEP'S WORDS CAME FROM, ASSERTED AT THE WIRE (ruled fable-968 §3).
+ *
+ * The contract is about what reaches the ROW, so every arm here reads the
+ * payload `claimVariant` was actually handed rather than a value near it. And
+ * the arms that matter most are the ones where the answer must be `null`: this
+ * column exists so that a row cannot lie, and a mechanism that files a
+ * provenance whenever it is handed something is not that.
+ */
+describe("the provenance a refine writes", () => {
+  /* The suite's own dependency bundle — a local one lacking `harvest` fails the
+     render for a harness reason and every arm below goes red together, which
+     says nothing about provenance. */
+  const deps = greenEyes;
+
+  async function claimedPayload() {
+    const { claimVariant } = await import("../db/castingV2Variants");
+    return vi.mocked(claimVariant).mock.calls[0]![0] as unknown as {
+      instructions: string[];
+      stepProvenance: unknown[];
+    };
+  }
+
+  /* Minted with the SAME secret the service will verify under, read off the
+     module rather than retyped — a token signed with a constant that has since
+     drifted would fail for a reason nobody could see. */
+  async function mint(over: Record<string, unknown> = {}) {
+    const { issueReadToken } = await import("./referenceProvenance");
+    const { ENV } = await import("../_core/env");
+    return issueReadToken({
+      secret: ENV.cookieSecret,
+      userId: 1,
+      /* The candidate ROW id the harness serves, which is what the read seals. */
+      candidateId: 1,
+      intent: "makeup",
+      sentence: "soft brown smoky shadow",
+      issuedAt: Date.now(),
+      ...over,
+    } as Parameters<typeof issueReadToken>[0]);
+  }
+
+  it("files VERBATIM when she spent the sentence the reader wrote", async () => {
+    const result = await refineCandidate(
+      { ...deps, interpret: async () => ({ ok: true as const, delta: { makeup: "soft brown smoky shadow" } }) },
+      { ...input, instruction: "soft brown smoky shadow", provenanceToken: await mint() },
+    );
+    expect(result.kind).not.toBe("refused");
+
+    const claimed = await claimedPayload();
+    expect(claimed.stepProvenance, "index-aligned with the instructions, always")
+      .toHaveLength(claimed.instructions.length);
+    expect(claimed.stepProvenance.at(-1)).toEqual({
+      source: "referenceRead",
+      intent: "makeup",
+      adopted: "verbatim",
+    });
+  });
+
+  it("files EDITED when she reworked it — the common case, and still a fact", async () => {
+    const result = await refineCandidate(
+      { ...deps, interpret: async () => ({ ok: true as const, delta: { makeup: "soft brown shadow, glossy lip" } }) },
+      { ...input, instruction: "soft brown shadow, glossy lip", provenanceToken: await mint() },
+    );
+    expect(result.kind).not.toBe("refused");
+    expect((await claimedPayload()).stepProvenance.at(-1)).toMatchObject({ adopted: "edited" });
+  });
+
+  it("files NOTHING for an ordinary typed refine — the array is nulls, not absent", async () => {
+    /*
+      The negative arm, and it is the one that keeps the column honest: a step
+      nobody adopted a read for must say so per index rather than leaving a hole
+      that a later reader has to interpret.
+    */
+    await refineCandidate({ ...deps }, input);
+    const claimed = await claimedPayload();
+    expect(claimed.stepProvenance).toHaveLength(claimed.instructions.length);
+    expect(claimed.stepProvenance.every((entry) => entry === null)).toBe(true);
+  });
+
+  it("files NOTHING for a token minted against ANOTHER Cast, and still renders", async () => {
+    /*
+      Two assertions in one, deliberately. The provenance must not survive a
+      Cast it was not issued for — the realistic version is two tabs, not theft
+      — and the refine must not NOTICE: a decoration that can fail a paid
+      operation is worse than no decoration at all.
+    */
+    const result = await refineCandidate(
+      { ...deps },
+      { ...input, provenanceToken: await mint({ candidateId: 999 }) },
+    );
+    expect(result.kind, "the paid operation is untouched by a bad decoration").not.toBe("refused");
+    expect((await claimedPayload()).stepProvenance.at(-1)).toBeNull();
+  });
+
+  it("files NOTHING for a token the client made up, and still renders", async () => {
+    const result = await refineCandidate(
+      { ...deps },
+      { ...input, provenanceToken: "makeup.not-a-hash.1.nope" },
+    );
+    expect(result.kind).not.toBe("refused");
+    expect((await claimedPayload()).stepProvenance.at(-1)).toBeNull();
   });
 });

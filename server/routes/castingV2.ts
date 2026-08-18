@@ -16,6 +16,8 @@
  */
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
+import { ENV } from "../_core/env";
+import { issueReadToken } from "../castingV2/referenceProvenance";
 
 import { router, protectedProcedure } from "../_core/trpc";
 import { checkRateLimit, RATE_LIMITS, rateLimitError } from "../security/rateLimit";
@@ -525,6 +527,34 @@ const referenceRouter = router({
         `readFromReference` is bound 5 — the record never claims she typed what
         a reader wrote.
       */
+      /*
+        AND THE PROOF THAT TRAVELS WITH IT (ruled fable-968 §3c).
+
+        Opaque to the client and useless to it: it carries a HASH of the
+        sentence, never the sentence, and it is signed under a key derived for
+        this purpose alone. If she spends these words, the refine may hand it
+        back and the SERVER decides whether she used them as read or reworked
+        them. Nothing here asks her client to tell us anything.
+
+        Minting cannot fail an answer she is owed — a missing secret throws
+        inside the module, and this catches it and returns the read without a
+        token rather than losing the read.
+      */
+      const provenanceToken = (() => {
+        try {
+          return issueReadToken({
+            secret: ENV.cookieSecret,
+            userId: ctx.user.id,
+            candidateId,
+            intent: "makeup",
+            sentence: outcome.sentence,
+            issuedAt: Date.now(),
+          });
+        } catch {
+          return undefined;
+        }
+      })();
+
       return {
         sentence: outcome.sentence,
         /* Named, so a surface that did not fit is visible rather than silently
@@ -532,6 +562,7 @@ const referenceRouter = router({
         surfacesRead: outcome.used,
         surfacesDropped: outcome.dropped,
         readFromReference: true,
+        provenanceToken,
       };
     }),
 });
@@ -947,6 +978,18 @@ export const castingV2Router = router({
             Shaped here, proved there — the same division as `scope` above.
           */
           replayOf: publicId.optional(),
+          /*
+            THE READ THESE WORDS CAME FROM (fable-968 §3c) — opaque here, and
+            NOT trusted here: the service verifies the signature, this account,
+            this Cast and the freshness before anything is written, and derives
+            `verbatim` or `edited` by comparing hashes itself.
+
+            Shaped rather than judged at this door, like `scope` and `replayOf`
+            above. The cap is generous because the token is four dot-separated
+            fields and one of them is a base64url HMAC; a longer string is not
+            one of ours and refuses in the service for free.
+          */
+          provenanceToken: z.string().trim().min(1).max(400).optional(),
         })
         .strict(),
     )
@@ -963,6 +1006,7 @@ export const castingV2Router = router({
         scope: input.scope,
         removeStep: input.removeStep,
         replayOf: input.replayOf,
+        provenanceToken: input.provenanceToken,
       });
     }),
 

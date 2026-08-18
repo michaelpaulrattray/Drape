@@ -97,6 +97,14 @@ export type ClaimVariantInput = {
    */
   stepDeltas: unknown;
   /**
+   * Where each instruction's WORDS came from, in order — INTERNAL.
+   *
+   * The third member of the index-aligned family, so index i means the same
+   * thing in all three and a removal reindexes it through the same pruning.
+   * `null` per step is ordinary: most steps are typed.
+   */
+  stepProvenance: unknown;
+  /**
    * What the user TYPED — which differs from the last instruction on a removal.
    *
    * Removal deletes steps rather than appending one, so its sentence is
@@ -242,6 +250,7 @@ export async function claimVariant(input: ClaimVariantInput): Promise<ClaimedVar
         instructions: input.instructions,
         deltas: input.deltas,
         stepDeltas: input.stepDeltas,
+        stepProvenance: input.stepProvenance,
         requestText: input.requestText ?? null,
         /*
           AND WHAT IT IS A FRESH TAKE OF, from the first instant (fable-703).
