@@ -77,10 +77,54 @@ would have been read as dead controls:
 | `recordFailedLogin` | named by nobody | `db.recordFailedLogin` in `emailAuth.ts:277` |
 | `handleSlackInteraction` | named by nobody | `await import("../slack/slackInteractions")` in `_core/index.ts:225` |
 
-**Recommendation: the reading list is the 111, not the 175.** The 23 OTHER
-entries are a ten-minute pass (most are prose mentions inside comments, or a
-same-named local in a disposable script), and the 41 barrel/dynamic entries need
-no reading at all.
+**Recommendation: the reading list is 118, not 175** — the 111 test-only plus
+seven of the OTHER entries, per the pass below. The 41 barrel/dynamic entries
+need no reading at all, and exactly one OTHER entry turned out to have a
+caller.
+
+### 1a-pre. THE OTHER PASS — done, so the list is exact rather than approximate
+
+All 23, read (ordered fable-976 §5). None of them cost more than a glance, and
+two of them are findings:
+
+| what the mention was | n | verdict |
+|---|---|---|
+| a sentence in a COMMENT naming the symbol (`rasterise`, `requestMatte`, `openKindZoneScope`, `openKindIsPlural`, `openKindDeparture`, `presentPair`, `isDistributed`, `HAIR_STYLE_NAMES`, `refusalTallies`) | 9 | prose, not a caller — **stays on the reading list** |
+| a same-named LOCAL in a disposable script (`FACET_KEYS`, `stepLabel`, `cutOf`) | 3 | coincidence — **stays on the list** |
+| an object KEY spelled like the symbol (`INSTRUCTION_MAY_OVERRIDE`, `OPEN_QUESTIONS`) | 2 | coincidence — **stays on the list** |
+| a SUBSTRING of a longer symbol (`REFUSAL_REASONS` inside `GUARD_REFUSAL_REASONS`) | 1 | the reader's own bias, declared below — **stays on the list** |
+| re-exported through a module barrel and imported by NOBODY from it (`getSessionCount`, `stopSessionEviction`, `clearAllUserSessions`, `_clearDedupCache`, `getDedupCacheSize`) | 5 | **stays on the list** — a re-export is a door, not a caller |
+| a real consumer in a TRACKED script (`inspectStorageCleanupReconciliation`, used by `scripts/run-storage-cleanup.mts`) | 1 | **off the list** — it has a caller |
+| **findings** (below) | 2 | **on the list, and named** |
+
+**So the exact reading list is 118**: the 111 test-only, plus the 5
+re-export-only, plus the two findings. One symbol — exactly one — left the list
+because it had a caller.
+
+⚠ **The reader's own bias, stated rather than discovered:** it matches on
+substrings, so `REFUSAL_REASONS` was "mentioned" by `GUARD_REFUSAL_REASONS`. The
+bias runs toward **not-dead** — it can keep a dead symbol on the maybe-alive
+pile, never invent a dead one — which is the safe direction for a triage whose
+next step is deletion.
+
+#### The two findings
+
+- **`beginInkAddIntent` is superseded, and its NAME is what hides that.**
+  `server/routes/evidence.ts` declares a tRPC procedure called
+  `beginInkAddIntent` — and imports `beginInkAnywhereIntent`, its successor. The
+  client calls `trpc.evidence.beginInkAddIntent`, so every grep for the name
+  finds a live path, and the function of that name has had no caller since the
+  successor landed. **RETIRE candidate**, and the class is worth naming for the
+  milestone: *a dead function whose name is also a live procedure's key reads as
+  alive from every direction except an import graph.*
+- **`STATED_WARDROBE_NOTICE` exists TWICE, and the live copy is the client's.**
+  `server/castingV2/statedWardrobe.ts` declares the sentence and nothing imports
+  it; `client/src/features/castingV2/sheetNotice.ts` declares the same sentence
+  again and shows it. They are byte-identical today — *"Casting sheets keep the
+  studio tee — outfits come after Sign, in takes."* — which is precisely the
+  state law 4 describes before drift. **RETIRE the server copy** (or make the
+  client import it), and read the neighbouring notices in the same sitting:
+  `FELL_BACK_NOTICE` sits beside it and may be the same shape.
 
 ### 1a. The 111, by family, with a recommended disposition
 
