@@ -43,14 +43,20 @@
  * because the court's other axis is wall-clock, and if 2K is slow enough to hurt
  * the wait the founder named, that is a reading rather than an argument.
  *
- * # WHAT IS NOT DECIDED HERE
+ * # THE ASPECT RATIO IS A PARAMETER, AND IT STARTED AS AN ABSENCE
  *
- * No aspect ratio is sent. Nothing in the product has ever set one, the shape is
- * the posted template's own, and inventing a ratio string this file has not
- * measured the provider accepting would be a guess arriving on a paid call. The
- * plate's ACTUAL dimensions are read off the result and stored on the row, which
- * is what makes "did the shape survive" a query at the court rather than a
- * memory.
+ * The first cut sent none: nothing in the product had ever set one, and
+ * inventing a ratio string nobody had measured the provider accepting would be
+ * a guess arriving on a paid call. The court then measured what happens without
+ * it — **NBP returned 1696x2528 for a 1536x1024 template**, i.e. it took its
+ * shape from the DESIGN photograph rather than from the blank form, letterboxing
+ * the plate inside a portrait canvas it invented. GPT Image 2, which is told an
+ * exact canvas, returned the template's own 1536x1024 both times.
+ *
+ * So the ratio is an option a caller may set, defaulted to the absence the court
+ * measured, and the plate's ACTUAL dimensions are still read off the result and
+ * stored on the row — which is what makes "did the shape survive" a query rather
+ * than a memory.
  */
 import type { IdentityEngine, ImageResult, ReferenceImage } from "../providers/types";
 
@@ -151,7 +157,11 @@ export function platesByMaskedEdit(engine: {
  */
 export function platesByIdentityEngine(
   engine: Pick<IdentityEngine, "id" | "editWithReferences">,
-  resolution: "1K" | "2K" = "2K",
+  options: {
+    resolution?: "1K" | "2K";
+    /** Sent only when a caller asks for it — see the header's measurement. */
+    aspectRatio?: string;
+  } = {},
 ): InkPlateEngine {
   return {
     id: engine.id,
@@ -159,7 +169,8 @@ export function platesByIdentityEngine(
       return engine.editWithReferences({
         prompt: request.prompt,
         references: [{ ...request.template }, { ...request.design }],
-        resolution,
+        resolution: options.resolution ?? "2K",
+        ...(options.aspectRatio ? { aspectRatio: options.aspectRatio } : {}),
         signal: request.signal,
       });
     },

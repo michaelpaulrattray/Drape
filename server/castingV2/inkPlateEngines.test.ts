@@ -124,10 +124,31 @@ describe("the identity engine", () => {
     expect(sent.resolution).toBe("2K");
     expect(sent.references[0].bytes).toBe(TEMPLATE.bytes);
     expect(sent.references[1].bytes).toBe(DESIGN.bytes);
-    /* No aspect ratio is invented: nothing in the product has ever sent one, and
-       a ratio string this file has not measured the provider accepting would be
-       a guess arriving on a paid call. */
+    /* None by default — the absence the court measured, and the reason the
+       plate's real dimensions are read off the bytes rather than assumed. */
     expect(sent.aspectRatio).toBeUndefined();
+  });
+
+  it("sends an aspect ratio ONLY when a caller names one", async () => {
+    /*
+      Measured at the court: with no ratio, NBP returned 1696x2528 for a
+      1536x1024 template — it took its shape from the DESIGN photograph rather
+      than from the blank form. GPT Image 2, told an exact canvas, returned the
+      template's own size both times. So the ratio is a parameter, and its
+      default is the absence that measurement was taken under.
+    */
+    const editWithReferences = vi.fn().mockResolvedValue(DRAWN);
+    await platesByIdentityEngine(
+      { id: "fal:fal-ai/nano-banana-pro", editWithReferences },
+      { aspectRatio: "3:2" },
+    ).mint({
+      prompt: "draw it",
+      template: TEMPLATE,
+      design: DESIGN,
+      templateWidth: 1536,
+      templateHeight: 1024,
+    });
+    expect(editWithReferences.mock.calls[0]![0].aspectRatio).toBe("3:2");
   });
 
   it("takes 1K when the court asks it to", async () => {
@@ -135,7 +156,7 @@ describe("the identity engine", () => {
     const editWithReferences = vi.fn().mockResolvedValue(DRAWN);
     await platesByIdentityEngine(
       { id: "fal:fal-ai/nano-banana-pro", editWithReferences },
-      "1K",
+      { resolution: "1K" },
     ).mint({
       prompt: "draw it",
       template: TEMPLATE,
