@@ -63,33 +63,76 @@ const FULL_FACE = JSON.stringify({
 
 describe("readMakeupSlot", () => {
   it("keeps a phrase, normalised", () => {
-    expect(readMakeupSlot("  Soft   Brown Smoky Shadow. ")).toBe("soft brown smoky shadow");
+    expect(readMakeupSlot("  Soft   Brown Smoky Shadow. ")).toEqual({ kind: "value", value: "soft brown smoky shadow" });
   });
 
   it("reads every spelling of nothing as nothing — the bug that reached the slot once", () => {
     /* `makeup: "none — a bare face"` is on the record as a value that became an
        instruction (D-172). Every one of these must be null, not a string. */
     for (const nothing of ["null", "none", "None", "n/a", "N/A", "unknown", "unclear", "nothing", "bare", "none — a bare face"]) {
-      expect(readMakeupSlot(nothing)).toBeNull();
+      expect(readMakeupSlot(nothing)).toEqual({ kind: "absent" });
     }
   });
 
-  it("refuses a non-string, because a model's JSON is input and not a promise", () => {
-    expect(readMakeupSlot(42)).toBeNull();
-    expect(readMakeupSlot(null)).toBeNull();
-    expect(readMakeupSlot({ eyes: "x" })).toBeNull();
-    expect(readMakeupSlot(["x"])).toBeNull();
+  it("reads an ABSENCE described as a presence as nothing — the measured tells", () => {
+    /* From the first real specimen: `brows: "naturally groomed, unfilled"` on a
+       bare face. The reader was right about the face and reported the absence
+       in a slot contracted to answer null. */
+    expect(readMakeupSlot("naturally groomed, unfilled")).toEqual({ kind: "absent" });
+    expect(readMakeupSlot("brows untinted")).toEqual({ kind: "absent" });
+    expect(readMakeupSlot("no makeup on the lips")).toEqual({ kind: "absent" });
+    expect(readMakeupSlot("not wearing any base")).toEqual({ kind: "absent" });
   });
 
-  it("refuses an answer that stopped obeying the ask", () => {
-    expect(readMakeupSlot("x".repeat(MAKEUP_SLOT_MAX_LENGTH))).not.toBeNull();
-    expect(readMakeupSlot("x".repeat(MAKEUP_SLOT_MAX_LENGTH + 1))).toBeNull();
+  it("KEEPS 'natural', because a natural look is a real thing to copy", () => {
+    /*
+      The carve-out the absence guard must not eat. "Natural" names a look a
+      person wears and a customer asks for; banning it would be the guard
+      banning what it exists to protect — the misaimed-guard mistake, applied in
+      advance rather than after the incident.
+    */
+    expect(readMakeupSlot("natural matte finish")).toEqual({ kind: "value", value: "natural matte finish" });
+    expect(readMakeupSlot("soft natural rose tint")).toEqual({ kind: "value", value: "soft natural rose tint" });
+    expect(readMakeupSlot("naturally groomed brows")).toEqual({ kind: "value", value: "naturally groomed brows" });
+  });
+
+  it("refuses a non-string, because a model's JSON is input and not a promise", () => {
+    expect(readMakeupSlot(42)).toEqual({ kind: "absent" });
+    expect(readMakeupSlot(null)).toEqual({ kind: "absent" });
+    expect(readMakeupSlot({ eyes: "x" })).toEqual({ kind: "absent" });
+    expect(readMakeupSlot(["x"])).toEqual({ kind: "absent" });
+  });
+
+  it("calls an over-long answer TOO LONG and never ABSENT — they are opposite facts", () => {
+    /*
+      THE REGRESSION THE FIRST POSITIVE CONTROL BOUGHT (opus-694).
+
+      A black winged smoky eye came back as `"smoky shadow, winged liner,
+      lashes"` — 34 characters against a cap of 32 — and returned null, the same
+      value this reader uses for "nothing was applied here". The loudest makeup
+      in the picture vanished into a word meaning its opposite, and nothing
+      reported it. The two facts are distinct here now, and the boundary is
+      asserted at the boundary rather than near it.
+    */
+    expect(readMakeupSlot("x".repeat(MAKEUP_SLOT_MAX_LENGTH)))
+      .toEqual({ kind: "value", value: "x".repeat(MAKEUP_SLOT_MAX_LENGTH) });
+    expect(readMakeupSlot("x".repeat(MAKEUP_SLOT_MAX_LENGTH + 1)))
+      .toEqual({ kind: "tooLong", length: MAKEUP_SLOT_MAX_LENGTH + 1 });
+  });
+
+  it("fits the eye description that convicted the old cap", () => {
+    /* The measured specimen, at its measured length. If the cap is ever tightened
+       back under this, the frame that found it says so immediately. */
+    const eye = "smoky shadow, winged liner, lashes";
+    expect(eye.length).toBe(34);
+    expect(readMakeupSlot(eye)).toEqual({ kind: "value", value: eye });
   });
 
   it("scrubs a brand, and refuses the answer if scrubbing empties it", () => {
     const scrubbed = readMakeupSlot("Chanel red lip");
-    expect(scrubbed).not.toBeNull();
-    expect(scrubbed?.toLowerCase()).not.toContain("chanel");
+    expect(scrubbed.kind).toBe("value");
+    if (scrubbed.kind !== "value") return;
+    expect(scrubbed.value).not.toContain("chanel");
   });
 });
 
@@ -180,10 +223,16 @@ describe("readMakeupFromReference", () => {
     });
     expect(sent).toBeDefined();
     const user = sent?.user ?? "";
-    expect(user).toContain("ONLY the makeup");
+    expect(user).toMatch(/COSMETICS THAT WERE APPLIED/);
     expect(user).toMatch(/never describe the person/i);
     expect(user).toMatch(/not their hair/i);
     expect(user).toMatch(/Never name a brand/i);
+    /* The presence gate is ASKED — the half that is proven here; that it is
+       CONSULTED is proven by the three cases above it. A gate present in the
+       prompt and ignored in the code is the exact shape this pair rules out. */
+    expect(user).toMatch(/is this face wearing makeup that was APPLIED/i);
+    expect(user).toMatch(/those are the PERSON, not makeup/);
+    expect(user).toMatch(/"wearing"/);
     expect(sent?.temperature).toBe(0);
     expect(sent?.json).toBe(true);
     /* The picture goes to the reader and nowhere else — one image, hers. */
@@ -224,6 +273,71 @@ describe("readMakeupFromReference", () => {
     expect(outcome.ok).toBe(false);
     if (outcome.ok) return;
     expect(outcome.refusal.code).toBe("noTransport");
+  });
+
+  /* ---- the presence gate (opus-693 §4, ruled fable-946 §4) ---- */
+
+  it("stops on an explicit 'no', even when the surfaces are full of prose", async () => {
+    /*
+      THE FAILURE THIS EXISTS FOR, driven directly. The first real specimen
+      delivered a sentence for a bare face because the reader always finds
+      something to say. The gate is asked FIRST and consulted FIRST, so its
+      answer ends the read whatever the surfaces claim.
+    */
+    const outcome = await readMakeupFromReference({
+      ...REFERENCE,
+      engine: engineReturning(JSON.stringify({
+        wearing: "no",
+        eyes: "soft shadow",
+        lips: "natural mauve tint",
+        brows: "naturally groomed",
+        complexion: "natural matte finish",
+      })),
+    });
+    expect(outcome.ok).toBe(false);
+    if (outcome.ok) return;
+    expect(outcome.refusal.code).toBe("noMakeupVisible");
+  });
+
+  it("does NOT treat a missing gate answer as 'she is bare'", async () => {
+    /* The other direction, and it matters: refusing on an absent field would
+       turn every malformed reply into a claim about a real person's face. Only
+       an explicit negative closes the gate. */
+    const outcome = await readMakeupFromReference({
+      ...REFERENCE,
+      engine: engineReturning(FULL_FACE),
+    });
+    expect(outcome.ok).toBe(true);
+  });
+
+  it("REPORTS a surface whose answer was too long, rather than losing it", async () => {
+    /* The end-to-end half of the same defect: `readMakeupSlot` now tells the
+       two facts apart, and this proves the caller passes the distinction on to
+       her instead of absorbing it. A surface she is told about is one she can
+       type herself; a surface she is not told about is gone. */
+    const outcome = await readMakeupFromReference({
+      ...REFERENCE,
+      engine: engineReturning(JSON.stringify({
+        wearing: "yes",
+        eyes: "x".repeat(MAKEUP_SLOT_MAX_LENGTH + 1),
+        lips: "matte red",
+      })),
+    });
+    expect(outcome.ok).toBe(true);
+    if (!outcome.ok) return;
+    expect(outcome.sentence).toBe("matte red");
+    expect(outcome.used).toEqual(["lips"]);
+    expect(outcome.dropped).toContain("eyes");
+  });
+
+  it("admits when the gate says yes", async () => {
+    const outcome = await readMakeupFromReference({
+      ...REFERENCE,
+      engine: engineReturning(JSON.stringify({ wearing: "yes", eyes: "winged liner" })),
+    });
+    expect(outcome.ok).toBe(true);
+    if (!outcome.ok) return;
+    expect(outcome.sentence).toBe("winged liner");
   });
 
   it("says a bare face is a bare face instead of filing the words 'bare face'", async () => {

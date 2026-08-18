@@ -74,15 +74,22 @@ export const MAKEUP_SLOTS = ["eyes", "lips", "brows", "complexion"] as const;
 export type MakeupSlot = (typeof MAKEUP_SLOTS)[number];
 
 /**
- * The shortest a slot answer may be to mean anything, and the longest it may be
- * before it has stopped obeying the instruction it was given.
+ * The longest a slot answer may be before it has stopped obeying the ask.
  *
- * Four slots have to fit inside {@link MAX_MAKEUP_LENGTH} with their
- * connectives, so a slot that spends the whole budget alone has misunderstood
- * the ask — the same reasoning `faceDescribe.readLine` uses at 120 for a row
- * built for one line.
+ * **Forty, and the number is MEASURED rather than chosen.** It was 32, and the
+ * first positive-control specimen convicted it: on a frame whose loudest
+ * feature was a black winged smoky eye, the reader answered
+ * `eyes: "smoky shadow, winged liner, lashes"` — **34 characters** — and 32
+ * turned the most obvious makeup in the picture into silence. A compound eye
+ * description is the legitimately longest of the four, because an eye carries
+ * shadow, liner and lashes at once where a lip carries one thing.
+ *
+ * It stays well under {@link MAX_MAKEUP_LENGTH} on purpose: two slots at this
+ * length plus a separator already exceed the sentence budget, so a single
+ * surface can never eat the whole note — the compose order decides who wins,
+ * and it puts the eye first for the reason above.
  */
-export const MAKEUP_SLOT_MAX_LENGTH = 32;
+export const MAKEUP_SLOT_MAX_LENGTH = 40;
 
 /**
  * Every way a read can end badly — as a LIST, because the demand record has to
@@ -137,23 +144,30 @@ export type MakeupReadOutcome =
 const ASK = [
   "You are a makeup artist writing a short note for a photographer.",
   "",
-  "Look at this photograph and describe ONLY the makeup being worn.",
+  "Look at this photograph.",
+  "",
+  "FIRST decide one thing: is this face wearing makeup that was APPLIED to it?",
+  "Many faces are bare. A bare face still has a lip colour, brow hair and skin",
+  "texture of its own — those are the PERSON, not makeup. Do not describe them.",
   "",
   "Rules:",
+  "- Describe only COSMETICS THAT WERE APPLIED. If a surface shows nothing but",
+  "  her own colouring, answer null for it — never describe what is absent.",
   "- Describe cosmetics only. Never describe the person: not their hair, not",
   "  their age, not their skin tone, not their ethnicity, not their identity.",
   "- Never name a brand or a product line.",
   "- Each answer is a short phrase of a few words, never a sentence.",
   `- Each answer is at most ${MAKEUP_SLOT_MAX_LENGTH} characters.`,
-  "- If a surface carries no makeup, or you cannot see it, answer null for it.",
   "",
-  "eyes: the eye makeup — shadow, liner, lashes",
-  "lips: the lip — colour and finish",
-  "brows: how the brows are groomed or filled",
-  "complexion: the base — finish, blush, contour, highlight",
+  'wearing: "yes" if applied makeup is visible anywhere, "no" if the face is bare',
+  "eyes: applied eye makeup — shadow, liner, lashes",
+  "lips: applied lip product — colour and finish",
+  "brows: how the brows have been filled, tinted or set",
+  "complexion: applied base — foundation, blush, contour, highlight",
   "",
-  'Reply with JSON: {"eyes": "...", "lips": "...", "brows": "...", "complexion": "..."}',
-  "and nothing else. Use null for any surface with no makeup on it.",
+  'Reply with JSON: {"wearing": "yes" or "no", "eyes": "...", "lips": "...",',
+  '"brows": "...", "complexion": "..."} and nothing else.',
+  "Use null for any surface with nothing applied to it.",
 ].join("\n");
 
 /** A model's JSON is input, not a promise. */
@@ -171,7 +185,26 @@ function parse(raw: string): Record<string, unknown> | null {
 }
 
 /**
- * One slot answer, cleaned — or `null`, which means the surface carries nothing
+ * What one slot answer turned out to be.
+ *
+ * `absent` and `tooLong` are DIFFERENT FACTS, and this type exists to stop them
+ * being the same one. Before it, an over-length answer returned `null` — which
+ * this module already spells *"nothing was applied here"* — so the loudest
+ * makeup in a frame could vanish and read as a bare surface, with nobody told.
+ * That is the no-silent-caps law broken one level below where it was being kept.
+ *
+ * Found by the first positive control (opus-694): on a frame whose most obvious
+ * feature was a black winged smoky eye, the reader answered
+ * `"smoky shadow, winged liner, lashes"` — 34 characters against a cap of 32 —
+ * and the eye simply disappeared from the sentence.
+ */
+export type MakeupSlotReading =
+  | { kind: "value"; value: string }
+  | { kind: "absent" }
+  | { kind: "tooLong"; length: number };
+
+/**
+ * One slot answer, cleaned — or absent, which means the surface carries nothing
  * this reader can honestly report.
  *
  * The null vocabulary is `faceDescribe.readLine`'s, and it is wider than it
@@ -180,15 +213,44 @@ function parse(raw: string): Record<string, unknown> | null {
  * paid prompt. That exact bug is on the record — `makeup: "none — a bare face"`
  * reached the slot once and nothing stopped it (D-172, `refineDelta`).
  */
-export function readMakeupSlot(value: unknown): string | null {
-  if (typeof value !== "string") return null;
+export function readMakeupSlot(value: unknown): MakeupSlotReading {
+  if (typeof value !== "string") return { kind: "absent" };
   const plain = value.trim().replace(/\s+/g, " ").replace(/[.;,]+$/, "");
-  if (!plain) return null;
-  if (/^(null|none|n\/?a|unknown|unclear|nothing|bare)\b/i.test(plain)) return null;
+  if (!plain) return { kind: "absent" };
+  if (/^(null|none|n\/?a|unknown|unclear|nothing|bare)\b/i.test(plain)) return { kind: "absent" };
+  /*
+    AND THE ABSENCE DESCRIBED AS A PRESENCE — the tells, MEASURED rather than
+    imagined (opus-693 §4).
+
+    The first real specimen came back with `brows: "naturally groomed,
+    unfilled"` on a bare face. The reader was not wrong about the face; it
+    reported the ABSENCE in a slot contracted to answer null, and that sentence
+    would have ridden into a render as an instruction describing her own brows
+    as a look she chose.
+
+    Every word here is one this reader has actually produced or is the direct
+    negation of one. **`natural` is deliberately NOT in this list** — "a natural
+    look" is a real thing a person wears and a real thing a customer asks to
+    copy, so banning it would be the guard banning the carve-out it exists to
+    protect, which is a mistake this repository has already made once.
+  */
+  if (/\b(unfilled|untinted|unlined|no makeup|not wearing|without makeup|free of makeup|absent)\b/i.test(plain)) {
+    return { kind: "absent" };
+  }
   const scrubbed = scrubBrands(plain)?.trim() ?? "";
-  if (!scrubbed) return null;
-  if (scrubbed.length > MAKEUP_SLOT_MAX_LENGTH) return null;
-  return scrubbed.toLowerCase();
+  if (!scrubbed) return { kind: "absent" };
+  /*
+    NOT ABSENT — READ AND UNUSABLE, and the caller has to be able to say which.
+
+    This returned `null` until the first positive control, and `null` is the
+    same word this function uses for "nothing was applied here". So a 34-char
+    answer describing the loudest makeup in the frame vanished into a value
+    meaning the opposite, and nothing anywhere reported it.
+  */
+  if (scrubbed.length > MAKEUP_SLOT_MAX_LENGTH) {
+    return { kind: "tooLong", length: scrubbed.length };
+  }
+  return { kind: "value", value: scrubbed.toLowerCase() };
 }
 
 /**
@@ -285,8 +347,51 @@ export async function readMakeupFromReference(
     };
   }
 
+  /*
+    THE PRESENCE GATE — ASKED, AND CONSULTED HERE (ruled fable-946 §4).
+
+    A gate nobody reads is not a gate, and this program has the scars to prove
+    it. The reader is asked one question before the surfaces — *is this face
+    wearing makeup that was APPLIED to it* — and a `no` ends the read, whatever
+    the surface answers say.
+
+    It is the FIRST door rather than a tiebreak on purpose: the failure it
+    exists for is a reader that finds something to say about every face, so the
+    place to stop it is before its prose is consulted at all.
+
+    `undefined` is not `no`. A reply that omits the field is a reply this door
+    cannot judge, and refusing on it would turn every malformed answer into
+    "she is bare" — a different claim about a real person. So only an explicit
+    negative closes it.
+  */
+  if (typeof parsed.wearing === "string" && /^\s*(no|false|none)\b/i.test(parsed.wearing)) {
+    return {
+      ok: false,
+      refusal: {
+        code: "noMakeupVisible",
+        message: "We couldn't see any makeup in that picture to take.",
+      },
+    };
+  }
+
   const slots: Partial<Record<MakeupSlot, string | null>> = {};
-  for (const slot of MAKEUP_SLOTS) slots[slot] = readMakeupSlot(parsed[slot]);
+  /* Read but unusable, kept apart from read-as-nothing so neither can wear the
+     other's meaning. These join `dropped`, because both are surfaces we saw and
+     did not speak for — and a surface we cannot speak for is one she can type
+     herself, which she cannot do if nobody tells her. */
+  const overCap: MakeupSlot[] = [];
+  for (const slot of MAKEUP_SLOTS) {
+    const reading = readMakeupSlot(parsed[slot]);
+    if (reading.kind === "value") slots[slot] = reading.value;
+    else if (reading.kind === "tooLong") {
+      slots[slot] = null;
+      overCap.push(slot);
+      log.info(
+        { slot, length: reading.length, cap: MAKEUP_SLOT_MAX_LENGTH },
+        "[makeupFromReference] a surface answered longer than the ask allows — reported, never silent",
+      );
+    } else slots[slot] = null;
+  }
 
   /*
     THE BACKSTOP, AND IT IS THE PROVEN GUARD RATHER THAN A SECOND LIST.
@@ -327,12 +432,17 @@ export async function readMakeupFromReference(
     };
   }
 
-  if (dropped.length > 0) {
+  /* Both kinds of "we saw it and did not say it" reach her in one list, in the
+     slots' own order so it reads as a list of surfaces rather than a log. */
+  const leftOut = MAKEUP_SLOTS.filter(
+    (slot) => dropped.includes(slot) || overCap.includes(slot),
+  );
+  if (leftOut.length > 0) {
     /* No silent caps: what was read and left out is logged as well as returned. */
-    log.info({ used, dropped }, "[makeupFromReference] the note did not fit every surface");
+    log.info({ used, dropped, overCap }, "[makeupFromReference] the note did not speak for every surface");
   }
 
-  return { ok: true, sentence, used, dropped };
+  return { ok: true, sentence, used, dropped: leftOut };
 }
 
 /**
