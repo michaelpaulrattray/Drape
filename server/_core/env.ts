@@ -26,6 +26,7 @@ import {
 } from "../casting/snapshotRestoreScope";
 import {
   CASTING_FACE_SCAN_SCOPE_ENV,
+  CASTING_INK_STUDIO_SCOPE_ENV,
   CASTING_OPEN_LANE_SCOPE_ENV,
   CASTING_REFERENCE_LIBRARY_SCOPE_ENV,
   CASTING_REPAINT_SCOPE_ENV,
@@ -35,6 +36,7 @@ import {
   CASTING_SCAN_TABLE_SCOPE_ENV,
   CASTING_V2_SCOPE_ENV,
   validateCastingFaceScanEnvironment,
+  validateCastingInkStudioEnvironment,
   validateCastingOpenLaneEnvironment,
   validateCastingReferenceLibraryEnvironment,
   validateCastingRepaintEnvironment,
@@ -224,6 +226,19 @@ export function validateEnv(): void {
   validateCastingOpenLaneEnvironment({
     scope: process.env[CASTING_OPEN_LANE_SCOPE_ENV],
     repaintScope: process.env[CASTING_REPAINT_SCOPE_ENV],
+  });
+  /*
+    The ink studio's door. Checked against the REPAINT scope for the open lane's
+    reason one step further on: a design reaches a photograph as a cropped
+    reference carried by the repaint recipe, and the paste road carries none —
+    so an upload armed there could never appear on her. And against the cleanup
+    worker, because an uploaded design is bytes we keep under the candidate's
+    purge path.
+  */
+  validateCastingInkStudioEnvironment({
+    scope: process.env[CASTING_INK_STUDIO_SCOPE_ENV],
+    repaintScope: process.env[CASTING_REPAINT_SCOPE_ENV],
+    cleanupWorker: process.env.ENABLE_STORAGE_CLEANUP_WORKER,
   });
 
   /*

@@ -972,3 +972,121 @@ export function validateCastingOpenLaneEnvironment(input: {
   }
   return child;
 }
+
+/**
+ * THE INK STUDIO — whether a customer may attach a tattoo design to a Cast.
+ *
+ * # What it gates, and what it deliberately does not
+ *
+ * On, the upload door exists: a design arrives, is stored under the candidate's
+ * own purge path, and records the placement it is meant for from the closed
+ * vocabulary (`shared/inkPlacementVocabulary.ts`). Off, and absent means off,
+ * there is no door and not one row is written.
+ *
+ * It does **not** gate the words-rendered ink road. `inkPlacement.ts` decides
+ * whether ink stated in a sentence can be rendered from words alone (D-133(a):
+ * face and neck, today) and is untouched by this flag in either position.
+ * Retiring that road removes a paid capability and is a founder-adjacent
+ * decision, not a consequence of this one being switched on.
+ *
+ * # Why the parent is the REPAINT scope
+ *
+ * Same argument as the open lane's, and the same measurement underneath it. An
+ * ink design reaches a photograph as a cropped reference carried by the repaint
+ * recipe; the paste road composes its prompt from a reader that carries no such
+ * thing. A user armed here and not on the repaint road would be offered a door
+ * that opens onto a wall — an upload that can never appear on her.
+ *
+ * The library scope is the repaint scope's own parent, so requiring the repaint
+ * road requires the library transitively. It is not re-asserted here: two
+ * checks of one fact drift apart, and the boot chain already refuses a scope
+ * reaching past its parent.
+ *
+ * # And the cleanup worker, for the reason every storage-writing flag has it
+ *
+ * An upload is bytes we keep. Without the worker running, nothing deletes them
+ * when the Cast they belong to goes, and the promise that a customer's picture
+ * leaves with her work becomes quietly false. Refusing to boot is the honest
+ * posture (invariant 7).
+ *
+ * # WHAT REMAINS TRUE WHILE IT IS OFF, WHICH IS EVERYWHERE TODAY
+ *
+ * Nothing renders. The released-tuple table (`shared/inkReleasedPlacements.ts`)
+ * is empty, so even with this flag on, no placement has yet earned a paid
+ * drive — and the mannequin template the design is plated onto does not exist
+ * until the founder's one-time taste gate is answered (D-138). This flag opens
+ * the door to a room that is still being built, which is exactly why it is off.
+ */
+export const CASTING_INK_STUDIO_SCOPE_ENV = "CASTING_INK_STUDIO_SCOPE";
+
+export class CastingInkStudioScopeConfigurationError extends Error {
+  constructor() {
+    super(
+      `${CASTING_INK_STUDIO_SCOPE_ENV} must be "off", "all", or "users:" followed by unique positive integer user ids`,
+    );
+    this.name = "CastingInkStudioScopeConfigurationError";
+  }
+}
+
+export class CastingInkStudioCoverageError extends Error {
+  constructor(detail: string) {
+    super(`${CASTING_INK_STUDIO_SCOPE_ENV} ${detail}`);
+    this.name = "CastingInkStudioCoverageError";
+  }
+}
+
+export function parseCastingInkStudioScope(raw: string | undefined): CastingV2Scope {
+  return parseScopeGrammar(raw, () => {
+    throw new CastingInkStudioScopeConfigurationError();
+  });
+}
+
+/**
+ * Whether this user may attach an ink design.
+ *
+ * An AND of the whole chain at the point of use, for the reason its siblings
+ * carry: the boot check refuses a scope that reaches past its parent, and a
+ * boot check nobody invoked is the second way a flag pair goes wrong.
+ */
+export function captureCastingInkStudioEnabled(userId: number): boolean {
+  const child = parseCastingInkStudioScope(process.env[CASTING_INK_STUDIO_SCOPE_ENV]);
+  if (!castingV2EnabledForUser(child, userId)) return false;
+  return captureCastingRepaintEnabled(userId);
+}
+
+export function validateCastingInkStudioEnvironment(input: {
+  scope: string | undefined;
+  repaintScope: string | undefined;
+  cleanupWorker: string | undefined;
+}): CastingV2Scope {
+  const child = parseCastingInkStudioScope(input.scope);
+  if (child.kind === "off") return child;
+
+  if (input.cleanupWorker !== "true") {
+    throw new CastingInkStudioCoverageError(
+      "cannot be enabled unless ENABLE_STORAGE_CLEANUP_WORKER is exactly \"true\" — an uploaded "
+      + "design is bytes we keep, and nothing would ever delete them",
+    );
+  }
+
+  const parent = parseCastingRepaintScope(input.repaintScope);
+  if (parent.kind === "off") {
+    throw new CastingInkStudioCoverageError(
+      `cannot be enabled while ${CASTING_REPAINT_SCOPE_ENV} is off — a design is carried into a `
+      + "render as a cropped reference by the repaint recipe, and the paste road carries none",
+    );
+  }
+  if (parent.kind === "all") return child;
+  if (child.kind === "all") {
+    throw new CastingInkStudioCoverageError(
+      `cannot be "all" while ${CASTING_REPAINT_SCOPE_ENV} is limited to specific users`,
+    );
+  }
+  const uncovered = child.userIds.filter((userId) => !parent.userIds.includes(userId));
+  if (uncovered.length > 0) {
+    throw new CastingInkStudioCoverageError(
+      `names users outside ${CASTING_REPAINT_SCOPE_ENV}: ${uncovered.join(",")}`,
+    );
+  }
+  return child;
+}

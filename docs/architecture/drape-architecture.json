@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "95ee7560bff0ff15"
+    "sourceFingerprint": "4a4098d92844b137"
   },
   "domains": [
     {
@@ -123,7 +123,7 @@
     {
       "id": "domain:shared",
       "name": "shared",
-      "moduleCount": 21
+      "moduleCount": 23
     },
     {
       "id": "domain:studio",
@@ -5049,6 +5049,18 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:shared/inkPlacementVocabulary.ts",
+      "path": "shared/inkPlacementVocabulary.ts",
+      "domain": "shared",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:shared/inkReleasedPlacements.ts",
+      "path": "shared/inkReleasedPlacements.ts",
+      "domain": "shared",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:shared/mergeCastingPreferenceChanges.ts",
       "path": "shared/mergeCastingPreferenceChanges.ts",
       "domain": "shared",
@@ -8024,6 +8036,11 @@
       "grammar": "off|all|users:<ids>"
     },
     {
+      "id": "flag:CASTING_INK_STUDIO_SCOPE",
+      "name": "CASTING_INK_STUDIO_SCOPE",
+      "grammar": "off|all|users:<ids>"
+    },
+    {
       "id": "flag:CASTING_OPEN_LANE_SCOPE",
       "name": "CASTING_OPEN_LANE_SCOPE",
       "grammar": "off|all|users:<ids>"
@@ -9510,6 +9527,18 @@
     {
       "id": "test:server/castingV2/inheritedVerdict.test.ts",
       "path": "server/castingV2/inheritedVerdict.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/inkPlacementVocabulary.test.ts",
+      "path": "server/castingV2/inkPlacementVocabulary.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/inkReleasedPlacements.test.ts",
+      "path": "server/castingV2/inkReleasedPlacements.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/inkStudioScope.test.ts",
+      "path": "server/castingV2/inkStudioScope.test.ts"
     },
     {
       "id": "test:server/castingV2/inventionDoor.test.ts",
@@ -25523,6 +25552,16 @@
     {
       "from": "module:shared/exportViews.ts",
       "to": "module:shared/boardTypes.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:shared/inkPlacementVocabulary.ts",
+      "to": "module:shared/bodyAnchorRegions.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:shared/inkReleasedPlacements.ts",
+      "to": "module:shared/inkPlacementVocabulary.ts",
       "kind": "imports"
     },
     {
