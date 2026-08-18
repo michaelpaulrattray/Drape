@@ -35,14 +35,20 @@
  * Structure is the fence. The word guard below is only a backstop, and it is
  * the PROVEN one rather than a second list (`namesHairColour`, D-176/D-177).
  *
- * # THE CAP IS THE DESTINATION'S, NOT A NUMBER CHOSEN HERE
+ * # NEITHER CAP IS A NUMBER CHOSEN HERE
  *
- * `MAX_MAKEUP_LENGTH` is imported from `refineDelta`, where the value is judged.
- * A compose longer than the slot it is destined for would be refused down there
- * and her ask would die for a reason she could not see. Nothing is silently
- * truncated: slots are added in a declared order until the next will not fit,
- * and the ones left out are RETURNED so she can see what was dropped and type
- * it herself if she wants it.
+ * Both live in `makeupSlots.ts`, and the sentence budget is DERIVED from the
+ * slot contract — every slot at its maximum, joined the way this composes. So
+ * a surface can never be dropped for room the contract had already promised it,
+ * which is what was happening until 2026-08-18: four legal answers needed 121
+ * characters of an 80-character budget and the last two surfaces were lost on
+ * every full-face read. The founder found it by looking at a specimen and
+ * asking where the blusher went.
+ *
+ * Dropping still exists and is still reported — it is the emergency path for a
+ * reading that broke its own contract, never the routine fate of surfaces three
+ * and four. Nothing is silently truncated: what was left out is RETURNED so she
+ * can see it and type it herself if she wants it.
  *
  * # AND IT IS SHOWN BEFORE IT IS SPENT — which is also what makes it legal
  *
@@ -59,37 +65,18 @@ import { createModuleLogger } from "../logging/logger";
 import type { TextEngine } from "../providers/types";
 import { interpreterEngine } from "./interpreter";
 import { scrubBrands } from "./brandScrub";
-import { MAX_MAKEUP_LENGTH, namesHairColour } from "./refineDelta";
+import { namesHairColour } from "./refineDelta";
+import {
+  MAKEUP_SLOTS,
+  MAKEUP_SLOT_MAX_LENGTH,
+  MAKEUP_SLOT_SEPARATOR,
+  MAX_MAKEUP_LENGTH,
+  type MakeupSlot,
+} from "./makeupSlots";
+
+export { MAKEUP_SLOTS, MAKEUP_SLOT_MAX_LENGTH, type MakeupSlot } from "./makeupSlots";
 
 const log = createModuleLogger("castingV2/makeupFromReference");
-
-/**
- * The cosmetic surfaces this reader may ask about, in the order they compose.
- *
- * The order is a makeup artist's, not an alphabet's: the eye is what a look is
- * usually named for, the lip is what changes it most, and complexion is the
- * one a casting note drops first when it runs out of room.
- */
-export const MAKEUP_SLOTS = ["eyes", "lips", "brows", "complexion"] as const;
-export type MakeupSlot = (typeof MAKEUP_SLOTS)[number];
-
-/**
- * The longest a slot answer may be before it has stopped obeying the ask.
- *
- * **Forty, and the number is MEASURED rather than chosen.** It was 32, and the
- * first positive-control specimen convicted it: on a frame whose loudest
- * feature was a black winged smoky eye, the reader answered
- * `eyes: "smoky shadow, winged liner, lashes"` — **34 characters** — and 32
- * turned the most obvious makeup in the picture into silence. A compound eye
- * description is the legitimately longest of the four, because an eye carries
- * shadow, liner and lashes at once where a lip carries one thing.
- *
- * It stays well under {@link MAX_MAKEUP_LENGTH} on purpose: two slots at this
- * length plus a separator already exceed the sentence budget, so a single
- * surface can never eat the whole note — the compose order decides who wins,
- * and it puts the eye first for the reason above.
- */
-export const MAKEUP_SLOT_MAX_LENGTH = 40;
 
 /**
  * Every way a read can end badly — as a LIST, because the demand record has to
@@ -163,7 +150,11 @@ const ASK = [
   "eyes: applied eye makeup — shadow, liner, lashes",
   "lips: applied lip product — colour and finish",
   "brows: how the brows have been filled, tinted or set",
-  "complexion: applied base — foundation, blush, contour, highlight",
+  /* His own vocabulary, and it is the closing check he set: *"did it get the
+     blusher/highlight and bronzer?"* (fable-950 §1). Naming what the slot
+     COVERS is not asking the reader to assert it — the presence gate and the
+     absence tells still govern whether anything is said at all. */
+  "complexion: applied base — foundation, blush, bronzer, contour, highlight",
   "",
   'Reply with JSON: {"wearing": "yes" or "no", "eyes": "...", "lips": "...",',
   '"brows": "...", "complexion": "..."} and nothing else.',
@@ -269,7 +260,7 @@ export function composeMakeupSentence(
   for (const slot of MAKEUP_SLOTS) {
     const value = slots[slot];
     if (!value) continue;
-    const candidate = sentence ? `${sentence}, ${value}` : value;
+    const candidate = sentence ? `${sentence}${MAKEUP_SLOT_SEPARATOR}${value}` : value;
     if (candidate.length > MAX_MAKEUP_LENGTH) {
       dropped.push(slot);
       continue;

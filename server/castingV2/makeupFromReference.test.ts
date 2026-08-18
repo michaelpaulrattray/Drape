@@ -160,8 +160,15 @@ describe("composeMakeupSentence", () => {
     expect(dropped).toEqual([]);
   });
 
-  it("stops before the destination's cap and REPORTS what it left", () => {
-    const long = "x".repeat(30);
+  /*
+    The drop path survives, and what it is FOR changed on 2026-08-18. With the
+    budget derived from the slot contract, four legal answers always fit — so
+    this can only fire on answers longer than the contract allows, which
+    `readMakeupSlot` refuses upstream. It is the emergency path, and it is
+    tested by handing the composer something the reader would never give it.
+  */
+  it("drops rather than overflowing if it is handed answers past the contract", () => {
+    const long = "x".repeat(MAKEUP_SLOT_MAX_LENGTH + 20);
     const { sentence, used, dropped } = composeMakeupSentence({
       eyes: long,
       lips: long,
@@ -172,6 +179,44 @@ describe("composeMakeupSentence", () => {
     expect(used).toEqual(["eyes", "lips"]);
     /* Not silence: the surfaces that did not fit come back named. */
     expect(dropped).toEqual(["brows", "complexion"]);
+  });
+
+  /*
+    HIS VERDICT, AS A TEST — *"for 2) specimen 1 did it get the
+    blusher/highlight and bronzer?"* (fable-950 §1). It did not, and this is the
+    frame's own answer rather than a fixture I invented: four reads of specimen
+    1 through the shipped reader and the shipped transport, three of which came
+    back with exactly these four values.
+
+    Written against EVERY SURFACE THE READER VALUED rather than against a
+    number, so it cannot pass by the cap being nudged to fit one specimen.
+  */
+  it("carries every surface the reader valued — a copied look is four surfaces, not two", () => {
+    const asRead = {
+      eyes: "smoky black shadow, winged liner, lashes",
+      lips: "matte red lipstick",
+      brows: "filled, defined arch",
+      complexion: "foundation with contour and highlight",
+    };
+    const { sentence, used, dropped } = composeMakeupSentence(asRead);
+    expect(dropped).toEqual([]);
+    expect(used).toEqual([...MAKEUP_SLOTS]);
+    /* And his own words are in it — the cheek work is the thing he missed. */
+    expect(sentence).toContain("contour and highlight");
+  });
+
+  /*
+    THE BUDGET IS DERIVED, NOT CHOSEN — so a surface can never be dropped for
+    room that the slot contract already promised it. Before this, the sentence
+    cap was a number judged in the destination and the slot cap a number judged
+    here, and nothing anywhere checked that the second could fit inside the
+    first: four legal slot answers needed 121 characters of an 80-character
+    budget, and surfaces three and four were routinely lost.
+  */
+  it("has room for every slot answering at its maximum", () => {
+    expect(MAX_MAKEUP_LENGTH).toBeGreaterThanOrEqual(
+      MAKEUP_SLOTS.length * MAKEUP_SLOT_MAX_LENGTH + (MAKEUP_SLOTS.length - 1) * 2,
+    );
   });
 
   it("never exceeds the cap for any combination of maximum-length answers", () => {
@@ -194,11 +239,12 @@ describe("composeMakeupSentence", () => {
 
 describe("readMakeupFromReference", () => {
   it("returns a sentence inside the destination's cap, all four surfaces intact", async () => {
-    /* Worth stating, because it is the reading that says the cap is the right
-       size: a realistic full-face read composes to 62 of the 80 characters the
-       destination allows, so the common case drops NOTHING. The drop path is a
-       tail, not the normal outcome — `composeMakeupSentence` drives it above
-       with answers at the slot maximum. */
+    /* This fixture composed to 62 of 80 and was read as proof the cap was the
+       right size. It was not — a HAND-WRITTEN full face fits where the real
+       reader's own words did not, and four reads of a real frame needed 121.
+       The fixture is kept because it still proves all four surfaces survive a
+       clean read; it is no longer quoted as evidence about the budget, which
+       is now derived rather than judged against a specimen. */
     const outcome = await readMakeupFromReference({
       ...REFERENCE,
       engine: engineReturning(FULL_FACE),

@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "aa005d932d01e8f3"
+    "sourceFingerprint": "f572dfef41832c5d"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 127
+      "moduleCount": 128
     },
     {
       "id": "domain:castingV2",
@@ -3593,6 +3593,12 @@
     {
       "id": "module:server/castingV2/makeupPlacement.ts",
       "path": "server/castingV2/makeupPlacement.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/makeupSlots.ts",
+      "path": "server/castingV2/makeupSlots.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -19744,6 +19750,11 @@
     },
     {
       "from": "module:server/castingV2/makeupFromReference.ts",
+      "to": "module:server/castingV2/makeupSlots.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/makeupFromReference.ts",
       "to": "module:server/castingV2/refineDelta.ts",
       "kind": "imports"
     },
@@ -20395,6 +20406,11 @@
     {
       "from": "module:server/castingV2/refineDelta.ts",
       "to": "module:server/castingV2/inkPlacement.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/refineDelta.ts",
+      "to": "module:server/castingV2/makeupSlots.ts",
       "kind": "imports"
     },
     {

@@ -69,16 +69,16 @@ import {
   type RealizationCaptions,
 } from "./realizationCaption";
 
-/**
- * One adjustment, not a paragraph — the brief box is where prose belongs.
- *
- * **Exported because a second reader now writes INTO this slot** and must fit
- * the cap it will be judged by. `makeupFromReference.ts` composes a sentence
- * from a describer read of a customer's reference; a compose over this length
- * is refused here and her ask dies for a reason she cannot see. So the composer
- * imports the number rather than knowing it (law 4 — derive, never mirror).
- */
-export const MAX_MAKEUP_LENGTH = 80;
+/*
+  The makeup cap moved to `makeupSlots.ts` on 2026-08-18 and is now DERIVED from
+  the slot contract rather than chosen here. It was 80, judged for a world where
+  makeup meant one typed adjustment — and a copied look is four surfaces at
+  once, which needed 121 characters of that 80. Re-exported because the parse
+  guard below is still where it is enforced, and callers of this module should
+  not have to know which file the arithmetic lives in.
+*/
+export { MAX_MAKEUP_LENGTH } from "./makeupSlots";
+import { MAX_MAKEUP_LENGTH } from "./makeupSlots";
 import type { ResolvedIdentity } from "./castingIntent";
 
 const log = createModuleLogger("castingV2/refineDelta");
