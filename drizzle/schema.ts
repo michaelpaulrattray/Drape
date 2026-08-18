@@ -19,6 +19,7 @@ import { KIND_LOCALITIES } from "../shared/kindLocality";
 import { INK_PLACEMENTS } from "../shared/inkPlacementVocabulary";
 import { INK_SIDES } from "../shared/inkReleasedPlacements";
 import { INK_PROVENANCES } from "../shared/inkProvenance";
+import { INK_TEMPLATE_KINDS } from "../shared/inkTemplateKinds";
 import { REFERENCE_INTENTS, type ReferenceIntent } from "../shared/referenceIntents";
 
 /**
@@ -3037,3 +3038,60 @@ export const castingInkDesigns = mysqlTable("casting_ink_designs", {
 
 export type CastingInkDesignRow = typeof castingInkDesigns.$inferSelect;
 export type InsertCastingInkDesignRow = typeof castingInkDesigns.$inferInsert;
+
+/**
+ * THE PLATE STORE (migration 0037, ruled fable-959 §3) — a design re-drawn onto
+ * a blank ghost mannequin, which is the ONLY ink artifact an engine is ever
+ * shown (D-138, fable-684 §2).
+ *
+ * # Why it is not columns on the design row
+ *
+ * The plate court mints one design on BOTH candidate engines, which is two
+ * plates for one design. Columns would make that a two-engine hack and would
+ * make "which engine drew this" an inference from which column is non-null.
+ *
+ * # What the row is for, beyond holding a key
+ *
+ * `engine` is the court's own axis, from the first commit. `templateDigest` is
+ * the sha256 the mint actually read off disk — the suite's pin protects every
+ * plate minted after a swap and says nothing about the ones minted before, and
+ * a plate persists and is shown to an engine on every later render. On the row,
+ * "which artwork is this standing on" is a query rather than an eye.
+ *
+ * # Retention
+ *
+ * A plate dies with its design, which dies with its Cast — unconditionally, not
+ * gated on the studio flag. There is deliberately no `candidateId` here: the
+ * sweep reaches these rows through the design's own (law 4), which fixes the
+ * delete order as plates-then-designs.
+ */
+export const castingInkPlates = mysqlTable("casting_ink_plates", {
+  id: int("id").autoincrement().primaryKey(),
+  publicId: varchar("publicId", { length: 36 }).notNull(),
+  userId: int("userId").notNull(), // denormalized — single-statement ownership
+  designId: int("designId").notNull(), // →casting_ink_designs
+  /** The model as the provider names it, so a verdict and an invoice line meet. */
+  engine: varchar("engine", { length: 128 }).notNull(),
+  /** Which blank form it stands on — derived from the vocabulary, never retyped. */
+  templateKind: mysqlEnum("templateKind", INK_TEMPLATE_KINDS).notNull(),
+  /** The template bytes this plate was actually drawn on. See the header. */
+  templateDigest: varchar("templateDigest", { length: 64 }).notNull(),
+  /** Our copy of the plate's bytes, under the candidate's purge path. */
+  storageKey: varchar("storageKey", { length: 512 }).notNull(),
+  /** sha256 of the plate's own bytes — byte identity, as the library does it. */
+  digest: varchar("digest", { length: 64 }).notNull(),
+  mime: varchar("mime", { length: 64 }).notNull(),
+  byteSize: int("byteSize").notNull(),
+  width: int("width").notNull(),
+  height: int("height").notNull(),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+}, (table) => ([
+  /* One plate per design per engine — the door's exactness, in the schema.
+     Its leftmost column is `designId`, so "every plate of this design" needs no
+     second index over the same prefix. */
+  uniqueIndex("uq_casting_ink_plates_design_engine").on(table.designId, table.engine),
+  uniqueIndex("uq_casting_ink_plates_publicId").on(table.publicId),
+]));
+
+export type CastingInkPlateRow = typeof castingInkPlates.$inferSelect;
+export type InsertCastingInkPlateRow = typeof castingInkPlates.$inferInsert;

@@ -54,6 +54,7 @@ describe("the plate mint's doors", () => {
        end up saying different things about one refusal. */
     for (const refusal of [
       inkPlateTransportRefusal(false),
+      inkPlateDesignRefusal({ recordedDigest: DIGEST, fetchedDigest: null }),
       inkPlateDesignRefusal({ recordedDigest: DIGEST, fetchedDigest: OTHER }),
       inkPlateTemplateRefusal({ present: false, approvedDigest: DIGEST, fetchedDigest: null }),
       inkPlateAlreadyMintedRefusal(true),
@@ -70,6 +71,7 @@ describe("the plate mint's doors", () => {
        value MySQL truncates to the empty string. */
     const produced = [
       inkPlateTransportRefusal(false),
+      inkPlateDesignRefusal({ recordedDigest: DIGEST, fetchedDigest: null }),
       inkPlateDesignRefusal({ recordedDigest: DIGEST, fetchedDigest: OTHER }),
       inkPlateTemplateRefusal({ present: false, approvedDigest: DIGEST, fetchedDigest: null }),
       inkPlateTemplateRefusal({ present: true, approvedDigest: DIGEST, fetchedDigest: OTHER }),

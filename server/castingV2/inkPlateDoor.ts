@@ -37,8 +37,31 @@
  * rather than plating onto a form nobody has seen. It is the reference
  * library's own `bytes have moved` refusal, one road along.
  */
+import { randomUUID } from "node:crypto";
+
 import { inkPlacementEntry, type InkPlacement } from "../../shared/inkPlacementVocabulary";
 import type { InkSide } from "../../shared/inkReleasedPlacements";
+import { INK_KEY_PREFIX } from "./inkUploadDoor";
+
+/**
+ * Where a plate's bytes live.
+ *
+ * Under the designs' own prefix and one level in, so an operator sees the whole
+ * ink tree in one place and can still tell what a customer GAVE us from what we
+ * DREW — the two have different provenance and one of them is the only artifact
+ * an engine ever sees.
+ *
+ * `randomUUID`, never `Math.random`: every object this product writes sits at a
+ * permanently public URL and the name is the only thing between it and a
+ * stranger (the repository guard on storage writers says the same thing).
+ */
+export const INK_PLATE_KEY_PREFIX = `${INK_KEY_PREFIX}/plates`;
+
+export function inkPlateKey(): string {
+  /* Always PNG: the engines are asked for PNG and a plate is a flat drawing on
+     a near-white ground, which is the one thing lossy compression is worst at. */
+  return `${INK_PLATE_KEY_PREFIX}/${randomUUID()}.png`;
+}
 
 /**
  * Every way a mint can refuse before it spends, as a LIST rather than a type
@@ -47,6 +70,7 @@ import type { InkSide } from "../../shared/inkReleasedPlacements";
  */
 export const INK_PLATE_REFUSAL_CODES = [
   "noTransport",
+  "designMissing",
   "designMoved",
   "templateMissing",
   "templateMoved",
@@ -78,8 +102,8 @@ export function inkPlateTransportRefusal(hasEngine: boolean): InkPlateRefusal | 
  * THE DESIGN'S BYTES ARE THE BYTES WE RECORDED, or nothing is minted.
  *
  * `digest` was taken over the object at upload and means byte identity. If what
- * comes back from storage hashes to something else, the plate would carry a
- * design the customer never attached — and because a plate PERSISTS and is
+ * comes back from storage hashes to something else — or does not come back at
+ * all — the plate would carry a design the customer never attached — and because a plate PERSISTS and is
  * shown to an engine on every later render, that is a wrong tattoo on every
  * frame rather than one bad picture.
  *
@@ -88,8 +112,24 @@ export function inkPlateTransportRefusal(hasEngine: boolean): InkPlateRefusal | 
  */
 export function inkPlateDesignRefusal(input: {
   recordedDigest: string;
-  fetchedDigest: string;
+  /** `null` is *the object is not there* — a different fact from a wrong one. */
+  fetchedDigest: string | null;
 }): InkPlateRefusal | null {
+  if (input.fetchedDigest === null) {
+    /*
+      THE SPLIT THE TEMPLATE PAIR ALREADY MAKES, on the other picture.
+
+      *The bytes are gone* and *the bytes are different* have different causes
+      and different fixes — an object collected out from under a live row versus
+      a design that was replaced — and one word for both would make a purge bug
+      indistinguishable from a swap. She reads the same sentence either way; the
+      code is for us.
+    */
+    return {
+      code: "designMissing",
+      message: "That design isn't there any more — attach it again and we'll prepare it.",
+    };
+  }
   return input.recordedDigest === input.fetchedDigest ? null : {
     code: "designMoved",
     message: "That design has changed since you attached it — attach it again and we'll prepare it.",

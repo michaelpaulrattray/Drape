@@ -31,6 +31,8 @@ const calls = {
   deleteScans: vi.fn(),
   listInkDesigns: vi.fn(),
   deleteInkDesigns: vi.fn(),
+  listInkPlates: vi.fn(),
+  deleteInkPlates: vi.fn(),
 };
 
 vi.mock("../db/castingV2", () => ({
@@ -102,6 +104,15 @@ vi.mock("../db/castingV2InkDesigns", () => ({
   deleteInkDesignRowsIn: (_tx: unknown, ...args: unknown[]) => calls.deleteInkDesigns(...args),
 }));
 
+/* And the PLATE a design was drawn onto (migration 0037). A plate has no
+   `candidateId` of its own, so the only path from a Cast to its plates runs
+   through the design row — which makes the ORDER part of the contract and not
+   an implementation detail. Asserted below. */
+vi.mock("../db/castingV2InkPlates", () => ({
+  listPurgeableInkPlatesIn: (_tx: unknown, ...args: unknown[]) => calls.listInkPlates(...args),
+  deleteInkPlateRowsIn: (_tx: unknown, ...args: unknown[]) => calls.deleteInkPlates(...args),
+}));
+
 const { runCandidateRetentionSweep } = await import("./candidateRetention");
 
 beforeEach(() => {
@@ -120,6 +131,8 @@ beforeEach(() => {
   calls.deleteScans.mockResolvedValue(0);
   calls.listInkDesigns.mockResolvedValue([]);
   calls.deleteInkDesigns.mockResolvedValue(0);
+  calls.listInkPlates.mockResolvedValue([]);
+  calls.deleteInkPlates.mockResolvedValue(0);
   delete process.env.CASTING_SEGMENTS_SCOPE;
   delete process.env.CASTING_REFERENCE_LIBRARY_SCOPE;
   delete process.env.CASTING_SCAN_TABLE_SCOPE;
@@ -406,6 +419,69 @@ describe("a candidate's segments purge with it", () => {
         { storageKey: "casting-v2/ink/design-two.jpg", storageBackend: "public_r2" },
       ]),
     }));
+  });
+
+  it("purges a minted plate whatever ITS flag says, and takes its bytes", async () => {
+    /* Same terms as the design it was drawn from: the studio flag governs
+       whether a plate is WRITTEN and nothing governs whether it is purged. */
+    process.env.CASTING_INK_STUDIO_SCOPE = "off";
+    calls.listInkPlates.mockResolvedValue([
+      { id: 21, storageKey: "casting-v2/ink/plates/one.png" },
+    ]);
+
+    const result = await runCandidateRetentionSweep();
+
+    expect(calls.deleteInkPlates).toHaveBeenCalledWith([1]);
+    /* The candidate's own object, plus the plate. */
+    expect(result.objectsQueued).toBe(2);
+    expect(calls.queueStorageCleanup).toHaveBeenCalledWith(expect.objectContaining({
+      storageItems: expect.arrayContaining([
+        { storageKey: "casting-v2/ink/plates/one.png", storageBackend: "public_r2" },
+      ]),
+    }));
+  });
+
+  it("reads the plates BEFORE the designs are deleted, because that is the only path to them", async () => {
+    /*
+      THE ORDER IS THE CONTRACT.
+
+      A plate row carries no `candidateId` — deliberately, so there is no
+      mirrored parent id to drift (working law 4) — and the read that finds it
+      joins through the design. Delete the designs first and every plate becomes
+      an orphan nothing can find, with its bytes left at a permanently public URL
+      forever. Nothing about the sweep's own result would say so, which is why
+      this is asserted on the CALL ORDER rather than on the outcome.
+    */
+    calls.listInkPlates.mockResolvedValue([{ id: 21, storageKey: "casting-v2/ink/plates/one.png" }]);
+    calls.listInkDesigns.mockResolvedValue([{ id: 9, storageKey: "casting-v2/ink/design-one.png" }]);
+
+    await runCandidateRetentionSweep();
+
+    const platesRead = calls.listInkPlates.mock.invocationCallOrder[0]!;
+    const designsDeleted = calls.deleteInkDesigns.mock.invocationCallOrder[0]!;
+    expect(platesRead).toBeLessThan(designsDeleted);
+    /* The control: both really ran, so the comparison above is between two
+       numbers rather than between two undefineds. */
+    expect(calls.listInkPlates).toHaveBeenCalledTimes(1);
+    expect(calls.deleteInkDesigns).toHaveBeenCalledTimes(1);
+  });
+
+  it("tolerates an absent ink plate table only while the studio is disarmed", async () => {
+    /* Production has taken neither 0034 nor 0037, and a plate cannot exist
+       without a design, so this window is doubly empty — and armed, the same
+       silence is a fault said out loud. */
+    const missing = Object.assign(new Error("Table 'x.casting_ink_plates' doesn't exist"), {
+      code: "ER_NO_SUCH_TABLE",
+      errno: 1146,
+    });
+    calls.listInkPlates.mockRejectedValue(missing);
+
+    const result = await runCandidateRetentionSweep();
+    expect(result.candidatesPurged).toBe(1);
+    expect(calls.deleteInkPlates).not.toHaveBeenCalled();
+
+    process.env.CASTING_INK_STUDIO_SCOPE = "users:1";
+    await expect(runCandidateRetentionSweep()).rejects.toThrow(/doesn't exist/);
   });
 
   it("tolerates an absent ink design table only while the studio is disarmed", async () => {

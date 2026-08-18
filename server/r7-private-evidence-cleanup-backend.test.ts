@@ -97,6 +97,12 @@ describe("R7-7C5A private evidence cleanup backend", () => {
       // images live in the public bucket, evidence does not, and a manifest
       // that left the backend implicit could delete from the wrong one.
       "server/castingV2/candidateRetention.ts",
+      // The plate mint (migration 0037) registers the plate's key BEFORE the
+      // engine's bytes are stored and names `public_r2` for it. A plate is what
+      // an engine is shown on every later render, so bytes at a permanently
+      // public key with no row pointing at them would be a drawing of somebody's
+      // tattoo that nothing can find and nothing will ever collect.
+      "server/castingV2/inkPlateMint.ts",
       // The kept face scan (migration 0032) registers one stencil per feature
       // before any of them exists, and names `public_r2` for each: a stencil is
       // the SHAPE of a feature on a person's face at a permanently public key,

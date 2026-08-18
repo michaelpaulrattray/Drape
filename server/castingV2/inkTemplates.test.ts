@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 
+import sharp from "sharp";
 import { describe, expect, it } from "vitest";
 
 import { INK_PLACEMENTS } from "../../shared/inkPlacementVocabulary";
@@ -48,6 +49,24 @@ describe("the blank forms a design is plated onto", () => {
       ROOT,
     );
     expect(missing).toBeNull();
+  });
+
+  it("carries the pixels the files actually have", async () => {
+    /*
+      THE PINNED SIZE IS A MEASUREMENT THAT STAYS MEASURED.
+
+      The mint derives an output canvas from these numbers rather than decoding a
+      known file on every mint. That is only legitimate while they are the file's
+      own — so they are read off the real bytes here, not remembered. Pinning is
+      safe for the same reason the digest is: bytes that decode to a different
+      size hash differently, and the mint refuses those before asking how big
+      they are.
+    */
+    for (const template of Object.values(INK_TEMPLATES)) {
+      const meta = await sharp(path.resolve(ROOT, template.file)).metadata();
+      expect({ width: meta.width, height: meta.height })
+        .toEqual({ width: template.width, height: template.height });
+    }
   });
 
   it("names a form for EVERY placement the vocabulary holds", () => {

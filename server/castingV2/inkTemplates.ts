@@ -40,9 +40,12 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 
 import type { InkPlacement } from "../../shared/inkPlacementVocabulary";
+import { INK_TEMPLATE_KINDS, type InkTemplateKind } from "../../shared/inkTemplateKinds";
 
-/** Which blank form a placement is plated onto. */
-export type InkTemplateKind = "arm" | "body";
+/* The vocabulary is `shared/inkTemplateKinds.ts` — the plate table's enum is
+   derived from it, and a second list here would be the parallel copy that
+   drifts. Re-exported so this module stays the one place a caller needs. */
+export { INK_TEMPLATE_KINDS, type InkTemplateKind };
 
 export type InkTemplate = {
   readonly kind: InkTemplateKind;
@@ -51,6 +54,22 @@ export type InkTemplate = {
   /** The sha256 of the bytes his ruling landed on. */
   readonly digest: string;
   readonly mime: string;
+  /**
+   * The form's own pixels.
+   *
+   * PINNED rather than decoded, and legitimately so: the bytes are pinned by
+   * `digest`, so their dimensions are pinned with them — a file that decodes to
+   * a different size is a file that hashes differently, and the mint refuses it
+   * before ever asking how big it is. The suite reads the real files and
+   * compares, so this is a measurement that stays measured rather than a
+   * remembered number.
+   *
+   * The mint needs them because an output canvas is DERIVED from the template's
+   * shape, and decoding a known file on every mint to learn a constant would be
+   * a round trip bought to re-answer a settled question.
+   */
+  readonly width: number;
+  readonly height: number;
 };
 
 /**
@@ -67,12 +86,20 @@ export const INK_TEMPLATES: Readonly<Record<InkTemplateKind, InkTemplate>> = Obj
     file: "assets/ink/arm-template.png",
     digest: "ab4f00a14732c4300bd2b0fe4225a75595dde3d73e6baf90a83f1432ceaca8d5",
     mime: "image/png",
+    width: 1536,
+    height: 1024,
   }),
   body: Object.freeze({
     kind: "body",
     file: "assets/ink/body-template.png",
     digest: "65a478cc55bf03e2230f1ace55c8306b01928b0be3b173902e149e725a389ced",
     mime: "image/png",
+    /* NOT a multiple of 16, which GPT Image 2's edit endpoint requires of an
+       output canvas — `legalPlateCanvas` asks for 1248 and the plate comes back
+       the same square his ruling landed on, six pixels smaller. Measured before
+       it was paid for; see `inkPlateEngines.ts`. */
+    width: 1254,
+    height: 1254,
   }),
 });
 

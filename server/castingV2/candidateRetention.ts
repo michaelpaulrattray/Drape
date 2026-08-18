@@ -24,6 +24,7 @@ import {
 } from "../db/castingV2ReferenceLibrary";
 import { deleteFaceScanRowsIn, listPurgeableFaceScansIn } from "../db/castingV2FaceScans";
 import { deleteInkDesignRowsIn, listPurgeableInkDesignsIn } from "../db/castingV2InkDesigns";
+import { deleteInkPlateRowsIn, listPurgeableInkPlatesIn } from "../db/castingV2InkPlates";
 import { deleteSegmentRowsIn, listPurgeableSegmentsIn } from "../db/castingV2Segments";
 import { deleteVariantRowsIn, listPurgeableVariantsIn } from "../db/castingV2Variants";
 import { withTransaction } from "../db/connection";
@@ -143,6 +144,23 @@ function tolerateAbsentInkDesignStore(error: unknown): never | [] {
   if (!isMissingTable(error) || castingInkStudioArmed()) throw error;
   log.warn(
     "[candidateRetention] the ink design table is absent — nothing can have been written to it, so nothing is being left behind. This is expected only before the ink-studio migration lands.",
+  );
+  return [];
+}
+
+/**
+ * And the same again for a PLATE (0037) — a different table with a different
+ * migration, so a different tolerance rather than one that covers both.
+ *
+ * Its window is the widest of the three: production has taken neither 0034 nor
+ * 0037, and a plate cannot exist without a design, so an absent plate table is
+ * doubly empty. Armed by the same flag, because the same door governs whether
+ * either row is ever written.
+ */
+function tolerateAbsentInkPlateStore(error: unknown): never | [] {
+  if (!isMissingTable(error) || castingInkStudioArmed()) throw error;
+  log.warn(
+    "[candidateRetention] the ink plate table is absent — nothing can have been written to it, so nothing is being left behind. This is expected only before the plate migration lands.",
   );
   return [];
 }
@@ -337,6 +355,27 @@ export async function runCandidateRetentionSweep(now = new Date()): Promise<Rete
         the delete could have keyed on either, and it keys on the LIST for the
         same reason its siblings do.
       */
+      /*
+        THE PLATES COME FIRST, AND THE ORDER IS LOAD-BEARING (migration 0037).
+
+        A plate has no `candidateId` of its own — deliberately, because a
+        mirrored parent id is a second source of truth that drifts (working law
+        4) — so the only path from a Cast to its plates runs THROUGH the design
+        row. Delete the designs first and every plate becomes an orphan nothing
+        can find, with its bytes left at a permanently public URL forever.
+
+        Unconditional, like everything above it, and on the same terms: the
+        studio flag governs whether a plate is written and nothing governs
+        whether it is purged.
+      */
+      const inkPlates = await listPurgeableInkPlatesIn(tx, candidateIds).catch(
+        (error: unknown) => tolerateAbsentInkPlateStore(error),
+      );
+      for (const plate of inkPlates) {
+        storageItems.push({ storageKey: plate.storageKey, storageBackend: "public_r2" as const });
+      }
+      if (inkPlates.length > 0) await deleteInkPlateRowsIn(tx, candidateIds);
+
       const inkDesigns = await listPurgeableInkDesignsIn(tx, candidateIds).catch(
         (error: unknown) => tolerateAbsentInkDesignStore(error),
       );

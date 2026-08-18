@@ -270,6 +270,52 @@ function safeParseIntents(value: string): unknown {
   }
 }
 
+/**
+ * ONE design, by the name a customer's client knows it by — owner-scoped in the
+ * statement, with the same all-the-way-up join `listInkDesigns` uses.
+ *
+ * The mint needs this and could not be given it by its caller. A plate is drawn
+ * from a design's BYTES at a placement, and both facts have to come from the row
+ * rather than from a request: a caller who could name the storage key could name
+ * somebody else's, and a caller who could name the placement could plate an
+ * upper-arm design onto a neck.
+ */
+export async function readInkDesign(input: {
+  userId: number;
+  designPublicId: string;
+}): Promise<StoredInkDesign | null> {
+  const db = await requireDb();
+  const [row] = await db
+    .select({
+      publicId: castingInkDesigns.publicId,
+      candidateId: castingInkDesigns.candidateId,
+      placement: castingInkDesigns.placement,
+      side: castingInkDesigns.side,
+      provenance: castingInkDesigns.provenance,
+      intents: castingInkDesigns.intents,
+      storageKey: castingInkDesigns.storageKey,
+      digest: castingInkDesigns.digest,
+      mime: castingInkDesigns.mime,
+      byteSize: castingInkDesigns.byteSize,
+      width: castingInkDesigns.width,
+      height: castingInkDesigns.height,
+      createdAt: castingInkDesigns.createdAt,
+    })
+    .from(castingInkDesigns)
+    .innerJoin(castingCandidates, eq(castingCandidates.id, castingInkDesigns.candidateId))
+    .where(and(
+      eq(castingInkDesigns.publicId, input.designPublicId),
+      /* Both sides, for `listInkDesigns`' reason: the design's `userId` is
+         denormalized, and a denormalized column is a claim until the parent
+         agrees with it. */
+      eq(castingInkDesigns.userId, input.userId),
+      eq(castingCandidates.userId, input.userId),
+    ))
+    .limit(1);
+  if (!row) return null;
+  return { ...row, intents: parseIntents(row.intents), createdAt: new Date(row.createdAt) };
+}
+
 /* ------------------------------------------------------------ retention */
 
 /**

@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "64ff51beff26977d"
+    "sourceFingerprint": "31d7f32b4a7b0069"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 130
+      "moduleCount": 132
     },
     {
       "id": "domain:castingV2",
@@ -53,7 +53,7 @@
     {
       "id": "domain:data",
       "name": "data",
-      "moduleCount": 52
+      "moduleCount": 53
     },
     {
       "id": "domain:evidence",
@@ -123,7 +123,7 @@
     {
       "id": "domain:shared",
       "name": "shared",
-      "moduleCount": 26
+      "moduleCount": 27
     },
     {
       "id": "domain:studio",
@@ -3561,6 +3561,18 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:server/castingV2/inkPlateEngines.ts",
+      "path": "server/castingV2/inkPlateEngines.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/inkPlateMint.ts",
+      "path": "server/castingV2/inkPlateMint.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:server/castingV2/inkTemplates.ts",
       "path": "server/castingV2/inkTemplates.ts",
       "domain": "casting-v2",
@@ -4133,6 +4145,12 @@
     {
       "id": "module:server/db/castingV2InkDesigns.ts",
       "path": "server/db/castingV2InkDesigns.ts",
+      "domain": "data",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/db/castingV2InkPlates.ts",
+      "path": "server/db/castingV2InkPlates.ts",
       "domain": "data",
       "lifecycle": "active"
     },
@@ -5111,6 +5129,12 @@
     {
       "id": "module:shared/inkReleasedPlacements.ts",
       "path": "shared/inkReleasedPlacements.ts",
+      "domain": "shared",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:shared/inkTemplateKinds.ts",
+      "path": "shared/inkTemplateKinds.ts",
       "domain": "shared",
       "lifecycle": "active"
     },
@@ -9387,6 +9411,10 @@
       "path": "server/castingV2-ink-design-db.test.ts"
     },
     {
+      "id": "test:server/castingV2-ink-plate-db.test.ts",
+      "path": "server/castingV2-ink-plate-db.test.ts"
+    },
+    {
       "id": "test:server/castingV2-reference-library-db.test.ts",
       "path": "server/castingV2-reference-library-db.test.ts"
     },
@@ -9629,6 +9657,18 @@
     {
       "id": "test:server/castingV2/inkPlateDoor.test.ts",
       "path": "server/castingV2/inkPlateDoor.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/inkPlateEngines.test.ts",
+      "path": "server/castingV2/inkPlateEngines.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/inkPlateMint.test.ts",
+      "path": "server/castingV2/inkPlateMint.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/inkPlateSchema.test.ts",
+      "path": "server/castingV2/inkPlateSchema.test.ts"
     },
     {
       "id": "test:server/castingV2/inkReleasedPlacements.test.ts",
@@ -15626,6 +15666,11 @@
     },
     {
       "from": "module:drizzle/schema.ts",
+      "to": "module:shared/inkTemplateKinds.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:drizzle/schema.ts",
       "to": "module:shared/kindLocality.ts",
       "kind": "imports"
     },
@@ -18956,6 +19001,11 @@
     },
     {
       "from": "module:server/castingV2/candidateRetention.ts",
+      "to": "module:server/db/castingV2InkPlates.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/candidateRetention.ts",
       "to": "module:server/db/castingV2ReferenceLibrary.ts",
       "kind": "imports"
     },
@@ -19621,6 +19671,11 @@
     },
     {
       "from": "module:server/castingV2/inkPlateDoor.ts",
+      "to": "module:server/castingV2/inkUploadDoor.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/inkPlateDoor.ts",
       "to": "module:shared/inkPlacementVocabulary.ts",
       "kind": "imports"
     },
@@ -19630,8 +19685,58 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/castingV2/inkPlateEngines.ts",
+      "to": "module:server/providers/types.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/inkPlateMint.ts",
+      "to": "module:server/castingV2/inkPlateDoor.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/inkPlateMint.ts",
+      "to": "module:server/castingV2/inkPlateEngines.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/inkPlateMint.ts",
+      "to": "module:server/castingV2/inkTemplates.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/inkPlateMint.ts",
+      "to": "module:server/db/castingV2InkDesigns.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/inkPlateMint.ts",
+      "to": "module:server/db/castingV2InkPlates.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/inkPlateMint.ts",
+      "to": "module:server/db/connection.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/inkPlateMint.ts",
+      "to": "module:server/db/storageCleanup.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/inkPlateMint.ts",
+      "to": "module:server/storage.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/castingV2/inkTemplates.ts",
       "to": "module:shared/inkPlacementVocabulary.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/inkTemplates.ts",
+      "to": "module:shared/inkTemplateKinds.ts",
       "kind": "imports"
     },
     {
@@ -22097,6 +22202,26 @@
     {
       "from": "module:server/db/castingV2InkDesigns.ts",
       "to": "module:shared/referenceIntents.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/castingV2InkPlates.ts",
+      "to": "module:drizzle/schema.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/castingV2InkPlates.ts",
+      "to": "module:server/db/connection.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/castingV2InkPlates.ts",
+      "to": "module:server/db/storageCleanup.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/castingV2InkPlates.ts",
+      "to": "module:shared/inkTemplateKinds.ts",
       "kind": "imports"
     },
     {
@@ -28084,6 +28209,13 @@
       "kind": "redeclared-shape",
       "subject": "server/castingV2/eyeShapeRouting.ts:193",
       "message": "Names 2 of TiltReading's 4 fields (server/castingV2/canthalTilt.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
+    },
+    {
+      "id": "finding:redeclared-shape:server/castingV2/inkPlateDoor.ts:82",
+      "severity": "warn",
+      "kind": "redeclared-shape",
+      "subject": "server/castingV2/inkPlateDoor.ts:82",
+      "message": "Names 2 of InkUploadRefusal's 2 fields (server/castingV2/inkUploadDoor.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
       "id": "finding:redeclared-shape:server/castingV2/maskGeometry.ts:314",
