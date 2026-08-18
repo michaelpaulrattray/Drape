@@ -733,9 +733,32 @@ approval lands, the same commit must:
    a written column. Production has never taken the ink migrations, so an
    amend-in-place is legitimate; that it is legitimate must be re-verified
    against the deployed variables at the time, not assumed from this sentence.
-4. **Route the placements.** `TEMPLATE_FOR` is a total function over the
-   placement vocabulary; per-side arm plates make it a function of placement AND
-   side. Note the consequence honestly: **no placement in today's vocabulary
+4. **Route the placements — and this one is now a CORRECTNESS requirement, not
+   a tidiness one.** `TEMPLATE_FOR` is a total function over the placement
+   vocabulary; per-side arm plates make it a function of placement AND side.
+
+   **THE SIDE IS CARRIED BY THE PICTURE, MEASURED 2026-08-19** (the mirror
+   court, `scripts/court-plate-mirror-disposable.mts`, ordered fable-1007 §2
+   after the wording fix failed). The prompt sentence does not decide which arm
+   a package view's tattoo lands on: five renders across three different claims
+   — two of them carrying the positional clause pointing the opposite way — put
+   the ink on the image's LEFT arm every time. The free control was the same
+   claim with the plate bytes MIRRORED, interleaved in one sitting: **3/3
+   mirrored landed on the image's right, 2/2 as-is on the image's left**, a 7/7
+   as-is baseline against 3/3 the other way. The ink follows the plate's own
+   half of the frame. His own template instruction — *"a right facing and left
+   facing arm"* — is therefore the fix, and it is the only fix: **the mint
+   selects the blank by the design's declared side** (a `left` upper-arm design
+   plates onto the left-facing blank), so the side rides as geometry the engine
+   actually reads.
+
+   Until that lands, an upper-arm design can ride a package view on the wrong
+   arm. Nothing paid is exposed — `CASTING_INK_STUDIO_SCOPE` is absent in
+   production (read off the deployed variables, 2026-08-19), so no design row,
+   no plate, and this lane writes nothing there. The founder's panel is
+   `output/view-reference-court/r5-mirror-panel.png`.
+
+   Note the other consequence honestly: **no placement in today's vocabulary
    routes to the body BACK plate** — neck, upper arm and upper chest are all
    front surfaces — so that asset lands with no caller until a back placement is
    earned, which is a declared state rather than an oversight.

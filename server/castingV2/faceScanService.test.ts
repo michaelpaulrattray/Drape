@@ -268,6 +268,23 @@ describe("the panel fills a feature at a time", () => {
     };
   }
 
+  /**
+   * The scan's progress once at least one feature has actually landed, or null
+   * at the deadline — so a caller's own assertion says what went wrong.
+   *
+   * The deadline is generous rather than tuned: it is never reached on a
+   * healthy run, so its only job is to stop a broken one hanging.
+   */
+  async function waitForProgress(deadlineMs = 5_000) {
+    const started = performance.now();
+    for (;;) {
+      const progress = scanProgressOf(FACE);
+      if (progress !== null && progress.scan.slots.size > 0) return progress;
+      if (performance.now() - started > deadlineMs) return progress;
+      await new Promise((resolve) => setTimeout(resolve, 5));
+    }
+  }
+
   it("hands back the features that have landed, and says it is not finished", async () => {
     const held = heldReader();
     const { deps } = await dependencies(held.reader);
@@ -279,7 +296,22 @@ describe("the panel fills a feature at a time", () => {
     expect(scanProgressOf(FACE)).toBeNull();
 
     await held.release();
-    const midway = scanProgressOf(FACE);
+    /*
+      WAIT FOR THE STATE, DO NOT SLEEP TOWARDS IT (2026-08-19).
+
+      `release()` opens the gate and then waits a fixed 5 ms for the reads to
+      resolve and the partial to cut its stencils from them. That is a race
+      dressed as a wait, and this block's own header says the opposite — *"a
+      state the test creates rather than races for"*. Cutting a stencil is real
+      PNG work: 5 ms is plenty on an idle machine and not enough under a full
+      suite, which is where it failed (green 31/31 run alone, red inside
+      `pnpm test`).
+
+      Polling for the condition keeps every ounce of the assertion's failure
+      power — a partial that never lands still fails, on the same message, at
+      the deadline — and removes only the dependence on how busy the machine is.
+    */
+    const midway = await waitForProgress();
     expect(midway, "some features have landed").not.toBeNull();
     expect(midway!.done, "and the reading is still running").toBe(false);
     expect(midway!.scan.slots.size).toBeGreaterThan(0);

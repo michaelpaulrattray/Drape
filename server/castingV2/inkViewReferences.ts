@@ -81,13 +81,38 @@ export function inkPlacementPhrase(input: { placement: InkPlacement; side: InkSi
     AND WHICH HALF OF THE PICTURE THAT IS — unconditionally on this lane
     (ordered fable-1006 §3, bought by the court's own miss).
 
-    The court's plate said HER LEFT upper arm and the render put the tattoo on
-    her right, which is the image's left: the engine paints by position rather
-    than by anatomy, measured at four misses in twelve without the clause and
-    none with it, never once worse. It is unconditional here because the view
-    clause is house prose on a new road with no installed behaviour to protect —
-    `CASTING_SIDE_PHRASING_SCOPE` governs the REPAINT recipe, which is a
-    different lane with a different history.
+    **THE CLAUSE DOES NOT DECIDE THE SIDE ON THIS LANE**, and that is measured
+    rather than suspected. The commit that added it read as a repair; an hour
+    later its own diagnostic overturned that reading. The same plate bytes,
+    described once as her left and once as her right — five renders, three
+    different claims, two of them carrying THIS clause pointing the opposite way
+    — put the tattoo on the image's LEFT arm every time. The four-in-twelve
+    measurement behind the sentence is the EYE lane's
+    (`V4_SIDE_INFERENCE_COURT.md`) and it stands on its own road; it did not
+    transfer here.
+
+    **WHAT DECIDES HERE IS THE PICTURE.** The mirror court asked the question
+    that cannot be answered wrong: the same claim, the same everything, the
+    plate bytes FLIPPED. The ink follows the plate's own half of the frame —
+    3/3 mirrored onto the image's right, 2/2 as-is onto the image's left in the
+    same interleaved sitting, against a 7/7 as-is baseline. It is this
+    program's carrier law arriving on one more lane: a crop holds the region it
+    PICTURES, and a plate holds the side it pictures.
+
+    So a per-side promise here is kept by GEOMETRY rather than by prose — the
+    blank a design is plated onto must face the side the design declares, which
+    is the founder's own right-facing/left-facing template pair. The fix is
+    drawn and queued on the template commit's checklist, §7.10 item 4 of
+    `V3B_INK_AND_MARKS_DESIGN_NOTE.md`. **Until those blanks land, an upper-arm
+    tattoo can ride a package view on the wrong arm.** Nothing paid is exposed:
+    `CASTING_INK_STUDIO_SCOPE` is absent in production, so no design row exists,
+    so no plate exists, so this clause is never written there.
+
+    The clause stays — it is the right sentence, it costs nothing per render,
+    and it is what the other lane measured. It is unconditional here because the
+    view clause is house prose on a new road with no installed behaviour to
+    protect — `CASTING_SIDE_PHRASING_SCOPE` governs the REPAINT recipe, which is
+    a different lane with a different history.
 
     Through the one owner rather than spelled here: a second copy of this phrase
     would drift at exactly the point it exists to hold still.
