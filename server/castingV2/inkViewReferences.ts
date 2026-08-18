@@ -46,6 +46,7 @@
  * guess.
  */
 import { inkPlacementEntry, type InkPlacement } from "../../shared/inkPlacementVocabulary";
+import { imageHalfClause } from "./sidePhrasing";
 import type { InkSide } from "../../shared/inkReleasedPlacements";
 
 /**
@@ -75,7 +76,58 @@ export type CarriedInkPlate = {
  */
 export function inkPlacementPhrase(input: { placement: InkPlacement; side: InkSide }): string {
   const surface = inkPlacementEntry(input.placement).readerWord;
-  return input.side === "centre" ? `her ${surface}` : `her ${input.side} ${surface}`;
+  if (input.side === "centre") return `her ${surface}`;
+  /*
+    AND WHICH HALF OF THE PICTURE THAT IS — unconditionally on this lane
+    (ordered fable-1006 §3, bought by the court's own miss).
+
+    The court's plate said HER LEFT upper arm and the render put the tattoo on
+    her right, which is the image's left: the engine paints by position rather
+    than by anatomy, measured at four misses in twelve without the clause and
+    none with it, never once worse. It is unconditional here because the view
+    clause is house prose on a new road with no installed behaviour to protect —
+    `CASTING_SIDE_PHRASING_SCOPE` governs the REPAINT recipe, which is a
+    different lane with a different history.
+
+    Through the one owner rather than spelled here: a second copy of this phrase
+    would drift at exactly the point it exists to hold still.
+  */
+  return `her ${input.side} ${surface}${imageHalfClause(input.side)}`;
+}
+
+/**
+ * MAY A DESIGN AT THIS SURFACE RIDE A PACKAGE VIEW AT ALL — the interim ordered
+ * fable-1006 §2, and the court is what bought it.
+ *
+ * The upper chest is bare **on a scoop neckline only** — the placement
+ * vocabulary has said so since the day sixteen production masters were measured
+ * — and the package wardrobe is a FIXED crew neck, unchanged across every view.
+ * Those two promises cannot both hold in one frame, and the engine demonstrated
+ * it by breaking each in turn: told to put the artwork on her upper chest it
+ * printed the design on the shirt; told that ink goes on skin and never on
+ * cloth, it rewrote the crew neck into a scoop and drew it on the skin beneath.
+ *
+ * **Both outcomes fail the package's own wardrobe check, and a failed view is a
+ * refunded slice** — so until he rules on the wardrobe itself, an upper-chest
+ * design carries no plate into a package view and says so on the same
+ * disposition surface as every other way a design can fail to ride.
+ *
+ * TOTAL over the vocabulary, like `TEMPLATE_FOR` and the anchor regions and for
+ * the same reason: a default would decide a new surface's visibility by
+ * whichever value was listed first, and nothing would say so.
+ */
+const RIDES_PACKAGE_VIEWS: Readonly<Record<InkPlacement, boolean>> = Object.freeze({
+  /* The crew tee's neckline sits below it; every measured master shows it bare. */
+  neck: true,
+  /* A short sleeve leaves it bare, and the court's passing arm is exactly this
+     case: ink on skin, below the sleeve, the garment untouched. */
+  upperArm: true,
+  /* Covered by the package's own crew neck. See the note above. */
+  upperChest: false,
+});
+
+export function placementRidesPackageViews(placement: InkPlacement): boolean {
+  return RIDES_PACKAGE_VIEWS[placement];
 }
 
 /**

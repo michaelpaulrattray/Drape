@@ -573,7 +573,9 @@ describe("a signed Cast's tattoos ride into every view", () => {
       /* Every view, including the ones that cannot show an upper arm: the
          ruling is that the engine must KNOW about the tattoo, and the clause
          tells it that a view which does not show the surface shows nothing. */
-      expect(request.prompt).toContain("Reference 2 is the tattoo at her left upper arm.");
+      /* The positional clause rides with the surface word now (fable-1006 §3),
+         so the assertion names the prefix rather than a full stop that moved. */
+      expect(request.prompt).toContain("Reference 2 is the tattoo at her left upper arm (on the right");
       expect(request.prompt).toContain("that tattoo simply does not appear in that view");
       /* And the view's own prompt is still all there — the clause is added, never
          substituted. */
@@ -607,7 +609,7 @@ describe("a signed Cast's tattoos ride into every view", () => {
     /* The sentence for reference 3 must be about the picture actually in slot 3.
        A clause and an array that drift apart is a prompt pointing at the wrong
        tattoo, and nothing downstream could tell. */
-    expect(request.prompt).toContain("Reference 2 is the tattoo at her left upper arm.");
+    expect(request.prompt).toContain("Reference 2 is the tattoo at her left upper arm (on the right");
     expect(request.prompt).toContain("Reference 3 is the tattoo at her neck.");
   });
 

@@ -65,7 +65,7 @@ import {
 import { createModuleLogger } from "../logging/logger";
 import { storageCopyExact, storageReadBytes } from "../storage";
 import { listCandidateInkPlates, type CandidateInkPlate } from "../db/castingV2InkPlates";
-import type { CarriedInkPlate } from "./inkViewReferences";
+import { placementRidesPackageViews, type CarriedInkPlate } from "./inkViewReferences";
 
 /**
  * WHETHER A DESIGN'S ARTWORK REACHED THIS CAST'S VIEWS, AND IF NOT WHY — one
@@ -77,13 +77,19 @@ import type { CarriedInkPlate } from "./inkViewReferences";
  * tattoo is the plate court's open question; picking one by array order is the
  * quiet dispatch fallback this product has already paid for.
  * `bytesUnreadable` — the row is there and the object is not.
+ * `surfaceCovered` — the package's own wardrobe covers the surface this design
+ * sits on, so no view can honestly show it. The court measured what happens
+ * without this: told to put an upper-chest design on a crew-necked frame the
+ * engine printed it on the shirt, and told that ink goes on skin it rewrote the
+ * neckline into a scoop — both of which the wardrobe check fails and refunds.
+ * The interim until he rules on the wardrobe itself (fable-1006 §2).
  */
 export type InkDesignDisposition =
   | { designPublicId: string; rode: true }
   | {
     designPublicId: string;
     rode: false;
-    reason: "noPlate" | "engineUndecided" | "bytesUnreadable";
+    reason: "noPlate" | "engineUndecided" | "bytesUnreadable" | "surfaceCovered";
     engines?: readonly string[];
   };
 import { CASTING_V2_SIGN_PRICE_CREDITS } from "./castViewPackage";
@@ -496,6 +502,15 @@ export async function carriedInkPlates(
   const dispositions: InkDesignDisposition[] = [];
   const read = dependencies.readBytes ?? storageReadBytes;
   for (const [designPublicId, rowsOfDesign] of Array.from(byDesign.entries())) {
+    /*
+      THE SURFACE'S OWN DOOR, BEFORE THE PLATE'S — a design the package cannot
+      show honestly does not ride, whether or not it was ever plated, and saying
+      `noPlate` about it would name the wrong fact.
+    */
+    if (!placementRidesPackageViews(rowsOfDesign[0]!.placement)) {
+      dispositions.push({ designPublicId, rode: false, reason: "surfaceCovered" });
+      continue;
+    }
     const minted = rowsOfDesign.filter((row) => row.storageKey !== null);
     if (minted.length === 0) {
       dispositions.push({ designPublicId, rode: false, reason: "noPlate" });

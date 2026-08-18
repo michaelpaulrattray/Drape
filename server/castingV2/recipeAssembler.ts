@@ -85,6 +85,7 @@ import { slotDefinition } from "./referenceSlotCatalogue";
    than splitting a string (fable-1001 §1). `referenceSlots` imports nothing, so
    there is no cycle to weigh here. */
 import { openKindOfSlot } from "./referenceSlots";
+import { imageHalfClause } from "./sidePhrasing";
 
 /** A library key is a PANEL SLOT — the stylist's ontology, never `facet@region`
  *  (fable-173). Bilateral features are stored per instance and spoken as pairs
@@ -429,11 +430,10 @@ function whereItIs(slot: FeatureSlot, placeSides: boolean): string {
   if (!placeSides) return "";
   const definition = slotDefinition(slot);
   if (definition === null || definition.instance === null) return "";
-  /* Her left is the viewer's right. Said as the painter sees it, because the
-     painter is looking at the picture. */
-  return definition.instance === "left"
-    ? " (on the right of the picture as you look at it)"
-    : " (on the left of the picture as you look at it)";
+  /* Through the shared owner rather than spelled here: the view-reference lane
+     says the same sentence now, and two copies of a measured phrase drift at
+     exactly the place the phrase exists to hold still (fable-1006 §3). */
+  return imageHalfClause(definition.instance);
 }
 
 function askSentence(

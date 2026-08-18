@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "b0d377c2604aea60"
+    "sourceFingerprint": "4528b9dd474f51d3"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 134
+      "moduleCount": 135
     },
     {
       "id": "domain:castingV2",
@@ -4001,6 +4001,12 @@
     {
       "id": "module:server/castingV2/sheetPreview.ts",
       "path": "server/castingV2/sheetPreview.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/sidePhrasing.ts",
+      "path": "server/castingV2/sidePhrasing.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -19900,6 +19906,11 @@
     },
     {
       "from": "module:server/castingV2/inkViewReferences.ts",
+      "to": "module:server/castingV2/sidePhrasing.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/inkViewReferences.ts",
       "to": "module:shared/inkPlacementVocabulary.ts",
       "kind": "imports"
     },
@@ -20456,6 +20467,11 @@
     {
       "from": "module:server/castingV2/recipeAssembler.ts",
       "to": "module:server/castingV2/referenceSlots.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/recipeAssembler.ts",
+      "to": "module:server/castingV2/sidePhrasing.ts",
       "kind": "imports"
     },
     {
@@ -21791,6 +21807,11 @@
     {
       "from": "module:server/castingV2/sharpness.ts",
       "to": "module:server/castingV2/maskedComposite.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/sidePhrasing.ts",
+      "to": "module:server/castingV2/referenceSlots.ts",
       "kind": "imports"
     },
     {

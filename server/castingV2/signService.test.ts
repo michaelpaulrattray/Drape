@@ -862,3 +862,53 @@ describe("what a Cast's views carry, design by design", () => {
     ]);
   });
 });
+
+/**
+ * A SURFACE THE PACKAGE'S WARDROBE COVERS DOES NOT RIDE — the interim ordered
+ * fable-1006 §2, on the conformance court's own frames.
+ */
+describe("a covered surface says so on the same disposition surface", () => {
+  const chestRow = {
+    designPublicId: "chest-1",
+    placement: "upperChest" as const,
+    side: "centre" as const,
+    engine: "fal-ai/nano-banana-pro",
+    storageKey: "casting-v2/candidates/chest-plate.png",
+    digest: "d".repeat(64),
+    mime: "image/png",
+  };
+
+  it("refuses an upper-chest design its ride, and names the surface as the reason", async () => {
+    /*
+      Not `noPlate` — it HAS a plate, and a refusal that named the wrong fact
+      would send the next person looking for a mint that already happened.
+    */
+    const { plates, dispositions } = await carriedInkPlates({
+      listInkPlates: async () => [chestRow] as never,
+      readBytes: async () => ({ bytes: Buffer.from("plate"), contentType: "image/png" }),
+    } as never, { userId: 1, candidateId: 9, operationId: "op-1" });
+
+    expect(plates).toEqual([]);
+    expect(dispositions).toEqual([{
+      designPublicId: "chest-1", rode: false, reason: "surfaceCovered",
+    }]);
+  });
+
+  it("still carries the arm design beside it — one refusal never silences a ride", async () => {
+    const { plates, dispositions } = await carriedInkPlates({
+      listInkPlates: async () => [chestRow, {
+        ...chestRow, designPublicId: "arm-1", placement: "upperArm", side: "left",
+        storageKey: "casting-v2/candidates/arm-plate.png",
+      }] as never,
+      readBytes: async (key: string) => ({
+        bytes: Buffer.from(`bytes:${key}`), contentType: "image/png",
+      }),
+    } as never, { userId: 1, candidateId: 9, operationId: "op-1" });
+
+    expect(plates.map((plate) => plate.designPublicId)).toEqual(["arm-1"]);
+    expect(dispositions).toEqual([
+      { designPublicId: "chest-1", rode: false, reason: "surfaceCovered" },
+      { designPublicId: "arm-1", rode: true },
+    ]);
+  });
+});

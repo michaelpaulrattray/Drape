@@ -14,8 +14,10 @@ import { describe, expect, it } from "vitest";
 import {
   inkPlacementPhrase,
   inkViewReferenceClause,
+  placementRidesPackageViews,
   type CarriedInkPlate,
 } from "./inkViewReferences";
+import { INK_PLACEMENTS } from "../../shared/inkPlacementVocabulary";
 
 const plate = (over: Partial<CarriedInkPlate> = {}): CarriedInkPlate => ({
   designPublicId: "design-1",
@@ -33,7 +35,10 @@ describe("where a tattoo is said to live", () => {
       cuts that surface. Deriving it here rather than typing it is what keeps one
       surface to one name — the same fork `inkPlatePrompt` takes.
     */
-    expect(inkPlacementPhrase({ placement: "upperArm", side: "left" })).toBe("her left upper arm");
+    /* The positional clause rides with it — see the per-side arms below. What is
+       on trial here is the SURFACE word, so the assertion names the prefix. */
+    expect(inkPlacementPhrase({ placement: "upperArm", side: "left" }))
+      .toMatch(/^her left upper arm \(/);
     expect(inkPlacementPhrase({ placement: "upperChest", side: "centre" })).toBe("her upper chest");
     expect(inkPlacementPhrase({ placement: "neck", side: "centre" })).toBe("her neck");
   });
@@ -62,7 +67,7 @@ describe("the clause that rides beside the anchor", () => {
        passed rather than assumed, because a sentence quoting the wrong slot is a
        prompt pointing at the wrong picture. */
     const clause = inkViewReferenceClause({ plates: [plate(), plate({ designPublicId: "d2", placement: "neck", side: "centre" })], firstOrdinal: 2 });
-    expect(clause).toContain("Reference 2 is the tattoo at her left upper arm.");
+    expect(clause).toContain("Reference 2 is the tattoo at her left upper arm (on the right");
     expect(clause).toContain("Reference 3 is the tattoo at her neck.");
   });
 
@@ -139,11 +144,100 @@ describe("the clause that rides beside the anchor", () => {
       ],
       firstOrdinal: 2,
     });
-    expect(clause).toContain("Reference 2 is the tattoo at her left upper arm.");
-    expect(clause).toContain("Reference 3 is the tattoo at her right upper arm.");
+    expect(clause).toContain("Reference 2 is the tattoo at her left upper arm (on the right");
+    expect(clause).toContain("Reference 3 is the tattoo at her right upper arm (on the left");
     expect(clause).toContain("Reference 4 is the tattoo at her upper chest.");
     /* One picture, one sentence — a plate with no sentence is a picture the
        engine has to guess the purpose of. */
     expect(clause.match(/is the tattoo at/g)).toHaveLength(3);
+  });
+});
+
+/**
+ * THE SIDE IS SAID BOTH WAYS — anatomy and the half of the picture it lives in
+ * (ordered fable-1006 §3, on the court's own miss).
+ *
+ * The court's arm plate said HER LEFT upper arm and the render put the tattoo on
+ * her RIGHT — the image's left half. That is per-side-paint-favours-image-right
+ * arriving in a new lane, and this product already measured the lever for it:
+ * saying the side both ways took a per-side edit from four misses in twelve to
+ * none, never once worse, at no cost per render.
+ *
+ * The phrase comes from the ONE owner (`sidePhrasing.imageHalfClause`) rather
+ * than being spelled here or there — a second copy of it would drift at exactly
+ * the point it exists to hold still.
+ */
+describe("a per-side tattoo says which half of the picture it is in", () => {
+  it("puts HER LEFT on the picture's RIGHT — and the mirror on the left", () => {
+    /*
+      THE MIRROR IS DRIVEN, both directions, because a per-side claim asserted
+      one way round passes just as well when the mapping is inverted. Her left is
+      the viewer's right; said as the painter sees it, because the painter is
+      looking at the picture.
+    */
+    const left = inkViewReferenceClause({ plates: [plate({ side: "left" })], firstOrdinal: 2 });
+    expect(left).toContain("her left upper arm (on the right of the picture as you look at it)");
+
+    const right = inkViewReferenceClause({ plates: [plate({ side: "right" })], firstOrdinal: 2 });
+    expect(right).toContain("her right upper arm (on the left of the picture as you look at it)");
+  });
+
+  it("says it on the copy instruction too, not only on the naming line", () => {
+    /* Both sentences name the surface, and a positional clause on one of them is
+       a recipe that says two different things about where the ink goes. */
+    const clause = inkViewReferenceClause({ plates: [plate({ side: "left" })], firstOrdinal: 2 });
+    expect(clause.match(/on the right of the picture as you look at it/g)).toHaveLength(2);
+  });
+
+  it("says NOTHING positional for a centred surface", () => {
+    /*
+      A neck or an upper chest has one of itself, and there is no half of the
+      picture it lives in. A clause that volunteered one would be inventing a
+      laterality the customer never named — the thing this whole lane refuses to
+      do about a mask's side label.
+    */
+    const clause = inkViewReferenceClause({
+      plates: [plate({ placement: "neck", side: "centre" })], firstOrdinal: 2,
+    });
+    expect(clause).not.toContain("of the picture as you look at it");
+  });
+});
+
+/**
+ * A SURFACE THE PACKAGE'S OWN WARDROBE COVERS DOES NOT RIDE — the interim
+ * ordered fable-1006 §2, bought by the court.
+ *
+ * The upper chest is bare on a SCOOP neckline only; the package wardrobe is a
+ * fixed crew neck. The two promises cannot both hold in one frame, and the
+ * engine proved it by breaking each in turn: printed on the shirt, and then —
+ * once told ink goes on skin — by rewriting the wardrobe into a scoop.
+ *
+ * Both are conformance failures with a refund behind them, so until he rules on
+ * the wardrobe itself, an upper-chest design carries no plate into a package
+ * view. It says so on the SAME disposition surface as every other way a design
+ * can fail to ride; a second refusal on a second surface is the defect §5 just
+ * repaired.
+ */
+describe("which surfaces can ride a package view at all", () => {
+  it("says the upper chest cannot — the wardrobe covers it", () => {
+    expect(placementRidesPackageViews("upperChest")).toBe(false);
+  });
+
+  it("says the upper arm and the neck can", () => {
+    /* The crew tee leaves both bare in the package's own framings, which is what
+       the court's passing arm actually demonstrated. */
+    expect(placementRidesPackageViews("upperArm")).toBe(true);
+    expect(placementRidesPackageViews("neck")).toBe(true);
+  });
+
+  it("is TOTAL over the vocabulary, so a fourth placement cannot compile silently", () => {
+    /*
+      The same totality `TEMPLATE_FOR` and `bodyAnchorRegions` use, for the same
+      reason: a default would decide a new surface's visibility by whichever
+      value was listed first, and nothing would say so.
+    */
+    for (const placement of INK_PLACEMENTS) {
+      expect(typeof placementRidesPackageViews(placement)).toBe("boolean");
+    }
   });
 });
