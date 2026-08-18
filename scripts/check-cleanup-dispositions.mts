@@ -24,6 +24,11 @@
  *             that may rot quietly is worse than no table.
  *   blockerless  a HELD row with no blocker named. "A deferral to when next
  *             touched has no owner and is not a deferral — it is a drop."
+ *   ownerless a FILED row with no owner named. The same rule aimed at the
+ *             other half: HELD says "waiting on a named thing", FILED says
+ *             "this is somebody's build" — and a build nobody owns is the drop
+ *             wearing the more respectable word. Every FILED row here is a
+ *             question about LIVE code, so it is the half that matters more.
  *   unknown   a verdict outside the closed set, which is how a table grows a
  *             sixth meaning nobody agreed to.
  *
@@ -65,6 +70,7 @@ export type Row = {
   why: string;
   argued: string;
   blocker?: string;
+  owner?: string;
   line: number;
 };
 
@@ -87,7 +93,7 @@ export function parseTable(text: string): Row[] {
       current = { symbol: start[1]!, line: index + 1 };
       continue;
     }
-    const field = line.match(/^\s+(symbol|file|verdict|why|argued|blocker):\s*(.*)$/);
+    const field = line.match(/^\s+(symbol|file|verdict|why|argued|blocker|owner):\s*(.*)$/);
     if (field && current) {
       (current as Record<string, unknown>)[field[1]!] = field[2]!.replace(/^["']|["']$/g, "").trim();
     }
@@ -100,6 +106,7 @@ export type Verdicts = {
   unread: string[];
   stale: string[];
   blockerless: string[];
+  ownerless: string[];
   unknown: string[];
 };
 
@@ -130,6 +137,9 @@ export function auditTable(input: {
     blockerless: input.rows
       .filter((row) => row.verdict === "HELD" && !(row.blocker ?? "").trim())
       .map((row) => row.symbol),
+    ownerless: input.rows
+      .filter((row) => row.verdict === "FILED" && !(row.owner ?? "").trim())
+      .map((row) => row.symbol),
     unknown: input.rows
       .filter((row) => row.verdict.trim() !== "" && !(VERDICTS as readonly string[]).includes(row.verdict))
       .map((row) => `${row.symbol} (${row.verdict})`),
@@ -145,10 +155,12 @@ function controls(log: (line: string) => void): boolean {
     { symbol: "liveKept", file: "live.ts", verdict: "KEEP", why: "w", argued: "§6", line: 1 },
     { symbol: "goneTaken", file: "live.ts", verdict: "TAKEN", why: "w", argued: "§8", line: 2 },
     { symbol: "liveHeld", file: "live.ts", verdict: "HELD", why: "w", argued: "§17", blocker: "a database", line: 3 },
+    { symbol: "liveFiled", file: "live.ts", verdict: "FILED", why: "w", argued: "§13c", owner: "the boards road", line: 4 },
   ];
   const listed = [
     { symbol: "liveKept", file: "live.ts" },
     { symbol: "liveHeld", file: "live.ts" },
+    { symbol: "liveFiled", file: "live.ts" },
   ];
   const cases: Array<{ name: string; rows: Row[]; listed: typeof listed; expect: keyof Verdicts | null }> = [
     { name: "a complete table passes", rows: clean, listed, expect: null },
@@ -175,6 +187,22 @@ function controls(log: (line: string) => void): boolean {
       rows: [...clean, { symbol: "liveBlank", file: "live.ts", verdict: "", why: "", argued: "", line: 7 }],
       listed,
       expect: "unread",
+    },
+    {
+      name: "a FILED row with no owner is OWNERLESS",
+      rows: [...clean, { symbol: "liveDropped", file: "live.ts", verdict: "FILED", why: "w", argued: "§13c", line: 8 }],
+      listed,
+      expect: "ownerless",
+    },
+    {
+      /* THE NEGATIVE ARM, and it is not a formality: `blocker` and `owner` are
+         two optional strings one line apart, and a refusal reading the wrong
+         one passes its positive arm and refuses every honest row. A HELD row
+         carrying a blocker and no owner is CORRECT and must not trip. */
+      name: "a HELD row is not ownerless, and a FILED row is not blockerless",
+      rows: clean,
+      listed,
+      expect: null,
     },
     {
       name: "a verdict outside the closed set is UNKNOWN",
@@ -258,7 +286,8 @@ if (process.argv[1] && import.meta.url.endsWith(process.argv[1].replaceAll("\\",
   }
 
   const strict = process.argv.includes("--strict");
-  const fatal = audit.stale.length + audit.blockerless.length + audit.unknown.length
+  const fatal = audit.stale.length + audit.blockerless.length + audit.ownerless.length
+    + audit.unknown.length
     + (strict ? audit.unread.length : 0);
   console.log("");
   if (fatal > 0) {

@@ -558,6 +558,7 @@
   verdict: FILED
   why: a reporting query whose only readers are UNTRACKED benches; the question is whether the refusal report gets a tracked reader like reliability-report.mts, or the query goes with them
   argued: 13d/15b
+  owner: the reliability-report road — the same owner as reliability-report.mts, which is the tracked reader this query does not have
 
 - symbol: heartbeatLine
   file: server/castingV2/reliabilityReport.ts
@@ -643,6 +644,7 @@
   verdict: FILED
   why: a rule declared, tested and applied by nothing; the honest repair may be that the road retires
   argued: 7a/10a
+  owner: the zone-scope road's owner — the repair may be that the road retires, which is a design answer and not a cleanup pick
 
 - symbol: OPEN_QUESTIONS
   file: server/castingV2/zoneScope.ts
@@ -673,6 +675,7 @@
   verdict: FILED
   why: not debris — the missing half of a live deletion path; wiring it is a build with an owner
   argued: 13c
+  owner: the boards road — wiring it into deleteBoardItems is a boards WRITE path, not a cleanup milestone edit
 
 - symbol: listSegmentHistory
   file: server/db/castingV2Segments.ts
@@ -685,6 +688,7 @@
   verdict: FILED
   why: a belt-and-braces purge sweep with NO consumer anywhere — not even a test. The 13c question, and the answer is not obvious: either the purge path should run it or it is debris the purge outgrew
   argued: 13c/13d
+  owner: the retention/purge owner — a sweep with no reader is collected-never-asserted in storage form, and only that road can say whether the purge should run it
 
 - symbol: dbReferencePlateIngestionPersistence
   file: server/db/evidenceIngestion.ts
@@ -772,3 +776,4 @@
   verdict: FILED
   why: the live path is per-session clearSession from the wardrobe route; nothing clears a whole user's VTO sessions, and whether account deletion should is the wardrobe road's question
   argued: 13c/20
+  owner: the wardrobe road — whether account deletion clears a whole user's VTO sessions is that road's question
