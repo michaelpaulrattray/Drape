@@ -642,26 +642,87 @@ Nor is it the mask's fault. The discriminator is simply not IN the hair mask:
 what separates two panels is background, and what separates two hair components
 on one head is a FACE.
 
-#### THE DISCRIMINATOR IS THE HEAD, NOT THE HAIR
+#### THE HEAD-COMPONENT DISCRIMINATOR WAS PROPOSED, RATIFIED, AND IS WRONG
 
-So the question the crop road asks is **how many heads are in this picture** —
-because a face that splits a hair mask is itself part of one connected head,
-while two panels are two heads with background between them.
+The proposal was *count the components of the HEAD mask* — a face that splits a
+hair mask is part of one connected head, while two panels are two heads with
+background between them. It was ratified (fable-1090 §1) on the strength of the
+argument. **Then it was run, and the frames said no**
+(`probe-panel-discriminator-disposable.mts`, four segmenter calls, house money):
 
 ```
-  head components   hair components   reading
-  ---------------   ---------------   -----------------------------------------
-        1                 1           one head, one region — cut it
-        1                2+           ONE HEAD, hair either side of a face —
-                                      cut the whole hair region, both parts
-       2+                 any         a composite: two heads in one frame
+  his STYLE specimen  (736x1309, genuinely two panels)
+    head   1 component  101051px  box 476x424 at (125, 18)
+    hair   1 component   99859px  box 479x425 at (123, 18)
+
+  his COLOUR specimen (736x981, one woman)
+    head   1 component  158146px  box 476x498 at (146, 14)
+    hair   1 component  183157px  box 560x721 at (74, 14)
 ```
 
-The reader already exists and is the one the product runs on its own frames
-(`falRegionReader`), and it already reports components per region — that is how
-the earring/ear pair was proven at the wire (*"earring: ONE component, 786px;
-ear: TWO components, 2557px and 2553px"*). **One extra region read per
-reference**, on the house, and no new instrument.
+**The composite answered ONE head, and that head is the TOP PANEL ONLY** — 424
+pixels of a 1309-pixel frame, confirmed by cutting the box out and looking at
+it. So the discriminator cannot fire: the composite and the single portrait give
+the same answer.
+
+The reason is already on the record — **a segmenter answers a CLASS with an
+INSTANCE** (`ask-what-cannot-be-answered-wrong`). Asked *where is the head* on a
+frame holding two, it returns one and says nothing about the other.
+
+**And the counterexample was wrong as well.** Her hair was supposed to arrive as
+two components split by her face. It arrives as ONE, because hair on both sides
+of a face joins over the crown. Both halves of the argument were mask arithmetic
+reasoned about rather than looked at — law 1, at my own desk, twice in one
+section.
+
+#### WHAT THE SEGMENTER'S REAL ANSWER MEANS, which is the finding that matters
+
+§9.3 feared a union spanning both panels with a white bar through it. **That
+shape does not occur with this reader.** What occurs is quieter and worse: the
+reader picks ONE PANEL and nobody is told. A carrier cut from a customer's
+two-view reference would be half her reference, chosen by a model, with no
+record that a choice was made — the no-silent-caps class rather than the
+corrupt-carrier class.
+
+#### THE DISCRIMINATOR THAT WORKS IS FREE, AND IT IS NOT A MODEL
+
+A composite is two photographs butted together, so **the seam is a row (or a
+column) where the picture stops being continuous** — measurable in image space
+with no model at all: the mean absolute difference between one line of pixels
+and the next, against the frame's OWN median line-difference.
+
+Measured over the whole corpus, five frames, one composite and four controls:
+
+```
+  frame        median   strongest interior line          read
+  style          3.60   y=661   98.7   27.4x median      SEAM ← dead centre
+  colour         5.80   x=159   15.1    2.0x median      no seam
+  tail           3.42   x=451   18.3    3.8x median      no seam
+  glasses        2.04   y=502   13.6    6.7x median      no seam
+  patchwork      7.61   y=158   21.3    2.8x median      no seam
+```
+
+**27x on the composite, nothing above 6.7x on any single photograph.** The
+threshold sits at **10x**, in the gap, and it is relative to each frame's own
+median on purpose — a grainy scan and a clean studio frame have very different
+absolute line-differences and the same seam.
+
+Cutting at `y=661` yields two panels that are exactly the two photographs, which
+was checked by writing them out and looking at them rather than by trusting the
+number.
+
+**And splitting first is what fixes the silent pick**: the segmenter is asked
+once per PANEL instead of once per frame, so both heads are read deliberately
+and neither is chosen on our behalf.
+
+##### What it does not settle, stated rather than implied
+
+- **One composite.** A collage whose panels are continuous at the join — same
+  background, aligned — would be missed, and a single photograph with a genuinely
+  hard horizontal edge could fire it. Both are cheap to add when a specimen
+  exists; neither is in his corpus.
+- It finds a CUT, not panels, and says nothing about how many heads are in each.
+- It does not decide the carrier.
 
 #### THE CARRY RULE IS UNDECIDED, AND THE PRECEDENT I REACHED FOR WAS CONVICTED
 
