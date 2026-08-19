@@ -106,6 +106,7 @@ beforeEach(async () => {
   dependencies = {
     readDesign: vi.fn(async () => DESIGN),
     readCastIdentity: vi.fn(async () => identityOf("female")),
+    countMissingForm: vi.fn(async () => true),
     existingPlates: vi.fn(async () => []),
     loadTemplate: vi.fn(async (template) => ({
       template,
@@ -154,29 +155,61 @@ describe("the refusals, and that each costs nothing", () => {
     expect(dependencies.fetchDesignBytes).not.toHaveBeenCalled();
     expect(mint).not.toHaveBeenCalled();
     expect(calls).toEqual([]);
+    /* COUNTED, at the seam it escapes from. A refusal nobody counts is a demand
+       signal thrown away, and the count is the whole reason the third form ever
+       gets commissioned. */
+    expect(dependencies.countMissingForm).toHaveBeenCalledWith({
+      kind: "torsoNonbinary", placement: "neck", outcome: "refused",
+    });
   });
 
-  it("refuses the same way when the Cast never stated a build at all", async () => {
-    /* Two causes, one refusal — and the absent one is the dangerous one: a
-       Cast with no stated sex must not fall through to the female blank, which
-       is the room calling every Cast "she" with a picture attached. */
+  it("refuses the same way when the Cast never stated a build at all — but counts it DIFFERENTLY", async () => {
+    /*
+      Two causes, one refusal, two demand rows — and the absent one is the
+      dangerous one twice over. It must not fall through to the female blank
+      (the room calling every Cast "she", with a picture attached), and it must
+      not be counted as *draw a third form* when what it actually means is
+      *this record is missing a field*. Collapsing them would put a data gap
+      into the number that decides whether to commission artwork.
+    */
     dependencies.readDesign = vi.fn(async () => ({ ...DESIGN, placement: "upperChest" as const, side: "centre" as const }));
     dependencies.readCastIdentity = vi.fn(async () => null);
 
     expect(await mintOne()).toMatchObject({ ok: false, refusal: { code: "noFormForBuild" } });
     expect(mint).not.toHaveBeenCalled();
+    expect(dependencies.countMissingForm).toHaveBeenCalledWith({
+      kind: "torsoUnstated", placement: "upperChest", outcome: "refused",
+    });
   });
 
   it("does NOT refuse an ARM design for the same Cast — the limb serves everyone", async () => {
     /* The control on the two above. A refusal that had widened to every
        placement would pass both of them and take the whole feature away from a
-       customer it was never about. */
+       customer it was never about — and would file demand rows for a form that
+       is not missing at all. */
     dependencies.readCastIdentity = vi.fn(async () => identityOf("nonbinary"));
 
     const outcome = await mintOne();
 
     expect(outcome).toMatchObject({ ok: true });
     expect(mint).toHaveBeenCalledTimes(1);
+    expect(dependencies.countMissingForm).not.toHaveBeenCalled();
+  });
+
+  it("still refuses when the demand row cannot be written — telemetry never blocks the answer", async () => {
+    /*
+      The count rides a customer's request, and this table lands in production
+      by a founder ceremony: until that ceremony runs, EVERY call to it fails.
+      So the failing case is the live case for a while, and it is driven rather
+      than assumed. The customer's sentence must be exactly the same one.
+    */
+    dependencies.readDesign = vi.fn(async () => ({ ...DESIGN, placement: "neck" as const, side: "centre" as const }));
+    dependencies.readCastIdentity = vi.fn(async () => identityOf("nonbinary"));
+    dependencies.countMissingForm = vi.fn(async () => { throw new Error("no such table"); });
+
+    expect(await mintOne()).toMatchObject({ ok: false, refusal: { code: "noFormForBuild" } });
+    expect(dependencies.countMissingForm).toHaveBeenCalledTimes(1);
+    expect(mint).not.toHaveBeenCalled();
   });
 
   it("throws rather than refusing when the design is not this account's", async () => {

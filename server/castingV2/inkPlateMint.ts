@@ -64,12 +64,16 @@
 import { createHash, randomUUID } from "node:crypto";
 import sharp from "sharp";
 
+import type { InkFormDemandKind, InkFormDemandOutcome } from "../../shared/inkFormDemand";
+import type { InkPlacement } from "../../shared/inkPlacementVocabulary";
+
 import { withTransaction } from "../db/connection";
 import {
   createStorageCleanupManifestIn,
   storageCleanupManifestHeldUntil,
 } from "../db/storageCleanup";
 import { readInkDesign, readInkDesignCastIdentity, type StoredInkDesign } from "../db/castingV2InkDesigns";
+import { recordInkFormDemand } from "../db/castingV2InkFormDemand";
 import {
   listInkPlatesForDesign,
   recordInkPlate,
@@ -120,6 +124,18 @@ export type InkPlateMintDependencies = {
    * without a database.
    */
   readCastIdentity: (input: { userId: number; designPublicId: string }) => Promise<{ internalPrompt: unknown } | null>;
+  /**
+   * The demand row for a Cast whose build has no form.
+   *
+   * Injected like every other side effect here, so the refusal AND its count
+   * can be driven without a database — and so a test can prove the count
+   * happens rather than trusting a call site to remember it.
+   */
+  countMissingForm: (input: {
+    kind: InkFormDemandKind;
+    placement: InkPlacement;
+    outcome: InkFormDemandOutcome;
+  }) => Promise<unknown>;
   existingPlates: (input: { userId: number; designPublicId: string }) => Promise<readonly RecordedInkPlate[]>;
   loadTemplate: typeof loadInkTemplate;
   fetchDesignBytes: (storageKey: string) => Promise<{ bytes: Buffer; contentType: string } | null>;
@@ -170,6 +186,7 @@ async function defaultFetchDesignBytes(
 const REAL: InkPlateMintDependencies = {
   readDesign: readInkDesign,
   readCastIdentity: readInkDesignCastIdentity,
+  countMissingForm: recordInkFormDemand,
   existingPlates: listInkPlatesForDesign,
   loadTemplate: loadInkTemplate,
   fetchDesignBytes: defaultFetchDesignBytes,
@@ -246,13 +263,34 @@ export async function mintInkPlate(
     userId: request.userId,
     designPublicId: request.designPublicId,
   });
-  const choice = inkTemplateFor({
-    placement: design.placement,
-    side: design.side,
-    build: readResolvedIdentity(identity?.internalPrompt ?? null)?.sex ?? null,
-  });
+  const build = readResolvedIdentity(identity?.internalPrompt ?? null)?.sex ?? null;
+  const choice = inkTemplateFor({ placement: design.placement, side: design.side, build });
   const formRefusal = inkPlateFormRefusal(choice);
-  if (formRefusal || !choice.ok) return { ok: false, refusal: formRefusal! };
+  if (formRefusal || !choice.ok) {
+    /*
+      COUNTED, and counted HERE rather than in `refusalCounter` — the refusal is
+      about a BUILD, and every audit row that counter writes carries a userId,
+      which would attribute one bit of this Cast's `technicalSchema` to an
+      account a staff member can read. The demand table holds no account at all.
+
+      **Swallowed HERE, and not only inside the writer.** The writer catches its
+      own failures — it has to, because the table lands by a founder ceremony
+      and every call before that one fails — but a refusal that could be turned
+      into a throw by whatever is injected as its counter is a refusal whose
+      safety depends on a caller remembering. It is awaited so a test can see
+      the write, and caught so nothing it does can reach the customer.
+
+      The two kinds are not one: `torsoNonbinary` is *draw a third form*,
+      `torsoUnstated` is *this record is missing a field*. Collapsing them would
+      put a data gap into the count that decides whether to commission artwork.
+    */
+    await dependencies.countMissingForm({
+      kind: build === null ? "torsoUnstated" : "torsoNonbinary",
+      placement: design.placement,
+      outcome: "refused",
+    }).catch(() => undefined);
+    return { ok: false, refusal: formRefusal! };
+  }
   const template = choice.template;
 
   const loaded = await dependencies.loadTemplate(template);

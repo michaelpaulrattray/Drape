@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "d421339d04efae3d"
+    "sourceFingerprint": "c73c099eda3214c5"
   },
   "domains": [
     {
@@ -53,7 +53,7 @@
     {
       "id": "domain:data",
       "name": "data",
-      "moduleCount": 54
+      "moduleCount": 55
     },
     {
       "id": "domain:evidence",
@@ -123,7 +123,7 @@
     {
       "id": "domain:shared",
       "name": "shared",
-      "moduleCount": 27
+      "moduleCount": 28
     },
     {
       "id": "domain:studio",
@@ -4185,6 +4185,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:server/db/castingV2InkFormDemand.ts",
+      "path": "server/db/castingV2InkFormDemand.ts",
+      "domain": "data",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:server/db/castingV2InkPlates.ts",
       "path": "server/db/castingV2InkPlates.ts",
       "domain": "data",
@@ -5153,6 +5159,12 @@
     {
       "id": "module:shared/exportViews.ts",
       "path": "shared/exportViews.ts",
+      "domain": "shared",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:shared/inkFormDemand.ts",
+      "path": "shared/inkFormDemand.ts",
       "domain": "shared",
       "lifecycle": "active"
     },
@@ -9706,6 +9718,10 @@
     {
       "id": "test:server/castingV2/inkDesignSchema.test.ts",
       "path": "server/castingV2/inkDesignSchema.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/inkFormDemandSchema.test.ts",
+      "path": "server/castingV2/inkFormDemandSchema.test.ts"
     },
     {
       "id": "test:server/castingV2/inkPlacementVocabulary.test.ts",
@@ -15746,6 +15762,11 @@
     },
     {
       "from": "module:drizzle/schema.ts",
+      "to": "module:shared/inkFormDemand.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:drizzle/schema.ts",
       "to": "module:shared/inkPlacementVocabulary.ts",
       "kind": "imports"
     },
@@ -19846,6 +19867,11 @@
     },
     {
       "from": "module:server/castingV2/inkPlateMint.ts",
+      "to": "module:server/db/castingV2InkFormDemand.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/inkPlateMint.ts",
       "to": "module:server/db/castingV2InkPlates.ts",
       "kind": "imports"
     },
@@ -19862,6 +19888,16 @@
     {
       "from": "module:server/castingV2/inkPlateMint.ts",
       "to": "module:server/storage.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/inkPlateMint.ts",
+      "to": "module:shared/inkFormDemand.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/inkPlateMint.ts",
+      "to": "module:shared/inkPlacementVocabulary.ts",
       "kind": "imports"
     },
     {
@@ -22417,6 +22453,31 @@
     {
       "from": "module:server/db/castingV2InkDesigns.ts",
       "to": "module:shared/referenceIntents.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/castingV2InkFormDemand.ts",
+      "to": "module:drizzle/schema.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/castingV2InkFormDemand.ts",
+      "to": "module:server/db/connection.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/castingV2InkFormDemand.ts",
+      "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/castingV2InkFormDemand.ts",
+      "to": "module:shared/inkFormDemand.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/castingV2InkFormDemand.ts",
+      "to": "module:shared/inkPlacementVocabulary.ts",
       "kind": "imports"
     },
     {

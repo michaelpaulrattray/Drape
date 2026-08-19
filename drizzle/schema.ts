@@ -19,6 +19,7 @@ import { KIND_LOCALITIES } from "../shared/kindLocality";
 import { INK_PLACEMENTS } from "../shared/inkPlacementVocabulary";
 import { INK_SIDES } from "../shared/inkReleasedPlacements";
 import { INK_PROVENANCES } from "../shared/inkProvenance";
+import { INK_FORM_DEMAND_KINDS, INK_FORM_DEMAND_OUTCOMES } from "../shared/inkFormDemand";
 import { INK_TEMPLATE_KINDS } from "../shared/inkTemplateKinds";
 import {
   REFERENCE_INTENTS,
@@ -2909,6 +2910,32 @@ export const castingReferenceReads = mysqlTable("casting_reference_reads", {
   index("idx_casting_reference_reads_intent").on(table.intent, table.outcome),
   index("idx_casting_reference_reads_created").on(table.createdAt),
 ]));
+
+/**
+ * WHO WANTED A BLANK FORM THAT DOES NOT EXIST (migration 0041).
+ *
+ * One row is: somebody attached a tattoo design to a Cast whose build has no
+ * torso blank in the set, and was told the mannequin has not been drawn yet.
+ * **The column list is the privacy boundary** — the refusal is ABOUT a build,
+ * so attributing it would hand one bit of a Cast's `technicalSchema` to every
+ * staff member who can read it. The account, the cast and the design are not
+ * omitted from a projection here; they are absent from the row. See the
+ * migration for why the existing audit-log refusal counter could not carry it.
+ */
+export const castingInkFormDemand = mysqlTable("casting_ink_form_demand", {
+  id: int("id").autoincrement().primaryKey(),
+  /** WHICH form was missing — a build with none, or a build never stated. */
+  kind: mysqlEnum("kind", INK_FORM_DEMAND_KINDS).notNull(),
+  /** What they wanted it FOR. A surface, never a person. */
+  placement: mysqlEnum("placement", INK_PLACEMENTS).notNull(),
+  outcome: mysqlEnum("outcome", INK_FORM_DEMAND_OUTCOMES).notNull(),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+}, (table) => ([
+  index("idx_casting_ink_form_demand_kind").on(table.kind, table.outcome),
+  index("idx_casting_ink_form_demand_created").on(table.createdAt),
+]));
+
+export type CastingInkFormDemandRow = typeof castingInkFormDemand.$inferSelect;
 
 export type CastingReferenceReadRow = typeof castingReferenceReads.$inferSelect;
 export type InsertCastingReferenceReadRow = typeof castingReferenceReads.$inferInsert;
