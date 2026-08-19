@@ -1,6 +1,34 @@
 /**
- * Ceremony — the attached-reference store (`casting_reference_attachments`,
- * migration 0043; design §2, countersigned fable-1063 §1–§2).
+ * Ceremony — **THE WHOLE ATTACH ROAD'S SCHEMA, IN ONE COMMAND**: the
+ * attached-reference store (`casting_reference_attachments`, migration 0043) and
+ * the two reader outcomes the same flip switches on (0044, 0045).
+ *
+ * # ⚠ WHY IT CARRIES THREE, AND WHAT IT WAS BEFORE (ordered fable-1123 §1)
+ *
+ * It carried 0043 alone, and the founder's card carried a DIFFERENT command —
+ * `ceremony-reference-read-hair-outcomes.mts`, which carries 0044 and 0045 — so
+ * his sitting as written would have flipped `CASTING_REFERENCE_ATTACH_SCOPE`
+ * with 0043 never applied. **Production was read by name on 2026-08-20 and
+ * `casting_reference_attachments` was ABSENT** while its neighbours 0040 and
+ * 0041 were present: the table had never joined a production ceremony.
+ *
+ * What that would have cost him is not subtle. The attach door writes a row on
+ * every upload, so the headline feature of that sitting — *attach any picture* —
+ * would have answered a 500 on his first tap; and `candidateRetention`'s sweep
+ * tolerates an absent attachment table only while the flag is OFF, so the flip
+ * turns a tolerated absence into a throwing sweep.
+ *
+ * One command rather than two is the founder-desk rule this program already
+ * runs on (`UNIVERSAL_REFERENCE_ROAD_DESIGN.md` §9.14): the three files belong
+ * to one road that opens on one flip, and asking him for the same chore twice is
+ * using his desk as our memory. **Each file is still judged by ITS OWN
+ * evidence**, so a database holding one and not the others lands only what it is
+ * missing, and the SQL is replayed rather than retyped — a ceremony that
+ * re-types its own DDL is a second copy of the schema.
+ *
+ * `ceremony-reference-read-hair-outcomes.mts` still exists and still carries
+ * 0044/0045 alone. It is not the card's command any more, and running either is
+ * safe: both replay the same files and both say ALREADY APPLIED.
  *
  * Inert on its own: a table nothing writes is a table nothing writes, and the
  * attach door is behind `CASTING_REFERENCE_ATTACH_SCOPE`, which is off
@@ -98,6 +126,69 @@ try {
 
   const [rows] = await world.connection.query<any[]>(`SELECT COUNT(*) AS n FROM \`${TABLE}\``);
   console.log(`rows: ${rows[0].n} (the attach door is off everywhere — anything but 0 is a finding)`);
+
+  /*
+    AND THE TWO READER OUTCOMES THE SAME FLIP SWITCHES ON — see the header.
+
+    Judged by their own values on their own column, so a database holding 0044
+    and not 0045 lands 0045 alone. The reader is proven against a value that
+    certainly exists before any absence is read as grounds to alter (working law
+    2): an enum reader that cannot say `delivered` is a wrong database, not an
+    unapplied migration.
+  */
+  const OUTCOME_TABLE = "casting_reference_reads";
+  const outcomeValues = async (): Promise<string[]> => {
+    const ddl = await columnType(world.connection, OUTCOME_TABLE, "outcome");
+    if (ddl === null) throw new Error(`\`outcome\` is not a column of ${OUTCOME_TABLE} — wrong database, or an unapplied 0036`);
+    return [...ddl.matchAll(/'([^']*)'/g)].map((match) => match[1]!);
+  };
+  const before = await outcomeValues();
+  for (const control of ["delivered", "unreadable"]) {
+    if (!before.includes(control)) {
+      throw new Error(`the enum reader cannot see \`${control}\` — wrong database, or a reader that cannot say yes`);
+    }
+  }
+  console.log(`  outcome     ${before.join(" · ")}`);
+
+  for (const migration of [
+    {
+      file: "drizzle/0044_reference_read_hair_outcomes.sql",
+      values: ["no_hair_visible", "no_colour_readable"],
+      what: "the hair reader's own two endings",
+    },
+    {
+      file: "drizzle/0045_reference_read_drawn_narrowed.sql",
+      values: ["drawn_narrowed"],
+      what: "the class door's narrowing, counted",
+    },
+  ]) {
+    await applyOnce({
+      what: `${migration.what} (${migration.values.join(", ")})`,
+      /* EVERY value of the file, so an alter that landed one of two reads as
+         unapplied rather than as done. */
+      isApplied: async () => {
+        const held = await outcomeValues();
+        return migration.values.every((value) => held.includes(value));
+      },
+      apply: () => replayMigration(world.connection, migration.file),
+    });
+  }
+
+  /* NOTHING WAS LOST. An enum MODIFY rewrites the column definition, and the
+     failure worth checking for is a value that quietly stopped being legal —
+     which would blank every existing row carrying it on the next write. */
+  const now = await outcomeValues();
+  for (const kept of before) {
+    if (!now.includes(kept)) throw new Error(`\`${kept}\` was on \`outcome\` and is not any more — stop`);
+  }
+
+  const [reads] = await world.connection.query<any[]>(
+    `SELECT outcome, COUNT(*) AS n FROM \`${OUTCOME_TABLE}\` GROUP BY outcome`,
+  );
+  console.log(reads.length === 0 ? "reads: none yet" : `reads: ${reads.map((row) => `${row.outcome || "(blank!)"}=${row.n}`).join(", ")}`);
+  for (const row of reads) {
+    if (!row.outcome) throw new Error("a read carries the EMPTY STRING outcome — a writer ran ahead of a migration");
+  }
 } catch (cause) {
   failure = cause;
 }
