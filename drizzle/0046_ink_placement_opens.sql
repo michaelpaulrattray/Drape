@@ -1,0 +1,107 @@
+-- THE PLACEMENT COLUMN STOPS BEING A FENCE — founder ruling, relayed
+-- fable-1078, designed opus-819, ratified fable-1112.
+--
+-- HIS WORDS, through the ruling that carries them:
+--
+--   "no any tattoo request from a reference image must be respected regardless
+--   if u can see it or not, if the sleeve cuts off and you cant see the full
+--   finished product in the image refinement it should carry into the
+--   sign/angles as it will still have the reference + description"
+--
+-- Read as fable-1078 §1: a reference-tattoo ask is NEVER refused on placement.
+-- The customer's own words name where the design goes, whatever words those
+-- are, `sleeve` included.
+--
+-- ============================================================================
+-- WHY A MIGRATION AND NOT A PREFERENCE
+-- ============================================================================
+--
+-- Both columns are `enum('neck','upperArm','upperChest')`, and this database
+-- runs with `STRICT_TRANS_TABLES` (read off the dev server 2026-08-20, not
+-- assumed). Under strict mode an out-of-vocabulary insert **errors**; it does
+-- not truncate to the empty string. So without this ALTER the day the door
+-- accepts his phrasing is the day the row refuses it.
+--
+-- ============================================================================
+-- TWO COLUMNS, AND THE SECOND IS THE ONE WORTH THE PARAGRAPH
+-- ============================================================================
+--
+-- `casting_ink_designs.placement` is the obvious half: it is where an accepted
+-- design records the surface it was filed against.
+--
+-- `casting_ink_form_demand.placement` is the half named by fable-1078's own
+-- last sentence — *"the demand counter keeps counting placements as
+-- information, never as refusal grounds."* That counter's writer CATCHES ITS
+-- OWN FAILURE by design (0041: a missing table costs the TALLY and never a
+-- customer's answer), so a placement its column cannot hold does not raise
+-- anything. It is dropped into a `catch` and the counter goes on reading
+-- healthy while counting nothing — a table that refuses exactly the
+-- information it exists to keep, silently, the day his phrasing arrives.
+--
+-- ============================================================================
+-- WHY varchar(64) AND NOT A WIDER ENUM
+-- ============================================================================
+--
+-- `shared/inkPlacementVocabulary.ts` states the law this migration obeys:
+-- **adding a member is a claim that the photograph contains it**, proven the
+-- way the three were proven — sixteen masters opened at full resolution, then a
+-- reader asked, then the word checked against a covered control. That proof
+-- exists for three surfaces and no others, and *"whatever words those are"* is
+-- not a set anybody can enumerate. An enum cannot hold an open vocabulary.
+--
+-- `varchar(64)` is the house's own answer to that problem, not a taste pick:
+-- `casting_open_lane_demand.kind` and `casting_open_kind_properties.kind` are
+-- both `varchar(64) NOT NULL`, holding exactly this kind of value — a
+-- customer's own word, kept verbatim, never inferred.
+--
+-- ============================================================================
+-- WHAT SEVERS, AND WHAT DOES NOT
+-- ============================================================================
+--
+-- The column stops being the vocabulary's fence. **The vocabulary does not stop
+-- being the vocabulary.** `INK_PLACEMENTS` goes on answering the question it
+-- was measured to answer — *is this surface in the photograph* — which is what
+-- the framing gate and every future quality court still need. The two facts
+-- were one column and are now two things, which is the whole change.
+--
+-- Nothing else opens, and each stays shut for its own reason:
+--
+--   side              enum('left','right','centre'), and TOTAL over bodies — a
+--                     sleeve is left or right, a back piece is centre. It is
+--                     the LATERALITY KEY a 300-credit refund bought twice
+--                     (DECISION_LOG R7-7G), and nothing in fable-1078 touches
+--                     it. Ratified closed at fable-1112 §2.
+--   provenance        a fence column, unrelated to where a design goes.
+--   templateKind      the plate road is parked (`MANNEQUIN_ROAD_DEFERRED`), so
+--                     no open placement can reach a mannequin template. That
+--                     the plate half CANNOT follow is a property of doing this
+--                     now rather than an omission.
+--
+-- ============================================================================
+-- LOSSLESS, AND IT IS READ RATHER THAN ASSERTED
+-- ============================================================================
+--
+-- enum → varchar preserves every stored string, and the three existing words
+-- are three of the strings the new column can hold. That is a claim about
+-- MySQL, so the rehearsal plants rows before the ALTER and reads them back
+-- after it (`scripts/rehearse-ink-placement-opens-disposable.mts`) rather than
+-- taking the manual's word for it. 7 design rows in dev; his own uploads in
+-- production.
+--
+-- ============================================================================
+-- IT LANDS DARK, AND THE DOOR IS WHAT KEEPS IT DARK
+-- ============================================================================
+--
+-- `server/routes/castingV2.ts` still validates `placement: z.enum(INK_PLACEMENTS)`,
+-- and `drizzle/schema.ts` still TYPES both columns `$type<InkPlacement>()`.
+-- After this migration the column can hold `sleeve` and nothing in the product
+-- can send it. The door opening is a separate build with its own design.
+--
+-- **The coupling between those two narrowings is pinned by a suite arm**
+-- (`inkPlacementCoupling.test.ts`, ordered fable-1112 §3): the door's `z.enum`
+-- and the column's `$type` must describe the same vocabulary, so the day one
+-- widens without the other, an instrument goes red instead of a comment being
+-- remembered.
+ALTER TABLE `casting_ink_designs` MODIFY `placement` varchar(64) NOT NULL;
+--> statement-breakpoint
+ALTER TABLE `casting_ink_form_demand` MODIFY `placement` varchar(64) NOT NULL;

@@ -16,7 +16,7 @@ import { sql } from "drizzle-orm";
 
 import { BODY_ANCHOR_REGIONS } from "../shared/bodyAnchorRegions";
 import { KIND_LOCALITIES } from "../shared/kindLocality";
-import { INK_PLACEMENTS } from "../shared/inkPlacementVocabulary";
+import type { InkPlacement } from "../shared/inkPlacementVocabulary";
 import { INK_SIDES } from "../shared/inkReleasedPlacements";
 import { INK_PROVENANCES } from "../shared/inkProvenance";
 import { INK_FORM_DEMAND_KINDS, INK_FORM_DEMAND_OUTCOMES } from "../shared/inkFormDemand";
@@ -2946,8 +2946,21 @@ export const castingInkFormDemand = mysqlTable("casting_ink_form_demand", {
   id: int("id").autoincrement().primaryKey(),
   /** WHICH form was missing — a build with none, or a build never stated. */
   kind: mysqlEnum("kind", INK_FORM_DEMAND_KINDS).notNull(),
-  /** What they wanted it FOR. A surface, never a person. */
-  placement: mysqlEnum("placement", INK_PLACEMENTS).notNull(),
+  /**
+   * What they wanted it FOR. A surface, never a person.
+   *
+   * OPEN since migration 0046 — the column holds the customer's own placement
+   * word, because fable-1078 ruled that this counter *"keeps counting
+   * placements as information, never as refusal grounds"*, and a closed enum
+   * refuses the very asks it exists to record. Its writer catches its own
+   * failure, so the refusal would have been silent.
+   *
+   * The `$type` is held narrow on purpose: today's only writer is a door that
+   * validates `z.enum(INK_PLACEMENTS)`, so the three measured words are a TRUE
+   * description of the contents. `inkPlacementCoupling.test.ts` reddens if the
+   * door and this type stop agreeing.
+   */
+  placement: varchar("placement", { length: 64 }).$type<InkPlacement>().notNull(),
   outcome: mysqlEnum("outcome", INK_FORM_DEMAND_OUTCOMES).notNull(),
   createdAt: timestamp("createdAt").notNull().defaultNow(),
 }, (table) => ([
@@ -3103,8 +3116,28 @@ export const castingInkDesigns = mysqlTable("casting_ink_designs", {
   publicId: varchar("publicId", { length: 36 }).notNull(),
   userId: int("userId").notNull(), // denormalized — single-statement ownership
   candidateId: int("candidateId").notNull(), // →casting_candidates
-  /** One of the three surfaces the casting frame was MEASURED to contain. */
-  placement: mysqlEnum("placement", INK_PLACEMENTS).notNull(),
+  /**
+   * WHERE ON HER the design goes — the customer's own word for it.
+   *
+   * It was `enum('neck','upperArm','upperChest')` and it is `varchar(64)` since
+   * migration 0046, because fable-1078 ruled a reference-tattoo ask is never
+   * refused on placement: *"the customer's own words name where it goes,
+   * whatever words those are"*, `sleeve` included. An enum cannot hold an open
+   * vocabulary, and adding members would claim a measurement (the frames, the
+   * reader, the covered control) that exists for three surfaces and no others.
+   *
+   * **The vocabulary did not shrink; it stopped being this column's fence.**
+   * `INK_PLACEMENTS` goes on answering *is this surface in the photograph*,
+   * which is the framing gate's question and not this one.
+   *
+   * The `$type` is held narrow deliberately (fable-1112 §3): the only writer
+   * today is a door validating `z.enum(INK_PLACEMENTS)`, so the three words
+   * describe the contents truthfully, and widening the type now would churn 28
+   * files for a capability nothing can yet send. **The day the door opens, this
+   * type must widen in the same commit** — `inkPlacementCoupling.test.ts` is
+   * the arm that goes red if it does not.
+   */
+  placement: varchar("placement", { length: 64 }).$type<InkPlacement>().notNull(),
   /** Which of her, spelled out — see the header. */
   side: mysqlEnum("side", INK_SIDES).notNull(),
   /** What was CLAIMED about where the design came from. Never guessed. */

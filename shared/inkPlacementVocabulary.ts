@@ -29,6 +29,32 @@
  * SAM 3 segments visible surfaces, not landmarks — so {@link readerWord} is a
  * measured value, not a label somebody liked.
  *
+ * # ⚠ THIS LIST IS NO LONGER THE DATABASE COLUMN'S FENCE (migration 0046)
+ *
+ * It was, on both ink tables, until 2026-08-20. The founder ruled otherwise
+ * (relayed fable-1078 §1): **a reference-tattoo ask is never refused on
+ * placement** — *"the customer's own words name where it goes, whatever words
+ * those are"*, `sleeve` included. `casting_ink_designs.placement` and
+ * `casting_ink_form_demand.placement` are `varchar(64)` since 0046, and the
+ * second matters most quietly: that counter *"keeps counting placements as
+ * information, never as refusal grounds"*, and its writer catches its own
+ * failure, so a word its column could not hold vanished into a `catch` while
+ * the tally went on looking healthy.
+ *
+ * **What did NOT change is this list, and that is the whole point of the
+ * severing.** Two facts had been living in one column:
+ *
+ *   what a customer may ASK FOR      — opened; his words, kept verbatim
+ *   what the PHOTOGRAPH contains     — this file, unchanged, still three
+ *
+ * The second is a measurement (sixteen masters opened, then a reader, then a
+ * covered control) and it goes on being consulted by the framing gate, by the
+ * upload door's own `z.enum(INK_PLACEMENTS)`, and by every quality court that
+ * asks whether ink can actually land somewhere. **An open column is not an open
+ * road**: the door is still closed to a fourth word, the released-tuple table is
+ * still empty, and the plate road is still parked. 0046 removed a wall the
+ * database was putting in front of a ruling; it granted nothing.
+ *
  * # TWO GATES, TWO JOBS, AND ONLY ONE OF THEM CAN FIRE TODAY
  *
  * This module holds both, and the difference is the whole design:
@@ -89,6 +115,12 @@ import {
  * made: frames opened first, then a reader asked, then the word checked against
  * a covered control. A segmenter read alone is not that proof — it is the thing
  * the reading was written to disqualify.
+ *
+ * **And the closure is now doing exactly one job instead of two.** Since 0046
+ * it no longer decides what the DATABASE will hold — see the severing note in
+ * the header. Growing this list to make a customer's phrasing storable is
+ * therefore never the right repair, and it never was: it would buy storage with
+ * a claim about a photograph that nobody measured.
  */
 export const INK_PLACEMENTS = ["neck", "upperArm", "upperChest"] as const;
 

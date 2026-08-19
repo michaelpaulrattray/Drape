@@ -880,3 +880,9 @@
   why: what a customer is told when her two-view reference had one view carry; joined into the delivered take's owed-lines list
   blocker: the refine road's reference lane, which is where a note reaches her
   argued: 14a
+
+- symbol: effectiveEnumMembers
+  file: server/testing/migrationColumns.ts
+  verdict: KEEP
+  why: the sequence reader's refusing half — two re-aimed ink schema suites are its only importers, and it throws rather than returning [] on a non-enum so a caller cannot get a clean wrong green
+  argued: 6c/13a

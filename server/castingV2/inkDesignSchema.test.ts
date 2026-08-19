@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { INK_PLACEMENTS } from "../../shared/inkPlacementVocabulary";
+import { effectiveColumn, effectiveEnumMembers } from "../testing/migrationColumns";
 import { INK_SIDES } from "../../shared/inkReleasedPlacements";
 import { INK_PROVENANCES } from "../../shared/inkProvenance";
 
@@ -24,15 +25,43 @@ const MIGRATION = readFileSync(
   "utf8",
 );
 
+/**
+ * The members a column accepts AFTER EVERY MIGRATION, not after the one that
+ * created it.
+ *
+ * This read `MIGRATION` — 0034 alone — and that is precisely the reading 0046
+ * falsified for `placement`. `side` and `provenance` are unaltered today, so
+ * pointing them at the sequence changes no answer now; it changes what happens
+ * the day one of them IS altered, which is the only day the difference could
+ * ever matter. A pin fixed after it has already failed once is a pin that will
+ * fail the same way somewhere else.
+ *
+ * `MIGRATION` stays for the arms below it, which are about the PROSE and the
+ * decisions 0034 recorded rather than about the shape of a column.
+ */
 function enumMembers(column: string): string[] {
-  const match = new RegExp(`\`${column}\` enum\\(([^)]*)\\)`).exec(MIGRATION);
-  if (!match) throw new Error(`no enum column \`${column}\` in the migration`);
-  return match[1]!.split(",").map((value) => value.trim().replace(/^'|'$/g, ""));
+  return effectiveEnumMembers("casting_ink_designs", column);
 }
 
 describe("the ink design table's enums match the vocabularies they came from", () => {
-  it("placement is exactly the measured survivors", () => {
-    expect(enumMembers("placement")).toEqual([...INK_PLACEMENTS]);
+  it("placement is OPEN, and the vocabulary is no longer its fence", () => {
+    /*
+      IT WAS `enum('neck','upperArm','upperChest')` AND THIS ARM SAID SO.
+      Migration 0046 opened it to `varchar(64)` on fable-1078's ruling that a
+      reference-tattoo ask is never refused on placement — the customer's own
+      words name where the design goes, `sleeve` included.
+
+      The arm is re-aimed rather than deleted, and it is read from the SEQUENCE
+      rather than from this file: left pointed at 0034 it would have gone on
+      passing while asserting a fence the database no longer has, which is a
+      suite that cannot fail when its subject is removed — the disease this
+      campaign has already paid to learn, planted here by our own hand.
+
+      `INK_PLACEMENTS` did not shrink; it stopped being this column's contents
+      and went on being the answer to *is this surface in the photograph*.
+    */
+    expect(effectiveColumn("casting_ink_designs", "placement")).toBe("varchar(64) NOT NULL");
+    expect(INK_PLACEMENTS).toEqual(["neck", "upperArm", "upperChest"]);
   });
 
   it("side is exactly the three the recipe can say", () => {
@@ -47,7 +76,7 @@ describe("the ink design table's enums match the vocabularies they came from", (
     /* The control: the reader above would answer nothing at all for a column
        name that does not exist, and a test that cannot fail on a misspelling is
        a test of its own regex. */
-    expect(() => enumMembers("placemnt")).toThrow(/no enum column/);
+    expect(() => enumMembers("placemnt")).toThrow(/does not exist after the migrations/);
   });
 });
 

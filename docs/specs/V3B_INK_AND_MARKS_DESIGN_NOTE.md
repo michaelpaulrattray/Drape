@@ -977,6 +977,51 @@ eyeColour UNCHANGED — a specific feature, so it rides as a crop, which is what
 A class arriving later is decided by asking his question — *does this carry fine
 as words?* — instead of by adding a row someone has to guess.
 
+#### ✅ THE STORAGE HALF OF fable-1078 §3(a) IS LANDED — migration 0046
+#### (designed opus-819, ratified fable-1112, 2026-08-20)
+
+fable-1078 §3(a) orders that **the tattoo intent's ingestion accepts any
+placement phrasing**. The first thing in its way was not code, it was two
+columns:
+
+```
+casting_ink_designs.placement       enum('neck','upperArm','upperChest')  →  varchar(64)
+casting_ink_form_demand.placement   enum('neck','upperArm','upperChest')  →  varchar(64)
+```
+
+Under `STRICT_TRANS_TABLES` — which is what this database runs, read off the
+server rather than assumed — an insert of `sleeve` **errors**; it does not
+truncate. So the ruling had a wall behind it in the storage layer, and the
+second column's wall was the silent one: `casting_ink_form_demand` is the
+counter the ruling itself says *"keeps counting placements as information, never
+as refusal grounds"*, and its writer catches its own failure by design — a word
+the column could not hold went into a `catch`, and the tally read healthy while
+counting nothing.
+
+**What landed is the storage half ONLY, and it is dark.**
+`server/routes/castingV2.ts` still validates `placement: z.enum(INK_PLACEMENTS)`
+and `drizzle/schema.ts` still types both columns `$type<InkPlacement>()`, so
+after 0046 the column can hold `sleeve` and nothing in the product can send it.
+**The door opening is a separate build with its own design**, and the two
+narrowings are held together by `inkPlacementCoupling.test.ts` (ordered
+fable-1112 §3), which reddens if either moves without the other — the trap
+announcing itself rather than being remembered.
+
+**The vocabulary did not shrink; it stopped being the column's fence.**
+`INK_PLACEMENTS` goes on answering *is this surface in the photograph* — the
+framing gate's question, the door's question, and every quality court's. An open
+column is not an open road: the released-tuple table is still empty, the
+never-infer rule still holds, and the plate road is still parked under
+`MANNEQUIN_ROAD_DEFERRED`.
+
+Rehearsed on the 0039 branch pattern before his sitting
+(`scripts/rehearse-ink-placement-opens-disposable.mts`): the pre-state asserted
+rather than assumed, the ceremony run twice with `ALREADY APPLIED` as a real
+branch, rows planted before the ALTER and read back by value after it, and
+`sleeve` accepted afterwards so the migration's own point is a reading. Applied
+to DEV (7 design rows preserved, read back by value); production joins his next
+sitting by ceremony.
+
 #### The three builds this opens — SCOPED TO FABLE BEFORE ANY IS BUILT
 
 Ordered fable-1047 §b, and none of them starts on this filing alone:

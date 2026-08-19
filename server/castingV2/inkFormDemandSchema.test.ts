@@ -4,6 +4,7 @@ import path from "node:path";
 
 import { INK_PLACEMENTS } from "../../shared/inkPlacementVocabulary";
 import { INK_FORM_DEMAND_KINDS, INK_FORM_DEMAND_OUTCOMES } from "../../shared/inkFormDemand";
+import { effectiveColumn, effectiveEnumMembers } from "../testing/migrationColumns";
 
 /**
  * THE MISSING-FORM DEMAND TABLE'S DDL, CHECKED AGAINST WHAT IT IS A COPY OF.
@@ -38,10 +39,22 @@ const DDL = MIGRATION
   .filter((line) => !line.trimStart().startsWith("--"))
   .join(" ");
 
+/**
+ * The members a column accepts AFTER EVERY MIGRATION, not after the one that
+ * created it.
+ *
+ * This read `DDL` — 0041 alone — and that is exactly the reading 0046
+ * falsified for `placement`. `kind` and `outcome` are unaltered today, so
+ * pointing them at the sequence changes no answer now; it changes what happens
+ * the day one of them IS altered, which is the only day the difference could
+ * ever matter.
+ *
+ * `DDL` stays for the arms about this table's PRIVACY BOUNDARY — the columns
+ * that deliberately do not exist — which is a fact about 0041's own text and
+ * not about a column's shape.
+ */
 function enumMembers(column: string): string[] {
-  const match = new RegExp(`\`${column}\` enum\\(([^)]*)\\)`).exec(DDL);
-  if (!match) throw new Error(`no enum column \`${column}\` in the migration`);
-  return match[1]!.split(",").map((value) => value.trim().replace(/^'|'$/g, ""));
+  return effectiveEnumMembers("casting_ink_form_demand", column);
 }
 
 describe("the missing-form demand table matches the vocabularies it came from", () => {
@@ -49,8 +62,25 @@ describe("the missing-form demand table matches the vocabularies it came from", 
     expect(enumMembers("kind")).toEqual([...INK_FORM_DEMAND_KINDS]);
   });
 
-  it("placement is the whole ink vocabulary, so a fourth surface cannot land unspellable", () => {
-    expect(enumMembers("placement")).toEqual([...INK_PLACEMENTS]);
+  it("placement is OPEN, because this counter's whole job is to record the ask", () => {
+    /*
+      IT WAS THE WHOLE INK VOCABULARY AND THIS ARM SAID SO. Migration 0046
+      opened it to `varchar(64)`, and the reason is this table's own sentence in
+      fable-1078: it *"keeps counting placements as information, never as
+      refusal grounds."*
+
+      A closed column made that impossible in the quietest way available. The
+      writer here CATCHES ITS OWN FAILURE by design — a missing table costs the
+      tally and never a customer's answer — so a placement the column could not
+      hold was not an error anyone would see. It was dropped into a `catch`, and
+      the counter went on reading healthy while counting nothing, on exactly the
+      asks it exists to hear about.
+
+      Read from the migration SEQUENCE, not from 0041: pointed at the CREATE,
+      this arm would still be green and still be wrong.
+    */
+    expect(effectiveColumn("casting_ink_form_demand", "placement")).toBe("varchar(64) NOT NULL");
+    expect(INK_PLACEMENTS).toEqual(["neck", "upperArm", "upperChest"]);
   });
 
   it("outcome keeps room for the day the third form ships", () => {
@@ -65,7 +95,7 @@ describe("the missing-form demand table matches the vocabularies it came from", 
     /* The control: the reader above answers nothing at all for a column name
        that does not exist, and a test that cannot fail on a misspelling is a
        test of its own regex. */
-    expect(() => enumMembers("placemnet")).toThrow(/no enum column/);
+    expect(() => enumMembers("placemnet")).toThrow(/does not exist after the migrations/);
   });
 });
 
