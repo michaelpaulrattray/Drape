@@ -19,7 +19,7 @@
  * silence five authored refusals on the way.
  */
 import express from "express";
-import type { AddressInfo } from "node:net";
+import { baseUrlOf, listenOnFetchablePort } from "../testing/fetchablePort";
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
@@ -78,11 +78,9 @@ async function callOverTheWire(path: string, input: unknown): Promise<ClientErro
     "/api/trpc",
     createExpressMiddleware({ router: probeRouter, createContext: () => ({}) as never }),
   );
-  const server = app.listen(0, "127.0.0.1");
-  await new Promise<void>((resolve) => server.once("listening", resolve));
+  const server = await listenOnFetchablePort((port) => app.listen(port, "127.0.0.1"));
   try {
-    const { port } = server.address() as AddressInfo;
-    const response = await fetch(`http://127.0.0.1:${port}/api/trpc/${path}`, {
+    const response = await fetch(`${baseUrlOf(server)}/api/trpc/${path}`, {
       method: "POST",
       headers: { "content-type": "application/json" },
       // superjson transformer: the input rides under `json`

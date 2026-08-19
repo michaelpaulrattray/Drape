@@ -773,6 +773,12 @@
   why: server/testing/ is test infrastructure by directory
   argued: 13a
 
+- symbol: baseUrlOf
+  file: server/testing/fetchablePort.ts
+  verdict: KEEP
+  why: server/testing/ is test infrastructure by directory; it is the one place the loopback URL of an ephemeral listener is spelled, across five suites
+  argued: 13a
+
 - symbol: clearAllUserSessions
   file: server/wardrobe/vtoSession.ts
   verdict: FILED

@@ -1,5 +1,5 @@
 import express from "express";
-import type { AddressInfo } from "node:net";
+import { baseUrlOf, listenOnFetchablePort } from "../testing/fetchablePort";
 import sharp from "sharp";
 import { describe, expect, it, vi } from "vitest";
 
@@ -44,11 +44,9 @@ async function get(
 ): Promise<{ status: number; headers: Headers; body: Buffer; json: unknown }> {
   const app = express();
   app.use(routerWith(overrides));
-  const server = app.listen(0, "127.0.0.1");
-  await new Promise<void>((resolve) => server.once("listening", resolve));
+  const server = await listenOnFetchablePort((bound) => app.listen(bound, "127.0.0.1"));
   try {
-    const { port } = server.address() as AddressInfo;
-    const response = await fetch(`http://127.0.0.1:${port}${path}`);
+    const response = await fetch(`${baseUrlOf(server)}${path}`);
     const body = Buffer.from(await response.arrayBuffer());
     let json: unknown = null;
     try { json = JSON.parse(body.toString("utf8")); } catch { /* an image */ }

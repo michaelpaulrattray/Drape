@@ -1,5 +1,5 @@
 import express from "express";
-import type { AddressInfo } from "node:net";
+import { baseUrlOf, listenOnFetchablePort } from "../testing/fetchablePort";
 import { readFile } from "node:fs/promises";
 import { afterEach, describe, it, expect, beforeEach, vi } from 'vitest';
 import {
@@ -136,11 +136,9 @@ describe('Rate Limiting', () => {
       app.get("/ip", (req, res) => {
         res.json({ ip: getClientIp(req) });
       });
-      const server = app.listen(0, "127.0.0.1");
-      await new Promise<void>((resolve) => server.once("listening", resolve));
+      const server = await listenOnFetchablePort((port) => app.listen(port, "127.0.0.1"));
       try {
-        const port = (server.address() as AddressInfo).port;
-        const response = await fetch(`http://127.0.0.1:${port}/ip`, {
+        const response = await fetch(`${baseUrlOf(server)}/ip`, {
           headers: {
             // The leftmost value is client-controlled. With exactly one
             // trusted proxy, Express selects the rightmost forwarded value.

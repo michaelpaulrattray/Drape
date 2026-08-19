@@ -1,5 +1,5 @@
 import express from "express";
-import type { AddressInfo } from "node:net";
+import { baseUrlOf, listenOnFetchablePort } from "../testing/fetchablePort";
 import { describe, expect, it, vi } from "vitest";
 import type { PrivateEvidenceStorageAdapter } from "../casting/evidence/evidenceDelivery";
 import { buildOwnerPrivateEvidenceEtag } from "../casting/evidence/evidenceDeliveryHttp";
@@ -65,11 +65,9 @@ async function withRoute(
 ) {
   const app = express();
   app.use(createEvidenceDeliveryRouter(deps));
-  const server = app.listen(0, "127.0.0.1");
-  await new Promise<void>((resolve) => server.once("listening", resolve));
+  const server = await listenOnFetchablePort((port) => app.listen(port, "127.0.0.1"));
   try {
-    const port = (server.address() as AddressInfo).port;
-    await run(`http://127.0.0.1:${port}`);
+    await run(baseUrlOf(server));
   } finally {
     await new Promise<void>((resolve, reject) => server.close((error) => {
       if (error) reject(error);
