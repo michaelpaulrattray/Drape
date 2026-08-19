@@ -41,7 +41,7 @@ import { randomUUID } from "node:crypto";
 
 import { inkPlacementEntry, type InkPlacement } from "../../shared/inkPlacementVocabulary";
 import type { InkSide } from "../../shared/inkReleasedPlacements";
-import { inkTemplateFor } from "./inkTemplates";
+import type { InkTemplate, InkTemplateChoice } from "./inkTemplates";
 import { INK_KEY_PREFIX } from "./inkUploadDoor";
 
 /**
@@ -73,6 +73,7 @@ export const INK_PLATE_REFUSAL_CODES = [
   "noTransport",
   "designMissing",
   "designMoved",
+  "noFormForBuild",
   "templateMissing",
   "templateMoved",
   "alreadyPlated",
@@ -164,6 +165,30 @@ export function inkPlateTemplateRefusal(input: {
 }
 
 /**
+ * THERE IS NO BLANK FORM FOR THIS CAST — and the sentence is about the FORM.
+ *
+ * Ruled fable-1025: a cast whose build has no torso blank in the set refuses
+ * rather than being routed to one by its label. Rider one is this copy, and it
+ * is one of the few strings in this lane a customer actually reads.
+ *
+ * **It names the missing MATERIAL, never the person.** Not their identity, not
+ * their label, not their body — a customer told a mannequin has not been drawn
+ * yet reads a workshop that is still stocking up; a customer told something
+ * about themselves reads a different product entirely. The second clause is
+ * true and useful rather than consoling: the arm is one bare limb and it serves
+ * every cast, so an arm design really does still work.
+ *
+ * It is not an error and it costs nothing. The design is attached, the note
+ * rides beside it, and no engine has been called.
+ */
+export function inkPlateFormRefusal(choice: InkTemplateChoice): InkPlateRefusal | null {
+  return choice.ok ? null : {
+    code: "noFormForBuild",
+    message: "We haven't drawn the tattoo mannequin for this figure yet — an arm design will still work.",
+  };
+}
+
+/**
  * A DESIGN IS PLATED ONCE, and a second ask is not an error.
  *
  * The whole cost argument of minting at intent-declaration (fable-936 §2) is
@@ -202,6 +227,17 @@ export function inkPlateAlreadyMintedRefusal(hasPlate: boolean): InkPlateRefusal
 export function inkPlatePrompt(input: {
   placement: InkPlacement;
   side: InkSide;
+  /**
+   * The blank the words are about — HANDED IN, not looked up.
+   *
+   * It used to be derived here from the placement alone. It cannot be any more:
+   * which blank a design plates onto is now a function of the placement, the
+   * SIDE and the cast's BUILD, and a prompt that re-derived it from one third of
+   * that would describe a different picture from the one being posted (working
+   * law 5 — the contract is proved on the outgoing request). The mint resolves
+   * the template once and passes the same object to both.
+   */
+  template: InkTemplate;
 }): string {
   /*
     THE SURFACE'S OWN WORD, taken from the vocabulary rather than passed in.
@@ -219,57 +255,80 @@ export function inkPlatePrompt(input: {
     ? `the ${surface}`
     : `the ${input.side} ${surface}`;
   /*
-    HOW MANY VIEWS THE SHEET HOLDS, and what they are — read from the template
-    rather than assumed to be one (the wrap court's finding, 2026-08-18).
+    HOW MANY VIEWS THE BLANK HOLDS, and what they are — read from the template
+    rather than assumed (the wrap court's finding, 2026-08-18), and the whole
+    set holds ONE each since the single-view spec (founder, fable-989/990).
 
-    Every committed template is a turnaround: the arm sheet is side / middle /
-    back, the body sheet is front / back. The first version of this prompt said
-    "a plain, featureless mannequin form" and then "leave every other part of
-    the form completely bare", and the engine did precisely that — one serpent
-    on the side view, two bare arms beside it. The sheet had three views and the
-    words had one.
+    The multi-view sentences FALL OUT of that reading rather than being silenced
+    by hand: at one view there is no "in every one of those views", no
+    meet-correctly clause and no "same number of views in the same order",
+    because each of those is built from `views` and each is empty at length one.
+    A two-view form arriving tomorrow puts them back by moving the list, which
+    is the property the court paid for.
   */
-  const template = inkTemplateFor(input.placement);
-  const views = template.views;
+  const views = input.template.views;
+  const single = views.length <= 1;
   const count = NUMBER_WORDS[views.length] ?? `${views.length} times`;
   const named = views.length > 1
     ? `${views.slice(0, -1).join(", ")} and ${views[views.length - 1]}`
     : views[0] ?? "";
+  const sheet = single
+    ? [
+      "PICTURE 1 is a blank template: a plain, featureless mannequin form in",
+      `neutral grey on a plain near-white background, seen from the ${named}. It`,
+      "has no tattoo on it.",
+    ]
+    : [
+      "PICTURE 1 is a blank template: THE SAME plain, featureless mannequin form",
+      `in neutral grey shown ${count} on one near-white sheet — ${named}, left to`,
+      "right. They are one body seen from several angles, not several different",
+      "bodies. It has no tattoo on it.",
+    ];
+  const everyView = single ? "." : ", IN EVERY ONE OF THOSE VIEWS.";
+  const oneTattoo = single
+    ? [
+      "- It is ONE tattoo, drawn once. Never draw a second copy of the design",
+      "  anywhere on the form.",
+    ]
+    : [
+      "- It is ONE tattoo, drawn once on one body, and each view shows that same",
+      "  tattoo from that view's angle. Where the design continues around the",
+      `  surface it must MEET correctly between the ${named} views: what leaves one`,
+      "  side of the form arrives on the next. Never draw a second copy of the",
+      "  design, and never leave a view bare because the design is elsewhere.",
+    ];
   return [
     "You are given two pictures.",
     "",
-    "PICTURE 1 is a blank template: THE SAME plain, featureless mannequin form",
-    `shown ${count} on one near-white sheet — ${named}, left to right. They are`,
-    "one body seen from several angles, not several different bodies. It has no",
-    "tattoo on it.",
+    ...sheet,
     "",
     "PICTURE 2 is a photograph containing a tattoo design.",
     "",
-    `Draw the tattoo design from PICTURE 2 onto PICTURE 1, at ${where}, IN EVERY`,
-    "ONE OF THOSE VIEWS.",
+    `Draw the tattoo design from PICTURE 2 onto PICTURE 1, at ${where}${everyView}`,
     "",
     "RULES:",
     "- Reproduce the DESIGN faithfully: its shapes, its line weight, its shading",
     "  and any lettering exactly as they appear. Do not restyle it, do not",
     "  simplify it, and do not add to it.",
-    "- It is ONE tattoo, drawn once on one body, and each view shows that same",
-    "  tattoo from that view's angle. Where the design continues around the",
-    `  surface it must MEET correctly between the ${named} views: what leaves one`,
-    "  side of the form arrives on the next. Never draw a second copy of the",
-    "  design, and never leave a view bare because the design is elsewhere.",
+    ...oneTattoo,
     "- Follow the form underneath, so the design sits on the surface as ink on",
     "  skin rather than as a flat sticker.",
     `- Put it at ${where} and nowhere else. Leave every other part of the form`,
-    "  completely bare, in every view.",
+    single ? "  completely bare." : "  completely bare, in every view.",
     "- The PERSON in PICTURE 2 is not the subject and must not appear: no face,",
     "  no hair, no eyes, no skin tone, no jewellery, no clothing, no background",
     "  from that photograph.",
     "- Change nothing else about PICTURE 1: same pose, same tone, same lighting,",
-    "  same near-white background, same soft fades where the form ends, and the",
-    "  same number of views in the same order.",
+    single
+      ? "  same near-white background, and the same soft fades where the form ends."
+      : "  same near-white background, same soft fades where the form ends, and the",
+    ...(single ? [] : ["  same number of views in the same order."]),
     "- No text of your own, no labels, no watermark, no border.",
-  ].join("\n");
+  ].join(BLANK_LINE_JOIN);
 }
+
+/** The prompt is assembled as lines and posted as one string. */
+const BLANK_LINE_JOIN = "\n";
 
 /** Small words for small counts — a sheet has two or three views, never forty. */
 const NUMBER_WORDS: Readonly<Record<number, string>> = Object.freeze({

@@ -69,7 +69,7 @@ import {
   createStorageCleanupManifestIn,
   storageCleanupManifestHeldUntil,
 } from "../db/storageCleanup";
-import { readInkDesign, type StoredInkDesign } from "../db/castingV2InkDesigns";
+import { readInkDesign, readInkDesignCastIdentity, type StoredInkDesign } from "../db/castingV2InkDesigns";
 import {
   listInkPlatesForDesign,
   recordInkPlate,
@@ -80,6 +80,7 @@ import { storagePut, storageReadBytes } from "../storage";
 import {
   inkPlateAlreadyMintedRefusal,
   inkPlateDesignRefusal,
+  inkPlateFormRefusal,
   inkPlateKey,
   inkPlatePrompt,
   inkPlateTemplateRefusal,
@@ -87,6 +88,7 @@ import {
   type InkPlateRefusal,
 } from "./inkPlateDoor";
 import { inkTemplateFor, loadInkTemplate } from "./inkTemplates";
+import { readResolvedIdentity } from "./rollService";
 import type { InkPlateEngine } from "./inkPlateEngines";
 
 export type InkPlateMintOutcome =
@@ -110,6 +112,14 @@ export type InkPlateMintRequest = {
 
 export type InkPlateMintDependencies = {
   readDesign: (input: { userId: number; designPublicId: string }) => Promise<StoredInkDesign | null>;
+  /**
+   * The Cast's compiled instruction, for the one field the blank depends on.
+   *
+   * A dependency rather than a call, like every other read here, so the whole
+   * ordering — including the refusal that has no torso form — can be driven
+   * without a database.
+   */
+  readCastIdentity: (input: { userId: number; designPublicId: string }) => Promise<{ internalPrompt: unknown } | null>;
   existingPlates: (input: { userId: number; designPublicId: string }) => Promise<readonly RecordedInkPlate[]>;
   loadTemplate: typeof loadInkTemplate;
   fetchDesignBytes: (storageKey: string) => Promise<{ bytes: Buffer; contentType: string } | null>;
@@ -159,6 +169,7 @@ async function defaultFetchDesignBytes(
 
 const REAL: InkPlateMintDependencies = {
   readDesign: readInkDesign,
+  readCastIdentity: readInkDesignCastIdentity,
   existingPlates: listInkPlatesForDesign,
   loadTemplate: loadInkTemplate,
   fetchDesignBytes: defaultFetchDesignBytes,
@@ -217,11 +228,33 @@ export async function mintInkPlate(
   if (already) return { ok: true, plate: already, reused: true };
 
   /*
-    THE BLANK FORM, derived from the design's own placement — a total function
-    over the vocabulary, so a fourth placement cannot reach an engine before
-    somebody has decided which form it stands on.
+    THE BLANK FORM — the placement picks the family, the SIDE or the cast's own
+    BUILD picks the member. Total over the placement vocabulary, so a fourth
+    placement cannot reach an engine before somebody has decided which form it
+    stands on, and total over the two that pick the member, so an unanswerable
+    combination refuses instead of falling to whichever blank was listed first.
+
+    The side matters here and not merely in the words: the ink follows the
+    PLATE'S own geometry rather than the prompt's sentence (the mirror court,
+    2026-08-19), so a left-arm design plating onto the right-facing blank is a
+    tattoo on the wrong arm no clause can talk out of it.
+
+    Ahead of every read below, because a refusal that costs nothing is strictly
+    better for her than one discovered after the bytes have been fetched.
   */
-  const template = inkTemplateFor(design.placement);
+  const identity = await dependencies.readCastIdentity({
+    userId: request.userId,
+    designPublicId: request.designPublicId,
+  });
+  const choice = inkTemplateFor({
+    placement: design.placement,
+    side: design.side,
+    build: readResolvedIdentity(identity?.internalPrompt ?? null)?.sex ?? null,
+  });
+  const formRefusal = inkPlateFormRefusal(choice);
+  if (formRefusal || !choice.ok) return { ok: false, refusal: formRefusal! };
+  const template = choice.template;
+
   const loaded = await dependencies.loadTemplate(template);
   const templateRefusal = inkPlateTemplateRefusal({
     present: loaded !== null,
@@ -248,7 +281,7 @@ export async function mintInkPlate(
     about: the contract is proved on the outgoing request, not on a constant
     near it.
   */
-  const prompt = inkPlatePrompt({ placement: design.placement, side: design.side });
+  const prompt = inkPlatePrompt({ placement: design.placement, side: design.side, template });
 
   /* Everything that could refuse has refused. This is where money is spent. */
   const drawn = await engine.mint({

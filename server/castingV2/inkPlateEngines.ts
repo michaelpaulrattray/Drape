@@ -20,19 +20,27 @@
  * The committed templates are:
  *
  * ```
- * assets/ink/arm-template.png    1536 x 1024   both multiples of 16   LEGAL
- * assets/ink/body-template.png   1254 x 1254   1254 % 16 = 6          REFUSED
+ * assets/ink/arm-{left,right}-template.png      857 x 1200   857 % 16 = 9    REFUSED
+ * assets/ink/body-{female,male}-{front,back}-…  1254 x 1254  1254 % 16 = 6   REFUSED
  * ```
  *
  * `createFalMaskedEditEngine` fails BEFORE dispatch on a canvas that is not a
  * multiple of 16, so a mint that simply asked for the template's own size would
- * refuse every neck and upper-chest plate — two placements of three — and the
- * court would have learned it at its first paid call.
+ * refuse EVERY plate in the product — and the court would have learned it at
+ * its first paid call.
+ *
+ * **Not one of the six is legal now**, which is a change from the retired set:
+ * the old arm sheet was 1536 x 1024 and legal on both edges, so this function
+ * used to be exercised by one family and bypassed by the other. The single-view
+ * spec ended that, and the "leaves an already legal canvas alone" control moved
+ * to a constructed size rather than staying tied to whichever asset happened to
+ * be legal that week.
  *
  * It does not touch the founder's artwork: the constraint is on the output size
  * ASKED FOR, not on the picture posted. `legalPlateCanvas` asks for the legal
- * canvas nearest the template's own, so the body plate comes back the same
- * square his ruling landed on, six pixels smaller.
+ * canvas nearest the template's own, so the torso plate comes back the same
+ * square his ruling landed on six pixels smaller, and the arm seven pixels
+ * wider.
  *
  * # WHY NBP IS ASKED FOR 2K AND NOT 1K
  *

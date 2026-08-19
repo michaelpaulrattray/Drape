@@ -21,36 +21,47 @@ const TEMPLATE = { bytes: Buffer.from("form"), contentType: "image/png" };
 const DESIGN = { bytes: Buffer.from("tattoo"), contentType: "image/jpeg" };
 
 describe("the canvas a plate is asked for", () => {
-  it("turns the body form's real size into one the edit endpoint will accept", () => {
+  it("turns EVERY blank in the set into a size the edit endpoint will accept", () => {
     /*
       THE CATCH THIS FUNCTION EXISTS FOR, and it was read off the committed
       bytes rather than learned from a paid refusal.
 
-      `assets/ink/body-template.png` is 1254 square; 1254 % 16 = 6; and
-      `createFalMaskedEditEngine` fails BEFORE dispatch on a canvas that is not a
-      multiple of 16. Asking for the template's own size would have refused every
-      neck and upper-chest plate — two placements of three.
+      `createFalMaskedEditEngine` fails BEFORE dispatch on a canvas that is not
+      a multiple of 16, and NOT ONE of the six blanks is one: the torso quartet
+      is 1254 square (1254 % 16 = 6) and the arm pair is 857 x 1200 (857 % 16 =
+      9, the height already legal). Asking for a template's own size would refuse
+      every plate in the product.
+
+      The sweep over the whole set is the test below ("gives every committed
+      template a legal canvas"), which was already derived rather than named —
+      this one asserts the two exact answers, so a change to either is visible
+      in a diff rather than absorbed by a property.
     */
-    expect(INK_TEMPLATES.body.width % 16).not.toBe(0);
     expect(legalPlateCanvas({
-      width: INK_TEMPLATES.body.width,
-      height: INK_TEMPLATES.body.height,
+      width: INK_TEMPLATES.bodyFemaleFront.width,
+      height: INK_TEMPLATES.bodyFemaleFront.height,
     })).toEqual({ width: 1248, height: 1248 });
+    expect(legalPlateCanvas({
+      width: INK_TEMPLATES.armLeft.width,
+      height: INK_TEMPLATES.armLeft.height,
+    })).toEqual({ width: 864, height: 1200 });
   });
 
-  it("leaves the arm form alone, because it is already legal", () => {
-    /* The negative arm: a function that rounded everything would pass the test
-       above while quietly resizing a form that never needed it. */
-    expect(legalPlateCanvas({
-      width: INK_TEMPLATES.arm.width,
-      height: INK_TEMPLATES.arm.height,
-    })).toEqual({ width: INK_TEMPLATES.arm.width, height: INK_TEMPLATES.arm.height });
-    /* Derived, not retyped: the sheet's shape is a founder ruling that has
-       already moved once (four views to three, fable-964), and a literal here
-       would have to be chased every time it moves again. What is asserted is
-       the PROPERTY — a legal canvas is left alone. */
-    expect(INK_TEMPLATES.arm.width % 16).toBe(0);
-    expect(INK_TEMPLATES.arm.height % 16).toBe(0);
+  it("leaves an ALREADY legal canvas alone", () => {
+    /*
+      The negative arm: a function that rounded everything would pass the test
+      above while quietly resizing a form that never needed it.
+
+      It used to be driven at the arm sheet, which was 1536 x 1024 and legal on
+      both edges. No blank in the set is legal any more, so the control is a
+      constructed size — which is the honest shape for it: the property is about
+      the FUNCTION, and tying it to whichever asset happens to be legal today is
+      how a control quietly stops testing anything.
+    */
+    expect(legalPlateCanvas({ width: 1024, height: 1536 }))
+      .toEqual({ width: 1024, height: 1536 });
+    expect(INK_TEMPLATES.armLeft.height % 16).toBe(0);
+    expect(INK_TEMPLATES.armLeft.width % 16).not.toBe(0);
   });
 
   it("never returns a zero-pixel canvas", () => {

@@ -316,6 +316,43 @@ export async function readInkDesign(input: {
   return { ...row, intents: parseIntents(row.intents), createdAt: new Date(row.createdAt) };
 }
 
+/**
+ * THE CAST'S OWN BUILD, for the design's sake — one owner-scoped statement.
+ *
+ * A design plates onto a blank form, and which torso form depends on the build
+ * of the Cast the design is attached to (`inkTemplates.inkTemplateFor`). That
+ * fact lives on the candidate's `internalPrompt`, which is INTERNAL and never
+ * projected, so it is read here and parsed by its one owner
+ * (`rollService.readResolvedIdentity`) rather than re-parsed at the call site.
+ *
+ * A separate statement rather than a field on {@link readInkDesign}: the
+ * compiled instruction is the single most sensitive thing on a candidate row,
+ * and putting it on a type that four modules already pass around is how an
+ * internal field reaches a projection by accident (invariant 8). This returns
+ * the blob to ONE caller that needs one value out of it.
+ *
+ * Owner-scoped on BOTH sides, for `readInkDesign`'s reason: the design's
+ * `userId` is denormalized, and a denormalized column is a claim until the
+ * parent agrees with it.
+ */
+export async function readInkDesignCastIdentity(input: {
+  userId: number;
+  designPublicId: string;
+}): Promise<{ internalPrompt: unknown } | null> {
+  const db = await requireDb();
+  const [row] = await db
+    .select({ internalPrompt: castingCandidates.internalPrompt })
+    .from(castingInkDesigns)
+    .innerJoin(castingCandidates, eq(castingCandidates.id, castingInkDesigns.candidateId))
+    .where(and(
+      eq(castingInkDesigns.publicId, input.designPublicId),
+      eq(castingInkDesigns.userId, input.userId),
+      eq(castingCandidates.userId, input.userId),
+    ))
+    .limit(1);
+  return row ? { internalPrompt: row.internalPrompt } : null;
+}
+
 /* ------------------------------------------------------------ retention */
 
 /**

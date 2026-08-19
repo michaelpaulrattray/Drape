@@ -380,8 +380,11 @@ once at each door, then the door is open.
 - The template asset set therefore shrinks **twice**: to one engine plate per
   form (torso / arm) by fable-935, and to one neutral PREVIEW form by fable-943.
   There is no per-tone artifact anywhere in the product.
-- **Male form: absent** — female torso + arm only, drawn when needed or at his
-  word (fable-934 §1a).
+- **Male form: SUPERSEDED — he ordered one on 2026-08-19** (fable-1017 §1, his
+  words: *"also do you a male torso the one in th example is female"*). It was
+  absent by fable-934 §1a until then, and the set now holds a male front and
+  back beside the female pair. The product casts men; the premise that it did
+  not was the thing that expired, not a decision that was reversed.
 - **The template is a pre-stored, code-owned asset**; runtime only plates the
   design onto it. What rebuilds at runtime is the SHEET (template + designs),
   never the template (fable-934 §1b).
@@ -705,104 +708,138 @@ colors everything then flip it to make it the other arm."* **And the extension**
 - The arm is one full limb, shoulder to wrist, **right-facing and left-facing**,
   the second taken as a MIRROR of the first rather than generated again.
 - Code-owned and checksum-pinned like their predecessors, after his eye.
+**The set as it SHIPPED (2026-08-19, six blanks, all pinned):** the arm blank
+was made by cleaning his own reference — every tattoo and the monogram removed,
+everything else held — and mirrored locally with `sharp.flop()`, so the two arms
+are the same limb by construction; the torso quartet is a composite of his
+approved armless plates on one flat field. All six carry his eye: the arm pair
+and the male torsos in the folder (*"looks good"*; *"i seen the male templates
+in the folder already they look good"*), the rest under his blanket
+pre-approval of the finished set (*"i approve it if the male is good i bet the
+female will be good sop just go once done"*, fable-1030 §1).
 
-**The build as it stands (2026-08-19):** the arm blank was made by cleaning his
-own reference — every tattoo and the monogram removed, everything else held —
-and mirrored locally; the body front and back are generations to the same style
-with the approved body sheet as the authority for the FORM, because his torso
-reference is a MALE mannequin on black and the product has no male form
-(fable-934 §1a). All four are with him. **Nothing is pinned before his eye.**
+#### THE TEMPLATE COMMIT — DISCHARGED, and what it decided
 
-#### THE TEMPLATE COMMIT'S OWN CHECKLIST — what must move WITH the assets
+Landed 2026-08-19. Each checklist item below carries what was actually done, so
+the next reader is not left inferring it from a diff. The pins, the routing and
+the retirement are in `server/castingV2/inkTemplates.ts`; the sentences are in
+`inkPlateDoor.ts`.
 
-Pinned here rather than remembered, because a stale sentence about a live asset
-is the wire-honest defect in prompt form (ordered fable-1005 §4). When his
-approval lands, the same commit must:
+1. **The sheet sentence is re-written and DERIVED.** It said *"THE SAME … form
+   shown three times on one near-white sheet"*; it now says *"a plain,
+   featureless mannequin form in neutral grey on a plain near-white background,
+   seen from the front"*. The field is genuinely near-white (254) and it is the
+   FORM that went greyscale, so both words in the sentence are measurements
+   rather than approximations.
+2. **The views-as-data derivation reads ONE, and the multi-view sentences fall
+   out of it** rather than being silenced by hand: at one view there is no *"IN
+   EVERY ONE OF THOSE VIEWS"*, no meet-correctly clause and no *"same number of
+   views in the same order"*, because each is built from `template.views`. The
+   absence tests are paired with a two-view control form in the suite — an
+   absence test over an all-single-view set is satisfied by a prompt that has
+   forgotten how to say those things at all.
+3. **The kind vocabulary stays `arm` | `body` — the FAMILY — and the DIGEST
+   names the member** (ruled fable-1032 §1). Six blanks do not become six enum
+   values: `casting_ink_plates.templateKind` is a written column, the digest
+   already identifies which of the six a plate stands on exactly, and nothing
+   branches on the kind — the mint writes it, the db layer passes it through,
+   and that is the whole population. Three riders landed with the ruling: the
+   declaration in `shared/inkTemplateKinds.ts`, the `inkTemplateByDigest`
+   lookup so the join is a call rather than archaeology, and the pre-priced
+   condition that earns the migration — **the day any code wants to branch on
+   the finer kind**.
 
-1. **Re-write `inkPlatePrompt`'s sheet sentence.** It says *"one near-white
-   sheet"* and the new plates are greyscale. A prompt describing the retired
-   asset is a prompt about a picture that no longer exists.
-2. **Check the views-as-data derivation reads ONE.** `InkTemplate.views` drives
-   the prompt's count, its names and its meet-correctly clause; at one view per
-   plate, the multi-view sentences must fall out rather than be silenced by
-   hand.
-3. **Decide the template KIND vocabulary.** `INK_TEMPLATE_KINDS` is `arm` and
-   `body` today and the plate table's enum derives from it. Single-view plates
-   mean four assets, and whether that is four kinds or two kinds with a side is
-   a decision with a MIGRATION behind it — `casting_ink_plates.templateKind` is
-   a written column. Production has never taken the ink migrations, so an
-   amend-in-place is legitimate; that it is legitimate must be re-verified
-   against the deployed variables at the time, not assumed from this sentence.
-4. **Route the placements — and this one is now a CORRECTNESS requirement, not
-   a tidiness one.** `TEMPLATE_FOR` is a total function over the placement
-   vocabulary; per-side arm plates make it a function of placement AND side.
+   **One sentence in the earlier version of this item was already stale when it
+   was written, and is corrected here**: *"Production has never taken the ink
+   migrations"*. It has — all seven ceremonies ran against production on
+   2026-08-19 and every one read back `ALREADY APPLIED` on its second run
+   (opus-752 §1), including `casting_ink_designs`, `casting_ink_plates` and
+   `casting_ink_plates.promptDigest`. An amend-in-place on that enum is
+   therefore NOT legitimate, which strengthens the ruling above rather than
+   changing it.
+4. **The placements route by placement AND SIDE AND BUILD**, and
+   `inkTemplateFor` is total over all three vocabularies. The arm is picked by
+   the design's declared side, which is the mirror court's fix: **the side is
+   carried by the PICTURE, not by the prompt** — five renders across three
+   claims, two carrying an explicit positional clause pointing the other way,
+   put the ink on the image's LEFT arm every time, against 3/3 the other way
+   with the plate bytes mirrored, interleaved in one sitting on a 7/7 as-is
+   baseline.
 
-   **THE SIDE IS CARRIED BY THE PICTURE, MEASURED 2026-08-19** (the mirror
-   court, `scripts/court-plate-mirror-disposable.mts`, ordered fable-1007 §2
-   after the wording fix failed). The prompt sentence does not decide which arm
-   a package view's tattoo lands on: five renders across three different claims
-   — two of them carrying the positional clause pointing the opposite way — put
-   the ink on the image's LEFT arm every time. The free control was the same
-   claim with the plate bytes MIRRORED, interleaved in one sitting: **3/3
-   mirrored landed on the image's right, 2/2 as-is on the image's left**, a 7/7
-   as-is baseline against 3/3 the other way. The ink follows the plate's own
-   half of the frame. His own template instruction — *"a right facing and left
-   facing arm"* — is therefore the fix, and it is the only fix: **the mint
-   selects the blank by the design's declared side** (a `left` upper-arm design
-   plates onto the left-facing blank), so the side rides as geometry the engine
-   actually reads.
+   **What is still OWED, named rather than implied: which single-view blank
+   delivers which arm.** The mirror court ran on the retired THREE-VIEW sheet,
+   where the limb occupied a half of the frame; a single-limb plate has no frame
+   half to carry the side. The blanks are named from the eye's reading of the
+   anatomy — the left blank's medial contour, the axillary fold, sits on the
+   image's left and its deltoid and elbow on the right, which is how a subject's
+   left arm presents in a front-facing frame — and `ARM_FOR_SIDE` is ONE LINE so
+   a re-run of that court flips it in one edit. Nothing paid rides it meanwhile:
+   `RELEASED_INK_TUPLES` is empty, so no design reaches a package view at all.
 
-   Until that lands, an upper-arm design can ride a package view on the wrong
-   arm. Nothing paid is exposed — `CASTING_INK_STUDIO_SCOPE` is absent in
-   production (read off the deployed variables, 2026-08-19), so no design row,
-   no plate, and this lane writes nothing there. The founder's panel is
-   `output/view-reference-court/r5-mirror-panel.png`.
+   **No placement routes to a BACK blank** — neck, upper arm and upper chest are
+   all front surfaces — so the two back plates land with no caller until a back
+   placement is earned. A declared state, not an oversight.
+5. **The crop-line question is moot on this set.** The torso blanks are the
+   armless plates he approved, cut where he asked (*"id the cut the arms off at
+   or just below the shoulders"*), and the arm blank is the full limb shoulder
+   to wrist. There is no line left to ask about.
+6. **A NECK design plates onto the female or male FRONT blank, one view — and
+   what a genuine WRAP plates onto is DECLARED as an accepted narrowing.**
 
-   Note the other consequence honestly: **no placement in today's vocabulary
-   routes to the body BACK plate** — neck, upper arm and upper chest are all
-   front surfaces — so that asset lands with no caller until a back placement is
-   earned, which is a declared state rather than an oversight.
-5. **Carry the crop-line question.** fable-997 §4 re-anchored it on the new
-   blanks: it is asked (or visibly moot) when they go to his eye.
-6. **Decide what a NECK design plates onto — and the measurement says the
-   single-view spec is the FIX here, not the loss.** Found by the neck court
-   over two sittings (2026-08-19).
+   The neck court over two sittings is why. First sitting, three arms —
+   `closeUp`, `frontFull`, `backFull` — all showed the tattoo correctly, one
+   copy each, and the nape ink rendered properly in the back view, so a one-view
+   plate looked like a loss. **The second sitting overturned it**: `sideClose`
+   and `threeQuarter` show the neck TURNING, so both surfaces of the two-view
+   plate were plausibly in frame at once and the engine drew both — a complete
+   "SEMPRE" and sprig on the side of her neck and a second "SEM" and sprig
+   behind it, bare skin between them. The customer's ONE tattoo became TWO on
+   two of five package views, and the prompt's own *"do not draw a second copy"*
+   could not prevent it, because from the engine's side nothing was duplicated:
+   the reference picture contained the artwork twice and it was copying the
+   picture — the same carrier law that decides which arm the side rides on.
 
-   The neck routes to the `body` form, whose sheet has a front view AND a back
-   view, so the plate prompt draws the artwork on both: the minted plate carries
-   it on the front of the neck and again on the NAPE.
+   So the wrap court is answered NO: a multi-view sheet does not read as one
+   design, it reads as one design per view. The three passing arms passed
+   because only ONE plate surface was visible in each framing, which is a
+   property of those framings rather than of the plate.
 
-   **First sitting, and it read as a feature.** Three arms — `closeUp`,
-   `frontFull`, `backFull` — all showed the tattoo correctly, one copy each, ink
-   on skin, garment untouched. The nape ink rendered properly in the back view
-   (`output/view-reference-court/r6-neck-backFull.png`), and the obvious reading
-   was that a one-view plate would take that away.
+   **The decision, said out loud in `inkTemplates.ts`' own docblock**: a design
+   that genuinely continues around a surface has no form in this set that can
+   carry it, and can only be plated as the half facing the camera. It costs the
+   back half of a wrapping piece; it buys the removal of the doubling. The two
+   alternatives stay available and neither is built — a blank drawn at an angle
+   that carries the whole wrap, or a design that DECLARES whether it wraps. It
+   is not settled by which blank the routing happens to name, and
+   `inkTemplates.test.ts` goes red the moment `views` moves in either direction.
+7. **The old sheets are retired in the same commit**, moved to
+   `docs/specs/references/templates/superseded/` rather than deleted, so the
+   record says the set changed BY MEASUREMENT rather than silently.
+8. **A cast with no torso form REFUSES rather than being routed to one** (ruled
+   fable-1025 §1). `SEXES` has three members and the set has two torso forms;
+   routing by the label would infer a body from an identity, and reading the
+   cast's frame would spend a vision call on a question the product has not
+   decided. The refusal names the missing MATERIAL and never the person — *"We
+   haven't drawn the tattoo mannequin for this figure yet — an arm design will
+   still work"* — and the second clause is true: the arm is one bare limb and
+   serves every cast, so only neck and upper chest are affected.
 
-   **Second sitting overturned it, and the overturning arm is the one the plate
-   has no artwork for.** `sideClose` and `threeQuarter` show the neck TURNING, so
-   both of the plate's surfaces are plausibly in frame at once — and the engine
-   drew **both**. A complete "SEMPRE" and sprig on the side of the neck and a
-   second "SEM" and sprig behind it, two distinct pieces with bare skin between
-   them; the same doubling across the front on the three-quarter.
-   (`output/view-reference-court/r7-neck-sideClose.png`, `…-threeQuarter.png`,
-   cropped at full resolution and looked at.)
+   **The COUNT (fable-1025 rider two) is a SECOND commit, held behind a
+   production ceremony.** A demand row is privacy-shaped — kind and outcome,
+   never the account and never the cast — which the audit-log refusal counter
+   cannot be, because every row it writes carries a `userId` and a candidate id,
+   and a row saying *"no torso form"* attributed to an account is one bit of a
+   Cast's `technicalSchema` handed to staff. So it needs its own table, a new
+   table lands in production BEFORE its writer deploys (migration 0036's own
+   rule), and that is a founder sitting. Until it runs the refusal WORKS and is
+   not counted, and that is stated rather than assumed.
 
-   **The customer's ONE tattoo becomes TWO on two of the five package views.**
-   The clause's own *"do not draw a second copy of it"* does not prevent it, and
-   could not: from the engine's side nothing is being duplicated — the reference
-   picture simply contains the artwork twice, and it is copying the picture, the
-   same carrier law that decides the arm's side.
+#### WHAT THE SET COST THE CANVAS MATH — a small consequence worth one line
 
-   **So this is the wrap court, answered by accident and answered NO**: a
-   multi-view sheet does not read as one design, it reads as one design per
-   view. The three passing arms were passing because only one of the plate's two
-   surfaces was visible in each of them, which is a property of those framings
-   and not of the plate.
-
-   That reframes the decision rather than settling it. One-view plates remove
-   the doubling; what they cost is the back half of a genuine wrap, which then
-   needs an answer of its own — a neck-specific blank showing the neck from an
-   angle that carries the whole wrap, a design that declares whether it wraps,
-   or an accepted narrowing recorded as a decision. **Do not let it be settled
-   by which blank `TEMPLATE_FOR` happens to name.** `inkTemplates.test.ts` goes
-   red when the views change, so this cannot pass unnoticed.
+Not one of the six blanks is a multiple of 16 on both edges (the torso quartet
+is 1254 square, the arm pair 857 × 1200), where the retired arm sheet was
+1536 × 1024 and legal on both. `legalPlateCanvas` therefore now rounds EVERY
+plate rather than one family of two, and the "leaves an already legal canvas
+alone" control in `inkPlateEngines.test.ts` moved to a constructed size — a
+control tied to whichever asset happens to be legal this week is a control that
+stops testing anything the week that changes.

@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "594ff736f30a855e"
+    "sourceFingerprint": "d421339d04efae3d"
   },
   "domains": [
     {
@@ -19836,6 +19836,11 @@
     },
     {
       "from": "module:server/castingV2/inkPlateMint.ts",
+      "to": "module:server/castingV2/rollService.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/inkPlateMint.ts",
       "to": "module:server/db/castingV2InkDesigns.ts",
       "kind": "imports"
     },
@@ -19861,7 +19866,17 @@
     },
     {
       "from": "module:server/castingV2/inkTemplates.ts",
+      "to": "module:shared/castingVocabularies.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/inkTemplates.ts",
       "to": "module:shared/inkPlacementVocabulary.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/inkTemplates.ts",
+      "to": "module:shared/inkReleasedPlacements.ts",
       "kind": "imports"
     },
     {
@@ -28466,10 +28481,10 @@
       "message": "Names 2 of TiltReading's 4 fields (server/castingV2/canthalTilt.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/inkPlateDoor.ts:83",
+      "id": "finding:redeclared-shape:server/castingV2/inkPlateDoor.ts:84",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/inkPlateDoor.ts:83",
+      "subject": "server/castingV2/inkPlateDoor.ts:84",
       "message": "Names 2 of InkUploadRefusal's 2 fields (server/castingV2/inkUploadDoor.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {

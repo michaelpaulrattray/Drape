@@ -51,6 +51,22 @@ const DESIGN: StoredInkDesign = {
   createdAt: new Date("2026-08-18T00:00:00Z"),
 };
 
+/**
+ * A Cast's compiled instruction, in the shape `readResolvedIdentity` accepts.
+ *
+ * The mint needs exactly one field out of it — the build, which picks the torso
+ * blank — but it is parsed by the one owner of that parse rather than faked at
+ * a shape that owner would reject, so a change to the required fields reddens
+ * this file instead of leaving the mint silently reading `null`.
+ */
+function identityOf(sex: string): { internalPrompt: unknown } {
+  return {
+    internalPrompt: {
+      resolved: { sex, ageBand: "twenties", energy: "calm", heritage: ["northern european"] },
+    },
+  };
+}
+
 /** A real 32x48 PNG, so "what the plate actually is" can be measured. */
 async function drawnPlate(): Promise<ImageResult> {
   const bytes = await sharp({
@@ -89,6 +105,7 @@ beforeEach(async () => {
   engine = { id: "fal:openai/gpt-image-2/edit", mint };
   dependencies = {
     readDesign: vi.fn(async () => DESIGN),
+    readCastIdentity: vi.fn(async () => identityOf("female")),
     existingPlates: vi.fn(async () => []),
     loadTemplate: vi.fn(async (template) => ({
       template,
@@ -115,6 +132,51 @@ describe("the refusals, and that each costs nothing", () => {
        door is work bought for a call that cannot happen. */
     expect(dependencies.readDesign).not.toHaveBeenCalled();
     expect(mint).not.toHaveBeenCalled();
+  });
+
+  it("refuses a torso design with no form for the build, and spends nothing", async () => {
+    /*
+      DRIVEN DIRECTLY, because the only alternative is trusting that a build
+      with no blank never reaches here — and a guard whose only test runs
+      through the happy path is a guard nobody has tested (working law 3).
+
+      Both halves matter: the customer gets a sentence about the MATERIAL, and
+      the door fires before the template is loaded, before the design's bytes
+      are fetched and before any engine call, so it costs nothing.
+    */
+    dependencies.readDesign = vi.fn(async () => ({ ...DESIGN, placement: "neck" as const, side: "centre" as const }));
+    dependencies.readCastIdentity = vi.fn(async () => identityOf("nonbinary"));
+
+    const outcome = await mintOne();
+
+    expect(outcome).toMatchObject({ ok: false, refusal: { code: "noFormForBuild" } });
+    expect(dependencies.loadTemplate).not.toHaveBeenCalled();
+    expect(dependencies.fetchDesignBytes).not.toHaveBeenCalled();
+    expect(mint).not.toHaveBeenCalled();
+    expect(calls).toEqual([]);
+  });
+
+  it("refuses the same way when the Cast never stated a build at all", async () => {
+    /* Two causes, one refusal — and the absent one is the dangerous one: a
+       Cast with no stated sex must not fall through to the female blank, which
+       is the room calling every Cast "she" with a picture attached. */
+    dependencies.readDesign = vi.fn(async () => ({ ...DESIGN, placement: "upperChest" as const, side: "centre" as const }));
+    dependencies.readCastIdentity = vi.fn(async () => null);
+
+    expect(await mintOne()).toMatchObject({ ok: false, refusal: { code: "noFormForBuild" } });
+    expect(mint).not.toHaveBeenCalled();
+  });
+
+  it("does NOT refuse an ARM design for the same Cast — the limb serves everyone", async () => {
+    /* The control on the two above. A refusal that had widened to every
+       placement would pass both of them and take the whole feature away from a
+       customer it was never about. */
+    dependencies.readCastIdentity = vi.fn(async () => identityOf("nonbinary"));
+
+    const outcome = await mintOne();
+
+    expect(outcome).toMatchObject({ ok: true });
+    expect(mint).toHaveBeenCalledTimes(1);
   });
 
   it("throws rather than refusing when the design is not this account's", async () => {
@@ -171,7 +233,7 @@ describe("a design is plated ONCE PER ENGINE", () => {
       designPublicId: "design-1",
       engine: "fal:openai/gpt-image-2/edit",
       templateKind: "arm",
-      templateDigest: INK_TEMPLATES.arm.digest,
+      templateDigest: INK_TEMPLATES.armLeft.digest,
       promptDigest: "p".repeat(64),
       storageKey: "casting-v2/ink/plates/old.png",
       digest: "c".repeat(64),
@@ -204,7 +266,7 @@ describe("a design is plated ONCE PER ENGINE", () => {
       designPublicId: "design-1",
       engine: "fal:fal-ai/nano-banana-pro",
       templateKind: "arm",
-      templateDigest: INK_TEMPLATES.arm.digest,
+      templateDigest: INK_TEMPLATES.armLeft.digest,
       promptDigest: "p".repeat(64),
       storageKey: "casting-v2/ink/plates/nbp.png",
       digest: "d".repeat(64),
@@ -259,8 +321,8 @@ describe("the mint itself", () => {
     expect(sent.design.bytes).toBe(DESIGN_BYTES);
     /* The arm form's real pixels, so the canvas is derived from the artwork
        rather than from a number the caller chose. */
-    expect(sent.templateWidth).toBe(INK_TEMPLATES.arm.width);
-    expect(sent.templateHeight).toBe(INK_TEMPLATES.arm.height);
+    expect(sent.templateWidth).toBe(INK_TEMPLATES.armLeft.width);
+    expect(sent.templateHeight).toBe(INK_TEMPLATES.armLeft.height);
   });
 
   it("records what it MEASURED, never what it was told", async () => {
@@ -276,7 +338,7 @@ describe("the mint itself", () => {
     expect(recorded.engine).toBe("fal:openai/gpt-image-2/edit");
     /* Derived from the design's placement, never passed in. */
     expect(recorded.templateKind).toBe("arm");
-    expect(recorded.templateDigest).toBe(INK_TEMPLATES.arm.digest);
+    expect(recorded.templateDigest).toBe(INK_TEMPLATES.armLeft.digest);
   });
 
   it("records a digest of the WORDS THAT WENT OUT, not of a second copy of them", async () => {
