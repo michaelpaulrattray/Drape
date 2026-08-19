@@ -74,6 +74,13 @@ it be challenged before it ships, not after.
    branch. A control that stops being reachable leaves no failing test
    and no error — only a green suite and a document that still describes
    it.
+
+   **The type specimen is 2026-02-07.** Two security controls died that
+   day, in two unrelated refactors six hours apart — the sensitive-action
+   gate at 03:35 in a file split, the credit-velocity caps at 09:13 in a
+   product removal — and both were then described, in code comments and
+   in this file, as controls whose call site was never added. Six months
+   of confident documentation, from one ordinary morning's tidying.
 8. **This is a visual studio, not a maths class.** (Founder, 2026-08-06.)
    The user's ontology governs design: edits are scoped and named the
    way a stylist, photographer, or casting director thinks — a fringe

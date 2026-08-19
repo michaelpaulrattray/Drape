@@ -58,14 +58,6 @@ The following events are handled silently — no Slack alerts:
 - **Large credit purchase** — informational only; there is no automated fraud cap behind it
 - **Intermediate payment failures** — Stripe retries automatically; only final failure alerts
 
-### Consumption Spike
-
-**Trigger:** Called programmatically when unusual credit consumption is detected  
-**Channel:** `#billing-alerts`  
-**Template:** `SlackAlerts.consumptionSpike()`
-
-Available for integration with consumption monitoring logic. Includes user info, credits used in the window, and the normal average.
-
 ## Adding New Billing Alerts
 
 1. Add a new async method to `SlackAlerts` in `server/slack/slackNotification.ts`
@@ -111,11 +103,11 @@ Credits are deducted down to a floor of 0 — balances never go negative.
 
 Every path above was checked against the tree on 2026-08-19. Six of the seven this table used to carry were wrong — `server/db.ts`, `server/webhooks.ts` and four others had moved into subdirectories, and one named a procedure that does not exist. A file table nobody re-reads is a map of a building that has been rebuilt around it.
 
-Three templates in `SlackAlerts` have no caller anywhere in the server: `subscriptionCancelled`, `largeCreditPurchase` and `consumptionSpike`. They are not the velocity pair and were not covered by the founder's decision. **Their history was read (2026-08-19) before anything was proposed, and it splits them:**
+Three templates in `SlackAlerts` had no caller anywhere in the server and were **deleted on 2026-08-19**, after their history was read — because the same "no caller" reading covered two different things and they argue for different answers:
 
-- `subscriptionCancelled` and `largeCreditPurchase` were wired at birth (`a3abdf8b`) and **deliberately un-wired** by `69eb9b0f` — *"Reduced billing alert noise… removed subscription cancellation Slack alerts… removed large purchase alert trigger."* That was a decision, the "Alerts NOT Sent (Noise Reduction)" section above records it correctly, and the templates are intentional leftovers rather than a broken control. Deleting them is tidying, not a security question.
-- `consumptionSpike` has **never had a caller** since `a3abdf8b`, and the section above says so in its own words (*"available for integration with consumption monitoring logic"*). Honest, and unbuilt.
+- `subscriptionCancelled` and `largeCreditPurchase` were wired at birth (`a3abdf8b`) and **deliberately un-wired** by `69eb9b0f` — *"Reduced billing alert noise… removed subscription cancellation Slack alerts… removed large purchase alert trigger."* That decision stands and is still recorded in "Alerts NOT Sent (Noise Reduction)" above; only the leftover templates went.
+- `consumptionSpike` had **never** had a caller since `a3abdf8b`. This page said so in its own words — *"available for integration with consumption monitoring logic"* — which was honest, and six months later still unbuilt.
 
-The distinction is the point: the same "no caller" reading covers a control someone switched off on purpose and one nobody ever finished, and those argue for different answers.
+Neither needed a founder decision, and that is exactly why the history was read first: had the question gone up as one, it would have asked for one word about a switch somebody turned off on purpose and a thing nobody finished.
 
-Last updated: 2026-08-19 (v3 — velocity limits deleted, file paths corrected against the tree)
+Last updated: 2026-08-19 (v3 — velocity limits deleted, three uncalled templates deleted after their history was read, file paths corrected against the tree)

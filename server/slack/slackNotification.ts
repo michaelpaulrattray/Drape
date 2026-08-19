@@ -493,29 +493,25 @@ export const SlackAlerts = {
     });
   },
 
-  // ============ NEW Billing Alerts (Feb 2026) ============
+  /*
+    THREE TEMPLATES WERE DELETED FROM HERE ON 2026-08-19, and the reason each
+    went is different — which is the whole point of having read the history
+    before touching them.
 
-  /**
-   * Alert when a subscription is cancelled
-   * → #billing-alerts
-   */
-  subscriptionCancelled: async (
-    userId: number,
-    userName: string,
-    plan: string,
-    reason?: string
-  ): Promise<boolean> => {
-    return dispatchBillingAlert({
-      title: "Subscription Cancelled",
-      description: `User *${userName}* (ID: ${userId}) cancelled their *${plan}* subscription.`,
-      severity: "warning",
-      fields: [
-        { title: "User", value: `${userName} (ID: ${userId})`, short: true },
-        { title: "Plan", value: plan, short: true },
-        ...(reason ? [{ title: "Reason", value: reason, short: false }] : []),
-      ],
-    });
-  },
+    `subscriptionCancelled` and `largeCreditPurchase` were wired at birth
+    (`a3abdf8b`) and DELIBERATELY un-wired by `69eb9b0f` — "Reduced billing
+    alert noise… removed subscription cancellation Slack alerts… removed large
+    purchase alert trigger". That was a decision and it stands; the templates
+    were the leftovers of it, and `BILLING_ALERTS.md`'s "Alerts NOT Sent (Noise
+    Reduction)" section still records the decision itself.
+
+    `consumptionSpike` never had a caller at all — honest and unbuilt, and the
+    doc always said so.
+
+    The same "no caller" reading covered a switch somebody turned off on
+    purpose and a thing nobody finished. They argue for different answers, so
+    they were separated before either was cut.
+  */
 
   /**
    * Alert when a payment fails
@@ -538,58 +534,6 @@ export const SlackAlerts = {
         { title: "Amount", value: amountFormatted, short: true },
         ...(failureReason ? [{ title: "Failure Reason", value: failureReason, short: false }] : []),
       ],
-    });
-  },
-
-  /**
-   * Alert when a large credit purchase is made (above threshold)
-   * → #billing-alerts
-   */
-  largeCreditPurchase: async (
-    userId: number,
-    userName: string,
-    credits: number,
-    amountCents: number,
-    currency: string
-  ): Promise<boolean> => {
-    const amountFormatted = `$${(amountCents / 100).toFixed(2)} ${currency.toUpperCase()}`;
-    return dispatchBillingAlert({
-      title: "Large Credit Purchase",
-      description: `User *${userName}* (ID: ${userId}) purchased *${credits.toLocaleString()} credits* for ${amountFormatted}.`,
-      severity: "info",
-      fields: [
-        { title: "User", value: `${userName} (ID: ${userId})`, short: true },
-        { title: "Credits", value: credits.toLocaleString(), short: true },
-        { title: "Amount", value: amountFormatted, short: true },
-      ],
-    });
-  },
-
-  /**
-   * Alert when unusual credit consumption spike is detected
-   * → #billing-alerts + #audit-log
-   */
-  consumptionSpike: async (
-    userId: number,
-    userName: string,
-    recentUsage: number,
-    averageUsage: number,
-    period: string
-  ): Promise<boolean> => {
-    const multiplier = averageUsage > 0 ? (recentUsage / averageUsage).toFixed(1) : "N/A";
-    return dispatchBillingAlertWithAudit({
-      title: "Unusual Credit Consumption Spike",
-      description: `User *${userName}* (ID: ${userId}) consumed *${recentUsage.toLocaleString()} credits* in the last ${period}, which is *${multiplier}x* their average.`,
-      severity: "warning",
-      fields: [
-        { title: "User", value: `${userName} (ID: ${userId})`, short: true },
-        { title: "Recent Usage", value: `${recentUsage.toLocaleString()} credits`, short: true },
-        { title: "Average Usage", value: `${averageUsage.toLocaleString()} credits`, short: true },
-        { title: "Multiplier", value: `${multiplier}x normal`, short: true },
-        { title: "Period", value: period, short: true },
-      ],
-      auditTitle: "Credit Consumption Spike Detected",
-      auditDescription: `User ${userName} (ID: ${userId}) consumed ${recentUsage} credits in ${period} (${multiplier}x average).`,
     });
   },
 
