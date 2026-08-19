@@ -1447,3 +1447,170 @@ export function validateCastingRefineDispatchEnvironment(input: {
   }
   return child;
 }
+
+/* ------------------------------------- the tattoo-from-a-reference sub-flag */
+
+/**
+ * A TATTOO TAKEN FROM A PICTURE — the gate's reference arm (founder rulings
+ * relayed fable-1047 §2 and fable-1078, designed opus-822, ruled fable-1115/1116).
+ *
+ * His words, the second of the two:
+ *
+ * > *"no any tattoo request from a reference image must be respected regardless
+ * > if u can see it or not, if the sleeve cuts off and you cant see the full
+ * > finished product in the image refinement it should carry into the
+ * > sign/angles as it will still have the reference + description"*
+ *
+ * On, an ask that POINTS AT AN ATTACHED PICTURE for a tattoo stops meeting the
+ * ink document gate (D-137), because the picture is the document the gate was
+ * always asking for. Off, and absent means off, the gate behaves exactly as it
+ * has: face and neck render from words, everything else waits.
+ *
+ * # WHY THIS ONE NEEDED A FLAG WHEN THE RESOLVER DID NOT
+ *
+ * The ink document gate fires **on a live road today** — `CASTING_V2_SCOPE` is
+ * `all`, and every refine passes through `refineDelta`. So unlike the rest of
+ * this build, opening that arm is a behaviour change for people who did not ask
+ * for one. **A live road's behaviour must never change on a flag nobody
+ * flipped** (fable-1116 §3), and that is the whole reason this constant exists.
+ *
+ * # BOTH PARENTS, AND WHERE EACH IS ENFORCED
+ *
+ *   the ATTACH door     the handle. A tattoo take reads a picture the customer
+ *                       handed us, and `castingV2.reference.attach` is what
+ *                       mints the handle for it. Checked directly below.
+ *   the REPAINT scope   the carrier. A design reaches a photograph as a cropped
+ *                       reference carried by the repaint recipe, and the paste
+ *                       road carries none. Enforced through the attach flag's
+ *                       own coverage check rather than restated here — a second
+ *                       copy of a coverage rule is the mirror law 4 forbids, and
+ *                       it is the copy that drifts.
+ *
+ * # WHAT IS TRUE WHILE IT IS OFF, WHICH IS EVERYWHERE TODAY
+ *
+ * No placement is resolved out of anybody's sentence, no side is asked for, the
+ * gate walls exactly as it did, and not one row is written.
+ *
+ * # AND WHAT IS TRUE WHILE IT IS ON, BEFORE THE CUTTER EXISTS
+ *
+ * The arm opens onto an ask that is **ANSWERED**, never onto a render. Until the
+ * crop-from-photo cutter lands, a reference-documented tattoo ask reaches the
+ * take and the side question and stops there. Opening the gate alone would turn
+ * a wall into a tattoo rendered from words — D-137's exact forbidden render —
+ * which is why the arm and the take ship in one commit (ruled fable-1116 §4).
+ */
+export const CASTING_INK_REFERENCE_SCOPE_ENV = "CASTING_INK_REFERENCE_SCOPE";
+
+export class CastingInkReferenceScopeConfigurationError extends Error {
+  constructor() {
+    super(
+      `${CASTING_INK_REFERENCE_SCOPE_ENV} must be "off", "all", or "users:" followed by unique positive integer user ids`,
+    );
+    this.name = "CastingInkReferenceScopeConfigurationError";
+  }
+}
+
+export class CastingInkReferenceCoverageError extends Error {
+  constructor(detail: string) {
+    super(`${CASTING_INK_REFERENCE_SCOPE_ENV} ${detail}`);
+    this.name = "CastingInkReferenceCoverageError";
+  }
+}
+
+export function parseCastingInkReferenceScope(raw: string | undefined): CastingV2Scope {
+  return parseScopeGrammar(raw, () => {
+    throw new CastingInkReferenceScopeConfigurationError();
+  });
+}
+
+/**
+ * Whether this user's tattoo ask may be documented by her own picture.
+ *
+ * An AND of the whole chain at the point of use, like every sibling: the boot
+ * check refuses a scope reaching past its parent, and a boot check nobody
+ * invoked is the second way a flag pair goes wrong.
+ */
+export function captureCastingInkReferenceEnabled(userId: number): boolean {
+  const child = parseCastingInkReferenceScope(process.env[CASTING_INK_REFERENCE_SCOPE_ENV]);
+  if (!castingV2EnabledForUser(child, userId)) return false;
+  return captureCastingReferenceAttachEnabled(userId);
+}
+
+/**
+ * WHETHER THE TAKE EXISTS YET — the thing that turns an opened gate into an
+ * ANSWER rather than a render (ruled fable-1117 §1).
+ *
+ * # What this constant is holding shut, and why it is a control and not a note
+ *
+ * The gate's reference arm and the TAKE that answers what gets through it were
+ * ordered to ship in one commit (fable-1116 §4), because opening the gate alone
+ * turns a wall into a tattoo rendered from words — D-137's exact forbidden
+ * render, and the render this gate was built to stop.
+ *
+ * The arm shipped first. **So the guarantee moved from a commit boundary to an
+ * instrument**: the scope cannot be enabled at all while this is `false`, which
+ * closes the window mechanically instead of temporally. A guarantee held by a
+ * control beats one held by sequencing, and a commit boundary is only a promise
+ * about the past.
+ *
+ * # ⚠ DELETING THIS IS THE TAKE'S OWN COMMIT, AND NOTHING ELSE
+ *
+ * Flip it to `true` — or delete it and its branch — **in the commit that lands
+ * the take**: the interpreter naming the placement and the side it read, the
+ * resolver validating them, and the question for what she did not say. Not
+ * before, and never "to try the flag out".
+ *
+ * It is its own forcing function and that is the point: the flag cannot open
+ * until the commit that makes opening safe removes the thing stopping it. There
+ * is no version of this that gets forgotten, because forgetting it costs
+ * nothing and remembering it is the only way to use the feature.
+ */
+export const INK_REFERENCE_TAKE_BUILT = false;
+
+export function validateCastingInkReferenceEnvironment(input: {
+  scope: string | undefined;
+  attachScope: string | undefined;
+  /** Injectable so the guard's REFUSAL can be driven; defaults to the real one. */
+  takeBuilt?: boolean;
+}): CastingV2Scope {
+  const child = parseCastingInkReferenceScope(input.scope);
+  if (child.kind === "off") return child;
+
+  /*
+    ASKED BEFORE THE PARENTS, because it is the stronger refusal: a scope that
+    cannot be served at all does not get to be discussed in terms of who covers
+    it. The message carries its own deletion condition so the person who meets
+    it does not have to go looking for one.
+  */
+  if (!(input.takeBuilt ?? INK_REFERENCE_TAKE_BUILT)) {
+    throw new CastingInkReferenceCoverageError(
+      "cannot be enabled while the tattoo TAKE does not exist — the gate's reference arm has "
+      + "shipped but nothing yet reads the placement and side out of her sentence, so an ask "
+      + "that got through would be a tattoo rendered from words (D-137). Delete "
+      + "`INK_REFERENCE_TAKE_BUILT` and this branch in the commit that lands the take, and not "
+      + "before.",
+    );
+  }
+
+  const parent = parseCastingReferenceAttachScope(input.attachScope);
+  if (parent.kind === "off") {
+    throw new CastingInkReferenceCoverageError(
+      `cannot be enabled while ${CASTING_REFERENCE_ATTACH_SCOPE_ENV} is off — the picture that `
+      + "documents the tattoo is attached at that door, so the gate would open for an ask with "
+      + "nothing to document it and render a design from words",
+    );
+  }
+  if (parent.kind === "all") return child;
+  if (child.kind === "all") {
+    throw new CastingInkReferenceCoverageError(
+      `cannot be "all" while ${CASTING_REFERENCE_ATTACH_SCOPE_ENV} is limited to specific users`,
+    );
+  }
+  const uncovered = child.userIds.filter((userId) => !parent.userIds.includes(userId));
+  if (uncovered.length > 0) {
+    throw new CastingInkReferenceCoverageError(
+      `names users outside ${CASTING_REFERENCE_ATTACH_SCOPE_ENV}: ${uncovered.join(",")}`,
+    );
+  }
+  return child;
+}

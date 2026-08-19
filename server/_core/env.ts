@@ -42,6 +42,8 @@ import {
   validateCastingReferenceAttachEnvironment,
   CASTING_HAIR_REFERENCE_SCOPE_ENV,
   CASTING_REFERENCE_ATTACH_SCOPE_ENV,
+  validateCastingInkReferenceEnvironment,
+  CASTING_INK_REFERENCE_SCOPE_ENV,
   validateCastingOpenLaneEnvironment,
   validateCastingReferenceLibraryEnvironment,
   validateCastingRefineDispatchEnvironment,
@@ -280,6 +282,17 @@ export function validateEnv(): void {
   */
   validateCastingHairReferenceEnvironment({
     scope: process.env[CASTING_HAIR_REFERENCE_SCOPE_ENV],
+    attachScope: process.env[CASTING_REFERENCE_ATTACH_SCOPE_ENV],
+  });
+  /*
+    A TATTOO DOCUMENTED BY HER OWN PICTURE. The same parent for the same reason,
+    plus one of its own: this arm changes the INK DOCUMENT GATE, and that gate
+    fires on a LIVE road today (`CASTING_V2_SCOPE` is `all`). Without a flag, the
+    first customer to attach a picture and say "tattoo" would meet behaviour
+    nobody flipped a switch for.
+  */
+  validateCastingInkReferenceEnvironment({
+    scope: process.env[CASTING_INK_REFERENCE_SCOPE_ENV],
     attachScope: process.env[CASTING_REFERENCE_ATTACH_SCOPE_ENV],
   });
 

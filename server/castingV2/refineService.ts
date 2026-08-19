@@ -221,6 +221,7 @@ import {
   captureCastingRefineDispatchEnabled,
   captureCastingRepaintEnabled,
   captureCastingSidePhrasingEnabled,
+  captureCastingInkReferenceEnabled,
 } from "./castingV2Scope";
 import { isUpsweptAsk, readCanthalTilt } from "./eyeShapeRouting";
 import { alreadyUpswept, wearsGlassesByPixels } from "./canthalTilt";
@@ -682,6 +683,8 @@ export type RefineServiceDependencies = {
    * consulted at all.
    */
   openLaneEnabled?: (userId: number) => boolean;
+  /** `CASTING_INK_REFERENCE_SCOPE`, injectable for the same reason as its siblings. */
+  inkReferenceEnabled?: (userId: number) => boolean;
   /** Writes the sent recipe onto the variant at dispatch — see `recordVariantDispatch`. */
   recordDispatch?: typeof recordVariantDispatch;
   /**
@@ -1342,6 +1345,13 @@ async function refineCandidateCounted(
         1,860 lines before the road — measured, four for four.
       */
       referenceAttached: reference !== null,
+      /*
+        AND WHETHER A TATTOO MAY BE DOCUMENTED BY IT. Read from the account
+        rather than from the presence of a picture: the ink document gate fires
+        for every user on `CASTING_V2_SCOPE=all`, so this is the switch that
+        keeps his ruling off a live road until it is flipped.
+      */
+      inkReferenceEnabled: (dependencies.inkReferenceEnabled ?? captureCastingInkReferenceEnabled)(input.userId),
       prior: priorItems,
       lastColourFacet: lastColourFacet ? colourFacetLabel(lastColourFacet) : null,
       currentEyeColour: currentValueOfFacet(currentIdentity, "eye.colour"),

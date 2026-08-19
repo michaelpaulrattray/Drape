@@ -526,6 +526,19 @@ export type FreeLaneCheck = {
    * vouching that widened to a subject would be the guard switched off.
    */
   vouched?: { subject: string; value: string };
+  /**
+   * WHETHER A PICTURE SHE POINTED AT DOCUMENTS THIS ASK — the ink gate's second
+   * answer (fable-1078, ruled fable-1116).
+   *
+   * Set by the interpreter, and only when BOTH are true: the reply's own
+   * `fromReference` contract field came back true, and the account is inside
+   * `CASTING_INK_REFERENCE_SCOPE`. It is one derived bit rather than the two
+   * facts separately, because the reader has no business knowing about flags and
+   * the gate has no business re-deciding what "pointed at" means.
+   *
+   * Absent means the gate behaves exactly as it always has.
+   */
+  inkDocumentedByReference?: boolean;
   /** Set when the value hit a wall, so the caller can name which one. */
   wall?: RefineRefusal;
   /**
@@ -1037,8 +1050,34 @@ export function readDelta(value: unknown, check?: FreeLaneCheck): RefineDelta | 
         Found by driving the real interpreter, not by the unit tests, which
         could only ever ask the question with the subject already chosen.
       */
+      /*
+        AND THE PICTURE IS A DOCUMENT (founder ruling relayed fable-1078,
+        designed opus-822, ruled fable-1115/1116).
+
+        > *"no any tattoo request from a reference image must be respected
+        > regardless if u can see it or not"*
+
+        The gate above has always been asking ONE question — *is there a
+        document for this design* — and answering it with the only document that
+        existed: the anchor itself. A photograph the customer attached and
+        POINTED AT is the other answer, and it is the one his ruling is about.
+
+        The condition is `inkDocumentedByReference`, which the interpreter sets
+        only when the reply's own `fromReference` came back true AND the account
+        is inside `CASTING_INK_REFERENCE_SCOPE`. Deliberately NOT the flag alone
+        and NOT the presence of a handle: a picture riding along while she asks
+        for something else documents nothing, so gating on the handle would open
+        this wall for an ask that never mentioned her photograph.
+
+        ⚠ WHAT THIS DOES NOT DO IS RENDER ANYTHING. Until the crop-from-photo
+        cutter lands, the ask that gets through here is ANSWERED — the take and
+        the side question — and never dispatched. The arm and the take shipped
+        in one commit for exactly this reason: an opened gate with no cutter
+        behind it is a tattoo rendered from words, which is the render D-137
+        forbids and the one this gate was built to stop.
+      */
       if (check && (subject === "ink" || (subject === "marks" && namesDesign(scrubbed)))) {
-        if (classifyInkPlacement(scrubbed).kind !== "in_frame") {
+        if (!check.inkDocumentedByReference && classifyInkPlacement(scrubbed).kind !== "in_frame") {
           check.wall = { reason: "gate_ink_document" };
           return null;
         }

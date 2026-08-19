@@ -738,6 +738,17 @@ export type RefineInterpretInput = {
    * every bench, every road with no attachment — gets exactly today's prompt.
    */
   referenceAttached?: boolean;
+  /**
+   * WHETHER THIS ACCOUNT'S TATTOO ASK MAY BE DOCUMENTED BY THAT PICTURE —
+   * `CASTING_INK_REFERENCE_SCOPE`, resolved by the service and never read here.
+   *
+   * Separate from {@link referenceAttached} because they are different facts: a
+   * picture can ride an ask on the hair road while this arm stays shut. The ink
+   * document gate fires on a live road (`CASTING_V2_SCOPE` is `all`), so this
+   * bit is the only thing between his ruling and a behaviour change nobody
+   * flipped a switch for.
+   */
+  inkReferenceEnabled?: boolean;
   /** The hybrid-likeness pass — the comparison is already settled (D-181). */
   hybrid?: boolean;
   /**
@@ -1406,10 +1417,29 @@ async function runOnce(
     a free value must appear in the sentence the user typed. `check.wall` comes
     back set when a wall was hit, so the refusal can name it.
   */
+  /*
+    POINTED AT THE PICTURE — hoisted, because TWO readers need the same fact and
+    a second computation of it is the mirror law 4 forbids. The ink gate needs it
+    BEFORE `readDelta` runs; the return below needs it after. One `const`, one
+    definition of what pointing means.
+  */
+  const fromReference = input.referenceAttached === true
+    && (reply as { fromReference?: unknown }).fromReference === true;
+
   const check: FreeLaneCheck = {
     instruction,
     prior: input.prior as FreeLaneCheck["prior"],
     ...(input.vouched ? { vouched: input.vouched } : {}),
+    /*
+      THE INK GATE'S SECOND DOCUMENT, and the AND is the whole guard: her
+      sentence must have pointed at the picture, and her account must be on the
+      road. Either alone opens a live wall — the flag alone for an ask that never
+      mentioned a photograph, the pointing alone for everybody on
+      `CASTING_V2_SCOPE=all`.
+    */
+    ...(fromReference && input.inkReferenceEnabled === true
+      ? { inkDocumentedByReference: true }
+      : {}),
   };
   const delta = readDelta(reply, check);
   /* A WALL is an answer, not a hiccup — it must not be re-sampled. */
@@ -1544,8 +1574,6 @@ async function runOnce(
     are one bit about how the sentence USED a reference, neither is part of the
     delta, and the service reads each where it can act on it.
   */
-  const fromReference = input.referenceAttached === true
-    && (reply as { fromReference?: unknown }).fromReference === true;
   if (fromReference) {
     return droppedReference
       ? { ok: true, delta, droppedReference, fromReference }
