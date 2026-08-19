@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "00948d5e9765a6f2"
+    "sourceFingerprint": "0b62ac7cde325bbe"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 147
+      "moduleCount": 148
     },
     {
       "id": "domain:castingV2",
@@ -3599,6 +3599,12 @@
     {
       "id": "module:server/castingV2/inkPlacement.ts",
       "path": "server/castingV2/inkPlacement.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/inkPlacementResolve.ts",
+      "path": "server/castingV2/inkPlacementResolve.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -9868,6 +9874,10 @@
     {
       "id": "test:server/castingV2/inkPlacementCoupling.test.ts",
       "path": "server/castingV2/inkPlacementCoupling.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/inkPlacementResolve.test.ts",
+      "path": "server/castingV2/inkPlacementResolve.test.ts"
     },
     {
       "id": "test:server/castingV2/inkPlacementVocabulary.test.ts",
@@ -20104,6 +20114,11 @@
     {
       "from": "module:server/castingV2/inheritedVerdict.ts",
       "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/inkPlacementResolve.ts",
+      "to": "module:shared/inkPlacementVocabulary.ts",
       "kind": "imports"
     },
     {

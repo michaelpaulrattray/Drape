@@ -886,3 +886,17 @@
   verdict: KEEP
   why: the sequence reader's refusing half — two re-aimed ink schema suites are its only importers, and it throws rather than returning [] on a non-enum so a caller cannot get a clean wrong green
   argued: 6c/13a
+
+- symbol: resolveInkPlacement
+  file: server/castingV2/inkPlacementResolve.ts
+  verdict: HELD
+  why: stage 1 of the sentence-composed tattoo door, landed dark ahead of its callers exactly as this program's migration-before-code rule requires
+  argued: V3B §7.11 (design opus-822, ruled fable-1115)
+  blocker: stage 2 — the ink document gate's reference arm, which is the first thing that resolves a placement out of her words
+
+- symbol: inkPlacementTallyValue
+  file: server/castingV2/inkPlacementResolve.ts
+  verdict: HELD
+  why: the demand row's own value, sentinel and all; its writer is stage 4 and that writer is itself dead while MANNEQUIN_ROAD_DEFERRED is true
+  argued: V3B §7.11 (design opus-822, ruled fable-1115)
+  blocker: stage 4 — the tally writer, which cannot be reached at all until the mannequin road resumes

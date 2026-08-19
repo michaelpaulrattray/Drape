@@ -5,6 +5,7 @@ import path from "node:path";
 import type { CastingInkDesignRow } from "../../drizzle/schema";
 import type { InkPlacement } from "../../shared/inkPlacementVocabulary";
 import { effectiveColumn } from "../testing/migrationColumns";
+import { INK_PLACEMENT_MAX_LENGTH, INK_PLACEMENT_TALLY_MAX_LENGTH } from "./inkPlacementResolve";
 
 /**
  * THE KEEPER FOR A ONE-COMMIT-WIDE TRAP (ordered fable-1112 §3).
@@ -97,6 +98,31 @@ describe("the open column's two narrowings are one decision", () => {
       thing it kept is how the next trap gets planted.
     */
     expect(DOOR).toMatch(/THE CLOSED LIST IS THE CONTRACT/);
+  });
+
+  it("the door's cap and the column's width are one decision", () => {
+    /*
+      THE SECOND COUPLING, ordered fable-1114 §3 and the same pattern as the one
+      above. `resolveInkPlacement` admits a phrase up to
+      `INK_PLACEMENT_MAX_LENGTH`; the column holds `varchar(64)`; this database
+      runs STRICT_TRANS_TABLES, so a 65th character is an ERROR at the INSERT
+      and not a truncation.
+
+      If the two ever disagree in the loose direction, the failure lands as a
+      500 on a customer's upload — which is the worst available way to discover
+      a number, and the one this arm exists to make impossible.
+    */
+    const ddl = effectiveColumn("casting_ink_designs", "placement");
+    const width = /varchar\((\d+)\)/i.exec(ddl ?? "");
+    expect(width, `unreadable column DDL: ${ddl}`).not.toBeNull();
+    expect(Number(width![1])).toBe(INK_PLACEMENT_MAX_LENGTH);
+  });
+
+  it("the tally's bound sits inside the column's, never outside it", () => {
+    /* The demand row is tighter for a privacy reason rather than a storage one,
+       so the ordering is the assertion: a tally bound that grew past the column
+       would be a sentinel that never fires and a phrase MySQL refuses. */
+    expect(INK_PLACEMENT_TALLY_MAX_LENGTH).toBeLessThan(INK_PLACEMENT_MAX_LENGTH);
   });
 
   it("can fail — the reader is not matching its own optimism", () => {

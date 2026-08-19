@@ -31,6 +31,37 @@
  *
  * Nor the words-rendered ink road (`inkPlacement.ts`, D-133(a)), which never
  * touched a mannequin and is untouched here.
+ *
+ * # ⚠ AND WHAT IT DOES TAKE, WHICH THIS FILE DID NOT SAY UNTIL 2026-08-20
+ *
+ * **THE MISSING-FORM DEMAND COUNTER IS DEAD WHILE THIS IS `true`.** Found at the
+ * code (opus-821 §0), ordered into this file by fable-1114 §1, and it is one
+ * import hop away from invisible:
+ *
+ *     recordInkFormDemand   ← one non-test caller: inkPlateMint.ts:287
+ *     mintInkPlate          ← one non-test caller: inkUploadService.ts:191
+ *     inkUploadService:297    returns FIRST when this constant is true
+ *
+ * So `casting_ink_form_demand` has counted nothing since the deferral, and dev
+ * confirms it: zero rows. Nothing is broken — the customer still gets
+ * {@link MANNEQUIN_DEFERRED_NOTE}, the design is still kept — but the
+ * instrument the *"draw a third form"* decision was going to read is not
+ * running, and a table with no rows looks the same as a question nobody asked.
+ *
+ * **This is the campaign's own hardest class and there is no mistake in it to
+ * find**: a live control orphaned by a correct ruling aimed at something else
+ * (CLAUDE.md working law 7's second half — the credit-velocity caps, the
+ * sensitive-action gate, the refused-frame camera, and now this). It leaves no
+ * failing test and no error, only a green suite and documents that go on
+ * describing it. `CLAUDE.md`'s ink row called migration 0041 a prerequisite
+ * *"because the thing being counted is the refusal a cast with no torso form
+ * receives"* — a refusal that cannot currently be issued.
+ *
+ * It is written here rather than repaired, because the BEHAVIOUR is correct and
+ * only the record was short. **The tally resumes when the road does**, and the
+ * sitting that flips this constant owns re-reading whether its `kind`
+ * vocabulary still fits — an open placement has no template at all, so
+ * *"no torso form for this build"* is not what an open ask is missing.
  */
 
 /**
