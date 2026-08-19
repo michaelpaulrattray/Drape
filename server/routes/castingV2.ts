@@ -1086,6 +1086,21 @@ export const castingV2Router = router({
             one of ours and refuses in the service for free.
           */
           provenanceToken: z.string().trim().min(1).max(400).optional(),
+          /*
+            THE PICTURE SHE ATTACHED TO THIS ASK — the handle, never the bytes
+            (`UNIVERSAL_REFERENCE_ROAD_DESIGN.md` §2).
+
+            The attach is its own door precisely so this one does not carry a
+            multi-megabyte upload on every paid, rate-limited refine. What
+            travels is the id that door minted.
+
+            Shaped here, PROVED in the service — the same division as `scope`,
+            `replayOf` and `provenanceToken` above. The service resolves it in a
+            statement carrying this account, re-anchors it to this Cast, and
+            refuses free if either fails; and the road's own flag is checked
+            before the database is touched at all.
+          */
+          referenceId: publicId.optional(),
         })
         .strict(),
     )
@@ -1103,6 +1118,7 @@ export const castingV2Router = router({
         removeStep: input.removeStep,
         replayOf: input.replayOf,
         provenanceToken: input.provenanceToken,
+        referenceId: input.referenceId,
       });
     }),
 

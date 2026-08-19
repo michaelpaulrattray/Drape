@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "7326fc79154fe4c7"
+    "sourceFingerprint": "09405a0915216449"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 140
+      "moduleCount": 142
     },
     {
       "id": "domain:castingV2",
@@ -3303,6 +3303,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:server/castingV2/askReference.ts",
+      "path": "server/castingV2/askReference.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:server/castingV2/axisRegistry.ts",
       "path": "server/castingV2/axisRegistry.ts",
       "domain": "casting-v2",
@@ -3527,6 +3533,12 @@
     {
       "id": "module:server/castingV2/hairArrangement.ts",
       "path": "server/castingV2/hairArrangement.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/hairReferenceTake.ts",
+      "path": "server/castingV2/hairReferenceTake.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -8258,6 +8270,11 @@
       "grammar": "off|all|users:<ids>"
     },
     {
+      "id": "flag:CASTING_HAIR_REFERENCE_SCOPE",
+      "name": "CASTING_HAIR_REFERENCE_SCOPE",
+      "grammar": "off|all|users:<ids>"
+    },
+    {
       "id": "flag:CASTING_INK_STUDIO_SCOPE",
       "name": "CASTING_INK_STUDIO_SCOPE",
       "grammar": "off|all|users:<ids>"
@@ -9573,6 +9590,10 @@
       "path": "server/castingV2/ageIdioms.test.ts"
     },
     {
+      "id": "test:server/castingV2/askReference.test.ts",
+      "path": "server/castingV2/askReference.test.ts"
+    },
+    {
       "id": "test:server/castingV2/askedAndAbsent.test.ts",
       "path": "server/castingV2/askedAndAbsent.test.ts"
     },
@@ -9759,6 +9780,14 @@
     {
       "id": "test:server/castingV2/hairModifiers.test.ts",
       "path": "server/castingV2/hairModifiers.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/hairReferenceScope.test.ts",
+      "path": "server/castingV2/hairReferenceScope.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/hairReferenceTake.test.ts",
+      "path": "server/castingV2/hairReferenceTake.test.ts"
     },
     {
       "id": "test:server/castingV2/hairStyles.test.ts",
@@ -18994,6 +19023,21 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/castingV2/askReference.ts",
+      "to": "module:server/castingV2/castingV2Scope.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/askReference.ts",
+      "to": "module:server/db/castingV2ReferenceAttachments.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/askReference.ts",
+      "to": "module:shared/inkProvenance.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/castingV2/axisRegistry.ts",
       "to": "module:server/castingV2/castingIntent.ts",
       "kind": "imports"
@@ -19816,6 +19860,11 @@
     {
       "from": "module:server/castingV2/falRegionReader.ts",
       "to": "module:server/security/trustedImageFetch.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/hairReferenceTake.ts",
+      "to": "module:server/castingV2/subjectCards.ts",
       "kind": "imports"
     },
     {
@@ -21135,6 +21184,11 @@
     },
     {
       "from": "module:server/castingV2/refineReask.ts",
+      "to": "module:server/castingV2/hairReferenceTake.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/refineReask.ts",
       "to": "module:server/castingV2/refineDelta.ts",
       "kind": "imports"
     },
@@ -21265,6 +21319,11 @@
     },
     {
       "from": "module:server/castingV2/refineService.ts",
+      "to": "module:server/castingV2/askReference.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/refineService.ts",
       "to": "module:server/castingV2/bornWornDetector.ts",
       "kind": "imports"
     },
@@ -21326,6 +21385,11 @@
     {
       "from": "module:server/castingV2/refineService.ts",
       "to": "module:server/castingV2/falRegionReader.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/refineService.ts",
+      "to": "module:server/castingV2/hairReferenceTake.ts",
       "kind": "imports"
     },
     {
@@ -28829,17 +28893,17 @@
       "message": "Names 2 of RecipeRefusal's 4 fields (server/castingV2/recipeAssembler.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/refineService.ts:487",
+      "id": "finding:redeclared-shape:server/castingV2/refineService.ts:508",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/refineService.ts:487",
+      "subject": "server/castingV2/refineService.ts:508",
       "message": "Names 3 of Thumbnail's 3 fields (server/castingV2/thumbnails.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/refineService.ts:555",
+      "id": "finding:redeclared-shape:server/castingV2/refineService.ts:576",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/refineService.ts:555",
+      "subject": "server/castingV2/refineService.ts:576",
       "message": "Names 3 of Thumbnail's 3 fields (server/castingV2/thumbnails.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {

@@ -791,3 +791,23 @@
   why: the live path is per-session clearSession from the wardrobe route; nothing clears a whole user's VTO sessions, and whether account deletion should is the wardrobe road's question
   argued: 13c/20
   owner: the wardrobe road — whether account deletion clears a whole user's VTO sessions is that road's question
+
+- symbol: hairColourFacetsMissedByTheColourTake
+  file: server/castingV2/hairReferenceTake.ts
+  verdict: KEEP
+  why: the heading fence's only door — it is how a future hair card headed COLOUR arrives as a failing test instead of silently joining the style take and leaking the one property that take promises to leave alone
+  argued: 13a
+
+- symbol: hairTakeSentence
+  file: server/castingV2/hairReferenceTake.ts
+  verdict: HELD
+  why: ruling 5's artifact — the sentence that rides with a hair crop, claiming the cut and explicitly not the colour; composed and proven here, spent by the recipe
+  argued: 13a
+  blocker: the hair crop chunk, where the recipe composes the outgoing prompt this sentence goes into (fable-1071 §5)
+
+- symbol: hairTakeAdmits
+  file: server/castingV2/hairReferenceTake.ts
+  verdict: HELD
+  why: the positive-admission gate that keeps a colour a reference read SAW out of a style-scoped ask; the read is what gives it something to refuse
+  argued: 13a
+  blocker: the hair read chunk, which is the first thing that can hand it a facet to judge (fable-1071 §5)

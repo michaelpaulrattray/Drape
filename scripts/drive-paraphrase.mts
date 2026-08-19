@@ -208,7 +208,10 @@ for (const klass of CLASSES) {
       interpreter would be asserting the wrong thing entirely.
     */
     if (klass.reask) {
-      const question = pendingReaskFor(ask, false);
+      /* No picture is attached on any ask this driver carries — every class here
+         is a question about the WORDS. Said explicitly rather than defaulted,
+         because the fact is what the answer path rebuilds the question from. */
+      const question = pendingReaskFor(ask, false, false);
       const resolved = question ? resolveAnswer(question, klass.reask.answer) : null;
       const problems: string[] = [];
       if (!question) problems.push("no question was raised");

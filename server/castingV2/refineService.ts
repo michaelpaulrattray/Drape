@@ -128,9 +128,11 @@ import { skippedOnReplay } from "./replayDoors";
 import { interpretRefinement, refusalMessage } from "./refineInterpreter";
 import { readStoredDelta } from "./refineLegacy";
 import { removalEvidence } from "./removalWords";
+import { resolveAskReference } from "./askReference";
 import {
   LEAVE_AS_SHE_IS,
   alreadyUpsweptReask,
+  hairFromReferenceReask,
   glassesHideEyesReask,
   colourFacetLabel,
   colourFacetOf,
@@ -144,6 +146,7 @@ import {
   whichFacetReask,
   type Reask,
 } from "./refineReask";
+import { asksAboutHair, hairTakeNamedIn } from "./hairReferenceTake";
 import {
   chainAfterRemoval,
   composeChain,
@@ -403,6 +406,24 @@ export type RefineInput = {
    * simply carries no provenance.
    */
   provenanceToken?: string;
+  /**
+   * THE PICTURE SHE ATTACHED TO THIS ASK — the reference lane
+   * (`UNIVERSAL_REFERENCE_ROAD_DESIGN.md` §2, hair first per fable-1071 §1).
+   *
+   * The attach is its own door and its own upload; what travels here is the
+   * HANDLE it minted. A refine is spendable and rate-limited, and hanging a
+   * multi-megabyte base64 on it would make every paid ask carry a photograph.
+   *
+   * **Named, not trusted, and re-anchored to this Cast.** The handle is
+   * resolved in a statement that carries the owner (invariant 1) and the row it
+   * returns must belong to the candidate being refined (invariant 2) — an
+   * attachment of hers on a different Cast is not this ask's reference, and
+   * verifying the handle would not have caught that.
+   *
+   * Absent on every ask before this lane, which is all of them today: the flag
+   * that arms it is off everywhere.
+   */
+  referenceId?: string;
 };
 
 export type RefineResult = {
@@ -1008,13 +1029,49 @@ async function refineCandidateCounted(
     was the offer. Two strings this server wrote, compared; never a guess at
     what she meant.
   */
+  /*
+    THE PICTURE SHE ATTACHED — resolved here, before any question is composed
+    and long before anything is charged.
+
+    Three refusals and all three are free. The flag is checked first, so a
+    handle sent to an account outside the road is refused without a database
+    read at all; then the row is read in a statement carrying HER user id
+    (invariant 1); then the row's candidate is compared to the one being
+    refined (invariant 2), because a reference of hers attached to a DIFFERENT
+    Cast is not this ask's reference and no amount of verifying the handle
+    catches that.
+
+    It is `null` rather than a throw on refusal because the refusals below are
+    hers to read, not exceptions to swallow — and `referenceAttached` must be a
+    fact, not an assumption: the question is re-derived from it on the answer
+    path, so a resolution that quietly succeeded once and failed the next time
+    would produce a question nobody could answer.
+  */
+  const reference = input.referenceId
+    ? await resolveAskReference({
+      userId: input.userId,
+      referencePublicId: input.referenceId,
+      candidateId: source.candidate.id,
+    })
+    : null;
+  if (input.referenceId && !reference) {
+    return {
+      kind: "selected",
+      note: "That picture isn't attached to this Cast any more — attach it again and I'll take a look. Nothing was charged.",
+      variantId: source.variantPublicId,
+      candidateId: input.candidatePublicId,
+      imageUrl: storagePublicUrl(source.imageKey ?? source.candidate.imageKey),
+      instructions: readInstructions(predecessorForParse?.instructions),
+    };
+  }
+
   const answeringText = (input.answering ?? "").trim().toLowerCase();
   const madeThisVersion = (predecessorForParse?.requestText ?? "").trim().toLowerCase();
   const offeredAgain = answeringText.length > 0 && answeringText === madeThisVersion;
   const outstanding = input.answering
     ? (offeredAgain
       ? sameAgainReask({ asked: input.answering.trim(), priceCredits: CASTING_V2_REFINE_PRICE_CREDITS })
-      : pendingReaskFor(input.answering, lastColourFacet != null))
+      : pendingReaskFor(input.answering, lastColourFacet != null, reference !== null))
     : null;
   const answered = outstanding ? resolveAnswer(outstanding, input.instruction) : null;
   const instruction = answered ?? input.instruction;
@@ -1107,6 +1164,31 @@ async function refineCandidateCounted(
       variantId: source.variantPublicId,
       candidateId: input.candidatePublicId,
       imageUrl: storagePublicUrl(source.imageKey ?? source.candidate.imageKey),
+      instructions: readInstructions(predecessorForParse?.instructions),
+    };
+  }
+  /*
+    THE HAIR REFERENCE QUESTION — his own example, and the one question in this
+    family raised by something OTHER than the words alone.
+
+    Its order matches `pendingReaskFor`'s exactly, and that is not a style
+    preference: the answer path rebuilds the question from the same two facts,
+    so a door that fires in a different order on the two passes produces a
+    question nobody can answer. Both are the near-miss door first, then this,
+    then the cold-start colour one.
+  */
+  if (
+    !answered
+    && reference !== null
+    && asksAboutHair(instruction)
+    && hairTakeNamedIn(instruction) === null
+  ) {
+    return {
+      kind: "asked",
+      reask: hairFromReferenceReask(instruction),
+      variantId: source.variantPublicId,
+      candidateId: input.candidatePublicId,
+      imageUrl: currentImageUrl,
       instructions: readInstructions(predecessorForParse?.instructions),
     };
   }

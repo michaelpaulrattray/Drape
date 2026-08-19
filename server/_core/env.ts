@@ -38,7 +38,9 @@ import {
   CASTING_V2_SCOPE_ENV,
   validateCastingFaceScanEnvironment,
   validateCastingInkStudioEnvironment,
+  validateCastingHairReferenceEnvironment,
   validateCastingReferenceAttachEnvironment,
+  CASTING_HAIR_REFERENCE_SCOPE_ENV,
   CASTING_REFERENCE_ATTACH_SCOPE_ENV,
   validateCastingOpenLaneEnvironment,
   validateCastingReferenceLibraryEnvironment,
@@ -268,6 +270,17 @@ export function validateEnv(): void {
   validateCastingRefineDispatchEnvironment({
     scope: process.env[CASTING_REFINE_DISPATCH_SCOPE_ENV],
     castingScope: process.env[CASTING_V2_SCOPE_ENV],
+  });
+  /*
+    TAKING HER HAIR FROM AN ATTACHED PICTURE. Its parent is the ATTACH door and
+    nothing else: the handle a hair take travels with is minted there, so armed
+    without it a customer would be asked a question about a reference she has no
+    way to supply. The repaint and cleanup-worker parents ride in through the
+    attach flag's own check rather than being restated here.
+  */
+  validateCastingHairReferenceEnvironment({
+    scope: process.env[CASTING_HAIR_REFERENCE_SCOPE_ENV],
+    attachScope: process.env[CASTING_REFERENCE_ATTACH_SCOPE_ENV],
   });
 
   /*

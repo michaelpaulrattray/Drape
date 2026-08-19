@@ -1238,6 +1238,112 @@ export function validateCastingReferenceAttachEnvironment(input: {
   return child;
 }
 
+/* ------------------------------------------- the hair-from-a-reference sub-flag */
+
+/**
+ * TAKING HER HAIR FROM A PICTURE — the first thing the attach door's handle is
+ * actually FOR (founder ruling relayed fable-1047 §3, sequenced fable-1071 §5).
+ *
+ * His words: *"if i supply a reference image and say copy hair from reference it
+ * asks color? style? or full look."*
+ *
+ * On, a `refine` may carry a `referenceId`, an ask that names hair without
+ * saying which of the three is meant gets the question, and the answer routes to
+ * the form his ruling gives it — colour as WORDS, style and the whole look as a
+ * CROP. Off, and absent means off, `refine` refuses a `referenceId` free and no
+ * question is ever composed.
+ *
+ * # THE FLAG IS WHAT KEEPS THE QUESTION HONEST, and that is not a formality
+ *
+ * D-180's condition on every question this product asks is that it **never dead
+ * ends**. A chip whose road is not built is a dead end wearing a tap target, and
+ * this road has three chips landing over more than one chunk. So the whole of it
+ * stays behind one switch until every answer acts — which means the flag is not
+ * protecting a risky feature, it is protecting a PROMISE.
+ *
+ * # Its parent is the ATTACH door, and there is no second candidate
+ *
+ * A hair take reads or cuts a picture the customer handed us, and the handle for
+ * that picture is minted by `castingV2.reference.attach`. Armed here and not
+ * there, a customer would meet a question about a reference she has no way to
+ * supply. The attach flag in turn carries the repaint and cleanup-worker
+ * parents, so this inherits both without restating them — a crop reaches a
+ * render on the repaint recipe and nowhere else, and the bytes it is cut from
+ * are deleted by the worker.
+ *
+ * # WHAT IS TRUE WHILE IT IS OFF, WHICH IS EVERYWHERE TODAY
+ *
+ * No question is composed, no reference is resolved, no picture is read, no
+ * crop is cut and no row is written. A `referenceId` on a refine is refused with
+ * a sentence and nothing is charged.
+ */
+export const CASTING_HAIR_REFERENCE_SCOPE_ENV = "CASTING_HAIR_REFERENCE_SCOPE";
+
+export class CastingHairReferenceScopeConfigurationError extends Error {
+  constructor() {
+    super(
+      `${CASTING_HAIR_REFERENCE_SCOPE_ENV} must be "off", "all", or "users:" followed by unique positive integer user ids`,
+    );
+    this.name = "CastingHairReferenceScopeConfigurationError";
+  }
+}
+
+export class CastingHairReferenceCoverageError extends Error {
+  constructor(detail: string) {
+    super(`${CASTING_HAIR_REFERENCE_SCOPE_ENV} ${detail}`);
+    this.name = "CastingHairReferenceCoverageError";
+  }
+}
+
+export function parseCastingHairReferenceScope(raw: string | undefined): CastingV2Scope {
+  return parseScopeGrammar(raw, () => {
+    throw new CastingHairReferenceScopeConfigurationError();
+  });
+}
+
+/**
+ * Whether this user may take hair from a reference.
+ *
+ * An AND of the whole chain at the point of use, like every sibling: the boot
+ * check refuses a scope reaching past its parent, and a boot check nobody
+ * invoked is the second way a flag pair goes wrong.
+ */
+export function captureCastingHairReferenceEnabled(userId: number): boolean {
+  const child = parseCastingHairReferenceScope(process.env[CASTING_HAIR_REFERENCE_SCOPE_ENV]);
+  if (!castingV2EnabledForUser(child, userId)) return false;
+  return captureCastingReferenceAttachEnabled(userId);
+}
+
+export function validateCastingHairReferenceEnvironment(input: {
+  scope: string | undefined;
+  attachScope: string | undefined;
+}): CastingV2Scope {
+  const child = parseCastingHairReferenceScope(input.scope);
+  if (child.kind === "off") return child;
+
+  const parent = parseCastingReferenceAttachScope(input.attachScope);
+  if (parent.kind === "off") {
+    throw new CastingHairReferenceCoverageError(
+      `cannot be enabled while ${CASTING_REFERENCE_ATTACH_SCOPE_ENV} is off — the handle a hair `
+      + "take travels with is minted by the attach door, so the question would be asked about a "
+      + "picture the customer has no way to supply",
+    );
+  }
+  if (parent.kind === "all") return child;
+  if (child.kind === "all") {
+    throw new CastingHairReferenceCoverageError(
+      `cannot be "all" while ${CASTING_REFERENCE_ATTACH_SCOPE_ENV} is limited to specific users`,
+    );
+  }
+  const uncovered = child.userIds.filter((userId) => !parent.userIds.includes(userId));
+  if (uncovered.length > 0) {
+    throw new CastingHairReferenceCoverageError(
+      `names users outside ${CASTING_REFERENCE_ATTACH_SCOPE_ENV}: ${uncovered.join(",")}`,
+    );
+  }
+  return child;
+}
+
 /* ------------------------------------------- the dispatch sub-flag */
 
 /**

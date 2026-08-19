@@ -75,6 +75,20 @@ let renderFault = false;
 
 vi.mock("./spendGuards", () => ({ assertNotFrozen: vi.fn(async () => undefined) }));
 
+/*
+  THE REFERENCE RESOLVER, STUBBED AT ITS MODULE BOUNDARY.
+
+  Its own decisions — the flag, the owner in the statement, the re-anchor to
+  this Cast — are driven directly in `askReference.test.ts`. What this seam is
+  for is the other half: whether the service CONSULTS it, and what it does with
+  each answer. Default is "no picture", which is every ask in this suite.
+*/
+type AskReferenceQuery = { userId: number; referencePublicId: string; candidateId: number };
+const resolveAskReferenceMock = vi.fn(async (_query: AskReferenceQuery) => null as unknown);
+vi.mock("./askReference", () => ({
+  resolveAskReference: (query: AskReferenceQuery) => resolveAskReferenceMock(query),
+}));
+
 vi.mock("../db/castingV2", () => ({
   /*
     THE BRIEF THE REMOVAL NOW CONSULTS (D-206). `briefWorn` is what each test
@@ -8434,5 +8448,92 @@ describe("the provenance a refine writes", () => {
     );
     expect(result.kind).not.toBe("refused");
     expect((await claimedPayload()).stepProvenance.at(-1)).toBeNull();
+  });
+});
+
+/*
+  THE REFERENCE LANE, PROVED AT THE SERVICE RATHER THAN BESIDE IT.
+
+  `askReference.test.ts` proves the three ownership questions and
+  `refineReask.test.ts` proves the question is re-derivable. Neither proves the
+  WIRING, and a resolver that is correct and never consulted is the shape this
+  campaign keeps paying for (`gate-not-reader`): the picture would be accepted,
+  no question would be asked, and she would be charged for a render that quietly
+  ignored the photograph she attached.
+
+  So these arms drive `refineCandidate` itself, with the resolver stubbed at its
+  module boundary — the seam that carries the FACT, not the one that decides it.
+*/
+describe("the picture she attached reaches the ask", () => {
+  const REFERENCE = {
+    id: 7,
+    storageKey: "casting-v2/reference/abc.png",
+    provenance: "consented" as const,
+    digest: "d".repeat(64),
+    mime: "image/png",
+    width: 1024,
+    height: 1024,
+  };
+
+  afterEach(() => { resolveAskReferenceMock.mockReset(); });
+
+  it("raises his question for a hair ask, free and before the parse", async () => {
+    resolveAskReferenceMock.mockResolvedValue(REFERENCE);
+    const result = await refineCandidate({ ...greenEyes, harvest: unmasked }, {
+      ...input,
+      instruction: "copy hair from reference",
+      referenceId: "ref-public",
+    });
+    expect(result.kind).toBe("asked");
+    expect(result.reask?.kind).toBe("hair-from-reference");
+    expect(result.reask?.options.map((option) => option.label))
+      .toEqual(["the colour", "the style", "the whole look"]);
+    /* Free is the whole point — nothing is claimed and nothing is deducted. */
+    expect(journal).not.toContain("begin");
+    expect(journal).not.toContain("deduct");
+  });
+
+  it("asks nothing when no picture is attached — the same sentence", async () => {
+    const result = await refineCandidate({ ...greenEyes, harvest: unmasked }, {
+      ...input,
+      instruction: "copy hair from reference",
+    });
+    expect(result.reask?.kind).not.toBe("hair-from-reference");
+    expect(resolveAskReferenceMock).not.toHaveBeenCalled();
+  });
+
+  /*
+    A HANDLE THAT RESOLVES TO NOTHING IS NOT AN EXCEPTION — it is an answer she
+    reads. Charging for a render that silently dropped her reference is the one
+    outcome this arm exists to make impossible.
+  */
+  it("refuses free when the handle resolves to nothing", async () => {
+    resolveAskReferenceMock.mockResolvedValue(null);
+    const result = await refineCandidate({ ...greenEyes, harvest: unmasked }, {
+      ...input,
+      instruction: "copy hair from reference",
+      referenceId: "ref-public",
+    });
+    expect(result.kind).toBe("selected");
+    expect(result.note).toMatch(/isn't attached to this Cast/);
+    expect(journal).not.toContain("begin");
+    expect(journal).not.toContain("deduct");
+  });
+
+  it("scopes the resolve to this account and this Cast", async () => {
+    resolveAskReferenceMock.mockResolvedValue(REFERENCE);
+    await refineCandidate({ ...greenEyes, harvest: unmasked }, {
+      ...input,
+      instruction: "copy hair from reference",
+      referenceId: "ref-public",
+    });
+    expect(resolveAskReferenceMock).toHaveBeenCalledWith(expect.objectContaining({
+      userId: 1,
+      referencePublicId: "ref-public",
+    }));
+    /* The candidate is a number resolved from her own row, never the public id
+       off the request (invariant 2). */
+    const [query] = resolveAskReferenceMock.mock.calls[0];
+    expect(typeof query.candidateId).toBe("number");
   });
 });

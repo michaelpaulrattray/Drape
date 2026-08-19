@@ -30,6 +30,12 @@
  * the answer resolves the question exactly as tapping it would.
  */
 import { mentionsUpsweptAsk } from "./eyeShapeRouting";
+import {
+  HAIR_TAKES,
+  asksAboutHair,
+  hairTakeEntry,
+  hairTakeNamedIn,
+} from "./hairReferenceTake";
 import { HAIR_COLOURS, type HairColour } from "../../shared/castingVocabularies";
 import { EYE_COLOURS, type EyeColour } from "../../shared/castingRealization";
 import { facetOfSubject, type Facet } from "./refineFacets";
@@ -46,7 +52,8 @@ import { facetOfAxis } from "./refineFacets";
  * second implementation of the other.
  */
 export type Reask = {
-  kind: "which-facet" | "did-you-mean" | "already-upswept" | "glasses-hide-eyes" | "same-again";
+  kind: "which-facet" | "did-you-mean" | "already-upswept" | "glasses-hide-eyes"
+    | "same-again" | "hair-from-reference";
   /** The sentence, in their words. */
   question: string;
   options: Array<{ label: string; resolves: string }>;
@@ -479,9 +486,32 @@ export function nearMiss(instruction: string): { typed: string; meant: string } 
  * so the server rebuilds them and the options cannot be forged into an edit the
  * user never saw offered.
  */
-export function pendingReaskFor(instruction: string, hasColourHistory: boolean): Reask | null {
+export function pendingReaskFor(
+  instruction: string,
+  hasColourHistory: boolean,
+  /*
+    WHETHER A PICTURE IS ATTACHED TO THIS ASK — no default, because a default
+    here is a silent one. `false` would make every existing caller quietly
+    assert "no reference", and the day one of them has a reference the question
+    stops being rebuildable and its answer dead-ends.
+  */
+  referenceAttached: boolean,
+): Reask | null {
   const miss = nearMiss(instruction);
   if (miss) return didYouMeanReask(instruction, miss);
+  /*
+    THE REFERENCE QUESTION SITS AHEAD OF THE COLOUR ONE, and the ordering is a
+    real decision rather than an accident of where it was typed.
+
+    "Copy the hair from this" with a picture attached has a referent — the
+    picture — so the cold-start colour question would be asking her to name a
+    part she has already pointed at. The typo question stays first for the same
+    reason it stays first everywhere: it is a question about the WORDS, and a
+    misspelled hair ask deserves its correction before anything acts on it.
+  */
+  if (referenceAttached && asksAboutHair(instruction) && hairTakeNamedIn(instruction) === null) {
+    return hairFromReferenceReask(instruction);
+  }
   if (!hasColourHistory && needsColourReferent(instruction)) return whichFacetReask(instruction);
   /*
     LAST, because it is the widest.
@@ -493,6 +523,28 @@ export function pendingReaskFor(instruction: string, hasColourHistory: boolean):
   */
   if (mentionsUpsweptAsk(instruction)) return alreadyUpsweptReask(instruction);
   return null;
+}
+
+/**
+ * A STANDARD ALTERNATE SPELLING IS THE SAME ANSWER — the near-miss gate's own
+ * rule, arriving one door along.
+ *
+ * `ALTERNATE_SPELLINGS` exists because asking a US customer whether she meant
+ * our spelling is "a nationality quiz in front of the work". The identical
+ * insult wearing a worse costume is accepting her tap on a chip and refusing
+ * the same word typed: `color` failing to match an option labelled *the colour*
+ * is a question that dead-ends on a correctly spelled word, which is D-180's
+ * one condition broken by a vocabulary difference.
+ *
+ * Fixed for EVERY question rather than for the one that surfaced it — the class,
+ * not the instance. It is deliberately one-way and tiny: it normalises what SHE
+ * typed onto the spelling the product stores, and never the other direction.
+ */
+function ours(said: string): string {
+  return said
+    .replace(/\bcolors?\b/g, (word) => (word.endsWith("s") ? "colours" : "colour"))
+    .replace(/\bgray\b/g, "grey")
+    .replace(/\bblond\b/g, "blonde");
 }
 
 const YES = ["yes", "yeah", "yep", "yup", "y", "correct", "right", "ok", "okay"];
@@ -508,7 +560,7 @@ const NO = ["no", "nope", "nah", "n"];
  * function decides is whether the words in front of it are an ANSWER.
  */
 export function resolveAnswer(reask: Reask, typed: string): string | null {
-  const said = typed.trim().toLowerCase().replace(/^[-—]\s*/, "").replace(/[.!?]+$/, "");
+  const said = ours(typed.trim().toLowerCase().replace(/^[-—]\s*/, "").replace(/[.!?]+$/, ""));
   if (!said) return null;
   const bare = said.replace(/^(the|my|her|his|their)\s+/, "");
 
@@ -712,5 +764,58 @@ export function didYouMeanReask(instruction: string, miss: { typed: string; mean
          answered one way is not a question. */
       { label: `No, ${miss.typed} is right`, resolves: `${instruction} (exactly as written)` },
     ],
+  };
+}
+
+/**
+ * *"IT ASKS COLOUR? STYLE? OR FULL LOOK"* — the hair reference question
+ * (founder ruling, relayed fable-1047 §3; ruled into this mechanism
+ * fable-1071 §5).
+ *
+ * # WHY IT IS HERE AND NOT IN A CHANNEL OF ITS OWN
+ *
+ * A refine has no conversation turn. It has exactly one adjacent shape — the
+ * outstanding question the `answering` field resolves — and building a second
+ * question channel beside it would be the second-list defect with a UI on top.
+ * So the reference question is a `Reask` like every other, which buys it the
+ * whole of D-180 for free: an inline sentence, tappable chips, typing works, and
+ * the answer is RE-DERIVED server-side rather than trusted from the client.
+ *
+ * # AND THAT RE-DERIVATION IS WHY NO MODEL DECIDES WHETHER TO ASK
+ *
+ * `pendingReaskFor` rebuilds this question from the sentence alone when the
+ * answer comes back. A model asked *"is this a hair ask"* may answer differently
+ * on the two passes, and a question that cannot be rebuilt cannot be answered —
+ * which is the dead end D-180 forbids, produced by our own cleverness. So the
+ * two readings are word tests over the product's own hair vocabulary, and they
+ * err in opposite directions on purpose (see `hairReferenceTake`).
+ *
+ * # THE THIRD ANSWER IS NOT "NEVER MIND"
+ *
+ * Every other question in this family offers a decline, because every other one
+ * fires on an ask the customer already made. This one fires on an ask she made
+ * WITH A PICTURE ATTACHED, and all three answers are things she plainly wants.
+ * Declining is still available and costs nothing — she types something else and
+ * it runs as a fresh instruction, which is `resolveAnswer`'s null.
+ */
+export function hairFromReferenceReask(instruction: string): Reask {
+  const asked = instruction.trim().replace(/[.!?]+$/, "");
+  return {
+    kind: "hair-from-reference",
+    /*
+      HER PICTURE, HER WORDS, AND THE THING THE PRODUCT IS UNSURE OF — in that
+      order. It says what it CAN do before it asks anything, because a question
+      that opens with a doubt reads as a refusal (§5's capability-honesty rule).
+      No price: none of the three answers spends anything by being chosen.
+    */
+    question: "I can take her hair from that picture — the colour, the style, or the whole look?",
+    options: HAIR_TAKES.map((take) => ({
+      label: hairTakeEntry(take).label,
+      /* Her sentence plus the clarifier, exactly like the which-part question:
+         answering is indistinguishable from having typed it that way. The
+         composed RIDE-ALONG sentence is a different artifact and is not this —
+         it is prompt-side, and it is asserted at the wire. */
+      resolves: `${asked} — ${hairTakeEntry(take).label}`,
+    })),
   };
 }

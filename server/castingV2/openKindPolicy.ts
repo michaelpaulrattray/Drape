@@ -118,6 +118,50 @@ export type OpenKindAnswer = {
  */
 export const OPEN_KIND_POLICY: Record<string, OpenKindAnswer> = {
   /* ── the vocabulary itself ──────────────────────────────────────────────── */
+  /* ── the hair reference take (`hairReferenceTake.ts`) ────────────────── */
+  HAIR_FACETS: {
+    file: "hairReferenceTake.ts",
+    asks: "which subjects a hair take from a reference may speak for",
+    answer: "no entry, ever — an open kind is not a facet of her hair",
+    basis: {
+      derived: "this list is DERIVED from the subject cards, and an open kind has no card "
+        + "by definition, so the answer is structural rather than chosen. It is also the "
+        + "right answer on its own terms: the three takes are his three answers about HAIR "
+        + "(`colour? style? or full look?`), and a kind the catalogue has never heard of is "
+        + "not one of the five things hair was split into. An open ask that happens to name "
+        + "something hair-like — a mane, a crest — travels the open lane's own road and "
+        + "never through a take that promises to scope her colour",
+    },
+    standing: "policy",
+  },
+  HAIR_COLOUR_FACETS: {
+    file: "hairReferenceTake.ts",
+    asks: "which hair facets count as THE COLOUR, and therefore what a style take disclaims",
+    answer: "no entry, ever — for the same reason, one step in",
+    basis: {
+      stated: "the style take's claim is this list read backwards over HAIR_FACETS, so an "
+        + "open kind entering here would enter the complement too and end up either claimed "
+        + "or disclaimed by a sentence about her hair. Neither is honest about a kind nobody "
+        + "has catalogued. The membership question this table answers is closed on purpose, "
+        + "and the HEADING FENCE beside it is what keeps a future CLOSED facet from being "
+        + "forgotten — that is a different failure and it has its own guard",
+    },
+    standing: "policy",
+  },
+  FACET_PHRASE: {
+    file: "hairReferenceTake.ts",
+    asks: "the ordinary words a person reads for one hair facet",
+    answer: "no entry, and asking THROWS — never a default, never the key",
+    basis: {
+      stated: "the fallback a table like this usually grows is `?? facet`, and that would "
+        + "put `hairWorn` into a sentence a customer reads. `hairFacetPhrase` raises "
+        + "instead, so the gap is loud where an open kind could only arrive by a "
+        + "programming error — nothing routes one here, because HAIR_FACETS above cannot "
+        + "contain one",
+    },
+    standing: "policy",
+  },
+
   FREE_SUBJECTS: {
     file: "refineSubjects.ts",
     asks: "the heading this subject's prose is composed under",
