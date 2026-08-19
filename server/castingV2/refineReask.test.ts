@@ -7,11 +7,17 @@
  * calls the pure function directly. Nothing in this file can be rescued by a
  * well-behaved model.
  */
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+
 import { describe, expect, it } from "vitest";
 
 import { readDelta } from "./refineDelta";
+import { REFINE_ANSWERING_MAX_LENGTH, REFINE_INSTRUCTION_MAX_LENGTH } from "./refineLimits";
 import { FREE_SUBJECTS, FREE_SUBJECT_KEYS } from "./refineSubjects";
 import {
+  REASK_HANDLE_MAX_LENGTH,
+  REASK_KINDS,
   alreadyUpsweptReask,
   colourFacetLabel,
   colourFacetOf,
@@ -20,9 +26,12 @@ import {
   nearMiss,
   needsColourReferent,
   pendingReaskFor,
+  reaskHandle,
   redirectColourTo,
   resolveAnswer,
+  sameAgainReask,
   whichFacetReask,
+  type Reask,
 } from "./refineReask";
 
 describe("needsColourReferent — the ask with nothing attached (D-178)", () => {
@@ -366,5 +375,133 @@ describe("a chip submits ONE instruction — the compound the parser cannot hold
         expect(`${reask.kind}: ${option.resolves}`).not.toMatch(COMPOUND);
       }
     }
+  });
+});
+
+/**
+ * EVERY QUESTION IS ANSWERABLE ON THE ANSWER PATH — the sweep that was missing
+ * (found opus-827 §0, ordered fable-1120 §2).
+ *
+ * # The defect this exists to make impossible
+ *
+ * The client submits a chip's LABEL, never its `resolves`
+ * (`RefinePanel.tsx` — *"a chip submits its own LABEL, which is exactly what
+ * someone typing the answer would send"*). So the server has to REBUILD the
+ * outstanding question from `answering` and map that label back. A question
+ * `pendingReaskFor` cannot rebuild is a question whose chips run as raw
+ * sentences: *"Take them off first"* reaches the interpreter with no referent
+ * for *them*, and *"Go ahead anyway"* throws her ask away.
+ *
+ * `glasses-hide-eyes` was exactly that, live, on the founder's own account —
+ * and its sibling twenty lines above it in `refineService.ts` carries a comment
+ * naming this defect as fixed. The class was named; the sweep was not done.
+ *
+ * # Why every arm here rebuilds rather than constructing
+ *
+ * Every other `resolveAnswer` assertion in this file drives a reask THE TEST
+ * built. That is the shape that could not see this: the object under test was
+ * never the object the answer path produces. So each row below goes through
+ * `pendingReaskFor` with what the CLIENT would send, which is `about` when the
+ * question carries one and the typed sentence when it does not.
+ */
+describe("the answer path rebuilds every question it asks", () => {
+  /*
+    ONE ROW PER KIND, and the table is checked against `REASK_KINDS` rather than
+    trusted — a question added without a row here fails the arm below, which is
+    the whole point of a sweep (law 7).
+  */
+  const ROWS: Array<{
+    kind: string;
+    asked: string;
+    build: (asked: string) => Reask;
+    /** Why this one is not rebuilt here, when it is not. */
+    exempt?: string;
+  }> = [
+    { kind: "which-facet", asked: "pinker", build: whichFacetReask },
+    {
+      kind: "did-you-mean",
+      asked: "piink hair",
+      build: (asked) => didYouMeanReask(asked, nearMiss(asked)!),
+    },
+    { kind: "already-upswept", asked: "fox eyes", build: alreadyUpsweptReask },
+    { kind: "glasses-hide-eyes", asked: "give her a cat eye", build: glassesHideEyesReask },
+    {
+      kind: "same-again",
+      asked: "gold hoops please",
+      build: (asked) => sameAgainReask({ asked, priceCredits: 25 }),
+      /*
+        DELIBERATELY OUT, and it is the one exemption with teeth: answering the
+        offer sets `confirmedRegenerate`, which stands doors down that exist to
+        stop somebody paying for a render that changes nothing. It is re-derived
+        in `refineService` by comparing two strings THIS SERVER WROTE — the
+        sentence being answered against the version's own `requestText` — and a
+        handle must never be the thing that turns a door off.
+      */
+      exempt: "re-derived from the version's own requestText, never from a handle",
+    },
+  ];
+
+  it("covers every kind the product can ask — no question joins without a row", () => {
+    expect([...REASK_KINDS].sort()).toEqual(ROWS.map((row) => row.kind).sort());
+  });
+
+  for (const row of ROWS.filter((entry) => !entry.exempt)) {
+    it(`${row.kind}: every chip resolves the same way on the answer path`, () => {
+      const raised = row.build(row.asked);
+      /* What the CLIENT sends back — `about` when the question carries one,
+         the sentence they typed when it does not (`CastingSheet.tsx`). */
+      const answering = raised.about ?? row.asked;
+      const rebuilt = pendingReaskFor(answering, false);
+      expect(rebuilt, `${row.kind} could not be rebuilt from ${JSON.stringify(answering)}`)
+        .not.toBeNull();
+      expect(rebuilt!.kind).toBe(row.kind);
+      for (const option of raised.options) {
+        expect(
+          resolveAnswer(rebuilt!, option.label),
+          `${row.kind} lost the chip ${JSON.stringify(option.label)}`,
+        ).toBe(option.resolves);
+      }
+    });
+  }
+});
+
+/**
+ * THE HANDLE FITS THROUGH THE DOOR IT HAS TO TRAVEL THROUGH.
+ *
+ * `about` is echoed back by the client in `answering`, and `about` defaults to
+ * the sentence they typed. So the two fields were the same width, which was
+ * exactly enough — until a question put its own handle in front of the
+ * sentence. A full-length ask would then overflow `answering` and the schema
+ * would refuse the ANSWER: a dead end quieter than the one the handle closes,
+ * because it fires only on the longest sentences.
+ *
+ * Read at the ROUTER'S OWN TEXT rather than against the two constants, which
+ * would be a suite comparing local constants to themselves — the shape that let
+ * a deleted control keep a live reputation for six months.
+ */
+describe("the answering field is wide enough for a handled question", () => {
+  const ROUTER = readFileSync(
+    fileURLToPath(new URL("../routes/castingV2.ts", import.meta.url)),
+    "utf8",
+  );
+
+  it("the wire spends the derived caps rather than literals", () => {
+    expect(ROUTER).toContain("instruction: z.string().trim().min(1).max(REFINE_INSTRUCTION_MAX_LENGTH)");
+    expect(ROUTER).toContain("answering: z.string().trim().min(1).max(REFINE_ANSWERING_MAX_LENGTH)");
+  });
+
+  it("the longest handle on the longest ask still fits", () => {
+    const longest = "x".repeat(REFINE_INSTRUCTION_MAX_LENGTH);
+    for (const kind of REASK_KINDS) {
+      expect(reaskHandle(kind, longest).length).toBeLessThanOrEqual(REFINE_ANSWERING_MAX_LENGTH);
+    }
+  });
+
+  it("the allowance is DERIVED over the kinds, not a number somebody chose", () => {
+    /* Not `toBe(28)`: a longer kind name must move the cap by existing. */
+    expect(REFINE_ANSWERING_MAX_LENGTH).toBe(REFINE_INSTRUCTION_MAX_LENGTH + REASK_HANDLE_MAX_LENGTH);
+    expect(REASK_HANDLE_MAX_LENGTH).toBe(
+      Math.max(...REASK_KINDS.map((kind) => reaskHandle(kind, "").length)),
+    );
   });
 });

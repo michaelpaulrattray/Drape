@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "cbb2d70bc3f46068"
+    "sourceFingerprint": "f8a5c42f06dbed4c"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 148
+      "moduleCount": 149
     },
     {
       "id": "domain:castingV2",
@@ -3911,6 +3911,12 @@
     {
       "id": "module:server/castingV2/refineLegacy.ts",
       "path": "server/castingV2/refineLegacy.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/refineLimits.ts",
+      "path": "server/castingV2/refineLimits.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -21400,6 +21406,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/castingV2/refineLimits.ts",
+      "to": "module:server/castingV2/refineReask.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/castingV2/refinePreservation.ts",
       "to": "module:server/castingV2/facetCards.ts",
       "kind": "imports"
@@ -25152,6 +25163,11 @@
     {
       "from": "module:server/routes/castingV2.ts",
       "to": "module:server/castingV2/refineDelta.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/castingV2.ts",
+      "to": "module:server/castingV2/refineLimits.ts",
       "kind": "imports"
     },
     {

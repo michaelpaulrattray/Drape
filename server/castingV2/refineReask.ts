@@ -45,6 +45,25 @@ import { REFINABLE_AXES } from "./refineDelta";
 import { facetOfAxis } from "./refineFacets";
 
 /**
+ * Every question this product can ask, ENUMERABLE.
+ *
+ * It was a union spelled inline on `Reask["kind"]`, which a suite cannot walk —
+ * so the sweep that proves every question is answerable had nothing to sweep
+ * over, and a question could join the family without one. A list, and the type
+ * read off it (law 4): a new kind arrives in the sweep on the day it is
+ * declared, or the sweep goes red for not covering it.
+ */
+export const REASK_KINDS = [
+  "which-facet",
+  "did-you-mean",
+  "already-upswept",
+  "glasses-hide-eyes",
+  "same-again",
+] as const;
+
+export type ReaskKind = (typeof REASK_KINDS)[number];
+
+/**
  * A question the product needs answered before it can act — and never a charge.
  *
  * `options` are the tappable chips; `resolves` is what a tap or a typed answer
@@ -52,8 +71,7 @@ import { facetOfAxis } from "./refineFacets";
  * second implementation of the other.
  */
 export type Reask = {
-  kind: "which-facet" | "did-you-mean" | "already-upswept" | "glasses-hide-eyes"
-    | "same-again";
+  kind: ReaskKind;
   /** The sentence, in their words. */
   question: string;
   options: Array<{ label: string; resolves: string }>;
@@ -70,9 +88,106 @@ export type Reask = {
    *
    * So the question carries its own subject and the client echoes it back.
    * Absent means "the sentence they typed", which is every other question here.
+   *
+   * # AND IT IS ALSO THE QUESTION'S HANDLE — see {@link reaskHandle}
+   *
+   * A question raised on something the WORDS do not say — her glasses are over
+   * her eyes; a model read a placement out of her sentence — cannot be rebuilt
+   * by {@link pendingReaskFor}, which re-reads the words alone. Such a question
+   * puts its own name in here, and the door in front of `pendingReaskFor`
+   * rebuilds it by that name. Server-authored, echoed back verbatim, never
+   * displayed.
    */
   about?: string;
 };
+
+/**
+ * THE QUESTION'S OWN NAME, travelling in `about` — the answer path's handle
+ * (found opus-827 §0, ruled fable-1120 §2).
+ *
+ * # The defect it closes, which was live
+ *
+ * The client submits a chip's LABEL, never its `resolves`. So the server has to
+ * rebuild the outstanding question from `answering` and map that label back —
+ * and `pendingReaskFor` rebuilds from the WORDS. Three of the four questions
+ * are about the words and rebuild fine. `glasses-hide-eyes` is about the
+ * PICTURE: the reading failed and there are frames over her eyes, and no amount
+ * of re-reading her sentence recovers that. It rebuilt as nothing, so both its
+ * chips ran as raw instructions — *"Take them off first"* with no referent for
+ * *them*, and *"Go ahead anyway"* discarding her eye ask.
+ *
+ * Its sibling twenty lines above it in `refineService.ts` carries a comment
+ * naming this exact defect as fixed. The class was named once and swept never;
+ * this is the sweep (law 7).
+ *
+ * # Why a handle rather than re-running the gate
+ *
+ * Re-running it costs a segmenter read on a picture that may have changed, and
+ * a second reading of an unstable instrument can disagree with the first — so
+ * the question a customer is answering would not be the question she was
+ * asked. The handle carries the DECISION rather than re-taking it, which is the
+ * same-again precedent generalised: that offer is re-derived by comparing two
+ * strings this server wrote.
+ *
+ * # What a forged handle buys, stated rather than implied
+ *
+ * Nothing. Every `resolves` reachable through this door is a sentence the
+ * customer could have typed unaided — *"remove her glasses"*, her own sentence,
+ * {@link LEAVE_AS_SHE_IS}. **`same-again` is deliberately NOT reachable through
+ * it**: answering that offer sets `confirmedRegenerate`, which stands down
+ * doors that exist to stop somebody paying for a render that changes nothing,
+ * and a handle must never be the thing that turns a door off. It keeps its own
+ * re-derivation, against the version's own `requestText`.
+ */
+const HANDLE = /^«([a-z-]+)»\s([\s\S]+)$/;
+
+export function reaskHandle(kind: ReaskKind, asked: string): string {
+  return `«${kind}» ${asked.trim()}`;
+}
+
+/**
+ * The longest a handle's own prefix can be, DERIVED over the kinds.
+ *
+ * The wire caps `answering` and `instruction` at the same number, and `about`
+ * defaults to the instruction — so a handle prefixed onto a full-length
+ * sentence overflows the field the client echoes it in, and the ANSWER would be
+ * refused by the schema. That is a worse dead end than the one this closes.
+ *
+ * So the allowance is derived here and spent at the door (`routes/castingV2.ts`),
+ * and `refineReask.test.ts` asserts the derivation rather than the number: a
+ * longer kind name moves the cap by existing.
+ */
+export const REASK_HANDLE_MAX_LENGTH = REASK_KINDS.reduce(
+  (longest, kind) => Math.max(longest, reaskHandle(kind, "").length),
+  0,
+);
+
+/**
+ * The questions rebuilt BY NAME rather than from the words, and their builders.
+ *
+ * A map rather than a `switch` so the sweep can walk it, and deliberately not
+ * total over {@link REASK_KINDS}: a question the words already rebuild does not
+ * need a handle, and `same-again` must not have one (see above). The sweep
+ * proves every kind is covered by one route or the other.
+ */
+const BY_HANDLE: Partial<Record<ReaskKind, (asked: string) => Reask>> = {
+  "glasses-hide-eyes": (asked) => glassesHideEyesReask(asked),
+};
+
+/**
+ * The question named in an `answering`, or `null` — positive admission against
+ * the closed set.
+ *
+ * A name outside {@link BY_HANDLE} is not a handle, whatever it spells: the
+ * sentence falls through to the word doors exactly as it does today, which is
+ * the behaviour every caller had before this existed.
+ */
+export function reaskByHandle(answering: string): Reask | null {
+  const match = HANDLE.exec(answering.trim());
+  if (!match) return null;
+  const build = BY_HANDLE[match[1] as ReaskKind];
+  return build ? build(match[2]!) : null;
+}
 
 /**
  * Facets that can carry a colour — the candidates a cold-start question offers.
@@ -490,6 +605,19 @@ export function pendingReaskFor(
   instruction: string,
   hasColourHistory: boolean,
 ): Reask | null {
+  /*
+    THE HANDLE FIRST, because it is the only route that KNOWS which question was
+    asked rather than inferring it (see `reaskHandle`).
+
+    It has to be in front of the word doors and not behind them: *"fox eyes"*
+    raised the glasses question and ALSO satisfies `mentionsUpsweptAsk`, so a
+    handle read last would be shadowed by a rebuild of the wrong question — and
+    the wrong question's chips do not match, which is the dead end this door
+    exists to close, arriving one line later.
+  */
+  const handled = reaskByHandle(instruction);
+  if (handled) return handled;
+
   const miss = nearMiss(instruction);
   if (miss) return didYouMeanReask(instruction, miss);
   if (!hasColourHistory && needsColourReferent(instruction)) return whichFacetReask(instruction);
@@ -714,6 +842,15 @@ export function glassesHideEyesReask(instruction: string): Reask {
   const asked = instruction.trim().replace(/[.!?]+$/, "");
   return {
     kind: "glasses-hide-eyes",
+    /*
+      ITS OWN NAME, because the words cannot rebuild it (opus-827 §0).
+
+      This question is raised on the PICTURE — a reading that failed and frames
+      over her eyes — and her sentence says none of that. Without the handle it
+      rebuilt as nothing (or, for an upswept-shaped ask, as the wrong question),
+      and both chips ran as raw instructions. See `reaskHandle`.
+    */
+    about: reaskHandle("glasses-hide-eyes", asked),
     question: "Her glasses are sitting over her eyes, so I can't tell whether "
       + "they already do this. Take the glasses off first, or go ahead anyway? "
       + "Either way this costs nothing.",

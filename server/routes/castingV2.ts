@@ -103,6 +103,7 @@ import {
 const tuple = <T extends string>(values: readonly T[]) => values as unknown as [T, ...T[]];
 import { createRoll, cancelRoll } from "../castingV2/rollService";
 import { signCandidate } from "../castingV2/signService";
+import { REFINE_ANSWERING_MAX_LENGTH, REFINE_INSTRUCTION_MAX_LENGTH } from "../castingV2/refineLimits";
 import { readAskScope, readRegeneratedFrom, refineCandidate } from "../castingV2/refineService";
 import { pendingStage } from "../castingV2/pendingStage";
 import {
@@ -948,13 +949,13 @@ export const castingV2Router = router({
         .object({
           clientRequestId: z.string(),
           candidateId: publicId,
-          instruction: z.string().trim().min(1).max(200),
+          instruction: z.string().trim().min(1).max(REFINE_INSTRUCTION_MAX_LENGTH),
           /*
             The outstanding question's SENTENCE, not the question (D-180). The
             server re-derives what was asked from it, so a client cannot invent
             an option and have a typed "yes" resolve into an edit nobody offered.
           */
-          answering: z.string().trim().min(1).max(200).optional(),
+          answering: z.string().trim().min(1).max(REFINE_ANSWERING_MAX_LENGTH).optional(),
           /*
             THE RECTANGLE SHE POINTED AT (fable-444, ruling C) — a slot key like
             `eye@left`, meaning this ask is about that one instance.
