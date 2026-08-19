@@ -59,6 +59,21 @@ it be challenged before it ships, not after.
    wrong-boundary measurement error took four appearances before its
    class was named — each earlier sweep would have prevented the later
    instances.
+
+   **The same law pointed at rulings instead of bugs (2026-08-19):
+   WHEN A RULING CLOSES A PATH, THE SWEEP ASKS WHAT WAS BOLTED TO IT.**
+   Asked at the closing commit, not later. Three controls have now died
+   this way and none of them by carelessness: the credit-velocity caps
+   (a product removing its topup checkout, `41a765ea`), the
+   sensitive-action gate (a file split, `3cb0cdee`, six hours earlier the
+   same day), and the founder-approved refused-frame camera — killed by
+   his own catastrophic-only refund ruling (`5c5a1f3f`), which was
+   CORRECT and still took a control with it. That is the harshest form,
+   because there is no mistake to find in the change itself. Each would
+   have been caught on the day for the cost of one grep along the dying
+   branch. A control that stops being reachable leaves no failing test
+   and no error — only a green suite and a document that still describes
+   it.
 8. **This is a visual studio, not a maths class.** (Founder, 2026-08-06.)
    The user's ontology governs design: edits are scoped and named the
    way a stylist, photographer, or casting director thinks — a fringe
