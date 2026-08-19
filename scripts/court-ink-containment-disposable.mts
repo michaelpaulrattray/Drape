@@ -71,9 +71,23 @@ const designPath = arg("--design");
 const PLACEMENT = "upperArm" as const;
 const SIDE = "left" as const;
 
+/* `inkTemplateFor` gained a REFUSAL arm on 2026-08-19 (`noFormForBuild`) and
+   now returns a choice rather than a blank. This court is fixed at
+   upperArm/left, which is one bare limb and serves every build, so the refusal
+   is unreachable here — but it is unwrapped rather than asserted away, because
+   a court that would crash on a shape the product can produce is not a court.
+
+   It is resolved HERE, above the prompt, because `inkPlatePrompt` no longer
+   derives the blank from the placement: the prompt and the posted picture must
+   be the same blank or the words describe a different limb from the one on the
+   wire. */
+const choice = inkTemplateFor({ placement: PLACEMENT, side: SIDE, build: null });
+if (!choice.ok) throw new Error(`no blank for ${PLACEMENT}/${SIDE}: ${choice.reason}`);
+const template = choice.template;
+
 /* Arm A is the product's own sentence, imported. A retyped control is a control
    of something else. */
-const shipped = inkPlatePrompt({ placement: PLACEMENT, side: SIDE });
+const shipped = inkPlatePrompt({ placement: PLACEMENT, side: SIDE, template });
 
 /*
   THE BOUNDARY, in the surface's own anatomy rather than in pixels. The engine
@@ -100,7 +114,6 @@ const ARMS = [
   { key: "c-boundary-and-scale", prompt: `${shipped}\n${BOUNDARY}\n${SCALE}` },
 ];
 
-const template = inkTemplateFor(PLACEMENT);
 const loaded = await loadInkTemplate(template);
 if (!loaded) throw new Error(`the template is not on disk: ${template.file}`);
 if (loaded.digest !== template.digest) {

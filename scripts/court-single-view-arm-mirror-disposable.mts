@@ -95,6 +95,11 @@ if (MODE === "mint") {
      looked at beside the plate that stands on it. */
   const pinned = SIDE === "right" ? INK_TEMPLATES.armRight : INK_TEMPLATES.armLeft;
   const blank = await loadInkTemplate(pinned);
+  /* `null` is the file not being on disk at all — a deploy that lost an asset —
+     which the loader tells apart from a file that is there and hashes wrong.
+     Both are fatal to a court that stands on the blank, and they are refused
+     separately so the message names which one happened. */
+  if (!blank) throw new Error(`the ${pinned.name} blank is not on disk at ${pinned.file}`);
   if (blank.digest !== pinned.digest) {
     throw new Error(`the ${pinned.name} blank on disk hashes ${blank.digest}, not its pin`);
   }
