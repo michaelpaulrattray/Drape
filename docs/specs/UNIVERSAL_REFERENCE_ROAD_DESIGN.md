@@ -1196,3 +1196,91 @@ founder-eyes crop gate** (fable-1074 §4): his own eye on the first real hair
 crop, riding the declaration as its centrepiece frames, exactly as build one's
 tail did. Every court behind it is already in the record — the panels, the scale
 form, the cross-sex question, the drawing, the class door.
+
+---
+
+## 11. BUILD TWO'S YES (assembled 2026-08-20, ordered fable-1110 §4)
+
+The §7 bar, item by item, against the record rather than against memory. Every
+line names the artifact a later reader can open.
+
+**1 · The ingestion courts pass, red-first.** Attach (`referenceAttachSchema`,
+`referenceAttachService`, `referenceAttachScope`), route (`askReference`,
+`referenceIntents`, `referenceClassGate`), crop (`hairReferenceCutter`,
+`hairReferenceCrop`, the panel decision), ride (`refineService`'s carrier block,
+`recipeAssembler`'s fourth role). Red-first is not a claim about intent here: the
+last of them, the style-not-colour arms, were **run red before the fix existed**
+and their failure output is quoted in opus-815.
+
+**2 · A face-bearing reference produces a crop with ZERO person content.** Proved
+twice, in the two places that answer different questions:
+
+- *at the frames* — `output/panel-probe/carrier-scale-redacted-head.png`: hair
+  cut from a real photograph, sitting on the head's REDACTED form, filled flat.
+  It says *this much head, this much hair* and nothing about whose head it was.
+- *at the wire* — `refineService.test.ts`, "carries NOTHING of the person in her
+  photograph": every opaque pixel of the DISPATCHED reference is either the
+  hair's own colour or `FORM_FILL`, read off the request rather than off the
+  cutter's promise.
+
+**His eye on that frame is the one half a suite cannot supply**, and it is on his
+card. Note the lifetime that makes this awkward and is correct anyway: a carrier
+lives for its ask (fable-1096), so the walk's own carrier was already swept when
+I went looking for it — the frame above is the cutter's, from the panel court.
+
+**3 · The style-not-colour split, proven at the wire.** `cc9cf8db`. The take had
+been resolved, courted, logged and then DROPPED one line before the recipe, so
+`style` and `fullLook` dispatched byte-identical prompts. The scope is now a
+REQUIRED field on a recipe source — a picture that says nothing about what it
+claims does not compile — and the proof is the dispatch record of a real paid
+request (§10.7 below), not a fixture.
+
+**4 · The honest-refusal sentence for an ask this product cannot yet serve.** An
+attached picture that no lane can use is not silently ignored: the ask renders,
+the picture goes unused, and she is TOLD in the same list every other half-served
+ask is confessed in (`attachedPictureUnused`; driven in `refineService.test.ts`,
+"CUTS NOTHING for an ask that does not touch hair — and says the picture went
+unused"). The ink door's own `intentNotThisDoor` carries the same shape for a
+declared feature. ⚠ **Both are driven at the service and the door, not through a
+browser** — stated rather than rounded up, because §7 says *driven* and a later
+reader should know which kind of driving bought this line.
+
+**5 · The UI evidence pack.** Both themes, 42 measured checks with what each SAW,
+the copy audit with its load-bearing negatives, and the law skim to Fable during
+the build (opus-812, ratified fable-1105 §3). Frames in `output/attach-surface/`.
+
+**6 · The tripwire does NOT retire at this YES** — and that is a statement about
+scope, not an omission. Its retirement was conditioned on the crop road being the
+only road to a MINT; the mannequin road is parked (`MANNEQUIN_ROAD_DEFERRED`), so
+the condition is unmet and the guard stays for the sitting that resumes that
+road. **A YES that quietly took a live control with it is exactly the failure law
+7's second half names**, and this build will not be the fourth instance.
+
+### 11.1 The declaration fires when he touches it
+
+The arrow reads FULLY YES on the record — every court, the surface, and a walk
+driven by a customer's own hand. **His sitting is the ribbon.** The flags are
+absent from production, so nobody, him included, can reach this road until he
+flips; a yes he cannot click is not his yes. The declaration is written here and
+spoken there.
+
+### 11.2 The walk, and the one thing its frames do not prove
+
+His own two-panel specimen, attached through the real picker, *"give her this
+haircut but keep her own hair colour"*, one real render. Frames:
+`output/hair-crop-walk/1-master-before.png` and `3-delivered-after.png` — tight
+corkscrew ringlets before, looser soft waves with volume through the top after,
+same face, pose, lighting and framing. The request is in the variant's own
+dispatch record.
+
+**The Cast was a MAN, which nobody staged**, so the sentence that went out reads
+*"Take his hair from the reference… keep his own"* — the pronoun fix of the same
+morning, on the one case that would have exposed its absence.
+
+⚠ **And the colour half is NOT proved by those two frames.** The reference's hair
+and the Cast's hair are both near-black: there was no colour difference to hold
+back, so the pair shows the CUT arriving and is silent on the disclaimer. A null
+with no fixture that could have gone non-null is not a reading. The colour half
+stands on the wire alone until an ask runs with a reference whose colour plainly
+differs from the Cast's — which is the first thing worth trying after the flip,
+and it is on his card in those words.
