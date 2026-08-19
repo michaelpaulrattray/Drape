@@ -169,18 +169,45 @@ export type InkTemplate = {
  * his eye actually judges, while a uniform +1 preserves every relationship in
  * the image.
  *
- * **Which arm is which is the EYE'S reading and it is not yet the engine's.**
+ * **Which arm is which is the eye's reading, and the court has now run — the
+ * naming is right and IT IS NOT WHAT DECIDES.**
+ *
  * The left blank is called the left arm because its medial contour — the
  * axillary fold the limb turns in on — sits on the image's left and its lateral
  * contour, deltoid and elbow, on the image's right, which is how a subject's
- * LEFT arm presents in a front-facing frame. What has NOT been measured is the
- * correspondence between these single-view blanks and the arm the ink actually
- * lands on: the mirror court ran on the retired three-view sheet, where the
- * limb occupied a HALF of the frame, and a single-limb plate has no frame half
- * to carry the side. So {@link ARM_FOR_SIDE} below is one line, deliberately,
- * and it is the line a re-run of that court would flip. Nothing paid rides it
- * meanwhile — `RELEASED_INK_TUPLES` is empty, so no design reaches a package
- * view at all.
+ * LEFT arm presents in a front-facing frame. Fifteen house renders on one
+ * candidate settled what that naming buys
+ * (`scripts/court-single-view-arm-mirror-disposable.mts` and its two
+ * extensions; every frame read by eye, panel at
+ * `output/single-view-arm-court/COURT-PANEL-single-view-arm.jpg`):
+ *
+ * ```
+ * A  armLeft  blank, clause "her left"    5/5 landed on her LEFT arm    correct
+ * B  the A plate hand-flopped, "her left" 2/2 landed on her RIGHT arm
+ * C  armRight blank, clause "her right"   0/5 — all five on her LEFT arm
+ * D  armRight blank, CLEAN plate, "right" 0/3 — all three on her LEFT arm
+ * ```
+ *
+ * Thirteen of the fifteen put the ink on the IMAGE'S RIGHT half whatever the
+ * blank depicted and whatever the sentence said. Her left arm IS the image's
+ * right, so arm A is correct — and correct because the bias happens to agree
+ * with it, not because the blank was chosen well. **Choosing the limb the
+ * design belongs to does not move the ink to that limb**, which is the
+ * hypothesis the six blanks were built on, and on the right side it fails
+ * every time.
+ *
+ * This is the standing image-half law arriving on a third lane: her right eye
+ * 3/6 against her left 6/6 on the repaint road, "her left ear" clearing the
+ * image's RIGHT half 6 of 6 even mirrored, and now the plate road
+ * (`docs/specs/V4_SIDE_INFERENCE_COURT.md` §6).
+ *
+ * So {@link ARM_FOR_SIDE} below stays exactly as it is — flipping it would
+ * plate a right-side design onto a picture of her left arm and change nothing
+ * about where the ink lands, trading a correct picture for a wrong one. The
+ * line is not the fix, and the earlier note here that called it one was
+ * written before the court. Nothing paid rides any of it: `RELEASED_INK_TUPLES`
+ * is empty, and this court is the evidence for keeping `upperArm:right` out of
+ * it while `upperArm:left` is the only arm tuple with a reading behind it.
  */
 export const INK_TEMPLATES = Object.freeze({
   armLeft: Object.freeze({
@@ -283,7 +310,11 @@ export function inkTemplateByDigest(digest: string): InkTemplate | null {
 }
 
 /**
- * WHICH ARM BLANK A SIDE PLATES ONTO — one line, and the line is the fix.
+ * WHICH ARM BLANK A SIDE PLATES ONTO — one line, and the court says LEAVE IT.
+ *
+ * It was written as "the line a re-run of the mirror court would flip". The
+ * court ran (see the header): the naming is correct and flipping it would fix
+ * nothing, because the blank is not what decides which arm the ink lands on.
  *
  * `centre` never reaches here: `upperArm` is `perSide` in the placement
  * vocabulary, so `sidesForInkPlacement` offers left and right only and the

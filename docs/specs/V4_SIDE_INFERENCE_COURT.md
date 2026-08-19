@@ -134,3 +134,70 @@ light.
   which DELETES the variant rows as it goes — so the per-render `internalPrompt`
   evidence is gone by the end and the read-back verdicts above had to be read
   from the run log. A court that spends should keep its rows.
+
+## 6. THE THIRD LANE — the ink plate road, and the picture does not rescue it
+
+Everything above is the repaint road, where the side reaches the engine as
+words. The ink studio's plate road was supposed to be the lane where words are
+not the only carrier: a design declaring `upperArm:left` is drawn onto a
+picture of a LEFT arm, and that picture rides into the package view beside the
+sentence. If a picture of the correct limb could beat the image-half bias,
+this is where it would show.
+
+It does not. Fifteen house renders, one candidate, one specimen, every frame
+read by eye (`scripts/court-single-view-arm-mirror-disposable.mts` and its two
+extensions; the panel is
+`output/single-view-arm-court/COURT-PANEL-single-view-arm.jpg`):
+
+```
+arm  plate                              clause        n   landed on         verdict
+A    armLeft  blank, as minted          "her left"    5   her LEFT   5/5    correct
+B    the A plate hand-flopped           "her left"    2   her RIGHT  2/2    crossed
+C    armRight blank (mirrored plate)    "her right"   5   her LEFT   5/5    WRONG
+D    armRight blank (clean plate)       "her right"   3   her LEFT   3/3    WRONG
+```
+
+**Thirteen of fifteen landed on the image's RIGHT half** — whichever limb the
+plate depicted, whichever side the sentence named. Her left arm is the image's
+right, so arm A reads as a clean pass and is not one: it is the bias agreeing
+with the answer. Arm C+D is the same bias disagreeing, 0 for 8.
+
+Three things this settles, and one it does not:
+
+- **The blank does not carry the side.** That was the hypothesis the six
+  single-view blanks were built on after the retired three-view sheet was
+  convicted, and on the right side it fails every time. `ARM_FOR_SIDE` is
+  correctly named (the armLeft blank really is a left arm — the axillary fold
+  sits image-left) and correctly named is not load-bearing.
+- **The sentence does not carry it either**, re-confirmed on a third lane:
+  eight renders said *"her right upper arm (on the left of the picture as you
+  look at it)"* and none of them obeyed. §3b's positional clause is on this
+  road unconditionally and did not rescue it.
+- **Arm B is the only thing that ever moved the ink**, and B is not a road the
+  product travels — it hand-flops a finished plate, which mirrors the
+  customer's artwork with it. B and C carry the same limb and the same
+  artwork orientation and land on opposite arms, so the "the picture decides"
+  reading from the three-view sitting does not survive; the mechanism is
+  unnamed and nothing here should be built on a guess about it.
+
+What it does not settle: one candidate, one design, one view angle. The
+direction of the bias is consistent with the two earlier lanes, so it is very
+unlikely to be this cast's pose, but a second face is what would prove it.
+
+**A separate defect surfaced on the way, and it is a flake rather than a
+rule.** The first `armRight` mint came back with the customer's artwork
+MIRRORED — the crescent opening the wrong way against the specimen — in plain
+violation of the plate prompt's own *"reproduce the DESIGN faithfully… exactly
+as they appear"*. A second mint of the same design on the same blank came back
+correct. One of two, against zero of one on the left blank: a flag, not a rate,
+and it is the reason arm D exists at all (arm C's five renders all rode the
+defective plate, so on its own it could not tell a placement failure from an
+artwork one).
+
+**Consequence for release.** `RELEASED_INK_TUPLES` is empty and this is the
+first V2 evidence about a specific tuple. `upperArm:left` is the only arm tuple
+with a reading behind it; `upperArm:right` has one too and it says no. The
+legacy road's rule — *a tuple is never inferred from a neighbouring placement
+or the opposite side* — is exactly what stops a right-arm design shipping on
+the left arm's evidence, and this court is what that rule looks like when it
+earns its keep.
