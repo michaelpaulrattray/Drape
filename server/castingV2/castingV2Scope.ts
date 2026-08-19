@@ -1536,61 +1536,34 @@ export function captureCastingInkReferenceEnabled(userId: number): boolean {
   return captureCastingReferenceAttachEnabled(userId);
 }
 
-/**
- * WHETHER THE TAKE EXISTS YET — the thing that turns an opened gate into an
- * ANSWER rather than a render (ruled fable-1117 §1).
- *
- * # What this constant is holding shut, and why it is a control and not a note
- *
- * The gate's reference arm and the TAKE that answers what gets through it were
- * ordered to ship in one commit (fable-1116 §4), because opening the gate alone
- * turns a wall into a tattoo rendered from words — D-137's exact forbidden
- * render, and the render this gate was built to stop.
- *
- * The arm shipped first. **So the guarantee moved from a commit boundary to an
- * instrument**: the scope cannot be enabled at all while this is `false`, which
- * closes the window mechanically instead of temporally. A guarantee held by a
- * control beats one held by sequencing, and a commit boundary is only a promise
- * about the past.
- *
- * # ⚠ DELETING THIS IS THE TAKE'S OWN COMMIT, AND NOTHING ELSE
- *
- * Flip it to `true` — or delete it and its branch — **in the commit that lands
- * the take**: the interpreter naming the placement and the side it read, the
- * resolver validating them, and the question for what she did not say. Not
- * before, and never "to try the flag out".
- *
- * It is its own forcing function and that is the point: the flag cannot open
- * until the commit that makes opening safe removes the thing stopping it. There
- * is no version of this that gets forgotten, because forgetting it costs
- * nothing and remembering it is the only way to use the feature.
- */
-export const INK_REFERENCE_TAKE_BUILT = false;
+/*
+  THE TAKE-BUILT GUARD IS GONE, AND THIS IS THE COMMIT ITS OWN MESSAGE NAMED.
+
+  `INK_REFERENCE_TAKE_BUILT` stood here from `d93849b3` and refused any non-off
+  `CASTING_INK_REFERENCE_SCOPE` while nothing read a placement out of her
+  sentence — because an opened gate with no take behind it is a tattoo rendered
+  from words (D-137). Its own thrown string said to delete it *"in the commit
+  that lands the take, and not before"*, and this is that commit:
+  `inkReferenceTake.ts` reads the placement and the side, `resolveInkPlacement`
+  validates them, and `refineService` ANSWERS the ask before the claim and never
+  dispatches it.
+
+  Recorded here rather than simply removed, because a control that vanishes
+  without a trace is indistinguishable from one that was never wired — which is
+  the reading this campaign keeps having to repair.
+
+  **What did not arrive with the take is the QUESTION**, and that is a ruling
+  rather than a debt (fable-1120 §4): pre-cutter, every answer to *"which side?"*
+  leads to *"we can't paint it yet"*, which is a dead end wearing a question. It
+  lands with the cutter, when it has somewhere to lead.
+*/
 
 export function validateCastingInkReferenceEnvironment(input: {
   scope: string | undefined;
   attachScope: string | undefined;
-  /** Injectable so the guard's REFUSAL can be driven; defaults to the real one. */
-  takeBuilt?: boolean;
 }): CastingV2Scope {
   const child = parseCastingInkReferenceScope(input.scope);
   if (child.kind === "off") return child;
-
-  /*
-    ASKED BEFORE THE PARENTS, because it is the stronger refusal: a scope that
-    cannot be served at all does not get to be discussed in terms of who covers
-    it. The message carries its own deletion condition so the person who meets
-    it does not have to go looking for one.
-  */
-  if (!(input.takeBuilt ?? INK_REFERENCE_TAKE_BUILT)) {
-    throw new CastingInkReferenceCoverageError(
-      "cannot be enabled while the tattoo TAKE does not exist — the gate's reference arm has "
-      + "shipped but nothing yet reads the placement and side out of her sentence, so an ask "
-      + "that got through would be a tattoo rendered from words (D-137). Delete "
-      + "`INK_REFERENCE_TAKE_BUILT` and this branch in the commit that lands the take, and not "
-      + "before.",
-    );
-  }
 
   const parent = parseCastingReferenceAttachScope(input.attachScope);
   if (parent.kind === "off") {

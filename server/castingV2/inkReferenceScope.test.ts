@@ -4,111 +4,72 @@ import {
   CASTING_INK_REFERENCE_SCOPE_ENV,
   CastingInkReferenceCoverageError,
   CastingInkReferenceScopeConfigurationError,
-  INK_REFERENCE_TAKE_BUILT,
   captureCastingInkReferenceEnabled,
   parseCastingInkReferenceScope,
   validateCastingInkReferenceEnvironment,
 } from "./castingV2Scope";
 
 /**
- * THE TATTOO-FROM-A-REFERENCE FLAG, AND THE GUARD THAT WILL NOT LET IT OPEN.
+ * THE TATTOO-FROM-A-REFERENCE FLAG, AND WHAT NOW DECIDES WHETHER IT MAY OPEN.
  *
- * The gate's reference arm shipped before the take that answers what gets
- * through it. fable-1116 §4 required the two in one commit so the window never
- * exists; fable-1117 §1 approved moving that guarantee from a commit boundary
- * to an INSTRUMENT — a scope that cannot be enabled while the take is absent.
+ * # The guard that used to live here, and why its arms are gone rather than
+ * # rewritten
  *
- * **A guard that has never been watched refuse is not a guard** (invariant 7,
- * working law 3), so its refusal is the first thing driven here and it is driven
- * directly, not through anything that might be feeling generous.
+ * `INK_REFERENCE_TAKE_BUILT` refused any non-off scope while nothing read a
+ * placement out of her sentence — the gate's reference arm having shipped one
+ * commit ahead of the take that answers what gets through it (fable-1116 §4,
+ * moved from a commit boundary to an instrument at fable-1117 §1). **The take
+ * has landed, so the guard was deleted in the same commit its own message named,
+ * and its arms went with it**: a test of a branch that no longer exists is a
+ * suite reporting on nothing, which is the shape this campaign keeps exhuming
+ * from the other direction.
+ *
+ * What replaces them is not a smaller guard — it is the PARENT COVERAGE below,
+ * which was written the same day and driven then through the guard's injectable
+ * half precisely so that it would already be proven on the day the take landed.
+ * It is now the only thing between this flag and the road, and every one of its
+ * refusals is driven here.
  */
-describe("the guard refuses the flag while the take does not exist", () => {
-  it("refuses `all`, and says what to delete and when", () => {
+describe("the parent coverage is what decides", () => {
+  it("refuses while the attach door is shut — no handle, no picture", () => {
     expect(() => validateCastingInkReferenceEnvironment({
-      scope: "all",
-      attachScope: "all",
-      takeBuilt: false,
-    })).toThrow(/tattoo TAKE does not exist/);
+      scope: "all", attachScope: "off",
+    })).toThrow(/cannot be enabled while CASTING_REFERENCE_ATTACH_SCOPE is off/);
   });
 
-  it("refuses a single named user just as hard — no back door for one account", () => {
-    /* The obvious shape of a leak: "it is only him". The window is about what
-       the code can do, not about who is behind it. */
+  it("refuses with the coverage error's own type, not a bare throw", () => {
     expect(() => validateCastingInkReferenceEnvironment({
-      scope: "users:1",
-      attachScope: "users:1",
-      takeBuilt: false,
+      scope: "users:1", attachScope: "off",
     })).toThrow(CastingInkReferenceCoverageError);
   });
 
-  it("carries its own deletion condition in the message", () => {
-    /* The person who meets this refusal should not have to go looking for the
-       answer in a mailbox — the instruction lives with the instrument. */
+  it("refuses `all` while the attach door is limited to named users", () => {
     expect(() => validateCastingInkReferenceEnvironment({
-      scope: "all", attachScope: "all", takeBuilt: false,
-    })).toThrow(/INK_REFERENCE_TAKE_BUILT/);
+      scope: "all", attachScope: "users:1",
+    })).toThrow(/cannot be "all"/);
   });
 
-  it("refuses BEFORE the parents are considered", () => {
-    /*
-      Order asserted, and it matters: with perfect parents the refusal must still
-      be the take's, because a scope that cannot be served at all does not get to
-      be discussed in terms of who covers it. If the parent check ran first, a
-      correct-looking configuration would produce a message about the wrong
-      problem.
-    */
+  it("refuses a user the attach door does not cover, and names them", () => {
     expect(() => validateCastingInkReferenceEnvironment({
-      scope: "all", attachScope: "all", takeBuilt: false,
-    })).toThrow(/tattoo TAKE/);
+      scope: "users:1,7", attachScope: "users:1",
+    })).toThrow(/names users outside CASTING_REFERENCE_ATTACH_SCOPE: 7/);
   });
 
-  it("is OFF in the code as it stands — the default this guard is protecting", () => {
-    /* The premise of every arm above. If somebody flips the constant without
-       landing the take, THIS is the arm that says so. */
-    expect(INK_REFERENCE_TAKE_BUILT).toBe(false);
+  it("admits a covered user", () => {
+    expect(validateCastingInkReferenceEnvironment({
+      scope: "users:1", attachScope: "users:1",
+    })).toEqual({ kind: "users", userIds: [1] });
   });
 
-  it("lets `off` through untouched, because there is no window to close", () => {
-    /* The negative control on the guard itself: a guard that refused everything
-       would pass every arm above and be useless. */
+  it("lets `off` through untouched, because there is nothing to cover", () => {
+    /* The negative control: a validator that refused everything would pass every
+       arm above and be useless. */
     expect(validateCastingInkReferenceEnvironment({
       scope: undefined, attachScope: undefined,
     })).toEqual({ kind: "off" });
     expect(validateCastingInkReferenceEnvironment({
       scope: "off", attachScope: "off",
     })).toEqual({ kind: "off" });
-  });
-});
-
-describe("with the take built, the parent coverage is what decides", () => {
-  /*
-    These arms drive the guard's OTHER half through `takeBuilt: true`, so the
-    coverage rules are proven now rather than discovered on the day the take
-    lands. A rule written today and first executed months later is a rule nobody
-    has run.
-  */
-  it("refuses while the attach door is shut — no handle, no picture", () => {
-    expect(() => validateCastingInkReferenceEnvironment({
-      scope: "all", attachScope: "off", takeBuilt: true,
-    })).toThrow(/cannot be enabled while CASTING_REFERENCE_ATTACH_SCOPE is off/);
-  });
-
-  it("refuses `all` while the attach door is limited to named users", () => {
-    expect(() => validateCastingInkReferenceEnvironment({
-      scope: "all", attachScope: "users:1", takeBuilt: true,
-    })).toThrow(/cannot be "all"/);
-  });
-
-  it("refuses a user the attach door does not cover, and names them", () => {
-    expect(() => validateCastingInkReferenceEnvironment({
-      scope: "users:1,7", attachScope: "users:1", takeBuilt: true,
-    })).toThrow(/names users outside CASTING_REFERENCE_ATTACH_SCOPE: 7/);
-  });
-
-  it("admits a covered user", () => {
-    expect(validateCastingInkReferenceEnvironment({
-      scope: "users:1", attachScope: "users:1", takeBuilt: true,
-    })).toEqual({ kind: "users", userIds: [1] });
   });
 });
 

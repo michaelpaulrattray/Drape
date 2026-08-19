@@ -889,10 +889,9 @@
 
 - symbol: resolveInkPlacement
   file: server/castingV2/inkPlacementResolve.ts
-  verdict: HELD
-  why: stage 1 of the sentence-composed tattoo door, landed dark ahead of its callers exactly as this program's migration-before-code rule requires
-  argued: V3B §7.11 (design opus-822, ruled fable-1115)
-  blocker: stage 2 — the ink document gate's reference arm, which is the first thing that resolves a placement out of her words
+  verdict: KEEP
+  why: the blocker cleared — `inkReferenceTake.ts` resolves the placement a model read out of her sentence, so the closed-first vocabulary is now what decides whether her word is measured or her own
+  argued: V3B §7.11 (design opus-822, ruled fable-1115; the take ruled fable-1120)
 
 - symbol: inkPlacementTallyValue
   file: server/castingV2/inkPlacementResolve.ts

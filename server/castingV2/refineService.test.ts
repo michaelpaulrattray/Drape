@@ -9121,6 +9121,126 @@ describe("the picture she attached becomes the carrier that rides", () => {
     expect(painted).toHaveLength(2);
     expect(painted[0]!.prompt).not.toEqual(painted[1]!.prompt);
   });
+
+  /*
+    THE ORDERED ARM — a reference-documented tattoo ask is ANSWERED and NEVER
+    DISPATCHED, pre-cutter (ruled fable-1116 §4, shaped fable-1120 §4).
+
+    This is the one the whole staging argument rests on. The gate's reference arm
+    stopped walling a sleeve ask; with nothing behind it, that ask would have
+    travelled to a recipe with no crop and been RENDERED FROM WORDS — D-137's
+    forbidden render, produced by the very gate built to stop it.
+
+    Asserted on `painted`, which is the outgoing request itself, because the
+    contract is about what gets SENT and a check on a constant near it proves
+    nothing (invariant 5).
+  */
+  const inkRoad = (over: Record<string, unknown> = {}) => carrierRoad({
+    inkReferenceEnabled: () => true,
+    interpret: async () => ({
+      ok: true as const,
+      fromReference: true,
+      delta: { free: { ink: "the tattoo design in the attached picture" } },
+    }),
+    inkTake: async () => ({ placement: { kind: "open" as const, phrase: "sleeve" }, side: "left" as const }),
+    ...over,
+  });
+
+  it("ANSWERS a reference-documented tattoo ask and dispatches NOTHING", async () => {
+    const result = await refineCandidate(inkRoad(), {
+      ...input, instruction: "use this tattoo design on my left sleeve", referenceId: "ref-public",
+    });
+
+    expect(painted, "a tattoo was rendered from words — the render D-137 forbids").toHaveLength(0);
+    expect(minted, "a hair carrier was cut for a tattoo ask").toHaveLength(0);
+    expect(result.kind).toBe("selected");
+    /* What was READ is in front of her, which is what makes the take a live
+       control rather than a dark one. */
+    expect(result.note).toContain("for her left sleeve");
+    expect(result.note).toContain("Nothing was charged.");
+  });
+
+  it("does not fire for a hair ask riding the same picture — the negative control", async () => {
+    /*
+      Without this, a branch that fired on `reference && fromReference` alone
+      would swallow every reference ask on the account and the arm above would
+      still pass. The hair road must be untouched.
+    */
+    await refineCandidate(inkRoad({
+      interpret: async () => ({
+        ok: true as const,
+        fromReference: true,
+        delta: { free: { hairCut: "a mid-length wavy cut" } },
+      }),
+      hairTake: async () => "style" as const,
+    }), { ...input, instruction: "copy this hairstyle", referenceId: "ref-public" });
+
+    expect(painted, "the hair road stopped dispatching").toHaveLength(1);
+  });
+
+  /** The outcome, however it arrived — a note or a spoken refusal. Both roads
+   *  say something to her, and the negative controls below are about WHICH. */
+  const said = async (deps: Record<string, unknown>, instruction: string): Promise<string> => {
+    try {
+      const result = await refineCandidate(deps, { ...input, instruction, referenceId: "ref-public" });
+      return result.note ?? `<${result.kind}>`;
+    } catch (error) {
+      return (error as Error).message;
+    }
+  };
+
+  it("does not fire while the flag is off — the road she is not on", async () => {
+    /*
+      With the arm shut her ask meets the door it always met, and that door is
+      not this branch. What this proves is that the branch is behind the FLAG
+      and not behind the picture — a branch keyed on the picture alone would
+      answer here and the arm above would still be green.
+    */
+    const off = await said(inkRoad({ inkReferenceEnabled: () => false }),
+      "use this tattoo design on my left sleeve");
+
+    expect(painted).toHaveLength(0);
+    expect(off).not.toContain("I've got the design from your picture");
+  });
+
+  it("does not fire for a tattoo ask that never pointed at the picture", async () => {
+    /* `fromReference` is the condition, not the handle: a picture riding along
+       while she asks for something else documents nothing. */
+    const unpointed = await said(inkRoad({
+      interpret: async () => ({
+        ok: true as const,
+        delta: { free: { ink: "a small anchor on her neck" } },
+      }),
+    }), "give her a small anchor tattoo on her neck");
+
+    expect(unpointed).not.toContain("I've got the design from your picture");
+  });
+
+  it("answers a MARK that names a design too — the star's own scar", async () => {
+    /* D-158 in this branch: "a small star behind her ear" carries no word
+       "tattoo" and files as a mark. If only `ink` reached here it would fall
+       through to the hair lane and be rendered from words. */
+    const result = await refineCandidate(inkRoad({
+      interpret: async () => ({
+        ok: true as const,
+        fromReference: true,
+        delta: { free: { marks: ["a small star from the attached picture"] } },
+      }),
+      inkTake: async () => ({ placement: { kind: "measured" as const, placement: "neck" as const }, side: "centre" as const }),
+    }), { ...input, instruction: "put this star from the picture on her neck", referenceId: "ref-public" });
+
+    expect(painted).toHaveLength(0);
+    expect(result.note).toContain("for her neck");
+  });
+
+  it("says the picture landed even when the sentence could not be read", async () => {
+    const result = await refineCandidate(inkRoad({ inkTake: async () => null }), {
+      ...input, instruction: "use this tattoo design", referenceId: "ref-public",
+    });
+
+    expect(painted).toHaveLength(0);
+    expect(result.note).toContain("couldn't tell where on her you meant");
+  });
 });
 
 

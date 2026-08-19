@@ -142,6 +142,11 @@ import {
 import { cutHairCarrier, mintHairCarrier, SECOND_VIEW_UNUSED_NOTE } from "./hairReferenceCutter";
 import { hairTakeEntry, hairTakeSentence, resolveHairTake } from "./hairReferenceTake";
 import {
+  inkReferenceNote,
+  namesInkFromReference,
+  resolveInkReferenceTake,
+} from "./inkReferenceTake";
+import {
   cropTakeAllowedOn, readReferenceMedium, DRAWN_NARROWED_NOTE,
 } from "./referenceMediumDoor";
 import {
@@ -683,6 +688,14 @@ export type RefineServiceDependencies = {
    * consulted at all.
    */
   openLaneEnabled?: (userId: number) => boolean;
+  /**
+   * THE TATTOO TAKE, injectable so its court runs without a transport.
+   *
+   * Its own seam rather than a reuse of `hairTake`: the two answer different
+   * questions about the same sentence, and a suite that could only stub both at
+   * once could not drive one road with the other left real.
+   */
+  inkTake?: typeof resolveInkReferenceTake;
   /** `CASTING_INK_REFERENCE_SCOPE`, injectable for the same reason as its siblings. */
   inkReferenceEnabled?: (userId: number) => boolean;
   /** Writes the sent recipe onto the variant at dispatch — see `recordVariantDispatch`. */
@@ -3463,6 +3476,61 @@ async function refineCandidateCounted(
     the SHA and leaving the scope behind is exactly how style and fullLook came
     to dispatch the same request (opus-815, ruled fable-1108).
   */
+  /*
+    THE TATTOO ASK HER PICTURE DOCUMENTS — read here, ANSWERED here, and it never
+    reaches the claim (designed opus-822, ruled fable-1116 §4 and fable-1120 §4).
+
+    The gate's reference arm stopped walling this ask. What it opened onto had to
+    be decided, and pre-cutter there is exactly one honest answer:
+
+      - there is nowhere to FILE it. A design row needs the design's bytes, and
+        the bytes that exist are her whole photograph — filing that as the design
+        is the widening tripwire's own exposure with a copy taken;
+      - there is nothing to RENDER it with. The crop-from-photo cutter is not
+        built, so a render here would be a tattoo drawn from words, which is
+        D-137's forbidden render and the one the gate exists to stop;
+      - and there is nothing to ASK her. A question whose every answer leads to
+        *"we can't yet"* is a dead end wearing a question (D-180), which is
+        exactly the defect the handle commit just closed on the glasses door.
+
+    So the ask is READ — the placement in her own word, the side only if she said
+    one — and she is told what was understood and what cannot be done yet. That
+    is not a consolation: today's wall tells somebody holding a design document
+    that her ask *"needs a design document first"*, which is false to her face.
+
+    THE QUESTION LANDS WITH THE CUTTER, when it has somewhere to lead.
+
+    Placed ABOVE the hair lane because an ink ask is not a hair ask: it would
+    fall through `asksAboutHair`, be confessed as an unused picture, and then be
+    claimed and rendered from words — which is the render this whole branch
+    exists to prevent.
+  */
+  if (
+    reference
+    && pointedAtThePicture
+    && (dependencies.inkReferenceEnabled ?? captureCastingInkReferenceEnabled)(input.userId)
+    && namesInkFromReference(editDelta)
+  ) {
+    const take = await (dependencies.inkTake ?? resolveInkReferenceTake)({ instruction });
+    log.info(
+      {
+        userId: input.userId,
+        candidate: input.candidatePublicId,
+        placement: take?.placement.kind ?? null,
+        side: take?.side ?? null,
+      },
+      "[refineService] a tattoo ask documented by her picture — answered before the claim, nothing spent",
+    );
+    return {
+      kind: "selected",
+      note: inkReferenceNote(take),
+      variantId: source.variantPublicId,
+      candidateId: input.candidatePublicId,
+      imageUrl: currentImageUrl,
+      instructions: readInstructions(predecessorForParse?.instructions),
+    };
+  }
+
   let hairSource: { key: string; sha: string; scope: string } | null = null;
   let attachedPictureUnused = false;
   let secondViewNote: string | null = null;
