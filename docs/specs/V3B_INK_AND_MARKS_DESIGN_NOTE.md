@@ -350,6 +350,13 @@ best, and the mannequin is reserved for on-skin graphics.** The real-person
 fence is met by the FORM in every row — a person cannot ride along a plate, a
 segmented cut, or a sentence.
 
+⚠ **TWO OF THESE FOUR ROWS WERE REFINED ON 2026-08-19 — read §7.11 before
+quoting this table.** He gave the RULE the four rows were instances of, and it
+moved two of them: **hair is a question before it is a form** (colour → words,
+style/full look → crop), and **tattoo extends** to uploads that merely CONTAIN a
+tattoo, cropped out of the photograph — while a words-only tattoo ask mints no
+plate at all. The table is not wrong; it is no longer the whole statement.
+
 This is live in code as `shared/referenceIntents.ts`, where each entry carries
 its form and whether that form is BUILT. Today exactly one is.
 
@@ -877,3 +884,94 @@ plate rather than one family of two, and the "leaves an already legal canvas
 alone" control in `inkPlateEngines.test.ts` moved to a constructed size — a
 control tied to whichever asset happens to be legal this week is a control that
 stops testing anything the week that changes.
+
+### 7.11 THE CARRIER LAW, STATED BY HIM FOR THE WHOLE REFERENCE SURFACE
+### (founder rulings, 2026-08-19, relayed fable-1047)
+
+**This supersedes narrower readings of the map in §7.1** — it does not replace
+the map, it states the PRINCIPLE the map was one instance of, and it extends two
+of its rows. Written here rather than cited from the mailbox, because the
+mailbox is the record and this section is the instruction.
+
+**HIS WORDS, verbatim:**
+
+> *"tatoo studio needs more work. AS OF TODAY if someone says a serpent tatoo on
+> his right arm it runs with words only including into the signing/angle views.
+> if someone upload a reference image of a tattoo and says use this tattoo design
+> on the right arm it uses the supplied reference image as the tattoo design
+> cropped if requried e.g its a full person with thir face in it. if i supply a
+> reference image and say copy hair from reference it asks color? style? or full
+> look. things which would carry fine as words alone such as makeup or hair color
+> stay as words but specific looks and feature must always ride as cropped
+> refrences. from the reference photo supplied."*
+
+#### The four rulings, as mapped
+
+1. **A WORD-DESCRIBED tattoo rides as WORDS end to end** — the refine AND the
+   signing/angle views. **No plate is minted from a words-only ask.** *"a serpent
+   tatoo on his right arm"* never becomes an uploaded design; it stays a
+   sentence, and the sentence has to reach every view, including the surfaces
+   the anchor cannot show.
+2. **An UPLOADED tattoo reference IS the design, CROPPED from the photo when
+   needed** — and he named the hard case himself: *"e.g its a full person with
+   thir face in it."* **This EXTENDS the upload door** from clean flash art to
+   photographs that merely CONTAIN a tattoo. The crop is segmentation work — the
+   fidelity law's dedicated tool, never a rectangle — and D-172 containment
+   governs absolutely: a face in the upload must never ride toward the engine.
+3. **Hair from a reference ASKS THE QUESTION** — *"it asks color? style? or full
+   look"*. An interpreter clarification, **not a guess**. Colour then rides as
+   WORDS; style and full look ride as the SEGMENTED CROP.
+4. **THE GENERAL LAW, which is the point of the whole ruling:** properties that
+   **carry fine as words** (makeup, hair colour) **stay words**; **specific looks
+   and features ALWAYS ride as cropped references** from the supplied photo.
+
+#### What it changes in §7.1's table
+
+```
+tattoo    EXTENDED — the row said the uploaded photograph never reaches a render,
+          which stands. What is new: an upload may now BE a photograph containing
+          a tattoo, and the design is CROPPED out of it before it reaches the
+          plate. Words-only asks mint NO plate at all and ride as words into the
+          views.
+hair      REFINED — the row said CROP flatly. It is now a QUESTION first:
+          colour → words · style → crop · full look → crop. The crop half is
+          unchanged and still the segmented cut, never a rectangle.
+makeup    UNCHANGED and now founder-explicit as the law's other half — it is the
+          named example of a property that carries fine as words.
+eyeColour UNCHANGED — a specific feature, so it rides as a crop, which is what
+          the row already said. The general law now explains WHY rather than
+          leaving it a per-class pick.
+```
+
+**The map was never wrong; it was four rows where he has now given the rule.**
+A class arriving later is decided by asking his question — *does this carry fine
+as words?* — instead of by adding a row someone has to guess.
+
+#### The three builds this opens — SCOPED TO FABLE BEFORE ANY IS BUILT
+
+Ordered fable-1047 §b, and none of them starts on this filing alone:
+
+- **the §1 view-words check** — do the sign/angle view prompts carry a worded
+  tattoo's description to surfaces the anchor cannot show (a back tattoo,
+  worded, viewed from behind)? A READ of the road answered with code cites, not
+  a build;
+- **the §2 crop-from-photo ingestion** — the crop pipeline, its containment
+  gates, and where the crop lands (the design store's own copy, under the
+  candidate's purge path). The design goes to review first;
+- **the §3 clarifying question** — an interpreter clarification with three
+  named answers, which is a conversation turn the refine road does not have
+  today.
+
+#### ⚠ WHAT THESE RULINGS DO NOT TOUCH — the release gating (fable-1047 §c)
+
+His §2 example says **"the right arm"**, and **right-arm delivery is the side
+court's open defect.** Ingestion per his spec is **not release**: the
+released-tuple table (`shared/inkReleasedPlacements.ts`) still governs what may
+reach a photograph, it is still EMPTY, the never-infer rule still holds, and the
+side defect still blocks right-arm until its lever is found. **Nothing in these
+four rulings reopens any of that**, and a reading that lets "he said right arm"
+imply "right arm ships" is the mistake this paragraph exists to prevent.
+
+His two pending items are unchanged. These rulings make the ink flip's surface
+**bigger, not different** — the upload door they govern is the door that flip
+opens.

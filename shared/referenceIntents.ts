@@ -26,7 +26,9 @@
  *     hair        CROP              the SEGMENTED hair region — a reader's cut,
  *                                   the artifact this product already mints from
  *                                   her own renders. Never a rectangle with a
- *                                   face in it
+ *                                   face in it. ⚠ REFINED 2026-08-19 — see
+ *                                   below; hair is a QUESTION before it is a
+ *                                   form
  *     makeup      WORDS             one describer read of the reference; the
  *                                   words carry, the picture does not
  *     eyeColour   CROP              the product's own proven eye-crop road
@@ -34,6 +36,33 @@
  * Each class ingests by the form that carries it best, and the mannequin is
  * reserved for on-skin graphics. The fence is met by the FORM in every row: a
  * person cannot ride along a plate, a segmented cut, or a sentence.
+ *
+ * # THE RULE BEHIND THE MAP — his, 2026-08-19 (fable-1047)
+ *
+ * > *"things which would carry fine as words alone such as makeup or hair color
+ * > stay as words but specific looks and feature must always ride as cropped
+ * > refrences. from the reference photo supplied."*
+ *
+ * The four rows above were never wrong; they were four instances, and this is
+ * the rule they were instances OF. A class arriving later is decided by asking
+ * his question — *does this carry fine as words?* — rather than by adding a row
+ * somebody guesses at.
+ *
+ * **And it refines `hair`, which is why that row now carries a warning.** Hair
+ * from a reference is a QUESTION before it is a form: *"if i supply a reference
+ * image and say copy hair from reference it asks color? style? or full look."*
+ * Colour rides as WORDS; style and full look ride as the segmented CROP. So one
+ * `form` per class is not the whole truth for hair, and **the shape of the fix
+ * is deliberately NOT decided here** — the clarifying question is an
+ * unbuilt road (`V3B_INK_AND_MARKS_DESIGN_NOTE.md` §7.11) whose design is
+ * reviewed before it is built. `hair.form` stays `"crop"` because that is what
+ * the STYLE and FULL-LOOK answers use, and because `hair.open` is `false`, so
+ * no door acts on the field today and nothing is promised to anyone.
+ *
+ * Tattoo is EXTENDED by the same ruling: an upload may now be a photograph that
+ * merely CONTAINS a tattoo, with the design cropped out of it before it reaches
+ * the plate — his own hard case, *"e.g its a full person with thir face in it"*
+ * — and a WORDS-ONLY tattoo ask mints no plate at all.
  *
  * # `open` is what is BUILT, and it is not the same question
  *
@@ -72,6 +101,10 @@ const ENTRIES: Readonly<Record<ReferenceIntent, ReferenceIntentEntry>> = Object.
   hair: Object.freeze({
     key: "hair",
     noun: "her hair",
+    /* The form of the STYLE and FULL-LOOK answers. Colour rides as words, so
+       this class is a question before it is a form — see the header. Left as
+       one value on purpose: `open` is false, no door reads it, and the shape
+       that carries two answers is part of an unbuilt design. */
     form: "crop",
     open: false,
   }),
