@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "48e7b7040a31be04"
+    "sourceFingerprint": "a56e75fe70aacf9a"
   },
   "domains": [
     {
@@ -19904,7 +19904,22 @@
     },
     {
       "from": "module:server/castingV2/hairReferenceTake.ts",
+      "to": "module:server/castingV2/interpreter.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/hairReferenceTake.ts",
       "to": "module:server/castingV2/subjectCards.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/hairReferenceTake.ts",
+      "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/hairReferenceTake.ts",
+      "to": "module:server/providers/types.ts",
       "kind": "imports"
     },
     {

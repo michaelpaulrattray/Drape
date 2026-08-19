@@ -73,8 +73,13 @@ import { castingIdentityEngine } from "../server/castingV2/signEngine";
 import { carriedInkPlates } from "../server/castingV2/signService";
 import { storageReadBytes } from "../server/storage";
 import { getDb } from "../server/db/connection";
+import { assertOneWorld } from "./lib/worldGuard.mts";
 import { castingCandidates } from "../drizzle/schema";
 import { eq } from "drizzle-orm";
+
+/* This court is TRACKED now, so it is permanent and declares its world: inert
+   locally, and it refuses a half-production process under `railway run`. */
+assertOneWorld(["DATABASE_URL"]);
 
 const OUT = path.resolve("output/view-reference-court");
 await mkdir(OUT, { recursive: true });

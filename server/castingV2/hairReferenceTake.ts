@@ -64,7 +64,12 @@
  * visible rather than filled by whoever notices it, because a phrase somebody
  * guessed at reads as chosen to the next person.
  */
+import { createModuleLogger } from "../logging/logger";
+import type { TextEngine } from "../providers/types";
+import { interpreterEngine } from "./interpreter";
 import { FREE_SUBJECT_KEYS, SUBJECT_CARDS, type FreeSubject } from "./subjectCards";
+
+const log = createModuleLogger("castingV2/hairReferenceTake");
 
 /**
  * The hair facets, DERIVED from the cards rather than listed beside them.
@@ -368,38 +373,150 @@ export function hairTakeFor(instruction: string): HairTake {
 }
 
 /**
- * WHETHER THIS ASK NAMED MORE THAN ONE TAKE — the open edge of the ruling
- * above, exported so it is a fact anything can read rather than a shape only
- * this file knows about.
+ * WHETHER THIS ASK NAMED MORE THAN ONE TAKE — the sentence the word tests
+ * cannot answer, and the door into {@link resolveHairTake}.
  *
- * # THE DEFECT IT MARKS, and it lands on the founder's OWN example
+ * *"Copy the hairstyle but keep her colour"* names `style` AND `colour`. Under
+ * the word tests alone that counts as neither, neither falls to the default,
+ * and the default is the whole lot — **so his own sentence from fable-1048, the
+ * one the scoped ride-along words exist to serve, would take her colour with
+ * it.** That was live for one commit and is what bought the escalation below.
+ */
+export function hairTakeIsAmbiguous(instruction: string): boolean {
+  return hairTakesNamedIn(instruction).length > 1;
+}
+
+/**
+ * THE TAKE, RESOLVED — word tests in front, the interpreter behind them
+ * (ruled fable-1089 §2).
  *
- * *"Copy the hairstyle but keep her colour"* names `style` AND `colour`. Two
- * takes at once counts as neither, neither becomes the default, and the default
- * is now the whole lot — **so his own sentence from fable-1048, the one the
- * scoped ride-along words exist to serve, currently takes her colour with it.**
- * That is the exact failure that amendment was written to prevent, produced by
- * a rule that was correct while the fallback was a question.
+ * ```
+ *   named none        → the whole lot            his 1087 ruling, free
+ *   named one         → that take                the word tests, free
+ *   named two or more → the INTERPRETER reads it  one text call
+ * ```
  *
- * **It is not fixed here, and that is deliberate.** Every candidate fix is a
- * guess about what she meant and each guesses differently:
+ * # WHY A MODEL, WHEN EVERY OTHER DOOR IN THIS FILE IS A WORD TEST
+ *
+ * The word tests exist because the deleted question had to be REBUILT
+ * server-side on the answer path, and a model asked *"is this a hair ask"* may
+ * answer differently on the two passes. **With no question there is nothing to
+ * rebuild**, so that constraint is gone and the reason for keeping a model out
+ * went with it.
+ *
+ * And the sentence genuinely needs one. *"Keep HER colour"* is an EXCLUSION,
+ * and the thing that marks it is the pronoun — *hers*, the Cast's own, the
+ * source-never-subject rule read from the other side. No word test sees that.
+ * The alternatives are a phrasing list, which D-163 outlaws as a class, or a
+ * guess, and the three available guesses disagree with each other:
  *
  *   first-named wins        "style but keep her colour" → style  ✓
  *                           "the colour and the cut"    → colour ✗
  *   smallest claim wins     his sentence                → colour ✗
- *   read the negation       needs a phrasing list, which D-163 outlaws as a
- *                           class, or a model read, which is a different design
  *
- * Choosing between them is a product decision about how a vague-but-specified
- * ask is answered, and it is out for ruling. Until it comes back the behaviour
- * is the one the suite pins — with his sentence named in the arm, so nobody can
- * read the green as "this case works."
+ * **A sentence a person reads plainly deserves a reader that understands
+ * English.** This is not a new road either: `UNIVERSAL_REFERENCE_ROAD_DESIGN`
+ * §3 already has the interpreter answering WHAT IS BEING TAKEN when an image is
+ * attached. The word tests are the fast path in front of that, so the ordinary
+ * ask still costs nothing.
  *
- * **Nothing is exposed while it is open**: `CASTING_HAIR_REFERENCE_SCOPE` is
- * off and absent-means-off, so no customer's ask reaches this function at all.
+ * # THE ANSWER IS VALIDATED AGAINST THE CLOSED SET, NEVER TRUSTED
+ *
+ * `refuse, don't invent` — a reply outside {@link HAIR_TAKES} is not a take,
+ * whatever it spells. The model chooses AMONG our three; it does not name a
+ * fourth, and it cannot re-spell one of the three into something the rest of
+ * this file would not recognise (`spelling-not-meaning`).
+ *
+ * # AND `null` MEANS UNREADABLE — never a fourth take and never a default
+ *
+ * A transport that fails, or a reply that is not one of the three, returns
+ * `null`. **It does not fall back to the whole lot**, because falling back is
+ * the defect this function exists to close: the sentence said *keep her colour*
+ * and guessing after a hiccup would take it anyway. Genuine unreadability is
+ * exactly what the D-180 mechanism was kept for (fable-1087 §2), and the caller
+ * spends the road's existing unreadable answer rather than a new surface
+ * invented here.
  */
-export function hairTakeIsAmbiguous(instruction: string): boolean {
-  return hairTakesNamedIn(instruction).length > 1;
+export async function resolveHairTake(input: {
+  instruction: string;
+  /** Test seam and dependency injection; `undefined` takes the shipped engine. */
+  engine?: TextEngine | null;
+  signal?: AbortSignal;
+}): Promise<HairTake | null> {
+  const named = hairTakesNamedIn(input.instruction);
+  if (named.length === 0) return "fullLook";
+  if (named.length === 1) return named[0];
+
+  const engine = input.engine === undefined ? interpreterEngine() : input.engine;
+  if (!engine) {
+    log.warn({}, "[hairReferenceTake] no text engine — the take is unreadable rather than guessed");
+    return null;
+  }
+
+  let raw: string;
+  try {
+    const reply = await engine.complete({
+      about: "interpret",
+      system: "You read one sentence and answer with one word.",
+      user: TAKE_ASK(input.instruction),
+      json: true,
+      temperature: 0,
+      maxOutputTokens: 200,
+      ...(input.signal ? { signal: input.signal } : {}),
+    });
+    raw = reply.text ?? "";
+  } catch (error) {
+    log.warn({ err: error }, "[hairReferenceTake] the take could not be read");
+    return null;
+  }
+  return readHairTake(raw);
+}
+
+/**
+ * The ask — and the three answers are COMPOSED from the take map rather than
+ * typed, so a fourth take would appear in the prompt on the day it is declared
+ * (law 4). Each one carries its own label, which is the customer-facing phrase
+ * this file already owns.
+ *
+ * It names the exclusion case explicitly because that is the whole reason this
+ * call exists, and it says the quiet part: what she wants KEPT is hers.
+ */
+function TAKE_ASK(instruction: string): string {
+  return [
+    "A customer attached a photograph and wrote this instruction about the hair in it:",
+    "",
+    `"${instruction.trim()}"`,
+    "",
+    "How much of that hair is she asking to take? Answer with exactly one of:",
+    ...HAIR_TAKES.map((take) => `  ${take} — ${hairTakeEntry(take).label}`),
+    "",
+    "If she asks for one thing and says to KEEP another as it is, she is taking",
+    "only the thing she asked for. Words like \"her own\" or \"keep hers\" describe",
+    "what stays, never what is taken.",
+    "",
+    'Reply with JSON: {"take": "..."} and nothing else.',
+  ].join("\n");
+}
+
+/**
+ * Read the reply — positive admission against the closed set.
+ *
+ * Tolerant of the punctuation and casing a model puts around a one-word answer,
+ * and strict about everything else: an unlisted word is `null`, which the caller
+ * spells as unreadable rather than as a take nobody declared.
+ */
+export function readHairTake(raw: string): HairTake | null {
+  let value: unknown;
+  try {
+    const parsed = JSON.parse(raw.trim().replace(/^```(?:json)?/i, "").replace(/```$/, "").trim());
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return null;
+    value = (parsed as Record<string, unknown>).take;
+  } catch {
+    return null;
+  }
+  if (typeof value !== "string") return null;
+  const plain = value.trim().toLowerCase().replace(/[.!"']+$/, "");
+  return HAIR_TAKES.find((take) => take.toLowerCase() === plain) ?? null;
 }
 
 /**

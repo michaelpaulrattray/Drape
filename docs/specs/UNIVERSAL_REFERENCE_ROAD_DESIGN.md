@@ -516,3 +516,223 @@ Each was opened at working size before its line here was written.
    crop road must rule one-region-or-many deliberately; and several of its
    pieces are TEXT, which the engines render unreliably, so a court records what
    the text actually came out as rather than scoring the shapes and moving on.
+
+### 9.7 THE CLARIFYING QUESTION IS GONE — his second word on it (fable-1087)
+
+> *"i want to simplify adding a hair reference lets not ask the user if they
+> want the style or the color etc, if they are vague and say copy this hair it
+> just means the whole lot unless they specify do you agree?"*
+> — the founder, 2026-08-19
+
+**This supersedes §9.1's clarifying question**, which shipped dark on
+`2358ca59` and lived for one day. The question, its builder and its `Reask`
+kind are deleted; the take map, the scoped ride-along sentence and the heading
+fence are untouched. `hairTakeFor` is the default and it returns the whole lot.
+
+Three reasons, and they belong on the page because the question was argued for
+on this same page a day earlier:
+
+1. **Law 8.** A stylist handed a picture and told *copy this hair* copies the
+   hair. Reading that sentence as under-specified was the product asking a
+   person to speak its own vocabulary back to it.
+2. **The sentence is the interface.** A take named in words still routes: *"just
+   the colour"* to the words road, *"the style, keep her colour"* to the crop
+   with its scoped sentence.
+3. **The cost asymmetry.** A question taxes EVERY reference ask, every time,
+   before anything happens. Guessing wrong costs one follow-up edit on the
+   minority that meant a facet and did not say so.
+
+**`hair.open`'s gate restates accordingly** (there are no answers to act any
+more): hair opens when the FULL-LOOK road and the two worded takes all act.
+
+#### The open edge, named rather than left to be discovered
+
+*"Copy the hairstyle but keep her colour"* — the founder's OWN sentence from
+fable-1048 — names `style` and `colour`. Two takes at once counts as neither,
+neither is now the whole lot, and **the whole lot takes the colour his amendment
+exists to protect.** The rule was right while the fallback was a question and
+became wrong the moment the question was deleted.
+
+It is pinned in the suite by name and marked by `hairTakeIsAmbiguous`, not
+fixed, because every candidate fix is a different guess:
+
+```
+  first-named wins       "style but keep her colour" → style   ✓
+                         "the colour and the cut"    → colour  ✗
+  smallest claim wins    his sentence                → colour  ✗
+  read the negation      a phrasing list (D-163 outlaws the class), or a model
+                         read, which is a different design
+```
+
+Nothing is exposed while it is open: the flag is off and absent means off.
+
+### 9.8 OWED COURT ARMS — filed, not yet run
+
+**REGENERATE MUST RE-SEND THE ORIGINAL REFERENCE** (ordered fable-1086, from a
+founder question). The design answer is that regenerate is replace-in-place
+re-running the SAME ask against the SAME parent state, so the ask holds its
+`referenceId`, the recipe re-composes with the ORIGINAL crop, and the failed
+attempt's harvest dies with the picture it came from. **The reference keeps
+riding until a delivery is KEPT.**
+
+That is reasoning, and this seam is where this product's bugs live — the
+reference lane meeting the carry system, the family that produced
+`fact-written-under-another-flag`. So it is PROVEN, red-first, with the crop
+road's courts:
+
+1. a regenerate after a reference-steered edit re-sends the original reference
+   crop **on the outgoing recipe**, asserted at the wire;
+2. and does **not** carry the replaced version's harvested hair.
+
+If the behaviour differs from the design answer above, that is a FINDING before
+it is a fix.
+
+**THE DRAWING'S QUIETNESS** (ordered fable-1088 §4). Between the two asks the
+salon illustration went from three blocks to one. n=2 each way, so it may be
+nothing — but the shape is the one `referenceClassGate` already paid for: a
+longer, sterner ask made a careful reader quieter everywhere, and the new ask
+gained five lines. **Four reads, settled WITH hair's final courts, before
+`hair.open` ever flips.** Not chased on n=2 now; not shipped unexamined either.
+
+### 9.9 ORDERING — where the outfit work sits (founder, fable-1085)
+
+> *"whats the current pipeline look like id like to park this test right at the
+> end"*
+
+The outfit/wardrobe thread — the default tee, a prompt-named outfit honoured as
+a lock and carried into signing, under-clothing ink flipping the register, and
+the consistency court that must precede any promise about free-typed outfits —
+**parks at the END of the current pipeline**: after the colour hardening, the
+hair crop road, hair opening, the drift centrepiece, tattoo routing and its
+courts, the attach UI and build two's YES bar, and build three.
+
+It is not ruled final. He has the three-rule shape and the easy-versus-difficult
+read (accepting is easy; per-view consistency is the unknown, evidenced by the
+trousers finding) and parked it deliberately. **Seats inherit this order;
+nothing about the outfit work starts until the pipeline ahead of it is done or
+he reorders.**
+
+### 9.10 THE PANEL DECISION — owed before the first crop is cut (§9.3)
+
+*Design only. Nothing here is built, and §9.3's order is explicit that it is
+reviewed before a crop road exists to use it.*
+
+His style specimen is a vertical stack of **two photographs of the same man** —
+a profile above, the crown and swept fringe from a downward three-quarter below.
+Asked *where is the hair*, a segmenter returns either one panel arbitrarily or a
+union spanning both with a white bar through the middle, and **a union of two
+heads is not a hair crop.** It is two crops and a gap, carried into a repaint as
+if it were one head of hair.
+
+#### THE OBVIOUS RULE IS WRONG, AND HIS OTHER SPECIMEN IS THE COUNTEREXAMPLE
+
+The rule that suggests itself is *count the connected components of the hair
+mask; more than one means a composite.* **It is wrong, and the frame that
+convicts it is already in the corpus.**
+
+`hair-colour-blocked-sections-copper-platinum-black-silver.png` is ONE
+photograph of ONE woman, and her hair hangs down both sides of her face. A hair
+mask over that frame is at least two components separated by a face. Pigtails,
+bunches, a centre-parted curtain and half-up styles are all the same shape.
+**Counting hair components cannot tell two panels from one head**, and a rule
+that mistakes her for a composite would throw away half of a customer's
+reference in the ordinary case.
+
+Nor is it the mask's fault. The discriminator is simply not IN the hair mask:
+what separates two panels is background, and what separates two hair components
+on one head is a FACE.
+
+#### THE DISCRIMINATOR IS THE HEAD, NOT THE HAIR
+
+So the question the crop road asks is **how many heads are in this picture** —
+because a face that splits a hair mask is itself part of one connected head,
+while two panels are two heads with background between them.
+
+```
+  head components   hair components   reading
+  ---------------   ---------------   -----------------------------------------
+        1                 1           one head, one region — cut it
+        1                2+           ONE HEAD, hair either side of a face —
+                                      cut the whole hair region, both parts
+       2+                 any         a composite: two heads in one frame
+```
+
+The reader already exists and is the one the product runs on its own frames
+(`falRegionReader`), and it already reports components per region — that is how
+the earring/ear pair was proven at the wire (*"earring: ONE component, 786px;
+ear: TWO components, 2557px and 2553px"*). **One extra region read per
+reference**, on the house, and no new instrument.
+
+#### THE CARRY RULE IS UNDECIDED, AND THE PRECEDENT I REACHED FOR WAS CONVICTED
+
+§9.3 asked for *a stated rule for which panel carries*, and the first version of
+this section proposed that **both panels ride as one sheet**, on the grounds
+that the ink road already carries a wrapping tattoo as *"multiple views on the
+same sheet, like a character sheet, so it stays consistent from any angle."*
+
+**That precedent does not exist any more, and citing it was the error**
+(corrected fable-1090 §2). The wrap court convicted the multi-view sheet
+(opus-745): **one neck tattoo arrived as TWO**, because a sheet showing a design
+from two angles reads as one design PER VIEW. The founder's single-view ruling
+was the fix. So proposing a profile-plus-crown hair sheet is not inheriting a
+precedent — **it is re-proposing the convicted shape in a new lane**, and the
+only honest thing to say for it is that its geometry MIGHT be innocent here: a
+head cannot show its profile and its crown at once the way a neck genuinely
+shows a front and a side, so the two views may not be confusable as two heads of
+hair. *Might.* Nobody has measured it.
+
+**So the sheet-as-carrier is a HYPOTHESIS and the measurement decides it**
+(ruled fable-1090 §3), rather than the measurement being a confirmation run
+after the decision. The arms are declared here before anything is bought, which
+is the wrap court's own method:
+
+```
+  ARM A   the two-view sheet as carrier
+  ARM B   the largest single panel as carrier      the control
+```
+
+judged on two things, in this order:
+
+1. **one haircut, delivered once** — no doubling, and no blending of the two
+   views into a chimera. This is the arm the wrap court failed, and it is what
+   the sheet is on trial for;
+2. **fidelity to the cut**, against BOTH source views, by eye (law 9).
+
+If the sheet is clean, both panels ride. If it doubles or blends, **the largest
+head by mask area carries** — a measurement rather than a judgement — and the
+customer is told plainly that the second view was not used.
+
+**Either way the fallback is the same**: a panel that cannot be cut cleanly is
+never carried as a sheet with a hole in it, and the ask is never failed for it.
+
+#### WHAT COULD MAKE THIS PROPOSAL WRONG, stated so the review has a target
+
+1. **Two heads may not be one person.** A mood board of three different models
+   is also two-or-more heads, and carrying all of them as one hair sheet would
+   be carrying three haircuts as one. *Same person* is a judgement, and law 9
+   says a reader's verdict on it is a pointer rather than a fact — so a
+   sameness test is the expensive part of this design and may not be affordable.
+   The honest interim may be a CAP (two panels ride, three or more asks her
+   which) rather than a sameness read.
+2. **A sheet is a different picture from a crop**, and `crop-holds-the-region-
+   it-depicts` says a carrier pins what it PICTURES. A two-view sheet pictures
+   two views; whether the engine reads that as one haircut or as two people is a
+   measurable question and it is not measured yet. **It is measurable cheaply**,
+   which is the argument for settling it before the crop road is built rather
+   than after.
+3. **The vertical stack is not the only composite shape.** Side-by-side and
+   grids exist. The head-component rule does not care, which is a point in its
+   favour, but the sheet composition does.
+
+#### Standing, as ruled (fable-1090)
+
+- **(a) the head-component discriminator is RATIFIED** — the counterexample is
+  measured, the true separator is named, and the instrument exists at the wire.
+  The mood-board residual (2+ heads may be 2+ people, and sameness is
+  law-9-expensive) defers behind the two-panel cap.
+- **(b) the carry rule is WITHHELD** until the measurement above answers it.
+- **(c) the measurement runs FIRST**, on his own specimen, arms as declared.
+- **Interim: the two-panel cap stands** — two or fewer heads proceed under
+  whatever (b) becomes, three or more ask her which — and **nothing about panels
+  ships before the measurement**, which costs less than one wrongly-shaped crop
+  road.

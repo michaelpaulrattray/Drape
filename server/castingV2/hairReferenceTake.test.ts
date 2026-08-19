@@ -9,6 +9,8 @@
  */
 import { describe, expect, it } from "vitest";
 
+import type { TextEngine } from "../providers/types";
+
 import {
   HAIR_COLOUR_FACETS,
   HAIR_FACETS,
@@ -23,6 +25,8 @@ import {
   hairTakeFor,
   hairTakeIsAmbiguous,
   hairTakesNamedIn,
+  readHairTake,
+  resolveHairTake,
   hairTakeNamedIn,
   hairTakeSentence,
   joinPhrases,
@@ -280,29 +284,138 @@ describe("THE DEFAULT IS THE WHOLE LOT — his second ruling (fable-1087)", () =
     expect(hairTakeFor("copy the whole look")).toBe("fullLook");
   });
 
-  it("KNOWN DEFECT — his own 'style but keep her colour' currently takes the colour", () => {
-    /*
-      NOT A PASSING CASE. This arm pins a defect so that the suite's green
-      cannot be read as the case working.
-
-      *"Copy the hairstyle but keep her colour"* is the founder's own sentence
-      from fable-1048 — the one the scoped ride-along words exist to serve. It
-      names `style` and `colour`, two-at-once counts as neither, and neither now
-      falls to the whole lot. So the ask that says *keep her colour* takes the
-      reference's colour.
-
-      The rule was correct while the fallback was a question and became wrong the
-      moment the question was deleted (fable-1087). The fix is a product decision
-      between three guesses that disagree — see `hairTakeIsAmbiguous` — and is
-      out for ruling. Nothing is exposed: the flag is off and absent-means-off.
-
-      WHEN IT IS RULED, this arm flips to the ruled answer and its name changes.
-      Leaving it red is not an option; leaving it silent is worse than either.
-    */
+  it("marks a two-take sentence as needing more than a word test", () => {
     expect(hairTakesNamedIn("copy the hairstyle but keep her colour").sort())
       .toEqual(["colour", "style"]);
     expect(hairTakeIsAmbiguous("copy the hairstyle but keep her colour")).toBe(true);
-    expect(hairTakeFor("copy the hairstyle but keep her colour")).toBe("fullLook");
+    expect(hairTakeIsAmbiguous("copy this hair")).toBe(false);
+    expect(hairTakeIsAmbiguous("copy just the colour")).toBe(false);
+  });
+});
+
+describe("THE ESCALATION — a sentence a person reads plainly (fable-1089 §2)", () => {
+  /** A transport that answers with these words and records what it was asked. */
+  function engineSaying(reply: string): { engine: TextEngine; sent: { user?: string } } {
+    const sent: { user?: string } = {};
+    const engine = {
+      async complete(request: any) {
+        sent.user = request.user;
+        return { text: reply };
+      },
+    } as unknown as TextEngine;
+    return { engine, sent };
+  }
+
+  /* An engine that must never be reached — the fast path's own proof. */
+  const forbidden = {
+    async complete() { throw new Error("the word tests should have answered this"); },
+  } as unknown as TextEngine;
+
+  it("HIS OWN SENTENCE — style, without the colour it says to keep", async () => {
+    /*
+      THE ARM THIS BUILD EXISTS FOR, and it was RED before the escalation:
+      *"copy the hairstyle but keep her colour"* names two takes, two-at-once
+      counted as neither, neither fell to the whole lot, and the ask that says
+      KEEP HER COLOUR took the reference's colour — the exact failure his
+      fable-1048 amendment was written to prevent.
+
+      It goes green only when the take is `style`, which is the take whose
+      ride-along sentence disclaims the colour.
+    */
+    const { engine } = engineSaying(JSON.stringify({ take: "style" }));
+    const take = await resolveHairTake({
+      instruction: "copy the hairstyle but keep her colour",
+      engine,
+    });
+    expect(take).toBe("style");
+    /* And the take it resolved to is one that promises to leave her colour
+       alone — asserted through the take map rather than by reading the word,
+       so the two cannot drift apart. */
+    expect(hairTakeDisclaims("style")).toContain("hairShade");
+  });
+
+  it("the other shape that broke every guess — 'the colour and the cut' is the lot", async () => {
+    /* A union rather than an exclusion. First-named-wins would have answered
+       `colour` here and been wrong; the reader answers what a person would. */
+    const { engine } = engineSaying(JSON.stringify({ take: "fullLook" }));
+    expect(await resolveHairTake({ instruction: "copy the colour and the cut", engine }))
+      .toBe("fullLook");
+  });
+
+  it("the ordinary asks never reach a model at all", async () => {
+    /* The fast path, proven by an engine that throws if it is touched: the
+       word tests answer for free and only a two-take sentence spends. */
+    expect(await resolveHairTake({ instruction: "copy this hair", engine: forbidden }))
+      .toBe("fullLook");
+    expect(await resolveHairTake({ instruction: "copy just the colour", engine: forbidden }))
+      .toBe("colour");
+    expect(await resolveHairTake({ instruction: "copy this hairstyle", engine: forbidden }))
+      .toBe("style");
+  });
+
+  it("asks with the three takes COMPOSED from the map, at the wire", async () => {
+    const { engine, sent } = engineSaying(JSON.stringify({ take: "style" }));
+    await resolveHairTake({ instruction: "the hairstyle but keep her colour", engine });
+    /* Invariant 5: the fence is what is actually sent. A fourth take declared
+       tomorrow appears here without anybody editing a prompt. */
+    for (const take of HAIR_TAKES) {
+      expect(sent.user).toContain(`${take} — ${hairTakeEntry(take).label}`);
+    }
+    /* Her own sentence, and the exclusion rule that is the whole reason for
+       the call. */
+    expect(sent.user).toContain('"the hairstyle but keep her colour"');
+    expect(sent.user).toContain("she is taking");
+  });
+
+  it("REFUSES rather than inventing: a take outside the closed set is unreadable", async () => {
+    for (const reply of [
+      JSON.stringify({ take: "texture" }),
+      JSON.stringify({ take: "the style" }),
+      JSON.stringify({ take: "" }),
+      JSON.stringify({ nope: "style" }),
+      "style",
+      "",
+    ]) {
+      const { engine } = engineSaying(reply);
+      expect(await resolveHairTake({
+        instruction: "copy the hairstyle but keep her colour",
+        engine,
+      })).toBeNull();
+    }
+  });
+
+  it("tolerates the politeness a model puts around one word", async () => {
+    const { engine } = engineSaying("```json\n{\"take\": \"Style\"}\n```");
+    expect(await resolveHairTake({
+      instruction: "copy the hairstyle but keep her colour",
+      engine,
+    })).toBe("style");
+  });
+
+  it("NEVER falls back to the whole lot when it cannot read — that is the defect", async () => {
+    /*
+      The one arm that must not be softened. A transport hiccup on a sentence
+      saying *keep her colour* must not resolve to the take that takes it.
+      `null` is unreadable and the caller spends the road's existing unreadable
+      answer; a fallback here would be the bug wearing a retry.
+    */
+    const thrower = {
+      async complete() { throw new Error("socket"); },
+    } as unknown as TextEngine;
+    expect(await resolveHairTake({
+      instruction: "copy the hairstyle but keep her colour",
+      engine: thrower,
+    })).toBeNull();
+    expect(await resolveHairTake({
+      instruction: "copy the hairstyle but keep her colour",
+      engine: null,
+    })).toBeNull();
+  });
+
+  it("reads a bare reply the same way, so the parse cannot be the discriminator", () => {
+    expect(readHairTake(JSON.stringify({ take: "fullLook" }))).toBe("fullLook");
+    expect(readHairTake(JSON.stringify({ take: "colour" }))).toBe("colour");
+    expect(readHairTake("not json at all")).toBeNull();
   });
 
   /*
