@@ -15,6 +15,7 @@ import { describe, expect, it, vi } from "vitest";
 import { INK_DESIGN_MIN_EDGE } from "./inkUploadDoor";
 import { resetInkPlateEngineForTests } from "./inkPlateEngine";
 import { defaultMintPlate, uploadInkDesign, type InkUploadDependencies } from "./inkUploadService";
+import { MANNEQUIN_DEFERRED_NOTE } from "../../shared/inkMannequinDeferral";
 
 async function pngOf(width: number, height: number): Promise<Buffer> {
   return sharp({
@@ -123,7 +124,9 @@ describe("attaching a design to a Cast", () => {
       actually stored and the key actually filed, rather than to a constant
       near them (invariant 5).
     */
-    const { dependencies, order, manifests, stored, recorded } = harness();
+    /* Driven un-deferred: the subject is the ORDER of the whole road, and the
+       mannequin half of it is parked rather than gone. */
+    const { dependencies, order, manifests, stored, recorded } = harness({ mannequinDeferred: false });
 
     await uploadInkDesign({ ...ask, bytes: await pngOf(512, 512) }, dependencies);
 
@@ -264,13 +267,23 @@ describe("attaching a design to a Cast", () => {
   });
 });
 
+/**
+ * THE PARKED ROAD'S OWN TESTS, kept alive on purpose.
+ *
+ * The mannequin road is deferred (fable-1053 §2) and every arm below drives it
+ * with `mannequinDeferred: false`. Deleting them would leave the day it resumes
+ * with nothing proving how it behaves — a suite that cannot fail when its
+ * subject returns is the same defect as one that cannot fail when its subject is
+ * deleted, and this program has paid for that shape already (the credit-velocity
+ * caps). The deferral's own arms are at the bottom of this file.
+ */
 describe("the plate, drawn at upload (fable-936 §2, wired fable-968 §2)", () => {
   it("mints from the design that was just filed, and says what came back", async () => {
     /* The mint is handed the design's OWN public id and this account's id —
        never the candidate, never anything from the caller's request — because
        the mint re-proves ownership in its own statement from exactly those two.
        Asserted at the wire rather than at a constant beside it (invariant 5). */
-    const { dependencies, minted, recorded } = harness();
+    const { dependencies, minted, recorded } = harness({ mannequinDeferred: false });
 
     const outcome = await uploadInkDesign({ ...ask, bytes: await pngOf(600, 800) }, dependencies);
 
@@ -292,6 +305,7 @@ describe("the plate, drawn at upload (fable-936 §2, wired fable-968 §2)", () =
     /* The mint is idempotent per (design, engine). A caller that could not tell
        drawn-now from already-there would read a re-drive as a second $0.15. */
     const { dependencies } = harness({
+      mannequinDeferred: false,
       mint: async (one) => ({
         ok: true,
         reused: true,
@@ -328,6 +342,7 @@ describe("the plate, drawn at upload (fable-936 §2, wired fable-968 §2)", () =
       that was down for ninety seconds.
     */
     const { dependencies, stored, recorded } = harness({
+      mannequinDeferred: false,
       mint: async () => ({
         ok: false,
         refusal: { code: "noTransport", message: "We can't draw designs right now." },
@@ -370,5 +385,38 @@ describe("the plate, drawn at upload (fable-936 §2, wired fable-968 §2)", () =
       else process.env.FAL_KEY = key;
       resetInkPlateEngineForTests();
     }
+  });
+});
+
+/**
+ * THE MANNEQUIN ROAD IS PARKED, so the upload STORES and does not DRAW
+ * (founder fable-1053 §2, gated fable-1060 §1).
+ *
+ * The mint-on-intent ruling predates the deferral and the deferral supersedes
+ * the spend: every upload was buying a fal call and ~37 seconds to draw a design
+ * onto a mannequin for a road nobody is building. What it must NOT do is stop
+ * keeping her design — storing is not spending, and the design is the seed the
+ * road uses whenever it resumes.
+ */
+describe("the plate is NOT drawn while the mannequin road is deferred", () => {
+  it("stores the design, files the row, and mints nothing", async () => {
+    const { dependencies, order, minted } = harness();
+    const outcome = await uploadInkDesign({ ...ask, bytes: await pngOf(1024, 1024) }, dependencies);
+
+    expect(outcome.ok).toBe(true);
+    /* The keeping half, unchanged — this is the assertion that stops a
+       "deferral" quietly becoming a refusal. */
+    expect(order).toEqual(["manifest", "store", "record"]);
+    expect(minted).toEqual([]);
+  });
+
+  it("says so, rather than reporting a mint that silently did not happen", async () => {
+    /* `minted: false` with no note is indistinguishable from a mint that broke,
+       and the customer would be left guessing which. */
+    const { dependencies } = harness();
+    const outcome = await uploadInkDesign({ ...ask, bytes: await pngOf(1024, 1024) }, dependencies);
+    if (!outcome.ok) throw new Error("the upload should have succeeded");
+    expect(outcome.plate).toEqual({ minted: false, note: MANNEQUIN_DEFERRED_NOTE });
+    expect(MANNEQUIN_DEFERRED_NOTE).toContain("Nothing was charged");
   });
 });

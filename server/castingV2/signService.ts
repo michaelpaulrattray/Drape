@@ -66,6 +66,7 @@ import { createModuleLogger } from "../logging/logger";
 import { storageCopyExact, storageReadBytes } from "../storage";
 import { listCandidateInkPlates, type CandidateInkPlate } from "../db/castingV2InkPlates";
 import { listLineageReferences } from "../db/castingV2ReferenceLibrary";
+import { MANNEQUIN_ROAD_DEFERRED } from "../../shared/inkMannequinDeferral";
 import type { BodyAnchorRegion } from "../../shared/bodyAnchorRegions";
 import { readOpenKindProperties } from "../db/castingV2OpenKindProperties";
 import { deriveLibrary } from "./referenceLibrary";
@@ -99,7 +100,7 @@ export type InkDesignDisposition =
   | {
     designPublicId: string;
     rode: false;
-    reason: "noPlate" | "engineUndecided" | "bytesUnreadable" | "surfaceCovered";
+    reason: "noPlate" | "engineUndecided" | "bytesUnreadable" | "surfaceCovered" | "mannequinDeferred";
     engines?: readonly string[];
   };
 import { CASTING_V2_SIGN_PRICE_CREDITS } from "./castViewPackage";
@@ -120,6 +121,15 @@ export type SignServiceDependencies = PackageOrchestratorDependencies & {
   /** Her plated tattoos, injected in tests. Absent, the real statement runs —
    *  owner-scoped through the design to the candidate. */
   listInkPlates?: typeof listCandidateInkPlates;
+  /**
+   * Whether the mannequin road is parked — defaults to the ruling's own
+   * constant, and is a seam rather than a switch.
+   *
+   * It exists so the PARKED road keeps its tests: the plate lane's arms drive it
+   * with `false`, because deleting them would leave the day it resumes with
+   * nothing proving how it behaves. Production never passes it.
+   */
+  mannequinDeferred?: boolean;
   /** The feature library of the branch this Sign anchors on, injected in tests.
    *  Absent, the real statement runs — owner-scoped in its own WHERE. */
   listLibrary?: typeof listLineageReferences;
@@ -521,6 +531,22 @@ export async function carriedInkPlates(
   const dispositions: InkDesignDisposition[] = [];
   const read = dependencies.readBytes ?? storageReadBytes;
   for (const [designPublicId, rowsOfDesign] of Array.from(byDesign.entries())) {
+    /*
+      THE MANNEQUIN ROAD IS PARKED, so nothing plated on one rides (founder,
+      fable-1053 §2, gated fable-1060 §2). First door of all: a parked road does
+      not read storage, weigh engines or consult a surface table to decide it is
+      parked.
+
+      **Verified at the wire before it was written, and the verification is the
+      reason this is here rather than assumed**: a neck plate DID ride, and the
+      thing believed to be stopping it — the empty `RELEASED_INK_TUPLES` — has no
+      caller anywhere outside its own test. What kept plates out of signed views
+      was the absence of a plate, which the studio flag then removed.
+    */
+    if (dependencies.mannequinDeferred ?? MANNEQUIN_ROAD_DEFERRED) {
+      dispositions.push({ designPublicId, rode: false, reason: "mannequinDeferred" });
+      continue;
+    }
     /*
       THE SURFACE'S OWN DOOR, BEFORE THE PLATE'S — a design the package cannot
       show honestly does not ride, whether or not it was ever plated, and saying

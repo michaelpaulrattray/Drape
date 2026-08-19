@@ -81,6 +81,10 @@ import { storagePut } from "../storage";
 import { inkPlateEngine } from "./inkPlateEngine";
 import { mintInkPlate, type InkPlateMintOutcome } from "./inkPlateMint";
 import {
+  MANNEQUIN_DEFERRED_NOTE,
+  MANNEQUIN_ROAD_DEFERRED,
+} from "../../shared/inkMannequinDeferral";
+import {
   inkDesignBytesRefusal,
   inkDesignContentType,
   inkDesignKey,
@@ -124,6 +128,17 @@ export type InkUploadOutcome =
   | { ok: false; refusal: InkUploadRefusal };
 
 export type InkUploadDependencies = {
+  /**
+   * Whether the mannequin road is parked — defaults to the ruling's own
+   * constant, and is a seam rather than a switch.
+   *
+   * It exists so the PARKED road keeps its tests. Deleting them would leave the
+   * day it resumes with nothing proving how it behaves, and a suite that cannot
+   * fail when its subject returns is the shape this program has paid for
+   * before. Production never passes it: `REAL` carries no such field, so the
+   * constant decides.
+   */
+  mannequinDeferred?: boolean;
   manifest: (input: { id: string; userId: number; storageKeys: readonly string[] }) => Promise<void>;
   store: (input: { key: string; bytes: Buffer; contentType: string }) => Promise<{ key: string; url: string }>;
   record: (input: InkDesignToRecord) => Promise<RecordedInkDesign>;
@@ -270,7 +285,23 @@ export async function uploadInkDesign(
     from until the row is committed. It also means a mint that fails leaves a
     stored design rather than orphaned bytes — the receipt was discharged one
     line above.
+
+    ⚠ AND IT IS PARKED. The founder deferred the mannequin road (fable-1053 §2)
+    while this door was already open on his account, so every upload was buying
+    a fal call and ~37 seconds to draw a design for a road nobody is building.
+    The mint-on-intent ruling predates the deferral and the deferral supersedes
+    the spend (gated fable-1060 §1). **Storing is not spending**: the row above
+    still lands, the bytes are still hers, still purged with her Cast — the
+    deferral parks the drawing, not the keeping. One line, reversible.
   */
+  if (dependencies.mannequinDeferred ?? MANNEQUIN_ROAD_DEFERRED) {
+    return {
+      ok: true,
+      design: { ...design, width: decoded.width ?? 0, height: decoded.height ?? 0 },
+      plate: { minted: false, note: MANNEQUIN_DEFERRED_NOTE },
+    };
+  }
+
   const plate = await dependencies.mint({
     userId: request.userId,
     designPublicId: design.publicId,

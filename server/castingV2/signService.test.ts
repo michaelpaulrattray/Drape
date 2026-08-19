@@ -651,6 +651,12 @@ describe("Sign reads the selected face, not the candidate", () => {
  * SIGN STILL SUCCEEDS: a tattoo missing from five frames is a smaller harm than
  * five frames nobody gets.
  */
+/*
+  Driven UN-DEFERRED throughout: the mannequin road is parked (fable-1053 §2)
+  and these arms describe the road itself, so they keep their subject alive for
+  the day it resumes. The deferral's own arms live in
+  `inkMannequinDeferral.test.ts`.
+*/
 describe("the tattoos a Sign carries into its views", () => {
   const plateRow = (over: Record<string, unknown> = {}) => ({
     designPublicId: "design-1",
@@ -668,7 +674,7 @@ describe("the tattoos a Sign carries into its views", () => {
     await signCandidate({
       schedulePackage: awaitPackage,
       buildPackage,
-      listInkPlates: async () => [plateRow(), plateRow({
+      mannequinDeferred: false, listInkPlates: async () => [plateRow(), plateRow({
         designPublicId: "design-2", placement: "neck", side: "centre",
         storageKey: "casting-v2/candidates/plate-2.png",
       })],
@@ -692,7 +698,7 @@ describe("the tattoos a Sign carries into its views", () => {
   it("carries NOTHING, and still signs, when the candidate has no plated design", async () => {
     const buildPackage = packageReturning({});
     await signCandidate({
-      schedulePackage: awaitPackage, buildPackage, listInkPlates: async () => [],
+      schedulePackage: awaitPackage, buildPackage, mannequinDeferred: false, listInkPlates: async () => [],
     }, input);
 
     const sent = buildPackage.mock.calls[0]![1];
@@ -712,7 +718,7 @@ describe("the tattoos a Sign carries into its views", () => {
     await signCandidate({
       schedulePackage: awaitPackage,
       buildPackage,
-      listInkPlates: async () => [
+      mannequinDeferred: false, listInkPlates: async () => [
         plateRow(),
         plateRow({ engine: "gpt-image-2", storageKey: "casting-v2/candidates/plate-1b.png" }),
         plateRow({ designPublicId: "design-2", placement: "neck", side: "centre" }),
@@ -735,7 +741,7 @@ describe("the tattoos a Sign carries into its views", () => {
     await signCandidate({
       schedulePackage: awaitPackage,
       buildPackage,
-      listInkPlates: async () => [
+      mannequinDeferred: false, listInkPlates: async () => [
         plateRow(),
         plateRow({ designPublicId: "design-2", storageKey: "gone.png" }),
       ],
@@ -760,7 +766,7 @@ describe("the tattoos a Sign carries into its views", () => {
     await signCandidate({
       schedulePackage: awaitPackage,
       buildPackage,
-      listInkPlates: async () => { throw new Error("Database not available"); },
+      mannequinDeferred: false, listInkPlates: async () => { throw new Error("Database not available"); },
     }, input);
 
     const sent = buildPackage.mock.calls[0]![1];
@@ -792,6 +798,11 @@ describe("what a Cast's views carry, design by design", () => {
 
   const drive = async (rows: unknown[], readBytes?: (key: string) => Promise<{ bytes: Buffer; contentType: string }>) =>
     carriedInkPlates({
+      /* Driven UN-DEFERRED: the mannequin road is parked (fable-1053 §2) and
+         these arms describe the road itself. Deleting them would leave the day
+         it resumes with nothing proving how it behaves. The deferral's own arms
+         live in `inkMannequinDeferral.test.ts`. */
+      mannequinDeferred: false,
       listInkPlates: async () => rows as never,
       readBytes: readBytes ?? (async (key: string) => ({
         bytes: Buffer.from(`bytes:${key}`), contentType: "image/png",
@@ -884,6 +895,8 @@ describe("a covered surface says so on the same disposition surface", () => {
       would send the next person looking for a mint that already happened.
     */
     const { plates, dispositions } = await carriedInkPlates({
+      /* Un-deferred — see the note on `drive` above. */
+      mannequinDeferred: false,
       listInkPlates: async () => [chestRow] as never,
       readBytes: async () => ({ bytes: Buffer.from("plate"), contentType: "image/png" }),
     } as never, { userId: 1, candidateId: 9, operationId: "op-1" });
@@ -896,6 +909,8 @@ describe("a covered surface says so on the same disposition surface", () => {
 
   it("still carries the arm design beside it — one refusal never silences a ride", async () => {
     const { plates, dispositions } = await carriedInkPlates({
+      /* Un-deferred — see the note on `drive` above. */
+      mannequinDeferred: false,
       listInkPlates: async () => [chestRow, {
         ...chestRow, designPublicId: "arm-1", placement: "upperArm", side: "left",
         storageKey: "casting-v2/candidates/arm-plate.png",

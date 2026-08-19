@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "188a2079db1be40a"
+    "sourceFingerprint": "e0c0c21b86afd390"
   },
   "domains": [
     {
@@ -123,7 +123,7 @@
     {
       "id": "domain:shared",
       "name": "shared",
-      "moduleCount": 28
+      "moduleCount": 29
     },
     {
       "id": "domain:studio",
@@ -5187,6 +5187,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:shared/inkMannequinDeferral.ts",
+      "path": "shared/inkMannequinDeferral.ts",
+      "domain": "shared",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:shared/inkPlacementVocabulary.ts",
       "path": "shared/inkPlacementVocabulary.ts",
       "domain": "shared",
@@ -9738,6 +9744,10 @@
     {
       "id": "test:server/castingV2/inkFormDemandSchema.test.ts",
       "path": "server/castingV2/inkFormDemandSchema.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/inkMannequinDeferral.test.ts",
+      "path": "server/castingV2/inkMannequinDeferral.test.ts"
     },
     {
       "id": "test:server/castingV2/inkPlacementVocabulary.test.ts",
@@ -20005,6 +20015,11 @@
     },
     {
       "from": "module:server/castingV2/inkUploadService.ts",
+      "to": "module:shared/inkMannequinDeferral.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/inkUploadService.ts",
       "to": "module:shared/inkPlacementVocabulary.ts",
       "kind": "imports"
     },
@@ -22166,6 +22181,11 @@
     {
       "from": "module:server/castingV2/signService.ts",
       "to": "module:shared/bodyAnchorRegions.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/signService.ts",
+      "to": "module:shared/inkMannequinDeferral.ts",
       "kind": "imports"
     },
     {
@@ -28627,17 +28647,17 @@
       "message": "Names 2 of InkUploadRefusal's 2 fields (server/castingV2/inkUploadDoor.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/inkUploadService.ts:139",
+      "id": "finding:redeclared-shape:server/castingV2/inkUploadService.ts:154",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/inkUploadService.ts:139",
+      "subject": "server/castingV2/inkUploadService.ts:154",
       "message": "Names 2 of InkPlateMintRequest's 4 fields (server/castingV2/inkPlateMint.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/inkUploadService.ts:174",
+      "id": "finding:redeclared-shape:server/castingV2/inkUploadService.ts:189",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/inkUploadService.ts:174",
+      "subject": "server/castingV2/inkUploadService.ts:189",
       "message": "Names 2 of InkPlateMintRequest's 4 fields (server/castingV2/inkPlateMint.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {

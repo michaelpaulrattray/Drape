@@ -42,6 +42,23 @@
  * accident, because a face slot is structurally incapable of entering it —
  * `viewFeatureWords.test.ts` drives that as its own arm.
  *
+ * # THE OTHER COVERAGE TABLE, AND THEY ARE COUSINS (recorded fable-1061 §3)
+ *
+ * A feature can be hidden in the anchor and still unshowable in the views —
+ * because the PACKAGE WARDROBE covers it. The founder caught the case himself:
+ * clawed FEET are in shoes in every view that reaches them, exactly as an upper
+ * chest design is under the crew tee (`placementRidesPackageViews`, the
+ * scoop-neck court). So the riding set intersects a second coverage question
+ * this module does not own.
+ *
+ * **Today's behaviour is deliberate and is recorded rather than built around:**
+ * the words still ride, and the view shows the feature only where the wardrobe
+ * permits. That matches the product's sell-don't-refuse posture — a signed Cast
+ * carries its features into whatever the frame allows — and the alternative
+ * (withholding words for wardrobe-covered regions) would need the two tables
+ * merged, which is a build nobody has asked for. Named here so the next person
+ * meets the fact rather than discovering it in a frame.
+ *
  * # AND IT RIDES EVERY VIEW, including the ones that cannot show it
  *
  * The same asymmetry the founder already ruled for plates
