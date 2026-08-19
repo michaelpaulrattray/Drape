@@ -556,9 +556,9 @@
 - symbol: refusalTallies
   file: server/castingV2/refusalCounter.ts
   verdict: FILED
-  why: a reporting query whose only readers are UNTRACKED benches; the question is whether the refusal report gets a tracked reader like reliability-report.mts, or the query goes with them
-  argued: 13d/15b
-  owner: the reliability-report road — the same owner as reliability-report.mts, which is the tracked reader this query does not have
+  why: READ AND COUNTED (23g) — the premise was wrong: its one candidate reader does NOT import it (the world guard makes that impossible, so the bench restates the grouping in SQL), so it has ZERO consumers. Its WRITER is live in the paid refine path, and production holds 2 refusal rows with 0 rescued/upheld — the ratio it exists to measure is not yet readable
+  argued: 13d/15b/23g
+  owner: the reliability-report road — with a mechanical trigger rather than an intention: a tracked reader is built when production holds any rescued or upheld row
 
 - symbol: heartbeatLine
   file: server/castingV2/reliabilityReport.ts
@@ -648,8 +648,8 @@
 - symbol: INSTRUCTION_MAY_OVERRIDE
   file: server/castingV2/zoneScope.ts
   verdict: FILED
-  why: a rule declared, tested and applied by nothing; the honest repair may be that the road retires
-  argued: 7a/10a
+  why: RE-READ AT THE ARTIFACTS (23h) and 7a HOLDS — scopedZone takes no instruction argument, so nothing consults this table. Two additions: it is LIVE for every user except the founder (maskedRefine is the paste road and repaint scope is users:1), and it is a hand-written mirror beside a DERIVED table (ZONE_SCOPE comes from the facet cards), so it can drift from the defaults it quotes with only a mirror test watching
+  argued: 7a/10a/23h
   owner: the zone-scope road's owner — the repair may be that the road retires, which is a design answer and not a cleanup pick
 
 - symbol: OPEN_QUESTIONS

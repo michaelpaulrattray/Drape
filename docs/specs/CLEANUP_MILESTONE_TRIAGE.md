@@ -1616,6 +1616,98 @@ stamping variant expiries, which is a retention design decision nobody has
 made). Wiring the helper unchanged would install a safety net with one arm tied
 behind it and call the row closed.
 
+### 23g. `refusalTallies` — its stated reader does not read it, and the thing it
+### was built to measure is not yet measurable
+
+Third FILED row, same method. Verdict stays **FILED**; the read replaces a vague
+owner with a mechanical trigger.
+
+**The row's premise was wrong, in §13c's way.** It said *"a reporting query
+whose only readers are UNTRACKED benches"*. There is exactly one candidate —
+`scripts/read-refusal-tallies-disposable.mts` — and **it does not import
+`refusalTallies` at all.** Its own header says why: importing it *"would need
+`getDb()` and a production `DATABASE_URL` in the same process the world guard
+exists to prevent, so the grouping is restated here in SQL."* So the function
+has **zero consumers of any kind**, and its only would-be consumer is
+STRUCTURALLY UNABLE to become one — the bench and the product are two
+implementations of one grouping, by necessity rather than by neglect.
+
+**The writer is live.** `countRefusal` has two call sites in the paid refine
+path (`refineService.ts:786`, `:1325`) and writes an audit row per refusal. So
+this is `collected-never-asserted` exactly: rows accumulating for a stated
+purpose with nothing summing them.
+
+**And the purpose is stated, which is what makes the count decisive.** The
+docblock: the `rescued` : `upheld` ratio *"IS the honest-ask-refused rate the
+guard's redesign has to be judged on, measured continuously from the day this
+lands rather than reconstructed afterwards from logs that no longer exist."*
+
+**Counted in production** (the bench's own controls printed first — 163 audit
+rows across 4 actions in the window, so the reader is not blind):
+
+```
+casting.refusal rows           2   (parsed 2, unparsable 0)
+  2  refused / absorbed
+rescued or upheld              0
+```
+
+**Two rows, and neither carries either outcome the ratio needs.** The
+invention door never ran in the window, so *the honest-ask-refused rate is not
+yet readable* — the bench prints that sentence itself rather than a confident
+nought.
+
+**Which answers the filed question for now: neither.** Building a tracked reader
+today would be building a report over two rows and one bucket, and deleting the
+query would delete the reader of a dataset that is still being collected on
+purpose. So the row keeps a **trigger** instead of an owner's intention:
+
+> **`refusalTallies` gets a tracked reader when production holds any
+> `rescued` or `upheld` row.** Until then it is a correct query waiting for a
+> population, and the bench above is how to check — it prints the count and says
+> in words when the rate is unreadable.
+
+*(Incidental, not this row's business: the same window holds **155
+`casting.scan_miss` rows**, which dwarf every other action in the audit log.
+Nobody has asked what they are telling us.)*
+
+### 23h. `INSTRUCTION_MAY_OVERRIDE` — §7a re-read at the artifacts and it HOLDS,
+### with two things §7a does not say
+
+Fifth and last FILED row, and the only one whose summary survived its read
+(fable-1046 §3). Verdict stays **FILED**, owner unchanged.
+
+**§7a verified independently rather than quoted.** `scopedZone(facet, region)`
+at `maskedRefine.ts:926` takes **no instruction argument**, and its first line
+is `zoneScopeOf(facet)`, which reads `ZONE_SCOPE[facet]` alone. Nothing anywhere
+consults `INSTRUCTION_MAY_OVERRIDE`. The defaults it claims to override are
+confirmed at `facetCards.ts`: `marks.zone = "distributedFacet"` (override says
+`object`), `ink.zone = "object"` (override says `distributedFacet`). Its only
+other mentions are its own test and a documentation row in `openKindPolicy.ts`
+— a STRING KEY in a registry, which is §19a's prose-is-not-a-caller rule holding
+exactly as designed.
+
+**The first thing §7a does not say: who is affected today.** §7a closes *"it is
+a paste-road question at most"*, which is true and now reads as a narrowing when
+it is the opposite. `maskedRefine.ts` IS the paste road — and production runs
+`CASTING_REPAINT_SCOPE=users:1`, **so the paste road is every user except the
+founder.** The one account that would notice is the one account structurally
+unable to reach the code. That is worth stating plainly wherever this row is
+picked up: it is not a dark corner, it is the default road for everyone who is
+not him, and it is still unmeasured.
+
+**The second: the table is a hand-written MIRROR beside a DERIVED one — law 4's
+shape.** `ZONE_SCOPE` is not a literal; it is
+`facetTableOf((card) => card.zone)`, derived from the facet cards so it cannot
+drift from them. `INSTRUCTION_MAY_OVERRIDE` is a separate hand-authored literal
+naming the same facets and quoting their defaults in its `when` prose. **Change
+`marks.zone` in the cards and this table still claims to override
+`distributedFacet`, with nothing to catch it** — its test asserts its own
+contents (a pure mirror test), so the assertion moves with the drift.
+
+So if the road ever retires this rule, the derived/mirrored split is part of
+what has to be decided: an override table that survives should be derived from
+the cards too, or it will disagree with them the first time a card moves.
+
 
 ---
 
