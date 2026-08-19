@@ -107,7 +107,28 @@ export type ReferenceRole =
   | { kind: "anchor"; slot: FeatureSlot }
   /** The crop minted from the last delivery that touched this slot (line 4).
    *  Rides untouched renders byte-identical; never its own slot's edit. */
-  | { kind: "carry"; slot: FeatureSlot };
+  | { kind: "carry"; slot: FeatureSlot }
+  /**
+   * A PICTURE THE CUSTOMER SUPPLIED FOR THIS EDIT — the fourth role (approved
+   * fable-1096 §1), and it is honestly a fourth thing.
+   *
+   * Not the master, not ours, not minted from any delivery, and not frozen at
+   * an introduction: it is a reference SHE attached, cut down to the feature
+   * she is pointing at, and it belongs to the one ask that carries it. D-244
+   * line 3 is untouched by it — anatomy still regenerates from the master, and
+   * a source rides BESIDE that rather than standing in for it.
+   *
+   * The alternative was widening `anchor` to accept an anatomy slot, and it was
+   * refused: an anchor meaning both *the thing this feature regenerates from*
+   * and *a picture she attached once* is how a slot loses its meaning three
+   * shifts later.
+   *
+   * **Per ask by construction**, which is what makes the regenerate answer true
+   * by type rather than by care (§9.8): a regenerate re-runs the same ask, the
+   * ask holds its `referenceId`, so the source re-rides and the failed
+   * attempt's harvest never enters.
+   */
+  | { kind: "source"; slot: FeatureSlot };
 
 /**
  * Which carrier the tier boundary gives this feature (§3.0a, fable-192).
@@ -262,6 +283,21 @@ export type AssembleInput = {
    */
   presentation?: readonly PresentationClause[];
   /**
+   * THE PICTURES SHE ATTACHED, one per slot at most (fable-1096 §2).
+   *
+   * Each must name a slot this render ASKS about — a picture riding with
+   * nothing said about it is a reference the painter is free to read as
+   * anything — and a slot may carry one, never two.
+   *
+   * The caller passes what the picture IS, not what to say about it: the prose
+   * is written here, from a closed vocabulary, so that a carrier is described
+   * to the engine honestly and identically on every render. That is the scale
+   * court's lesson in a type — calling a redacted form *"only hair"* would be
+   * lying to the engine about what it is looking at, and the court measured
+   * what that costs.
+   */
+  sources?: readonly RecipeSource[];
+  /**
    * SAY WHERE A SIDE IS, as well as whose it is (`CASTING_SIDE_PHRASING_SCOPE`).
    *
    * Decided by the caller because the flag is per user and this function knows
@@ -270,6 +306,22 @@ export type AssembleInput = {
    * written.
    */
   placeSides?: boolean;
+};
+
+/**
+ * WHAT A SOURCE PICTURE ACTUALLY SHOWS — a closed vocabulary, because the
+ * sentence describing it has to be true.
+ *
+ * One member today. A second arrives with the road that mints a second kind of
+ * carrier, and it arrives with its own sentence rather than by widening this
+ * one's.
+ */
+export type SourcePicture = "hairOnRedactedForm";
+
+export type RecipeSource = {
+  slot: FeatureSlot;
+  image: ReferenceImage;
+  pictures: SourcePicture;
 };
 
 /**
@@ -373,7 +425,16 @@ export type RecipeRefusal = {
     /** A vacate whose sentence is empty; the recipe would go silent. */
     | "vacateSaysNothing"
     /** A presentation clause with no words — see {@link AssembleInput.presentation}. */
-    | "presentationSaysNothing";
+    | "presentationSaysNothing"
+    /**
+     * A source picture naming a slot this render does not ask about.
+     *
+     * Refused rather than dropped: a reference in the request that no sentence
+     * accounts for is a picture the painter may read as anything, and a recipe
+     * that silently discards what a customer attached is the confession class
+     * D-181 exists to prevent — one layer too late to say anything about it.
+     */
+    | "sourceNotAsked";
   /** Null for a refusal about something that has no slot by construction. */
   slot: FeatureSlot | null;
   detail: string;
@@ -621,6 +682,31 @@ function identityClause(pronouns: CastPronouns): string {
   ].join(" ");
 }
 
+/**
+ * WHAT A SOURCE IS SAID TO BE — and it is said to be exactly what it is.
+ *
+ * The wording is the scale arm's own, which is the wording that DELIVERED: the
+ * length arrived 2/2 with the grey form described and explicitly excluded from
+ * the instruction, and stayed short 2/2 on a plain cutout carrying the same
+ * length sentence. So the honesty is not manners — the picture being described
+ * as what it is is part of what made it work.
+ */
+function sourceSentence(
+  ordinal: number,
+  pictures: SourcePicture,
+  pronouns: CastPronouns,
+): string {
+  switch (pictures) {
+    case "hairOnRedactedForm":
+      return [
+        `Reference ${ordinal} is the picture supplied for ${pronouns.possessive} hair:`,
+        "it shows hair on a plain grey form standing in for a head.",
+        "The grey form is NOT part of the instruction — it is there only to show how long",
+        `the hair is relative to a head. Match that length and that shape on ${pronouns.object}.`,
+      ].join(" ");
+  }
+}
+
 export function assembleRecipe(input: AssembleInput): AssembleResult {
   const bySlot = new Map(input.library.map((entry) => [entry.slot, entry]));
   const restated = input.asks.filter((ask) => ask.restate).map((ask) => ask.slot);
@@ -628,6 +714,22 @@ export function assembleRecipe(input: AssembleInput): AssembleResult {
      `edited` is the DELIVERED column of the verification. */
   const edited = input.asks.filter((ask) => !ask.restate).map((ask) => ask.slot);
   const editedSet = new Set(edited);
+  /*
+    A SOURCE BELONGS TO AN ASK, and the ask list is what says so.
+
+    Checked against every ask INCLUDING a restate — a taken-back slot is not in
+    `edited` — because what makes a source legal is that this render has a
+    sentence about that feature, not that it delivers into it.
+  */
+  const sourceOf = new Map(input.sources?.map((source) => [source.slot, source]) ?? []);
+  for (const source of input.sources ?? []) {
+    if (!input.asks.some((ask) => ask.slot === source.slot)) {
+      return {
+        ok: false, reason: "sourceNotAsked", slot: source.slot,
+        detail: `a picture was attached for ${source.slot}, which this render says nothing about`,
+      };
+    }
+  }
   const pronouns = input.pronouns;
   const possessive = pronouns.possessive;
   const has = pronouns.plural ? "have" : "has";
@@ -761,6 +863,33 @@ export function assembleRecipe(input: AssembleInput): AssembleResult {
       };
     }
     wordStacks.set(ask.slot, stack);
+
+    /*
+      THE SOURCE RIDES HERE — with its ask, before the anchor, and inside the
+      same `claimed` fence.
+
+      Before the anchor check rather than after it, because that check ends in
+      `continue` for anatomy: hair has no anchor, and a source placed after the
+      continue would be a picture that never rode with the very feature it was
+      cut for.
+    */
+    const source = sourceOf.get(ask.slot);
+    if (source) {
+      if (claimed.has(ask.slot)) {
+        return {
+          ok: false, reason: "slotTwiceReferenced", slot: ask.slot,
+          detail: `${ask.slot} was given two references in one render (fable-174)`,
+        };
+      }
+      claimed.add(ask.slot);
+      ordinalOf.set(ask.slot, nextOrdinal());
+      sentences.push(sourceSentence(nextOrdinal(), source.pictures, pronouns));
+      references.push({
+        role: { kind: "source", slot: ask.slot },
+        image: source.image,
+        sentence: sentences[sentences.length - 1]!,
+      });
+    }
 
     if (!entry?.anchor) continue; /* anatomy — the master is already reference 1 */
     if (claimed.has(ask.slot)) {

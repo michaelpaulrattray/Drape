@@ -129,6 +129,8 @@ import { interpretRefinement, refusalMessage } from "./refineInterpreter";
 import { readStoredDelta } from "./refineLegacy";
 import { removalEvidence } from "./removalWords";
 import { resolveAskReference } from "./askReference";
+import { cutHairCarrier, mintHairCarrier, SECOND_VIEW_UNUSED_NOTE } from "./hairReferenceCutter";
+import { hairTakeEntry, resolveHairTake } from "./hairReferenceTake";
 import {
   LEAVE_AS_SHE_IS,
   alreadyUpsweptReask,
@@ -193,7 +195,7 @@ import { repaint, type ReferenceFitter, type RepaintEngine, type SentRequest } f
 import {
   RepaintCannotSayError, repaintAsksFor, repaintCannotRemove, scopedAskIsUnsayable,
 } from "./repaintAsks";
-import { cannotSaySentence, likenessSetAsideNote } from "./cannotSayCopy";
+import { attachedPictureUnusedNote, cannotSaySentence, likenessSetAsideNote } from "./cannotSayCopy";
 import { censusOfAttempt, censusSoFar, type CallCensus } from "./callCensus";
 import { carriesAfterPruning } from "./prunedCarries";
 import { countRefusal } from "./refusalCounter";
@@ -476,6 +478,17 @@ export type RefineServiceDependencies = {
   refund?: typeof recordRefund;
   engine?: () => ReturnType<typeof castingIdentityEngine>;
   interpret?: typeof interpretRefinement;
+  /**
+   * WHAT SHE IS TAKING FROM THE PICTURE SHE ATTACHED, and WHERE IT IS PUT.
+   *
+   * Two seams rather than one, because the two failures are different: the take
+   * is a reading of her sentence that can escalate to a text engine, and the
+   * mint writes bytes to a bucket. A suite driving the reference lane must be
+   * able to do both without a provider and without R2 — the reader itself
+   * already arrives through `regions`.
+   */
+  hairTake?: typeof resolveHairTake;
+  mintCarrier?: typeof mintHairCarrier;
   /** The reader that checks the picture against the record (D-185). */
   verifier?: Parameters<typeof verifyRender>[0]["engine"];
   admit?: () => boolean;
@@ -3253,6 +3266,84 @@ async function refineCandidateCounted(
     });
   }
 
+  /*
+    HER PICTURE BECOMES A CARRIER — the crop road, on the request path
+    (design §9.11; the fourth reference role approved fable-1096 §1).
+
+    Everything here happens BEFORE the claim, and that is the whole placement
+    argument: cutting a carrier asks a segmenter two or three questions, any of
+    which can come back with nothing usable, and a customer must not be charged
+    for a render whose reference we could not build. Every refusal below returns
+    her own picture with a sentence and takes nothing.
+
+    THE ORDER IS: what is she taking → does this ask touch hair at all → cut →
+    mint. The take is read first because it is free and it is the cheapest way
+    to find out that no crop is wanted at all: a colour take carries as WORDS
+    (his own example) and buys no segmenter call.
+  */
+  let hairSource: { key: string; sha: string } | null = null;
+  let attachedPictureUnused = false;
+  let secondViewNote: string | null = null;
+  if (reference) {
+    const take = await (dependencies.hairTake ?? resolveHairTake)({ instruction });
+    /*
+      AN UNREADABLE TAKE IS NOT A GUESS. `null` is the resolver saying it could
+      not tell which of two named takes she meant, and the honest answer to that
+      is the same as the honest answer to any unreadable ask — not a crop cut on
+      a coin flip. It falls through as an unused picture and is confessed.
+    */
+    const wantsCrop = take !== null && hairTakeEntry(take).form === "crop";
+    /*
+      AND DOES THIS ASK TOUCH HAIR AT ALL — derived from the reading through the
+      same catalogue the recipe's asks come from, never a second list. A picture
+      attached to a sentence about her eyes is a picture with nothing to be cut
+      for, and the recipe would refuse it (`sourceNotAsked`) after the money had
+      moved.
+    */
+    const hairSlot = slotsForFeature("hair")?.[0]?.slot ?? null;
+    const asksAboutHair = hairSlot !== null && editDelta !== null && editDelta !== undefined
+      && Array.from(facetsWrittenBy(editDelta))
+        .some((facet) => slotsForFacet(facet).some((definition) => definition.slot === hairSlot));
+    if (!wantsCrop || !asksAboutHair) {
+      /* Not a failure and not free-of-charge news either: she is TOLD, in the
+         same list every other half-served ask is confessed in. */
+      attachedPictureUnused = true;
+      log.info(
+        { userId: input.userId, candidate: input.candidatePublicId, take, asksAboutHair },
+        "[refineService] the attached picture was not used — nothing was cut and nothing was spent",
+      );
+    } else {
+      const attached = await (dependencies.readBytes ?? storageReadBytes)(reference.storageKey);
+      const cut = await cutHairCarrier({
+        bytes: attached.bytes,
+        reader: dependencies.regions ?? defaultRegionReader(),
+        about: { userId: input.userId, candidatePublicId: input.candidatePublicId },
+      });
+      if (!cut.ok) {
+        log.info(
+          { userId: input.userId, candidate: input.candidatePublicId, code: cut.refusal.code },
+          "[refineService] her picture could not become a carrier — refused before the claim",
+        );
+        return {
+          kind: "selected",
+          note: cut.refusal.message,
+          variantId: source.variantPublicId,
+          candidateId: input.candidatePublicId,
+          imageUrl: currentImageUrl,
+          instructions: readInstructions(predecessorForParse?.instructions),
+        };
+      }
+      const minted = await (dependencies.mintCarrier ?? mintHairCarrier)({
+        userId: input.userId, carrier: cut.carrier,
+      });
+      hairSource = { key: minted.key, sha: minted.sha };
+      /* THE SECOND VIEW'S NON-USE IS SAID (ruled fable-1093 §1) — carried to the
+         same list the other confessions travel in, so one ask that loses two
+         things says both. */
+      if (cut.carrier.secondViewUnused) secondViewNote = SECOND_VIEW_UNUSED_NOTE;
+    }
+  }
+
   /* ---- the claim ---- */
 
   const gate = await (dependencies.begin ?? beginDirectOperation)({
@@ -3959,6 +4050,45 @@ async function refineCandidateCounted(
           nothing the library holds.
         */
         ...(asks.presentation ? { presentation: asks.presentation } : {}),
+        /*
+          AND THE PICTURE SHE ATTACHED, cut down to her hair (fable-1096 §1).
+
+          The slot is taken from the ASK LIST rather than derived a second time:
+          the assembler refuses a source naming a slot no ask names, and that
+          refusal throws into the refund — so the one thing this line must never
+          do is disagree with `asks.asks` about which slot the render is about.
+          The pre-claim door has already proved this ask touches hair; this
+          finds the slot it actually became.
+
+          Absent on every render without an attachment, which is every render
+          this product has served so far.
+        */
+        ...(hairSource
+          ? (() => {
+            const slot = asks.asks
+              .map((ask) => ask.slot)
+              .find((candidate) => candidate === (slotsForFeature("hair")?.[0]?.slot ?? null));
+            if (slot === undefined) {
+              /* The pre-claim door said this ask touches hair and the ask list
+                 says otherwise. Painting anyway would send a picture no sentence
+                 accounts for, so the carrier is dropped and the fact is loud —
+                 it is a defect in the two derivations agreeing, not a customer's
+                 mistake. */
+              log.error(
+                { operationId, variant: variant.publicId, slots: asks.asks.map((ask) => ask.slot) },
+                "[refineService] a carrier was cut for an ask whose recipe names no hair slot — dropping it rather than sending a reference nothing says anything about",
+              );
+              return {};
+            }
+            return {
+              sources: [{
+                slot,
+                image: { key: hairSource.key, sha: hairSource.sha },
+                pictures: "hairOnRedactedForm" as const,
+              }],
+            };
+          })()
+          : {}),
       });
       if (!recipe.ok) {
         log.error(
@@ -4085,6 +4215,18 @@ async function refineCandidateCounted(
           /* The master IS the frame; nothing to fit, but its size is still
              measured so the wire assertion covers every reference. */
           if (role.kind === "master") return unpadded();
+          /*
+            AND A SOURCE IS NOT IN HER FRAME AT ALL.
+
+            The pad exists because a crop cut FROM this master drifts the frame
+            when it rides at its own size — it has a position to be put back
+            into. A carrier cut from somebody else's photograph has none: padding
+            it into her geometry would place a stranger's head at a coordinate
+            that means nothing, and the fit's own `branchRows` lookup would have
+            missed it anyway. Said here rather than left to fall through, so the
+            reason is a decision rather than an accident of a lookup.
+          */
+          if (role.kind === "source") return unpadded();
           const stored = branchRows.find((row) => row.storageKey === image.key)?.geometry ?? null;
           /*
             NO GEOMETRY MEANS NO PAD, dispatched exactly as production does
@@ -6414,6 +6556,13 @@ async function refineCandidateCounted(
       droppedReference
         ? likenessSetAsideNote({ subjects: filedSubjectsOf(editDelta) })
         : null,
+      /* Her attachment went unused — the same law as the line above, about the
+         other kind of reference. Nothing was cut and nothing was spent, which is
+         exactly when a product stays quiet and lets her assume it was used. */
+      attachedPictureUnused ? attachedPictureUnusedNote() : null,
+      /* And the second view of a two-panel reference, said plainly rather than
+         dropped in silence (ruled fable-1093 §1). */
+      secondViewNote,
       outOfFrameNote,
       invisibleSiteNote,
     ].filter((line): line is string => line !== null);

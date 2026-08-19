@@ -1334,3 +1334,134 @@ describe("a distributed open kind is two pictures and one sentence", () => {
     expect(recipe.prompt).not.toContain("References 2 and 3");
   });
 });
+
+describe("the fourth role — a picture the CUSTOMER supplied (fable-1096)", () => {
+  const CARRIER = { key: "casting-v2/reference-carrier/aa.png", sha: "c0ffee" };
+  const source = { slot: "hair" as const, image: CARRIER, pictures: "hairOnRedactedForm" as const };
+
+  it("rides with its ask, on an anatomy slot that has no anchor", () => {
+    /*
+      The whole point of the role: hair is anatomy, D-244 line 3 gives anatomy
+      no anchor, and the anchor branch ends in `continue` — so a source placed
+      after it would never ride with the one feature it was cut for.
+    */
+    const recipe = assembleRecipe({
+      master: MASTER, pronouns: SHE, library: [],
+      asks: [{ slot: "hair", noun: "hair", words: "a mid-length wavy cut" }],
+      sources: [source],
+    });
+
+    expect(recipe.ok).toBe(true);
+    if (!recipe.ok) return;
+    expect(recipe.references).toHaveLength(2);
+    expect(recipe.references[1]!.role).toEqual({ kind: "source", slot: "hair" });
+    expect(recipe.references[1]!.image).toBe(CARRIER);
+    /* Anatomy still regenerates from the master: nothing became an anchor. */
+    expect(recipe.references.some((one) => one.role.kind === "anchor")).toBe(false);
+    expect(recipe.edited).toEqual(["hair"]);
+  });
+
+  it("is DESCRIBED HONESTLY, in the wording the scale court measured", () => {
+    /*
+      Not manners. The length arrived 2/2 with the grey form described and
+      excluded from the instruction, and stayed short 2/2 on a plain cutout
+      carrying the same length words — so the description is part of what
+      worked, and a sentence calling this "only hair" would be lying to the
+      engine about its own reference.
+    */
+    const recipe = assembleRecipe({
+      master: MASTER, pronouns: SHE, library: [],
+      asks: [{ slot: "hair", noun: "hair", words: "a mid-length wavy cut" }],
+      sources: [source],
+    });
+    expect(recipe.ok).toBe(true);
+    if (!recipe.ok) return;
+    const sentence = recipe.references[1]!.sentence;
+    expect(sentence).toContain("Reference 2");
+    expect(sentence).toContain("plain grey form");
+    expect(sentence).toContain("NOT part of the instruction");
+    expect(sentence).toContain("how long");
+    /* The cast's pronouns, never the specimen's: "her hair", "on her". */
+    expect(sentence).toContain("her hair");
+    /* And the prompt the caller sends carries it, in the ordinal it occupies. */
+    expect(recipe.sentences[1]).toBe(sentence);
+    expect(recipe.prompt).toContain(sentence);
+  });
+
+  it("names the cast's own pronouns on a male cast", () => {
+    const recipe = assembleRecipe({
+      master: MASTER, pronouns: pronounsForSex("male"), library: [],
+      asks: [{ slot: "hair", noun: "hair", words: "a mid-length wavy cut" }],
+      sources: [source],
+    });
+    expect(recipe.ok).toBe(true);
+    if (!recipe.ok) return;
+    expect(recipe.references[1]!.sentence).toContain("his hair");
+    expect(recipe.references[1]!.sentence).not.toContain("her ");
+  });
+
+  it("REFUSES a picture attached to a slot this render says nothing about", () => {
+    /* A reference no sentence accounts for is one the painter may read as
+       anything — and dropping it silently is the confession class one layer too
+       late to say anything about. */
+    const refusal = assembleRecipe({
+      master: MASTER, pronouns: SHE, library: [],
+      asks: [{ slot: "lips", noun: "lips", words: "a soft nude lip gloss" }],
+      sources: [source],
+    });
+    expect(refusal.ok).toBe(false);
+    if (refusal.ok) return;
+    expect(refusal.reason).toBe("sourceNotAsked");
+    expect(refusal.slot).toBe("hair");
+  });
+
+  it("REFUSES a slot given both a source and an anchor — one slot, one reference", () => {
+    const refusal = assembleRecipe({
+      master: MASTER, pronouns: SHE,
+      library: [{
+        slot: "hair", tier: "anatomy", noun: "hair", words: ["a mid-length wavy cut"],
+        anchor: { key: "mint/hair-anchor.png" },
+      }],
+      asks: [{ slot: "hair", words: "a mid-length wavy cut" }],
+      sources: [source],
+    });
+    expect(refusal.ok).toBe(false);
+    if (refusal.ok) return;
+    expect(refusal.reason).toBe("slotTwiceReferenced");
+  });
+
+  it("changes NOTHING when no source is passed — the road every render travels", () => {
+    /* Additive by construction: the absent case must be byte-identical to what
+       this assembler produced before the role existed. */
+    const withNone = assembleRecipe({
+      master: MASTER, pronouns: SHE, library: [],
+      asks: [{ slot: "hair", noun: "hair", words: "a mid-length wavy cut" }],
+    });
+    const withEmpty = assembleRecipe({
+      master: MASTER, pronouns: SHE, library: [],
+      asks: [{ slot: "hair", noun: "hair", words: "a mid-length wavy cut" }],
+      sources: [],
+    });
+    expect(withNone.ok && withEmpty.ok).toBe(true);
+    if (!withNone.ok || !withEmpty.ok) return;
+    expect(withEmpty.prompt).toBe(withNone.prompt);
+    expect(withEmpty.references).toEqual(withNone.references);
+  });
+
+  it("carries a source AND a carried crop in one render, in send order", () => {
+    /* The source belongs to the edited slot; an untouched slot still carries
+       its own minted crop, and the ordinals in the sentences must be the
+       ordinals in the array that goes out. */
+    const recipe = assembleRecipe({
+      master: MASTER, pronouns: SHE,
+      library: [lips({ carry: { key: "mint/lips.png" } })],
+      asks: [{ slot: "hair", noun: "hair", words: "a mid-length wavy cut" }],
+      sources: [source],
+    });
+    expect(recipe.ok).toBe(true);
+    if (!recipe.ok) return;
+    expect(recipe.references.map((one) => one.role.kind)).toEqual(["master", "source", "carry"]);
+    expect(recipe.references[2]!.sentence).toContain("Reference 3");
+    expect(recipe.carried).toEqual(["lips"]);
+  });
+});

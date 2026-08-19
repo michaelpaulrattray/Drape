@@ -858,11 +858,57 @@ unless a caller records a row naming the key. That is the right life for an
 ask-scoped artifact: the candidate purge collects by ROW, so an object with no
 row would otherwise outlive the Cast it was cut from.
 
-**What is NOT built yet, stated rather than implied: the wire.** The cutter has
-no call site, so `carrierPicturesScale` is not yet consulted on any request path
-— invariant 7's own sentence, said here rather than discovered later. The open
-design question the wire turns on is what ROLE the carrier rides under: a recipe
-reference is today either the master, an `anchor` (an introduced item's frozen
-introduction reference) or a `carry` (minted from a delivery), and hair is
-`anatomy`, whose anchor is the master by D-244 line 3. A customer's own
-photograph is none of those three.
+### 9.12 THE WIRE — and the FOURTH REFERENCE ROLE it needed (approved fable-1096)
+
+A recipe reference was one of three things, and a customer's own photograph is
+none of them: not the `master`, not an `anchor` (an INTRODUCED item's frozen
+introduction reference — and D-244 line 3 gives anatomy no anchor, its anchor is
+the master), not a `carry` (minted from a delivery of hers). So the role is a
+fourth: **`{ kind: "source"; slot }`** — a picture SHE supplied, for one ask.
+
+The alternative — widening `anchor` to accept an anatomy slot — was rejected:
+an anchor meaning both *the thing this feature regenerates from* and *a picture
+she attached once* is how a slot loses its meaning three shifts later.
+
+Three bounds ride with it:
+
+- **the assembler writes the sentence**, never a caller. Ordinals are true of
+  the array that is dispatched, which is the whole reason the prompt is built
+  where the references are;
+- **the sentence describes the source HONESTLY** — a redacted-form carrier is
+  said to be one, in the scale arm's own wording, because that is the wording
+  that DELIVERED (long 2/2 with the grey form described and excluded; short 2/2
+  on a plain cutout carrying the same length words). Honesty here is not
+  manners, it is part of what worked;
+- **per ask by construction**, which is what makes §9.8's regenerate answer true
+  by TYPE rather than by care: a regenerate re-runs the same ask, the ask holds
+  its `referenceId`, so the source is cut and sent again and the replaced take's
+  crop cannot take its place.
+
+#### What the request path now does, and where the money line is
+
+Everything the cut touches happens **before the claim**. In order: read the take
+(free — a `colour` take carries as WORDS and buys no segmenter call at all);
+ask whether this reading touches hair at all, through the same catalogue the
+recipe's asks come from; cut; mint; send. A refusal at any of those returns her
+own picture with a sentence and takes nothing, in credits **or** in calls — a
+picture with no hair in it never buys the scale question.
+
+Two things are SAID rather than dropped, joined into the same owed-lines list
+every other half-served ask travels in: **the second view of a two-panel
+reference**, and **an attachment that went unused** because the ask turned out
+not to be about hair. Nothing is cut in that second case, so the temptation to
+say nothing is at its strongest exactly where D-181's law applies.
+
+**A source is never padded to her frame.** A crop cut FROM this master has a
+position to be put back into; a carrier cut from somebody else's photograph has
+none, and padding it would place a stranger's head at a coordinate that means
+nothing.
+
+#### Still not built, and named
+
+- **the `colour` take's wire.** `hairColourFromReference` is built and courted
+  and has no call site: a colour take is currently a picture that is not cut and
+  words that are not read. It is the next wire, not a defect in this one;
+- the drawing's quietness (§9.8) and the cross-sex regression arm, both of which
+  land with hair's final courts before `hair.open` flips.

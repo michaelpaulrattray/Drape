@@ -234,3 +234,20 @@ export function likenessSetAsideNote(input: { subjects: readonly string[] }): st
   return `${made} Refining can't copy a real person's features, so that part of `
     + "the comparison was set aside.";
 }
+
+/**
+ * THE PICTURE THAT DID NOT RIDE — said, never swallowed (D-181's law, pointed
+ * at the reference lane).
+ *
+ * She attached a photograph and then asked for something the picture has
+ * nothing to do with. Nothing is cut, nothing is read, and no house money is
+ * spent on it — which is right, and which is exactly the situation where a
+ * product stays quiet and lets her believe her picture was used.
+ *
+ * It names no feature deliberately: what is true here is that the ATTACHMENT
+ * went unused, and a sentence guessing at which feature she meant would be the
+ * hardcoded "the eyes" defect wearing a different hat.
+ */
+export function attachedPictureUnusedNote(): string {
+  return "The picture you attached wasn't used — this change didn't ask for anything I could take from it.";
+}

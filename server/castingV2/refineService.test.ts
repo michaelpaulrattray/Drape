@@ -8563,3 +8563,459 @@ describe("the picture she attached reaches the ask", () => {
     expect(typeof query.candidateId).toBe("number");
   });
 });
+
+/*
+  HER PICTURE BECOMING A CARRIER — the crop road ON THE REQUEST PATH.
+
+  `hairReferenceCutter.test.ts` proves the cut and `recipeAssembler.test.ts`
+  proves the fourth role. Neither proves that a paid ask reaches either of them,
+  and this campaign's own record says what an unconsulted control is worth
+  (`gate-not-reader`, invariant 7): `carrierPicturesScale` exists exactly as
+  much as the request path that consults it.
+
+  So these arms drive `refineCandidate` and assert on WHAT WENT OUT — the
+  reference array the repaint engine actually received — rather than on a
+  variable near it.
+*/
+describe("the picture she attached becomes the carrier that rides", () => {
+  const REFERENCE = {
+    id: 7,
+    storageKey: "casting-v2/reference/attached.png",
+    provenance: "consented" as const,
+    digest: "d".repeat(64),
+    mime: "image/png",
+    width: 120,
+    height: 100,
+  };
+
+  /** One photograph, continuous — no seam, so one panel and two questions. */
+  const onePhotograph = async () => {
+    const sharp = (await import("sharp")).default;
+    const width = 120;
+    const height = 100;
+    const raw = Buffer.alloc(width * height * 3);
+    for (let y = 0; y < height; y += 1) {
+      for (let x = 0; x < width; x += 1) {
+        const at = (y * width + x) * 3;
+        raw[at] = Math.round(60 + (x / width) * 60);
+        raw[at + 1] = Math.round(70 + (y / height) * 60);
+        raw[at + 2] = 90;
+      }
+    }
+    return sharp(raw, { raw: { width, height, channels: 3 } }).png().toBuffer();
+  };
+
+  const boxMask = (width: number, height: number, rect: { x: number; y: number; w: number; h: number }) => {
+    const data = Buffer.alloc(width * height, 0);
+    for (let y = rect.y; y < rect.y + rect.h; y += 1) {
+      for (let x = rect.x; x < rect.x + rect.w; x += 1) data[y * width + x] = 255;
+    }
+    return { data, width, height };
+  };
+
+  /** The segmenter, scripted. `asked` is the count that proves a refusal was
+   *  free in CALLS as well as in credits. */
+  const asked: string[] = [];
+  const reader = (answers: (name: string) => { hair?: boolean; form?: boolean } = () => ({})) => ({
+    region: async ({ image, name }: { image: Buffer; name: string }) => {
+      asked.push(name);
+      const sharp = (await import("sharp")).default;
+      const meta = await sharp(image).metadata();
+      const width = meta.width ?? 0;
+      const height = meta.height ?? 0;
+      const answer = answers(name);
+      if (name === "hair") {
+        return answer.hair === false
+          ? { data: Buffer.alloc(width * height, 0), width, height }
+          : boxMask(width, height, { x: 10, y: 10, w: 40, h: 40 });
+      }
+      return answer.form === false
+        ? { data: Buffer.alloc(width * height, 0), width, height }
+        : boxMask(width, height, { x: 50, y: 20, w: 30, h: 30 });
+    },
+    subject: async () => { throw new Error("no subject matte is asked for on this road"); },
+    landmark: async () => { throw new Error("no landmark is asked for on this road"); },
+  });
+
+  /** Every render's outgoing request, captured at the wire. */
+  const painted: Array<{ prompt: string; references: ReadonlyArray<{ bytes: Buffer; contentType: string }> }> = [];
+  const minted: Array<{ userId: number; bytes: Buffer }> = [];
+
+  const carrierRoad = (over: Record<string, unknown> = {}) => ({
+    repaintEnabled: () => true,
+    repaintEngine: () => ({
+      id: "test:repaint",
+      edit: async (request: { prompt: string; references: ReadonlyArray<{ bytes: Buffer; contentType: string }>; width: number; height: number }) => {
+        painted.push({ prompt: request.prompt, references: request.references });
+        return {
+          bytes: Buffer.from("repainted"),
+          contentType: "image/png",
+          width: request.width,
+          height: request.height,
+          latencyMs: 10,
+          provenance: { provider: "fal" as const, model: "gpt-image-2", providerRef: "req-r" },
+        };
+      },
+    }),
+    /*
+      STORAGE, STANDING IN — and the carrier comes back out of it EXACTLY as it
+      went in.
+
+      Not a convenience: `repaint` checks every reference's digest against the
+      sha the recipe carries, so a stub handing back different bytes would be
+      refused as `referenceBytesChanged` — which is what the first version of
+      this fixture did, and it is the pixel-frozen promise catching a fixture
+      rather than a defect.
+    */
+    readBytes: async (key: string) => (key === REFERENCE.storageKey
+      ? { bytes: await onePhotograph(), contentType: "image/png" }
+      : key === "casting-v2/reference-carrier/carrier.png"
+        ? { bytes: minted.at(-1)!.bytes, contentType: "image/png" }
+        : { bytes: TINY_MASTER_PNG, contentType: "image/png" }),
+    /* The mint is stubbed at its own seam: this suite must not write to a
+       bucket, and the KEY is what the recipe carries. */
+    mintCarrier: async ({ userId, carrier }: { userId: number; carrier: { bytes: Buffer } }) => {
+      minted.push({ userId, bytes: carrier.bytes });
+      const { createHash } = await import("node:crypto");
+      return {
+        key: "casting-v2/reference-carrier/carrier.png",
+        sha: createHash("sha256").update(carrier.bytes).digest("hex"),
+        contentType: "image/png",
+        carrier: carrier as never,
+      };
+    },
+    regions: reader(),
+    interpret: async () => ({ ok: true as const, delta: { free: { hairCut: "a mid-length wavy cut" } } }),
+    harvest: unmasked,
+    ...over,
+  });
+
+  beforeEach(() => {
+    painted.length = 0;
+    minted.length = 0;
+    asked.length = 0;
+    resolveAskReferenceMock.mockResolvedValue(REFERENCE);
+  });
+  afterEach(() => { resolveAskReferenceMock.mockReset(); });
+
+  it("SENDS THE CARRIER as a second reference, described honestly", async () => {
+    await refineCandidate(carrierRoad(), {
+      ...input,
+      instruction: "copy this hairstyle",
+      referenceId: "ref-public",
+    });
+
+    expect(minted).toHaveLength(1);
+    expect(painted).toHaveLength(1);
+    /* The master is reference 1 and the carrier is reference 2 — asserted on
+       the array that was dispatched. */
+    expect(painted[0]!.references).toHaveLength(2);
+    expect(painted[0]!.references[0]!.bytes).toEqual(TINY_MASTER_PNG);
+    /* The bytes that went out ARE the bytes the cutter composed — the pixel
+       identity, read off the request rather than off the mint. */
+    expect(painted[0]!.references[1]!.bytes).toEqual(minted[0]!.bytes);
+    expect(painted[0]!.prompt).toContain("Reference 2 is the picture supplied for her hair");
+    expect(painted[0]!.prompt).toContain("plain grey form");
+    /* Two questions, no more: one panel, hair then the scale. */
+    expect(asked).toEqual(["hair", "face"]);
+  });
+
+  it("REFUSES FREE when the carrier pictures no scale — nothing claimed, nothing charged", async () => {
+    /*
+      The guard is `carrierPicturesScale`, and this is the arm that makes it
+      exist: consulted here, on the path a customer's money travels. A carrier
+      with no form would deliver the short crop the length court convicted, at
+      full price.
+    */
+    const result = await refineCandidate(carrierRoad({ regions: reader(() => ({ form: false })) }), {
+      ...input,
+      instruction: "copy this hairstyle",
+      referenceId: "ref-public",
+    });
+
+    expect(result.kind).toBe("selected");
+    expect(result.note).toMatch(/not enough of the head around it/);
+    expect(journal).not.toContain("begin");
+    expect(journal).not.toContain("deduct");
+    expect(painted).toHaveLength(0);
+    expect(minted).toHaveLength(0);
+  });
+
+  it("REFUSES FREE when there is no hair in her picture, and buys no scale call", async () => {
+    const result = await refineCandidate(carrierRoad({ regions: reader(() => ({ hair: false })) }), {
+      ...input,
+      instruction: "copy this hairstyle",
+      referenceId: "ref-public",
+    });
+
+    expect(result.kind).toBe("selected");
+    expect(result.note).toMatch(/couldn't find any hair/);
+    expect(journal).not.toContain("deduct");
+    /* Free in calls as well: the second question is never bought. */
+    expect(asked).toEqual(["hair"]);
+  });
+
+  it("CUTS NOTHING for an ask that does not touch hair — and says the picture went unused", async () => {
+    /*
+      She attached a photograph and asked for green eyes. No segmenter call is
+      bought, no carrier is cut — and she is TOLD, because a product that stays
+      quiet here lets her believe her picture was used (D-181's law, pointed at
+      the other kind of reference).
+    */
+    const result = await refineCandidate(carrierRoad({
+      interpret: async () => ({ ok: true as const, delta: { eyeColour: "green" as const } }),
+    }), {
+      ...input,
+      instruction: "copy this hairstyle",
+      referenceId: "ref-public",
+    });
+
+    expect(asked).toEqual([]);
+    expect(minted).toHaveLength(0);
+    expect(painted).toHaveLength(1);
+    expect(painted[0]!.references).toHaveLength(1);
+    expect(result.note).toMatch(/picture you attached wasn't used/);
+  });
+
+  it("CUTS NOTHING for a COLOUR take — that one carries as words", async () => {
+    /* His own example of the words half of the general law. The picture is not
+       cut, and the ask still renders. */
+    await refineCandidate(carrierRoad({ hairTake: async () => "colour" as const }), {
+      ...input,
+      instruction: "copy just the hair colour",
+      referenceId: "ref-public",
+    });
+
+    expect(asked).toEqual([]);
+    expect(minted).toHaveLength(0);
+    expect(painted[0]!.references).toHaveLength(1);
+  });
+
+  it("CUTS NOTHING when the take cannot be read — an unreadable ask is not a coin flip", async () => {
+    await refineCandidate(carrierRoad({ hairTake: async () => null }), {
+      ...input,
+      instruction: "copy the colour and the cut",
+      referenceId: "ref-public",
+    });
+
+    expect(asked).toEqual([]);
+    expect(minted).toHaveLength(0);
+  });
+
+  it("carries NOTHING of the person in her photograph — the containment bound, at the wire", async () => {
+    /*
+      Proved on the bytes that were dispatched rather than on the cutter's
+      promise: every opaque pixel of what went out is either the hair's own
+      colour or the flat fill. The mint seam here hands back the REAL composed
+      carrier so the assertion reads what the road built.
+    */
+    const sharp = (await import("sharp")).default;
+    await refineCandidate(carrierRoad(), {
+      ...input, instruction: "copy this hairstyle", referenceId: "ref-public",
+    });
+
+    expect(painted).toHaveLength(1);
+    /* Read off the DISPATCHED reference, not off the mint — what a person's
+       photograph could leak into is the request, and that is where this looks. */
+    const { data, info } = await sharp(painted[0]!.references[1]!.bytes)
+      .ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+    const { FORM_FILL } = await import("./hairReferenceCrop.js");
+    let flat = 0;
+    for (let at = 0; at < info.width * info.height; at += 1) {
+      if (data[at * 4 + 3] === 0) continue;
+      const inHair = (at % info.width) + 10 < 50 && Math.floor(at / info.width) + 10 < 50;
+      if (!inHair) {
+        expect([data[at * 4], data[at * 4 + 1], data[at * 4 + 2]])
+          .toEqual([FORM_FILL.r, FORM_FILL.g, FORM_FILL.b]);
+        flat += 1;
+      }
+    }
+    expect(flat).toBe(30 * 30);
+  });
+});
+
+/*
+  A REGENERATE RE-SENDS THE PICTURE SHE ATTACHED — the arm ordered in
+  fable-1086, and it is now a question about STRUCTURE rather than about care.
+
+  The design answer given to the founder was that a regenerate re-runs the SAME
+  ask against the SAME parent state, so the ask holds its `referenceId`, the
+  recipe re-composes with the original crop, and the failed attempt's harvest
+  dies with the picture it came from — the reference keeps riding until a
+  delivery is KEPT.
+
+  With the source role in the type, that answer is true by construction rather
+  than by anyone remembering it: a source belongs to an ask, so re-running the
+  ask re-rides the source, and there is no path on which a replaced version's
+  crop can arrive in its place. This arm drives both halves anyway, because
+  "true by construction" is a claim about a road nobody has walked until a test
+  walks it.
+*/
+describe("a regenerate re-sends the picture, and none of the replaced take", () => {
+  const REFERENCE = {
+    id: 7,
+    storageKey: "casting-v2/reference/attached.png",
+    provenance: "consented" as const,
+    digest: "d".repeat(64),
+    mime: "image/png",
+    width: 120,
+    height: 100,
+  };
+
+  const onePhotograph = async () => {
+    const sharp = (await import("sharp")).default;
+    const width = 120;
+    const height = 100;
+    const raw = Buffer.alloc(width * height * 3);
+    for (let y = 0; y < height; y += 1) {
+      for (let x = 0; x < width; x += 1) {
+        const at = (y * width + x) * 3;
+        raw[at] = Math.round(60 + (x / width) * 60);
+        raw[at + 1] = Math.round(70 + (y / height) * 60);
+        raw[at + 2] = 90;
+      }
+    }
+    return sharp(raw, { raw: { width, height, channels: 3 } }).png().toBuffer();
+  };
+
+  const mask = (width: number, height: number, rect: { x: number; y: number; w: number; h: number }) => {
+    const data = Buffer.alloc(width * height, 0);
+    for (let y = rect.y; y < rect.y + rect.h; y += 1) {
+      for (let x = rect.x; x < rect.x + rect.w; x += 1) data[y * width + x] = 255;
+    }
+    return { data, width, height };
+  };
+
+  const painted: Array<{ prompt: string; references: ReadonlyArray<{ bytes: Buffer; contentType: string }> }> = [];
+  const minted: Buffer[] = [];
+
+  /** The hair crop the REPLACED take minted — the thing that must not ride. */
+  const HAIR_CARRY_KEY = "casting-v2/library/hair-from-the-take-being-replaced.png";
+
+  const road = () => ({
+    repaintEnabled: () => true,
+    repaintEngine: () => ({
+      id: "test:repaint",
+      edit: async (request: { prompt: string; references: ReadonlyArray<{ bytes: Buffer; contentType: string }>; width: number; height: number }) => {
+        painted.push({ prompt: request.prompt, references: request.references });
+        return {
+          bytes: Buffer.from("repainted"),
+          contentType: "image/png",
+          width: request.width,
+          height: request.height,
+          latencyMs: 10,
+          provenance: { provider: "fal" as const, model: "gpt-image-2", providerRef: "req-r" },
+        };
+      },
+    }),
+    readBytes: async (key: string) => (key === REFERENCE.storageKey
+      ? { bytes: await onePhotograph(), contentType: "image/png" }
+      : key === "casting-v2/reference-carrier/carrier.png"
+        ? { bytes: minted.at(-1)!, contentType: "image/png" }
+        : key === HAIR_CARRY_KEY
+          ? { bytes: Buffer.from("the-replaced-take-s-hair"), contentType: "image/png" }
+          : { bytes: TINY_MASTER_PNG, contentType: "image/png" }),
+    mintCarrier: async ({ carrier }: { carrier: { bytes: Buffer } }) => {
+      minted.push(carrier.bytes);
+      const { createHash } = await import("node:crypto");
+      return {
+        key: "casting-v2/reference-carrier/carrier.png",
+        sha: createHash("sha256").update(carrier.bytes).digest("hex"),
+        contentType: "image/png",
+        carrier: carrier as never,
+      };
+    },
+    regions: {
+      region: async ({ image, name }: { image: Buffer; name: string }) => {
+        const sharp = (await import("sharp")).default;
+        const meta = await sharp(image).metadata();
+        const width = meta.width ?? 0;
+        const height = meta.height ?? 0;
+        return name === "hair"
+          ? mask(width, height, { x: 10, y: 10, w: 40, h: 40 })
+          : mask(width, height, { x: 50, y: 20, w: 30, h: 30 });
+      },
+      subject: async () => { throw new Error("no subject matte on this road"); },
+      landmark: async () => { throw new Error("no landmark on this road"); },
+    },
+    interpret: async () => ({ ok: true as const, delta: { free: { hairCut: "a mid-length wavy cut" } } }),
+    harvest: unmasked,
+  });
+
+  beforeEach(() => {
+    painted.length = 0;
+    minted.length = 0;
+    resolveAskReferenceMock.mockResolvedValue(REFERENCE);
+    /*
+      The take being redrawn: her chosen version, made by this very sentence,
+      with a hair crop minted from the frame it delivered.
+
+      THE FIXTURE IS DELIBERATELY MORE GENEROUS THAN PRODUCTION. A real re-roll
+      hangs where the replaced version hangs — it takes the predecessor's
+      PARENT — so the replaced take's own row is a sibling and the lineage walk
+      never returns it. Handing it in anyway puts the stale crop in front of the
+      recipe, which is the only way to prove the drop rather than to prove that
+      nothing was there.
+    */
+    variantRows.push({
+      id: 91,
+      publicId: "variant-selected",
+      imageKey: "casting-v2/variants/the-take-being-replaced.png",
+      instructions: ["copy this hairstyle"],
+      requestText: "copy this hairstyle",
+      stepDeltas: [{ free: { hairCut: "a mid-length wavy cut" } }],
+      deltas: { free: { hairCut: "a mid-length wavy cut" } },
+      internalPrompt: {},
+    } as never);
+    candidateRow.selectedVariantPublicId = "variant-selected";
+    lineageReferences = [{
+      id: 1,
+      publicId: "ref-hair",
+      candidateId: 1,
+      variantId: 91,
+      role: "carry",
+      slot: "hair",
+      tier: "anatomy",
+      noun: "hair",
+      words: ["a mid-length wavy cut"],
+      storageKey: HAIR_CARRY_KEY,
+      maskKey: null,
+      digest: null,
+      geometry: null,
+      guard: null,
+      refusal: null,
+      version: 1,
+      retiredAt: null,
+      createdAt: new Date("2026-08-19T00:00:00Z"),
+    }];
+  });
+  afterEach(() => { resolveAskReferenceMock.mockReset(); });
+
+  it("cuts the ORIGINAL picture again and sends it — and the replaced take's own crop does not ride", async () => {
+    await refineCandidate(road() as never, {
+      ...input,
+      instruction: "copy this hairstyle",
+      replayOf: "variant-selected",
+      referenceId: "ref-public",
+    });
+
+    expect(painted).toHaveLength(1);
+    const sent = painted[0]!.references;
+    /* Master plus the carrier, and nothing else: the crop the replaced take
+       minted is dropped because its slot is the one being edited (D-244 line
+       2), and the SOURCE takes the place a stale carry would otherwise have. */
+    expect(sent).toHaveLength(2);
+    expect(sent[0]!.bytes).toEqual(TINY_MASTER_PNG);
+    expect(sent[1]!.bytes).toEqual(minted.at(-1)!);
+    expect(sent.some((one) => one.bytes.equals(Buffer.from("the-replaced-take-s-hair")))).toBe(false);
+    /* And it is the picture SHE attached that was cut, not the version being
+       replaced: the resolver was asked for her handle on this pass too. */
+    expect(resolveAskReferenceMock).toHaveBeenCalledWith(expect.objectContaining({
+      referencePublicId: "ref-public",
+    }));
+    /* The pronoun is this fixture's cast's, and the sentence is asserted
+       without it — the pronoun has its own arm in the assembler's suite. */
+    expect(painted[0]!.prompt).toContain("Reference 2 is the picture supplied for");
+    expect(painted[0]!.prompt).toContain("plain grey form standing in for a head");
+  });
+});

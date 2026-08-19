@@ -828,63 +828,55 @@
 
 - symbol: findSeam
   file: server/castingV2/hairReferenceCrop.ts
-  verdict: HELD
-  why: the crop road's composite discriminator — measured over his six specimens (one seam at 27.4x its own median, four controls at or below 6.7x) and driven over the committed corpus in its own suite
+  verdict: KEEP
+  why: the composite discriminator, measured over his six specimens and now consulted on every attached picture; live on the paid refine path since the crop road was wired — a hair reference is cut, guarded and sent from `refineCandidate` itself
   argued: 14a
-  blocker: the crop road's cutter, which calls it once per attached reference
 
 - symbol: panelsOf
   file: server/castingV2/hairReferenceCrop.ts
-  verdict: HELD
-  why: turns a seam into the two panels the segmenter is asked about separately, which is what stops a model choosing half a customer's reference on her behalf
+  verdict: KEEP
+  why: turns a seam into the panels the segmenter is asked about separately, which is what stops a model choosing half a customer's reference on her behalf; live on the paid refine path since the crop road was wired — a hair reference is cut, guarded and sent from `refineCandidate` itself
   argued: 14a
-  blocker: the crop road's cutter
 
 - symbol: unionBox
   file: server/castingV2/hairReferenceCrop.ts
-  verdict: HELD
-  why: the carrier's extent over hair and form together, so a fringe past the head outline is not cut off by the head's bounds; refuses two masks in different spaces rather than resolving them
+  verdict: KEEP
+  why: the carrier's extent over hair and form together, refusing two masks in different spaces rather than resolving them; live on the paid refine path since the crop road was wired — a hair reference is cut, guarded and sent from `refineCandidate` itself
   argued: 14a
-  blocker: the crop road's cutter
 
 - symbol: composeCarrierPixels
   file: server/castingV2/hairReferenceCrop.ts
-  verdict: HELD
-  why: the carrier itself — hair in its own pixels, the head flat-filled and unrecoverable, everything else transparent; written as a loop because three imaging idioms returned a whole face silently
+  verdict: KEEP
+  why: the carrier itself — hair in its own pixels, the head flat-filled and unrecoverable; live on the paid refine path since the crop road was wired — a hair reference is cut, guarded and sent from `refineCandidate` itself
   argued: 14a
-  blocker: the crop road's cutter
 
 - symbol: carrierPicturesScale
   file: server/castingV2/hairReferenceCrop.ts
-  verdict: HELD
-  why: refuses a carrier whose form is a rounding error (the measured head-region read left 1,043px against 99,220px of hair), which would be a silent regression to the cutout the length court convicted
+  verdict: KEEP
+  why: REFUSES a carrier whose form is a rounding error, and it is consulted before the claim on the request path — invariant 7 satisfied rather than asserted
   argued: 14a
-  blocker: the crop road's cutter
 
 - symbol: encodeCarrier
   file: server/castingV2/hairReferenceCrop.ts
-  verdict: HELD
-  why: encodes a composed carrier, separated so the composition stays pure and testable without an image codec
+  verdict: KEEP
+  why: encodes a composed carrier, separated so the composition stays pure; live on the paid refine path since the crop road was wired — a hair reference is cut, guarded and sent from `refineCandidate` itself
   argued: 14a
-  blocker: the crop road's cutter
 
 - symbol: cutHairCarrier
   file: server/castingV2/hairReferenceCutter.ts
-  verdict: HELD
-  why: the crop road's orchestration — the seam, one hair question per panel (which is what stops a model choosing half her reference in silence), the largest panel carrying, the scale read and every free refusal
+  verdict: KEEP
+  why: the crop road's orchestration — the seam, one hair question per panel, the largest panel carrying, the scale read and every free refusal; called by `refineCandidate` before the claim
   argued: 14a
-  blocker: the refine road's reference lane, which must decide what ROLE a customer's own picture rides under — a recipe reference is today the master, an anchor or a carry, and hair is anatomy whose anchor is the master (D-244 line 3)
 
 - symbol: mintHairCarrier
   file: server/castingV2/hairReferenceCutter.ts
-  verdict: HELD
-  why: writes the carrier manifest-first, so bytes cut from a photograph of a person are never at a public address with nothing naming them
+  verdict: KEEP
+  why: writes the carrier manifest-first so bytes cut from a photograph of a person are never at a public address with nothing naming them; called beside the cut
   argued: 14a
-  blocker: the refine road's reference lane, same as cutHairCarrier
 
 - symbol: SECOND_VIEW_UNUSED_NOTE
   file: server/castingV2/hairReferenceCutter.ts
-  verdict: HELD
-  why: what a customer is told when her two-view reference had one view carry — said plainly rather than dropped in silence (ruled fable-1093 §1)
+  verdict: KEEP
+  why: what a customer is told when her two-view reference had one view carry; joined into the delivered take's owed-lines list
   blocker: the refine road's reference lane, which is where a note reaches her
   argued: 14a
