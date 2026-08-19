@@ -691,8 +691,8 @@
 - symbol: listOrphanedVariants
   file: server/db/castingV2Variants.ts
   verdict: FILED
-  why: a belt-and-braces purge sweep with NO consumer anywhere — not even a test. The 13c question, and the answer is not obvious: either the purge path should run it or it is debris the purge outgrew
-  argued: 13c/13d
+  why: READ AND COUNTED (23f) — it would return NOTHING today (0 orphaned variants in both worlds, detector passing) and half its predicate is dead by construction, since variant expiresAt is written by nothing. Still the retention road's call: the fix is either the PREDICATE or the COLUMN, and wiring it as-is installs a safety net with one arm tied behind it
+  argued: 13c/13d/23f
   owner: the retention/purge owner — a sweep with no reader is collected-never-asserted in storage form, and only that road can say whether the purge should run it
 
 - symbol: dbReferencePlateIngestionPersistence

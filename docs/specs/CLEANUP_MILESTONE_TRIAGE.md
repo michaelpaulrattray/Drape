@@ -1564,6 +1564,58 @@ irreversible to bytes.
 before this row is answered **burns the map** to the unbilled-object question.
 Recommend holding the purge until then — carded for the founder on those terms.
 
+### 23f. `listOrphanedVariants`, read and counted — it would return NOTHING, and
+### half its predicate cannot fire at all
+
+The §13c method applied to the next FILED row (ruled fable-1045 §5). Verdict
+stays **FILED**: this is the retention road's design call, and the read below
+sharpens the question rather than answering it.
+
+**Read at the code first.** The predicate is a disjunction —
+`expiresAt < now` **OR** `NOT EXISTS (the candidate row)` — and
+**`castingCandidateVariants.expiresAt` is written by nothing.** The column
+exists and is indexed (`idx_casting_variants_expires`); the ONLY reference to it
+in the entire server is this helper's own predicate. `expiresAt` is stamped on
+the CANDIDATE (`db/castingV2.ts:1038`, on discard; cleared on undo at `:1075`),
+never on the variant. **So arm 1 is dead by construction.**
+
+**Counted** (`scripts/census-variant-orphans-disposable.mts`, read-only, the
+same three controls):
+
+```
+                                  DEV :52008      PRODUCTION :23768
+casting_candidate_variants        80              27
+casting_candidates                32              55
+detector (parent set emptied)     80 of 80 pass   27 of 27 pass
+ARM 2 — candidate row gone        0               0
+ARM 1 — expiresAt < now           0               0
+variants carrying any expiresAt   0               0
+candidates carrying any expiresAt 0               0
+```
+
+**Arm 2 is a real zero and the detector is what makes it one:** no variant has
+ever outlived its candidate in either world. `listOrphanedVariants` would return
+an empty list today — belt-and-braces that has never had anything to catch.
+
+⚠ **Arm 1's zero is NOT a confirmation, and the control is what says so.** The
+`candidates carrying any expiresAt` line was included as the discriminator — the
+idea being that a populated candidate column beside an empty variant column
+would confirm the code read at the data. **It reads 0 as well, and on reflection
+0 is exactly what a WORKING purge produces**, since a swept candidate's row goes
+with its expiry. So the reading cannot distinguish "nothing writes this column"
+from "everything that did has been purged". **The code read stands on the code
+alone** — which is solid, being a whole-server grep with one hit — and the data
+neither confirms nor refutes it. Recorded this way rather than as a confirmation,
+because a control that turns out not to discriminate is a fact about the reading.
+
+**What it means for the filed question.** *Should the purge run this sweep?* The
+honest state: it would do nothing today, and half of it could never do anything.
+**Do not wire it as-is** — the choice is whether the fix is the PREDICATE (drop
+the dead arm, keep the orphan sweep as a real safety net) or the COLUMN (start
+stamping variant expiries, which is a retention design decision nobody has
+made). Wiring the helper unchanged would install a safety net with one arm tied
+behind it and call the row closed.
+
 
 ---
 
