@@ -1,7 +1,21 @@
-import { RotateCw } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Plus, RotateCw, X } from "lucide-react";
+
+import type { InkProvenance } from "@shared/inkProvenance";
 
 import { Button } from "@/foundation";
-import { ReferenceMakeupChip, type MakeupReadResult } from "./ReferenceMakeupChip";
+import {
+  ATTACHED_PICTURE_LABEL,
+  ATTACHED_PICTURE_NOTE,
+  ATTACH_ACTION_LABEL,
+  ATTACH_BUSY_LABEL,
+  ATTACH_CLAIM_QUESTION,
+  ATTACH_FAILED_FALLBACK,
+  ATTACH_REMOVE_LABEL,
+  attachClaimChips,
+} from "../referenceAttachCopy";
+import { asBase64 } from "../pictureBytes";
+import { READ_CAPTION, READ_USE, droppedNote } from "../referenceReadCopy";
 import { SegmentsOnFace, type FaceRow } from "./SegmentsOnFace";
 import { VersionRail } from "./VersionRail";
 import type { PendingStage } from "../refineBusy";
@@ -156,7 +170,9 @@ export function RefinePanel({
   onDraft,
   stackHoisted = false,
   regenerates = null,
-  readMakeupFromPhoto = null,
+  offer = null,
+  onAdopt,
+  attachPicture = null,
 }: {
   variants: readonly RefineVariant[];
   /** Refinements still running, from server truth — survives remount (D-161). */
@@ -178,7 +194,17 @@ export function RefinePanel({
    * same reason the scope does: a replay is not the sentence, it is the
    * sentence PLUS what it is a replay of. Absent on every typed ask.
    */
-  onRefine: (instruction: string, scope?: string, replayOf?: string) => void;
+  /*
+    AND THE PICTURE SHE ATTACHED TO THIS ASK — the handle, fourth and last
+    (`UNIVERSAL_REFERENCE_ROAD_DESIGN.md` §10).
+
+    It travels with the SENTENCE because the sentence is the instruction: the
+    road reads what she typed and decides what her picture contributes. Absent
+    on every ask with no picture on it, which is most of them — and absent, not
+    null, for the same reason `scope` is: the wire has no field for "no
+    reference", and sending one would be a handle naming nothing.
+  */
+  onRefine: (instruction: string, scope?: string, replayOf?: string, referenceId?: string) => void;
   onSelect: (variantId: string | null) => void;
   /**
    * Remove one instruction from the middle of the stack — a PAID re-render.
@@ -252,22 +278,133 @@ export function RefinePanel({
    */
   stackHoisted?: boolean;
   /**
-   * TAKING A LOOK FROM A PHOTOGRAPH — absent unless the road serves this
-   * account (`config.makeupFromReferenceEnabled`).
+   * A SENTENCE READ OFF THE PICTURE SHE ATTACHED — free, and nothing has
+   * happened yet (the words lane, ruled fable-1103 §1).
    *
-   * ABSENT rather than disabled, for the reason the Regenerate button is: a
-   * control that can never apply to the account looking at it is not a control
-   * that is temporarily unavailable. And the gate is the server's — the client
-   * asks, it never decides.
+   * It arrives on the refine's own answer rather than through a control of its
+   * own, which is the whole re-skin: there is no *"take the makeup from a
+   * photo"* link any more, because the SENTENCE is the instruction and the road
+   * decides what her picture contributes. She attached a picture and asked for
+   * a colour or a look; a reader spoke for it; this is what it said.
    *
-   * It is a FUNCTION rather than a flag so this panel stays presentational: the
-   * page owns the mutation, this owns where the sentence appears.
+   * PREFILL ONLY, NEVER SEND — see {@link onAdopt}.
    */
-  readMakeupFromPhoto?: ((imageBase64: string) => Promise<MakeupReadResult>) | null;
+  offer?: {
+    sentence: string;
+    /** What the reading could not fit, NAMED — she can type it herself. */
+    dropped: string[];
+  } | null;
+  /**
+   * She picked the sentence up. It FILLS THE BOX AND STOPS.
+   *
+   * Spending her credits is a deliberate act and stays one, and if she sends
+   * the sentence unchanged it travels as an ordinary ask at the ordinary price
+   * through the same doors as anything she typed by hand. That is also the only
+   * shape in which the road is legal: `refineDelta` has required since D-171
+   * that the value appear in the CUSTOMER'S OWN instruction, so a sentence
+   * routed silently from a reader into a render would be refused by a guard
+   * that has stood there for months.
+   *
+   * The page owns it rather than this panel, because adopting also arms the
+   * provenance the next ask carries — the panel writes words, not facts.
+   */
+  onAdopt?: (sentence: string) => void;
+
+  /**
+   * ATTACHING A PICTURE — the one universal door (founder ruling, fable-1051).
+   *
+   * ABSENT rather than disabled outside the scope, like every other capability
+   * on this panel: `reference.attach` answers NOT_FOUND there, so a drawn `+`
+   * would be a control that refuses. The server owns the gate; the client asks.
+   *
+   * A FUNCTION rather than a flag, so the panel stays presentational — the page
+   * owns the mutation, this owns where the picture appears and what rides with
+   * the sentence.
+   */
+  attachPicture?: ((input: {
+    imageBase64: string;
+    provenance: InkProvenance;
+  }) => Promise<{ referenceId: string }>) | null;
 }) {
   const instruction = draft;
   const setInstruction = onDraft;
   const trimmed = instruction.trim();
+
+  /*
+    THE PICTURE ON THIS ASK (design §10; founder ruling fable-1051).
+
+    Held HERE rather than above the panel, unlike the draft, because it has ONE
+    door: the `+` in the box's own row. The draft is lifted because three
+    surfaces write to it and a draft owned by one of them is a draft the other
+    two cannot open — no such thing is true of the picture.
+
+    It is keyed to the face by the panel's own `key`, so walking the viewer with
+    ←/→ cannot carry one person's reference onto the next person's ask.
+  */
+  const pictureInput = useRef<HTMLInputElement | null>(null);
+  const [picture, setPicture] = useState<{
+    /** For the eye only — an object URL, never sent anywhere. */
+    url: string;
+    imageBase64: string;
+    /**
+     * The handle, once the door has taken it. **Null while she has not yet said
+     * where the picture came from**, which is the whole reason this is one
+     * state rather than two: the chip is on screen the moment she picks a file
+     * (his Grok reference), and it is not yet a reference anybody can ask
+     * against.
+     */
+    referenceId: string | null;
+  } | null>(null);
+  const [attaching, setAttaching] = useState(false);
+  const [attachRefusal, setAttachRefusal] = useState<string | null>(null);
+  /*
+    THE PREVIEW IS A LIVE OBJECT URL, so it is released — on replacement and on
+    removal below, and here for the case neither of those happens: she closes
+    the viewer, or walks to the next face, with a photograph still attached.
+    A ref rather than the state itself, because an effect that depended on the
+    picture would revoke the URL the moment she claimed it.
+  */
+  const liveUrl = useRef<string | null>(null);
+  liveUrl.current = picture?.url ?? null;
+  useEffect(() => () => {
+    if (liveUrl.current) URL.revokeObjectURL(liveUrl.current);
+  }, []);
+
+  function dropPicture(): void {
+    if (picture) URL.revokeObjectURL(picture.url);
+    setPicture(null);
+    setAttachRefusal(null);
+  }
+
+  async function claimPicture(provenance: InkProvenance): Promise<void> {
+    if (!picture || !attachPicture) return;
+    setAttaching(true);
+    setAttachRefusal(null);
+    try {
+      const { referenceId } = await attachPicture({ imageBase64: picture.imageBase64, provenance });
+      setPicture((held) => (held ? { ...held, referenceId } : held));
+    } catch (error) {
+      /* The server's own sentence, unchanged — every refusal this door has is
+         spoken (too large, too small, not an image, the cap). A client that
+         re-worded one is how two surfaces come to say different things about
+         one wall. */
+      setAttachRefusal(
+        error instanceof Error && error.message ? error.message : ATTACH_FAILED_FALLBACK,
+      );
+    } finally {
+      setAttaching(false);
+    }
+  }
+
+  /*
+    A CHOSEN PICTURE THAT IS NOT YET A REFERENCE HOLDS THE ASK.
+
+    The alternative is worse than a disabled button: sending anyway would drop
+    her picture in silence and answer about a sentence she did not think she was
+    asking alone. The question that unblocks it is two taps away, directly above
+    the box, which is why nothing else has to be said here.
+  */
+  const pictureUnclaimed = picture !== null && picture.referenceId === null;
   /*
     ARE THEY ABOUT TO BUY THE SAME EDIT TWICE? (D-161)
 
@@ -434,15 +571,126 @@ export function RefinePanel({
         </div>
       ) : null}
 
+      {/*
+        THE PICTURE, ABOVE THE INPUT AND INSIDE THE BOX (his Grok reference,
+        fable-1051 §1; the size pinned at 32px by fable-1101 §3).
+
+        It appears the instant she picks a file, before the door has taken it —
+        because a picker that swallows a photograph for a second and then shows
+        it reads as a hang. What arrives with it is the fence's own question.
+      */}
+      {picture ? (
+        <div className="dpc-refine__attached">
+          <div className="dpc-refine__attachedRow">
+            <span className="dpc-refine__thumb">
+              <img src={picture.url} alt={ATTACHED_PICTURE_LABEL} />
+            </span>
+            <button
+              type="button"
+              className="dpc-refine__attachedOff"
+              aria-label={ATTACH_REMOVE_LABEL}
+              title={ATTACH_REMOVE_LABEL}
+              disabled={attaching}
+              onClick={dropPicture}
+            >
+              <X size={12} strokeWidth={2} aria-hidden="true" />
+            </button>
+          </div>
+
+          {/*
+            WHERE IT CAME FROM — asked once per picture and never remembered.
+
+            `attach` takes `synthetic | consented` and has no default by ruling:
+            a guessed provenance is the one value the real-person fence cannot
+            carry. An answer inherited from her last attach would be a claim
+            about THIS picture that nobody made, so this row appears every time
+            and the chips are derived from the enum rather than typed beside it.
+          */}
+          {picture.referenceId === null ? (
+            <div className="dpc-refine__claim">
+              <span className="dpc-refine__claimAsk">{ATTACH_CLAIM_QUESTION}</span>
+              {attachClaimChips().map((chip) => (
+                <button
+                  key={chip.provenance}
+                  type="button"
+                  className="dpc-refine__answer"
+                  disabled={attaching || busy}
+                  onClick={() => void claimPicture(chip.provenance)}
+                >
+                  {chip.label}
+                </button>
+              ))}
+            </div>
+          ) : (
+            <p className="dpc-refine__note">{ATTACHED_PICTURE_NOTE}</p>
+          )}
+
+          {attachRefusal ? (
+            <p className="dpc-refine__readNote">{attachRefusal}</p>
+          ) : null}
+        </div>
+      ) : null}
+
       <form
         className="dpc-refine__ask"
         onSubmit={(event) => {
           event.preventDefault();
-          if (!trimmed || busy) return;
-          onRefine(trimmed);
+          if (!trimmed || busy || pictureUnclaimed) return;
+          /* The handle rides with the sentence, and only when there is one:
+             `undefined` rather than null, because the wire has no field for
+             "no reference". */
+          onRefine(trimmed, undefined, undefined, picture?.referenceId ?? undefined);
           setInstruction("");
         }}
       >
+        {/*
+          THE ONE ATTACH AFFORDANCE — a `+` at the left of the box's own row,
+          where a stylist's hands already are (design §6).
+
+          No label, no tooltip chrome, no toolbar, and NO FEATURE IN ITS NAME:
+          the sentence is the instruction, and a control that said what to
+          attach a picture FOR would rebuild the per-feature entry point the
+          founder deleted.
+
+          Absent unless the page hands it a door, like the Regenerate button and
+          the photograph read below it — outside the scope the procedure answers
+          NOT_FOUND, and a drawn control that can only refuse is not a control.
+        */}
+        {attachPicture ? (
+          <>
+            <input
+              ref={pictureInput}
+              type="file"
+              /* The three the door accepts. The BYTES are judged server-side
+                 either way — this only spares her choosing a file that will be
+                 refused. */
+              accept="image/png,image/jpeg,image/webp"
+              className="dpc-refine__readInput"
+              onChange={(event) => {
+                const file = event.target.files?.[0];
+                /* Cleared before anything else, so choosing the SAME file twice
+                   fires again — a picker that ignores a repeat looks broken. */
+                event.target.value = "";
+                if (!file) return;
+                if (picture) URL.revokeObjectURL(picture.url);
+                setAttachRefusal(null);
+                void asBase64(file).then((imageBase64) => {
+                  setPicture({ url: URL.createObjectURL(file), imageBase64, referenceId: null });
+                }).catch(() => setAttachRefusal(ATTACH_FAILED_FALLBACK));
+              }}
+            />
+            <button
+              type="button"
+              className="dpc-refine__attach"
+              aria-label={attaching ? ATTACH_BUSY_LABEL : ATTACH_ACTION_LABEL}
+              title={ATTACH_ACTION_LABEL}
+              disabled={busy || attaching}
+              onClick={() => pictureInput.current?.click()}
+            >
+              <Plus size={18} strokeWidth={1.75} aria-hidden="true" />
+            </button>
+          </>
+        ) : null}
         <input
           className="dpc-refine__field"
           value={instruction}
@@ -452,7 +700,7 @@ export function RefinePanel({
           disabled={busy}
           aria-label="What to change about this person"
         />
-        <Button type="submit" size="small" disabled={!trimmed || busy}>
+        <Button type="submit" size="small" disabled={!trimmed || busy || pictureUnclaimed}>
           {busy ? "Refining…" : "Refine"}
         </Button>
         {/*
@@ -513,21 +761,39 @@ export function RefinePanel({
       </form>
 
       {/*
-        THE THIRD DOOR ONTO THE ASK BOX — a photograph (fable-940/941).
+        THE SENTENCE READ OFF HER PICTURE — and it is an OFFER, not an outcome.
 
-        It sits BELOW the box rather than above it, because the chip above is
-        about the version already on screen and this is about a picture she has
-        not chosen yet. Same promise either way: it fills the box and stops.
+        It sits BELOW the box, where the makeup link's answer used to sit and
+        for the same reason: the chip above is about the version already on
+        screen, and this is about a picture she attached to the ask she has not
+        sent yet. Same promise either way — it fills the box and stops.
 
-        Absent unless the road serves this account — the page passes nothing at
-        all outside the scope, so there is no control here to be refused.
+        Nothing here is a control that could be absent outside a scope: the
+        offer arrives on the road's own answer, so a road that does not serve
+        this account simply never sends one.
       */}
-      {readMakeupFromPhoto ? (
-        <ReferenceMakeupChip
-          busy={busy}
-          onRead={readMakeupFromPhoto}
-          onUse={(sentence) => setInstruction(sentence)}
-        />
+      {offer ? (
+        <div className="dpc-refine__readResult">
+          {/* WHAT THIS IS, before the sentence — past tense, about the PICTURE,
+              and it says outright that nothing has changed. */}
+          <p className="dpc-refine__readCaption">{READ_CAPTION}</p>
+          <div className="dpc-refine__made">
+            <span className="dpc-refine__madeText">{offer.sentence}</span>
+            <button
+              type="button"
+              className="dpc-refine__madeUse"
+              disabled={busy}
+              onClick={() => (onAdopt ?? setInstruction)(offer.sentence)}
+            >
+              {READ_USE}
+            </button>
+          </div>
+          {/* NAMED, never counted: the only useful thing she can do with this
+              is type the missing one herself. */}
+          {droppedNote(offer.dropped) ? (
+            <p className="dpc-refine__readNote">{droppedNote(offer.dropped)}</p>
+          ) : null}
+        </div>
       ) : null}
 
       {/*

@@ -1,6 +1,15 @@
 /**
- * WHAT SHE READS WHEN A PHOTOGRAPH IS READ FOR HER — the words, apart from the
- * component that draws them.
+ * WHAT SHE READS WHEN THE PICTURE SHE ATTACHED IS READ FOR HER — the words,
+ * apart from the component that draws them.
+ *
+ * # These sentences serve TWO readers now, and that is the point
+ *
+ * They were the makeup link's copy. The link is deleted (founder ruling,
+ * fable-1051) and the reading it performed lives inside the universal road,
+ * where a hair colour is read by the same mechanism — so one caption, one
+ * `Use`, one sentence about what did not come across, spoken identically
+ * whichever reader answered. Two lanes with two sets of words is how a product
+ * comes to make the same promise two ways.
  *
  * # Why the copy is a module with a suite
  *
@@ -33,7 +42,12 @@
  * may simply type it.
  */
 
-/** The surfaces a makeup read can speak for, as the server names them. */
+/** The surfaces a makeup read can speak for, as the server names them.
+ *
+ *  A hair reading's blocks arrive already in English ("copper at the ends"),
+ *  spelled on the server so this surface holds ONE list of strings rather than
+ *  two shapes and a branch — they fall through the lookup below unchanged,
+ *  which is exactly what its fallback is for. */
 export const MAKEUP_SURFACE_WORDS: Readonly<Record<string, string>> = Object.freeze({
   eyes: "eyes",
   lips: "lips",
@@ -66,8 +80,10 @@ export function spokenList(words: readonly string[]): string {
  * governs (law 8): she gave us a picture and we looked at it. The tense is past
  * and the object is the PICTURE, so nothing in it can be mistaken for a claim
  * about her Cast.
+ *
+ * It names no feature, which is what lets one caption serve both readers.
  */
-export const MAKEUP_READ_CAPTION = "Read from your photo — nothing has changed yet";
+export const READ_CAPTION = "Read from your photo — nothing has changed yet";
 
 /**
  * What did not survive the read, in her words, or `null` when nothing was lost.
@@ -76,19 +92,13 @@ export const MAKEUP_READ_CAPTION = "Read from your photo — nothing has changed
  * only useful thing she can do with this sentence is type the missing one
  * herself.
  */
-export function makeupDroppedNote(dropped: readonly string[]): string | null {
+export function droppedNote(dropped: readonly string[]): string | null {
   if (dropped.length === 0) return null;
   const words = spokenList(dropped.map(makeupSurfaceWord));
   return dropped.length === 1
     ? `The ${words} didn't come across — type it yourself if you want it.`
     : `The ${words} didn't come across — type them yourself if you want them.`;
 }
-
-/** The label on the door. A photograph, and the thing taken from it. */
-export const MAKEUP_READ_ACTION = "Take the makeup from a photo";
-
-/** While the reader is looking. Present tense, because it is happening. */
-export const MAKEUP_READ_BUSY = "Reading your photo…";
 
 /**
  * The word on the button that fills the box.
@@ -98,4 +108,4 @@ export const MAKEUP_READ_BUSY = "Reading your photo…";
  * controls that behave identically must read identically, or the second one
  * teaches her that the first might send.
  */
-export const MAKEUP_READ_USE = "Use";
+export const READ_USE = "Use";

@@ -548,251 +548,28 @@ const referenceRouter = router({
       }
     }),
 
-  readMakeup: protectedProcedure
-    .input(z.object({
-      /* Candidate-scoped for ownership (invariant 1) even though nothing is
-         written against it — a read this account may not make on a Cast it does
-         not own is still a read of somebody's photograph on our transport. */
-      candidateId: publicId,
-      imageBase64: z.string().max(Math.ceil(INK_DESIGN_MAX_BYTES * 4 / 3) + 256),
-    }).strict())
-    .mutation(async ({ ctx, input }) => {
-      if (!captureCastingInkStudioEnabled(ctx.user.id)) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "No such thing." });
-      }
-      enforceRateLimit(ctx.user.id, RATE_LIMITS.castingReferenceRead);
+  /*
+    THE TWO READ DOORS ARE DELETED, and their READERS are alive and busier than
+    they have ever been (ruled fable-1103 §2).
 
-      /* From the session, never from input (invariant 3); and somebody else's
-         Cast is answered the way a missing one is. */
-      const candidateId = await resolveOwnedCandidateId({
-        userId: ctx.user.id,
-        candidatePublicId: input.candidateId,
-      }).catch(() => null);
-      if (candidateId === null) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Cast not found" });
-      }
+    `reference.readMakeup` and `reference.readHairColour` each existed to hand a
+    customer a sentence read off a picture. Both are now reached from inside the
+    refine road — the words lane (`referenceWordsLane.ts`) — because the founder
+    deleted the per-feature affordance that was their only caller:
 
-      const bytes = decodeUploadedImage(input.imageBase64);
-      /*
-        THE BYTES ARE JUDGED BEFORE THEY ARE SENT, on the upload door's own
-        rules — the format is what the BYTES are, never what was claimed. A
-        reference too small to read is refused here rather than paid for and
-        then found unreadable.
-      */
-      const decoded = await sharp(bytes).metadata().catch(() => null);
-      const bytesRefusal = inkDesignBytesRefusal({
-        byteSize: bytes.length,
-        decoded: decoded ? { format: decoded.format, width: decoded.width, height: decoded.height } : null,
-      });
-      if (bytesRefusal) throw spokenError({ code: "BAD_REQUEST", message: bytesRefusal.message });
-      /* The door has already refused anything that is not one of the three
-         formats; asking the guard again is how that fact is CARRIED rather than
-         asserted with a `!`, so a future edit to the door cannot leave a lie
-         here. */
-      if (!isInkDesignFormat(decoded?.format)) {
-        throw spokenError({ code: "BAD_REQUEST", message: "That file isn't an image we can read." });
-      }
+    > *"you put a small link take makeup from a photo???? this is stupid, you
+    > should be able to upload any image like grok and use it as a reference for
+    > anything"*
 
-      const outcome = await readMakeupFromReference({
-        bytes,
-        contentType: inkDesignContentType(decoded.format),
-      });
+    With the link gone, no surface can honestly call either one: a control that
+    said WHICH reader to run would be the per-feature entry point wearing a new
+    coat. **An export nobody calls is a claim** — and the second door had never
+    been called by anything at all, in any road, since the day it was written.
 
-      /*
-        THE DEMAND ROW, fire-and-forget (fable-941 §3a). It records THAT a
-        makeup read happened and how it ended — never the sentence, never the
-        account, never the cast. It cannot reject and nothing here awaits its
-        verdict: telemetry may not take an answer away from somebody who asked
-        for one.
-      */
-      void recordReferenceRead("makeup", referenceReadOutcomeFor(outcome) as ReferenceReadOutcome);
-
-      if (!outcome.ok) {
-        throw spokenError({ code: "BAD_REQUEST", message: outcome.refusal.message });
-      }
-
-      /*
-        AN EXPLICIT PROJECTION (invariant 8), and every field in it is FOR HER
-        EYES BEFORE ANYTHING IS SPENT (fable-940 bounds 3 and 4).
-
-        `sentence` is a suggestion, not a setting. The client shows it as words
-        she adopts or edits, and only then does it travel as an ordinary makeup
-        ask. That is a product promise and it is also what makes this legal:
-        `refineDelta` requires a makeup value to appear in the customer's own
-        instruction, so a sentence routed silently around her would be refused
-        by a guard that has stood there since D-172.
-
-        `readFromReference` is bound 5 — the record never claims she typed what
-        a reader wrote.
-      */
-      /*
-        AND THE PROOF THAT TRAVELS WITH IT (ruled fable-968 §3c).
-
-        Opaque to the client and useless to it: it carries a HASH of the
-        sentence, never the sentence, and it is signed under a key derived for
-        this purpose alone. If she spends these words, the refine may hand it
-        back and the SERVER decides whether she used them as read or reworked
-        them. Nothing here asks her client to tell us anything.
-
-        Minting cannot fail an answer she is owed — a missing secret throws
-        inside the module, and this catches it and returns the read without a
-        token rather than losing the read.
-      */
-      const provenanceToken = (() => {
-        try {
-          return issueReadToken({
-            secret: ENV.cookieSecret,
-            userId: ctx.user.id,
-            candidateId,
-            intent: "makeup",
-            sentence: outcome.sentence,
-            issuedAt: Date.now(),
-          });
-        } catch {
-          return undefined;
-        }
-      })();
-
-      return {
-        sentence: outcome.sentence,
-        /* Named, so a surface that did not fit is visible rather than silently
-           absent — she can type it herself if she wants it. */
-        surfacesRead: outcome.used,
-        surfacesDropped: outcome.dropped,
-        readFromReference: true,
-        provenanceToken,
-      };
-    }),
-
-  /**
-   * TAKING A HAIR COLOUR FROM THE PICTURE SHE ALREADY ATTACHED — the colour
-   * take's WORDS road (his ruling, fable-1047 §3; the reader is
-   * `hairColourFromReference`, courted before this door existed).
-   *
-   * # It reads OUR copy, and takes no upload
-   *
-   * The makeup read next door carries its bytes in the request, because makeup
-   * has no attach door: the picture is looked at once and dropped. Hair does
-   * have one — the crop road needs our own copy under the candidate's purge
-   * path — so this takes the HANDLE and resolves it exactly as a refine does,
-   * through `resolveAskReference`: her account, her Cast, this Cast. A second
-   * upload of a photograph we already hold would be a second copy of somebody's
-   * picture on the wire for no reason at all.
-   *
-   * # WHAT COMES BACK IS A SUGGESTION, and that is what makes it legal
-   *
-   * The sentence goes to her as words she adopts or edits before anything is
-   * charged. It is a product promise (fable-940 bounds 3/4) and a structural
-   * requirement: `refineDelta` requires a free `hairShade` value to appear in
-   * the customer's own instruction, so a reading routed silently around her
-   * would be refused by a guard that has stood there since D-171.
-   *
-   * # AND NOTHING HERE IS CHARGED
-   *
-   * One text call on house money, rate-limited per account on the same bucket
-   * the makeup read uses. The demand row records THAT a hair read happened and
-   * how it ended — never the sentence, never the account, never the Cast.
-   */
-  readHairColour: protectedProcedure
-    .input(z.object({
-      /* Candidate-scoped for ownership (invariant 1): the handle is
-         re-anchored to this Cast inside the resolve, because an attachment of
-         hers on a DIFFERENT Cast is not this ask's reference (invariant 2). */
-      candidateId: publicId,
-      referenceId: publicId,
-    }).strict())
-    .mutation(async ({ ctx, input }) => {
-      /*
-        THE FLAG FIRST, and NOT_FOUND rather than a refusal — outside the scope
-        there is no such capability, and a code that says "not yet" advertises
-        one. `resolveAskReference` checks the same flag again on its own way in;
-        that is deliberate rather than redundant, because it is the door that
-        would otherwise resolve a handle for an account no road can serve.
-      */
-      if (!captureCastingHairReferenceEnabled(ctx.user.id)) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "No such thing." });
-      }
-      enforceRateLimit(ctx.user.id, RATE_LIMITS.castingReferenceRead);
-
-      /* From the session, never from input (invariant 3); and somebody else's
-         Cast is answered the way a missing one is. */
-      const candidateId = await resolveOwnedCandidateId({
-        userId: ctx.user.id,
-        candidatePublicId: input.candidateId,
-      }).catch(() => null);
-      if (candidateId === null) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Cast not found" });
-      }
-
-      const reference = await resolveAskReference({
-        userId: ctx.user.id,
-        referencePublicId: input.referenceId,
-        candidateId,
-      });
-      if (!reference) {
-        throw spokenError({
-          code: "NOT_FOUND",
-          message: "That picture isn't attached to this Cast any more — attach it again and I'll take a look.",
-        });
-      }
-
-      /* The bytes are fetched by the SERVER from the key it holds. The key
-         never leaves this process: it is a permanently public address for a
-         photograph of a person, and handing one out before something needs it
-         is a URL that outlives every reason it was minted for. */
-      const stored = await storageReadBytes(reference.storageKey);
-      const outcome = await readHairColourFromReference({
-        bytes: stored.bytes,
-        contentType: reference.mime,
-      });
-
-      /*
-        THE DEMAND ROW, fire-and-forget. It records THAT a hair read happened
-        and how it ended — never the sentence, never the account, never the
-        Cast. It cannot reject and nothing here awaits its verdict: telemetry
-        may not take an answer away from somebody who asked for one.
-      */
-      void recordReferenceRead("hair", referenceReadOutcomeFor(outcome) as ReferenceReadOutcome);
-
-      if (!outcome.ok) {
-        throw spokenError({ code: "BAD_REQUEST", message: outcome.refusal.message });
-      }
-
-      /*
-        AN EXPLICIT PROJECTION (invariant 8), and every field in it is FOR HER
-        EYES BEFORE ANYTHING IS SPENT.
-
-        `blocksRead` and `blocksDropped` are the no-silent-caps half: a head can
-        hold more blocks of colour than the destination's cap can carry, and
-        what did not fit comes back so she can see it and type it herself. The
-        alternative — narrowing the fields until four always fit — was refused,
-        because an announced cap is a BRIEF and buys the fourth block by making
-        all four vaguer.
-      */
-      const provenanceToken = (() => {
-        try {
-          return issueReadToken({
-            secret: ENV.cookieSecret,
-            userId: ctx.user.id,
-            candidateId,
-            intent: "hair",
-            sentence: outcome.sentence,
-            issuedAt: Date.now(),
-          });
-        } catch {
-          /* Minting cannot fail an answer she is owed. */
-          return undefined;
-        }
-      })();
-
-      return {
-        sentence: outcome.sentence,
-        blocksRead: outcome.used,
-        blocksDropped: outcome.dropped,
-        readFromReference: true,
-        provenanceToken,
-      };
-    }),
+    Neither the readers, nor the provenance token, nor the demand tally moved.
+    If a surface ever earns an explicit read-this-picture affordance, it re-earns
+    a door with it.
+  */
 });
 
 export const castingV2Router = router({
@@ -825,32 +602,31 @@ export const castingV2Router = router({
     */
     stepBackEnabled: captureCastingRepaintEnabled(ctx.user.id),
     /*
-      WHETHER THIS ACCOUNT MAY TAKE A LOOK FROM A PHOTOGRAPH (fable-940/941).
+      THE TWO READ GATES ARE GONE WITH THEIR DOORS (fable-1103 §2).
 
-      The same doctrine as `stepBackEnabled` one surface along: `reference.readMakeup`
-      answers NOT_FOUND outside the ink studio's scope, so an affordance drawn
-      without this gate would be a control that refuses. One gate, not two lists
-      — when the road widens the affordance widens with it.
-
-      It is named for the CAPABILITY rather than for the flag, because a client
-      has no business knowing which environment variable governs it.
+      `makeupFromReferenceEnabled` and `hairColourFromReferenceEnabled` each
+      told the client whether to draw a per-feature read control. There are no
+      per-feature read controls any more — the reading happens inside the refine
+      road and arrives on its answer — so a gate for one would be a flag about a
+      control nobody draws. What replaced them is the gate below: whether she
+      may attach a picture at all.
     */
-    makeupFromReferenceEnabled: captureCastingInkStudioEnabled(ctx.user.id),
     /*
-      AND WHETHER SHE MAY TAKE A HAIR COLOUR OFF A PICTURE SHE ATTACHED.
+      AND WHETHER SHE MAY ATTACH A PICTURE TO AN ASK AT ALL — the one universal
+      door (founder ruling, fable-1051; the surface is design §10).
 
-      A THIRD gate rather than a reuse of the one above, because these are two
-      roads with two flags that move independently: the makeup read lives behind
-      the ink studio's scope and this lives behind the hair reference's, which is
-      OFF in production while the studio's is on. One gate per capability is the
-      same doctrine as `stepBackEnabled` — when a road widens its affordance
-      widens with it, and a control drawn from the wrong flag is a control that
-      answers NOT_FOUND.
+      A FOURTH gate, for the fourth flag, and the reason is the same one written
+      three times above: `reference.attach` answers NOT_FOUND outside
+      `CASTING_REFERENCE_ATTACH_SCOPE`, so a `+` drawn from any other flag is a
+      control that refuses. These four move independently — the attach scope is
+      deliberately not the ink studio's, because landing it there would have
+      opened a store of full photographs on a live account on the deploy that
+      shipped it.
 
-      It is named for the CAPABILITY rather than for the flag: a client has no
+      Named for the CAPABILITY rather than for the flag: a client has no
       business knowing which environment variable governs it.
     */
-    hairColourFromReferenceEnabled: captureCastingHairReferenceEnabled(ctx.user.id),
+    attachReferenceEnabled: captureCastingReferenceAttachEnabled(ctx.user.id),
   })),
 
   createSession: protectedProcedure

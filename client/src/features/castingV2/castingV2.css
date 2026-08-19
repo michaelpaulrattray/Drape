@@ -2952,6 +2952,120 @@
   taken from them.
 */
 
+/*
+  THE ONE ATTACH AFFORDANCE — a `+` at the left of the ask row (design §6,
+  founder ruling fable-1051).
+
+  Written as a sibling of the field rather than as a button with weight: it
+  costs nothing, spends nothing and decides nothing, and the price law runs both
+  ways — a free control must not wear the dress of a paid one. It matches the
+  field's height so the row is one line rather than a toolbar above one.
+*/
+.dpc-refine__attach {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border-radius: var(--r-sm);
+  border: 1px solid color-mix(in srgb, var(--onScrim) 24%, transparent);
+  background: color-mix(in srgb, var(--onScrim) 8%, transparent);
+  color: var(--onScrim);
+  opacity: 0.72;
+  cursor: pointer;
+  transition: opacity 120ms ease, border-color 120ms ease;
+}
+
+.dpc-refine__attach:hover:not(:disabled) {
+  opacity: 1;
+  border-color: color-mix(in srgb, var(--onScrim) 44%, transparent);
+}
+
+.dpc-refine__attach:disabled { opacity: 0.3; cursor: default; }
+
+/*
+  HER PICTURE, ABOVE THE INPUT — his Grok reference, 32px (fable-1101 §3).
+
+  Monochrome frame, no drop shadow, no coloured accent: the picture is the only
+  colour in the box, which is the whole of the house style here.
+*/
+.dpc-refine__attached {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+}
+
+.dpc-refine__attachedRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dpc-refine__thumb {
+  position: relative;
+  display: block;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--r-sm);
+  border: 1px solid color-mix(in srgb, var(--onScrim) 26%, transparent);
+  overflow: hidden;
+  background: color-mix(in srgb, var(--onScrim) 8%, transparent);
+}
+
+/* Cropped to fill rather than letterboxed: the chip says WHICH picture, and a
+   32px square of grey around a thumbnail says nothing at all. */
+.dpc-refine__thumb > img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Beside the picture rather than over it — an × sitting on a 32px thumbnail
+   covers a quarter of the only thing the chip exists to show. */
+.dpc-refine__attachedOff {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-pill);
+  background: none;
+  color: var(--onScrim);
+  opacity: 0.55;
+  cursor: pointer;
+}
+
+.dpc-refine__attachedOff:hover:not(:disabled) { opacity: 0.95; }
+.dpc-refine__attachedOff:disabled { opacity: 0.25; cursor: default; }
+
+/*
+  WHERE THE PICTURE CAME FROM — the fence's own question, wearing the answer
+  chips' clothes (D-180) because it is the same kind of thing: a question in
+  conversation, answered by tapping or by nothing at all.
+*/
+.dpc-refine__claim {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+}
+
+.dpc-refine__claimAsk {
+  font-family: var(--font-sans);
+  letter-spacing: normal;
+  font-size: 11.5px;
+  color: var(--onScrim);
+  opacity: 0.6;
+}
+
 .dpc-refine__ask {
   display: flex;
   gap: 8px;

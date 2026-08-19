@@ -528,11 +528,14 @@ describe("the rectangle names what it covers (fable-378 (c))", () => {
     ]);
 
     expect(regions).toContain("onAsk(said, open.scope);");
-    /* The third parameter is the replay marker (fable-733 §2) and it rides the
-       same handler, because a fresh take is the same paid edit arriving with
-       one more thing known about it — a second closure here is the drift this
-       file already exists to prevent. */
-    expect(sheet).toContain("function askRefine(instruction: string, scope?: string, replayOf?: string)");
+    /* The third parameter is the replay marker (fable-733 §2) and the FOURTH is
+       the picture she attached (fable-1051); both ride the same handler,
+       because each is the same paid edit arriving with one more thing known
+       about it — a second closure here is the drift this file already exists
+       to prevent. */
+    expect(sheet).toContain(
+      "function askRefine(instruction: string, scope?: string, replayOf?: string, referenceId?: string)",
+    );
     /* `sent` rather than `scope` since fable-704: the rectangle now has three
        sources — the box she taps, the version being replayed, and the question
        she is answering about one of them — and they resolve to one value before

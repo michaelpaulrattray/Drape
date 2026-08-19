@@ -175,8 +175,7 @@ describe("which bucket each casting procedure was handed", () => {
          for the opposite reason to the upload's. This one keeps NOTHING, so
          there is no storage to protect; what it spends is a model call on house
          money every time, with no credit path pacing it. */
-      readMakeup: "castingReferenceRead",
-      /* Attaching a picture — the upload's shape and the upload's numbers, in
+        /* Attaching a picture — the upload's shape and the upload's numbers, in
          its OWN bucket. The two doors can be open independently (the studio
          scope is `users:1` in production while the attach scope is off), and a
          shared bucket would let either road spend the other's allowance while
@@ -188,8 +187,7 @@ describe("which bucket each casting procedure was handed", () => {
          pacing it. Sharing that bucket is right here where it was wrong for the
          attach, because the thing being paced is the same thing — reads on our
          own money — rather than two different roads' storage. */
-      readHairColour: "castingReferenceRead",
-    });
+      });
   });
 
   it("the parser found procedures at all — a mapping test that reads nothing passes forever", () => {

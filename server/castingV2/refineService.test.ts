@@ -8565,6 +8565,164 @@ describe("the picture she attached reaches the ask", () => {
 });
 
 /*
+  THE WORDS LANE, PROVED AT THE SERVICE — free, and it never intercepts a render.
+
+  `referenceWordsLane.test.ts` drives the decision and the read directly. What
+  it cannot prove is the WIRING, and the wiring is the whole of it: a lane that
+  is correct and never consulted leaves a colour ask rendering the words *"the
+  hair colour in the attached picture"* onto somebody's face, which is exactly
+  what the entrance clause made possible one commit earlier.
+
+  So these arms drive `refineCandidate` and assert on the ANSWER and on the
+  LEDGER — no claim opened, nothing deducted — rather than on a variable near
+  them.
+*/
+describe("a words take is answered with a sentence to adopt, free", () => {
+  const REFERENCE = {
+    id: 7,
+    storageKey: "casting-v2/reference/words.png",
+    provenance: "consented" as const,
+    digest: "d".repeat(64),
+    mime: "image/png",
+    width: 900,
+    height: 900,
+  };
+
+  const readWords = async () => ({
+    ok: true as const,
+    sentence: "copper through the lengths",
+    used: ["copper through the lengths"],
+    dropped: ["ash blonde at the roots"],
+    outcome: "delivered",
+  });
+
+  /*
+    THE INTERPRETER, ANSWERING THE WAY THE REAL ONE WAS MEASURED TO.
+
+    Not `greenEyes`: a double that answers unlike the thing it stands for
+    discriminates nothing. Driven on the live transport with the entrance clause
+    in place, *"take the hair colour from this picture"* files exactly this —
+    the free lane, a value naming the picture, and `fromReference` beside it.
+    That value is the reason this lane exists: painted, it would put the words
+    "the hair colour in the attached picture" onto a customer's hair.
+  */
+  const pointedAtThePicture = async () => ({
+    ok: true as const,
+    delta: { free: { hairShade: "the hair colour in the attached picture" } },
+    fromReference: true,
+  });
+
+  const road = (over: Record<string, unknown> = {}) => ({
+    ...greenEyes,
+    interpret: pointedAtThePicture,
+    harvest: unmasked,
+    readBytes: async () => ({ bytes: Buffer.from("her picture"), contentType: "image/png" }),
+    readWords,
+    ...over,
+  });
+
+  afterEach(() => { resolveAskReferenceMock.mockReset(); });
+
+  it("reads her picture and offers the sentence — nothing claimed, nothing charged", async () => {
+    resolveAskReferenceMock.mockResolvedValue(REFERENCE);
+    const result = await refineCandidate(road() as never, {
+      ...input,
+      instruction: "take the hair colour from this picture",
+      referenceId: "ref-public",
+    });
+    expect(result.kind).toBe("selected");
+    expect(result.offer?.sentence).toBe("copper through the lengths");
+    /* NAMED, never counted — the only useful thing she can do with what did not
+       fit is type it herself. */
+    expect(result.offer?.dropped).toEqual(["ash blonde at the roots"]);
+    /* THE LEDGER IS THE ASSERTION. A words take costs nothing, and "free" is a
+       fact about the journal rather than about the sentence. */
+    expect(journal).not.toContain("begin");
+    expect(journal).not.toContain("deduct");
+  });
+
+  it("mints the provenance the adopted sentence travels back with", async () => {
+    /* So `verbatim` or `edited` is something the service derives rather than a
+       claim anybody makes. */
+    resolveAskReferenceMock.mockResolvedValue(REFERENCE);
+    const result = await refineCandidate(road() as never, {
+      ...input,
+      instruction: "take the hair colour from this picture",
+      referenceId: "ref-public",
+    });
+    expect(result.offer?.provenanceToken).toMatch(/^hair\./);
+  });
+
+  it("carries a reader's refusal as HER sentence, and still charges nothing", async () => {
+    resolveAskReferenceMock.mockResolvedValue(REFERENCE);
+    const result = await refineCandidate({
+      ...road(),
+      readWords: async () => ({
+        ok: false as const,
+        message: "I can't see any hair in that picture.",
+        outcome: "no_hair_visible",
+      }),
+    } as never, {
+      ...input,
+      instruction: "take the hair colour from this picture",
+      referenceId: "ref-public",
+    });
+    expect(result.kind).toBe("selected");
+    expect(result.note).toBe("I can't see any hair in that picture.");
+    expect(result.offer).toBeUndefined();
+    expect(journal).not.toContain("deduct");
+  });
+
+  it("READS NOTHING when no picture is attached", async () => {
+    /*
+      The lane is reached by a picture, never by a sentence. Without this the
+      words "take the hair colour from this picture" typed by somebody with no
+      attachment would spend house money on a reader with nothing to read.
+    */
+    let read = 0;
+    /* With no picture there is nothing to intercept, so the ask goes to the
+       render this harness has no engine for — the assertion is on the READ. */
+    const answered = await refineCandidate({
+      ...road(),
+      readWords: async () => { read += 1; return { ok: false as const, message: "no", outcome: "no_transport" }; },
+    } as never, {
+      ...input,
+      instruction: "take the hair colour from this picture",
+    }).then((result) => result.offer, () => undefined);
+    expect(read).toBe(0);
+    expect(answered).toBeUndefined();
+  });
+
+  it("READS NOTHING for a complete ask of her own — the picture is confessed instead", async () => {
+    /*
+      fable-1104 §3's cousin, and the failure it names is real: the take
+      resolver defaults to the whole lot for ANY sentence, so a picture she
+      attached and did not mention must not turn her own value into a reading.
+    */
+    resolveAskReferenceMock.mockResolvedValue(REFERENCE);
+    let read = 0;
+    /*
+      IT GOES TO THE RENDER, which this harness has no engine for — so the
+      assertion is on what the lane DID, not on what the render returned. A
+      thrown render is the proof the ask was never intercepted: an intercepted
+      one answers `selected` and never reaches an engine at all.
+    */
+    const answered = await refineCandidate({
+      /* Her own complete ask, filed the way the real interpreter files it —
+         the exact vocabulary, and NO `fromReference` beside it. */
+      ...road({ interpret: async () => ({ ok: true as const, delta: { hairColour: "copper" as const } }) }),
+      readWords: async () => { read += 1; return { ok: false as const, message: "no", outcome: "no_transport" }; },
+    } as never, {
+      ...input,
+      instruction: "make her hair copper",
+      referenceId: "ref-public",
+    }).then((result) => result.offer, () => undefined);
+    expect(read).toBe(0);
+    expect(answered).toBeUndefined();
+  });
+});
+
+/*
   HER PICTURE BECOMING A CARRIER — the crop road ON THE REQUEST PATH.
 
   `hairReferenceCutter.test.ts` proves the cut and `recipeAssembler.test.ts`

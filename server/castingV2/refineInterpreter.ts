@@ -479,6 +479,61 @@ const HYBRID_CONSTRAINT = [
 ].join("\n");
 
 /**
+ * THE ENTRANCE TO THE REFERENCE ROAD — the one clause that says a picture is
+ * here (`UNIVERSAL_REFERENCE_ROAD_DESIGN.md` §10; ruled fable-1104 §2).
+ *
+ * # The road was built end to end except for this
+ *
+ * The cutter, the class door, the carrier mint, the fourth reference role and
+ * five commits of court all sit behind `refineService.ts:3290`. The parse
+ * refuses at `:1431`. So every sentence the road was built for — *"copy this
+ * hair"*, *"give her the hairstyle from this picture"*, *"give her hair like
+ * this"* — refused FREE, 1,860 lines early, and the reason is this prompt had
+ * never been told a photograph might be attached: *"this photo"* reads as a
+ * real person, and the likeness wall did exactly its job. Measured, four
+ * canonical sentences, four refusals (`probe-words-lane-deltas-disposable`).
+ *
+ * # Reachable ONLY when a picture actually rides the ask
+ *
+ * Appended like every other constraint in this file rather than folded into the
+ * base prompt, so the blast radius on an ask with no reference is structurally
+ * zero rather than argued: `context-is-not-additive` — a sentence added to this
+ * prompt moves routing for asks that have nothing to do with it, and the only
+ * safe version of that is a sentence that cannot arrive.
+ *
+ * # It opens the wall by exactly nothing
+ *
+ * A likeness ask can travel through a picture (fable-1104 §3), and this must
+ * not admit one by a millimetre: pointing at the picture for a FEATURE is not
+ * a likeness ask, and asking for the PERSON in it — their face, their features,
+ * to look like them — is the wall exactly as before. Both are stated, and both
+ * are court arms.
+ *
+ * # And it never guesses a value out of a picture it cannot see
+ *
+ * The model reading this has no image. So the feature files in the FREE lane
+ * with words that name where it comes from, never an exact vocabulary word — a
+ * guessed `hairColour` here would be a value nobody read off anything, filed
+ * under a customer's ask, which is the invention D-172 exists to refuse.
+ */
+const REFERENCE_CONSTRAINT = [
+  "",
+  "",
+  "A PICTURE IS ATTACHED TO THIS INSTRUCTION. \"this\", \"this picture\", \"the photo\", \"the",
+  "reference\", \"like this\" and \"from this\" mean THAT PICTURE — not a real person — so",
+  "pointing at it for a feature is NOT the likeness wall.",
+  "When they point at it, set \"fromReference\": true beside the delta and file the feature",
+  "they named in the FREE lane, in their own words, saying where it comes from:",
+  '  "copy this hair" -> {"free": {"hairCut": "the hair in the attached picture"}, "fromReference": true}',
+  "You cannot see the picture. NEVER guess a value out of it and never use an exact",
+  "vocabulary word for something only the picture could say.",
+  "IF THEY DO NOT POINT AT IT, answer exactly as you would with no picture at all and leave",
+  '"fromReference" out — "make her hair copper" is their own complete ask.',
+  "STILL THE LIKENESS WALL: asking for the PERSON in the picture — their face, their",
+  'features, to look like them — is {"wall": "likeness"} exactly as before.',
+].join("\n");
+
+/**
  * THE STAGE RE-LOOK — what the code says when it overrides an unbacked wall
  * (fable-363 ruling 1).
  *
@@ -674,6 +729,15 @@ export type RefineInterpretInput = {
    * faces every guard the first did.
    */
   echoed?: boolean;
+  /**
+   * A PICTURE RIDES THIS ASK — the entrance (see {@link REFERENCE_CONSTRAINT}).
+   *
+   * Set by the service from `reference !== null`, which is a resolved row: her
+   * account, her Cast, THIS Cast, all proved before this is true. Absent means
+   * no picture, and a caller that has never heard of this field — every test,
+   * every bench, every road with no attachment — gets exactly today's prompt.
+   */
+  referenceAttached?: boolean;
   /** The hybrid-likeness pass — the comparison is already settled (D-181). */
   hybrid?: boolean;
   /**
@@ -1134,6 +1198,7 @@ async function runOnce(
     const reply = await engine.complete({
       about: purpose,
       system: refineParseSystemPrompt(input.mode, { openLane: input.openLane === true })
+        + (input.referenceAttached ? REFERENCE_CONSTRAINT : "")
         + (input.echoed ? ECHO_CONSTRAINT : "")
         + (input.hybrid ? HYBRID_CONSTRAINT : "")
         + (input.stageRelook ? STAGE_RELOOK_CONSTRAINT : "")
@@ -1465,6 +1530,27 @@ async function runOnce(
     changes only whether the honest half is served, never what is filed.
   */
   const droppedReference = namesUnknownProperNoun(instruction, { mode: "phrase" });
+  /*
+    AND WHETHER SHE POINTED AT THE PICTURE SHE ATTACHED (the entrance,
+    fable-1104 §2).
+
+    Read ONLY when a picture rides the ask, so a reply that names the field
+    without being asked — a model's flourish on an ask with no attachment —
+    cannot turn a plain sentence into a reference one. `=== true` rather than
+    truthiness: the field is a claim, and a string or a number in it is a reply
+    this contract does not recognise rather than a yes.
+
+    It rides beside `droppedReference` above because they are siblings — both
+    are one bit about how the sentence USED a reference, neither is part of the
+    delta, and the service reads each where it can act on it.
+  */
+  const fromReference = input.referenceAttached === true
+    && (reply as { fromReference?: unknown }).fromReference === true;
+  if (fromReference) {
+    return droppedReference
+      ? { ok: true, delta, droppedReference, fromReference }
+      : { ok: true, delta, fromReference };
+  }
   return droppedReference ? { ok: true, delta, droppedReference } : { ok: true, delta };
 }
 

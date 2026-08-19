@@ -128,7 +128,17 @@ import { skippedOnReplay } from "./replayDoors";
 import { interpretRefinement, refusalMessage } from "./refineInterpreter";
 import { readStoredDelta } from "./refineLegacy";
 import { removalEvidence } from "./removalWords";
+import {
+  recordReferenceRead,
+  type ReferenceReadOutcome,
+} from "../db/castingV2ReferenceReads";
+import { issueReadToken, type ReferenceReadIntent } from "./referenceProvenance";
 import { resolveAskReference } from "./askReference";
+import {
+  readWordsTake,
+  refusalIsAnswerableByAReader,
+  wordsTakeIntentFor,
+} from "./referenceWordsLane";
 import { cutHairCarrier, mintHairCarrier, SECOND_VIEW_UNUSED_NOTE } from "./hairReferenceCutter";
 import { hairTakeEntry, resolveHairTake } from "./hairReferenceTake";
 import {
@@ -472,7 +482,98 @@ export type RefineResult = {
    * shows a render running should be able to quote what is running.
    */
   operationId?: string;
+  /**
+   * A SENTENCE TO ADOPT, read off the picture she attached — free, and nothing
+   * has happened yet (the words lane, ruled fable-1103 §1).
+   *
+   * It is not a `note` because it is not a statement about an outcome: it is an
+   * offer she picks up, edits or ignores, and the surface has to draw it as one
+   * — the sentence, and a control that fills her box and STOPS. That shape is
+   * the road's licence as much as its manners: `refineDelta` requires the value
+   * to appear in the customer's own instruction, so a sentence routed around
+   * her is refused by a guard that has stood since D-171.
+   *
+   * `dropped` is what the reading could not fit, NAMED — the only useful thing
+   * she can do with it is type it herself, and a count would tell her nothing.
+   */
+  offer?: {
+    sentence: string;
+    intent: "makeup" | "hair";
+    dropped: string[];
+    /** Carried back on the ask she sends, so `verbatim` or `edited` is a fact
+     *  the service derives rather than a claim anybody makes. */
+    provenanceToken?: string;
+  };
 };
+
+/**
+ * THE WORDS LANE'S ONE READ, with everything around it that is not the reading.
+ *
+ * Hoisted out of `refineCandidate` so the paid path's own function does not
+ * grow a second story: what is here is the bytes, the token, the tally and the
+ * sentence, and every one of them is free.
+ *
+ * **The bytes are fetched by the SERVER from the key it holds.** The key never
+ * leaves this process — it is a permanently public address for a photograph of
+ * a person, and handing one out before something needs it is a URL that
+ * outlives every reason it was minted for.
+ *
+ * **The token is what makes her adoption provable.** She is shown a sentence,
+ * she edits it or does not, and the ask she sends carries this back: the
+ * service verifies the signature, this account, this Cast and the freshness,
+ * and derives `verbatim` or `edited` from the signed digest itself. Minting cannot
+ * fail an answer she is owed, so a failure to sign is silence rather than a
+ * refusal.
+ *
+ * **And the tally records THAT a read happened and how it ended** — never the
+ * sentence, never the account, never the Cast. Fire-and-forget: telemetry may
+ * not take an answer away from somebody who asked for one.
+ */
+async function readTheWordsTake(input: {
+  intent: ReferenceReadIntent;
+  reference: { storageKey: string; mime: string };
+  userId: number;
+  candidateId: number;
+  dependencies: RefineServiceDependencies;
+}): Promise<
+  | { kind: "offer"; offer: NonNullable<RefineResult["offer"]> }
+  | { kind: "refusal"; message: string }
+> {
+  const stored = await (input.dependencies.readBytes ?? storageReadBytes)(input.reference.storageKey);
+  const reading = await (input.dependencies.readWords ?? readWordsTake)({
+    intent: input.intent,
+    bytes: stored.bytes,
+    contentType: input.reference.mime,
+  });
+  void recordReferenceRead(input.intent, reading.outcome as ReferenceReadOutcome);
+  if (!reading.ok) return { kind: "refusal", message: reading.message };
+
+  const provenanceToken = (() => {
+    try {
+      return issueReadToken({
+        secret: ENV.cookieSecret,
+        userId: input.userId,
+        candidateId: input.candidateId,
+        intent: input.intent,
+        sentence: reading.sentence,
+        issuedAt: Date.now(),
+      });
+    } catch {
+      /* Minting cannot fail an answer she is owed. */
+      return undefined;
+    }
+  })();
+
+  return {
+    kind: "offer",
+    offer: {
+      sentence: reading.sentence,
+      intent: input.intent,
+      dropped: [...reading.dropped],
+      ...(provenanceToken ? { provenanceToken } : {}),
+    },
+  };
+}
 
 export type RefineServiceDependencies = {
   begin?: typeof beginDirectOperation;
@@ -501,6 +602,9 @@ export type RefineServiceDependencies = {
   /** The brief that knows what she was drawn wearing (D-206). */
   readBaseWorn?: typeof getBriefForOwnedCandidate;
   readBytes?: typeof storageReadBytes;
+  /** The words lane's reader — so the lane can answer, refuse and throw in a
+   *  suite with no transport and no bucket. */
+  readWords?: typeof readWordsTake;
   /**
    * The segmenter the masked path asks where a region is.
    *
@@ -1226,6 +1330,18 @@ async function refineCandidateCounted(
         repaint road's admission is decided.
       */
       openLane: (dependencies.openLaneEnabled ?? captureCastingOpenLaneEnabled)(input.userId),
+      /*
+        A PICTURE RIDES THIS ASK — the entrance to the reference road
+        (fable-1104 §2).
+
+        From the RESOLVED row rather than from `input.referenceId`: her account,
+        her Cast, this Cast, all proved above, so a handle that failed any of
+        those three never reaches the prompt. Without this the interpreter has
+        never heard of an attachment, *"this photo"* reads as a real person, and
+        every sentence the crop road exists for refuses at the likeness wall
+        1,860 lines before the road — measured, four for four.
+      */
+      referenceAttached: reference !== null,
       prior: priorItems,
       lastColourFacet: lastColourFacet ? colourFacetLabel(lastColourFacet) : null,
       currentEyeColour: currentValueOfFacet(currentIdentity, "eye.colour"),
@@ -1428,6 +1544,47 @@ async function refineCandidateCounted(
       outcome: "rescued",
     });
   }
+  /*
+    THE WORDS LANE — a property she pointed at a picture for, read and handed
+    back as a sentence she adopts (ruled fable-1103 §1, sited fable-1104 §4).
+
+    HERE, above the refusal and below the parse, because this is the one place
+    both of its doors are in hand. Measured with the entrance clause live: a
+    colour ask FILES an unusable value (`hairShade: "the hair colour in the
+    attached picture"`) and a makeup ask REFUSES at containment
+    (`wall_unfileable`) — the same fact, that only a reader can supply the
+    value, arriving at two different outcomes one line apart.
+
+    Everything below is free, and every exit takes nothing: no claim is opened,
+    no credit moves, no row is written, and the picture is never sent to a
+    render. What she gets back is words, and they are not even in her box until
+    she says so.
+  */
+  const wordsTakeIntent = reference ? wordsTakeIntentFor(instruction) : null;
+  const pointedAtThePicture = parsed.ok && "fromReference" in parsed && parsed.fromReference === true;
+  if (
+    reference
+    && wordsTakeIntent
+    && (pointedAtThePicture
+      || (!parsed.ok && refusalIsAnswerableByAReader(parsed.refusal.reason)))
+  ) {
+    const offer = await readTheWordsTake({
+      intent: wordsTakeIntent,
+      reference,
+      userId: input.userId,
+      candidateId: source.candidate.id,
+      dependencies,
+    });
+    return {
+      kind: "selected",
+      ...(offer.kind === "refusal" ? { note: offer.message } : { offer: offer.offer }),
+      variantId: source.variantPublicId,
+      candidateId: input.candidatePublicId,
+      imageUrl: storagePublicUrl(source.imageKey ?? source.candidate.imageKey),
+      instructions: readInstructions(predecessorForParse?.instructions),
+    };
+  }
+
   if (!parsed.ok) {
     /*
       A FREE REFUSAL SHOULD NOT ALSO BE A FREE PASS ON DIAGNOSIS.

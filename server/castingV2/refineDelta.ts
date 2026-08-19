@@ -411,6 +411,30 @@ export type RefineParse =
      * knife fight does not.
      */
     droppedReference?: boolean;
+    /**
+     * THE VALUES IN THIS DELTA ARE TO COME FROM THE ATTACHED PICTURE
+     * (`UNIVERSAL_REFERENCE_ROAD_DESIGN.md` §10; the entrance, ruled
+     * fable-1104 §2).
+     *
+     * Read only when a picture actually rides the ask, and it is what separates
+     * the two sentences a reference road has to tell apart:
+     *
+     *     "copy this hair"        → she pointed AT the picture   → true
+     *     "make her hair copper"  → a complete ask of her own    → absent
+     *
+     * Without it the second sentence takes the first one's road — the take
+     * resolver defaults to the whole lot for ANY sentence, so a picture she
+     * attached and did not mention would be cut and carried into a render that
+     * already had its own value. It is a field on the CONTRACT rather than a
+     * word test on the sentence because the thing being read is English: *"like
+     * this"*, *"from the photo"* and *"copy that"* all point, and a list of
+     * pointing words is the phrasing list D-163 outlaws as a class.
+     *
+     * Absent — never false — when nothing points, so a reply from before the
+     * field and a reply that considered it and said no are the same fact: the
+     * picture is unused, and the road confesses it.
+     */
+    fromReference?: boolean;
     /** Set when a door rescued this reading — see the type. */
     door?: InventionDoorOutcome;
     /** Which door — see `DoorAt`. Always present when `door` is. */

@@ -135,67 +135,94 @@ describe("the AND is taken at the point of use, not only at boot", () => {
 });
 
 /**
- * AND THE TWO DOORS THIS FLAG IS SUPPOSED TO SHUT, read at the source that
- * declares them.
+ * AND THE DOOR THIS FLAG SHUTS, read at the source that declares it.
+ *
+ * **It moved, and the move is the point** (fable-1103 §2). The colour read had
+ * a procedure of its own — `castingV2.reference.readHairColour` — whose gate
+ * this block used to pin. That procedure is DELETED: the founder deleted the
+ * per-feature affordance that was its only possible caller, and an export
+ * nobody calls is a claim. The reading now happens inside the refine road, so
+ * the flag is consulted where the ROAD resolves a handle, and that is the line
+ * this block pins instead.
  *
  * The flag's own behaviour is driven above. What cannot be driven without the
- * whole app is the COMPOSITION — that the colour read's procedure consults it
- * at all, and that it answers NOT_FOUND rather than a refusal that advertises a
- * capability. A capability whose gate is one line above it in a file is exactly
- * the sort of line a later edit moves, and nothing else in this suite would
- * notice: the road is dark, so no other arm can go red.
+ * whole app is the COMPOSITION — that the resolution consults it at all, and
+ * consults it BEFORE the row is read, so a handle sent by an account outside
+ * the road costs no database read and gets no answer that advertises one. A
+ * capability whose gate is one line above it is exactly the sort of line a
+ * later edit moves, and nothing else in this suite would notice: the road is
+ * dark, so no other arm can go red.
  */
-describe("the colour read's door, pinned at the source", () => {
+describe("the road's own door, pinned at the source", () => {
   const source = readFileSync(
-    new URL("../routes/castingV2.ts", import.meta.url),
+    new URL("./askReference.ts", import.meta.url),
     "utf8",
   );
-  /* BOUNDED TO THE PROCEDURE'S OWN TEXT. An unbounded slice runs to the end of
-     the file and picks up every later procedure's lines, which is how an
-     absence assertion passes or fails on somebody else's code — it failed on
-     `storagePublicUrl` from a procedure three hundred lines down. */
-  /* The sub-router's own closing line — a newline then the brace. Built rather
-     than typed, because this file is edited by tooling that has already turned
-     one escaped newline into a real one. */
-  const END_OF_ROUTER = String.fromCharCode(10) + "});";
-  const from = source.indexOf("  readHairColour: protectedProcedure");
-  const procedure = source.slice(from, source.indexOf(END_OF_ROUTER, from));
 
   it("is declared at all, and the reader in this test can see it", () => {
-    /* The instrument's own control: a renamed procedure would make every
+    /* The instrument's own control: a renamed function would make every
        assertion below vacuously true against an empty string. */
-    expect(procedure.length).toBeGreaterThan(500);
-    expect(procedure).toContain("readHairColourFromReference");
+    expect(source.length).toBeGreaterThan(500);
+    expect(source).toContain("resolveAskReference");
   });
 
-  it("checks the flag BEFORE the rate limit and before any database read", () => {
-    const flag = procedure.indexOf("captureCastingHairReferenceEnabled");
-    const limit = procedure.indexOf("enforceRateLimit");
-    const owned = procedure.indexOf("resolveOwnedCandidateId");
+  it("checks the flag BEFORE any database read", () => {
+    const flag = source.indexOf("if (!dependencies.enabled(input.userId)) return null;");
+    const row = source.indexOf("if (!row) return null;");
     expect(flag).toBeGreaterThan(-1);
-    expect(flag).toBeLessThan(limit);
-    expect(flag).toBeLessThan(owned);
+    expect(row).toBeGreaterThan(-1);
+    expect(flag).toBeLessThan(row);
   });
 
-  it("answers NOT_FOUND outside the scope — a refusal would advertise the road", () => {
-    const gate = procedure.slice(procedure.indexOf("captureCastingHairReferenceEnabled"));
-    expect(gate.slice(0, 300)).toContain("NOT_FOUND");
+  it("answers with NOTHING outside the scope — a refusal would advertise the road", () => {
+    /* `null`, which the callers turn into "that picture isn't attached to this
+       Cast any more" — the same sentence a handle that never existed gets. A
+       code that says "not yet" advertises a capability. */
+    expect(source).toContain("captureCastingHairReferenceEnabled");
+    expect(source).not.toContain("NOT_FOUND");
   });
 
-  it("resolves the handle through the road's own three questions", () => {
-    /* Never a direct row read: `resolveAskReference` is where her account, her
-       Cast and THIS Cast are proved, and a second path to the bytes would be a
-       second answer to who may read them. */
-    expect(procedure).toContain("resolveAskReference");
+  it("re-anchors the handle to THIS Cast in the same resolution", () => {
+    /* Invariant 2: an attachment of hers on a DIFFERENT Cast is not this ask's
+       reference, and no amount of verifying the handle catches that. */
+    expect(source).toContain("if (row.candidateId !== input.candidateId) return null;");
+  });
+});
+
+/**
+ * AND THE WORDS LANE'S OWN READ, pinned where the road performs it.
+ *
+ * The reading it does is the one the deleted procedure used to do; what this
+ * block asserts is that nothing about the picture's ADDRESS travels with it.
+ */
+describe("the words lane's read, pinned at the source", () => {
+  const service = readFileSync(
+    new URL("./refineService.ts", import.meta.url),
+    "utf8",
+  );
+  const from = service.indexOf("async function readTheWordsTake(");
+  /* Built rather than typed: a newline escape written into this file by tooling has already become a real one once. */
+  const END_OF_HELPER = String.fromCharCode(10) + "export type RefineServiceDependencies";
+  const helper = service.slice(from, service.indexOf(END_OF_HELPER, from));
+
+  it("is declared at all, and the reader in this test can see it", () => {
+    expect(helper.length).toBeGreaterThan(500);
+    expect(helper).toContain("readWordsTake");
   });
 
-  it("never hands back the storage key", () => {
-    /* A permanently public address for a photograph of a person, returned
+  it("fetches the bytes itself and never hands out the key", () => {
+    /* A permanently public address for a photograph of a person, handed out
        before anything needs it, is a URL that outlives every reason it was
-       minted for. */
-    const opens = procedure.indexOf("      return {");
-    const projection = procedure.slice(opens, procedure.indexOf("      };", opens));
-    expect(projection).not.toContain("storageKey");
-    expect(projection).not.toContain("storagePublicUrl");
+       minted for. The key never leaves this process. */
+    expect(helper).toContain("storageReadBytes");
+    const offer = helper.slice(helper.indexOf("return {"));
+    expect(offer).not.toContain("storageKey");
+    expect(offer).not.toContain("storagePublicUrl");
+  });
+
+  it("records THAT a read happened, and never what it said", () => {
+    expect(helper).toContain("recordReferenceRead");
+    const tally = helper.slice(helper.indexOf("recordReferenceRead"), helper.indexOf("recordReferenceRead") + 200);
+    expect(tally).not.toContain("sentence");
   });
 });

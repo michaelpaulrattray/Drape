@@ -918,9 +918,9 @@ land with hair's final courts before `hair.open` flips.
 
 The crop road carries a specific LOOK. The colour take is the other half of his
 general law and it carries as WORDS, so it has no carrier, no cut and no
-segmenter call at all: `castingV2.reference.readHairColour` takes the handle of
-a picture she has already attached, reads it once on house money, and returns a
-SENTENCE.
+segmenter call at all: the road takes the handle of a picture she has already
+attached, reads it once on house money, and hands back a SENTENCE. (It had a
+procedure of its own until 2026-08-20 — see the end of this section.)
 
 **It reads our own copy and takes no upload.** The makeup read next door carries
 its bytes in the request because makeup has no attach door — the picture is
@@ -947,11 +947,17 @@ a reply came back shaped wrong is a claim about her picture that no reader made,
 and a shared word would merge two readers' gates in a tally that exists to tell
 them apart. Applied to dev; production takes it by the ceremony script.
 
-**And the two doors are pinned at the source**, because a dark road has no other
-arm that could go red: the flag is consulted before the rate limit and before
-any database read, the answer outside the scope is NOT_FOUND rather than a
-refusal that advertises the road, the handle resolves through the road's own
-three questions, and the storage key never appears in the projection.
+**The DOOR is deleted and the reading is not** (fable-1103 §2, 2026-08-20).
+`castingV2.reference.readHairColour` existed to be called by a surface, and the
+founder deleted the only surface that could honestly call one — so the reading
+now happens inside the refine road (§9.16) and the procedure went the way
+`isHairTake` went. An export nobody calls is a claim.
+
+**The flag is pinned at the source it now shuts**, because a dark road has no
+other arm that could go red: `resolveAskReference` consults it before any
+database read, answers with nothing rather than a code that advertises the road,
+re-anchors the handle to THIS Cast in the same resolution, and the storage key
+never leaves the process.
 
 ### 9.14 THE CLASS DOOR, BUILT AND COURTED (`referenceMediumDoor.ts`)
 
@@ -1011,11 +1017,104 @@ that flip in one ceremony rather than sitting on the founder's desk twice. Until
 then the narrowing is a log line, said here rather than left to be discovered by
 somebody looking for a tally.
 
-## 10. THE ATTACH SURFACE — ruled, and NOT YET BUILT
+### 9.15 THE ENTRANCE — the stone nobody had laid (built, courted 8/8)
 
-*Written here in full because it has lived only in review messages, and a
-ruling is not landed when it is relayed — it is landed when it is written where
-the next person will act on it. §9.10's stale standing block is what that costs.*
+**Every sentence this road was built for refused at the interpreter, 1,860
+lines before the road.** Found by driving the real `interpretRefinement` before
+wiring anything to it, on 2026-08-20:
+
+```
+  "copy this hair"                            REFUSED  wall_likeness
+  "give her the hairstyle from this picture"  REFUSED  wall_likeness
+  "give her hair like this"                   REFUSED  unreadable
+  "give her this hair"                        REFUSED  wall_stage
+  "take the hair colour from this picture"    REFUSED  unreadable
+  "give her the makeup from this photo"       REFUSED  wall_likeness
+```
+
+`refineService.ts` throws on `!parsed.ok` long before the reference block runs,
+so the cutter, the class door, the carrier mint and every court behind them sat
+on the far side of a door that shuts first. The cause is one absence: **the V2
+interpreter had never been told a photograph might be attached**, so *"this
+photo"* read as a real person and the likeness wall did exactly its job. (The V1
+legacy road has taken `referenceAttached` since it was written; the newer road
+never did.)
+
+**The clause** (`REFERENCE_CONSTRAINT`, appended only when a picture actually
+rides the ask, so the blast radius on every other ask is structurally zero):
+*this / the photo / the reference / like this* mean the attached picture, so
+pointing at it for a feature is not the likeness wall; the feature files in the
+FREE lane with words naming where it comes from, never an exact vocabulary word,
+because the model reading it has no image and may not guess a value out of one.
+
+**`fromReference` is a contract field, not a word test.** It is read only when a
+picture rides the ask, and it is what separates *"copy this hair"* from *"make
+her hair copper"* — without it the take resolver's whole-lot default would cut a
+picture she attached and never mentioned. A list of pointing words was refused
+for D-163's reason: it is a phrasing list, and *"like this"*, *"from the photo"*
+and *"copy that"* all point.
+
+#### The court — PASS, both arms, bar as ruled (fable-1104 §2/§3)
+
+```
+  A  a picture IS attached          8/8
+     the six picture-pointing sentences FILE with fromReference
+       (makeup refuses wall_unfileable — see below, and it is correct)
+     "make her face like the woman in this photo"   wall_likeness   ← the wall
+       is not opened a millimetre by knowing a picture is there
+     "make her hair copper"                          files, NO fromReference
+       ← the clause did not make the interpreter reference-happy
+  B  no picture                     unchanged, and `fromReference` never once
+     arrives — that half is code rather than prompt
+```
+
+The makeup arm's bar moved during the court, off an artifact older than it:
+§9.13 already says only a READER can supply a makeup value, and containment
+(D-172) enforces it. The entrance's own bar is that the ask reaches that
+refusal; turning it into a sentence she can adopt is §9.16's job.
+
+### 9.16 THE WORDS LANE — a words take is answered with a sentence to adopt
+
+Ruled fable-1103 §1, sited fable-1104 §4. `referenceWordsLane.ts` decides;
+`refineService` performs it above the refusal and below the parse, because with
+the entrance live the same fact — *only a reader can supply this value* —
+arrives at two outcomes one line apart: a colour ask FILES an unusable value
+(`hairShade: "the hair colour in the attached picture"`) and a makeup ask
+REFUSES at containment.
+
+```
+  fires when   she POINTED (fromReference, or a refusal a picture can answer)
+               AND her sentence names a property a reader speaks for
+  hair         the sentence is about hair and names the colour take alone
+  makeup       the sentence says "makeup" (not a cosmetic SURFACE — "her eyes
+               green like this" is a feature ask and routing it to a makeup
+               reader would answer a question she did not ask)
+  never over   wall_content (an answer, not a gap) or wall_stage (no reader
+               here speaks for a garment)
+```
+
+Everything about it is free: no claim, no credit, no row, no render. What comes
+back is `offer` on the refine's own answer — the sentence, what the reading
+could not fit (NAMED, never counted), and a provenance token the adopted ask
+carries back so `verbatim` or `edited` is derived rather than claimed.
+
+**Both read procedures are DELETED with it** (`reference.readMakeup`,
+`reference.readHairColour`) and their two config gates with them. The readers
+are alive and busier than ever; what went is the per-feature door, because with
+the makeup link deleted no surface can honestly call one — a control that said
+WHICH reader to run is the entry point fable-1051 killed, wearing a new coat.
+
+## 10. THE ATTACH SURFACE — BUILT (2026-08-20)
+
+*Written here in full because it lived only in review messages, and a ruling is
+not landed when it is relayed — it is landed when it is written where the next
+person will act on it. §9.10's stale standing block is what that costs.*
+
+**Built and photographed 2026-08-20**, both themes, 42 checks with what each one
+SAW: `scripts/drive-attach-surface-evidence.mts`, frames under
+`output/attach-surface/`. What §10.2 said would be true turned out to be false
+in one place and that is §9.15 — the four calls answered, and no sentence could
+reach them.
 
 ### 10.1 His words, and the ruling they bought (fable-1051)
 
@@ -1045,7 +1144,8 @@ Every server road this control needs exists and is deployed dark:
 
 ```
   castingV2.reference.attach          the picture → a handle (build two's only write)
-  castingV2.reference.readHairColour  the colour take's words, for her to adopt
+  the words lane (§9.16)              the colour take's words, for her to adopt
+                                      — inside the road, not a door of its own
   castingV2.refine { referenceId }    the ask carries the handle
   hairTakeFor / resolveHairTake       what she is taking, read from her sentence
   referenceMediumDoor                 a drawing gives its colour, not its cut

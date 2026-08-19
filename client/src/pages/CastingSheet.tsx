@@ -208,6 +208,20 @@ export default function CastingSheet() {
   */
   const [refineOutcome, setRefineOutcome] = useState<HeldOutcome>(null);
   /*
+    A SENTENCE READ OFF THE PICTURE SHE ATTACHED, and the provenance it carries
+    (the words lane, ruled fable-1103 §1).
+
+    Page state rather than the panel's, for the same reason the mutations are:
+    ADOPTING the sentence arms the token the NEXT ask travels with, and the
+    panel writes words rather than facts. The token is one-use — sent with the
+    ask she sends, gone afterwards — because it is a claim about where THAT
+    sentence came from and not a property of the box.
+  */
+  const [refineOffer, setRefineOffer] = useState<{ sentence: string; dropped: string[] } | null>(null);
+  const adoptedProvenance = useRef<string | null>(null);
+  /** The token that came WITH the offer on screen, held until she adopts it. */
+  const refineOfferToken = useRef<string | null>(null);
+  /*
     WHICH SETTLED OUTCOMES HE HAS CLOSED — see the adoption effect below.
 
     A settled failure is server truth and keeps arriving for an hour, so unlike
@@ -263,17 +277,17 @@ export default function CastingSheet() {
 
   const config = trpc.castingV2.config.useQuery({});
   /*
-    THE MAKEUP READ — one look at a photograph she supplies, and nothing kept.
+    ATTACHING A PICTURE — the one universal door (founder ruling, fable-1051).
 
-    Declared here rather than inside the panel so the panel stays presentational
-    (it is handed a function, not a client), and because this page already owns
-    every other paid and unpaid call the viewer makes.
+    Declared beside the read above and for the same two reasons: the panel stays
+    presentational, and every call the viewer makes is owned by this page.
 
-    It costs her nothing and writes nothing: the reference is read and dropped —
-    no object, no row, no digest. What comes back is a SUGGESTION she adopts or
-    edits, and only then does it travel as an ordinary makeup ask.
+    It is its OWN procedure rather than a field on `refine` because `refine` is
+    spendable and rate-limited, and hanging a multi-megabyte upload on it would
+    make every paid ask carry one. Nothing is read, cut, rendered or charged
+    here — she attaches, and the ask comes afterwards in her own sentence.
   */
-  const readMakeup = trpc.castingV2.reference.readMakeup.useMutation();
+  const attachReference = trpc.castingV2.reference.attach.useMutation();
   const session = trpc.castingV2.getSession.useQuery(
     { sessionId },
     {
@@ -1390,7 +1404,7 @@ export default function CastingSheet() {
    * row before it means anything, so this is a claim under inspection rather
    * than a permission granted from here.
    */
-  function askRefine(instruction: string, scope?: string, replayOf?: string) {
+  function askRefine(instruction: string, scope?: string, replayOf?: string, referenceId?: string) {
     if (!viewerCandidateId) return;
 
     /*
@@ -1405,6 +1419,10 @@ export default function CastingSheet() {
     */
     setRefineOutcome(null);
     setReaskOptions(null);
+    /* The last offer goes when the next instruction is submitted — an offer
+       about a picture standing over a live ask for something else is the same
+       stale-sentence defect the outcome above was fixed for. */
+    setRefineOffer(null);
     /*
       THE ANSWER GOES BACK THROUGH THE BOX (D-180).
 
@@ -1452,6 +1470,11 @@ export default function CastingSheet() {
       makes the difference.
     */
     const requestId = crypto.randomUUID();
+    /* ONE USE. The token is a claim about where THIS sentence came from; a
+       token that outlived its ask would file a reader's provenance on the next
+       thing she typed by hand. Read into the payload above, cleared here. */
+    const carriedProvenance = adoptedProvenance.current;
+    adoptedProvenance.current = null;
     void refine
       .mutateAsync({
         clientRequestId: requestId,
@@ -1460,6 +1483,15 @@ export default function CastingSheet() {
         ...(answering ? { answering: answering.about } : {}),
         ...(sent ? { scope: sent } : {}),
         ...(replayOf ? { replayOf } : {}),
+        /* HER PICTURE, ON THIS ASK — the handle the attach door minted, never
+           the bytes. Absent on every ask with nothing attached to it, because
+           the wire has no field for "no reference". */
+        ...(referenceId ? { referenceId } : {}),
+        /* AND WHERE THIS SENTENCE CAME FROM, when she picked one up. Opaque
+           here and not trusted here: the service verifies the signature, this
+           account, this Cast and the freshness, and derives `verbatim` or
+           `edited` by comparing hashes itself. */
+        ...(carriedProvenance ? { provenanceToken: carriedProvenance } : {}),
       })
       .then(async (result) => {
         /*
@@ -1543,6 +1575,19 @@ export default function CastingSheet() {
           which owns the rule now and is driven both ways.
           The panel owns the saying, like every other outcome (D-154).
         */
+        /*
+          A SENTENCE TO ADOPT, not an outcome (the words lane).
+
+          She attached a picture and asked for a property a reader can speak
+          for, so the road read it — free, before any claim — and this is what
+          it said. It is held beside the outcome rather than inside it because
+          the two are different acts: an outcome is read and dismissed, and this
+          is picked up.
+        */
+        if (result?.offer) {
+          setRefineOffer({ sentence: result.offer.sentence, dropped: result.offer.dropped });
+          refineOfferToken.current = result.offer.provenanceToken ?? null;
+        }
         const said = refineOutcomeNote(result);
         if (said) setRefineOutcome({ text: said, origin: "server", requestId });
         await variants.refetch();
@@ -2704,21 +2749,42 @@ export default function CastingSheet() {
                 so the panel stays presentational and the whole surface can be
                 driven in a test without a network.
               */
-              readMakeupFromPhoto={
-                config.data?.makeupFromReferenceEnabled && viewerCandidateId
-                  ? async (imageBase64: string) => {
-                    const answer = await readMakeup.mutateAsync({
+              /*
+                ATTACHING A PICTURE — handed down only where the road serves
+                this account (`CASTING_REFERENCE_ATTACH_SCOPE`).
+
+                NULL rather than a disabled `+` outside the scope, the same
+                doctrine as the read below it: the procedure answers NOT_FOUND
+                there, so a drawn control would be one that refuses.
+
+                Her claim about where the picture came from travels with it and
+                is never defaulted here — the panel asks her, every time.
+              */
+              attachPicture={
+                config.data?.attachReferenceEnabled && viewerCandidateId
+                  ? async ({ imageBase64, provenance }) => {
+                    const attached = await attachReference.mutateAsync({
                       candidateId: viewerCandidateId,
+                      provenance,
                       imageBase64,
                     });
-                    return {
-                      sentence: answer.sentence,
-                      surfacesRead: answer.surfacesRead,
-                      surfacesDropped: answer.surfacesDropped,
-                    };
+                    return { referenceId: attached.referenceId };
                   }
                   : null
               }
+              /*
+                A SENTENCE READ OFF HER PICTURE — free, and nothing has happened
+                yet (the words lane). It arrives on the road's own answer, so
+                there is no control here to be absent outside a scope.
+              */
+              offer={refineOffer}
+              onAdopt={(sentence) => {
+                /* It fills the box and STOPS — and it arms the provenance the
+                   next ask carries, which is why the page owns this rather than
+                   the panel: adopting is a fact as well as some words. */
+                setAskDraft(sentence);
+                adoptedProvenance.current = refineOfferToken.current;
+              }}
               /*
                 Keyed by the face. Without it, walking the viewer with ←/→
                 carries a half-typed instruction from one candidate to the next,
