@@ -1010,3 +1010,89 @@ cannot be reached by anybody until the hair flag flips — so the value rides wi
 that flip in one ceremony rather than sitting on the founder's desk twice. Until
 then the narrowing is a log line, said here rather than left to be discovered by
 somebody looking for a tally.
+
+## 10. THE ATTACH SURFACE — ruled, and NOT YET BUILT
+
+*Written here in full because it has lived only in review messages, and a
+ruling is not landed when it is relayed — it is landed when it is written where
+the next person will act on it. §9.10's stale standing block is what that costs.*
+
+### 10.1 His words, and the ruling they bought (fable-1051)
+
+> *"you put a small link take makeup from a photo???? this is stupid, you
+> should be able to upload any image like grok and use it as a reference for
+> anything"*
+
+1. **ONE attach affordance, in the refine ask box** — a `+` / image control in
+   the ask box's own row. An attached picture shows as a **thumbnail chip above
+   the input** (his Grok reference; 32px, fable-1101 §3). The *"Take the makeup
+   from a photo"* text link is **REMOVED**.
+2. **Any image, any ask.** The SENTENCE is the instruction; the road decides
+   what the reference contributes — words for word-safe properties, a cropped
+   region for a specific look. **No per-feature entry points, ever.**
+3. **Capability honesty moves to the REPLY.** Where a take is not yet
+   buildable, the answer is an honest sentence on the surface — never a hidden
+   or absent control. The box is always there; what it can do is said when
+   asked.
+
+Riders that survive the re-skin (fable-1051 c): the makeup read's
+read-and-discard contract, the price line on the paid affordance, and D-172's
+shown-and-adopted shape. **The UI unifies the door, not the rules behind it.**
+
+### 10.2 What is ALREADY BUILT behind it, so the surface is only a surface
+
+Every server road this control needs exists and is deployed dark:
+
+```
+  castingV2.reference.attach          the picture → a handle (build two's only write)
+  castingV2.reference.readHairColour  the colour take's words, for her to adopt
+  castingV2.refine { referenceId }    the ask carries the handle
+  hairTakeFor / resolveHairTake       what she is taking, read from her sentence
+  referenceMediumDoor                 a drawing gives its colour, not its cut
+  hairReferenceCutter + the source role   the crop, cut, guarded, sent
+```
+
+So the build is the control, the chip, the wiring of four calls that already
+answer, and the honest sentences. **Nothing behind it needs designing.**
+
+### 10.3 What the surface must SAY, because the road can now say several things
+
+Each of these already comes back from the server as a note or a refusal, and
+each needs somewhere to be read:
+
+- the picture went **unused** (the ask turned out not to be about hair);
+- her two-view reference had **one view carry**;
+- the picture is a **drawing**, so the cut cannot come from it — and the colour
+  can, in the same sentence;
+- the carrier **pictures no scale** (not enough head around the hair);
+- there is **no hair** in the picture;
+- and the colour read's **blocks that did not fit**, returned so she can type
+  them herself.
+
+### 10.4 The milestone contract (founder, 2026-08-01) — this is a UI milestone
+
+No UI milestone reaches the founder without an **evidence pack**: side-by-side
+screenshots (shipped vs. design, per surface, **both themes**) and a copy audit
+classifying every user-visible string as prototype-verified / adapted /
+invented — **to the reviewer DURING the build**, not after. Render before
+shipping: no visual change ships without being looked at in the running app.
+
+### 10.5 The flags flip WITH the surface — one card, one sitting
+
+`CASTING_REFERENCE_ATTACH_SCOPE` and `CASTING_HAIR_REFERENCE_SCOPE` are absent
+from production and stay absent until there is something to click. Flipping them
+first would open two doors into a room with no handle on his side, and carding
+that flip would read as *the feature is ready for you*.
+
+When the surface lands, ONE card carries: the two flags, the `0044` ceremony
+already waiting, and the class door's deferred count value (§9.14) as one more
+line on the same ceremony. One sitting, one announcement, a feature he can
+actually touch.
+
+### 10.6 And the YES bar's centrepiece is HIS EYE on the first real crop
+
+Build two's YES declaration carries the surface's evidence pack **and the
+founder-eyes crop gate** (fable-1074 §4): his own eye on the first real hair
+crop, riding the declaration as its centrepiece frames, exactly as build one's
+tail did. Every court behind it is already in the record — the panels, the scale
+form, the cross-sex question, the drawing, the class door.
