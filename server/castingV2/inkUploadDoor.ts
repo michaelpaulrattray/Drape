@@ -16,9 +16,14 @@
  * the procedure, which is this program's own `bench-skips-the-gate` failure
  * written in advance.
  *
- * So: **release gates the RENDER; the upload records intent** (ruled
- * fable-932 §2). `INK_PLACEMENT_NOT_RELEASED`'s own sentence — *"Nothing was
- * charged"* — belongs to the before-dispatch door, and stays there.
+ * So: **release was to gate the RENDER; the upload records intent** (ruled
+ * fable-932 §2). ⚠ **AND THE DOOR IT NAMES DOES NOT EXIST** — found at the wire
+ * 2026-08-19 and corrected here rather than left standing: nothing anywhere
+ * consults `isInkTupleReleased`, so there is no before-dispatch release door and
+ * `INK_PLACEMENT_NOT_RELEASED` is a sentence with no site. What holds ink off a
+ * photograph today is `MANNEQUIN_ROAD_DEFERRED`, and the release door is a named
+ * prerequisite of the mannequin road resuming
+ * (`shared/inkMannequinDeferral.ts`).
  *
  * # AND THE ONE THAT CANNOT FIRE TODAY, DECLARED RATHER THAN DISCOVERED
  *

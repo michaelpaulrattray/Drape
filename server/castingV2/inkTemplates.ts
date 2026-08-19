@@ -51,7 +51,9 @@
  * customer's tattoo into two on two of five package views. The alternatives —
  * a blank drawn at an angle that carries the whole wrap, or a design that
  * DECLARES whether it wraps — stay available and neither is built. Nothing
- * sells a wrap meanwhile: `RELEASED_INK_TUPLES` is empty, so no tuple has
+ * sells a wrap meanwhile — though NOT for the reason this line once implied:
+ * `RELEASED_INK_TUPLES` is empty AND is consulted by no door at all (fable-1064
+ * §3); what holds today is `MANNEQUIN_ROAD_DEFERRED`. No tuple has
  * earned release at all.
  *
  * # WHAT IS NOT HERE
@@ -211,7 +213,8 @@ export type InkTemplate = {
  * plate a right-side design onto a picture of her left arm and change nothing
  * about where the ink lands, trading a correct picture for a wrong one. The
  * line is not the fix, and the earlier note here that called it one was
- * written before the court. Nothing paid rides any of it: `RELEASED_INK_TUPLES`
+ * written before the court. Nothing paid rides any of it — by the DEFERRAL,
+ * which is the mechanism that actually holds (fable-1064 §3): `RELEASED_INK_TUPLES`
  * is empty, and this court is the evidence for keeping `upperArm:right` out of
  * it while `upperArm:left` is the only arm tuple with a reading behind it.
  */

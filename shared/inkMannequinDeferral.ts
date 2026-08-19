@@ -36,8 +36,29 @@
 /**
  * Whether the mannequin/plate road is parked.
  *
- * `true` until the founder says otherwise. Flipping it to `false` restores the
- * mint and the view-reference lane exactly as they were.
+ * `true` until the founder says otherwise.
+ *
+ * # ⚠ FLIPPING THIS IS NOT A ONE-LINE ACT. THE RESUMPTION PREREQUISITE:
+ *
+ * > **THE MANNEQUIN ROAD DOES NOT RESUME UNTIL THE RELEASE DOOR EXISTS, IS
+ * > WIRED AT THE DISPATCH IT CLAIMS TO GOVERN, AND HAS BEEN DRIVEN RED.**
+ * > (Ruled fable-1064 §3.)
+ *
+ * The reason, and it is a finding rather than caution: **the release gate this
+ * road's paperwork rests on has no caller.** `isInkTupleReleased` and
+ * `INK_PLACEMENT_NOT_RELEASED` are consulted by nothing outside their own test,
+ * so *"release gates the render"* described a door that was never built. What
+ * had been keeping ink off customers' photographs was the ABSENCE OF A PLATE —
+ * and the day the studio flag opened for one account, a neck plate rode into a
+ * signed Cast's views in a wire test written to check exactly that.
+ *
+ * So this constant is currently doing the release gate's job as well as its own.
+ * Flip it back without building that door and the product returns to the state
+ * the wire test found, with the paperwork still claiming a control that does not
+ * exist. **The missing control is therefore converted into a named blocking
+ * prerequisite of the act that needs it**, rather than patched into a road that
+ * is parked — wiring a gate into a closed road would install a control nobody
+ * can exercise, which is the defect bought at birth.
  */
 export const MANNEQUIN_ROAD_DEFERRED = true;
 

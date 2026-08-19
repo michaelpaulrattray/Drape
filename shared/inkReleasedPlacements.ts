@@ -89,6 +89,34 @@ export function inkTupleKey(tuple: InkTuple): string {
 }
 
 /**
+ * ⚠ NO DOOR CONSULTS THIS. Read the note below before citing it as a gate.
+ *
+ * # THE GATE DOES NOT EXIST (found at the wire 2026-08-19, ruled fable-1064 §3)
+ *
+ * This file's rule is real and its emptiness is correct. What was NOT true is
+ * the sentence several docblocks carried — that release gates the render, at a
+ * before-dispatch door. **A repo-wide sweep finds no caller of
+ * `isInkTupleReleased` or `INK_PLACEMENT_NOT_RELEASED` outside this module's own
+ * test.** There is no such door and there never was one.
+ *
+ * What was actually keeping ink off customers' photographs was the absence of a
+ * PLATE: the studio flag was off, so nothing was ever drawn to ride. Turning it
+ * on for one account removed that, and a neck plate rode into a signed Cast's
+ * views in a wire test written to check exactly this.
+ *
+ * **What holds today** is `MANNEQUIN_ROAD_DEFERRED` (`shared/inkMannequinDeferral.ts`)
+ * — the founder's own deferral of the mannequin road, gated at the mint and at
+ * the view-reference lane. That is a named mechanism rather than luck, and it is
+ * the only one.
+ *
+ * **This table is therefore UNBUILT MACHINERY, not a control**, and no document
+ * may describe it as governing anything until a door consults it. The resumption
+ * prerequisite in `inkMannequinDeferral.ts` is where that gets fixed: the road
+ * does not resume until the release door exists, is wired at the dispatch it
+ * claims to govern, and has been driven RED.
+ */
+
+/**
  * The released set. **Empty**, deliberately, until a drive earns an entry.
  *
  * An entry here is a claim that ink was rendered at that exact placement AND
