@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "87e32d7c3cd37503"
+    "sourceFingerprint": "b905f409fe2343d7"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 150
+      "moduleCount": 151
     },
     {
       "id": "domain:castingV2",
@@ -3629,6 +3629,12 @@
     {
       "id": "module:server/castingV2/inkPlateMint.ts",
       "path": "server/castingV2/inkPlateMint.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/inkReferenceCrop.ts",
+      "path": "server/castingV2/inkReferenceCrop.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -9919,6 +9925,10 @@
     {
       "id": "test:server/castingV2/inkPlateSchema.test.ts",
       "path": "server/castingV2/inkPlateSchema.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/inkReferenceCrop.test.ts",
+      "path": "server/castingV2/inkReferenceCrop.test.ts"
     },
     {
       "id": "test:server/castingV2/inkReferenceGate.test.ts",
@@ -20253,6 +20263,16 @@
     {
       "from": "module:server/castingV2/inkPlateMint.ts",
       "to": "module:shared/inkPlacementVocabulary.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/inkReferenceCrop.ts",
+      "to": "module:server/castingV2/inkUploadDoor.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/inkReferenceCrop.ts",
+      "to": "module:server/castingV2/maskedComposite.ts",
       "kind": "imports"
     },
     {

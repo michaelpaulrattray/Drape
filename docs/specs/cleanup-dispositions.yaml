@@ -899,3 +899,21 @@
   why: the demand row's own value, sentinel and all; its writer is stage 4 and that writer is itself dead while MANNEQUIN_ROAD_DEFERRED is true
   argued: V3B §7.11 (design opus-822, ruled fable-1115)
   blocker: stage 4 — the tally writer, which cannot be reached at all until the mannequin road resumes
+
+- symbol: PERSON_REGION
+  file: server/castingV2/inkReferenceCrop.ts
+  verdict: KEEP
+  why: build 3a's licence word, and it is a measured value rather than a label — `person` cannot tell a drawn person from a photographed one (wrong in BOTH directions across two design sheets) and `human skin` separated 6/6; its own suite pins the string so a tidy back to `person` reddens
+  argued: V3B §7.12 (measured opus-833/835, ruled fable-1126/1127/1129)
+
+- symbol: cropClearsMinimumEdge
+  file: server/castingV2/inkReferenceCrop.ts
+  verdict: KEEP
+  why: the completeness guard invariant 7 requires be consulted on the request path, deriving its floor from the upload door's own INK_DESIGN_MIN_EDGE rather than a second number; the cutter that calls it is the next commit
+  argued: V3B §7.12 (design opus-830, ruled fable-1123 §3)
+
+- symbol: cutOutPixels
+  file: server/castingV2/inkReferenceCrop.ts
+  verdict: KEEP
+  why: the masked cutout itself — a bounding rectangle here is the fidelity violation fable-1052 ruled out twice, and this is the boring loop that replaces two clever idioms which BOTH silently returned an unmasked crop
+  argued: V3B §7.12 (ruled fable-1052, built opus-838)
