@@ -678,10 +678,9 @@
 
 - symbol: removeEdgesForItems
   file: server/db/boardEdges.ts
-  verdict: FILED
-  why: not debris — the missing half of a live deletion path; wiring it is a build with an owner
-  argued: 13c
-  owner: the boards road — wiring it into deleteBoardItems is a boards WRITE path, not a cleanup milestone edit
+  verdict: TAKE
+  why: SUPERSEDED, not merely uncalled — the three deletion paths were fixed forward and none of them could use it. It deletes by bare item id with no ownership predicate, so wiring it would have satisfied 13c's sentence while breaking enforcement invariant 1 inside the commit fixing a deletion path
+  argued: 13c/23d
 
 - symbol: listSegmentHistory
   file: server/db/castingV2Segments.ts

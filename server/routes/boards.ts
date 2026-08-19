@@ -173,7 +173,7 @@ export const boardsRouter = router({
     .input(z.object({ boardId: z.number().int().positive() }))
     .mutation(async ({ ctx, input }) => {
       await requireBoardOwnership(input.boardId, ctx.user.id);
-      await deleteBoard(input.boardId);
+      await deleteBoard({ userId: ctx.user.id, boardId: input.boardId });
       log.info({ userId: ctx.user.id, boardId: input.boardId }, "Board deleted");
       return { success: true };
     }),

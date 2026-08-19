@@ -2,7 +2,7 @@
  * Board DB Helpers — CRUD operations for boards and board items.
  */
 import { isDeepStrictEqual } from "node:util";
-import { eq, and, desc, asc, inArray, sql, isNull, isNotNull } from "drizzle-orm";
+import { eq, and, or, desc, asc, inArray, sql, isNull, isNotNull } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { getDb, withTransaction, type TransactionHandle } from "./connection";
 import {
@@ -81,12 +81,69 @@ export async function archiveBoard(boardId: number) {
   return updateBoard(boardId, { status: "archived" });
 }
 
-export async function deleteBoard(boardId: number) {
-  const db = (await getDb())!;
-  // Delete all items first (cascade)
-  await db.delete(boardItems).where(eq(boardItems.boardId, boardId));
-  // Then delete the board
-  await db.delete(boards).where(eq(boards.id, boardId));
+/**
+ * THE CHILD TABLES A BOARD DELETION HAS TO TAKE WITH IT, and why every one of
+ * these statements carries the owner.
+ *
+ * `board_edges` and `board_item_versions` hang off boards and items with **no
+ * foreign key** — plain int columns with indexes (`drizzle/schema.ts`), so
+ * nothing in the database removes them when their parent goes. For most of this
+ * product's life nothing in the application did either: measured 2026-08-19,
+ * production held **73 of 83 edges and 170 of 184 versions orphaned** (dev: 658
+ * of 701 versions), because all three hard-delete paths below deleted the
+ * parent row and stopped.
+ *
+ * `finalCastDeletion.ts:417-422` — the Cast deletion path — has always done it
+ * correctly, which is what made this a class rather than an oversight.
+ *
+ * **Rows only, deliberately.** These deletes take DATABASE ROWS and never the
+ * R2 objects a version row's `imageUrl` points at. A board item's image may be
+ * owned elsewhere — a cast's generated frame placed onto a board — and deleting
+ * a casting-owned object through a boards reference is cross-domain
+ * destruction. Which objects are boards-OWNED versus boards-REFERENCED is an
+ * unread design question, filed rather than guessed.
+ *
+ * **Soft delete is untouched.** Decision 7 makes item deletion undoable
+ * (`softDeleteBoardItems` / `undoDeleteBoardItems` move `deletedAt` only), and
+ * an edge whose endpoint is soft-deleted must survive for the restore. Only the
+ * three permanent paths below remove children.
+ *
+ * Every statement here re-anchors through the OWNED parent in the same
+ * statement rather than trusting an id checked earlier (enforcement invariants
+ * 1 and 2) — a deletion fix that removed children by bare id would be repeating
+ * the class it is fixing.
+ */
+function ownedBoardItemExists(userId: number, itemId: number) {
+  return sql<boolean>`exists (
+    select 1
+    from ${boardItems}
+    join ${boards} on ${boards.id} = ${boardItems.boardId}
+    where ${boardItems.id} = ${itemId}
+      and ${boards.userId} = ${userId}
+  )`;
+}
+
+export async function deleteBoard(input: { userId: number; boardId: number }) {
+  await withTransaction(async (tx) => {
+    const owned = ownedBoardExists(input.userId, input.boardId);
+
+    // Children first, while the rows they scope through still exist.
+    await tx
+      .delete(boardItemVersions)
+      .where(
+        and(
+          inArray(
+            boardItemVersions.itemId,
+            tx.select({ id: boardItems.id }).from(boardItems).where(eq(boardItems.boardId, input.boardId)),
+          ),
+          owned,
+        ),
+      );
+    await tx.delete(boardEdges).where(and(eq(boardEdges.boardId, input.boardId), owned));
+    await tx.delete(boardItems).where(and(eq(boardItems.boardId, input.boardId), owned));
+    // Then the board itself, scoped to its owner in the same statement.
+    await tx.delete(boards).where(and(eq(boards.id, input.boardId), eq(boards.userId, input.userId)));
+  });
 }
 
 export async function getUserBoardCount(userId: number) {
@@ -598,25 +655,67 @@ export async function batchUpdateBoardItemPositions(
 }
 
 export async function deleteBoardItem(input: { userId: number; itemId: number }) {
-  const db = (await getDb())!;
-  const deleted = await db
-    .delete(boardItems)
-    .where(ownedBoardItemScope(input));
-  if (affectedRows(deleted) !== 1) {
-    throw new TRPCError({ code: "NOT_FOUND", message: "Item not found" });
-  }
+  await withTransaction(async (tx) => {
+    // Children first, each re-anchored to the owned item in its own statement.
+    const owned = ownedBoardItemExists(input.userId, input.itemId);
+    await tx
+      .delete(boardItemVersions)
+      .where(and(eq(boardItemVersions.itemId, input.itemId), owned));
+    await tx
+      .delete(boardEdges)
+      .where(
+        and(
+          or(
+            eq(boardEdges.sourceItemId, input.itemId),
+            eq(boardEdges.targetItemId, input.itemId),
+          ),
+          owned,
+        ),
+      );
+    const deleted = await tx
+      .delete(boardItems)
+      .where(ownedBoardItemScope(input));
+    if (affectedRows(deleted) !== 1) {
+      throw new TRPCError({ code: "NOT_FOUND", message: "Item not found" });
+    }
+  });
 }
 
 export async function deleteBoardItems(input: OwnedBoardItemMutation) {
   if (input.itemIds.length === 0) return;
   await withTransaction(async (tx) => {
     const rows = await lockOwnedBoardItemsIn(tx, input);
+    const lockedIds = rows.map((row) => row.id);
+    if (lockedIds.length > 0) {
+      // Children first, scoped through the same owned board as the parent
+      // delete below — the ids are already re-anchored by the lock above.
+      await tx
+        .delete(boardItemVersions)
+        .where(
+          and(
+            inArray(boardItemVersions.itemId, lockedIds),
+            ownedBoardExists(input.userId, input.boardId),
+          ),
+        );
+      await tx
+        .delete(boardEdges)
+        .where(
+          and(
+            eq(boardEdges.boardId, input.boardId),
+            or(
+              inArray(boardEdges.sourceItemId, lockedIds),
+              inArray(boardEdges.targetItemId, lockedIds),
+            ),
+            ownedBoardExists(input.userId, input.boardId),
+          ),
+        );
+    }
     const deleted = await tx
       .delete(boardItems)
       .where(
         and(
           eq(boardItems.boardId, input.boardId),
-          inArray(boardItems.id, rows.map((row) => row.id)),
+          inArray(boardItems.id, lockedIds),
           ownedBoardExists(input.userId, input.boardId),
         ),
       );

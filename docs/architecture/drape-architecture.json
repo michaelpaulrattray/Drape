@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "bd912862f2686b1c"
+    "sourceFingerprint": "3d6f92c56a5ccdaf"
   },
   "domains": [
     {
@@ -9098,6 +9098,10 @@
     {
       "id": "test:server/billingAlerts.test.ts",
       "path": "server/billingAlerts.test.ts"
+    },
+    {
+      "id": "test:server/boardDeletionChildren.test.ts",
+      "path": "server/boardDeletionChildren.test.ts"
     },
     {
       "id": "test:server/boardVersions.test.ts",

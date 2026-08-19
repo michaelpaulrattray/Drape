@@ -1476,6 +1476,94 @@ session set).
 result rather than a caveat: the reading found more live-code questions than
 dead code.
 
+### 23d. THE FIRST FILED ROW WAS READ AND COUNTED, and its one-line summary
+### pointed at the SMALLER HALF of its own finding
+
+Ruled fable-1044 §4 as the standing method after this read: **a FILED row's
+summary is a pointer, not a finding — every one gets the read-and-count before
+anyone acts on it.**
+
+§13c said *"`removeEdgesForItems` is the deletion path's other half, and nothing
+calls it"*, named ONE path, ONE child table, and priced the cost as *"the LIKELY
+real cost is unbounded row growth"*. That word was honest — nobody had counted.
+Counted now (`scripts/census-board-orphans-disposable.mts`, read-only, three
+controls: visibility, an emptied-parent detector, and arithmetic closure; all
+passed in both worlds):
+
+```
+                        DEV :52008          PRODUCTION :23768
+board_edges             6                   83
+board_item_versions     701                 184
+
+EDGE / board gone       0                   73     (88% of the table)
+EDGE / endpoint gone    0                   73
+EDGE / endpoint soft    2                   0      ← not a leak, kept apart
+VERSION / item gone     658  (94%)          170    (92%)
+```
+
+**Three corrections, none of which change §13c's verdict and all of which
+change its size:**
+
+1. **Three paths, not one.** `deleteBoard` (routes/boards.ts:176) and
+   `deleteBoardItem` (:324) have the identical shape and §13c named neither.
+   `deleteBoard` is the biggest of the three — edges are keyed by `boardId`, so
+   deleting a board stranded every edge on it.
+2. **Two child tables, not one.** `board_item_versions` is keyed on `itemId`
+   with no foreign key and was never mentioned. **It is the larger leak by an
+   order of magnitude and the only one carrying image URLs.**
+3. **§13c pointed at the smaller half.** The edge leak it named is **0 rows in
+   dev**. The table it did not name is **92–94% orphaned in both worlds**.
+
+The counterpart that makes it a class: `finalCastDeletion.ts:417-422` — the
+Cast deletion path in this same product — has always deleted both child tables
+correctly.
+
+**Fixed forward** for all three paths, rows only, each child statement
+re-anchored through the owned parent (invariants 1–2), guarded by
+`server/boardDeletionChildren.test.ts` — which drives the real functions through
+a recording fake transaction and was proven able to fail by three sabotages
+(dropped child delete · parent-before-children · a cross-domain delete), each
+reddening the arm that owns it. **The behavioural arm — insert, delete, observe
+the rows are gone — remains unrunnable on this machine**, and this fix is the
+FOURTH customer of the disposable-database blocker three HELD rows already name.
+
+*One thing the sabotage found that reading had not:* the ordering assertion
+used `indexOf(...) < parentIndex`, and `indexOf` returns **-1** for a missing
+delete — so an arm written to catch reordering stayed green when the delete was
+removed outright. Presence is now asserted before order. A negative arm that
+cannot distinguish "wrong place" from "not there at all" is half an arm.
+
+**`removeEdgesForItems` itself was NOT wired, and that is the finding's last
+turn.** The helper deletes by bare item id with no ownership predicate, so
+calling it would have satisfied §13c's sentence while breaking enforcement
+invariant 1 *in the commit fixing a deletion path*. The three paths carry their
+own owner-scoped statements instead, and the helper's disposition moves
+**FILED → TAKE**: it is now superseded rather than merely uncalled. Executing
+that TAKE is its own commit, per §21's rule.
+
+### 23e. FILED ROW SIX — the storage question, which the census opened and this
+### milestone does not answer
+
+Ruled fable-1044 §2. Owner: **the boards/storage road.**
+
+The row fix above stops the growth and deliberately touches **no bytes**. The
+reason is that the obvious escalation is forbidden until a reading nobody has
+done: **a board item's `imageUrl` may point at an object owned by another
+domain** — a cast's generated frame placed onto a board — so scheduling R2
+deletion from a boards delete is cross-domain destruction through a reference.
+Which objects are boards-OWNED versus boards-REFERENCED is that design reading.
+
+**And the consequence cuts both ways, which is why it is filed rather than
+deferred.** Today an orphaned version row is the LAST POINTER to a billed
+object. After the row fix, a permanent deletion leaves **no pointer at all** —
+the object unreachable, unrecorded, and still paid for. Neither state is
+correct; the row fix is the one that stops the bleeding without doing anything
+irreversible to bytes.
+
+*Practical consequence for the 316 existing production orphans:* purging them
+before this row is answered **burns the map** to the unbilled-object question.
+Recommend holding the purge until then — carded for the founder on those terms.
+
 
 ---
 
