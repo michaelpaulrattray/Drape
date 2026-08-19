@@ -184,7 +184,20 @@ describe("a script ends by ending the process", () => {
       .map((rel) => ({ rel, verdict: exitContract(sourceOf.get(rel)!) }))
       .filter(({ verdict }) => !verdict.ok)
       .map(({ rel, verdict }) => `${rel}: ${verdict.reason}`);
-    expect(breaches).toEqual([]);
+    /*
+      THE MESSAGE NAMES THE REMEDY BY PATH, ordered fable-1038 §4 after the
+      fourth promoted-script instance. A guard that names its remedy gets
+      followed; one that only refuses gets worked around, and the next instance
+      arrives through whoever never read the mailbox this was ruled in.
+    */
+    expect(
+      breaches,
+      "End the script by ending the process — the LAST top-level statement is "
+        + "`process.exit(0)`, and an exit in an earlier branch does not count. "
+        + "`scripts/SKELETON-disposable.mts` is the shape both script guards "
+        + "want; copy it rather than starting from a blank file.\n"
+        + breaches.map((line) => `  ${line}`).join("\n"),
+    ).toEqual([]);
   });
 
   it("CAN FAIL — the shapes it must reject, driven directly", () => {

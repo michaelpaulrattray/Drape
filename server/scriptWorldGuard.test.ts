@@ -148,7 +148,11 @@ describe("a script that reads the app's database declares its world", () => {
     expect(
       unguarded,
       `Add \`assertOneWorld(["DATABASE_URL"])\` after the imports — it is inert `
-        + `locally and refuses a half-production process under \`railway run\`:\n`
+        + `locally and refuses a half-production process under \`railway run\`. `
+        /* The remedy by path (fable-1038 §4): a guard that names its remedy
+           gets followed, one that only refuses gets worked around. */
+        + `\`scripts/SKELETON-disposable.mts\` is the shape both script guards `
+        + `want; copy it rather than starting from a blank file:\n`
         + unguarded.map((f) => `  scripts/${f}`).join("\n"),
     ).toEqual([]);
   });
