@@ -759,22 +759,49 @@ the retirement are in `server/castingV2/inkTemplates.ts`; the sentences are in
    changing it.
 4. **The placements route by placement AND SIDE AND BUILD**, and
    `inkTemplateFor` is total over all three vocabularies. The arm is picked by
-   the design's declared side, which is the mirror court's fix: **the side is
-   carried by the PICTURE, not by the prompt** — five renders across three
-   claims, two carrying an explicit positional clause pointing the other way,
-   put the ink on the image's LEFT arm every time, against 3/3 the other way
-   with the plate bytes mirrored, interleaved in one sitting on a 7/7 as-is
-   baseline.
+   the design's declared side.
 
-   **What is still OWED, named rather than implied: which single-view blank
-   delivers which arm.** The mirror court ran on the retired THREE-VIEW sheet,
-   where the limb occupied a half of the frame; a single-limb plate has no frame
-   half to carry the side. The blanks are named from the eye's reading of the
-   anatomy — the left blank's medial contour, the axillary fold, sits on the
-   image's left and its deltoid and elbow on the right, which is how a subject's
-   left arm presents in a front-facing frame — and `ARM_FOR_SIDE` is ONE LINE so
-   a re-run of that court flips it in one edit. Nothing paid rides it meanwhile:
-   `RELEASED_INK_TUPLES` is empty, so no design reaches a package view at all.
+   **THE COURT THAT WAS OWED HAS RUN (2026-08-19), AND IT OVERTURNS THE RULE
+   THIS ITEM USED TO STATE.** The earlier version said *"the side is carried by
+   the PICTURE, not by the prompt"*, banked off the retired THREE-VIEW sheet
+   where the limb occupied a frame HALF. That measurement still stands — flip
+   that sheet and the ink crossed — but it was generalized into a rule, and on
+   a single-limb blank the rule is false. Fifteen house renders, one candidate,
+   every frame read by eye (`docs/specs/V4_SIDE_INFERENCE_COURT.md` §6;
+   `scripts/court-single-view-arm-mirror-disposable.mts` and its two
+   extensions; panel at
+   `output/single-view-arm-court/COURT-PANEL-single-view-arm.jpg`):
+
+   ```
+   A  armLeft  blank, clause "her left"     5/5 landed on her LEFT arm   correct
+   B  the A plate hand-flopped, "her left"  2/2 landed on her RIGHT arm
+   C  armRight blank (mirrored plate)       0/5 — all five on her LEFT
+   D  armRight blank (CLEAN plate)          0/3 — all three on her LEFT
+   ```
+
+   **Thirteen of fifteen put the ink on the IMAGE'S RIGHT half** whatever limb
+   the plate depicted and whatever the sentence named. Her left arm IS the
+   image's right, so arm A is a pass in which the answer and the bias happen to
+   agree — reading it as *"the blanks fixed the wrong-arm bug"* would ship a
+   coincidence as a fix. **Choosing the limb a design belongs to does not move
+   the ink to that limb.** Arms B and C carry the same limb and the same
+   artwork orientation and land on opposite arms, so the picture does not decide
+   either: the mechanism is UNNAMED and nothing should be built on a guess about
+   it. This is the standing image-half law on a third lane.
+
+   `ARM_FOR_SIDE` is correctly named and STAYS AS WRITTEN — flipping it would
+   plate a right-side design onto a picture of her left arm and change nothing
+   about where the ink lands, a wrong picture bought for no gain. Nothing paid
+   rides any of it: `RELEASED_INK_TUPLES` is empty, and this court is the
+   evidence for keeping `upperArm:right` out of it while `upperArm:left` is the
+   only arm tuple with a reading behind it. Releasing that one is the founder's
+   decision on that measurement, and it is on his desk.
+
+   **A separate defect surfaced and it is a flag, not a rate**: one of two
+   `armRight` mints returned the customer's artwork MIRRORED, against the plate
+   prompt's own *"exactly as they appear"*; the second came back correct. It is
+   why arm D exists — arm C's five renders had all ridden the defective plate,
+   so on its own it could not tell a placement failure from an artwork one.
 
    **No placement routes to a BACK blank** — neck, upper arm and upper chest are
    all front surfaces — so the two back plates land with no caller until a back
@@ -797,7 +824,14 @@ the retirement are in `server/castingV2/inkTemplates.ts`; the sentences are in
    two of five package views, and the prompt's own *"do not draw a second copy"*
    could not prevent it, because from the engine's side nothing was duplicated:
    the reference picture contained the artwork twice and it was copying the
-   picture — the same carrier law that decides which arm the side rides on.
+   picture.
+
+   **That last clause used to read *"the same carrier law that decides which
+   arm the side rides on"*, and item 4's court has since taken that law away.**
+   The neck finding is untouched and does not need it: a reference picture
+   holding the artwork twice produced two copies, which is a fact about CONTENT
+   the engine copies. Which ARM a design lands on is a different question, and
+   the answer there is the image-half bias rather than anything in the plate.
 
    So the wrap court is answered NO: a multi-view sheet does not read as one
    design, it reads as one design per view. The three passing arms passed
