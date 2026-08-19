@@ -289,3 +289,107 @@ the scolding around it is what made a careful reader quieter everywhere.
 The gate is keyed by intent and total over the vocabulary, so **tattoo's sibling
 is a compile-visible gap rather than an invented list** — no other road's words
 are declared, because no other road has bought specimens for them.
+
+---
+
+## 9. HAIR — what is built, and what HIS OWN SPECIMENS say before a result is bought
+
+*Ordered fable-1077: his specimens are the acceptance corpus, they are preferred
+over authored ones, and each one's flags are surfaced HERE before its court
+runs. What follows was read by eye from the frames themselves (law 9), not from
+a filename and not from a reader.*
+
+### 9.1 Built and deployed dark (`2358ca59`, `CASTING_HAIR_REFERENCE_SCOPE` off)
+
+- **The take map.** Hair is five subject cards since D-142, so a take is a claim
+  over facets: `colour` declares `{hairShade}`, `style` is that list read
+  backwards, `fullLook` is the total. The disclaimer is arithmetic, not a second
+  list, and a future hair card headed COLOUR that the colour take does not claim
+  reddens the suite.
+- **The clarifying question**, on the existing `answering` mechanism (D-180), so
+  no model decides whether to ask and the answer path can rebuild it.
+- **The reference lane**: `refine` carries a `referenceId`, resolved with the
+  owner in the statement and re-anchored to this Cast.
+
+Not built: the reads, the crop, and the class door ruled in fable-1075.
+
+### 9.2 HIS COLOUR SPECIMEN IS NOT A MULTI-PANEL, AND ITS DIFFICULTY IS SPATIAL
+
+`hair-colour-multipanel-copper-blonde-black.png` — ask: **hair colour only**.
+
+Read at the frame: **one photograph, one person, no panels.** The filename and
+fable-1077's note both suggest a composite; it is not one, and nothing should be
+built to split it.
+
+Its real difficulty is harder than the one that was flagged. The colour is not a
+blend and it is not one tone — it is **BLOCKED BY SECTION**: a bright
+orange-copper fringe panel, a platinum-blonde panel beside it, near-black roots
+and lengths behind, and a silver-white section on the far side.
+
+**So "does the reader flatten it to one word" is the wrong bar, and a reader
+that passes it can still be completely wrong.** *"Copper, blonde and black"*
+names every tone in the frame and describes a different head entirely — an
+ombré, a balayage, anything. **The colour take's words have to carry WHERE each
+tone sits**, or they are not a description of this reference. That is a real
+constraint on the hair reader's slot contract and it lands before the reader is
+written, which is the point of surfacing it here.
+
+The `hairShade` card's own vocabulary already reaches for the right words —
+`hair colour`, `highlights`, `roots` — so the slot is not being invented; it is
+being asked for placement it has always implied.
+
+### 9.3 HIS STYLE SPECIMEN IS A GENUINE TWO-PANEL, AND IT IS TWO HEADS
+
+`hair-style-dark-waves-two-panel.png` — ask: **hair style with a different
+colour, carried through multiple edits without drift.**
+
+Read at the frame: a vertical stack of **two photographs of the same man** — a
+profile above, the crown and fringe from a downward three-quarter below. Dark,
+near-black, soft-waved, volume through the top, swept fringe.
+
+**Two flags, both about the crop rather than the words:**
+
+1. **The segmenter meets TWO heads in one frame.** *Where is the hair* returns
+   either one panel arbitrarily or a union spanning both with a white bar
+   through the middle — and **a union of two heads is not a hair crop**, it is
+   two crops and a gap, carried into a repaint as if it were one head of hair.
+   His order is explicit that this shape is handled and not rejected, so the
+   crop road needs a panel decision — connected components, and a stated rule
+   for which one carries — designed and reviewed before the first crop is cut.
+2. **The reference is a MAN and the Cast may not be.** The take's ride-along
+   sentence says *"Take HER hair from the reference"*, and that is correct as
+   written: the pronoun is the CAST's, because a reference is a source and never
+   a subject. Stated here so it is not later "fixed" into agreeing with the
+   photograph, which would be the reference quietly becoming the person.
+
+And the ask itself is the corpus's centrepiece for a reason: **style WITH a
+different colour is exactly the split ruling 5 scopes**, and *carried through
+multiple edits without drift* puts the carry court on top of it. The
+style-not-colour assertion at the wire is the first half; the drift court is the
+second, and it needs the `carry-noise-floor` bought before any figure from it
+means anything.
+
+### 9.4 The class door, as ruled (fable-1075) — not yet built
+
+Measured, four specimens, both directions: **hair does not have makeup's
+out-of-class defect.** Handed the cyborg — the very bytes on which the makeup
+reader called prosthetic circuitry a look — a bare hair reader answered
+`present: "no"` with every slot null, 2/2; so did a golden retriever, 2/2.
+**A presence question anchored on a body part is a gate; one anchored on a
+judgement is a prompt.**
+
+It has a different defect, in the one place a presence flag cannot help: a
+**salon illustration** — ink and gouache on paper, pencil construction lines
+showing — answered `present: "yes"` and described *"copper red with auburn
+tones", "long length, center part, face-framing", "wavy", "down"*, 2/2, with no
+hedge.
+
+**It ROUTES, it does not refuse** (fable-1075 §1): 1052 forbids a reader's
+photo-versus-drawing verdict that turns a customer away, and tolerates one that
+only narrows the lane. So the drawn answer may refuse the CROP takes — a drawn
+look cannot be carried onto a photograph faithfully — and **never the WORDS
+one**, because a colour read off a drawing is honest. Three riders ship with it:
+the refusal copy is humble and two-part, offering the words road in the same
+breath; the outcome is counted so a false-positive rate has a signal; and **the
+false-positive court ships FIRST** — a real, stylised, heavily-retouched
+photograph must read through before the door is live anywhere.
