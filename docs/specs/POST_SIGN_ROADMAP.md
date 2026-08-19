@@ -812,8 +812,58 @@ per fable-721 §3 / fable-723 §3, deployed):
 Companion principle, unchanged: **the checker judges EXISTENCE against her
 own words only; intensity/density belongs to her words or nobody.**
 
-**What remains is one reading, and it decides nothing** — the refused-frames
-classification, REPURPOSED by fable-721 §3 from decider to **calibration**:
+### The remaining reading has NO POPULATION — measured 2026-08-19, and the reason is a defect
+
+**n = 0, in both worlds, and it is not that nothing was refused.** Fifteen
+production refusals exist between 12 and 16 August, all on user 1 — the only
+account diagnostic capture is armed for. **Not one frame was kept.** The
+private evidence bucket answers (5 objects on an unprefixed control page) and
+`casting-v2/diagnostics/` holds zero. Scoped by
+`scripts/scope-refused-frames-disposable.mts` and
+`scripts/list-diagnostic-frames-disposable.mts`.
+
+**Two indexes look like the answer and both lie**, which is worth more than
+the count:
+
+- **the candidate/variant row** — `failCandidate`/`failVariant` transition only
+  out of `queued`/`dispatched`, and `imageKey` is written when a render
+  SUCCEEDS. A refused row can never carry a frame. Zero there is a fact about
+  the writers;
+- **`storage_cleanup_items`** — rows are DELETED on successful purge and on
+  reservation-consumption, so an empty table means *nothing pending* and says
+  nothing whatever about what was captured. A census taken there returns a
+  clean, confident, fictional zero.
+
+**Why nothing was captured: both call sites are unreachable for the only
+account in scope, each orphaned by a change aimed at something else.**
+
+1. `refineService.ts` captures inside `else` of
+   `if (!refusesAfterRender(failure))` where `failure` is the literal
+   `"facts_missing"` — and `facts_missing` is not in `REFUSES_AFTER_RENDER`.
+   **The branch is statically dead**, from §4's own contract commit
+   (`5c5a1f3f`). The behaviour it guards is right (deliver and charge); the
+   founder-approved capture inside it simply stopped existing.
+2. `maskedRefine.ts` captures on `composite_fault` — a torn COMPOSITE. The
+   repaint road returns before `harvestRefinement` is reached
+   (`if (repaintEnabled) return repaintOnce()`), and production runs
+   `CASTING_REPAINT_SCOPE=users:1`. **No composite, no seam, no capture.**
+
+**This is the same class as the credit-velocity pair binned the same day**
+(CLAUDE.md, "a third path"): written, wired, live, then orphaned by a deletion
+or a ruling aimed elsewhere, with nothing sweeping behind it. Twice in one day,
+which is what makes it a class rather than an anecdote.
+
+**So the calibration cannot be done retrospectively at any point in the
+future** — the evidence is not late, it was never written, and even a captured
+frame dies with its candidate under the purge promise. It is a FORWARD
+collection or it is nothing. **Where capture belongs under the catastrophic-only
+contract is a decision, not a repair**, and it is open: the refusals that now
+happen are `render_fault` / `composite_fault` / `segment_store`, and only the
+middle one has a capture site at all.
+
+**The original framing, kept for the record:** it was one reading that decides
+nothing — the refused-frames classification, REPURPOSED by fable-721 §3 from
+decider to **calibration**:
 what would yesterday's refusals be under the new contract, and is
 "catastrophic" drawn in the right place? Every refunded render whose frame
 survives, dev and production, read **by eye** against the reader's stated
@@ -829,7 +879,9 @@ reason (never by re-running the reader), and bucketed:
   were refusals of DELIVERED work.
 
 Report rates plus example frames. **Zero new spend** — the frames are already
-on disk and in R2.
+on disk and in R2. *(That last sentence is the one that was false, and it is
+left standing above so the correction has something to point at: the frames are
+NOT on disk and NOT in R2. Nobody checked before writing it down.)*
 
 ## 5. Open-vocabulary regions — the map becomes a cache
 
