@@ -111,6 +111,11 @@ Credits are deducted down to a floor of 0 — balances never go negative.
 
 Every path above was checked against the tree on 2026-08-19. Six of the seven this table used to carry were wrong — `server/db.ts`, `server/webhooks.ts` and four others had moved into subdirectories, and one named a procedure that does not exist. A file table nobody re-reads is a map of a building that has been rebuilt around it.
 
-Three templates in `SlackAlerts` have no caller anywhere in the server and are listed here honestly rather than described as live: `subscriptionCancelled`, `largeCreditPurchase` and `consumptionSpike`. They are not the velocity pair and were not covered by the founder's decision; they are recorded so the next reader does not have to re-derive it.
+Three templates in `SlackAlerts` have no caller anywhere in the server: `subscriptionCancelled`, `largeCreditPurchase` and `consumptionSpike`. They are not the velocity pair and were not covered by the founder's decision. **Their history was read (2026-08-19) before anything was proposed, and it splits them:**
+
+- `subscriptionCancelled` and `largeCreditPurchase` were wired at birth (`a3abdf8b`) and **deliberately un-wired** by `69eb9b0f` — *"Reduced billing alert noise… removed subscription cancellation Slack alerts… removed large purchase alert trigger."* That was a decision, the "Alerts NOT Sent (Noise Reduction)" section above records it correctly, and the templates are intentional leftovers rather than a broken control. Deleting them is tidying, not a security question.
+- `consumptionSpike` has **never had a caller** since `a3abdf8b`, and the section above says so in its own words (*"available for integration with consumption monitoring logic"*). Honest, and unbuilt.
+
+The distinction is the point: the same "no caller" reading covers a control someone switched off on purpose and one nobody ever finished, and those argue for different answers.
 
 Last updated: 2026-08-19 (v3 — velocity limits deleted, file paths corrected against the tree)
