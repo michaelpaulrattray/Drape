@@ -65,6 +65,7 @@ import { createModuleLogger } from "../logging/logger";
 import type { TextEngine } from "../providers/types";
 import { interpreterEngine } from "./interpreter";
 import { scrubBrands } from "./brandScrub";
+import { readReferenceClass, referenceClassAskLines } from "./referenceClassGate";
 import { namesHairColour } from "./refineDelta";
 import {
   MAKEUP_SLOTS,
@@ -91,6 +92,10 @@ export const MAKEUP_READ_REFUSAL_CODES = [
   "unreadable",
   "noMakeupVisible",
   "namesHair",
+  /* The class door (ordered fable-1068 §4). Its column value arrives in
+     migration 0042 — the walk in `referenceReadDemand.test.ts` is what makes
+     that ordering enforceable rather than remembered. */
+  "outOfClass",
 ] as const;
 
 export type MakeupReadRefusalCode = (typeof MAKEUP_READ_REFUSAL_CODES)[number];
@@ -133,7 +138,16 @@ const ASK = [
   "",
   "Look at this photograph.",
   "",
-  "FIRST decide one thing: is this face wearing makeup that was APPLIED to it?",
+  /*
+    THE CLASS QUESTION COMES FIRST, and it is composed from the vocabulary
+    rather than typed here (law 4) — see `referenceClassGate.ts` for the cyborg
+    that bought it. The short version: this ask had four cosmetic surfaces and a
+    presence flag, and NO FIELD in which "these are prosthetics" could arrive,
+    so a reader handed one reached for the nearest word it had been given.
+  */
+  ...referenceClassAskLines("makeup"),
+  "",
+  "THEN decide one thing: is this face wearing makeup that was APPLIED to it?",
   "Many faces are bare. A bare face still has a lip colour, brow hair and skin",
   "texture of its own — those are the PERSON, not makeup. Do not describe them.",
   "",
@@ -156,8 +170,8 @@ const ASK = [
      absence tells still govern whether anything is said at all. */
   "complexion: applied base — foundation, blush, bronzer, contour, highlight",
   "",
-  'Reply with JSON: {"wearing": "yes" or "no", "eyes": "...", "lips": "...",',
-  '"brows": "...", "complexion": "..."} and nothing else.',
+  'Reply with JSON: {"subject": "...", "wearing": "yes" or "no", "eyes": "...",',
+  '"lips": "...", "brows": "...", "complexion": "..."} and nothing else.',
   "Use null for any surface with nothing applied to it.",
 ].join("\n");
 
@@ -329,6 +343,67 @@ export async function readMakeupFromReference(
 
   const parsed = parse(raw);
   if (!parsed) {
+    return {
+      ok: false,
+      refusal: {
+        code: "unreadable",
+        message: "We couldn't read that picture — try another one.",
+      },
+    };
+  }
+
+  /*
+    THE CLASS DOOR — FIRST, AND AHEAD OF THE PRESENCE GATE (ordered fable-1068
+    §4).
+
+    It sits here for the presence gate's own reason, one class wider: the
+    failure both doors exist for is a reader that finds something to say about
+    every picture, so the place to stop it is BEFORE its prose is consulted at
+    all. Four fluent surfaces must not outvote *"this is not makeup"* — and if
+    they were read first, the loudest ones would compose into a sentence and
+    only then be thrown away, which is a tiebreak rather than a door.
+
+    Ahead of the presence gate specifically, because *"there is no makeup on
+    this face"* and *"this is not a face wearing makeup at all"* are different
+    answers, and the wider one is the one a customer needs.
+
+    AND THE THREE ARMS ARE THREE DIFFERENT SENTENCES, on purpose:
+
+      outOfClass   the reader NAMED something else — refuse with this door's own
+                   sentence, and record it as its own outcome
+      nothing      the class is simply absent — the road's existing empty
+                   answer, the same one the presence gate spends
+      unanswered   the reply never addressed the question. NOT this door's
+                   sentence: telling somebody *"what's on that face isn't
+                   makeup"* because a transport hiccupped would be a claim about
+                   a real person's photograph that no reader made. It takes
+                   `unreadable`, which is what actually happened.
+  */
+  const subject = readReferenceClass("makeup", parsed.subject);
+  if (subject.kind === "outOfClass") {
+    /* Logged with the word the reader chose, because that word is the whole
+       mechanism under test and the demand row deliberately cannot carry it. */
+    log.info({ named: subject.named }, "[makeupFromReference] the subject is not cosmetics — refused");
+    return {
+      ok: false,
+      refusal: {
+        code: "outOfClass",
+        message:
+          "What's on that face isn't makeup we can take — try a picture of the look you want. Nothing was charged.",
+      },
+    };
+  }
+  if (subject.kind === "nothing") {
+    return {
+      ok: false,
+      refusal: {
+        code: "noMakeupVisible",
+        message: "We couldn't see any makeup in that picture to take.",
+      },
+    };
+  }
+  if (subject.kind === "unanswered") {
+    log.warn({ subject: parsed.subject }, "[makeupFromReference] the class question came back unanswered");
     return {
       ok: false,
       refusal: {

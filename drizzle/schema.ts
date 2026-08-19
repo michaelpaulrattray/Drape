@@ -2882,6 +2882,11 @@ export const CASTING_REFERENCE_READ_OUTCOMES = [
   "unreadable",
   "no_makeup_visible",
   "names_hair",
+  /* Migration 0042 — the reader answered that the subject is not cosmetics at
+     all. Kept apart from `unreadable` deliberately: a transport hiccup and a
+     photograph of a cyborg are different facts, and a tally that merged them
+     would send the next reader to the wrong repair. */
+  "out_of_class",
 ] as const;
 
 /**

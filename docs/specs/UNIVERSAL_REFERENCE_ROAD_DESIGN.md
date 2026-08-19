@@ -253,6 +253,39 @@ region that was never there.
 
 **The specimen is already in hand and costs nothing**: the cyborg frame above is
 an out-of-class subject with a known-correct answer, so the red-first arm can be
-driven the moment the reader is touched. Which shape the fix takes — a stricter
-ask, an explicit refusal arm in the prompt, or a second confirming read — is
-still open and is decided here.
+driven the moment the reader is touched.
+
+**BUILT 2026-08-19, and the shape it took is the FIELD.** Not a stricter ask and
+not a second read. Read at the code, the defect is not the reader's fault: handed
+a cyborg it had exactly two shapes available to it — four cosmetic surfaces and
+*is this face wearing makeup* — and **no field in which "these are prosthetics"
+could arrive.** A model with no word for what it sees reaches for the nearest one
+it has been given. So the ask gained a `subject` field whose closed list NAMES
+the out-of-class answers (`prosthetics, mask, body paint, digital effect, injury,
+something else`), and `referenceClassGate.ts` reads it before a single surface is
+consulted. Structure is the fence — the ink door's own idiom, which is handed no
+filename *because there is no field for a claim to arrive in*.
+
+Three arms, three sentences, because they are three different facts: an explicit
+out-of-class answer refuses as `outOfClass` (migration 0042 gives the tally its
+column value); `nothing` takes the road's existing empty answer; and a reply that
+never addressed the question takes `unreadable` — telling somebody *"what's on
+that face isn't makeup"* because a transport hiccupped would be a claim about a
+real person's photograph that no reader made.
+
+Driven **red-first** (`4 failed | 30 passed` before the gate existed), then
+bought on the real reader in both directions — `court-out-of-class-disposable.mts`,
+three reads each: **cyborg refused 3/3 · made-up face delivered 3/3.**
+
+**And the first shape of the ask was wrong in a way no suite could see.** It
+asked across six lines with a sterner preamble, and on a matched before/after
+against the shipped ask — same frame, three reads each, the prior file taken from
+a pinned commit rather than rebuilt — the smoky eye went from spoken **3/3 to
+1/3**. A class question is not supposed to cost a surface. Tightened to three
+lines and one flat list, it reads **3/3 both sides** with the refusal intact. The
+lesson is filed where the lines are composed: an announced list is a BRIEF, and
+the scolding around it is what made a careful reader quieter everywhere.
+
+The gate is keyed by intent and total over the vocabulary, so **tattoo's sibling
+is a compile-visible gap rather than an invented list** — no other road's words
+are declared, because no other road has bought specimens for them.

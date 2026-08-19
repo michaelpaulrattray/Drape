@@ -1,0 +1,52 @@
+-- THE OUT-OF-CLASS OUTCOME — one new value on the reference-read demand
+-- record's `outcome` enum (ordered fable-1068 §4).
+--
+-- ============================================================================
+-- WHY A MIGRATION FOR ONE WORD
+-- ============================================================================
+--
+-- `casting_reference_reads.outcome` is a MySQL ENUM, and MySQL's failure mode
+-- for a value outside an enum is to write the EMPTY STRING rather than to
+-- refuse: a row that counts toward a tally and names nothing. The reader is
+-- gaining a fifth way to end — it can now answer *this is not makeup* — and a
+-- refusal code shipped ahead of its column value would be counted as a blank.
+--
+-- The writer already refuses a value the column does not hold
+-- (`castingV2ReferenceReads.recordReferenceRead` proves the outcome against
+-- `CASTING_REFERENCE_READ_OUTCOMES` before the insert, and logs rather than
+-- writes), so the cost of running behind this migration is a LOST TALLY and
+-- never a customer's answer. It is still a migration first, because the tally
+-- is the only record that the refusal is firing at all.
+--
+-- ============================================================================
+-- WHAT THE VALUE MEANS, AND WHAT IT DOES NOT
+-- ============================================================================
+--
+-- `out_of_class` is: the reader looked at the photograph and answered that what
+-- is on that face is NOT cosmetics — prosthetics, an appliance, a mask, body
+-- paint, a digital effect, an injury. It is a REFUSAL and nothing was charged.
+--
+-- It is deliberately not `unreadable`: a reply that never answered the class
+-- question at all stays `unreadable`, because a transport hiccup and a
+-- photograph of a cyborg are different facts and a tally that merges them would
+-- send the next reader to the wrong repair.
+--
+-- The specimen that bought it: the shipped reader was handed a photograph of a
+-- bald, bearded man with metal implants across his scalp and jaw and one
+-- glowing red eye — no cosmetics anywhere in it — and answered, in the makeup
+-- vocabulary and with no hedge, *"glowing red iris effect, mechanical seam
+-- detailing, prosthetic circuitry and metallic implant detailing"*. Harmless
+-- there (it was a token count and nothing was written); the same reader is
+-- about to be handed a customer's own uploaded photograph with its sentence
+-- riding into a paid render.
+--
+-- ============================================================================
+-- PURELY ADDITIVE
+-- ============================================================================
+--
+-- One value appended to one enum. No existing value changes position or
+-- spelling, no row is rewritten, no column is dropped. Existing rows keep the
+-- value they were written with, and a deploy running ahead of this file writes
+-- no `out_of_class` row rather than a broken one.
+ALTER TABLE `casting_reference_reads`
+	MODIFY COLUMN `outcome` enum('delivered','no_transport','unreadable','no_makeup_visible','names_hair','out_of_class') NOT NULL;

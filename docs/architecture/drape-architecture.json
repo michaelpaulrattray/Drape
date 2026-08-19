@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "de1eb9e877411b76"
+    "sourceFingerprint": "df08260e7d20728f"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 137
+      "moduleCount": 138
     },
     {
       "id": "domain:castingV2",
@@ -3767,6 +3767,12 @@
     {
       "id": "module:server/castingV2/referenceCentreline.ts",
       "path": "server/castingV2/referenceCentreline.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/referenceClassGate.ts",
+      "path": "server/castingV2/referenceClassGate.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -9944,6 +9950,10 @@
     {
       "id": "test:server/castingV2/referenceCentreline.test.ts",
       "path": "server/castingV2/referenceCentreline.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/referenceClassGate.test.ts",
+      "path": "server/castingV2/referenceClassGate.test.ts"
     },
     {
       "id": "test:server/castingV2/referenceCompleteness.test.ts",
@@ -20155,6 +20165,11 @@
     },
     {
       "from": "module:server/castingV2/makeupFromReference.ts",
+      "to": "module:server/castingV2/referenceClassGate.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/makeupFromReference.ts",
       "to": "module:server/castingV2/refineDelta.ts",
       "kind": "imports"
     },
@@ -20631,6 +20646,11 @@
     {
       "from": "module:server/castingV2/referenceCentreline.ts",
       "to": "module:server/castingV2/segmentCuts.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/referenceClassGate.ts",
+      "to": "module:shared/referenceIntents.ts",
       "kind": "imports"
     },
     {

@@ -54,7 +54,18 @@ const REFERENCE = {
   contentType: "image/jpeg",
 };
 
+/**
+ * A clean read of a face wearing a full look.
+ *
+ * **It carries `subject` because the reply contract now requires it** (the
+ * out-of-class door, ordered fable-1068 §4): the class question is asked before
+ * the surfaces and admission is POSITIVE, so a fixture that does not answer it
+ * is a reply the door could not judge and is refused as `unreadable`. Every
+ * fixture below that expects to reach the surfaces therefore answers it — which
+ * is the contract change stated in the fixtures rather than hidden in a helper.
+ */
 const FULL_FACE = JSON.stringify({
+  subject: "cosmetics",
   eyes: "soft brown smoky shadow",
   lips: "nude matte lip",
   brows: "brushed up",
@@ -333,6 +344,7 @@ describe("readMakeupFromReference", () => {
     const outcome = await readMakeupFromReference({
       ...REFERENCE,
       engine: engineReturning(JSON.stringify({
+        subject: "cosmetics",
         wearing: "no",
         eyes: "soft shadow",
         lips: "natural mauve tint",
@@ -364,6 +376,7 @@ describe("readMakeupFromReference", () => {
     const outcome = await readMakeupFromReference({
       ...REFERENCE,
       engine: engineReturning(JSON.stringify({
+        subject: "cosmetics",
         wearing: "yes",
         eyes: "x".repeat(MAKEUP_SLOT_MAX_LENGTH + 1),
         lips: "matte red",
@@ -379,7 +392,7 @@ describe("readMakeupFromReference", () => {
   it("admits when the gate says yes", async () => {
     const outcome = await readMakeupFromReference({
       ...REFERENCE,
-      engine: engineReturning(JSON.stringify({ wearing: "yes", eyes: "winged liner" })),
+      engine: engineReturning(JSON.stringify({ subject: "cosmetics", wearing: "yes", eyes: "winged liner" })),
     });
     expect(outcome.ok).toBe(true);
     if (!outcome.ok) return;
@@ -390,7 +403,7 @@ describe("readMakeupFromReference", () => {
     const outcome = await readMakeupFromReference({
       ...REFERENCE,
       engine: engineReturning(
-        JSON.stringify({ eyes: null, lips: "none", brows: null, complexion: "n/a" }),
+        JSON.stringify({ subject: "cosmetics", eyes: null, lips: "none", brows: null, complexion: "n/a" }),
       ),
     });
     expect(outcome.ok).toBe(false);
@@ -404,7 +417,7 @@ describe("readMakeupFromReference", () => {
     const outcome = await readMakeupFromReference({
       ...REFERENCE,
       engine: engineReturning(
-        JSON.stringify({ eyes: "soft shadow", lips: null, brows: null, complexion: "pink hair colour" }),
+        JSON.stringify({ subject: "cosmetics", eyes: "soft shadow", lips: null, brows: null, complexion: "pink hair colour" }),
       ),
     });
     expect(outcome.ok).toBe(false);
@@ -421,7 +434,7 @@ describe("readMakeupFromReference", () => {
     const outcome = await readMakeupFromReference({
       ...REFERENCE,
       engine: engineReturning(
-        JSON.stringify({ eyes: null, lips: null, brows: "bleached brows", complexion: "tinted moisturiser" }),
+        JSON.stringify({ subject: "cosmetics", eyes: null, lips: null, brows: "bleached brows", complexion: "tinted moisturiser" }),
       ),
     });
     expect(outcome.ok).toBe(true);
@@ -454,5 +467,125 @@ describe("readMakeupFromReference", () => {
     const source = await read("makeupFromReference.ts");
     for (const pattern of keepsBytes) expect(source).not.toMatch(pattern);
     expect(source).not.toMatch(/createStorageCleanupManifest|withTransaction/);
+  });
+});
+
+/**
+ * THE OUT-OF-CLASS DOOR — ordered fable-1068 §4, driven red-first.
+ *
+ * The defect it exists for was found while pricing the attach read (opus-785
+ * §3): the shipped reader was handed a photograph of a bald, bearded man with
+ * metal implants across his scalp and jaw and one glowing red eye — no
+ * cosmetics anywhere in it — and answered in the makeup vocabulary with no
+ * hedge, describing prosthetics as a look. Harmless there; the same reader is
+ * about to be handed a customer's own uploaded photograph, with its sentence
+ * riding into a paid render.
+ *
+ * **These fixtures are AUTHORED, not the record.** The pricing script kept the
+ * composed sentence and not the raw reply, so nothing here is quoted as the
+ * reader's own words — a reconstruction presented as a record is a claim
+ * wearing a fact's clothes. What these arms prove is the DOOR: given a reply
+ * that names its subject, the module refuses or admits correctly. That the real
+ * reader NAMES it is a different question, and it is bought with the real
+ * reader on the two specimens (`scripts/court-out-of-class-disposable.mts`).
+ */
+describe("the out-of-class door", () => {
+  const PROSTHETICS = JSON.stringify({
+    subject: "prosthetics",
+    wearing: "yes",
+    eyes: "glowing red iris effect",
+    lips: null,
+    brows: "mechanical seam detailing",
+    complexion: "prosthetic circuitry, metallic implant detailing",
+  });
+
+  it("refuses a subject that is not cosmetics, however fluent the surfaces are", async () => {
+    const outcome = await readMakeupFromReference({
+      ...REFERENCE,
+      engine: engineReturning(PROSTHETICS),
+    });
+    expect(outcome.ok).toBe(false);
+    if (outcome.ok) return;
+    expect(outcome.refusal.code).toBe("outOfClass");
+    /* The sentence names what happened without repeating the reader's prose —
+       a reader's words are a pointer to look, never a fact to hand a customer
+       (law 9). */
+    expect(outcome.refusal.message).toMatch(/isn't makeup/i);
+    expect(outcome.refusal.message).toMatch(/nothing was charged/i);
+  });
+
+  it("does not let four confident surfaces outvote the class answer", async () => {
+    /*
+      THE ORDERING IS THE POINT, and it is the presence gate's own argument
+      (fable-946 §4). The failure this door exists for is a reader that finds
+      something to say about every picture, so the place to stop it is BEFORE
+      its prose is consulted at all — not as a tiebreak after four fluent
+      phrases have been composed into a sentence.
+    */
+    const outcome = await readMakeupFromReference({
+      ...REFERENCE,
+      engine: engineReturning(PROSTHETICS),
+    });
+    expect(outcome.ok).toBe(false);
+    if (outcome.ok) return;
+    expect(outcome.refusal.code).not.toBe("noMakeupVisible");
+  });
+
+  it("reads an unanswered class question as unreadable, never as a verdict about the face", async () => {
+    /*
+      A reply that never answered the class question is a reply this door could
+      not judge — so it takes the existing `unreadable` sentence rather than a
+      new one. Refusing a transport hiccup with *"what's on that face isn't
+      makeup"* would be a CLAIM about a real person's photograph, produced by a
+      reader that said nothing of the kind. That is the presence gate's scar
+      (`undefined` is not `no`) applied to the class question, and it is why
+      strictness here buys a different code rather than the same sentence.
+    */
+    const outcome = await readMakeupFromReference({
+      ...REFERENCE,
+      engine: engineReturning(JSON.stringify({
+        wearing: "yes",
+        eyes: "soft brown smoky shadow",
+        lips: "nude matte lip",
+      })),
+    });
+    expect(outcome.ok).toBe(false);
+    if (outcome.ok) return;
+    expect(outcome.refusal.code).toBe("unreadable");
+  });
+
+  it("admits the carve-out it exists to protect — a named cosmetic subject reads through", async () => {
+    /*
+      THE POSITIVE CONTROL, kept in the same file as the refusal (working law
+      2). A door proven only in the direction it was written for is how a guard
+      ends up refusing everybody, and this repository has already banned a
+      carve-out once that way (the `shave`/`shape` typo gate).
+    */
+    const outcome = await readMakeupFromReference({
+      ...REFERENCE,
+      engine: engineReturning(JSON.stringify({ subject: "cosmetics", wearing: "yes", ...JSON.parse(FULL_FACE) })),
+    });
+    expect(outcome.ok).toBe(true);
+    if (!outcome.ok) return;
+    expect(outcome.sentence).toBe("soft brown smoky shadow, nude matte lip, brushed up, dewy skin");
+  });
+
+  it("asks the class question at the wire, with the out-of-class answers named", async () => {
+    /*
+      ASSERT AT THE WIRE (invariant 5). And the second half is the one that
+      matters: naming the out-of-class ANSWERS is the whole mechanism. A reader
+      offered only *cosmetics* and *nothing* has no word for a prosthetic and
+      will reach for the nearest one it has — which is the defect, not a fix.
+    */
+    let sent: TextRequest | undefined;
+    await readMakeupFromReference({
+      ...REFERENCE,
+      engine: engineReturning(FULL_FACE, (request) => { sent = request; }),
+    });
+    const user = sent?.user ?? "";
+    expect(user).toMatch(/"subject"/);
+    expect(user).toMatch(/prosthetics/i);
+    expect(user).toMatch(/mask/i);
+    expect(user).toMatch(/body paint/i);
   });
 });
