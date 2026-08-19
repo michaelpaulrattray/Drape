@@ -182,6 +182,9 @@ next step is deletion.
   dead by import; but CLAUDE.md already lists credit-purchase velocity limits as
   *"helpers and Slack alert exist, no call site in the checkout path"*. The
   import graph cannot settle that one; the checkout path must be read.
+  **RESOLVED 2026-08-19 — DELETED by founder default** (§9's wire-or-bin card,
+  binned). The checkout path was read and there was no check in it; the git
+  record then showed why, and it is not what this entry assumed — see §9.
 
 ---
 
@@ -503,6 +506,26 @@ and an alert that never fires look identical**.
 Both are already in CLAUDE.md's *"Currently not enforced — do not rely on these"*
 list. **A deletion changes what that list means**, so the choice is the founder's:
 wire them, or delete them and say so in that list.
+
+**BOTH RESOLVED, by opposite doors, and the list says so.** The login-attack
+detector was **WIRED** on 2026-08-19 (`server/security/loginAttackAlert.ts`, onto
+the admin and moderator panels rather than Slack, because production has no Slack
+webhook). The velocity pair was **DELETED** the same day, by the founder's stated
+default after a wire-or-bin card: the helpers, `SlackAlerts.velocityLimitHit` and
+`server/velocityLimits.test.ts` are gone, and CLAUDE.md, `BILLING_ALERTS.md`,
+`SECURITY_OVERVIEW.md` and audit H5 all record it. Neither was silently deleted,
+which is what this section asked for.
+
+**One correction this section owes itself.** It filed the velocity pair under the
+same shape as the login detector — *"helper written, docs written, call site never
+added"*. That is wrong about the velocity pair. The caps were **wired and live**
+from `a3abdf8b` (2026-02-06) to `41a765ea` (2026-02-07), when removing the
+one-time topup system deleted `createTopupCheckout` and with it the only call
+site. Nobody skipped a step; a deletion aimed elsewhere orphaned a control and
+nothing swept behind it. The two symbols read identically to an import graph and
+arrived by entirely different roads — **a reading that only asks "does anything
+call this" cannot tell a control that was never wired from one that was
+un-wired**, and only the second kind has a commit that can be found and read.
 
 ## 10. THE CLASS both §7 findings belong to (ruled fable-980)
 

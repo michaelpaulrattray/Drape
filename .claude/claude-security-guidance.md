@@ -66,5 +66,13 @@ in the same change.
 ## Known-inert (do not credit these as mitigations)
 
 Admin allowlist (empty in prod), Slack approval flow (self-approves when
-unconfigured), IP blocking (recorded, never checked), purchase velocity limits
-(no call site), audit-log hash chain (in-memory, resets on deploy).
+unconfigured), IP blocking (recorded, never checked), audit-log hash chain
+(in-memory, resets on deploy).
+
+Purchase velocity limits left this list on 2026-08-19 by **deletion** rather
+than by wiring (founder default; CLAUDE.md carries the reasoning). Do not credit
+a purchase cap as a mitigation and do not resurrect the helpers — there is no
+application-side fraud cap on credit purchases, and the next one starts as a
+product design. The same day, the site-wide login-attack alarm left it by the
+other door: `server/security/loginAttackAlert.ts` is wired onto the admin and
+moderator panels, with an in-memory counter that resets on deploy.

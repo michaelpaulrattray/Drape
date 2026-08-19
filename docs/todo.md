@@ -4616,6 +4616,6 @@ Four items above were marked complete but were never wired into a request path. 
 - `[x] Add IP blocking check to rate limiter middleware` (~line 2539) — `isIpBlocked` is never called during a request. Blocked addresses are recorded and not stopped. (H2)
 - `[x] Implement admin allowlist` (~line 2576) — returns true for everyone when the list is empty, which it is in production. (H3)
 - `[x] Update sensitive admin procedures to require Slack approval` (~line 2596) — those procedures execute directly; the approval router is a parallel optional route, and it self-approves when Slack is unconfigured. (H4)
-- Credit-purchase velocity limits — helpers and Slack alert exist, no call site in the checkout path. (H5)
+- Credit-purchase velocity limits — helpers and Slack alert exist, no call site in the checkout path. (H5) — **and this bullet is the one of the four that was wrong about WHY.** The caps were wired and live for one day (`a3abdf8b`, 2026-02-06) until `41a765ea` (2026-02-07) removed the one-time topup system and took the only call site with it. Nobody skipped a step here; a deletion aimed at something else orphaned it. Closed by deletion 2026-08-19 on the founder's default: helpers, alert and `server/velocityLimits.test.ts` are gone.
 
 See `docs/specs/SECURITY_AUDIT_2026-07-25.md`. When ticking off a security control in future, the box means "something calls it and a test proves it blocks", not "the code exists".

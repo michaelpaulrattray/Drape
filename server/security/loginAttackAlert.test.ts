@@ -12,6 +12,15 @@ import path from "node:path";
  * fires. That is the shape being avoided here: every test below makes the
  * alarm actually go off, or actually not.
  *
+ * That neighbouring suite (`server/velocityLimits.test.ts`) was DELETED with
+ * its subject on 2026-08-19, and the manner of its death is the sharper half of
+ * the lesson: its own subject — the checkout velocity check — had been gone
+ * since February, and it stayed green through all of it, because every
+ * assertion in it compared a local constant to itself. A suite that cannot go
+ * red when the thing it names is deleted is not weak coverage, it is a false
+ * report of coverage. The example is kept here because the file that
+ * demonstrated it no longer exists.
+ *
  * `vi.resetModules()` per test because the attack window is module-level state
  * in `rateLimit.ts` — without it, test two would inherit test one's fifty
  * failures and the thresholds would be untested.

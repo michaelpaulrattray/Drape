@@ -56,22 +56,18 @@ Before deploying any new endpoint, verify the following:
 |---------|---------|----------------|
 | `#admin-actions` | Admin actions, IP blocks, emergency alerts | `SLACK_ADMIN_ACTIONS_WEBHOOK_URL` |
 | `#audit-log` | Audit log entries, security events | `SLACK_AUDIT_LOG_WEBHOOK_URL` |
-| `#billing-alerts` | Chargebacks, payment failures, cancellations, large purchases, velocity limits | `SLACK_BILLING_ALERTS_WEBHOOK_URL` |
+| `#billing-alerts` | Chargebacks, payment failures, cancellations, large purchases | `SLACK_BILLING_ALERTS_WEBHOOK_URL` |
 | `#general` | General notifications, test alerts | `SLACK_WEBHOOK_URL` |
 
-## Credit Purchase Velocity Limits
+## Credit Purchase Velocity Limits — DELETED 2026-08-19
 
-> **Not enforced as of 2026-07-25.** This section previously described the caps below as active. They are not. `getRecentTopupCount` and `getTopupCreditsTotal` (`server/db/moderatorQueries.ts:344-390`) compute the figures and `SlackAlerts.velocityLimitHit` is ready to fire, but nothing calls them — `server/routes/billing.ts` performs no velocity check. Treat credit top-ups as having **no application-side fraud cap** until H5 in the current audit is fixed.
+**There is no application-side fraud cap on credit purchases, and there is no longer any code pretending otherwise.**
 
-The intended design, for whoever wires it up:
+This section used to describe three caps — 3 top-ups an hour, 10 a day, ~$500 of spend a day — as active. They were active, for one day: added 2026-02-06 inside the `createTopupCheckout` procedure, and orphaned 2026-02-07 when the whole one-time topup system was removed for an unrelated product reason. The two query helpers and the `velocityLimitHit` alert outlived their only call site by six months, along with this page and a test suite that could not go red.
 
-| Limit | Window | Purpose |
-|-------|--------|--------|
-| 3 top-ups | Per hour | Prevents rapid-fire purchases |
-| 10 top-ups | Per 24 hours | Daily cap |
-| ~$500 total spend | Per 24 hours | Dollar-amount cap (33,333 credits) |
+On 2026-08-19 the founder's decision was to **delete rather than re-wire**, and the helpers, the alert template and `server/velocityLimits.test.ts` are gone. The reasoning is on the record and is a product one: deciding how fast is too fast for a paying customer, and what happens to them when they hit it, is a design question and not a switch — and code that pretends to be the answer is worse than no code.
 
-The check belongs in the checkout path before the Stripe session is created; over the cap should refuse with `TOO_MANY_REQUESTS`. The refusal must not depend on Slack being connected — only the alert is optional.
+If a cap is wanted, it starts from that design. What it should not start from is a resurrection of two SQL helpers because they happened to survive. Closes H5 of `docs/specs/SECURITY_AUDIT_2026-07-25.md`.
 
 ## Reporting Security Issues
 

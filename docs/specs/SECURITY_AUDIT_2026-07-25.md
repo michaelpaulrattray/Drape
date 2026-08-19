@@ -148,7 +148,11 @@ So the compensating control that `adminSecurity.ts` relies on to justify a singl
 
 Whichever is chosen, **the current state — documentation describing a control that isn't there — is the one option to rule out.** This is the same failure mode as H2.
 
-### H5 — Credit-purchase velocity limits are not enforced · HIGH · Post-R7, before launch
+### H5 — Credit-purchase velocity limits are not enforced · HIGH · **CLOSED BY DELETION 2026-08-19**
+
+**Current status.** Closed the way the founder ruled, which is not the way the *Fix* paragraph below proposes. He was asked for one word — *wire* or *bin* — and the recommendation put to him was **bin**; he did not object inside the stated pause, and the default landed. `getRecentTopupCount`, `getRecentTopupCredits`, `SlackAlerts.velocityLimitHit` and `server/velocityLimits.test.ts` are deleted. There is now **no application-side fraud cap on credit purchases and no code implying one** — which is the honest state, and the one state this finding said to rule out.
+
+**One fact the original entry did not have, found while executing the deletion.** The caps were not written-and-never-wired. They were wired and live from `a3abdf8b` (2026-02-06) until `41a765ea` (2026-02-07), when the one-time topup system was removed for an unrelated product reason and took `createTopupCheckout` — the only call site — with it. The helpers stayed. That reclassifies this finding: it is not a control somebody forgot to connect, it is **a control that was disconnected by a deletion aimed at something else, with nothing sweeping behind it.** The paragraph below calling it "the fourth control with helpers written, documentation published, and no invocation" is right about the end state and wrong about the road, and the road is the part that generalises. H2/H3/H4 should be re-read with that question asked of each.
 
 *(Found 2026-07-25 during documentation cleanup, not in the original sweep.)*
 

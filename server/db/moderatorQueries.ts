@@ -1,6 +1,14 @@
 /**
- * Moderator Read-Only Queries — detailed credit/generation history,
- * and credit purchase velocity limits.
+ * Moderator Read-Only Queries — detailed credit/generation history, and the
+ * same-IP referral flag.
+ *
+ * It also held the two credit-purchase velocity helpers until 2026-08-19, when
+ * they were deleted by founder default: they had counted a user's recent
+ * top-ups for months with no call site in the checkout path, and a control that
+ * nothing invokes is indistinguishable from a control that was never written.
+ * If a purchase cap is wanted it wants a product design first — how fast is too
+ * fast for a paying customer, and what happens when they hit it — not a
+ * re-wiring of these two queries.
  */
 
 import {
@@ -363,58 +371,6 @@ export async function getDetailedGenerationHistory(
       },
     };
   }
-}
-
-// ============================================================================
-// CREDIT PURCHASE VELOCITY LIMITS
-// ============================================================================
-
-/**
- * Get count of recent topup transactions for a user within a time window.
- * Used for velocity limiting credit purchases.
- */
-export async function getRecentTopupCount(
-  userId: number,
-  sinceTimestamp: Date
-): Promise<number> {
-  const db = await getDb();
-  if (!db) return 0;
-
-  const result = await db
-    .select({ count: sql<number>`COUNT(*)` })
-    .from(creditTransactions)
-    .where(
-      and(
-        eq(creditTransactions.userId, userId),
-        eq(creditTransactions.type, "topup"),
-        gte(creditTransactions.createdAt, sinceTimestamp)
-      )
-    );
-  return Number(result[0]?.count ?? 0);
-}
-
-/**
- * Get total credits purchased from topup transactions for a user within a time window.
- * Used for daily dollar-amount velocity cap.
- */
-export async function getRecentTopupCredits(
-  userId: number,
-  sinceTimestamp: Date
-): Promise<number> {
-  const db = await getDb();
-  if (!db) return 0;
-
-  const result = await db
-    .select({ total: sql<number>`COALESCE(SUM(amount), 0)` })
-    .from(creditTransactions)
-    .where(
-      and(
-        eq(creditTransactions.userId, userId),
-        eq(creditTransactions.type, "topup"),
-        gte(creditTransactions.createdAt, sinceTimestamp)
-      )
-    );
-  return Number(result[0]?.total ?? 0);
 }
 
 // ============================================================================

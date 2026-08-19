@@ -132,14 +132,6 @@ const NAMED: Record<string, Seed> = {
     verdict: "FILED", why: "one comment mention, no caller",
     argued: "11b",
   },
-  getRecentTopupCount: {
-    verdict: "HELD", why: "credit-purchase velocity limits: helpers exist, no call site in the checkout path",
-    argued: "9", blocker: "founder card — the security wire-or-delete decision",
-  },
-  getRecentTopupCredits: {
-    verdict: "HELD", why: "credit-purchase velocity limits: helpers exist, no call site in the checkout path",
-    argued: "9", blocker: "founder card — the security wire-or-delete decision",
-  },
   inspectStorageCleanupReconciliation: {
     verdict: "KEEP", why: "a real caller in a tracked script (run-storage-cleanup.mts)",
     argued: "1a/20",

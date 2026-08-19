@@ -160,8 +160,6 @@ vi.mock("./db/moderatorQueries", () => ({
   getFlaggedReferrals: vi.fn(),
   getDetailedCreditHistory: vi.fn(),
   getDetailedGenerationHistory: vi.fn(),
-  getRecentTopupCount: vi.fn(),
-  getRecentTopupCredits: vi.fn(),
 }));
 
 import { getFlaggedReferrals } from "./db/moderatorQueries";

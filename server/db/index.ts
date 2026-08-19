@@ -160,12 +160,10 @@ export {
   getUserStatistics,
 } from "./admin";
 
-// Moderator Queries (read-only history, velocity limits)
+// Moderator Queries (read-only history, flagged referrals)
 export {
   getDetailedCreditHistory,
   getDetailedGenerationHistory,
-  getRecentTopupCount,
-  getRecentTopupCredits,
   getFlaggedReferrals,
 } from "./moderatorQueries";
 

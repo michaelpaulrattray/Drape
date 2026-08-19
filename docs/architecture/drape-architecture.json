@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "22e86559d72642a5"
+    "sourceFingerprint": "6edd8665d514c8b3"
   },
   "domains": [
     {
@@ -10878,10 +10878,6 @@
     {
       "id": "test:server/uptimeAnchor.test.ts",
       "path": "server/uptimeAnchor.test.ts"
-    },
-    {
-      "id": "test:server/velocityLimits.test.ts",
-      "path": "server/velocityLimits.test.ts"
     },
     {
       "id": "test:server/w1-export-truth.test.ts",

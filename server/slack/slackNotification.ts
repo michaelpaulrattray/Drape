@@ -625,29 +625,6 @@ export const SlackAlerts = {
     });
   },
   /**
-   * Alert when credit purchase velocity limit is hit
-   * → #billing-alerts
-   */
-  velocityLimitHit: async (
-    userId: number,
-    userName: string,
-    limitType: string,
-    currentCount: number,
-    maxAllowed: number
-  ): Promise<boolean> => {
-    return dispatchBillingAlert({
-      title: "Credit Purchase Velocity Limit Hit",
-      description: `User *${userName}* (ID: ${userId}) hit the *${limitType}* purchase velocity limit.`,
-      severity: "warning",
-      fields: [
-        { title: "User", value: `${userName} (ID: ${userId})`, short: true },
-        { title: "Limit Type", value: limitType, short: true },
-        { title: "Attempts", value: `${currentCount}/${maxAllowed}`, short: true },
-      ],
-    });
-  },
-
-  /**
    * Alert when an account is auto-frozen due to credit discrepancy
    * → #billing-alerts (critical)
    */

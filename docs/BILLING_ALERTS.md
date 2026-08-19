@@ -1,6 +1,14 @@
-# Billing Alerts & Credit Purchase Velocity Limits
+# Billing Alerts
 
-This document covers the billing-specific Slack alert system and credit purchase velocity limits that protect FormaStudio from payment fraud and abuse.
+This document covers the billing-specific Slack alert system.
+
+**There are no credit-purchase velocity limits, and this page described them as live for six months after they stopped existing.** The history is worth a paragraph, because it is not the usual one.
+
+The caps were real and wired: `a3abdf8b` (2026-02-06) added `VELOCITY_LIMITS` inside the `createTopupCheckout` procedure, three checks against the two query helpers, and a `velocityLimitHit` alert on each. **They lived for one day.** `41a765ea` (2026-02-07) removed the entire one-time credit-topup system for an unrelated product reason — the procedure went, and with it the only call site. The helpers and the alert template stayed. So did this page.
+
+**That is the class, and it is not "somebody forgot to wire it".** A control dies when its call site is deleted for a reason that has nothing to do with the control, and nothing sweeps behind it. `server/velocityLimits.test.ts` survived the same commit and stayed green for six months — its own docblock said the topup packages had been removed and that the tests "remain relevant for any future credit purchase flow", while every assertion in it compared a local constant to itself. A suite that cannot go red when its subject is deleted is how the corpse stays warm.
+
+The helpers, the alert and that suite were deleted on 2026-08-19 by founder default. If a purchase cap is wanted it starts as a product decision — what counts as too fast for a paying customer, and what happens when they hit it — not as a re-wiring of two queries. See `docs/specs/SECURITY_AUDIT_2026-07-25.md` H5 for the audit finding this closes.
 
 ## Overview
 
@@ -47,17 +55,8 @@ Fires when an admin approves a moderator-initiated Stripe refund. Includes refun
 The following events are handled silently — no Slack alerts:
 
 - **Subscription cancelled** — users cancel for many reasons; not actionable
-- **Large credit purchase** — informational only; velocity limits catch fraud
+- **Large credit purchase** — informational only; there is no automated fraud cap behind it
 - **Intermediate payment failures** — Stripe retries automatically; only final failure alerts
-
-### Velocity Limit Triggered
-
-**Trigger:** User attempts a top-up that exceeds velocity limits  
-**Channel:** `#billing-alerts`  
-**Auto-actions:** Block the purchase, return error to user  
-**Template:** `SlackAlerts.velocityLimitHit()`
-
-Fires when a user hits any of the three velocity limits. Includes which limit was hit, current count, and the cap.
 
 ### Consumption Spike
 
@@ -67,46 +66,12 @@ Fires when a user hits any of the three velocity limits. Includes which limit wa
 
 Available for integration with consumption monitoring logic. Includes user info, credits used in the window, and the normal average.
 
-## Credit Purchase Velocity Limits
-
-Velocity limits are enforced in the `createTopupCheckout` procedure in `server/routers.ts`. They query the `credit_transactions` table for recent `topup` entries.
-
-### Limits
-
-| Limit | Value | Window | Purpose |
-|-------|-------|--------|---------|
-| Hourly max | 3 top-ups | Rolling 1 hour | Prevents rapid-fire purchases |
-| Daily max | 10 top-ups | Rolling 24 hours | Daily transaction cap |
-| Daily credit cap | 33,333 credits | Rolling 24 hours | ~$500 spend cap |
-
-### Implementation
-
-The velocity check runs before the Stripe checkout session is created, so no Stripe API calls are wasted on blocked purchases. The check uses two query helpers:
-
-- `getRecentTopupCount(userId, sinceTimestamp)` — counts topup transactions in window
-- `getRecentTopupCredits(userId, sinceTimestamp)` — sums credit amounts in window
-
-### Error Messages
-
-Users see friendly error messages when limits are hit:
-- Hourly: "You've reached the maximum number of credit purchases per hour. Please try again later."
-- Daily: "You've reached the maximum number of credit purchases per day. Please try again tomorrow."
-- Spend cap: "You've reached the daily credit purchase limit. Please try again tomorrow."
-
-### Tuning
-
-The constants are defined in `VELOCITY_LIMITS` within the `createTopupCheckout` procedure. To adjust:
-
-1. Change the constant values in `server/routers.ts`
-2. Update the tests in `server/velocityLimits.test.ts`
-3. Update this document
-
 ## Adding New Billing Alerts
 
-1. Add a new async method to `SlackAlerts` in `server/slackNotification.ts`
-2. Use `dispatchBillingAlert()` from `server/slackDispatcher.ts` to route to `#billing-alerts`
+1. Add a new async method to `SlackAlerts` in `server/slack/slackNotification.ts`
+2. Use `dispatchBillingAlert()` from `server/slack/slackDispatcher.ts` to route to `#billing-alerts`
 3. Call the alert from the appropriate webhook handler or procedure
-4. Add tests in `server/velocityLimits.test.ts` or a new test file
+4. Add tests that drive the alert, not tests that assert it is a function — an existence assertion is something the typechecker already makes, and the deleted velocity suite is what that looks like after a year
 5. Update this document
 
 ## Stripe Refund Workflow
@@ -132,19 +97,20 @@ Credits are deducted down to a floor of 0 — balances never go negative.
 
 | File | Purpose |
 |------|---------|
-| `server/stripeService.ts` | `issueStripeRefund()`, `calculateProportionalRefund()`, `getPaymentIntentFromSession()` |
-| `server/stripeRefund.test.ts` | 11 tests for proportional refund calculation |
+| `server/stripe/stripeService.ts` | `issueStripeRefund()`, `calculateProportionalRefund()`, `getPaymentIntentFromSession()` |
+| `server/stripe/stripeRefund.test.ts` | tests for proportional refund calculation |
 | `drizzle/schema.ts` | `stripeSessionId`, `refundType`, `refundAmountCents`, `creditsToDeduct`, `originalCredits` on `changeRequests` |
 
 ## Files
 
 | File | Purpose |
 |------|---------|
-| `server/slackNotification.ts` | Alert templates (`SlackAlerts.*`) |
-| `server/slackDispatcher.ts` | Channel routing (`dispatchBillingAlert`) |
-| `server/webhooks.ts` | Webhook handlers that trigger alerts |
-| `server/routers.ts` | Velocity limit enforcement in `createTopupCheckout` |
-| `server/db.ts` | `getRecentTopupCount`, `getRecentTopupCredits` query helpers |
-| `server/velocityLimits.test.ts` | Tests for velocity limits and alert templates |
+| `server/slack/slackNotification.ts` | Alert templates (`SlackAlerts.*`) |
+| `server/slack/slackDispatcher.ts` | Channel routing (`dispatchBillingAlert`) |
+| `server/stripe/webhooks.ts` | Webhook handlers that trigger alerts |
 
-Last updated: February 6, 2026 (v2 — added refund workflow, noise reduction, auto-cancel)
+Every path above was checked against the tree on 2026-08-19. Six of the seven this table used to carry were wrong — `server/db.ts`, `server/webhooks.ts` and four others had moved into subdirectories, and one named a procedure that does not exist. A file table nobody re-reads is a map of a building that has been rebuilt around it.
+
+Three templates in `SlackAlerts` have no caller anywhere in the server and are listed here honestly rather than described as live: `subscriptionCancelled`, `largeCreditPurchase` and `consumptionSpike`. They are not the velocity pair and were not covered by the founder's decision; they are recorded so the next reader does not have to re-derive it.
+
+Last updated: 2026-08-19 (v3 — velocity limits deleted, file paths corrected against the tree)
