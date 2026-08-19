@@ -1109,3 +1109,282 @@ imply "right arm ships" is the mistake this paragraph exists to prevent.
 His two pending items are unchanged. These rulings make the ink flip's surface
 **bigger, not different** — the upload door they govern is the door that flip
 opens.
+
+### 7.12 BUILD 3a — THE CUTTER, ON MEASUREMENTS RATHER THAN ADJECTIVES
+### (designed opus-830, re-measured opus-833/835, ruled fable-1123/1126/1127/1129)
+
+This is the build that retires the tripwire above. Everything in it rests on two
+segmentation questions whose words were **chosen by measurement and not by
+taste** — 58 reader calls of house money across two nights, on the founder's own
+fixtures, with every mask cut out and looked at.
+
+The precedent is `V3B_PLACEMENT_VOCABULARY_READING`: `collarbone`, `clavicle`
+and `decolletage` read NOTHING on skin that was plainly bare, and `upper chest`
+found it exactly. **A question word is a measured value.** It happened twice
+more here, and the second time it overturned a verdict this note nearly
+inherited.
+
+#### The two questions
+
+```
+  ask `tattooed skin`   pixels found → there is a design on a body: CUT that region
+  ask `human skin`      pixels found → THERE IS SOMEBODY PHOTOGRAPHED IN THIS PICTURE
+```
+
+Both are asked with `absentIsAnswer`, so **an empty mask is a reading and a
+thrown error is a failure, and the two can never arrive as the same value.** A
+reader that did not answer refuses; it does not route.
+
+#### Why not `tattoo`, and the trap that nearly closed this road
+
+`tattoo` was measured first and read `0.0%` and `0.1%` on the two face-bearing
+specimens — filed as *the reader cannot find ink*, and it very nearly ended the
+build. **It was wrong, and the same numbers read at the right scale say so:**
+
+```
+specimen A, `tattoo`   370 px, box (819,973)-(842,1001), 24 x 29
+```
+
+370 of 1,572,864 pixels prints as `0.0%`. Cut out and looked at, it is **one of
+the three stars** — one complete object of a design that is a crescent and three
+stars. SAM 3 answers a class with an instance; the word governs how much of the
+design comes with it.
+
+> **REPORT PIXEL COUNT AND BOUNDING BOX, NEVER A PERCENTAGE ALONE.** A real
+> design is a fraction of a percent of a portrait, and on a percentage scale it
+> is indistinguishable from noise. Then cut the box out and look at it.
+
+#### What the words measured
+
+```
+                       specimen A          specimen B      no-ink control   torso
+word                   (solid design)      (fine line)     (photographed)   (~30 designs)
+────────────────────────────────────────────────────────────────────────────────────────
+tattooed skin          6,256 px  129x194   1,476 px        0 masks          12,161 px
+tattoo                   370 px   24x29    1,417 px        0 masks          63,574 px
+tattoo on her arm      6,155 px  129x194   1,435 px          —                —
+body art               5,425 px  116x154   1,412 px          —                —
+black ink on skin      5,413 px  116x154   1,390 px          —                —
+ink                    0 masks             0 masks           —                —
+arm tattoo             0 masks             0 masks           —                —
+```
+
+`tattooed skin` cut from specimen A is the crescent and all three stars on
+transparency — the design and nothing else. **Zero false positives on a
+photographed person carrying no ink**, which is the arm that matters: a word
+that lit up there would route a bare photograph to a bogus cut.
+
+#### THE ROUTING TABLE — asymmetric, and fail-closed
+
+```
+  tattooed skin   human skin   →  what happens
+  ─────────────────────────────────────────────────────────────────────────
+  found           found        →  CUT the design. The person is not in the crop.
+  found           absent       →  CUT it anyway — a design on a flat sheet with
+                                  a shape the reader found is still best carried
+                                  as its own region
+  absent          absent       →  THE FRAME RIDES WHOLE. The licence comes from
+                                  `human skin: absent`, NEVER from no-tattoo-found
+  absent          FOUND        →  ⚠ REFUSE, free, naming what it could not do
+```
+
+**The last row is the whole design.** *"No tattoo found"* alone must never buy the
+whole frame: a photograph of a person whose ink the reader missed is precisely
+the object the tripwire exists to keep out of an engine. The licence to send a
+picture whole comes from a positive reading that **there is nobody in it**.
+
+#### THE LICENCE LAW — `pixels > 0`, and never a percentage floor
+#### (ratified fable-1129 §1)
+
+> **The licence is `pixels > 0`. It may NEVER carry a percentage floor.**
+
+Measured, on a photographed man in a cloak and armour with one strip of bare
+torso showing: `human skin` found **his face and nothing else** — 17,407 px,
+**1.80% of the frame**. Read as percentages, that sits *below* the 3.2% a
+different word scored on a sheet of paper. **A floor of even 1%, added by anyone
+to "ignore noise", passes a photographed person straight through to an engine
+whole.**
+
+The separation this road actually rests on is `17,407` against a **structural
+zero** — `human skin` is exactly zero on a picture with no skin in it — and the
+zero is the whole licence.
+
+Stated with it, so 6/6 cannot inflate: on that frame the answer rests **entirely
+on one face**. A photograph shot from behind, or a fully covered subject, has
+not been asked. If this road ever grows a from-behind population, that arm buys
+then.
+
+#### Why the licence word is `human skin` and not `person`
+
+```
+frame                        person              human skin   truth
+──────────────────────────────────────────────────────────────────────────────
+flash, flat sheet         25,885 px (3.2%)          0         paper — but it DEPICTS
+                                                              three drawn winged figures
+his sleeve sheet               0                    0         paper — but it DEPICTS a
+                                                              drawn figure and a hand
+specimen A               842,872 px             344,538 px    photographed woman
+no-ink control           233,807 px              70,240 px    photographed man
+cloaked, low skin        544,804 px              17,407 px    photographed man
+face + neck only         687,159 px             170,177 px    photographed man
+```
+
+`person` **cannot tell a drawn person from a photographed one**, and it is wrong
+in *both directions*: it found a drawn angel on the flash sheet and missed a
+drawn figure on the sleeve sheet. A flash sheet covered in figures is the single
+most ordinary thing a tattoo customer uploads, and the licence rests entirely on
+this answer.
+
+`human skin` works because it asks after **a substance only a photograph of a
+person contains.** A drawing has none.
+
+**And the control that proves the point:** `a photograph of a person` — naming
+the MEDIUM directly — read **zero on all four frames, including both real
+photographs.** The discriminator cannot be bought by asking what KIND of picture
+it is; only by asking **what is in it**.
+
+#### THE FOUR POPULATIONS, and the one the first design missed
+
+```
+(i)   the design ALONE          flash on paper, a stencil, a flat sheet
+                                → nothing to cut. The frame IS the design.
+(ii)  the design ON A BODY      his own hard case: "its a full person with
+                                their face in it" → cut the ink, and only that.
+(iii) a PLASTIC mannequin       human skin 0, person 0 → rides whole, and for
+                                the right reason: nobody is in it.
+(iv)  a GHOST MANNEQUIN         human skin 232,061 px, tattooed skin 0 MASKS
+      (photorealistic limb)     → ⚠ REFUSED by the row above, working exactly
+                                as ratified.
+```
+
+**Population (iv) is a real product cost and the row does not soften for it**
+(ratified fable-1129 §2). A full sleeve rendered on a photorealistic grey arm is
+a standard way artists present work; the reader reads the limb as skin with
+total confidence and finds no *patch* of tattooed skin because the whole limb is
+one.
+
+That last clause is **one limitation with two faces, not two limitations**: the
+cutter answers *which patch of inked skin*, and it has no answer when the answer
+is "all of it" (the sleeve) or "a grey line of text" (see the bounds below).
+
+**The refusal names the road that works** (fable-1129 §3) — telling her the door
+that opens beats describing the one that closed:
+
+> *"That looks like a design on a model's arm — I can't safely take it from
+> there. A flat photo of the design itself works."*
+
+Counted through the demand row, so its frequency is a number rather than an
+impression. If demand says it is common, a deeper road becomes a later, measured
+question. **The row itself never softens.**
+
+#### THE CUT IS SHOWN BEFORE IT IS EVER HERS (ruled fable-1127 §2)
+
+The cutter's result goes in front of the customer **as an offer** — *"this is the
+design I got from your picture"* — before any paid render carries it. It is
+D-172's shown-and-adopted shape, already the words road's law, generalised to
+crops.
+
+This is what makes the two bounds below survivable rather than defects: a branch
+missing its lettering is a thing **she sees and rejects**, not a wrong tattoo
+delivered as right; one design chosen from thirty is a **visible selection she
+can redirect**, with the non-use of the others confessed in the owed lines.
+
+**Accept-and-show beats refusing**, and it beats silent-accept by the fidelity
+law.
+
+#### THE FOUR MEASURED BOUNDS — written down because they are measured
+
+1. **Fine-line lettering does not read.** On specimen B every tattoo word masks
+   the olive branch and **drops the "SEMPRE" above it entirely** — mask top edge
+   `y=1124`, the lettering at `y ≈ 1100–1117`. Eleven distinct words were tried,
+   including three aimed straight at lettering; **all eleven return the identical
+   box.** The qualifier does not steer the reader within a frame — it changes only
+   how much context arrives with the one instance it has already chosen. The
+   lettering is not a word away; it is invisible to this reader. *Covered by the
+   shown cut.*
+2. **One design per ask.** A whole-body photograph yields one design and the rest
+   go silently. *Covered by the shown cut, with the non-use confessed.*
+3. **The licence is `pixels > 0`.** See above. *A law for this road, not a
+   preference.*
+4. **A ghost-mannequin sleeve is refused.** See population (iv). *The only bound
+   with a product cost rather than a fidelity cost.*
+
+No percentage would have surfaced bound 1: `tattoo` 1,417 px against
+`tattooed skin` 1,476 px — **the missing word costs 4% of the number and 100% of
+the meaning of the tattoo.** It took the cut going in front of eyes.
+
+#### What the cutter owes besides the two questions
+
+- **A completeness guard, consulted on the request path** (invariant 7). A cut of
+  forty pixels of ink is not a design: the crop's shortest edge clears
+  `INK_DESIGN_MIN_EDGE` — the floor the upload door already enforces, rather than
+  a second number — and a crop that does not is a free refusal naming it.
+- **Never resize a mask to fit.** The house rule (`maskedRefine`): a mask not in
+  its picture's space is our error and her free refusal, never a resample.
+- **A masked cutout, not a bounding rectangle.** Already ruled twice
+  (fable-1052): the rectangle *"is not an interim, it is 3a done badly, in the
+  one place he said cropped means the design"*. `crop-holds-the-region-it-depicts`
+  governs — a carrier pins the region it PICTURES.
+- **Every refusal free, and none of them sharing a code.**
+
+#### Where the cut is stored — `casting_ink_designs.storageKey`
+#### (ruled fable-1130 §1, from the reading in opus-836)
+
+**3a needs no migration and no founder ceremony.** The design's bytes already
+have a row, and it is the row the mint reads:
+`casting_ink_designs.storageKey` (`inkPlateMint.ts:304`), purged with the Cast
+by `candidateRetention.ts:438`. **Build 3a changes what those bytes ARE** — the
+photograph today, the cut tomorrow — and `storageKey`, `digest`, `byteSize`,
+`width` and `height` all describe whatever object is there.
+
+The division falls out with each table keeping the sentence it already carries:
+
+```
+casting_reference_attachments (0043)   the PHOTOGRAPH she gave us, kept
+casting_ink_designs                    THE CUT, and the only thing the mint sees
+casting_reference_crops (0040)         features that travel as crops into a
+                                       RENDER — a different road; a tattoo's
+                                       crop goes to a PLATE
+```
+
+#### AND THIS IS THE TRIPWIRE'S RETIREMENT MECHANISM (fable-1130 §4)
+
+The tripwire above says `CASTING_INK_STUDIO_SCOPE` does not widen past `users:1`
+**while uploads ride uncropped to the mint**. Once the design row's bytes are the
+cut, that condition becomes **structurally false**: there is no uncropped upload
+for the mint to be handed, because the object it fetches is the cutout.
+
+**The retirement follows its own clause and is verified at the landing, never
+before** — by an arm proving the mint's input **is the cut and not the
+photograph**. Asserted at the wire, on the bytes actually handed to
+`fetchDesignBytes`, not on a constant near it. Until that arm is green and the
+build has landed, the tripwire stays armed and this paragraph is a plan rather
+than a fact.
+
+#### What this replaces, and why the replacement is not optional
+
+An earlier plan had 3a opening with a migration adding `tattoo` to
+`casting_reference_crops.intent`. That enum is **derived**
+(`drizzle/schema.ts:3267`) from the crop-form members of
+`shared/referenceIntents.ts`, and `tattoo`'s form is `mannequinPlate`. A
+hand-edited `ALTER` would go red against `referenceCropSchema.test.ts`
+immediately; the only way to make it legal is `tattoo.form = "crop"`, and that
+field is **what picks which door serves the feature** — flipping it makes the
+ink upload door refuse tattoos with the wrong-door sentence, in the build whose
+purpose is to let them through.
+
+**The reading that was weighed and rejected**, recorded because a rejected
+reading on the page is how the next person knows it was considered rather than
+missed: `0040`'s own docblock describes its subject as *"a customer's own picture
+with one feature taken out of it"*, which is a cropped tattoo word for word, and
+there is a real case for the crops table being the home. It was rejected on its
+costs (fable-1130 §3) — **a rerouted door and a production ceremony, to move
+bytes that are already in the right place.**
+
+**And one ruling was superseded to get here, which belongs on the page too.** An
+earlier review ruling moved `tattoo.form` to `crop`, citing the founder's
+carrier law. It was made before the blast radius was measured. The founder's
+substance — that a tattoo carries into pictures as a CUT — is delivered in full
+by the cut becoming the design's bytes; **his rulings are about what carries
+into a picture, not about which door takes the upload**, and the form field is a
+door selector.
