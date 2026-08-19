@@ -130,13 +130,19 @@ export type InkTemplate = {
   /**
    * WHICH ARM THIS PICTURES — `null` on the torso forms, which are not lateral.
    *
-   * It is part of the descriptor because **the side is carried by the PICTURE,
-   * not by the prompt**, measured 2026-08-19 (the mirror court): five renders
-   * across three different claims, two of them carrying an explicit positional
-   * clause pointing the opposite way, put the ink on the image's LEFT arm every
-   * time; the same claim with the plate bytes MIRRORED landed on the image's
-   * right 3/3 against 2/2 as-is, interleaved in one sitting, on a 7/7 as-is
-   * baseline. The engine follows the plate's own geometry.
+   * **This field once carried the sentence *"the side is carried by the
+   * PICTURE, not by the prompt"*, and the single-view court has taken that
+   * sentence away** — see the header. The three-view measurement it rested on
+   * still stands (flip a sheet whose limb occupies a frame HALF and the ink
+   * crosses), but it was generalized into a rule, and on a single-limb blank
+   * the rule is false: two arms carrying the same limb and the same artwork
+   * orientation landed on opposite arms, and thirteen renders of fifteen went
+   * to the image's right whatever the plate showed.
+   *
+   * So the field stays for what it honestly is — **which limb this blank
+   * DEPICTS**, so a design is drawn on the anatomy it belongs to and a plate
+   * row can say which blank it stood on. It is not a lever on where the ink
+   * lands, and a reader who believes it is will reach for it as a fix.
    */
   readonly side: InkSide | null;
   /**
