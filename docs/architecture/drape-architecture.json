@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "b905f409fe2343d7"
+    "sourceFingerprint": "13587d2ce898008b"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 151
+      "moduleCount": 152
     },
     {
       "id": "domain:castingV2",
@@ -3635,6 +3635,12 @@
     {
       "id": "module:server/castingV2/inkReferenceCrop.ts",
       "path": "server/castingV2/inkReferenceCrop.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/inkReferenceCutter.ts",
+      "path": "server/castingV2/inkReferenceCutter.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -9929,6 +9935,10 @@
     {
       "id": "test:server/castingV2/inkReferenceCrop.test.ts",
       "path": "server/castingV2/inkReferenceCrop.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/inkReferenceCutter.test.ts",
+      "path": "server/castingV2/inkReferenceCutter.test.ts"
     },
     {
       "id": "test:server/castingV2/inkReferenceGate.test.ts",
@@ -20276,6 +20286,31 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/castingV2/inkReferenceCutter.ts",
+      "to": "module:server/castingV2/inkReferenceCrop.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/inkReferenceCutter.ts",
+      "to": "module:server/castingV2/inkUploadDoor.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/inkReferenceCutter.ts",
+      "to": "module:server/castingV2/maskedComposite.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/inkReferenceCutter.ts",
+      "to": "module:server/castingV2/maskedRefine.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/inkReferenceCutter.ts",
+      "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/castingV2/inkReferenceTake.ts",
       "to": "module:server/castingV2/inkPlacement.ts",
       "kind": "imports"
@@ -29201,6 +29236,13 @@
       "severity": "warn",
       "kind": "redeclared-shape",
       "subject": "server/castingV2/inkPlateDoor.ts:84",
+      "message": "Names 2 of InkUploadRefusal's 2 fields (server/castingV2/inkUploadDoor.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
+    },
+    {
+      "id": "finding:redeclared-shape:server/castingV2/inkReferenceCutter.ts:104",
+      "severity": "warn",
+      "kind": "redeclared-shape",
+      "subject": "server/castingV2/inkReferenceCutter.ts:104",
       "message": "Names 2 of InkUploadRefusal's 2 fields (server/castingV2/inkUploadDoor.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {

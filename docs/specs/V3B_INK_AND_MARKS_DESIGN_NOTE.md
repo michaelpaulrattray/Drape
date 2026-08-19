@@ -1388,3 +1388,69 @@ substance — that a tattoo carries into pictures as a CUT — is delivered in f
 by the cut becoming the design's bytes; **his rulings are about what carries
 into a picture, not about which door takes the upload**, and the form field is a
 door selector.
+
+#### ✅ 3a.1 IS LANDED, DARK — the cutter and its court (built opus-840)
+
+`server/castingV2/inkReferenceCrop.ts` (the pure half, opus-839) and
+`server/castingV2/inkReferenceCutter.ts` (the orchestration) are both in, with
+41 tests between them. **Nothing imports the cutter**, so it is dark BY
+CONSTRUCTION rather than behind a flag — there is no switch to set wrong.
+
+The order it runs: decode to RGBA → both questions of the whole frame with
+`absentIsAnswer` → each mask proven to be in her picture's space and one byte per
+pixel → `extentOf` → `routeInkUpload` on the COUNTS → `cropClearsMinimumEdge` →
+`cutOutPixels`, extracted to the ink's box, encoded PNG. **Two segmenter calls
+per uploaded design**, house money, and the second is the licence rather than a
+nicety.
+
+Five refusals, all free, none sharing a sentinel: `unreadable`, `couldNotRead`,
+`wrongSpace`, `personWithoutDesign`, `cutTooSmall`.
+
+**Three sabotages were run before the green counted** (law 2), each reddening
+exactly the arm it should and no other:
+
+```
+sabotage                                        reddens
+──────────────────────────────────────────────────────────────────────────────
+a 3.2% floor on the licence — the figure         2 arms: the cloaked man at
+somebody would pick to exclude the flash          1.80%, and the one-pixel case.
+sheet's own false positive                        ⚠ THE FULL-FRAME PERSON ARM
+                                                  STAYED GREEN — an arm written
+                                                  from the loudest number would
+                                                  not have caught the class
+the cut silently becoming a bounding-box crop    1 arm: the containment bound,
+                                                  counted pixel by pixel against
+                                                  a DIAMOND mask
+a licence-reader FAILURE read as an absence      1 arm: the licence question's
+                                                  own couldNotRead — the silent
+                                                  direction, which would send a
+                                                  photograph whole on a bad minute
+```
+
+#### ⚠ TWO THINGS 3a.1 DOES NOT DISCHARGE, named rather than left to be found
+
+1. **THE TRIPWIRE'S ARM RIDES 3a.3, NOT THIS BUILD, AND THE TRIPWIRE STAYS
+   ARMED.** The arm proves the mint's input IS the cut and not the photograph,
+   asserted at the wire on the bytes handed to `fetchDesignBytes`. No code path
+   yet produces that, because the cutter has no caller — so written today the
+   arm would be a green test about a fiction, which is worse than an absent one.
+   3a.3 also carries a **founder gate no executor may close** (fable-919 §3): a
+   face-bearing reference must produce a plate with ZERO person content, at the
+   frames, in front of him. Law 9 — no reader's word closes it. **The retirement
+   paragraph above therefore remains a plan and not a fact.**
+2. **POPULATION (iv)'s REFUSAL HAS NOWHERE TO BE COUNTED.** This section says it
+   is "counted through the demand row, so its frequency is a number rather than
+   an impression" — and there is no such row. `casting_ink_form_demand` is a
+   different question entirely: its `kind` enum has two members, both about a
+   Cast whose BUILD has no torso blank, and CLAUDE.md already records that its
+   only writer sits after the `MANNEQUIN_ROAD_DEFERRED` early return, so the
+   table has counted nothing since the road was parked. A ghost-mannequin
+   refusal is neither of its kinds and would need an enum value and a migration.
+
+   **This is not a defect in 3a.1 — a module with no caller cannot count
+   anything real, and a counter written now would tally a structural zero.** It
+   is recorded here so it is discharged by the build that gives the cutter a
+   caller (3a.2), rather than surviving as a sentence in a design note that
+   describes an instrument nobody built. The measurement it was to buy — *is
+   the ghost mannequin common enough to justify a deeper road* — is exactly the
+   kind this arc has twice proved must be bought before the row is written.

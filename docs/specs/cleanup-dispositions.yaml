@@ -909,11 +909,18 @@
 - symbol: cropClearsMinimumEdge
   file: server/castingV2/inkReferenceCrop.ts
   verdict: KEEP
-  why: the completeness guard invariant 7 requires be consulted on the request path, deriving its floor from the upload door's own INK_DESIGN_MIN_EDGE rather than a second number; the cutter that calls it is the next commit
+  why: the completeness guard invariant 7 requires be consulted on the request path, deriving its floor from the upload door's own INK_DESIGN_MIN_EDGE rather than a second number; `cutInkDesign` consults it before the pixels are touched, and drives it from both sides of the floor one pixel apart
   argued: V3B §7.12 (design opus-830, ruled fable-1123 §3)
 
 - symbol: cutOutPixels
   file: server/castingV2/inkReferenceCrop.ts
   verdict: KEEP
-  why: the masked cutout itself — a bounding rectangle here is the fidelity violation fable-1052 ruled out twice, and this is the boring loop that replaces two clever idioms which BOTH silently returned an unmasked crop
+  why: the masked cutout itself — a bounding rectangle here is the fidelity violation fable-1052 ruled out twice, and this is the boring loop that replaces two clever idioms which BOTH silently returned an unmasked crop; called by `cutInkDesign`, whose containment arm counts every opaque pixel against a DIAMOND mask so a silent return to a rectangle reddens
   argued: V3B §7.12 (ruled fable-1052, built opus-838)
+
+- symbol: cutInkDesign
+  file: server/castingV2/inkReferenceCutter.ts
+  verdict: HELD
+  why: build 3a.1's orchestration — the two measured questions asked with absentIsAnswer, the fail-closed routing, the completeness guard and five free refusals that share no sentinel; DARK BY CONSTRUCTION with no importer, which is the declared staging rather than an omission
+  argued: V3B §7.12 (design opus-837, built opus-840; staging opus-830 §6, ratified fable-1131 §3)
+  blocker: 3a.3 — the wire making a design row's bytes the cut, which carries a FOUNDER GATE that is not an executor's to close (fable-919 §3: a face-bearing reference must produce a plate with zero person content, at the frames, in front of him). Until then the widening tripwire stays armed and §7.12's retirement paragraph stays a plan
