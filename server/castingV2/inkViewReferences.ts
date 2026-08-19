@@ -133,9 +133,24 @@ export function inkPlacementPhrase(input: { placement: InkPlacement; side: InkSi
  * cloth, it rewrote the crew neck into a scoop and drew it on the skin beneath.
  *
  * **Both outcomes fail the package's own wardrobe check, and a failed view is a
- * refunded slice** — so until he rules on the wardrobe itself, an upper-chest
- * design carries no plate into a package view and says so on the same
- * disposition surface as every other way a design can fail to ride.
+ * refunded slice** — so an upper-chest design carries no plate into a package
+ * view and says so on the same disposition surface as every other way a design
+ * can fail to ride.
+ *
+ * # HE HAS NOW RULED THE WARDROBE, AND IT IS NOT WHAT LIFTS THIS
+ *
+ * The interim above read *"until he rules on the wardrobe itself"*, and he
+ * ruled on 2026-08-19 (fable-1081 §2–§3): **the crew neck stays a crew neck**,
+ * the wardrobe is never altered for a tattoo, and a covered design shows
+ * whatever the collar leaves bare and nothing more. That answer closes the
+ * question this interim was waiting on WITHOUT lifting the interim, which is
+ * the distinction worth writing down rather than remembering — a ruling that
+ * settles a question is not automatically a ruling that opens a door.
+ *
+ * **What lifts it is the crop road** (fable-1081 §3), where a chest design
+ * rides as reference plus words like every other feature instead of as a plate
+ * the engine must reconcile with a neckline. Until then the two failures above
+ * are still the only two outcomes available, and both still cost a slice.
  *
  * TOTAL over the vocabulary, like `TEMPLATE_FOR` and the anchor regions and for
  * the same reason: a default would decide a new surface's visibility by
@@ -147,7 +162,8 @@ const RIDES_PACKAGE_VIEWS: Readonly<Record<InkPlacement, boolean>> = Object.free
   /* A short sleeve leaves it bare, and the court's passing arm is exactly this
      case: ink on skin, below the sleeve, the garment untouched. */
   upperArm: true,
-  /* Covered by the package's own crew neck. See the note above. */
+  /* Covered by the package's own crew neck, which STAYS a crew neck (his
+     ruling, fable-1081 §2). The crop road is what lifts this, not the ruling. */
   upperChest: false,
 });
 
@@ -205,11 +221,30 @@ export function inkViewReferenceClause(input: {
     check calls printed text or a logo on the garment a failure WHEREVER it
     appears, so that view would have been refused and its slice refunded. An
     upper-chest tattoo would have cost a slice of every Sign it rode.
+
+    # AND WHAT THE COVERED CASE LOOKS LIKE IS NOW HIS RULING, NOT A SIDE EFFECT
+
+    Founder, 2026-08-19 (relayed fable-1081), on the same question that closed
+    the scoop-neck card:
+
+    > *"tattos can still ride they may just not be visible fully yet so if you
+    > had a chest tatto reference with neck continuation you might see it poking
+    > out the top of the shirt but thats the extent for now"*
+
+    So clothing COVERS ink rather than deleting it, and the sentence below says
+    so in those terms. The earlier wording — *"the tattoo is simply not visible
+    in that view"* — was true of a design wholly under a collar and WRONG of the
+    one he described: a chest piece that runs up the neck has a part on bare
+    skin, and that part shows. The wardrobe is never altered to reveal more of
+    it, and no view is added to; a poke above the collar is the whole of what a
+    covered design gets, and that is the promise rather than the compromise.
   */
   lines.push(
     "It is ink on her skin — never printed, embroidered or otherwise placed on her clothing, and "
-    + "never added to a garment as a graphic. Where the surface a tattoo sits on is covered by "
-    + "clothing in a view, the tattoo is simply not visible in that view.",
+    + "never added to a garment as a graphic. Clothing covers ink rather than removing it: where a "
+    + "tattoo runs under a garment, the part of it on bare skin appears exactly as it is and the "
+    + "covered part simply does not show. Never change, move or open a garment to reveal more of a "
+    + "tattoo — the clothing in a view is what it is, and the tattoo shows only where skin shows.",
   );
   lines.push(
     "Each tattoo sits where it is named and nowhere else — do not move one to a nearby part of the "

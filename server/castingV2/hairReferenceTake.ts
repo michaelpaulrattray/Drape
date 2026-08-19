@@ -1,14 +1,22 @@
 /**
- * *"IT ASKS COLOUR? STYLE? OR FULL LOOK"* — what a customer is taking when the
- * thing she points at is HAIR (founder ruling, 2026-08-19, relayed fable-1047
- * §3 and amended fable-1048; sequenced fable-1071 §5).
+ * *"IT JUST MEANS THE WHOLE LOT UNLESS THEY SPECIFY"* — what a customer is
+ * taking when the thing she points at is HAIR (founder ruling, 2026-08-19,
+ * relayed fable-1087; amended fable-1048; sequenced fable-1071 §5).
  *
- * His words, verbatim:
+ * His words, verbatim, and they are his SECOND word on this:
  *
- * > *"if i supply a reference image and say copy hair from reference it asks
- * > color? style? or full look."*
+ * > *"i want to simplify adding a hair reference lets not ask the user if they
+ * > want the style or the color etc, if they are vague and say copy this hair
+ * > it just means the whole lot unless they specify."*
  *
- * and the amendment that scopes the answer, the same day:
+ * The first word built a clarifying question — *"if i supply a reference image
+ * and say copy hair from reference it asks color? style? or full look"* — and
+ * it shipped, dark, for one day. **The question is deleted, the three takes it
+ * offered are not**: they are still what an ask can NAME, and everything below
+ * about what each one claims is untouched. Only the silence changed meaning.
+ * See {@link hairTakeFor}.
+ *
+ * The amendment that scopes a named take still stands, unchanged:
  *
  * > *"if someone wanted a hairstyle but a different hair color its important
  * > that the words that ride along with the reference state it the style only
@@ -297,6 +305,22 @@ export function asksAboutHair(instruction: string): boolean {
  * "copper" belongs to the ask itself and not to this decision.
  */
 export function hairTakeNamedIn(instruction: string): HairTake | null {
+  const named = hairTakesNamedIn(instruction);
+  return named.length === 1 ? named[0] : null;
+}
+
+/**
+ * EVERY take the sentence names — the raw reading, and the reason it is
+ * separate is that "named none" and "named two" stopped being the same fact
+ * the day the question was deleted.
+ *
+ * While a question was the fallback, collapsing both to `null` was right: each
+ * one earned the same chips. With the fallback now being *the whole lot*, they
+ * are opposite situations — one is a person who said nothing, and the other is
+ * a person who said two things. See {@link hairTakeFor}, which is where that
+ * difference is currently NOT yet acted on, and why.
+ */
+export function hairTakesNamedIn(instruction: string): HairTake[] {
   const said = words(instruction);
   const named = new Set<HairTake>();
   const colourWords = [...SUBJECT_CARDS.hairShade.nouns, "colour", "color", "shade", "tone"];
@@ -305,7 +329,77 @@ export function hairTakeNamedIn(instruction: string): HairTake | null {
   if (["whole look", "full look", "everything", "all of it"].some((word) => says(said, word))) {
     named.add("fullLook");
   }
-  return named.size === 1 ? Array.from(named)[0] : null;
+  return Array.from(named);
+}
+
+/**
+ * THE TAKE THIS ASK GETS — named, or the whole lot (founder ruling 2026-08-19,
+ * relayed fable-1087, superseding the clarifying question of fable-1047 §3).
+ *
+ * His words:
+ *
+ * > *"i want to simplify adding a hair reference lets not ask the user if they
+ * > want the style or the color etc, if they are vague and say copy this hair
+ * > it just means the whole lot unless they specify."*
+ *
+ * **So there is no question, and the vague ask is not ambiguous — it is
+ * complete.** *"Copy this hair"* means the hair, and law 8 says the user's
+ * ontology governs: a stylist handed a picture and told *copy this hair* copies
+ * the hair. Reading that sentence as under-specified was the product asking a
+ * person to speak its own vocabulary back to it.
+ *
+ * The cost asymmetry is the other half, and it points the same way. A question
+ * taxes EVERY reference ask, every time, before anything happens. Guessing
+ * wrong costs a rare follow-up edit on the minority of asks that meant one
+ * facet and did not say so — and those asks CAN say so: *"just the colour"* and
+ * *"the style, keep her colour"* still route exactly as they were built to.
+ *
+ * Nothing else moves. The take map, the scoped ride-along sentence and the
+ * heading fence are untouched; only the default. And the D-180 question
+ * mechanism itself stays — it predates this and serves genuine unreadability;
+ * it simply stops being hair's router.
+ *
+ * **`hairTakeNamedIn` is deliberately still the strict reader**: this function
+ * is the DEFAULT, and keeping the two apart is what lets the suite tell "she
+ * named the whole look" from "she named nothing and got it".
+ */
+export function hairTakeFor(instruction: string): HairTake {
+  return hairTakeNamedIn(instruction) ?? "fullLook";
+}
+
+/**
+ * WHETHER THIS ASK NAMED MORE THAN ONE TAKE — the open edge of the ruling
+ * above, exported so it is a fact anything can read rather than a shape only
+ * this file knows about.
+ *
+ * # THE DEFECT IT MARKS, and it lands on the founder's OWN example
+ *
+ * *"Copy the hairstyle but keep her colour"* names `style` AND `colour`. Two
+ * takes at once counts as neither, neither becomes the default, and the default
+ * is now the whole lot — **so his own sentence from fable-1048, the one the
+ * scoped ride-along words exist to serve, currently takes her colour with it.**
+ * That is the exact failure that amendment was written to prevent, produced by
+ * a rule that was correct while the fallback was a question.
+ *
+ * **It is not fixed here, and that is deliberate.** Every candidate fix is a
+ * guess about what she meant and each guesses differently:
+ *
+ *   first-named wins        "style but keep her colour" → style  ✓
+ *                           "the colour and the cut"    → colour ✗
+ *   smallest claim wins     his sentence                → colour ✗
+ *   read the negation       needs a phrasing list, which D-163 outlaws as a
+ *                           class, or a model read, which is a different design
+ *
+ * Choosing between them is a product decision about how a vague-but-specified
+ * ask is answered, and it is out for ruling. Until it comes back the behaviour
+ * is the one the suite pins — with his sentence named in the arm, so nobody can
+ * read the green as "this case works."
+ *
+ * **Nothing is exposed while it is open**: `CASTING_HAIR_REFERENCE_SCOPE` is
+ * off and absent-means-off, so no customer's ask reaches this function at all.
+ */
+export function hairTakeIsAmbiguous(instruction: string): boolean {
+  return hairTakesNamedIn(instruction).length > 1;
 }
 
 /**

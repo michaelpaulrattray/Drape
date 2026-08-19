@@ -132,7 +132,6 @@ import { resolveAskReference } from "./askReference";
 import {
   LEAVE_AS_SHE_IS,
   alreadyUpsweptReask,
-  hairFromReferenceReask,
   glassesHideEyesReask,
   colourFacetLabel,
   colourFacetOf,
@@ -146,7 +145,6 @@ import {
   whichFacetReask,
   type Reask,
 } from "./refineReask";
-import { asksAboutHair, hairTakeNamedIn } from "./hairReferenceTake";
 import {
   chainAfterRemoval,
   composeChain,
@@ -1071,7 +1069,7 @@ async function refineCandidateCounted(
   const outstanding = input.answering
     ? (offeredAgain
       ? sameAgainReask({ asked: input.answering.trim(), priceCredits: CASTING_V2_REFINE_PRICE_CREDITS })
-      : pendingReaskFor(input.answering, lastColourFacet != null, reference !== null))
+      : pendingReaskFor(input.answering, lastColourFacet != null))
     : null;
   const answered = outstanding ? resolveAnswer(outstanding, input.instruction) : null;
   const instruction = answered ?? input.instruction;
@@ -1168,30 +1166,19 @@ async function refineCandidateCounted(
     };
   }
   /*
-    THE HAIR REFERENCE QUESTION — his own example, and the one question in this
-    family raised by something OTHER than the words alone.
+    NO HAIR QUESTION — founder ruling 2026-08-19 (relayed fable-1087),
+    superseding his own earlier one.
 
-    Its order matches `pendingReaskFor`'s exactly, and that is not a style
-    preference: the answer path rebuilds the question from the same two facts,
-    so a door that fires in a different order on the two passes produces a
-    question nobody can answer. Both are the near-miss door first, then this,
-    then the cold-start colour one.
+    A door stood here that asked *"the colour, the style, or the whole look?"*
+    whenever a picture was attached and the words named no take. His newer word
+    is that a vague ask is not vague: *"if they are vague and say copy this hair
+    it just means the whole lot unless they specify."*
+
+    So the take is now READ rather than asked (`hairTakeFor`), and the reference
+    lane reaches the recipe with an answer already in hand. The ordering note
+    that lived here is gone with the door, and `pendingReaskFor` lost the
+    reference argument it only ever had for this.
   */
-  if (
-    !answered
-    && reference !== null
-    && asksAboutHair(instruction)
-    && hairTakeNamedIn(instruction) === null
-  ) {
-    return {
-      kind: "asked",
-      reask: hairFromReferenceReask(instruction),
-      variantId: source.variantPublicId,
-      candidateId: input.candidatePublicId,
-      imageUrl: currentImageUrl,
-      instructions: readInstructions(predecessorForParse?.instructions),
-    };
-  }
   if (!answered && !lastColourFacet && needsColourReferent(instruction)) {
     return {
       kind: "asked",

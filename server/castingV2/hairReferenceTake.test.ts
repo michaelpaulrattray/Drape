@@ -20,6 +20,9 @@ import {
   hairTakeClaims,
   hairTakeDisclaims,
   hairTakeEntry,
+  hairTakeFor,
+  hairTakeIsAmbiguous,
+  hairTakesNamedIn,
   hairTakeNamedIn,
   hairTakeSentence,
   joinPhrases,
@@ -254,5 +257,74 @@ describe("READING THE ASK — is it about hair, and did she say which take", () 
   it("does not read a take out of a value word", () => {
     /* "Copper" is the ask's own content, not a statement about which take. */
     expect(hairTakeNamedIn("make her hair copper like this")).toBeNull();
+  });
+});
+
+describe("THE DEFAULT IS THE WHOLE LOT — his second ruling (fable-1087)", () => {
+  /*
+    The question that used to fire here is deleted. What replaces it is not a
+    guess: law 8 says the user's ontology governs, and a stylist handed a
+    picture and told *copy this hair* copies the hair. Reading that as
+    under-specified was the product asking a person to speak its vocabulary
+    back to it.
+  */
+  it("reads a vague hair ask as the whole look", () => {
+    expect(hairTakeFor("copy this hair")).toBe("fullLook");
+    expect(hairTakeFor("copy hair from reference")).toBe("fullLook");
+    expect(hairTakeFor("give her this hair")).toBe("fullLook");
+  });
+
+  it("still honours a take she NAMED, which is the half his ruling preserves", () => {
+    expect(hairTakeFor("copy just the hair colour")).toBe("colour");
+    expect(hairTakeFor("copy this hairstyle")).toBe("style");
+    expect(hairTakeFor("copy the whole look")).toBe("fullLook");
+  });
+
+  it("KNOWN DEFECT — his own 'style but keep her colour' currently takes the colour", () => {
+    /*
+      NOT A PASSING CASE. This arm pins a defect so that the suite's green
+      cannot be read as the case working.
+
+      *"Copy the hairstyle but keep her colour"* is the founder's own sentence
+      from fable-1048 — the one the scoped ride-along words exist to serve. It
+      names `style` and `colour`, two-at-once counts as neither, and neither now
+      falls to the whole lot. So the ask that says *keep her colour* takes the
+      reference's colour.
+
+      The rule was correct while the fallback was a question and became wrong the
+      moment the question was deleted (fable-1087). The fix is a product decision
+      between three guesses that disagree — see `hairTakeIsAmbiguous` — and is
+      out for ruling. Nothing is exposed: the flag is off and absent-means-off.
+
+      WHEN IT IS RULED, this arm flips to the ruled answer and its name changes.
+      Leaving it red is not an option; leaving it silent is worse than either.
+    */
+    expect(hairTakesNamedIn("copy the hairstyle but keep her colour").sort())
+      .toEqual(["colour", "style"]);
+    expect(hairTakeIsAmbiguous("copy the hairstyle but keep her colour")).toBe(true);
+    expect(hairTakeFor("copy the hairstyle but keep her colour")).toBe("fullLook");
+  });
+
+  /*
+    THE TWO FUNCTIONS STAY APART, and this arm is why. `hairTakeNamedIn` reports
+    what she SAID; `hairTakeFor` reports what she GETS. Collapsing them would
+    make "she named the whole look" and "she named nothing" the same fact, and
+    the day that distinction matters — a court arm, a demand tally, a decision
+    about whether to say what we assumed — it would already be gone.
+  */
+  it("keeps 'she named nothing' distinguishable from 'she named the whole look'", () => {
+    expect(hairTakeNamedIn("copy this hair")).toBeNull();
+    expect(hairTakeFor("copy this hair")).toBe("fullLook");
+    expect(hairTakeNamedIn("copy the whole look")).toBe("fullLook");
+  });
+
+  /*
+    AND TWO TAKES AT ONCE IS STILL NEITHER, which now means the whole lot rather
+    than a question. That is the right answer to it: "the colour and the cut" is
+    a person describing a whole look in her own words.
+  */
+  it("reads two takes named at once as the whole lot", () => {
+    expect(hairTakeNamedIn("copy the colour and the cut")).toBeNull();
+    expect(hairTakeFor("copy the colour and the cut")).toBe("fullLook");
   });
 });

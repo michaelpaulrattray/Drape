@@ -115,13 +115,24 @@ describe("the clause that rides beside the anchor", () => {
       have been refused and refunded — an upper-chest tattoo would have cost a
       slice of every Sign it rode.
 
-      So the clause says the thing the engine needed told: ink goes on skin, and
-      a covered surface means the tattoo is simply absent from that frame.
+      So the clause says the thing the engine needed told: ink goes on skin.
+
+      AND WHAT "COVERED" MEANS IS HIS RULING (2026-08-19, fable-1081 §2), not a
+      side effect this arm may state loosely. Clothing COVERS ink rather than
+      deleting it — *"if you had a chest tatto reference with neck continuation
+      you might see it poking out the top of the shirt but thats the extent for
+      now"* — so a design that runs onto bare skin shows that part and no more,
+      and the garment is never altered to reveal the rest. The arm asserts both
+      halves, because a clause carrying only the first would license the scoop
+      neck the ruling refuses and one carrying only the second would delete the
+      poke he asked for.
     */
     const clause = inkViewReferenceClause({ plates: [plate()], firstOrdinal: 2 });
     expect(clause).toContain("It is ink on her skin");
     expect(clause).toContain("never printed, embroidered or otherwise placed on her clothing");
-    expect(clause).toContain("covered by clothing in a view");
+    expect(clause).toContain("the part of it on bare skin appears exactly as it is");
+    expect(clause).toContain("the covered part simply does not show");
+    expect(clause).toContain("Never change, move or open a garment to reveal more of a tattoo");
   });
 
   it("tells the engine that a view which cannot show a tattoo simply does not", () => {

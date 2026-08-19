@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "09405a0915216449"
+    "sourceFingerprint": "48e7b7040a31be04"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 142
+      "moduleCount": 143
     },
     {
       "id": "domain:castingV2",
@@ -3533,6 +3533,12 @@
     {
       "id": "module:server/castingV2/hairArrangement.ts",
       "path": "server/castingV2/hairArrangement.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/hairColourFromReference.ts",
+      "path": "server/castingV2/hairColourFromReference.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -9772,6 +9778,10 @@
     {
       "id": "test:server/castingV2/hairArrangement.test.ts",
       "path": "server/castingV2/hairArrangement.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/hairColourFromReference.test.ts",
+      "path": "server/castingV2/hairColourFromReference.test.ts"
     },
     {
       "id": "test:server/castingV2/hairCoverage.test.ts",
@@ -19863,6 +19873,36 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/castingV2/hairColourFromReference.ts",
+      "to": "module:server/castingV2/brandScrub.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/hairColourFromReference.ts",
+      "to": "module:server/castingV2/interpreter.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/hairColourFromReference.ts",
+      "to": "module:server/castingV2/refineDelta.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/hairColourFromReference.ts",
+      "to": "module:server/castingV2/sidePhrasing.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/hairColourFromReference.ts",
+      "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/hairColourFromReference.ts",
+      "to": "module:server/providers/types.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/castingV2/hairReferenceTake.ts",
       "to": "module:server/castingV2/subjectCards.ts",
       "kind": "imports"
@@ -21385,11 +21425,6 @@
     {
       "from": "module:server/castingV2/refineService.ts",
       "to": "module:server/castingV2/falRegionReader.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/refineService.ts",
-      "to": "module:server/castingV2/hairReferenceTake.ts",
       "kind": "imports"
     },
     {
@@ -28893,17 +28928,17 @@
       "message": "Names 2 of RecipeRefusal's 4 fields (server/castingV2/recipeAssembler.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/refineService.ts:508",
+      "id": "finding:redeclared-shape:server/castingV2/refineService.ts:506",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/refineService.ts:508",
+      "subject": "server/castingV2/refineService.ts:506",
       "message": "Names 3 of Thumbnail's 3 fields (server/castingV2/thumbnails.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/refineService.ts:576",
+      "id": "finding:redeclared-shape:server/castingV2/refineService.ts:574",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/refineService.ts:576",
+      "subject": "server/castingV2/refineService.ts:574",
       "message": "Names 3 of Thumbnail's 3 fields (server/castingV2/thumbnails.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {

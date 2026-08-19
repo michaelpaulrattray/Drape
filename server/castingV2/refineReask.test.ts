@@ -19,7 +19,6 @@ import {
   glassesHideEyesReask,
   nearMiss,
   needsColourReferent,
-  hairFromReferenceReask,
   pendingReaskFor,
   redirectColourTo,
   resolveAnswer,
@@ -281,105 +280,47 @@ describe("resolveAnswer — the sentence never dead-ends (D-180)", () => {
 
 describe("pendingReaskFor — the question is re-derived, never trusted", () => {
   it("rebuilds the typo question from the sentence alone", () => {
-    expect(pendingReaskFor("piink hair", false, false)?.kind).toBe("did-you-mean");
+    expect(pendingReaskFor("piink hair", false)?.kind).toBe("did-you-mean");
   });
 
   it("rebuilds the cold-start question only when there is no colour history", () => {
-    expect(pendingReaskFor("pinker", false, false)?.kind).toBe("which-facet");
+    expect(pendingReaskFor("pinker", false)?.kind).toBe("which-facet");
     /* With a colour edit behind it, history answers silently and there was
        never a question to reopen. */
-    expect(pendingReaskFor("pinker", true, false)).toBeNull();
+    expect(pendingReaskFor("pinker", true)).toBeNull();
   });
 
   it("is null for an ordinary instruction", () => {
-    expect(pendingReaskFor("give her a fringe", false, false)).toBeNull();
+    expect(pendingReaskFor("give her a fringe", false)).toBeNull();
   });
 
   /*
-    THE REFERENCE QUESTION'S RE-DERIVATION, which is the half that makes it
-    answerable at all. The answer path rebuilds it from the sentence plus one
-    fact — is a picture attached — and both halves have to be load-bearing:
-    without the attachment there is no question, and without the hair words
-    there is no question either.
+    AND NO HAIR QUESTION IS REBUILT, because there is no hair question
+    (founder ruling 2026-08-19, fable-1087, superseding his own earlier one).
+
+    Six arms stood here proving the reference question's re-derivation, and they
+    went with the door. These two replace them, and they are the ones worth
+    keeping: a hair ask WITH a picture attached must raise nothing at all — that
+    is the ruling, *"if they are vague and say copy this hair it just means the
+    whole lot"* — while every other question in this family is untouched by it.
+
+    The second arm is the one that could fail silently. Deleting a branch from
+    a chain of doors is how the door BELOW it stops being reached, so the
+    cold-start colour question is driven here rather than assumed.
   */
-  it("rebuilds the hair question from the sentence and the attachment", () => {
-    expect(pendingReaskFor("copy hair from reference", false, true)?.kind)
-      .toBe("hair-from-reference");
+  it("raises nothing for a hair ask — the vague ask is not ambiguous", () => {
+    expect(pendingReaskFor("copy hair from reference", false)).toBeNull();
+    expect(pendingReaskFor("copy this hair", false)).toBeNull();
   });
 
-  it("does not raise it without a picture attached", () => {
-    expect(pendingReaskFor("copy hair from reference", false, false)).toBeNull();
-  });
-
-  it("does not raise it when she already said which take", () => {
-    expect(pendingReaskFor("copy her hair colour from the reference", false, true)).toBeNull();
-  });
-
-  /* A picture attached to an ask about something else raises nothing here — the
-     hair question is not the reference lane's greeting. */
-  it("does not raise it for an ask that is not about hair", () => {
-    expect(pendingReaskFor("copy her makeup from this", false, true)).toBeNull();
-  });
-
-  /*
-    ORDER, and it is the same on both passes by construction. A misspelled hair
-    ask gets its free correction BEFORE anything acts on it — the typo door is a
-    question about the words, and this one is a question about the picture.
-  */
-  it("offers the typo correction ahead of the reference question", () => {
-    expect(pendingReaskFor("copy hiar from reference", false, true)?.kind).toBe("did-you-mean");
-  });
-
-  /*
-    AND AHEAD OF THE COLD-START COLOUR QUESTION. "Pinker" with a picture
-    attached still has no referent and still earns the which-part question —
-    the reference question needs hair words in the sentence, and asking about
-    hair because a photograph is attached would be the guess his ruling forbids.
-  */
-  it("leaves the cold-start colour question alone", () => {
-    expect(pendingReaskFor("pinker", false, true)?.kind).toBe("which-facet");
-  });
-});
-
-describe("THE HAIR REFERENCE QUESTION — his three answers, and typing them works", () => {
-  const reask = hairFromReferenceReask("copy hair from reference");
-
-  it("offers his three answers in his order", () => {
-    expect(reask.options.map((option) => option.label))
-      .toEqual(["the colour", "the style", "the whole look"]);
-  });
-
-  it("says what it CAN do before it asks anything", () => {
-    expect(reask.question).toContain("I can take her hair from that picture");
-    /* No price: choosing an answer spends nothing. */
-    expect(reask.question).not.toMatch(/credits/);
-  });
-
-  it("resolves a tapped chip into her own sentence plus the clarifier", () => {
-    expect(resolveAnswer(reask, "the style")).toBe("copy hair from reference — the style");
-    expect(resolveAnswer(reask, "the whole look")).toBe("copy hair from reference — the whole look");
-  });
-
-  it("resolves the noun typed bare", () => {
-    expect(resolveAnswer(reask, "style")).toBe("copy hair from reference — the style");
-    expect(resolveAnswer(reask, "colour")).toBe("copy hair from reference — the colour");
-  });
-
-  /*
-    A STANDARD ALTERNATE SPELLING IS THE SAME ANSWER. The near-miss gate already
-    refuses to call `color` a typo — "a nationality quiz in front of the work" —
-    and accepting the tap while refusing the typed word would be the identical
-    insult one door along, on a question that must never dead-end.
-  */
-  it("takes the US spelling", () => {
-    expect(resolveAnswer(reask, "color")).toBe("copy hair from reference — the colour");
-    expect(resolveAnswer(reask, "the color")).toBe("copy hair from reference — the colour");
-  });
-
-  /* Not an answer — so it runs as a fresh instruction rather than being
-     refused. That is the other half of never dead-ending. */
-  it("returns null for a reply that is not one of the three", () => {
-    expect(resolveAnswer(reask, "actually make her blonde")).toBeNull();
+  it("still asks every question that was never hair's", () => {
+    /* The typo door, on the same misspelled hair ask that used to reach the
+       reference question through it. */
+    expect(pendingReaskFor("copy hiar from reference", false)?.kind).toBe("did-you-mean");
+    /* And the cold-start colour question, which sat directly beneath the
+       deleted branch. */
+    expect(pendingReaskFor("pinker", false)?.kind).toBe("which-facet");
+    expect(pendingReaskFor("pinker", true)).toBeNull();
   });
 });
 

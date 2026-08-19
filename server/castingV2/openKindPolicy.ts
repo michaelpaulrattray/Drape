@@ -118,6 +118,23 @@ export type OpenKindAnswer = {
  */
 export const OPEN_KIND_POLICY: Record<string, OpenKindAnswer> = {
   /* ── the vocabulary itself ──────────────────────────────────────────────── */
+  /* ── the free lane's per-subject caps (`refineDelta.ts`) ─────────────── */
+  FREE_SUBJECT_MAX_LENGTH: {
+    file: "refineDelta.ts",
+    asks: "how long a value for this subject may be before the free lane refuses it",
+    answer: "no entry — an open kind takes the default, which is what every subject took "
+      + "until one earned otherwise",
+    basis: {
+      derived: "an entry in this table is only legitimate with the ARITHMETIC that produced "
+        + "its number beside it — the cap is derived from what that subject's own composer "
+        + "can produce, measured. An open kind has no composer and no measurement, so there "
+        + "is nothing to derive a number from, and the default is not a fallback here but "
+        + "the answer: `MAX_FREE_LENGTH` is what a subject is worth until somebody proves "
+        + "it needs more. The silence is therefore safe rather than merely undecided, which "
+        + "is the distinction this whole module exists to keep",
+    },
+    standing: "policy",
+  },
   /* ── the hair reference take (`hairReferenceTake.ts`) ────────────────── */
   HAIR_FACETS: {
     file: "hairReferenceTake.ts",

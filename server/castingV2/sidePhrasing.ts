@@ -38,3 +38,68 @@ export function imageHalfClause(side: Instance): string {
     ? " (on the right of the picture as you look at it)"
     : " (on the left of the picture as you look at it)";
 }
+
+/* ------------------------------------------------------------------ *
+ * THE OTHER DIRECTION — describing a side in a picture we were GIVEN  *
+ * ------------------------------------------------------------------ */
+
+/**
+ * A half of a PICTURE, already picture-relative — never an anatomical side.
+ *
+ * Its own type rather than `Instance`, and that is the whole safety of this
+ * half of the file: `Instance` is her body's side and `imageHalfClause` INVERTS
+ * it, because her left is the viewer's right. A source description has nothing
+ * to invert — the reader was asked which half of the frame it could see the
+ * thing in, and the answer is already the answer. **Passing one where the other
+ * belongs would flip a side silently, which is the exact confusion this module
+ * exists to remove**, so the two cannot be passed to each other's function.
+ */
+export type PictureHalf = "left" | "right";
+
+/**
+ * WHERE IN THE PICTURE SHE POINTED — the source half of the same fact family
+ * (ruled fable-1084 §2).
+ *
+ * Same family as `imageHalfClause` above: engines paint by position, anatomical
+ * side words are unreliable, and one place knows how to say a side safely.
+ * **Different direction**: that clause DIRECTS A PAINT on the target frame,
+ * this one DESCRIBES a source we were handed. So it lives beside its sibling
+ * and is spelled separately rather than reused.
+ *
+ * # Why it is four words and not eleven
+ *
+ * The clause above is long because it is a painting instruction with room to
+ * be long. This one rides inside a customer-facing description with a hard
+ * character budget (`hairColourFromReference`: the destination caps a free
+ * value at 120, and a real four-block head already overruns it). Eleven words
+ * per block would drop two blocks of her hair to say which side they were on,
+ * which is paying for precision with content.
+ *
+ * # Why it is parenthesised
+ *
+ * The sentence it joins is comma-separated between blocks, so a comma-attached
+ * side would be indistinguishable from the next block — *"copper at the fringe,
+ * picture left, platinum at the fringe"* reads as three things. The bracket is
+ * what makes two sided blocks in one sentence tell apart, which is the property
+ * fable-1084 §2 required by construction rather than by prose.
+ */
+export function pictureSideClause(half: PictureHalf): string {
+  return half === "left" ? " (picture left)" : " (picture right)";
+}
+
+/**
+ * The words that tell a reader HOW to answer a side — composed here so the ask
+ * and the spelling cannot drift apart (law 4).
+ *
+ * The reader is never asked for prose about a side. It is asked for a half, and
+ * this module writes the words; a reader allowed to phrase it itself produced
+ * *"down one side"* and *"down the other side"* on the same head, which is a
+ * place a repaint cannot use and a contradiction a person can see.
+ */
+export function pictureSideAskLines(): string[] {
+  return [
+    'side: "left" or "right" if this block is clearly on one half of the PICTURE',
+    "  as you look at it — not her left or right, the picture's. Use null if it is",
+    "  not a side: all over, at the roots, at the ends, at the fringe across both.",
+  ];
+}

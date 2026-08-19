@@ -811,3 +811,17 @@
   why: the positive-admission gate that keeps a colour a reference read SAW out of a style-scoped ask; the read is what gives it something to refuse
   argued: 13a
   blocker: the hair read chunk, which is the first thing that can hand it a facet to judge (fable-1071 §5)
+
+- symbol: hairColourReadOutcomeFor
+  file: server/castingV2/hairColourFromReference.ts
+  verdict: HELD
+  why: the demand row's column spelling for a hair colour read, the mirror of makeup's referenceReadOutcomeFor; written with the reader so the enum walk exists before the migration rather than after
+  argued: 14a
+  blocker: the read's own procedure, which lands with migration 0044's outcome values (no_hair_visible, no_colour_readable)
+
+- symbol: hairTakeIsAmbiguous
+  file: server/castingV2/hairReferenceTake.ts
+  verdict: HELD
+  why: marks the open edge of the founder's 2026-08-19 no-question ruling — "copy the hairstyle but keep her colour" names two takes, counts as neither, and now falls to the whole lot, which takes the colour his own amendment protects
+  argued: 14a
+  blocker: the ruling on how a two-take ask is answered; the arm pinning today's behaviour cites this symbol by name

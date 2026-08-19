@@ -53,7 +53,7 @@ import { facetOfAxis } from "./refineFacets";
  */
 export type Reask = {
   kind: "which-facet" | "did-you-mean" | "already-upswept" | "glasses-hide-eyes"
-    | "same-again" | "hair-from-reference";
+    | "same-again";
   /** The sentence, in their words. */
   question: string;
   options: Array<{ label: string; resolves: string }>;
@@ -489,29 +489,9 @@ export function nearMiss(instruction: string): { typed: string; meant: string } 
 export function pendingReaskFor(
   instruction: string,
   hasColourHistory: boolean,
-  /*
-    WHETHER A PICTURE IS ATTACHED TO THIS ASK — no default, because a default
-    here is a silent one. `false` would make every existing caller quietly
-    assert "no reference", and the day one of them has a reference the question
-    stops being rebuildable and its answer dead-ends.
-  */
-  referenceAttached: boolean,
 ): Reask | null {
   const miss = nearMiss(instruction);
   if (miss) return didYouMeanReask(instruction, miss);
-  /*
-    THE REFERENCE QUESTION SITS AHEAD OF THE COLOUR ONE, and the ordering is a
-    real decision rather than an accident of where it was typed.
-
-    "Copy the hair from this" with a picture attached has a referent — the
-    picture — so the cold-start colour question would be asking her to name a
-    part she has already pointed at. The typo question stays first for the same
-    reason it stays first everywhere: it is a question about the WORDS, and a
-    misspelled hair ask deserves its correction before anything acts on it.
-  */
-  if (referenceAttached && asksAboutHair(instruction) && hairTakeNamedIn(instruction) === null) {
-    return hairFromReferenceReask(instruction);
-  }
   if (!hasColourHistory && needsColourReferent(instruction)) return whichFacetReask(instruction);
   /*
     LAST, because it is the widest.
@@ -767,55 +747,23 @@ export function didYouMeanReask(instruction: string, miss: { typed: string; mean
   };
 }
 
-/**
- * *"IT ASKS COLOUR? STYLE? OR FULL LOOK"* — the hair reference question
- * (founder ruling, relayed fable-1047 §3; ruled into this mechanism
- * fable-1071 §5).
- *
- * # WHY IT IS HERE AND NOT IN A CHANNEL OF ITS OWN
- *
- * A refine has no conversation turn. It has exactly one adjacent shape — the
- * outstanding question the `answering` field resolves — and building a second
- * question channel beside it would be the second-list defect with a UI on top.
- * So the reference question is a `Reask` like every other, which buys it the
- * whole of D-180 for free: an inline sentence, tappable chips, typing works, and
- * the answer is RE-DERIVED server-side rather than trusted from the client.
- *
- * # AND THAT RE-DERIVATION IS WHY NO MODEL DECIDES WHETHER TO ASK
- *
- * `pendingReaskFor` rebuilds this question from the sentence alone when the
- * answer comes back. A model asked *"is this a hair ask"* may answer differently
- * on the two passes, and a question that cannot be rebuilt cannot be answered —
- * which is the dead end D-180 forbids, produced by our own cleverness. So the
- * two readings are word tests over the product's own hair vocabulary, and they
- * err in opposite directions on purpose (see `hairReferenceTake`).
- *
- * # THE THIRD ANSWER IS NOT "NEVER MIND"
- *
- * Every other question in this family offers a decline, because every other one
- * fires on an ask the customer already made. This one fires on an ask she made
- * WITH A PICTURE ATTACHED, and all three answers are things she plainly wants.
- * Declining is still available and costs nothing — she types something else and
- * it runs as a fresh instruction, which is `resolveAnswer`'s null.
- */
-export function hairFromReferenceReask(instruction: string): Reask {
-  const asked = instruction.trim().replace(/[.!?]+$/, "");
-  return {
-    kind: "hair-from-reference",
-    /*
-      HER PICTURE, HER WORDS, AND THE THING THE PRODUCT IS UNSURE OF — in that
-      order. It says what it CAN do before it asks anything, because a question
-      that opens with a doubt reads as a refusal (§5's capability-honesty rule).
-      No price: none of the three answers spends anything by being chosen.
-    */
-    question: "I can take her hair from that picture — the colour, the style, or the whole look?",
-    options: HAIR_TAKES.map((take) => ({
-      label: hairTakeEntry(take).label,
-      /* Her sentence plus the clarifier, exactly like the which-part question:
-         answering is indistinguishable from having typed it that way. The
-         composed RIDE-ALONG sentence is a different artifact and is not this —
-         it is prompt-side, and it is asserted at the wire. */
-      resolves: `${asked} — ${hairTakeEntry(take).label}`,
-    })),
-  };
-}
+/*
+  THE HAIR-FROM-REFERENCE QUESTION IS GONE, and its builder went with it
+  (founder ruling 2026-08-19, relayed fable-1087, superseding fable-1047 §3).
+
+  It asked *"the colour, the style, or the whole look?"* whenever a picture was
+  attached and the words named no take. His newer word retires it — *"if they
+  are vague and say copy this hair it just means the whole lot unless they
+  specify"* — so the default moved to `hairReferenceTake.hairTakeFor` and
+  nothing here asks anything. A take NAMED in words still routes exactly as it
+  did; only the silence changed meaning.
+
+  Deleted rather than left standing behind its flag: an export nobody calls is a
+  claim, and a question builder sitting in the reask family reads to the next
+  person as a question this product asks. The `Reask` kind went with it for the
+  same reason — a client switching on a kind that can never arrive is a branch
+  nobody can ever test.
+
+  What did NOT go: the D-180 mechanism itself, which predates this and serves
+  genuine unreadability, and every other question in this file.
+*/

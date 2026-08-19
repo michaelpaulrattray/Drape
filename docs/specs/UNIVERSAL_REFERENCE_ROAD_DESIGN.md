@@ -315,11 +315,17 @@ Not built: the reads, the crop, and the class door ruled in fable-1075.
 
 ### 9.2 HIS COLOUR SPECIMEN IS NOT A MULTI-PANEL, AND ITS DIFFICULTY IS SPATIAL
 
-`hair-colour-multipanel-copper-blonde-black.png` — ask: **hair colour only**.
+`hair-colour-blocked-sections-copper-platinum-black-silver.png` — ask: **hair
+colour only**.
 
-Read at the frame: **one photograph, one person, no panels.** The filename and
-fable-1077's note both suggest a composite; it is not one, and nothing should be
-built to split it.
+Read at the frame: **one photograph, one person, no panels.** It was filed as
+`hair-colour-multipanel-copper-blonde-black.png`, and fable-1077's mapping note
+still calls it a multi-panel; both came from a caption and a glance rather than
+from the file at working size. It is not a composite, nothing should be built to
+split it, and **the file has been renamed** (ordered fable-1079 §1) so the name
+stops telling every future reader of the corpus the opposite. `blonde` went with
+it: the frame holds FOUR blocked tones, not three, and one of them is a
+silver-white the old name never mentioned.
 
 Its real difficulty is harder than the one that was flagged. The colour is not a
 blend and it is not one tone — it is **BLOCKED BY SECTION**: a bright
@@ -393,3 +399,120 @@ the refusal copy is humble and two-part, offering the words road in the same
 breath; the outcome is counted so a false-positive rate has a signal; and **the
 false-positive court ships FIRST** — a real, stylised, heavily-retouched
 photograph must read through before the door is live anywhere.
+
+### 9.5 THE COLOUR TAKE'S WORDS ROAD — built, and what its court measured
+
+`server/castingV2/hairColourFromReference.ts`, approved fable-1080 §2/§3.
+
+**The contract is a SECTION LIST, and it is spatial by construction.** The
+reader does not answer a `colour` string. It answers a list of pairs — a tone,
+and where that tone sits — so **there is no field a tone can arrive in without a
+place.** §9.2's wrong answer (*"copper, blonde and black"*) has nowhere to go:
+it is either one section claiming to be all over, which is visibly false and is
+a readable failure, or it is a section with no place and is dropped. The
+instructed version of the same rule is the thing `refineDelta` calls not a rule
+at all — *a rule enforced only by asking nicely.*
+
+The ordinary head is the same shape with no special path: one section, `where:
+"all over"`, composing to *"chestnut brown all over"*. The `where` field carries
+its own preposition, which is what lets one join serve both — and a reader that
+answers a bare `"fringe"` degrades to *"copper fringe"*, still English and still
+carrying the place.
+
+**One door, and it is the measured one.** The presence gate, anchored on the
+body part. No class question: fable-1075 rules that hair's drawn-versus-real
+verdict may narrow away the CROP takes and **never the WORDS one**, and this is
+the words one. The drawn detector ships with the crop, false-positive court
+first.
+
+#### What the court found (`court-hair-colour-words-disposable.mts`, 10 calls, $0.076842 at the wire)
+
+Five arms, two runs each, driving the SHIPPED reader — not a copy of its ask.
+
+**PASSED, and one of these could have killed the design:**
+
+- **The invention control clears.** A contract demanding a place for every tone
+  is a contract that could push a reader into finding panels in a plain head.
+  The one-tone studio portrait came back as **one section, twice** —
+  *"deep black all over"*. The ordinary head is not made strange to buy the
+  strange one its words.
+- **The gate holds through the PRODUCT**, not merely through a probe: the
+  retriever and the cyborg refuse `noHairVisible` 2/2 each.
+- **The drawing delivers 2/2**, which is fable-1075's routing as code.
+- **On his own head, every tone came back with a place**, and read against the
+  frame by eye (law 9) each pairing is true of the picture.
+
+**AND THE BUDGET STRANGLED, 4 RUNS OUT OF 4.** Every run on his specimen dropped
+at least one block of colour. Run 1's own answers need 126 characters against
+the destination's 120 — six characters, and a block of his hair goes back to her
+as text instead of riding in the sentence. This is `makeupSlots`' incident
+happening in a new place; the difference is that his specimen met it before a
+customer did.
+
+**The stated rule for which sections are spoken for** (reserved fable-1080 §2,
+so it is named rather than improvised): **the reader's own prominence order.**
+The ask instructs *"work from the most obvious block to the least"*, the
+composer consumes the list in that order, and the suite pins it. It is the
+reader's answer to a question we asked — not measured area, and not our
+judgement about her hair.
+
+The field caps were deliberately NOT narrowed to force four blocks to fit.
+An announced cap is a brief, so buying the fourth block that way costs *pale*,
+*orange* and *at the ends* on all four. **A dropped block is returned to her and
+she can type it; a flattened one is gone and nobody is told.**
+
+#### The open finding: "one side" is not a place a repaint can use
+
+The `where` answers reach for unanchored side words — *down one side*, *down the
+other side* — and twice in one sentence two different tones both landed on *down
+one side*, a contradiction in prose even though both are true of the frame.
+
+This road already owns the answer: the engine paints by position rather than by
+anatomy, which is why `sidePhrasing.imageHalfClause` exists and why the eye
+edits say *"(on the left of the picture as you look at it)"*. **Not built** —
+whether a colour block's side is the same fact as an eye's is a ruling, not an
+implementation detail, and it is out with the reviewer.
+
+#### One honest limit on the court itself
+
+It cannot see a section the fence DROPPED, because the drop happens inside the
+reader. So *"every tone came back with a place"* is a statement about what
+reached the sentence, not proof the reader never wrote a placeless one. The
+reader now logs its refused sections with the raw reply, so the next run of this
+court reads the fence's own firing rate rather than inferring it.
+
+### 9.6 The corpus, as corrected and extended
+
+Six specimens now, and two entries below correct what fable-1077 first recorded.
+Each was opened at working size before its line here was written.
+
+1. `tail-scorpion-fashion-photo.png` — **tail**. Open-kind crop from an upload,
+   region-only.
+2. `hair-style-dark-waves-two-panel.png` — **hair style with a different
+   colour, carried through multiple edits.** A genuine two-panel, and §9.3 is
+   the reading: it is TWO HEADS, so the crop road owes a panel decision before
+   the first cut.
+3. `tattoo-sleeve-trex-geometric-design.png` — **sleeve tattoo, left arm,
+   through signing.** Flash art with an artist monogram; `sleeve` is outside the
+   placement vocabulary and is a demand-backed card, never a silent map to
+   `upperArm`.
+4. `glasses-cateye-blond-model.png` — **glasses.** Outside the intent
+   vocabulary; this specimen tests the honest refusal road.
+5. `hair-colour-blocked-sections-copper-platinum-black-silver.png` — **hair
+   colour only.** *Renamed* (fable-1079 §1) from
+   `hair-colour-multipanel-copper-blonde-black.png`: it is one photograph rather
+   than a composite, and it holds four blocked tones rather than three. §9.2 and
+   §9.5 are its readings.
+6. `tattoo-patchwork-torso-neck-continuation.png` — **use all these tattoos,
+   onto the neck** (fable-1083). *"One more reference photo to test if the
+   tattoos will pop out the top of the shirt."* Read at the frame: a barbed-wire
+   band at the base of the neck with throat work above it, chest and stomach
+   pieces below, both sleeves worked, cropped at the chin. **It carries both
+   halves of the visible-extent promise in one specimen** — the neck work MUST
+   show above a crew collar, the chest and stomach work MUST NOT — which is
+   exactly what `court-view-reference-disposable.mts` now refuses to run
+   without. Two things it raises before any render is bought: it is a PATCHWORK
+   (many designs in one photograph, and his ask is to use all of them), so the
+   crop road must rule one-region-or-many deliberately; and several of its
+   pieces are TEXT, which the engines render unreliably, so a court records what
+   the text actually came out as rather than scoring the shapes and moving on.

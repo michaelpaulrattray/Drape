@@ -538,8 +538,77 @@ export type FreeLaneCheck = {
   unowned?: Array<{ subject: string; value: unknown }>;
 };
 
-/** One adjustment per subject, not a paragraph. */
-const MAX_FREE_LENGTH = 120;
+/**
+ * One adjustment per subject, not a paragraph — the DEFAULT, and every subject
+ * took it until 2026-08-19.
+ *
+ * **Exported because a composer now has to fit inside it.** A composer judging
+ * its own budget by a number typed beside this one is the mirror law 4 forbids:
+ * it drifts the day somebody widens one of the two.
+ */
+export const MAX_FREE_LENGTH = 120;
+
+/**
+ * WHERE A SUBJECT NEEDS MORE ROOM THAN THE DEFAULT — and every entry carries
+ * the arithmetic that produced its number (bound (a), fable-1088 §2).
+ *
+ * A bare table of numbers is the announced-cap trap in storage form: the next
+ * person reads a figure somebody chose and treats it as measured. So an entry
+ * here is only legitimate with its derivation beside it, and a subject absent
+ * from this table takes {@link MAX_FREE_LENGTH}, which is what all of them did
+ * until the first one earned otherwise.
+ *
+ * # WHY A TABLE RATHER THAN A WIDER SHARED NUMBER
+ *
+ * Raising the shared cap for one road gives teeth two hundred characters for no
+ * reason anybody could state. **A hair colour is a longer fact than an eye
+ * colour**, and that is a true thing about the subjects rather than a
+ * concession to one feature.
+ *
+ * # hairShade — 220, and here is where it comes from
+ *
+ * `hairColourFromReference` composes a colour description as a list of blocks,
+ * each one a tone, a place, and (when it is a side) a picture half spelled by
+ * `sidePhrasing`. The founder's own blocked-colour specimen returns FIVE blocks,
+ * and the sentence the reader's own answer composes to, **measured by composing
+ * it rather than by adding the parts up**
+ * (`court-hair-colour-words-disposable.mts`, 2026-08-19):
+ *
+ * ```
+ *   dark brown at the roots                          23   running  23
+ *   platinum blonde at the fringe (picture left)     44            69
+ *   copper orange at the fringe (picture right)      43           114
+ *   copper orange at the ends (picture left)         40           156
+ *   platinum blonde at the ends (picture right)      43           201
+ * ```
+ *
+ * At 120 that head arrived as **two blocks of five**, with the near-black roots
+ * — the dominant tone — returned to her as leftovers.
+ *
+ * **The first version of this table said 198 and this cap was set to 200.** The
+ * sum was hand-added from the block lengths and was three characters short, so
+ * a cap derived from it dropped the last block by ONE character and the suite
+ * caught it. Assert against the composed artifact, never against the figure you
+ * printed about it — the same lesson as `margin-false-in-the-third-digit`, one
+ * table along.
+ *
+ * **220 is 201 plus the ordinary variation between two readings of one head**,
+ * which is a real quantity here rather than a padding instinct: the same
+ * specimen composed to 157 on one reading and 201 on the next, so a cap sitting
+ * exactly on one observation is a cap fitted to a coin toss.
+ *
+ * **And it is sized for the observed head, not for infinity** (bound (b)): the
+ * composer still drops and still RETURNS what it dropped, so an eight-tone
+ * monster is handled honestly rather than promised silently.
+ */
+const FREE_SUBJECT_MAX_LENGTH: Readonly<Partial<Record<FreeSubject, number>>> = Object.freeze({
+  hairShade: 220,
+});
+
+/** The cap this subject's values are judged by. */
+export function freeSubjectMaxLength(subject: FreeSubject): number {
+  return FREE_SUBJECT_MAX_LENGTH[subject] ?? MAX_FREE_LENGTH;
+}
 
 /**
  * Words that mean somebody coloured hair on purpose (D-177).
@@ -907,7 +976,10 @@ export function readDelta(value: unknown, check?: FreeLaneCheck): RefineDelta | 
       if (typeof rawItem !== "string") return null;
 
       const scrubbed = scrubBrands(rawItem.trim())?.trim() ?? "";
-      if (!scrubbed || scrubbed.length > MAX_FREE_LENGTH) return null;
+      /* The subject's own cap, not one number for every drawer — see
+         `FREE_SUBJECT_MAX_LENGTH`. Everything absent from that table is
+         byte-unchanged at the old 120. */
+      if (!scrubbed || scrubbed.length > freeSubjectMaxLength(subject as FreeSubject)) return null;
       /* False without a `check`: with no instruction and no prior to read,
          nothing here is known to be a restatement, and a set that supersedes on
          a guess is worse than one that accumulates. */
@@ -1102,7 +1174,7 @@ export function readDelta(value: unknown, check?: FreeLaneCheck): RefineDelta | 
       if (!Array.isArray(value) || value.length > MAX_ITEMS) return null;
       const items = value.filter(
         (item): item is string => typeof item === "string" && item.trim().length > 0
-          && item.length <= MAX_FREE_LENGTH,
+          && item.length <= freeSubjectMaxLength(subject as FreeSubject),
       );
       if (items.length !== value.length) return null;
       /* An empty list is no subject here for the same reason it is no subject

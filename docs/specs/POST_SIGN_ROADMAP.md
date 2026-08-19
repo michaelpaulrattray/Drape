@@ -1634,6 +1634,51 @@ answered — annotated on item 7's checklist); D-82 vocabulary reading
 and the D-166 glasses clause (both "fine as shipped" —
 founder-ratified, no longer provisional).
 
+## 8b. LATER FEATURES — banked by the founder, nothing builds
+
+Items he has decided are real and has deliberately parked until after the full
+SaaS is finished. **They are written here with the thinking preserved, not as
+one-line titles**, so the eventual build starts from the design rather than from
+a name somebody has to reconstruct.
+
+### "Digitals" — body-record views (banked 2026-08-19)
+
+> *"for now let's just keep the idea banked for once we actually finish the full
+> SaaS it can be a later feature"* — the founder, closing the discussion.
+
+**BANKED (founder, 2026-08-19): "digitals" — body-record views.** Real casting
+includes "digitals": plain, flat-lit full-length front/back shots in simple
+underwear, documenting the body that clothed editorial shots cannot. Proposed
+for signed Casts as up to two extra views (male: plain underwear; female: legacy
+singlet/tights register), neutral studio styling on the standard white.
+**REFINED DESIGN before banking:** never always-on — included AUTOMATICALLY only
+when the cast carries covered body features (derived from the feature rows + the
+coverage map), per-side (a chest piece adds the frontal digital only, ~+75cr,
+priced before the tap), with an on-demand "generate digitals" button on every
+signed cast otherwise. **SYNERGY:** the digitals pair is the natural base layer
+for VTO garment try-on. **INTERACTION:** M8's takes may subsume this (a
+wardrobe-changing take reveals body art without dedicated views) — decide the
+two together at M8's design sitting (founder: *"thats an m8 decision nothing for
+now"*). Until then: tattoos ride always, wardrobe never changes for them,
+visible-where-visible (fable-1081).
+
+**Why the M8 note is attached to this item rather than filed beside it.** His
+own words when the connection occurred to him: *"people can also potentially do
+this in takes potentially? seeing as we havent decided what takes will be? they
+might remove the shirt and decide to add tattos themselves anyway thats an m8
+decision nothing for now."* A take that changes the wardrobe reveals body art
+with no dedicated view at all, so the two designs answer overlapping questions
+and **the M8 designer should inherit the connection instead of rediscovering
+it** — digitals-as-views versus reveal-through-takes versus both, decided
+together, once.
+
+**What is true in the product while this is banked**, so nobody reads the bank
+as a gap: a tattoo rides into every signed view already, the package wardrobe is
+never altered to show one, and ink appears exactly where skin shows — a chest
+piece running onto the neck pokes above the collar and that is the whole of it
+(his ruling, fable-1081 §2). That is a stated promise rather than a side effect,
+and it is asserted in `inkViewReferences.test.ts`.
+
 ## 9. Shelved-with-trigger register (durable in DECISION_LOG; pointers here)
 
 **The contamination instrument** (what a paint borrowed from a reference

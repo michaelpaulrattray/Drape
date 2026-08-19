@@ -8477,29 +8477,55 @@ describe("the picture she attached reaches the ask", () => {
 
   afterEach(() => { resolveAskReferenceMock.mockReset(); });
 
-  it("raises his question for a hair ask, free and before the parse", async () => {
+  it("ASKS NOTHING for a hair ask with a picture attached — his newer ruling", () => {
+    /*
+      This arm asserted the OPPOSITE an hour ago, and the ruling that moved it
+      is the founder's own (2026-08-19, fable-1087, superseding fable-1047 §3):
+      *"if they are vague and say copy this hair it just means the whole lot
+      unless they specify."*
+
+      So a hair ask with a reference attached is not a question and never was
+      one — it is a complete instruction that the recipe reads a take out of.
+      Driven through `refineCandidate` rather than through the reask builder,
+      because the thing being proved is that the DOOR is gone from the request
+      path and not merely that a function returns something different.
+    */
     resolveAskReferenceMock.mockResolvedValue(REFERENCE);
-    const result = await refineCandidate({ ...greenEyes, harvest: unmasked }, {
+    return refineCandidate({ ...greenEyes, harvest: unmasked }, {
       ...input,
       instruction: "copy hair from reference",
       referenceId: "ref-public",
+    }).then((result) => {
+      expect(result.kind).not.toBe("asked");
     });
-    expect(result.kind).toBe("asked");
-    expect(result.reask?.kind).toBe("hair-from-reference");
-    expect(result.reask?.options.map((option) => option.label))
-      .toEqual(["the colour", "the style", "the whole look"]);
-    /* Free is the whole point — nothing is claimed and nothing is deducted. */
-    expect(journal).not.toContain("begin");
-    expect(journal).not.toContain("deduct");
   });
 
-  it("asks nothing when no picture is attached — the same sentence", async () => {
-    const result = await refineCandidate({ ...greenEyes, harvest: unmasked }, {
+  it("resolves the handle even though nothing asks a question about it", () => {
+    /*
+      THE HALF THE DELETED QUESTION WAS CARRYING, and it is why this arm is not
+      redundant. The resolver was reached through the question door in every
+      previous arm; with that door gone, a reference could silently stop being
+      resolved at all and every hair arm would still pass. So the resolution is
+      driven on its own — the ownership and re-anchoring checks are the whole
+      safety of the lane and they run before anything is charged.
+    */
+    resolveAskReferenceMock.mockResolvedValue(REFERENCE);
+    return refineCandidate({ ...greenEyes, harvest: unmasked }, {
       ...input,
       instruction: "copy hair from reference",
+      referenceId: "ref-public",
+    }).then(() => {
+      expect(resolveAskReferenceMock).toHaveBeenCalled();
     });
-    expect(result.reask?.kind).not.toBe("hair-from-reference");
-    expect(resolveAskReferenceMock).not.toHaveBeenCalled();
+  });
+
+  it("does not resolve anything when no picture is attached", () => {
+    return refineCandidate({ ...greenEyes, harvest: unmasked }, {
+      ...input,
+      instruction: "copy hair from reference",
+    }).then(() => {
+      expect(resolveAskReferenceMock).not.toHaveBeenCalled();
+    });
   });
 
   /*

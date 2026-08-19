@@ -208,10 +208,10 @@ for (const klass of CLASSES) {
       interpreter would be asserting the wrong thing entirely.
     */
     if (klass.reask) {
-      /* No picture is attached on any ask this driver carries — every class here
-         is a question about the WORDS. Said explicitly rather than defaulted,
-         because the fact is what the answer path rebuilds the question from. */
-      const question = pendingReaskFor(ask, false, false);
+      /* Every class here is a question about the WORDS. The reference argument
+         this call used to carry went with the hair question it existed for
+         (founder ruling 2026-08-19, fable-1087). */
+      const question = pendingReaskFor(ask, false);
       const resolved = question ? resolveAnswer(question, klass.reask.answer) : null;
       const problems: string[] = [];
       if (!question) problems.push("no question was raised");
