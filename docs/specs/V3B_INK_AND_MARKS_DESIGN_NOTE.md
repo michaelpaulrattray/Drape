@@ -924,6 +924,27 @@ mailbox is the record and this section is the instruction.
 4. **THE GENERAL LAW, which is the point of the whole ruling:** properties that
    **carry fine as words** (makeup, hair colour) **stay words**; **specific looks
    and features ALWAYS ride as cropped references** from the supplied photo.
+5. **THE RIDE-ALONG WORDS ARE SCOPED TO THE PROPERTY THE CROP CARRIES** — his
+   amendment the same day (relayed fable-1048), verbatim: *"if someone wanted a
+   hairstyle but a different hair color its important that the words that ride
+   along with the reference state it the style only not the color etc"*.
+
+   A crop never travels alone; a sentence travels with it. **That sentence names
+   the property being taken AND ONLY THAT PROPERTY.** A hair-STYLE crop's words
+   claim the cut and explicitly do not claim the colour — the colour stays the
+   cast's own, or whatever the customer stated separately. The same holds for
+   every property split the clarifying question can produce.
+
+   **This is the property-not-extent law arriving on the WORDS side.** A
+   reference may claim one property without claiming another, and the words are
+   the scoping instrument — the crop cannot scope itself, because a picture of
+   hair is a picture of hair in some colour whether anyone asked for the colour
+   or not.
+
+   *Its test is named with it, and it is a RED-FIRST one at the wire:* **a
+   style-scoped ask whose composed outgoing prompt mentions the reference's
+   colour is the failing case.** Asserted on the sentence that actually leaves
+   (law 5), never on a constant near it.
 
 #### What it changes in §7.1's table
 
@@ -960,7 +981,9 @@ Ordered fable-1047 §b, and none of them starts on this filing alone:
   candidate's purge path). The design goes to review first;
 - **the §3 clarifying question** — an interpreter clarification with three
   named answers, which is a conversation turn the refine road does not have
-  today.
+  today. **Ruling 5 lands inside this design**: the answer composes the
+  sentence — *"style"* composes the SCOPED one, *"full look"* the unscoped one —
+  and the split is proven red-first at the wire.
 
 #### ⚠ WHAT THESE RULINGS DO NOT TOUCH — the release gating (fable-1047 §c)
 
