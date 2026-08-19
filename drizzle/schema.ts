@@ -2895,6 +2895,13 @@ export const CASTING_REFERENCE_READ_OUTCOMES = [
      what the `intent` column beside this one exists to keep apart. */
   "no_hair_visible",
   "no_colour_readable",
+  /* Migration 0045 — the CLASS DOOR narrowed a crop ask to the words road
+     because the picture is a drawing. Not `out_of_class`, which is a reader
+     saying the SUBJECT is not its thing: this one is about the MEDIUM, and a
+     repair aimed at one would be aimed away from the other. §9.14 asked for
+     this count so the door's false-positive rate has a signal that is a
+     reading of live use rather than of a corpus somebody chose. */
+  "drawn_narrowed",
 ] as const;
 
 /**

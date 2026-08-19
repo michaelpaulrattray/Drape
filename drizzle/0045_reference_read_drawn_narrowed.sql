@@ -1,0 +1,42 @@
+-- THE CLASS DOOR'S NARROWING, COUNTED — one new value on the reference-read
+-- demand record's `outcome` enum (`UNIVERSAL_REFERENCE_ROAD_DESIGN.md` §9.14).
+--
+-- ============================================================================
+-- WHY THIS VALUE EXISTS AT ALL
+-- ============================================================================
+--
+-- The class door asks one question — is this a PHOTOGRAPH taken with a camera,
+-- or is it DRAWN — and a `drawn` answer narrows a customer's ask from the crop
+-- road to the words road. Her picture is not turned away and nothing is
+-- charged, but she does NOT get the thing she asked for, and the door's whole
+-- false-positive court was barred at ZERO for that reason: the cost of one
+-- false positive is a real customer's real photograph denied the crop she
+-- asked for, and she has no way to argue with it.
+--
+-- A court is a reading of a corpus somebody chose. THIS is the reading of what
+-- actually happens, and until it exists the narrowing is a log line — §9.14
+-- said so out loud rather than leaving it to be discovered by somebody looking
+-- for a tally that was never built.
+--
+-- ============================================================================
+-- WHY IT IS A SEPARATE WORD
+-- ============================================================================
+--
+-- `out_of_class` (migration 0042) is a READER saying the subject is not the
+-- thing it reads — a cyborg's prosthetics are not cosmetics. This one is a
+-- reader saying the MEDIUM is a drawing. Both refuse a road; they refuse it for
+-- different reasons and a repair aimed at one would be aimed away from the
+-- other, which is the same argument 0044 made for keeping two hair endings
+-- apart. One word for two facts is a defect this campaign has paid for twice.
+--
+-- ============================================================================
+-- PURELY ADDITIVE
+-- ============================================================================
+--
+-- One value appended to one enum. No existing value changes position or
+-- spelling, no row is rewritten, no column is dropped. The writer proves the
+-- value against the column's own list before the insert
+-- (`recordReferenceRead`), so a deploy running ahead of this file writes NO row
+-- rather than a broken one — the tally is what is lost, never an answer.
+ALTER TABLE `casting_reference_reads`
+	MODIFY COLUMN `outcome` enum('delivered','no_transport','unreadable','no_makeup_visible','names_hair','out_of_class','no_hair_visible','no_colour_readable','drawn_narrowed') NOT NULL;

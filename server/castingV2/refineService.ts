@@ -3512,6 +3512,19 @@ async function refineCandidateCounted(
           { userId: input.userId, candidate: input.candidatePublicId, medium },
           "[refineService] the picture is drawn — narrowing to the words road rather than cutting a carrier from it",
         );
+        /*
+          AND IT IS COUNTED (§9.14, migration 0045).
+
+          The door's court was barred at ZERO false positives, and a court is a
+          reading of a corpus somebody chose. This is the reading of live use:
+          how often a real customer's real picture is turned away from the crop
+          she asked for. Until this line it was a log line, which is not an
+          artifact a rate can be derived from.
+
+          Fire-and-forget on a customer's own path, like every other row this
+          table takes — telemetry may never cost somebody an answer.
+        */
+        void recordReferenceRead("hair", "drawn_narrowed");
         return {
           kind: "selected",
           note: DRAWN_NARROWED_NOTE,

@@ -1,6 +1,13 @@
 /**
- * Ceremony — the hair reader's own endings (`casting_reference_reads.outcome`,
- * migration 0044; the colour take's wire).
+ * Ceremony — the hair reader's own endings AND the class door's narrowing
+ * (`casting_reference_reads.outcome`, migrations 0044 and 0045).
+ *
+ * ONE COMMAND FOR TWO FILES, and that is the point rather than a convenience:
+ * both values belong to the same road, the road opens on one flip, and asking
+ * the founder for the same chore twice is using his desk as our memory
+ * (`UNIVERSAL_REFERENCE_ROAD_DESIGN.md` §9.14 asked for exactly this shape).
+ * Each file is applied only if its own values are missing, so a database
+ * holding 0044 and not 0045 lands 0045 alone.
  *
  * The demand record is gaining a second READER. The hair colour reader ends in
  * two ways the makeup reader has no word for — `no_hair_visible` (the presence
@@ -63,7 +70,27 @@ const port = new URL(url).port || "3306";
 console.log(`world: ${world.toUpperCase()} · ${new URL(url).hostname}:${port}`);
 
 const TABLE = "casting_reference_reads";
-const VALUES = ["no_hair_visible", "no_colour_readable"] as const;
+/**
+ * The two migrations this ceremony carries, each with the values that prove it.
+ *
+ * A file is replayed rather than retyped — a ceremony that re-types its own DDL
+ * is a second copy of the schema and it drifts from the one every test ran
+ * against — and each is judged by ITS OWN values, so the two cannot be confused
+ * for one another by a half-applied database.
+ */
+const MIGRATIONS = [
+  {
+    file: "drizzle/0044_reference_read_hair_outcomes.sql",
+    values: ["no_hair_visible", "no_colour_readable"],
+    what: "the hair reader's own two endings",
+  },
+  {
+    file: "drizzle/0045_reference_read_drawn_narrowed.sql",
+    values: ["drawn_narrowed"],
+    what: "the class door's narrowing, counted",
+  },
+] as const;
+const VALUES = MIGRATIONS.flatMap((migration) => migration.values);
 
 /** What the column says it holds, read back rather than assumed. */
 async function readOutcomeValues(conn: Awaited<ReturnType<typeof openDatabase>>): Promise<string[]> {
@@ -89,25 +116,25 @@ try {
     }
   }
 
-  if (VALUES.every((value) => before.includes(value))) {
-    console.log(`ALREADY APPLIED — ${VALUES.join(" and ")} are on the column.`);
-  } else {
-    /* The migration file itself, replayed rather than retyped: a ceremony that
-       re-types its own DDL is a second copy of the schema and it drifts from
-       the one every test ran against. */
-    const sql = await readFile("drizzle/0044_reference_read_hair_outcomes.sql", "utf8");
+  for (const migration of MIGRATIONS) {
+    const held = await readOutcomeValues(conn);
+    if (migration.values.every((value) => held.includes(value))) {
+      console.log(`ALREADY APPLIED — ${migration.values.join(" and ")} (${migration.what}).`);
+      continue;
+    }
+    const sql = await readFile(migration.file, "utf8");
     for (const statement of sql.split("--> statement-breakpoint")) {
       const trimmed = statement.trim();
       if (trimmed) await conn.query(trimmed);
     }
     const after = await readOutcomeValues(conn);
-    /* BOTH, and each named in its own failure: an alter that landed one of two
-       values is a half-applied migration, and a check for "any of them" would
-       report success on it. */
-    for (const value of VALUES) {
-      if (!after.includes(value)) throw new Error(`the migration ran and \`${value}\` is not on the column — stop and investigate`);
+    /* EVERY value of this file, each named in its own failure: an alter that
+       landed one of two is a half-applied migration, and a check for "any of
+       them" would report success on it. */
+    for (const value of migration.values) {
+      if (!after.includes(value)) throw new Error(`${migration.file} ran and \`${value}\` is not on the column — stop and investigate`);
     }
-    console.log(`APPLIED — outcome now holds: ${after.join(", ")}`);
+    console.log(`APPLIED ${migration.file} — outcome now holds: ${after.join(", ")}`);
   }
 
   /*
