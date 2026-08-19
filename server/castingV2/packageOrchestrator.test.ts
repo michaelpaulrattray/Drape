@@ -39,7 +39,7 @@ const {
   promisedPackageAngles,
   unsettledPackageAngles,
 } = await import("./packageOrchestrator");
-const { CAST_PACKAGE_VIEWS, composePackageViewPrompt } = await import("./castViewPackage");
+const { CAST_PACKAGE_VIEWS, composePackageViewPrompt, packageViewExpectation } = await import("./castViewPackage");
 import type { CastViewAngle } from "../../shared/boardTypes";
 
 const pass: ViewConformanceVerdict = {
@@ -667,5 +667,156 @@ describe("a signed Cast's tattoos ride into every view", () => {
     const request = generateView.mock.calls[0]![0];
     expect(request.references).toHaveLength(1);
     expect(request.prompt).toBe(composePackageViewPrompt(request.viewAngle));
+  });
+});
+
+/**
+ * WHAT THE ANCHOR CANNOT SHOW RIDES AS WORDS — arrow 6 (FOUNDER, 2026-08-19:
+ * *"when signing a cast to make the angles the refined image is supplied as the
+ * reference and a description so that any features not visible are not lost"*).
+ *
+ * At the wire, for the same reason the tattoo lane is: a contract about what
+ * gets SENT is proven on the outgoing request. The SELECTION — which features
+ * qualify as "not visible" — is on trial in `viewFeatureWords.test.ts`; what is
+ * on trial here is that the sentence actually leaves the building on every view,
+ * and that a Cast with nothing hidden is untouched.
+ */
+describe("a signed Cast's hidden features ride into every view as words", () => {
+  const hidden = (over: Record<string, unknown> = {}) => ({
+    slot: "open:tail",
+    noun: "tail",
+    words: ["a long scaled tail at the base of the spine"],
+    region: "belowWaist" as const,
+    ...over,
+  });
+
+  const recorder = () => vi.fn(async (_request: ViewRequest) => ({
+    bytes: Buffer.from("view"),
+    contentType: "image/png",
+    latencyMs: 1,
+    provenance: { provider: "fal" as const, model: "nbp", providerRef: "ref" },
+  }));
+
+  it("names the hidden feature on EVERY view, beside the anchor and never instead of it", async () => {
+    const generateView = recorder();
+    const identityEngine = () => ({ id: "e", editWithReferences: vi.fn(), generateView });
+
+    await buildCastPackage(deps({ identityEngine }), { ...input, featureWords: [hidden()] });
+
+    expect(generateView).toHaveBeenCalledTimes(CAST_PACKAGE_VIEWS.length);
+    for (const call of generateView.mock.calls) {
+      const request = call[0];
+      /* The words are words: they add no reference, and the anchor stays alone
+         and first. A lane that quietly added an image would be a different
+         feature wearing this one's test. */
+      expect(request.references).toHaveLength(1);
+      expect(request.prompt).toContain("a long scaled tail at the base of the spine");
+      /* Bound 4 (fable-876 §2, "the reference is still king") written into the
+         prompt itself rather than trusted to the blocks below it. */
+      expect(request.prompt).toContain("Everything the reference photograph DOES show is authoritative");
+      /* Added, never substituted. */
+      expect(request.prompt).toContain("Keep this exact person unchanged");
+    }
+  });
+
+  it("is INERT for a Cast with nothing hidden — byte-for-byte the composer's own output", async () => {
+    /*
+      The control that keeps the founder's bound. Absent hidden features the
+      request must be exactly what it was before this existed — a composer that
+      cannot produce NOTHING would be re-describing the person on every Sign in
+      the product, which is the drift the bound forbids.
+    */
+    const generateView = recorder();
+    const identityEngine = () => ({ id: "e", editWithReferences: vi.fn(), generateView });
+
+    await buildCastPackage(deps({ identityEngine }), input);
+
+    for (const call of generateView.mock.calls) {
+      const request = call[0];
+      expect(request.prompt).toBe(composePackageViewPrompt(request.viewAngle));
+    }
+  });
+
+  it("is inert for an EMPTY list too, not only an absent one", async () => {
+    const generateView = recorder();
+    const identityEngine = () => ({ id: "e", editWithReferences: vi.fn(), generateView });
+
+    await buildCastPackage(deps({ identityEngine }), { ...input, featureWords: [] });
+
+    const request = generateView.mock.calls[0]![0];
+    expect(request.prompt).toBe(composePackageViewPrompt(request.viewAngle));
+  });
+
+  it("rides BESIDE a tattoo plate without either clause eating the other", async () => {
+    const generateView = recorder();
+    const identityEngine = () => ({ id: "e", editWithReferences: vi.fn(), generateView });
+
+    await buildCastPackage(deps({ identityEngine }), {
+      ...input,
+      inkPlates: [{
+        designPublicId: "design-1",
+        placement: "upperArm" as const,
+        side: "left" as const,
+        bytes: Buffer.from("plate-bytes"),
+        contentType: "image/png",
+      }],
+      featureWords: [hidden()],
+    });
+
+    const request = generateView.mock.calls[0]![0];
+    expect(request.references).toHaveLength(2);
+    expect(request.prompt).toContain("Reference 2 is the tattoo at her left upper arm");
+    expect(request.prompt).toContain("a long scaled tail at the base of the spine");
+  });
+});
+
+/**
+ * P-b — THE CLAUSE CANNOT BUY ITS OWN CONFORMANCE PASS (invariant 7, named as a
+ * prerequisite in `castViewPackage.ts` since fable-871 §3, discharged here).
+ *
+ * `packageViewExpectation` is assembled from the view spec alone and has no
+ * opinion about anything riding beside the anchor. That is deliberate and it is
+ * fragile: the day the expectation could see the clause, view conformance would
+ * quietly become prompt compliance and the check would stop being worth running.
+ * So the property is asserted rather than assumed, from both ends — the
+ * expectation itself, and what the judge is actually handed.
+ */
+describe("a riding clause cannot move the conformance check", () => {
+  it("the expectation is byte-identical whatever rides", () => {
+    /* Structural today — the function takes an angle and nothing else. The
+       assertion is what turns that structure into a promise: a later signature
+       that accepted the prompt would fail here before it reached a customer. */
+    for (const angle of CAST_PACKAGE_VIEWS) {
+      expect(packageViewExpectation(angle)).toEqual(packageViewExpectation(angle));
+      expect(Object.keys(packageViewExpectation(angle)).sort()).toEqual(["framing", "wardrobe"]);
+    }
+  });
+
+  it("the judge is never handed the words — it sees the angle and the pixels", async () => {
+    const seen: unknown[] = [];
+    const judge = () => vi.fn(async (request: unknown) => {
+      seen.push(request);
+      return pass;
+    });
+
+    await buildCastPackage(deps({ judge }), {
+      ...input,
+      featureWords: [{
+        slot: "open:tail",
+        noun: "tail",
+        words: ["a long scaled tail at the base of the spine"],
+        region: "belowWaist" as const,
+      }],
+    });
+
+    expect(seen).toHaveLength(CAST_PACKAGE_VIEWS.length);
+    /*
+      The whole payload, serialized — not a field-by-field walk, which is how a
+      leak arrives through the field nobody thought to check.
+    */
+    for (const request of seen) {
+      expect(JSON.stringify(request)).not.toContain("tail");
+      expect(JSON.stringify(request)).not.toContain("scaled");
+    }
   });
 });

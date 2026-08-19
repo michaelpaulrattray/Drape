@@ -58,6 +58,10 @@ import {
   composePackageViewPrompt,
 } from "./castViewPackage";
 import { inkViewReferenceClause, type CarriedInkPlate } from "./inkViewReferences";
+import {
+  composeViewFeatureWordsClause,
+  type CarriedFeatureWords,
+} from "./viewFeatureWords";
 import { castingIdentityEngine, castingViewConformanceJudge } from "./signEngine";
 import type { ViewConformanceJudge, ViewConformanceVerdict } from "./viewConformance";
 
@@ -156,6 +160,23 @@ export type BuildPackageInput = {
    * before this existed, which is what a Cast with no ink still gets.
    */
   inkPlates?: readonly CarriedInkPlate[];
+  /**
+   * WHAT THE ANCHOR CANNOT SHOW, AS WORDS — arrow 6 (FOUNDER, 2026-08-19:
+   * *"when signing a cast to make the angles the refined image is supplied as
+   * the reference and a description so that any features not visible are not
+   * lost"*).
+   *
+   * The anchor is a waist-up photograph. A tail, clawed feet or cybernetic
+   * hands are outside that frame entirely, so they rode into the full-body
+   * views on nothing at all.
+   *
+   * Selection is `viewFeatureWords.ts`'s, and it is narrow by construction: a
+   * feature the master framing PRESENTS rides nothing, because re-describing
+   * what the pixels already carry is the likeness drift fable-876 §2 forbids.
+   * Absent or empty, every view composes exactly the prompt it composed before
+   * this existed.
+   */
+  featureWords?: readonly CarriedFeatureWords[];
 };
 
 async function defaultStoreImage(input: {
@@ -398,11 +419,18 @@ async function buildOneView(
         ...plates.map((plate) => ({ bytes: plate.bytes, contentType: plate.contentType })),
       ];
       const inkClause = inkViewReferenceClause({ plates, firstOrdinal: 2 });
+      /*
+        THE WORDS FOR WHAT THE ANCHOR CANNOT SHOW ride in the same place the
+        plates' clause does, so there is one shape for "things that travel
+        beside the anchor" rather than two. Both are appended rather than
+        substituted: a Cast with neither sends the composer's own output, byte
+        for byte, which is the inertness both lanes are asserted on.
+      */
+      const wordsClause = composeViewFeatureWordsClause(input.featureWords ?? []).clause;
       const image = await engine.generateView({
-        prompt: inkClause === ""
-          ? composePackageViewPrompt(angle)
-          : `${composePackageViewPrompt(angle)}
-${inkClause}`,
+        prompt: [composePackageViewPrompt(angle), inkClause, wordsClause]
+          .filter((part) => part !== "")
+          .join("\n"),
         references,
         // §H.10: signed package views are 2K.
         resolution: "2K",

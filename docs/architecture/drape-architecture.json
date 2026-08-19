@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "364ee0408c3f4718"
+    "sourceFingerprint": "c9fec6833e5032bb"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 136
+      "moduleCount": 137
     },
     {
       "id": "domain:castingV2",
@@ -4103,6 +4103,12 @@
     {
       "id": "module:server/castingV2/viewConformance.ts",
       "path": "server/castingV2/viewConformance.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/viewFeatureWords.ts",
+      "path": "server/castingV2/viewFeatureWords.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -10106,6 +10112,10 @@
       "path": "server/castingV2/sheetPreview.test.ts"
     },
     {
+      "id": "test:server/castingV2/signFeatureWords.test.ts",
+      "path": "server/castingV2/signFeatureWords.test.ts"
+    },
+    {
       "id": "test:server/castingV2/signRecovery.test.ts",
       "path": "server/castingV2/signRecovery.test.ts"
     },
@@ -10184,6 +10194,10 @@
     {
       "id": "test:server/castingV2/viewConformance.test.ts",
       "path": "server/castingV2/viewConformance.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/viewFeatureWords.test.ts",
+      "path": "server/castingV2/viewFeatureWords.test.ts"
     },
     {
       "id": "test:server/castingV2/viewVocabulary.test.ts",
@@ -20366,6 +20380,11 @@
     },
     {
       "from": "module:server/castingV2/packageOrchestrator.ts",
+      "to": "module:server/castingV2/viewFeatureWords.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/packageOrchestrator.ts",
       "to": "module:server/db/castingV2Sign.ts",
       "kind": "imports"
     },
@@ -22076,12 +22095,37 @@
     },
     {
       "from": "module:server/castingV2/signService.ts",
+      "to": "module:server/castingV2/referenceLibrary.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/signService.ts",
+      "to": "module:server/castingV2/referenceSlots.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/signService.ts",
       "to": "module:server/castingV2/spendGuards.ts",
       "kind": "imports"
     },
     {
       "from": "module:server/castingV2/signService.ts",
+      "to": "module:server/castingV2/viewFeatureWords.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/signService.ts",
       "to": "module:server/db/castingV2InkPlates.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/signService.ts",
+      "to": "module:server/db/castingV2OpenKindProperties.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/signService.ts",
+      "to": "module:server/db/castingV2ReferenceLibrary.ts",
       "kind": "imports"
     },
     {
@@ -22117,6 +22161,11 @@
     {
       "from": "module:server/castingV2/signService.ts",
       "to": "module:server/storage.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/signService.ts",
+      "to": "module:shared/bodyAnchorRegions.ts",
       "kind": "imports"
     },
     {
@@ -22227,6 +22276,16 @@
     {
       "from": "module:server/castingV2/viewConformance.ts",
       "to": "module:shared/boardTypes.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/viewFeatureWords.ts",
+      "to": "module:server/castingV2/referenceSlots.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/viewFeatureWords.ts",
+      "to": "module:shared/bodyAnchorRegions.ts",
       "kind": "imports"
     },
     {

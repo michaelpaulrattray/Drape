@@ -65,6 +65,16 @@ import {
 import { createModuleLogger } from "../logging/logger";
 import { storageCopyExact, storageReadBytes } from "../storage";
 import { listCandidateInkPlates, type CandidateInkPlate } from "../db/castingV2InkPlates";
+import { listLineageReferences } from "../db/castingV2ReferenceLibrary";
+import type { BodyAnchorRegion } from "../../shared/bodyAnchorRegions";
+import { readOpenKindProperties } from "../db/castingV2OpenKindProperties";
+import { deriveLibrary } from "./referenceLibrary";
+import { openKindOfSlot } from "./referenceSlots";
+import {
+  regionForSlot,
+  selectCarriedFeatureWords,
+  type CarriedFeatureWords,
+} from "./viewFeatureWords";
 import { placementRidesPackageViews, type CarriedInkPlate } from "./inkViewReferences";
 
 /**
@@ -110,6 +120,12 @@ export type SignServiceDependencies = PackageOrchestratorDependencies & {
   /** Her plated tattoos, injected in tests. Absent, the real statement runs —
    *  owner-scoped through the design to the candidate. */
   listInkPlates?: typeof listCandidateInkPlates;
+  /** The feature library of the branch this Sign anchors on, injected in tests.
+   *  Absent, the real statement runs — owner-scoped in its own WHERE. */
+  listLibrary?: typeof listLineageReferences;
+  /** Where an open kind lives on the body. A table read, never a model call:
+   *  the answer was bought once at the acceptance door. */
+  readKindRegion?: typeof readOpenKindProperties;
   buildPackage?: typeof buildCastPackage;
   /**
    * How the package work is scheduled after the Cast exists.
@@ -428,6 +444,9 @@ export async function signCandidate(
       package whose reference disappeared underneath it.
     */
     anchorStorageKey,
+    /* The same variant the anchor's pixels came from, so the words and the
+       picture describe one branch (`branch-state-identity`). */
+    selectedVariantId: source.face.variantId,
     identityRevisionId: cast.identityRevisionId,
     identityText: documents.identityText,
     chargedCredits: price,
@@ -563,6 +582,109 @@ export async function carriedInkPlates(
 }
 
 /**
+ * WHAT THE ANCHOR CANNOT SHOW, GATHERED FOR THE VIEWS — arrow 6 (FOUNDER,
+ * 2026-08-19: *"when signing a cast to make the angles the refined image is
+ * supplied as the reference and a description so that any features not visible
+ * are not lost"*).
+ *
+ * The rule is `viewFeatureWords.ts`'s and it is narrow by construction. What
+ * this function owns is the READ: the library of the branch this Sign is
+ * anchoring on, and the body region of every open kind in it.
+ *
+ * # The branch, not the face
+ *
+ * `anchorVariantId` is the variant the Sign was quoted against, so the words and
+ * the pixels come from the same frame. Anchoring anywhere else is
+ * branch-state-identity failing: a Cast signed off a copper-shag branch would
+ * carry the blonde branch's features into its own views.
+ *
+ * # No model call, no credit
+ *
+ * The regions come from `casting_open_kind_properties`, a row the open lane
+ * already bought at the acceptance door — one text read per new noun ever. A
+ * kind with no row rides nothing rather than a guess.
+ *
+ * # A failure here NEVER fails the Sign
+ *
+ * Same shape as the plate lane, same reason. The Cast exists and the views are
+ * worth having; a feature missing from five frames is a smaller harm than five
+ * frames nobody gets. It returns what it could read and reports the rest.
+ *
+ * # AND THE LOG CARRIES SLOTS, NEVER WORDS
+ *
+ * The library's words are the customer's creative content — the class the access
+ * grid keeps out of every staff surface. They ride to the ENGINE, which is where
+ * every render already goes, and to nothing else. This line says WHICH features
+ * rode and why the others did not; `signServicePrivacy.test.ts` drives it.
+ *
+ * **Exported to be driven** (working law 3): every refusal here is reachable
+ * only through a whole Sign.
+ */
+export async function carriedFeatureWords(
+  dependencies: SignServiceDependencies,
+  input: {
+    userId: number;
+    candidateId: number;
+    selectedVariantId: number | null;
+    operationId: string;
+  },
+): Promise<readonly CarriedFeatureWords[]> {
+  let rows: Awaited<ReturnType<typeof listLineageReferences>>;
+  try {
+    rows = await (dependencies.listLibrary ?? listLineageReferences)({
+      userId: input.userId,
+      candidateId: input.candidateId,
+      anchorVariantId: input.selectedVariantId,
+    });
+  } catch (error) {
+    log.error(
+      { operationId: input.operationId, err: error },
+      "[signService] the feature library could not be read — the package renders without its words",
+    );
+    return [];
+  }
+  if (rows.length === 0) return [];
+
+  const entries = deriveLibrary(rows);
+  /*
+    ONE READ PER KIND, not one per row: a distributed kind files two slots and
+    they share a properties row. The map is built before the selection because
+    the selection is synchronous — a `regionOf` that awaited would make the
+    ordering of a customer's features depend on a database.
+  */
+  const regions = new Map<string, BodyAnchorRegion | null>();
+  for (const entry of entries) {
+    const open = openKindOfSlot(entry.slot);
+    if (open === null || regions.has(open.kind)) continue;
+    try {
+      const row = await (dependencies.readKindRegion ?? readOpenKindProperties)(open.kind);
+      regions.set(open.kind, row?.anchorRegion ?? null);
+    } catch (error) {
+      log.warn(
+        { operationId: input.operationId, kind: open.kind, err: error },
+        "[signService] a kind's region could not be read — it rides nothing rather than a guess",
+      );
+      regions.set(open.kind, null);
+    }
+  }
+
+  const selection = selectCarriedFeatureWords({
+    entries,
+    regionOf: (slot) => regionForSlot(slot, (kind) => regions.get(kind) ?? null),
+  });
+
+  log.info(
+    {
+      operationId: input.operationId,
+      rode: selection.carried.map((feature) => feature.slot),
+      declined: selection.declined,
+    },
+    "[signService] the features this Cast's views carry as words — slots only, never the words",
+  );
+  return selection.carried;
+}
+
+/**
  * Everything after the durable boundary: build, activate, seal.
  *
  * Contained on purpose — a throw in here must never look like a Sign failure to
@@ -579,6 +701,8 @@ async function completeSignPackage(
     agencyId: string;
     candidateId: number;
     anchorStorageKey: string;
+    /** The branch the Sign was quoted against — the words come from it too. */
+    selectedVariantId: number | null;
     identityRevisionId: string;
     identityText: string;
     chargedCredits: number;
@@ -591,6 +715,12 @@ async function completeSignPackage(
       candidateId: input.candidateId,
       operationId: input.operationId,
     });
+    const featureWords = await carriedFeatureWords(dependencies, {
+      userId: input.userId,
+      candidateId: input.candidateId,
+      selectedVariantId: input.selectedVariantId,
+      operationId: input.operationId,
+    });
     const result = await (dependencies.buildPackage ?? buildCastPackage)(dependencies, {
       userId: input.userId,
       operationId: input.operationId,
@@ -599,6 +729,7 @@ async function completeSignPackage(
       identityText: input.identityText,
       anchor: anchorBytes,
       inkPlates: ink.plates,
+      featureWords,
     });
 
     if (result.refundUnrecorded) {

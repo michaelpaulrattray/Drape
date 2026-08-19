@@ -773,6 +773,12 @@
   why: server/testing/ is test infrastructure by directory
   argued: 13a
 
+- symbol: cataloguedFeaturesWithRegion
+  file: server/castingV2/viewFeatureWords.ts
+  verdict: KEEP
+  why: the totality control's only door — it is how a catalogue feature added without a body region arrives as a failing test instead of a silent regionUnknown
+  argued: 13a
+
 - symbol: baseUrlOf
   file: server/testing/fetchablePort.ts
   verdict: KEEP
