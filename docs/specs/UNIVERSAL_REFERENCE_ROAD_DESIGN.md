@@ -907,8 +907,44 @@ nothing.
 
 #### Still not built, and named
 
-- **the `colour` take's wire.** `hairColourFromReference` is built and courted
-  and has no call site: a colour take is currently a picture that is not cut and
-  words that are not read. It is the next wire, not a defect in this one;
-- the drawing's quietness (§9.8) and the cross-sex regression arm, both of which
-  land with hair's final courts before `hair.open` flips.
+The drawing's quietness (§9.8) and the cross-sex regression arm, both of which
+land with hair's final courts before `hair.open` flips.
+
+### 9.13 THE COLOUR TAKE'S WIRE — words, and a sentence she adopts
+
+The crop road carries a specific LOOK. The colour take is the other half of his
+general law and it carries as WORDS, so it has no carrier, no cut and no
+segmenter call at all: `castingV2.reference.readHairColour` takes the handle of
+a picture she has already attached, reads it once on house money, and returns a
+SENTENCE.
+
+**It reads our own copy and takes no upload.** The makeup read next door carries
+its bytes in the request because makeup has no attach door — the picture is
+looked at once and dropped. Hair does have one, so a second upload of a
+photograph we already hold would be a second copy of somebody's picture on the
+wire for no reason. The handle resolves through `resolveAskReference`, the same
+three questions a refine asks: her account, her Cast, THIS Cast.
+
+**What comes back is a suggestion, and that is what makes it legal.** The
+sentence goes to her as words she adopts or edits before anything is charged
+(fable-940 bounds 3/4). It is also structural: `refineDelta` requires a free
+`hairShade` value to appear in the customer's own instruction, so a reading
+routed silently around her would be refused by a guard standing since D-171.
+Nothing is charged, the read is rate-limited on the makeup read's own bucket
+(the thing being paced is the same thing — reads on our money), and the demand
+row records THAT a hair read happened and how it ended, never the sentence.
+
+**Two words of migration came with it** (`0044`): the hair reader's refusals end
+in ways the makeup reader has no word for — `no_hair_visible` (its presence gate
+said no) and `no_colour_readable` (there is hair and no block of colour could be
+spoken for). Two values rather than one, and neither reusing
+`no_makeup_visible`: telling a customer her photograph has no hair in it because
+a reply came back shaped wrong is a claim about her picture that no reader made,
+and a shared word would merge two readers' gates in a tally that exists to tell
+them apart. Applied to dev; production takes it by the ceremony script.
+
+**And the two doors are pinned at the source**, because a dark road has no other
+arm that could go red: the flag is consulted before the rate limit and before
+any database read, the answer outside the scope is NOT_FOUND rather than a
+refusal that advertises the road, the handle resolves through the road's own
+three questions, and the storage key never appears in the projection.

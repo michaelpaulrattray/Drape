@@ -56,11 +56,24 @@ export const READ_TOKEN_TTL_MS = 30 * 60 * 1000;
 /**
  * What a reference read can be ABOUT.
  *
- * One member today. It is a union rather than a string so a second reader
- * cannot start writing an intent nothing has agreed to, and so the provenance
- * a row carries is drawn from a vocabulary rather than from a caller.
+ * A closed list rather than a string, so a second reader cannot start writing
+ * an intent nothing has agreed to, and so the provenance a row carries is drawn
+ * from a vocabulary rather than from a caller.
+ *
+ * **The list is the only copy.** Both doors below — the token's own parse and
+ * the persisted column's reader — test membership of THIS array rather than
+ * spelling a member out, because two hand-written `!== "makeup"` checks are
+ * exactly the second list working law 4 forbids: the day a third reader lands,
+ * one of them gets updated and the other silently refuses every token it sees.
  */
-export type ReferenceReadIntent = "makeup";
+export const REFERENCE_READ_INTENTS = ["makeup", "hair"] as const;
+
+export type ReferenceReadIntent = (typeof REFERENCE_READ_INTENTS)[number];
+
+function isReadIntent(value: unknown): value is ReferenceReadIntent {
+  return typeof value === "string"
+    && (REFERENCE_READ_INTENTS as readonly string[]).includes(value);
+}
 
 /**
  * How closely her instruction matched the sentence the reader produced.
@@ -181,7 +194,7 @@ export function verifyReadToken(input: {
   const parts = input.token.split(".");
   if (parts.length !== 4) return { ok: false, refusal: "malformed" };
   const [intent, hash, issuedAtText, signature] = parts as [string, string, string, string];
-  if (intent !== "makeup") return { ok: false, refusal: "malformed" };
+  if (!isReadIntent(intent)) return { ok: false, refusal: "malformed" };
   if (!/^[0-9a-f]{64}$/.test(hash)) return { ok: false, refusal: "malformed" };
   const issuedAt = Number(issuedAtText);
   if (!Number.isSafeInteger(issuedAt) || issuedAt <= 0) return { ok: false, refusal: "malformed" };
@@ -252,7 +265,7 @@ export function readStepProvenance(
     if (entry === null || typeof entry !== "object") return null;
     const one = entry as Partial<StepProvenance>;
     if (one.source !== "referenceRead") return null;
-    if (one.intent !== "makeup") return null;
+    if (!isReadIntent(one.intent)) return null;
     if (one.adopted !== "verbatim" && one.adopted !== "edited") return null;
     return { source: one.source, intent: one.intent, adopted: one.adopted };
   });

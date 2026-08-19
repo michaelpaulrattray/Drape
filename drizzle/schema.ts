@@ -2887,6 +2887,14 @@ export const CASTING_REFERENCE_READ_OUTCOMES = [
      photograph of a cyborg are different facts, and a tally that merged them
      would send the next reader to the wrong repair. */
   "out_of_class",
+  /* Migration 0044 — the HAIR colour reader's own two endings. `no_hair_visible`
+     is its presence gate answering no; `no_colour_readable` is hair that is
+     there and could not be spoken for. Two words rather than one, and neither
+     of them reusing makeup's `no_makeup_visible`: a shared word would merge two
+     readers' gates in the tally with no way to ask which is firing, which is
+     what the `intent` column beside this one exists to keep apart. */
+  "no_hair_visible",
+  "no_colour_readable",
 ] as const;
 
 /**

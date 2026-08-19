@@ -88,3 +88,26 @@ export async function recordReferenceRead(
     return false;
   }
 }
+
+/**
+ * The demand record's value for a finished read — DERIVED from the outcome
+ * rather than mapped beside it (law 4).
+ *
+ * The refusal codes are camelCase because they are TypeScript; the column's
+ * values are snake_case because it is SQL. That is a spelling difference and
+ * nothing more, so it is spelled mechanically. A hand-written map of pairs is a
+ * second list, and a second list shadowing a source of truth always drifts from
+ * it — usually on the fifth entry, which nobody adds to both.
+ *
+ * **It takes the SHAPE rather than one reader's type**, and it lives here
+ * rather than beside the makeup reader, because there are two readers now and a
+ * second copy of a mechanical spelling rule is the very thing the paragraph
+ * above refuses. What both outcomes have in common is exactly what this needs:
+ * they either delivered or they carry a refusal with a code.
+ */
+export function referenceReadOutcomeFor(
+  outcome: { ok: true } | { ok: false; refusal: { code: string } },
+): string {
+  if (outcome.ok) return "delivered";
+  return outcome.refusal.code.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`);
+}

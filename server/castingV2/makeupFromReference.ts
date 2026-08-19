@@ -511,17 +511,4 @@ export async function readMakeupFromReference(
   return { ok: true, sentence, used, dropped: leftOut };
 }
 
-/**
- * The demand record's value for a finished read — DERIVED from the outcome
- * rather than mapped beside it (law 4).
- *
- * The refusal codes are camelCase because they are TypeScript; the column's
- * values are snake_case because it is SQL. That is a spelling difference and
- * nothing more, so it is spelled mechanically. A hand-written map of four pairs
- * is a second list, and a second list shadowing a source of truth always drifts
- * from it — usually on the fifth entry, which nobody adds to both.
- */
-export function referenceReadOutcomeFor(outcome: MakeupReadOutcome): string {
-  if (outcome.ok) return "delivered";
-  return outcome.refusal.code.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`);
-}
+

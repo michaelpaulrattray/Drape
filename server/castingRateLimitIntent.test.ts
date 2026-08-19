@@ -182,6 +182,13 @@ describe("which bucket each casting procedure was handed", () => {
          shared bucket would let either road spend the other's allowance while
          nobody could tell from the counter which had done it. */
       attach: "castingReferenceAttach",
+      /* Reading the hair colour off a picture she ALREADY attached — the same
+         bucket as the makeup read and for the same reason: it keeps nothing,
+         and what it spends is one text call on house money with no credit path
+         pacing it. Sharing that bucket is right here where it was wrong for the
+         attach, because the thing being paced is the same thing — reads on our
+         own money — rather than two different roads' storage. */
+      readHairColour: "castingReferenceRead",
     });
   });
 

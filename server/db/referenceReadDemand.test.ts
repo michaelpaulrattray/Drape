@@ -18,10 +18,9 @@ import {
   castingReferenceReads,
 } from "../../drizzle/schema";
 import { REFERENCE_INTENTS } from "../../shared/referenceIntents";
-import {
-  MAKEUP_READ_REFUSAL_CODES,
-  referenceReadOutcomeFor,
-} from "../castingV2/makeupFromReference";
+import { MAKEUP_READ_REFUSAL_CODES } from "../castingV2/makeupFromReference";
+import { HAIR_COLOUR_READ_REFUSAL_CODES } from "../castingV2/hairColourFromReference";
+import { referenceReadOutcomeFor } from "./castingV2ReferenceReads";
 
 describe("the reference-read demand record", () => {
   it("holds a column value for every way a read can end badly", () => {
@@ -38,6 +37,37 @@ describe("the reference-read demand record", () => {
         `the reader can refuse with "${code}" and the column has no value for it — that row would write as the empty string`,
       ).toContain(outcome);
     }
+  });
+
+  it("holds a column value for every way the HAIR reader can end badly", () => {
+    /*
+      THE SECOND READER, walked the same way — and this is the arm that would
+      have caught the two words missing from the column when the colour take was
+      wired. A reader whose refusals have no column value does not fail: the
+      writer logs and skips, and the tally simply never learns that its gate is
+      firing.
+    */
+    for (const code of HAIR_COLOUR_READ_REFUSAL_CODES) {
+      const outcome = referenceReadOutcomeFor({
+        ok: false,
+        refusal: { code, message: "irrelevant here" },
+      });
+      expect(
+        CASTING_REFERENCE_READ_OUTCOMES,
+        `the hair reader can refuse with "${code}" and the column has no value for it`,
+      ).toContain(outcome);
+    }
+  });
+
+  it("keeps the two readers' gates APART in the tally", () => {
+    /* `no_makeup_visible` and `no_hair_visible` are two facts about two
+       readers, and a shared word would merge them with no way to ask which one
+       is firing — which is what the `intent` column beside the outcome exists
+       to prevent, and it cannot do it alone. */
+    expect(referenceReadOutcomeFor({ ok: false, refusal: { code: "noHairVisible", message: "" } }))
+      .toBe("no_hair_visible");
+    expect(referenceReadOutcomeFor({ ok: false, refusal: { code: "noMakeupVisible", message: "" } }))
+      .toBe("no_makeup_visible");
   });
 
   it("holds a value for the read that worked", () => {

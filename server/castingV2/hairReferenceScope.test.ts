@@ -12,6 +12,8 @@
  * wearing a tap target. Nothing else in the product would go red if this stopped
  * refusing — the question would simply start being asked.
  */
+import { readFileSync } from "node:fs";
+
 import { afterEach, describe, expect, it } from "vitest";
 import {
   CASTING_HAIR_REFERENCE_SCOPE_ENV,
@@ -129,5 +131,71 @@ describe("the AND is taken at the point of use, not only at boot", () => {
     });
     expect(captureCastingHairReferenceEnabled(1)).toBe(true);
     expect(captureCastingHairReferenceEnabled(2)).toBe(false);
+  });
+});
+
+/**
+ * AND THE TWO DOORS THIS FLAG IS SUPPOSED TO SHUT, read at the source that
+ * declares them.
+ *
+ * The flag's own behaviour is driven above. What cannot be driven without the
+ * whole app is the COMPOSITION — that the colour read's procedure consults it
+ * at all, and that it answers NOT_FOUND rather than a refusal that advertises a
+ * capability. A capability whose gate is one line above it in a file is exactly
+ * the sort of line a later edit moves, and nothing else in this suite would
+ * notice: the road is dark, so no other arm can go red.
+ */
+describe("the colour read's door, pinned at the source", () => {
+  const source = readFileSync(
+    new URL("../routes/castingV2.ts", import.meta.url),
+    "utf8",
+  );
+  /* BOUNDED TO THE PROCEDURE'S OWN TEXT. An unbounded slice runs to the end of
+     the file and picks up every later procedure's lines, which is how an
+     absence assertion passes or fails on somebody else's code — it failed on
+     `storagePublicUrl` from a procedure three hundred lines down. */
+  /* The sub-router's own closing line — a newline then the brace. Built rather
+     than typed, because this file is edited by tooling that has already turned
+     one escaped newline into a real one. */
+  const END_OF_ROUTER = String.fromCharCode(10) + "});";
+  const from = source.indexOf("  readHairColour: protectedProcedure");
+  const procedure = source.slice(from, source.indexOf(END_OF_ROUTER, from));
+
+  it("is declared at all, and the reader in this test can see it", () => {
+    /* The instrument's own control: a renamed procedure would make every
+       assertion below vacuously true against an empty string. */
+    expect(procedure.length).toBeGreaterThan(500);
+    expect(procedure).toContain("readHairColourFromReference");
+  });
+
+  it("checks the flag BEFORE the rate limit and before any database read", () => {
+    const flag = procedure.indexOf("captureCastingHairReferenceEnabled");
+    const limit = procedure.indexOf("enforceRateLimit");
+    const owned = procedure.indexOf("resolveOwnedCandidateId");
+    expect(flag).toBeGreaterThan(-1);
+    expect(flag).toBeLessThan(limit);
+    expect(flag).toBeLessThan(owned);
+  });
+
+  it("answers NOT_FOUND outside the scope — a refusal would advertise the road", () => {
+    const gate = procedure.slice(procedure.indexOf("captureCastingHairReferenceEnabled"));
+    expect(gate.slice(0, 300)).toContain("NOT_FOUND");
+  });
+
+  it("resolves the handle through the road's own three questions", () => {
+    /* Never a direct row read: `resolveAskReference` is where her account, her
+       Cast and THIS Cast are proved, and a second path to the bytes would be a
+       second answer to who may read them. */
+    expect(procedure).toContain("resolveAskReference");
+  });
+
+  it("never hands back the storage key", () => {
+    /* A permanently public address for a photograph of a person, returned
+       before anything needs it, is a URL that outlives every reason it was
+       minted for. */
+    const opens = procedure.indexOf("      return {");
+    const projection = procedure.slice(opens, procedure.indexOf("      };", opens));
+    expect(projection).not.toContain("storageKey");
+    expect(projection).not.toContain("storagePublicUrl");
   });
 });

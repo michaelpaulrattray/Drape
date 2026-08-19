@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "b01410afc1209f7e"
+    "sourceFingerprint": "f40404ee4d807954"
   },
   "domains": [
     {
@@ -6450,6 +6450,16 @@
       "id": "route:castingV2.reference.attach",
       "namespace": "castingV2.reference",
       "name": "attach",
+      "type": "mutation",
+      "auth": "protected",
+      "strictInput": true,
+      "rateLimited": true,
+      "file": "server/routes/castingV2.ts"
+    },
+    {
+      "id": "route:castingV2.reference.readHairColour",
+      "namespace": "castingV2.reference",
+      "name": "readHairColour",
       "type": "mutation",
       "auth": "protected",
       "strictInput": true,
@@ -24919,6 +24929,11 @@
     },
     {
       "from": "module:server/routes/castingV2.ts",
+      "to": "module:server/castingV2/askReference.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/castingV2.ts",
       "to": "module:server/castingV2/briefCompiler.ts",
       "kind": "imports"
     },
@@ -24960,6 +24975,11 @@
     {
       "from": "module:server/routes/castingV2.ts",
       "to": "module:server/castingV2/faceScanService.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/castingV2.ts",
+      "to": "module:server/castingV2/hairColourFromReference.ts",
       "kind": "imports"
     },
     {

@@ -1,0 +1,54 @@
+-- THE HAIR READER'S OWN ENDINGS — two new values on the reference-read demand
+-- record's `outcome` enum (the colour take's wire).
+--
+-- ============================================================================
+-- WHY A MIGRATION FOR TWO WORDS
+-- ============================================================================
+--
+-- `casting_reference_reads.outcome` is a MySQL ENUM, and MySQL's failure mode
+-- for a value outside an enum is to write the EMPTY STRING rather than to
+-- refuse: a row that counts toward a tally and names nothing. The demand record
+-- is about to gain a second READER — the hair colour one — and its refusals end
+-- in ways the makeup reader has no word for.
+--
+-- The writer already refuses a value the column does not hold
+-- (`recordReferenceRead` proves the outcome against
+-- `CASTING_REFERENCE_READ_OUTCOMES` before the insert and logs instead of
+-- writing), so running behind this file costs a LOST TALLY and never a
+-- customer's answer. It is still first, because the tally is the only record
+-- that the refusal is firing at all.
+--
+-- ============================================================================
+-- WHAT THE TWO VALUES MEAN, AND WHY THEY ARE TWO
+-- ============================================================================
+--
+-- `no_hair_visible`    the presence gate answered NO: there is no hair growing
+--                      on a head in that picture. Measured on the same bytes
+--                      that fooled the makeup reader — a bald cyborg and a
+--                      golden retriever both answered "no" 2/2 — because a
+--                      presence question anchored on a BODY PART is a gate,
+--                      while one anchored on a judgement is a prompt.
+--
+-- `no_colour_readable` there IS hair and no block of colour could be spoken
+--                      for. A different fact, kept apart deliberately: telling
+--                      a customer her photograph has no hair in it because a
+--                      reply came back shaped wrong is a claim about her
+--                      picture that no reader made. One sentinel meaning two
+--                      things is a defect this campaign has already paid for
+--                      twice.
+--
+-- The makeup reader's `no_makeup_visible` is NOT reused for the first of them.
+-- A shared word would merge two readers' gates in the tally and there would be
+-- no way to ask which one is firing — which is the whole reason this table
+-- carries an `intent` column beside the outcome.
+--
+-- ============================================================================
+-- PURELY ADDITIVE
+-- ============================================================================
+--
+-- Two values appended to one enum. No existing value changes position or
+-- spelling, no row is rewritten, no column is dropped. Existing rows keep the
+-- value they were written with, and a deploy running ahead of this file writes
+-- no hair-refusal row rather than a broken one.
+ALTER TABLE `casting_reference_reads`
+	MODIFY COLUMN `outcome` enum('delivered','no_transport','unreadable','no_makeup_visible','names_hair','out_of_class','no_hair_visible','no_colour_readable') NOT NULL;

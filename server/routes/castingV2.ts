@@ -18,6 +18,8 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { ENV } from "../_core/env";
 import { issueReadToken } from "../castingV2/referenceProvenance";
+import { resolveAskReference } from "../castingV2/askReference";
+import { storageReadBytes } from "../storage";
 
 import { router, protectedProcedure } from "../_core/trpc";
 import { checkRateLimit, RATE_LIMITS, rateLimitError } from "../security/rateLimit";
@@ -29,6 +31,7 @@ import { storagePublicUrl } from "../storage";
 import { assertClientRequestId } from "../../shared/clientRequestId";
 import { CASTING_V2_COSTS, CASTING_V2_ROLL_PRICE_CREDITS } from "../casting/castingCreditCosts";
 import {
+  captureCastingHairReferenceEnabled,
   captureCastingInkStudioEnabled,
   captureCastingReferenceAttachEnabled,
   captureCastingRepaintEnabled,
@@ -46,12 +49,11 @@ import {
   inkDesignContentType,
   isInkDesignFormat,
 } from "../castingV2/inkUploadDoor";
-import {
-  readMakeupFromReference,
-  referenceReadOutcomeFor,
-} from "../castingV2/makeupFromReference";
+import { readMakeupFromReference } from "../castingV2/makeupFromReference";
+import { readHairColourFromReference } from "../castingV2/hairColourFromReference";
 import {
   recordReferenceRead,
+  referenceReadOutcomeFor,
   type ReferenceReadOutcome,
 } from "../db/castingV2ReferenceReads";
 import { uploadInkDesign } from "../castingV2/inkUploadService";
@@ -661,6 +663,136 @@ const referenceRouter = router({
         provenanceToken,
       };
     }),
+
+  /**
+   * TAKING A HAIR COLOUR FROM THE PICTURE SHE ALREADY ATTACHED — the colour
+   * take's WORDS road (his ruling, fable-1047 §3; the reader is
+   * `hairColourFromReference`, courted before this door existed).
+   *
+   * # It reads OUR copy, and takes no upload
+   *
+   * The makeup read next door carries its bytes in the request, because makeup
+   * has no attach door: the picture is looked at once and dropped. Hair does
+   * have one — the crop road needs our own copy under the candidate's purge
+   * path — so this takes the HANDLE and resolves it exactly as a refine does,
+   * through `resolveAskReference`: her account, her Cast, this Cast. A second
+   * upload of a photograph we already hold would be a second copy of somebody's
+   * picture on the wire for no reason at all.
+   *
+   * # WHAT COMES BACK IS A SUGGESTION, and that is what makes it legal
+   *
+   * The sentence goes to her as words she adopts or edits before anything is
+   * charged. It is a product promise (fable-940 bounds 3/4) and a structural
+   * requirement: `refineDelta` requires a free `hairShade` value to appear in
+   * the customer's own instruction, so a reading routed silently around her
+   * would be refused by a guard that has stood there since D-171.
+   *
+   * # AND NOTHING HERE IS CHARGED
+   *
+   * One text call on house money, rate-limited per account on the same bucket
+   * the makeup read uses. The demand row records THAT a hair read happened and
+   * how it ended — never the sentence, never the account, never the Cast.
+   */
+  readHairColour: protectedProcedure
+    .input(z.object({
+      /* Candidate-scoped for ownership (invariant 1): the handle is
+         re-anchored to this Cast inside the resolve, because an attachment of
+         hers on a DIFFERENT Cast is not this ask's reference (invariant 2). */
+      candidateId: publicId,
+      referenceId: publicId,
+    }).strict())
+    .mutation(async ({ ctx, input }) => {
+      /*
+        THE FLAG FIRST, and NOT_FOUND rather than a refusal — outside the scope
+        there is no such capability, and a code that says "not yet" advertises
+        one. `resolveAskReference` checks the same flag again on its own way in;
+        that is deliberate rather than redundant, because it is the door that
+        would otherwise resolve a handle for an account no road can serve.
+      */
+      if (!captureCastingHairReferenceEnabled(ctx.user.id)) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "No such thing." });
+      }
+      enforceRateLimit(ctx.user.id, RATE_LIMITS.castingReferenceRead);
+
+      /* From the session, never from input (invariant 3); and somebody else's
+         Cast is answered the way a missing one is. */
+      const candidateId = await resolveOwnedCandidateId({
+        userId: ctx.user.id,
+        candidatePublicId: input.candidateId,
+      }).catch(() => null);
+      if (candidateId === null) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Cast not found" });
+      }
+
+      const reference = await resolveAskReference({
+        userId: ctx.user.id,
+        referencePublicId: input.referenceId,
+        candidateId,
+      });
+      if (!reference) {
+        throw spokenError({
+          code: "NOT_FOUND",
+          message: "That picture isn't attached to this Cast any more — attach it again and I'll take a look.",
+        });
+      }
+
+      /* The bytes are fetched by the SERVER from the key it holds. The key
+         never leaves this process: it is a permanently public address for a
+         photograph of a person, and handing one out before something needs it
+         is a URL that outlives every reason it was minted for. */
+      const stored = await storageReadBytes(reference.storageKey);
+      const outcome = await readHairColourFromReference({
+        bytes: stored.bytes,
+        contentType: reference.mime,
+      });
+
+      /*
+        THE DEMAND ROW, fire-and-forget. It records THAT a hair read happened
+        and how it ended — never the sentence, never the account, never the
+        Cast. It cannot reject and nothing here awaits its verdict: telemetry
+        may not take an answer away from somebody who asked for one.
+      */
+      void recordReferenceRead("hair", referenceReadOutcomeFor(outcome) as ReferenceReadOutcome);
+
+      if (!outcome.ok) {
+        throw spokenError({ code: "BAD_REQUEST", message: outcome.refusal.message });
+      }
+
+      /*
+        AN EXPLICIT PROJECTION (invariant 8), and every field in it is FOR HER
+        EYES BEFORE ANYTHING IS SPENT.
+
+        `blocksRead` and `blocksDropped` are the no-silent-caps half: a head can
+        hold more blocks of colour than the destination's cap can carry, and
+        what did not fit comes back so she can see it and type it herself. The
+        alternative — narrowing the fields until four always fit — was refused,
+        because an announced cap is a BRIEF and buys the fourth block by making
+        all four vaguer.
+      */
+      const provenanceToken = (() => {
+        try {
+          return issueReadToken({
+            secret: ENV.cookieSecret,
+            userId: ctx.user.id,
+            candidateId,
+            intent: "hair",
+            sentence: outcome.sentence,
+            issuedAt: Date.now(),
+          });
+        } catch {
+          /* Minting cannot fail an answer she is owed. */
+          return undefined;
+        }
+      })();
+
+      return {
+        sentence: outcome.sentence,
+        blocksRead: outcome.used,
+        blocksDropped: outcome.dropped,
+        readFromReference: true,
+        provenanceToken,
+      };
+    }),
 });
 
 export const castingV2Router = router({
@@ -704,6 +836,21 @@ export const castingV2Router = router({
       has no business knowing which environment variable governs it.
     */
     makeupFromReferenceEnabled: captureCastingInkStudioEnabled(ctx.user.id),
+    /*
+      AND WHETHER SHE MAY TAKE A HAIR COLOUR OFF A PICTURE SHE ATTACHED.
+
+      A THIRD gate rather than a reuse of the one above, because these are two
+      roads with two flags that move independently: the makeup read lives behind
+      the ink studio's scope and this lives behind the hair reference's, which is
+      OFF in production while the studio's is on. One gate per capability is the
+      same doctrine as `stepBackEnabled` — when a road widens its affordance
+      widens with it, and a control drawn from the wrong flag is a control that
+      answers NOT_FOUND.
+
+      It is named for the CAPABILITY rather than for the flag: a client has no
+      business knowing which environment variable governs it.
+    */
+    hairColourFromReferenceEnabled: captureCastingHairReferenceEnabled(ctx.user.id),
   })),
 
   createSession: protectedProcedure
