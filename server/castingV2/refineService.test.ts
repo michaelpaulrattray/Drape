@@ -8832,7 +8832,72 @@ describe("the picture she attached becomes the carrier that rides", () => {
     }
     expect(flat).toBe(30 * 30);
   });
+
+  it("NARROWS A DRAWING to the words road — free, and it names the sentence she could type", async () => {
+    /*
+      The class door on the path a customer's money travels (fable-1075 §1). A
+      crop rides into a repaint as a picture of the thing to reproduce, so a
+      gouache painting there asks an engine to paint PAINT onto her head. The
+      colour is a different matter, which is why the answer offers it.
+    */
+    const result = await refineCandidate(carrierRoad({ readMedium: async () => "drawn" as const }), {
+      ...input,
+      instruction: "copy this hairstyle",
+      referenceId: "ref-public",
+    });
+
+    expect(result.kind).toBe("selected");
+    expect(result.note).toMatch(/illustration/);
+    expect(result.note).toMatch(/copy just the hair colour/);
+    /* Nothing cut, nothing claimed, nothing charged — and the segmenter never
+       asked a question about a picture the road had already declined. */
+    expect(asked).toEqual([]);
+    expect(minted).toHaveLength(0);
+    expect(journal).not.toContain("begin");
+    expect(journal).not.toContain("deduct");
+  });
+
+  it("changes NOTHING when the medium cannot be read — the arm that keeps a bad minute from turning her away", async () => {
+    /*
+      A door that narrows on silence turns customers away on a provider's bad
+      minute, which is the verdict fable-1052 forbids. The licence to narrow
+      comes from a positive `drawn` answer or from nowhere.
+    */
+    await refineCandidate(carrierRoad({ readMedium: async () => "unreadable" as const }), {
+      ...input,
+      instruction: "copy this hairstyle",
+      referenceId: "ref-public",
+    });
+
+    expect(minted).toHaveLength(1);
+    expect(painted[0]!.references).toHaveLength(2);
+  });
+
+  it("asks the class door only once BOTH cheap doors have said this ask wants a crop", async () => {
+    /* A vision read is house money on a paid path. An ask that never wanted a
+       crop must not buy one — the colour take and the non-hair ask both stop
+       short of it. */
+    const asks: number[] = [];
+    const counting = { readMedium: async () => { asks.push(1); return "photograph" as const; } };
+
+    await refineCandidate(carrierRoad({ ...counting, hairTake: async () => "colour" as const }), {
+      ...input, instruction: "copy just the hair colour", referenceId: "ref-public",
+    });
+    expect(asks).toHaveLength(0);
+
+    await refineCandidate(carrierRoad({
+      ...counting,
+      interpret: async () => ({ ok: true as const, delta: { eyeColour: "green" as const } }),
+    }), { ...input, instruction: "copy this hairstyle", referenceId: "ref-public" });
+    expect(asks).toHaveLength(0);
+
+    await refineCandidate(carrierRoad(counting), {
+      ...input, instruction: "copy this hairstyle", referenceId: "ref-public",
+    });
+    expect(asks).toHaveLength(1);
+  });
 });
+
 
 /*
   A REGENERATE RE-SENDS THE PICTURE SHE ATTACHED — the arm ordered in

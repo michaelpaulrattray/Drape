@@ -375,7 +375,11 @@ style-not-colour assertion at the wire is the first half; the drift court is the
 second, and it needs the `carry-noise-floor` bought before any figure from it
 means anything.
 
-### 9.4 The class door, as ruled (fable-1075) — not yet built
+### 9.4 The class door, as ruled (fable-1075) — BUILT, courted 8/8, and wired
+
+*Built as `referenceMediumDoor.ts`, wired into the crop lane, and its
+false-positive court PASSED before the wire existed — see §9.14. The ruling
+below is unchanged and is what it implements.*
 
 Measured, four specimens, both directions: **hair does not have makeup's
 out-of-class defect.** Handed the cyborg — the very bytes on which the makeup
@@ -948,3 +952,61 @@ arm that could go red: the flag is consulted before the rate limit and before
 any database read, the answer outside the scope is NOT_FOUND rather than a
 refusal that advertises the road, the handle resolves through the road's own
 three questions, and the storage key never appears in the projection.
+
+### 9.14 THE CLASS DOOR, BUILT AND COURTED (`referenceMediumDoor.ts`)
+
+One question — *is this a PHOTOGRAPH taken with a camera, or is it DRAWN* — with
+a closed one-word answer, so there is no field for a hedge or for a claim about
+the person to arrive in.
+
+```
+  photograph   both roads — the crop takes and the words take
+  drawn        the WORDS take only; the crop is declined and the words road is
+               offered in the same breath, naming the sentence she could type
+  unreadable   BOTH ROADS, exactly as if this door were not here
+```
+
+**The third row is load-bearing.** A door that narrows on silence turns
+customers away on a provider's bad minute — the verdict fable-1052 forbids — so
+the licence to narrow comes from a positive `drawn` answer or from nowhere.
+
+#### THE FALSE-POSITIVE COURT — the bar was ZERO, and it passed 8/8
+
+Ruled to ship before the door is live anywhere. Three of the four arms are REAL
+pictures, because the failure that matters is not a drawing read as a photograph
+(the words road serves a drawing well, 4/4 — §9.13) but a real customer's real
+photograph read as a drawing and quietly denied the crop road she asked for.
+
+```
+  A  his colour specimen     real, stylised, four blocked tones    photograph  2/2
+  B  the retouched portrait  real, smoothed studio frame           photograph  2/2
+  C  THE CYBORG              a real photograph of a man in metal
+                             prosthetics with one glowing red eye  photograph  2/2
+  D  the salon illustration  ink and gouache, pencil lines showing  drawn      2/2
+
+  VERDICT: PASS — 0 misses, 0 real photographs turned away.  $0.053478
+```
+
+**Arm C is the court's centre.** A photograph that looks synthetic is the exact
+shape of a false positive, and those are the same bytes that fooled the makeup
+reader in the opposite direction — it called prosthetic circuitry a cosmetic
+look. One specimen catching two readers' opposite defects.
+
+The bar is zero rather than a rate because the cost of one false positive is a
+real customer's real photograph turned away from the crop she paid for, and she
+has no way to argue with it.
+
+#### On the request path, and what it costs
+
+Asked only once both cheap doors have said this ask wants a crop of her hair: a
+non-hair ask and a colour take buy nothing. One vision read of house money per
+crop-take refine, before the claim, so every outcome here is free to her.
+
+#### The count is deferred, and named
+
+§9.4 asks for the narrowing to be counted so a false-positive rate has a signal.
+The demand column has no value for it, adding one is a migration, and this door
+cannot be reached by anybody until the hair flag flips — so the value rides with
+that flip in one ceremony rather than sitting on the founder's desk twice. Until
+then the narrowing is a log line, said here rather than left to be discovered by
+somebody looking for a tally.

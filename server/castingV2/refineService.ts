@@ -132,6 +132,9 @@ import { resolveAskReference } from "./askReference";
 import { cutHairCarrier, mintHairCarrier, SECOND_VIEW_UNUSED_NOTE } from "./hairReferenceCutter";
 import { hairTakeEntry, resolveHairTake } from "./hairReferenceTake";
 import {
+  cropTakeAllowedOn, readReferenceMedium, DRAWN_NARROWED_NOTE,
+} from "./referenceMediumDoor";
+import {
   LEAVE_AS_SHE_IS,
   alreadyUpsweptReask,
   glassesHideEyesReask,
@@ -489,6 +492,9 @@ export type RefineServiceDependencies = {
    */
   hairTake?: typeof resolveHairTake;
   mintCarrier?: typeof mintHairCarrier;
+  /** Whether her picture is a photograph or a drawing — the class door's
+   *  reader, injected so the suite drives the routing without a vision call. */
+  readMedium?: typeof readReferenceMedium;
   /** The reader that checks the picture against the record (D-185). */
   verifier?: Parameters<typeof verifyRender>[0]["engine"];
   admit?: () => boolean;
@@ -3314,6 +3320,50 @@ async function refineCandidateCounted(
       );
     } else {
       const attached = await (dependencies.readBytes ?? storageReadBytes)(reference.storageKey);
+      /*
+        IS IT A PHOTOGRAPH, OR A DRAWING OF ONE — the class door (fable-1075 §1),
+        asked HERE because this is the only lane it governs.
+
+        A crop is carried into a repaint as a picture of the thing to be
+        reproduced, so a gouache painting sent there asks an engine to reproduce
+        PAINT on a photograph of a person's head. The colour is a different
+        matter and that is why the words road stays open in the same sentence:
+        a copper read off a drawing is an honest copper.
+
+        **It routes and never turns her away.** A drawn answer narrows this ask
+        to the words road and names the sentence she could type; an unreadable
+        answer changes nothing at all, because the licence to narrow comes from
+        a positive answer or from nowhere.
+
+        It costs one vision read on house money, bought only once BOTH cheap
+        doors above have said this ask wants a crop of her hair — a non-hair ask
+        and a colour take buy nothing here.
+
+        Its false-positive court passed 8/8 before this line existed, with the
+        bar at ZERO rather than at a rate: a real photograph read as a drawing
+        turns a customer away from the crop she asked for, and she has no way to
+        argue with it. The hardest arm was a photograph of a man in metal
+        prosthetics with one glowing red eye — the same bytes that fooled the
+        makeup reader in the opposite direction — and it read photograph 2/2.
+      */
+      const medium = await (dependencies.readMedium ?? readReferenceMedium)({
+        bytes: attached.bytes,
+        contentType: reference.mime,
+      });
+      if (!cropTakeAllowedOn(medium)) {
+        log.info(
+          { userId: input.userId, candidate: input.candidatePublicId, medium },
+          "[refineService] the picture is drawn — narrowing to the words road rather than cutting a carrier from it",
+        );
+        return {
+          kind: "selected",
+          note: DRAWN_NARROWED_NOTE,
+          variantId: source.variantPublicId,
+          candidateId: input.candidatePublicId,
+          imageUrl: currentImageUrl,
+          instructions: readInstructions(predecessorForParse?.instructions),
+        };
+      }
       const cut = await cutHairCarrier({
         bytes: attached.bytes,
         reader: dependencies.regions ?? defaultRegionReader(),
