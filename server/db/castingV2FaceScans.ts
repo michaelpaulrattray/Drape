@@ -26,8 +26,11 @@
  */
 import { and, eq, inArray } from "drizzle-orm";
 
-import { castingFaceScans } from "../../drizzle/schema";
-import { getDb, type TransactionHandle } from "./connection";
+import { randomUUID } from "node:crypto";
+
+import { castingFaceScans, storageCleanupBatches, storageCleanupItems } from "../../drizzle/schema";
+import { getDb, withTransaction, type TransactionHandle } from "./connection";
+import { createStorageCleanupManifestIn, undischargedStorageCleanupBatchWhere } from "./storageCleanup";
 
 async function requireDb() {
   const db = await getDb();
@@ -135,6 +138,35 @@ export async function readKeptFaceScan(input: {
  * frame moved, or the row was refused as stale. Two rows for one version would
  * break the founder's bound, and the unique key would refuse the second write
  * anyway — so the replace is stated here rather than discovered as an error.
+ *
+ * # THE MANIFEST IS DISCHARGED HERE, AND ITS ABSENCE COST THE WHOLE TABLE
+ *
+ * The library's discipline is manifest → bytes → row, and **the row's own
+ * transaction releases the receipt**. Every other writer on this road does it
+ * (`recordInkDesign`, the plate mint); this one did not, and the consequence
+ * was not a leak — it was the exact opposite, and it was silent.
+ *
+ * `keepScan` registered the stencil keys for cleanup, wrote the bytes, and
+ * wrote this row with nothing to discharge. So the hold lapsed at five minutes,
+ * the sweep ran within sixty seconds, and **the worker deleted the stencils the
+ * scan had just paid for.** The row survived, pointing at objects that no
+ * longer existed; `serveKeptScan` found it, matched the frame, failed to fetch
+ * a stencil and returned null — on the one branch that logs nothing. Every look
+ * at that face then re-bought a twenty-call segmenter scan, forever.
+ *
+ * Measured on production, 2026-08-19: three faces re-scanned at 01:16, 01:17
+ * and 01:20 despite holding matching kept rows, each with a cleanup batch born
+ * seconds later and `succeeded` about six minutes after that. The table had
+ * never once answered since it was flipped on.
+ *
+ * # AND THE REPLACED ROW'S OWN STENCILS ARE HANDED TO THE WORKER
+ *
+ * The other half, and it is the same rule pointing the other way. An upsert
+ * that replaced a row used to orphan the previous reading's objects: nothing
+ * referenced them and nothing would ever collect them, because the candidate
+ * purge reads the CURRENT row's geometry. So the old keys are registered on a
+ * fresh manifest in this same transaction — the receipt for bytes that have
+ * just stopped being referenced.
  */
 export async function keepFaceScan(input: {
   publicId: string;
@@ -144,6 +176,14 @@ export async function keepFaceScan(input: {
   frameKey: string;
   geometry: StoredScanGeometry;
   stencilBytes: number;
+  /**
+   * The manifest holding the new stencils while this row is written.
+   *
+   * Optional in the type only so a caller with nothing to discharge cannot be
+   * forced to invent one — a scan that found no slots writes no objects. On
+   * every path that DID store bytes, the caller passes it.
+   */
+  cleanupBatchId?: string;
 }): Promise<void> {
   const row = {
     publicId: input.publicId,
@@ -154,13 +194,66 @@ export async function keepFaceScan(input: {
     geometry: input.geometry,
     stencilBytes: input.stencilBytes,
   };
-  const db = await requireDb();
-  await db.insert(castingFaceScans).values(row).onDuplicateKeyUpdate({
-    set: {
-      frameKey: row.frameKey,
-      geometry: row.geometry,
-      stencilBytes: row.stencilBytes,
-    },
+  return withTransaction(async (tx) => {
+    /* What is about to be replaced, read INSIDE the transaction — a reading
+       taken before it would be a claim about a row another write may have
+       moved. */
+    const [previous] = await tx
+      .select({ geometry: castingFaceScans.geometry })
+      .from(castingFaceScans)
+      .where(and(
+        eq(castingFaceScans.userId, input.userId),
+        eq(castingFaceScans.candidateId, input.candidateId),
+        eq(castingFaceScans.versionKey, row.versionKey),
+      ))
+      .limit(1);
+
+    await tx.insert(castingFaceScans).values(row).onDuplicateKeyUpdate({
+      set: {
+        frameKey: row.frameKey,
+        geometry: row.geometry,
+        stencilBytes: row.stencilBytes,
+      },
+    });
+
+    if (input.cleanupBatchId) {
+      /*
+        The new stencils are now referenced by a row, so the manifest holding
+        them must go — in this same transaction, or the worker deletes the
+        objects this reading depends on. Asserted rather than assumed: a
+        manifest that does not delete means something else already claimed it,
+        and committing on top of that files a row whose bytes are already
+        scheduled to die. Which is the state this function was in.
+      */
+      await tx.delete(storageCleanupItems)
+        .where(eq(storageCleanupItems.batchId, input.cleanupBatchId));
+      const removed = await tx.delete(storageCleanupBatches).where(and(
+        eq(storageCleanupBatches.id, input.cleanupBatchId),
+        eq(storageCleanupBatches.userId, input.userId),
+        undischargedStorageCleanupBatchWhere(),
+      ));
+      if (affectedRows(removed) !== 1) {
+        throw new Error("the kept scan's manifest was already claimed — refusing to file a row whose stencils are scheduled for deletion");
+      }
+    }
+
+    const orphaned = ((previous?.geometry as StoredScanGeometry | null)?.slots ?? [])
+      .map((slot) => slot.maskKey)
+      .filter((key): key is string => Boolean(key));
+    if (orphaned.length > 0) {
+      /* Nothing references these any more, and the candidate purge only ever
+         sees the CURRENT row — so without this they outlive everything. */
+      await createStorageCleanupManifestIn(tx, {
+        id: randomUUID(),
+        userId: input.userId,
+        operationId: randomUUID(),
+        kind: "casting_candidate_cleanup",
+        storageItems: orphaned.map((storageKey) => ({
+          storageKey,
+          storageBackend: "public_r2" as const,
+        })),
+      });
+    }
   });
 }
 

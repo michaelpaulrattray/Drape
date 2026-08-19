@@ -137,7 +137,17 @@ describe("R7-7C5A private evidence cleanup backend", () => {
       // cleanup worker before they exist so a crash cannot strand them.
       "server/castingV2/segmentPersistence.ts",
       "server/castingV2/signService.ts",
+      // The kept scan's ROW-FILING statement, and it is the second manifest on
+      // that road rather than a duplicate of the one above. `keepScan` registers
+      // the NEW stencils before they exist; this one registers the stencils of
+      // the reading it is REPLACING, at the moment nothing references them any
+      // more. Without it an upsert orphaned the previous reading's objects
+      // permanently — the candidate purge only ever sees the CURRENT row's
+      // geometry, so nothing would have collected them. Both name `public_r2`,
+      // because a stencil is the shape of a feature on a person's face and it
+      // lives in the public bucket.
       "server/db/accountDeletion.ts",
+      "server/db/castingV2FaceScans.ts",
       "server/db/evidenceCandidates.ts",
       "server/db/evidenceOperations.ts",
       "server/db/evidenceRecovery.ts",

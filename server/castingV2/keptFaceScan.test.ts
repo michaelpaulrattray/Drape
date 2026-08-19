@@ -36,23 +36,63 @@ const shape = (slots: readonly FeatureSlot[]): KeptScanShape => ({
 function bench() {
   const objects = new Map<string, Buffer>();
   const manifested: string[][] = [];
+  const manifestIds: string[] = [];
   const rows: any[] = [];
   const journal: string[] = [];
+  /** Manifests nothing has discharged — what the cleanup worker will collect. */
+  const held = new Map<string, string[]>();
+  /**
+   * THE WORKER, in one line: it deletes every object an undischarged manifest
+   * still names, once that manifest's hold has lapsed.
+   *
+   * A model rather than the real sweep, and a faithful one on the only axis
+   * that matters here — a manifest that nobody released is a promise to delete,
+   * and the worker keeps it. Production's own record: three batches born
+   * seconds after three scans on 2026-08-19, every one `succeeded` about six
+   * minutes later.
+   */
+  const sweep = () => {
+    let deleted = 0;
+    for (const keys of held.values()) {
+      for (const key of keys) if (objects.delete(key)) deleted += 1;
+    }
+    held.clear();
+    return deleted;
+  };
   return {
     objects,
     manifested,
+    manifestIds,
     rows,
     journal,
+    held,
+    sweep,
     dependencies: {
       store: async (one: { key: string; bytes: Buffer }) => {
         journal.push(`store:${one.key}`);
         objects.set(one.key, one.bytes);
       },
-      manifest: async (one: { storageKeys: readonly string[] }) => {
+      manifest: async (one: { id: string; storageKeys: readonly string[] }) => {
         journal.push("manifest");
         manifested.push([...one.storageKeys]);
+        /* The RECEIPT's own id, kept — the row must carry it back or the worker
+           collects the stencils this reading depends on. */
+        manifestIds.push(one.id);
+        held.set(one.id, [...one.storageKeys]);
       },
-      write: async (row: any) => { journal.push("write"); rows.push(row); },
+      /*
+        THE ROW'S WRITE, INCLUDING THE HALF THIS BENCH USED TO LEAVE OUT.
+
+        `keepFaceScan` discharges the manifest inside the transaction that files
+        the row. A double that only recorded the row modelled a database and not
+        the CONTRACT, which is why the full cycle below could not be written
+        against the old bench and the defect it would have caught shipped.
+      */
+      write: async (row: any) => {
+        journal.push("write");
+        rows.push(row);
+        if (row.cleanupBatchId) held.delete(row.cleanupBatchId);
+      },
       read: async () => rows.at(-1) ?? null,
       readBytes: async (key: string) => {
         const bytes = objects.get(key);
@@ -82,6 +122,60 @@ describe("what a kept scan writes", () => {
     expect(it_.journal.filter((step) => step.startsWith("store:"))).toHaveLength(2);
     expect(it_.journal.at(-1)).toBe("write");
     expect(it_.manifested[0]).toEqual(Array.from(it_.objects.keys()));
+  });
+
+  it("CARRIES THE RECEIPT TO THE ROW, so the worker cannot collect what the row needs", async () => {
+    /*
+      THE ASSERTION THIS SUITE DID NOT HAVE, and its absence cost the table its
+      whole purpose for days.
+
+      The manifest above is a promise to DELETE these objects unless something
+      claims them. `keepScan` made that promise, wrote the bytes, wrote the row
+      — and handed the row no batch id, so nothing ever claimed it. The hold
+      lapsed at five minutes, the sweep ran within sixty seconds, and the worker
+      deleted the stencils the scan had just paid ten cents for. The row
+      survived pointing at objects that no longer existed, `serveKeptScan` fell
+      through its one branch that logs nothing, and every subsequent look at
+      that face re-bought the whole scan.
+
+      Measured on production 2026-08-19: three faces re-scanned at 01:16, 01:17
+      and 01:20 while holding matching kept rows, each with a cleanup batch born
+      seconds after and `succeeded` about six minutes later.
+
+      The old suite passed throughout, because it asserted that a manifest
+      HAPPENED and never that anything discharged it. This asserts the wire: the
+      id that went to the manifest is the id that reaches the row.
+    */
+    const it_ = bench();
+    await keepScan({
+      userId: 1, candidateId: 41, variantId: null, frameKey: "faces/v1.png",
+      scan: shape(["eye@left", "hair"] as FeatureSlot[]),
+      dependencies: it_.dependencies,
+    });
+
+    expect(it_.manifestIds).toHaveLength(1);
+    expect(it_.rows[0].cleanupBatchId).toBe(it_.manifestIds[0]);
+  });
+
+  it("makes no promise it needs to keep when it stores nothing", async () => {
+    /*
+      The control on the line above, and it is not decoration: a `cleanupBatchId`
+      that were simply always present would satisfy the assertion whether or not
+      it named a real manifest. A scan whose slots carry no storable stencil
+      writes no objects, registers nothing, and must therefore hand the row no
+      receipt — there is nothing to discharge, and an id for a manifest that was
+      never created would make the row's write throw on the real path.
+    */
+    const it_ = bench();
+    const kept = await keepScan({
+      userId: 1, candidateId: 41, variantId: null, frameKey: "faces/v1.png",
+      scan: { ...shape([] as FeatureSlot[]), slots: new Map() },
+      dependencies: it_.dependencies,
+    });
+
+    expect(kept).toEqual({ kept: true, objects: 0 });
+    expect(it_.manifestIds).toHaveLength(0);
+    expect(it_.rows[0].cleanupBatchId).toBeUndefined();
   });
 
   it("keeps the geometry and the frame it was measured on, never the bytes", async () => {
@@ -182,5 +276,96 @@ describe("what a kept scan serves", () => {
       dependencies: { ...it_.dependencies, read: async () => { throw new Error("the database said no"); } },
     });
     expect(served, "one outcome, because every cause has the same right answer").toBeNull();
+  });
+});
+
+describe("the full cycle — a kept scan survives the cleanup worker", () => {
+  /*
+    THE TEST THAT WOULD HAVE CAUGHT IT AT BIRTH, and did not exist.
+
+    Every piece of this road had a green test. `keepScan` was proved to register
+    a manifest before storing bytes; `serveKeptScan` was proved to serve a kept
+    reading, to refuse a moved frame, and to condemn a reading with a missing
+    stencil. Not one of them ran the WORKER, so nothing ever asked the only
+    question that mattered: is the reading still there ten minutes later?
+
+    It was not. `keepScan` registered its stencils for deletion and handed the
+    row no receipt, so the hold lapsed at five minutes, the sweep ran within
+    sixty seconds, and the worker deleted the stencils the scan had just paid
+    ten cents for. The row survived pointing at nothing, `serveKeptScan` fell
+    through its one silent branch, and every look at that face re-bought the
+    whole scan — for as long as the flag was on.
+
+    Production, 2026-08-19: candidates 1641, 1642 and 1644 re-scanned at 01:16,
+    01:17 and 01:20 while each held a kept row whose frame still matched, with a
+    cleanup batch born seconds after each scan and `succeeded` about six minutes
+    later. Seventeen kept rows, and the table had never answered once.
+  */
+  const face = { userId: 1, candidateId: 41, variantId: null, frameKey: "faces/v1.png" };
+
+  it("STILL SERVES after the worker has run", async () => {
+    const it_ = bench();
+    await keepScan({ ...face, scan: shape(["eye@left", "hair"] as FeatureSlot[]), dependencies: it_.dependencies });
+
+    /* Before the sweep it serves — which is what the old suite proved, and what
+       made the defect invisible. */
+    expect(await serveKeptScan({ ...face, dependencies: it_.dependencies })).not.toBeNull();
+
+    const deleted = it_.sweep();
+
+    expect(deleted, "the worker must have had nothing left to collect").toBe(0);
+    expect(it_.objects.size).toBe(2);
+    const served = await serveKeptScan({ ...face, dependencies: it_.dependencies });
+    expect(served, "the reading this face paid for must outlive the sweep").not.toBeNull();
+    expect(served!.slots.size).toBe(2);
+  });
+
+  it("shows the worker CAN delete — the control, on a manifest nothing discharged", async () => {
+    /*
+      Without this the test above passes against a sweep that does nothing, and
+      a bench whose worker cannot delete proves exactly as much as a checker
+      that cannot fail. Same bench, same objects, one manifest left held by hand
+      — the state `keepScan` used to leave behind on every single scan.
+    */
+    const it_ = bench();
+    await keepScan({ ...face, scan: shape(["eye@left", "hair"] as FeatureSlot[]), dependencies: it_.dependencies });
+
+    it_.held.set("a-manifest-nobody-released", Array.from(it_.objects.keys()));
+    const deleted = it_.sweep();
+
+    expect(deleted).toBe(2);
+    expect(it_.objects.size).toBe(0);
+    expect(
+      await serveKeptScan({ ...face, dependencies: it_.dependencies }),
+      "and this is exactly what the panel saw on every look",
+    ).toBeNull();
+  });
+
+  it("hands the REPLACED reading's stencils to the worker, so an upsert does not orphan them", async () => {
+    /*
+      The same rule pointing the other way, and the half that only exists
+      because discharging the manifest created it. An upsert replaces the row,
+      and the candidate purge only ever reads the CURRENT row's geometry — so
+      the previous reading's objects would be referenced by nothing and
+      collected by nothing, forever.
+
+      Driven at the seam this bench owns: `keepFaceScan` is the real writer and
+      registers those keys itself, so what is asserted here is that a second
+      keep leaves the FIRST reading's objects claimable and the second's not.
+    */
+    const it_ = bench();
+    await keepScan({ ...face, scan: shape(["eye@left", "hair"] as FeatureSlot[]), dependencies: it_.dependencies });
+    const first = Array.from(it_.objects.keys());
+
+    await keepScan({ ...face, scan: shape(["eye@left", "hair"] as FeatureSlot[]), dependencies: it_.dependencies });
+    const second = Array.from(it_.objects.keys()).filter((key) => !first.includes(key));
+
+    expect(second, "a re-scan writes new objects under new keys").toHaveLength(2);
+    /* The real `keepFaceScan` registers `first` on a fresh manifest inside the
+       row's transaction; this bench's `write` double does not model that, so
+       the assertion here is the one it CAN make honestly — the new reading's
+       receipt was discharged, and the old objects are the ones left over. */
+    expect(it_.held.size, "no receipt for the new stencils may be left held").toBe(0);
+    expect(it_.rows.at(-1).cleanupBatchId).toBe(it_.manifestIds.at(-1));
   });
 });

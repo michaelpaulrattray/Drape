@@ -138,9 +138,18 @@ export async function keepScan(input: {
       });
     }
 
-    if (planned.length > 0) {
+    /*
+      THE RECEIPT, CARRIED TO THE ROW — and the reason it is a variable rather
+      than an inline id is the defect this fixes. The manifest used to be
+      created here and never discharged, so the worker deleted every stencil
+      about six minutes after it was written and the kept row survived pointing
+      at nothing. `keepFaceScan` releases it in the same transaction that files
+      the row, exactly as the ink upload and the plate mint do.
+    */
+    const cleanupBatchId = planned.length > 0 ? randomUUID() : undefined;
+    if (cleanupBatchId) {
       await manifest({
-        id: randomUUID(),
+        id: cleanupBatchId,
         userId: input.userId,
         storageKeys: planned.map((one) => one.key),
       });
@@ -165,6 +174,7 @@ export async function keepScan(input: {
       frameKey: input.frameKey,
       geometry,
       stencilBytes: input.scan.stencilBytes,
+      cleanupBatchId,
     });
     return { kept: true, objects: planned.length };
   } catch (error) {
@@ -220,7 +230,25 @@ export async function serveKeptScan(input: {
          panel with a hole in it: the alternative is a face whose ear silently
          has no cutout, which is the founder's own complaint arriving by a new
          road. */
-      if (!stencil?.bytes) return null;
+      if (!stencil?.bytes) {
+        /*
+          AND IT SAYS SO — this branch was silent, and its silence is why a
+          table that had never once answered took a database investigation to
+          find instead of a glance at a log.
+
+          The row is present and the frame matches, so the reading SHOULD have
+          served; a stencil that will not fetch means its object is gone, which
+          is a finding about the store and never a shrug. The slot is named
+          because which feature lost its cutout is the first thing anybody
+          diagnosing this will want, and a slot name is a feature word — "ear",
+          "brow" — and nothing about the face itself.
+        */
+        log.warn(
+          { candidateId: input.candidateId, slot: slot.slot },
+          "[keptFaceScan] a kept stencil would not fetch — the reading is condemned and this face re-scans at full price",
+        );
+        return null;
+      }
       slots.set(slot.slot as FeatureSlot, {
         box: slot.box,
         maskUrl: `data:image/png;base64,${stencil.bytes.toString("base64")}`,

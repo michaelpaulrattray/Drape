@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "c73c099eda3214c5"
+    "sourceFingerprint": "5855b045f18fcaa3"
   },
   "domains": [
     {
@@ -10850,6 +10850,10 @@
     {
       "id": "test:server/storageCleanupEnumCopies.test.ts",
       "path": "server/storageCleanupEnumCopies.test.ts"
+    },
+    {
+      "id": "test:server/storageManifestReceipt.test.ts",
+      "path": "server/storageManifestReceipt.test.ts"
     },
     {
       "id": "test:server/stripe/environmentTag.test.ts",
@@ -22413,6 +22417,11 @@
     {
       "from": "module:server/db/castingV2FaceScans.ts",
       "to": "module:server/db/connection.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/castingV2FaceScans.ts",
+      "to": "module:server/db/storageCleanup.ts",
       "kind": "imports"
     },
     {
