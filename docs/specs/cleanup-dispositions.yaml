@@ -867,3 +867,24 @@
   why: encodes a composed carrier, separated so the composition stays pure and testable without an image codec
   argued: 14a
   blocker: the crop road's cutter
+
+- symbol: cutHairCarrier
+  file: server/castingV2/hairReferenceCutter.ts
+  verdict: HELD
+  why: the crop road's orchestration — the seam, one hair question per panel (which is what stops a model choosing half her reference in silence), the largest panel carrying, the scale read and every free refusal
+  argued: 14a
+  blocker: the refine road's reference lane, which must decide what ROLE a customer's own picture rides under — a recipe reference is today the master, an anchor or a carry, and hair is anatomy whose anchor is the master (D-244 line 3)
+
+- symbol: mintHairCarrier
+  file: server/castingV2/hairReferenceCutter.ts
+  verdict: HELD
+  why: writes the carrier manifest-first, so bytes cut from a photograph of a person are never at a public address with nothing naming them
+  argued: 14a
+  blocker: the refine road's reference lane, same as cutHairCarrier
+
+- symbol: SECOND_VIEW_UNUSED_NOTE
+  file: server/castingV2/hairReferenceCutter.ts
+  verdict: HELD
+  why: what a customer is told when her two-view reference had one view carry — said plainly rather than dropped in silence (ruled fable-1093 §1)
+  blocker: the refine road's reference lane, which is where a note reaches her
+  argued: 14a

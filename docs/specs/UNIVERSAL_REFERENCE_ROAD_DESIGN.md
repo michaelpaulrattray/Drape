@@ -785,15 +785,84 @@ never carried as a sheet with a hole in it, and the ask is never failed for it.
    grids exist. The head-component rule does not care, which is a point in its
    favour, but the sheet composition does.
 
-#### Standing, as ruled (fable-1090)
+#### Standing — SUPERSEDED, and the block it replaces is kept above on purpose
 
-- **(a) the head-component discriminator is RATIFIED** — the counterexample is
-  measured, the true separator is named, and the instrument exists at the wire.
-  The mood-board residual (2+ heads may be 2+ people, and sameness is
-  law-9-expensive) defers behind the two-panel cap.
-- **(b) the carry rule is WITHHELD** until the measurement above answers it.
-- **(c) the measurement runs FIRST**, on his own specimen, arms as declared.
-- **Interim: the two-panel cap stands** — two or fewer heads proceed under
-  whatever (b) becomes, three or more ask her which — and **nothing about panels
-  ships before the measurement**, which costs less than one wrongly-shaped crop
-  road.
+The section above is the record of how this was reasoned, and two of its
+conclusions did not survive contact with the frames. **What follows is what is
+true now**, so that nobody builds from a ratification that has since been
+withdrawn.
+
+- **(a) the head-component discriminator is WITHDRAWN** (fable-1090 §1 ratified
+  it; fable-1091 withdrew it at the frames). Run on his own specimens, the
+  composite answered ONE head and that head was the top panel alone — a
+  segmenter answers a class with an instance — and the counterexample failed too,
+  because hair joins over the crown. **The shipped discriminator is the SEAM**,
+  deterministic and with no model in it: 27.4x its own median line-difference on
+  the one composite against 6.7x on the loudest single photograph, threshold at
+  10x in the gap (`hairReferenceCrop.findSeam`).
+- **(b) the carry rule is RULED: LARGEST PANEL CARRIES** (fable-1093 §1, on the
+  court's own reading in opus-801). The two-view sheet did not double and did not
+  blend — the wrap court's failure did not reproduce in this lane — and it also
+  bought nothing a person could see, so it does not earn a second segmenter call,
+  a composition step, an ordering rule and a cap. The panel holding the most hair
+  carries, and **the second view's non-use is said plainly to her**
+  (`SECOND_VIEW_UNUSED_NOTE`). The sheet's re-audition is tagged to the length
+  question: if length ever proves view-dependent, it returns to trial with its
+  repeat.
+- **(c) the measurement RAN**, arms as declared, before anything shipped.
+- **AND THE CARRIER PICTURES ITS OWN SCALE** (ruled fable-1094 §2, from the
+  length court in opus-802). A hair cutout on transparency lost the length on
+  every arm; with the length words held constant the plain carrier still came
+  back short 2/2 while the scale carrier went long 2/2. So the hair rides on the
+  head's **redacted form** — the `face` region minus the hair, flat-filled, no
+  face at all — and a carrier whose form is a rounding error is REFUSED rather
+  than sent (`carrierPicturesScale`, floor at 10% of the hair's own area). The
+  region is asked as `face` and not `head` because the head answer IS the hair
+  (99,677px against 99,220px), which was read before a render was bought.
+- **The two-panel cap stands and is now structural**: the seam finder returns one
+  cut or none, so a frame is one panel or two and there is no path on which three
+  arrive. The mood-board residual (2+ heads may be 2+ people, and sameness is
+  law-9-expensive) is unchanged and still deferred.
+
+### 9.11 THE CUTTER — the orchestration, built (`hairReferenceCutter.ts`)
+
+The geometry above is pure and drives for nothing. The cutter is the half that
+spends money and can go wrong: which questions are asked, of which picture, in
+which order, what is refused, and what is written.
+
+```
+  1. decode          one greyscale read, for the seam alone
+  2. the seam        findSeam / panelsOf — deterministic, no model
+  3. hair PER PANEL  the step that fixes the silent pick
+  4. the carry       most hair carries; the second view's non-use is SAID
+  5. the scale       `face`, on the carrying panel only
+  6. compose + GUARD composeCarrierPixels, then carrierPicturesScale
+  7. mint            manifest, then bytes — the keeper-receipt order
+```
+
+**What it costs: two segmenter calls for one photograph, three for a composite.**
+The extra call is what buys a deliberate answer instead of a model's private
+choice of panel.
+
+**Every refusal is free** — nothing here is reached after a claim — and they do
+not share a sentinel. `noHair` (the reader answered, and the answer is none) is
+kept apart from `couldNotRead` (the reader did not answer) by construction: the
+hair questions are asked with `absentIsAnswer`, so an empty mask is a reading and
+a thrown error is a failure. A mask that is not in its panel's space is
+`wrongSpace` — refused, never resampled, because a resample inside the one path
+that promises not to have one moves every edge it touches.
+
+**How long a carrier lives.** It is written under a cleanup manifest born HELD
+and **nothing discharges it**, so the worker collects it when the hold lapses
+unless a caller records a row naming the key. That is the right life for an
+ask-scoped artifact: the candidate purge collects by ROW, so an object with no
+row would otherwise outlive the Cast it was cut from.
+
+**What is NOT built yet, stated rather than implied: the wire.** The cutter has
+no call site, so `carrierPicturesScale` is not yet consulted on any request path
+— invariant 7's own sentence, said here rather than discovered later. The open
+design question the wire turns on is what ROLE the carrier rides under: a recipe
+reference is today either the master, an `anchor` (an introduced item's frozen
+introduction reference) or a `carry` (minted from a delivery), and hair is
+`anatomy`, whose anchor is the master by D-244 line 3. A customer's own
+photograph is none of those three.

@@ -138,6 +138,22 @@ const KEEPERS: Readonly<Record<string, string>> = {
  */
 const COLLECTORS: Readonly<Record<string, string>> = {
   "server/castingV2/candidateRetention.ts": "a candidate ageing out, and everything under its purge path",
+  /*
+    THE ONLY COLLECTOR THAT REGISTERS BYTES BEFORE THEY EXIST, and the class is
+    a decision rather than an oversight.
+
+    A hair carrier is cut per render from an attachment that is itself KEPT, so
+    nothing needs the carrier once the render has loaded it and re-cutting costs
+    two segmenter calls of house money. It is held while it is written and then
+    collected, which is the right life for an ask-scoped artifact — the
+    candidate purge collects by ROW, so an object with no row would otherwise
+    outlive the Cast it was cut from.
+
+    **The day a caller needs the carrier to survive its render, this file moves
+    to KEEPERS and records a row** — and this table is what will refuse to let
+    that happen quietly.
+  */
+  "server/castingV2/hairReferenceCutter.ts": "a carrier cut for one render, collected after it",
   /* The nine older-road collectors, read one at a time on 2026-08-19. Every one
      records the batch id ONTO its row — the pointer, not the receipt — and not
      one of them deletes a batch. */

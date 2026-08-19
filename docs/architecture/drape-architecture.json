@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "af32be628af9afd2"
+    "sourceFingerprint": "0efe3dc7af7429de"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 144
+      "moduleCount": 145
     },
     {
       "id": "domain:castingV2",
@@ -3545,6 +3545,12 @@
     {
       "id": "module:server/castingV2/hairReferenceCrop.ts",
       "path": "server/castingV2/hairReferenceCrop.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/hairReferenceCutter.ts",
+      "path": "server/castingV2/hairReferenceCutter.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -9800,6 +9806,10 @@
     {
       "id": "test:server/castingV2/hairReferenceCrop.test.ts",
       "path": "server/castingV2/hairReferenceCrop.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/hairReferenceCutter.test.ts",
+      "path": "server/castingV2/hairReferenceCutter.test.ts"
     },
     {
       "id": "test:server/castingV2/hairReferenceScope.test.ts",
@@ -19910,6 +19920,41 @@
     {
       "from": "module:server/castingV2/hairColourFromReference.ts",
       "to": "module:server/providers/types.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/hairReferenceCutter.ts",
+      "to": "module:server/castingV2/hairReferenceCrop.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/hairReferenceCutter.ts",
+      "to": "module:server/castingV2/maskedComposite.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/hairReferenceCutter.ts",
+      "to": "module:server/castingV2/maskedRefine.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/hairReferenceCutter.ts",
+      "to": "module:server/db/connection.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/hairReferenceCutter.ts",
+      "to": "module:server/db/storageCleanup.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/hairReferenceCutter.ts",
+      "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/hairReferenceCutter.ts",
+      "to": "module:server/storage.ts",
       "kind": "imports"
     },
     {

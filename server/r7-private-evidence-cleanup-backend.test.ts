@@ -102,6 +102,14 @@ describe("R7-7C5A private evidence cleanup backend", () => {
       // an engine is shown on every later render, so bytes at a permanently
       // public key with no row pointing at them would be a drawing of somebody's
       // tattoo that nothing can find and nothing will ever collect.
+      // The crop road's cutter registers the carrier's key BEFORE the composed
+      // bytes are stored and names `public_r2` for it. The carrier pictures no
+      // person — the head is flat-filled and unrecoverable — but it is cut from
+      // a photograph of one, and it is the only caller here that means its bytes
+      // to be COLLECTED rather than kept: nothing discharges the manifest, so
+      // the worker takes the carrier once the render that bought it has loaded
+      // it.
+      "server/castingV2/hairReferenceCutter.ts",
       "server/castingV2/inkPlateMint.ts",
       // The kept face scan (migration 0032) registers one stencil per feature
       // before any of them exists, and names `public_r2` for each: a stencil is
