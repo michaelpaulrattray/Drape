@@ -38,6 +38,8 @@ import {
   CASTING_V2_SCOPE_ENV,
   validateCastingFaceScanEnvironment,
   validateCastingInkStudioEnvironment,
+  validateCastingReferenceAttachEnvironment,
+  CASTING_REFERENCE_ATTACH_SCOPE_ENV,
   validateCastingOpenLaneEnvironment,
   validateCastingReferenceLibraryEnvironment,
   validateCastingRefineDispatchEnvironment,
@@ -239,6 +241,20 @@ export function validateEnv(): void {
   */
   validateCastingInkStudioEnvironment({
     scope: process.env[CASTING_INK_STUDIO_SCOPE_ENV],
+    repaintScope: process.env[CASTING_REPAINT_SCOPE_ENV],
+    cleanupWorker: process.env.ENABLE_STORAGE_CLEANUP_WORKER,
+  });
+  /*
+    THE ATTACH DOOR — its own flag rather than the studio's, because the studio's
+    is already `users:1` in production and landing this behind it would open a
+    new store on a live account on the deploy that shipped it. What that store
+    keeps is a full photograph of whoever is in the picture, so it earns its own
+    switch. Same two parents as the studio, and for the same two reasons: the
+    repaint recipe is what carries a cropped reference into a render, and the
+    cleanup worker is what eventually deletes the bytes.
+  */
+  validateCastingReferenceAttachEnvironment({
+    scope: process.env[CASTING_REFERENCE_ATTACH_SCOPE_ENV],
     repaintScope: process.env[CASTING_REPAINT_SCOPE_ENV],
     cleanupWorker: process.env.ENABLE_STORAGE_CLEANUP_WORKER,
   });

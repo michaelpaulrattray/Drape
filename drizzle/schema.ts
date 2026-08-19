@@ -3267,12 +3267,22 @@ export type CastingReferenceCropSource = typeof CASTING_REFERENCE_CROP_SOURCES[n
  * here because a table justified by a wrong sentence outlives every shift that
  * reads it.)*
  *
- * # THE PHOTOGRAPH IS NOT KEPT — the fence, met by construction
+ * # THIS ROW HOLDS THE CUT AND NEVER THE UPLOAD — the fence, by construction
  *
- * The uploaded picture is read once and dropped, exactly as the makeup road
- * drops it. What persists is the CUT alone: one PNG carrying its own alpha, so
- * the mask is not a second object and there is no rectangle of a stranger's
- * face anywhere in this product.
+ * What persists HERE is the CUT alone: one PNG carrying its own alpha, so the
+ * mask is not a second object and there is no rectangle of a stranger's face in
+ * this table.
+ *
+ * ⚠ **Corrected 2026-08-19**, and it is worth the paragraph because a REVERSED
+ * policy is the hardest kind to notice — nothing fails, nothing goes red, and
+ * the old sentence goes on reassuring people. This used to add that the upload
+ * is *"read once and dropped, exactly as the makeup road drops it"* and that
+ * therefore *"there is no rectangle of a stranger's face anywhere in this
+ * product"*. The first clause is still true of this table; **the second was a
+ * claim about the PRODUCT and it has moved** — fable-1063 §2 ruled that an
+ * attached reference is KEPT (migration 0043,
+ * {@link castingReferenceAttachments}), so that a crop minted from one can be
+ * re-derived and so that nobody has to attach the same picture twice.
  *
  * There is deliberately **no bbox and no frame size** here, and the absence is
  * the point rather than an omission — geometry would locate this cut inside a
@@ -3336,3 +3346,77 @@ export const castingReferenceCrops = mysqlTable("casting_reference_crops", {
 
 export type CastingReferenceCropRow = typeof castingReferenceCrops.$inferSelect;
 export type InsertCastingReferenceCropRow = typeof castingReferenceCrops.$inferInsert;
+
+/**
+ * THE ATTACHED REFERENCE — build two's door (migration 0043; design §2,
+ * countersigned fable-1063 §1–§2).
+ *
+ * One row is: **a photograph a customer attached to one of her Casts, and where
+ * OUR copy of it lives.** It is the picture BEFORE anything has been decided
+ * about it — she attaches, then she types, and the interpreter reads the ask.
+ *
+ * It is a third store rather than a row in either existing one, and both
+ * refusals are NOT NULL columns rather than taste: `casting_ink_designs` needs
+ * a `placement` and a `side` that do not exist at attach time (and a guessed
+ * placement is what cost 300 credits twice for the wrong anatomical side), and
+ * `casting_reference_crops` holds a CUT and says in its own docblock that it is
+ * "never the upload".
+ *
+ * ⚠ **The photograph is KEPT, and that is a change** (ruled fable-1063 §2, for
+ * two stated reasons: a crop minted from an attachment must be re-derivable,
+ * and "attach it again" is the friction the founder asked to be rid of). What
+ * bounds it is in the row rather than beside it — the object dies with her Cast
+ * unconditionally and NOT on any flag, the per-Cast cap is SHARED with the ink
+ * door's 8 rather than doubled, and `provenance` is NOT NULL with no default.
+ *
+ * **The short column list is the boundary.** No instruction, no sentence, no
+ * reader's prose, no description of who is in the picture — absent from the row
+ * rather than omitted from a projection (invariant 8).
+ *
+ * **And no `intents`**, unlike the ink design row. That door is reached by a
+ * customer who has already said what she is taking; this one is reached before
+ * she has typed anything. fable-937's *no extraction without intent* is honoured
+ * where the extraction happens — nothing is taken at attach time, so there is
+ * nothing yet for an intent to authorise, and a NOT NULL column here could only
+ * be filled with a guess about an ask that does not exist.
+ *
+ * # THE TWO LINES THAT CONTAIN THE KEEP (ordered fable-1071 §4)
+ *
+ * A kept photograph is only as safe as what may be done with it, so the bounds
+ * are stated HERE, where the row is defined, rather than in a design note the
+ * next reader of this table will not be holding:
+ *
+ * 1. **The kept picture never rides WHOLE to any engine. Crops only.** A
+ *    feature travels as its own segmented cutout — the fence is met by the
+ *    FORM, which is the founder's own ruling and the reason a rectangle
+ *    containing a face is the named fidelity violation. `storageKey` here is an
+ *    input to a cutter and to nothing else.
+ * 2. **No staff projection ever selects this row.** Not the moderator surface,
+ *    not the admin one, not an export. A customer's cast is her work and her
+ *    reference photograph is more private than the cast — "metadata only" is a
+ *    boundary, and there is nothing here any staff member needs.
+ */
+export const castingReferenceAttachments = mysqlTable("casting_reference_attachments", {
+  id: int("id").autoincrement().primaryKey(),
+  publicId: varchar("publicId", { length: 36 }).notNull(),
+  userId: int("userId").notNull(), // denormalized — single-statement ownership
+  candidateId: int("candidateId").notNull(), // →casting_candidates
+  /** What was CLAIMED about the source. Never guessed, never back-filled. */
+  provenance: mysqlEnum("provenance", INK_PROVENANCES).notNull(),
+  /** OUR copy of the picture as given — never a pointer, never a re-encode. */
+  storageKey: varchar("storageKey", { length: 512 }).notNull(),
+  /** sha256 of the object's bytes: byte identity, as the library does it. */
+  digest: varchar("digest", { length: 64 }).notNull(),
+  mime: varchar("mime", { length: 64 }).notNull(),
+  byteSize: int("byteSize").notNull(),
+  width: int("width").notNull(),
+  height: int("height").notNull(),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+}, (table) => ([
+  /* Every read is "her attachments on this cast", so the candidate is the index. */
+  index("ix_casting_reference_attachments_candidate").on(table.candidateId),
+  uniqueIndex("uq_casting_reference_attachments_publicId").on(table.publicId),
+]));
+
+export type CastingReferenceAttachmentRow = typeof castingReferenceAttachments.$inferSelect;
+export type InsertCastingReferenceAttachmentRow = typeof castingReferenceAttachments.$inferInsert;

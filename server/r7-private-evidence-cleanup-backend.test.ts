@@ -116,6 +116,14 @@ describe("R7-7C5A private evidence cleanup backend", () => {
       // at them would be somebody's photograph nobody would ever go looking for.
       "server/castingV2/inkUploadService.ts",
       "server/castingV2/keptFaceScan.ts",
+      // The attach door (migration 0043) registers the picture's key BEFORE the
+      // bytes are stored and names `public_r2` for it. It is the SECOND caller
+      // whose artifact was never ours — a whole photograph a customer handed us,
+      // uncut, at a permanently public key. Bytes there with no row pointing at
+      // them would be a picture of a person that nothing can find and nothing
+      // will ever collect, which is the sharpest form of the defect this pin
+      // exists for.
+      "server/castingV2/referenceAttachService.ts",
       // The reference library's mint (migration 0028) registers a crop of a
       // feature and its mask before either exists, and names `public_r2` for
       // both: a library crop is a piece of a person's face at a permanently

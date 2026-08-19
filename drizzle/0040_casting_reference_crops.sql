@@ -31,13 +31,26 @@
 -- wrong sentence outlives every shift that reads the table.
 --
 -- ============================================================================
--- THE PHOTOGRAPH IS NOT KEPT — the fence, met by construction
+-- THIS ROW HOLDS THE CUT AND NEVER THE UPLOAD — the fence, met by construction
 -- ============================================================================
 --
--- The uploaded picture is read once and dropped, exactly as the makeup road
--- drops it. What persists is the CUT alone: one PNG carrying its own alpha, so
--- the mask is not a second object and no rectangle of a stranger's face exists
--- anywhere in this product.
+-- What persists HERE is the CUT alone: one PNG carrying its own alpha, so the
+-- mask is not a second object and no rectangle of a stranger's face is in this
+-- table.
+--
+-- ⚠ CORRECTED 2026-08-19. This section used to say the uploaded picture is
+-- "read once and dropped, exactly as the makeup road drops it", and that
+-- therefore "no rectangle of a stranger's face exists anywhere in this
+-- product". The first half is still true of THIS TABLE. **The second half is a
+-- claim about the product and it stopped being true**: fable-1063 §2 ruled that
+-- an attached reference is KEPT — migration 0043, `casting_reference_attachments`
+-- — for two stated reasons, that a crop minted from one must be re-derivable
+-- and that "attach it again" is the friction the founder asked to be rid of.
+--
+-- The correction is here rather than only in a mailbox because a table
+-- justified by a sentence that has moved outlives every shift that reads the
+-- table, and because a REVERSED policy is the hardest kind to notice: nothing
+-- fails, nothing goes red, and the old sentence goes on reassuring people.
 --
 -- There is deliberately NO bbox and NO frame size on this row. The absence is
 -- the design, not an omission: geometry would locate this cut inside a

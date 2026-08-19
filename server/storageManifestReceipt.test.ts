@@ -116,6 +116,7 @@ const KEEPERS: Readonly<Record<string, string>> = {
   "server/castingV2/inkPlateMint.ts": "the plate an engine is shown on every later render",
   "server/castingV2/inkUploadService.ts": "the customer's own design photograph",
   "server/castingV2/keptFaceScan.ts": "the scan's stencils — THE ONE THAT WAS MISSING, fixed 2026-08-19",
+  "server/castingV2/referenceAttachService.ts": "the picture a customer attached to her Cast",
   "server/castingV2/referenceMint.ts": "a library crop and its mask",
   "server/castingV2/segmentPersistence.ts": "a kept edit's mask and crop",
   "server/castingV2/signService.ts": "the anchor copy a Sign makes, released as the ceremony's last act",

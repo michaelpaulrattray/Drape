@@ -30,6 +30,7 @@ import { assertClientRequestId } from "../../shared/clientRequestId";
 import { CASTING_V2_COSTS, CASTING_V2_ROLL_PRICE_CREDITS } from "../casting/castingCreditCosts";
 import {
   captureCastingInkStudioEnabled,
+  captureCastingReferenceAttachEnabled,
   captureCastingRepaintEnabled,
   captureCastingV2Enabled,
 } from "../castingV2/castingV2Scope";
@@ -54,6 +55,12 @@ import {
   type ReferenceReadOutcome,
 } from "../db/castingV2ReferenceReads";
 import { uploadInkDesign } from "../castingV2/inkUploadService";
+import { attachReference } from "../castingV2/referenceAttachService";
+import { REFERENCE_PICTURES_PER_CANDIDATE_REFUSAL } from "../castingV2/referenceAttachDoor";
+import {
+  ReferenceAttachmentCapError,
+  ReferenceAttachmentOwnershipError,
+} from "../db/castingV2ReferenceAttachments";
 import { InkDesignCapError, InkDesignOwnershipError } from "../db/castingV2InkDesigns";
 import { spokenError } from "../_core/spokenError";
 import { UNLOCKABLE_FIELDS } from "../castingV2/briefCompiler";
@@ -450,6 +457,95 @@ const inkRouter = router({
  * the founder has looked at the first sentence read off a real person.
  */
 const referenceRouter = router({
+  /**
+   * ATTACHING A PICTURE — build two's door (design §2, countersigned fable-1063
+   * §1). The founder's complaint is the whole reason it exists:
+   *
+   * > *"you put a small link take makeup from a photo???? this is stupid, you
+   * > should be able to upload any image like grok and use it as a reference for
+   * > anything"*
+   *
+   * She attaches, our copy lands under the candidate's own purge path, and she
+   * gets a handle back. **Nothing is read, cut, rendered or charged here** — the
+   * ask comes afterwards, in her own sentence, and that is what the separate
+   * door buys: `refine` is a spendable, rate-limited procedure and hanging a
+   * multi-megabyte upload on it would make every paid ask carry one.
+   *
+   * Behind its OWN flag, off by default and off everywhere today. Not the ink
+   * studio's, which is already `users:1` in production — landing this there
+   * would open a new store keeping full photographs on a live account, on the
+   * deploy that shipped it.
+   */
+  attach: protectedProcedure
+    .input(z.object({
+      candidateId: publicId,
+      /* No default, ever. A guessed provenance is precisely the value the
+         real-person fence cannot tolerate (`shared/inkProvenance.ts`), and it
+         is the one claim this door does hold. */
+      provenance: z.enum(INK_PROVENANCES),
+      /*
+        A COARSE WIRE BOUND, not the real one. This stops a payload too large to
+        be worth decoding; whether the BYTES are acceptable is decided after
+        decoding, by what they turn out to be.
+      */
+      imageBase64: z.string().max(Math.ceil(INK_DESIGN_MAX_BYTES * 4 / 3) + 256),
+      /* No `intents` field, and its absence is the design — see the migration.
+         This door is reached before she has typed anything, so there is no ask
+         yet for an intent to authorise, and a NOT NULL guess about one is what
+         the fence cannot carry. */
+    }).strict())
+    .mutation(async ({ ctx, input }) => {
+      /*
+        THE FLAG FIRST, and NOT_FOUND rather than a refusal — outside the scope
+        there is no such capability, and a code that says "not yet" advertises
+        one. The AND of the whole chain is inside this call.
+      */
+      if (!captureCastingReferenceAttachEnabled(ctx.user.id)) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "No such thing." });
+      }
+      enforceRateLimit(ctx.user.id, RATE_LIMITS.castingReferenceAttach);
+
+      const bytes = decodeUploadedImage(input.imageBase64);
+      try {
+        const outcome = await attachReference({
+          /* From the session, never from input (invariant 3). */
+          userId: ctx.user.id,
+          candidatePublicId: input.candidateId,
+          provenance: input.provenance,
+          bytes,
+        });
+        if (!outcome.ok) {
+          throw spokenError({ code: "BAD_REQUEST", message: outcome.refusal.message });
+        }
+        /*
+          AN EXPLICIT PROJECTION (invariant 8), and the storage key is not in it.
+          A URL here would be a permanently public address for a photograph of a
+          person, handed out before anything needs it — the handle is what the
+          next ask travels with, and the server resolves it to bytes itself.
+        */
+        return {
+          referenceId: outcome.attachment.publicId,
+          provenance: outcome.attachment.provenance,
+          width: outcome.attachment.width,
+          height: outcome.attachment.height,
+        };
+      } catch (error) {
+        /* Somebody else's Cast is answered the way a missing one is. */
+        if (error instanceof ReferenceAttachmentOwnershipError) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Cast not found" });
+        }
+        /* A real TOO_MANY_REQUESTS at the cap, never a 200 carrying an error
+           field the client cannot tell from a validation failure (6). */
+        if (error instanceof ReferenceAttachmentCapError) {
+          throw spokenError({
+            code: "TOO_MANY_REQUESTS",
+            message: REFERENCE_PICTURES_PER_CANDIDATE_REFUSAL,
+          });
+        }
+        throw error;
+      }
+    }),
+
   readMakeup: protectedProcedure
     .input(z.object({
       /* Candidate-scoped for ownership (invariant 1) even though nothing is

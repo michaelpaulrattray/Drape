@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "df08260e7d20728f"
+    "sourceFingerprint": "7326fc79154fe4c7"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 138
+      "moduleCount": 140
     },
     {
       "id": "domain:castingV2",
@@ -53,7 +53,7 @@
     {
       "id": "domain:data",
       "name": "data",
-      "moduleCount": 55
+      "moduleCount": 56
     },
     {
       "id": "domain:evidence",
@@ -3765,6 +3765,18 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:server/castingV2/referenceAttachDoor.ts",
+      "path": "server/castingV2/referenceAttachDoor.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/referenceAttachService.ts",
+      "path": "server/castingV2/referenceAttachService.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:server/castingV2/referenceCentreline.ts",
       "path": "server/castingV2/referenceCentreline.ts",
       "domain": "casting-v2",
@@ -4217,6 +4229,12 @@
     {
       "id": "module:server/db/castingV2OpenLaneDemand.ts",
       "path": "server/db/castingV2OpenLaneDemand.ts",
+      "domain": "data",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/db/castingV2ReferenceAttachments.ts",
+      "path": "server/db/castingV2ReferenceAttachments.ts",
       "domain": "data",
       "lifecycle": "active"
     },
@@ -6399,6 +6417,16 @@
       "file": "server/routes/castingV2.ts"
     },
     {
+      "id": "route:castingV2.reference.attach",
+      "namespace": "castingV2.reference",
+      "name": "attach",
+      "type": "mutation",
+      "auth": "protected",
+      "strictInput": true,
+      "rateLimited": true,
+      "file": "server/routes/castingV2.ts"
+    },
+    {
       "id": "route:castingV2.reference.readMakeup",
       "namespace": "castingV2.reference",
       "name": "readMakeup",
@@ -8240,6 +8268,11 @@
       "grammar": "off|all|users:<ids>"
     },
     {
+      "id": "flag:CASTING_REFERENCE_ATTACH_SCOPE",
+      "name": "CASTING_REFERENCE_ATTACH_SCOPE",
+      "grammar": "off|all|users:<ids>"
+    },
+    {
       "id": "flag:CASTING_REFERENCE_LIBRARY_SCOPE",
       "name": "CASTING_REFERENCE_LIBRARY_SCOPE",
       "grammar": "off|all|users:<ids>"
@@ -9946,6 +9979,18 @@
     {
       "id": "test:server/castingV2/recipeAssembler.test.ts",
       "path": "server/castingV2/recipeAssembler.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/referenceAttachSchema.test.ts",
+      "path": "server/castingV2/referenceAttachSchema.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/referenceAttachScope.test.ts",
+      "path": "server/castingV2/referenceAttachScope.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/referenceAttachService.test.ts",
+      "path": "server/castingV2/referenceAttachService.test.ts"
     },
     {
       "id": "test:server/castingV2/referenceCentreline.test.ts",
@@ -19170,6 +19215,11 @@
     },
     {
       "from": "module:server/castingV2/candidateRetention.ts",
+      "to": "module:server/db/castingV2ReferenceAttachments.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/candidateRetention.ts",
       "to": "module:server/db/castingV2ReferenceCrops.ts",
       "kind": "imports"
     },
@@ -20636,6 +20686,46 @@
     {
       "from": "module:server/castingV2/recipeAssembler.ts",
       "to": "module:server/castingV2/vacancyPhrases.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/referenceAttachDoor.ts",
+      "to": "module:server/castingV2/inkUploadDoor.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/referenceAttachService.ts",
+      "to": "module:server/castingV2/inkUploadDoor.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/referenceAttachService.ts",
+      "to": "module:server/castingV2/referenceAttachDoor.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/referenceAttachService.ts",
+      "to": "module:server/db/castingV2ReferenceAttachments.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/referenceAttachService.ts",
+      "to": "module:server/db/connection.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/referenceAttachService.ts",
+      "to": "module:server/db/storageCleanup.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/referenceAttachService.ts",
+      "to": "module:server/storage.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/referenceAttachService.ts",
+      "to": "module:shared/inkProvenance.ts",
       "kind": "imports"
     },
     {
@@ -22666,6 +22756,21 @@
     {
       "from": "module:server/db/castingV2OpenLaneDemand.ts",
       "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/castingV2ReferenceAttachments.ts",
+      "to": "module:drizzle/schema.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/castingV2ReferenceAttachments.ts",
+      "to": "module:server/db/connection.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/castingV2ReferenceAttachments.ts",
+      "to": "module:shared/inkProvenance.ts",
       "kind": "imports"
     },
     {
@@ -24705,6 +24810,16 @@
     },
     {
       "from": "module:server/routes/castingV2.ts",
+      "to": "module:server/castingV2/referenceAttachDoor.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/castingV2.ts",
+      "to": "module:server/castingV2/referenceAttachService.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/castingV2.ts",
       "to": "module:server/castingV2/referenceProvenance.ts",
       "kind": "imports"
     },
@@ -24751,6 +24866,11 @@
     {
       "from": "module:server/routes/castingV2.ts",
       "to": "module:server/db/castingV2InkDesigns.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/castingV2.ts",
+      "to": "module:server/db/castingV2ReferenceAttachments.ts",
       "kind": "imports"
     },
     {
@@ -28686,6 +28806,13 @@
       "kind": "redeclared-shape",
       "subject": "server/castingV2/maskGeometry.ts:314",
       "message": "Names 3 of Raster's 3 fields (server/castingV2/maskedComposite.ts), 3 of Mask's 3 fields (server/castingV2/maskedComposite.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
+    },
+    {
+      "id": "finding:redeclared-shape:server/castingV2/referenceAttachDoor.ts:60",
+      "severity": "warn",
+      "kind": "redeclared-shape",
+      "subject": "server/castingV2/referenceAttachDoor.ts:60",
+      "message": "Names 2 of InkUploadRefusal's 2 fields (server/castingV2/inkUploadDoor.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
       "id": "finding:redeclared-shape:server/castingV2/referenceCentreline.ts:50",

@@ -34,6 +34,8 @@ const calls = {
   listInkPlates: vi.fn(),
   deleteInkPlates: vi.fn(),
   listReferenceCrops: vi.fn(),
+  listReferenceAttachments: vi.fn(),
+  deleteReferenceAttachments: vi.fn(),
   deleteReferenceCrops: vi.fn(),
 };
 
@@ -141,6 +143,15 @@ vi.mock("../db/castingV2ReferenceCrops", () => ({
   deleteReferenceCropRowsIn: (_tx: unknown, ...args: unknown[]) => calls.deleteReferenceCrops(...args),
 }));
 
+/* The PICTURE a customer attached (migration 0043). Its tolerance is armed by
+   its OWN flag rather than by the ingestion map, because an attachment is not a
+   form — any open intent can produce one, and what decides whether a row can
+   exist is whether the attach door is open at all. */
+vi.mock("../db/castingV2ReferenceAttachments", () => ({
+  listPurgeableReferenceAttachmentsIn: (_tx: unknown, ...args: unknown[]) => calls.listReferenceAttachments(...args),
+  deleteReferenceAttachmentRowsIn: (_tx: unknown, ...args: unknown[]) => calls.deleteReferenceAttachments(...args),
+}));
+
 vi.mock("../db/castingV2InkPlates", () => ({
   listPurgeableInkPlatesIn: (_tx: unknown, ...args: unknown[]) => calls.listInkPlates(...args),
   deleteInkPlateRowsIn: (_tx: unknown, ...args: unknown[]) => calls.deleteInkPlates(...args),
@@ -167,6 +178,8 @@ beforeEach(() => {
   calls.listInkPlates.mockResolvedValue([]);
   calls.deleteInkPlates.mockResolvedValue(0);
   calls.listReferenceCrops.mockResolvedValue([]);
+  calls.listReferenceAttachments.mockResolvedValue([]);
+  calls.deleteReferenceAttachments.mockResolvedValue(0);
   calls.deleteReferenceCrops.mockResolvedValue(0);
   mapState.cropOpen = null;
   delete process.env.CASTING_SEGMENTS_SCOPE;
@@ -296,6 +309,60 @@ describe("a candidate's segments purge with it", () => {
     (`captureRefusedRender` writing frames no manifest ever names) is that shape
     exactly, and it was written into the roadmap rather than into a test.
   */
+  /*
+    THE ATTACHED PICTURE (migration 0043, countersigned fable-1063 §2).
+
+    Same argument as the crop above, one degree sharper. A crop is a CUT of one
+    feature; an attachment is **the whole photograph a customer handed us,
+    uncut**, sitting at a permanently public URL. If this clause is ever removed
+    or its store renamed, the objects it stops naming are pictures of people
+    that nothing will ever collect — and nothing would go red, because a purge
+    that sweeps fewer rows still succeeds.
+
+    Written before the door that writes them is open anywhere, for the reason
+    the crop arm gives: a row-driven sweep that gains its clause after the
+    writer ships was missing for however long the writer shipped first.
+  */
+  it("collects an attached picture's bytes and deletes its rows with the Cast", async () => {
+    calls.listReferenceAttachments.mockResolvedValue([
+      { id: 4, storageKey: "casting-v2/reference/she-uploaded-this.jpg" },
+    ]);
+
+    const result = await runCandidateRetentionSweep();
+
+    expect(calls.deleteReferenceAttachments).toHaveBeenCalledWith([1]);
+    expect(calls.queueStorageCleanup).toHaveBeenCalledWith(
+      expect.objectContaining({
+        storageItems: expect.arrayContaining([
+          { storageKey: "casting-v2/reference/she-uploaded-this.jpg", storageBackend: "public_r2" },
+        ]),
+      }),
+    );
+    /* The candidate's own image, plus this picture. */
+    expect(result.objectsQueued).toBe(1 + 1);
+  });
+
+  it("purges an attached picture whatever the ATTACH FLAG says — the flag governs writing, never purging", async () => {
+    /*
+      THE NEGATIVE CONTROL FOR THE FLAG, and it is the arm that matters most on
+      this store. `CASTING_REFERENCE_ATTACH_SCOPE` is off everywhere today, so
+      the whole clause runs in the disarmed state on every real sweep — if the
+      purge were gated on the flag, a picture attached during a trial would
+      outlive the Cast it was promised to leave with the moment the flag went
+      back off. A retention path that narrows with a feature flag is how that
+      happens, and it happens silently.
+    */
+    delete process.env.CASTING_REFERENCE_ATTACH_SCOPE;
+    calls.listReferenceAttachments.mockResolvedValue([
+      { id: 5, storageKey: "casting-v2/reference/attached-while-it-was-on.png" },
+    ]);
+
+    const result = await runCandidateRetentionSweep();
+
+    expect(calls.deleteReferenceAttachments).toHaveBeenCalledWith([1]);
+    expect(result.objectsQueued).toBe(1 + 1);
+  });
+
   it("collects a reference crop's bytes and deletes its rows with the Cast", async () => {
     calls.listReferenceCrops.mockResolvedValue([
       { id: 9, storageKey: "reference-crops/her-hair.png" },

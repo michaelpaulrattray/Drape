@@ -1105,6 +1105,139 @@ export function validateCastingInkStudioEnvironment(input: {
   return child;
 }
 
+/* ------------------------------------------- the attach sub-flag */
+
+/**
+ * THE ATTACH DOOR — whether a customer may hand a picture to a Cast at all
+ * (build two, `UNIVERSAL_REFERENCE_ROAD_DESIGN.md` §2, countersigned
+ * fable-1063 §1).
+ *
+ * The founder's complaint is the whole reason: *"you put a small link take
+ * makeup from a photo???? this is stupid, you should be able to upload any image
+ * like grok and use it as a reference for anything"*. On, there is one door —
+ * she attaches, our copy lands under the candidate's own purge path, and she
+ * gets a handle back. Off, and absent means off, `castingV2.reference.attach`
+ * answers NOT_FOUND and not one row is written.
+ *
+ * # A THIRD FLAG RATHER THAN THE STUDIO'S, and the reason is what it keeps
+ *
+ * `CASTING_INK_STUDIO_SCOPE` is `users:1` in production. Landing this door
+ * behind it would not be a dark landing at all — it would open a new store on
+ * the founder's live account on the deploy that shipped it, and the thing that
+ * store keeps is a FULL PHOTOGRAPH of whoever is in the picture. A road that
+ * keeps people's photographs earns its own switch, off by default, so that
+ * opening it is a decision somebody makes rather than a side effect of where the
+ * code was put.
+ *
+ * # Why the parent is the REPAINT scope
+ *
+ * The ink studio's argument, unchanged, because the destination is the same: a
+ * feature taken from an attached picture reaches a render as a CROPPED
+ * REFERENCE carried by the repaint recipe, and the paste road carries none. A
+ * user armed here and not on the repaint road would be offered a door that
+ * opens onto a wall — she could attach a picture that could never appear on her.
+ *
+ * # And the cleanup worker, for the reason every storage-writing flag has it
+ *
+ * An attachment is bytes we keep, and the bytes are a person. Without the worker
+ * running, nothing deletes them when the Cast they belong to goes, and the
+ * promise that a customer's picture leaves with her work becomes quietly false.
+ * Refusing to boot is the honest posture (invariant 7).
+ *
+ * # WHAT IS TRUE WHILE IT IS OFF, WHICH IS EVERYWHERE TODAY
+ *
+ * No row, no object, no handle. The sweep clause for its table is live anyway
+ * and is NOT gated on this flag — a picture attached while it was on must be
+ * collected after it goes off, and a retention path that narrows with a feature
+ * flag is how a customer's own photograph outlives the Cast it was promised to
+ * leave with.
+ */
+export const CASTING_REFERENCE_ATTACH_SCOPE_ENV = "CASTING_REFERENCE_ATTACH_SCOPE";
+
+export class CastingReferenceAttachScopeConfigurationError extends Error {
+  constructor() {
+    super(
+      `${CASTING_REFERENCE_ATTACH_SCOPE_ENV} must be "off", "all", or "users:" followed by unique positive integer user ids`,
+    );
+    this.name = "CastingReferenceAttachScopeConfigurationError";
+  }
+}
+
+export class CastingReferenceAttachCoverageError extends Error {
+  constructor(detail: string) {
+    super(`${CASTING_REFERENCE_ATTACH_SCOPE_ENV} ${detail}`);
+    this.name = "CastingReferenceAttachCoverageError";
+  }
+}
+
+export function parseCastingReferenceAttachScope(raw: string | undefined): CastingV2Scope {
+  return parseScopeGrammar(raw, () => {
+    throw new CastingReferenceAttachScopeConfigurationError();
+  });
+}
+
+/**
+ * Whether this user may attach a picture.
+ *
+ * An AND of the whole chain at the point of use, for the reason its siblings
+ * carry: the boot check refuses a scope that reaches past its parent, and a boot
+ * check nobody invoked is the second way a flag pair goes wrong.
+ */
+export function captureCastingReferenceAttachEnabled(userId: number): boolean {
+  const child = parseCastingReferenceAttachScope(process.env[CASTING_REFERENCE_ATTACH_SCOPE_ENV]);
+  if (!castingV2EnabledForUser(child, userId)) return false;
+  return captureCastingRepaintEnabled(userId);
+}
+
+/**
+ * Whether the attach door is armed AT ALL, regardless of user.
+ *
+ * The retention sweep reads this one, and only to decide whether a MISSING
+ * TABLE is tolerable before migration 0043 lands. It never gates the purge
+ * itself — see the header.
+ */
+export function castingReferenceAttachArmed(): boolean {
+  return parseCastingReferenceAttachScope(process.env[CASTING_REFERENCE_ATTACH_SCOPE_ENV]).kind !== "off";
+}
+
+export function validateCastingReferenceAttachEnvironment(input: {
+  scope: string | undefined;
+  repaintScope: string | undefined;
+  cleanupWorker: string | undefined;
+}): CastingV2Scope {
+  const child = parseCastingReferenceAttachScope(input.scope);
+  if (child.kind === "off") return child;
+
+  if (input.cleanupWorker !== "true") {
+    throw new CastingReferenceAttachCoverageError(
+      "cannot be enabled unless ENABLE_STORAGE_CLEANUP_WORKER is exactly \"true\" — an attached "
+      + "picture is bytes we keep, and nothing would ever delete them",
+    );
+  }
+
+  const parent = parseCastingRepaintScope(input.repaintScope);
+  if (parent.kind === "off") {
+    throw new CastingReferenceAttachCoverageError(
+      `cannot be enabled while ${CASTING_REPAINT_SCOPE_ENV} is off — a feature taken from an `
+      + "attached picture is carried into a render as a cropped reference by the repaint recipe, "
+      + "and the paste road carries none",
+    );
+  }
+  if (parent.kind === "all") return child;
+  if (child.kind === "all") {
+    throw new CastingReferenceAttachCoverageError(
+      `cannot be "all" while ${CASTING_REPAINT_SCOPE_ENV} is limited to specific users`,
+    );
+  }
+  const uncovered = child.userIds.filter((userId) => !parent.userIds.includes(userId));
+  if (uncovered.length > 0) {
+    throw new CastingReferenceAttachCoverageError(
+      `names users outside ${CASTING_REPAINT_SCOPE_ENV}: ${uncovered.join(",")}`,
+    );
+  }
+  return child;
+}
+
 /* ------------------------------------------- the dispatch sub-flag */
 
 /**

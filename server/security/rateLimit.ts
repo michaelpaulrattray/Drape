@@ -225,6 +225,25 @@ export const RATE_LIMITS = {
     maxRequests: 12,
     keyPrefix: 'casting_reference_read',
   },
+  /*
+    ATTACHING A PICTURE TO A CAST — the same shape as the ink upload and the
+    same numbers, deliberately.
+
+    It protects the same thing for the same reason: bytes we keep, at a
+    permanently public URL, on a road with no charge path pacing them. It gets
+    its OWN bucket rather than sharing the ink one because the two doors can be
+    open independently — the studio scope is `users:1` in production while this
+    one is off — and a shared bucket would let either road spend the other's
+    allowance while nobody could tell from the counter which had done it.
+
+    The per-Cast cap is SHARED across both stores, which is the bound that
+    actually matters; this bounds the rate at which somebody may discover it.
+  */
+  castingReferenceAttach: {
+    windowMs: 60 * 60 * 1000, // 1 hour
+    maxRequests: 24,
+    keyPrefix: 'casting_reference_attach',
+  },
 } as const;
 
 /**

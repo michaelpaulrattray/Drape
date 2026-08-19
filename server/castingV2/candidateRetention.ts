@@ -29,6 +29,10 @@ import {
   listPurgeableReferenceCropsIn,
 } from "../db/castingV2ReferenceCrops";
 import {
+  deleteReferenceAttachmentRowsIn,
+  listPurgeableReferenceAttachmentsIn,
+} from "../db/castingV2ReferenceAttachments";
+import {
   REFERENCE_INTENTS,
   referenceIntentIngestionForm,
   referenceIntentIsOpen,
@@ -50,6 +54,7 @@ import { createModuleLogger } from "../logging/logger";
 import { checkCandidateInvariants } from "./candidateInvariants";
 import {
   castingInkStudioArmed,
+  castingReferenceAttachArmed,
   castingReferenceLibraryArmed,
   castingScanTableArmed,
   castingSegmentsArmed,
@@ -169,6 +174,23 @@ function tolerateAbsentReferenceCropStore(error: unknown): never | [] {
   if (!isMissingTable(error) || cropStoreArmed()) throw error;
   log.warn(
     "[candidateRetention] the reference crop table is absent — no crop-form feature is open, so nothing can have been written to it and nothing is being left behind. This is expected only before the 0040 migration lands.",
+  );
+  return [];
+}
+
+/**
+ * And the same for an ATTACHMENT (0043).
+ *
+ * Its arming question is its own FLAG rather than the ingestion map, because an
+ * attachment is not a form — any open intent can produce one, and the thing that
+ * decides whether a row can exist is whether the attach door is open at all. The
+ * moment it is, an absent table becomes a fault said out loud instead of a
+ * tolerated warning, without anybody remembering to edit this.
+ */
+function tolerateAbsentReferenceAttachmentStore(error: unknown): never | [] {
+  if (!isMissingTable(error) || castingReferenceAttachArmed()) throw error;
+  log.warn(
+    "[candidateRetention] the reference attachment table is absent — the attach door is closed for everyone, so nothing can have been written to it and nothing is being left behind. This is expected only before the 0043 migration lands.",
   );
   return [];
 }
@@ -434,6 +456,26 @@ export async function runCandidateRetentionSweep(now = new Date()): Promise<Rete
         storageItems.push({ storageKey: crop.storageKey, storageBackend: "public_r2" as const });
       }
       if (referenceCrops.length > 0) await deleteReferenceCropRowsIn(tx, candidateIds);
+
+      /*
+        THE PICTURES SHE ATTACHED (0043).
+
+        Unconditional and NOT gated on the attach flag, on the same terms as
+        everything above it: the flag governs whether a row is ever WRITTEN and
+        nothing governs whether it is purged. This clause lands with the
+        migration and ahead of the writer, which matters more here than
+        anywhere else on this road — an attachment is a FULL PHOTOGRAPH of a
+        real person at a permanently public URL, and a sweep that gained its
+        clause after the writer shipped would have missed every one written in
+        between.
+      */
+      const attachments = await listPurgeableReferenceAttachmentsIn(tx, candidateIds).catch(
+        (error: unknown) => tolerateAbsentReferenceAttachmentStore(error),
+      );
+      for (const attachment of attachments) {
+        storageItems.push({ storageKey: attachment.storageKey, storageBackend: "public_r2" as const });
+      }
+      if (attachments.length > 0) await deleteReferenceAttachmentRowsIn(tx, candidateIds);
 
       if (storageItems.length > 0) {
         await createStorageCleanupManifestIn(tx, {
