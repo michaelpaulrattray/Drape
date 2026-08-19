@@ -72,6 +72,7 @@ import path from "node:path";
 import sharp from "sharp";
 
 import { createFalMaskedEditEngine } from "../server/providers/falImages";
+import { pronounsForSex } from "../server/castingV2/castPronouns";
 import { hairTakeSentence } from "../server/castingV2/hairReferenceTake";
 
 if (process.env.MYSQL_PUBLIC_URL) {
@@ -132,7 +133,9 @@ const ARMS = [
   the two carriers are genuinely different pictures and a prompt that called the
   redacted form "only hair" would be lying to the engine about its own reference.
 */
-const TAKE_SENTENCE = hairTakeSentence("style");
+/* The cast's own words — this court's master is a woman and every other line
+   of its prompt says so ("on her", "about her"). */
+const TAKE_SENTENCE = hairTakeSentence("style", pronounsForSex("female"));
 
 function promptFor(scale: boolean, wordsOnly = false): string {
   if (wordsOnly) {

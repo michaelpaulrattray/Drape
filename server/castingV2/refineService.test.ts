@@ -9054,6 +9054,73 @@ describe("the picture she attached becomes the carrier that rides", () => {
     });
     expect(asks).toHaveLength(1);
   });
+
+  /* ------------------------------------------------------------------ *
+   * WHAT THE CROP IS ALLOWED TO GIVE HER — his fable-1048 amendment, at *
+   * the wire (opus-815, the last mile of the crop road)                 *
+   * ------------------------------------------------------------------ */
+
+  /*
+    > *"if someone wanted a hairstyle but a different hair color its important
+    > that the words that ride along with the reference state it the style only
+    > not the color etc"*
+
+    A crop cannot scope itself: a picture of a haircut is a picture of a haircut
+    in SOME colour whether anybody asked for the colour or not. The words are
+    the only scoping instrument there is, so these arms read the dispatched
+    prompt rather than the composer — a sentence that exists and does not travel
+    is exactly the state this road was found in.
+  */
+
+  it("SCOPES THE CROP IN WORDS — a style take says what it must NOT take, at the wire", async () => {
+    await refineCandidate(carrierRoad({ hairTake: async () => "style" as const }), {
+      ...input,
+      instruction: "give her this haircut but keep her own colour",
+      referenceId: "ref-public",
+    });
+
+    expect(painted).toHaveLength(1);
+    /* The claim, and then the half his amendment is actually about. Read off
+       the request that was dispatched — the crop rode, so the scope must too. */
+    expect(painted[0]!.prompt).toContain("Take her hair from the reference:");
+    expect(painted[0]!.prompt).toContain("Do not take the colour from the reference — keep her own.");
+  });
+
+  it("a FULL LOOK take claims the colour and disclaims nothing — no empty clause", async () => {
+    await refineCandidate(carrierRoad({ hairTake: async () => "fullLook" as const }), {
+      ...input,
+      instruction: "copy this hair",
+      referenceId: "ref-public",
+    });
+
+    expect(painted).toHaveLength(1);
+    const claim = /Take her hair from the reference: ([^.]+)\./.exec(painted[0]!.prompt);
+    expect(claim).not.toBeNull();
+    /* "the whole lot" is his own word for this take, so the colour is IN the
+       claim — and there is nothing left over to disclaim. */
+    expect(claim![1]).toContain("the colour");
+    expect(painted[0]!.prompt).not.toContain("Do not take");
+  });
+
+  it("THE TWO CROP TAKES ARE NOT THE SAME REQUEST — the negative control", async () => {
+    /*
+      THE ARM THAT WAS RED. Before the take reached the engine, `style` and
+      `fullLook` were resolved, courted, logged — and then dropped, so the two
+      asks dispatched byte-identical prompts and a customer who asked to keep
+      her own colour was given the reference's. Nothing else in this file could
+      fail on that, because everything else asserts what IS in the prompt and
+      the defect was a difference that was not.
+    */
+    await refineCandidate(carrierRoad({ hairTake: async () => "style" as const }), {
+      ...input, instruction: "give her this haircut but keep her own colour", referenceId: "ref-public",
+    });
+    await refineCandidate(carrierRoad({ hairTake: async () => "fullLook" as const }), {
+      ...input, instruction: "copy this hair", referenceId: "ref-public",
+    });
+
+    expect(painted).toHaveLength(2);
+    expect(painted[0]!.prompt).not.toEqual(painted[1]!.prompt);
+  });
 });
 
 

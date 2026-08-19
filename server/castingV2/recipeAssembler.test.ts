@@ -1337,7 +1337,13 @@ describe("a distributed open kind is two pictures and one sentence", () => {
 
 describe("the fourth role — a picture the CUSTOMER supplied (fable-1096)", () => {
   const CARRIER = { key: "casting-v2/reference-carrier/aa.png", sha: "c0ffee" };
-  const source = { slot: "hair" as const, image: CARRIER, pictures: "hairOnRedactedForm" as const };
+  /* The scope is REQUIRED on a source (fable-1108 §2): a picture that says
+     nothing about what it claims must not compile, so every fixture carries
+     one. This is the style take's own sentence. */
+  const SCOPE = "Take her hair from the reference: the cut. Do not take the colour from the reference — keep her own.";
+  const source = {
+    slot: "hair" as const, image: CARRIER, pictures: "hairOnRedactedForm" as const, scope: SCOPE,
+  };
 
   it("rides with its ask, on an anatomy slot that has no anchor", () => {
     /*
@@ -1388,11 +1394,44 @@ describe("the fourth role — a picture the CUSTOMER supplied (fable-1096)", () 
     expect(recipe.prompt).toContain(sentence);
   });
 
+  /*
+    THE SCOPE RIDES WITH THE PICTURE — the half that was missing.
+
+    A crop cannot scope itself: a picture of a haircut is a picture of a haircut
+    in some colour whether anybody asked for the colour or not. The description
+    says what the picture IS; this says what it may GIVE her, and the recipe is
+    the only place the engine hears either.
+  */
+  it("SPLICES WHAT THE PICTURE MAY GIVE HER, after the description that delivered", () => {
+    const recipe = assembleRecipe({
+      master: MASTER, pronouns: SHE, library: [],
+      asks: [{ slot: "hair", noun: "hair", words: "a mid-length wavy cut" }],
+      sources: [source],
+    });
+    expect(recipe.ok).toBe(true);
+    if (!recipe.ok) return;
+    const sentence = recipe.references[1]!.sentence;
+    /* Order matters and is asserted: the proven scale wording first, the scope
+       appended to it — one sentence, not a replacement. */
+    expect(sentence).toContain("Match that length and that shape");
+    expect(sentence.indexOf("Match that length")).toBeLessThan(sentence.indexOf(SCOPE));
+    expect(sentence.endsWith(SCOPE)).toBe(true);
+    /* And it reaches the prompt the caller actually sends. */
+    expect(recipe.prompt).toContain(SCOPE);
+  });
+
   it("names the cast's own pronouns on a male cast", () => {
     const recipe = assembleRecipe({
       master: MASTER, pronouns: pronounsForSex("male"), library: [],
       asks: [{ slot: "hair", noun: "hair", words: "a mid-length wavy cut" }],
-      sources: [source],
+      /*
+        THE SCOPE'S PRONOUNS ARE THE COMPOSER'S, NOT THIS MODULE'S — so a male
+        cast's fixture carries a male cast's sentence, which is what
+        `hairTakeSentence` hands the service. This arm caught the shared fixture
+        the day the scope was wired: a `her`-worded scope spliced in front of a
+        male face reddened it, which is the whole reason it was written.
+      */
+      sources: [{ ...source, scope: "Take his hair from the reference: the cut. Do not take the colour from the reference — keep his own." }],
     });
     expect(recipe.ok).toBe(true);
     if (!recipe.ok) return;

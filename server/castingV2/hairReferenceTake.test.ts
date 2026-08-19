@@ -31,7 +31,11 @@ import {
   hairTakeSentence,
   joinPhrases,
 } from "./hairReferenceTake";
+import { pronounsForSex } from "./castPronouns";
 import { FREE_SUBJECT_KEYS, SUBJECT_CARDS, type FreeSubject } from "./subjectCards";
+
+/* The sentence is spoken in front of a face, so it takes that face's words. */
+const SHE = pronounsForSex("female");
 
 describe("the hair facets are derived, and the derivation is pinned", () => {
   it("is the five cards D-142 split hair into", () => {
@@ -157,29 +161,49 @@ describe("the customer phrases are total over the hair facets", () => {
 
 describe("THE RIDE-ALONG SENTENCE — ruling 5, composed from the same list twice", () => {
   it("a style take claims the cut and explicitly not the colour", () => {
-    const sentence = hairTakeSentence("style");
+    const sentence = hairTakeSentence("style", SHE);
     expect(sentence).toContain("the cut");
     expect(sentence).toContain("how it is worn");
     /* The claim half must not name the colour, and the disclaimer half must. */
     const [claim, ...rest] = sentence.split(" Do not take ");
     expect(claim).not.toContain("the colour");
     expect(rest.join(" ")).toContain("the colour");
-    expect(sentence).toMatch(/from the reference — keep hers\.$/);
+    expect(sentence).toMatch(/from the reference — keep her own\.$/);
   });
 
   it("a colour take claims the colour and disclaims the rest by name", () => {
-    const sentence = hairTakeSentence("colour");
+    const sentence = hairTakeSentence("colour", SHE);
     expect(sentence).toContain("Take her hair from the reference: the colour.");
     expect(sentence).toContain("the cut");
     expect(sentence).toContain("how it is worn");
-    expect(sentence).toMatch(/from the reference — keep hers\.$/);
+    expect(sentence).toMatch(/from the reference — keep her own\.$/);
   });
 
   it("the whole look ends without a disclaimer clause", () => {
-    const sentence = hairTakeSentence("fullLook");
+    const sentence = hairTakeSentence("fullLook", SHE);
     expect(sentence).not.toContain("Do not take");
-    expect(sentence).not.toContain("keep hers");
+    expect(sentence).not.toContain("keep her own");
     for (const facet of HAIR_FACETS) expect(sentence).toContain(hairFacetPhrase(facet));
+  });
+
+  /*
+    WHOSE HAIR IT IS — the arm bought the day this sentence started travelling.
+
+    It was written with `her` and `hers` hard-coded, which cost nothing while it
+    reached no engine and would have put "keep hers" in front of a male cast the
+    moment it did. `castPronouns` exists because this product once called a male
+    candidate's eyes "hers" on his own sheet; a sentence composed away from the
+    face is exactly where that comes back.
+  */
+  it("speaks the CAST's pronouns, not the room's", () => {
+    const his = hairTakeSentence("style", pronounsForSex("male"));
+    expect(his).toContain("Take his hair from the reference:");
+    expect(his).toMatch(/keep his own\.$/);
+    expect(his).not.toContain("her");
+
+    const theirs = hairTakeSentence("style", pronounsForSex(null));
+    expect(theirs).toContain("Take their hair from the reference:");
+    expect(theirs).toMatch(/keep their own\.$/);
   });
 
   /*
@@ -189,7 +213,7 @@ describe("THE RIDE-ALONG SENTENCE — ruling 5, composed from the same list twic
   */
   it("names every facet it does not claim", () => {
     for (const take of HAIR_TAKES) {
-      const sentence = hairTakeSentence(take);
+      const sentence = hairTakeSentence(take, SHE);
       for (const facet of hairTakeDisclaims(take)) {
         expect(sentence).toContain(hairFacetPhrase(facet));
       }

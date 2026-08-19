@@ -322,6 +322,29 @@ export type RecipeSource = {
   slot: FeatureSlot;
   image: ReferenceImage;
   pictures: SourcePicture;
+  /**
+   * WHAT THIS PICTURE IS ALLOWED TO GIVE HER — and it is REQUIRED, which is the
+   * whole of the design (ruled fable-1108 §2).
+   *
+   * A crop cannot scope itself: a picture of a haircut is a picture of a
+   * haircut in SOME colour whether anybody asked for the colour or not. So the
+   * words are the only scoping instrument there is, and his fable-1048
+   * amendment — *"if someone wanted a hairstyle but a different hair color its
+   * important that the words that ride along with the reference state it the
+   * style only not the color"* — lives or dies on this field arriving.
+   *
+   * **Optional is what the defect looked like.** The take was resolved,
+   * courted, logged and then dropped one line before the recipe, so `style` and
+   * `fullLook` dispatched byte-identical prompts and a customer who asked to
+   * keep her own colour was given the reference's. A required field means a
+   * source that says nothing about what it claims does not COMPILE — the class
+   * killed rather than the instance.
+   *
+   * Composed by its owner (`hairTakeSentence`) at the call site that knows the
+   * take. This module splices; it does not decide what a take claims, because
+   * that list lives beside the facets it is derived from.
+   */
+  scope: string;
 };
 
 /**
@@ -883,7 +906,17 @@ export function assembleRecipe(input: AssembleInput): AssembleResult {
       }
       claimed.add(ask.slot);
       ordinalOf.set(ask.slot, nextOrdinal());
-      sentences.push(sourceSentence(nextOrdinal(), source.pictures, pronouns));
+      /*
+        THE PICTURE, THEN WHAT IT MAY GIVE HER — two sentences, in that order.
+
+        The description is APPENDED to rather than replaced: *"Match that length
+        and that shape"* is the scale arm's own wording and it is what
+        delivered, 2/2. Wiring a missing sentence and rewording a proven one in
+        the same change would leave neither readable.
+      */
+      sentences.push(
+        `${sourceSentence(nextOrdinal(), source.pictures, pronouns)} ${source.scope}`,
+      );
       references.push({
         role: { kind: "source", slot: ask.slot },
         image: source.image,

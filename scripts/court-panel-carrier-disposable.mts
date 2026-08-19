@@ -58,6 +58,7 @@ import path from "node:path";
 import sharp from "sharp";
 
 import { createFalMaskedEditEngine } from "../server/providers/falImages";
+import { pronounsForSex } from "../server/castingV2/castPronouns";
 import { hairTakeSentence } from "../server/castingV2/hairReferenceTake";
 
 if (process.env.MYSQL_PUBLIC_URL) {
@@ -103,7 +104,8 @@ const ARMS = [
   sentence disclaims the colour. It is also the harder case for a carrier, since
   the words have to hold back a property the picture plainly shows.
 */
-const TAKE_SENTENCE = hairTakeSentence("style");
+/* The cast's own words — this court's master is a woman, as its prompt says. */
+const TAKE_SENTENCE = hairTakeSentence("style", pronounsForSex("female"));
 
 const PROMPT = [
   "Edit the first picture, which is a photograph of a woman.",

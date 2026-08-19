@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "ac0e2f9d8b795c8b"
+    "sourceFingerprint": "bba56679c69d6ed5"
   },
   "domains": [
     {
@@ -19990,6 +19990,11 @@
     {
       "from": "module:server/castingV2/hairReferenceCutter.ts",
       "to": "module:server/storage.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/hairReferenceTake.ts",
+      "to": "module:server/castingV2/castPronouns.ts",
       "kind": "imports"
     },
     {

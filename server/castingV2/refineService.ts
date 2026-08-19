@@ -140,7 +140,7 @@ import {
   wordsTakeIntentFor,
 } from "./referenceWordsLane";
 import { cutHairCarrier, mintHairCarrier, SECOND_VIEW_UNUSED_NOTE } from "./hairReferenceCutter";
-import { hairTakeEntry, resolveHairTake } from "./hairReferenceTake";
+import { hairTakeEntry, hairTakeSentence, resolveHairTake } from "./hairReferenceTake";
 import {
   cropTakeAllowedOn, readReferenceMedium, DRAWN_NARROWED_NOTE,
 } from "./referenceMediumDoor";
@@ -3444,7 +3444,16 @@ async function refineCandidateCounted(
     to find out that no crop is wanted at all: a colour take carries as WORDS
     (his own example) and buys no segmenter call.
   */
-  let hairSource: { key: string; sha: string } | null = null;
+  /*
+    AND THE SCOPE RIDES WITH IT — `scope` is the sentence saying what this crop
+    may give her, composed by `hairTakeSentence` from the take read below.
+
+    It is on this object rather than resolved again at the recipe because the
+    take is knowable only here, inside the pre-claim door: carrying the KEY and
+    the SHA and leaving the scope behind is exactly how style and fullLook came
+    to dispatch the same request (opus-815, ruled fable-1108).
+  */
+  let hairSource: { key: string; sha: string; scope: string } | null = null;
   let attachedPictureUnused = false;
   let secondViewNote: string | null = null;
   if (reference) {
@@ -3556,7 +3565,21 @@ async function refineCandidateCounted(
       const minted = await (dependencies.mintCarrier ?? mintHairCarrier)({
         userId: input.userId, carrier: cut.carrier,
       });
-      hairSource = { key: minted.key, sha: minted.sha };
+      /*
+        `take` is non-null here — `wantsCrop` above proved it, and this is the
+        only branch that mint runs in. The narrowing is stated rather than
+        asserted with a bang so a future edit that loosens `wantsCrop` fails
+        here instead of shipping a crop with nobody's scope on it.
+      */
+      const cropTake = take;
+      if (cropTake === null) throw new Error("a carrier was cut for an unreadable take");
+      /* The CAST's pronouns, read the same way every other sentence in this
+         render reads them — the scope is spoken in front of her own face. */
+      hairSource = {
+        key: minted.key,
+        sha: minted.sha,
+        scope: hairTakeSentence(cropTake, pronounsForSex(currentIdentity?.sex)),
+      };
       /* THE SECOND VIEW'S NON-USE IS SAID (ruled fable-1093 §1) — carried to the
          same list the other confessions travel in, so one ask that loses two
          things says both. */
@@ -4305,6 +4328,9 @@ async function refineCandidateCounted(
                 slot,
                 image: { key: hairSource.key, sha: hairSource.sha },
                 pictures: "hairOnRedactedForm" as const,
+                /* His 1048 amendment, reaching the engine — required by the
+                   type, so this line cannot go missing quietly again. */
+                scope: hairSource.scope,
               }],
             };
           })()

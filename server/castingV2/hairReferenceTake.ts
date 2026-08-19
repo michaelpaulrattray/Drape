@@ -64,6 +64,7 @@
  * visible rather than filled by whoever notices it, because a phrase somebody
  * guessed at reads as chosen to the next person.
  */
+import type { CastPronouns } from "./castPronouns";
 import { createModuleLogger } from "../logging/logger";
 import type { TextEngine } from "../providers/types";
 import { interpreterEngine } from "./interpreter";
@@ -211,10 +212,10 @@ export function joinPhrases(phrases: readonly string[]): string {
  * facets rather than saying "nothing else", because *"not the colour"* is a
  * fact a reader and a person can both act on and *"only what I said"* is not.
  */
-export function hairTakeSentence(take: HairTake): string {
+export function hairTakeSentence(take: HairTake, pronouns: CastPronouns): string {
   const claimed = joinPhrases(hairTakeClaims(take).map(hairFacetPhrase));
   const disclaimed = hairTakeDisclaims(take);
-  const claim = `Take her hair from the reference: ${claimed}.`;
+  const claim = `Take ${pronouns.possessive} hair from the reference: ${claimed}.`;
   if (disclaimed.length === 0) return claim;
   /*
     HERS, NOT THE REFERENCE'S — the cast keeps what this take did not ask for,
@@ -226,9 +227,22 @@ export function hairTakeSentence(take: HairTake): string {
     output rather than by reading the code, which is the only way that class of
     defect is ever caught.
   */
+  /*
+    "KEEP HER OWN", never "keep hers" — and the reason is the day this sentence
+    started travelling.
+
+    It was composed for months with `her` and `hers` written in, which cost
+    nothing while it reached no engine. The moment it rides a recipe it is read
+    in front of a FACE, and `castPronouns` exists because this product once
+    called a male candidate's eyes "hers" on his own sheet. `CastPronouns` has
+    no independent possessive (his · hers · theirs), so the clause is worded to
+    need only the one it has: *keep his own*, *keep her own*, *keep their own*
+    are all English, and *keep theirs* would have forced a fourth word into that
+    type for one sentence's sake.
+  */
   return `${claim} Do not take ${
     joinPhrases(disclaimed.map(hairFacetPhrase))
-  } from the reference — keep hers.`;
+  } from the reference — keep ${pronouns.possessive} own.`;
 }
 
 /**
