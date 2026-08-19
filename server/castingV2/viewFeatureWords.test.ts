@@ -105,6 +105,31 @@ describe("what the anchor cannot show", () => {
     expect(selection.declined).toEqual([{ slot: "open:wings", reason: "shown" }]);
   });
 
+  it("DECLINES a feature the branch holds a crop of — the pixels carry it", () => {
+    /*
+      The probe's finding, as an arm (fable-1058 §2). A tail anchored below the
+      waist was drawn curling up beside her shoulder and was plainly in the
+      waist-up master; the crop the mint cut from that frame is the read fact
+      that says so. Geometry alone said "hidden" and geometry alone was wrong.
+    */
+    const selection = selectCarriedFeatureWords({
+      entries: [entry({ slot: "open:tail", noun: "tail", words: ["long scaled tail"], cropped: true })],
+      regionOf: (slot) => regionForSlot(slot, kinds({ tail: "belowWaist" })),
+    });
+    expect(selection.carried).toEqual([]);
+    expect(selection.declined).toEqual([{ slot: "open:tail", reason: "cropped" }]);
+  });
+
+  it("and CARRIES the same feature when the branch holds no crop of it", () => {
+    /* The negative half, one field apart: without it the arm above would pass
+       for a selection that had simply stopped carrying anything. */
+    const selection = selectCarriedFeatureWords({
+      entries: [entry({ slot: "open:tail", noun: "tail", words: ["long scaled tail"], cropped: false })],
+      regionOf: (slot) => regionForSlot(slot, kinds({ tail: "belowWaist" })),
+    });
+    expect(selection.carried.map((feature) => feature.slot)).toEqual(["open:tail"]);
+  });
+
   it("declines a kind nobody has answered for, rather than guessing a region", () => {
     /* The fail-closed side `readKindProperties` already chose: the cost of a
        null is that the feature carries exactly as it does today — nothing. */

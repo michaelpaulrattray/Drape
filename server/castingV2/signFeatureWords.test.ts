@@ -102,6 +102,19 @@ describe("gathering the words the anchor cannot show", () => {
     }]);
   });
 
+  it("carries NOTHING when the branch holds a CROP of the feature", async () => {
+    /*
+      The two-condition rule's second half, driven through the real
+      `deriveLibrary` rather than through this module's own view of an entry: a
+      carry row with bytes becomes `carry` on the entry, and a feature the
+      pixels carry rides no words. The probe bought this arm at the frames.
+    */
+    const listLibrary = vi.fn(async () => [
+      row({ storageKey: "casting-v2/library/tail.png", maskKey: "casting-v2/library/tail-mask.png", digest: "d" }),
+    ] as never);
+    expect(await carriedFeatureWords(deps({ listLibrary }), input)).toEqual([]);
+  });
+
   it("carries NOTHING when the same feature sits where the anchor can see it", async () => {
     const readKindRegion = vi.fn(async () => ({
       locality: "single" as const,

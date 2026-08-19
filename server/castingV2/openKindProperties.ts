@@ -259,14 +259,31 @@ export async function ensureKindProperties(input: {
   });
   if (read === null) return null;
 
-  /* Not awaited for its verdict — a lost write costs one repeated read on the
-     next ask, and this is the one path where a paid render is waiting. */
+  /*
+    Not awaited for its verdict — a lost write costs one repeated read on the
+    next ask, and this is the one path where a paid render is waiting.
+
+    BUT THE MISS IS SAID OUT LOUD (ordered fable-1057 §4). "One text read per
+    new noun ever" is the entire cost argument of this design, and it holds only
+    while the answer is KEPT. On 2026-08-19 it was found not to be: the
+    properties table had never been created in production, so every ask bought
+    the read again and threw it away — for months, behind a `warn` about one
+    failed INSERT that reads like a transient. This line is about the
+    CONSEQUENCE rather than the operation, which is the half a reader can act
+    on: the next ask for this kind will pay again.
+  */
   void writeOpenKindProperties({
     kind: input.kind,
     locality: read.locality,
     anchorRegion: read.anchorRegion,
     model: read.model,
     promptVersion: read.promptVersion,
+  }).then((kept) => {
+    if (kept) return;
+    log.warn(
+      { kind: input.kind },
+      "[openKindProperties] the answer was bought and NOT kept — the next ask for this kind buys it again",
+    );
   });
   return read;
 }

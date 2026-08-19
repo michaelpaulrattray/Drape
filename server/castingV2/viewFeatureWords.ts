@@ -86,6 +86,13 @@ export type FeatureEntry = {
   readonly noun: string;
   readonly words: readonly string[];
   readonly vacant?: boolean;
+  /**
+   * Whether the branch holds a CROP of this feature — `deriveLibrary`'s own
+   * `carry`. Present means a segmenter FOUND the thing in a delivered frame and
+   * cut it, which is a read fact about a picture rather than an inference from
+   * geometry. See {@link selectCarriedFeatureWords}.
+   */
+  readonly cropped?: boolean;
 };
 
 export type FeatureWordsSelection = {
@@ -97,7 +104,7 @@ export type FeatureWordsSelection = {
    */
   readonly declined: readonly {
     readonly slot: string;
-    readonly reason: "shown" | "vacant" | "noWords" | "regionUnknown" | "capped";
+    readonly reason: "shown" | "cropped" | "vacant" | "noWords" | "regionUnknown" | "capped";
   }[];
 };
 
@@ -176,7 +183,10 @@ export function selectCarriedFeatureWords(input: {
   readonly regionOf: (slot: string) => BodyAnchorRegion | null;
 }): FeatureWordsSelection {
   const carried: CarriedFeatureWords[] = [];
-  const declined: Array<{ slot: string; reason: "shown" | "vacant" | "noWords" | "regionUnknown" | "capped" }> = [];
+  const declined: Array<{
+    slot: string;
+    reason: "shown" | "cropped" | "vacant" | "noWords" | "regionUnknown" | "capped";
+  }> = [];
 
   for (const entry of input.entries) {
     /* A feature she has taken off is not a feature the anchor is failing to
@@ -197,6 +207,27 @@ export function selectCarriedFeatureWords(input: {
     }
     if (anchorPresentsIn(region, "master")) {
       declined.push({ slot: entry.slot, reason: "shown" });
+      continue;
+    }
+    /*
+      THE SECOND CONDITION, and the probe is what bought it (fable-1058 §2).
+
+      Geometry answers a PROSPECTIVE question — may this ask be served on this
+      framing — and `anchorPresentsIn`'s own docblock says it does not answer
+      whether the thing is VISIBLE in a delivered photograph, because that is a
+      fact about a picture and this program READS such facts. The first version
+      of this rule used it for exactly the question it disclaims, and the probe
+      caught it at the frames: a tail anchored `belowWaist` was drawn curling up
+      beside her shoulder, plainly IN the waist-up master, and would have been
+      re-described in words the pixels were already carrying.
+
+      A live CROP is that read fact, already bought: it exists because a
+      segmenter found the thing in a delivered frame and cut it, with its own
+      coverage guard. So a cropped feature is carried by the picture and rides
+      nothing.
+    */
+    if (entry.cropped === true) {
+      declined.push({ slot: entry.slot, reason: "cropped" });
       continue;
     }
     if (carried.length >= MAX_CARRIED_FEATURES) {

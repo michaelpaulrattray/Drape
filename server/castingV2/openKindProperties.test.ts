@@ -18,13 +18,29 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
    database writes rather than infer them from a return value. */
 let kept: Record<string, unknown> | null = null;
 const written: Array<Record<string, unknown>> = [];
+/** Whether the store ACCEPTS the write — false is the missing-table world. */
+let writeKeeps = true;
 vi.mock("../db/castingV2OpenKindProperties", () => ({
   readOpenKindProperties: async () => kept,
   writeOpenKindProperties: async (row: Record<string, unknown>) => {
     written.push(row);
-    return true;
+    return writeKeeps;
   },
 }));
+
+/* The logger is captured so the CONSEQUENCE line below is readable — the same
+   shape `faceScan.test.ts` uses, and the fields are ours either way. */
+const logged: { fields: Record<string, unknown>; message: string }[] = [];
+vi.mock("../logging/logger", () => {
+  const record = () => (fields: unknown, message: string) => {
+    logged.push({ fields: (fields ?? {}) as Record<string, unknown>, message });
+  };
+  return {
+    createModuleLogger: () => ({
+      error: record(), warn: record(), info: record(), debug: record(), fatal: record(),
+    }),
+  };
+});
 
 const {
   KIND_PROPERTY_PROMPT_VERSION,
@@ -37,6 +53,8 @@ import type { TextEngine } from "../providers/types";
 beforeEach(() => {
   kept = null;
   written.length = 0;
+  writeKeeps = true;
+  logged.length = 0;
 });
 
 function engineSaying(text: string, extra: { truncated?: boolean; served?: string } = {}): {
@@ -220,6 +238,37 @@ describe("the kind-property cache", () => {
       model: "anthropic/claude-sonnet-5",
       promptVersion: KIND_PROPERTY_PROMPT_VERSION,
     }]);
+  });
+
+  it("SAYS SO when the answer was bought and not kept", async () => {
+    /*
+      Ordered fable-1057 §4, from the incident that found it: the properties
+      table had never been created in production, so every ask bought the read
+      again and threw it away — for months, behind a `warn` about one failed
+      INSERT that reads like a transient. The line a reader can act on is about
+      the CONSEQUENCE: the next ask pays again.
+    */
+    kept = null;
+    writeKeeps = false;
+    const { engine } = engineSaying('{"locality":"single","anchor":"belowWaist"}');
+    const got = await ensureKindProperties({ kind: "tail", noun: "tail", engine });
+    expect(got).toMatchObject({ anchorRegion: "belowWaist" });
+    /* The write is not awaited by the caller, so the line lands on the next
+       tick — the same tick the render is not waiting for. */
+    await new Promise((resolve) => setImmediate(resolve));
+    const line = logged.find((entry) => entry.message.includes("buys it again"));
+    expect(line).toBeDefined();
+    expect(line!.fields).toEqual({ kind: "tail" });
+  });
+
+  it("and says NOTHING when the answer was kept", async () => {
+    /* The negative arm, because a line that fires either way is not a signal. */
+    kept = null;
+    writeKeeps = true;
+    const { engine } = engineSaying('{"locality":"single","anchor":"belowWaist"}');
+    await ensureKindProperties({ kind: "tail", noun: "tail", engine });
+    await new Promise((resolve) => setImmediate(resolve));
+    expect(logged.find((entry) => entry.message.includes("buys it again"))).toBeUndefined();
   });
 
   it("asks about the NOUN and keys on the KEY", async () => {

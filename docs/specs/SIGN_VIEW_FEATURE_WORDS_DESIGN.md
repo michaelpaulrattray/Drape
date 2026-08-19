@@ -89,6 +89,43 @@ This is what makes the rule honest rather than convenient: **it cannot grow into
 "describe the person" by accident**, because a face slot is structurally
 incapable of entering it.
 
+### ⚠ AMENDED 2026-08-19 — the rule above is HALF of it, and the probe is why
+
+**Geometry is not visibility, and `anchorPresentsIn`'s own docblock says so:**
+*"What it does NOT answer is whether the thing is VISIBLE in a delivered
+photograph: that is D2, it is a fact about a picture, and this program's rule is
+that such facts are READ rather than inferred from geometry."* The version of
+this section above used it for exactly the question it disclaims.
+
+**The probe caught it at the frames.** A dev specimen's tail, anchored
+`belowWaist`, was drawn curling up beside her shoulder and is plainly IN the
+delivered frame — so the words would have re-described what the pixels already
+carry, which is bound 3's mild direction. Two further readings from the same
+sitting made it worse rather than better: a relocation edit produced a frame
+where the tail runs off the corner, and a *"scaled clawed feet"* ask produced a
+frame the engine **REFRAMED to full body** in order to show them. **The
+delivered frame is not pinned to the master framing**, so the geometry premise
+is unreliable in both directions.
+
+**THE RULE, as ruled fable-1058 §2:**
+
+```
+rides its words  ⟺  the framing geometry says the anchor cannot show it
+                     AND the branch holds NO CROP of it
+```
+
+The crop is the read fact and is the load-bearing half: a crop exists only
+because a segmenter FOUND the thing in a delivered frame and cut it, under its
+own coverage guard, on money already spent — no new read, no vision call at
+Sign. The geometry half stays for one job only, and it is the important one:
+**keeping a face slot structurally incapable of entering the set.**
+
+**Verified on real branches** (fable-1058 §3's ordered reading, not an
+assumption): candidate 376, variant 471 (crop minted) declines `cropped`;
+variant 472, after an edit that moved the feature and produced no crop, CARRIES
+its words — `deriveLibrary` serves the newest row per slot, so no stale ancestor
+crop is served and no tiebreak is needed.
+
 ## 4. WHERE THE WORDS COME FROM — one owner, no second list
 
 The panel already computes each slot's current declarative state from the

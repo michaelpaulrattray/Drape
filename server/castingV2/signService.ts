@@ -669,7 +669,15 @@ export async function carriedFeatureWords(
   }
 
   const selection = selectCarriedFeatureWords({
-    entries,
+    entries: entries.map((entry) => ({
+      slot: entry.slot,
+      noun: entry.noun,
+      words: entry.words,
+      ...(entry.vacant === true ? { vacant: true as const } : {}),
+      /* `carry` is the branch's live CROP of this feature — present only when a
+         segmenter found it in a delivered frame and cut it. */
+      cropped: entry.carry !== undefined,
+    })),
     regionOf: (slot) => regionForSlot(slot, (kind) => regions.get(kind) ?? null),
   });
 
