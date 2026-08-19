@@ -47,8 +47,13 @@ belong to it, both about the crop:
   this forces is designed in `UNIVERSAL_REFERENCE_ROAD_DESIGN.md` §9.10 and is
   owed BEFORE the first crop is cut.
 - **the reference is a MAN and the Cast may not be.** The ride-along sentence
-  says *"take HER hair"* and that is correct as written: the pronoun is the
-  CAST's, because **a reference is a source and never a subject.**
+  says *"take HER hair"* in front of a female Cast, and the principle is that
+  the pronoun is the CAST's, because **a reference is a source and never a
+  subject.** *(Written when that sentence reached no engine and the pronoun was
+  hard-coded `her` — so the principle was stated and not implemented. It is
+  implemented now: `hairTakeSentence` takes the cast's pronouns and this
+  specimen's own case, a male reference on a female Cast, is one of its arms.
+  `cc9cf8db`.)*
 
 ## 3. `tattoo-sleeve-trex-geometric-design.png` — ask: **sleeve tattoo, left arm, copied through signing and angles**
 
