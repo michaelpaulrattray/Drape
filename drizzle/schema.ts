@@ -3049,7 +3049,10 @@ export type InsertCastingOpenKindPropertiesRow = typeof castingOpenKindPropertie
  * and it is not a library row — an uploaded photograph never reaches a render
  * (D-138: ink is re-drawn onto a neutral mannequin, ruled fable-684 §2), so this
  * table holds the SEED and the plate that comes from it is a separate artifact
- * with its own columns when the mannequin templates exist.
+ * with its own columns when the mannequin templates exist. ⚠ *Never reaches a
+ * RENDER* — the row's bytes DO ride uncropped to the plate-MINT engine today;
+ * that gap, its founder-taken bound and its widening tripwire are stated in
+ * `shared/referenceIntents.ts` and V3B §7.11.
  *
  * # COPY, NEVER POINTER — the condition this build inherited
  *

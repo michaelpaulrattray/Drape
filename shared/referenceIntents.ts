@@ -22,7 +22,9 @@
  * be cropped etc"*
  *
  *     tattoo      MANNEQUIN PLATE   the plate peels the design off the skin, so
- *                                   the photograph never reaches a render
+ *                                   the photograph never reaches a RENDER. ⚠ It
+ *                                   DOES reach the plate MINT — see the fence
+ *                                   note below
  *     hair        CROP              the SEGMENTED hair region — a reader's cut,
  *                                   the artifact this product already mints from
  *                                   her own renders. Never a rectangle with a
@@ -36,6 +38,24 @@
  * Each class ingests by the form that carries it best, and the mannequin is
  * reserved for on-skin graphics. The fence is met by the FORM in every row: a
  * person cannot ride along a plate, a segmented cut, or a sentence.
+ *
+ * # ⚠ THE FENCE IS SCOPED TO THE RENDER, AND THE MINT IS A SECOND ENGINE
+ *
+ * *"The photograph never reaches a render"* is true and was verified at the
+ * code on 2026-08-19. It is not the whole truth: `inkPlateMint.ts` hands the
+ * plate engine the STORED UPLOAD UNCHANGED, and `inkUploadDoor.ts` gates
+ * placement, size, format, edge, intent and the per-Cast cap — nothing about
+ * who is in the picture. **So a full-person photograph rides wholesale to the
+ * MINT today**, on the one account inside `CASTING_INK_STUDIO_SCOPE`.
+ *
+ * Ruled fable-1052 §1–§3: no interim gate (a face detector cannot tell a
+ * portrait tattoo from a photograph of a person, and law 9 forbids asking a
+ * vision reader to; a rectangle crop is the fidelity violation in the one
+ * place he said "cropped" means the design; gating the mint disarms the fence
+ * court). The exposure is bounded to HIS OWN account, knowingly, and the bound
+ * is held by a TRIPWIRE in `CLAUDE.md`: **the ink scope does not widen past
+ * `users:1` while uploads ride uncropped to the mint.** The crop-from-photo
+ * build (V3B §7.11 build 3a) retires it.
  *
  * # THE RULE BEHIND THE MAP — his, 2026-08-19 (fable-1047)
  *

@@ -336,7 +336,10 @@ there.*
 
 ```
 tattoo      MANNEQUIN PLATE   the plate peels the design off the skin, so the
-                              uploaded photograph never reaches a render
+                              uploaded photograph never reaches a RENDER — and
+                              read §7.11's fence section before quoting that:
+                              the MINT is a second engine, and the raw upload
+                              rides to it until build 3a lands
 hair        CROP              the SEGMENTED hair region — a reader's cut, the
                               same artifact this product already mints from her
                               own renders. NEVER a rectangle containing a face
@@ -348,7 +351,10 @@ eyeColour   CROP              the product's own proven eye-crop road
 The general rule: **each feature class ingests by the form that carries it
 best, and the mannequin is reserved for on-skin graphics.** The real-person
 fence is met by the FORM in every row — a person cannot ride along a plate, a
-segmented cut, or a sentence.
+segmented cut, or a sentence. ⚠ **That last sentence is about what reaches HER
+RENDER, and it holds. It says nothing about the plate MINT**, which today
+receives the upload's raw bytes — see §7.11's fence section for the whole
+truth, the founder's call on it, and the widening tripwire that bounds it.
 
 ⚠ **TWO OF THESE FOUR ROWS WERE REFINED ON 2026-08-19 — read §7.11 before
 quoting this table.** He gave the RULE the four rows were instances of, and it
@@ -953,7 +959,10 @@ tattoo    EXTENDED — the row said the uploaded photograph never reaches a rend
           which stands. What is new: an upload may now BE a photograph containing
           a tattoo, and the design is CROPPED out of it before it reaches the
           plate. Words-only asks mint NO plate at all and ride as words into the
-          views.
+          views. ⚠ AND THE FENCE SENTENCE IS NOT THE WHOLE STORY — the raw
+          upload rides to the plate-MINT engine today, uncropped. That is what
+          build 3a closes, and the fence section below states it in full with
+          the founder's call and the widening tripwire.
 hair      REFINED — the row said CROP flatly. It is now a QUESTION first:
           colour → words · style → crop · full look → crop. The crop half is
           unchanged and still the segmented cut, never a rectangle.
@@ -984,6 +993,63 @@ Ordered fable-1047 §b, and none of them starts on this filing alone:
   today. **Ruling 5 lands inside this design**: the answer composes the
   sentence — *"style"* composes the SCOPED one, *"full look"* the unscoped one —
   and the split is proven red-first at the wire.
+
+#### ⚠ THE FENCE, WITH THE WHOLE TRUTH — where an upload meets an engine TODAY
+#### (ruled fable-1052 §1–§3, after the scoping in opus-775 §1–§2)
+
+The sentence this note has carried since D-138 — **"the uploaded photograph
+never reaches a render"** — is TRUE, was verified at the code on 2026-08-19,
+and is no longer the whole story.
+
+**It was scoped to the RENDER. The plate mint is a second engine, and it was
+never covered by it.** `inkPlateMint.ts` hands the engine `design: { bytes:
+fetched.bytes }` — the stored upload, unchanged, the service's own header
+saying *"the bytes stored are the bytes given, unchanged"* — and the upload
+door (`inkUploadDoor.ts`) gates placement, byte size, format, minimum edge,
+intent and the per-Cast cap, and **nothing about who is in the picture**. So
+with `CASTING_INK_STUDIO_SCOPE` on, **a full-person photograph rides wholesale
+to the plate-mint engine today.** Not to her render — to the mint.
+
+This is not a broken promise; it is a promise that stayed true while the mint
+quietly became the place a photograph meets an engine. **Build 3a — the
+crop-from-photo ingestion — is what closes it**, and it is the top of the queue
+for exactly this reason.
+
+**THE FOUNDER'S CALL, taken knowingly and not silently (fable-1052 §1):** no
+interim gate. Three candidate gates were scoped and all three were worse than
+the exposure:
+
+- *refuse when the upload contains a face* — **the discriminator does not
+  exist.** A portrait tattoo is a legitimate design containing a face; flash
+  art is full of them. The real test is *is this a photograph or a drawing*,
+  which is a judgement law 9 says no vision reader closes.
+- *a conservative rectangle crop* — **that is not an interim, it is 3a done
+  badly**, in the one place he said "cropped" means the design. The fidelity
+  law's named violation.
+- *gate the MINT, keep storing the design* — clean, one line, reversible — but
+  **it disarms the fence court** (fable-919 §3: a face-bearing reference must
+  produce a plate with zero person content, at the frames, in front of him),
+  which is the instrument that settles this question, and it stops the one
+  user's dogfooding of the feature he just ordered.
+
+**The exposure is acceptable because of WHO it is.** The only account behind
+this door is his own — his uploads, his hand, his ordered flag, going to the
+vendor his product already streams every render through. D-172's containment
+protects a CUSTOMER's identity from riding into an engine; the founder
+knowingly sending his own reference is not that class. He was told plainly, in
+his own chat, rather than left to assume the narrow sentence.
+
+**THE TRIPWIRE — what makes this a ruling and not a shrug.** It is written into
+the flag's widening prerequisites in `CLAUDE.md` beside the migration-0041 row:
+
+> **`CASTING_INK_STUDIO_SCOPE` DOES NOT WIDEN PAST `users:1` WHILE UPLOADS RIDE
+> UNCROPPED TO THE MINT.**
+
+3a landing retires the tripwire. A widening request BEFORE 3a lands re-opens
+this as a **blocking prerequisite**, not a judgement call — because the
+sentence that makes the exposure acceptable is *"it is his"*, and the first
+customer through this door is the moment that sentence stops being true.
+
 
 #### ⚠ WHAT THESE RULINGS DO NOT TOUCH — the release gating (fable-1047 §c)
 

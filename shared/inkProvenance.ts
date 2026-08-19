@@ -32,6 +32,12 @@
  * proven by its own court, not by this column (fable-919 §3). This records
  * WHAT WAS CLAIMED about the source, so a later reading has something to be
  * about.
+ *
+ * ⚠ And it does not say the upload is safe to MINT. The fence above is about
+ * the RENDER; the plate mint receives the stored upload's raw bytes today
+ * (`inkPlateMint.ts`), which is the gap build 3a closes — see
+ * `shared/referenceIntents.ts` and V3B §7.11's fence section for the whole
+ * truth, the founder's call, and the widening tripwire that bounds it.
  */
 export const INK_PROVENANCES = ["synthetic", "consented"] as const;
 
