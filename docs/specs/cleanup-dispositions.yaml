@@ -825,3 +825,45 @@
   why: marks the open edge of the founder's 2026-08-19 no-question ruling — "copy the hairstyle but keep her colour" names two takes, counts as neither, and now falls to the whole lot, which takes the colour his own amendment protects
   argued: 14a
   blocker: the ruling on how a two-take ask is answered; the arm pinning today's behaviour cites this symbol by name
+
+- symbol: findSeam
+  file: server/castingV2/hairReferenceCrop.ts
+  verdict: HELD
+  why: the crop road's composite discriminator — measured over his six specimens (one seam at 27.4x its own median, four controls at or below 6.7x) and driven over the committed corpus in its own suite
+  argued: 14a
+  blocker: the crop road's cutter, which calls it once per attached reference
+
+- symbol: panelsOf
+  file: server/castingV2/hairReferenceCrop.ts
+  verdict: HELD
+  why: turns a seam into the two panels the segmenter is asked about separately, which is what stops a model choosing half a customer's reference on her behalf
+  argued: 14a
+  blocker: the crop road's cutter
+
+- symbol: unionBox
+  file: server/castingV2/hairReferenceCrop.ts
+  verdict: HELD
+  why: the carrier's extent over hair and form together, so a fringe past the head outline is not cut off by the head's bounds; refuses two masks in different spaces rather than resolving them
+  argued: 14a
+  blocker: the crop road's cutter
+
+- symbol: composeCarrierPixels
+  file: server/castingV2/hairReferenceCrop.ts
+  verdict: HELD
+  why: the carrier itself — hair in its own pixels, the head flat-filled and unrecoverable, everything else transparent; written as a loop because three imaging idioms returned a whole face silently
+  argued: 14a
+  blocker: the crop road's cutter
+
+- symbol: carrierPicturesScale
+  file: server/castingV2/hairReferenceCrop.ts
+  verdict: HELD
+  why: refuses a carrier whose form is a rounding error (the measured head-region read left 1,043px against 99,220px of hair), which would be a silent regression to the cutout the length court convicted
+  argued: 14a
+  blocker: the crop road's cutter
+
+- symbol: encodeCarrier
+  file: server/castingV2/hairReferenceCrop.ts
+  verdict: HELD
+  why: encodes a composed carrier, separated so the composition stays pure and testable without an image codec
+  argued: 14a
+  blocker: the crop road's cutter

@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "a56e75fe70aacf9a"
+    "sourceFingerprint": "af32be628af9afd2"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 143
+      "moduleCount": 144
     },
     {
       "id": "domain:castingV2",
@@ -3539,6 +3539,12 @@
     {
       "id": "module:server/castingV2/hairColourFromReference.ts",
       "path": "server/castingV2/hairColourFromReference.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/hairReferenceCrop.ts",
+      "path": "server/castingV2/hairReferenceCrop.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -9790,6 +9796,10 @@
     {
       "id": "test:server/castingV2/hairModifiers.test.ts",
       "path": "server/castingV2/hairModifiers.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/hairReferenceCrop.test.ts",
+      "path": "server/castingV2/hairReferenceCrop.test.ts"
     },
     {
       "id": "test:server/castingV2/hairReferenceScope.test.ts",
