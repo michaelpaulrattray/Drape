@@ -468,18 +468,34 @@ that line's voice — one story in two beats — since it can now follow it.)*
 > production — the sentence already survives on
 > `generation_operations.publicMessage`, so the migration and its founder
 > ceremony went with it. **C** is built behind `CASTING_REFINE_DISPATCH_SCOPE`,
-> **off everywhere**, with the double-tap guard (`one face, one render` — a
-> derived candidate lock, ruled fable-974) beside it on both roads.
+> **which is `users:1` in production as of 2026-08-19** — see the correction
+> below — with the double-tap guard (`one face, one render` — a derived
+> candidate lock, ruled fable-974) beside it on both roads.
 >
 > Walked in the running app on a real paid dev refine: the request's life fell
 > from **79 s to 20 s**, the panel said the edit was running at the receipt, and
 > the picture landed with nobody holding anything. What remains synchronous is
 > the FREE half — the interpreter and the doors — by design.
 >
-> **What is left is a decision, not a build:** turning the flag on is a Railway
-> variable and therefore the founder's, and it is on his queue with a
+> ⚠→✅ **THE DECISION WAS MADE AND THIS PARAGRAPH DID NOT KNOW.** It read, for
+> a day: *"What is left is a decision, not a build: turning the flag on is a
+> Railway variable and therefore the founder's, and it is on his queue with a
 > recommendation. Until he does, this paragraph's ~305 s tail is still live for
-> every refine.
+> every refine."*
+>
+> **He said "flip it".** `CASTING_REFINE_DISPATCH_SCOPE=users:1` was set on the
+> Drape service on 2026-08-19 with no paid work in flight, watched to healthy
+> and read back three times; the founder-queue card is CLOSED and cites
+> fable-985 §1 / fable-986. **So the ~305 s exposure is retired on his account**
+> — the flag is still off for everyone else, which is the only part of the old
+> sentence that survives.
+>
+> *Found on 2026-08-19 by the deploy rite printing the flags it READ off the
+> service, against this file claiming they were off — not by anyone re-reading
+> the page.* This is PROTOCOL's own class: **a ruling is landed where the next
+> person acts, not where it was relayed.** The card moved; the survivor file
+> queued the founder a question he had already answered. Read the flags the rite
+> prints before quoting a scope from this page.
 
 **The real answer is to stop holding the request** — the sheet already polls, so
 the machinery exists; the mutation would dispatch and return, and the outcome
