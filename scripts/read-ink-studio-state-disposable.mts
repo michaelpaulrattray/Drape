@@ -20,6 +20,11 @@ import {
   castingReferenceAttachments,
 } from "../drizzle/schema";
 import { getDb } from "../server/db/connection";
+import { assertOneWorld } from "./lib/worldGuard.mts";
+
+/* Which world this reads — inert locally, refuses a half-production process
+   under `railway run` (`scriptWorldGuard`). */
+assertOneWorld(["DATABASE_URL"]);
 
 const db = (await getDb())!;
 

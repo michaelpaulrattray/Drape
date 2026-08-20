@@ -26,6 +26,17 @@ import {
   listPurgeableReferenceAttachmentsIn,
 } from "../server/db/castingV2ReferenceAttachments";
 import { createStorageCleanupManifestIn } from "../server/db/storageCleanup";
+import { assertOneWorld } from "./lib/worldGuard.mts";
+
+/*
+  WHICH WORLD THIS DELETES IN — and `scriptWorldGuard` CANNOT SEE THIS FILE.
+
+  Its scope is the text `getDb()`, and this script reaches the pool through
+  `withTransaction` instead. So the guard is here because it is owed, not
+  because a suite asked: a reader taken from the wrong world is a wrong number,
+  and a DELETE taken from the wrong world is rows nobody can put back.
+*/
+assertOneWorld(["DATABASE_URL"]);
 
 const candidatePublicId = process.argv[2];
 if (!candidatePublicId) {
