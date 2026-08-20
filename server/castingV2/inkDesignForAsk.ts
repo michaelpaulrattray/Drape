@@ -42,6 +42,7 @@ import { inkDesignWasExamined } from "../../shared/inkCutRoute";
 import { isInkPlacement, inkPlacementBareNoun } from "../../shared/inkPlacementVocabulary";
 import type { InkSide } from "../../shared/inkReleasedPlacements";
 import type { StoredInkDesign } from "../db/castingV2InkDesigns";
+import type { InkAskPlacement } from "./referenceSlots";
 
 /**
  * WHERE THE ASK PUTS IT, as the take read it.
@@ -51,10 +52,22 @@ import type { StoredInkDesign } from "../db/castingV2InkDesigns";
  * twice for a design on the wrong anatomical side, DECISION_LOG R7-7G), so an
  * unstated side narrows nothing and lets the count below do the talking.
  */
-export type InkAskAddress = {
-  /** The vocabulary's key for a measured surface, or her own word for one it
-   *  has not measured. */
-  placement: string;
+export type InkAskAddress = Omit<InkAskPlacement, "side"> & {
+  /**
+   * THE ROW'S SIDE VOCABULARY, which is WIDER than the slot grammar's — and
+   * saying so by derivation rather than by re-listing the fields.
+   *
+   * `InkSide` has three members and `Instance` has two: `centre` is the
+   * vocabulary's answer for a surface there is ONE of, and the slot grammar
+   * says that same thing by having no instance at all. So this is not a second
+   * copy of `InkAskPlacement` — it is that type with one field widened, and
+   * {@link slotPlacementOf} is the narrowing back.
+   *
+   * Written as an `Omit` because a re-listed shape is a copy that drifts by
+   * losing a field nothing can see, and the Atlas says so mechanically. The
+   * `placement` half is inherited here, so the day it gains a member or a
+   * constraint this type follows without anybody remembering to.
+   */
   side: InkSide | null;
 };
 
@@ -178,4 +191,32 @@ export function inkDesignForAsk(
   }
 
   return { kind: "ride", design };
+}
+
+/**
+ * THE SAME ADDRESS, IN THE SLOT GRAMMAR'S WORDS — and the two vocabularies do
+ * not agree, which is why this is a function rather than a cast.
+ *
+ * A design ROW's side is `InkSide`: `left`, `right`, or **`centre`**. A library
+ * SLOT's instance is `Instance`: `left`, `right`, or nothing at all. `centre`
+ * is the vocabulary's answer for a surface there is ONE of (`neck`,
+ * `upperChest`), and the slot grammar says that same thing by having no
+ * instance suffix — `ink:neck`, never `ink:neck@centre`, which
+ * `inkPlacementOfSlot` refuses outright because the suffix list is closed.
+ *
+ * So `centre` maps to `null`, and it is a TRANSLATION rather than a loss: both
+ * spellings mean *this surface is one place*. Written here, once, because the
+ * alternative is a call site coercing it — and a call site that got it backwards
+ * would ask for `ink:neck@centre`, which resolves to nothing, and the design
+ * would be dropped one door later by a slot the catalogue never heard of.
+ *
+ * The two real sides pass through untouched. That is the half worth protecting:
+ * this road's measured failure is a design on the wrong arm, so a mapping that
+ * ever moved `left` would be the R7-7G refund with a new author.
+ */
+export function slotPlacementOf(address: InkAskAddress): InkAskPlacement {
+  return {
+    placement: address.placement,
+    side: address.side === "centre" ? null : address.side,
+  };
 }

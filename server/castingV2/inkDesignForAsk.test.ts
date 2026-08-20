@@ -11,7 +11,9 @@
  */
 import { describe, expect, it } from "vitest";
 
-import { inkDesignForAsk } from "./inkDesignForAsk";
+import { inkDesignForAsk, slotPlacementOf } from "./inkDesignForAsk";
+import { slotDefinition } from "./referenceSlotCatalogue";
+import { inkSlotKey } from "./referenceSlots";
 import { inkDesignWasExamined, INK_CUT_ROUTES } from "../../shared/inkCutRoute";
 import type { StoredInkDesign } from "../db/castingV2InkDesigns";
 
@@ -224,5 +226,56 @@ describe("the disposition predicate has ONE owner", () => {
     }
     expect(inkDesignWasExamined(null)).toBe(false);
     expect(inkDesignWasExamined(undefined)).toBe(false);
+  });
+});
+
+/*
+  THE TWO VOCABULARIES MEETING — found by a sabotage that reddened NOTHING.
+
+  `slotPlacementOf` translates a design row's side into a slot's instance, and
+  the whole content of it is `centre` → `null`. Breaking that translation left
+  every arm in this file and every arm at the wire GREEN, because all of them
+  used a per-side placement.
+
+  It is not a corner. `sidesForInkPlacement("neck")` is `["centre"]`, so *"put
+  it on her neck"* produces exactly this address — and without the translation
+  the key becomes `ink:neck@centre`, which `inkPlacementOfSlot` refuses because
+  the suffix list is closed, so the ask finds no slot and a NECK tattoo is
+  walled with `unplacedInk`. The most ordinary ask on the road was the one
+  nothing covered.
+*/
+describe("a row's side, in the slot grammar's words", () => {
+  it("says `centre` by having no instance at all", () => {
+    expect(slotPlacementOf({ placement: "neck", side: "centre" }))
+      .toEqual({ placement: "neck", side: null });
+    expect(slotPlacementOf({ placement: "upperChest", side: "centre" }))
+      .toEqual({ placement: "upperChest", side: null });
+  });
+
+  it("passes the two real sides through untouched — the half worth protecting", () => {
+    /* This road's measured failure is a design on the wrong arm (300 credits
+       refunded twice, DECISION_LOG R7-7G), so a translation that ever moved
+       `left` would be that refund with a new author. */
+    expect(slotPlacementOf({ placement: "upperArm", side: "left" }))
+      .toEqual({ placement: "upperArm", side: "left" });
+    expect(slotPlacementOf({ placement: "upperArm", side: "right" }))
+      .toEqual({ placement: "upperArm", side: "right" });
+  });
+
+  it("carries an unstated side as unstated", () => {
+    expect(slotPlacementOf({ placement: "neck", side: null }))
+      .toEqual({ placement: "neck", side: null });
+  });
+
+  /*
+    AND THE KEY IT PRODUCES RESOLVES — the assertion that would have caught the
+    defect on its own, because it asks the catalogue rather than a shape.
+  */
+  it("produces a key the catalogue actually answers for", () => {
+    const one = slotPlacementOf({ placement: "neck", side: "centre" });
+    expect(slotDefinition(inkSlotKey(one.placement))).not.toBeNull();
+    /* And the key the broken translation would have produced does NOT resolve,
+       which is why nothing downstream could have rescued it. */
+    expect(slotDefinition("ink:neck@centre")).toBeNull();
   });
 });

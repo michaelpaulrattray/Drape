@@ -275,6 +275,20 @@ const TINY_MASTER_PNG = Buffer.from(
   "base64",
 );
 
+/**
+ * The digest of the bytes the storage double serves, DERIVED rather than
+ * pasted.
+ *
+ * `repaintRender` re-hashes every reference it loads and refuses when the sha
+ * the recipe named does not match (`referenceBytesChanged`) — which is how a
+ * design row whose bytes have moved refuses instead of painting something else.
+ * A fixture that wants a reference to RIDE therefore has to name the digest of
+ * the bytes that will actually be loaded, and computing it here means a change
+ * to the fixture png moves this with it instead of leaving a pasted hex string
+ * that quietly stops matching.
+ */
+const TINY_MASTER_SHA = createHash("sha256").update(TINY_MASTER_PNG).digest("hex");
+
 vi.mock("../providers/falImages", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../providers/falImages")>()),
   createFalMaskedEditEngine: () => ({
@@ -9197,8 +9211,45 @@ describe("the picture she attached becomes the carrier that rides", () => {
     contract is about what gets SENT and a check on a constant near it proves
     nothing (invariant 5).
   */
+  /**
+   * ONE design row, at the place `inkRoad`'s take names.
+   *
+   * `digest` defaults to a value that does NOT match the bytes storage serves,
+   * because that is the honest default for a fixture: a row whose digest is
+   * invented describes bytes that are not there, and the render is supposed to
+   * refuse it. The riding arm passes the real one explicitly, so the ONE place
+   * that expects a paint is the one place that had to say so.
+   */
+  const inkDesignRow = (over: Record<string, unknown> = {}) => ({
+    publicId: "d-sleeve",
+    candidateId: 1,
+    placement: "sleeve",
+    side: "left",
+    provenance: "ownWork",
+    intents: ["ink"],
+    storageKey: "casting-v2/ink/d-sleeve.png",
+    cutRoute: "cut",
+    createdAt: new Date("2026-08-20T00:00:00Z"),
+    digest: "b".repeat(64),
+    mime: "image/png",
+    byteSize: 2048,
+    width: 512,
+    height: 512,
+    ...over,
+  });
+
   const inkRoad = (over: Record<string, unknown> = {}) => carrierRoad({
     inkReferenceEnabled: () => true,
+    /*
+      HER STUDIO, EMPTY — which is the production state for every customer who
+      has uploaded no design, and therefore the right default for this road's
+      arms. An arm that wanted a design supplies one.
+
+      The seam exists because the shipped read is owner-scoped on BOTH sides of
+      its join, and a double that ignored the owner would be testing a door that
+      is not the one that ships.
+    */
+    listInkDesigns: async () => [],
     interpret: async () => ({
       ok: true as const,
       fromReference: true,
@@ -9208,7 +9259,21 @@ describe("the picture she attached becomes the carrier that rides", () => {
     ...over,
   });
 
-  it("ANSWERS a reference-documented tattoo ask and dispatches NOTHING", async () => {
+  it("ANSWERS a reference-documented tattoo ask with NO DESIGN and dispatches NOTHING", async () => {
+    /*
+      RE-ANCHORED 2026-08-20, and the contract it protects did not move.
+
+      Pre-cutter this ask was answered *"I can't put it on her yet"* because
+      there was no road at all. There is one now — the design row is resolved
+      and ridden — so the sentence a customer reads depends on what she HAS, and
+      this arm is the case that has nothing: an empty studio.
+
+      **The thing being protected is identical**: a tattoo ask must never travel
+      to a recipe with no design and be RENDERED FROM WORDS. That is D-137's
+      forbidden render, produced by the very gate built to stop it, and it is
+      still asserted on `painted` — the outgoing request itself, because the
+      contract is about what gets SENT (invariant 5).
+    */
     const result = await refineCandidate(inkRoad(), {
       ...input, instruction: "use this tattoo design on my left sleeve", referenceId: "ref-public",
     });
@@ -9216,10 +9281,152 @@ describe("the picture she attached becomes the carrier that rides", () => {
     expect(painted, "a tattoo was rendered from words — the render D-137 forbids").toHaveLength(0);
     expect(minted, "a hair carrier was cut for a tattoo ask").toHaveLength(0);
     expect(result.kind).toBe("selected");
-    /* What was READ is in front of her, which is what makes the take a live
-       control rather than a dark one. */
-    expect(result.note).toContain("for her left sleeve");
+    /* The place she named is in front of her, which is what makes the take a
+       live control rather than a dark one — and the answer names what she can
+       DO about it rather than what we cannot do. */
+    expect(result.note).toContain("her left sleeve");
     expect(result.note).toContain("Nothing was charged.");
+  });
+
+  /*
+    AND WITH A DESIGN AT THAT PLACE, IT RIDES — the other half, and the first
+    time a tattoo has ever reached a recipe on this road.
+
+    The two assertions that matter are the last two: the design goes as a
+    SECOND REFERENCE with its own digest, and the prompt carries the sentence
+    that scopes it. A render that sent the picture with nothing said about it
+    would pass a naive "did it dispatch" check and would be the unscoped
+    reference the whole source vocabulary exists to prevent.
+  */
+  it("RIDES the design she has at the place she named", async () => {
+    const design = inkDesignRow({ digest: TINY_MASTER_SHA });
+    await refineCandidate(inkRoad({ listInkDesigns: async () => [design] }), {
+      ...input, instruction: "use this tattoo design on my left sleeve", referenceId: "ref-public",
+    });
+    expect(painted, "the design was resolved and nothing was sent").toHaveLength(1);
+    const sent = painted[0]!;
+    /*
+      TWO REFERENCES REACHED THE ENGINE, not one: the master and the design.
+
+      Asserted on the outgoing request's own `references` rather than on a key
+      in a log line, because this double records what the ENGINE was handed —
+      loaded bytes — and that is the thing the contract is about (invariant 5).
+      The bytes only load at all because the digest matched: `repaintRender`
+      refuses a reference whose sha is not the one the recipe named, which is
+      the arm below.
+    */
+    expect(sent.references).toHaveLength(2);
+    /* AND THE ENGINE IS TOLD WHAT THE SECOND PICTURE IS — a reference sent with
+       nothing said about it is one the painter may read as anything. */
+    expect(sent.prompt).toContain("is the tattoo design supplied for this edit");
+    /* AND WHAT IT MAY GIVE HER: the artwork is claimed, her body is not. */
+    expect(sent.prompt).toContain("Take the tattoo design from the reference");
+    expect(sent.prompt).toContain("Do not take skin, skin tone, body shape, pose or lighting");
+    /* AND WHERE IT GOES, in the ask clause — the slot's own noun. */
+    expect(sent.prompt).toContain("left sleeve tattoo");
+  });
+
+  /*
+    AND BYTES THAT HAVE MOVED SINCE THE ROW RECORDED THEM REFUSE RATHER THAN
+    PAINT (fable-1137 §3b).
+
+    This arm exists because the build handed it to me: the first version of the
+    arm above carried an invented digest, and the render refused it with
+    `referenceBytesChanged` before anything was painted. That is the control
+    working on real machinery rather than on a check written beside it —
+    `repaintRender` re-hashes EVERY reference it loads and compares against the
+    sha the recipe named, so the design road inherits the refusal instead of
+    needing its own.
+
+    Kept as its own arm because a control discovered by accident is a control
+    nobody has decided to keep. This is the deciding.
+  */
+  it("REFUSES a design whose bytes are not the ones its row recorded", async () => {
+    await refineCandidate(
+      inkRoad({ listInkDesigns: async () => [inkDesignRow({ digest: "b".repeat(64) })] }),
+      { ...input, instruction: "use this tattoo design on my left sleeve", referenceId: "ref-public" },
+    ).then(() => expect.unreachable("moved bytes must not paint"), () => undefined);
+
+    expect(painted, "a design was painted from bytes its row does not describe").toHaveLength(0);
+    const refusal = logged.find((line) => line.fields.reason === "referenceBytesChanged");
+    expect(refusal, "the refusal was not the digest one").toBeDefined();
+    expect(refusal!.fields.key).toBe("casting-v2/ink/d-sleeve.png");
+  });
+
+  /*
+    A NECK ASK — THE ORDINARY ONE, and the arm a sabotage proved was missing.
+
+    Every other arm on this road names a per-side placement, so all of them were
+    green with `slotPlacementOf`'s `centre` → `null` translation broken. A neck
+    take carries side `centre` (`sidesForInkPlacement`), and without the
+    translation the ask would look for `ink:neck@centre` — a key the closed
+    suffix grammar refuses — and the most ordinary tattoo request on the road
+    would be walled as unplaced.
+  */
+  it("RIDES a neck design, where the side is `centre` rather than a side", async () => {
+    const neck = inkDesignRow({
+      publicId: "d-neck",
+      placement: "neck",
+      side: "centre",
+      storageKey: "casting-v2/ink/d-neck.png",
+      digest: TINY_MASTER_SHA,
+    });
+    await refineCandidate(inkRoad({
+      inkTake: async () => ({
+        placement: { kind: "measured" as const, placement: "neck" as const },
+        side: "centre" as const,
+      }),
+      listInkDesigns: async () => [neck],
+    }), { ...input, instruction: "put this tattoo on her neck", referenceId: "ref-public" });
+
+    expect(painted, "a neck ask was walled").toHaveLength(1);
+    expect(painted[0]!.references).toHaveLength(2);
+    /* The slot's own noun, with no side in it — which is what `centre` means. */
+    expect(painted[0]!.prompt).toContain("neck tattoo");
+    expect(painted[0]!.prompt).not.toContain("centre");
+  });
+
+  it("REFUSES FREE when she has two designs at that place, naming the count", async () => {
+    /*
+      (iii), at the wire (ruled fable-1145 §4). The pure resolver's own suite
+      proves the sentence; this proves the DOOR — that the refusal happens
+      before the claim and nothing is dispatched, which is the half a unit test
+      of a pure function cannot see.
+    */
+    const at = (publicId: string) => inkDesignRow({
+      publicId, storageKey: `casting-v2/ink/${publicId}.png`,
+    });
+    const result = await refineCandidate(
+      inkRoad({ listInkDesigns: async () => [at("d-one"), at("d-two")] }),
+      { ...input, instruction: "use this tattoo design on my left sleeve", referenceId: "ref-public" },
+    );
+
+    expect(painted, "an ambiguous ask was painted").toHaveLength(0);
+    expect(result.note).toContain("2 designs");
+    expect(result.note).toContain("Nothing was charged.");
+  });
+
+  it("REFUSES FREE a design nobody has looked at — before the claim, not after", async () => {
+    /*
+      1137 §4's control at its PRE-CLAIM door (ruled fable-1146 §3). `cutRoute:
+      null` is the recorded fact that the cutter was off when those bytes were
+      stored, so what sits at `storageKey` is her uploaded picture rather than
+      the design cut out of it — possibly a photograph of a person.
+
+      The assembler keeps its own arm as the backstop, driven separately with
+      this door bypassed, because a guard whose only test runs through a door
+      that usually behaves is not a tested guard.
+    */
+    const result = await refineCandidate(inkRoad({
+      listInkDesigns: async () => [inkDesignRow({ publicId: "d-old", cutRoute: null })],
+    }), { ...input, instruction: "use this tattoo design on my left sleeve", referenceId: "ref-public" });
+
+    expect(painted, "an unexamined picture reached an engine").toHaveLength(0);
+    const said = result.note ?? "";
+    expect(said).toContain("Nothing was charged.");
+    /* Her sentence is about her picture, never about our configuration. */
+    expect(said.toLowerCase()).not.toContain("flag");
+    expect(said.toLowerCase()).not.toContain("scope");
   });
 
   it("does not fire for a hair ask riding the same picture — the negative control", async () => {

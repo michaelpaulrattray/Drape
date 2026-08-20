@@ -74,6 +74,7 @@ import { sidesForInkPlacement, type InkSide } from "../../shared/inkReleasedPlac
 import { inkPlacementBareNoun } from "../../shared/inkPlacementVocabulary";
 import type { CastPronouns } from "./castPronouns";
 import { namesDesign } from "./inkPlacement";
+import type { InkAskAddress } from "./inkDesignForAsk";
 import { itemsOf, type RefineDelta } from "./refineDelta";
 
 const log = createModuleLogger("castingV2/inkReferenceTake");
@@ -365,4 +366,38 @@ export function inkTakeSentence(pronouns: CastPronouns): string {
   return "Take the tattoo design from the reference: the artwork itself — its shapes, its lines "
     + "and its colours. Do not take skin, skin tone, body shape, pose or lighting from the "
     + `reference — keep ${pronouns.possessive} own.`;
+}
+
+/**
+ * THE TAKE AS AN ADDRESS, or `null` when it is still a question.
+ *
+ * Two of `ResolvedPlacement`'s four answers are places and two are questions,
+ * and the split is the whole content of this function: `measured` and `open`
+ * name somewhere on her, while `absent` and `tooLong` name nothing that can be
+ * looked up. An unreadable take is the third question and takes the same road.
+ *
+ * **It converts and never guesses.** There is no branch here that supplies a
+ * placement, a side, or a default of any kind — a guessed place on this road is
+ * a design on the wrong part of a person, and a guessed SIDE is the failure
+ * that refunded 300 credits twice (DECISION_LOG R7-7G). Everything it returns
+ * was said by the customer and validated by the resolver.
+ *
+ * It lives beside the take rather than beside the resolver that consumes it,
+ * because what it knows is the TAKE'S shape — which of its answers are answers.
+ */
+export function inkAskAddressOf(take: InkReferenceTake | null): InkAskAddress | null {
+  if (take === null) return null;
+  switch (take.placement.kind) {
+    case "measured":
+      return { placement: take.placement.placement, side: take.side };
+    case "open":
+      return { placement: take.placement.phrase, side: take.side };
+    case "absent":
+    case "tooLong":
+      return null;
+    default: {
+      const unhandled: never = take.placement;
+      throw new Error(`unhandled placement resolution: ${JSON.stringify(unhandled)}`);
+    }
+  }
 }

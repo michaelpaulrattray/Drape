@@ -142,7 +142,9 @@ import {
 import { cutHairCarrier, mintHairCarrier, SECOND_VIEW_UNUSED_NOTE } from "./hairReferenceCutter";
 import { hairTakeEntry, hairTakeSentence, resolveHairTake } from "./hairReferenceTake";
 import {
+  inkAskAddressOf,
   inkReferenceNote,
+  inkTakeSentence,
   namesInkFromReference,
   resolveInkReferenceTake,
 } from "./inkReferenceTake";
@@ -204,6 +206,9 @@ import {
   facetsOfSlot, slotDefinition, slotsForFacet, slotsForFeature, type SlotDefinition,
 } from "./referenceSlotCatalogue";
 import { isInkSlot, isOpenSlot, openKindCarriedByCrops, openSlotKey } from "./referenceSlots";
+import { inkDesignForAsk, slotPlacementOf, type InkAskAddress } from "./inkDesignForAsk";
+import { listInkDesigns } from "../db/castingV2InkDesigns";
+import type { InkCutRoute } from "../../shared/inkCutRoute";
 import { openLaneOutcomeOf } from "./openLaneAccept";
 import { openKindPresenceBindsToday } from "./openKindPolicy";
 import { readOpenKinds } from "./openLaneKind";
@@ -696,6 +701,9 @@ export type RefineServiceDependencies = {
    * once could not drive one road with the other left real.
    */
   inkTake?: typeof resolveInkReferenceTake;
+  /** Test seam. The shipped read is owner-scoped on both sides of its join,
+   *  so a double that ignored the owner would be testing a different door. */
+  listInkDesigns?: typeof listInkDesigns;
   /** `CASTING_INK_REFERENCE_SCOPE`, injectable for the same reason as its siblings. */
   inkReferenceEnabled?: (userId: number) => boolean;
   /** Writes the sent recipe onto the variant at dispatch — see `recordVariantDispatch`. */
@@ -3543,6 +3551,21 @@ async function refineCandidateCounted(
     claimed and rendered from words — which is the render this whole branch
     exists to prevent.
   */
+  /*
+    THE DESIGN THIS RENDER IS CARRYING — the same shape of fact as
+    `hairSource` below: resolved inside the pre-claim door, where the ask is
+    knowable, and read at the recipe, which is the only place it can be spent.
+
+    Declared ABOVE the branch rather than beside its sibling for the plainest of
+    reasons — the branch that assigns it is the next statement.
+  */
+  let inkSource: {
+    key: string;
+    sha: string;
+    cutRoute: InkCutRoute | null;
+    scope: string;
+    address: InkAskAddress;
+  } | null = null;
   if (
     reference
     && pointedAtThePicture
@@ -3550,22 +3573,99 @@ async function refineCandidateCounted(
     && namesInkFromReference(editDelta)
   ) {
     const take = await (dependencies.inkTake ?? resolveInkReferenceTake)({ instruction });
-    log.info(
-      {
-        userId: input.userId,
-        candidate: input.candidatePublicId,
-        placement: take?.placement.kind ?? null,
-        side: take?.side ?? null,
-      },
-      "[refineService] a tattoo ask documented by her picture — answered before the claim, nothing spent",
-    );
-    return {
-      kind: "selected",
-      note: inkReferenceNote(take),
-      variantId: source.variantPublicId,
-      candidateId: input.candidatePublicId,
-      imageUrl: currentImageUrl,
-      instructions: readInstructions(predecessorForParse?.instructions),
+    /*
+      AN UNREADABLE TAKE, OR ONE THAT NAMED NO PLACE, IS STILL A QUESTION.
+
+      Unchanged from the day this branch was built, and it must stay that way:
+      `null` is the resolver saying it could not tell where she meant, and the
+      honest answer to that is to ask — never a guessed placement, which on this
+      road is a design on the wrong part of her.
+
+      `absent` and `tooLong` are questions for the same reason
+      (`inkPlacementResolve`'s own note): there is nothing to name about a place
+      nobody stated, and nothing safe to repeat back out of a sentence long
+      enough to be about a person.
+    */
+    const address = inkAskAddressOf(take);
+    if (address === null) {
+      log.info(
+        {
+          userId: input.userId,
+          candidate: input.candidatePublicId,
+          placement: take?.placement.kind ?? null,
+          side: take?.side ?? null,
+        },
+        "[refineService] a tattoo ask whose place could not be read — asked back before the claim, nothing spent",
+      );
+      return {
+        kind: "selected",
+        note: inkReferenceNote(take),
+        variantId: source.variantPublicId,
+        candidateId: input.candidatePublicId,
+        imageUrl: currentImageUrl,
+        instructions: readInstructions(predecessorForParse?.instructions),
+      };
+    }
+    /*
+      WHICH OF HER DESIGNS THIS ASK IS ABOUT (ruled fable-1145 §4, road (D)
+      ruled fable-1148 §3).
+
+      Read owner-scoped on both sides of its own join, then decided by the one
+      owner of that decision. Every non-`ride` answer comes back with its own
+      finished sentence and is returned FREE, before the claim — a charge
+      raised and reversed for a fact knowable this early is the wrong shape
+      under the founder's catastrophic-only refund ruling.
+
+      **The `unexamined` answer is the pre-claim half of 1137 §4's control**,
+      and it shares its predicate (`inkDesignWasExamined`) with the recipe
+      assembler's backstop, so the two cannot come to disagree about what
+      "nobody looked" means.
+    */
+    const designs = await (dependencies.listInkDesigns ?? listInkDesigns)({
+      userId: input.userId,
+      candidatePublicId: input.candidatePublicId,
+    });
+    const chosen = inkDesignForAsk(designs, address);
+    if (chosen.kind !== "ride") {
+      log.info(
+        {
+          userId: input.userId,
+          candidate: input.candidatePublicId,
+          placement: address.placement,
+          side: address.side,
+          outcome: chosen.kind,
+          held: designs.length,
+        },
+        "[refineService] a tattoo ask with no one design to answer it — said before the claim, nothing spent",
+      );
+      return {
+        kind: "selected",
+        note: chosen.say,
+        variantId: source.variantPublicId,
+        candidateId: input.candidatePublicId,
+        imageUrl: currentImageUrl,
+        instructions: readInstructions(predecessorForParse?.instructions),
+      };
+    }
+    /*
+      AND IT RIDES. The bytes are the design row's own — our copy, under the
+      candidate's purge path — carried by KEY and DIGEST rather than fetched
+      here: `repaintRender` already re-reads every reference and refuses when
+      the loaded bytes do not hash to the sha the recipe named, which is
+      fable-1137 §3b's moved-bytes refusal met by machinery that exists rather
+      than by a second check written beside it.
+
+      The scope sentence is composed HERE, in front of her own face, for the
+      reason the hair road paid for: carrying the key and the sha and leaving
+      the scope to be resolved again at the recipe is exactly how two different
+      takes came to dispatch byte-identical prompts.
+    */
+    inkSource = {
+      key: chosen.design.storageKey,
+      sha: chosen.design.digest,
+      cutRoute: chosen.design.cutRoute,
+      scope: inkTakeSentence(pronounsForSex(currentIdentity?.sex)),
+      address,
     };
   }
 
@@ -4242,6 +4342,17 @@ async function refineCandidateCounted(
              that has to name the same object. */
           accessoryKind: accessoryRegion,
           /*
+            AND WHERE ON HER THE DESIGN GOES, from the take that read her own
+            sentence — the ink facet's slot cannot be looked up in a table
+            (`FacetAssignment`'s `perPlacement` branch says why).
+
+            Derived ONCE, in the pre-claim door, and carried: re-deriving it
+            here would be a second reading of the same sentence, and the two
+            disagreeing means a design on the wrong arm. Undefined on every
+            render that is not an ink ask, which is every render so far.
+          */
+          ...(inkSource ? { inkPlacement: slotPlacementOf(inkSource.address) } : {}),
+          /*
             AND WHAT THE LIBRARY CANNOT PICTURE, SAID IN WORDS INSTEAD.
 
             `composed` rather than `editDelta`: the point of a restoration is to
@@ -4422,6 +4533,48 @@ async function refineCandidateCounted(
           Absent on every render without an attachment, which is every render
           this product has served so far.
         */
+        /*
+          THE DESIGN, AS THE RENDER'S SECOND REFERENCE.
+
+          The slot is taken from the ASK LIST rather than derived again, for the
+          identical reason the hair carrier's is: the assembler refuses a source
+          naming a slot no ask names, and that refusal throws into the refund.
+          Here the agreement is structural rather than hopeful — both sides come
+          from `inkSource.address` through one owner (`slotsForFacet`), so the
+          only way they can disagree is if the ask list holds no ink slot at
+          all, which is the case the log below names.
+
+          `cutRoute` rides because the assembler REQUIRES it: an ink source
+          cannot be constructed without stating what was done to its bytes, and
+          `null` — nobody looked — is refused there as the backstop to the
+          pre-claim door that already refused it free.
+        */
+        ...(inkSource
+          ? (() => {
+            const slot = asks.asks.map((ask) => ask.slot).find((one) => isInkSlot(one));
+            if (slot === undefined) {
+              /* The pre-claim door resolved a design and the ask list names no
+                 ink slot. Sending it anyway would put a picture in front of the
+                 painter that no sentence accounts for, so it is dropped and the
+                 fact is loud — a defect in two derivations agreeing, never a
+                 customer's mistake. */
+              log.error(
+                { operationId, variant: variant.publicId, slots: asks.asks.map((ask) => ask.slot) },
+                "[refineService] a design was resolved for an ask whose recipe names no ink slot — dropping it rather than sending a reference nothing says anything about",
+              );
+              return {};
+            }
+            return {
+              sources: [{
+                slot,
+                image: { key: inkSource.key, sha: inkSource.sha },
+                pictures: "inkDesignOnTransparency" as const,
+                cutRoute: inkSource.cutRoute,
+                scope: inkSource.scope,
+              }],
+            };
+          })()
+          : {}),
         ...(hairSource
           ? (() => {
             const slot = asks.asks
