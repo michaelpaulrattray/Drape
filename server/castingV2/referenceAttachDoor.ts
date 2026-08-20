@@ -114,6 +114,26 @@ export function referenceAttachmentKey(format: InkDesignFormat): string {
   return `${REFERENCE_ATTACHMENT_KEY_PREFIX}/${randomUUID()}.${extension}`;
 }
 
-/** What a customer is told when this Cast already holds as many as it may. */
+/**
+ * What a customer is told when this Cast already holds as many as it may.
+ *
+ * ⚠ **IT USED TO SAY "REMOVE ONE TO ADD ANOTHER", AND THERE IS NO REMOVAL**
+ * (found in the running app 2026-08-20, ruled fable-1173 §2). `ink.remove`
+ * takes a design; nothing takes an attachment — they are only ever swept with
+ * the Cast. So the sentence named a move a customer cannot make, which is
+ * D-180's dead end, and the only exit it left was deleting the Cast.
+ *
+ * **The trap worth naming is HOW it got here**: this sentence was copied from
+ * the ink upload door's alongside the NUMBER it derives
+ * (`REFERENCE_PICTURES_PER_CANDIDATE` comes from that door's own cap, law 4,
+ * correctly). At the origin it is TRUE — a design can be removed. At the
+ * destination it is false. **A derived number is safe to copy and the prose
+ * around it is not**, because the prose is about what else exists there.
+ *
+ * So it now says only what is true today. The customer-facing DETACH is filed
+ * as its own chunk (fable-1173 §2); when it lands, this sentence names it, and
+ * `referenceAttachDoor.test.ts` is where the two are kept in step.
+ */
 export const REFERENCE_PICTURES_PER_CANDIDATE_REFUSAL =
-  `This Cast is holding ${REFERENCE_PICTURES_PER_CANDIDATE} pictures already — remove one to add another.`;
+  `This Cast is holding all ${REFERENCE_PICTURES_PER_CANDIDATE} pictures it can hold. `
+  + "Start a new Cast to work from more.";

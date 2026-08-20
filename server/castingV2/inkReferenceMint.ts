@@ -201,6 +201,26 @@ export const MINT_DEPENDENCIES: InkReferenceMintDependencies = {
  * The cutter's own are carried through untouched, so they are not restated
  * here — there is exactly one place each wall is worded.
  */
+/**
+ * WHAT SHE IS TOLD AT THE DESIGN CAP — exported so a suite can hold it to the
+ * router (ruled fable-1173 §2).
+ *
+ * ⚠ **THE NOUN WAS "PICTURES" AND THE THING IS A DESIGN** (found in the running
+ * app 2026-08-20). The move this names is real — `castingV2.ink.remove` takes a
+ * design — but a customer told she is holding eight PICTURES goes looking at
+ * the pictures she attached, where there is nothing to remove. A true sentence
+ * about a real move, pointed at the wrong object.
+ *
+ * Its sibling in `referenceAttachDoor` was the louder half of the same class:
+ * that one named a move that does not exist at all. Both were changed with no
+ * test going red, which is why this constant is now exported and armed:
+ * `inkReferenceMint.test.ts` pins *"remove one"* to a `remove` procedure
+ * existing in `routes/castingV2.ts`, rather than to a copy of these words.
+ */
+export const INK_DESIGN_CAP_REFUSAL =
+  `This Cast is holding ${INK_DESIGNS_PER_CANDIDATE} designs already — remove one `
+  + "and send this again. Nothing was charged.";
+
 const REFUSALS: Readonly<Record<Exclude<InkReferenceMintRefusalCode, "cut">, string>> = Object.freeze({
   tooLargeAfterCut:
     "I found the design in that picture, but it came out too big to keep. "
@@ -208,9 +228,19 @@ const REFUSALS: Readonly<Record<Exclude<InkReferenceMintRefusalCode, "cut">, str
   bytesUnavailable:
     "I couldn't open the picture you attached just now — try attaching it again. "
     + "Nothing was charged.",
-  cap:
-    `This Cast is holding ${INK_DESIGNS_PER_CANDIDATE} pictures already — remove one `
-    + "and send this again. Nothing was charged.",
+  /*
+    THE NOUN IS "DESIGNS", AND IT SAID "PICTURES" — swept up beside its sibling
+    in `referenceAttachDoor` (found 2026-08-20, ruled fable-1173 §2).
+
+    This cap counts `INK_DESIGNS_PER_CANDIDATE`, and the move it names is real:
+    `castingV2.ink.remove` takes a design. But a customer told she is holding
+    eight PICTURES goes looking at the pictures she attached, where there is
+    nothing to remove — so a true sentence about a real move sent her to the
+    wrong object. The attachment door's version of this sentence named a move
+    that does not exist at all; this one named the right move and the wrong
+    thing, which is the quieter half of the same class.
+  */
+  cap: INK_DESIGN_CAP_REFUSAL,
   noSuchCast: "I couldn't find that Cast. Nothing was charged.",
 });
 

@@ -23,13 +23,18 @@
  * returned success would discriminate nothing.
  */
 import { createHash } from "node:crypto";
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+
 import { describe, expect, it } from "vitest";
 
 import {
+  INK_DESIGN_CAP_REFUSAL,
   MINT_DEPENDENCIES,
   mintInkDesignFromReference,
   type InkReferenceMintDependencies,
 } from "./inkReferenceMint";
+import { REFERENCE_PICTURES_PER_CANDIDATE_REFUSAL } from "./referenceAttachDoor";
 import { InkDesignCapError, InkDesignOwnershipError } from "../db/castingV2InkDesigns";
 import type { CutInkDesignResult } from "./inkReferenceCutter";
 import { INK_DESIGN_MAX_BYTES } from "./inkUploadDoor";
@@ -384,5 +389,57 @@ describe("the shipped dependencies are the ones the mint actually calls", () => 
        process. */
     expect(asked).toEqual([REFERENCE.storageKey]);
     expect(asked[0]).not.toContain("http");
+  });
+});
+
+/**
+ * A REFUSAL MAY ONLY NAME MOVES THAT EXIST (ruled fable-1173 §2, from a cap met
+ * in the running app).
+ *
+ * Two cap sentences in this feature told a customer to *"remove one"*. One of
+ * them — the attach door's — named a move that DOES NOT EXIST: `ink.remove`
+ * takes a design and nothing takes an attachment, so her only exit was deleting
+ * the Cast. The other, here, named a real move and the WRONG OBJECT: it counted
+ * designs and called them pictures, sending her to look at the pictures she had
+ * attached, where there is nothing to remove.
+ *
+ * **Neither sentence had an arm, which is why both could be wrong for as long
+ * as they liked.** Changing them reddened nothing. These are that arm, and they
+ * are pinned to the ROUTER rather than to a copy of the words: what makes
+ * *"remove one"* honest is a `remove` procedure existing, and that is a fact
+ * about `routes/castingV2.ts`, not about this string.
+ */
+describe("a cap refusal names only moves that exist", () => {
+  const ROUTER = readFileSync(
+    fileURLToPath(new URL("../routes/castingV2.ts", import.meta.url)),
+    "utf8",
+  );
+
+  it("the design cap may say REMOVE, because a design can be removed", () => {
+    /* Read at the router's own text — a suite comparing this sentence to a
+       constant beside it would be comparing local constants to themselves. */
+    expect(ROUTER).toContain("removeInkDesign");
+    expect(INK_DESIGN_CAP_REFUSAL).toContain("remove one");
+    /* AND IT SAYS THE THING THAT CAN BE REMOVED. "Pictures" is what she
+       attached; "designs" is what this cap counts and what `ink.remove` takes. */
+    expect(INK_DESIGN_CAP_REFUSAL).toContain("designs");
+    expect(INK_DESIGN_CAP_REFUSAL).not.toContain("pictures");
+  });
+
+  it("the ATTACHMENT cap may NOT say remove, because nothing removes one", () => {
+    /*
+      The negative arm, and it is the one that matters: this reddens on the day
+      somebody writes the sentence back, and it STOPS reddening on the day the
+      detach lands — which is exactly when the sentence may say it again
+      (fable-1173 §2 filed that chunk).
+    */
+    const detachExists = /reference[\s\S]{0,400}?detach/.test(ROUTER);
+    expect(
+      detachExists || !/\bremove\b/i.test(REFERENCE_PICTURES_PER_CANDIDATE_REFUSAL),
+      "the attachment cap tells her to remove one, and no procedure removes an attachment",
+    ).toBe(true);
+    /* And it still tells her what she CAN do, rather than only what she cannot
+       — a wall with no road is the other half of D-180. */
+    expect(REFERENCE_PICTURES_PER_CANDIDATE_REFUSAL).toMatch(/new Cast/i);
   });
 });
