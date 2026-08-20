@@ -511,7 +511,23 @@ export function RefinePanel({
               type="button"
               className="dpc-refine__answer"
               disabled={busy}
-              onClick={() => onRefine(option.label)}
+              /*
+                AND THE PICTURE RIDES WITH THE ANSWER, exactly as it rides with
+                a typed one (found at the client 2026-08-20, opus-857).
+
+                The comment above says a chip sends what someone typing the
+                answer would send. That was FALSE for the one thing a question
+                can be about: the form below passes `picture?.referenceId` and
+                this button passed nothing — so a question raised ABOUT an
+                attached picture could not be answered by tapping it. The answer
+                arrived with no reference, the branch that asked it did not fire,
+                and the sentence carried on as an ordinary ask.
+
+                It is D-180's dead end wearing a tap target, and it arrived the
+                moment a question was raised about a reference — the side
+                question is the first, and every later one inherits the fix.
+              */
+              onClick={() => onRefine(option.label, undefined, undefined, picture?.referenceId ?? undefined)}
             >
               {option.label}
             </button>

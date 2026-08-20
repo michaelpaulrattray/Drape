@@ -163,4 +163,33 @@ describe("the surface itself", () => {
     expect(source).not.toMatch(BYTES_ON_THE_ASK);
     expect(`onRefine(trimmed, undefined, undefined, imageBase64)`).toMatch(BYTES_ON_THE_ASK);
   });
+
+  it("SENDS IT WITH A TAPPED ANSWER TOO — a question about her picture must be answerable", async () => {
+    /*
+      FOUND AT THE CLIENT 2026-08-20, and it was live the moment a question was
+      first raised about an attached picture (the side question, `which-side`).
+
+      The chips carry a comment saying a chip submits what someone TYPING the
+      answer would send. That was true of the words and false of the picture:
+      the form passed `picture?.referenceId` and the chip passed nothing. So she
+      attached a design, was asked which arm, tapped "Her right" — and the
+      answer reached the server with no reference at all, the branch that asked
+      the question did not fire, and her sentence carried on as an ordinary ask.
+
+      D-180's dead end wearing a tap target. Asserted as SAMENESS rather than as
+      two separate matches: the two routes have to send the same expression, or
+      one of them is a second implementation of the other and this happens again
+      on the next question.
+    */
+    const source = withoutProse(await readFile(PANEL, "utf8"));
+    const CARRIES_THE_PICTURE = /picture\?\.referenceId \?\? undefined/g;
+    const rides = source.match(CARRIES_THE_PICTURE) ?? [];
+    /* One for the typed route, one for the tapped one. */
+    expect(rides).toHaveLength(2);
+    expect(source).toMatch(
+      /onClick=\{\(\) => onRefine\(option\.label, undefined, undefined, picture\?\.referenceId \?\? undefined\)\}/,
+    );
+    /* The control: the reader is not matching its own optimism. */
+    expect("onClick={() => onRefine(option.label)}").not.toMatch(CARRIES_THE_PICTURE);
+  });
 });

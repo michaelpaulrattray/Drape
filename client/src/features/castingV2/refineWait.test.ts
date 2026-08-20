@@ -193,8 +193,21 @@ describe("the answer chips are the typed path, not a second one", () => {
   it("submits the chip's label, the same string a person would type", async () => {
     const source = await readFile(PANEL, "utf8");
     const chips = source.slice(source.indexOf('className="dpc-refine__answers"'));
-    expect(chips).toContain("onRefine(option.label)");
-    expect(chips).not.toContain("onRefine(option.resolves)");
+    /*
+      RE-ANCHORED 2026-08-20, and the contract it protects got STRONGER rather
+      than weaker.
+
+      It read `onRefine(option.label)` — the whole call, exactly — which made
+      "the chip sends the label" and "the chip sends NOTHING ELSE" one
+      assertion. The second half was never the rule and it was hiding a dead
+      end: the typed route also carries the attached picture, and this one did
+      not, so a question raised ABOUT a picture could not be answered by tapping
+      it (opus-857). The label is still the first argument and the `resolves` is
+      still never sent; what rides beside it is asserted in
+      `referenceAttachCopy.test.ts`, where the picture's own contract lives.
+    */
+    expect(chips).toContain("onRefine(option.label,");
+    expect(chips).not.toContain("onRefine(option.resolves");
   });
 
   it("leaves the box live beside them", async () => {
