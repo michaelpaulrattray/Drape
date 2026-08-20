@@ -29,7 +29,42 @@ const png = (width: number, height: number): Promise<Buffer> =>
     create: { width, height, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 1 } },
   }).png().toBuffer();
 
-/** A double that scales by `factor`, and says what it was asked. */
+/**
+ * A cut with a real HOLE in it — the fixture family the first ladder did not
+ * have (fable-1215 §1c).
+ *
+ * Left half fully transparent, right half fully opaque, which is the binary
+ * alpha `cutOutPixels` actually produces (`mask > 127 ? 255 : 0`). A picture
+ * that is 0.0% transparent cannot notice a road that throws transparency away,
+ * and all three rungs of the floor court were exactly that.
+ */
+const holedPng = async (width: number, height: number): Promise<Buffer> => {
+  const raw = Buffer.alloc(width * height * 4);
+  for (let at = 0; at < width * height; at += 1) {
+    const x = at % width;
+    raw[at * 4] = 200; raw[at * 4 + 1] = 120; raw[at * 4 + 2] = 60;
+    raw[at * 4 + 3] = x < width / 2 ? 0 : 255;
+  }
+  return sharp(raw, { raw: { width, height, channels: 4 } }).png().toBuffer();
+};
+
+/** Every fully-transparent pixel, counted. */
+async function transparentFraction(bytes: Buffer): Promise<number> {
+  const { data, info } = await sharp(bytes).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+  let clear = 0;
+  for (let at = 3; at < data.length; at += 4) if (data[at] === 0) clear += 1;
+  return clear / (info.width * info.height);
+}
+
+/**
+ * A double that scales by `factor`, and says what it was asked.
+ *
+ * ⚠ **IT DROPS THE ALPHA, BECAUSE THE REAL MODEL DOES.** Measured: `aura-sr`
+ * handed a 4-channel cut returns three channels and 0.0% transparency
+ * (opus-908 §1, opus-909 §1). A double that preserved the fourth channel would
+ * be a tidier version of the provider rather than a model of it, and this arm
+ * would pass over the defect it exists to catch.
+ */
 function upscalerThatGrows(factor: number) {
   const asked: string[] = [];
   const run = (async (input: { endpoint: string; body: Record<string, unknown> }) => {
@@ -42,6 +77,7 @@ function upscalerThatGrows(factor: number) {
         height: Math.round((meta.height ?? 1) * factor),
         fit: "fill",
       })
+      .removeAlpha()
       .png()
       .toBuffer();
     return { bytes, contentType: "image/png", requestId: "r", latencyMs: 1 };
@@ -133,6 +169,87 @@ describe("enlarging a cut that is under the floor", () => {
 
     expect(grown).toBeNull();
     expect(asked.length, "a no-op pass must not be repeated").toBe(1);
+  });
+});
+
+describe("THE SHAPE IS OURS — the model contributes detail, never geometry", () => {
+  it("gives back FOUR channels with the hole still in it, though the model returned three", async () => {
+    const { run } = upscalerThatGrows(4);
+    const grown = await upscaleToFloor({
+      bytes: await holedPng(100, 100), width: 100, height: 100, apiKey: "k", about: {}, run,
+    });
+
+    const meta = await sharp(grown!.bytes).metadata();
+    expect(meta.channels, "an enlarged cut with no alpha is a design on a rectangle").toBe(4);
+    expect(meta.hasAlpha).toBe(true);
+    /* Nonzero rather than a figure: the number is the fixture's, and pinning it
+       would be asserting the fixture instead of the behaviour. */
+    expect(await transparentFraction(grown!.bytes)).toBeGreaterThan(0);
+  });
+
+  it("DERIVES that alpha from the original — the same bytes, scaled, and nothing else", async () => {
+    /*
+      The derivation itself is the assertion (fable-1215 §1c). The expected
+      channel is computed here from the INPUT, independently of the module, and
+      compared byte for byte — a percentage would pass for any mask of roughly
+      the right size, including one the model invented.
+    */
+    const source = await holedPng(100, 100);
+    const { run } = upscalerThatGrows(4);
+    const grown = await upscaleToFloor({
+      bytes: source, width: 100, height: 100, apiKey: "k", about: {}, run,
+    });
+
+    const expected = await sharp(source)
+      .ensureAlpha()
+      .extractChannel(3)
+      .resize({ width: grown!.width, height: grown!.height, fit: "fill" })
+      .raw()
+      .toBuffer();
+    const actual = await sharp(grown!.bytes)
+      .ensureAlpha()
+      .extractChannel(3)
+      .raw()
+      .toBuffer();
+
+    expect(Buffer.compare(actual, expected), "the enlarged cut's alpha is the cut's own alpha").toBe(0);
+  });
+
+  it("OVERRIDES an alpha the model supplies — our geometry wins whichever endpoint answered", async () => {
+    /*
+      `esrgan` has never been called on this road and nobody knows whether it
+      keeps a fourth channel. This is why that does not have to be measured: a
+      model that returns a WRONG alpha (here, fully opaque) still gets ours.
+    */
+    const asked: string[] = [];
+    const run = (async (input: { endpoint: string; body: Record<string, unknown> }) => {
+      asked.push(input.endpoint);
+      const from = Buffer.from(String(input.body.image_url).split(",")[1] ?? "", "base64");
+      const bytes = await sharp(from)
+        .resize({ width: 400, height: 400, fit: "fill" })
+        .removeAlpha()
+        .ensureAlpha()
+        .png()
+        .toBuffer();
+      return { bytes, contentType: "image/png", requestId: "r", latencyMs: 1 };
+    }) as never;
+
+    const grown = await upscaleToFloor({
+      bytes: await holedPng(100, 100), width: 100, height: 100, apiKey: "k", about: {}, run,
+    });
+
+    expect(await transparentFraction(grown!.bytes),
+      "a fully-opaque answer must not become the stored cut's shape").toBeGreaterThan(0);
+  });
+
+  it("leaves an opaque cut opaque — the fix takes nothing away from the road it found", async () => {
+    const { run } = upscalerThatGrows(4);
+    const grown = await upscaleToFloor({
+      bytes: await png(100, 100), width: 100, height: 100, apiKey: "k", about: {}, run,
+    });
+
+    expect(await transparentFraction(grown!.bytes)).toBe(0);
+    expect((await sharp(grown!.bytes).metadata()).channels).toBe(4);
   });
 });
 

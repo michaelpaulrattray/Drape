@@ -12,6 +12,9 @@
  * silently became a bounding-box crop — which it DID, four times, during this
  * build's own reading.
  */
+import { resolve } from "node:path";
+
+import sharp from "sharp";
 import { describe, expect, it } from "vitest";
 
 import { INK_DESIGN_MIN_EDGE } from "./inkUploadDoor";
@@ -224,6 +227,32 @@ describe("cutOutPixels — a masked cutout, never a bounding rectangle", () => {
     expect(out[outside + 3]).toBe(0);
   });
 
+  /*
+    ⚠ THE ARM FOR THE DEFECT THE ONE ABOVE COULD NOT SEE (found opus-909 §2,
+    ordered fable-1216 §1).
+
+    Everything above tests the ALPHA. The loop used to write the alpha byte and
+    nothing else, over a copy of the whole picture — so a cut was the customer's
+    photograph with a mask laid on top of it, and 41% of a real stored cut was
+    fully transparent pixels still holding a photograph of a man's arm. Every
+    arm here passed the whole time.
+
+    So this asserts the COLOUR of a cleared pixel, at the bytes, and the real
+    photograph below is the same assertion on a picture nobody constructed.
+  */
+  it("ZEROES the colour of every cleared pixel — the person leaves the bytes, not just the view", () => {
+    const mask = maskWithBox(width, height, { left: 2, top: 2, width: 3, height: 3 });
+    const out = cutOutPixels({ rgba: frame(), width, height, mask });
+
+    for (let at = 0; at < width * height; at += 1) {
+      if (out[at * 4 + 3] !== 0) continue;
+      expect(
+        [out[at * 4], out[at * 4 + 1], out[at * 4 + 2]],
+        `pixel ${at} is transparent but still carries its source colour`,
+      ).toEqual([0, 0, 0]);
+    }
+  });
+
   it("leaves the source buffer alone", () => {
     const rgba = frame();
     const before = Buffer.from(rgba);
@@ -243,6 +272,53 @@ describe("cutOutPixels — a masked cutout, never a bounding rectangle", () => {
     expect(() =>
       cutOutPixels({ rgba: Buffer.alloc(width * height * 3), width, height, mask: maskWithBox(width, height, null) }),
     ).toThrow(/expected/);
+  });
+
+  /*
+    AND THE SAME THING ON A REAL PHOTOGRAPH OF A REAL PERSON (ordered
+    fable-1216 §1), because the fixture family is the trap this defect was
+    hiding in — twice now.
+
+    The floor court's ladder was three opaque rungs, so it could not see an
+    upscaler dropping transparency. Every arm above is a synthetic frame of one
+    flat colour, so none of them could see a photograph surviving under an
+    alpha. A fixture whose cleared pixels were already black would pass this
+    test while the code did nothing, which is why the POSITIVE CONTROL runs
+    first: the same pixels are proven non-black in the source before they are
+    required to be black in the cut.
+
+    It reads one committed photograph off disk — his own specimen, the man whose
+    arm this whole road was measured on.
+  */
+  it("takes the photograph out of a REAL picture's cleared pixels — with the control that proves it could have failed", async () => {
+    const source = await sharp(resolve("docs/specs/references/build-two-founder-specimens/tattoo-patchwork-man-selective-take.png"))
+      /* Small enough to be a unit test, large enough to be a photograph. */
+      .resize({ width: 120, height: 160, fit: "fill" })
+      .ensureAlpha()
+      .raw()
+      .toBuffer();
+    const w = 120;
+    const h = 160;
+    /* The mask keeps a small box; everything outside it is his photograph. */
+    const mask = maskWithBox(w, h, { left: 40, top: 60, width: 30, height: 30 });
+
+    let couldHaveFailed = 0;
+    for (let at = 0; at < w * h; at += 1) {
+      if (mask.data[at] > 127) continue;
+      if (source[at * 4] !== 0 || source[at * 4 + 1] !== 0 || source[at * 4 + 2] !== 0) couldHaveFailed += 1;
+    }
+    expect(
+      couldHaveFailed,
+      "a photograph whose cleared pixels are already black would pass this arm while the code did nothing",
+    ).toBeGreaterThan(w * h * 0.5);
+
+    const out = cutOutPixels({ rgba: source, width: w, height: h, mask });
+    let leaked = 0;
+    for (let at = 0; at < w * h; at += 1) {
+      if (out[at * 4 + 3] !== 0) continue;
+      if (out[at * 4] !== 0 || out[at * 4 + 1] !== 0 || out[at * 4 + 2] !== 0) leaked += 1;
+    }
+    expect(leaked, "a cut of his photograph is carrying his photograph").toBe(0);
   });
 });
 

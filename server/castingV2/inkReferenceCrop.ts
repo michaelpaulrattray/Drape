@@ -370,7 +370,41 @@ export function cutOutPixels(input: {
   }
   const out = Buffer.from(rgba);
   for (let at = 0; at < width * height; at += 1) {
-    out[at * 4 + 3] = mask.data[at] > 127 ? 255 : 0;
+    if (mask.data[at] > 127) { out[at * 4 + 3] = 255; continue; }
+    /*
+      ---- THE PERSON LEAVES THE BYTES, NOT JUST THE VIEW ----
+      (found opus-909 §2, ruled fable-1216 §1)
+
+      This loop used to write the alpha byte ALONE, over a `Buffer.from(rgba)`
+      that had copied the whole picture. So a cut was the photograph with a mask
+      laid over it: 41% of `S1-upperArm-native-183x353.png` was fully
+      transparent and every one of those pixels still held the customer's own
+      photograph in its red, green and blue. Flattened, both founder specimens
+      are unmistakably photographs of real men — an arm and a bare chest — and
+      that is what any consumer which ignores the fourth channel receives.
+
+      **One such consumer is on this road already.** `fal-ai/aura-sr` returns
+      three channels: handed a cut, it ignored the alpha and enlarged the man
+      underneath it. That is measured, not feared.
+
+      Three things rested on those bytes being the design alone. The widening
+      tripwire retires when the stored design is *the cut rather than the
+      photograph* — a test that could pass while the photograph was still in the
+      object. fable-919 §3's founder gate reads the PLATE, so its frames could
+      be clean while the object was not. And a cut object sits in the same
+      public bucket as everything else, where what is behind a hard-to-guess URL
+      had become a picture of somebody's body.
+
+      Zeroing costs nothing and takes nothing: the mask is binary, so no
+      partial-alpha pixel exists whose colour could matter, and a fully
+      transparent pixel's RGB is invisible to every correct compositor. What it
+      buys is that the sentence *"the design alone on transparency"* is now true
+      of the bytes rather than of the view.
+    */
+    out[at * 4] = 0;
+    out[at * 4 + 1] = 0;
+    out[at * 4 + 2] = 0;
+    out[at * 4 + 3] = 0;
   }
   return out;
 }
