@@ -166,6 +166,7 @@ import {
   redirectColourTo,
   resolveAnswer,
   whichFacetReask,
+  whichSideReask,
   type Reask,
 } from "./refineReask";
 import {
@@ -3656,6 +3657,39 @@ async function refineCandidateCounted(
         instructions: readInstructions(predecessorForParse?.instructions),
       };
     };
+    if (chosen.kind === "sideUnstated") {
+      /*
+        THE SIDE QUESTION (released fable-1120 §4, built once the mint gave it
+        somewhere to lead; ordered fable-1153 §5).
+
+        A paired surface and no word for which one. Every other non-riding
+        answer on this road is a SENTENCE — this one is a QUESTION, because the
+        thing missing is one word she can supply with a tap, and telling her to
+        type it again is a wall wearing an explanation.
+
+        Free and before the claim, like every outcome above it: `kind: "asked"`
+        raises no operation and moves no credit. And it cannot loop — an answer
+        puts the word in her own sentence, so the take reads it and the source
+        containment that guards the side accepts it.
+      */
+      log.info(
+        {
+          userId: input.userId,
+          candidate: input.candidatePublicId,
+          placement: address.placement,
+          held: designs.length,
+        },
+        "[refineService] a tattoo ask on a paired surface with no side — asked before the claim, nothing spent",
+      );
+      return {
+        kind: "asked",
+        reask: whichSideReask(instruction),
+        variantId: source.variantPublicId,
+        candidateId: input.candidatePublicId,
+        imageUrl: currentImageUrl,
+        instructions: readInstructions(predecessorForParse?.instructions),
+      };
+    }
     if (chosen.kind !== "ride" && chosen.kind !== "mint") return said(chosen.kind, chosen.say);
 
     /*

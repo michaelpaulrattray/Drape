@@ -31,6 +31,7 @@ import {
   resolveAnswer,
   sameAgainReask,
   whichFacetReask,
+  whichSideReask,
   type Reask,
 } from "./refineReask";
 
@@ -425,6 +426,7 @@ describe("the answer path rebuilds every question it asks", () => {
     },
     { kind: "already-upswept", asked: "fox eyes", build: alreadyUpsweptReask },
     { kind: "glasses-hide-eyes", asked: "give her a cat eye", build: glassesHideEyesReask },
+    { kind: "which-side", asked: "use this tattoo design on her arm", build: whichSideReask },
     {
       kind: "same-again",
       asked: "gold hoops please",
@@ -503,5 +505,67 @@ describe("the answering field is wide enough for a handled question", () => {
     expect(REASK_HANDLE_MAX_LENGTH).toBe(
       Math.max(...REASK_KINDS.map((kind) => reaskHandle(kind, "").length)),
     );
+  });
+});
+
+/**
+ * THE SIDE QUESTION — and the property that makes it answerable at all.
+ *
+ * Every other question here can be checked by reading its chips. This one has a
+ * condition the chips must satisfy DOWNSTREAM: the take accepts a side only
+ * when the word is in HER SENTENCE (source containment, D-79), so a chip that
+ * put the side beside her words instead of inside them would resolve into a
+ * sentence that raises the SAME question again — the loop a question exists to
+ * end. The end-to-end proof of that is in `refineService.test.ts`, driving the
+ * real take; these are the properties that can be read here.
+ */
+describe("which-side — the word has to land IN her sentence", () => {
+  const asked = "use this tattoo design on her upper arm";
+
+  it("puts the side word inside the sentence it resolves to", () => {
+    for (const option of whichSideReask(asked).options) {
+      const side = option.label === "Her left" ? "left" : "right";
+      /* The containment guard's own test, applied to our own chip. */
+      expect(new RegExp(`\\b${side}\\b`, "i").test(option.resolves), option.label).toBe(true);
+    }
+  });
+
+  it("keeps HER placement wording untouched", () => {
+    /* A rewrite of that half is the product choosing a body part for her, and
+       the take reads the placement out of this same string. */
+    for (const option of whichSideReask(asked).options) {
+      expect(option.resolves.startsWith(asked)).toBe(true);
+    }
+  });
+
+  it("offers both sides and NOTHING ELSE — it may not guess and may not default", () => {
+    /* R7-7G: 300 credits refunded twice for a design on the wrong anatomical
+       side. A third chip that meant "you choose" would be that refund with a
+       tap target. */
+    const raised = whichSideReask(asked);
+    expect(raised.options).toHaveLength(2);
+    expect(raised.options.map((one) => one.resolves)).toEqual([
+      `${asked} (her left)`,
+      `${asked} (her right)`,
+    ]);
+  });
+
+  it("carries its own name, because her words cannot rebuild it", () => {
+    /* It is raised on a MODEL'S READING of her sentence — a placement and an
+       absent side — and re-reading the words recovers neither. */
+    const raised = whichSideReask(asked);
+    expect(raised.about).toBe(reaskHandle("which-side", asked));
+    expect(pendingReaskFor(raised.about!, false)?.kind).toBe("which-side");
+    /* And without the handle her sentence rebuilds nothing at all, which is
+       what the handle is for. */
+    expect(pendingReaskFor(asked, false)).toBeNull();
+  });
+
+  it("says nothing about a price, because nothing has been claimed", () => {
+    const said = whichSideReask(asked).question.toLowerCase();
+    expect(said).toContain("her left or her right");
+    for (const money of ["credit", "25", "charge you", "cost"]) {
+      expect(said, money).not.toContain(money);
+    }
   });
 });

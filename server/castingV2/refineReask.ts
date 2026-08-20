@@ -59,6 +59,7 @@ export const REASK_KINDS = [
   "already-upswept",
   "glasses-hide-eyes",
   "same-again",
+  "which-side",
 ] as const;
 
 export type ReaskKind = (typeof REASK_KINDS)[number];
@@ -172,6 +173,7 @@ export const REASK_HANDLE_MAX_LENGTH = REASK_KINDS.reduce(
  */
 const BY_HANDLE: Partial<Record<ReaskKind, (asked: string) => Reask>> = {
   "glasses-hide-eyes": (asked) => glassesHideEyesReask(asked),
+  "which-side": (asked) => whichSideReask(asked),
 };
 
 /**
@@ -859,6 +861,65 @@ export function glassesHideEyesReask(instruction: string): Reask {
          sentence cost the second one. */
       { label: "Take them off first", resolves: "remove her glasses" },
       { label: "Go ahead anyway", resolves: asked },
+    ],
+  };
+}
+
+/**
+ * WHICH OF HER — the side question (released fable-1120 §4, built once the road
+ * behind it existed; ordered next fable-1153 §5).
+ *
+ * # Why it is a QUESTION now and was a refusal before
+ *
+ * fable-1120 §4 released this question on one condition: that it has somewhere
+ * to lead. Until the attach-pointed mint landed, every answer led to *"we can't
+ * yet"* — a dead end wearing a tap target, which D-180 forbids. Now an answer
+ * lands a design on the arm she names, so the question is a question.
+ *
+ * # What it may never do, and the reason has a price on it
+ *
+ * It may never GUESS. `casting_ink_designs.side` is NOT NULL and a paired
+ * surface with no stated word has no value that is not an invention — and this
+ * road's invention is measured: 300 credits refunded twice for a design on the
+ * wrong anatomical side (DECISION_LOG R7-7G). So the missing word is asked for
+ * rather than supplied, and the two chips are the only two answers.
+ *
+ * # IT CARRIES ITS OWN NAME, because her sentence cannot rebuild it
+ *
+ * The question is raised on a MODEL'S READING of her sentence — a placement and
+ * an absent side, read by `inkReferenceTake` — and no amount of re-reading the
+ * words recovers which question was asked (`reaskHandle`'s own case, named in
+ * its docblock: *"a model read a placement out of her sentence"*). Re-running
+ * the take would cost a second call and could disagree with the first, so the
+ * question a customer answers would not be the question she was asked.
+ *
+ * # The chips are HER SENTENCE plus the missing word
+ *
+ * Not a sentence composed for her. The take reads WHERE from her own words and
+ * the side is accepted only when the word is in her sentence (source
+ * containment, D-79) — so an answer has to put the word THERE rather than
+ * beside it. The parenthetical is `did-you-mean`'s own shape, and it keeps her
+ * placement wording untouched, which matters because a rewrite of that half is
+ * the product choosing a body part for her.
+ */
+export function whichSideReask(instruction: string): Reask {
+  const asked = instruction.trim().replace(/[.!?]+$/, "");
+  return {
+    kind: "which-side",
+    about: reaskHandle("which-side", asked),
+    /*
+      IT NAMES NEITHER A PLACEMENT NOR A PRICE.
+
+      Not the placement, because her own word for it is already in the sentence
+      she is looking at, and repeating our reading of it back would invite an
+      argument about a word she never used. Not a price, because nothing has
+      been claimed and nothing will be until she answers — and a question that
+      mentions a charge reads as one.
+    */
+    question: "Which one — her left or her right? Nothing has been charged.",
+    options: [
+      { label: "Her left", resolves: `${asked} (her left)` },
+      { label: "Her right", resolves: `${asked} (her right)` },
     ],
   };
 }

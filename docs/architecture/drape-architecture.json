@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "769749ced110dda2"
+    "sourceFingerprint": "02d672bc431bf994"
   },
   "domains": [
     {
@@ -29617,17 +29617,17 @@
       "message": "Names 2 of HairColourSection's 3 fields (server/castingV2/hairColourFromReference.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/refineService.ts:642",
+      "id": "finding:redeclared-shape:server/castingV2/refineService.ts:643",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/refineService.ts:642",
+      "subject": "server/castingV2/refineService.ts:643",
       "message": "Names 3 of Thumbnail's 3 fields (server/castingV2/thumbnails.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/refineService.ts:730",
+      "id": "finding:redeclared-shape:server/castingV2/refineService.ts:731",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/refineService.ts:730",
+      "subject": "server/castingV2/refineService.ts:731",
       "message": "Names 3 of Thumbnail's 3 fields (server/castingV2/thumbnails.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {

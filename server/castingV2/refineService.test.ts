@@ -16,6 +16,8 @@ vi.hoisted(() => {
 import { departureFloorFor } from "./bornWornDetector";
 import { COVERAGE_BANDS } from "./maskGeometry";
 import { slotDefinition } from "./referenceSlotCatalogue";
+import { whichSideReask } from "./refineReask";
+import { resolveInkReferenceTake } from "./inkReferenceTake";
 
 /**
  * Refine's MONEY and its ORDER (M8 §10, §12).
@@ -9461,14 +9463,12 @@ describe("the picture she attached becomes the carrier that rides", () => {
     expect(result.note).toContain("Nothing was charged.");
   });
 
-  it("ASKS WHICH ARM rather than picking one — and cuts nothing while it asks", async () => {
+  it("ASKS which arm — a question with chips, not a sentence telling her to retype", async () => {
     /*
-      The row's side column is NOT NULL and a paired surface with no stated word
-      has no value that is not an invention. This road's own killer: 300 credits
-      refunded twice for a design on the wrong anatomical side (R7-7G).
-
-      It is not a dead end — re-asking with the word works immediately, which is
-      the condition fable-1120 §4 released the side question on.
+      Released fable-1120 §4 on the condition that an answer leads somewhere,
+      and built once the mint gave it that. The refusal it replaces was honest
+      and was still a wall: the one thing missing is a word she can supply with
+      a tap.
     */
     const result = await refineCandidate(inkRoad({
       inkTake: async () => ({
@@ -9480,10 +9480,55 @@ describe("the picture she attached becomes the carrier that rides", () => {
       ...input, instruction: "use this tattoo design on her arm", referenceId: "ref-public",
     });
 
+    expect(result.kind).toBe("asked");
+    expect(result.reask?.kind).toBe("which-side");
+    expect(result.reask?.options.map((one) => one.label)).toEqual(["Her left", "Her right"]);
+    /* FREE, and nothing was cut while it asks. */
     expect(painted).toHaveLength(0);
     expect(inkMinted, "a picture was cut before the side was known").toHaveLength(0);
-    expect(result.note).toContain("her left or her right");
-    expect(result.note).toContain("Nothing was charged.");
+  });
+
+  it("AND THE ANSWER CLOSES THE LOOP — the chip lands the design on the arm she named", async () => {
+    /*
+      THE ARM THAT WOULD CATCH A CHIP THAT DOES NOT ANSWER ITS OWN QUESTION.
+
+      The take accepts a side only when the WORD IS IN HER SENTENCE (source
+      containment, D-79, on the one field where a confident guess is a refund).
+      So this arm runs the REAL take over a scripted model reply rather than a
+      stub that agrees: if the chip's `resolves` put the side beside her
+      sentence instead of in it, containment would drop it, the address would
+      come back sideless, and the question would be asked a second time — the
+      loop a question exists to end.
+    */
+    const raised = whichSideReask("use this tattoo design on her upper arm");
+    const chip = raised.options.find((one) => one.label === "Her right")!;
+
+    const result = await refineCandidate(inkRoad({
+      listInkDesigns: async () => [],
+      /* The real reader, over a scripted reply. The model says "arm" and
+         "right"; the CODE decides whether the word is hers. */
+      inkTake: async ({ instruction }: { instruction: string }) => resolveInkReferenceTake({
+        instruction,
+        engine: {
+          id: "test:take",
+          complete: async () => ({ text: '{"placement":"upper arm","side":"right"}' }),
+        } as never,
+      }),
+    }), {
+      ...input,
+      instruction: chip.resolves,
+      answering: raised.about,
+      referenceId: "ref-public",
+    });
+
+    /* THE MINT WAS ASKED FOR HER RIGHT — not her left, and not nothing. */
+    expect(inkMinted).toEqual([
+      { placement: "upperArm", side: "right", sourceDigest: REFERENCE.digest },
+    ]);
+    /* And it rode rather than asking again. */
+    expect(result.kind).toBe("rendered");
+    expect(painted).toHaveLength(1);
+    expect(painted[0]!.prompt).toContain("right upper arm tattoo");
   });
 
   it("names the surfaces that work when she asks for one nobody has measured", async () => {
