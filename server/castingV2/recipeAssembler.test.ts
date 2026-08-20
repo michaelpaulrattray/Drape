@@ -19,7 +19,7 @@ import {
   type LibraryEntry,
   type RecipeSource,
 } from "./recipeAssembler";
-import { inkNotOnClothingClause, inkRealismClause } from "./inkRealism";
+import { inkNotOnClothingClause, inkRealismClause, inkStopsAtTheGarmentClause } from "./inkRealism";
 import { inkTakeSentence } from "./inkReferenceTake";
 
 const MASTER = { key: "casting-v2/candidates/master.png", sha: "16bb85180e9e" };
@@ -2072,5 +2072,91 @@ describe("a words-only ink ask is told what a tattoo is on skin", () => {
     expect(recipe.ok).toBe(true);
     if (!recipe.ok) return;
     expect(recipe.prompt).not.toContain("HEALED tattoo");
+  });
+});
+
+/*
+  WHERE THE CARRIED DESIGN STOPS — the clause the COURT bought (fable-1191 §1).
+
+  The realism landing fixed the fresh lane and did not fix the carry lane: both
+  carry arms put the design on his T-shirt, `485` at `42652964` and `487` at
+  `283a0f37` — and the second had the clothing PROHIBITION on the wire in full.
+  So this is not a synonym for that rule; it is the fact the rule does not
+  carry, which is where the edge is.
+
+  The negative control is the important half. This clause is deliberately the
+  ONLY thing in this module said on one ink lane and not the others, because the
+  fresh frame PASSED and a clause added to a passing frame is a change nobody
+  courted.
+*/
+describe("the carry says where the design stops, and only the carry", () => {
+  const DESIGN = { key: "casting-v2/ink/design.png", sha: "962fe3fda823" };
+
+  it("rides the carry sentence, in the CAST'S pronoun", () => {
+    const recipe = assembleRecipe({
+      master: MASTER, pronouns: HE, library: [],
+      asks: [{ slot: "eye@left", noun: "left eye", words: "green" }],
+      carriedInk: [{
+        slot: "ink:upperChest", image: DESIGN, cutRoute: "rideWhole", noun: "upper chest tattoo",
+      }],
+    });
+    expect(recipe.ok).toBe(true);
+    if (!recipe.ok) return;
+    expect(recipe.prompt).toContain(inkStopsAtTheGarmentClause(HE));
+    expect(recipe.prompt).toContain("Its edge is where his clothing begins");
+    /* The observed defect, named as an instruction: the design GREW between the
+       frame that delivered it and the frame that carried it. */
+    expect(recipe.prompt).toContain("Do not enlarge, extend or complete the design");
+  });
+
+  it("does NOT ride the FRESH lane — the negative control the court bought", () => {
+    /*
+      `486` passed at his three FAIL classes with the realism landing alone. If
+      this clause appeared there too, the carry court would be measuring a
+      change to both lanes and could not say which one moved.
+    */
+    const recipe = assembleRecipe({
+      master: MASTER, pronouns: HE, library: [],
+      asks: [{ slot: "hair", noun: "hair", words: "a mid-length wavy cut" }],
+      sources: [{
+        slot: "hair",
+        image: DESIGN,
+        pictures: "inkDesignOnTransparency",
+        cutRoute: "cut",
+        scope: inkTakeSentence(HE),
+      }],
+    });
+    expect(recipe.ok).toBe(true);
+    if (!recipe.ok) return;
+    expect(recipe.prompt).toContain(inkRealismClause(HE));
+    expect(recipe.prompt).not.toContain("Its edge is where");
+  });
+
+  it("does NOT ride the words-only lane either", () => {
+    const recipe = assembleRecipe({
+      master: MASTER, pronouns: HE, library: [],
+      asks: [{ slot: "ink:neck", noun: "neck tattoo", words: "a small geometric skeleton design" }],
+    });
+    expect(recipe.ok).toBe(true);
+    if (!recipe.ok) return;
+    expect(recipe.prompt).toContain(inkRealismClause(HE));
+    expect(recipe.prompt).not.toContain("Its edge is where");
+  });
+
+  it("says it once per carried design, beside that design's own sentence", () => {
+    const recipe = assembleRecipe({
+      master: MASTER, pronouns: HE, library: [],
+      asks: [{ slot: "eye@left", noun: "left eye", words: "green" }],
+      carriedInk: [
+        { slot: "ink:upperChest", image: DESIGN, cutRoute: "rideWhole", noun: "upper chest tattoo" },
+        { slot: "ink:neck", image: DESIGN, cutRoute: "rideWhole", noun: "neck tattoo" },
+      ],
+    });
+    expect(recipe.ok).toBe(true);
+    if (!recipe.ok) return;
+    /* Two designs, two carry sentences, two boundaries — unlike the words-only
+       clause, which is one standing sentence for any number of asks. Each
+       carried design states its own, because each is a different edge. */
+    expect(recipe.prompt.split("Its edge is where")).toHaveLength(3);
   });
 });

@@ -85,7 +85,7 @@ import { slotDefinition } from "./referenceSlotCatalogue";
    than splitting a string (fable-1001 §1). `referenceSlots` imports nothing, so
    there is no cycle to weigh here. */
 import { isInkSlot, openKindOfSlot } from "./referenceSlots";
-import { inkNotOnClothingClause, inkRealismClause } from "./inkRealism";
+import { inkNotOnClothingClause, inkRealismClause, inkStopsAtTheGarmentClause } from "./inkRealism";
 import { imageHalfClause } from "./sidePhrasing";
 import { inkDesignWasExamined, type InkCutRoute } from "../../shared/inkCutRoute";
 
@@ -931,6 +931,19 @@ function inkCarrySentence(ordinal: number, noun: string, pronouns: CastPronouns)
     */
     inkRealismClause(pronouns),
     inkNotOnClothingClause(pronouns),
+    /*
+      AND WHERE IT STOPS — the carry lane's own clause, and the ONLY thing in
+      this sentence that the fresh lane does not also say (fable-1191 §1).
+
+      The realism landing above fixed the fresh frame and did not fix this one:
+      both carry arms of the court put the design on his T-shirt, and the second
+      of them had the clothing prohibition on the wire in full. `keep it exactly
+      as it is, in the same place and at the same size` is a size instruction
+      pointed at a picture with no body in it, on a render anchored to a master
+      with no tattoo on it — so the painter has nothing to measure and picks.
+      This gives it the measure the frame contains.
+    */
+    inkStopsAtTheGarmentClause(pronouns),
   ].join(" ");
 }
 

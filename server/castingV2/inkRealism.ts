@@ -142,6 +142,56 @@ export function inkRealismClause(pronouns: { possessive: string }): string {
 }
 
 /**
+ * WHERE THE DESIGN STOPS — the CARRY lane's own clause, and the only one in
+ * this module that is not said on every ink road (ordered fable-1191 §1 after
+ * the like-for-like court split).
+ *
+ * # The frame that bought it
+ *
+ * The realism landing fixed the fresh lane and did NOT fix the carry lane. Both
+ * arms of the carry pair put the design on his T-SHIRT — `485` at `42652964`
+ * and `487` at `283a0f37`, the second one with
+ * {@link inkNotOnClothingClause} in full on the wire. So the prohibition is
+ * present and is not enough, and this is not a synonym for it: it is the fact
+ * the prohibition does not carry, which is WHERE THE EDGE IS.
+ *
+ * # Why the carry lane and not the fresh one
+ *
+ * Because of the sentence that is only ever said here:
+ *
+ * > *"He already has this tattoo: **keep it exactly as it is, in the same place
+ * > and at the same size**."*
+ *
+ * On the fresh lane there is nothing to keep, so the clothing rule is the only
+ * statement about extent and it lands. On the carry lane the render anchors on
+ * the MASTER — which has no tattoo on it at all — while *"the same size"* points
+ * at a picture that is 1200×1697 of artwork with no body in it. The painter is
+ * told to preserve a size it has nothing to measure, and on both arms it chose
+ * an extent that ran off the neck and onto cloth, larger than the design had
+ * ever been. This clause gives it the one measure the frame actually contains.
+ *
+ * The fresh lane is deliberately left alone: it passed, and a clause added to a
+ * passing frame is a change nobody courted.
+ *
+ * # The words are his
+ *
+ * > *"if you had a chest tatto reference with neck continuation you might see it
+ * > poking out the top of the shirt but **thats the extent for now**"*
+ * > (fable-1081)
+ *
+ * A boundary stated as a place rather than as a prohibition — the same lesson
+ * `HAIR_ARRANGEMENTS` paid for: a wording that tells the painter WHERE beats one
+ * that tells it what to conclude.
+ */
+export function inkStopsAtTheGarmentClause(pronouns: { possessive: string }): string {
+  const their = pronouns.possessive;
+  return `Its edge is where ${their} clothing begins. A tattoo that runs on under a garment shows only `
+    + "the part above the neckline — it may poke out at the top of the collar and no further, and the "
+    + `rest of it is simply not in this picture. Do not enlarge, extend or complete the design to make `
+    + `more of it show, and do not draw any part of it onto ${their} clothing.`;
+}
+
+/**
  * The clothing rule in the CAST'S OWN PRONOUN — the same fact as
  * {@link INK_NOT_ON_CLOTHING}, for the lane that has pronouns to hand.
  *
