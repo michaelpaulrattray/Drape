@@ -69,6 +69,17 @@ function harness(overrides: Partial<InkUploadDependencies> = {}) {
         },
       };
     }),
+    /*
+      THE OFF ROAD BY DEFAULT, so every arm written before build 3a.2 keeps
+      testing exactly what it tested — which is the proof that the flag is
+      additive and inert rather than a claim about it.
+
+      And `cut` THROWS rather than returning something plausible: an arm that
+      reaches the cutter without meaning to should be loud, not quietly served
+      by a double that agrees with whatever it was expecting.
+    */
+    cutEnabled: vi.fn(() => false),
+    cut: vi.fn(async () => { throw new Error("the cutter was called on the OFF road"); }),
     ...overrides,
   };
   return { dependencies, order, manifests, stored, recorded, minted };
@@ -418,5 +429,194 @@ describe("the plate is NOT drawn while the mannequin road is deferred", () => {
     if (!outcome.ok) throw new Error("the upload should have succeeded");
     expect(outcome.plate).toEqual({ minted: false, note: MANNEQUIN_DEFERRED_NOTE });
     expect(MANNEQUIN_DEFERRED_NOTE).toContain("Nothing was charged");
+  });
+});
+
+describe("THE CUT, at the wire — build 3a.2's upload wire", () => {
+  /**
+   * A cutter double that hands back a design DIFFERENT from what it was given.
+   *
+   * Different bytes, and deliberately different DIMENSIONS, so an arm cannot
+   * pass by accident on a buffer that merely happens to compare equal. The
+   * point of every arm below is which of the two objects reached the store and
+   * the row — asserted at the wire, on what the dependencies were actually
+   * handed, never on a constant near the call.
+   */
+  async function cutterReturning(route: "cut" | "rideWhole", given?: Buffer) {
+    const design = await sharp({
+      create: { width: 300, height: 280, channels: 4, background: { r: 9, g: 9, b: 9, alpha: 1 } },
+    }).png().toBuffer();
+    return {
+      design,
+      cut: vi.fn(async (input: { bytes: Buffer }) => (route === "cut"
+        ? {
+          ok: true as const,
+          cut: {
+            route: "cut" as const,
+            bytes: design,
+            width: 300,
+            height: 280,
+            inkPixels: 84000,
+            personPixels: 160000,
+            box: { left: 50, top: 60, width: 300, height: 280 },
+          },
+        }
+        : {
+          ok: true as const,
+          cut: {
+            route: "rideWhole" as const,
+            bytes: given ?? input.bytes,
+            width: 600,
+            height: 800,
+            inkPixels: 0,
+            personPixels: 0,
+            box: null,
+          },
+        })),
+    };
+  }
+
+  it("⚠ STORES THE CUT AND NOT THE PHOTOGRAPH, and every column describes the object written", async () => {
+    const bytes = await pngOf(600, 800);
+    const { design, cut } = await cutterReturning("cut");
+    const { dependencies, stored, recorded } = harness({ cutEnabled: () => true, cut });
+
+    const outcome = await uploadInkDesign({ ...ask, bytes }, dependencies);
+
+    expect(outcome.ok).toBe(true);
+    if (!outcome.ok) return;
+    expect(cut).toHaveBeenCalledTimes(1);
+    /* The cutter was handed HER picture — the one thing upstream of all of this. */
+    expect(cut.mock.calls[0]![0]!.bytes.equals(bytes)).toBe(true);
+
+    /* AT THE WIRE. What reached storage is the cut, and it is not her frame. */
+    expect(stored).toHaveLength(1);
+    expect(stored[0]!.bytes.equals(design)).toBe(true);
+    expect(stored[0]!.bytes.equals(bytes)).toBe(false);
+
+    /*
+      AND THE ROW DESCRIBES THAT OBJECT. A digest of the photograph over bytes
+      that are the cut is not merely dishonest — the plate mint compares the two
+      and refuses on the mismatch, so this arm is load-bearing rather than tidy.
+    */
+    expect(recorded[0]).toMatchObject({
+      byteSize: design.byteLength,
+      width: 300,
+      height: 280,
+      digest: createHash("sha256").update(design).digest("hex"),
+    });
+    expect(recorded[0]!.digest).not.toBe(createHash("sha256").update(bytes).digest("hex"));
+    expect(outcome.cut).toEqual({ route: "cut" });
+    expect(outcome.design.width).toBe(300);
+    expect(outcome.design.height).toBe(280);
+  });
+
+  it("stores a cut as a PNG even when she uploaded a JPEG — a JPEG has no alpha to keep", async () => {
+    const bytes = await sharp({
+      create: { width: 600, height: 800, channels: 3, background: { r: 30, g: 30, b: 30 } },
+    }).jpeg().toBuffer();
+    const { cut } = await cutterReturning("cut");
+    const { dependencies, stored, recorded } = harness({ cutEnabled: () => true, cut });
+
+    const outcome = await uploadInkDesign({ ...ask, bytes }, dependencies);
+
+    expect(outcome.ok).toBe(true);
+    expect(stored[0]!.contentType).toBe("image/png");
+    expect(stored[0]!.key.endsWith(".png")).toBe(true);
+    expect(recorded[0]).toMatchObject({ mime: "image/png" });
+  });
+
+  it("keeps her bytes and her format UNTOUCHED when the frame rides whole", async () => {
+    /*
+      The `rideWhole` road must be byte-identical to the off road, or the digest
+      stops meaning byte identity for exactly the population — flash sheets —
+      that makes up most of what a tattoo customer uploads.
+    */
+    const bytes = await sharp({
+      create: { width: 600, height: 800, channels: 3, background: { r: 30, g: 30, b: 30 } },
+    }).jpeg().toBuffer();
+    const { cut } = await cutterReturning("rideWhole");
+    const { dependencies, stored, recorded } = harness({ cutEnabled: () => true, cut });
+
+    const outcome = await uploadInkDesign({ ...ask, bytes }, dependencies);
+
+    expect(outcome.ok).toBe(true);
+    if (!outcome.ok) return;
+    expect(stored[0]!.bytes.equals(bytes)).toBe(true);
+    expect(stored[0]!.contentType).toBe("image/jpeg");
+    expect(recorded[0]).toMatchObject({
+      mime: "image/jpeg",
+      byteSize: bytes.byteLength,
+      width: 600,
+      height: 800,
+      digest: createHash("sha256").update(bytes).digest("hex"),
+    });
+    expect(outcome.cut).toEqual({ route: "rideWhole" });
+  });
+
+  it("⚠ `null` and `rideWhole` are NOT the same answer — nobody looked is not a licence", async () => {
+    const bytes = await pngOf(600, 800);
+    const { dependencies } = harness();
+
+    const outcome = await uploadInkDesign({ ...ask, bytes }, dependencies);
+
+    expect(outcome.ok).toBe(true);
+    if (!outcome.ok) return;
+    /*
+      Off, the cutter is not called at all and the answer is `null`. A surface
+      that read `null` as "we checked and there was nobody in it" would be
+      reading an unflipped flag as a positive licence.
+    */
+    expect(outcome.cut).toBeNull();
+    expect(dependencies.cut).not.toHaveBeenCalled();
+  });
+
+  it("REFUSES the upload on the cutter's refusal, in her words, having written NOTHING", async () => {
+    const bytes = await pngOf(600, 800);
+    const refusal = {
+      code: "personWithoutDesign" as const,
+      message: "That looks like a design on a model's arm — I can't safely take it from there.",
+    };
+    const { dependencies, manifests, stored, recorded } = harness({
+      cutEnabled: () => true,
+      cut: vi.fn(async () => ({ ok: false as const, refusal })),
+    });
+
+    const outcome = await uploadInkDesign({ ...ask, bytes }, dependencies);
+
+    expect(outcome.ok).toBe(false);
+    if (outcome.ok) return;
+    /* HER SENTENCE, unchanged — a re-worded refusal is how two surfaces come to
+       say different things about one wall. */
+    expect(outcome.refusal).toEqual(refusal);
+    /* FREE, and free means nothing was written either — no manifest, so no
+       receipt for a worker to collect and no litter to collect. */
+    expect(manifests).toHaveLength(0);
+    expect(stored).toHaveLength(0);
+    expect(recorded).toHaveLength(0);
+  });
+
+  it("⚠ never reads her picture when a FREE DOOR would have refused it anyway", async () => {
+    /*
+      The cut is the first step that spends. A customer whose declared intent
+      this product cannot serve should hear that rather than have her picture
+      read at house expense — and the ordering is what makes that true, so it
+      is asserted rather than described.
+    */
+    const bytes = await pngOf(600, 800);
+    const { cut } = await cutterReturning("cut");
+    const { dependencies } = harness({ cutEnabled: () => true, cut });
+
+    const outcome = await uploadInkDesign(
+      { ...ask, bytes, side: "centre" as const },
+      dependencies,
+    );
+
+    expect(outcome.ok).toBe(false);
+    if (outcome.ok) return;
+    /* And refused for the reason the arm is about, so it cannot pass on some
+       other door quietly closing first. */
+    expect(outcome.refusal.code).toBe("sideNotOnPlacement");
+    expect(cut).not.toHaveBeenCalled();
   });
 });

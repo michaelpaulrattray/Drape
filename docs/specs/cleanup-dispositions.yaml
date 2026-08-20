@@ -920,7 +920,6 @@
 
 - symbol: cutInkDesign
   file: server/castingV2/inkReferenceCutter.ts
-  verdict: HELD
-  why: build 3a.1's orchestration — the two measured questions asked with absentIsAnswer, the fail-closed routing, the completeness guard and five free refusals that share no sentinel; DARK BY CONSTRUCTION with no importer, which is the declared staging rather than an omission
-  argued: V3B §7.12 (design opus-837, built opus-840; staging opus-830 §6, ratified fable-1131 §3)
-  blocker: 3a.3 — the wire making a design row's bytes the cut, which carries a FOUNDER GATE that is not an executor's to close (fable-919 §3: a face-bearing reference must produce a plate with zero person content, at the frames, in front of him). Until then the widening tripwire stays armed and §7.12's retirement paragraph stays a plan
+  verdict: KEEP
+  why: build 3a.1's orchestration — the two measured questions asked with absentIsAnswer, the fail-closed routing, the completeness guard and five free refusals that share no sentinel; WIRED by 3a.2's upload wire, which calls it before the manifest so what lands at `casting_ink_designs.storageKey` is the design and not the photograph, behind `CASTING_INK_CUT_SCOPE`
+  argued: V3B §7.12 (design opus-837, built opus-840; the wire ruled fable-1133 §3a)

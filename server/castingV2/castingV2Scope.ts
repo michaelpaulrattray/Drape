@@ -1587,3 +1587,143 @@ export function validateCastingInkReferenceEnvironment(input: {
   }
   return child;
 }
+
+/* ------------------------------------------- the ink CUT sub-flag */
+
+/**
+ * WHETHER AN UPLOADED DESIGN IS CUT OUT OF ITS PICTURE BEFORE IT IS STORED —
+ * build 3a.2's upload wire (`V3B_INK_AND_MARKS_DESIGN_NOTE.md` §7.12, ruled
+ * fable-1130 §1 and fable-1133 §3a).
+ *
+ * Off, and absent means off, `uploadInkDesign` behaves exactly as it does today:
+ * her photograph is stored unchanged, no segmenter is called, and not one thing
+ * about the door moves. On, the same upload asks two measured questions of her
+ * picture and what lands in `casting_ink_designs.storageKey` is **the design
+ * alone, on transparency** — the bytes the plate mint reads, and the bytes every
+ * later consumer inherits.
+ *
+ * # A FLAG RATHER THAN A STRAIGHT SWAP, and the reason is that the door is LIVE
+ *
+ * `CASTING_INK_STUDIO_SCOPE` is `users:1` in production — the founder's own
+ * account, uploading his own designs. Cutting before storing changes what an
+ * upload DOES: it spends two segmenter calls of house money, and it can refuse
+ * a picture that succeeds today (a photographed person the reader could isolate
+ * no design on). Landing that unflagged would change live behaviour on the
+ * deploy that shipped it, which the standing autonomy grant forbids by name.
+ *
+ * # WHY THE PARENT IS THE STUDIO SCOPE AND NOTHING ELSE
+ *
+ * The cut happens INSIDE the upload door. A user who cannot upload has nothing
+ * to cut, so arming this over them is arming a step of a road they cannot enter
+ * — inert, and indistinguishable from mistaken. The repaint and cleanup-worker
+ * parents ride in through the studio flag's own check rather than being
+ * restated here; two checks of one fact drift apart.
+ *
+ * # `FAL_KEY` IS GUARANTEED BY THE CHAIN, AND THIS FILE DELIBERATELY DOES NOT
+ * # RE-CHECK IT — a note, because its absence looks like an oversight
+ *
+ * The cutter refuses rather than storing a photograph when the reader does not
+ * answer: the fence, and the right direction. But it means a deployment with no
+ * segmenter transport would refuse **every** upload behind this flag, with a
+ * sentence about her picture rather than about our configuration.
+ *
+ * A `FAL_KEY` check was written here for exactly that reason and then **deleted,
+ * because it could never fire**. The parent chain is
+ * `CASTING_INK_CUT_SCOPE` → `CASTING_INK_STUDIO_SCOPE` → `CASTING_REPAINT_SCOPE`
+ * → `CASTING_REFERENCE_LIBRARY_SCOPE` → `CASTING_V2_SCOPE`, and the last of
+ * those refuses to boot without the transport
+ * (`CastingV2TransportConfigurationError`). So no configuration exists in which
+ * this flag is armed and the key is missing.
+ *
+ * It was found by driving the guard through `validateEnv()` itself
+ * (`scripts/rehearse-ink-cut-boot-disposable.mts`) and INSISTING THE ARM ASSERT
+ * ITS OWN REASON: the arm refused, and refused on `CASTING_V2_SCOPE`'s message.
+ * A looser regex would have printed PROVEN over a control that does nothing —
+ * which is the shape half of `CLAUDE.md`'s inert-control list has. Law 4:
+ * derive, never mirror; two checks of one fact drift apart, and the one that
+ * cannot fire is the one that keeps its reputation.
+ *
+ * The rehearsal keeps the arm, aimed at the fact rather than at this file: with
+ * the flag armed and no key, boot REFUSES, naming `CASTING_V2_SCOPE`.
+ *
+ * It declares no fal allowance of its own. The two questions ride the shared
+ * `FAL_CONCURRENCY` courtesy pool that every region read already uses, so the
+ * ceiling arithmetic `assertFalBudget` refuses to boot over is untouched.
+ *
+ * # WHAT IS STILL TRUE WITH IT ON
+ *
+ * **The widening tripwire stays armed.** Its retirement is verified at the wire
+ * on the bytes handed to `fetchDesignBytes`, and that arm belongs to the build
+ * that mints — which fable-1133 §1 folded into the mannequin resumption sitting,
+ * beside the release door, D-138 and the fence court. A flag that can be off is
+ * not a structural fact, and rows written before it was flipped still hold
+ * photographs.
+ */
+export const CASTING_INK_CUT_SCOPE_ENV = "CASTING_INK_CUT_SCOPE";
+
+export class CastingInkCutScopeConfigurationError extends Error {
+  constructor() {
+    super(
+      `${CASTING_INK_CUT_SCOPE_ENV} must be "off", "all", or "users:" followed by unique positive integer user ids`,
+    );
+    this.name = "CastingInkCutScopeConfigurationError";
+  }
+}
+
+export class CastingInkCutCoverageError extends Error {
+  constructor(detail: string) {
+    super(`${CASTING_INK_CUT_SCOPE_ENV} ${detail}`);
+    this.name = "CastingInkCutCoverageError";
+  }
+}
+
+export function parseCastingInkCutScope(raw: string | undefined): CastingV2Scope {
+  return parseScopeGrammar(raw, () => {
+    throw new CastingInkCutScopeConfigurationError();
+  });
+}
+
+/**
+ * Whether this user's uploaded design is cut before it is stored.
+ *
+ * An AND of the whole chain at the point of use, like every sibling: the boot
+ * check refuses a scope reaching past its parent, and a boot check nobody
+ * invoked is the second way a flag pair goes wrong.
+ */
+export function captureCastingInkCutEnabled(userId: number): boolean {
+  const child = parseCastingInkCutScope(process.env[CASTING_INK_CUT_SCOPE_ENV]);
+  if (!castingV2EnabledForUser(child, userId)) return false;
+  return captureCastingInkStudioEnabled(userId);
+}
+
+export function validateCastingInkCutEnvironment(input: {
+  scope: string | undefined;
+  studioScope: string | undefined;
+}): CastingV2Scope {
+  const child = parseCastingInkCutScope(input.scope);
+  if (child.kind === "off") return child;
+
+  /* No `FAL_KEY` check here, and its absence is a decision rather than a gap —
+     see the docblock above. The chain up to `CASTING_V2_SCOPE` already refuses
+     to boot without the transport, so a check here could never fire. */
+  const parent = parseCastingInkStudioScope(input.studioScope);
+  if (parent.kind === "off") {
+    throw new CastingInkCutCoverageError(
+      `cannot be enabled while ${CASTING_INK_STUDIO_SCOPE_ENV} is off — the cut happens inside the `
+      + "upload door, so a user who cannot upload has nothing to cut",
+    );
+  }
+  if (parent.kind === "all") return child;
+  if (child.kind === "all") {
+    throw new CastingInkCutCoverageError(
+      `cannot be "all" while ${CASTING_INK_STUDIO_SCOPE_ENV} is limited to specific users`,
+    );
+  }
+  const uncovered = child.userIds.filter((userId) => !parent.userIds.includes(userId));
+  if (uncovered.length > 0) {
+    throw new CastingInkCutCoverageError(
+      `names users outside ${CASTING_INK_STUDIO_SCOPE_ENV}: ${uncovered.join(",")}`,
+    );
+  }
+  return child;
+}

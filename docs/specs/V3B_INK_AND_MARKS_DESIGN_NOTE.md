@@ -1344,7 +1344,10 @@ casting_reference_attachments (0043)   the PHOTOGRAPH she gave us, kept
 casting_ink_designs                    THE CUT, and the only thing the mint sees
 casting_reference_crops (0040)         features that travel as crops into a
                                        RENDER — a different road; a tattoo's
-                                       crop goes to a PLATE
+                                       crop goes to a PLATE *when the mannequin
+                                       resumes*, and into renders as reference
+                                       plus words TODAY (fable-1078, clause
+                                       ruled fable-1133 §3)
 ```
 
 #### AND THIS IS THE TRIPWIRE'S RETIREMENT MECHANISM (fable-1130 §4)
@@ -1393,8 +1396,9 @@ door selector.
 
 `server/castingV2/inkReferenceCrop.ts` (the pure half, opus-839) and
 `server/castingV2/inkReferenceCutter.ts` (the orchestration) are both in, with
-41 tests between them. **Nothing imports the cutter**, so it is dark BY
-CONSTRUCTION rather than behind a flag — there is no switch to set wrong.
+39 tests between them. It landed with **no importer at all** — dark by
+construction rather than behind a flag — and gained one in the very next commit,
+which is 3a.2(a) below.
 
 The order it runs: decode to RGBA → both questions of the whole frame with
 `absentIsAnswer` → each mask proven to be in her picture's space and one byte per
@@ -1454,3 +1458,88 @@ a licence-reader FAILURE read as an absence      1 arm: the licence question's
    describes an instrument nobody built. The measurement it was to buy — *is
    the ghost mannequin common enough to justify a deeper road* — is exactly the
    kind this arc has twice proved must be bought before the row is written.
+
+#### ✅ 3a.2(a) IS LANDED — THE UPLOAD WIRE, behind `CASTING_INK_CUT_SCOPE`
+#### (ruled fable-1133 §3a, built opus-841)
+
+`uploadInkDesign` now **cuts before it stores**, so what lands at
+`casting_ink_designs.storageKey` is the design and not the photograph. The order
+gained one step and it sits where it does for two reasons, both structural:
+
+```
+  1. the doors            free refusals, before a single byte moves
+  2. THE CUT              ← the first step that spends anything
+  3. the MANIFEST         naming the exact key about to be written
+  4. the BYTES            to that key
+  5. the ROW              discharging the manifest
+```
+
+**After the doors**, because a customer whose declared intent this product
+cannot serve should hear that rather than have her picture read at house
+expense. **Before the manifest**, because what the manifest names is what the
+store is about to write — cutting afterwards would leave the photograph at a
+permanently public address with a row pointing at it, which is the exact object
+the fence exists to prevent, created by the step meant to prevent it.
+
+Every column is read off the object actually written (`digest`, `byteSize`,
+`width`, `height`), and a cut is stored as PNG regardless of her upload's format
+— a JPEG has no alpha, and recording her original mime would flatten the
+transparency the whole cut is made of. `rideWhole` touches none of it: her bytes
+and her format go on exactly as they arrived, which is what keeps `digest`
+meaning byte identity for the flash-sheet population.
+
+**Three answers, not two.** The outcome carries `cut: { route } | null`, and the
+`null` is load-bearing: it means *nobody looked*, where `rideWhole` means
+*somebody looked and there is nobody in the picture*. Collapsing them would let
+an unflipped flag read as a positive licence.
+
+#### Why a FLAG and not a straight swap
+
+`CASTING_INK_STUDIO_SCOPE` is `users:1` in production — the founder's own
+account. Cutting before storing changes what an upload DOES: two segmenter calls
+of house money, and a refusal where one succeeds today. Landing that unflagged
+would change live behaviour on the deploy that shipped it.
+
+Its parent is the STUDIO scope and nothing else: a user who cannot upload has
+nothing to cut.
+
+**It does NOT re-check `FAL_KEY`, and that is a finding rather than a gap.** A
+check was written for the fail-closed direction — the cutter refuses rather than
+storing a photograph when its questions go unanswered, so a keyless deployment
+would refuse *every* upload with a sentence about her picture rather than about
+our configuration — and then **deleted, because it could never fire**: the chain
+`CASTING_INK_CUT_SCOPE` → `CASTING_INK_STUDIO_SCOPE` → `CASTING_REPAINT_SCOPE` →
+`CASTING_REFERENCE_LIBRARY_SCOPE` → `CASTING_V2_SCOPE` already refuses to boot
+without the transport. It surfaced by driving the guard through `validateEnv()`
+itself and insisting the arm assert ITS OWN REASON — a regex of merely
+`/FAL_KEY/` matched `CASTING_V2_SCOPE`'s message and would have printed PROVEN
+over a control that does nothing, which is how half of `CLAUDE.md`'s inert list
+came to be written. The fact keeps its arm in
+`scripts/rehearse-ink-cut-boot-disposable.mts`. It declares no fal allowance of
+its own;
+the two questions ride the shared `FAL_CONCURRENCY` courtesy pool, so
+`assertFalBudget`'s ceiling arithmetic is untouched.
+
+#### ⚠ AND THE TRIPWIRE IS STILL ARMED, which is the point of saying this here
+
+A flag that can be off is not a structural fact, and rows written before it was
+flipped still hold photographs. The retirement is verified at the MINT'S WIRE,
+on the bytes handed to `fetchDesignBytes` — and fable-1133 §1 folded that build
+into the **mannequin resumption sitting**, beside the release door, D-138 and
+the fence court, because it requires minting and the mannequin road is deferred.
+Until then this paragraph and the one above it are a plan.
+
+#### What 3a.2(b) owes — the delivery, and it must not slide off the plan
+
+fable-1133 §3b: the cut riding as a carried reference into repaint and the sign
+views' words, plus the side question. **With the mannequin deferred that is the
+only road on which a customer ever sees their tattoo** (1047/1078), so it is the
+reason the storage exists rather than a follow-up to it. The shown cut
+(fable-1127 §2) belongs to it: today the wire returns the FACTS about the cut and
+no address, and the surface that puts it in front of her lands there — which is
+also why the flag should not be flipped for anyone until both halves are in.
+
+And the division table above has taken its clarifying clause **in this commit**
+rather than "when next touched" (fable-1133 §3): to a plate when the mannequin
+resumes; into renders as reference plus words today, per 1078. A deferral with
+no owner is a drop, and this file has lost two rulings that way already.

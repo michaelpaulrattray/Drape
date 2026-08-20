@@ -26,6 +26,7 @@ import {
 } from "../casting/snapshotRestoreScope";
 import {
   CASTING_FACE_SCAN_SCOPE_ENV,
+  CASTING_INK_CUT_SCOPE_ENV,
   CASTING_INK_STUDIO_SCOPE_ENV,
   CASTING_OPEN_LANE_SCOPE_ENV,
   CASTING_REFERENCE_LIBRARY_SCOPE_ENV,
@@ -37,6 +38,7 @@ import {
   CASTING_SCAN_TABLE_SCOPE_ENV,
   CASTING_V2_SCOPE_ENV,
   validateCastingFaceScanEnvironment,
+  validateCastingInkCutEnvironment,
   validateCastingInkStudioEnvironment,
   validateCastingHairReferenceEnvironment,
   validateCastingReferenceAttachEnvironment,
@@ -294,6 +296,19 @@ export function validateEnv(): void {
   validateCastingInkReferenceEnvironment({
     scope: process.env[CASTING_INK_REFERENCE_SCOPE_ENV],
     attachScope: process.env[CASTING_REFERENCE_ATTACH_SCOPE_ENV],
+  });
+  /*
+    WHETHER AN UPLOADED DESIGN IS CUT BEFORE IT IS STORED. Its parent is the
+    STUDIO door and nothing else: the cut happens inside that door, so a user
+    who cannot upload has nothing to cut. The transport it needs is guaranteed
+    by the chain rather than re-checked here — `CASTING_V2_SCOPE` at the top of
+    this function already refuses to boot without FAL_KEY, and a second check of
+    one fact is the mirror that drifts (the reasoning is in the flag's docblock,
+    and the fact itself is an arm of the boot rehearsal).
+  */
+  validateCastingInkCutEnvironment({
+    scope: process.env[CASTING_INK_CUT_SCOPE_ENV],
+    studioScope: process.env[CASTING_INK_STUDIO_SCOPE_ENV],
   });
 
   /*

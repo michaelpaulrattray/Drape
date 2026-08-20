@@ -14,11 +14,12 @@
  * sequence is the part that goes wrong invisibly:
  *
  *   1. the doors, before a single byte moves — a refusal costs nothing
- *   2. the MANIFEST, naming the exact key about to be written
- *   3. the BYTES, to that key
- *   4. the ROW, which discharges the manifest in its own transaction
+ *   2. THE CUT, when this account is inside `CASTING_INK_CUT_SCOPE`
+ *   3. the MANIFEST, naming the exact key about to be written
+ *   4. the BYTES, to that key
+ *   5. the ROW, which discharges the manifest in its own transaction
  *
- * Steps 2–4 are the library's own discipline and they are here for the reason
+ * Steps 3–5 are the library's own discipline and they are here for the reason
  * it learned them: bytes at a permanently public URL with no row referencing
  * them are litter nobody will ever go looking for, and a crash between two
  * writes is not a rare event on a road that stores megabytes. If step 3 dies
@@ -32,6 +33,23 @@
  * and leaving them untouched is what makes the digest mean byte identity later
  * — the same thing the reference library's `digest` means, and the reason a
  * reference whose bytes have moved can be refused rather than painted.
+ *
+ * **Step 2 is the one deliberate exception, and it is not a re-encode.** With
+ * `CASTING_INK_CUT_SCOPE` on, what is stored is the DESIGN CUT OUT of the
+ * picture she gave us — a different object, not a recompression of the same one
+ * — and every column describing it is read off the object that was written.
+ * When the cutter says the frame rides whole, her bytes and her format go on
+ * untouched and this paragraph is true in full.
+ *
+ * # THE CUT IS WHERE THE FENCE STOPS BEING A PROMISE ABOUT THE RENDER
+ *
+ * The paragraph below says the photograph never reaches a render, and that has
+ * always been scoped to the RENDER: the plate mint is a second engine and it is
+ * handed whatever sits at `storageKey`. Cutting at step 2 is what makes the
+ * object there the design rather than the photograph — but the widening
+ * tripwire retires on an arm asserting that AT THE MINT'S WIRE, and that arm
+ * belongs to the build that mints. A flag that can be off is not a structural
+ * fact, and rows written before it was flipped still hold photographs.
  *
  * # THE PHOTOGRAPH NEVER REACHES A RENDER
  *
@@ -78,7 +96,11 @@ import {
   storageCleanupManifestHeldUntil,
 } from "../db/storageCleanup";
 import { storagePut } from "../storage";
+import { captureCastingInkCutEnabled } from "./castingV2Scope";
+import { createFalRegionReader } from "./falRegionReader";
+import { cutInkDesign, type CutInkDesignResult, type InkCutRoute } from "./inkReferenceCutter";
 import { inkPlateEngine } from "./inkPlateEngine";
+import { refusingRegionReader } from "./maskedRefine";
 import { mintInkPlate, type InkPlateMintOutcome } from "./inkPlateMint";
 import {
   MANNEQUIN_DEFERRED_NOTE,
@@ -91,6 +113,7 @@ import {
   inkIntentRefusal,
   inkPlacementRefusal,
   isInkDesignFormat,
+  type InkDesignFormat,
   type InkUploadRefusal,
 } from "./inkUploadDoor";
 
@@ -124,6 +147,16 @@ export type InkUploadOutcome =
     design: RecordedInkDesign & { width: number; height: number };
     /** Her design is stored either way; this says what became of the plate. */
     plate: InkUploadPlate;
+    /**
+     * WHAT WAS STORED — the cut, or her frame whole, or `null` when the cutter
+     * did not run at all because this account is outside `CASTING_INK_CUT_SCOPE`.
+     *
+     * Three values rather than two, and the third is not a tidy-away: `null`
+     * means *nobody looked*, `rideWhole` means *somebody looked and there was
+     * nobody in the picture*. Collapsing them would let an unflipped flag read
+     * as a positive licence, which is the one reading this road cannot afford.
+     */
+    cut: { route: InkCutRoute } | null;
   }
   | { ok: false; refusal: InkUploadRefusal };
 
@@ -152,6 +185,18 @@ export type InkUploadDependencies = {
    * sentence rather than a crash.
    */
   mint: (input: { userId: number; designPublicId: string }) => Promise<InkPlateMintOutcome>;
+  /**
+   * WHETHER THIS ACCOUNT'S DESIGN IS CUT BEFORE IT IS STORED — read per request
+   * rather than captured at module load, so a deployment that gains the flag
+   * does not stay stuck with the absence.
+   */
+  cutEnabled: (userId: number) => boolean;
+  /**
+   * TAKING THE DESIGN OUT OF HER PICTURE — injected so this file keeps owning
+   * the ORDER and nothing else, and so a suite can drive the whole upload
+   * without a provider, a key or a network.
+   */
+  cut: (input: { userId: number; candidatePublicId: string; bytes: Buffer }) => Promise<CutInkDesignResult>;
 };
 
 async function defaultManifest(input: {
@@ -191,11 +236,39 @@ export function defaultMintPlate(
   return mintInkPlate({ ...input, engine: inkPlateEngine() });
 }
 
+/**
+ * The real cut, exported so a suite can assert THIS — the thing the upload
+ * actually calls — rather than a double that agrees with it.
+ *
+ * The reader is built PER UPLOAD rather than shared: `createFalRegionReader`
+ * proves a frame's URL against the bytes in hand once per reader, so one reader
+ * per picture is one proof per picture, and a shared one would carry another
+ * picture's proof into these calls.
+ *
+ * `refusingRegionReader` when there is no key, which makes the missing-transport
+ * case a REFUSAL rather than a photograph stored as though it had been cut. The
+ * boot guard on `CASTING_INK_CUT_SCOPE` is what stops that being reachable in
+ * production; this is the second half of the same posture, because a guard and
+ * a fallback that disagree are how a fence gets a hole.
+ */
+export function defaultCutDesign(
+  input: { userId: number; candidatePublicId: string; bytes: Buffer },
+): Promise<CutInkDesignResult> {
+  const apiKey = process.env.FAL_KEY;
+  return cutInkDesign({
+    bytes: input.bytes,
+    reader: apiKey ? createFalRegionReader({ apiKey }) : refusingRegionReader,
+    about: { userId: input.userId, candidatePublicId: input.candidatePublicId },
+  });
+}
+
 const REAL: InkUploadDependencies = {
   manifest: defaultManifest,
   store: (one) => storagePut(one.key, one.bytes, one.contentType),
   record: recordInkDesign,
   mint: defaultMintPlate,
+  cutEnabled: captureCastingInkCutEnabled,
+  cut: defaultCutDesign,
 };
 
 /**
@@ -250,7 +323,54 @@ export async function uploadInkDesign(
     return { ok: false, refusal: { code: "unreadable", message: "That file isn't an image we can read." } };
   }
 
-  const storageKey = inkDesignKey(decoded.format);
+  /*
+    THE CUT — build 3a.2's upload wire, and it sits HERE for two reasons.
+
+    AFTER every free door, because it is the first step that spends anything:
+    two segmenter questions of house money, and a customer whose intent this
+    product cannot serve should hear that rather than have her picture read.
+
+    BEFORE the manifest, because what the manifest names is what the store is
+    about to write, and after this line that is the CUT. Cutting after the
+    write would leave the photograph at a permanently public address with a row
+    pointing at it — the exact object the fence exists to prevent, created by
+    the step that was supposed to prevent it.
+
+    Every refusal here is free: nothing has been written and nothing charged.
+  */
+  let stored = request.bytes;
+  let storedFormat: InkDesignFormat = decoded.format;
+  let storedWidth = decoded.width ?? 0;
+  let storedHeight = decoded.height ?? 0;
+  let cut: { route: InkCutRoute } | null = null;
+
+  if (dependencies.cutEnabled(request.userId)) {
+    const taken = await dependencies.cut({
+      userId: request.userId,
+      candidatePublicId: request.candidatePublicId,
+      bytes: request.bytes,
+    });
+    /* The cutter's own sentence, passed through unchanged. A re-worded refusal
+       is how two surfaces come to say different things about one wall. */
+    if (!taken.ok) return { ok: false, refusal: taken.refusal };
+    cut = { route: taken.cut.route };
+    if (taken.cut.route === "cut") {
+      /*
+        PNG, ALWAYS, and never `decoded.format` — the cut carries an alpha
+        channel and a JPEG has none, so recording her original format here would
+        write a mime that flattens the transparency the whole cut is made of.
+        `rideWhole` deliberately touches none of these: her bytes and her format
+        go on exactly as they arrived, which is what keeps the digest meaning
+        byte identity.
+      */
+      stored = taken.cut.bytes;
+      storedFormat = "png";
+      storedWidth = taken.cut.width;
+      storedHeight = taken.cut.height;
+    }
+  }
+
+  const storageKey = inkDesignKey(storedFormat);
   const cleanupBatchId = randomUUID();
   await dependencies.manifest({
     id: cleanupBatchId,
@@ -258,9 +378,20 @@ export async function uploadInkDesign(
     storageKeys: [storageKey],
   });
 
-  const contentType = inkDesignContentType(decoded.format);
-  await dependencies.store({ key: storageKey, bytes: request.bytes, contentType });
+  const contentType = inkDesignContentType(storedFormat);
+  await dependencies.store({ key: storageKey, bytes: stored, contentType });
 
+  /*
+    EVERY COLUMN DESCRIBES THE OBJECT THAT WAS ACTUALLY WRITTEN.
+
+    `digest`, `byteSize`, `width` and `height` are read off `stored`, not off
+    `request.bytes` — the two are the same buffer on the off and `rideWhole`
+    roads and a different one on the cut road, and a row describing the
+    photograph while the object is the cut is the wrong-frame class filed as a
+    measurement. The mint compares `digest` against the bytes it fetches and
+    would refuse on the mismatch, so this is also what keeps the plate road
+    working rather than merely honest.
+  */
   const design = await dependencies.record({
     userId: request.userId,
     candidatePublicId: request.candidatePublicId,
@@ -269,11 +400,11 @@ export async function uploadInkDesign(
     provenance: request.provenance,
     intents: request.intents,
     storageKey,
-    digest: createHash("sha256").update(request.bytes).digest("hex"),
+    digest: createHash("sha256").update(stored).digest("hex"),
     mime: contentType,
-    byteSize: request.bytes.byteLength,
-    width: decoded.width ?? 0,
-    height: decoded.height ?? 0,
+    byteSize: stored.byteLength,
+    width: storedWidth,
+    height: storedHeight,
     cleanupBatchId,
   });
 
@@ -297,8 +428,9 @@ export async function uploadInkDesign(
   if (dependencies.mannequinDeferred ?? MANNEQUIN_ROAD_DEFERRED) {
     return {
       ok: true,
-      design: { ...design, width: decoded.width ?? 0, height: decoded.height ?? 0 },
+      design: { ...design, width: storedWidth, height: storedHeight },
       plate: { minted: false, note: MANNEQUIN_DEFERRED_NOTE },
+      cut,
     };
   }
 
@@ -309,7 +441,8 @@ export async function uploadInkDesign(
 
   return {
     ok: true,
-    design: { ...design, width: decoded.width ?? 0, height: decoded.height ?? 0 },
+    cut,
+    design: { ...design, width: storedWidth, height: storedHeight },
     plate: plate.ok
       ? {
         minted: true,

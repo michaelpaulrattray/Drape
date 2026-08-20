@@ -428,6 +428,18 @@ const inkRouter = router({
           intents: outcome.design.intents,
           width: outcome.design.width,
           height: outcome.design.height,
+          /*
+            WHAT WAS ACTUALLY STORED — the design cut out of her picture, or her
+            frame whole, or `null` when nothing looked at all.
+
+            The width and height above already describe the CUT rather than her
+            upload once this account is inside `CASTING_INK_CUT_SCOPE`, and a
+            surface handed smaller numbers with no reason for them would have to
+            guess. Still no key and still no URL: the address of a design is not
+            something to hand out before anything renders, and that is unchanged
+            by the object at it being a cutout.
+          */
+          cut: outcome.cut,
         };
       } catch (error) {
         /* Somebody else's Cast is answered the way a missing one is. */

@@ -92,7 +92,21 @@ export type InkUploadRefusalCode =
   | "unreadable"
   | "unsupportedFormat"
   | "tooLarge"
-  | "tooSmall";
+  | "tooSmall"
+  /*
+    THE CUTTER'S OWN CODES, carried here rather than mapped onto the four above
+    (build 3a.2's upload wire). A map would have to collapse them — every one of
+    these means something different to the person reading the sentence, and
+    `personWithoutDesign` in particular is the row the whole fence rests on.
+
+    `unreadable` is NOT repeated: the cutter's decode failure and this door's
+    are the same fact about the same bytes, and two codes for one fact is the
+    drift law 4 names.
+  */
+  | "couldNotRead"
+  | "wrongSpace"
+  | "personWithoutDesign"
+  | "cutTooSmall";
 
 /** A refusal carries the customer's sentence, not a code the client re-words. */
 export type InkUploadRefusal = {
