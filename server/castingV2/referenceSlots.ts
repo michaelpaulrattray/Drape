@@ -173,6 +173,100 @@ export function openKindOfSlot(key: string): { kind: string; side: Instance | nu
   return { kind: rest.slice(0, at), side: side as Instance };
 }
 
+/* ------------------------------------------------------------------ *
+ * THE INK NAMESPACE — a tattoo at a place, and it never sees the       *
+ * library                                                              *
+ * ------------------------------------------------------------------ */
+
+/**
+ * THE INK LANE'S PREFIX — spelled once, here, beside the open lane's.
+ *
+ * Same separator argument, arrived at for the same reason: `@` is the INSTANCE
+ * separator and nothing else, so a second namespace rides `:` rather than
+ * widening `INSTANCES` — at which point `earring@neck` parses too, and the
+ * closed grammar is breached in the one place it exists to hold.
+ *
+ * # Why ink needs a namespace at all
+ *
+ * `ink` is not a feature of her the way `lips` is. It is a DESIGN at a PLACE,
+ * and the facet card said so before anybody built it: *"ink is per placement
+ * and its question comes from the placement rather than from a region table"*
+ * (`facetCards.ts`, the `notASlot` reason). One `tattoo` slot would ask a
+ * segmenter an open question, which is D-213's own caution written on the card.
+ * So there is a slot per placement, and the placement is the token after this
+ * prefix.
+ *
+ * # AND IT IS THE FENCE, NOT ONLY A SPELLING (ruled fable-1137 §3)
+ *
+ * Ink NEVER writes `casting_reference_library`. The design already has a
+ * durable, digest-verified, purge-pathed home of its own
+ * (`casting_ink_designs.storageKey`), and a library copy would be the second
+ * list that drifts from a source of truth — with the drift being bytes of a
+ * customer's design (working law 4). This prefix is what makes that refusable
+ * at the database door rather than merely intended: `parseSlot` accepts
+ * `ink:neck` the same way it accepts `open:wings`, so the door needs a reason
+ * to tell them apart, and the reason is this string.
+ */
+export const INK_SLOT_PREFIX = "ink:";
+
+/**
+ * Is this key in the ink lane's namespace?
+ *
+ * String shape only, exactly like {@link isOpenSlot}: whether the token after
+ * the prefix names a placement the vocabulary has measured is the catalogue's
+ * question, asked one layer along where the answer is acted on.
+ */
+export function isInkSlot(key: string): boolean {
+  return key.startsWith(INK_SLOT_PREFIX);
+}
+
+/**
+ * The slot key a design at one placement carries under — spelled ONCE, here.
+ *
+ * Takes a string rather than an `InkPlacement` on purpose. The customer's own
+ * word for a surface nobody has measured is a legal placement on this road
+ * (fable-1078: a reference-tattoo ask is never refused on placement), so a
+ * signature that only accepted the closed three would push every open caller
+ * into spelling the prefix itself — which is the one thing this function
+ * exists to prevent.
+ */
+export function inkSlotKey(placement: string): string {
+  return `${INK_SLOT_PREFIX}${placement}`;
+}
+
+/**
+ * The same placement, one side of her — the closed grammar's instance suffix on
+ * the ink lane's prefix, composed rather than concatenated.
+ *
+ * `ink:upperArm@left` is `slotKey(inkSlotKey("upperArm"), "left")`, and neither
+ * spelling is written out at a call site. It is per-side because the vocabulary
+ * says so (`InkPlacementEntry.sides`) and because the side is this road's
+ * measured failure: the legacy ink road refunded 300 credits twice for a design
+ * on the wrong anatomical side (DECISION_LOG R7-7G).
+ */
+export function inkSideSlotKey(placement: string, side: Instance): string {
+  return slotKey(inkSlotKey(placement), side);
+}
+
+/**
+ * The placement and side behind an ink key — the parser half of the grammar.
+ *
+ * `null` for anything outside the namespace. `side: null` is a real answer and
+ * not a missing one: a placement there is one of (`neck`, `upper chest`) files
+ * exactly there.
+ */
+export function inkPlacementOfSlot(
+  key: string,
+): { placement: string; side: Instance | null } | null {
+  if (!isInkSlot(key)) return null;
+  const rest = key.slice(INK_SLOT_PREFIX.length);
+  const at = rest.indexOf("@");
+  if (at === -1) return { placement: rest, side: null };
+  const side = rest.slice(at + 1);
+  if (!(INSTANCES as readonly string[]).includes(side)) return null;
+  return { placement: rest.slice(0, at), side: side as Instance };
+}
+
 /**
  * WHICH FRAME A SLOT'S QUESTION MAY BE ASKED OF.
  *

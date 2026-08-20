@@ -15,6 +15,12 @@
 import { describe, expect, it } from "vitest";
 
 import { LANDMARK_OF_ACCESSORY } from "./accessoryKinds";
+import {
+  INK_PLACEMENTS,
+  inkPlacementBareNoun,
+  inkPlacementEntry,
+} from "../../shared/inkPlacementVocabulary";
+import { inkSideSlotKey, inkSlotKey } from "./referenceSlots";
 import { REGION_CARDS } from "./regionCards";
 import { regionNameOf } from "./maskedRefine";
 import { assembleRecipe } from "./recipeAssembler";
@@ -529,5 +535,159 @@ describe("which features may state a finding of nothing", () => {
       expect(definition.question).not.toBeNull();
       expect(definition.panel.row).toBe("own");
     }
+  });
+});
+
+/*
+  THE INK LANE, IN THE CATALOGUE — shape (a)–(c)/(e), countersigned fable-1137
+  §2, and its whole point is that nothing here was invented.
+
+  The `ink` facet card wrote this shape long before anybody built it, in a
+  `notASlot` reason meant as a fence: *"ink is per placement and its question
+  comes from the placement rather than from a region table"*, with the mistake
+  to avoid named on the same line — *"inventing a `tattoo` question here would
+  ask a segmenter an open question (D-213)"*. So the arms below are mostly
+  DERIVATION arms: they fail if a word was retyped rather than read.
+*/
+describe("a tattoo at a place", () => {
+  it("is one slot per placement, never one `tattoo` slot", () => {
+    /* The card's own caution made mechanical. A single `tattoo` question is
+       exactly the open question D-213 forbids asking a segmenter. */
+    expect(slotDefinition("ink:")).toBeNull();
+    for (const placement of INK_PLACEMENTS) {
+      const key = inkPlacementEntry(placement).sides === "perSide"
+        ? inkSideSlotKey(placement, "left")
+        : inkSlotKey(placement);
+      expect(slotDefinition(key), key).not.toBeNull();
+    }
+  });
+
+  /*
+    THE QUESTION IS THE PLACEMENT'S OWN MEASURED WORD — read off the entry, not
+    retyped beside it.
+
+    `neck`, `upper arm` and `upper chest` were bought on sixteen production
+    masters: the reading where `collarbone`, `clavicle` and `decolletage`
+    returned nothing on skin that was plainly bare while `upper chest` found it
+    exactly. This arm compares the slot's question to the VOCABULARY rather than
+    to a string, so the day a better word is measured the catalogue follows it
+    and this test is not the thing that has to be remembered.
+  */
+  it("asks the vocabulary's word and no new one", () => {
+    for (const placement of INK_PLACEMENTS) {
+      const entry = inkPlacementEntry(placement);
+      const key = entry.sides === "perSide"
+        ? inkSideSlotKey(placement, "right")
+        : inkSlotKey(placement);
+      const definition = slotDefinition(key);
+      expect(definition, key).not.toBeNull();
+      expect(definition!.question, key).toBe(entry.readerWord);
+    }
+  });
+
+  /*
+    THE SIDE IS THE VOCABULARY'S ANSWER TOO, and both rejections are driven.
+
+    `upperArm` is `perSide` — the side is this road's measured failure, with 300
+    credits refunded twice for a design on the wrong anatomical side
+    (DECISION_LOG R7-7G). `neck` and `upperChest` are one place each, so a sided
+    key for them is a key nobody could mean.
+  */
+  it("refuses a sideless key for a paired surface, and a sided one for a single", () => {
+    expect(slotDefinition("ink:upperArm")).toBeNull();
+    expect(slotDefinition("ink:neck@left")).toBeNull();
+    expect(slotDefinition("ink:upperChest@right")).toBeNull();
+    expect(slotDefinition("ink:upperArm@left")).not.toBeNull();
+    expect(slotDefinition("ink:neck")).not.toBeNull();
+  });
+
+  it("puts the side on the slot, which is what the picture-half clause reads", () => {
+    /* (e)'s side half is structural rather than a second sentence: the
+       assembler's `whereItIs` reaches `sidePhrasing.imageHalfClause` through
+       this field, so an ink slot with no instance would silently lose the
+       clause that took a per-side court from four misses in twelve to none. */
+    expect(slotDefinition("ink:upperArm@left")!.instance).toBe("left");
+    expect(slotDefinition("ink:upperArm@right")!.instance).toBe("right");
+    expect(slotDefinition("ink:neck")!.instance).toBeNull();
+  });
+
+  it("is an ITEM — introduced and worn, never anatomy the master owns", () => {
+    /* The tier's own first example is *"an earring, a tattoo, her own
+       glasses"*. Anatomy would make the words ride every render for a thing
+       the master never had. */
+    expect(slotDefinition("ink:neck")!.tier).toBe("item");
+  });
+
+  it("draws no panel row, and says the ROOM rather than the feature is missing", () => {
+    const definition = slotDefinition("ink:upperArm@left")!;
+    expect(definition.panel.row).toBe("none");
+    expect(definition.panel.row === "none" && definition.panel.why)
+      .toContain("ink studio");
+  });
+
+  it("speaks the surface in the stylist's bare words", () => {
+    expect(slotDefinition("ink:neck")!.noun).toBe("neck tattoo");
+    expect(slotDefinition("ink:upperArm@left")!.noun).toBe("left upper arm tattoo");
+    expect(slotDefinition("ink:upperChest")!.noun).toBe("upper chest tattoo");
+    /* Derived off the vocabulary's copy with the possessive off, never a second
+       spelling — *"her her left upper arm"* is what a naive join makes. */
+    expect(slotDefinition("ink:upperArm@right")!.noun)
+      .toBe(`right ${inkPlacementBareNoun("upperArm")} tattoo`);
+  });
+
+  /*
+    NO COMPLETENESS GUARD, AND THE REASON IS NOT "NOBODY MEASURED IT YET".
+
+    A completeness family judges a crop WE CUT against specimens of that kind,
+    and ink is never cut for the library (fable-1137 §3) — the design's own
+    bytes are the carrier. So the biconditional the closed catalogue states is
+    broken here the way the open lane breaks it, on a ground of its own, and the
+    reason is RECORDED rather than left as a silent null.
+  */
+  it("carries no guard and says why, on every ink slot", () => {
+    for (const key of ["ink:neck", "ink:upperArm@left", "ink:upperChest", "ink:sleeve"]) {
+      const definition = slotDefinition(key);
+      expect(definition, key).not.toBeNull();
+      expect(definition!.guardKind, key).toBeNull();
+      expect(definition!.question, key).not.toBeNull();
+      expect(definition!.noSpecimen, key).toContain("never cut for the library");
+    }
+  });
+
+  /*
+    HER OWN WORD FOR A SURFACE NOBODY MEASURED (shape (c)).
+
+    fable-1078: a reference-tattoo ask is never refused on placement. So an open
+    placement resolves, with its own noun as the question and a SECOND reason on
+    its `noSpecimen` — there is no measured region to cut from either.
+  */
+  it("takes an open placement, with the extra sentence a measured one does not get", () => {
+    const open = slotDefinition("ink:sleeve")!;
+    expect(open.question).toBe("sleeve");
+    expect(open.noun).toBe("sleeve tattoo");
+    expect(open.noSpecimen).toContain("names no surface the vocabulary has measured");
+    /* And a measured one must NOT carry that sentence — the negative control
+       kept after the positive passes, or the two reasons collapse into one. */
+    expect(slotDefinition("ink:neck")!.noSpecimen)
+      .not.toContain("names no surface the vocabulary has measured");
+  });
+
+  it("refuses a placement the slot grammar itself would refuse", () => {
+    /* The shape rule is asked of `parseSlot` rather than restated, so a spaced
+       phrase cannot resolve here and be refused downstream AFTER a paid
+       render — the gap the open lane's kebab note records paying for. */
+    expect(slotDefinition("ink:left forearm")).toBeNull();
+  });
+
+  /*
+    AND IT IS NOT IN THE SCAN'S ENUMERATION, which is what makes the `question`
+    above honest about being inert today.
+
+    `catalogueSlots()` is the closed catalogue, and the face scan pays real
+    money per region it enumerates. An ink slot appearing there would buy a
+    segmenter read of an upper arm on every face panel opened.
+  */
+  it("is absent from the closed catalogue's own list", () => {
+    expect(catalogueSlots().some((one) => one.slot.startsWith("ink:"))).toBe(false);
   });
 });

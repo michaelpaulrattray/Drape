@@ -71,7 +71,8 @@ import {
   type ResolvedPlacement,
 } from "./inkPlacementResolve";
 import { sidesForInkPlacement, type InkSide } from "../../shared/inkReleasedPlacements";
-import { inkPlacementEntry } from "../../shared/inkPlacementVocabulary";
+import { inkPlacementBareNoun } from "../../shared/inkPlacementVocabulary";
+import type { CastPronouns } from "./castPronouns";
 import { namesDesign } from "./inkPlacement";
 import { itemsOf, type RefineDelta } from "./refineDelta";
 
@@ -302,13 +303,13 @@ function placeIn(take: InkReferenceTake): string | null {
     take.side === "left" || take.side === "right" ? `her ${take.side} ${noun}` : `her ${noun}`
   );
   switch (take.placement.kind) {
-    case "measured": {
-      const entry = inkPlacementEntry(take.placement.placement);
-      /* The entry's own noun already reads "her neck" / "her upper arm", so a
-         sided phrase is built from the bare word rather than by editing a
-         sentence somebody else composed. */
-      return sided(entry.noun.replace(/^her\s+/i, ""));
-    }
+    case "measured":
+      /* Through the vocabulary's own owner: the entry's noun reads "her neck"
+         already, and a sided phrase needs the bare word rather than a sentence
+         somebody else composed with a possessive on the front. The slot
+         catalogue's display noun wants the identical string, and two hands
+         stripping the same prefix is the parallel copy law 4 refuses. */
+      return sided(inkPlacementBareNoun(take.placement.placement));
     case "open":
       return sided(take.placement.phrase);
     case "absent":
@@ -319,4 +320,49 @@ function placeIn(take: InkReferenceTake): string | null {
       throw new Error(`unhandled placement resolution: ${JSON.stringify(unhandled)}`);
     }
   }
+}
+
+/* ------------------------------------------------------------------ *
+ * WHAT THE PICTURE MAY GIVE HER — the sentence that rides with it     *
+ * ------------------------------------------------------------------ */
+
+/**
+ * WHAT A DESIGN REFERENCE IS ALLOWED TO GIVE HER (the hair road's discipline,
+ * transplanted — shape (e), countersigned fable-1137 §2).
+ *
+ * `RecipeSource.scope` is required for a reason this road inherits rather than
+ * re-learns: a crop cannot scope itself. A picture of a haircut is a picture of
+ * a haircut in SOME colour whether anybody asked for the colour or not, and the
+ * words are the only scoping instrument there is — the founder's fable-1048
+ * amendment lives or dies on the sentence being written.
+ *
+ * # What ink's version has to hold off, and it is not a colour
+ *
+ * A design reference's hazard is the SURFACE UNDER IT. Even after the cutter,
+ * an artwork carries the tone and grain of the skin it was photographed on at
+ * its own edges, and a `rideWhole` design was never cut at all. So the sentence
+ * claims the artwork and disclaims her body: skin, skin tone, and the light
+ * falling on it stay hers, which is the difference between putting a design on
+ * a person and pasting a stranger's arm onto her.
+ *
+ * # It says WHAT, and deliberately not WHERE
+ *
+ * The place and the side are the ask clause's job, and the side has one owner
+ * already — `sidePhrasing.imageHalfClause`, reached through the slot's own
+ * `instance` in `recipeAssembler`'s `whereItIs`. A second speller of "which
+ * side as you look at it" is the drift that phrase exists to prevent, so this
+ * sentence does not name a side at all.
+ *
+ * # "keep her own", never "keep hers"
+ *
+ * The hair sentence's own hard-won wording, and the reason transfers verbatim:
+ * `CastPronouns` has no independent possessive (his · hers · theirs), so the
+ * clause is worded to need only the one it has. *Keep his own*, *keep her own*
+ * and *keep their own* are all English; *keep theirs* would have forced a
+ * fourth word into that type for one sentence's sake.
+ */
+export function inkTakeSentence(pronouns: CastPronouns): string {
+  return "Take the tattoo design from the reference: the artwork itself — its shapes, its lines "
+    + "and its colours. Do not take skin, skin tone, body shape, pose or lighting from the "
+    + `reference — keep ${pronouns.possessive} own.`;
 }

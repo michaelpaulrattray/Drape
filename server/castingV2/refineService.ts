@@ -203,7 +203,7 @@ import { assembleRecipe, type FeatureSlot } from "./recipeAssembler";
 import {
   facetsOfSlot, slotDefinition, slotsForFacet, slotsForFeature, type SlotDefinition,
 } from "./referenceSlotCatalogue";
-import { isOpenSlot, openKindCarriedByCrops, openSlotKey } from "./referenceSlots";
+import { isInkSlot, isOpenSlot, openKindCarriedByCrops, openSlotKey } from "./referenceSlots";
 import { openLaneOutcomeOf } from "./openLaneAccept";
 import { openKindPresenceBindsToday } from "./openKindPolicy";
 import { readOpenKinds } from "./openLaneKind";
@@ -763,12 +763,12 @@ function defaultRegionReader(): RegionReader {
 }
 
 /**
- * AN OPEN KIND NEVER DEPARTS THROUGH THE VACATE PATH (fable-775 §2).
+ * AN UNCATALOGUED SLOT NEVER DEPARTS THROUGH THE VACATE PATH (fable-775 §2).
  *
  * `openKindDeparture()` is `dropTheCarry` — an open kind is absent from the
  * master, so ceasing to carry it is ceasing to paint it. No vacancy row, no
  * absence phrase about a thing her master never had. The vacate loop is the
- * closed lane's machinery, and an open key reaching it is a defect rather than
+ * closed lane's machinery, and such a key reaching it is a defect rather than
  * a path, which is why this is loud rather than a refusal: nothing a customer
  * can type should be able to produce it.
  *
@@ -781,15 +781,31 @@ function defaultRegionReader(): RegionReader {
  * reads as *still there* and the removal is disputed on a floor nobody
  * measured — the unowned-axis class one layer below where it was looked for.
  *
+ * # AND IT IS TWO NAMESPACES NOW, WHICH IS WHY IT IS NAMED FOR THE CLASS
+ *
+ * `ink:` arrived with the same two properties and neither of them by
+ * coincidence: a design is an ADDITION the master never held, and its slot
+ * carries `guardKind: null` because ink is never cut for the library
+ * (fable-1137 §3). So the zero-floor sentence above is true of it word for
+ * word. Written into this guard on the commit that MINTED the namespace rather
+ * than left for the sitting that first reaches the vacate path — working law 7,
+ * whose second half is that a control keeps its reach only if somebody asks
+ * what was bolted to a road when the road moves.
+ *
  * Exported so it can be driven DIRECTLY rather than through a paid render
  * (working law 3). A guard whose only test runs the whole repaint path is a
  * guard proved by a path that usually behaves, and this is precisely the
  * refusal a suite would otherwise "prove" by never triggering it.
  */
-export function assertNotAnOpenDeparture(slot: FeatureSlot): void {
+export function assertNotAnUncataloguedDeparture(slot: FeatureSlot): void {
   if (isOpenSlot(slot)) {
     throw new Error(
       `${slot} is an open kind and departs by dropping its carry — it must never reach the vacate path`,
+    );
+  }
+  if (isInkSlot(slot)) {
+    throw new Error(
+      `${slot} is an ink design and departs by dropping its carry — it must never reach the vacate path`,
     );
   }
 }
@@ -1056,6 +1072,28 @@ async function refineCandidateCounted(
     have decided they are not, either.
   */
   if (input.scope !== undefined && isOpenSlot(input.scope)) {
+    throw refusal("scope_unknown", {
+      code: "BAD_REQUEST",
+      message: "I don't know which part of her that is. Nothing was charged.",
+    });
+  }
+  /*
+    AND THE INK LANE DOES NOT EITHER — the same finding, the same sentence, one
+    namespace later (fable-1137 §2a).
+
+    `slotDefinition` resolves `ink:neck` since the catalogue chunk, for the same
+    reason it resolves an open key: so a design can be CARRIED. Scopability is a
+    different question and nobody has answered it — a scope is *this ask is
+    about one instance of a thing on the panel*, and a design has no panel row
+    to point at until the ink studio exists (fable-1138 §3). Without this line
+    the answer would be yes, arrived at by nobody, which is the unowned-axis
+    class coming through the back door a second time.
+
+    Restated in its own terms rather than left resting on the resolver below,
+    which has stopped answering the question it is being asked here — exactly
+    what the open branch above had to do when its key started resolving.
+  */
+  if (input.scope !== undefined && isInkSlot(input.scope)) {
     throw refusal("scope_unknown", {
       code: "BAD_REQUEST",
       message: "I don't know which part of her that is. Nothing was charged.",
@@ -5848,7 +5886,7 @@ async function refineCandidateCounted(
     if (vacatedSlots.length > 0) {
       const reader = dependencies.regions ?? defaultRegionReader();
       for (const slot of vacatedSlots) {
-        assertNotAnOpenDeparture(slot);
+        assertNotAnUncataloguedDeparture(slot);
         const definition = slotDefinition(slot);
         if (definition?.question == null) {
           /* A slot with no question cannot be confirmed either way, and an

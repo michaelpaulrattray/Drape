@@ -202,6 +202,30 @@ export function inkPlacementEntry(key: InkPlacement): InkPlacementEntry {
 }
 
 /**
+ * THE SURFACE'S WORD WITH THE POSSESSIVE OFF — `neck`, `upper arm`.
+ *
+ * {@link InkPlacementEntry.noun} is copy and carries its possessive already
+ * (*"her neck"*), which is right where it is read whole and wrong everywhere a
+ * side or a determiner has to go in front of it — *"her her left upper arm"* is
+ * what a naive join produces.
+ *
+ * **It is not {@link InkPlacementEntry.readerWord}, and the difference is the
+ * reason this exists rather than being one field used twice.** Today the two
+ * strings are identical for all three placements, which is exactly how a
+ * conflation survives review: `readerWord` is a MEASURED segmenter word and
+ * moves when a better one is measured, while this is what a person is shown.
+ * The day a reading finds a different word cuts the neck better, the copy must
+ * not follow it.
+ *
+ * Derived off the copy rather than restated beside it, so a re-worded noun
+ * cannot leave a second spelling behind (working law 4). The two callers are
+ * the slot catalogue's display noun and the take's spoken-back place.
+ */
+export function inkPlacementBareNoun(key: InkPlacement): string {
+  return ENTRIES[key].noun.replace(/^her\s+/i, "");
+}
+
+/**
  * Whether an ask about this surface can be served on this framing at all.
  *
  * Three answers rather than two, because the two ways a surface can be missing

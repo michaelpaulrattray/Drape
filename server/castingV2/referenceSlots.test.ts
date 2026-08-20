@@ -9,7 +9,20 @@
  */
 import { describe, expect, it } from "vitest";
 
-import { isFeatureSlot, pairHasDiverged, parseSlot, presentPair, slotKey } from "./referenceSlots";
+import {
+  INK_SLOT_PREFIX,
+  inkPlacementOfSlot,
+  inkSideSlotKey,
+  inkSlotKey,
+  isFeatureSlot,
+  isInkSlot,
+  isOpenSlot,
+  openSlotKey,
+  pairHasDiverged,
+  parseSlot,
+  presentPair,
+  slotKey,
+} from "./referenceSlots";
 
 describe("a library key is a feature slot, and a ledger key is not one", () => {
   it("parses the slots the panel actually has", () => {
@@ -89,5 +102,81 @@ describe("divergence is derived from the instances, never held beside them", () 
       right: { words: ["a gold hoop"], carryDigest: "bbbb" },
     };
     expect(pairHasDiverged(matched)).toBe(false);
+  });
+});
+
+/*
+  THE INK NAMESPACE — a second lane on the same `:` separator, and the tests
+  that matter are the ones that would fail if the two lanes could be confused
+  for each other or for the closed grammar.
+*/
+describe("the ink lane's keys", () => {
+  it("composes rather than concatenates — no call site spells the prefix", () => {
+    expect(inkSlotKey("neck")).toBe("ink:neck");
+    expect(inkSideSlotKey("upperArm", "left")).toBe("ink:upperArm@left");
+    /* The composition is literally the two owners in order, which is what
+       stops a hand-written key from drifting from the parser. */
+    expect(inkSideSlotKey("upperArm", "right")).toBe(slotKey(inkSlotKey("upperArm"), "right"));
+    expect(inkSlotKey("neck").startsWith(INK_SLOT_PREFIX)).toBe(true);
+  });
+
+  it("round-trips the placement and the side", () => {
+    expect(inkPlacementOfSlot("ink:neck")).toEqual({ placement: "neck", side: null });
+    expect(inkPlacementOfSlot("ink:upperArm@left"))
+      .toEqual({ placement: "upperArm", side: "left" });
+    expect(inkPlacementOfSlot("ink:upperArm@right"))
+      .toEqual({ placement: "upperArm", side: "right" });
+    /* Her own word for a surface nobody measured parses the same way — the
+       grammar is about the KEY, and the vocabulary is asked one layer along. */
+    expect(inkPlacementOfSlot("ink:sleeve")).toEqual({ placement: "sleeve", side: null });
+  });
+
+  it("refuses a suffix outside the closed two-member instance list", () => {
+    /* The one rule the whole grammar rests on. If `centre` ever parsed here,
+       `earring@centre` would parse too and the closed grammar is breached in
+       the place the separator argument exists to protect. */
+    expect(inkPlacementOfSlot("ink:upperArm@centre")).toBeNull();
+    expect(inkPlacementOfSlot("ink:upperArm@both")).toBeNull();
+  });
+
+  it("answers null for anything outside the namespace", () => {
+    expect(inkPlacementOfSlot("neck")).toBeNull();
+    expect(inkPlacementOfSlot("open:horns")).toBeNull();
+    expect(inkPlacementOfSlot("hair")).toBeNull();
+  });
+
+  /*
+    THE TWO LANES CANNOT BE CONFUSED, and this is the arm that would catch it.
+
+    Both ride `:` and both are recognised before `parseSlot`. If either
+    predicate ever answered for the other's key, an ink design would resolve as
+    an open kind — which mints into the library, which is the one thing
+    fable-1137 §3 forbids.
+  */
+  it("is disjoint from the open lane, both ways", () => {
+    expect(isInkSlot("ink:neck")).toBe(true);
+    expect(isOpenSlot("ink:neck")).toBe(false);
+    expect(isInkSlot(openSlotKey("horns"))).toBe(false);
+    expect(isOpenSlot(openSlotKey("horns"))).toBe(true);
+    /* And neither claims a closed key. */
+    expect(isInkSlot("hair")).toBe(false);
+    expect(isOpenSlot("hair")).toBe(false);
+  });
+
+  /*
+    AND THE CLOSED GRAMMAR STILL READS AN INK KEY AS A PLAIN FEATURE, which is
+    the fact the library door had to be told about.
+
+    It is asserted here rather than assumed, because it is the reason
+    `slotNeverEntersTheLibrary` needs a line of its own: `parseSlot` does NOT
+    refuse `ink:neck`, so a door that only asked the grammar would admit it.
+    If this ever starts returning null, that door has a second, silent reason
+    and the sabotage that proves it would stop proving anything.
+  */
+  it("is NOT refused by the closed grammar — which is why the door is explicit", () => {
+    expect(parseSlot("ink:neck")).toEqual({ feature: "ink:neck" });
+    expect(isFeatureSlot("ink:neck")).toBe(true);
+    /* A spaced placement is the one shape the grammar does refuse. */
+    expect(parseSlot("ink:left forearm")).toBeNull();
   });
 });

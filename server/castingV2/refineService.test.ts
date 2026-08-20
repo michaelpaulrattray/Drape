@@ -491,7 +491,7 @@ vi.mock("./signEngine", () => ({
 }));
 
 const {
-  assertNotAnOpenDeparture, asksToRemoveHerHair, readAskScope, refineCandidate,
+  assertNotAnUncataloguedDeparture, asksToRemoveHerHair, readAskScope, refineCandidate,
 } = await import("./refineService");
 /* The door itself, so the pair-vacancy rows below are checked against the rule
    that used to refuse them rather than against a copy of it. */
@@ -8144,17 +8144,34 @@ describe("two read-backs on one render, and whether they wait for each other", (
   that threw on everything would pass the first arm and take the removal road
   down with it.
 */
-describe("an open kind never departs through the vacate path", () => {
+describe("an uncatalogued slot never departs through the vacate path", () => {
   it("throws on an open key, loudly, before the paid reading", () => {
-    expect(() => assertNotAnOpenDeparture("open:horns" as never))
+    expect(() => assertNotAnUncataloguedDeparture("open:horns" as never))
       .toThrow(/must never reach the vacate path/);
-    expect(() => assertNotAnOpenDeparture("open:cat-ears" as never))
+    expect(() => assertNotAnUncataloguedDeparture("open:cat-ears" as never))
+      .toThrow(/must never reach the vacate path/);
+  });
+
+  /*
+    AND ON AN INK KEY, for the same two reasons word for word: a design is an
+    addition the master never held, and its slot carries `guardKind: null`
+    because ink is never cut for the library — so `departureFloorFor` would hand
+    the vacate loop a floor of ZERO, at which any non-empty mask reads as still
+    there and the removal is disputed on a number nobody measured.
+
+    Written on the commit that MINTED the namespace rather than left for the
+    sitting that first reaches this path, which is working law 7's second half.
+  */
+  it("throws on an ink key, for the identical zero-floor reason", () => {
+    expect(() => assertNotAnUncataloguedDeparture("ink:neck" as never))
+      .toThrow(/must never reach the vacate path/);
+    expect(() => assertNotAnUncataloguedDeparture("ink:upperArm@left" as never))
       .toThrow(/must never reach the vacate path/);
   });
 
   it("lets every slot the loop is FOR through untouched", () => {
     for (const slot of ["glasses", "earring@left", "earring@right", "hair"]) {
-      expect(() => assertNotAnOpenDeparture(slot as never), slot).not.toThrow();
+      expect(() => assertNotAnUncataloguedDeparture(slot as never), slot).not.toThrow();
     }
   });
 });
@@ -8170,6 +8187,42 @@ describe("an open kind is never scopable — the door, at the wire", () => {
         interpret: async () => ({ ok: true as const, delta: { eyeColour: "green" as const } }),
       } as never,
       { ...input, instruction: "make them longer", scope: "open:horns" as never },
+    )).rejects.toThrow(/which part of her/);
+  });
+});
+
+/*
+  AND THE INK LANE IS NOT SCOPABLE EITHER — the same finding, one namespace on.
+
+  The first assertion is the one that makes the second mean anything: the
+  catalogue RESOLVES `ink:neck` now, so the door written as *the catalogue
+  cannot name it* has stopped answering the question it is being asked. Without
+  its own line a design would become scopable through a resolver change nobody
+  read as a decision about scoping — the unowned-axis class through the back
+  door, which is exactly how the open lane got here.
+
+  Driven at the WIRE rather than on the predicate: the contract is about what
+  `refineCandidate` does with a customer's field, and a helper answering
+  correctly beside a door that never calls it is the shape this campaign has
+  already paid for.
+*/
+describe("an ink design is never scopable — the door, at the wire", () => {
+  it("resolves the ink key AND still refuses it as a scope", async () => {
+    expect(
+      slotDefinition("ink:neck" as never),
+      "the ink branch does not exist yet — this arm is the build's definition of done",
+    ).not.toBeNull();
+
+    await expect(refineCandidate({ harvest: unmasked,
+        interpret: async () => ({ ok: true as const, delta: { eyeColour: "green" as const } }),
+      } as never,
+      { ...input, instruction: "make it bigger", scope: "ink:neck" as never },
+    )).rejects.toThrow(/which part of her/);
+
+    await expect(refineCandidate({ harvest: unmasked,
+        interpret: async () => ({ ok: true as const, delta: { eyeColour: "green" as const } }),
+      } as never,
+      { ...input, instruction: "make it bigger", scope: "ink:upperArm@left" as never },
     )).rejects.toThrow(/which part of her/);
   });
 });

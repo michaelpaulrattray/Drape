@@ -13,9 +13,11 @@ import type { TextEngine } from "../providers/types";
 import {
   inkReferenceNote,
   namesInkFromReference,
+  inkTakeSentence,
   readInkReferenceTake,
   resolveInkReferenceTake,
 } from "./inkReferenceTake";
+import { pronounsForSex } from "./castPronouns";
 import { readDelta } from "./refineDelta";
 
 /** A transport that says exactly this, once. */
@@ -224,5 +226,59 @@ describe("what she is told", () => {
       /* And never the sentence the old wall says to somebody holding one. */
       expect(said).not.toContain("needs a design document");
     }
+  });
+});
+
+/*
+  WHAT THE PICTURE MAY GIVE HER — shape (e), the hair road's discipline moved
+  onto a design.
+
+  `RecipeSource.scope` is required because a crop cannot scope itself: a picture
+  of a haircut is a picture of a haircut in SOME colour whether anybody asked or
+  not, and the words are the only scoping instrument there is. Ink's hazard is
+  not a colour, it is THE SURFACE UNDER THE ARTWORK — even after the cutter, a
+  design carries the tone and grain of the skin it was photographed on at its
+  own edges, and a `rideWhole` design was never cut at all.
+*/
+describe("the sentence that rides with a design", () => {
+  const SHE = pronounsForSex("female");
+
+  it("claims the artwork and names what of it is claimed", () => {
+    const said = inkTakeSentence(SHE);
+    expect(said).toContain("Take the tattoo design from the reference");
+    expect(said).toContain("its shapes, its lines and its colours");
+  });
+
+  it("disclaims her body — the failing case this sentence exists for", () => {
+    const said = inkTakeSentence(SHE);
+    for (const held of ["skin", "skin tone", "body shape", "pose", "lighting"]) {
+      expect(said, held).toContain(held);
+    }
+    expect(said).toContain("Do not take");
+  });
+
+  it("says KEEP HER OWN, never keep hers", () => {
+    /*
+      The hair sentence's own hard-won wording, and the reason transfers word
+      for word: `CastPronouns` has no independent possessive (his · hers ·
+      theirs), so the clause is worded to need only the one it has. *Keep
+      theirs* would have forced a fourth word into that type for one sentence.
+    */
+    expect(inkTakeSentence(SHE)).toContain("keep her own");
+    expect(inkTakeSentence(pronounsForSex("male"))).toContain("keep his own");
+    for (const sex of ["female", "male"] as const) {
+      expect(inkTakeSentence(pronounsForSex(sex)), sex).not.toContain("keep hers");
+      expect(inkTakeSentence(pronounsForSex(sex)), sex).not.toContain("keep theirs");
+    }
+  });
+
+  it("does not name a side, because that phrase already has an owner", () => {
+    /* `sidePhrasing.imageHalfClause` writes the picture half, reached through
+       the slot's own instance in the assembler. A second speller here is the
+       drift the phrase exists to prevent — and what would drift is the
+       difference between her left and the picture's left. */
+    const said = inkTakeSentence(SHE);
+    expect(said).not.toMatch(/\bleft\b|\bright\b/);
+    expect(said).not.toContain("as you look at it");
   });
 });

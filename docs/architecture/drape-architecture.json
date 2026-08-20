@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "75c76f6581b4fcad"
+    "sourceFingerprint": "dbdab0b67d466efb"
   },
   "domains": [
     {
@@ -20404,6 +20404,11 @@
     },
     {
       "from": "module:server/castingV2/inkReferenceTake.ts",
+      "to": "module:server/castingV2/castPronouns.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/inkReferenceTake.ts",
       "to": "module:server/castingV2/inkPlacement.ts",
       "kind": "imports"
     },
@@ -21153,6 +21158,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/castingV2/recipeAssembler.ts",
+      "to": "module:shared/inkCutRoute.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/castingV2/referenceAttachDoor.ts",
       "to": "module:server/castingV2/inkUploadDoor.ts",
       "kind": "imports"
@@ -21380,6 +21390,11 @@
     {
       "from": "module:server/castingV2/referenceSlotCatalogue.ts",
       "to": "module:server/castingV2/refineFacets.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/referenceSlotCatalogue.ts",
+      "to": "module:shared/inkPlacementVocabulary.ts",
       "kind": "imports"
     },
     {

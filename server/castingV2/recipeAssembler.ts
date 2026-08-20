@@ -86,6 +86,7 @@ import { slotDefinition } from "./referenceSlotCatalogue";
    there is no cycle to weigh here. */
 import { openKindOfSlot } from "./referenceSlots";
 import { imageHalfClause } from "./sidePhrasing";
+import type { InkCutRoute } from "../../shared/inkCutRoute";
 
 /** A library key is a PANEL SLOT — the stylist's ontology, never `facet@region`
  *  (fable-173). Bilateral features are stored per instance and spoken as pairs
@@ -331,10 +332,33 @@ export type AssembleInput = {
  */
 export type SourcePicture = "hairOnRedactedForm" | "inkDesignOnTransparency";
 
-export type RecipeSource = {
+/**
+ * WHAT KIND OF PICTURE THIS IS, AND WHAT THAT KIND OWES.
+ *
+ * A union rather than a flag, because the ink road carries an obligation the
+ * hair road does not have and OPTIONAL IS WHAT THE DEFECT LOOKS LIKE — the same
+ * lesson `scope` below is written from. A caller assembling an ink source must
+ * state what was done to the bytes before they were stored; there is no shape
+ * of this type in which it can forget, and forgetting is the failure that would
+ * send an unexamined photograph to an engine.
+ *
+ * `null` is a legal value and is REFUSED at assembly (`sourceNotExamined`).
+ * That is the distinction the type cannot make and the door can: the caller is
+ * forced to SAY which of the three it is, and saying "nobody looked" is
+ * answered with a refusal rather than a render.
+ */
+type SourceKind =
+  | { pictures: "hairOnRedactedForm" }
+  | {
+    pictures: "inkDesignOnTransparency";
+    /** What was done to these bytes before they were stored — the design row's
+     *  own column (migration 0047). `null` means nobody looked. */
+    cutRoute: InkCutRoute | null;
+  };
+
+export type RecipeSource = SourceKind & {
   slot: FeatureSlot;
   image: ReferenceImage;
-  pictures: SourcePicture;
   /**
    * WHAT THIS PICTURE IS ALLOWED TO GIVE HER — and it is REQUIRED, which is the
    * whole of the design (ruled fable-1108 §2).
@@ -470,7 +494,26 @@ export type RecipeRefusal = {
      * that silently discards what a customer attached is the confession class
      * D-181 exists to prevent — one layer too late to say anything about it.
      */
-    | "sourceNotAsked";
+    | "sourceNotAsked"
+    /**
+     * AN INK DESIGN WHOSE BYTES NOBODY HAS LOOKED AT (ruled fable-1137 §4).
+     *
+     * `cutRoute` has three answers and the third is the one this exists for:
+     * `cut` (the design was cut out of the picture she gave us), `rideWhole`
+     * (the cutter looked and the picture was already the design), and `null` —
+     * NOBODY LOOKED, because `CASTING_INK_CUT_SCOPE` was off for that account
+     * when the row was written.
+     *
+     * On this road unexamined means POSSIBLY A PHOTOGRAPH OF A PERSON, which is
+     * the exposure the cutter exists to close. Every row stored before that flag
+     * flips holds unexamined bytes, so the hole is not hypothetical — it is the
+     * exact set of rows the flag's off-period created, and a refine wire without
+     * this line would quietly re-open it for them.
+     *
+     * **Refused, never skipped.** A silent skip would paint the ask without the
+     * design and charge for it, which is the confession class one door along.
+     */
+    | "sourceNotExamined";
   /** Null for a refusal about something that has no slot by construction. */
   slot: FeatureSlot | null;
   detail: string;
@@ -779,6 +822,28 @@ export function assembleRecipe(input: AssembleInput): AssembleResult {
       return {
         ok: false, reason: "sourceNotAsked", slot: source.slot,
         detail: `a picture was attached for ${source.slot}, which this render says nothing about`,
+      };
+    }
+    /*
+      A DESIGN NOBODY HAS LOOKED AT NEVER RIDES TO A RENDER (fable-1137 §4).
+
+      Read off the design row's own `cutRoute`, which is the only thing that
+      knows: `null` is not "unset", it is the recorded fact that
+      `CASTING_INK_CUT_SCOPE` was off when those bytes were stored, so what sits
+      at `storageKey` is the picture the customer uploaded rather than the
+      design cut out of it — possibly a photograph of a person, which is the
+      exposure the cutter exists to close.
+
+      Here rather than at the wire that builds the source, because THIS is the
+      last door before an engine sees bytes and a control belongs at the point
+      it protects. It is stated in the assembler's own refusal vocabulary so the
+      caller answers it the way it answers every other malformed recipe: free,
+      named, and never a silent skip.
+    */
+    if (source.pictures === "inkDesignOnTransparency" && source.cutRoute === null) {
+      return {
+        ok: false, reason: "sourceNotExamined", slot: source.slot,
+        detail: `the design attached for ${source.slot} has not been through the cutter, so nobody has looked at what is in its picture; it needs its cut before it can ride to a render`,
       };
     }
   }

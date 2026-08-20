@@ -63,7 +63,7 @@ import {
 /* A dependency-free vocabulary module, imported for its PARSER: the whole
    difference between the library's key space and the ledger's is that
    `makeup@face skin` does not parse, and the place to catch that is the write. */
-import { parseSlot } from "../castingV2/referenceSlots";
+import { isInkSlot, parseSlot } from "../castingV2/referenceSlots";
 import { slotWordsRefusal } from "../castingV2/slotWordShape";
 /* The row shape and the live-rows rule both live next door, and this file
    imports them rather than restating them: a second copy of "which version is
@@ -119,6 +119,9 @@ export class ReferenceLibraryShapeError extends Error {
   constructor(
     readonly reason:
       | "slotNotAFeatureSlot"
+      /* The ink lane's fence, at the door it is a fence against — see
+         `assertReferenceRowShape`. */
+      | "slotNeverEntersTheLibrary"
       | "anchorWithoutImage"
       | "surfaceCarriesCrop"
       | "imageWithoutDigest"
@@ -355,6 +358,31 @@ export function assertReferenceRowShape(row: ReferenceRowToRecord): void {
     throw new ReferenceLibraryShapeError(
       "slotNotAFeatureSlot",
       `"${row.slot}" is not a panel slot; the library's keys are features (\`lips\`, \`eye@left\`), never the ledger's \`facet@region\``,
+    );
+  }
+  /*
+    INK NEVER WRITES THIS TABLE — the ruling made STRUCTURAL (fable-1137 §3).
+
+    Three grounds, and the first is working law 4: the design already has a
+    durable, digest-verified, purge-pathed home at
+    `casting_ink_designs.storageKey`, so a library copy is a second list
+    shadowing a source of truth — and the thing that would drift is bytes of a
+    customer's design. The second is the founder's own answer to *"does the new
+    crop come from the generated image or is it still the supplied reference
+    image?"* — the supplied one, every time, including regenerate; a library
+    mint harvests from a DELIVERED frame, which is the road he closed. The third
+    is one purge story instead of two.
+
+    **It needs a line of its own, because the rule above does not catch it.**
+    `parseSlot("ink:neck")` returns a feature called `ink:neck` — the key holds
+    no space and no `@`, so the closed grammar accepts it exactly as it accepts
+    `open:wings`, which DOES belong here. A ruling with no door is a control
+    that does not exist (invariant 7), and this is the door.
+  */
+  if (isInkSlot(row.slot)) {
+    throw new ReferenceLibraryShapeError(
+      "slotNeverEntersTheLibrary",
+      `"${row.slot}" is an ink design and the library never holds one; a design's bytes live on its own row under the candidate's purge path, and the recipe reads them there on every assembly`,
     );
   }
   if (row.role === "anchor" && !row.image) {

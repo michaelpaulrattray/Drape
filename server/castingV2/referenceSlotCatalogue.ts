@@ -83,6 +83,11 @@
  */
 import { LANDMARK_OF_ACCESSORY } from "./accessoryKinds";
 import { facetTableOf } from "./facetCards";
+import {
+  inkPlacementBareNoun,
+  inkPlacementEntry,
+  isInkPlacement,
+} from "../../shared/inkPlacementVocabulary";
 import { regionNameOf } from "./maskedRefine";
 import type { FeatureSlot, FeatureTier } from "./recipeAssembler";
 import type { SlotSpec } from "./referenceMint";
@@ -91,6 +96,9 @@ import {
   parseSlot,
   slotKey,
   INSTANCES,
+  inkPlacementOfSlot,
+  inkSlotKey,
+  isInkSlot,
   isOpenSlot,
   OPEN_SLOT_PREFIX,
   openKindOfSlot,
@@ -1216,6 +1224,175 @@ function openSlotDefinition(slot: FeatureSlot): SlotDefinition | null {
 }
 
 /**
+ * WHY NO INK SLOT HAS A COMPLETENESS GUARD — recorded, never left null.
+ *
+ * The catalogue's invariant is that `guardKind` is null exactly when `question`
+ * is, stated over the CLOSED catalogue. An ink slot has a question — the
+ * placement's measured reader word — and no specimen family, which breaks the
+ * biconditional the same way an open kind does and for a REASON OF ITS OWN.
+ *
+ * **The ground is not "nobody has measured it yet". It is that there is nothing
+ * here to measure** (ruled fable-1137 §3): a completeness family judges a CROP
+ * WE CUT against specimens of that kind, and ink is never cut for the library.
+ * The design's pixels are the customer's own, already sitting at
+ * `casting_ink_designs.storageKey` with a digest, and the recipe reads them
+ * there on every assembly. A `guardKind` naming a family nothing will ever
+ * consult would be a field declared inert on the day it was written — and the
+ * one thing worse than an unmeasured guard is a guard that reads as measured.
+ *
+ * An open placement has a SECOND reason on top of this one and it is the open
+ * lane's: her own word for a surface names no region anybody has measured, so
+ * there is no region to cut from even if this road ever cut.
+ */
+function inkNoSpecimenReason(placement: string, measured: boolean): string {
+  const second = measured
+    ? ""
+    : ` — and "${placement}" names no surface the vocabulary has measured, so there is no `
+      + "region to cut from either";
+  return "an ink slot is never cut for the library (fable-1137 §3): the design's own bytes are "
+    + "the carrier, read from the design row at assembly time, so no crop of ours exists for a "
+    + `completeness family to judge${second}`;
+}
+
+/**
+ * WHAT A TATTOO AT A PLACE IS, IN THE CATALOGUE'S OWN RECORD SHAPE.
+ *
+ * The shape is not invented here — the `ink` facet card specified it in a
+ * `notASlot` reason written as a fence: *"ink is per placement and its question
+ * comes from the placement rather than from a region table"*, and *"inventing a
+ * `tattoo` question here would ask a segmenter an open question (D-213)"*. So
+ * there is a slot per PLACEMENT, its question is the placement's own MEASURED
+ * word, and no new word is asked of any model.
+ *
+ * `null` for a key this lane could not have minted, exactly like every other
+ * key the catalogue has never heard of.
+ */
+function inkSlotDefinition(slot: FeatureSlot): SlotDefinition | null {
+  const parsed = inkPlacementOfSlot(slot);
+  if (parsed === null) return null;
+  const placement = parsed.placement;
+  /*
+    THE TOKEN'S SHAPE RULE IS THE SLOT GRAMMAR'S, ASKED OF THE GRAMMAR ITSELF.
+
+    A placement phrase may be the customer's own word (fable-1078: a
+    reference-tattoo ask is never refused on placement), and her word can hold a
+    space — `parseSlot` refuses one, so a spaced key would resolve here and be
+    refused downstream by a grammar this branch had quietly disagreed with. The
+    open lane paid for that exact gap once (`openKindPolicy`'s kebab note:
+    resolved here, refused at the library door, AFTER the render was paid for).
+
+    So the rule is not restated — the grammar's own parser is asked whether the
+    composed key survives it. One owner, and the day `parseSlot` changes this
+    branch changes with it.
+  */
+  if (placement === "" || parseSlot(inkSlotKey(placement)) === null) return null;
+  const measured = isInkPlacement(placement);
+  const entry = measured ? inkPlacementEntry(placement) : null;
+  /*
+    THE SIDE IS THE VOCABULARY'S ANSWER, never this branch's.
+
+    `upperArm` is `perSide` and the other two are `one`, so a sided key for a
+    one-of-it surface and a sideless key for a paired one are both refused —
+    the same two rejections the closed catalogue makes on `entry.instances.of`,
+    read off the placement table instead of a second copy of it.
+
+    An OPEN placement is exempt in both directions and that is honest rather
+    than lax: nobody has measured whether her word names one surface or a pair,
+    and refusing the sideless key would turn an unmeasured question into a
+    refusal, while refusing the sided one would drop a side she stated out loud.
+  */
+  if (entry !== null) {
+    if (entry.sides === "perSide" && parsed.side === null) return null;
+    if (entry.sides === "one" && parsed.side !== null) return null;
+  }
+  /* The surface in ordinary words, from the vocabulary's copy for a measured
+     one and from her own phrase for an open one. `left upper arm tattoo` — the
+     bare, plain form every other slot's noun takes. */
+  const surface = entry === null ? placement : inkPlacementBareNoun(entry.key);
+  const noun = `${parsed.side === null ? "" : `${parsed.side} `}${surface} tattoo`;
+  return {
+    slot,
+    /* The placement token, the way an open kind's feature half is its own
+       token: the prefix is the namespace and the feature is what is in it. */
+    feature: placement,
+    instance: parsed.side,
+    /*
+      A tattoo is INTRODUCED AND WORN, which is the tier's own first example —
+      *"an earring, a tattoo, her own glasses"*. It is not anatomy: she did not
+      arrive with it, the master does not hold it, and it arrives through an
+      edit carrying its own picture.
+    */
+    tier: "item",
+    /* Where on her it is, in the panel's four words. `neck` and `upperChest`
+       sit on the torso group's half of the body rather than the face chart's;
+       an open placement has no measured region and takes the same answer,
+       which is inert either way while the row below is `none`. */
+    group: "body",
+    /*
+      NO ROW, AND THE ROOM IS THE REASON RATHER THAN THE FEATURE.
+
+      The panel this catalogue draws is the FACE chart, and a tattoo on an upper
+      arm is not a face feature. The surface a customer sees her designs on is
+      the ink studio, which is owed and unbuilt (fable-1138 §3) — so drawing a
+      row here would put a tattoo in the wrong room to avoid saying it has none.
+    */
+    panel: {
+      row: "none",
+      why: `a design belongs in the ink studio rather than the face chart, and that surface is `
+        + `owed — ${noun} is askable and carried, and it earns its row when the room exists`,
+    },
+    noun,
+    /*
+      THE PLACEMENT'S OWN MEASURED WORD, and NO NEW ONE (D-213, and the facet
+      card's own caution).
+
+      `neck`, `upper arm`, `upper chest` were bought on sixteen production
+      masters (`V3B_PLACEMENT_VOCABULARY_READING.md`) — the reading where
+      `collarbone`, `clavicle` and `decolletage` returned nothing on skin that
+      was plainly bare while `upper chest` found it exactly. It is derived off
+      the entry rather than retyped, so the day a better word is measured this
+      follows it.
+
+      An open placement asks her own word, which is the open lane's precedent
+      and its declared limit: engine-facing, and whether it reads worse than a
+      measured one is a MEASUREMENT nobody has taken for a surface nobody has
+      catalogued.
+
+      **DECLARED INERT TODAY.** Nothing asks it: ink never mints, so no cut is
+      ever scoped by this word, and `catalogueSlots()` — the scan's enumeration
+      — holds the closed catalogue only. It is written because the day a render
+      has to be VERIFIED at the place it painted, this line is what gets read,
+      and the alternative is inventing the word in that sitting.
+    */
+    question: entry === null ? placement : entry.readerWord,
+    /* And the field where the closed invariant cannot hold. See
+       `inkNoSpecimenReason` — the ground is that nothing of ours is cut. */
+    guardKind: null,
+    /*
+      `ownSide` for a sided key for the same reason `earring@left` has it: asked
+      of the whole frame, a two-sided question comes back as the union of both
+      sides. Inert while nothing asks — declared, not assumed.
+    */
+    frame: parsed.side === null ? "wholeFrame" : "ownSide",
+    /* Inert with the two above: a slot that never mints never re-mints. The
+       default is the one every slot should keep. */
+    remint: "whenEarned",
+    display: null,
+    /*
+      NO `pairNoun`, AND ITS ABSENCE IS A STATEMENT.
+
+      A matched pair is the earring's premise — one thing worn in twos, spoken
+      about as one row while it matches. Two designs on two arms are two
+      designs: they are separate uploads, separate rows, separate bytes, and a
+      customer who put different artwork on each arm has not got a diverged
+      pair, she has got two tattoos. Supplying a pair noun would invite the
+      panel to say *"her upper arm tattoos"* about them.
+    */
+    noSpecimen: inkNoSpecimenReason(placement, measured),
+  };
+}
+
+/**
  * What this slot is — or `null` when the catalogue has never heard of it.
  *
  * Null rather than a default: a slot nobody catalogued is a feature nobody
@@ -1233,6 +1410,16 @@ export function slotDefinition(slot: FeatureSlot): SlotDefinition | null {
     ever be entered by a key carrying the prefix.
   */
   if (isOpenSlot(slot)) return openSlotDefinition(slot);
+  /*
+    THE SECOND DYNAMIC BRANCH, CONFINED THE SAME WAY (ruled fable-1137 §2a).
+
+    Before `parseSlot` for the identical reason the open branch is: `ink:neck`
+    holds no space, so the closed grammar would parse it as a FEATURE called
+    `ink:neck` and hand it to `entryOf`, which has never heard of it — null, by
+    accident rather than by decision. Recognising the namespace here is what
+    makes the ink lane's answer a decision.
+  */
+  if (isInkSlot(slot)) return inkSlotDefinition(slot);
 
   const parsed = parseSlot(slot);
   if (parsed === null) return null;

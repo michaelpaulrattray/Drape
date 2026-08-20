@@ -107,6 +107,43 @@ describe("the keys the library will hold", () => {
        is one edit away from being admitted too. */
     expect(reasonOf(crop({ slot: "open:cat ears" }))).toBe("slotNotAFeatureSlot");
   });
+
+  /*
+    INK NEVER ENTERS THIS TABLE — fable-1137 §3 as a DOOR rather than a ruling.
+
+    The arm above is the reason this one has to exist. `open:horns` is
+    `accepted` because `parseSlot` reads it as a feature with no space and no
+    `@` — and `ink:neck` has exactly the same shape, so the rule that catches a
+    ledger key is silent on precisely the key the ruling forbids. Without its
+    own line the answer would be `accepted`, arrived at by nobody.
+
+    The design's bytes have a durable home of their own with a digest and a
+    purge path; a copy here is the second list that drifts from a source of
+    truth, and what would drift is a customer's design.
+  */
+  it("refuses an ink design — the library never holds one", () => {
+    expect(reasonOf(crop({ slot: "ink:neck" }))).toBe("slotNeverEntersTheLibrary");
+    expect(reasonOf(crop({ slot: "ink:upperArm@left" }))).toBe("slotNeverEntersTheLibrary");
+    expect(reasonOf(crop({ slot: "ink:upperChest" }))).toBe("slotNeverEntersTheLibrary");
+    /* Her own word for a surface nobody measured is refused by the SAME rule,
+       not by falling through to the grammar one — the reason is the namespace,
+       never the vocabulary. */
+    expect(reasonOf(crop({ slot: "ink:sleeve" }))).toBe("slotNeverEntersTheLibrary");
+  });
+
+  it("says WHY, in a sentence naming the design's own home", () => {
+    /* The positive control on the arm above: a refusal whose detail said
+       nothing would be indistinguishable from the grammar refusing it by
+       accident, which is the outcome this door exists to replace. */
+    try {
+      assertReferenceRowShape(crop({ slot: "ink:neck" }));
+      expect.unreachable("an ink key must not pass the library door");
+    } catch (error) {
+      expect(error).toBeInstanceOf(ReferenceLibraryShapeError);
+      expect((error as Error).message).toContain("the library never holds one");
+      expect((error as Error).message).toContain("purge path");
+    }
+  });
 });
 
 describe("what a row of each role may hold", () => {

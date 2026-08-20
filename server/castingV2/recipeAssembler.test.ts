@@ -13,7 +13,8 @@
 import { describe, expect, it } from "vitest";
 
 import { pronounsForSex } from "./castPronouns";
-import { assembleRecipe, type LibraryEntry } from "./recipeAssembler";
+import { assembleRecipe, type LibraryEntry, type RecipeSource } from "./recipeAssembler";
+import { inkTakeSentence } from "./inkReferenceTake";
 
 const MASTER = { key: "casting-v2/candidates/master.png", sha: "16bb85180e9e" };
 const SHE = pronounsForSex("female");
@@ -1385,6 +1386,9 @@ describe("the fourth role — a picture the CUSTOMER supplied (fable-1096)", () 
         slot: "hair" as const,
         image: CARRIER,
         pictures: "inkDesignOnTransparency" as const,
+        /* The design was cut. `null` is a different answer and is refused one
+           door up — see the `sourceNotExamined` arms below. */
+        cutRoute: "cut" as const,
         scope: SCOPE,
       }],
     });
@@ -1412,17 +1416,18 @@ describe("the fourth role — a picture the CUSTOMER supplied (fable-1096)", () 
       still "describe honestly" and neither would be true — the grey-form
       clause on a transparent cutout is a lie about what is in the frame.
     */
-    const of = (pictures: "hairOnRedactedForm" | "inkDesignOnTransparency") => {
+    const of = (source: RecipeSource) => {
       const recipe = assembleRecipe({
         master: MASTER, pronouns: SHE, library: [],
         asks: [{ slot: "hair", noun: "hair", words: "a mid-length wavy cut" }],
-        sources: [{ slot: "hair" as const, image: CARRIER, pictures, scope: SCOPE }],
+        sources: [source],
       });
       expect(recipe.ok).toBe(true);
       return recipe.ok ? recipe.references[1]!.sentence : "";
     };
-    const hair = of("hairOnRedactedForm");
-    const ink = of("inkDesignOnTransparency");
+    const base = { slot: "hair" as const, image: CARRIER, scope: SCOPE };
+    const hair = of({ ...base, pictures: "hairOnRedactedForm" });
+    const ink = of({ ...base, pictures: "inkDesignOnTransparency", cutRoute: "cut" });
     expect(hair).not.toBe(ink);
     expect(hair).toContain("plain grey form");
     expect(ink).not.toContain("plain grey form");
@@ -1565,5 +1570,132 @@ describe("the fourth role — a picture the CUSTOMER supplied (fable-1096)", () 
     expect(recipe.references.map((one) => one.role.kind)).toEqual(["master", "source", "carry"]);
     expect(recipe.references[2]!.sentence).toContain("Reference 3");
     expect(recipe.carried).toEqual(["lips"]);
+  });
+});
+
+/*
+  A DESIGN NOBODY HAS LOOKED AT NEVER RIDES TO A RENDER (ruled fable-1137 §4).
+
+  `cutRoute` has three answers and the third is the one this exists for: `cut`,
+  `rideWhole`, and `null` — NOBODY LOOKED, because `CASTING_INK_CUT_SCOPE` was
+  off for that account when the row was written. On this road unexamined means
+  possibly a photograph of a person, which is the exposure the cutter exists to
+  close, and every row stored before the flag flips holds unexamined bytes.
+
+  So the hole is not hypothetical: it is the exact set of rows the flag's
+  off-period created, and `null` is every row's state today.
+*/
+describe("an ink design rides only after somebody has looked at it", () => {
+  const CARRIER = { key: "casting-v2/reference-carrier/ink.png", sha: "c0ffee" };
+  const SCOPE = inkTakeSentence(SHE);
+  const inkSource = (cutRoute: "cut" | "rideWhole" | null): RecipeSource => ({
+    slot: "hair",
+    image: CARRIER,
+    pictures: "inkDesignOnTransparency",
+    cutRoute,
+    scope: SCOPE,
+  });
+
+  const withSource = (cutRoute: "cut" | "rideWhole" | null) => assembleRecipe({
+    master: MASTER, pronouns: SHE, library: [],
+    asks: [{ slot: "hair", noun: "hair", words: "a mid-length wavy cut" }],
+    sources: [inkSource(cutRoute)],
+  });
+
+  it("REFUSES a planted null — the state every row is in today", () => {
+    const result = withSource(null);
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.reason).toBe("sourceNotExamined");
+    expect(result.slot).toBe("hair");
+    /* Named, never silent. A skip would paint the ask without the design and
+       charge for it, which is the confession class one door along. */
+    expect(result.detail).toContain("has not been through the cutter");
+  });
+
+  it("takes BOTH real answers — the refusal is about nobody looking", () => {
+    /*
+      The negative control, and it is the half that would be missing if this
+      were written as "ink needs the flag on". `rideWhole` means the cutter DID
+      look and the picture was already the design; refusing it would turn a
+      finished examination into a wall.
+    */
+    for (const route of ["cut", "rideWhole"] as const) {
+      const result = withSource(route);
+      expect(result.ok, route).toBe(true);
+    }
+  });
+
+  it("says nothing about a hair source, which has no such column", () => {
+    /* The other arm of the same control: a refusal that fired on every source
+       would pass the first test and take the hair road down with it. */
+    const result = assembleRecipe({
+      master: MASTER, pronouns: SHE, library: [],
+      asks: [{ slot: "hair", noun: "hair", words: "a mid-length wavy cut" }],
+      sources: [{ slot: "hair", image: CARRIER, pictures: "hairOnRedactedForm", scope: SCOPE }],
+    });
+    expect(result.ok).toBe(true);
+  });
+});
+
+/*
+  WHAT THE DESIGN PICTURE MAY GIVE HER — shape (e), at the WIRE.
+
+  The hair road's discipline transplanted, and the failing case is the one named
+  when the shape was countersigned: a composed outgoing prompt that describes
+  her SKIN from the reference. A crop cannot scope itself — even after the
+  cutter, artwork carries the tone of the skin it was photographed on at its own
+  edges, and a `rideWhole` design was never cut at all.
+
+  Asserted on `recipe.prompt` rather than on the sentence in isolation, because
+  the contract is about what gets SENT (working law 5).
+*/
+describe("the sentence riding with a design claims the artwork and nothing of her", () => {
+  const CARRIER = { key: "casting-v2/reference-carrier/ink.png", sha: "c0ffee" };
+  const promptWith = (pronouns: typeof SHE) => {
+    const recipe = assembleRecipe({
+      master: MASTER, pronouns, library: [],
+      asks: [{ slot: "hair", noun: "hair", words: "a mid-length wavy cut" }],
+      sources: [{
+        slot: "hair",
+        image: CARRIER,
+        pictures: "inkDesignOnTransparency",
+        cutRoute: "cut",
+        scope: inkTakeSentence(pronouns),
+      }],
+    });
+    expect(recipe.ok).toBe(true);
+    return recipe.ok ? recipe.prompt : "";
+  };
+
+  it("claims the artwork, in the outgoing prompt", () => {
+    const prompt = promptWith(SHE);
+    expect(prompt).toContain("Take the tattoo design from the reference");
+    expect(prompt).toContain("its shapes, its lines and its colours");
+  });
+
+  it("disclaims her skin, in the outgoing prompt — the failing case", () => {
+    const prompt = promptWith(SHE);
+    expect(prompt).toContain("Do not take skin, skin tone, body shape, pose or lighting");
+    expect(prompt).toContain("keep her own");
+  });
+
+  it("says it in front of HIS face too", () => {
+    /* `castPronouns` exists because this product once called a male
+       candidate's eyes "hers" on his own sheet. */
+    const prompt = promptWith(pronounsForSex("male"));
+    expect(prompt).toContain("keep his own");
+    expect(prompt).not.toContain("keep her own");
+  });
+
+  it("names no side — that phrase has one owner and it is not this one", () => {
+    /* `sidePhrasing.imageHalfClause` writes "which side as you look at it",
+       reached through the slot's own instance. A second speller here is the
+       drift that phrase exists to prevent, and the thing that would drift is
+       the difference between her left and the picture's left. */
+    const sentence = inkTakeSentence(SHE);
+    expect(sentence).not.toContain("left");
+    expect(sentence).not.toContain("right");
+    expect(sentence).not.toContain("as you look at it");
   });
 });
