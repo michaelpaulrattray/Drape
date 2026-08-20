@@ -8927,6 +8927,7 @@ describe("the picture she attached becomes the carrier that rides", () => {
   beforeEach(() => {
     painted.length = 0;
     minted.length = 0;
+    inkMinted.length = 0;
     asked.length = 0;
     resolveAskReferenceMock.mockResolvedValue(REFERENCE);
   });
@@ -9229,6 +9230,17 @@ describe("the picture she attached becomes the carrier that rides", () => {
     intents: ["ink"],
     storageKey: "casting-v2/ink/d-sleeve.png",
     cutRoute: "cut",
+    /*
+      IT CAME OUT OF THE PICTURE THIS ASK POINTS AT (migration 0048).
+
+      The default rather than an over-ride, because a row that RIDES on this
+      road is by definition one cut from the attachment she is pointing at —
+      the reuse rule. An arm about a design that came from somewhere else says
+      so explicitly, and there are two of those below: a hand-uploaded row
+      (`sourceDigest: null`) and one cut from another picture. A fixture family
+      that shared this property would test it once (fable-1150 §1).
+    */
+    sourceDigest: REFERENCE.digest,
     createdAt: new Date("2026-08-20T00:00:00Z"),
     digest: "b".repeat(64),
     mime: "image/png",
@@ -9238,8 +9250,49 @@ describe("the picture she attached becomes the carrier that rides", () => {
     ...over,
   });
 
+  /**
+   * WHAT THE MINT WAS ASKED TO FILE — recorded, so an arm can assert that a
+   * picture was NOT cut as well as that it was.
+   *
+   * A refusal that never reaches the mint and one that reaches it and comes
+   * back empty look identical in the note a customer reads, and only the first
+   * is free of house money.
+   */
+  const inkMinted: Array<{ placement: string; side: string; sourceDigest: string }> = [];
+
   const inkRoad = (over: Record<string, unknown> = {}) => carrierRoad({
     inkReferenceEnabled: () => true,
+    /*
+      THE MINT, at its own seam: this suite must not fetch bytes, call a
+      segmenter or write to a bucket. What it returns is the row the real one
+      would have written, with a digest that matches the bytes storage serves —
+      because `repaintRender` re-hashes every reference and would refuse it
+      otherwise, which is the pixel-frozen promise catching a fixture rather
+      than a defect.
+    */
+    mintInkDesign: async (request: {
+      placement: string;
+      side: string;
+      reference: { digest: string };
+      intents: readonly string[];
+    }) => {
+      inkMinted.push({
+        placement: request.placement,
+        side: request.side,
+        sourceDigest: request.reference.digest,
+      });
+      return {
+        ok: true as const,
+        design: inkDesignRow({
+          publicId: "d-minted",
+          placement: request.placement,
+          side: request.side,
+          storageKey: "casting-v2/ink/d-minted.png",
+          digest: TINY_MASTER_SHA,
+          intents: request.intents,
+        }),
+      };
+    },
     /*
       HER STUDIO, EMPTY — which is the production state for every customer who
       has uploaded no design, and therefore the right default for this road's
@@ -9327,6 +9380,164 @@ describe("the picture she attached becomes the carrier that rides", () => {
   });
 
   /*
+    AND WHEN SHE HAS NOTHING THERE, THE PICTURE SHE POINTED AT BECOMES THE
+    DESIGN — road (D) at the wire (ruled fable-1148 §3).
+
+    This is the arm that closes the gap opus-853 named in its own commit
+    message: before it, this road's entrance required a customer to have BOTH
+    attached a picture and uploaded a design at the same placement, which
+    nobody had. Now the ask that reaches an empty studio files the design out
+    of her own attachment and rides it in the same breath.
+  */
+  it("MINTS the design out of her picture and rides it, in one ask", async () => {
+    const result = await refineCandidate(inkRoad({
+      inkTake: async () => ({
+        placement: { kind: "measured" as const, placement: "upperArm" as const },
+        side: "left" as const,
+      }),
+      listInkDesigns: async () => [],
+    }), {
+      ...input,
+      instruction: "use this tattoo design on her left upper arm",
+      referenceId: "ref-public",
+    });
+
+    /* THE MINT WAS ASKED FOR EXACTLY WHAT HER SENTENCE SAID, and the picture it
+       was told to cut is the one she pointed at. */
+    expect(inkMinted).toEqual([
+      { placement: "upperArm", side: "left", sourceDigest: REFERENCE.digest },
+    ]);
+    /* AND IT RODE — the master and the design, two references at the engine. */
+    expect(painted, "the minted design never reached the render").toHaveLength(1);
+    expect(painted[0]!.references).toHaveLength(2);
+    expect(painted[0]!.prompt).toContain("is the tattoo design supplied for this edit");
+    expect(painted[0]!.prompt).toContain("left upper arm tattoo");
+    /* A ridden ask is a RENDER, not a sentence — the whole difference between
+       this road and every answer it used to give. */
+    expect(result.kind).toBe("rendered");
+  });
+
+  it("does NOT mint twice for the same picture at the same place — it rides the row", async () => {
+    /*
+      The reuse rule at the wire (fable-1149 §2b). A second ask about the same
+      picture at the same address must find the row the first one wrote: a mint
+      here would be a second $0.010 of house money and a second row that then
+      walls her as a conflict.
+    */
+    await refineCandidate(inkRoad({
+      listInkDesigns: async () => [inkDesignRow({ digest: TINY_MASTER_SHA })],
+    }), {
+      ...input, instruction: "use this tattoo design on my left sleeve", referenceId: "ref-public",
+    });
+
+    expect(inkMinted, "the same picture was cut a second time").toHaveLength(0);
+    expect(painted).toHaveLength(1);
+  });
+
+  it("REFUSES FREE when a DIFFERENT design already lives at that place — and cuts nothing", async () => {
+    /*
+      Ruled fable-1151 §3. She pointed at a picture and something else is
+      already at the address she named. Riding the resident would paint a
+      different artwork onto her because it shares a placement — the silent
+      wrong answer — and minting alongside would build the ambiguity out of its
+      own row and then wall her with it.
+
+      The assertion that matters is `inkMinted`: the refusal happens BEFORE the
+      cut, so it costs no house money either.
+    */
+    const result = await refineCandidate(inkRoad({
+      listInkDesigns: async () => [inkDesignRow({
+        publicId: "d-resident",
+        storageKey: "casting-v2/ink/d-resident.png",
+        sourceDigest: "e".repeat(64),
+      })],
+    }), {
+      ...input, instruction: "use this tattoo design on my left sleeve", referenceId: "ref-public",
+    });
+
+    expect(painted, "a resident design was painted for a picture it did not come from").toHaveLength(0);
+    expect(inkMinted, "a picture was cut for an ask that was refused").toHaveLength(0);
+    expect(result.note).toContain("a design for her left sleeve already");
+    expect(result.note).toContain("Nothing was charged.");
+  });
+
+  it("ASKS WHICH ARM rather than picking one — and cuts nothing while it asks", async () => {
+    /*
+      The row's side column is NOT NULL and a paired surface with no stated word
+      has no value that is not an invention. This road's own killer: 300 credits
+      refunded twice for a design on the wrong anatomical side (R7-7G).
+
+      It is not a dead end — re-asking with the word works immediately, which is
+      the condition fable-1120 §4 released the side question on.
+    */
+    const result = await refineCandidate(inkRoad({
+      inkTake: async () => ({
+        placement: { kind: "measured" as const, placement: "upperArm" as const },
+        side: null,
+      }),
+      listInkDesigns: async () => [],
+    }), {
+      ...input, instruction: "use this tattoo design on her arm", referenceId: "ref-public",
+    });
+
+    expect(painted).toHaveLength(0);
+    expect(inkMinted, "a picture was cut before the side was known").toHaveLength(0);
+    expect(result.note).toContain("her left or her right");
+    expect(result.note).toContain("Nothing was charged.");
+  });
+
+  it("names the surfaces that work when she asks for one nobody has measured", async () => {
+    /*
+      Ordered fable-1152 §1c. The design row's placement type is still the
+      measured three, and widening it forces an unmeasured answer on the paid
+      package-view road — so the mint serves those three and says so.
+
+      It REPLACES a worse sentence rather than adding a wall: until today this
+      ask was told *"send me the tattoo you want"* by a gate that could not see
+      she had just attached one.
+    */
+    const result = await refineCandidate(inkRoad({ listInkDesigns: async () => [] }), {
+      ...input, instruction: "use this tattoo design on my left sleeve", referenceId: "ref-public",
+    });
+
+    expect(painted).toHaveLength(0);
+    expect(inkMinted, "an unservable placement was cut anyway").toHaveLength(0);
+    expect(result.note).toContain("her neck");
+    expect(result.note).toContain("her upper arm");
+    expect(result.note).toContain("her upper chest");
+    expect(result.note).toContain("sleeve");
+    expect(result.note).toContain("Nothing was charged.");
+  });
+
+  it("REFUSES FREE when the cut fails, and files no design at all", async () => {
+    /*
+      fable-1148 §3b at the wire. The mint's own suite proves nothing is left
+      behind; this proves the DOOR — that the cutter's sentence reaches her
+      unchanged, before any claim, and that no render happens on the way.
+    */
+    const result = await refineCandidate(inkRoad({
+      inkTake: async () => ({
+        placement: { kind: "measured" as const, placement: "neck" as const },
+        side: "centre" as const,
+      }),
+      listInkDesigns: async () => [],
+      mintInkDesign: async () => ({
+        ok: false as const,
+        refusal: {
+          code: "cut" as const,
+          message: "That looks like a design on a model's arm — I can't safely take it from there. Nothing was charged.",
+        },
+      }),
+    }), {
+      ...input, instruction: "use this tattoo design on her neck", referenceId: "ref-public",
+    });
+
+    expect(painted, "a refused mint still painted").toHaveLength(0);
+    expect(result.note).toContain("design on a model's arm");
+    expect(result.note).toContain("Nothing was charged.");
+  });
+
+  /*
     AND BYTES THAT HAVE MOVED SINCE THE ROW RECORDED THEM REFUSE RATHER THAN
     PAINT (fable-1137 §3b).
 
@@ -9394,7 +9605,7 @@ describe("the picture she attached becomes the carrier that rides", () => {
       of a pure function cannot see.
     */
     const at = (publicId: string) => inkDesignRow({
-      publicId, storageKey: `casting-v2/ink/${publicId}.png`,
+      publicId, storageKey: `casting-v2/ink/${publicId}.png`, sourceDigest: null,
     });
     const result = await refineCandidate(
       inkRoad({ listInkDesigns: async () => [at("d-one"), at("d-two")] }),
@@ -9498,8 +9709,19 @@ describe("the picture she attached becomes the carrier that rides", () => {
       inkTake: async () => ({ placement: { kind: "measured" as const, placement: "neck" as const }, side: "centre" as const }),
     }), { ...input, instruction: "put this star from the picture on her neck", referenceId: "ref-public" });
 
-    expect(painted).toHaveLength(0);
-    expect(result.note).toContain("for her neck");
+    /*
+      RE-ANCHORED 2026-08-20 with the mint, and the routing fact it protects is
+      unchanged. Before the mint this ask had nowhere to go and the evidence
+      was the sentence; now it goes all the way, and the evidence is that the
+      INK road handled it — a mark that fell through to the hair lane would cut
+      a hair carrier and mint no design at all.
+    */
+    expect(minted, "a mark naming a design cut a HAIR carrier").toHaveLength(0);
+    expect(inkMinted).toEqual([
+      { placement: "neck", side: "centre", sourceDigest: REFERENCE.digest },
+    ]);
+    expect(painted, "the star did not reach the render").toHaveLength(1);
+    void result;
   });
 
   it("says the picture landed even when the sentence could not be read", async () => {

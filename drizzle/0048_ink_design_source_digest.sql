@@ -1,0 +1,64 @@
+-- THE PICTURE THIS DESIGN WAS TAKEN OUT OF — the reuse key's first member,
+-- proposed opus-854 §2 against the key ruled fable-1149 §2b.
+--
+-- ============================================================================
+-- WHY THE KEY COULD NOT BE EVALUATED WITHOUT IT
+-- ============================================================================
+--
+-- fable-1149 §2b ruled the attach-pointed mint's reuse key: **(attachment
+-- digest, placement, side)** — never two design rows from one picture, and the
+-- side is in the key because the same design on her left and right arms is two
+-- designs and a key without it would dedup them into one.
+--
+-- The first member had nowhere to live. `casting_ink_designs`.`digest` is the
+-- sha256 of the STORED bytes, and on the mint's road the stored bytes are the
+-- CUTOUT — a segmenter's output, so the same picture cut twice is not the same
+-- bytes and that digest is not a stable name for the picture it came from.
+-- Nothing else on the row points at the attachment. So the key names a fact the
+-- table does not hold.
+--
+-- ============================================================================
+-- NULL IS THE HONEST VALUE, AND THERE IS NO BACKFILL — 0047's ARGUMENT AGAIN
+-- ============================================================================
+--
+-- NULL means **this design was not taken out of anything**: the customer
+-- uploaded the design itself through the ink studio door, which is every row
+-- that exists today in both worlds. There is nothing to back-fill FROM, and
+-- there is nothing a guess could be built out of — an uploaded design's bytes
+-- ARE the design, and no attachment was involved at any point in its life.
+--
+-- **And the NULL is load-bearing rather than merely honest.** The mint's
+-- conflict rule asks whether a design already at this placement came from THIS
+-- picture; a studio-uploaded row answers *no* by holding NULL, which no digest
+-- can ever equal. So a row that predates this road can never be silently reused
+-- for a picture it did not come from, and that safety is a property of the
+-- column's own emptiness rather than of a special case somebody remembered to
+-- write.
+--
+-- ============================================================================
+-- varchar(64), WHICH IS WHAT EVERY OTHER DIGEST IN THIS PRODUCT IS
+-- ============================================================================
+--
+-- A sha256 in hex is 64 characters. `casting_ink_designs`.`digest`,
+-- `casting_reference_attachments`.`digest` and the reference library's own all
+-- carry the same shape, and this column is compared against the second of them
+-- — a width that disagreed would be a comparison that silently truncated.
+--
+-- NOT indexed: the comparison happens over the rows of ONE Cast, capped at
+-- eight, already read for the resolution that precedes it. An index here would
+-- be a write cost paid for a scan of at most eight values held in memory.
+--
+-- ============================================================================
+-- IT LANDS WITH ITS WRITER, IN THE SAME COMMIT
+-- ============================================================================
+--
+-- `migration-before-code` in its strict form, exactly as 0047 took it: a new
+-- column on a WRITTEN table is named in every INSERT the moment the writer
+-- ships — drizzle names every schema column whether or not a caller supplied
+-- one — so there is no dark landing for a column and no flag that can hide it.
+--
+-- Nullable, so the ALTER is safe on a table with rows in it and no default has
+-- to be invented. Production runs it by `ceremony-ink-design-source-digest` on
+-- the founder's word, in the SAME sitting as 0047's outstanding ceremony —
+-- one command, not two, because they are one table and one chore.
+ALTER TABLE `casting_ink_designs` ADD COLUMN `sourceDigest` varchar(64) NULL;

@@ -143,6 +143,7 @@ import { cutHairCarrier, mintHairCarrier, SECOND_VIEW_UNUSED_NOTE } from "./hair
 import { hairTakeEntry, hairTakeSentence, resolveHairTake } from "./hairReferenceTake";
 import {
   inkAskAddressOf,
+  inkAskIntents,
   inkReferenceNote,
   inkTakeSentence,
   namesInkFromReference,
@@ -207,6 +208,7 @@ import {
 } from "./referenceSlotCatalogue";
 import { isInkSlot, isOpenSlot, openKindCarriedByCrops, openSlotKey } from "./referenceSlots";
 import { inkDesignForAsk, slotPlacementOf, type InkAskAddress } from "./inkDesignForAsk";
+import { mintInkDesignFromReference } from "./inkReferenceMint";
 import { listInkDesigns } from "../db/castingV2InkDesigns";
 import type { InkCutRoute } from "../../shared/inkCutRoute";
 import { openLaneOutcomeOf } from "./openLaneAccept";
@@ -704,6 +706,13 @@ export type RefineServiceDependencies = {
   /** Test seam. The shipped read is owner-scoped on both sides of its join,
    *  so a double that ignored the owner would be testing a different door. */
   listInkDesigns?: typeof listInkDesigns;
+  /**
+   * FILING THE DESIGN IN HER PICTURE — the attach-pointed mint, injected for
+   * the same reason its siblings are: it fetches bytes, calls a segmenter and
+   * writes a row, and a suite must be able to drive the ORDER around it
+   * without any of the three.
+   */
+  mintInkDesign?: typeof mintInkDesignFromReference;
   /** `CASTING_INK_REFERENCE_SCOPE`, injectable for the same reason as its siblings. */
   inkReferenceEnabled?: (userId: number) => boolean;
   /** Writes the sent recipe onto the variant at dispatch — see `recordVariantDispatch`. */
@@ -3625,28 +3634,68 @@ async function refineCandidateCounted(
       userId: input.userId,
       candidatePublicId: input.candidatePublicId,
     });
-    const chosen = inkDesignForAsk(designs, address);
-    if (chosen.kind !== "ride") {
+    const chosen = inkDesignForAsk(designs, address, { digest: reference.digest });
+    const said = (outcome: string, note: string): RefineResult => {
       log.info(
         {
           userId: input.userId,
           candidate: input.candidatePublicId,
           placement: address.placement,
           side: address.side,
-          outcome: chosen.kind,
+          outcome,
           held: designs.length,
         },
-        "[refineService] a tattoo ask with no one design to answer it — said before the claim, nothing spent",
+        "[refineService] a tattoo ask answered before the claim — nothing stored, nothing spent",
       );
       return {
         kind: "selected",
-        note: chosen.say,
+        note,
         variantId: source.variantPublicId,
         candidateId: input.candidatePublicId,
         imageUrl: currentImageUrl,
         instructions: readInstructions(predecessorForParse?.instructions),
       };
-    }
+    };
+    if (chosen.kind !== "ride" && chosen.kind !== "mint") return said(chosen.kind, chosen.say);
+
+    /*
+      AND WHEN NOTHING IS THERE, THE PICTURE SHE POINTED AT BECOMES THE DESIGN
+      (road (D), ruled fable-1148 §3).
+
+      Cut ONCE, through the one owner, and filed as a row — so the wire below
+      reads a row exactly as it reads one somebody uploaded, and the next ask
+      about the same picture at the same address rides this row rather than
+      buying a second cut.
+
+      **It runs BEFORE THE CLAIM and every failure is free**: a mint that cannot
+      cut refuses and stores nothing, in the cutter's own sentence about her
+      picture. The two segmenter calls it spends are house money and are the
+      only thing on this branch that costs anything at all.
+
+      `intents` is DERIVED from the predicate that entered this branch rather
+      than typed beside it (ruled fable-1151 §1): the attachment record carries
+      no intents because the attach door is reached before she has typed
+      anything, so there is no ask yet for an intent to authorise. Here there
+      is — her own sentence, about this picture, naming a design — and an ask
+      that is not a tattoo ask cannot reach this line to claim it was.
+    */
+    const design = chosen.kind === "ride" ? chosen.design : await (async () => {
+      const minted = await (dependencies.mintInkDesign ?? mintInkDesignFromReference)({
+        userId: input.userId,
+        candidatePublicId: input.candidatePublicId,
+        reference: {
+          storageKey: reference.storageKey,
+          digest: reference.digest,
+          provenance: reference.provenance,
+          mime: reference.mime,
+        },
+        placement: chosen.placement,
+        side: chosen.side,
+        intents: inkAskIntents(editDelta),
+      });
+      return minted.ok ? minted.design : minted.refusal;
+    })();
+    if (!("storageKey" in design)) return said(`mint:${design.code}`, design.message);
     /*
       AND IT RIDES. The bytes are the design row's own — our copy, under the
       candidate's purge path — carried by KEY and DIGEST rather than fetched
@@ -3661,9 +3710,9 @@ async function refineCandidateCounted(
       takes came to dispatch byte-identical prompts.
     */
     inkSource = {
-      key: chosen.design.storageKey,
-      sha: chosen.design.digest,
-      cutRoute: chosen.design.cutRoute,
+      key: design.storageKey,
+      sha: design.digest,
+      cutRoute: design.cutRoute,
       scope: inkTakeSentence(pronounsForSex(currentIdentity?.sex)),
       address,
     };

@@ -212,6 +212,24 @@ export function inkDesignContentType(format: InkDesignFormat): string {
 }
 
 /**
+ * THE SAME MAPPING READ BACKWARDS — a stored design's format from the mime its
+ * row records.
+ *
+ * It lives beside {@link inkDesignContentType} rather than at the one call site
+ * that needs it, because the two directions are one decision: change the
+ * spelling above and this follows, and a caller stripping `image/` by hand
+ * would be the second author of a mapping (law 4).
+ *
+ * `null` for anything the vocabulary does not know, which includes the mime of
+ * a row written by some future door — a format this product cannot name is not
+ * a format it should be inventing a key extension for.
+ */
+export function inkDesignFormatOfContentType(mime: string): InkDesignFormat | null {
+  const format = mime.trim().toLowerCase().replace(/^image\//, "");
+  return isInkDesignFormat(format) ? format : null;
+}
+
+/**
  * Where our copy of the bytes lives.
  *
  * `randomUUID`, never `Math.random` — every object this product writes sits at a

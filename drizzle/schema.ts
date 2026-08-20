@@ -3181,6 +3181,26 @@ export const castingInkDesigns = mysqlTable("casting_ink_designs", {
    * defect the condition exists to prevent, spelled as a default.
    */
   cutRoute: mysqlEnum("cutRoute", INK_CUT_ROUTES),
+  /**
+   * THE PICTURE THIS DESIGN WAS TAKEN OUT OF (migration 0048).
+   *
+   * The sha256 of the ATTACHMENT the mint cut this design from — the first
+   * member of the reuse key fable-1149 §2b ruled, (attachment digest,
+   * placement, side). It is not `digest` one line below: that one names the
+   * bytes STORED, which on the mint's road are the cutout, and a cutout is a
+   * segmenter's output — the same picture cut twice is not the same bytes.
+   *
+   * **NULL means this design was not taken out of anything**, which is every
+   * design a customer uploaded through the ink studio door. Never back-filled,
+   * because an uploaded design's bytes ARE the design and no attachment was
+   * involved in its life at any point.
+   *
+   * The NULL is load-bearing: no digest can equal it, so a studio-uploaded row
+   * can never be silently reused for a picture it did not come from. The
+   * conflict rule gets its answer from the column's own emptiness rather than
+   * from a special case somebody remembered to write.
+   */
+  sourceDigest: varchar("sourceDigest", { length: 64 }),
   /** sha256 of the object's bytes — byte identity, as the library does it. */
   digest: varchar("digest", { length: 64 }).notNull(),
   mime: varchar("mime", { length: 64 }).notNull(),

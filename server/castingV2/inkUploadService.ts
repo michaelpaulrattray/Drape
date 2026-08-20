@@ -199,7 +199,18 @@ export type InkUploadDependencies = {
   cut: (input: { userId: number; candidatePublicId: string; bytes: Buffer }) => Promise<CutInkDesignResult>;
 };
 
-async function defaultManifest(input: {
+/**
+ * THE HOLD ON BYTES THAT DO NOT YET HAVE A ROW.
+ *
+ * Exported since 2026-08-20 because the attach-pointed mint
+ * (`inkReferenceMint.ts`) writes into this same store under this same purge
+ * path, and the two decisions inside it — a synthetic operation id, and BORN
+ * HELD so the worker cannot claim the batch while the bytes are still uploading
+ * — are exactly the pair that must not be re-decided by a second hand. A
+ * second writer spelling them again is how one of them comes to be spelled
+ * differently.
+ */
+export async function defaultManifest(input: {
   id: string;
   userId: number;
   storageKeys: readonly string[];
@@ -411,6 +422,16 @@ export async function uploadInkDesign(
       the design may not ride to a render until somebody has.
     */
     cutRoute: cut?.route ?? null,
+    /*
+      SHE DID NOT TAKE THIS ONE OUT OF ANYTHING (migration 0048).
+
+      `sourceDigest` names the PICTURE a design was cut from, and on this road
+      the bytes she handed over ARE the design — there is no attachment behind
+      them. Stated rather than omitted, for `cutRoute`'s reason one line above:
+      the reuse key reads this column and cannot tell a deliberate null from a
+      forgotten one.
+    */
+    sourceDigest: null,
     digest: createHash("sha256").update(stored).digest("hex"),
     mime: contentType,
     byteSize: stored.byteLength,

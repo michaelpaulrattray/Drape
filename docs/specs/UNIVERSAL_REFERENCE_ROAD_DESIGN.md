@@ -1284,3 +1284,53 @@ with no fixture that could have gone non-null is not a reading. The colour half
 stands on the wire alone until an ask runs with a reference whose colour plainly
 differs from the Cast's — which is the first thing worth trying after the flip,
 and it is on his card in those words.
+
+## 12. THE OPEN LANE FOR REFERENCE TAKES — scheduled, and what it OWES
+
+Scheduled by the founder in one word (*"yeah schedule that"*, filed fable-1139
+§3), after the tattoo carry wire: attach a reference, name ANYTHING (wardrobe
+and disallowed content excepted), the cutter cuts it by the ask's own noun, and
+it carries like any crop — best-effort tier, honest refunds, measured lanes
+upgrading categories over time.
+
+### 12.1 Three lines it inherited on 2026-08-20, and why they are HERE
+
+The attach-pointed ink mint (road (D)) landed serving the **measured three**
+placements only — `neck`, `upperArm`, `upperChest` — and an ask naming any other
+surface is refused free with a capability sentence naming those three. That is a
+deliberate narrowing, ruled fable-1152 §1 after the alternative was measured,
+and **this build is where the narrowing is paid off**. It is written down here
+rather than left in a mailbox message because a ruling is landed when it is
+written where the next person will act on it.
+
+What the widening actually requires, in the order the compiler finds it:
+
+1. **THE DATABASE TYPE OPENS.** `casting_ink_designs.placement` has been
+   `varchar(64)` since migration 0046 and holds any word already; what is still
+   narrow is the `$type<InkPlacement>()` on it (and on
+   `casting_ink_form_demand`). `server/castingV2/inkPlacementCoupling.test.ts`
+   is the keeper built for exactly this day — it insists the narrowings move in
+   ONE commit and tells whoever reddens it what to do. **That keeper is TRUE
+   today and must stay true until this build**: the mint writes measured words
+   only, so the type's promise is still kept.
+2. **THE MANNEQUIN ROAD'S TYPE SITES** — three in `inkPlateMint.ts`.
+   `inkTemplateFor` has no template for an unmeasured surface, and CLAUDE.md
+   already says so: *"an open placement has no template at all, so 'no torso
+   form for this build' is not what an open ask is missing."* The mannequin road
+   is parked, so this is a decision the resumption sitting owns; it must not be
+   answered by a silent fall-through.
+3. ⚠ **THE SIGN-ROAD MEASUREMENT, and it is a measurement rather than a
+   judgement.** `signService` carries a signed Cast's tattoos into package views
+   through `placementRidesPackageViews(placement)` and `inkPlacementPhrase(...)`,
+   both of which take the closed three — which were measured on sixteen
+   production masters. For a word nobody has measured there are only two
+   answers available today and **both are this program's named sins**: an
+   unknown key falling through a lookup to falsy is a SILENT DROP on a paid,
+   shipped road, and answering *"yes it rides"* is an unread claim that a
+   sleeve appears in a waist-up framing. So the widening carries a reading —
+   frames, in front of eyes (law 9) — and never a lookup's default.
+
+Until all three are answered, the capability sentence stands. It is not
+fable-1078's document wall rebuilt: that ruling removed the wall that refused a
+design she had SUPPLIED, and this is a capability said honestly, with the three
+surfaces she can use in her next message named in the same breath.

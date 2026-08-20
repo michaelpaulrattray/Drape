@@ -34,7 +34,7 @@
  * flag governs whether a row is WRITTEN and nothing governs whether it is
  * purged.
  */
-import { and, eq, inArray, sql } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
 
 import {
@@ -49,6 +49,7 @@ import type { InkCutRoute } from "../../shared/inkCutRoute";
 import type { InkSide } from "../../shared/inkReleasedPlacements";
 import { isReferenceIntent, type ReferenceIntent } from "../../shared/referenceIntents";
 import { INK_DESIGNS_PER_CANDIDATE } from "../castingV2/inkUploadDoor";
+import { countHeldPicturesIn } from "./castingV2ReferenceAttachments";
 import { getDb, withTransaction, type TransactionHandle } from "./connection";
 import { undischargedStorageCleanupBatchWhere } from "./storageCleanup";
 
@@ -106,6 +107,16 @@ export type InkDesignToRecord = {
    * one. Every caller says which of the three it is.
    */
   cutRoute: InkCutRoute | null;
+  /**
+   * THE PICTURE THIS DESIGN WAS TAKEN OUT OF (migration 0048).
+   *
+   * The sha256 of the ATTACHMENT the mint cut it from, and `null` for a design
+   * the customer uploaded through the studio door — she did not take that one
+   * out of anything. REQUIRED rather than optional, for `cutRoute`'s reason:
+   * the reuse key reads this column, and it cannot tell a deliberate null from
+   * a forgotten one. Every caller says which of the two it is.
+   */
+  sourceDigest: string | null;
   /** sha256 of the stored bytes — byte identity, as the library does it. */
   digest: string;
   mime: string;
@@ -131,6 +142,8 @@ export type RecordedInkDesign = {
   intents: readonly ReferenceIntent[];
   storageKey: string;
   cutRoute: InkCutRoute | null;
+  /** The picture it was taken out of, or `null` for one uploaded as a design. */
+  sourceDigest: string | null;
   createdAt: Date;
 };
 
@@ -158,11 +171,24 @@ export async function recordInkDesign(input: InkDesignToRecord): Promise<Recorde
       .for("update");
     if (!candidate) throw new InkDesignOwnershipError("candidate");
 
-    const [held] = await tx
-      .select({ count: sql<number>`count(*)` })
-      .from(castingInkDesigns)
-      .where(eq(castingInkDesigns.candidateId, candidate.id));
-    if (Number(held?.count ?? 0) >= INK_DESIGNS_PER_CANDIDATE) throw new InkDesignCapError();
+    /*
+      THE CAP COUNTS BOTH STORES, AND UNTIL 2026-08-20 IT COUNTED ONE.
+
+      fable-1063 §2 ruled the eight is SHARED between the designs and the
+      attached pictures — *"not 8 + 8, so the purge surface stays bounded"* —
+      and the attach door enforced exactly that while this writer counted
+      `casting_ink_designs` alone. A Cast holding eight attachments still
+      admitted eight designs: sixteen kept objects against a bound of eight,
+      and the bound read as held because the door somebody tested enforced it
+      (found opus-854 §6, ruled fable-1151 §4).
+
+      Through the attachment store's own counter rather than a second count
+      spelled the same way here (law 4): one owner, so one sabotage reddens
+      both suites.
+    */
+    if (await countHeldPicturesIn(tx, candidate.id) >= INK_DESIGNS_PER_CANDIDATE) {
+      throw new InkDesignCapError();
+    }
 
     await tx.insert(castingInkDesigns).values({
       publicId,
@@ -175,6 +201,7 @@ export async function recordInkDesign(input: InkDesignToRecord): Promise<Recorde
       intents: input.intents,
       storageKey: input.storageKey,
       cutRoute: input.cutRoute,
+      sourceDigest: input.sourceDigest,
       digest: input.digest,
       mime: input.mime,
       byteSize: input.byteSize,
@@ -210,6 +237,7 @@ export async function recordInkDesign(input: InkDesignToRecord): Promise<Recorde
       intents: input.intents,
       storageKey: input.storageKey,
       cutRoute: input.cutRoute,
+      sourceDigest: input.sourceDigest,
       createdAt: now,
     };
   });
@@ -244,6 +272,7 @@ export async function listInkDesigns(input: {
       intents: castingInkDesigns.intents,
       storageKey: castingInkDesigns.storageKey,
       cutRoute: castingInkDesigns.cutRoute,
+      sourceDigest: castingInkDesigns.sourceDigest,
       digest: castingInkDesigns.digest,
       mime: castingInkDesigns.mime,
       byteSize: castingInkDesigns.byteSize,
@@ -311,6 +340,7 @@ export async function readInkDesign(input: {
       intents: castingInkDesigns.intents,
       storageKey: castingInkDesigns.storageKey,
       cutRoute: castingInkDesigns.cutRoute,
+      sourceDigest: castingInkDesigns.sourceDigest,
       digest: castingInkDesigns.digest,
       mime: castingInkDesigns.mime,
       byteSize: castingInkDesigns.byteSize,

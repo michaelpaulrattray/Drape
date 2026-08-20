@@ -45,6 +45,10 @@ function harness(overrides: Partial<InkUploadDependencies> = {}) {
            decided, and a double that answered `null` regardless would make the
            arm asserting it vacuous. */
         cutRoute: one.cutRoute,
+        /* ECHOED for the same reason, one column along: this door files `null`
+           because she uploaded the design rather than taking it out of a
+           picture, and a double that invented one would make the arm vacuous. */
+        sourceDigest: one.sourceDigest,
         provenance: one.provenance,
         intents: one.intents,
         storageKey: one.storageKey,

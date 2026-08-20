@@ -76,6 +76,7 @@ import type { CastPronouns } from "./castPronouns";
 import { namesDesign } from "./inkPlacement";
 import type { InkAskAddress } from "./inkDesignForAsk";
 import { itemsOf, type RefineDelta } from "./refineDelta";
+import type { ReferenceIntent } from "../../shared/referenceIntents";
 
 const log = createModuleLogger("castingV2/inkReferenceTake");
 
@@ -258,6 +259,34 @@ export function namesInkFromReference(delta: RefineDelta | null | undefined): bo
   if (!free) return false;
   if (itemsOf(free.ink).length > 0) return true;
   return itemsOf(free.marks).some((item) => namesDesign(item));
+}
+
+/**
+ * WHAT THIS PICTURE IS BEING TAKEN FOR, DERIVED FROM THE ASK ITSELF (ruled
+ * fable-1151 §1).
+ *
+ * A design row records `intents` — the declaration fable-937 was built on, so
+ * that nothing is extracted from a reference nobody asked to take from. The
+ * ink STUDIO door collects it as a field, and the ATTACH door deliberately does
+ * not: it is reached before she has typed anything, so *"there is no ask yet
+ * for an intent to authorise, and a NOT NULL guess about one is what the fence
+ * cannot carry"* (that door's own words).
+ *
+ * On this road the ask arrives later and IS the declaration — her own sentence,
+ * about this picture, naming a design. That is a stronger statement than a
+ * checkbox, because it is contemporaneous with the use rather than a prediction
+ * of it.
+ *
+ * **It is derived rather than written down beside the predicate, and that is
+ * the whole reason this is a function.** The value comes out of
+ * {@link namesInkFromReference} — the same predicate that decides whether the
+ * tattoo branch is entered at all — so a delta that is not a tattoo ask cannot
+ * produce a row claiming it was. A constant `["tattoo"]` at the call site would
+ * be true today and would go on being written the day the branch's condition
+ * moved.
+ */
+export function inkAskIntents(delta: RefineDelta | null | undefined): readonly ReferenceIntent[] {
+  return namesInkFromReference(delta) ? ["tattoo"] : [];
 }
 
 /**

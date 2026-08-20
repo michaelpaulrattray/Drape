@@ -27,6 +27,38 @@
  * stays on the board rather than being spent now by a default nobody would have
  * chosen deliberately.
  *
+ * # AND SHE POINTED AT A PICTURE, WHICH IS THE HALF THE PLACE COULD NOT ANSWER
+ *
+ * Everything above is about a sentence that names a place and nothing else. On
+ * the attach-pointed road she also hands over the DESIGN — so the question this
+ * function answers stops being *which of these eight* and becomes *is the one
+ * she is pointing at already here* (ruled fable-1148 §3, resolution order ruled
+ * fable-1151 §3).
+ *
+ * The source is REQUIRED rather than optional, and that is the shape of the
+ * road rather than a convenience: this decision is only ever made inside the
+ * pre-claim branch, which cannot be entered without a resolved attachment. An
+ * optional source would have left two outcomes below reachable by nobody, which
+ * is how a sentence nobody can read comes to look tested.
+ *
+ * Three answers, and each is somebody's scar:
+ *
+ *   RIDE      a design at this address came out of THIS picture — the reuse
+ *             rule (fable-1149 §2b). One picture, one row: never a second cut,
+ *             never a second charge, and never two rows that then wall her
+ *   MINT      nothing is at this address at all, so the picture becomes the
+ *             design. That is the whole of road (D)
+ *   CONFLICT  something IS at this address and it did not come out of this
+ *             picture. Riding it would paint a different artwork onto her
+ *             because it shares an address — the silent wrong answer, and the
+ *             worst of the three outcomes this road can produce
+ *
+ * **The corner where the resident IS the same artwork, uploaded by hand, stays
+ * a conflict** (ruled fable-1151 §3). Telling them apart would take a reader's
+ * opinion about whether two pictures show the same design, and law 9 forbids a
+ * vision verdict that turns a customer away. Honest and rare beats a similarity
+ * guess.
+ *
  * # WHY IT IS A PURE FUNCTION OVER ROWS ALREADY READ
  *
  * It takes the Cast's designs rather than fetching them, for the reason working
@@ -39,7 +71,12 @@
  * somebody else by a caller that forgot.
  */
 import { inkDesignWasExamined } from "../../shared/inkCutRoute";
-import { isInkPlacement, inkPlacementBareNoun } from "../../shared/inkPlacementVocabulary";
+import {
+  INK_PLACEMENTS,
+  inkPlacementBareNoun,
+  isInkPlacement,
+  type InkPlacement,
+} from "../../shared/inkPlacementVocabulary";
 import type { InkSide } from "../../shared/inkReleasedPlacements";
 import type { StoredInkDesign } from "../db/castingV2InkDesigns";
 import type { InkAskPlacement } from "./referenceSlots";
@@ -72,14 +109,65 @@ export type InkAskAddress = Omit<InkAskPlacement, "side"> & {
 };
 
 export type InkDesignForAsk =
-  /** Exactly one design answers this ask, and it has been looked at. */
+  /** A design from THIS picture is already at this address, and it has been
+   *  looked at. The reuse rule's outcome: ride it, cut nothing, charge nothing. */
   | { kind: "ride"; design: StoredInkDesign }
-  /** She has no design at the place she named. */
-  | { kind: "none"; say: string }
-  /** More than one, and choosing between them is hers to do — fable-1145 §4. */
-  | { kind: "ambiguous"; count: number; say: string }
-  /** One design, stored before anybody looked at what is in its picture. */
+  /**
+   * Nothing is at this address, so the picture she pointed at becomes the
+   * design. The caller cuts it once and files it — road (D).
+   *
+   * **The two fields are the proof, not a convenience.** A row needs a measured
+   * placement and a side, and this outcome is only returned when the address
+   * has both — so the caller cannot reach the mint holding a `string` and a
+   * `null` and be tempted to resolve either of them itself. The two answers
+   * that are not mintable are outcomes of their own, below.
+   */
+  | { kind: "mint"; placement: InkPlacement; side: InkSide }
+  /**
+   * She named a surface nobody has measured — *"on my sleeve"*.
+   *
+   * ⚠ TEMPORARY, AND IT IS THE ONLY OUTCOME HERE THAT IS. The database column
+   * has held any word since migration 0046 and the slot grammar takes one on
+   * purpose (`inkSlotKey`), so nothing about the RENDER stands in the way. What
+   * stands in the way is that `casting_ink_designs.placement` is still typed to
+   * the measured three, and widening it forces an answer on the paid sign road
+   * — *does a tattoo at a surface nobody has measured ride into package views*
+   * — which is a measurement rather than a judgement (opus-855 §2).
+   *
+   * It is not fable-1078's wall being rebuilt: that ruling removed the DOCUMENT
+   * wall, and this is a capability said plainly, with the three surfaces that
+   * work today named so she has a road in the next message.
+   */
+  | { kind: "placementUnserved"; say: string }
+  /**
+   * A paired surface, and she never said which one.
+   *
+   * The one thing this road may never do is pick (DECISION_LOG R7-7G: 300
+   * credits refunded twice for a design on the wrong anatomical side). So it
+   * asks — and asking is only allowed because the road behind the answer now
+   * exists (fable-1120 §4 released the side question on exactly that
+   * condition). Re-asking with the word works immediately.
+   */
+  | { kind: "sideUnstated"; say: string }
+  /** Something else lives at this address — refused, and nothing is written. */
+  | { kind: "conflict"; count: number; say: string }
+  /** Her design, stored before anybody looked at what is in its picture. */
   | { kind: "unexamined"; say: string };
+
+/**
+ * THE PICTURE THIS ASK POINTS AT, reduced to the one thing this decision needs.
+ *
+ * Byte identity of what she POINTED AT, and never of the cut taken out of it: a
+ * cutout is a segmenter's output, so the same picture cut twice is not the same
+ * bytes, and keying on the cut would make two different pictures that happened
+ * to cut alike collide — a claim about her intent nobody measured
+ * (fable-1149 §2b).
+ *
+ * Narrowed to `digest` rather than taking the whole `AskReference` so nothing
+ * here can reach for a storage key: this function decides, and the road that
+ * spends is somewhere else.
+ */
+export type InkAskSource = { readonly digest: string };
 
 /**
  * How the place is spoken back to her — the vocabulary's own noun for a surface
@@ -131,37 +219,72 @@ function matching(
 export function inkDesignForAsk(
   designs: readonly StoredInkDesign[],
   address: InkAskAddress,
+  source: InkAskSource,
 ): InkDesignForAsk {
   const place = placeIn(address);
   const here = matching(designs, address);
+  /*
+    THE ROWS THAT CAME OUT OF THIS PICTURE.
 
-  if (here.length === 0) {
-    return {
-      kind: "none",
-      say: `I don't have a design for ${place} yet. Send me the tattoo you want and `
-        + "I'll put it on her. Nothing was charged.",
-    };
-  }
+    `sourceDigest` is `null` for every design a customer uploaded through the
+    studio door — she did not take that one out of anything — and no digest can
+    equal a null. So a hand-uploaded design can never be silently reused for a
+    picture it did not come from, and that safety is a property of the column's
+    own emptiness rather than of a branch somebody remembered to write
+    (migration 0048).
 
-  if (here.length > 1) {
+    At most one row can match by the reuse key itself, since the key is
+    (source digest, placement, side) and those are exactly the three things
+    filtered on here. More than one would mean the key was not enforced, which
+    is why the answer below is `here.length` rather than an assumption.
+  */
+  const mine = here.filter((design) => design.sourceDigest === source.digest);
+
+  if (mine.length > 1) {
     /*
-      NAMED, WITH THE ROAD THAT EXISTS TODAY (fable-1145 §4's three conditions).
+      HER PICTURE IS AT THIS PLACEMENT ON MORE THAN ONE SIDE OF HER, AND SHE
+      NAMED NEITHER — found by an arm rather than by reasoning, and the version
+      of this function without it rode the LEFT arm.
 
-      The count is said because "you have more than one" and "you have four" ask
-      for different amounts of thinking from her, and she cannot see the list.
-      The delete is said because it shipped this week and is the move that
-      actually unblocks her. Nothing is said about a picker.
+      The reuse key is (source digest, placement, side), so two rows from one
+      picture at one placement differ by SIDE and nothing else. An address with
+      no stated side spans both of them, and picking is the 300-credit refund
+      with a new author (R7-7G). So it asks — the same question the mint asks,
+      through the same sentence, because it is the same missing word.
+
+      A stated side cannot reach here, since `matching` has already filtered to
+      it: more than one row then would mean the key was not enforced, and the
+      honest answer to that is the count rather than a choice.
     */
-    return {
-      kind: "ambiguous",
-      count: here.length,
-      say: `I've got ${here.length} designs for ${place}, so I don't know which one you mean. `
-        + "Remove the ones you don't want, or ask for a place where there's just one. "
-        + "Nothing was charged.",
-    };
+    return address.side === null ? unstatedSide(place) : conflict(mine.length, place);
   }
 
-  const design = here[0]!;
+  if (mine.length === 0) {
+    if (here.length === 0) {
+      /* NOTHING IS HERE AND SHE HANDED US THE DESIGN. Road (D)'s whole
+         purpose: the caller cuts this picture once and files it — once the
+         address is one a row can actually hold. */
+      return mintable(address, place);
+    }
+    /*
+      SOMETHING ELSE LIVES AT THIS ADDRESS (ruled fable-1151 §3).
+
+      Three roads and two were refused. Riding the resident is a different
+      artwork painted onto her because it shares an address — the silent wrong
+      answer. Minting alongside builds the ambiguity out of its own row and
+      then walls her with it. So: refuse, before anything is cut or written.
+
+      The count is said because "you have one there" and "you have three there"
+      ask different amounts of thinking from her, and she cannot see the list.
+      Both moves that exist TODAY are named — the per-design delete that shipped
+      this week, and simply naming a place with room. Nothing is said about a
+      picker, because the ink studio's room does not exist and a hint at one is
+      the tap target with nothing behind it.
+    */
+    return conflict(here.length, place);
+  }
+
+  const design = mine[0]!;
   if (!inkDesignWasExamined(design.cutRoute)) {
     /*
       NOBODY LOOKED AT WHAT IS IN THIS PICTURE.
@@ -191,6 +314,77 @@ export function inkDesignForAsk(
   }
 
   return { kind: "ride", design };
+}
+
+/**
+ * SOMETHING ELSE LIVES HERE — the sentence, spelled once.
+ *
+ * The count is said because *"you have one there"* and *"you have three there"*
+ * ask different amounts of thinking from her, and she cannot see the list. Both
+ * moves that exist TODAY are named — the per-design delete that shipped this
+ * week, and simply naming a place with room. Nothing is said about a picker,
+ * because the ink studio's room does not exist and a hint at one is the tap
+ * target with nothing behind it (D-180).
+ */
+function conflict(count: number, place: string): InkDesignForAsk {
+  const held = count === 1 ? `a design for ${place} already` : `${count} designs for ${place} already`;
+  return {
+    kind: "conflict",
+    count,
+    say: `You've got ${held}, and this picture isn't one of them. Remove the one you `
+      + "don't want and send this again, or put this one somewhere she's got room. "
+      + "Nothing was charged.",
+  };
+}
+
+/**
+ * WHICH OF HER — the sentence, spelled once, for the two roads that need it.
+ *
+ * A mint has no value to put in a NOT NULL column, and a ride would have to
+ * pick between her arms. Both are the same missing word and she reads the same
+ * question, because two sentences for one gap is how a customer meets two
+ * products.
+ */
+function unstatedSide(place: string): InkDesignForAsk {
+  return {
+    kind: "sideUnstated",
+    say: `I've got the design from your picture for ${place}, but I need to know which `
+      + "one — her left or her right. Say which and I'll put it there. Nothing was charged.",
+  };
+}
+
+/**
+ * WHETHER THIS ADDRESS IS ONE A ROW CAN HOLD — and the sentence when it is not.
+ *
+ * Two questions, and neither is a formality:
+ *
+ *   the PLACEMENT must be one the vocabulary has measured, because the row's
+ *   column is still typed to those three and widening it is a decision on the
+ *   paid sign road rather than here (see `placementUnserved` above);
+ *
+ *   the SIDE must be stated, because `casting_ink_designs.side` is NOT NULL and
+ *   there is no value for *she did not say*. `centre` is not a spare: it is the
+ *   vocabulary's answer for a surface there is ONE of, and `sidesForInkPlacement`
+ *   has already supplied it before this point for `neck` and `upperChest`. So a
+ *   null side here means a PAIRED surface with no word — the one case where a
+ *   value would have to be invented, and inventing it is this road's proven
+ *   refund.
+ *
+ * The served list is derived from the vocabulary rather than typed out, so a
+ * fourth measured surface joins the sentence the day it is measured (law 4).
+ */
+function mintable(address: InkAskAddress, place: string): InkDesignForAsk {
+  if (!isInkPlacement(address.placement)) {
+    const served = INK_PLACEMENTS.map((key) => `her ${inkPlacementBareNoun(key)}`);
+    const list = `${served.slice(0, -1).join(", ")} or ${served[served.length - 1]}`;
+    return {
+      kind: "placementUnserved",
+      say: `I can put a design on ${list} right now — ${place} is more than I can `
+        + "place yet. Nothing was charged.",
+    };
+  }
+  if (address.side === null) return unstatedSide(place);
+  return { kind: "mint", placement: address.placement, side: address.side };
 }
 
 /**

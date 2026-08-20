@@ -12,6 +12,7 @@ import { describe, expect, it } from "vitest";
 import type { TextEngine } from "../providers/types";
 import {
   inkReferenceNote,
+  inkAskIntents,
   namesInkFromReference,
   inkTakeSentence,
   readInkReferenceTake,
@@ -174,6 +175,37 @@ describe("is this delta a tattoo ask", () => {
     expect(namesInkFromReference(readDelta({ hairColour: "copper" }))).toBe(false);
     expect(namesInkFromReference(null)).toBe(false);
     expect(namesInkFromReference(undefined)).toBe(false);
+  });
+});
+
+describe("what the picture is being taken FOR", () => {
+  /*
+    ORDERED fable-1151 §1. A design row records `intents`, and on this road the
+    declaration is HER SENTENCE rather than a field: the attach door is reached
+    before she has typed anything, so there is no ask yet for an intent to
+    authorise.
+
+    The condition binding that ruling is that the value is DERIVED from the same
+    predicate that enters the branch — so an ask that is not a tattoo ask cannot
+    produce a row claiming it was. A constant `["tattoo"]` at the call site
+    would be true today and would go on being written the day the branch's
+    condition moved, which is what these arms are pointed at.
+  */
+  it("declares the tattoo when the ask names a design", () => {
+    expect(inkAskIntents(readDelta({ free: { ink: "the design in the picture" } })))
+      .toEqual(["tattoo"]);
+    /* And through the MARKS half of the predicate too, not just the ink one. */
+    expect(inkAskIntents(readDelta({ free: { marks: ["a small star behind her ear"] } })))
+      .toEqual(["tattoo"]);
+  });
+
+  it("declares NOTHING for an ask that is not about a design", () => {
+    /* The arm that catches a hard-coded constant: a hair ask, a freckle mark
+       and an empty delta must all come back with nothing to declare. */
+    expect(inkAskIntents(readDelta({ hairColour: "copper" }))).toEqual([]);
+    expect(inkAskIntents(readDelta({ free: { marks: ["a few freckles"] } }))).toEqual([]);
+    expect(inkAskIntents(null)).toEqual([]);
+    expect(inkAskIntents(undefined)).toEqual([]);
   });
 });
 

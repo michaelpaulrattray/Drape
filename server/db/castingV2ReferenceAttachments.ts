@@ -104,8 +104,23 @@ export type RecordedReferenceAttachment = {
  *
  * Counted in the same transaction as the insert that may exceed it. A count
  * outside the transaction is a number that was true a moment ago.
+ *
+ * # IT IS EXPORTED BECAUSE A BOUND WITH TWO WRITERS NEEDS ONE COUNTER
+ *
+ * It was private, and the consequence was found at the code on 2026-08-20
+ * (opus-854 §6, ruled fable-1151 §4): `recordInkDesign` enforced the same
+ * shared cap by counting **designs only**, so a Cast holding eight attachments
+ * still admitted eight designs — sixteen kept objects against a bound of eight,
+ * with the bound reading as held because the door somebody tested enforced it.
+ *
+ * Two writers of one bound, and the fix is not a second count spelled the same
+ * way in the other file (law 4): both ask THIS function, so a sabotage here
+ * reddens arms in both suites, which is what one owner looks like from the
+ * outside. It lives in this file because this is the store that was already
+ * counting both — moving it would mint a module whose only job is to be
+ * imported, and the direction of the import says nothing about which cap it is.
  */
-async function countHeldPictures(
+export async function countHeldPicturesIn(
   tx: TransactionHandle,
   candidateId: number,
 ): Promise<number> {
@@ -147,7 +162,7 @@ export async function recordReferenceAttachment(
       .limit(1);
     if (!candidate) throw new ReferenceAttachmentOwnershipError("no such candidate for this account");
 
-    if (await countHeldPictures(tx, candidate.id) >= input.cap) {
+    if (await countHeldPicturesIn(tx, candidate.id) >= input.cap) {
       throw new ReferenceAttachmentCapError("this cast is holding as many pictures as it may");
     }
 

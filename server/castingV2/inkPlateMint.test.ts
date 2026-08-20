@@ -44,6 +44,9 @@ const DESIGN: StoredInkDesign = {
      the disposition — it reads bytes and a digest — so the fixture states the
      honest value rather than a convenient one. */
   cutRoute: null,
+  /* AND SHE DID NOT TAKE IT OUT OF ANYTHING (0048) — an uploaded design, which
+     is what every row in both worlds is today. */
+  sourceDigest: null,
   provenance: "consented",
   intents: ["tattoo"],
   storageKey: "casting-v2/ink/design-1.png",

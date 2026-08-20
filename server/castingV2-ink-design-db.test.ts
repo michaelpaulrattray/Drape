@@ -35,6 +35,7 @@ describeWithDatabase("the ink design store (disposable DB)", () => {
   let removals: typeof import("./db/castingV2InkDesignRemoval");
   let retention: typeof import("./castingV2/candidateRetention");
   let cleanup: typeof import("./db/storageCleanup");
+  let attachments: typeof import("./db/castingV2ReferenceAttachments");
   let db: typeof import("./db/connection");
 
   async function newUser(name: string): Promise<number> {
@@ -78,6 +79,10 @@ describeWithDatabase("the ink design store (disposable DB)", () => {
          cutter, and the state of every row in both worlds today (0047). The
          arm below files the other two. */
       cutRoute: null,
+      /* AND SHE TOOK IT OUT OF NOTHING (0048) — an uploaded design. The
+         attach-pointed mint's rows carry the attachment's digest here, and the
+         arm about the shared cap files one of those beside these. */
+      sourceDigest: null,
       digest: randomUUID().replace(/-/g, "").repeat(2).slice(0, 64),
       mime: "image/png",
       byteSize: 40_137,
@@ -100,6 +105,7 @@ describeWithDatabase("the ink design store (disposable DB)", () => {
     removals = await import("./db/castingV2InkDesignRemoval");
     retention = await import("./castingV2/candidateRetention");
     cleanup = await import("./db/storageCleanup");
+    attachments = await import("./db/castingV2ReferenceAttachments");
     db = await import("./db/connection");
   });
 
@@ -109,6 +115,7 @@ describeWithDatabase("the ink design store (disposable DB)", () => {
 
   beforeEach(async () => {
     await connection.query("DELETE FROM casting_ink_designs");
+    await connection.query("DELETE FROM casting_reference_attachments");
   });
 
   it("files a design against the Cast it names, and reads it back", async () => {
@@ -197,6 +204,79 @@ describeWithDatabase("the ink design store (disposable DB)", () => {
     await expect(designs.recordInkDesign(
       design(other.publicId, owner, `casting-v2/ink/${randomUUID()}.png`),
     )).resolves.toMatchObject({ candidateId: other.candidateId });
+  });
+
+  /**
+   * THE CAP IS SHARED WITH THE ATTACHED PICTURES, AND UNTIL 2026-08-20 THIS
+   * WRITER DID NOT KNOW IT.
+   *
+   * fable-1063 §2 ruled the eight is shared across both stores — *"not 8 + 8,
+   * so the purge surface stays bounded"* — and the attach door enforced exactly
+   * that while `recordInkDesign` counted `casting_ink_designs` alone. A Cast
+   * holding eight attachments still admitted eight designs: sixteen kept
+   * objects against a bound of eight, and the bound READ as held because the
+   * door somebody tested was the one enforcing it (found opus-854 §6, ruled
+   * fable-1151 §4).
+   *
+   * It is driven against the real tables because that is where the shape of the
+   * defect lived: both writers type-check, both name the same constant, and
+   * only the COUNT told them apart.
+   */
+  it("counts the attached pictures too — the cap is shared, not 8 + 8", async () => {
+    const cast = await newCast(owner);
+    for (let at = 0; at < 6; at += 1) {
+      await attachments.recordReferenceAttachment({
+        userId: owner,
+        candidatePublicId: cast.publicId,
+        provenance: "consented",
+        storageKey: `casting-v2/reference/${randomUUID()}.png`,
+        digest: randomUUID().replace(/-/g, "").repeat(2).slice(0, 64),
+        mime: "image/png",
+        byteSize: 40_137,
+        width: 900,
+        height: 1200,
+        cap: 8,
+      });
+    }
+
+    /* Two more designs fit — six plus two is the bound. */
+    for (let at = 0; at < 2; at += 1) {
+      await designs.recordInkDesign(design(cast.publicId, owner, `casting-v2/ink/${randomUUID()}.png`));
+    }
+
+    /* And the ninth picture, whichever store it would land in, does not. */
+    await expect(designs.recordInkDesign(
+      design(cast.publicId, owner, `casting-v2/ink/${randomUUID()}.png`),
+    )).rejects.toBeInstanceOf(designs.InkDesignCapError);
+
+    const [rows] = await connection.query<RowDataPacket[]>(
+      "SELECT (SELECT COUNT(*) FROM casting_ink_designs WHERE candidateId = ?)"
+      + " + (SELECT COUNT(*) FROM casting_reference_attachments WHERE candidateId = ?) AS held",
+      [cast.candidateId, cast.candidateId],
+    );
+    expect(Number(rows[0]!.held)).toBe(8);
+  });
+
+  it("stores the picture a design was taken out of, and reads it back", async () => {
+    /*
+      Migration 0048's column against the real table, because the reuse key is
+      only worth anything if the value survives the round trip — a column that
+      truncated a 64-character digest would make two different pictures compare
+      equal, which is the collision the key exists to prevent.
+    */
+    const cast = await newCast(owner);
+    const source = randomUUID().replace(/-/g, "").repeat(2).slice(0, 64);
+    await designs.recordInkDesign({
+      ...design(cast.publicId, owner, `casting-v2/ink/${randomUUID()}.png`),
+      cutRoute: "cut" as const,
+      sourceDigest: source,
+    });
+    await designs.recordInkDesign(design(cast.publicId, owner, `casting-v2/ink/${randomUUID()}.png`));
+
+    const listed = await designs.listInkDesigns({ userId: owner, candidatePublicId: cast.publicId });
+    expect(listed.map((row) => row.sourceDigest)).toEqual([source, null]);
+    /* The whole digest, not a prefix of it. */
+    expect(listed[0]!.sourceDigest).toHaveLength(64);
   });
 
   /**
