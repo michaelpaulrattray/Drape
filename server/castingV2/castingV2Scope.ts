@@ -1536,6 +1536,27 @@ export function captureCastingInkReferenceEnabled(userId: number): boolean {
   return captureCastingReferenceAttachEnabled(userId);
 }
 
+/**
+ * Whether a design may reach a Cast AT ALL, by either road — the retention
+ * sweep's question about the delivered-tattoo store (0049), and only ever
+ * about whether a MISSING TABLE is tolerable.
+ *
+ * Two doors mint a design row and neither is the other's parent: the studio's
+ * upload (`CASTING_INK_STUDIO_SCOPE`) and the take from an attached picture
+ * (`CASTING_INK_REFERENCE_SCOPE`, whose parent is the attach door). A delivery
+ * crop cannot exist without a design row, so this is the OR of the two rather
+ * than a third list of conditions to keep in step (law 4).
+ *
+ * It never gates the purge itself. A crop cut while a flag was on must be
+ * collected after it goes off, and a retention path that narrows with a feature
+ * flag is how a picture of a real person's neck outlives the Cast it was
+ * promised to leave with.
+ */
+export function castingInkDeliveryCropArmed(): boolean {
+  return castingInkStudioArmed()
+    || parseCastingInkReferenceScope(process.env[CASTING_INK_REFERENCE_SCOPE_ENV]).kind !== "off";
+}
+
 /*
   THE TAKE-BUILT GUARD IS GONE, AND THIS IS THE COMMIT ITS OWN MESSAGE NAMED.
 

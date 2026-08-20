@@ -22,7 +22,11 @@ import {
   INK_NOT_ON_CLOTHING,
   INK_SITS_ON_THE_FORM,
   INK_SITS_ON_THE_FORM_LINES,
+  inkDeliveredCarrySentence,
+  inkNotOnClothingClause,
+  inkRealismClause,
 } from "./inkRealism";
+import { inkTakeSentence } from "./inkReferenceTake";
 import { inkTemplateFor } from "./inkTemplates";
 import { inkViewReferenceClause } from "./inkViewReferences";
 
@@ -77,5 +81,89 @@ describe("every lane that says it, says the OWNER'S string", () => {
       firstOrdinal: 2,
     });
     expect(clause).toContain(INK_NOT_ON_CLOTHING);
+  });
+});
+
+/*
+  THE TWO SENTENCES MAY NEVER SHARE AN INSTANCE — ruled fable-1194 §2a, as a
+  rule with an arm rather than a note in a docblock.
+
+  The fresh lane and the delivered carry both hand a picture to the painter, and
+  what they must say about the SKIN in that picture is opposite:
+
+    fresh       somebody else's artwork on somebody else's arm. The surrounding
+                surface is a hazard, so `inkTakeSentence` disclaims it —
+                "Do not take skin, skin tone, body shape, pose or lighting from
+                the reference — keep his own."
+    delivered   a crop of HIS OWN frame. The surface is the FACT being supplied
+                — his tone, his light, the ink at the size it landed — and the
+                disclaimer would tell the painter to ignore the one thing the
+                crop was minted for.
+
+  Both sentences are imported here, so a future edit that merges them into one
+  reusable clause turns this file red instead of quietly making one of the two
+  lanes wrong.
+*/
+describe("the fresh sentence and the delivered carry cannot be one sentence", () => {
+  const HE = { subject: "he", object: "him", possessive: "his", plural: false };
+  const DISCLAIMER = "Do not take skin, skin tone, body shape, pose or lighting";
+
+  it("the FRESH lane disclaims the reference's skin", () => {
+    expect(inkTakeSentence(HE)).toContain(DISCLAIMER);
+  });
+
+  it("the DELIVERED carry does not — and says whose skin it is showing", () => {
+    const sentence = inkDeliveredCarrySentence(2, "neck tattoo", HE);
+    expect(sentence).not.toContain(DISCLAIMER);
+    /* Not merely "no disclaimer": the affirmative and the negative cannot be
+       allowed to share an answer, so the arm demands the positive claim too. */
+    expect(sentence).toContain("HIS OWN skin");
+    expect(sentence).toContain("his own tone");
+    expect(sentence).toContain("his own light");
+  });
+
+  it("the delivered carry still says what a tattoo IS on skin", () => {
+    /* The naming form alone is the decal instruction. `486` and its siblings
+       failed on that, and the realism clause is the same fix on this lane. */
+    const sentence = inkDeliveredCarrySentence(2, "neck tattoo", HE);
+    expect(sentence).toContain(inkRealismClause(HE));
+    expect(sentence).toContain("HEALED tattoo");
+    expect(sentence).toContain("never printed, embroidered");
+  });
+
+  it("it takes the CAST'S pronoun, on all three", () => {
+    /* `segmentsOnFace` shipped "hers" onto a male candidate before pronouns
+       were passed rather than guessed; this sentence talks about a person's
+       skin four times in one breath. */
+    const she = inkDeliveredCarrySentence(2, "neck tattoo", {
+      subject: "she", object: "her", possessive: "her", plural: false,
+    });
+    expect(she).toContain("HER OWN skin");
+    /* A WORD BOUNDARY, never a substring: "this picture" contains "his", and a
+       bare `not.toContain` would pass on a sentence riddled with the wrong
+       pronoun the day somebody removed the word "this". */
+    expect(she).not.toMatch(new RegExp(String.raw`\bhis\b`));
+    const they = inkDeliveredCarrySentence(2, "neck tattoo", {
+      subject: "they", object: "them", possessive: "their", plural: true,
+    });
+    expect(they).toContain("they already have");
+    expect(they).toContain("THEIR OWN skin");
+  });
+
+  it("⚠ THE REVERTED CLAUSE IS GONE — `8f0515d2`, measured on three frames", () => {
+    /*
+      `inkStopsAtTheGarmentClause` said the edge as a place and `490` carried it
+      in full onto a T-shirt. fable-1194 §2c's standing rule: a clause measured
+      not to work is REMOVED by the next commit that touches its lane. This arm
+      is what stops it drifting back in as prose somebody liked the sound of.
+    */
+    for (const sentence of [
+      inkDeliveredCarrySentence(2, "neck tattoo", HE),
+      inkRealismClause(HE),
+      inkNotOnClothingClause(HE),
+    ]) {
+      expect(sentence).not.toContain("Its edge is where");
+      expect(sentence).not.toContain("Do not enlarge, extend or complete");
+    }
   });
 });

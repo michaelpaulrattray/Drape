@@ -25,6 +25,10 @@ import {
 import { deleteFaceScanRowsIn, listPurgeableFaceScansIn } from "../db/castingV2FaceScans";
 import { deleteInkDesignRowsIn, listPurgeableInkDesignsIn } from "../db/castingV2InkDesigns";
 import {
+  deleteInkDeliveryCropRowsIn,
+  listPurgeableInkDeliveryCropsIn,
+} from "../db/castingV2InkDeliveryCrops";
+import {
   deleteReferenceCropRowsIn,
   listPurgeableReferenceCropsIn,
 } from "../db/castingV2ReferenceCrops";
@@ -57,6 +61,7 @@ import {
   castingReferenceAttachArmed,
   castingReferenceLibraryArmed,
   castingScanTableArmed,
+  castingInkDeliveryCropArmed,
   castingSegmentsArmed,
   parseCastingV2Scope,
   CASTING_V2_SCOPE_ENV,
@@ -216,6 +221,28 @@ function tolerateAbsentInkPlateStore(error: unknown): never | [] {
   if (!isMissingTable(error) || castingInkStudioArmed()) throw error;
   log.warn(
     "[candidateRetention] the ink plate table is absent — nothing can have been written to it, so nothing is being left behind. This is expected only before the plate migration lands.",
+  );
+  return [];
+}
+
+/**
+ * And the same again for a DELIVERED-TATTOO CROP (0049).
+ *
+ * Its arming question is neither a single flag nor the ingestion map: a crop
+ * here cannot exist without a design row, and TWO doors mint one — the studio's
+ * upload and the take from an attached picture. `castingInkDeliveryCropArmed`
+ * is that OR, derived where the scopes live rather than spelled a second time
+ * here (law 4).
+ *
+ * This clause lands with the migration and with the writer in one commit,
+ * which is the ordering that matters most on this road: the object is a crop of
+ * a real person's neck at a permanently public URL, and a row-driven sweep that
+ * gained its clause afterwards would have missed every crop written in between.
+ */
+function tolerateAbsentInkDeliveryCropStore(error: unknown): never | [] {
+  if (!isMissingTable(error) || castingInkDeliveryCropArmed()) throw error;
+  log.warn(
+    "[candidateRetention] the delivered-tattoo crop table is absent — no ink door is open, so nothing can have been written to it and nothing is being left behind. This is expected only before the 0049 migration lands.",
   );
   return [];
 }
@@ -438,6 +465,27 @@ export async function runCandidateRetentionSweep(now = new Date()): Promise<Rete
         storageItems.push({ storageKey: design.storageKey, storageBackend: "public_r2" as const });
       }
       if (inkDesigns.length > 0) await deleteInkDesignRowsIn(tx, candidateIds);
+
+      /*
+        THE CROP OF THE TATTOO AS IT LANDED ON HER (0049).
+
+        Unconditional and NOT gated on any ink flag, on the same terms as
+        everything above it: a flag governs whether a crop is ever CUT and
+        nothing governs whether it is purged.
+
+        It goes AFTER the designs deliberately, and the reason is the plate's
+        one clause up with the roles swapped: this row's only path back to a
+        Cast is its own `candidateId`, so the order costs nothing here — but a
+        reader comparing the two should see that a delivery crop is not reached
+        THROUGH a design and therefore cannot be orphaned by deleting one.
+      */
+      const inkDeliveryCrops = await listPurgeableInkDeliveryCropsIn(tx, candidateIds).catch(
+        (error: unknown) => tolerateAbsentInkDeliveryCropStore(error),
+      );
+      for (const crop of inkDeliveryCrops) {
+        storageItems.push({ storageKey: crop.storageKey, storageBackend: "public_r2" as const });
+      }
+      if (inkDeliveryCrops.length > 0) await deleteInkDeliveryCropRowsIn(tx, candidateIds);
 
       /*
         THE CUTS TAKEN FROM A CUSTOMER'S OWN REFERENCE (0040).

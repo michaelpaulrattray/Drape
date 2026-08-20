@@ -4082,6 +4082,11 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
     const withDesigns = (rows: readonly StoredInkDesign[]) => ({
       ...hairDown,
       listInkDesigns: async () => rows,
+      /* NO CROP WAS EVER KEPT — the state of every Cast that predates 0049, and
+         the default for this whole block so an arm about the DELIVERED crop has
+         to say so explicitly. A default that supplied one would let the
+         fallback arms pass as clause (a) arms. */
+      listInkDeliveryCrops: async () => [],
     });
 
     const dispatched = () => dispatchRecords[0]!.repaint as {
@@ -4156,6 +4161,116 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
       /* Nothing was painted, and the money went back — the refund path, which
          is the right shape for a recipe the assembler will not build. */
       expect(painted).toHaveLength(0);
+    });
+
+    /*
+      CLAUSE (a) AT THE WIRE — the tattoo as it landed rides instead of the
+      artwork (design report opus-886 §3, countersigned fable-1194 §2).
+
+      Every arm below is about WHICH PICTURE goes out, which is the only thing
+      the court could not fix with words: three carry renders with three
+      different clauses all put the design on his T-shirt, because the artwork
+      has no size in it and the master has no tattoo on it.
+    */
+    const DELIVERY_KEY = "casting-v2/ink-delivery/on-her-chest.png";
+    /* Computed from the bytes the harness serves for that key, for the same
+       reason the design's is: `repaintRender` re-hashes every reference and
+       refuses one whose bytes have moved, so a hand-typed digest would make
+       this arm prove the refusal instead of the carry. */
+    const DELIVERY_SHA = createHash("sha256")
+      .update(Buffer.from(`crop:${DELIVERY_KEY}`)).digest("hex");
+    const deliveredCrop = (over: Record<string, unknown> = {}) => ({
+      designPublicId: DESIGN_ID,
+      slot: "ink:upperChest",
+      storageKey: DELIVERY_KEY,
+      digest: DELIVERY_SHA,
+      width: 281,
+      height: 268,
+      ...over,
+    });
+
+    it("RIDES THE DELIVERED CROP when one was kept for that design", async () => {
+      wearingTheDesign();
+
+      await refineCandidate({
+        ...withDesigns([designRow()]),
+        listInkDeliveryCrops: async () => [deliveredCrop()],
+      }, { ...input, instruction: "wear her hair down" });
+
+      /* The bytes on the wire are the CROP's, not the design's. */
+      expect(painted[0]!.references.map((reference) => String(reference.bytes)))
+        .toContain(`crop:${DELIVERY_KEY}`);
+      expect(painted[0]!.references.map((reference) => String(reference.bytes)))
+        .not.toContain(`crop:${DESIGN_KEY}`);
+      /* And it is described as what it IS — her own skin, at the size it
+         landed — rather than as artwork on transparency. */
+      expect(painted[0]!.prompt).toContain("HER OWN skin");
+      expect(painted[0]!.prompt).toContain("whatever edge you can see in it is the real edge");
+      expect(painted[0]!.prompt).not.toContain("artwork alone on a transparent background");
+      /* Still a CARRY, so the verification still has a question about it. */
+      expect(dispatched().carried).toContain("ink:upperChest");
+    });
+
+    it("matches the crop on the DESIGN AND THE SLOT, never on one of them", async () => {
+      /*
+        `uniqueness-proves-the-key`: the row's own key is (candidate, design,
+        slot), so matching on less than that is matching on less than the thing
+        is keyed by — and a crop of her neck sent as her upper arm's carry is
+        the wrong-boundary class with a picture attached.
+      */
+      wearingTheDesign();
+
+      await refineCandidate({
+        ...withDesigns([designRow()]),
+        listInkDeliveryCrops: async () => [
+          deliveredCrop({ slot: "ink:neck", storageKey: "casting-v2/ink-delivery/her-neck.png" }),
+          deliveredCrop({ designPublicId: "some-other-design", storageKey: "casting-v2/ink-delivery/other.png" }),
+        ],
+      }, { ...input, instruction: "wear her hair down" });
+
+      /* Neither near-miss rode, and the carry fell back to the artwork. */
+      expect(painted[0]!.references.map((reference) => String(reference.bytes)))
+        .toContain(`crop:${DESIGN_KEY}`);
+      expect(painted[0]!.prompt).toContain("artwork alone on a transparent background");
+    });
+
+    it("falls back to the artwork when the 0049 table is not there yet", async () => {
+      /*
+        The ordinary state of a database between the deploy and the ceremony,
+        and of every Cast whose tattoo landed before this build. The tattoo does
+        not vanish — it rides the road it drove yesterday. A refund here would
+        be losing a render to a bookkeeping table.
+      */
+      wearingTheDesign();
+
+      await refineCandidate({
+        ...withDesigns([designRow()]),
+        listInkDeliveryCrops: async () => { throw new Error("Table 'casting_ink_delivery_crops' doesn't exist"); },
+      }, { ...input, instruction: "wear her hair down" });
+
+      expect(painted[0]!.references.map((reference) => String(reference.bytes)))
+        .toContain(`crop:${DESIGN_KEY}`);
+      expect(painted[0]!.prompt).toContain("the exact upper chest tattoo she already has");
+    });
+
+    it("NEGATIVE CONTROL: a carry render mints nothing — MINTED ONCE", async () => {
+      /*
+        fable-1193 §3b, at the wire rather than in a docblock: the crop is cut
+        from the frame that FIRST delivered the design and never re-cut from a
+        later carry, because a crop of a carried frame is a copy of a copy and
+        the drift compounds with nothing going red.
+
+        This render carries and does not edit, so the mint must not run at all.
+      */
+      wearingTheDesign();
+
+      await refineCandidate({
+        ...withDesigns([designRow()]),
+        listInkDeliveryCrops: async () => [deliveredCrop()],
+        mintInkDeliveryCrop: async () => { throw new Error("a carry render minted a crop"); },
+      }, { ...input, instruction: "wear her hair down" });
+
+      expect(painted).toHaveLength(1);
     });
   });
 
@@ -9102,6 +9217,18 @@ describe("the picture she attached becomes the carrier that rides", () => {
     regions: reader(),
     interpret: async () => ({ ok: true as const, delta: { free: { hairCut: "a mid-length wavy cut" } } }),
     harvest: unmasked,
+    /* Clause (a)'s mint at its own seam — see `deliveryCropsMinted`. */
+    mintInkDeliveryCrop: async (request: {
+      variantPublicId: string;
+      design: { publicId: string; slot: string };
+    }) => {
+      deliveryCropsMinted.push({
+        variant: request.variantPublicId,
+        design: request.design.publicId,
+        slot: request.design.slot,
+      });
+      return { outcome: "minted" as const, slot: request.design.slot, maskPixels: 27374, keptPixels: 27374 };
+    },
     ...over,
   });
 
@@ -9109,6 +9236,7 @@ describe("the picture she attached becomes the carrier that rides", () => {
     painted.length = 0;
     minted.length = 0;
     inkMinted.length = 0;
+    deliveryCropsMinted.length = 0;
     asked.length = 0;
     resolveAskReferenceMock.mockResolvedValue(REFERENCE);
   });
@@ -9441,6 +9569,16 @@ describe("the picture she attached becomes the carrier that rides", () => {
    */
   const inkMinted: Array<{ placement: string; side: string; sourceDigest: string }> = [];
 
+  /**
+   * WHAT THE DELIVERY MINT WAS ASKED TO KEEP — clause (a)'s own seam.
+   *
+   * Stubbed for the same reason its sibling above is: this suite must not
+   * decode a frame, call a segmenter, write to a bucket or open a database.
+   * Recorded rather than merely swallowed, because "was it called at all, and
+   * on which frame" is the whole of what the wire owes.
+   */
+  const deliveryCropsMinted: Array<{ variant: string; design: string; slot: string }> = [];
+
   const inkRoad = (over: Record<string, unknown> = {}) => carrierRoad({
     inkReferenceEnabled: () => true,
     /*
@@ -9669,6 +9807,19 @@ describe("the picture she attached becomes the carrier that rides", () => {
     }).mock.calls.at(-1)![0];
     expect(claimed.deltas.inkApplied).toEqual({ "ink:sleeve@left": "d-sleeve" });
     expect(claimed.stepDeltas.at(-1)!.inkApplied).toEqual({ "ink:sleeve@left": "d-sleeve" });
+    /*
+      AND THE FRAME THAT DELIVERED IT IS CUT AND KEPT — clause (a)'s POSITIVE
+      control at the wire (countersigned fable-1194 §2).
+
+      The carry suite's negative control proves a carry render mints nothing;
+      without this one, "never mints" would pass with the mint wired to
+      nothing at all, which is this campaign's own inert-control shape. The
+      variant asserted is the one this render just claimed, because a crop cut
+      from any other frame is a picture of a different moment.
+    */
+    expect(deliveryCropsMinted).toEqual([
+      { variant: "variant-1", design: "d-sleeve", slot: "ink:sleeve@left" },
+    ]);
   });
 
   /*

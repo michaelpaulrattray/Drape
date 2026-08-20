@@ -19,7 +19,9 @@ import {
   type LibraryEntry,
   type RecipeSource,
 } from "./recipeAssembler";
-import { inkNotOnClothingClause, inkRealismClause, inkStopsAtTheGarmentClause } from "./inkRealism";
+import {
+  inkDeliveredCarrySentence, inkNotOnClothingClause, inkRealismClause,
+} from "./inkRealism";
 import { inkTakeSentence } from "./inkReferenceTake";
 
 const MASTER = { key: "casting-v2/candidates/master.png", sha: "16bb85180e9e" };
@@ -1761,9 +1763,11 @@ describe("the sentence riding with a design claims the artwork and nothing of he
 */
 describe("a design she already has rides the renders that are not about it", () => {
   const DESIGN = { key: "casting-v2/ink/design.png", sha: "962fe3fda823" };
-  const carriedInk = (over: Partial<CarriedInkDesign> = {}): CarriedInkDesign => ({
+  type ArtworkCarry = Extract<CarriedInkDesign, { picture: "designArtwork" }>;
+  const carriedInk = (over: Partial<ArtworkCarry> = {}): CarriedInkDesign => ({
     slot: "ink:upperChest",
     image: DESIGN,
+    picture: "designArtwork",
     cutRoute: "rideWhole",
     noun: "upper chest tattoo",
     ...over,
@@ -2076,87 +2080,154 @@ describe("a words-only ink ask is told what a tattoo is on skin", () => {
 });
 
 /*
-  WHERE THE CARRIED DESIGN STOPS — the clause the COURT bought (fable-1191 §1).
+  THE TATTOO AS IT LANDED ON HER — clause (a), ruled fable-1193 §3 and
+  countersigned fable-1194 §2.
 
-  The realism landing fixed the fresh lane and did not fix the carry lane: both
-  carry arms put the design on his T-shirt, `485` at `42652964` and `487` at
-  `283a0f37` — and the second had the clothing PROHIBITION on the wire in full.
-  So this is not a synonym for that rule; it is the fact the rule does not
-  carry, which is where the edge is.
+  # What this replaces, and the measurement is why
 
-  The negative control is the important half. This clause is deliberately the
-  ONLY thing in this module said on one ink lane and not the others, because the
-  fresh frame PASSED and a clause added to a passing frame is a change nobody
-  courted.
+  A `describe` block stood here for the BOUNDARY CLAUSE (`8f0515d2`) — the carry
+  lane's edge said as a place, *"Its edge is where his clothing begins"*. It was
+  courted on the carry pair and it did not work: `490` had it on the wire in
+  full and drew the design a third of the way down a white T-shirt, exactly as
+  `485` (no realism language) and `487` (the clothing prohibition in full) had.
+  Three clauses, three shirts.
+
+  So the clause is REVERTED and this is its replacement — not a fourth sentence
+  but the same instruction pointed at a picture that finally contains the size:
+  a crop of the frame that delivered the tattoo, which holds his own skin, the
+  ink at its delivered scale, and the collar's own edge at the bottom of it.
+
+  # The negative controls are the important half
+
+  Two of them, and each guards a different way for this to go quietly wrong:
+  the delivered sentence must NOT carry the fresh lane's skin disclaimer (the
+  picture's skin is the FACT, not the hazard), and the reverted clause must be
+  gone from every lane.
 */
-describe("the carry says where the design stops, and only the carry", () => {
+describe("the carry rides the tattoo as it landed, not the artwork", () => {
   const DESIGN = { key: "casting-v2/ink/design.png", sha: "962fe3fda823" };
+  const DELIVERED = { key: "casting-v2/ink-delivery/crop.png", sha: "5b1c04ffe210" };
 
-  it("rides the carry sentence, in the CAST'S pronoun", () => {
-    const recipe = assembleRecipe({
-      master: MASTER, pronouns: HE, library: [],
-      asks: [{ slot: "eye@left", noun: "left eye", words: "green" }],
-      carriedInk: [{
-        slot: "ink:upperChest", image: DESIGN, cutRoute: "rideWhole", noun: "upper chest tattoo",
-      }],
-    });
-    expect(recipe.ok).toBe(true);
-    if (!recipe.ok) return;
-    expect(recipe.prompt).toContain(inkStopsAtTheGarmentClause(HE));
-    expect(recipe.prompt).toContain("Its edge is where his clothing begins");
-    /* The observed defect, named as an instruction: the design GREW between the
-       frame that delivered it and the frame that carried it. */
-    expect(recipe.prompt).toContain("Do not enlarge, extend or complete the design");
+  const carrying = (design: CarriedInkDesign) => assembleRecipe({
+    master: MASTER, pronouns: HE, library: [],
+    asks: [{ slot: "eye@left", noun: "left eye", words: "green" }],
+    carriedInk: [design],
   });
 
-  it("does NOT ride the FRESH lane — the negative control the court bought", () => {
-    /*
-      `486` passed at his three FAIL classes with the realism landing alone. If
-      this clause appeared there too, the carry court would be measuring a
-      change to both lanes and could not say which one moved.
-    */
-    const recipe = assembleRecipe({
-      master: MASTER, pronouns: HE, library: [],
-      asks: [{ slot: "hair", noun: "hair", words: "a mid-length wavy cut" }],
-      sources: [{
-        slot: "hair",
-        image: DESIGN,
-        pictures: "inkDesignOnTransparency",
-        cutRoute: "cut",
-        scope: inkTakeSentence(HE),
-      }],
+  it("says whose skin the picture shows, and what the edge in it means", () => {
+    const recipe = carrying({
+      slot: "ink:upperChest", image: DELIVERED, picture: "deliveredCrop",
+      noun: "upper chest tattoo",
     });
     expect(recipe.ok).toBe(true);
     if (!recipe.ok) return;
+    expect(recipe.prompt).toContain(inkDeliveredCarrySentence(2, "upper chest tattoo", HE));
+    /* The two facts the artwork could never supply. */
+    expect(recipe.prompt).toContain("HIS OWN skin");
+    expect(recipe.prompt).toContain("whatever edge you can see in it is the real edge");
+    /* And it is still ink in skin rather than a reproduced drawing. */
     expect(recipe.prompt).toContain(inkRealismClause(HE));
-    expect(recipe.prompt).not.toContain("Its edge is where");
+    expect(recipe.prompt).toContain(inkNotOnClothingClause(HE));
   });
 
-  it("does NOT ride the words-only lane either", () => {
-    const recipe = assembleRecipe({
+  it("NEGATIVE CONTROL: it does not carry the fresh lane's skin disclaimer", () => {
+    /*
+      fable-1194 §2a, as an arm rather than a note. `inkTakeSentence` tells the
+      painter *"Do not take skin, skin tone, body shape, pose or lighting from
+      the reference — keep his own"*, which is right about somebody else's
+      artwork and FALSE about a crop of his own frame: the skin in that picture
+      IS his own, and it is the reason the crop was minted. The two sentences
+      may never share an instance, and this is what says so.
+    */
+    const recipe = carrying({
+      slot: "ink:upperChest", image: DELIVERED, picture: "deliveredCrop",
+      noun: "upper chest tattoo",
+    });
+    expect(recipe.ok).toBe(true);
+    if (!recipe.ok) return;
+    expect(recipe.prompt).not.toContain("Do not take skin, skin tone, body shape, pose or lighting");
+    /* Nor the artwork lane's own description, which would be a lie about these
+       bytes: there is a body in this picture and it is hers. */
+    expect(recipe.prompt).not.toContain("the artwork alone on a transparent background");
+  });
+
+  it("NEGATIVE CONTROL: the reverted boundary clause is gone from every lane", () => {
+    const delivered = carrying({
+      slot: "ink:upperChest", image: DELIVERED, picture: "deliveredCrop",
+      noun: "upper chest tattoo",
+    });
+    const artwork = carrying({
+      slot: "ink:upperChest", image: DESIGN, picture: "designArtwork",
+      cutRoute: "rideWhole", noun: "upper chest tattoo",
+    });
+    const fresh = assembleRecipe({
       master: MASTER, pronouns: HE, library: [],
       asks: [{ slot: "ink:neck", noun: "neck tattoo", words: "a small geometric skeleton design" }],
     });
-    expect(recipe.ok).toBe(true);
-    if (!recipe.ok) return;
-    expect(recipe.prompt).toContain(inkRealismClause(HE));
-    expect(recipe.prompt).not.toContain("Its edge is where");
+    for (const recipe of [delivered, artwork, fresh]) {
+      expect(recipe.ok).toBe(true);
+      if (!recipe.ok) return;
+      expect(recipe.prompt).not.toContain("Its edge is where");
+      expect(recipe.prompt).not.toContain("Do not enlarge, extend or complete the design");
+    }
   });
 
-  it("says it once per carried design, beside that design's own sentence", () => {
+  it("falls back to the artwork when no crop was ever kept", () => {
+    /*
+      Every Cast that predates 0049, and every delivery whose mint answered
+      `no-cut`. The carry still happens — the tattoo does not vanish — it simply
+      rides the road it drove yesterday, which is what makes the mint's failure
+      survivable rather than a lost feature.
+    */
+    const recipe = carrying({
+      slot: "ink:upperChest", image: DESIGN, picture: "designArtwork",
+      cutRoute: "rideWhole", noun: "upper chest tattoo",
+    });
+    expect(recipe.ok).toBe(true);
+    if (!recipe.ok) return;
+    expect(recipe.prompt).toContain("the artwork alone on a transparent background");
+    expect(recipe.prompt).not.toContain("HIS OWN skin");
+  });
+
+  it("a delivered crop needs no cut route, and the artwork still does", () => {
+    /*
+      The fence is not weakened, it is pointed at the right object. A delivered
+      crop is a cut of OUR render and carries none of her upload's bytes; an
+      unexamined ARTWORK is still refused, on the carry road as on the source
+      road, because nobody has looked at what is in that picture.
+    */
+    const delivered = carrying({
+      slot: "ink:upperChest", image: DELIVERED, picture: "deliveredCrop",
+      noun: "upper chest tattoo",
+    });
+    expect(delivered.ok).toBe(true);
+
+    const unexamined = carrying({
+      slot: "ink:upperChest", image: DESIGN, picture: "designArtwork",
+      cutRoute: null, noun: "upper chest tattoo",
+    });
+    expect(unexamined.ok).toBe(false);
+    if (unexamined.ok) return;
+    expect(unexamined.reason).toBe("sourceNotExamined");
+  });
+
+  it("says it once per carried design, beside that design's own picture", () => {
     const recipe = assembleRecipe({
       master: MASTER, pronouns: HE, library: [],
       asks: [{ slot: "eye@left", noun: "left eye", words: "green" }],
       carriedInk: [
-        { slot: "ink:upperChest", image: DESIGN, cutRoute: "rideWhole", noun: "upper chest tattoo" },
-        { slot: "ink:neck", image: DESIGN, cutRoute: "rideWhole", noun: "neck tattoo" },
+        {
+          slot: "ink:upperChest", image: DELIVERED, picture: "deliveredCrop",
+          noun: "upper chest tattoo",
+        },
+        { slot: "ink:neck", image: DELIVERED, picture: "deliveredCrop", noun: "neck tattoo" },
       ],
     });
     expect(recipe.ok).toBe(true);
     if (!recipe.ok) return;
-    /* Two designs, two carry sentences, two boundaries — unlike the words-only
-       clause, which is one standing sentence for any number of asks. Each
-       carried design states its own, because each is a different edge. */
-    expect(recipe.prompt.split("Its edge is where")).toHaveLength(3);
+    /* Two designs, two delivered sentences — each is a different picture of a
+       different place on him, so neither may be said for both. */
+    expect(recipe.prompt.split("whatever edge you can see in it")).toHaveLength(3);
+    expect(recipe.references).toHaveLength(3);
   });
 });

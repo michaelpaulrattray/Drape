@@ -220,6 +220,8 @@ import { sidesForInkPlacement } from "../../shared/inkReleasedPlacements";
 import { INK_PLACEMENTS } from "../../shared/inkPlacementVocabulary";
 import { mintInkDesignFromReference } from "./inkReferenceMint";
 import { listInkDesigns } from "../db/castingV2InkDesigns";
+import { listInkDeliveryCrops } from "../db/castingV2InkDeliveryCrops";
+import { mintInkDeliveryCrop } from "./inkDeliveryMint";
 import { removeInkDesign } from "../db/castingV2InkDesignRemoval";
 import { inkDesignImagePath } from "../../shared/inkDesignDelivery";
 import type { InkCutRoute } from "../../shared/inkCutRoute";
@@ -739,6 +741,16 @@ export type RefineServiceDependencies = {
   /** Test seam. The shipped read is owner-scoped on both sides of its join,
    *  so a double that ignored the owner would be testing a different door. */
   listInkDesigns?: typeof listInkDesigns;
+  /** Test seam, same terms as its sibling above — owner-scoped on both sides of
+   *  its own join, so a double that ignored the owner tests a different door. */
+  listInkDeliveryCrops?: typeof listInkDeliveryCrops;
+  /**
+   * KEEPING THE TATTOO AS IT LANDED — clause (a)'s mint, injected for the same
+   * reason the design mint is: it decodes a frame, calls a segmenter, writes an
+   * object and files a row, and a suite must be able to drive the ORDER around
+   * it without any of the four.
+   */
+  mintInkDeliveryCrop?: typeof mintInkDeliveryCrop;
   /**
    * FILING THE DESIGN IN HER PICTURE — the attach-pointed mint, injected for
    * the same reason its siblings are: it fetches bytes, calls a segmenter and
@@ -5229,6 +5241,32 @@ async function refineCandidateCounted(
             userId: input.userId,
             candidatePublicId: input.candidatePublicId,
           });
+          /*
+            AND THE TATTOO AS IT LANDED ON HER, where one has been kept —
+            clause (a), countersigned fable-1194 §2.
+
+            Read beside the designs rather than instead of them: the crop is
+            what RIDES, and the design row is still what says the carry is
+            legal at all (its `cutRoute`, its very existence, the per-design
+            delete). A crop with no design row behind it carries nothing, which
+            is the same rule one line down and is what makes the per-design
+            delete still work.
+
+            An absent table is TOLERATED here and nowhere else on this path: it
+            is the ordinary state of a database that has not taken 0049 yet,
+            and the answer to it is the road this lane drove yesterday — the
+            artwork carry — rather than a refund on a render already delivered.
+          */
+          const deliveredCrops = await (dependencies.listInkDeliveryCrops ?? listInkDeliveryCrops)({
+            userId: input.userId,
+            candidatePublicId: input.candidatePublicId,
+          }).catch((error: unknown) => {
+            log.warn(
+              { operationId, variant: variant.publicId, err: error },
+              "[refineService] the delivered-tattoo crops could not be read — every carry on this render rides the design's own artwork",
+            );
+            return [] as const;
+          });
           /* The assembler's own type rather than a re-listing of its fields:
              a copy drifts by losing a field nothing can see, and the Atlas
              says so mechanically. */
@@ -5262,16 +5300,39 @@ async function refineCandidateCounted(
               );
               continue;
             }
-            carried.push({
-              slot,
-              /* By KEY and DIGEST, never fetched here: `repaintRender` re-reads
-                 every reference and refuses when the loaded bytes do not hash to
-                 the sha the recipe named, which is fable-1137 §3b's moved-bytes
-                 refusal met by machinery that already exists. */
-              image: { key: design.storageKey, sha: design.digest },
-              cutRoute: design.cutRoute,
-              noun,
-            });
+            /*
+              THE CROP IS MATCHED ON BOTH THE DESIGN AND THE SLOT.
+
+              Never on the design alone: the same design may in principle sit at
+              two placements, and a crop of her neck sent as her upper arm's
+              carry would be the wrong-boundary class with a picture attached.
+              The row's own unique key is (candidate, design, slot), so matching
+              on less than it here is matching on less than the thing is keyed by
+              (`uniqueness-proves-the-key`).
+            */
+            const delivered = deliveredCrops.find(
+              (crop) => crop.designPublicId === designId && crop.slot === slot,
+            );
+            carried.push(delivered
+              ? {
+                slot,
+                picture: "deliveredCrop",
+                /* Same posture as the artwork below — by KEY and DIGEST, and
+                   `repaintRender` refuses if the bytes at that key have moved. */
+                image: { key: delivered.storageKey, sha: delivered.digest },
+                noun,
+              }
+              : {
+                slot,
+                picture: "designArtwork",
+                /* By KEY and DIGEST, never fetched here: `repaintRender` re-reads
+                   every reference and refuses when the loaded bytes do not hash to
+                   the sha the recipe named, which is fable-1137 §3b's moved-bytes
+                   refusal met by machinery that already exists. */
+                image: { key: design.storageKey, sha: design.digest },
+                cutRoute: design.cutRoute,
+                noun,
+              });
           }
           return carried;
         })();
@@ -5280,7 +5341,14 @@ async function refineCandidateCounted(
           {
             operationId,
             variant: variant.publicId,
-            slots: carriedInk.map((one) => one.slot),
+            /*
+              WHICH PICTURE EACH ONE RODE, and it is the line that says whether
+              (a) is happening at all. A carry reading `designArtwork` after 0049
+              has landed is the state the court measured onto a T-shirt three
+              times — indistinguishable at the frames from (a) not working, and
+              visible here in one search of the log.
+            */
+            slots: carriedInk.map((one) => `${one.slot}:${one.picture}`),
           },
           "[refineService] her own designs ride a render that is not about them",
         );
@@ -7621,6 +7689,71 @@ async function refineCandidateCounted(
         log.warn(
           { err: error, operationId, variant: variant.publicId },
           "[refineService] this render's references were not minted — the picture stands",
+        );
+      }
+    }
+
+    /*
+      AND THE TATTOO THIS RENDER PUT ON HER, KEPT AS IT LANDED — clause (a)
+      (design report opus-886 §3, countersigned fable-1193 §3 / fable-1194 §2).
+
+      Ink is the one facet whose delivered state rode as SOURCE ARTWORK instead
+      of as a crop of her own frame, and that difference is exactly where the
+      defect lived: three carry renders, three shirts, with three different
+      clauses on the wire. The artwork has no size in it and the master has no
+      tattoo on it, so *"at the same size"* pointed at nothing measurable. This
+      is the step that gives the next carry a picture that contains the answer.
+
+      # Why it sits outside the library's mint rather than inside it
+
+      The library's `carry` door requires a guard reading — an independent
+      second read scored against a SPECIMEN FAMILY — and ink has none: the whole
+      measured population is three masks. Through that door every ink crop would
+      refuse `noSpecimen` and file words. Migration 0049's header carries the
+      full argument, and it is the same one migration 0040 made for the
+      customer-supplied crop store.
+
+      # Why the condition is `appliedInk` and not a flag
+
+      `appliedInk` is non-null exactly when THIS render resolved a design and
+      put it on her, which already implies the ink scopes were open for this
+      account. A second flag here would be a door on a corridor.
+
+      And it is `appliedInk` rather than the whole carried set on purpose:
+      fable-1193 §3b's MINTED ONCE, from the frame that FIRST delivered the
+      design, never re-cut from a later carry. A carry render's `appliedInk` is
+      null, so this line does not run on one at all — and the unique index says
+      so again for any caller that gets it wrong.
+
+      # An unverified delivery needs no special case
+
+      If the ink did not actually arrive in the frame, `tattooed skin` finds
+      nothing on it and the mint answers `no-cut`. The reader guards this by
+      being asked of the delivered picture rather than of our intentions, which
+      is the only way round it worth having.
+
+      Wrapped in its own try/catch even though `mintInkDeliveryCrop` catches its
+      own: this runs before the landing, and a throw here would refund a render
+      nobody has seen because a bookkeeping step failed.
+    */
+    if (appliedInk !== null) {
+      try {
+        const kept = await (dependencies.mintInkDeliveryCrop ?? mintInkDeliveryCrop)({
+          userId: input.userId,
+          candidatePublicId: input.candidatePublicId,
+          variantPublicId: variant.publicId,
+          frame: image.bytes,
+          design: { publicId: appliedInk.designId, slot: appliedInk.slot },
+          operationId,
+        });
+        log.info(
+          { operationId, variant: variant.publicId, ...kept },
+          "[refineService] the delivered tattoo's own crop",
+        );
+      } catch (error) {
+        log.warn(
+          { err: error, operationId, variant: variant.publicId },
+          "[refineService] the delivered tattoo's crop was not kept — the picture stands and the next carry rides her artwork",
         );
       }
     }

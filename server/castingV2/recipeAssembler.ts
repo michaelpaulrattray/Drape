@@ -85,7 +85,7 @@ import { slotDefinition } from "./referenceSlotCatalogue";
    than splitting a string (fable-1001 §1). `referenceSlots` imports nothing, so
    there is no cycle to weigh here. */
 import { isInkSlot, openKindOfSlot } from "./referenceSlots";
-import { inkNotOnClothingClause, inkRealismClause, inkStopsAtTheGarmentClause } from "./inkRealism";
+import { inkDeliveredCarrySentence, inkNotOnClothingClause, inkRealismClause } from "./inkRealism";
 import { imageHalfClause } from "./sidePhrasing";
 import { inkDesignWasExamined, type InkCutRoute } from "../../shared/inkCutRoute";
 
@@ -437,21 +437,44 @@ export type CarriedInkDesign = {
   slot: FeatureSlot;
   image: ReferenceImage;
   /**
-   * What was done to these bytes before they were stored — the design row's own
-   * column (migration 0047). `null` means nobody looked, and it REFUSES here
-   * exactly as it refuses on a source: a carry is a render too, and an
-   * unexamined design reaching an engine is the same exposure whichever door it
-   * came through. Required rather than optional for {@link SourceKind}'s
-   * reason — a caller that could forget is a caller that will.
-   */
-  cutRoute: InkCutRoute | null;
-  /**
    * The catalogue's own bare noun for the placement — `upper chest tattoo`,
    * `left upper arm tattoo`. Bare, like every other noun this module is
    * handed, because the template supplies the determiner.
    */
   noun: string;
-};
+} & (
+  /**
+   * WHICH PICTURE THIS CARRY IS — a union rather than a flag, and the two
+   * members carry different fields because they are different pictures with
+   * different obligations (the discipline {@link SourceKind} is written on).
+   *
+   * `designArtwork` is the customer's own design on transparency: the road this
+   * lane travelled alone until clause (a). It must state what was done to those
+   * bytes, because they are HERS and an unexamined upload is possibly a
+   * photograph of a person.
+   *
+   * `deliveredCrop` is a cut of one of OUR OWN delivered frames — the tattoo as
+   * it landed on her, at the size it landed, with the boundary in the picture.
+   * It carries no `cutRoute` and cannot: nothing of the customer's upload is in
+   * those bytes, and a field asking *what was done to her picture* about a
+   * render would be a fence pointed at the wrong object. The containment rule
+   * is not weakened by its absence — a delivered crop can only exist for a
+   * design that already rode to a render, which the same fence had to pass.
+   */
+  | {
+    picture: "designArtwork";
+    /**
+     * What was done to these bytes before they were stored — the design row's
+     * own column (migration 0047). `null` means nobody looked, and it REFUSES
+     * here exactly as it refuses on a source: a carry is a render too, and an
+     * unexamined design reaching an engine is the same exposure whichever door
+     * it came through. Required rather than optional for {@link SourceKind}'s
+     * reason — a caller that could forget is a caller that will.
+     */
+    cutRoute: InkCutRoute | null;
+  }
+  | { picture: "deliveredCrop" }
+);
 
 /**
  * One presentation fact, said in the recipe and filed nowhere.
@@ -932,18 +955,23 @@ function inkCarrySentence(ordinal: number, noun: string, pronouns: CastPronouns)
     inkRealismClause(pronouns),
     inkNotOnClothingClause(pronouns),
     /*
-      AND WHERE IT STOPS — the carry lane's own clause, and the ONLY thing in
-      this sentence that the fresh lane does not also say (fable-1191 §1).
+      ⚠ AND THE BOUNDARY CLAUSE THAT USED TO BE HERE IS GONE — `8f0515d2`,
+      reverted in clause (a)'s own commit (fable-1194 §2c).
 
-      The realism landing above fixed the fresh frame and did not fix this one:
-      both carry arms of the court put the design on his T-shirt, and the second
-      of them had the clothing prohibition on the wire in full. `keep it exactly
-      as it is, in the same place and at the same size` is a size instruction
-      pointed at a picture with no body in it, on a render anchored to a master
-      with no tattoo on it — so the painter has nothing to measure and picks.
-      This gives it the measure the frame contains.
+      It said where the design stops, in the founder's own words, as a place
+      rather than a prohibition. `490` carried it on the wire in full and drew
+      the design a third of the way down a white T-shirt, exactly as the two
+      arms before it had. Three clauses, three shirts: the extent is not a word
+      problem, and this lane's `at the same size` points at 1200x1697 of artwork
+      with no body in it on a render anchored to a master with no tattoo on it,
+      so the painter has nothing to measure whatever else it is told.
+
+      **This sentence is the FALLBACK now**, said only when no delivered crop
+      exists for the design — see {@link inkDeliveredCarrySentence}, which is
+      the same instruction pointed at a picture that contains the size. The
+      measurement is kept in `inkRealism.ts`'s header rather than as a clause
+      nobody wanted to be the one to remove.
     */
-    inkStopsAtTheGarmentClause(pronouns),
   ].join(" ");
 }
 
@@ -1362,7 +1390,14 @@ export function assembleRecipe(input: AssembleInput): AssembleResult {
       the recipe it arrived in, and a fence that held on one road and not the
       other would be the widening tripwire's exposure with a carry's alibi.
     */
-    if (!inkDesignWasExamined(design.cutRoute)) {
+    /*
+      ON THE ARTWORK LANE ONLY, and the exemption is structural rather than a
+      carve-out: a `deliveredCrop` has no `cutRoute` field to read, because
+      nothing of the customer's upload is in its bytes. The fence still holds
+      over the whole road — a delivered crop can only exist for a design that
+      already rode to a render, and that ride went through this same door.
+    */
+    if (design.picture === "designArtwork" && !inkDesignWasExamined(design.cutRoute)) {
       return {
         ok: false, reason: "sourceNotExamined", slot: design.slot,
         detail: `the design carried for ${design.slot} has not been through the cutter, so nobody has looked at what is in its picture; it needs its cut before it can ride to a render`,
@@ -1396,7 +1431,18 @@ export function assembleRecipe(input: AssembleInput): AssembleResult {
     }
     claimed.add(design.slot);
     ordinalOf.set(design.slot, nextOrdinal());
-    sentences.push(inkCarrySentence(nextOrdinal(), design.noun, pronouns));
+    /*
+      TWO PICTURES, TWO SENTENCES, AND THEY MAY NEVER SHARE ONE (fable-1194 §2a).
+
+      The artwork carry describes a design on transparency with no body in it;
+      the delivered carry describes the tattoo on HER OWN SKIN, and the skin is
+      the fact it was minted to supply. A sentence that fitted both would have
+      to say nothing about the surface, which is the one thing the delivered
+      crop is for. `inkRealism.test.ts` drives them apart.
+    */
+    sentences.push(design.picture === "deliveredCrop"
+      ? inkDeliveredCarrySentence(nextOrdinal(), design.noun, pronouns)
+      : inkCarrySentence(nextOrdinal(), design.noun, pronouns));
     references.push({
       role: { kind: "carry", slot: design.slot },
       image: design.image,

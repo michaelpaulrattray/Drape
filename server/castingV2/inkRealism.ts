@@ -43,7 +43,32 @@
  * for them — the two halves are legible apart in the history, which is what
  * makes it possible to tell a rendering difference caused by new words from one
  * caused by a move that was supposed to change nothing.
+ *
+ * # ⚠ ONE CLAUSE WAS REMOVED FROM THIS FILE, and the measurement is the record
+ *
+ * `inkStopsAtTheGarmentClause` stood here from `8f0515d2` — the carry lane's
+ * boundary said as a place, *"Its edge is where his clothing begins"*, in the
+ * founder's own words and on `HAIR_ARRANGEMENTS`' own precedent. **It was
+ * measured and it did not work.** `490` carried it on the wire in full — read
+ * off the row, not assumed — and drew the design a third of the way down a
+ * white T-shirt exactly as `485` (no realism language at all) and `487` (the
+ * clothing prohibition in full) had.
+ *
+ * Three clauses, three shirts. The extent was never a word problem: the carry
+ * pointed *"at the same size"* at 1200x1697 of artwork with no body in it, on a
+ * render anchored to a master with no tattoo on it, so the painter had nothing
+ * to measure and picked. {@link inkDeliveredCarrySentence} is the answer, and
+ * it is not a fourth clause — it is the same instruction pointed at a picture
+ * that contains the size.
+ *
+ * It is removed rather than left because of the standing rule fable-1194 §2c
+ * adopted from that court: **a clause measured not to work is removed by the
+ * next commit that touches its lane, or explicitly kept with the measurement
+ * cited.** Prompt bloat accumulates because nobody wants to be the one to take
+ * a sentence out.
  */
+
+import type { CastPronouns } from "./castPronouns";
 
 /**
  * THE ANTI-STICKER CLAUSE — his bar, and it was already house prose.
@@ -142,53 +167,77 @@ export function inkRealismClause(pronouns: { possessive: string }): string {
 }
 
 /**
- * WHERE THE DESIGN STOPS — the CARRY lane's own clause, and the only one in
- * this module that is not said on every ink road (ordered fable-1191 §1 after
- * the like-for-like court split).
+ * THE TATTOO AS IT LANDED ON HER, SAID TO THE PAINTER — the delivered carry's
+ * own sentence, and the ONLY thing in this module that is not said on every ink
+ * road (ruled fable-1194 §2a, after clause (a)'s design report).
  *
- * # The frame that bought it
+ * # ⚠ IT CANNOT SHARE AN INSTANCE WITH THE FRESH LANE'S SENTENCE. Ever.
  *
- * The realism landing fixed the fresh lane and did NOT fix the carry lane. Both
- * arms of the carry pair put the design on his T-SHIRT — `485` at `42652964`
- * and `487` at `283a0f37`, the second one with
- * {@link inkNotOnClothingClause} in full on the wire. So the prohibition is
- * present and is not enough, and this is not a synonym for it: it is the fact
- * the prohibition does not carry, which is WHERE THE EDGE IS.
+ * That is the ruling, and here is the whole of it in two lines:
  *
- * # Why the carry lane and not the fresh one
+ * ```
+ *   the fresh lane   `inkTakeSentence`  "Do not take skin, skin tone, body
+ *                                        shape, pose or lighting from the
+ *                                        reference — keep his own."
+ *   this lane                           the skin in the picture IS his own.
+ * ```
  *
- * Because of the sentence that is only ever said here:
+ * The fresh reference is somebody else's artwork, photographed on somebody
+ * else's arm, so its surrounding surface is a hazard and the sentence disclaims
+ * it. **A delivered crop's surface is the fact being supplied** — his tone, his
+ * light, the ink sitting in his own skin at the size it landed. Carrying the
+ * fresh lane's disclaimer here would tell the painter to ignore the one thing
+ * this picture was minted to say.
  *
- * > *"He already has this tattoo: **keep it exactly as it is, in the same place
- * > and at the same size**."*
+ * `inkRealism.test.ts` holds the two apart by driving both: the fresh sentence
+ * CONTAINS the disclaimer, and this one does NOT and names whose skin it shows.
+ * Merge them and the arms go red.
  *
- * On the fresh lane there is nothing to keep, so the clothing rule is the only
- * statement about extent and it lands. On the carry lane the render anchors on
- * the MASTER — which has no tattoo on it at all — while *"the same size"* points
- * at a picture that is 1200×1697 of artwork with no body in it. The painter is
- * told to preserve a size it has nothing to measure, and on both arms it chose
- * an extent that ran off the neck and onto cloth, larger than the design had
- * ever been. This clause gives it the one measure the frame actually contains.
+ * # WHY IT EXISTS AT ALL — three renders, three shirts, and no fourth clause
  *
- * The fresh lane is deliberately left alone: it passed, and a clause added to a
- * passing frame is a change nobody courted.
+ * The artwork carry said *"keep it exactly as it is, in the same place and at
+ * the same size"* pointing at 1200x1697 of design on transparency, on a render
+ * anchored to a master with no tattoo on it. Neither input held a size. Three
+ * clauses were said to that lane — realism, the clothing prohibition, and a
+ * boundary stated as a place — and all three arms put the design a third of the
+ * way down a white T-shirt. This sentence is not a fourth clause: it is the
+ * same instruction pointed at a picture that finally contains the answer.
  *
- * # The words are his
+ * # WHAT IT SAYS ABOUT THE EDGE, and why that is a description rather than a rule
  *
- * > *"if you had a chest tatto reference with neck continuation you might see it
- * > poking out the top of the shirt but **thats the extent for now**"*
- * > (fable-1081)
- *
- * A boundary stated as a place rather than as a prohibition — the same lesson
- * `HAIR_ARRANGEMENTS` paid for: a wording that tells the painter WHERE beats one
- * that tells it what to conclude.
+ * On `486` the crop's own bottom edge IS THE COLLAR — the region the segmenter
+ * returned stops where his shirt starts, so the boundary is IN the picture. So
+ * the sentence points at it (*whatever edge you can see here is the real edge*)
+ * instead of describing where clothing begins, which is what the reverted
+ * clause did and what three frames measured not to work.
  */
-export function inkStopsAtTheGarmentClause(pronouns: { possessive: string }): string {
+export function inkDeliveredCarrySentence(
+  ordinal: number,
+  noun: string,
+  pronouns: CastPronouns,
+): string {
+  const has = pronouns.plural ? "have" : "has";
   const their = pronouns.possessive;
-  return `Its edge is where ${their} clothing begins. A tattoo that runs on under a garment shows only `
-    + "the part above the neckline — it may poke out at the top of the collar and no further, and the "
-    + `rest of it is simply not in this picture. Do not enlarge, extend or complete the design to make `
-    + `more of it show, and do not draw any part of it onto ${their} clothing.`;
+  return [
+    `Reference ${ordinal} is the exact ${noun} ${pronouns.subject} already ${has}, taken from`,
+    `${their} own picture: it is the tattoo cut out of a photograph of ${pronouns.object}, so the`,
+    `skin in it is ${their.toUpperCase()} OWN skin, at ${their} own tone and in ${their} own light.`,
+    "The transparent area is NOT part of the instruction — it is there only so the tattoo's own",
+    "edges and extent are unambiguous.",
+    `This picture is how big the design is on ${pronouns.object} and where on ${pronouns.object} it`,
+    "sits, including where it stops: whatever edge you can see in it is the real edge of the",
+    "design. Put it back exactly as it is here — the same design, in the same place, at the same",
+    "size.",
+    /*
+      AND WHAT A TATTOO IS ON SKIN, on this lane too.
+
+      "Put it back exactly as it is" said alone is the decal instruction — it was
+      the whole of what the carry lane told the painter, and a carried tattoo
+      re-drawn as reproduced artwork is the same defect as a fresh one.
+    */
+    inkRealismClause(pronouns),
+    inkNotOnClothingClause(pronouns),
+  ].join(" ");
 }
 
 /**

@@ -3517,3 +3517,168 @@ export const castingReferenceAttachments = mysqlTable("casting_reference_attachm
 
 export type CastingReferenceAttachmentRow = typeof castingReferenceAttachments.$inferSelect;
 export type InsertCastingReferenceAttachmentRow = typeof castingReferenceAttachments.$inferInsert;
+
+/**
+ * THE DELIVERED TATTOO — how the design landed on HER, kept so the next render
+ * can put back the thing she is looking at rather than the thing she uploaded
+ * (migration 0049; design report opus-886 §3, countersigned fable-1193 §3 and
+ * fable-1194 §2).
+ *
+ * One row is: **the frame that first delivered one design onto one Cast, cut
+ * down to the tattoo as it sits on her, and where OUR copy of that cut lives.**
+ *
+ * # The frames that bought it
+ *
+ * Three carry renders, three shirts. `485` with no realism language at all,
+ * `487` with the clothing prohibition in full on the wire, `490` with a
+ * boundary clause on top of that — every one of them drew the design a third of
+ * the way down a white T-shirt. **Three clauses were said to that lane and none
+ * of them moved it**, which is the finding: the extent is not a word problem.
+ *
+ * The reason is arithmetic rather than mysterious. What the carry sent was the
+ * customer's ARTWORK (1200x1697 of design on transparency, no body in it) with
+ * the sentence *"keep it exactly as it is, in the same place and at the same
+ * size"*, on a render anchored to the MASTER — a photograph with no tattoo on it
+ * anywhere. **There is no size in that picture and no size in that frame.** The
+ * painter was told to preserve a measurement neither of its inputs contained,
+ * so it invented one. A fourth sentence cannot supply a number no picture holds.
+ *
+ * A crop of the delivered frame is a reference with the extent IN it — his own
+ * skin, the ink at its delivered scale, and the collar's own edge cut out of
+ * the bottom of the picture. Measured before it was designed on: `tattooed
+ * skin` on three delivered frames returned 27,374 / 51,596 / 2,632 px, all of
+ * them the ink and none of them the man, opened at full size (opus-887 §2).
+ *
+ * # WHY THIS IS A TABLE AND NOT A ROW IN `casting_reference_library`
+ *
+ * fable-1193 §2 amended the ink prohibition to ALLOW it there, and the
+ * amendment's distinction is the one this table is built on — the DESIGN ROW
+ * stays the identity source forever, and this is a DELIVERY FACT. But the
+ * library's own door refuses these bytes, and migration 0040 is the house
+ * record of the same refusal happening once before:
+ *
+ *   anchor   AN UPLOAD, AND NEVER A CUT.
+ *   carry    A CUT FROM HER OWN DELIVERED FRAME. Geometry, mask and **a guard
+ *            reading** are all REQUIRED.
+ *
+ * This is a cut from her own delivered frame, so `carry` is the right shape and
+ * the wrong door: the guard is *an independent second read scored against a
+ * specimen family*, and **ink has no specimen family** — the entire measured
+ * population is the three masks above. Through `mintGuardedReference` every
+ * crop would refuse `noSpecimen` and file words; around it, a library row with
+ * no guard reading breaks the invariant that door exists to hold.
+ *
+ * The second reason is independent of the first: `deriveLibrary` is generic, so
+ * a row here would become a `LibraryEntry` and the assembler would emit a
+ * second sentence about the same feature beside the ink carry sentence — one
+ * picture, two instructions, which is what the assembler refuses one layer up.
+ *
+ * # MINTED ONCE, AND THE DATABASE IS WHAT SAYS SO
+ *
+ * fable-1193 §3b: *minted ONCE, from the frame that FIRST delivered the design,
+ * never re-cut from a later carry.* The reason is the chained-anchor trap —
+ * `anchor-is-the-pristine-master` — a crop taken from a frame that was itself
+ * carried is a copy of a copy, and the drift compounds silently.
+ *
+ * That rule is `uq_casting_ink_delivery_crops_design` rather than a comment: the
+ * unique index over (candidateId, designId, slot) means a second mint cannot be
+ * written, whatever a caller believes. The writer inserts and ignores a
+ * duplicate; it never updates.
+ *
+ * # WHAT IS ABSENT, AND THE ABSENCE IS THE DESIGN
+ *
+ * **No nullable `designId`.** A tattoo painted from WORDS ALONE — D-137's
+ * face/neck road — delivers a real tattoo with no design row anywhere, and it
+ * cannot carry today for a reason one layer away: `inkApplied` is `slot ->
+ * designId` and its strict reader requires a UUID, so a designless delivery is
+ * never recorded as applied. A delivered crop needs no design row and could
+ * hold it, which is exactly why the column is not nullable here — a nullable
+ * key with no writer is a half-built road that reads as a finished one
+ * (filed opus-888 §2; it lands with its writer or not at all).
+ *
+ * No mask object. The crop carries its own alpha, the way the reference crop
+ * store does, so the cutout is one object rather than two that can come apart.
+ *
+ * # RETENTION
+ *
+ * Rows and their objects die with the candidate, unconditionally and NOT gated
+ * on any feature flag — the rule library crops, face scans, ink designs, ink
+ * plates, reference crops and attachments already follow. `candidateRetention`
+ * is ROW-DRIVEN: it builds its purge list by enumerating rows and collecting
+ * their storage keys, so **the row is what makes the object purgeable at all**,
+ * and an unrowed crop would be a picture of a real person's neck that nothing
+ * ever deletes. The sweep clause lands in the same commit as the writer.
+ */
+export const castingInkDeliveryCrops = mysqlTable("casting_ink_delivery_crops", {
+  id: int("id").autoincrement().primaryKey(),
+  publicId: varchar("publicId", { length: 36 }).notNull(),
+  userId: int("userId").notNull(), // denormalized — single-statement ownership
+  candidateId: int("candidateId").notNull(), // →casting_candidates
+  /** The design this delivered — →`casting_ink_designs.id`. The identity source
+   *  stays that row; this says how it LANDED. */
+  designId: int("designId").notNull(),
+  /**
+   * THE FRAME IT WAS CUT FROM — →`casting_candidate_variants.id`, and the one
+   * that FIRST delivered this design.
+   *
+   * NOT NULL, unlike the library's, and the difference is the whole point: a
+   * library row may be minted from the master, and a delivery cannot be. A
+   * delivered crop with no delivering frame is a contradiction, not a default.
+   */
+  variantId: int("variantId").notNull(),
+  /** The panel's slot key the design went on: `ink:neck`, `ink:upperArm@left`. */
+  slot: varchar("slot", { length: 64 }).notNull(),
+  /** The segmentation question that drew the cut — `tattooed skin` today, and
+   *  written down rather than assumed so a later reader can tell what was asked
+   *  without re-deriving it from the date. */
+  region: varchar("region", { length: 64 }).notNull(),
+  /** OUR copy of the CUT, under the candidate's purge path. */
+  storageKey: varchar("storageKey", { length: 512 }).notNull(),
+  /** sha256 of the cut's own bytes: byte identity, and what `repaintRender`
+   *  refuses on when the bytes at the key have moved. */
+  digest: varchar("digest", { length: 64 }).notNull(),
+  mime: varchar("mime", { length: 64 }).notNull(),
+  byteSize: int("byteSize").notNull(),
+  /** The CROP's own size, which is the box below and not the frame. */
+  width: int("width").notNull(),
+  height: int("height").notNull(),
+  /**
+   * Where the crop sat on the frame it came from, and how big that frame was.
+   *
+   * Same rule and same reason as the library's geometry: the stored cut is
+   * crop-local, so without these its pixels can be looked at and never placed —
+   * and a crop means nothing except against the frame it came from.
+   */
+  bboxX: int("bboxX").notNull(),
+  bboxY: int("bboxY").notNull(),
+  bboxW: int("bboxW").notNull(),
+  bboxH: int("bboxH").notNull(),
+  frameWidth: int("frameWidth").notNull(),
+  frameHeight: int("frameHeight").notNull(),
+  /**
+   * HOW MANY PIXELS THE REGION HELD, and how many the cut kept — counted, never
+   * sampled, and both written down because they are the arm against the failure
+   * this build already hit twice.
+   *
+   * `composite({ blend: "dest-in" })` with a raw greyscale alpha returns THE
+   * WHOLE FRAME, silently, while every number beside it stays correct. A row
+   * whose `keptPixels` equals `frameWidth * frameHeight` is that failure, in
+   * the record, findable by a query rather than by somebody opening a picture.
+   */
+  maskPixels: int("maskPixels").notNull(),
+  keptPixels: int("keptPixels").notNull(),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+}, (table) => ([
+  /* Every read is "the delivered ink on this cast", so the candidate is the index. */
+  index("ix_casting_ink_delivery_crops_candidate").on(table.candidateId),
+  uniqueIndex("uq_casting_ink_delivery_crops_publicId").on(table.publicId),
+  /* MINTED ONCE, as a fact the database holds — see the header. */
+  uniqueIndex("uq_casting_ink_delivery_crops_design").on(
+    table.candidateId,
+    table.designId,
+    table.slot,
+  ),
+]));
+
+export type CastingInkDeliveryCropRow = typeof castingInkDeliveryCrops.$inferSelect;
+export type InsertCastingInkDeliveryCropRow = typeof castingInkDeliveryCrops.$inferInsert;

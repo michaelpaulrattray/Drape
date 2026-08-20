@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "60eb398a21ef0cd3"
+    "sourceFingerprint": "3180ab612cafc8b4"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 156
+      "moduleCount": 158
     },
     {
       "id": "domain:castingV2",
@@ -53,7 +53,7 @@
     {
       "id": "domain:data",
       "name": "data",
-      "moduleCount": 57
+      "moduleCount": 58
     },
     {
       "id": "domain:evidence",
@@ -3603,6 +3603,18 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:server/castingV2/inkDeliveryCrop.ts",
+      "path": "server/castingV2/inkDeliveryCrop.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/inkDeliveryMint.ts",
+      "path": "server/castingV2/inkDeliveryMint.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:server/castingV2/inkDesignForAsk.ts",
       "path": "server/castingV2/inkDesignForAsk.ts",
       "domain": "casting-v2",
@@ -4301,6 +4313,12 @@
     {
       "id": "module:server/db/castingV2FaceScans.ts",
       "path": "server/db/castingV2FaceScans.ts",
+      "domain": "data",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/db/castingV2InkDeliveryCrops.ts",
+      "path": "server/db/castingV2InkDeliveryCrops.ts",
       "domain": "data",
       "lifecycle": "active"
     },
@@ -9984,6 +10002,14 @@
     {
       "id": "test:server/castingV2/inkCutScope.test.ts",
       "path": "server/castingV2/inkCutScope.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/inkDeliveryCrop.test.ts",
+      "path": "server/castingV2/inkDeliveryCrop.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/inkDeliveryMint.test.ts",
+      "path": "server/castingV2/inkDeliveryMint.test.ts"
     },
     {
       "id": "test:server/castingV2/inkDesignForAsk.test.ts",
@@ -19518,6 +19544,11 @@
     },
     {
       "from": "module:server/castingV2/candidateRetention.ts",
+      "to": "module:server/db/castingV2InkDeliveryCrops.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/candidateRetention.ts",
       "to": "module:server/db/castingV2InkDesigns.ts",
       "kind": "imports"
     },
@@ -20307,6 +20338,56 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/castingV2/inkDeliveryCrop.ts",
+      "to": "module:server/castingV2/inkReferenceCrop.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/inkDeliveryCrop.ts",
+      "to": "module:server/castingV2/maskedComposite.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/inkDeliveryMint.ts",
+      "to": "module:server/castingV2/falRegionReader.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/inkDeliveryMint.ts",
+      "to": "module:server/castingV2/inkDeliveryCrop.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/inkDeliveryMint.ts",
+      "to": "module:server/castingV2/inkReferenceCrop.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/inkDeliveryMint.ts",
+      "to": "module:server/castingV2/inkUploadService.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/inkDeliveryMint.ts",
+      "to": "module:server/castingV2/maskedRefine.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/inkDeliveryMint.ts",
+      "to": "module:server/db/castingV2InkDeliveryCrops.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/inkDeliveryMint.ts",
+      "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/inkDeliveryMint.ts",
+      "to": "module:server/storage.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/castingV2/inkDesignForAsk.ts",
       "to": "module:server/castingV2/referenceSlots.ts",
       "kind": "imports"
@@ -20449,6 +20530,11 @@
     {
       "from": "module:server/castingV2/inkPlateMint.ts",
       "to": "module:shared/inkPlacementVocabulary.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/inkRealism.ts",
+      "to": "module:server/castingV2/castPronouns.ts",
       "kind": "imports"
     },
     {
@@ -22093,6 +22179,11 @@
     },
     {
       "from": "module:server/castingV2/refineService.ts",
+      "to": "module:server/castingV2/inkDeliveryMint.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/refineService.ts",
       "to": "module:server/castingV2/inkDesignForAsk.ts",
       "kind": "imports"
     },
@@ -22354,6 +22445,11 @@
     {
       "from": "module:server/castingV2/refineService.ts",
       "to": "module:server/db/castingV2.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/refineService.ts",
+      "to": "module:server/db/castingV2InkDeliveryCrops.ts",
       "kind": "imports"
     },
     {
@@ -23443,6 +23539,21 @@
     },
     {
       "from": "module:server/db/castingV2FaceScans.ts",
+      "to": "module:server/db/storageCleanup.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/castingV2InkDeliveryCrops.ts",
+      "to": "module:drizzle/schema.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/castingV2InkDeliveryCrops.ts",
+      "to": "module:server/db/connection.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/castingV2InkDeliveryCrops.ts",
       "to": "module:server/db/storageCleanup.ts",
       "kind": "imports"
     },
@@ -29751,17 +29862,17 @@
       "message": "Names 2 of HairColourSection's 3 fields (server/castingV2/hairColourFromReference.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/refineService.ts:675",
+      "id": "finding:redeclared-shape:server/castingV2/refineService.ts:677",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/refineService.ts:675",
+      "subject": "server/castingV2/refineService.ts:677",
       "message": "Names 3 of Thumbnail's 3 fields (server/castingV2/thumbnails.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/refineService.ts:782",
+      "id": "finding:redeclared-shape:server/castingV2/refineService.ts:794",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/refineService.ts:782",
+      "subject": "server/castingV2/refineService.ts:794",
       "message": "Names 3 of Thumbnail's 3 fields (server/castingV2/thumbnails.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {

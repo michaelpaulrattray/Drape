@@ -37,6 +37,8 @@ const calls = {
   listReferenceAttachments: vi.fn(),
   deleteReferenceAttachments: vi.fn(),
   deleteReferenceCrops: vi.fn(),
+  listInkDeliveryCrops: vi.fn(),
+  deleteInkDeliveryCrops: vi.fn(),
 };
 
 vi.mock("../db/castingV2", () => ({
@@ -138,6 +140,11 @@ vi.mock("../../shared/referenceIntents", async (importOriginal) => {
 /* The CUT taken from a customer's own reference (migration 0040). It has no
    flag of its own: the ingestion map decides whether a crop can exist, so the
    sweep's tolerance is armed by the map rather than by an env var. */
+vi.mock("../db/castingV2InkDeliveryCrops", () => ({
+  listPurgeableInkDeliveryCropsIn: (_tx: unknown, ...args: unknown[]) => calls.listInkDeliveryCrops(...args),
+  deleteInkDeliveryCropRowsIn: (_tx: unknown, ...args: unknown[]) => calls.deleteInkDeliveryCrops(...args),
+}));
+
 vi.mock("../db/castingV2ReferenceCrops", () => ({
   listPurgeableReferenceCropsIn: (_tx: unknown, ...args: unknown[]) => calls.listReferenceCrops(...args),
   deleteReferenceCropRowsIn: (_tx: unknown, ...args: unknown[]) => calls.deleteReferenceCrops(...args),
@@ -181,11 +188,14 @@ beforeEach(() => {
   calls.listReferenceAttachments.mockResolvedValue([]);
   calls.deleteReferenceAttachments.mockResolvedValue(0);
   calls.deleteReferenceCrops.mockResolvedValue(0);
+  calls.listInkDeliveryCrops.mockResolvedValue([]);
+  calls.deleteInkDeliveryCrops.mockResolvedValue(0);
   mapState.cropOpen = null;
   delete process.env.CASTING_SEGMENTS_SCOPE;
   delete process.env.CASTING_REFERENCE_LIBRARY_SCOPE;
   delete process.env.CASTING_SCAN_TABLE_SCOPE;
   delete process.env.CASTING_INK_STUDIO_SCOPE;
+  delete process.env.CASTING_INK_REFERENCE_SCOPE;
 });
 
 describe("the 7-day retention sweep", () => {
@@ -430,6 +440,93 @@ describe("a candidate's segments purge with it", () => {
        expectation the segment store's armed arm carries one flight down. */
     await expect(runCandidateRetentionSweep()).rejects.toThrow(/casting_reference_crops/);
     expect(calls.deleteCandidates).not.toHaveBeenCalled();
+  });
+
+  it("collects a delivered tattoo's crop and deletes its row with the Cast", async () => {
+    /*
+      The object is a picture of a real person's neck at a permanently public
+      URL, so the sweep clause landed in the same commit as the writer rather
+      than after it (migration 0049's own retention paragraph).
+    */
+    calls.listInkDeliveryCrops.mockResolvedValue([
+      { id: 3, storageKey: "casting-v2/ink-delivery/his-neck.png" },
+    ]);
+
+    const result = await runCandidateRetentionSweep();
+
+    expect(calls.deleteInkDeliveryCrops).toHaveBeenCalledWith([1]);
+    expect(calls.queueStorageCleanup).toHaveBeenCalledWith(
+      expect.objectContaining({
+        storageItems: expect.arrayContaining([
+          { storageKey: "casting-v2/ink-delivery/his-neck.png", storageBackend: "public_r2" },
+        ]),
+      }),
+    );
+    expect(result.objectsQueued).toBe(1 + 1);
+  });
+
+  it("collects it with EVERY ink flag off — the purge is not gated on any door", async () => {
+    /*
+      A crop cut while a flag was on must be collected after it goes off. A
+      retention path that narrows with a feature flag is how a picture of a real
+      person outlives the Cast it was promised to leave with.
+    */
+    delete process.env.CASTING_INK_STUDIO_SCOPE;
+    delete process.env.CASTING_INK_REFERENCE_SCOPE;
+    calls.listInkDeliveryCrops.mockResolvedValue([
+      { id: 3, storageKey: "casting-v2/ink-delivery/cut-while-it-was-on.png" },
+    ]);
+
+    const result = await runCandidateRetentionSweep();
+
+    expect(calls.deleteInkDeliveryCrops).toHaveBeenCalledWith([1]);
+    expect(result.objectsQueued).toBe(1 + 1);
+  });
+
+  it("tolerates the 0049 table's absence while no ink door is open", async () => {
+    delete process.env.CASTING_INK_STUDIO_SCOPE;
+    delete process.env.CASTING_INK_REFERENCE_SCOPE;
+    calls.listInkDeliveryCrops.mockRejectedValue(Object.assign(new Error("Failed query"), {
+      name: "DrizzleQueryError",
+      cause: Object.assign(new Error("Table 'railway.casting_ink_delivery_crops' doesn't exist"), {
+        code: "ER_NO_SUCH_TABLE",
+        errno: 1146,
+      }),
+    }));
+
+    const result = await runCandidateRetentionSweep();
+
+    expect(result.candidatesPurged).toBe(1);
+    expect(calls.deleteInkDeliveryCrops).not.toHaveBeenCalled();
+  });
+
+  it("REFUSES the same absence once EITHER ink door is open", async () => {
+    /*
+      The arm that makes the tolerance a control rather than a permanent excuse
+      — and it is driven from BOTH doors, because the arming predicate is an OR
+      and a single-door arm would leave half of it untested. A design row can be
+      minted by the studio's upload or by the take from an attached picture, and
+      either one makes a delivery crop possible.
+    */
+    const missing = () => Object.assign(new Error("Failed query: select `id` from `casting_ink_delivery_crops`"), {
+      name: "DrizzleQueryError",
+      cause: Object.assign(new Error("Table 'railway.casting_ink_delivery_crops' doesn't exist"), {
+        code: "ER_NO_SUCH_TABLE",
+        errno: 1146,
+      }),
+    });
+
+    for (const door of ["CASTING_INK_STUDIO_SCOPE", "CASTING_INK_REFERENCE_SCOPE"] as const) {
+      delete process.env.CASTING_INK_STUDIO_SCOPE;
+      delete process.env.CASTING_INK_REFERENCE_SCOPE;
+      process.env[door] = "users:1";
+      calls.deleteCandidates.mockClear();
+      calls.listInkDeliveryCrops.mockRejectedValue(missing());
+
+      await expect(runCandidateRetentionSweep())
+        .rejects.toThrow(/casting_ink_delivery_crops/);
+      expect(calls.deleteCandidates).not.toHaveBeenCalled();
+    }
   });
 
   it("tolerates a database whose segment table does not exist yet — but only while disarmed", async () => {

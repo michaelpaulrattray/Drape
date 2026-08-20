@@ -1823,3 +1823,147 @@ loop that sends the picture left the recipe still PROMISING to hold it).
    stays honest; what the product cannot yet do is wear two. **The day a Cast
    wears two, `free.ink`'s restatement is the line to fix first and
    `composeDeltas`' ink clause is the line to fix beside it.**
+
+### 7.14 CLAUSE (a) — THE CARRY RIDES THE TATTOO AS IT LANDED, NOT THE ARTWORK
+### (court opus-885/886, measured opus-887 §2, ruled fable-1193 §3, countersigned
+### fable-1194 §2, table ratified fable-1195 §1)
+
+§7.13 made a delivered tattoo survive the next edit. This section is about it
+surviving it *at the right size*, which for three renders it did not.
+
+#### The court: three carry renders, three shirts
+
+```
+485   carry at 42652964            no realism language at all      SHIRT
+487   carry at 283a0f37            realism + clothing prohibition  SHIRT
+490   carry at 8f0515d2            + the boundary clause (b)       SHIRT
+```
+
+`490`'s wire was read off the row rather than assumed: `HEALED` present, the
+clothing prohibition present, *"Its edge is where his clothing begins"* present,
+`carried: ["ink:neck"]`, parent `486`. Every condition of the pair met. The
+frame still drew the circuit linework a third of the way down a white tee.
+
+**Three clauses were said to that lane and none of them moved it.** The founder's
+own words bought clause (b) (*"thats the extent for now"*), it was the right
+shape on the right precedent, and it failed anyway. That is the finding: **the
+extent is not a word problem.**
+
+#### Why, in arithmetic rather than in adjectives
+
+What the carry sent:
+
+```
+reference 2   casting-v2/ink/97371eed…   1200×1697   the artwork on transparency
+sentence      "He already has this tattoo: keep it exactly as it is, in the same
+               place and at the same size."
+anchored on   the MASTER — a photograph with no tattoo on it anywhere
+```
+
+**There is no size in that picture and no size in that frame.** The painter was
+told to preserve a measurement neither of its inputs contained, so it invented
+one, and three times out of three it invented one that ran onto cloth. A fourth
+sentence cannot supply a number no picture holds.
+
+#### The fix, and it is this product's own mechanism rather than a new one
+
+The reference library already carries every other delivered feature by CROP —
+hair, lips, brows — and the repaint recipe already says *"Reference N is the
+exact X he has"* about them. **Ink was the one carrier that rode as source
+artwork instead of as a crop of her own frame**, and the defect lived exactly in
+that difference (the fidelity law: the dedicated mechanism existed and the
+nearer-to-hand one was in use).
+
+So the carry now sends a crop of the frame that DELIVERED the design.
+
+#### The measure-first arm, run before a line was built (ordered fable-1193 §3a)
+
+`tattooed skin` was measured on UPLOADS. A finished render is a new population,
+so the reader was asked before anything was designed on top of it:
+
+```
+variant  frame       mask px      % of frame   box
+484      1024×1536   27,374       1.74%        201×194   (391–631, 697–890)
+486      1024×1536   51,596       3.28%        281×268   (391–671, 737–1004)
+491      1024×1536    2,632       0.17%         97×98    (400–496, 728–825)
+```
+
+Every mask and every cut was opened at full size before a word was written about
+it (law 9). **It is the ink and not the man, at both scales.** `486`'s cut is the
+tattoo as it sits on him — his skin tone, the ink at its delivered scale, and
+*the collar's own edge cut out of the bottom of it*. That last part is the thing
+three sentences failed to say: **the boundary is IN the picture.**
+
+#### Two design facts that are rulings, not notes
+
+1. **The crop carries HIS SKIN, and the sentence riding it must say so**
+   (fable-1194 §2a). The fresh lane's `inkTakeSentence` disclaims exactly that —
+   *"Do not take skin, skin tone, body shape, pose or lighting from the
+   reference — keep his own"* — which is right about somebody else's artwork and
+   FALSE about a crop of his own frame. The two sentences may never share an
+   instance; `inkRealism.test.ts` drives both and goes red on a merge.
+2. **The mask is a filled REGION rather than the ink's strokes** (fable-1194
+   §2b), and that is right rather than a compromise: strokes alone would carry
+   no skin, no scale and no collar, which is the state that already fails. Named
+   in the code so nobody "improves" it into a stroke matte.
+
+#### Where the crop lives, and why not in the library
+
+fable-1193 §2 amended fable-1137 §3 to permit ink's delivery crop in
+`casting_reference_library`. **The permission was retracted on evidence**
+(fable-1195 §1): that table's `carry` role is a guarded door whose guard is *an
+independent second read scored against a specimen family*, and ink has no
+specimen family — the entire measured population is the three masks above.
+Through `mintGuardedReference` every ink crop refuses `noSpecimen` and files
+words; around it, a library row with no guard reading breaks the invariant the
+door exists to hold. Independently, `deriveLibrary` is generic, so a row there
+would also emit a second sentence about the same feature beside the ink carry
+sentence — one picture, two instructions.
+
+So: **`casting_ink_delivery_crops`, migration 0049**, on migration 0040's own
+precedent (that file is the house record of the same refusal happening once
+before, for the customer-supplied crop store).
+
+The MINTED ONCE rule is the database's rather than a writer's:
+`uq_casting_ink_delivery_crops_design` over (candidateId, designId, slot). The
+reason is the chained-anchor trap — a crop cut from a frame that was itself
+carried is a copy of a copy, and the drift compounds with nothing going red.
+
+#### What it costs
+
+**One segmenter call per delivered design** — `tattooed skin` on the frame that
+just landed, the same word the upload cutter already asks, on the shared
+`FAL_CONCURRENCY` courtesy pool. House money, never a customer's credits, and no
+new allowance is declared so `assertFalBudget`'s arithmetic is untouched.
+
+#### What was REMOVED in the same commit
+
+`inkStopsAtTheGarmentClause` (`8f0515d2`), per fable-1194 §2c's standing rule:
+**a clause measured not to work is removed by the next commit that touches its
+lane, or explicitly kept with the measurement cited.** The measurement is kept in
+`inkRealism.ts`'s own header. Prompt bloat accumulates because nobody wants to be
+the one to take a sentence out.
+
+#### Limits, declared
+
+1. **Nothing fails closed.** No crop, a reader that did not answer, a frame with
+   no ink found, a database that has not taken 0049 — every one of them falls
+   back to the artwork carry, which is the road this lane drove yesterday. The
+   mint runs after a delivered, paid render and may never take that picture
+   back.
+2. **No retroactive crop.** A tattoo delivered before this shipped has no crop
+   and carries as artwork until it is re-applied. Acceptable while the road is
+   dark and only the founder's account is on it.
+3. **⚠ A WORDS-ONLY TATTOO STILL CANNOT CARRY AT ALL, by a different road**
+   (found opus-888 §2, ordered as its own chunk fable-1195 §2). `inkApplied` is
+   `slot → designId` and its strict reader requires a UUID, so a tattoo painted
+   from words alone — D-137's face and neck road, the lane that produced the
+   court's cleanest frame — is never recorded as applied and vanishes on the
+   next unrelated edit. **A delivered crop needs no design row**, so the fix is
+   *record the delivery, not the design*: a code-written key naming the crop
+   row, never a widening of `inkApplied`'s fence, and the nullable column lands
+   with its writer.
+4. **No fraction ceiling is claimed.** The three frames measured 1.74%, 3.28%
+   and 0.17%, and a ceiling written from three readings would be a bar nobody
+   courted. The only refusal that needs no calibration is in: a mask covering
+   the WHOLE frame is not a tattoo, it is the picture.
