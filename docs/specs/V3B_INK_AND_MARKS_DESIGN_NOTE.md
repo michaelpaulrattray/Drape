@@ -2018,15 +2018,46 @@ is the frame it is labelled as.
 2. **No retroactive crop.** A tattoo delivered before this shipped has no crop
    and carries as artwork until it is re-applied. Acceptable while the road is
    dark and only the founder's account is on it.
-3. **⚠ A WORDS-ONLY TATTOO STILL CANNOT CARRY AT ALL, by a different road**
-   (found opus-888 §2, ordered as its own chunk fable-1195 §2). `inkApplied` is
+3. **A WORDS-ONLY TATTOO COULD NOT CARRY AT ALL, by a different road** (found
+   opus-888 §2, ordered as its own chunk fable-1195 §2). `inkApplied` is
    `slot → designId` and its strict reader requires a UUID, so a tattoo painted
    from words alone — D-137's face and neck road, the lane that produced the
-   court's cleanest frame — is never recorded as applied and vanishes on the
-   next unrelated edit. **A delivered crop needs no design row**, so the fix is
-   *record the delivery, not the design*: a code-written key naming the crop
-   row, never a widening of `inkApplied`'s fence, and the nullable column lands
-   with its writer.
+   court's cleanest frame — was never recorded as applied and vanished on the
+   next unrelated edit.
+
+   ✅ **BUILT 2026-08-21, on the branch `words-only-carry`, and NOT YET ON
+   `main`** — the stack it belongs after is still waiting on the founder's
+   verdict, so this limit is live in production terms until the rite ships and
+   the chunk lands behind it. Shape (c), ruled fable-1197 §1: **the DELIVERY is
+   the key.** Migration `0050` re-keys `casting_ink_delivery_crops` onto
+   (candidateId, variantId, slot) — which is what the row has always meant, and
+   a delivering frame always exists, so it needs no sentinel and holds
+   identically on both roads. `designId` becomes nullable PROVENANCE, and NULL
+   means *painted from her words* rather than *we lost track*.
+
+   The chain carries `inkDelivered`: slot → the delivered crop's own `publicId`,
+   written by code with `inkApplied`'s exact discipline — the strict reader
+   BLIND to it in both directions, `readStoredDelta` round-tripping it, and both
+   fields composing through ONE loop with `free.ink` so that her words, which
+   design and which picture cannot disagree about whether she still has a
+   tattoo. **`inkApplied`'s fence is not widened**, which was the condition.
+
+   The name is minted at CLAIM and handed forward, because the delta is written
+   before the render and nothing amends it after (`landVariant` takes an
+   `internalPrompt` and no deltas). A render whose ink never arrived therefore
+   leaves the chain naming a row that was never written — THE ID POINTS AND THE
+   ROW DECIDES, and the carry skips that case loudly rather than throwing into a
+   paid frame (condition, fable-1199 §1).
+
+   It dissolved a live wart in the same stroke: `486` and `492` are two
+   deliveries of one design on one Cast and shared a crop row whose `variantId`
+   named only one of them.
+
+   **Production takes `scripts/ceremony-ink-delivery-rekey.mts` AFTER 0049's own
+   ceremony, in that order** — the re-key alters the table 0049 creates and
+   refuses outright rather than creating it. The card for it is deliberately not
+   filed yet: fable-1197 §2c batches it with the chunk it rides, so the founder
+   gets one command rather than a drip.
 4. **No fraction ceiling is claimed.** The three frames measured 1.74%, 3.28%
    and 0.17%, and a ceiling written from three readings would be a bar nobody
    courted. The only refusal that needs no calibration is in: a mask covering
