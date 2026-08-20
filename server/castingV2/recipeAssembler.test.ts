@@ -1367,6 +1367,69 @@ describe("the fourth role — a picture the CUSTOMER supplied (fable-1096)", () 
     expect(recipe.edited).toEqual(["hair"]);
   });
 
+  /*
+    THE SECOND MEMBER OF THE VOCABULARY (ruled fable-1137 §2d).
+
+    A tattoo design cut out of the picture a customer supplied. Two things are
+    asserted and the second is the one that matters: the sentence is HONEST
+    about what the engine is looking at, and the member's NAME is the fence —
+    `inkDesignOnTransparency` says what the object is, so a future
+    `inkFromPhoto` would have to be written by a hand that could see it reading
+    as the violation it would be.
+  */
+  it("describes an ink design as the artwork alone, on transparency", () => {
+    const recipe = assembleRecipe({
+      master: MASTER, pronouns: SHE, library: [],
+      asks: [{ slot: "hair", noun: "hair", words: "a mid-length wavy cut" }],
+      sources: [{
+        slot: "hair" as const,
+        image: CARRIER,
+        pictures: "inkDesignOnTransparency" as const,
+        scope: SCOPE,
+      }],
+    });
+    expect(recipe.ok).toBe(true);
+    if (!recipe.ok) return;
+    const sentence = recipe.references[1]!.sentence;
+    expect(sentence).toContain("Reference 2 is the tattoo design supplied for this edit");
+    expect(sentence).toContain("the artwork alone on a transparent background");
+    /* The grey form's own lesson, transplanted: naming the part that is NOT the
+       instruction is what made the instruction land. */
+    expect(sentence).toContain("NOT part of the instruction");
+    /* AND IT SAYS NOTHING ABOUT THE PICTURE IT CAME FROM having a person in
+       it, because it does not have one — the cutter counted. A sentence that
+       mentioned a photograph would be describing an object the engine is not
+       being shown. */
+    expect(sentence).not.toContain("photograph");
+    expect(recipe.sentences[1]).toBe(sentence);
+    expect(recipe.prompt).toContain(sentence);
+  });
+
+  it("gives the two members DIFFERENT sentences, not one with a noun swapped", () => {
+    /*
+      The negative control on the arm above. If a future edit collapsed the
+      switch into one sentence with the noun interpolated, both members would
+      still "describe honestly" and neither would be true — the grey-form
+      clause on a transparent cutout is a lie about what is in the frame.
+    */
+    const of = (pictures: "hairOnRedactedForm" | "inkDesignOnTransparency") => {
+      const recipe = assembleRecipe({
+        master: MASTER, pronouns: SHE, library: [],
+        asks: [{ slot: "hair", noun: "hair", words: "a mid-length wavy cut" }],
+        sources: [{ slot: "hair" as const, image: CARRIER, pictures, scope: SCOPE }],
+      });
+      expect(recipe.ok).toBe(true);
+      return recipe.ok ? recipe.references[1]!.sentence : "";
+    };
+    const hair = of("hairOnRedactedForm");
+    const ink = of("inkDesignOnTransparency");
+    expect(hair).not.toBe(ink);
+    expect(hair).toContain("plain grey form");
+    expect(ink).not.toContain("plain grey form");
+    expect(ink).toContain("transparent background");
+    expect(hair).not.toContain("transparent background");
+  });
+
   it("is DESCRIBED HONESTLY, in the wording the scale court measured", () => {
     /*
       Not manners. The length arrived 2/2 with the grey form described and

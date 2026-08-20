@@ -312,11 +312,24 @@ export type AssembleInput = {
  * WHAT A SOURCE PICTURE ACTUALLY SHOWS — a closed vocabulary, because the
  * sentence describing it has to be true.
  *
- * One member today. A second arrives with the road that mints a second kind of
- * carrier, and it arrives with its own sentence rather than by widening this
- * one's.
+ * Each member arrives with the road that mints that kind of carrier, and with
+ * its own sentence rather than by widening a neighbour's. Calling a redacted
+ * form *"only hair"* would be lying to the engine about what it is looking at,
+ * and the scale court measured what that costs.
+ *
+ * # THE NAME IS THE CONTAINMENT (ruled fable-1137 §2d)
+ *
+ * `inkDesignOnTransparency` is literally what `cutOutPixels` produces — the
+ * design in its own pixels, everything else alpha-zero. It is named for the
+ * OBJECT rather than for the feature so that the fence is legible in the type
+ * itself: **a future member called `inkFromPhoto` would read as the violation
+ * it would be**, and it would have to be written by a hand that could see it
+ * saying so. That is the whole reason this vocabulary is closed rather than a
+ * string.
+ *
+ * The uploaded photograph is not a member and cannot become one by accident.
  */
-export type SourcePicture = "hairOnRedactedForm";
+export type SourcePicture = "hairOnRedactedForm" | "inkDesignOnTransparency";
 
 export type RecipeSource = {
   slot: FeatureSlot;
@@ -726,6 +739,22 @@ function sourceSentence(
         "it shows hair on a plain grey form standing in for a head.",
         "The grey form is NOT part of the instruction — it is there only to show how long",
         `the hair is relative to a head. Match that length and that shape on ${pronouns.object}.`,
+      ].join(" ");
+    /*
+      THE DESIGN, AND NOTHING ELSE THAT WAS IN ITS PICTURE.
+
+      What the engine is shown is the cutter's own output — the artwork on
+      transparency — so the honest description is the short one, and saying it
+      is the same discipline the arm above bought: the picture is described as
+      what it IS, and the grey form's precedent is that stating the part which
+      is not the instruction is what made the instruction land.
+    */
+    case "inkDesignOnTransparency":
+      return [
+        `Reference ${ordinal} is the tattoo design supplied for this edit:`,
+        "it is the artwork alone on a transparent background, with nothing else from the",
+        "picture it came from. The transparent area is NOT part of the instruction — it is",
+        "there only so the design's own shape and edges are unambiguous.",
       ].join(" ");
   }
 }
