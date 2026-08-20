@@ -8697,6 +8697,10 @@ describe("a words take is answered with a sentence to adopt, free", () => {
     harvest: unmasked,
     readBytes: async () => ({ bytes: Buffer.from("her picture"), contentType: "image/png" }),
     readWords,
+    /* The words lane is the hair road's other form (D-142's split), so it asks
+       the hair flag for itself from 2026-08-20 — these arms are about what the
+       lane SAYS, not about who is on it (fable-1163 §2). */
+    hairReferenceEnabled: () => true,
     ...over,
   });
 
@@ -8880,6 +8884,15 @@ describe("the picture she attached becomes the carrier that rides", () => {
 
   const carrierRoad = (over: Record<string, unknown> = {}) => ({
     repaintEnabled: () => true,
+    /*
+      THE HAIR ROAD IS OPEN FOR THIS ACCOUNT — supplied here from 2026-08-20,
+      when the lane gained its own reader of the hair flag (fable-1163 §2).
+
+      Every arm in this describe is about what the hair road DOES; the flag is
+      not their subject, and without this they would all be testing an account
+      that is not on it. The arms that ARE about the flag override it and say so.
+    */
+    hairReferenceEnabled: () => true,
     repaintEngine: () => ({
       id: "test:repaint",
       edit: async (request: { prompt: string; references: ReadonlyArray<{ bytes: Buffer; contentType: string }>; width: number; height: number }) => {
@@ -9711,6 +9724,107 @@ describe("the picture she attached becomes the carrier that rides", () => {
     expect(result.note).toContain("nothing was charged");
   });
 
+  it("RESOLVES FOR AN INK-ONLY ACCOUNT — the two runs the drive lost", async () => {
+    /*
+      THE END-TO-END HALF OF fable-1163 §2, and the reason it is here rather
+      than only in `askReference.test.ts`.
+
+      `resolveAskReference` gated on the HAIR flag for the whole life of the ink
+      road. An account inside `CASTING_INK_REFERENCE_SCOPE` and outside the hair
+      scope attached a picture, pointed at it for a tattoo, and was told **"That
+      picture isn't attached to this Cast any more"** — about a picture that was
+      attached. Not one arm in this suite could see it: they all inject
+      `inkReferenceEnabled` and stub the resolution, so the road was proven
+      everywhere except at the door it comes through.
+
+      This arm is that account. The hair road is SHUT for her and the tattoo ask
+      still reaches the cut.
+    */
+    const result = await refineCandidate(inkRoad({
+      hairReferenceEnabled: () => false,
+      inkTake: async () => ({
+        placement: { kind: "measured" as const, placement: "neck" as const },
+        side: "centre" as const,
+      }),
+      listInkDesigns: async () => [],
+    }), {
+      ...input, instruction: "use this tattoo design on her neck", referenceId: "ref-public",
+    });
+
+    expect(inkMinted, "an ink-only account's picture never reached the cutter").toHaveLength(1);
+    expect(result.kind).toBe("asked");
+    expect(result.reask?.kind).toBe("this-design");
+    /* And not a word about her picture being unattached — the sentence the
+       defect produced. */
+    expect(result.note ?? "").not.toContain("isn't attached");
+  });
+
+  it("and the SAME account's hair ask is refused at the lane, not served for free", async () => {
+    /*
+      THE OTHER HALF, and the reason the gate's OR could not ship alone: until
+      that commit there was no other live reader of the hair flag anywhere in
+      the product, so widening the gate would have handed an ink-only account
+      the hair crop road for nothing.
+
+      Her picture is CONFESSED rather than silently ignored — she attached one
+      and nothing was taken from it, which is the line D-181 has required since
+      the dropped reference went unmentioned for its whole life.
+    */
+    const result = await refineCandidate(inkRoad({
+      hairReferenceEnabled: () => false,
+      interpret: async () => ({
+        ok: true as const,
+        fromReference: true,
+        delta: { free: { hairWorn: "the hairstyle in the attached picture" } },
+      }),
+    }), {
+      ...input, instruction: "copy this hairstyle", referenceId: "ref-public",
+    });
+
+    expect(minted, "an ink-only account had a HAIR carrier cut for it").toHaveLength(0);
+    expect(inkMinted, "a hair ask reached the ink cutter").toHaveLength(0);
+    expect(result.note ?? "", "her picture went unused and unmentioned").toContain("picture");
+  });
+
+  it("leaves a HAIR-ONLY account exactly as it was — both ways", async () => {
+    /*
+      The unchanged control. The fix must be invisible to everyone who was
+      already on the hair road: her crop is still cut, and the ink road she is
+      not on still does not open for her.
+    */
+    const hairOnly = await refineCandidate(inkRoad({
+      hairReferenceEnabled: () => true,
+      inkReferenceEnabled: () => false,
+      interpret: async () => ({
+        ok: true as const,
+        fromReference: true,
+        delta: { free: { hairWorn: "the hairstyle in the attached picture" } },
+      }),
+    }), {
+      ...input, instruction: "copy this hairstyle", referenceId: "ref-public",
+    });
+    expect(minted, "the hair road stopped cutting for the account it was built for")
+      .toHaveLength(1);
+    expect(hairOnly.kind).toBe("rendered");
+
+    minted.length = 0;
+    /*
+      AND HER TATTOO ASK MEETS THE DOCUMENT GATE, exactly as it did before any
+      of this — D-137's wall, thrown rather than returned, because a tattoo
+      documented by nothing is the render that gate exists to stop. The point of
+      the assertion is what is ABSENT: no cut was bought for an account outside
+      the ink flag, and the OR at the resolver did not change that.
+    */
+    await expect(refineCandidate(inkRoad({
+      hairReferenceEnabled: () => true,
+      inkReferenceEnabled: () => false,
+      listInkDesigns: async () => [],
+    }), {
+      ...input, instruction: "use this tattoo design on my left sleeve", referenceId: "ref-public",
+    })).rejects.toThrow(/Nothing was charged/);
+    expect(inkMinted, "the ink road opened for an account outside its flag").toHaveLength(0);
+  });
+
   it("names the surfaces that work when she asks for one nobody has measured", async () => {
     /*
       Ordered fable-1152 §1c. The design row's placement type is still the
@@ -10027,6 +10141,10 @@ describe("a regenerate re-sends the picture, and none of the replaced take", () 
 
   const road = () => ({
     repaintEnabled: () => true,
+    /* The hair road is open for this account — the lane gained its own reader
+       of the hair flag on 2026-08-20 (fable-1163 §2), and this arm is about what
+       a REGENERATE re-cuts rather than about who is on the road. */
+    hairReferenceEnabled: () => true,
     repaintEngine: () => ({
       id: "test:repaint",
       edit: async (request: { prompt: string; references: ReadonlyArray<{ bytes: Buffer; contentType: string }>; width: number; height: number }) => {

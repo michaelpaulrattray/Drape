@@ -239,6 +239,7 @@ import {
   captureCastingRefineDispatchEnabled,
   captureCastingRepaintEnabled,
   captureCastingSidePhrasingEnabled,
+  captureCastingHairReferenceEnabled,
   captureCastingInkReferenceEnabled,
 } from "./castingV2Scope";
 import { isUpsweptAsk, readCanthalTilt } from "./eyeShapeRouting";
@@ -748,6 +749,16 @@ export type RefineServiceDependencies = {
    * never a way to delete something this service picked.
    */
   removeInkDesign?: typeof removeInkDesign;
+  /**
+   * MAY THIS ACCOUNT TAKE HAIR FROM A PICTURE — the hair road's own question,
+   * asked at the hair road (ruled fable-1163 §2).
+   *
+   * It used to be answered by the reference resolver's gate, which was the hair
+   * flag; the day that gate became the OR of every road that can act on a
+   * picture, an ink-only account would have inherited the hair crop lane for
+   * free. So the lane asks for itself, and both halves landed together.
+   */
+  hairReferenceEnabled?: (userId: number) => boolean;
   /** `CASTING_INK_REFERENCE_SCOPE`, injectable for the same reason as its siblings. */
   inkReferenceEnabled?: (userId: number) => boolean;
   /** Writes the sent recipe onto the variant at dispatch — see `recordVariantDispatch`. */
@@ -1745,7 +1756,17 @@ async function refineCandidateCounted(
     render. What she gets back is words, and they are not even in her box until
     she says so.
   */
-  const wordsTakeIntent = reference ? wordsTakeIntentFor(instruction) : null;
+  /*
+    THE WORDS LANE IS THE HAIR ROAD TOO — colour as words is one of its two
+    forms (D-142's split), and the makeup read has ridden the same gate since it
+    landed. So it asks the hair flag for itself, for the reason the crop lane
+    below does: this used to be answered by the resolver's gate, and that gate
+    is now the OR of every road that can act on a picture (fable-1163 §2).
+  */
+  const wordsTakeIntent = reference
+    && (dependencies.hairReferenceEnabled ?? captureCastingHairReferenceEnabled)(input.userId)
+    ? wordsTakeIntentFor(instruction)
+    : null;
   const pointedAtThePicture = parsed.ok && "fromReference" in parsed && parsed.fromReference === true;
   if (
     reference
@@ -3907,7 +3928,31 @@ async function refineCandidateCounted(
   let hairSource: { key: string; sha: string; scope: string } | null = null;
   let attachedPictureUnused = false;
   let secondViewNote: string | null = null;
-  if (reference) {
+  /*
+    THE HAIR ROAD'S OWN GATE (ruled fable-1163 §2).
+
+    Until 2026-08-20 this branch had no flag of its own: it ran whenever a
+    reference RESOLVED, and the resolver asked the hair question — so the hair
+    flag gated the hair road by accident of siting. That stopped being safe the
+    moment the resolver's gate became the OR of the roads that can act on a
+    picture, because an account on the ink road alone would have walked into
+    this branch and had a crop cut for it.
+
+    An account outside it with a picture attached falls through exactly as an
+    unusable take does: the picture is CONFESSED as unused rather than silently
+    ignored, which is the line D-181 has required since the dropped reference
+    went unmentioned for its whole life.
+  */
+  const hairRoadOpen = reference !== null
+    && (dependencies.hairReferenceEnabled ?? captureCastingHairReferenceEnabled)(input.userId);
+  /*
+    AND IF THE ROAD IS SHUT, HER PICTURE IS STILL ACCOUNTED FOR. `inkSource`
+    is the other thing an attachment can have been used for; with neither, the
+    picture rode along and did nothing, and she is told so in the same list
+    every other half-served ask is confessed in.
+  */
+  if (reference && !hairRoadOpen && inkSource === null) attachedPictureUnused = true;
+  if (reference && hairRoadOpen) {
     const take = await (dependencies.hairTake ?? resolveHairTake)({ instruction });
     /*
       AN UNREADABLE TAKE IS NOT A GUESS. `null` is the resolver saying it could

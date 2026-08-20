@@ -37,7 +37,10 @@
  */
 import { readOwnedReferenceAttachment } from "../db/castingV2ReferenceAttachments";
 import type { InkProvenance } from "../../shared/inkProvenance";
-import { captureCastingHairReferenceEnabled } from "./castingV2Scope";
+import {
+  captureCastingHairReferenceEnabled,
+  captureCastingInkReferenceEnabled,
+} from "./castingV2Scope";
 
 export type AskReference = {
   /** The row's own id, for anything minted from this picture later. */
@@ -60,19 +63,53 @@ export type ResolveAskReferenceDependencies = {
 
 const REAL: ResolveAskReferenceDependencies = {
   /*
-    THE HAIR FLAG, and today it is the only reader of this lane.
+    THE OR OF THE ROADS THAT CAN ACT ON A PICTURE — and this line was the hair
+    flag alone for the whole life of the ink road (fixed 2026-08-20, ruled
+    fable-1163 §2).
 
-    When a second take opens — a tattoo design, an eye colour — the gate here
-    becomes the OR of the roads that can act on a picture, and it is written as
-    a single injected predicate rather than as a chain of `||` so that the day
-    it grows a second member is a day somebody edits one expression. What must
-    never happen is a reference resolving for a user no road can serve: she
-    would attach, be asked nothing, and pay for a render that ignored her
-    picture.
+    The paragraph that used to sit here said what to do and was never done:
+    *"when a second take opens — a tattoo design, an eye colour — the gate here
+    becomes the OR of the roads that can act on a picture."* A second take DID
+    open. `CASTING_INK_REFERENCE_SCOPE` shipped, its boot chain requires
+    `CASTING_REFERENCE_ATTACH_SCOPE` and says nothing about hair, and this gate
+    went on asking the hair question — so an ink-only account attached a
+    picture, pointed at it for a tattoo, and was told **"That picture isn't
+    attached to this Cast any more"**, which is false: it was attached, and we
+    refused to look at it.
+
+    It cost two runs of the shown-cut drive to find, and no unit arm could have:
+    every one of them injects `inkReferenceEnabled` and stubs this resolution,
+    so the only instrument that could see it was the road driven end to end.
+
+    **The OR here does NOT hand an ink account the hair road.** The gate answers
+    *"can ANY road serve a picture for this user"*; whether THIS user may take
+    hair from a picture is the hair lane's own question, and `refineService`
+    now asks it there. Both halves landed in one commit deliberately: widening
+    this alone would have opened the hair crop road to ink-only accounts,
+    because until that commit there was no other live reader of the hair flag
+    anywhere in the product.
+
+    Still one injected predicate rather than a chain at the call site, for the
+    reason the old paragraph gave: the day it grows a third member is a day
+    somebody edits one expression.
   */
-  enabled: captureCastingHairReferenceEnabled,
+  enabled: askReferenceRoadOpen,
   read: readOwnedReferenceAttachment,
 };
+
+/**
+ * CAN ANY ROAD SERVE A PICTURE FOR THIS ACCOUNT — exported so it can be DRIVEN.
+ *
+ * Every arm in `askReference.test.ts` injects `enabled`, which is correct for
+ * testing the three ownership questions and is exactly why nobody saw the gate
+ * asking the wrong one for the whole life of the ink road: an injected
+ * predicate cannot fail the way the shipped predicate failed. So the shipped
+ * one has a name and its own arms, and they read the flags rather than a
+ * double (assert at the wire, invariant 5's spirit).
+ */
+export function askReferenceRoadOpen(userId: number): boolean {
+  return captureCastingHairReferenceEnabled(userId) || captureCastingInkReferenceEnabled(userId);
+}
 
 export async function resolveAskReference(
   input: { userId: number; referencePublicId: string; candidateId: number },
