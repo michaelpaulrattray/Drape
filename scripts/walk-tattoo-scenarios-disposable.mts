@@ -234,3 +234,8 @@ for (const scenario of SCENARIOS) {
 await browser.close();
 await writeFile(`${OUT}/walk.log`, `${log.join("\n")}\n`);
 console.log(`\nwalk log: ${OUT}/walk.log`);
+
+/* END BY ENDING THE PROCESS. Puppeteer leaves handles alive, so a driver that
+   merely falls off the end can hang a shell forever — the discipline the script
+   guard enforces, and it caught this file rather than a reviewer did. */
+process.exit(0);
