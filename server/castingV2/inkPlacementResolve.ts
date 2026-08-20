@@ -56,6 +56,7 @@ import {
   inkPlacementEntry,
   type InkPlacement,
 } from "../../shared/inkPlacementVocabulary";
+import type { InkSide } from "../../shared/inkReleasedPlacements";
 
 /**
  * The longest a stored placement may be.
@@ -140,7 +141,54 @@ function measuredFor(normalised: string): InkPlacement | null {
   return null;
 }
 
-export function resolveInkPlacement(raw: string): ResolvedPlacement {
+/**
+ * HER SIDE WORD, TAKEN OUT OF THE PLACE NAME IT IS SITTING INSIDE — decomposition
+ * (ruled fable-1163 §3, found by driving the surface 2026-08-20).
+ *
+ * *"use this tattoo design on her left upper arm"* is the most natural phrasing
+ * there is, and it read back as the OPEN phrase `left upper arm` with the side
+ * `left` — so the ask was refused as an unmeasured surface, in a sentence that
+ * said **"her left left upper arm is more than I can place yet"**. Both halves
+ * were wrong: `upperArm` is one of the three measured surfaces, and the prose
+ * repeated her word.
+ *
+ * # WHY THIS IS NOT THE INFERENCE 1115 §3 OUTLAWED
+ *
+ * That ruling forbade deriving a side FROM a placement word — *sleeve implies
+ * arm implies pick one* — because the side would be the machine's guess about a
+ * thing whose cost is a refund and an apology. Nothing is guessed here. The
+ * side is one SHE TYPED, already captured and already checked against her own
+ * sentence by source containment; all this does is stop counting it twice.
+ *
+ * # THE THREE CONDITIONS, and each rules something out
+ *
+ *   the token must be the side ALREADY CAPTURED — never any side word, so a
+ *   sentence naming one side cannot have another one stripped out of a phrase;
+ *   it comes off as a WHOLE WORD at either end — "leftover" keeps its letters;
+ *   and the remainder must match the closed vocabulary — "left sleeve" strips
+ *   to "sleeve", which is unmeasured, so it stays OPEN with her whole phrase
+ *   intact. An open phrase is the tally's evidence and is never edited.
+ */
+function withoutStatedSide(normalised: string, statedSide: InkSide | null): string | null {
+  if (statedSide !== "left" && statedSide !== "right") return null;
+  /* `\\s` rather than `\s`: a template literal resolves `\s` to a bare "s", so
+     the pattern would read `^lefts+` and quietly never match — a whole-word
+     strip that fires on nothing. */
+  const stripped = normalised
+    .replace(new RegExp(`^${statedSide}\\s+`), "")
+    .replace(new RegExp(`\\s+${statedSide}$`), "");
+  return stripped === normalised || stripped === "" ? null : stripped;
+}
+
+export function resolveInkPlacement(
+  raw: string,
+  /**
+   * The side she stated, when one was captured out of her own sentence — the
+   * only token this resolver may consume. `null` on every other road, which is
+   * every road that has not read one.
+   */
+  statedSide: InkSide | null = null,
+): ResolvedPlacement {
   const normalised = normalise(raw);
   if (normalised === "") return { kind: "absent" };
 
@@ -153,6 +201,14 @@ export function resolveInkPlacement(raw: string): ResolvedPlacement {
   */
   const measured = measuredFor(normalised);
   if (measured !== null) return { kind: "measured", placement: measured };
+
+  /* Her own side word, out of the way, and only then asked again. See above for
+     why this is not an inference. */
+  const withoutSide = withoutStatedSide(normalised, statedSide);
+  if (withoutSide !== null) {
+    const decomposed = measuredFor(withoutSide);
+    if (decomposed !== null) return { kind: "measured", placement: decomposed };
+  }
 
   if (normalised.length > INK_PLACEMENT_MAX_LENGTH) {
     return { kind: "tooLong", length: normalised.length };

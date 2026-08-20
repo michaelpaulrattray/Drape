@@ -25,6 +25,7 @@ import { inkDesignForAsk, slotPlacementOf } from "./inkDesignForAsk";
 import { slotDefinition } from "./referenceSlotCatalogue";
 import { inkSlotKey } from "./referenceSlots";
 import { inkDesignWasExamined, INK_CUT_ROUTES } from "../../shared/inkCutRoute";
+import { INK_PLACEMENTS } from "../../shared/inkPlacementVocabulary";
 import type { StoredInkDesign } from "../db/castingV2InkDesigns";
 
 /** The picture she pointed at on this ask. */
@@ -401,5 +402,90 @@ describe("a row's side, in the slot grammar's words", () => {
     /* And the key the broken translation would have produced does NOT resolve,
        which is why nothing downstream could have rescued it. */
     expect(slotDefinition("ink:neck@centre")).toBeNull();
+  });
+});
+
+/**
+ * NO SENTENCE THIS MODULE WRITES EVER SAYS HER SIDE WORD TWICE — the class,
+ * killed 2026-08-20 (ruled fable-1163 §3).
+ *
+ * The instance was read off the running app: **"I can put a design on her neck,
+ * her upper arm or her upper chest right now — her left left upper arm is more
+ * than I can place yet."** Her phrasing put the side inside the place name, the
+ * take captured it as the side as well, and the composer prepended it to a
+ * phrase that already had it.
+ *
+ * Decomposition fixes that particular ask — `upper arm` is measured, so the
+ * address is now (upperArm, left). It does NOT fix the class: an OPEN phrase
+ * keeps her exact words by ruling, so "left sleeve" with side `left` still
+ * arrives at the composer. This is the arm for the class.
+ */
+describe("the spoken-back place never repeats her side", () => {
+  /*
+    THE PROPERTY, PRECISELY — and the first version of this regex was not it.
+
+    It looked for a side word repeated anywhere in the sentence, and the refusal
+    contains the ordinary English "right now", so it reported a false double on
+    every sentence carrying that phrase. What is forbidden is the PLACE being
+    spoken with HER OWN WORD TWICE: "her left left upper arm". A checker that
+    fires on prose it was not written about is a checker whose verdicts nobody
+    can read.
+
+    It is a REPEAT rather than "two side words", and the difference is a case
+    the sweep below turns up: an open phrase "left sleeve" with the side `right`
+    composes "her right left sleeve", which is a CONTRADICTION in her own ask
+    rather than a repeat. That is left standing deliberately — see the sweep.
+  */
+  const doubled = /\bher\s+(left|right)\s+\1\b/i;
+
+  it("says an open phrase that already carries the side ONCE", () => {
+    const answer = inkDesignForAsk(
+      [],
+      { placement: "left sleeve", side: "left" },
+      { digest: "a".repeat(64) },
+    );
+    expect(answer.kind).toBe("placementUnserved");
+    const said = "say" in answer ? answer.say : "";
+    expect(said).toContain("her left sleeve");
+    expect(said, `the sentence repeats her side word: ${said}`).not.toMatch(doubled);
+  });
+
+  it("still SAYS the side for a measured surface that needs one", () => {
+    /* The other direction, because a composer that solved this by dropping the
+       side would be a worse bug wearing a passing test: on a paired surface the
+       side is the whole point. */
+    const answer = inkDesignForAsk(
+      [],
+      { placement: "upperArm", side: "right" },
+      { digest: "a".repeat(64) },
+    );
+    const said = "say" in answer ? answer.say : "";
+    if (said) expect(said).toContain("her right upper arm");
+  });
+
+  it("sweeps every sentence this module can compose, at every address", () => {
+    /*
+      The class rather than the instance: every placement (measured and open) ×
+      every side × the answers that produce prose. A future sentence that
+      concatenates a side onto a phrase joins this sweep by existing.
+    */
+    /*
+      "left sleeve" WITH THE SIDE `right` IS IN HERE DELIBERATELY, and what it
+      produces is "her right left sleeve" — not a repeat, but a contradiction in
+      her own ask, said back to her. It is left standing rather than papered
+      over: suppressing the side there would make the sentence describe a
+      different address than the one being refused, and choosing between two
+      sides she named is a product decision nobody has made. Filed to Fable.
+    */
+    const places = [...INK_PLACEMENTS, "left sleeve", "right forearm", "sleeve"];
+    for (const placement of places) {
+      for (const side of ["left", "right", "centre", null] as const) {
+        for (const designs of [[] as StoredInkDesign[]]) {
+          const answer = inkDesignForAsk(designs, { placement, side }, { digest: "a".repeat(64) });
+          const said = "say" in answer ? answer.say : "";
+          expect(said, `${placement}/${side}: ${said}`).not.toMatch(doubled);
+        }
+      }
+    }
   });
 });

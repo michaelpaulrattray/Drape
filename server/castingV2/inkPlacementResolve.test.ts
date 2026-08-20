@@ -190,3 +190,81 @@ describe("the tally keeps place names and refuses to keep sentences", () => {
     }
   });
 });
+
+/**
+ * DECOMPOSITION — her side word, taken out of the place name it was sitting
+ * inside (ruled fable-1163 §3, found by driving the surface 2026-08-20).
+ *
+ * *"use this tattoo design on her left upper arm"* is the phrasing a person
+ * actually types, and before this it read back as the OPEN phrase `left upper
+ * arm` and was refused as an unmeasured surface — in a sentence that said
+ * *"her left left upper arm is more than I can place yet"*. `upperArm` is one
+ * of the three measured surfaces; the ask was always serveable.
+ *
+ * The line this must not cross is 1115 §3's: a side is never DERIVED from a
+ * placement word. Nothing is derived here — the side is one she typed and the
+ * containment guard already admitted; this only stops it being counted twice.
+ */
+describe("her own side word inside the place name", () => {
+  it("resolves the natural phrasing to the measured surface", () => {
+    expect(resolveInkPlacement("left upper arm", "left"))
+      .toEqual({ kind: "measured", placement: "upperArm" });
+    expect(resolveInkPlacement("right upper arm", "right"))
+      .toEqual({ kind: "measured", placement: "upperArm" });
+  });
+
+  it("takes it off either end, as a WHOLE word", () => {
+    expect(resolveInkPlacement("upper arm left", "left"))
+      .toEqual({ kind: "measured", placement: "upperArm" });
+    /* "leftover" is not her side word with a suffix; it is a different word. */
+    expect(resolveInkPlacement("leftover shoulder", "left").kind).toBe("open");
+  });
+
+  it("CONSUMES ONLY THE SIDE SHE STATED — never any side word it finds", () => {
+    /*
+      The condition that keeps this out of 1115 §3's territory. A sentence that
+      captured "right" may not have "left" stripped out of a phrase: that would
+      be the resolver editing a place name on the strength of a word she used
+      about something else.
+    */
+    expect(resolveInkPlacement("left upper arm", "right").kind).toBe("open");
+    expect(resolveInkPlacement("left upper arm", null).kind).toBe("open");
+    /* `centre` is the vocabulary's answer for a single surface and is never a
+       word she states, so it consumes nothing either. */
+    expect(resolveInkPlacement("left upper arm", "centre").kind).toBe("open");
+  });
+
+  it("LEAVES AN UNMEASURED SURFACE OPEN, with her whole phrase intact", () => {
+    /*
+      The negative that matters most. "sleeve" is unmeasured, so stripping the
+      side gets no closer to a measured surface — and the phrase kept is HER
+      phrase, because an open phrase is the demand tally's evidence and is
+      never edited (1114 §2's founding sentence).
+    */
+    expect(resolveInkPlacement("left sleeve", "left"))
+      .toEqual({ kind: "open", phrase: "left sleeve" });
+    expect(resolveInkPlacement("left forearm", "left"))
+      .toEqual({ kind: "open", phrase: "left forearm" });
+  });
+
+  it("cannot strip a phrase down to nothing", () => {
+    /* A phrase that IS the side word alone names no surface, and a remainder of
+       "" must never be offered to the vocabulary as if it were one. */
+    expect(resolveInkPlacement("left", "left")).toEqual({ kind: "open", phrase: "left" });
+  });
+
+  it("changes nothing for every measured spelling that never carried a side", () => {
+    /* The unchanged control, swept over the vocabulary rather than sampled: a
+       decomposition that altered a direct match would be a fix that broke the
+       thing it was extending. */
+    for (const key of INK_PLACEMENTS) {
+      const entry = inkPlacementEntry(key);
+      for (const spelling of [key, entry.readerWord, entry.noun]) {
+        expect(resolveInkPlacement(spelling, "left"))
+          .toEqual({ kind: "measured", placement: key });
+        expect(resolveInkPlacement(spelling, null))
+          .toEqual({ kind: "measured", placement: key });
+      }
+    }
+  });
+});

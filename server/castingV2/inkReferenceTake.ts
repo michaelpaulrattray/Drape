@@ -195,7 +195,8 @@ export function readInkReferenceTake(raw: string, instruction: string): InkRefer
     transport hiccup into a question about her sentence.
   */
   if (typeof rawPlacement !== "string") return null;
-  const placement = resolveInkPlacement(rawPlacement);
+  const stated = statedSideIn(parsed.side, instruction);
+  const placement = resolveInkPlacement(rawPlacement, stated);
 
   return { placement, side: sideFor(placement, parsed.side, instruction) };
 }
@@ -221,20 +222,31 @@ function sideFor(
     if (sides.length === 1) return sides[0]!;
   }
 
+  return statedSideIn(claimed, instruction);
+}
+
+/**
+ * THE SIDE SHE TYPED — the model's claim, admitted only if her sentence carries
+ * the word.
+ *
+ * Hoisted out of {@link sideFor} when decomposition landed (fable-1163 §3),
+ * because the resolver needs this answer BEFORE the placement is resolved and
+ * `sideFor` cannot give it — that function's first question is about the
+ * placement. One owner rather than two readings: the containment rule is what
+ * this road's refunds were bought with, and a second copy of it beside the
+ * first is how two callers come to disagree about what she said.
+ *
+ * A model reporting a side is a reading; a model reporting a side she never
+ * typed is an invention, and the two look identical in a reply. So the word
+ * itself must appear in her sentence — source containment (D-79) on the one
+ * field where a wrong answer is a refund and an apology rather than a question.
+ * `\b` because "left" hides inside nothing useful, and because the guard must
+ * not fire on "sleeve" for containing no side at all.
+ */
+function statedSideIn(claimed: unknown, instruction: string): InkSide | null {
   const said = typeof claimed === "string" ? claimed.trim().toLowerCase() : null;
   const side = STATEABLE_SIDES.find((value) => value === said) ?? null;
   if (side === null) return null;
-
-  /*
-    AND SHE HAS TO HAVE SAID IT.
-
-    A model reporting a side is a reading; a model reporting a side she never
-    typed is an invention, and the two look identical in a reply. So the word
-    itself must appear in her sentence — source containment (D-79) on the one
-    field where a wrong answer is a refund and an apology rather than a
-    question. `\b` because "left" hides inside nothing useful, and because the
-    guard must not fire on "sleeve" for containing no side at all.
-  */
   return new RegExp(`\\b${side}\\b`, "i").test(instruction) ? side : null;
 }
 

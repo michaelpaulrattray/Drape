@@ -181,9 +181,26 @@ function placeIn(address: InkAskAddress): string {
   const surface = isInkPlacement(address.placement)
     ? inkPlacementBareNoun(address.placement)
     : address.placement;
-  return address.side === "left" || address.side === "right"
-    ? `her ${address.side} ${surface}`
-    : `her ${surface}`;
+  if (address.side !== "left" && address.side !== "right") return `her ${surface}`;
+  /*
+    AND HER SIDE WORD IS NEVER SAID TWICE (the class, killed 2026-08-20; ruled
+    fable-1163 §3).
+
+    The instance was **"her left left upper arm is more than I can place yet"**,
+    read off the running app: her phrasing put the side inside the place name,
+    the take captured it as the side as well, and this line prepended it to a
+    phrase that already carried it. Decomposition fixes that ask — `upper arm`
+    is measured, so the address is now (upperArm, left) and the surface here is
+    a bare noun.
+
+    It does NOT fix the class. An OPEN phrase keeps her exact words, by ruling —
+    the tally's evidence is never edited — so *"left sleeve"* with the side
+    `left` still arrives here, and `sleeve` is not something the vocabulary can
+    reduce. So the repeat is refused at the sentence rather than at the address:
+    if the phrase already opens with her word, it is not added again.
+  */
+  const alreadySaid = new RegExp(`^${address.side}\\b`, "i").test(surface.trim());
+  return alreadySaid ? `her ${surface}` : `her ${address.side} ${surface}`;
 }
 
 /**

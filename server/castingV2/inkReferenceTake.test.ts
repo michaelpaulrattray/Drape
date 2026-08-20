@@ -314,3 +314,52 @@ describe("the sentence that rides with a design", () => {
     expect(said).not.toContain("as you look at it");
   });
 });
+
+/**
+ * THE WIRE, not the rule — decomposition asserted where the take hands her side
+ * to the resolver (added 2026-08-20 after a sabotage proved it was unguarded).
+ *
+ * `inkPlacementResolve.test.ts` drives decomposition thoroughly and every one of
+ * its arms supplies the side ITSELF. So when the wire between the two was cut as
+ * a sabotage — the take calling `resolveInkPlacement(rawPlacement)` with no side
+ * at all, exactly as it did before the fix — **342 tests passed**. The rule was
+ * proven and the feature was inert, which is this campaign's own
+ * harness-supplied-arguments trap wearing a new hat.
+ *
+ * These arms drive `readInkReferenceTake` on a scripted reply, so what they
+ * prove is that the take PASSES her word on.
+ */
+describe("the take hands her side to the resolver", () => {
+  it("resolves the natural phrasing end to end", () => {
+    const take = readInkReferenceTake(
+      '{"placement":"left upper arm","side":"left"}',
+      "use this tattoo design on her left upper arm",
+    );
+    expect(take?.placement).toEqual({ kind: "measured", placement: "upperArm" });
+    expect(take?.side).toBe("left");
+  });
+
+  it("and the side it hands over is one HER SENTENCE carries", () => {
+    /*
+      The containment rule, still standing between the model and the address:
+      a reply claiming a side she never typed decomposes nothing, because the
+      side it would consume was never hers. The phrase stays open and the road
+      asks her rather than filing an arm she did not name.
+    */
+    const invented = readInkReferenceTake(
+      '{"placement":"left upper arm","side":"left"}',
+      "use this tattoo design on her arm",
+    );
+    expect(invented?.placement.kind).toBe("open");
+    expect(invented?.side).toBeNull();
+  });
+
+  it("leaves an unmeasured surface open, side and all", () => {
+    const sleeve = readInkReferenceTake(
+      '{"placement":"left sleeve","side":"left"}',
+      "put this on my left sleeve",
+    );
+    expect(sleeve?.placement).toEqual({ kind: "open", phrase: "left sleeve" });
+    expect(sleeve?.side).toBe("left");
+  });
+});
