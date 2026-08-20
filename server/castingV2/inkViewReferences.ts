@@ -46,6 +46,7 @@
  * guess.
  */
 import { inkPlacementEntry, type InkPlacement } from "../../shared/inkPlacementVocabulary";
+import { INK_NOT_ON_CLOTHING } from "./inkRealism";
 import { imageHalfClause } from "./sidePhrasing";
 import type { InkSide } from "../../shared/inkReleasedPlacements";
 
@@ -239,13 +240,7 @@ export function inkViewReferenceClause(input: {
     it, and no view is added to; a poke above the collar is the whole of what a
     covered design gets, and that is the promise rather than the compromise.
   */
-  lines.push(
-    "It is ink on her skin — never printed, embroidered or otherwise placed on her clothing, and "
-    + "never added to a garment as a graphic. Clothing covers ink rather than removing it: where a "
-    + "tattoo runs under a garment, the part of it on bare skin appears exactly as it is and the "
-    + "covered part simply does not show. Never change, move or open a garment to reveal more of a "
-    + "tattoo — the clothing in a view is what it is, and the tattoo shows only where skin shows.",
-  );
+  lines.push(INK_NOT_ON_CLOTHING);
   lines.push(
     "Each tattoo sits where it is named and nowhere else — do not move one to a nearby part of the "
     + "body, do not mirror it to her other side, and do not draw a second copy of it. Where a view "

@@ -41,6 +41,7 @@ import { randomUUID } from "node:crypto";
 
 import { inkPlacementEntry, type InkPlacement } from "../../shared/inkPlacementVocabulary";
 import type { InkSide } from "../../shared/inkReleasedPlacements";
+import { INK_SITS_ON_THE_FORM_LINES } from "./inkRealism";
 import type { InkTemplate, InkTemplateChoice } from "./inkTemplates";
 import { INK_KEY_PREFIX } from "./inkUploadDoor";
 
@@ -311,8 +312,7 @@ export function inkPlatePrompt(input: {
     "  and any lettering exactly as they appear. Do not restyle it, do not",
     "  simplify it, and do not add to it.",
     ...oneTattoo,
-    "- Follow the form underneath, so the design sits on the surface as ink on",
-    "  skin rather than as a flat sticker.",
+    ...INK_SITS_ON_THE_FORM_LINES,
     `- Put it at ${where} and nowhere else. Leave every other part of the form`,
     single ? "  completely bare." : "  completely bare, in every view.",
     "- The PERSON in PICTURE 2 is not the subject and must not appear: no face,",
