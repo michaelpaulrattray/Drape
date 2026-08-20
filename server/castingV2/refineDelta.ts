@@ -125,6 +125,71 @@ export type RefineDelta = {
    */
   free?: Partial<Record<FreeSubject, FreeValue>>;
   /**
+   * WHICH OF HER DESIGNS THIS STEP ACTUALLY PUT ON HER — keyed by ink slot,
+   * holding the design row's public id (shape A, ruled fable-1167 §2).
+   *
+   * # The hole it fills, read off the wire
+   *
+   * A delivered tattoo did not survive the next unrelated edit. Step one
+   * painted a chest piece; step two — *"give him green eyes"* — dispatched the
+   * master and a hair crop, no ink reference and no ink clause, and the design
+   * was gone (opus-864 §1). The chain still held the customer's ink WORDS the
+   * whole time. What it did not hold was WHICH DESIGN, so nothing could put the
+   * artwork back, and painting a tattoo from the surviving words alone is
+   * D-137's forbidden render.
+   *
+   * # Why here and not on the design row
+   *
+   * `casting_ink_designs` records the design — its bytes, its place, its cut —
+   * and is silent about whether anything was ever PAINTED with it. It cannot
+   * stand in for this: the studio door files a row the moment a customer
+   * attaches a picture, and road (D) files one at the shown-cut moment, before
+   * her confirming tap. Riding rows would paint a tattoo she never asked for
+   * onto her next unrelated edit, at full price.
+   *
+   * A column on the row was weighed and refused twice over. One column holds
+   * one variant, so re-applying a design on a second branch MOVES the mark and
+   * the first branch silently loses its tattoo; and an applications TABLE keyed
+   * on the variant gets PRUNES wrong — a pruned ink step's variant is still in
+   * the ancestry, so the design would go on riding after she took the ask back,
+   * and the filter that would fix it (`slotsNamedByChain`) cannot name an ink
+   * slot at all, because ink's assignment is per-placement and the placement is
+   * a runtime fact.
+   *
+   * **The chain has none of those problems and it has them for free.** The
+   * chain IS the branch, so a fork carries what its own steps did; a prune is
+   * chain arithmetic that already runs, so a struck ink step composes away and
+   * the master — which never had the design — does the removing.
+   *
+   * # It is written by CODE, never read off a model's reply
+   *
+   * The open lane's rule, verbatim and for a sharper reason. `readDelta` — the
+   * strict reader guarding the boundary where a model's reply enters the record
+   * — does NOT read this field and must not: a reply free to name a design id
+   * would be a model choosing which of a customer's eight designs gets painted
+   * onto her, which is the road `inkDesignForAsk` exists to own. It enters the
+   * record only from the service that resolved the design itself, and comes
+   * back out through `readStoredDelta`, which guards our own past.
+   *
+   * # And the id is re-checked, never trusted
+   *
+   * What rides is read from the ROW by this id, owner-scoped, digest-checked at
+   * the recipe, and refused if its cut disposition is `null` — so a delta
+   * naming a declined or unexamined design paints nothing. The id points; the
+   * row decides.
+   *
+   * ⚠ **THE TWO-TATTOO LIMIT LIVES ONE FIELD ALONG** (filed fable-1167 §2e).
+   * This record is per SLOT and composes per slot, so two placements coexist
+   * here. `free.ink` does not — the free lane is last-writer-wins per subject,
+   * so a second tattoo ask REPLACES the first's words in the composed delta.
+   * The day a second design is served, that is the line to fix, and this one
+   * is deliberately not made to agree with a limit it does not have.
+   *
+   * Absent on every delta written before this existed, which reads as *nothing
+   * applied* — true of all of them.
+   */
+  inkApplied?: Readonly<Record<string, string>>;
+  /**
    * WHAT HAS LEFT HER — the one negative fact the recipe can hold (D-238).
    *
    * Every other field above is a positive assertion, and that omission is why no
@@ -1712,6 +1777,52 @@ export function composeDeltas(deltas: readonly RefineDelta[]): RefineDelta {
       the kind and the master — which never had it — does the removing.
     */
     if (delta.open) composed.open = { ...(composed.open ?? {}), ...delta.open };
+    /*
+      AND THE DESIGNS THIS STEP PUT ON HER — RESTATED WITH THEIR OWN WORDS.
+
+      `inkApplied` is the pointer half of a fact whose word half is `free.ink`,
+      and the one rule this needs is that the two halves can never disagree
+      about whether she still has a tattoo. So the pointers are governed by the
+      SUBJECT rather than by the facet: `ink` is a plural subject, which the
+      note above says holds the whole current set as one value, restated
+      absolutely — so a step that says anything at all about ink replaces the
+      pointer set with its own, and a step that says nothing leaves it alone.
+
+      That single rule covers all three states, measured against composition
+      rather than assumed:
+
+        an unrelated later edit    the design carries — THE WHOLE POINT
+        a new design               the words are replaced and so are the
+                                   pointers, together
+        `free: {ink: []}`          she had it taken off: the words go empty and
+                                   the pointers go with them
+
+      The third is why this is not `clearFacets`' business. An emptied plural
+      subject deliberately answers no facet (*"[] is not an answer"*), so a
+      facet-keyed rule would leave the pointer standing while the words went
+      empty — a paid removal that does not remove, which is this product's most
+      expensive shape.
+
+      And a prune removes one for free: `composeChain` runs this over the
+      SURVIVING steps, so a chain without the ink step composes without the
+      design, nothing carries it, and the master — which never had it — does the
+      removing. The carry and the un-carry in one line.
+
+      ⚠ THE ONE LIMIT, SHARED WITH THE WORDS AND FILED (fable-1167 §2e): a
+      second design at a second placement does not accumulate, because the
+      interpreter restates `free.ink` with the newest ask alone rather than the
+      whole set. Both halves lose the first design together, so they stay in
+      step and the record stays honest — but the day a Cast wears two, THIS is
+      the line to fix and `free.ink`'s restatement is the line to fix first.
+    */
+    const inkRestated = delta.free !== undefined && "ink" in delta.free;
+    if (inkRestated || delta.inkApplied) {
+      const next = inkRestated
+        ? { ...(delta.inkApplied ?? {}) }
+        : { ...(composed.inkApplied ?? {}), ...delta.inkApplied };
+      if (Object.keys(next).length === 0) delete composed.inkApplied;
+      else composed.inkApplied = next;
+    }
   }
   return composed;
 }

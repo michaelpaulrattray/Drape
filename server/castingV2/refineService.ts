@@ -206,7 +206,8 @@ import {
 } from "./referenceLibrary";
 import { listLineageReferences, recordReferenceRows, retireReferenceSlot } from "../db/castingV2ReferenceLibrary";
 import type { RegionReader as MintRegionReader } from "./referenceCompleteness";
-import { assembleRecipe, type FeatureSlot } from "./recipeAssembler";
+import { withAppliedInk } from "./inkApplied";
+import { assembleRecipe, type CarriedInkDesign, type FeatureSlot } from "./recipeAssembler";
 import {
   facetsOfSlot, slotDefinition, slotsForFacet, slotsForFeature, type SlotDefinition,
 } from "./referenceSlotCatalogue";
@@ -4119,6 +4120,52 @@ async function refineCandidateCounted(
   */
   attempt.claimed = true;
 
+  /*
+    WHICH DESIGN THIS STEP PUTS ON HER — written into the record, so the NEXT
+    render can put it back (shape A, ruled fable-1167 §2).
+
+    The hole this closes was read off the wire: a delivered tattoo did not
+    survive the next unrelated edit, because the chain remembered her ink WORDS
+    and nothing remembered WHICH DESIGN (opus-864 §1). Both lists get it — the
+    step's own delta, so a prune takes it away by arithmetic, and the composed
+    one, so a reader of the branch state does not have to re-compose to see it.
+
+    Derived from `inkSource`, which is the same object the recipe carries this
+    render, so the design recorded and the design painted cannot disagree. The
+    slot comes through `slotsForFacet`'s own key builder rather than being
+    spelled here, for the reason every ink derivation in this file gives: two
+    spellings of a placement is a design on the wrong part of her.
+
+    Absent on every render that is not an ink ask, which leaves both lists
+    byte-identical to what they were before this existed.
+  */
+  const appliedInk = (() => {
+    if (inkSource === null) return null;
+    const slot = slotsForFacet("ink", { inkPlacement: slotPlacementOf(inkSource.address) })[0]?.slot;
+    if (slot === undefined) {
+      /* The catalogue cannot name the slot this design went on. It should not
+         be reachable — the pre-claim door resolved the address through the same
+         vocabulary — and it is handled rather than assumed away: the render
+         still happens, and the fact that this design will not carry is LOUD
+         rather than a tattoo that quietly stops existing one edit later. */
+      log.error(
+        { userId: input.userId, candidate: input.candidatePublicId, placement: inkSource.address.placement },
+        "[refineService] a design is riding this render and the catalogue cannot name its slot — it will not carry to the next edit",
+      );
+      return null;
+    }
+    return { slot, designId: inkSource.designId };
+  })();
+  const claimedDeltas = appliedInk === null
+    ? composed
+    : withAppliedInk(composed, appliedInk.slot, appliedInk.designId);
+  const claimedStepDeltas = appliedInk === null || stepDeltas.length === 0
+    ? stepDeltas
+    : [
+      ...stepDeltas.slice(0, -1),
+      withAppliedInk(stepDeltas[stepDeltas.length - 1]!, appliedInk.slot, appliedInk.designId),
+    ];
+
   let variant: Awaited<ReturnType<typeof claimVariant>>;
   try {
     variant = await claimVariant({
@@ -4127,8 +4174,8 @@ async function refineCandidateCounted(
       operationId,
       pointsCost: price,
       instructions,
-      deltas: composed,
-      stepDeltas,
+      deltas: claimedDeltas,
+      stepDeltas: claimedStepDeltas,
       stepProvenance,
       /*
         WHAT THEY TYPED, kept apart from the recipe (D-163).
@@ -4770,6 +4817,91 @@ async function refineCandidateCounted(
       */
       const editedSlots = new Set(asks.asks.map((ask) => ask.slot));
       const library = libraryWithoutEditedCrops(libraryBeforeAsks, editedSlots);
+      /*
+        THE DESIGNS SHE ALREADY HAS — clause (a), ruled fable-1167 §2.
+
+        Ink never enters the reference library (fable-1137 §3), so nothing in
+        the machinery above puts a delivered tattoo back on the next render.
+        Read off the wire before it was built: step one painted a chest piece
+        and step two — "give him green eyes" — dispatched the master and a hair
+        crop, no ink reference, no ink clause, tattoo gone (opus-864 §1).
+
+        THE CHAIN SAYS WHICH DESIGNS, AND THE ROWS SAY WHAT THEY ARE. The
+        composed delta carries `inkApplied` per slot, so a fork carries what its
+        own steps did and a prune takes one away by arithmetic; the row supplies
+        the bytes, the digest and the cut disposition, owner-scoped on both
+        sides of its own join. The id POINTS and the row DECIDES — a delta
+        naming a design that has since been deleted carries nothing, and one
+        naming an unexamined row is refused by the assembler rather than
+        painted.
+
+        Skipped entirely when the branch has no applied design, which is every
+        render this product has served: no read, no allocation, no change.
+      */
+      const appliedBySlot = composed.inkApplied ?? {};
+      const carriedInk = Object.keys(appliedBySlot).length === 0
+        ? []
+        : await (async () => {
+          const designs = await (dependencies.listInkDesigns ?? listInkDesigns)({
+            userId: input.userId,
+            candidatePublicId: input.candidatePublicId,
+          });
+          /* The assembler's own type rather than a re-listing of its fields:
+             a copy drifts by losing a field nothing can see, and the Atlas
+             says so mechanically. */
+          const carried: CarriedInkDesign[] = [];
+          for (const [slot, designId] of Object.entries(appliedBySlot)) {
+            /* A slot this render EDITS is handed the design as a SOURCE with
+               the ask's own words; carrying it as well would send one picture
+               twice with two sentences, and the assembler refuses that outright
+               (`carriesItsOwnEdit`). Skipped here rather than refused because
+               it is the ORDINARY state of every ink edit, not a defect. */
+            if (editedSlots.has(slot)) continue;
+            const design = designs.find((row) => row.publicId === designId);
+            const noun = slotDefinition(slot)?.noun;
+            if (design === undefined || noun === undefined) {
+              /*
+                LOUD, ALWAYS. A design that has been deleted stops riding, which
+                is right and is what the per-design delete is for — but it is
+                also indistinguishable at this line from a record that has come
+                apart, and a tattoo that quietly stops existing is the exact
+                shape this whole build exists to end.
+              */
+              log.warn(
+                {
+                  operationId,
+                  variant: variant.publicId,
+                  slot,
+                  design: designId,
+                  reason: design === undefined ? "noRow" : "uncataloguedSlot",
+                },
+                "[refineService] the branch says a design is on her and this render cannot carry it — the tattoo will not be in this frame",
+              );
+              continue;
+            }
+            carried.push({
+              slot,
+              /* By KEY and DIGEST, never fetched here: `repaintRender` re-reads
+                 every reference and refuses when the loaded bytes do not hash to
+                 the sha the recipe named, which is fable-1137 §3b's moved-bytes
+                 refusal met by machinery that already exists. */
+              image: { key: design.storageKey, sha: design.digest },
+              cutRoute: design.cutRoute,
+              noun,
+            });
+          }
+          return carried;
+        })();
+      if (carriedInk.length > 0) {
+        log.info(
+          {
+            operationId,
+            variant: variant.publicId,
+            slots: carriedInk.map((one) => one.slot),
+          },
+          "[refineService] her own designs ride a render that is not about them",
+        );
+      }
       const recipe = assembleRecipe({
         /* The master is the base this render is anchored on, by key. Every
            render is `edit(original, …)` and `claimVariant` proved that base
@@ -4830,6 +4962,7 @@ async function refineCandidateCounted(
           `null` — nobody looked — is refused there as the backstop to the
           pre-claim door that already refused it free.
         */
+        ...(carriedInk.length > 0 ? { carriedInk } : {}),
         ...(inkSource
           ? (() => {
             const slot = asks.asks.map((ask) => ask.slot).find((one) => isInkSlot(one));

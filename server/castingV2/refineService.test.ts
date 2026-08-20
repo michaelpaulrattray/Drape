@@ -17,6 +17,8 @@ import { departureFloorFor } from "./bornWornDetector";
 import { COVERAGE_BANDS } from "./maskGeometry";
 import { slotDefinition } from "./referenceSlotCatalogue";
 import { whichSideReask } from "./refineReask";
+import type { RefineDelta } from "./refineDelta";
+import type { StoredInkDesign } from "../db/castingV2InkDesigns";
 import { resolveInkReferenceTake } from "./inkReferenceTake";
 import { inkDesignImagePath } from "../../shared/inkDesignDelivery";
 
@@ -4011,6 +4013,151 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
     Both directions, on ONE fixture, because a split has two sides and a guard
     that answered the same way to both would pass either arm alone.
   */
+  /*
+    A DELIVERED TATTOO SURVIVES THE NEXT EDIT — clause (a) AT THE WIRE
+    (ruled fable-1165 §2a, conditions fable-1167 §2).
+
+    The unit arms one module along prove the record composes and the recipe can
+    carry it. Neither of them can prove the WIRE, and the wire is where this
+    campaign has twice found a rule with six arms and no caller: the carry only
+    exists if the design reaches `painted[0].references` on a render whose
+    sentence says nothing about ink.
+
+    The measured failure it replaces: step one painted a chest piece, step two
+    was "give him green eyes", and the dispatch record held the master and a
+    hair crop — no ink reference, no ink clause (opus-864 §1).
+  */
+  describe("a design she already has rides the next unrelated edit", () => {
+    const DESIGN_KEY = "casting-v2/ink/design.png";
+    const DESIGN_ID = "6c66a44f-ccbc-46eb-aa7b-1cf86be8f859";
+    /* The digest of the bytes the harness will actually serve for that key.
+       Computed rather than typed, because `repaintRender` refuses a reference
+       whose loaded bytes do not hash to the sha the recipe named — so a
+       hand-written digest would make this arm prove the refusal instead. */
+    const designDigest = createHash("sha256").update(Buffer.from(`crop:${DESIGN_KEY}`)).digest("hex");
+
+    const designRow = (over: Partial<StoredInkDesign> = {}): StoredInkDesign => ({
+      publicId: DESIGN_ID,
+      candidateId: 1,
+      placement: "upperChest",
+      side: "centre",
+      provenance: "consented",
+      intents: ["tattoo"],
+      storageKey: DESIGN_KEY,
+      cutRoute: "rideWhole",
+      sourceDigest: null,
+      digest: designDigest,
+      mime: "image/png",
+      byteSize: 64,
+      width: 512,
+      height: 512,
+      createdAt: new Date("2026-08-20T08:33:04Z"),
+      ...over,
+    });
+
+    /** The branch a paid ink render left behind: her words, and OUR pointer. */
+    /* `null` rather than `undefined` for "nothing applied", because a default
+       parameter swallows an explicitly passed `undefined` — which is how the
+       negative control below first passed as a positive one. */
+    const wearingTheDesign = (applied: Record<string, string> | null = { "ink:upperChest": DESIGN_ID }) => {
+      const delta = {
+        free: { ink: ["the tattoo design in the attached picture on her upper chest"] },
+        ...(applied ? { inkApplied: applied } : {}),
+      };
+      variantRows = [{
+        id: 703,
+        publicId: "variant-ink",
+        candidateId: 1,
+        imageKey: "casting-v2/variants/ink.png",
+        internalPrompt: candidateRow.internalPrompt as Record<string, unknown>,
+        instructions: ["use this tattoo design on her upper chest"],
+        deltas: delta,
+        stepDeltas: [delta],
+        status: "ready",
+      }];
+      candidateRow.selectedVariantPublicId = "variant-ink";
+    };
+
+    const withDesigns = (rows: readonly StoredInkDesign[]) => ({
+      ...hairDown,
+      listInkDesigns: async () => rows,
+    });
+
+    const dispatched = () => dispatchRecords[0]!.repaint as {
+      references: Array<{ kind: string | null; slot: string | null; digest: string | null }>;
+      edited: string[];
+      carried: string[];
+    };
+
+    it("puts the DESIGN on the wire on a render that never mentions ink", async () => {
+      wearingTheDesign();
+
+      await refineCandidate(withDesigns([designRow()]), { ...input, instruction: "wear her hair down" });
+
+      expect(painted[0]!.references.map((reference) => String(reference.bytes)))
+        .toContain(`crop:${DESIGN_KEY}`);
+      expect(dispatched().references.map((reference) => [reference.kind, reference.slot]))
+        .toEqual([["master", null], ["carry", "ink:upperChest"]]);
+      /* CARRIED, so the verification has a question about it — a picture
+         riding uncounted is delivered unverified on the fact it exists to keep. */
+      expect(dispatched().carried).toContain("ink:upperChest");
+      expect(dispatched().edited).not.toContain("ink:upperChest");
+      /* Said as what it IS, and said to be already there. */
+      expect(painted[0]!.prompt).toContain("the exact upper chest tattoo she already has");
+      expect(painted[0]!.prompt).toContain("artwork alone on a transparent background");
+    });
+
+    it("carries nothing when the branch never applied one — the negative control", async () => {
+      /*
+        THE ARM THAT MAKES THE ONE ABOVE MEAN SOMETHING. Same rows on the Cast,
+        same ask, and the branch's own record is the only difference: a design
+        a customer merely uploaded, or one minted for a cut she then declined,
+        must never be painted onto an edit she did not ask for.
+      */
+      wearingTheDesign(null);
+
+      await refineCandidate(withDesigns([designRow()]), { ...input, instruction: "wear her hair down" });
+
+      expect(dispatched().references.map((reference) => reference.slot)).toEqual([null]);
+      expect(painted[0]!.prompt).not.toContain("tattoo");
+    });
+
+    it("carries nothing when the design row is gone — and says so", async () => {
+      /* The per-design delete exists, so this is a real state and not a
+         corruption. It stops riding, which is right, and it is LOUD — a tattoo
+         that quietly stops existing is the class this build ends. */
+      wearingTheDesign();
+
+      await refineCandidate(withDesigns([]), { ...input, instruction: "wear her hair down" });
+
+      expect(dispatched().references.map((reference) => reference.slot)).toEqual([null]);
+      expect(logged.some((line) => (
+        line.level === "warn"
+        && line.message.includes("this render cannot carry it")
+        && line.fields.design === DESIGN_ID
+      ))).toBe(true);
+    });
+
+    it("REFUSES the whole render when the applied row was never examined", async () => {
+      /*
+        fable-1137 §4 reaching the carry road (condition fable-1167 §2c): the
+        row's own disposition is re-checked at assembly, so a forged delta
+        naming an unexamined design paints nothing. `null` means nobody looked,
+        which on this road means possibly a photograph of a person.
+      */
+      wearingTheDesign();
+
+      await expect(refineCandidate(
+        withDesigns([designRow({ cutRoute: null })]),
+        { ...input, instruction: "wear her hair down" },
+      )).rejects.toThrow(/didn't come through/);
+
+      /* Nothing was painted, and the money went back — the refund path, which
+         is the right shape for a recipe the assembler will not build. */
+      expect(painted).toHaveLength(0);
+    });
+  });
+
   describe("an open kind the customer is not changing carries by its CROP", () => {
     /** A branch that already asked for fangs, and a library that minted one. */
     const carryingFangs = () => {
@@ -9393,6 +9540,25 @@ describe("the picture she attached becomes the carrier that rides", () => {
     expect(sent.prompt).toContain("Do not take skin, skin tone, body shape, pose or lighting");
     /* AND WHERE IT GOES, in the ask clause — the slot's own noun. */
     expect(sent.prompt).toContain("left sleeve tattoo");
+    /*
+      AND THE ROW REMEMBERS WHICH DESIGN RODE — clause (a)'s write half
+      (shape A, ruled fable-1167 §2).
+
+      Without this line the whole carry is a rule with no caller: the recipe can
+      carry an applied design and nothing would ever record that one was
+      applied, so the tattoo would still vanish on the next edit. Asserted on
+      what `claimVariant` was HANDED — the row as written — because that is the
+      only thing a later render reads.
+
+      Both lists, because they answer different questions: the composed delta is
+      the branch state a later recipe reads, and the step's own delta is what a
+      PRUNE takes away.
+    */
+    const claimed = (claimVariant as unknown as {
+      mock: { calls: Array<[{ deltas: RefineDelta; stepDeltas: RefineDelta[] }]> };
+    }).mock.calls.at(-1)![0];
+    expect(claimed.deltas.inkApplied).toEqual({ "ink:sleeve@left": "d-sleeve" });
+    expect(claimed.stepDeltas.at(-1)!.inkApplied).toEqual({ "ink:sleeve@left": "d-sleeve" });
   });
 
   /*

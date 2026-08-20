@@ -77,14 +77,14 @@
  */
 
 import { vacantPhraseFor } from "./vacancyPhrases";
-import type { CastPronouns } from "./castPronouns";
+import { capitalize, type CastPronouns } from "./castPronouns";
 import { IMPERATIVE_OPENER } from "./declarativeState";
 import { accessoryKindOfSlot } from "./slotWordShape";
 import { slotDefinition } from "./referenceSlotCatalogue";
 /* The open lane's key grammar has ONE owner and this module reads it rather
    than splitting a string (fable-1001 §1). `referenceSlots` imports nothing, so
    there is no cycle to weigh here. */
-import { openKindOfSlot } from "./referenceSlots";
+import { isInkSlot, openKindOfSlot } from "./referenceSlots";
 import { imageHalfClause } from "./sidePhrasing";
 import { inkDesignWasExamined, type InkCutRoute } from "../../shared/inkCutRoute";
 
@@ -299,6 +299,20 @@ export type AssembleInput = {
    */
   sources?: readonly RecipeSource[];
   /**
+   * THE DESIGNS ALREADY ON HER THAT THIS RENDER IS NOT ABOUT — see
+   * {@link CarriedInkDesign}.
+   *
+   * Absent is *nothing carries*, which is every render this product served
+   * before it existed and every render on a Cast with no applied design.
+   *
+   * **The caller decides WHICH designs are applied on this branch**, and this
+   * module does not and must not: a Cast holds rows a customer merely uploaded
+   * and rows minted for a cut she then declined, and painting one of those onto
+   * her next unrelated edit would be a tattoo she never asked for at full
+   * price. What arrives here is the answer, never the question.
+   */
+  carriedInk?: readonly CarriedInkDesign[];
+  /**
    * SAY WHERE A SIDE IS, as well as whose it is (`CASTING_SIDE_PHRASING_SCOPE`).
    *
    * Decided by the caller because the flag is per user and this function knows
@@ -382,6 +396,60 @@ export type RecipeSource = SourceKind & {
    * that list lives beside the facets it is derived from.
    */
   scope: string;
+};
+
+/**
+ * A DESIGN SHE ALREADY HAS, ON A RENDER THAT IS NOT ABOUT IT — the ink carry.
+ *
+ * # The hole it fills, measured
+ *
+ * Ink never enters `casting_reference_library` (ruled fable-1137 §3): the
+ * design row is the durable, digest-verified, purge-pathed home of those bytes
+ * and a library copy would be the second list that drifts. That ruling settled
+ * where the bytes LIVE and left open what puts them back on the next render —
+ * so a delivered tattoo survived exactly as long as the ask that asked for it.
+ *
+ * Read off the wire rather than reasoned about (opus-864 §1): step one painted
+ * a chest piece and step two, *"give him green eyes"*, dispatched the master
+ * and one hair crop. No ink reference, no ink clause. The composed delta still
+ * held the customer's ink words — the CHAIN remembered and the RECIPE did not.
+ *
+ * # Why it is not a {@link RecipeSource}
+ *
+ * A source belongs to an ASK — `sourceNotAsked` refuses one whose slot this
+ * render says nothing about, and that refusal is right: a picture nobody has a
+ * sentence for is a picture the painter may read as anything. A carry is the
+ * opposite shape. There is no ask, the sentence is *keep what is already
+ * there*, and the slot lands in `carried` rather than `edited` — so the
+ * verification asks *is it still there* instead of *did it arrive*.
+ *
+ * # Why it is not a {@link LibraryEntry} either
+ *
+ * A library carry is a crop harvested from the frame that last delivered the
+ * slot. This is the customer's own artwork on transparency, which is a
+ * different picture and must be described as a different picture: calling a
+ * redacted form *"only hair"* is the lie the scale court priced, and calling a
+ * design-on-transparency *"the exact tattoo he has"* and stopping there would
+ * be the same lie with the alpha channel unexplained.
+ */
+export type CarriedInkDesign = {
+  slot: FeatureSlot;
+  image: ReferenceImage;
+  /**
+   * What was done to these bytes before they were stored — the design row's own
+   * column (migration 0047). `null` means nobody looked, and it REFUSES here
+   * exactly as it refuses on a source: a carry is a render too, and an
+   * unexamined design reaching an engine is the same exposure whichever door it
+   * came through. Required rather than optional for {@link SourceKind}'s
+   * reason — a caller that could forget is a caller that will.
+   */
+  cutRoute: InkCutRoute | null;
+  /**
+   * The catalogue's own bare noun for the placement — `upper chest tattoo`,
+   * `left upper arm tattoo`. Bare, like every other noun this module is
+   * handed, because the template supplies the determiner.
+   */
+  noun: string;
 };
 
 /**
@@ -513,7 +581,21 @@ export type RecipeRefusal = {
      * **Refused, never skipped.** A silent skip would paint the ask without the
      * design and charge for it, which is the confession class one door along.
      */
-    | "sourceNotExamined";
+    | "sourceNotExamined"
+    /**
+     * A CARRIED DESIGN WHOSE SLOT IS NOT AN INK SLOT.
+     *
+     * {@link CarriedInkDesign} takes a `FeatureSlot`, which is a string, so
+     * `hair` type-checks. The sentence this loop writes says *tattoo design*
+     * and *artwork on a transparent background*, and saying that about a hair
+     * crop would be the scale court's lie with the roles swapped — the engine
+     * told what a picture is by a template rather than by the picture.
+     *
+     * Refused rather than described some other way: the caller has assembled
+     * something incoherent, and the honest answer to an incoherent recipe is
+     * the refund, not a second sentence for it.
+     */
+    | "inkCarryNotInkSlot";
   /** Null for a refusal about something that has no slot by construction. */
   slot: FeatureSlot | null;
   detail: string;
@@ -800,6 +882,36 @@ function sourceSentence(
         "there only so the design's own shape and edges are unambiguous.",
       ].join(" ");
   }
+}
+
+/**
+ * A DESIGN SHE ALREADY HAS, SAID AS A CARRY — see {@link CarriedInkDesign}.
+ *
+ * Two halves, in the order the source path already proved: the PROVEN NAMING
+ * FORM first — *"Reference N is the exact ${noun} ${subject} ${has}"*, the
+ * wording the carry bisect held fixed while it stripped everything else away —
+ * and then the honesty about what the picture IS.
+ *
+ * The second half is not manners. The scale arm measured that describing the
+ * grey form, and explicitly excluding it from the instruction, is part of what
+ * made the instruction land; the transparent background is the same fact about
+ * a different picture, and a carry that stopped at the naming form would hand
+ * the painter an alpha channel with nothing said about it.
+ *
+ * And it ends by saying the one thing a carry means that an edit does not:
+ * **it is already there.** A tattoo the recipe merely NAMES is a tattoo the
+ * engine may re-draw somewhere else at some other size, which is drift wearing
+ * a carry's clothes.
+ */
+function inkCarrySentence(ordinal: number, noun: string, pronouns: CastPronouns): string {
+  const has = pronouns.plural ? "have" : "has";
+  return [
+    `Reference ${ordinal} is the exact ${noun} ${pronouns.subject} already ${has}:`,
+    "the artwork alone on a transparent background, with nothing else from the picture it",
+    "came from. The transparent area is NOT part of the instruction — it is there only so",
+    `the design's own shape and edges are unambiguous. ${capitalize(pronouns.subject)} already ${has} this tattoo:`,
+    "keep it exactly as it is, in the same place and at the same size.",
+  ].join(" ");
 }
 
 export function assembleRecipe(input: AssembleInput): AssembleResult {
@@ -1188,6 +1300,77 @@ export function assembleRecipe(input: AssembleInput): AssembleResult {
     });
   }
 
+  /* ---- the INK carries: her own artwork, from the design row, unedited ---- */
+
+  /*
+    AFTER the library's crops and before the standing words, which is where an
+    ink carry belongs in both directions: it is a picture, so it goes with the
+    pictures, and it is not a library row, so it cannot ride inside a loop over
+    `input.library`.
+
+    Every refusal below is one the library carry loop already makes for its own
+    rows. They are re-made rather than shared because the two lists are
+    different types with different owners — and a carry that skipped them would
+    be the weaker door on the same law.
+  */
+  for (const design of input.carriedInk ?? []) {
+    if (!isInkSlot(design.slot)) {
+      return {
+        ok: false, reason: "inkCarryNotInkSlot", slot: design.slot,
+        detail: `${design.slot} was carried as an ink design and is not an ink slot, so the recipe would tell the painter a picture is a tattoo design when nothing says it is`,
+      };
+    }
+    /*
+      A DESIGN NOBODY HAS LOOKED AT NEVER RIDES TO A RENDER (fable-1137 §4),
+      AND A CARRY IS A RENDER.
+
+      Same predicate, same owner, same sentence as the source door above — an
+      unexamined design is possibly a photograph of a person whichever field of
+      the recipe it arrived in, and a fence that held on one road and not the
+      other would be the widening tripwire's exposure with a carry's alibi.
+    */
+    if (!inkDesignWasExamined(design.cutRoute)) {
+      return {
+        ok: false, reason: "sourceNotExamined", slot: design.slot,
+        detail: `the design carried for ${design.slot} has not been through the cutter, so nobody has looked at what is in its picture; it needs its cut before it can ride to a render`,
+      };
+    }
+    if (LEADING_DETERMINER.test(design.noun)) {
+      return {
+        ok: false, reason: "nounNotBare", slot: design.slot,
+        detail: `${design.slot}'s noun "${design.noun}" starts with a determiner; recipe nouns are bare and every template supplies its own`,
+      };
+    }
+    if (editedSet.has(design.slot)) {
+      /*
+        D-244 line 2 again, and on this road it is not a theoretical defect: a
+        render that EDITS the tattoo is handed the design as a SOURCE, with the
+        ask's own words about what is changing. Carrying it as well would send
+        one picture twice with two sentences — *keep it exactly as it is* beside
+        *change it to this* — which is the contradiction the assembler exists to
+        refuse rather than dispatch at full price.
+      */
+      return {
+        ok: false, reason: "carriesItsOwnEdit", slot: design.slot,
+        detail: `${design.slot} is edited by this render and cannot also carry the design it already has`,
+      };
+    }
+    if (claimed.has(design.slot)) {
+      return {
+        ok: false, reason: "slotTwiceReferenced", slot: design.slot,
+        detail: `${design.slot} was given two references in one render (fable-174)`,
+      };
+    }
+    claimed.add(design.slot);
+    ordinalOf.set(design.slot, nextOrdinal());
+    sentences.push(inkCarrySentence(nextOrdinal(), design.noun, pronouns));
+    references.push({
+      role: { kind: "carry", slot: design.slot },
+      image: design.image,
+      sentence: sentences[sentences.length - 1]!,
+    });
+  }
+
   /* ---- the carry contract's WORD half: what rides without being edited ---- */
 
   const standing: StandingWords[] = [];
@@ -1372,10 +1555,38 @@ export function assembleRecipe(input: AssembleInput): AssembleResult {
     the two loops above — a second list built alongside a source of truth drifts
     from it (working law 4), and this one would have had to agree with both.
   */
-  const carried = input.library
-    .filter((entry) => !editedSet.has(entry.slot))
-    .filter((entry) => entry.carry !== undefined || (entry.tier !== "item" && entry.words.length > 0))
-    .map((entry) => entry.slot);
+  const carried = [
+    ...input.library
+      .filter((entry) => !editedSet.has(entry.slot))
+      .filter((entry) => entry.carry !== undefined || (entry.tier !== "item" && entry.words.length > 0))
+      .map((entry) => entry.slot),
+    /*
+      AND HER OWN DESIGNS, WHICH ARE CARRIED AND ARE NOT LIBRARY ROWS.
+
+      In `carried` rather than merely in `references` because that list is the
+      CARRIED column of the verification — every slot this render PROMISES to
+      hold. A design riding as a picture nobody counted would be delivered
+      unverified on exactly the fact the carry exists to keep, which is how a
+      tattoo comes back wrong and nothing goes red.
+
+      Read off `references` — WHAT ACTUALLY WENT OUT — and never off
+      `input.carriedInk`, and that distinction was bought by a sabotage rather
+      than reasoned about. Cutting the loop that pushes the reference left this
+      list still naming the slot: ten arms went red and *"counts it as
+      CARRIED"* stayed green, which is a recipe PROMISING to hold a tattoo
+      whose picture it never sent. A carried column derived from the request is
+      a claim; derived from the array on the wire it is a fact (working law 5).
+
+      Appended rather than folded into the filter above because these are two
+      different types from two different sources of truth, and one expression
+      pretending otherwise is the drift working law 4 names.
+    */
+    ...references.flatMap((reference) => (
+      reference.role.kind === "carry" && isInkSlot(reference.role.slot)
+        ? [reference.role.slot]
+        : []
+    )),
+  ];
 
   const ask = askSentence(
     input.asks, bySlot, wordStacks, possessive, input.presentation ?? [],

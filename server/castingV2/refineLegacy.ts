@@ -43,6 +43,7 @@
  */
 import { REFINABLE_CUT_NAMES } from "./hairStyles";
 import { EYE_SHAPES } from "../../shared/castingRealization";
+import { readAppliedInk } from "./inkApplied";
 import { closedSubjectFor, readOpenKinds } from "./openLaneKind";
 import { readDelta, type FreeValue, type OpenKindAsk, type RefineDelta } from "./refineDelta";
 import type { FreeSubject } from "./refineSubjects";
@@ -167,8 +168,29 @@ export function readStoredDelta(value: unknown): RefineDelta | null {
   */
   const migrated = promoteOpenKinds(migrateStoredDelta(value));
   const open = readOpenKinds(migrated);
+  /*
+    AND THE DESIGNS ALREADY ON HER, WHICH `readDelta` IS ALSO BLIND TO — and
+    blind for a sharper reason than the open lane's (shape A, fable-1167 §2a).
+
+    A model free to name a design id would be choosing which of a customer's
+    eight designs gets painted onto her body, which is `inkDesignForAsk`'s
+    decision and no reply's. So the strict reader must never produce this
+    field, and this reader — guarding our own past, where a key we wrote is a
+    fact already paid for — carries it forward unchanged.
+
+    Re-attached rather than left to `readDelta` for the same mechanical reason
+    `open` is: the strict reader cannot see it, so it would be dropped on every
+    read and the tattoo would be lost on the very edit this exists to survive.
+  */
+  const inkApplied = readAppliedInk(migrated);
   const delta = readDelta(migrated);
-  if (delta !== null) return open === null ? delta : { ...delta, open };
+  if (delta !== null) {
+    return {
+      ...delta,
+      ...(open === null ? {} : { open }),
+      ...(inkApplied === null ? {} : { inkApplied }),
+    };
+  }
   /*
     A NULL FROM THE STRICT READER MEANS TWO DIFFERENT THINGS, and telling them
     apart is the whole of D-182's lesson said once more.
@@ -184,8 +206,22 @@ export function readStoredDelta(value: unknown): RefineDelta | null {
     So the discriminator is what else is in the row.
   */
   if (open === null) return null;
-  const others = Object.keys(migrated as Record<string, unknown>).filter((key) => key !== "open");
-  return others.length === 0 ? { open } : null;
+  /*
+    `inkApplied` joins `open` on the LEFT of this discriminator, and it is not a
+    widening: both are fields the strict reader cannot see, so counting either
+    as "other content" would mean a step the strict reader legitimately reads as
+    empty is declared unreadable for carrying a field we wrote ourselves.
+
+    An ink step always carries its own words (`free.ink`), so a delta holding
+    `inkApplied` and nothing the strict reader can read should not exist. It is
+    handled rather than declared unreachable, because a comment calling a branch
+    synthetic is a branch with no test, and this codebase has paid a walk for
+    that once already.
+  */
+  const others = Object.keys(migrated as Record<string, unknown>)
+    .filter((key) => key !== "open" && key !== "inkApplied");
+  if (others.length > 0) return null;
+  return inkApplied === null ? { open } : { open, inkApplied };
 }
 
 /**

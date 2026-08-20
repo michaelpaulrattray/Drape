@@ -1651,3 +1651,105 @@ detector, which is the tattoo studio's machinery (roadmap §3) — named as owed
 rather than approximated here."* `SourcePicture` likewise has one member,
 `hairOnRedactedForm`. Both are shape INSIDE the countersigned design
 (fable-1135 §4c) and are proposed and countersigned in the build's own report.
+
+### 7.13 THE CARRY — a delivered tattoo survives the next edit
+### (measured opus-862/863, wire read opus-864, shape ruled fable-1167 §2)
+
+Everything above is about getting a design ONTO her. This section is about it
+still being there on the next ask, which until 2026-08-20 it was not.
+
+#### The measurement, and it was read off the wire rather than reasoned about
+
+Two paid renders in dev, one after the other on the same Cast:
+
+```
+step 1  "use this tattoo design on her upper chest"   the T-rex lands, good frame
+step 2  "give him green eyes"                         the green eyes land, the
+                                                      tattoo is GONE
+```
+
+The dispatch record of step 2 — never a reconstruction — says why in one line.
+Its references were the master and one hair crop; its prompt contained no ink
+clause of any kind:
+
+> Reference 1 is the photograph of this person … Reference 2 is the exact hair
+> he has … Change only his left eye: green …; his right eye: green …
+
+And the composed delta of that same render still held her ink WORDS
+(`free.ink: ["the tattoo design in the attached picture on her upper chest"]`).
+**The chain remembered the ask and nothing remembered the design.** Ink never
+enters `casting_reference_library` (§7.11, ruled fable-1137 §3), which settled
+where the bytes LIVE and left open what puts them back — so the carry was a
+ruling's omission rather than a build failure.
+
+Repainting from the surviving words would have been the wrong fix twice: they
+name *"the attached picture"* that is not attached on step 2, and a tattoo drawn
+from words is D-137's forbidden render.
+
+#### One thing that was NOT the cause, and is worth keeping written down
+
+The report that ordered this wire also said the master was bare-chested and the
+second render had dressed him. **It is not.** The master wears a light grey crew
+tee; step 1 UNDRESSED him to satisfy a chest ask, with nothing in its prompt
+asking for that; step 2 re-anchored on the pristine master and correctly put the
+tee back. That is the anchor law working, and no anchor-fidelity fix is owed
+(fable-1166 §2b discrimination 3, closed at the frames by eye).
+
+What it leaves is a product fact for the founder rather than a defect: on a Cast
+whose master wears a crew tee, an upper-chest design is only visible in a frame
+that undresses him. His visible-extent ruling (fable-1081, *"poking out the top
+of the shirt but thats the extent for now"*) already prices it.
+
+#### The shape: THE CHAIN CARRIES THE POINTER (`RefineDelta.inkApplied`)
+
+The step that applies a design records `{ ink-slot: design publicId }` on its own
+delta. Every later render composes that forward exactly as it composes
+everything else she has asked for, and the recipe reads the ROW by that id —
+owner-scoped, digest-checked at the wire, refused if its cut disposition is
+`null`. **The id points; the row decides.**
+
+Three shapes were weighed and two refused:
+
+| shape | why not |
+|---|---|
+| a column on the design row (`appliedVariantId`) | one column holds one variant, so re-applying a design on a second branch MOVES the mark and the first branch silently loses its tattoo |
+| an applications table (design × variant) | gets PRUNES wrong — a pruned ink step's variant is still in the ancestry, and the filter that would fix it (`slotsNamedByChain`) cannot name an ink slot at all, because ink's assignment is per-placement and the placement is a runtime fact |
+| **the chain (built)** | the chain IS the branch, so a fork carries what its own steps did; a prune is arithmetic that already runs, so a struck ink step composes away and the master — which never had the design — does the removing |
+
+The field is **written by CODE and the strict reader is blind to it**, which is
+the open lane's rule with a sharper edge: a model free to name a design id would
+be choosing which of a customer's eight designs gets painted onto her body,
+which is `inkDesignForAsk`'s decision. `readDelta` never produces it;
+`readStoredDelta` carries it back out of our own record.
+
+#### What the engine is told, and why it is not the library's sentence
+
+A library carry is a crop harvested from the frame that last delivered the slot.
+This is the customer's own artwork on transparency, and it is described as
+that — the scale court measured that describing a picture honestly, including
+the part that is NOT the instruction, is part of what makes the instruction
+land:
+
+> Reference N is the exact upper chest tattoo he already has: the artwork alone
+> on a transparent background, with nothing else from the picture it came from.
+> The transparent area is NOT part of the instruction … He already has this
+> tattoo: keep it exactly as it is, in the same place and at the same size.
+
+The slot lands in `recipe.carried`, so the verification asks *is it still there*
+rather than *did it arrive* — and that list is read off the references actually
+on the wire, never off the request (a sabotage found the difference: cutting the
+loop that sends the picture left the recipe still PROMISING to hold it).
+
+#### Two limits, declared
+
+1. **No retroactive carry.** Rows written before this shipped hold no pointer,
+   so a design applied before 2026-08-20 does not carry. Re-asking re-applies
+   it. Acceptable because the road is dark and no customer holds a design.
+2. **⚠ ONE DESIGN AT A TIME, and both halves lose it together.** `free.ink` is
+   last-writer-wins per subject and the interpreter restates it with the newest
+   ask alone, so a second design at a second placement replaces the first — in
+   the words AND in the pointers, which is why the composer governs the pointers
+   by SUBJECT rather than by facet. The two halves stay in step and the record
+   stays honest; what the product cannot yet do is wear two. **The day a Cast
+   wears two, `free.ink`'s restatement is the line to fix first and
+   `composeDeltas`' ink clause is the line to fix beside it.**

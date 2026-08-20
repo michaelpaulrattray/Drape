@@ -13,7 +13,12 @@
 import { describe, expect, it } from "vitest";
 
 import { pronounsForSex } from "./castPronouns";
-import { assembleRecipe, type LibraryEntry, type RecipeSource } from "./recipeAssembler";
+import {
+  assembleRecipe,
+  type CarriedInkDesign,
+  type LibraryEntry,
+  type RecipeSource,
+} from "./recipeAssembler";
 import { inkTakeSentence } from "./inkReferenceTake";
 
 const MASTER = { key: "casting-v2/candidates/master.png", sha: "16bb85180e9e" };
@@ -1697,5 +1702,199 @@ describe("the sentence riding with a design claims the artwork and nothing of he
     expect(sentence).not.toContain("left");
     expect(sentence).not.toContain("right");
     expect(sentence).not.toContain("as you look at it");
+  });
+});
+
+/*
+  A DELIVERED TATTOO SURVIVES THE NEXT EDIT — the ink carry (clause (a), ruled
+  fable-1165 §2a and fable-1166 §1).
+
+  The hole this closes was read off the WIRE, not reasoned about (opus-864 §1):
+  step one painted a chest piece and step two — *"give him green eyes"* — went
+  out carrying the master and a hair crop. No ink reference, no ink clause. Ink
+  never enters the library (fable-1137 §3), so nothing in the recipe put the
+  design back, and the tattoo the customer had paid for was gone one edit later.
+
+  Driven straight at the assembler with planted designs, never through the
+  service that usually behaves (working law 3).
+*/
+describe("a design she already has rides the renders that are not about it", () => {
+  const DESIGN = { key: "casting-v2/ink/design.png", sha: "962fe3fda823" };
+  const carriedInk = (over: Partial<CarriedInkDesign> = {}): CarriedInkDesign => ({
+    slot: "ink:upperChest",
+    image: DESIGN,
+    cutRoute: "rideWhole",
+    noun: "upper chest tattoo",
+    ...over,
+  });
+  /* The ordinary second edit: an unrelated ask, nothing about ink in the
+     sentence, and no picture attached. The shape of every carry failure. */
+  const secondEdit = (over: Partial<Parameters<typeof assembleRecipe>[0]> = {}) => assembleRecipe({
+    master: MASTER, pronouns: pronounsForSex("male"), library: [],
+    asks: [{ slot: "eye@left", noun: "left eye", words: "green" }],
+    carriedInk: [carriedInk()],
+    ...over,
+  });
+
+  it("sends the design as a reference on a render that never mentions ink", () => {
+    const recipe = secondEdit();
+    expect(recipe.ok).toBe(true);
+    if (!recipe.ok) return;
+    expect(recipe.references.map((one) => one.role.kind)).toEqual(["master", "carry"]);
+    expect(recipe.references[1]!.image).toBe(DESIGN);
+    expect(recipe.references[1]!.role).toEqual({ kind: "carry", slot: "ink:upperChest" });
+  });
+
+  it("counts it as CARRIED, so the verification has a question about it", () => {
+    /* `carried` is the column the verification reads — every slot this render
+       PROMISES to hold. A picture riding uncounted would be delivered
+       unverified on exactly the fact the carry exists to keep. */
+    const recipe = secondEdit();
+    expect(recipe.ok).toBe(true);
+    if (!recipe.ok) return;
+    expect(recipe.carried).toEqual(["ink:upperChest"]);
+    expect(recipe.edited).toEqual(["eye@left"]);
+  });
+
+  it("says what the picture IS and that it is already there — at the wire", () => {
+    /*
+      Asserted on `recipe.prompt` rather than on the sentence beside it, because
+      the contract is about what gets SENT (working law 5).
+
+      Two halves and both are load-bearing: the transparent background is the
+      grey form's own lesson on a different picture (describing what is NOT the
+      instruction is part of what made the instruction land), and "already has"
+      is the whole difference between a carry and an edit — a tattoo the recipe
+      merely names is one the engine may redraw somewhere else at some other
+      size.
+    */
+    const recipe = secondEdit();
+    expect(recipe.ok).toBe(true);
+    if (!recipe.ok) return;
+    expect(recipe.prompt).toContain("the exact upper chest tattoo he already has");
+    expect(recipe.prompt).toContain("artwork alone on a transparent background");
+    expect(recipe.prompt).toContain("NOT part of the instruction");
+    expect(recipe.prompt).toContain("keep it exactly as it is, in the same place and at the same size");
+  });
+
+  it("says it in front of HER face too", () => {
+    /* One product, two pronouns. `segmentsOnFace` shipped "hers" onto a male
+       candidate before pronouns were passed rather than guessed. */
+    const recipe = secondEdit({ pronouns: SHE });
+    expect(recipe.ok).toBe(true);
+    if (!recipe.ok) return;
+    expect(recipe.prompt).toContain("She already has this tattoo");
+    expect(recipe.prompt).not.toContain("He already has");
+  });
+
+  it("takes its ordinal from the array that actually goes out", () => {
+    /* The reference the sentence names must be the reference at that index.
+       A carry riding behind a library crop moves, and a hardcoded ordinal is
+       how "reference 2 is her hair" comes to point at a tattoo. */
+    const recipe = secondEdit({ library: [lips({ carry: { key: "mint/lips.png" } })] });
+    expect(recipe.ok).toBe(true);
+    if (!recipe.ok) return;
+    expect(recipe.references.map((one) => one.role.kind)).toEqual(["master", "carry", "carry"]);
+    expect(recipe.references[2]!.role).toEqual({ kind: "carry", slot: "ink:upperChest" });
+    expect(recipe.references[2]!.sentence).toContain("Reference 3");
+    expect(recipe.carried).toEqual(["lips", "ink:upperChest"]);
+  });
+
+  it("carries nothing when nothing is applied — every render before today", () => {
+    /* The negative control. An arm that only ever ran with a design planted
+       could not tell this feature from one that fires on every render. */
+    const recipe = secondEdit({ carriedInk: [] });
+    expect(recipe.ok).toBe(true);
+    if (!recipe.ok) return;
+    expect(recipe.references).toHaveLength(1);
+    expect(recipe.carried).toEqual([]);
+    expect(recipe.prompt).not.toContain("tattoo");
+  });
+
+  it("REFUSES a design nobody has looked at — the carry is a render too", () => {
+    /*
+      fable-1137 §4 on the other road. `null` is the recorded fact that
+      `CASTING_INK_CUT_SCOPE` was off when those bytes were stored, so what sits
+      at the key is the picture the customer uploaded rather than the design cut
+      out of it — possibly a photograph of a person. A fence that held on the
+      source road and not this one would be the same exposure with a carry's
+      alibi.
+    */
+    const recipe = secondEdit({ carriedInk: [carriedInk({ cutRoute: null })] });
+    expect(recipe.ok).toBe(false);
+    if (recipe.ok) return;
+    expect(recipe.reason).toBe("sourceNotExamined");
+    expect(recipe.slot).toBe("ink:upperChest");
+    expect(recipe.detail).toContain("has not been through the cutter");
+  });
+
+  it("takes BOTH real answers — the refusal is about nobody looking", () => {
+    /* The negative control for the arm above: `rideWhole` means the cutter DID
+       look and the picture was already the design. */
+    for (const route of ["cut", "rideWhole"] as const) {
+      const recipe = secondEdit({ carriedInk: [carriedInk({ cutRoute: route })] });
+      expect(recipe.ok, route).toBe(true);
+    }
+  });
+
+  it("REFUSES to carry the design into its own edit", () => {
+    /*
+      D-244 line 2 on this road, and it is not theoretical: a render that edits
+      the tattoo is handed the design as a SOURCE with the ask's own words.
+      Carrying it as well would send one picture twice with two sentences —
+      "keep it exactly as it is" beside "change it to this" — dispatched at full
+      price.
+    */
+    const recipe = secondEdit({
+      asks: [{ slot: "ink:upperChest", noun: "upper chest tattoo", words: "a fine-line dinosaur skeleton" }],
+    });
+    expect(recipe.ok).toBe(false);
+    if (recipe.ok) return;
+    expect(recipe.reason).toBe("carriesItsOwnEdit");
+    expect(recipe.slot).toBe("ink:upperChest");
+  });
+
+  it("REFUSES a carry whose slot is not an ink slot", () => {
+    /* `FeatureSlot` is a string, so `hair` type-checks. The sentence says
+       "tattoo design"; saying that about a hair crop is the scale court's lie
+       with the roles swapped. */
+    const recipe = secondEdit({ carriedInk: [carriedInk({ slot: "hair" })] });
+    expect(recipe.ok).toBe(false);
+    if (recipe.ok) return;
+    expect(recipe.reason).toBe("inkCarryNotInkSlot");
+    expect(recipe.slot).toBe("hair");
+  });
+
+  it("REFUSES a noun that brought its own determiner", () => {
+    /* Every template here supplies the determiner, and a possessive REPLACES an
+       article rather than queueing behind it — "her a mullet" was live in real
+       data. The library rows are checked for this and so is a design. */
+    const recipe = secondEdit({ carriedInk: [carriedInk({ noun: "the upper chest tattoo" })] });
+    expect(recipe.ok).toBe(false);
+    if (recipe.ok) return;
+    expect(recipe.reason).toBe("nounNotBare");
+  });
+
+  it("REFUSES two references for one design slot", () => {
+    const recipe = secondEdit({ carriedInk: [carriedInk(), carriedInk()] });
+    expect(recipe.ok).toBe(false);
+    if (recipe.ok) return;
+    expect(recipe.reason).toBe("slotTwiceReferenced");
+  });
+
+  it("carries two designs at two placements", () => {
+    /* A Cast may hold eight. Two applied at different places is one render
+       carrying two pictures, and each says its own place. */
+    const recipe = secondEdit({
+      carriedInk: [
+        carriedInk(),
+        carriedInk({ slot: "ink:upperArm@left", noun: "left upper arm tattoo" }),
+      ],
+    });
+    expect(recipe.ok).toBe(true);
+    if (!recipe.ok) return;
+    expect(recipe.carried).toEqual(["ink:upperChest", "ink:upperArm@left"]);
+    expect(recipe.prompt).toContain("the exact upper chest tattoo he already has");
+    expect(recipe.prompt).toContain("the exact left upper arm tattoo he already has");
   });
 });
