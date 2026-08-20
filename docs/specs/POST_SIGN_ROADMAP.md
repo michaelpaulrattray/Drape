@@ -1021,6 +1021,108 @@ its own court (the corpus is full of legitimate uses — the customer is "she" i
 every docblock in this house). The one-off sweep that produced the count above is
 `output/_pronounsweep.mts`, untracked; promote it only with that court.
 
+## 5f. THE POST-RITE LIST — what runs the hour the rite fires, in ruled order
+## (class found opus-913 and ruled fable-1220 §4; this section is the SWEEP that
+## ruling owed, run opus-915 and granted fable-1222 — three of the list's own
+## four items were written down nowhere)
+
+**This section exists because §5e's repair stopped at §5e.** fable-1220 §4 ruled
+that *a road named in a ruling is written into a roadmap or it does not exist*,
+and the pronoun road was written up the same day. It was item 3 of a four-item
+list, and the other three — including the one ruled to go FIRST — stayed in the
+mailbox. The list survived a seat rotation only because the incoming seat read
+its predecessor's parking message, which is exactly the mechanism 1220 §4 ruled
+insufficient: **the mailbox is the record, never the instruction.**
+
+Nothing here is a founder card. Every item is work we found ourselves, on roads
+that are dark or strictly-better-than-before, and each carries the thing that
+would make it unnecessary — because an item that cannot say what would retire it
+is a chore, not a road.
+
+### 1. THE UNPADDED DELIVERED CROP COURT — ruled the first item after the rite
+
+**Ruling: fable-1207 §1.** A fix landing between the founder's tattoo verdict and
+the rite invalidates the frames on his desk, so this waits; and the class was
+bought at **n=3 paid repeats**, so it gets a real court when its turn comes
+rather than a fix on a hunch.
+
+**It is a READ, which is the best kind of court.** Migration `0049`
+(`casting_ink_delivery_crops`) already stores the six geometry columns the
+question needs — the court reads them rather than buying new renders to produce
+them.
+
+**What would make it unnecessary:** the six stored columns showing the padded and
+unpadded extents agree on the delivered population. Then there is no choice to
+make and the road closes on a reading.
+
+### 2. THE FRESH-LANE CLOTHING COURT — the first draw of a new tattoo is
+### unreliable, and that is now named work rather than unclaimed work
+
+**Rulings: fable-1210 §2 (the graduation), fable-1211 §1 (the correction),
+fable-1211 §3 (the required cell).**
+
+The failure: a brand-new tattoo ask can put the design a long way down the
+subject's tee instead of stopping at the collar. It is separate from the CARRY
+fix that the rite ships — the carry is what keeps an existing tattoo the size it
+is, and it works.
+
+⚠ **THE TALLY IS NOT A RATE, AND THE HONEST SENTENCE IS THE FOUNDER CARD'S
+ORIGINAL.** A count of *"1 clean of 8"* was assembled across courts on different
+paths — all six floor renders were REPLACEMENTS on an occupied neck, the clean
+frames plausibly first placements — so it does not hold as a rate and must not be
+quoted as one. fable-1211 §1 corrected it on his desk with the confound named.
+What he has been told, and what stands: **first draws are unreliable, known,
+separate work.** A real number is available if he wants one, and it costs a court
+(N draws onto an empty neck, one path, one tree).
+
+**The replacement-vs-first-placement cell is REQUIRED whenever this court runs**
+(1211 §3). The confound that broke the tally becomes the variable this court
+measures — that is the whole reason it is a required cell and not a nice-to-have.
+
+**What would make it unnecessary:** a fresh-lane frame population that stops at
+the collar without intervention. The realism language already shipped; whether it
+moved this lane is precisely what has not been demonstrated (opus-905 §2 —
+BEFORE's fresh frame already stopped at the collar, so that pair does not show
+the improvement).
+
+### 3. THE PRONOUN ROAD — see §5e
+
+Written up in full there; not restated here. **Derive, never mirror** — a second
+copy of an item is a second thing to drift.
+
+Its slot relative to this list: after the two courts above, its own commit,
+post-rite for the reason §5e states (it edits live customer-facing copy on
+`CASTING_V2_SCOPE=all` lanes).
+
+### 4. THE REMOVAL-WALL WORDING NOTE — filed rather than fixed, deliberately
+
+**Found opus-912 §3, filed fable-1219 §1.** The words-only ink branch fires on
+any delta whose facets include ink and which points at no picture — **including a
+REMOVAL**. So *"take his tattoos off"*, with no placement in the sentence, is
+answered with *"I can put a tattoo on her, but I need to know where it goes"*:
+an offer to add, in reply to an ask to remove.
+
+**It is strictly better than it was and it is not a rite blocker.** The wall
+existed before the stack (the ask met `unplacedInk` inside the claim); what the
+stack changes is that it is now **free and pre-claim** instead of charged and
+refunded. It is filed rather than fixed because it is a copy-and-routing question
+on a live lane, and those get their own sitting.
+
+**What would make it unnecessary:** routing a removal ask to the removal road
+before the placement question is ever asked. (Note the pronoun in that sentence
+is §5e's class too — the same string says *"his"* and *"her"* about one person.)
+
+### And the sibling instance this sweep turned up in a different sitting
+
+The **mannequin-resumption sitting** carries FOUR items, not three (fable-1202
+§2): the release door, D-138's taste gate, the fence court, and **the D-138 SCOPE
+QUESTION** — *may a delivered crop of a words-only tattoo ride into the package
+views?* Two documents described that sitting as three items until 2026-08-21;
+both were corrected in this section's own commit. The question's home is
+`V3B_INK_AND_MARKS_DESIGN_NOTE.md` §7.12 and the flag paragraph in `CLAUDE.md`;
+it is **not** on the founder's desk and does not go there until the mannequin
+card files (1202 §2 — that ruling governs the CARD; this one governs the RECORD).
+
 ## 5c. AUTO-DISCOVERY SCAN — founder demand, quality-gated (filed 2026-08-17, fable-880)
 
 His words: *"well id like for it to automatically pick features up on its

@@ -1578,9 +1578,25 @@ the two questions ride the shared `FAL_CONCURRENCY` courtesy pool, so
 A flag that can be off is not a structural fact, and rows written before it was
 flipped still hold photographs. The retirement is verified at the MINT'S WIRE,
 on the bytes handed to `fetchDesignBytes` — and fable-1133 §1 folded that build
-into the **mannequin resumption sitting**, beside the release door, D-138 and
-the fence court, because it requires minting and the mannequin road is deferred.
-Until then this paragraph and the one above it are a plan.
+into the **mannequin resumption sitting**, beside the release door, D-138's
+taste gate and the fence court, because it requires minting and the mannequin
+road is deferred. Until then this paragraph and the one above it are a plan.
+
+⚠ **THAT SITTING CARRIES FOUR ITEMS, NOT THREE** (fable-1202 §2; this sentence
+corrected 2026-08-21, opus-915 / fable-1222, because it said three). The fourth
+is **the D-138 SCOPE QUESTION**, and it is the founder's: D-138 says the plate is
+the only ink artifact an engine is ever shown, but **a delivered crop is not the
+customer's photograph** — it is our own render's pixels, the ink on the Cast's
+own neck in a frame she paid for and looked at. If D-138's fence names UPLOADS,
+then *a tattoo she only ever described in words could ride into her package views
+as a PICTURE, with no mannequin anywhere in the road* — which is the whole of
+what the plate was going to buy it. It is a fact about his intent (the artifact
+did not exist when he ruled), it touches the SIGNED package, and it belongs to
+the sitting that would otherwise resume this road without asking what changed
+while it was parked. **It is written here and NOT on his desk**: 1202 §2 ruled it
+joins the mannequin card when that card files, and that ruling governs the CARD
+while this one governs the RECORD. The artifact is `casting_ink_delivery_crops`
+(migration `0049`), so the question becomes answerable the hour the rite fires.
 
 #### What 3a.2(b) owes — the delivery, and it must not slide off the plan
 
