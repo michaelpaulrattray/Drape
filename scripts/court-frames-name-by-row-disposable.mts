@@ -48,7 +48,9 @@ import { openDatabase } from "./lib/dbConnection.mts";
 import { assertOneWorld } from "./lib/worldGuard.mts";
 
 const REPO = resolve(import.meta.dirname, "..");
-const TREE = resolve(REPO, "output/court-realism");
+/* WHICH TREE — the law is standing for every court, so the sweep must be able to
+   point at any of them. `court-realism` is the one that bought the law. */
+const TREE = resolve(REPO, process.env.COURT_TREE ?? "output/court-realism");
 const OUT = resolve(TREE, "by-row");
 /** The dev Cast every ink court on this arc has run against. */
 const CANDIDATE = 232;
@@ -87,7 +89,7 @@ for (const row of rows) {
 console.log(`indexed ${byDigest.size} variant frames of candidate ${CANDIDATE}`);
 
 const manifest: string[] = [
-  "# court-realism, named by row",
+  `# ${TREE.split(/[\/]/).pop()}, named by row`,
   "",
   "Every frame below was fetched BY `imageKey` FROM ITS OWN ROW. The files in the",
   "arm directories were named by what their driver INTENDED to run, and at least",
@@ -97,11 +99,22 @@ const manifest: string[] = [
   "|---|---|---|",
 ];
 
-for (const arm of await readdir(TREE, { withFileTypes: true })) {
-  if (!arm.isDirectory() || arm.name === "by-row") continue;
-  for (const name of await readdir(resolve(TREE, arm.name))) {
+/* ⚠ THE TREE'S ROOT IS WALKED TOO, and the first version of this file did not —
+   which would have skipped `court-carry-a/after-step1-delivered.png`, a frame
+   CITED ON THE FOUNDER'S OWN CARD. A sweep that misses the files somebody is
+   actually reading is the sweep-that-proves-it-was-looking failure. */
+const entries = await readdir(TREE, { withFileTypes: true });
+const places: Array<{ arm: string; dir: string }> = [
+  { arm: ".", dir: TREE },
+  ...entries
+    .filter((entry) => entry.isDirectory() && entry.name !== "by-row")
+    .map((entry) => ({ arm: entry.name, dir: resolve(TREE, entry.name) })),
+];
+for (const { arm: armName, dir } of places) {
+  const arm = { name: armName };
+  for (const name of await readdir(dir)) {
     if (!name.endsWith(".png")) continue;
-    const bytes = await readFile(resolve(TREE, arm.name, name));
+    const bytes = await readFile(resolve(dir, name));
     const digest = createHash("sha256").update(bytes).digest("hex");
     const row = byDigest.get(digest);
     const verdict = row === undefined
