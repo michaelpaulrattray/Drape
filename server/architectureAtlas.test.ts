@@ -1,8 +1,10 @@
+import { createHash } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { checkArchitecture } from "../scripts/check-architecture.mts";
+import { sourceText } from "../scripts/generate-architecture.mts";
 
 const repoRoot = path.resolve(__dirname, "..");
 
@@ -64,4 +66,43 @@ describe("architecture atlas", () => {
       expect(entry.valueRecorded).toBe(false);
     }
   });
+
+  /**
+   * THE FRESHNESS VERDICT ABOVE IS ONLY A READING IF ITS HASH IS OF THE SOURCE
+   * (found opus-926 §5, ordered fable-1234 §2b).
+   *
+   * `core.autocrlf` is `true` here, so `git checkout` rewrites line endings on
+   * every file it touches and the working tree runs MIXED. The fingerprint
+   * hashes file text, so before `sourceText` it hashed that skew: the same
+   * commit answered `23a85001b1a85f4d` and then `99989fd2d9720929` minutes
+   * apart, and flipping ONE file from LF to CRLF — content untouched, `git
+   * diff` empty — moved it on demand. The first test in this file was
+   * therefore a coin flip wearing a reading's face, over the arm that keeps
+   * the Atlas usable as the retirement program's deletion authority.
+   *
+   * This is the property guarded by construction rather than remembered. It
+   * drives the normalize DIRECTLY, on a fixture pair, so it cannot be rescued
+   * by whatever endings this checkout happens to hold.
+   */
+  it("hashes the SOURCE and not this disk — CRLF and LF text are the same text", () => {
+    const lf = "const a = 1;\nconst b = 2;\n\nexport { a, b };\n";
+    const crlf = lf.replaceAll("\n", "\r\n");
+
+    // The negative control: the two fixtures really are different bytes, so a
+    // passing assertion below is the normalize working and not the fixtures
+    // being identical.
+    expect(crlf).not.toEqual(lf);
+    expect(sha(crlf)).not.toEqual(sha(lf));
+
+    expect(sourceText(crlf)).toEqual(sourceText(lf));
+    expect(sha(sourceText(crlf))).toEqual(sha(sourceText(lf)));
+
+    // And a lone CR is CONTENT, not a line ending — it must survive, or the
+    // normalize is quietly editing source rather than folding endings.
+    expect(sourceText("a\rb")).toEqual("a\rb");
+  });
 });
+
+function sha(text: string): string {
+  return createHash("sha256").update(text).digest("hex");
+}

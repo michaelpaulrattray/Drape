@@ -140,8 +140,41 @@ const sourceFiles = allFiles.filter(
 );
 const testFiles = allFiles.filter((file) => /\.(test|spec)\.tsx?$/.test(file));
 
+/**
+ * THE FINGERPRINT IS OF THE SOURCE, NEVER OF THIS DISK (found opus-926 §5,
+ * ruled fable-1234 §2).
+ *
+ * `core.autocrlf` is `true` on the machine this repo is developed on, so `git
+ * checkout` re-materializes files through the CRLF filter every time it touches
+ * them — and a working tree ends up MIXED, because a file git has not touched
+ * since a tool wrote it keeps whatever endings that tool used. Read on one
+ * ordinary sitting: `server/_core/index.ts` LF, `shared/const.ts` CRLF,
+ * `drizzle/schema.ts` CRLF, `client/src/App.tsx` CRLF.
+ *
+ * {@link fingerprint} hashes the BYTES ON DISK, so before this normalize it was
+ * hashing that skew. Driven rather than argued: converting
+ * `server/_core/index.ts` from LF to CRLF — not one character of content
+ * changed, and `git diff` empty — moved the source fingerprint from
+ * `99989fd2d9720929` to `cde1db8ddd2061b1`, and restoring the file
+ * byte-identically moved it back.
+ *
+ * **A change git itself does not carry must not move this hash.** What that
+ * cost: `docs/architecture/drape-architecture.json` read as STALE at four
+ * commits in a row — including `c6940592`, whose entire job was regenerating it
+ * — while `region-crop` read FRESH, because there a regeneration and a check
+ * happened to run under the same skew. So `server/architectureAtlas.test.ts`'s
+ * green was a coin flip nobody could tell from a reading, over the arm that
+ * guards the Atlas's currency as *the deletion authority for the
+ * legacy-retirement program* (CLAUDE.md).
+ *
+ * Only `\r\n` is folded. A lone `\r` is content and stays content.
+ */
+export function sourceText(raw: string): string {
+  return raw.replaceAll("\r\n", "\n");
+}
+
 function read(relative: string): string {
-  return fs.readFileSync(path.join(repoRoot, relative), "utf8");
+  return sourceText(fs.readFileSync(path.join(repoRoot, relative), "utf8"));
 }
 
 /* ---------------------------------------------------------- tRPC procedures */
@@ -844,8 +877,13 @@ function fingerprint(): string {
     hash.update(file);
     hash.update(read(file));
   }
+  /* The annotations file is tracked text and takes the same filter as every
+     source file above, so it is normalized by the same hand rather than left as
+     the one raw read in here — the instance is not the class. */
   const annotations = path.join(repoRoot, "docs", "architecture", "annotations.yaml");
-  if (fs.existsSync(annotations)) hash.update(fs.readFileSync(annotations));
+  if (fs.existsSync(annotations)) {
+    hash.update(sourceText(fs.readFileSync(annotations, "utf8")));
+  }
   return hash.digest("hex").slice(0, 16);
 }
 
