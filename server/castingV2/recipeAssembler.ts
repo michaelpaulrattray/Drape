@@ -1625,9 +1625,56 @@ export function assembleRecipe(input: AssembleInput): AssembleResult {
     };
   }
 
+  /*
+    ---- WHAT A TATTOO IS ON SKIN, FOR THE LANE THAT HAS NO PICTURE ----
+
+    fable-1180 §1 ordered the realism language into BOTH ink lanes; fable-1184
+    §3b shaped the landing as the repaint recipe's ink SENTENCES, fresh and
+    carry — and both of those are reference lanes. So the words-only lane got
+    nothing, and it was read at the wire rather than argued: the same recipe
+    built at `42652964` and at `283a0f37` produced the identical prompt, digest
+    for digest, 201 characters, whose whole ink instruction was
+
+        "Change only his neck tattoo: a small geometric skeleton design."
+
+    That is a LIVE lane — `CASTING_REPAINT_SCOPE` is `users:1` in production and
+    D-137's face/neck road lets words alone document ink there — so it was a
+    paid render told to draw a tattoo and told nothing about what one is.
+    Countersigned fable-1190 §1.
+
+    # WHY IT IS ITS OWN SENTENCE AND NOT PART OF "Change only …"
+
+    §3.0a's small-ask rule: the ask clause is deliberately small, one phrase per
+    feature, and a caller cannot paste a paragraph into a frame it does not own.
+    The vacate and presentation clauses ride that sentence precisely BECAUSE
+    they are one phrase each. This is a paragraph, so it goes after — where "it"
+    has the tattoo the ask just named as its antecedent, which it would not have
+    in front.
+
+    # WHY THE CONDITION IS "NO SOURCE" AND NOT MERELY "AN INK ASK"
+
+    An ink SOURCE rides the ask list's own ink slot — `refineService` takes the
+    source's slot from `asks` by construction — so on the reference lane there
+    IS an ink ask, and it already carries this clause on its reference sentence.
+    Said again here it would be the same instruction twice in one prompt, which
+    is the thing this assembler refuses everywhere else. A CARRY needs no test:
+    a carried slot is never an edited one, so it is never in `asks` at all.
+
+    Said ONCE for any number of ink asks (fable-332's rule, the same reason the
+    vacate phrase de-duplicates), and never for a restate or a vacate — there is
+    no tattoo being drawn in either, and telling the painter how to draw ink
+    while taking some off is an instruction about nothing.
+  */
+  const inkAsksWithoutAPicture = input.asks.some((one) => (
+    isInkSlot(one.slot) && !one.restate && one.vacate === undefined && !sourceOf.has(one.slot)
+  ));
+  const inkWords = inkAsksWithoutAPicture
+    ? `${inkRealismClause(pronouns)} ${inkNotOnClothingClause(pronouns)}`
+    : "";
+
   return {
     ok: true, references, edited, restated, carried, vacated, wordStacks, sentences, standing, ask,
-    prompt: [...sentences, ...standing.map((entry) => entry.sentence), ask]
+    prompt: [...sentences, ...standing.map((entry) => entry.sentence), ask, inkWords]
       .filter((line) => line !== "")
       .join(" "),
   };

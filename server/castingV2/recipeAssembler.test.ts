@@ -1949,3 +1949,128 @@ describe("a design she already has rides the renders that are not about it", () 
     expect(recipe.prompt).toContain("the exact left upper arm tattoo he already has");
   });
 });
+
+/*
+  THE LANE WITH NO PICTURE IS TOLD WHAT A TATTOO IS TOO (ordered fable-1180 §1,
+  countersigned fable-1190 §1).
+
+  fable-1184 §3b landed the realism language in the repaint recipe's ink
+  SENTENCES — fresh and carry — and both of those are reference lanes. A
+  words-only ink ask reaches neither: it goes through `askSentence`, and the
+  whole of what it told the painter was *"Change only his neck tattoo: a small
+  geometric skeleton design."*
+
+  That was read at the WIRE before it was fixed, in both trees, and the two
+  prompts were identical digest for digest — which is why the court's own
+  words-only arm was struck as a null arm before a credit was spent on it.
+
+  Every assertion here is on `recipe.prompt` rather than on a sentence in
+  isolation: the contract is about what gets SENT (working law 5).
+*/
+describe("a words-only ink ask is told what a tattoo is on skin", () => {
+  const wordsOnly = (pronouns = HE, over: Partial<Parameters<typeof assembleRecipe>[0]> = {}) =>
+    assembleRecipe({
+      master: MASTER, pronouns, library: [],
+      asks: [{ slot: "ink:neck", noun: "neck tattoo", words: "a small geometric skeleton design" }],
+      ...over,
+    });
+
+  it("carries the realism clause and the clothing rule, in the CAST'S pronoun", () => {
+    const recipe = wordsOnly();
+    expect(recipe.ok).toBe(true);
+    if (!recipe.ok) return;
+    expect(recipe.prompt).toContain(inkRealismClause(HE));
+    expect(recipe.prompt).toContain(inkNotOnClothingClause(HE));
+    /* A man is not called her — the same wart named in `283a0f37`, one lane on. */
+    expect(recipe.prompt).toContain("Keep his own skin");
+    expect(recipe.prompt).not.toContain("her skin");
+  });
+
+  it("says it AFTER the ask, so \"it\" has the tattoo as its antecedent", () => {
+    const recipe = wordsOnly();
+    expect(recipe.ok).toBe(true);
+    if (!recipe.ok) return;
+    /* Not a formatting preference. In front of the ask, "Draw IT as a HEALED
+       tattoo" points at nothing the prompt has named yet. */
+    expect(recipe.prompt.indexOf("Change only")).toBeLessThan(recipe.prompt.indexOf("HEALED tattoo"));
+  });
+
+  it("is NOT folded into the \"Change only\" clause — the small-ask rule holds", () => {
+    const recipe = wordsOnly();
+    expect(recipe.ok).toBe(true);
+    if (!recipe.ok) return;
+    /* §3.0a: the ask clause is one phrase per feature. A caller cannot paste a
+       paragraph into a frame it does not own, and neither can this. */
+    expect(recipe.ask).toBe("Change only his neck tattoo: a small geometric skeleton design.");
+  });
+
+  it("SAYS NOTHING on an ask that is not about ink — the negative control", () => {
+    /*
+      The half that would be missing if this were written as "append the clause".
+      A sentence that lands on every render is a different change from the one
+      that was asked for, and it would be invisible in the arm above.
+    */
+    const recipe = assembleRecipe({
+      master: MASTER, pronouns: HE, library: [],
+      asks: [{ slot: "hair", noun: "hair", words: "a mid-length wavy cut" }],
+    });
+    expect(recipe.ok).toBe(true);
+    if (!recipe.ok) return;
+    expect(recipe.prompt).not.toContain("HEALED tattoo");
+    expect(recipe.prompt).not.toContain("never printed, embroidered");
+  });
+
+  it("says it ONCE for two ink asks (fable-332)", () => {
+    const recipe = assembleRecipe({
+      master: MASTER, pronouns: HE, library: [],
+      asks: [
+        { slot: "ink:neck", noun: "neck tattoo", words: "a small geometric skeleton design" },
+        { slot: "ink:upperChest", noun: "upper chest tattoo", words: "a compass rose" },
+      ],
+    });
+    expect(recipe.ok).toBe(true);
+    if (!recipe.ok) return;
+    expect(recipe.prompt.split("HEALED tattoo")).toHaveLength(2);
+    expect(recipe.prompt.split("never printed, embroidered")).toHaveLength(2);
+  });
+
+  it("does NOT say it a second time when the ask HAS a design — the exactness", () => {
+    /*
+      THE ARM THAT MADE THE CONDITION "no source" RATHER THAN "an ink ask".
+
+      `refineService` takes an ink source's slot FROM THE ASK LIST, so on the
+      reference lane there is always an ink ask — and its reference sentence
+      already carries both clauses. Appended again here it would be the same
+      instruction twice in one prompt, which is what this assembler refuses
+      everywhere else.
+    */
+    const recipe = assembleRecipe({
+      master: MASTER, pronouns: HE, library: [],
+      asks: [{ slot: "ink:neck", noun: "neck tattoo", words: "a small geometric skeleton design" }],
+      sources: [{
+        slot: "ink:neck",
+        image: { key: "casting-v2/reference-carrier/ink.png", sha: "c0ffee" },
+        pictures: "inkDesignOnTransparency",
+        cutRoute: "cut",
+        scope: inkTakeSentence(HE),
+      }],
+    });
+    expect(recipe.ok).toBe(true);
+    if (!recipe.ok) return;
+    expect(recipe.prompt).toContain(inkRealismClause(HE));
+    expect(recipe.prompt.split("HEALED tattoo")).toHaveLength(2);
+    expect(recipe.prompt.split("never printed, embroidered")).toHaveLength(2);
+  });
+
+  it("says nothing on a REMOVAL — there is no tattoo being drawn", () => {
+    /* Telling the painter how to draw ink in the same breath as taking some off
+       is an instruction about nothing. */
+    const recipe = assembleRecipe({
+      master: MASTER, pronouns: HE, library: [],
+      asks: [{ slot: "ink:neck", noun: "neck tattoo", vacate: { says: "no tattoo on his neck — bare skin" } }],
+    });
+    expect(recipe.ok).toBe(true);
+    if (!recipe.ok) return;
+    expect(recipe.prompt).not.toContain("HEALED tattoo");
+  });
+});
