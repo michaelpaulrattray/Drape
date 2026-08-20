@@ -45,13 +45,19 @@ describe("the read stage's purpose vocabulary", () => {
     360 attempts and one lumped `reask` would reproduce the hole it was built to
     close, one level down.
   */
-  it("is exactly the twelve members the design note enumerated", () => {
+  /*
+    ELEVEN since 2026-08-20. `reask.vouched` went with the call it counted: the
+    invention door's rescue no longer asks the model anything (fable-1141 §2 —
+    containment re-runs on the same parse), so the bucket could only ever have
+    read zero, and a bucket that cannot be non-zero reads as a measurement
+    rather than as an absence.
+  */
+  it("is exactly the eleven members the design note enumerated", () => {
     expect([...READ_PURPOSES]).toEqual([
       "interpret",
       "reask.echo",
       "reask.prior",
       "reask.colour",
-      "reask.vouched",
       "reask.hybrid",
       "reask.relook",
       "verify",

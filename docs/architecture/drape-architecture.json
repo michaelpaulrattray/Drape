@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "060ce99a1b0c826f"
+    "sourceFingerprint": "4211110712e3ce00"
   },
   "domains": [
     {
@@ -10262,6 +10262,10 @@
     {
       "id": "test:server/castingV2/refineInterpreterReferenceEntrance.test.ts",
       "path": "server/castingV2/refineInterpreterReferenceEntrance.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/refineInterpreterVouchedRecheck.test.ts",
+      "path": "server/castingV2/refineInterpreterVouchedRecheck.test.ts"
     },
     {
       "id": "test:server/castingV2/refineLegacy.test.ts",

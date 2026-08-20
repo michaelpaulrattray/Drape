@@ -489,6 +489,24 @@ export type RefineParse =
     door?: InventionDoorOutcome;
     /** Which door — see `DoorAt`. Always present when `door` is. */
     doorAt?: DoorAt;
+    /**
+     * RE-RUN CONTAINMENT ON THIS VERY REPLY, with the value this run refused
+     * vouched (ruled fable-1141 §2).
+     *
+     * Present only on a `wall_unfileable` that carries its value, and set only
+     * by the interpreter's own containment step — never by a caller, and never
+     * on a parse that already carried a vouch.
+     *
+     * **It takes no argument, and that is the design.** The invention door used
+     * to rescue by asking the model a second time with the value vouched, and a
+     * second sampling is free to re-word the value the door has just
+     * adjudicated — `"…IN the attached picture"` came back as `"…FROM the
+     * attached picture"` and the vouch missed, throwing away a decision that
+     * had already been made correctly. A closure with nothing to pass cannot
+     * carry a different string: the reply and the pair are the ones this run
+     * produced, so a re-wording is impossible rather than detected.
+     */
+    recheckVouched?: () => Promise<RefineParse | null>;
   };
 
 /**

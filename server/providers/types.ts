@@ -348,7 +348,20 @@ export type ReadPurpose =
   | "reask.echo"
   | "reask.prior"
   | "reask.colour"
-  | "reask.vouched"
+  /*
+    `reask.vouched` IS DELETED (2026-08-20), and its deletion is the fix rather
+    than tidying. The invention door used to rescue a refused value by ASKING
+    THE MODEL AGAIN with it vouched; fable-1141 §2 killed that re-sample because
+    the second reading was free to re-word the value the door had just
+    adjudicated. Containment now re-runs on the same parse, in code, so the door
+    costs ZERO model calls and this bucket could only ever read zero.
+
+    A census bucket that can never be non-zero is the dead-control shape wearing
+    a measurement's clothes — someone would eventually read "the vouched re-ask
+    cost nothing" as a finding about spend rather than as a call that no longer
+    exists. Removed with its caller, in its caller's commit, which is the sweep
+    law 7's second half asks for.
+  */
   | "reask.hybrid"
   | "reask.relook"
   /** A reading that judges a delivered picture. */
@@ -370,7 +383,6 @@ export const READ_PURPOSES = Object.freeze([
   "reask.echo",
   "reask.prior",
   "reask.colour",
-  "reask.vouched",
   "reask.hybrid",
   "reask.relook",
   "verify",

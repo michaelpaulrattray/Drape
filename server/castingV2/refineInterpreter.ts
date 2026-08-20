@@ -1112,13 +1112,36 @@ async function inventionDoor(
   }
   log.info(
     { asked, value },
-    "[refineInterpreter] the filed value says only what they asked — re-reading with it vouched",
+    "[refineInterpreter] the filed value says only what they asked — containing it again, vouched",
   );
-  const vouchedRead = await runOnce(engine, { ...input, vouched: { subject: asked, value } }, instruction, "reask.vouched");
+  /*
+    THE SAME PARSE, CONTAINED AGAIN — never a second reading (ruled fable-1141
+    §2, from the founder's own refused ask).
+
+    This used to be `runOnce(..., "reask.vouched")`, and that second sampling
+    was free to re-word the value the door had just adjudicated: vouched on
+    *"her hairstyle IN the attached picture"*, the re-read produced *"her
+    hairstyle FROM the attached picture"*, the vouch missed, and a decision
+    already made correctly was thrown away. Measured at 4 of 11 on a legitimate
+    reference ask, with every refusal arriving AFTER this log line.
+
+    The closure carries no argument on purpose. It re-enters containment on the
+    reply this refusal came from, with the pair that run refused — so there is
+    no second reading for a re-wording to happen in, and no string comparison
+    for a synonym to defeat. **A door whose verdict can be undone by a
+    re-sample is not a door**, and normalising the string would have been a rule
+    on the wrong layer: `IN` versus `FROM` today, a synonym tomorrow.
+
+    Its absence is not a silent pass. A refusal with no re-check is one this
+    door cannot rescue — a wall other than `wall_unfileable`, or a value the
+    refusal did not carry — and it falls through to `upheld` below, which is
+    exactly what the old path did when its re-read came back unusable.
+  */
+  const contained = await refused.recheckVouched?.();
   /* Only an EDIT can be rescued: the door exists for a value containment
      refused, and a navigation carries none. */
-  if (vouchedRead?.ok && "delta" in vouchedRead) {
-    return { ...vouchedRead, door: "rescued" as const, doorAt: "wall_unfileable" as const };
+  if (contained?.ok && "delta" in contained) {
+    return { ...contained, door: "rescued" as const, doorAt: "wall_unfileable" as const };
   }
   return { ...refused, door: "upheld" as const, doorAt: "wall_unfileable" as const };
 }
@@ -1471,7 +1494,46 @@ async function runOnce(
       refusal: { reason: "wall_stage", asked: asked || "that", backed: backing !== null },
     };
   }
+  return containReply({ engine, input, instruction, reply });
+}
 
+/**
+ * CONTAINMENT AND EVERYTHING AFTER IT, ON ONE REPLY — extracted so the vouched
+ * re-check can re-enter it WITHOUT ASKING THE MODEL AGAIN (ruled fable-1141 §2).
+ *
+ * # The defect this shape exists to kill
+ *
+ * The invention door's rescue used to call `runOnce` a second time with the
+ * value vouched. That is a fresh sampling, and the sampling is free to re-word
+ * the very value the door has just adjudicated:
+ *
+ *     vouched on   "her hairstyle in the attached picture"
+ *     re-read got  "her hairstyle FROM the attached picture"   -> vouch misses
+ *
+ * Measured on the founder's own road: a legitimate reference ask landed 4 of 11
+ * on a Cast whose hair was already filed, and EVERY refusal arrived after the
+ * door had said the value says only what she asked. The door was right and the
+ * re-sample threw the answer away.
+ *
+ * **The model's read is the unstable thing** — deterministic code after a flaky
+ * parse only moves the coin flip. So the re-check re-runs containment on the
+ * SAME parsed reply, and the vouched pair is the one THAT run produced.
+ * Same-parse by construction: there is no second reading for a re-wording to
+ * happen in, and no string comparison that a synonym could defeat.
+ *
+ * A fresh `check` per entry is not optional — `readDelta` writes its wall onto
+ * the object it is handed, so a reused one would carry the first run's verdict
+ * into the second.
+ */
+async function containReply(call: {
+  engine: TextEngine;
+  input: RefineInterpretInput;
+  instruction: string;
+  reply: Record<string, unknown>;
+  /** Set only by the re-check below, never by an ordinary caller. */
+  vouchedNow?: { subject: string; value: string };
+}): Promise<RefineParse | null> {
+  const { engine, input, instruction, reply } = call;
   /*
     The instruction goes in so SOURCE CONTAINMENT can run: every content word of
     a free value must appear in the sentence the user typed. `check.wall` comes
@@ -1489,7 +1551,13 @@ async function runOnce(
   const check: FreeLaneCheck = {
     instruction,
     prior: input.prior as FreeLaneCheck["prior"],
-    ...(input.vouched ? { vouched: input.vouched } : {}),
+    /* THE RE-CHECK'S PAIR WINS when it is set — it is the pair the invention
+       door judged, on this very reply. `input.vouched` is the ordinary
+       caller's, and the two can never both be live: the door only re-checks a
+       parse that had none. */
+    ...(call.vouchedNow ?? input.vouched
+      ? { vouched: (call.vouchedNow ?? input.vouched)! }
+      : {}),
     /*
       THE INK GATE'S SECOND DOCUMENT, and the AND is the whole guard: her
       sentence must have pointed at the picture, and her account must be on the
@@ -1503,7 +1571,29 @@ async function runOnce(
   };
   const delta = readDelta(reply, check);
   /* A WALL is an answer, not a hiccup — it must not be re-sampled. */
-  if (check.wall) return { ok: false, refusal: check.wall };
+  if (check.wall) {
+    const wall = check.wall;
+    /*
+      THE ONE WALL THAT CAN BE RE-CHECKED, and the closure is what makes the
+      re-check SAME-PARSE BY CONSTRUCTION. It captures this reply and the pair
+      this run refused; nothing is re-read and nothing is compared as a string.
+      Attached only on the first entry, so a re-check that fails again is
+      upheld rather than looping.
+    */
+    if (
+      call.vouchedNow === undefined
+      && wall.reason === "wall_unfileable"
+      && typeof wall.value === "string"
+    ) {
+      const vouchedNow = { subject: wall.asked, value: wall.value };
+      return {
+        ok: false,
+        refusal: wall,
+        recheckVouched: () => containReply({ ...call, vouchedNow }),
+      };
+    }
+    return { ok: false, refusal: wall };
+  }
   /*
     THE OPEN LANE'S DOOR, AND IT IS HERE RATHER THAN IN THE READER
     (OPEN_LANE_DESIGN_NOTE §8 step 5; the shape ordered in fable-874 §3a).

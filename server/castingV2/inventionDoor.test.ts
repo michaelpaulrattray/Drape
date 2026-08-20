@@ -57,8 +57,14 @@ const REPAIRED = JSON.stringify({
 
 /*
   The parse runs once, the echo pass runs twice, then the invention question is
-  asked, then — when it clears — the reading is taken again with the value
-  vouched. Five replies, in that order.
+  asked. FOUR replies, and the fourth is the last — **when the door clears a
+  value, nothing is read again** (ruled fable-1141 §2).
+
+  It used to be five: the rescue took the reading a second time with the value
+  vouched. That second sampling was free to re-word the very value the door had
+  just adjudicated — measured at 4 of 11 on a legitimate reference ask — so
+  containment now re-runs on the parse already in hand. The counts below are the
+  fix, not an accounting detail.
 */
 const asksNothing = JSON.stringify({ invents: false, fact: null });
 const invents = JSON.stringify({ invents: true, fact: "a bar fight" });
@@ -71,8 +77,9 @@ describe("a repair of their own word is theirs", () => {
     expect(parse.ok).toBe(true);
     expect(parse.ok && "delta" in parse && parse.delta.free?.marks)
       .toEqual(["a lightning bolt scar on her forehead"]);
-    /* Five calls: the parse, two echo passes, the question, the vouched read. */
-    expect(engine.seen).toHaveLength(5);
+    /* FOUR calls: the parse, two echo passes, the question — and nothing after
+       it. A fifth would be the re-sample fable-1141 §2 deleted. */
+    expect(engine.seen).toHaveLength(4);
     /* And the question is asked about the value, with their sentence beside
        it — asserted at the wire, not on a constant near it. */
     expect(engine.seen[3]!.system).toContain("does that value assert any FACT that is not theirs"
@@ -105,19 +112,34 @@ describe("a repair of their own word is theirs", () => {
     expect(parse.ok).toBe(false);
   });
 
-  it("vouches ONE value and no other", async () => {
+  it("vouches ONE value and no other — a cleared value is not a cleared lane", async () => {
     /*
-      The vouching is exact on the subject AND the words. A re-read that files
-      something else — even in the same subject — meets containment unchanged,
-      which is what stops one cleared value becoming a cleared lane.
+      THE SAME GUARANTEE, ASSERTED AGAINST THE MECHANISM THAT REPLACED THE ONE
+      IT WAS WRITTEN FOR (fable-1141 §2).
+
+      It used to script a fifth reply filing something else and assert that the
+      re-read met containment unchanged. There is no re-read now, so that arm
+      would have been asserting the absence of a call rather than the property —
+      and would have passed for the wrong reason forever.
+
+      The property is unchanged and it is asserted here on ONE reply carrying
+      TWO values: the door is asked about the one containment refused, clears
+      it, and the re-check runs containment again on the same parse — where the
+      OTHER value, which nobody vouched and her sentence never contained, is
+      still refused. One value cleared, the lane still shut.
     */
-    const somethingElse = JSON.stringify({
+    const twoValues = JSON.stringify({
       intent: "edit",
-      free: { marks: "a long knife scar from a bar fight" },
+      free: {
+        marks: "a lightning bolt scar on her forehead",
+        hairCut: "a chin-length platinum bob she never mentioned",
+      },
     });
-    const engine = scripted([REPAIRED, REPAIRED, REPAIRED, asksNothing, somethingElse]);
+    const engine = scripted([twoValues, twoValues, twoValues, asksNothing, twoValues]);
     const parse = await interpretRefinement({ instruction: HIS, engine, ...FACE });
     expect(parse.ok).toBe(false);
+    expect(!parse.ok && parse.refusal.reason).toBe("wall_unfileable");
+    expect(!parse.ok && parse.door).toBe("upheld");
   });
 
   it("does not ask twice on the vouched reading", async () => {
