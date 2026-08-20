@@ -19,10 +19,12 @@ import {
   type LibraryEntry,
   type RecipeSource,
 } from "./recipeAssembler";
+import { inkNotOnClothingClause, inkRealismClause } from "./inkRealism";
 import { inkTakeSentence } from "./inkReferenceTake";
 
 const MASTER = { key: "casting-v2/candidates/master.png", sha: "16bb85180e9e" };
 const SHE = pronounsForSex("female");
+const HE = pronounsForSex("male");
 
 const lips = (over: Partial<LibraryEntry> = {}): LibraryEntry => ({
   slot: "lips", tier: "anatomy", noun: "lips", words: ["a soft nude lip gloss"], ...over,
@@ -1412,6 +1414,45 @@ describe("the fourth role — a picture the CUSTOMER supplied (fable-1096)", () 
     expect(sentence).not.toContain("photograph");
     expect(recipe.sentences[1]).toBe(sentence);
     expect(recipe.prompt).toContain(sentence);
+
+    /*
+      AND IT SAYS WHAT A TATTOO IS ON SKIN — the clause this lane never had
+      (fable-1179 §2a, landed per fable-1184 §3b). Everything asserted above
+      describes the PICTURE; without this the only instruction about the RESULT
+      is "reproduce that artwork", and reproduction of a drawing is a drawing —
+      which is the frame he ruled a FAIL.
+    */
+    expect(sentence).toContain(inkRealismClause(SHE));
+    expect(sentence).toContain(inkNotOnClothingClause(SHE));
+  });
+
+  it("says a HEALED tattoo in the CAST'S pronoun — a man is not called her", () => {
+    /*
+      The frame that bought this whole pass is a MAN with a tattoo on HIS neck,
+      and the sign views' own version of this sentence hard-codes "her". Carrying
+      that spelling into the lane that painted his failed frame would be making a
+      known wart worse in the exact place it was found, so the clause takes the
+      Cast's pronouns — and this arm is what stops a later edit from inlining a
+      convenient "her" back into it.
+    */
+    const recipe = assembleRecipe({
+      master: MASTER, pronouns: HE, library: [],
+      asks: [{ slot: "hair", noun: "hair", words: "a mid-length wavy cut" }],
+      sources: [{
+        slot: "hair" as const,
+        image: CARRIER,
+        pictures: "inkDesignOnTransparency" as const,
+        cutRoute: "cut" as const,
+        scope: SCOPE,
+      }],
+    });
+    expect(recipe.ok).toBe(true);
+    if (!recipe.ok) return;
+    const sentence = recipe.references[1]!.sentence;
+    expect(sentence).toContain("HEALED tattoo");
+    expect(sentence).toContain("Keep his own skin");
+    expect(sentence).toContain("ink on his skin");
+    expect(sentence).not.toContain("her skin");
   });
 
   it("gives the two members DIFFERENT sentences, not one with a noun swapped", () => {
@@ -1775,6 +1816,16 @@ describe("a design she already has rides the renders that are not about it", () 
     expect(recipe.prompt).toContain("artwork alone on a transparent background");
     expect(recipe.prompt).toContain("NOT part of the instruction");
     expect(recipe.prompt).toContain("keep it exactly as it is, in the same place and at the same size");
+    /*
+      AND THE THIRD HALF, which this sentence went without until 2026-08-20:
+      "keep it exactly" is about the DESIGN and never about the material. Said
+      alone it is the decal instruction, and a CARRIED tattoo re-drawn as
+      reproduced artwork is the same defect as a fresh one — the carry frame
+      passed his eye, but it passed it holding a tattoo drawn by the same lane
+      that failed the other one.
+    */
+    expect(recipe.prompt).toContain(inkRealismClause(HE));
+    expect(recipe.prompt).toContain(inkNotOnClothingClause(HE));
   });
 
   it("says it in front of HER face too", () => {

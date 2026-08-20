@@ -30,13 +30,19 @@
  * defect classes are not mysterious engine behaviour; they are what that lane
  * asked for.
  *
- * # WHAT THIS COMMIT IS, stated so the next reader does not look for more
+ * # HOW THIS MODULE ARRIVED, in two commits and in this order on purpose
  *
- * A PURE EXTRACTION. Every string below is the prose its lane already sent,
- * byte for byte, moved to one home so the lanes cannot drift — not one word is
- * reworded here, because the sign-view lane paints today and its prose moving
- * house must not change its clothes. What the live lane is MISSING lands next,
- * additively, with its own like-for-like court.
+ * **First a PURE EXTRACTION**: the constants below are the prose their lanes
+ * already sent, byte for byte, moved to one home so the lanes cannot drift —
+ * not one word reworded, because the sign-view lane paints today and its prose
+ * may move house without changing clothes.
+ *
+ * **Then the ADDITIVE landing**: {@link inkRealismClause} and
+ * {@link inkNotOnClothingClause}, the sentences the live lane never had, said in
+ * the CAST's own pronoun. Nothing the extraction moved was touched to make room
+ * for them — the two halves are legible apart in the history, which is what
+ * makes it possible to tell a rendering difference caused by new words from one
+ * caused by a move that was supposed to change nothing.
  */
 
 /**
@@ -88,3 +94,67 @@ export const INK_NOT_ON_CLOTHING =
   + "tattoo runs under a garment, the part of it on bare skin appears exactly as it is and the "
   + "covered part simply does not show. Never change, move or open a garment to reveal more of a "
   + "tattoo — the clothing in a view is what it is, and the tattoo shows only where skin shows.";
+
+/**
+ * WHAT A TATTOO IS ON SKIN, SAID TO THE PAINTER — the sentence the live lane
+ * never had (ordered fable-1179 §2a, landed per fable-1184 §3b).
+ *
+ * # Every clause here is prior art, and the two that matter are legacy's
+ *
+ * The founder's memory was right: `server/casting/evidence/composer/inkComposer.ts`,
+ * the D-133/D-138-era road, says *"Add exactly one **healed** tattoo"* and
+ * *"Preserve realistic **skin pores, texture, lighting, and skin highlights over
+ * the ink**"*. Those are the two doing the work, and neither is an adjective:
+ *
+ *   - **`healed`** is the whole translation in one word. A healed tattoo is
+ *     settled into skin and slightly faded BY DEFINITION; fresh artwork is not.
+ *   - **highlights passing OVER the ink** states the anti-sticker bar
+ *     PHYSICALLY. *"Do not make it look flat"* is a taste word an engine can
+ *     agree with and ignore; *"the skin's highlights pass over it"* is a thing
+ *     to draw. A decal cannot have them.
+ *
+ * `slightly faded` and `follows the anatomy` are his own words for the same
+ * fact, and {@link INK_SITS_ON_THE_FORM} is the house sentence for it.
+ *
+ * # Why this one takes PRONOUNS when the extracted constants do not
+ *
+ * Because the frame that bought this pass is a MAN with a tattoo on HIS neck.
+ * The sign views' clause hard-codes "her" — a defect named where it lives — and
+ * carrying that spelling into the lane that painted his failed frame would be
+ * making a known wart worse in the exact place it was found. The pronoun is the
+ * CAST's, which is `hairTakeSentence`'s rule and this room's oldest scar.
+ *
+ * # WHAT IT IS FOR, so a later reader does not soften it
+ *
+ * His bar, verbatim and corrected by him: **"it CAN'T look like a sticker."**
+ * That is a FAIL class at the frames gate, not room for polish — so this
+ * sentence's job is not decoration, and a frame that still reads as a decal is
+ * a failure of this sentence rather than an engine limit.
+ */
+export function inkRealismClause(pronouns: { possessive: string }): string {
+  return [
+    "Draw it as a HEALED tattoo — ink that sits in the skin rather than artwork laid on top:",
+    "matte, slightly faded, and following the form underneath so it curves with the body.",
+    `Keep ${pronouns.possessive} own skin: its pores, its texture, its lighting, and its`,
+    "highlights passing OVER the ink. It must not look like a sticker, a decal, a print or a",
+    "drawing placed on the surface.",
+  ].join(" ");
+}
+
+/**
+ * The clothing rule in the CAST'S OWN PRONOUN — the same fact as
+ * {@link INK_NOT_ON_CLOTHING}, for the lane that has pronouns to hand.
+ *
+ * It is a second SHAPE of one fact and not a second fact, the way the plate's
+ * wrapped bullet is: `inkRealism.test.ts` holds them to the same words with the
+ * pronouns substituted, so neither can be edited alone.
+ */
+export function inkNotOnClothingClause(pronouns: { possessive: string }): string {
+  const their = pronouns.possessive;
+  return `It is ink on ${their} skin — never printed, embroidered or otherwise placed on `
+    + `${their} clothing, and never added to a garment as a graphic. Clothing covers ink rather `
+    + "than removing it: where a tattoo runs under a garment, the part of it on bare skin appears "
+    + "exactly as it is and the covered part simply does not show. Never change, move or open a "
+    + "garment to reveal more of a tattoo — the clothing in a view is what it is, and the tattoo "
+    + "shows only where skin shows.";
+}

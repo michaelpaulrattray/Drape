@@ -85,6 +85,7 @@ import { slotDefinition } from "./referenceSlotCatalogue";
    than splitting a string (fable-1001 §1). `referenceSlots` imports nothing, so
    there is no cycle to weigh here. */
 import { isInkSlot, openKindOfSlot } from "./referenceSlots";
+import { inkNotOnClothingClause, inkRealismClause } from "./inkRealism";
 import { imageHalfClause } from "./sidePhrasing";
 import { inkDesignWasExamined, type InkCutRoute } from "../../shared/inkCutRoute";
 
@@ -880,6 +881,15 @@ function sourceSentence(
         "it is the artwork alone on a transparent background, with nothing else from the",
         "picture it came from. The transparent area is NOT part of the instruction — it is",
         "there only so the design's own shape and edges are unambiguous.",
+        /*
+          AND WHAT A TATTOO IS ON SKIN — the clause this lane never had, and the
+          reason his chest frame came back reading as a drawing (fable-1179 §2a).
+          Everything above describes the PICTURE; without these two sentences the
+          only instruction about the RESULT is "reproduce that artwork", and
+          reproduction of a drawing is a drawing.
+        */
+        inkRealismClause(pronouns),
+        inkNotOnClothingClause(pronouns),
       ].join(" ");
   }
 }
@@ -911,6 +921,16 @@ function inkCarrySentence(ordinal: number, noun: string, pronouns: CastPronouns)
     "came from. The transparent area is NOT part of the instruction — it is there only so",
     `the design's own shape and edges are unambiguous. ${capitalize(pronouns.subject)} already ${has} this tattoo:`,
     "keep it exactly as it is, in the same place and at the same size.",
+    /*
+      "KEEP IT EXACTLY" IS ABOUT THE DESIGN, NEVER ABOUT THE MATERIAL.
+
+      Said alone it is the decal instruction — it was the whole of what this lane
+      told the painter, and a carried tattoo re-drawn as reproduced artwork is
+      the same defect as a fresh one. Same shape, same place, same size; drawn as
+      ink in skin every time.
+    */
+    inkRealismClause(pronouns),
+    inkNotOnClothingClause(pronouns),
   ].join(" ");
 }
 

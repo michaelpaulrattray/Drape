@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "71ec5830e7061d4d"
+    "sourceFingerprint": "fbe8618ec1b0036e"
   },
   "domains": [
     {
@@ -21304,6 +21304,11 @@
     {
       "from": "module:server/castingV2/recipeAssembler.ts",
       "to": "module:server/castingV2/declarativeState.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/recipeAssembler.ts",
+      "to": "module:server/castingV2/inkRealism.ts",
       "kind": "imports"
     },
     {
