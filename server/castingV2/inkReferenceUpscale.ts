@@ -53,6 +53,30 @@
  * arms are in the test file, including the transparent fixture the floor
  * court's opaque-only ladder did not have.
  *
+ * # ⚠ WHAT THE ENLARGEMENT DOES INVENT, MEASURED AND DECLARED
+ *
+ * A GAN handed a hard content-to-background transition rings at it. Counted
+ * against the brightest pixel the customer's OWN cut contains — her number, not
+ * a chosen bar — the enlarged cut carries pixels brighter than anything she
+ * drew, along the cutout's boundary:
+ *
+ * ```
+ *   under the alpha        brighter-than-hers, inside the kept mask
+ *   a photograph                1,747 of 617,638   0.28%
+ *   black (today's cut)         4,420 of 617,638   0.72%
+ * ```
+ *
+ * It is a thin rim on the boundary with a little scatter inside, it exists on
+ * BOTH roads, and zeroing the colour underneath makes it 2.5x more common
+ * because black is a harder edge than skin. Declared rather than hidden: the
+ * fidelity law's own prohibition is about invention, and this is invention,
+ * sub-1% and bought only for a cut that would otherwise be REFUSED outright.
+ * **The named fix if a frame ever shows it is edge-extension** — fill the
+ * cleared area with the design's own boundary colour before the call so there
+ * is no synthetic edge to ring against, then discard it again. That is new
+ * machinery and would want its own court, so it is written down rather than
+ * guessed at. `output/court-upscale-alpha{,-2}/halo-map.png`.
+ *
  * # NO TARGET NUMBER IS INVENTED (fable-1210 §1b)
  *
  * There is exactly one constant on this road and it is still `INK_DESIGN_MIN_
