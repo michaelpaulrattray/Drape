@@ -1,6 +1,9 @@
 # The founder's own acceptance corpus for build two
 
-Six references he supplied, with the asks he supplied them for. **Courts prefer
+**NINE** references he supplied, with the asks he supplied them for — the count
+in this line said *six* until 2026-08-21, three specimens after it stopped being
+true, which is the same rot the descriptions below exist to prevent. Read the
+numbered entries, never this sentence. **Courts prefer
 these over authored specimens wherever one fits** (ordered fable-1077, extended
 fable-1083); the README exists because the corpus is what a later reader OPENS,
 and its truth belongs beside the files rather than only in a design document.
@@ -149,6 +152,54 @@ waist. Two things it exists to measure, per fable-1160 §3:
 - **"inspired by" as a distinct ask shape** — a STYLE-scoped ride (claim the
   style, disclaim the designs), the property-not-extent law on the words side,
   filed to the open lane's §12.
+
+## 9. `tattoo-flash-collage-inspired-by-full-body.png` — ask: **"add tattos to him inspired by the attached design"** (supplied 2026-08-21, filed fable-1233 §1)
+
+**The first tattoo ask he ever made in the live product**, and the one that met
+an unflipped switch: `CASTING_INK_REFERENCE_SCOPE` is absent in production, so
+his picture-pointing ask fell through to the words road's placement wall and he
+was answered *"tell me where it goes first."*
+
+Opened at working size, 1125x2000 (portrait, 1.78:1):
+
+NOT a design. A **collage of dozens of separate designs**, black-and-grey
+fine-line and dotwork on white, arranged as one tall full-body/back-piece
+layout. Top to bottom: a cratered moon and a large orbital diagram behind a bare
+tree whose roots run the whole left column; a radiant bearded sun-god head with
+two serpents coiled round a staff; a crucifixion under a rayed burst beside a
+column of invented script; a ring of praying hands and mudras around a classical
+face split in two, with an eye below it and two lettered lines — *"God's in his
+Heaven…"* / *"…All's right with the World"*; a sun-face medallion over a
+spear-bearing classical figure in a ring; a human silhouette filled with stars;
+the Vitruvian man; a DNA helix; an antlered deer skull over a geometric ring; a
+scarab in a triangle; an open book; a clock-face dial; a ringed planet; a band
+of city architecture dissolving into smoke; a feathered wing; a robed Justice
+figure with suspended scales; a row of moon phases under a full moon; and a
+hooded figure over a pentagram at the foot. Fine geometric scaffolding — circles,
+dotted arcs, crosshairs, dashed rules — runs behind all of it.
+
+What it is in the corpus for, and it is three things at once:
+
+- **it is the open lane's defining live test case** (fable-1233 §1). *"Inspired
+  by"* + PLURAL pieces + NO placement is all three of the open lane's §12
+  prerequisites exercised by one real sentence from the founder. Today's road is
+  one design, one measured placement, exact copy — his ask is none of those.
+- **the refusal copy is wrong for this ask shape, and it is carded** (ordered
+  fable-1233 §2). *"Tell me where it goes"* is a nonsense question when the ask
+  means *wherever fits* — D-180's dead end wearing a question. Until the open
+  lane, an inspired-by / plural / no-placement ink ask gets the honest
+  capability sentence instead.
+- **it is the aspect-mismatch cell made real.** At 1.78:1 it is a tall
+  full-body layout, and the first-draw court's required design-aspect cell
+  (fable-1232 §5a) has its mismatched arm sitting right here: this file asked
+  onto a `neck` is a tall design on a short surface.
+
+One more thing it raises before a crop is cut: **the licence and the cut both
+meet a white-background SHEET rather than a person** — the flash-sheet
+population the padded-licence court was built to keep un-walled (both drawings
+in that court read zero on `human skin`, padded or not). This is the biggest
+sheet the corpus holds, and it holds LETTERING, so specimen 6's text warning
+applies to it too.
 
 ---
 
