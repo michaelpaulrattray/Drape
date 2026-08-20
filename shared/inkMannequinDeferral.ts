@@ -38,9 +38,21 @@
  * code (opus-821 §0), ordered into this file by fable-1114 §1, and it is one
  * import hop away from invisible:
  *
- *     recordInkFormDemand   ← one non-test caller: inkPlateMint.ts:287
- *     mintInkPlate          ← one non-test caller: inkUploadService.ts:191
- *     inkUploadService:297    returns FIRST when this constant is true
+ *     recordInkFormDemand   ← one non-test caller: inkPlateMint's
+ *                             `dependencies.countMissingForm` call
+ *     mintInkPlate          ← one non-test caller: inkUploadService's
+ *                             `dependencies.mint` call
+ *     …and inkUploadService's MANNEQUIN_ROAD_DEFERRED early return fires
+ *     FIRST, one statement above that call
+ *
+ * Named by SYMBOL rather than by line, and the reason is this block's own
+ * history: it was written so the dead tally could be re-checked in one read,
+ * and by 2026-08-21 two of its three line numbers pointed at unrelated comment
+ * prose while every fact in it was still true. A stale line makes a true
+ * sentence read as false to whoever checks it next; a symbol that moves fails
+ * loudly, because a grep finding nothing IS the red light. (Ruled fable-1227
+ * §2: on a live instruction surface, a pointer names a symbol a grep can
+ * re-find.)
  *
  * So `casting_ink_form_demand` has counted nothing since the deferral, and dev
  * confirms it: zero rows. Nothing is broken — the customer still gets

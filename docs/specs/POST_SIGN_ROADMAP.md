@@ -1488,7 +1488,8 @@ superseded it — fable-071/080).
                         (drizzle/schema.ts:499) — a duplicate-key INSERT, not
                         a check-then-write (invariant 1). The loser is
                         finalized failed/CONFLICT, and an EXPIRED lease is
-                        still never stolen (generationOperations.ts:893).
+                        still never stolen — server/db/generationOperations.ts,
+                        "Resource lock refused without stealing it".
   3  lock re-proved     markGenerationOperationRunning({requiredLockKey}) —
                         castingExport.ts:441. Re-reads the lock row inside
                         the transaction, SELECT ... FOR UPDATE on the model.

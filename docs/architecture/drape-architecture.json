@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "dab600b589cc6c66"
+    "sourceFingerprint": "34f4f49c7fbfd234"
   },
   "domains": [
     {
@@ -10797,6 +10797,10 @@
     {
       "id": "test:server/profileVisualDefaults.test.ts",
       "path": "server/profileVisualDefaults.test.ts"
+    },
+    {
+      "id": "test:server/prosePointerDiscipline.test.ts",
+      "path": "server/prosePointerDiscipline.test.ts"
     },
     {
       "id": "test:server/providers/bannedEngines.test.ts",
