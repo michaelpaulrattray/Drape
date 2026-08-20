@@ -89,6 +89,11 @@ const ADDED_FACETS = ["horns"];
  *         `referenceSlotCatalogue.test.ts` reading it off the source.
  */
 const CHANGED_FACET_SLOTS: Record<string, unknown> = {
+  /* Shape countersigned fable-1137 §2; the assignment approved fable-1146 §1;
+     the fence string released fable-1146 §2. Cited on the entry rather than
+     only in the note above, because a pinned change without its warrant beside
+     it is half a record — the next person to read this line is deciding whether
+     the change was authorised, and that answer must not be one scroll away. */
   ink: { perPlacement: "ink" },
 };
 

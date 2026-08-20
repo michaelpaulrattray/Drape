@@ -86,7 +86,7 @@ import { slotDefinition } from "./referenceSlotCatalogue";
    there is no cycle to weigh here. */
 import { openKindOfSlot } from "./referenceSlots";
 import { imageHalfClause } from "./sidePhrasing";
-import type { InkCutRoute } from "../../shared/inkCutRoute";
+import { inkDesignWasExamined, type InkCutRoute } from "../../shared/inkCutRoute";
 
 /** A library key is a PANEL SLOT — the stylist's ontology, never `facet@region`
  *  (fable-173). Bilateral features are stored per instance and spoken as pairs
@@ -834,13 +834,24 @@ export function assembleRecipe(input: AssembleInput): AssembleResult {
       design cut out of it — possibly a photograph of a person, which is the
       exposure the cutter exists to close.
 
-      Here rather than at the wire that builds the source, because THIS is the
-      last door before an engine sees bytes and a control belongs at the point
-      it protects. It is stated in the assembler's own refusal vocabulary so the
+      THE PREDICATE HAS ONE OWNER (ruled fable-1146 §3a). `inkDesignWasExamined`
+      is the same function the PRE-CLAIM door asks, so the two cannot come to
+      disagree about what "nobody looked" means — written out as `=== null` at
+      both, they are two spellings of one rule, and the day the absence stops
+      being spelled `null` only one of them would follow.
+
+      Both doors, not one: the pre-claim door refuses FREE, which is the right
+      shape for a fact known before the claim, and this one stays because THIS
+      is the last door before an engine sees bytes. A backstop whose only test
+      runs through a door that usually behaves is not a tested guard (law 3), so
+      this arm is driven with the door bypassed. It is stated in the assembler's own refusal vocabulary so the
       caller answers it the way it answers every other malformed recipe: free,
       named, and never a silent skip.
     */
-    if (source.pictures === "inkDesignOnTransparency" && source.cutRoute === null) {
+    if (
+      source.pictures === "inkDesignOnTransparency"
+      && !inkDesignWasExamined(source.cutRoute)
+    ) {
       return {
         ok: false, reason: "sourceNotExamined", slot: source.slot,
         detail: `the design attached for ${source.slot} has not been through the cutter, so nobody has looked at what is in its picture; it needs its cut before it can ride to a render`,

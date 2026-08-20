@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "d7327b152554627e"
+    "sourceFingerprint": "7bc28974b7e7d75d"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 152
+      "moduleCount": 153
     },
     {
       "id": "domain:castingV2",
@@ -3593,6 +3593,12 @@
     {
       "id": "module:server/castingV2/inheritedVerdict.ts",
       "path": "server/castingV2/inheritedVerdict.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/inkDesignForAsk.ts",
+      "path": "server/castingV2/inkDesignForAsk.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -9952,6 +9958,10 @@
     {
       "id": "test:server/castingV2/inkCutScope.test.ts",
       "path": "server/castingV2/inkCutScope.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/inkDesignForAsk.test.ts",
+      "path": "server/castingV2/inkDesignForAsk.test.ts"
     },
     {
       "id": "test:server/castingV2/inkDesignSchema.test.ts",
@@ -20250,6 +20260,26 @@
     {
       "from": "module:server/castingV2/inheritedVerdict.ts",
       "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/inkDesignForAsk.ts",
+      "to": "module:server/db/castingV2InkDesigns.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/inkDesignForAsk.ts",
+      "to": "module:shared/inkCutRoute.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/inkDesignForAsk.ts",
+      "to": "module:shared/inkPlacementVocabulary.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/inkDesignForAsk.ts",
+      "to": "module:shared/inkReleasedPlacements.ts",
       "kind": "imports"
     },
     {
