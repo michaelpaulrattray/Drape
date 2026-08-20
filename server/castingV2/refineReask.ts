@@ -29,6 +29,8 @@
  * error state — and **never a dead end**: the box is the interface, so typing
  * the answer resolves the question exactly as tapping it would.
  */
+import { randomUUID } from "node:crypto";
+
 import { mentionsUpsweptAsk } from "./eyeShapeRouting";
 import {
   HAIR_TAKES,
@@ -60,6 +62,7 @@ export const REASK_KINDS = [
   "glasses-hide-eyes",
   "same-again",
   "which-side",
+  "this-design",
 ] as const;
 
 export type ReaskKind = (typeof REASK_KINDS)[number];
@@ -147,6 +150,32 @@ export function reaskHandle(kind: ReaskKind, asked: string): string {
 }
 
 /**
+ * THE ONE QUESTION WHOSE HANDLE NAMES A THING AS WELL AS A SENTENCE.
+ *
+ * `this-design` is asked about a design row that was just written, and its
+ * decline has to be able to DELETE that row. Every other question here is
+ * answerable from the words alone; this one is not — two designs cut from the
+ * same picture at different placements are the same sentence, and "the most
+ * recent" is the unowned-axis default this product has killed twice.
+ *
+ * So the design's own name rides in the handle, and what a FORGED one buys is
+ * nothing: `removeInkDesign` carries the authenticated owner inside the
+ * statement, on both sides of its join, so a stranger's id is the same
+ * NOT_FOUND as an id that never existed.
+ */
+const HANDLE_NAMES_A_DESIGN: readonly ReaskKind[] = ["this-design"];
+
+/**
+ * How much room that name needs, MEASURED off a real id rather than typed.
+ *
+ * `publicId` is written from `randomUUID()` and from nothing else, so this is
+ * the length the wire must actually carry, plus the space that separates the
+ * name from the sentence. A number here would be a second copy of a decision
+ * `crypto` already owns (law 4).
+ */
+const DESIGN_NAME_ALLOWANCE = randomUUID().length + 1;
+
+/**
  * The longest a handle's own prefix can be, DERIVED over the kinds.
  *
  * The wire caps `answering` and `instruction` at the same number, and `about`
@@ -156,10 +185,15 @@ export function reaskHandle(kind: ReaskKind, asked: string): string {
  *
  * So the allowance is derived here and spent at the door (`routes/castingV2.ts`),
  * and `refineReask.test.ts` asserts the derivation rather than the number: a
- * longer kind name moves the cap by existing.
+ * longer kind name moves the cap by existing, and so does a kind that starts
+ * naming a design.
  */
 export const REASK_HANDLE_MAX_LENGTH = REASK_KINDS.reduce(
-  (longest, kind) => Math.max(longest, reaskHandle(kind, "").length),
+  (longest, kind) => Math.max(
+    longest,
+    reaskHandle(kind, "").length
+      + (HANDLE_NAMES_A_DESIGN.includes(kind) ? DESIGN_NAME_ALLOWANCE : 0),
+  ),
   0,
 );
 
@@ -174,6 +208,10 @@ export const REASK_HANDLE_MAX_LENGTH = REASK_KINDS.reduce(
 const BY_HANDLE: Partial<Record<ReaskKind, (asked: string) => Reask>> = {
   "glasses-hide-eyes": (asked) => glassesHideEyesReask(asked),
   "which-side": (asked) => whichSideReask(asked),
+  /* About a ROW rather than about the words — the sentence alone cannot say
+     which design was cut, so the handle carries its name and this puts the two
+     halves back (`splitDesignHandle`). */
+  "this-design": (named) => thisDesignReask(splitDesignHandle(named)),
 };
 
 /**
@@ -690,6 +728,9 @@ export function resolveAnswer(reask: Reask, typed: string): string | null {
        D-180's rule and the reason this branch is a list rather than a special
        case per question. */
     || reask.kind === "same-again"
+    /* The shown cut is a yes/no question like the four above it: "yes" is the
+       design, "no" throws it away, and both work typed (D-180). */
+    || reask.kind === "this-design"
   ) {
     if (YES.includes(bare)) return reask.options[0]?.resolves ?? null;
     if (NO.includes(bare)) return reask.options[1]?.resolves ?? null;
@@ -719,6 +760,103 @@ export function resolveAnswer(reask: Reask, typed: string): string | null {
  * spelled out at each of them.
  */
 export const LEAVE_AS_SHE_IS = "leave her as she is";
+
+/**
+ * The answer that means "not this — throw it away", for the same reason and by
+ * the same mechanism (ruled fable-1156 §2a).
+ *
+ * There is no sentence meaning "delete the design you just made", so the
+ * decline resolves into this one shared string, recognised before the parse.
+ * It is deliberately NOT {@link LEAVE_AS_SHE_IS}: that answer leaves everything
+ * where it is, and this one destroys a row and hands its bytes to the cleanup
+ * worker. Two outcomes that differ by a deletion must not share a constant.
+ */
+export const DISCARD_THE_DESIGN = "discard the design taken from that picture";
+
+/**
+ * THE SHOWN CUT — "this is the design I got from your picture" (ruled
+ * fable-1127 §2, road (D)'s own instance ruled fable-1156).
+ *
+ * # Why a paid render waits on a tap
+ *
+ * The cutter reads her photograph and keeps what it decides is the artwork.
+ * The reader that judges that CANNOT SEE fine sparse detail — dropped
+ * lettering is the measured case — so her eyes are the only check between the
+ * cut and her money. 1127 §2 rules that the result goes in front of her BEFORE
+ * any paid render carries it, and this is the question that does it.
+ *
+ * # It fires ONCE PER DESIGN, not once per render
+ *
+ * Only a fresh mint raises it. The next ask about the same picture at the same
+ * address finds the row and RIDES it (`inkDesignForAsk`), which is the reuse
+ * rule doing double duty: the second ask is what she is answering with, so the
+ * adopt costs exactly one claim and the cutter runs exactly once across the
+ * pair.
+ *
+ * # The two answers are the same road as every other question here
+ *
+ * Adopt resolves into HER OWN SENTENCE, unchanged — so the take reads the
+ * placement out of her words a second time and the source containment that
+ * guards the side has something to contain. Decline resolves into the
+ * {@link DISCARD_THE_DESIGN} sentinel, answered before the parse.
+ *
+ * And the handle names the design, because the decline has to be able to
+ * delete it — see {@link HANDLE_NAMES_A_DESIGN} for what a forged one buys.
+ */
+export function thisDesignReask(input: { designPublicId: string; asked: string }): Reask {
+  const asked = input.asked.trim().replace(/[.!?]+$/, "");
+  return {
+    kind: "this-design",
+    about: designReaskHandle(input.designPublicId, asked),
+    /*
+      IT NAMES NO PRICE AND NO PLACEMENT.
+
+      Not a price, because nothing has been claimed and a question that mentions
+      a charge reads as one. Not the placement, because her own word for it is
+      in the sentence she is looking at. What it does say is that the picture
+      beside it came out of HERS — the whole content of 1127 §2's offer.
+    */
+    question: "This is the design I took out of your picture. Use it? "
+      + "Nothing has been charged.",
+    options: [
+      { label: "Yes — use this design", resolves: asked },
+      { label: "No, discard it", resolves: DISCARD_THE_DESIGN },
+    ],
+  };
+}
+
+/** The handle for {@link thisDesignReask} — the design's name, then the ask. */
+export function designReaskHandle(designPublicId: string, asked: string): string {
+  return reaskHandle("this-design", `${designPublicId} ${asked.trim()}`);
+}
+
+/**
+ * The design a `this-design` handle names, or `null`.
+ *
+ * Split rather than pattern-matched against a uuid's shape: what makes an id
+ * real is the owner-scoped statement that fails to find it, never a regex here,
+ * and a second spelling of "what a publicId looks like" is a second thing to
+ * keep in step (law 4).
+ */
+export function designNamedIn(answering: string | null | undefined): string | null {
+  const match = HANDLE.exec((answering ?? "").trim());
+  if (!match || match[1] !== "this-design") return null;
+  const named = splitDesignHandle(match[2]!).designPublicId;
+  return named.length > 0 ? named : null;
+}
+
+/**
+ * A `this-design` handle's two halves — the ONE place that knows the order.
+ *
+ * Both readers of this handle go through it: the rebuild below, which needs the
+ * sentence, and {@link designNamedIn}, which needs the name. Two splitters
+ * would be two chances to disagree about which came first.
+ */
+function splitDesignHandle(named: string): { designPublicId: string; asked: string } {
+  const gap = named.indexOf(" ");
+  if (gap < 0) return { designPublicId: named, asked: "" };
+  return { designPublicId: named.slice(0, gap), asked: named.slice(gap + 1) };
+}
 
 /**
  * THE REFUSAL THAT BECAME AN OFFER — asking the same thing again (founder,

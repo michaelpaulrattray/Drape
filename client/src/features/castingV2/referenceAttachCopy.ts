@@ -117,3 +117,17 @@ export function attachClaimChips(): readonly AttachClaimChip[] {
     return { provenance, label };
   });
 }
+
+/**
+ * THE SHOWN CUT — what a screen reader is told about the picture beside the
+ * question (ruled fable-1127 §2, brought to this road fable-1156).
+ *
+ * The question itself is the SERVER'S sentence and is drawn like every other
+ * one — this is only the alt text, and it says what the picture IS rather than
+ * what to do about it, because the chips below already say that.
+ *
+ * It says "taken out of" rather than "cropped from": the customer's own framing
+ * of this act is a design lifted off a photograph, and a word from the cutter's
+ * implementation would be the maths class talking (working law 8).
+ */
+export const SHOWN_CUT_LABEL = "The design taken out of your picture";

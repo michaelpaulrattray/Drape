@@ -18,6 +18,7 @@ import { COVERAGE_BANDS } from "./maskGeometry";
 import { slotDefinition } from "./referenceSlotCatalogue";
 import { whichSideReask } from "./refineReask";
 import { resolveInkReferenceTake } from "./inkReferenceTake";
+import { inkDesignImagePath } from "../../shared/inkDesignDelivery";
 
 /**
  * Refine's MONEY and its ORDER (M8 §10, §12).
@@ -9391,7 +9392,18 @@ describe("the picture she attached becomes the carrier that rides", () => {
     nobody had. Now the ask that reaches an empty studio files the design out
     of her own attachment and rides it in the same breath.
   */
-  it("MINTS the design out of her picture and rides it, in one ask", async () => {
+  it("MINTS the design out of her picture and SHOWS IT before anything is charged", async () => {
+    /*
+      RE-ANCHORED 2026-08-20 by fable-1156 §2, and the change is the ruling
+      rather than the code drifting: this arm read *"mints and rides it, in one
+      ask"*, which is exactly the sentence 1127 §2 forbids on a road that cuts.
+
+      The cutter takes what it decides is the artwork out of her photograph, and
+      the reader that judges that CANNOT see fine sparse detail — so her eyes
+      are the only check between the cut and her money. The mint still happens
+      here, and it still happens before the claim; what has changed is that the
+      ask now STOPS and shows her.
+    */
     const result = await refineCandidate(inkRoad({
       inkTake: async () => ({
         placement: { kind: "measured" as const, placement: "upperArm" as const },
@@ -9409,14 +9421,100 @@ describe("the picture she attached becomes the carrier that rides", () => {
     expect(inkMinted).toEqual([
       { placement: "upperArm", side: "left", sourceDigest: REFERENCE.digest },
     ]);
+    /* AND IT DID NOT RIDE. Free, before the claim, and no engine was asked for
+       anything — the two segmenter calls the mint spends are house money. */
+    expect(painted, "the cut rode into a paid render before she had seen it").toHaveLength(0);
+    expect(ledger.charges, "a cut nobody had looked at was charged for").toHaveLength(0);
+    expect(result.kind).toBe("asked");
+    expect(result.reask?.kind).toBe("this-design");
+    expect(result.reask?.options.map((one) => one.label))
+      .toEqual(["Yes — use this design", "No, discard it"]);
+    /*
+      AND THE ANSWER NAMES THE DESIGN AT AN ADDRESS SHE CAN OPEN (fable-1156
+      §2e). A question about a picture nobody can see is not a question, and the
+      path is the one speller's — never a storage URL.
+    */
+    expect(result.design?.designId).toBe("d-minted");
+    expect(result.design?.imagePath).toBe(inkDesignImagePath("d-minted"));
+    expect(result.design?.imagePath).not.toContain("http");
+  });
+
+  it("AND THE ADOPT RIDES THE ROW SHE WAS SHOWN — one cut and one claim across the pair", async () => {
+    /*
+      THE PAIR, DRIVEN END TO END (ruled fable-1156 §2b).
+
+      The round trip the shown cut costs must be ONE TAP AND NOTHING ELSE: no
+      second cut of the same picture, and no second charge. Both of those are
+      properties of the pair rather than of either ask, so neither can be seen
+      by an arm that runs one of them.
+
+      `listInkDesigns` is stateful here BECAUSE THE DATABASE IS: the first ask
+      writes the row, so the second ask must find it. A fixed empty double would
+      mint twice and this arm would pass while the customer paid for two cuts.
+    */
+    const studio: Array<Record<string, unknown>> = [];
+    const road = inkRoad({
+      inkTake: async () => ({
+        placement: { kind: "measured" as const, placement: "upperArm" as const },
+        side: "left" as const,
+      }),
+      listInkDesigns: async () => studio,
+      mintInkDesign: async (request: {
+        placement: string;
+        side: string;
+        reference: { digest: string };
+        intents: readonly string[];
+      }) => {
+        inkMinted.push({
+          placement: request.placement,
+          side: request.side,
+          sourceDigest: request.reference.digest,
+        });
+        const design = inkDesignRow({
+          publicId: "d-minted",
+          placement: request.placement,
+          side: request.side,
+          storageKey: "casting-v2/ink/d-minted.png",
+          digest: TINY_MASTER_SHA,
+          intents: request.intents,
+        });
+        studio.push(design as unknown as Record<string, unknown>);
+        return { ok: true as const, design };
+      },
+    });
+
+    const asked = "use this tattoo design on her left upper arm";
+    const offer = await refineCandidate(road, { ...input, instruction: asked, referenceId: "ref-public" });
+    expect(offer.kind).toBe("asked");
+
+    /*
+      THE LABEL, WHICH IS WHAT THE CLIENT SENDS — never the `resolves`, and the
+      handle echoed back verbatim. An arm that posted the resolved sentence
+      would skip the rebuild and the mapping both, and prove a road nobody
+      travels.
+    */
+    const chip = offer.reask!.options.find((one) => one.label === "Yes — use this design")!;
+    const rode = await refineCandidate(road, {
+      ...input,
+      instruction: chip.label,
+      answering: offer.reask!.about,
+      referenceId: "ref-public",
+    });
+
+    /* ONE CUT ACROSS THE PAIR — the reuse rule is what makes her answer free. */
+    expect(inkMinted, "the same picture was cut a second time to answer a question about it")
+      .toHaveLength(1);
+    /* ONE CLAIM ACROSS THE PAIR — the offer charged nothing, the adopt charged once. */
+    expect(ledger.charges, "the round trip cost her two charges").toHaveLength(1);
     /* AND IT RODE — the master and the design, two references at the engine. */
-    expect(painted, "the minted design never reached the render").toHaveLength(1);
+    expect(rode.kind).toBe("rendered");
+    expect(painted, "the design she adopted never reached the render").toHaveLength(1);
     expect(painted[0]!.references).toHaveLength(2);
     expect(painted[0]!.prompt).toContain("is the tattoo design supplied for this edit");
     expect(painted[0]!.prompt).toContain("left upper arm tattoo");
-    /* A ridden ask is a RENDER, not a sentence — the whole difference between
-       this road and every answer it used to give. */
-    expect(result.kind).toBe("rendered");
+    /* The delivered answer names the design too — a row she cannot name is a
+       row she cannot reject, and `ink.remove` takes a name (fable-1156 §2e). */
+    expect(rode.design?.designId).toBe("d-minted");
   });
 
   it("does NOT mint twice for the same picture at the same place — it rides the row", async () => {
@@ -9426,7 +9524,7 @@ describe("the picture she attached becomes the carrier that rides", () => {
       here would be a second $0.010 of house money and a second row that then
       walls her as a conflict.
     */
-    await refineCandidate(inkRoad({
+    const result = await refineCandidate(inkRoad({
       listInkDesigns: async () => [inkDesignRow({ digest: TINY_MASTER_SHA })],
     }), {
       ...input, instruction: "use this tattoo design on my left sleeve", referenceId: "ref-public",
@@ -9434,6 +9532,14 @@ describe("the picture she attached becomes the carrier that rides", () => {
 
     expect(inkMinted, "the same picture was cut a second time").toHaveLength(0);
     expect(painted).toHaveLength(1);
+    /*
+      AND IT DID NOT ASK AGAIN (ruled fable-1156 §2c). The shown cut fires on a
+      FRESH MINT only: the row a reuse finds is one she has already been shown,
+      and a question repeated on every render about a decision already taken is
+      D-180's dead end wearing a tap target. This is what makes the round trip
+      cost once per DESIGN rather than once per render.
+    */
+    expect(result.kind, "a reuse re-asked a question she had already answered").toBe("rendered");
   });
 
   it("REFUSES FREE when a DIFFERENT design already lives at that place — and cuts nothing", async () => {
@@ -9533,10 +9639,76 @@ describe("the picture she attached becomes the carrier that rides", () => {
     expect(inkMinted).toEqual([
       { placement: "upperArm", side: "right", sourceDigest: REFERENCE.digest },
     ]);
-    /* And it rode rather than asking again. */
-    expect(result.kind).toBe("rendered");
-    expect(painted).toHaveLength(1);
-    expect(painted[0]!.prompt).toContain("right upper arm tattoo");
+    /*
+      AND THE LOOP CLOSED ONTO THE SHOWN CUT rather than asking the SAME
+      question again — which is the thing this arm exists to catch (fable-1156
+      re-anchored it; before the shown cut the loop closed onto the render).
+
+      The two questions are distinguishable by kind, so a side question raised a
+      second time would redden here rather than passing as "still asking".
+    */
+    expect(result.kind).toBe("asked");
+    expect(result.reask?.kind).toBe("this-design");
+    expect(result.design?.designId).toBe("d-minted");
+  });
+
+  it("THE DECLINE THROWS THE DESIGN AWAY — free, and nothing is rendered", async () => {
+    /*
+      THE OTHER HALF OF "SEE OR REJECT" (ruled fable-1156 §2a).
+
+      A shown cut she cannot refuse is a viewing window, not a decision. This
+      arm drives the decline exactly as the client sends it — the chip's LABEL,
+      with the question's handle echoed back — and asserts the three things that
+      make it a rejection rather than a shrug:
+
+        the design is DELETED, by the name the handle carried and under the
+        AUTHENTICATED owner (invariant 3, never from input);
+        nothing is painted, because a sentinel that reached the interpreter
+        would be read as an ordinary ask and RENDERED — the charge this whole
+        question stands in front of;
+        and nothing is charged.
+
+      What "nothing remains" means for the row and its bytes is proved against a
+      real database in `castingV2-ink-design-db.test.ts`, where the deletion and
+      its cleanup manifest live in one transaction. What is proved HERE is the
+      wire into it, which is the half that did not exist.
+    */
+    const removals: Array<{ userId: number; designPublicId: string }> = [];
+    const road = inkRoad({
+      inkTake: async () => ({
+        placement: { kind: "measured" as const, placement: "upperArm" as const },
+        side: "left" as const,
+      }),
+      listInkDesigns: async () => [],
+      removeInkDesign: async (request: { userId: number; designPublicId: string }) => {
+        removals.push(request);
+        return { designPublicId: request.designPublicId, objectsQueued: 1, remaining: 0 };
+      },
+    });
+
+    const offer = await refineCandidate(road, {
+      ...input,
+      instruction: "use this tattoo design on her left upper arm",
+      referenceId: "ref-public",
+    });
+    const chip = offer.reask!.options.find((one) => one.label === "No, discard it")!;
+
+    const result = await refineCandidate(road, {
+      ...input,
+      instruction: chip.label,
+      answering: offer.reask!.about,
+      referenceId: "ref-public",
+    });
+
+    expect(removals, "the design she declined was kept anyway").toEqual([
+      { userId: input.userId, designPublicId: "d-minted" },
+    ]);
+    expect(painted, "a declined design was rendered — the sentinel reached the parse")
+      .toHaveLength(0);
+    expect(ledger.charges, "declining a cut cost her credits").toHaveLength(0);
+    expect(result.kind).toBe("selected");
+    expect(result.note).toContain("Discarded");
+    expect(result.note).toContain("nothing was charged");
   });
 
   it("names the surfaces that work when she asks for one nobody has measured", async () => {
@@ -9773,8 +9945,15 @@ describe("the picture she attached becomes the carrier that rides", () => {
     expect(inkMinted).toEqual([
       { placement: "neck", side: "centre", sourceDigest: REFERENCE.digest },
     ]);
-    expect(painted, "the star did not reach the render").toHaveLength(1);
-    void result;
+    /*
+      RE-ANCHORED AGAIN 2026-08-20 (fable-1156 §2), and the routing fact is
+      still the whole point of this arm: a mark that fell through to the hair
+      lane would cut a HAIR carrier and mint no design at all. What moved is
+      where the ink road STOPS — at the shown cut rather than at the render — so
+      the evidence is the offer about the row it minted.
+    */
+    expect(result.kind).toBe("asked");
+    expect(result.reask?.kind).toBe("this-design");
   });
 
   it("says the picture landed even when the sentence could not be read", async () => {

@@ -153,6 +153,7 @@ import {
   cropTakeAllowedOn, readReferenceMedium, DRAWN_NARROWED_NOTE,
 } from "./referenceMediumDoor";
 import {
+  DISCARD_THE_DESIGN,
   LEAVE_AS_SHE_IS,
   alreadyUpsweptReask,
   glassesHideEyesReask,
@@ -167,6 +168,8 @@ import {
   resolveAnswer,
   whichFacetReask,
   whichSideReask,
+  designNamedIn,
+  thisDesignReask,
   type Reask,
 } from "./refineReask";
 import {
@@ -211,6 +214,8 @@ import { isInkSlot, isOpenSlot, openKindCarriedByCrops, openSlotKey } from "./re
 import { inkDesignForAsk, slotPlacementOf, type InkAskAddress } from "./inkDesignForAsk";
 import { mintInkDesignFromReference } from "./inkReferenceMint";
 import { listInkDesigns } from "../db/castingV2InkDesigns";
+import { removeInkDesign } from "../db/castingV2InkDesignRemoval";
+import { inkDesignImagePath } from "../../shared/inkDesignDelivery";
 import type { InkCutRoute } from "../../shared/inkCutRoute";
 import { openLaneOutcomeOf } from "./openLaneAccept";
 import { openKindPresenceBindsToday } from "./openKindPolicy";
@@ -510,6 +515,26 @@ export type RefineResult = {
    * `dropped` is what the reading could not fit, NAMED — the only useful thing
    * she can do with it is type it herself, and a count would tell her nothing.
    */
+  /**
+   * THE DESIGN THIS ANSWER IS ABOUT, at the address its owner may look at it
+   * (ruled fable-1156 §2e).
+   *
+   * On the OFFER it is the whole point: the question asks *"use it?"* about a
+   * picture, and a question about a picture nobody can see is not a question.
+   * On a RENDERED answer it is the other half of "see or reject" — until this
+   * existed, a design minted inside an ask was a row its owner could never
+   * name, and `castingV2.ink.remove` takes a name.
+   *
+   * The path is built by `inkDesignImagePath` and by nothing else, so the
+   * product has one spelling of this address (`shared/inkDesignDelivery.ts`).
+   * It is an authenticated app route, never a storage URL: the bytes sit at a
+   * permanently public key and what keeps them private is that the key is not
+   * handed out.
+   */
+  design?: {
+    designId: string;
+    imagePath: string;
+  };
   offer?: {
     sentence: string;
     intent: "makeup" | "hair";
@@ -714,6 +739,15 @@ export type RefineServiceDependencies = {
    * without any of the three.
    */
   mintInkDesign?: typeof mintInkDesignFromReference;
+  /**
+   * THROWING ONE AWAY when she says the cut is not her design (fable-1156 §2a).
+   *
+   * The shipped removal carries the authenticated owner inside its own
+   * statement and hands the design's objects to the cleanup manifest in the
+   * same transaction, so a double here is a seam for the ORDER around it and
+   * never a way to delete something this service picked.
+   */
+  removeInkDesign?: typeof removeInkDesign;
   /** `CASTING_INK_REFERENCE_SCOPE`, injectable for the same reason as its siblings. */
   inkReferenceEnabled?: (userId: number) => boolean;
   /** Writes the sent recipe onto the variant at dispatch — see `recordVariantDispatch`. */
@@ -913,6 +947,10 @@ export async function refineCandidate(
         imageUrl: first.given.imageUrl,
         instructions: first.given.instructions,
         operationId: first.given.operationId,
+        /* The design this render is carrying, named on the receipt as it is on
+           a delivered answer: a customer who stopped waiting must not be the
+           one customer who cannot say which design rode (fable-1156 §2e). */
+        ...(first.given.design ? { design: first.given.design } : {}),
       };
     }
     return answerOnTheRequest(first.outcome);
@@ -922,7 +960,28 @@ export async function refineCandidate(
 }
 
 /** What the receipt carries out of the attempt (Landing C). */
-type DispatchedReceipt = { variantId: string; operationId: string; imageUrl: string; instructions: string[] };
+type DispatchedReceipt = {
+  variantId: string;
+  operationId: string;
+  imageUrl: string;
+  instructions: string[];
+  design?: RefineResult["design"];
+};
+
+/**
+ * HOW AN ANSWER NAMES THE DESIGN IT IS CARRYING — one spelling, three roads.
+ *
+ * The offer, the rendered answer and the dispatch receipt all say the same
+ * thing, and the path inside it is built by `inkDesignImagePath` and nothing
+ * else. Three literals here would be three chances for one road to hand out a
+ * storage URL while the other two did not (law 4).
+ */
+function designAnswerFor(
+  source: { designId: string } | null,
+): RefineResult["design"] | undefined {
+  if (!source) return undefined;
+  return { designId: source.designId, imagePath: inkDesignImagePath(source.designId) };
+}
 
 /**
  * THE PRICE OF ONE ATTEMPT, WRITTEN WHEREVER IT ENDED.
@@ -1014,7 +1073,7 @@ function answerOnTheRequest(
  */
 type RefineAttempt = {
   claimed: boolean;
-  dispatched?: (receipt: { variantId: string; operationId: string; imageUrl: string; instructions: string[] }) => void;
+  dispatched?: (receipt: DispatchedReceipt) => void;
 };
 
 async function refineCandidateCounted(
@@ -1332,6 +1391,53 @@ async function refineCandidateCounted(
     return {
       kind: "selected",
       note: "Left her as she is — nothing was charged.",
+      variantId: source.variantPublicId,
+      candidateId: input.candidatePublicId,
+      imageUrl: storagePublicUrl(source.imageKey ?? source.candidate.imageKey),
+      instructions: readInstructions(predecessorForParse?.instructions),
+    };
+  }
+
+  /*
+    SHE LOOKED AT THE CUT AND IT IS NOT HER DESIGN (the shown cut's decline,
+    ruled fable-1156 §2a).
+
+    Answered HERE, beside its sibling above and long before the parse, for the
+    reason that sibling exists: there is no sentence meaning "throw that away",
+    so it arrives as a sentinel and must never reach the interpreter. A decline
+    that fell through would be read as an ordinary ask and RENDERED — the exact
+    charge this whole question exists to stand in front of.
+
+    **The design is named by the handle, not found by a guess.** Two designs cut
+    from one picture at different placements are the same sentence, so a lookup
+    from the words would be the unowned-axis default wearing a timestamp. The
+    removal carries the AUTHENTICATED owner into its own statement (invariant
+    3), which is what makes a forged handle worth nothing.
+
+    It answers the same way whether a row was deleted or there was nothing to
+    delete: from her side those are one state, and a response that told them
+    apart would let a stranger's id be tested against ours.
+  */
+  if (answered === DISCARD_THE_DESIGN) {
+    const named = designNamedIn(input.answering);
+    if (named) {
+      const removal = await (dependencies.removeInkDesign ?? removeInkDesign)({
+        userId: input.userId,
+        designPublicId: named,
+      });
+      log.info(
+        {
+          userId: input.userId,
+          candidate: input.candidatePublicId,
+          removed: removal !== null,
+          objectsQueued: removal?.objectsQueued ?? 0,
+        },
+        "[refineService] the cut was declined — the design was thrown away, nothing was charged",
+      );
+    }
+    return {
+      kind: "selected",
+      note: "Discarded — that design is not kept, and nothing was charged.",
       variantId: source.variantPublicId,
       candidateId: input.candidatePublicId,
       imageUrl: storagePublicUrl(source.imageKey ?? source.candidate.imageKey),
@@ -3570,6 +3676,10 @@ async function refineCandidateCounted(
     reasons — the branch that assigns it is the next statement.
   */
   let inkSource: {
+    /** The design's own name — so the answer can say WHICH design rode
+     *  (fable-1156 §2e). Without it a design minted inside an ask was a row its
+     *  owner could never name, and the removal that exists takes a name. */
+    designId: string;
     key: string;
     sha: string;
     cutRoute: InkCutRoute | null;
@@ -3731,6 +3841,47 @@ async function refineCandidateCounted(
     })();
     if (!("storageKey" in design)) return said(`mint:${design.code}`, design.message);
     /*
+      AND BEFORE IT RIDES, SHE LOOKS AT IT — the shown cut (ruled fable-1127 §2,
+      brought to this road fable-1156 §2).
+
+      1127 §2 was ruled when the only cutter was the studio upload door. Road
+      (D) is a second one, and its ask cuts and RENDERS in a single breath — so
+      the promise that the cutter's result goes in front of the customer before
+      any paid render carries it was, on this road, not true. The reader that
+      judges a cut cannot see fine sparse detail (dropped lettering, measured),
+      which makes her eyes the only check between the cut and her money.
+
+      **ON A FRESH MINT ONLY.** A reuse RIDE never re-asks: the row it finds is
+      one she has already been shown, and a question repeated on every render
+      about a decision already taken is the dead end D-180 forbids wearing a tap
+      target. So the round trip costs one tap ONCE PER DESIGN, and the reuse
+      rule is what makes her answer free — the second ask finds this row rather
+      than buying a second cut.
+
+      Free, before the claim, and it raises no operation: the two segmenter
+      calls above are house money and are the only thing this branch has spent.
+    */
+    if (chosen.kind === "mint") {
+      log.info(
+        {
+          userId: input.userId,
+          candidate: input.candidatePublicId,
+          placement: chosen.placement,
+          side: chosen.side,
+        },
+        "[refineService] the cut is shown before it rides — asked before the claim, nothing spent",
+      );
+      return {
+        kind: "asked",
+        reask: thisDesignReask({ designPublicId: design.publicId, asked: instruction }),
+        design: designAnswerFor({ designId: design.publicId }),
+        variantId: source.variantPublicId,
+        candidateId: input.candidatePublicId,
+        imageUrl: currentImageUrl,
+        instructions: readInstructions(predecessorForParse?.instructions),
+      };
+    }
+    /*
       AND IT RIDES. The bytes are the design row's own — our copy, under the
       candidate's purge path — carried by KEY and DIGEST rather than fetched
       here: `repaintRender` already re-reads every reference and refuses when
@@ -3744,6 +3895,7 @@ async function refineCandidateCounted(
       takes came to dispatch byte-identical prompts.
     */
     inkSource = {
+      designId: design.publicId,
       key: design.storageKey,
       sha: design.digest,
       cutRoute: design.cutRoute,
@@ -4068,6 +4220,7 @@ async function refineCandidateCounted(
          receipt is not a new frame and must never look like one. */
       imageUrl: storagePublicUrl(variant.baseImageKey),
       instructions,
+      ...(designAnswerFor(inkSource) ? { design: designAnswerFor(inkSource) } : {}),
     });
 
     const base = await (dependencies.readBytes ?? storageReadBytes)(variant.baseImageKey);
@@ -7172,6 +7325,10 @@ async function refineCandidateCounted(
       candidateId: input.candidatePublicId,
       imageUrl: stored.url,
       instructions,
+      /* WHICH DESIGN RODE — on a RIDE there was no offer to name it (the offer
+         fires once per design), and a design its owner cannot name is one she
+         cannot reject: `castingV2.ink.remove` takes a name. */
+      ...(designAnswerFor(inkSource) ? { design: designAnswerFor(inkSource) } : {}),
     };
     /*
       THE OPEN LANE'S DEMAND ROW, WRITTEN WHERE THE ASK ENDED (5b Stage D).

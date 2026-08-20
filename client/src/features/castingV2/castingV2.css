@@ -3303,6 +3303,61 @@
   under it. The box beside them stays live — a chip is the fast path, never the
   only one.
 */
+/*
+  THE SHOWN CUT — the design taken out of her picture, above the chips that
+  answer for it (ruled fable-1127 §2; road (D)'s instance fable-1156 §2).
+
+  ON A LIGHT PLATE, AND THAT IS THE WHOLE DESIGN DECISION HERE. A cut lands as
+  artwork on TRANSPARENCY, and this panel sits on a scrim — so a black-line
+  tattoo drawn straight onto it is a customer being asked to approve a picture
+  she cannot see. The plate is the paper a flash sheet is drawn on.
+
+  Built from `--onScrim` rather than from `--surface`, and that is the load
+  bearing part: every surface token INVERTS between themes, so a plate made from
+  one would be light in the theme nobody uses and dark in the default — the
+  invisible-artwork failure with a token in front of it. `--onScrim` is defined
+  once and never inverted, which is what makes this paper the same paper in both
+  themes, exactly like the artwork it is holding.
+
+  Contained rather than cropped: `cover` would cut the edges off the very thing
+  she is being asked to judge, which is the failure mode this question exists to
+  catch.
+*/
+.dpc-refine__shownCut {
+  /*
+    THE PLATE TAKES THE DESIGN'S OWN SHAPE — found by looking (law 6), not by
+    reading the code.
+
+    It was a 168px SQUARE, and the drive photographed the founder's own sleeve
+    specimen inside it: 1200x1697 of artwork contained in a square renders about
+    119px wide, with white bars either side doing nothing. The question this
+    surface asks is *"is this the design?"* about a cut whose fine sparse detail
+    the READER cannot see — dropped lettering is the measured case — so her eyes
+    are the check, and 119px of a sleeve is not something eyes can check.
+
+    A tattoo design is long, or wide, or square, and a fixed box is wrong for two
+    of the three. So the plate is sized by the picture inside it and bounded on
+    both axes: no bars, no cropping, and the artwork gets every pixel the panel
+    can give it.
+  */
+  width: fit-content;
+  max-width: 208px;
+  border-radius: var(--r-sm);
+  border: 1px solid color-mix(in srgb, var(--onScrim) 26%, transparent);
+  overflow: hidden;
+  background: color-mix(in srgb, var(--onScrim) 92%, transparent);
+}
+
+.dpc-refine__shownCut > img {
+  /* Intrinsic, bounded. Nothing here can crop her design — there is no box for
+     it to be cropped INTO, which is a stronger promise than `contain`. */
+  width: auto;
+  height: auto;
+  max-width: 208px;
+  max-height: 264px;
+  display: block;
+}
+
 .dpc-refine__answers {
   display: flex;
   flex-wrap: wrap;

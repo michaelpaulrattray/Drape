@@ -7,6 +7,7 @@
  * calls the pure function directly. Nothing in this file can be rescued by a
  * well-behaved model.
  */
+import { randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
@@ -32,6 +33,8 @@ import {
   sameAgainReask,
   whichFacetReask,
   whichSideReask,
+  designNamedIn,
+  thisDesignReask,
   type Reask,
 } from "./refineReask";
 
@@ -428,6 +431,17 @@ describe("the answer path rebuilds every question it asks", () => {
     { kind: "glasses-hide-eyes", asked: "give her a cat eye", build: glassesHideEyesReask },
     { kind: "which-side", asked: "use this tattoo design on her arm", build: whichSideReask },
     {
+      /*
+        The shown cut. Its handle names a DESIGN as well as a sentence, because
+        the decline has to be able to delete the row — so the round trip this
+        row drives is the one that would break if the two halves were ever put
+        back in the wrong order.
+      */
+      kind: "this-design",
+      asked: "use this tattoo design on her left upper arm",
+      build: (asked) => thisDesignReask({ designPublicId: "d-minted", asked }),
+    },
+    {
       kind: "same-again",
       asked: "gold hoops please",
       build: (asked) => sameAgainReask({ asked, priceCredits: 25 }),
@@ -499,11 +513,38 @@ describe("the answering field is wide enough for a handled question", () => {
     }
   });
 
+  it("AND SO DOES THE ONE THAT NAMES A DESIGN — built the way the server builds it", () => {
+    /*
+      The arm above walks the kinds through `reaskHandle`, which is the handle
+      every OTHER question travels in. The shown cut's is longer by a `publicId`
+      and is built by its own speller, so a cap derived without that allowance
+      would pass there and refuse a real answer here — the quiet dead end the
+      whole derivation exists to prevent, on the longest sentences only.
+    */
+    const longest = "x".repeat(REFINE_INSTRUCTION_MAX_LENGTH);
+    const handle = thisDesignReask({ designPublicId: randomUUID(), asked: longest }).about!;
+    expect(handle.length).toBeLessThanOrEqual(REFINE_ANSWERING_MAX_LENGTH);
+    /* And it still names the design it was built for, at full length. */
+    expect(designNamedIn(handle)).toHaveLength(randomUUID().length);
+  });
+
   it("the allowance is DERIVED over the kinds, not a number somebody chose", () => {
-    /* Not `toBe(28)`: a longer kind name must move the cap by existing. */
+    /*
+      Not `toBe(51)`: a longer kind name must move the cap by existing, and so
+      must a kind that starts naming a design.
+
+      **The derivation grew on 2026-08-20 and this arm grew with it, which is
+      the only honest way to move a bar** — `this-design` puts a `publicId` in
+      front of the sentence, so the widest handle is no longer the longest NAME.
+      Measured off a real `randomUUID()` here as well, so the two sides of the
+      assertion cannot agree on a number neither of them checked.
+    */
+    const NAMES_A_DESIGN = ["this-design"];
+    const idAllowance = randomUUID().length + 1;
     expect(REFINE_ANSWERING_MAX_LENGTH).toBe(REFINE_INSTRUCTION_MAX_LENGTH + REASK_HANDLE_MAX_LENGTH);
     expect(REASK_HANDLE_MAX_LENGTH).toBe(
-      Math.max(...REASK_KINDS.map((kind) => reaskHandle(kind, "").length)),
+      Math.max(...REASK_KINDS.map((kind) => reaskHandle(kind, "").length
+        + (NAMES_A_DESIGN.includes(kind) ? idAllowance : 0))),
     );
   });
 });

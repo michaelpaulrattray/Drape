@@ -12,6 +12,7 @@ import {
   ATTACH_CLAIM_QUESTION,
   ATTACH_FAILED_FALLBACK,
   ATTACH_REMOVE_LABEL,
+  SHOWN_CUT_LABEL,
   attachClaimChips,
 } from "../referenceAttachCopy";
 import { asBase64 } from "../pictureBytes";
@@ -163,6 +164,7 @@ export function RefinePanel({
   onRemove,
   outcome,
   reask,
+  shownCut,
   onDismissOutcome,
   kept = [],
   keptPossessive = "their",
@@ -233,6 +235,22 @@ export function RefinePanel({
    * question mark — same frame, same voice, same dismiss.
    */
   reask?: RefineReask | null;
+  /**
+   * THE CUT SHE IS BEING SHOWN, when the answer is about one (ruled fable-1127
+   * §2, brought to road (D) by fable-1156).
+   *
+   * The cutter takes the artwork out of the photograph she attached, and the
+   * reader that judges what it took CANNOT SEE fine sparse detail — so her eyes
+   * are the only check between the cut and her money. The question above it
+   * asks *"use it?"*, and a question about a picture nobody can see is not a
+   * question.
+   *
+   * An APP path, not an image URL: the bytes sit at a permanently public
+   * storage key and what keeps them private is that the key is never handed
+   * out, so this is an authenticated route the browser fetches with her own
+   * cookie. The server builds it — this only draws it.
+   */
+  shownCut?: string | null;
   onDismissOutcome?: () => void;
   /**
    * What this version is keeping — read-only, and empty until the segment store
@@ -492,6 +510,27 @@ export function RefinePanel({
           >
             ×
           </button>
+        </div>
+      ) : null}
+
+      {/*
+        THE CUT, ABOVE THE ANSWERS IT IS ABOUT (ruled fable-1127 §2; road (D)'s
+        instance fable-1156 §2).
+
+        It sits between the question and its chips because that is the order the
+        decision is made in — read the sentence, look at the design, tap. A
+        picture below its own answers would be a picture nobody looked at before
+        answering.
+
+        `no-store` on the route and no thumbnail cache here: it is one person's
+        design, fetched with her own session, and drawn at the size of the chip
+        row rather than the size of the file. The route refuses to serve bytes
+        whose sha256 is not the one the row records, so what she is looking at
+        is the object we would paint from — a viewer is an instrument too.
+      */}
+      {shownCut ? (
+        <div className="dpc-refine__shownCut">
+          <img src={shownCut} alt={SHOWN_CUT_LABEL} />
         </div>
       ) : null}
 

@@ -253,6 +253,17 @@ export default function CastingSheet() {
   const [reaskOptions, setReaskOptions] = useState<
     ReadonlyArray<{ label: string; resolves: string }> | null
   >(null);
+  /*
+    AND THE PICTURE THE QUESTION IS ABOUT, when it has one — the shown cut
+    (ruled fable-1127 §2; road (D)'s instance fable-1156 §2).
+
+    Held beside the answers rather than inside the outcome, because it dies with
+    the QUESTION: an offer is answered or dismissed, and a cut left on screen
+    after either would be a picture describing a decision already taken. The
+    server builds the path (`inkDesignImagePath`), so nothing here spells an
+    address.
+  */
+  const [shownCut, setShownCut] = useState<string | null>(null);
   /* Balance context for the cost line — the question a price actually raises. */
   const balance = trpc.credits.getBalance.useQuery(undefined, {
     staleTime: 30_000,
@@ -1419,6 +1430,10 @@ export default function CastingSheet() {
     */
     setRefineOutcome(null);
     setReaskOptions(null);
+    /* The cut goes with the question it was shown for — see the state's own
+       note. A design picture standing over a live ask about something else is
+       the stale-sentence defect one surface further down. */
+    setShownCut(null);
     /* The last offer goes when the next instruction is submitted — an offer
        about a picture standing over a live ask for something else is the same
        stale-sentence defect the outcome above was fixed for. */
@@ -1559,6 +1574,10 @@ export default function CastingSheet() {
              — a settled row may not speak over an open question. */
           setRefineOutcome({ text: result.reask.question, origin: "server", requestId });
           setReaskOptions(result.reask.options);
+          /* THE DESIGN THIS QUESTION IS ABOUT, when there is one. The offer
+             asks "use it?" about a picture, and a question about a picture
+             nobody can see is not a question (fable-1127 §2). */
+          setShownCut(result.design?.imagePath ?? null);
           return;
         }
         /* Bought HERE, so its arrival is not a late lander (D-161). */
@@ -2863,12 +2882,16 @@ export default function CastingSheet() {
                  shape is on — the same component, not a second stack. */
               stackHoisted={Boolean(facePanelData)}
               reask={reaskOptions ? { question: refineOutcome?.text ?? "", options: reaskOptions } : null}
+              /* Only while the question it answers is open — the panel draws
+                 what it is handed and owns none of this. */
+              shownCut={reaskOptions ? shownCut : null}
               onDismissOutcome={() => {
                 // Dismissing the question withdraws it. The next sentence is a
                 // fresh instruction, not a late answer to something gone from
                 // the screen.
                 pendingReask.current = null;
                 setReaskOptions(null);
+                setShownCut(null);
                 setRefineOutcome(null);
                 /*
                   AND IF WHAT HE JUST CLOSED WAS A SETTLED OUTCOME, IT STAYS
