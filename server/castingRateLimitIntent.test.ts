@@ -171,6 +171,10 @@ describe("which bucket each casting procedure was handed", () => {
          choosing files can plausibly do rather than by what a click storm
          can. */
       upload: "castingInkUpload",
+      /* Removing a design — its OWN bucket, deliberately not the upload's.
+         Sharing one would make deleting a design she disliked cost her an
+         upload, which is the opposite of what "see or reject" is for. */
+      remove: "castingInkRemove",
       /* Reading a reference for its makeup — its own bucket again, and tighter,
          for the opposite reason to the upload's. This one keeps NOTHING, so
          there is no storage to protect; what it spends is a model call on house

@@ -316,7 +316,18 @@ const UNREACHABLE_ROUTERS: string[] = [];
 /* -------------------------------------------------------- express surfaces */
 
 function collectExpressRoutes(): Entity[] {
-  const source = read("server/_core/index.ts");
+  return expressSurfacesFrom(read("server/_core/index.ts"));
+}
+
+/**
+ * The Express surfaces declared by one bootstrap source.
+ *
+ * Pure and exported so its arms can be driven against fixture sources rather
+ * than against the repository's own current bootstrap — a checker tested only
+ * on the tree it will run over is a checker whose blind spots are invisible
+ * exactly where they matter (`architectureExpressSurfaces.test.ts`).
+ */
+export function expressSurfacesFrom(source: string): Entity[] {
   const routes: Entity[] = [];
   // Capture the handler too: three routers mount on /api/auth, and collapsing
   // them to one row would hide two of the app's session-minting surfaces.
@@ -335,15 +346,40 @@ function collectExpressRoutes(): Entity[] {
       file: "server/_core/index.ts",
     });
   }
-  // Routers mounted without a path prefix declare their own paths internally
-  // (image proxy, hero, evidence delivery). Missing them would understate the
-  // Express surface, so they are listed with the router as the subject.
+  /*
+    Routers mounted without a path prefix declare their own paths internally
+    (image proxy, hero, evidence delivery). Missing them would understate the
+    Express surface, so they are listed with the router as the subject.
+
+    TWO SHAPES, AND THE SECOND WAS MISSING UNTIL 2026-08-20. A router is either
+    a module-level value (`app.use(imageProxyRouter)`) or built at registration
+    by a factory (`app.use(createCharacterSheetRouter())`) — the newer house
+    style, because a factory takes injected dependencies and is what makes the
+    route drivable in a suite. Only the first shape was matched, so
+    `/api/cast/:castId/sheet` was invisible to the Atlas from the day it
+    shipped, and `/api/ink-design/:designId` would have been. Both are
+    AUTHENTICATED routes serving one owner's images.
+
+    That is precisely the failure the enumerated-surface list exists to prevent
+    (access-control invariant 5), arriving through the mechanism that was
+    supposed to prevent it: a checker blind to a shape reports a complete list.
+    `architectureExpressSurfaces.test.ts` drives both shapes directly.
+  */
   for (const hit of source.matchAll(/app\.use\(\s*(\w+Router)\s*\)/g)) {
     routes.push({
       id: `express:USE (router-defined) ${hit[1]}`,
       method: "USE",
       path: "(defined by the router)",
       handler: hit[1],
+      file: "server/_core/index.ts",
+    });
+  }
+  for (const hit of source.matchAll(/app\.use\(\s*(\w*Router)\(\s*\)\s*\)/g)) {
+    routes.push({
+      id: `express:USE (router-defined) ${hit[1]}()`,
+      method: "USE",
+      path: "(defined by the router)",
+      handler: `${hit[1]}()`,
       file: "server/_core/index.ts",
     });
   }

@@ -16,6 +16,7 @@ import heroProxyRouter from "../heroProxy";
 import imageProxyRouter from "../routes/imageProxy";
 import evidenceDeliveryRouter from "../routes/evidenceDelivery";
 import { createCharacterSheetRouter } from "../routes/characterSheet";
+import { createInkDesignDeliveryRouter } from "../routes/inkDesignDelivery";
 import { healthHandler } from "../health";
 import { validateEnv } from "./env";
 import { assertPrivateEvidenceCleanupSchema } from "../casting/evidence/privateEvidenceSchema";
@@ -246,6 +247,15 @@ async function startServer() {
     in the statement that loads the Cast rather than trusting the URL.
   */
   app.use(createCharacterSheetRouter());
+
+  /*
+    A STORED INK DESIGN, LOOKED AT BY THE PERSON WHOSE IT IS — the shown cut.
+
+    Third in this group for the same reason as the second: an authenticated
+    image for one owner, with ownership re-proved in the statement that loads
+    the row. It is what makes `CASTING_INK_CUT_SCOPE` a change she can see.
+  */
+  app.use(createInkDesignDeliveryRouter());
 
   // tRPC API with centralized error logging
   app.use(

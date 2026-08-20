@@ -57,6 +57,7 @@ import {
   type ReferenceReadOutcome,
 } from "../db/castingV2ReferenceReads";
 import { uploadInkDesign } from "../castingV2/inkUploadService";
+import { removeInkDesign } from "../db/castingV2InkDesignRemoval";
 import { attachReference } from "../castingV2/referenceAttachService";
 import { REFERENCE_PICTURES_PER_CANDIDATE_REFUSAL } from "../castingV2/referenceAttachDoor";
 import {
@@ -456,6 +457,46 @@ const inkRouter = router({
         }
         throw error;
       }
+    }),
+
+  /**
+   * REMOVING A DESIGN — the other half of "see or reject" (ruled fable-1138 §3).
+   *
+   * Until this existed, the only deletion of a design in the whole product was
+   * the sweep taking it with her entire Cast. A customer who looked at what the
+   * cutter made of her design and disliked it could destroy the Cast or live
+   * with it, and a studio holding its eight stayed full forever. That is half a
+   * road, and the shown cut is the half that makes the other one necessary.
+   *
+   * **Deliberately NOT behind `CASTING_INK_STUDIO_SCOPE`, unlike `upload`
+   * above.** The namespace's law puts the scope inside each procedure because
+   * these procedures spend credits; this one spends nothing and destroys only
+   * the caller's own row. Gating it would mean that the day the flag moved
+   * under her, a customer could no longer delete a picture of her own that we
+   * are still holding — a refusal about our configuration wearing the shape of
+   * a refusal about her design. It leaks nothing either: an account outside the
+   * scope owns no design rows, so it gets the same NOT_FOUND it would get from
+   * a procedure that did not exist.
+   */
+  remove: protectedProcedure
+    .input(z.object({ designId: publicId }).strict())
+    .mutation(async ({ ctx, input }) => {
+      enforceRateLimit(ctx.user.id, RATE_LIMITS.castingInkRemove);
+      /* From the session, never from input (invariant 3). The owner is inside
+         the statement that selects the row to delete, on both sides of the
+         join, and the delete carries it again. */
+      const removal = await removeInkDesign({
+        userId: ctx.user.id,
+        designPublicId: input.designId,
+      });
+      /* Somebody else's design is answered the way a missing one is. */
+      if (!removal) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Design not found" });
+      }
+      /* An explicit projection (invariant 8). `remaining` is here so a surface
+         showing "7 of 8" never has to recount — and never has to guess whether
+         its own count is stale. */
+      return { designId: removal.designPublicId, remaining: removal.remaining };
     }),
 });
 

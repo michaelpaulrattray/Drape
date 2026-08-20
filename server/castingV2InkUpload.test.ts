@@ -34,6 +34,12 @@ vi.mock("./castingV2/inkUploadService", async () => {
   return { ...real, uploadInkDesign: (...args: unknown[]) => uploaded(...args) };
 });
 
+const removed = vi.fn();
+
+vi.mock("./db/castingV2InkDesignRemoval", () => ({
+  removeInkDesign: (...args: unknown[]) => removed(...args),
+}));
+
 const { castingV2Router } = await import("./routes/castingV2");
 const { InkDesignCapError, InkDesignOwnershipError } = await import("./db/castingV2InkDesigns");
 
@@ -272,5 +278,65 @@ describe("nothing is charged for it", () => {
       "});",
     ].join("\n");
     expect(inkNamespaceSource(charging)).toMatch(SPEND);
+  });
+});
+
+/**
+ * REMOVING A DESIGN — the other half of "see or reject" (ruled fable-1138 §3).
+ *
+ * The interesting arm here is the FIRST one, and it is a decision rather than a
+ * behaviour: `remove` is deliberately NOT behind `CASTING_INK_STUDIO_SCOPE`,
+ * unlike `upload` directly above it in the same router. A decision that lives
+ * only in a comment is a decision that gets tidied away by whoever next makes
+ * the namespace consistent, so it is asserted.
+ */
+describe("removing a design", () => {
+  const DESIGN = "22222222-2222-4222-8222-222222222222";
+
+  beforeEach(() => {
+    removed.mockResolvedValue({ designPublicId: DESIGN, objectsQueued: 1, remaining: 3 });
+  });
+
+  it("still lets an owner delete her own picture when the studio flag is OFF", async () => {
+    /* Every scope flag is deleted by the outer `beforeEach`. She uploaded when
+       the door was open; a flag that moved under her must not leave us holding
+       a photograph she cannot remove. */
+    const result = await caller().ink.remove({ designId: DESIGN });
+    expect(result).toEqual({ designId: DESIGN, remaining: 3 });
+    expect(removed).toHaveBeenCalledTimes(1);
+  });
+
+  it("takes the account from the session and refuses one sent as input", async () => {
+    await caller(1).ink.remove({ designId: DESIGN });
+    expect(removed).toHaveBeenCalledWith({ userId: 1, designPublicId: DESIGN });
+
+    await expect(
+      (caller(1).ink.remove as unknown as (input: unknown) => Promise<unknown>)({
+        designId: DESIGN,
+        userId: 2,
+      }),
+    ).rejects.toBeInstanceOf(TRPCError);
+  });
+
+  it("answers a design that is not this account's the way a missing one is", async () => {
+    removed.mockResolvedValue(null);
+    await expect(caller().ink.remove({ designId: DESIGN })).rejects.toMatchObject({
+      code: "NOT_FOUND",
+    });
+  });
+
+  it("refuses anything that is not a design id, before the database", async () => {
+    await expect(
+      caller().ink.remove({ designId: "not-a-uuid" }),
+    ).rejects.toBeInstanceOf(TRPCError);
+    expect(removed).not.toHaveBeenCalled();
+  });
+
+  it("hands back no storage key and no cleanup detail", async () => {
+    /* An explicit projection (invariant 8). `objectsQueued` is ours; the number
+       of objects a delete queued is not a fact a customer's client is owed, and
+       a spread row is how internals cross this boundary. */
+    const result = await caller().ink.remove({ designId: DESIGN });
+    expect(Object.keys(result).sort()).toEqual(["designId", "remaining"]);
   });
 });

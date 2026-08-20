@@ -164,6 +164,7 @@ describe("R7-7C5A private evidence cleanup backend", () => {
       // lives in the public bucket.
       "server/db/accountDeletion.ts",
       "server/db/castingV2FaceScans.ts",
+      "server/db/castingV2InkDesignRemoval.ts",
       "server/db/evidenceCandidates.ts",
       "server/db/evidenceOperations.ts",
       "server/db/evidenceRecovery.ts",

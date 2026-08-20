@@ -32,6 +32,7 @@ describeWithDatabase("the ink design store (disposable DB)", () => {
   let owner: number;
   let stranger: number;
   let designs: typeof import("./db/castingV2InkDesigns");
+  let removals: typeof import("./db/castingV2InkDesignRemoval");
   let retention: typeof import("./castingV2/candidateRetention");
   let cleanup: typeof import("./db/storageCleanup");
   let db: typeof import("./db/connection");
@@ -92,6 +93,7 @@ describeWithDatabase("the ink design store (disposable DB)", () => {
     owner = await newUser("Ink Owner");
     stranger = await newUser("Ink Stranger");
     designs = await import("./db/castingV2InkDesigns");
+    removals = await import("./db/castingV2InkDesignRemoval");
     retention = await import("./castingV2/candidateRetention");
     cleanup = await import("./db/storageCleanup");
     db = await import("./db/connection");
@@ -342,5 +344,152 @@ describeWithDatabase("the ink design store (disposable DB)", () => {
       keys,
     );
     expect(queued.map((row) => String(row.storageKey)).sort()).toEqual([...keys].sort());
+  });
+
+  /**
+   * THE OTHER HALF OF "SEE OR REJECT" (ruled fable-1138 §3).
+   *
+   * Until `removeInkDesign` landed, the only deletion of a design anywhere was
+   * the sweep above taking it with the whole Cast. These prove the second path
+   * against MySQL rather than against a mock, because every claim it makes is a
+   * claim about a statement: that a stranger holding a real design id cannot
+   * delete it, that the bytes reach the worker in the same transaction as the
+   * row, that a plate hanging off the design does not become an orphan, and
+   * that the per-Cast cap is actually freed rather than merely reported freed.
+   */
+  it("removes ONE design, hands its bytes to the worker, and frees the slot", async () => {
+    const cast = await newCast(owner);
+    const kept = `casting-v2/ink/${randomUUID()}.png`;
+    const doomedKey = `casting-v2/ink/${randomUUID()}.png`;
+    await designs.recordInkDesign(design(cast.publicId, owner, kept));
+    const doomed = await designs.recordInkDesign(design(cast.publicId, owner, doomedKey));
+
+    const removal = await removals.removeInkDesign({
+      userId: owner,
+      designPublicId: doomed.publicId,
+    });
+    expect(removal).not.toBeNull();
+    expect(removal!.remaining, "counted in the deleting transaction").toBe(1);
+
+    const listed = await designs.listInkDesigns({ userId: owner, candidatePublicId: cast.publicId });
+    expect(listed.map((row) => row.storageKey), "only the one she asked for").toEqual([kept]);
+
+    const [queued] = await connection.query<RowDataPacket[]>(
+      "SELECT storageKey FROM storage_cleanup_items WHERE storageKey = ?",
+      [doomedKey],
+    );
+    expect(queued, "the worker holds the removed design's bytes").toHaveLength(1);
+
+    const [survivor] = await connection.query<RowDataPacket[]>(
+      "SELECT storageKey FROM storage_cleanup_items WHERE storageKey = ?",
+      [kept],
+    );
+    expect(survivor, "and holds nothing belonging to the one she kept").toHaveLength(0);
+  });
+
+  /**
+   * INVARIANT 1, AT THE DELETING STATEMENT. The stranger holds a real design's
+   * real public id. The row is the only thing that can refuse them, and it must
+   * refuse in the statement rather than in a check above one.
+   */
+  it("refuses a stranger holding a real design id, and leaves the row alone", async () => {
+    const cast = await newCast(owner);
+    const key = `casting-v2/ink/${randomUUID()}.png`;
+    const recorded = await designs.recordInkDesign(design(cast.publicId, owner, key));
+
+    const attempt = await removals.removeInkDesign({
+      userId: stranger,
+      designPublicId: recorded.publicId,
+    });
+    expect(attempt, "the same answer a design that never existed gets").toBeNull();
+
+    const listed = await designs.listInkDesigns({ userId: owner, candidatePublicId: cast.publicId });
+    expect(listed, "her design is untouched").toHaveLength(1);
+
+    const [queued] = await connection.query<RowDataPacket[]>(
+      "SELECT storageKey FROM storage_cleanup_items WHERE storageKey = ?",
+      [key],
+    );
+    expect(queued, "and nothing of hers was queued for deletion").toHaveLength(0);
+  });
+
+  /**
+   * A DESIGN'S PLATES GO WITH IT, ROWS AND BYTES.
+   *
+   * What this arm proves and what it does NOT is worth stating, because the
+   * first version of the code's comment claimed the stronger thing. It proves
+   * the plates go: delete the plate handling and this reddens, alone. It does
+   * not prove the ORDER — the removal holds the design's internal id in memory,
+   * so the plates stay reachable by `designId` either way, and flipping the
+   * order left all fourteen arms green. The sweep's identical-looking order IS
+   * load-bearing, for a reason that does not transfer here.
+   */
+  it("takes a design's plates with it, rows and bytes", async () => {
+    const cast = await newCast(owner);
+    const designKey = `casting-v2/ink/${randomUUID()}.png`;
+    const recorded = await designs.recordInkDesign(design(cast.publicId, owner, designKey));
+    const plateKey = `casting-v2/ink/plates/${randomUUID()}.png`;
+    await connection.execute(
+      "INSERT INTO casting_ink_plates (publicId, userId, designId, engine, templateKind, templateDigest,"
+        + " promptDigest, storageKey, digest, mime, byteSize, width, height)"
+        + " SELECT ?, ?, id, 'nanoBananaPro', 'arm', ?, ?, ?, ?, 'image/png', 1024, 512, 512"
+        + " FROM casting_ink_designs WHERE publicId = ?",
+      [
+        randomUUID(), owner,
+        randomUUID().replace(/-/g, "").repeat(2).slice(0, 64),
+        randomUUID().replace(/-/g, "").repeat(2).slice(0, 64),
+        plateKey,
+        randomUUID().replace(/-/g, "").repeat(2).slice(0, 64),
+        recorded.publicId,
+      ],
+    );
+
+    const removal = await removals.removeInkDesign({
+      userId: owner,
+      designPublicId: recorded.publicId,
+    });
+    expect(removal!.objectsQueued, "the plate's object and the design's").toBe(2);
+
+    const [plates] = await connection.query<RowDataPacket[]>(
+      "SELECT COUNT(*) AS n FROM casting_ink_plates WHERE storageKey = ?",
+      [plateKey],
+    );
+    expect(plates[0].n, "no orphan plate row").toBe(0);
+
+    const [queued] = await connection.query<RowDataPacket[]>(
+      "SELECT storageKey FROM storage_cleanup_items WHERE storageKey IN (?, ?)",
+      [plateKey, designKey],
+    );
+    expect(queued.map((row) => String(row.storageKey)).sort()).toEqual(
+      [plateKey, designKey].sort(),
+    );
+  });
+
+  /**
+   * THE CAP IS A FACT ABOUT THE TABLE, AND SO IS ITS RELEASE. A studio holding
+   * its eight stayed full forever before this path existed; a removal that
+   * reported a freed slot without freeing one would be worse than no removal.
+   */
+  it("frees the per-Cast cap, so a ninth upload lands after a removal", async () => {
+    const cast = await newCast(owner);
+    const recorded = [];
+    for (let index = 0; index < 8; index += 1) {
+      recorded.push(await designs.recordInkDesign(
+        design(cast.publicId, owner, `casting-v2/ink/${randomUUID()}.png`),
+      ));
+    }
+    await expect(designs.recordInkDesign(
+      design(cast.publicId, owner, `casting-v2/ink/${randomUUID()}.png`),
+    )).rejects.toBeInstanceOf(designs.InkDesignCapError);
+
+    await removals.removeInkDesign({ userId: owner, designPublicId: recorded[0]!.publicId });
+
+    /* THE POSITIVE CONTROL the refusal above needs: the ninth now lands. */
+    const ninth = await designs.recordInkDesign(
+      design(cast.publicId, owner, `casting-v2/ink/${randomUUID()}.png`),
+    );
+    expect(ninth.publicId).toBeTruthy();
+    const listed = await designs.listInkDesigns({ userId: owner, candidatePublicId: cast.publicId });
+    expect(listed).toHaveLength(8);
   });
 });

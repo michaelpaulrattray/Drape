@@ -166,6 +166,10 @@ const COLLECTORS: Readonly<Record<string, string>> = {
   "server/db/inkAddCancellation.ts": "a cancelled ink-ADD candidate's objects",
   "server/db/inkAddCandidates.ts": "an ink-ADD candidate discarded before acceptance",
   "server/db/inkAddRecovery.ts": "an abandoned ink-ADD operation's objects, swept",
+  /* The tenth, 2026-08-20. A COLLECTOR and unambiguously so: the customer asked
+     for the design to go, so the manifest is the delete rather than a hold over
+     bytes about to be claimed — there is no row left to carry a receipt. */
+  "server/db/castingV2InkDesignRemoval.ts": "a design its owner removed, and the plates drawn from it",
 };
 
 describe("the manifest receipt, swept across every caller", () => {

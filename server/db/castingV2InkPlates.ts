@@ -354,6 +354,43 @@ export async function listCandidateInkPlates(input: {
  * a plate minted between the read and the delete cannot slip through and outlive
  * the Cast it was drawn for.
  */
+/**
+ * The plates hanging off ONE design — read inside the deleting transaction.
+ *
+ * The candidate-keyed sibling below is the sweep's; this is the owner's own
+ * per-design removal (`castingV2.ink.remove`). Same path and same reason: a
+ * plate reaches its Cast only THROUGH its design, so a design deleted without
+ * its plates leaves rows nothing can find and bytes at a permanently public URL
+ * forever.
+ *
+ * Keyed on the design's internal id, which the caller has only because it just
+ * proved and LOCKED that row through its candidate. Nothing here re-proves an
+ * owner, and it does not need to: the id it is handed is not a caller's.
+ */
+export async function listPurgeableInkPlatesForDesignIn(
+  tx: TransactionHandle,
+  designId: number,
+): Promise<Array<{ id: number; storageKey: string }>> {
+  return tx
+    .select({ id: castingInkPlates.id, storageKey: castingInkPlates.storageKey })
+    .from(castingInkPlates)
+    .where(eq(castingInkPlates.designId, designId));
+}
+
+/**
+ * Delete those plate rows. **Before the design row, and the order is
+ * load-bearing** for {@link listPurgeableInkPlatesForDesignIn}'s reason.
+ */
+export async function deleteInkPlateRowsForDesignIn(
+  tx: TransactionHandle,
+  designId: number,
+): Promise<number> {
+  const result = await tx
+    .delete(castingInkPlates)
+    .where(eq(castingInkPlates.designId, designId));
+  return affectedRows(result);
+}
+
 export async function listPurgeableInkPlatesIn(
   tx: TransactionHandle,
   candidateIds: readonly number[],

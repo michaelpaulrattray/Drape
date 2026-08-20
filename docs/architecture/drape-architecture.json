@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "1b90892be6bfc180"
+    "sourceFingerprint": "49fe07098af2d464"
   },
   "domains": [
     {
@@ -18,7 +18,7 @@
     {
       "id": "domain:api",
       "name": "api",
-      "moduleCount": 39
+      "moduleCount": 40
     },
     {
       "id": "domain:billing",
@@ -53,7 +53,7 @@
     {
       "id": "domain:data",
       "name": "data",
-      "moduleCount": 56
+      "moduleCount": 57
     },
     {
       "id": "domain:evidence",
@@ -123,7 +123,7 @@
     {
       "id": "domain:shared",
       "name": "shared",
-      "moduleCount": 29
+      "moduleCount": 30
     },
     {
       "id": "domain:studio",
@@ -4281,6 +4281,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:server/db/castingV2InkDesignRemoval.ts",
+      "path": "server/db/castingV2InkDesignRemoval.ts",
+      "domain": "data",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:server/db/castingV2InkDesigns.ts",
       "path": "server/db/castingV2InkDesigns.ts",
       "domain": "data",
@@ -4899,6 +4905,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:server/routes/inkDesignDelivery.ts",
+      "path": "server/routes/inkDesignDelivery.ts",
+      "domain": "api",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:server/routes/lobby.ts",
       "path": "server/routes/lobby.ts",
       "domain": "api",
@@ -5279,6 +5291,12 @@
     {
       "id": "module:shared/exportViews.ts",
       "path": "shared/exportViews.ts",
+      "domain": "shared",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:shared/inkDesignDelivery.ts",
+      "path": "shared/inkDesignDelivery.ts",
       "domain": "shared",
       "lifecycle": "active"
     },
@@ -6465,6 +6483,16 @@
       "namespace": "castingV2",
       "name": "getSession",
       "type": "query",
+      "auth": "protected",
+      "strictInput": true,
+      "rateLimited": true,
+      "file": "server/routes/castingV2.ts"
+    },
+    {
+      "id": "route:castingV2.ink.remove",
+      "namespace": "castingV2.ink",
+      "name": "remove",
+      "type": "mutation",
       "auth": "protected",
       "strictInput": true,
       "rateLimited": true,
@@ -8024,6 +8052,20 @@
       "file": "server/_core/index.ts"
     },
     {
+      "id": "express:USE (router-defined) createCharacterSheetRouter()",
+      "method": "USE",
+      "path": "(defined by the router)",
+      "handler": "createCharacterSheetRouter()",
+      "file": "server/_core/index.ts"
+    },
+    {
+      "id": "express:USE (router-defined) createInkDesignDeliveryRouter()",
+      "method": "USE",
+      "path": "(defined by the router)",
+      "handler": "createInkDesignDeliveryRouter()",
+      "file": "server/_core/index.ts"
+    },
+    {
       "id": "express:USE (router-defined) evidenceDeliveryRouter",
       "method": "USE",
       "path": "(defined by the router)",
@@ -9180,6 +9222,10 @@
     {
       "id": "test:server/architectureAtlas.test.ts",
       "path": "server/architectureAtlas.test.ts"
+    },
+    {
+      "id": "test:server/architectureExpressSurfaces.test.ts",
+      "path": "server/architectureExpressSurfaces.test.ts"
     },
     {
       "id": "test:server/architectureShapeCopies.test.ts",
@@ -10996,6 +11042,10 @@
     {
       "id": "test:server/routes/imageProxy.test.ts",
       "path": "server/routes/imageProxy.test.ts"
+    },
+    {
+      "id": "test:server/routes/inkDesignDelivery.test.ts",
+      "path": "server/routes/inkDesignDelivery.test.ts"
     },
     {
       "id": "test:server/routes/modelCreatePayload.test.ts",
@@ -16202,6 +16252,11 @@
     {
       "from": "module:server/_core/index.ts",
       "to": "module:server/routes/imageProxy.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/_core/index.ts",
+      "to": "module:server/routes/inkDesignDelivery.ts",
       "kind": "imports"
     },
     {
@@ -23090,6 +23145,26 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/db/castingV2InkDesignRemoval.ts",
+      "to": "module:drizzle/schema.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/castingV2InkDesignRemoval.ts",
+      "to": "module:server/db/castingV2InkPlates.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/castingV2InkDesignRemoval.ts",
+      "to": "module:server/db/connection.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/castingV2InkDesignRemoval.ts",
+      "to": "module:server/db/storageCleanup.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/db/castingV2InkDesigns.ts",
       "to": "module:drizzle/schema.ts",
       "kind": "imports"
@@ -25346,6 +25421,11 @@
     },
     {
       "from": "module:server/routes/castingV2.ts",
+      "to": "module:server/db/castingV2InkDesignRemoval.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/castingV2.ts",
       "to": "module:server/db/castingV2InkDesigns.ts",
       "kind": "imports"
     },
@@ -26277,6 +26357,41 @@
     {
       "from": "module:server/routes/imageProxy.ts",
       "to": "module:server/security/urlValidator.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/inkDesignDelivery.ts",
+      "to": "module:server/_core/sdk.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/inkDesignDelivery.ts",
+      "to": "module:server/castingV2/inkUploadDoor.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/inkDesignDelivery.ts",
+      "to": "module:server/db/castingV2InkDesigns.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/inkDesignDelivery.ts",
+      "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/inkDesignDelivery.ts",
+      "to": "module:server/security/rateLimit.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/inkDesignDelivery.ts",
+      "to": "module:server/storage.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/inkDesignDelivery.ts",
+      "to": "module:shared/inkDesignDelivery.ts",
       "kind": "imports"
     },
     {

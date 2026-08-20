@@ -239,6 +239,18 @@ export const RATE_LIMITS = {
     The per-Cast cap is SHARED across both stores, which is the bound that
     actually matters; this bounds the rate at which somebody may discover it.
   */
+  /*
+    REMOVING AN INK DESIGN — its own bucket, deliberately not the upload's.
+
+    Sharing one would make deleting a design she disliked cost her an upload,
+    which is the opposite of what "see or reject" is for. It is a cheap write
+    against her own rows, so it is bounded generously and only against a loop.
+  */
+  castingInkRemove: {
+    windowMs: 60 * 60 * 1000, // 1 hour
+    maxRequests: 48,
+    keyPrefix: 'casting_ink_remove',
+  },
   castingReferenceAttach: {
     windowMs: 60 * 60 * 1000, // 1 hour
     maxRequests: 24,
