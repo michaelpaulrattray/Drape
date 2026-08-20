@@ -7,6 +7,27 @@ POINT here — this file is the survivor. Reconciled against the full
 mailbox archive, memory, and DECISION_LOG by the lost-pin audit of
 2026-08-09; items marked (L#) were recovered by that audit.
 
+**Pointers here are under 1227 §2 BY REVIEW, never by an arm, and that
+is deliberate.** The rule is that a pointer on a live instruction
+surface names a symbol a grep can re-find — a line number rots in
+silence, and a stale one makes a true sentence read as false. But this
+file is not one surface: it interleaves live roadmap with **dated
+records kept unchanged on purpose** (`### … ✅ CLOSED`, `### (history)
+…`), and the rule exempts those, because a bare line inside a preserved
+finding is describing the world on the day it was found. The split is
+paragraph-deep and cannot be decided mechanically — an attempt to
+classify it by heading marker filed an entire frozen section as live,
+because that heading wraps onto a second line (opus-922 §1). So
+`server/prosePointerDiscipline.test.ts` deliberately does **not** cover
+this file, and its green says nothing about this one. Measured
+2026-08-21: of 26 pointers in live prose, 11 no longer landed on their
+subject and every one of them read as `ok` to a resolver that can only
+see blank lines and missing files. Ten are repaired by symbol. The
+eleventh is left standing on purpose — it sits inside a **verbatim
+quotation** of `CASTING_SYSTEM_R7_6_EVIDENCE_COMPOSER_DESIGN.md`, and
+correcting a quote's pointer would make the quote false. The eight in
+frozen blocks are left exactly as they are.
+
 ## THE BRIEF DISCIPLINE — a known degraded path is told, not discovered
 
 **Ruled fable-851 §4, filed 2026-08-17.** When a whole FEATURE CLASS is
@@ -142,14 +163,15 @@ answering rather than as a loss.
   value imports of live functions, called:
 
   ```
-  server/castingV2/faceScan.ts:63    armedBornWornClasses, detectionFloorFor
-      :147  new Set(armedBornWornClasses().map(...))
-      :419  detectionFloorFor(region.question, bilateral ? "side" : "frame")
+  server/castingV2/faceScan.ts          imports armedBornWornClasses,
+                                        detectionFloorFor
+      new Set(armedBornWornClasses().map(...))
+      detectionFloorFor(region.question, bilateral ? "side" : "frame")
       THE LIVE AUTO-SCAN — CASTING_FACE_SCAN_SCOPE=users:1 on his account
-  server/castingV2/refineService.ts:200   departureFloorFor
-      :1778 presentInBase = coverage(seen) > departureFloorFor(asked).floor
+  server/castingV2/refineService.ts     imports departureFloorFor
+      presentInBase = coverage(seen) > departureFloorFor(asked).floor
       THE PAID REFINE PATH — the "was this already on her face" decision
-  server/castingV2/detectionUniversality.ts:40
+  server/castingV2/detectionUniversality.ts   imports BORN_WORN_CLASSES
   ```
 
   `faceScan.ts` did not exist on 2026-08-09. **So the catalogue is the one
@@ -418,8 +440,8 @@ waited **304.9 s** and was answered by a gateway's plain-text 502
    the first reading of this said 4.0% past 305 s and p95 290 s, and both were
    artefacts.
 2. **The structural discriminator is unavailable for 18 of 19 sweep rows, and
-   not because of a missing stamp.** `refineRecovery.ts:197` has the *only*
-   `failVariant` call and it fires whenever there is a live row to take over —
+   not because of a missing stamp.** `refineRecovery.ts`'s
+   `options.failVariantRow ?? failVariant` is the *only* `failVariant` call and it fires whenever there is a live row to take over —
    but **15 sweep-settled refines have no variant row at all** (the operation
    was claimed and charged before one existed) and 3 had already been failed by
    the service with a truer class, which `failVariant`'s `queued/dispatched`
@@ -608,7 +630,8 @@ last UNPRICED reading rather than the first priced one. Cost-per-render against
 the 25-credit price becomes a query once ordinary use accumulates rows.
 A price table does exist and was overlooked once already:
 `FAL_GPT_IMAGE_2_MEASURED_USD_PER_IMAGE = 0.099`, measured off the account
-balance rather than a rate card (`server/providers/falImages.ts:88`).
+balance rather than a rate card (`server/providers/falImages.ts`, the constant
+itself).
 
 **Filed here by fable-132, deliberately NOT slipped in behind the D-238
 fix:** a bilateral region now costs **three** segmentation calls instead of
@@ -1342,7 +1365,8 @@ superseded it — fable-071/080).
   **The item was read at the ACCOUNT rather than at the line, and its own
   sentence was wrong in both directions.** It used to read *"dev checkouts
   currently fire webhooks at prod trusting `metadata.userId`"* — true at
-  `webhooks.ts:155`, and unable to settle anything, because it says nothing
+  `server/stripe/webhooks.ts`'s `session.metadata?.userId` read, and unable to
+  settle anything, because it says nothing
   about whether a dev event can *arrive* or whether arriving *moves money*.
   Both are readable. Read, with controls, fingerprints rather than values:
 
@@ -1364,8 +1388,8 @@ superseded it — fable-071/080).
   that `webhookEndpoints.list()` does not return.)*
 
   **The money line, traced forward:** `metadata.userId` reaches exactly one
-  spend — `webhooks.ts:164` → `creditReferrerOnPaidAction` →
-  `referrals.ts:386` `addCredits(referral.referrerUserId,
+  spend — `server/stripe/webhooks.ts`'s `creditReferrerOnPaidAction(userId)`
+  call → `server/db/referrals.ts` `addCredits(referral.referrerUserId,
   REFERRAL_REWARD_CREDITS)` = **12,500 credits**, two and a half times the
   whole overnight campaign ceiling, paid to the named user's **REFERRER**
   rather than to the named user. The old sentence was wrong in the target and
@@ -1485,7 +1509,8 @@ superseded it — fable-071/080).
                         receipt; same id + different payload = CONFLICT.
   2  resource lock      acquireGenerationOperationLock, key "model:<id>".
                         generation_operation_locks.lockKey is the PRIMARY KEY
-                        (drizzle/schema.ts:499) — a duplicate-key INSERT, not
+                        (drizzle/schema.ts, `lockKey: varchar(...).primaryKey()`)
+                        — a duplicate-key INSERT, not
                         a check-then-write (invariant 1). The loser is
                         finalized failed/CONFLICT, and an EXPIRED lease is
                         still never stolen — server/db/generationOperations.ts,
@@ -1493,7 +1518,8 @@ superseded it — fable-071/080).
   3  lock re-proved     markGenerationOperationRunning({requiredLockKey}) —
                         castingExport.ts:441. Re-reads the lock row inside
                         the transaction, SELECT ... FOR UPDATE on the model.
-  4  ledger reference   only then deductPoints (mintPackage.ts:607), keyed on
+  4  ledger reference   only then deductPoints (server/casting/mintPackage.ts),
+                        keyed on
                         operationChargeReference(operationId); a duplicate
                         referenceId rolls the balance update back inside the
                         transaction (credits.ts:364).
@@ -1561,7 +1587,8 @@ superseded it — fable-071/080).
 
   **The pattern exists one lane over**: `batchC-structured.test.ts:504`
   asserts `lockKey: "model:7"` reaches the gate on `applyModelEdit`, and
-  `:726` proves a busy receipt "refuses before marking running, charging, or
+  and its `lockKey: "board-item:3"` sibling proves a busy receipt "refuses
+  before marking running, charging, or
   generating" with `expect(deductPoints).not.toHaveBeenCalled()`. Canvas has
   it; the Casting V2 paid surface does not. This is the eye-row class on a
   money line: a real guard with nothing that fails when it is deleted.
@@ -1609,7 +1636,7 @@ superseded it — fable-071/080).
      `referenceImage` is GONE and the object is STRICT — a creation reference
      is schema-REJECTED, never silently ignored."*
   3. **A post-headshot reference holds its OWN BYTES** —
-     `server/castingV2/referenceMint.ts:532` is
+     `server/castingV2/referenceMint.ts` ends in
      `storagePut(input.key, input.bytes, input.contentType)`. The library
      mints a crop as a new object under the candidate's own purge path; it
      does not point at a source object somebody else can delete.
@@ -1915,7 +1942,9 @@ spec-not-control; reliability-report build-id column (prod migration
 
 **`refineService`'s open noun to the segmenter** (filed fable-132, off
 D-238's class sweep): `region({ name: parsed.match })` at
-`refineService.ts:939` and `:1073` sends an **interpreter-authored noun
+`refineService`'s two `reader.region({ … name: asked })` calls, where
+`asked = accessoryKindOf(parsed.match) ?? parsed.match`, send an
+**interpreter-authored noun
 phrase** — "round wire-frame glasses", "smokey eye" — straight to SAM 3,
 which is D-213's *"a segmenter is never asked an open question"* under
 strain. Pre-existing and NOT this class; **no evidence of harm was
