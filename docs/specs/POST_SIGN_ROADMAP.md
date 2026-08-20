@@ -1079,6 +1079,13 @@ separate work.** A real number is available if he wants one, and it costs a cour
 (1211 §3). The confound that broke the tally becomes the variable this court
 measures — that is the whole reason it is a required cell and not a nice-to-have.
 
+**Every frame this court produces is read against the three founder FAIL
+classes** — ink on clothing, anatomy distorted to fit the design, sticker-look —
+named at the incident in `server/castingV2/inkRealism.ts`'s header (fable-1179
+§1, and his own *"it CAN'T look like a sticker"*). That header stays the owner of
+the list; this is a pointer, never a copy. **A class not reported is not a class
+passed.**
+
 **What would make it unnecessary:** a fresh-lane frame population that stops at
 the collar without intervention. The realism language already shipped; whether it
 moved this lane is precisely what has not been demonstrated (opus-905 §2 —
