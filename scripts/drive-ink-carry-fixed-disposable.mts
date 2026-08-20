@@ -43,6 +43,7 @@ import "dotenv/config";
 import { mkdir, writeFile } from "node:fs/promises";
 
 import { SignJWT } from "jose";
+import type { ElementHandle } from "puppeteer-core";
 
 import { openDrivenPage } from "./lib/drivePage.mts";
 
@@ -183,7 +184,11 @@ if (/tattoo|design/i.test(startedFrom)) {
   await stop("could not find a version without ink in its chain — the neck ask would be walled");
 }
 
-const input = await page.$(".dpc-refine__readInput");
+/* The picker is a real `<input type="file">`, and `uploadFile` is typed on the
+   input handle rather than on a bare Element — the same cast every other driver
+   here makes. Without it this file does not compile, and vitest cannot see
+   that: the suite does not typecheck the scripts tree. */
+const input = (await page.$(".dpc-refine__readInput")) as ElementHandle<HTMLInputElement> | null;
 if (!input) await stop("no attach door — is the scope armed?");
 await input!.uploadFile(PICTURE);
 if (!(await page.waitForSelector(".dpc-refine__thumb img", { timeout: 30_000 }).catch(() => null))) {
