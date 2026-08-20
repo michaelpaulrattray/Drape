@@ -27,6 +27,12 @@
  * stays on the board rather than being spent now by a default nobody would have
  * chosen deliberately.
  *
+ * **And on 2026-08-20 the founder took most of that refusal away**, which is
+ * the amendment the rest of this file now reads against: where exactly ONE
+ * design lives at an address a row can hold, she is offered the replacement
+ * rather than told to go and delete something. The prose above still describes
+ * what happens where the offer cannot be shown, and that is now a corner.
+ *
  * # AND SHE POINTED AT A PICTURE, WHICH IS THE HALF THE PLACE COULD NOT ANSWER
  *
  * Everything above is about a sentence that names a place and nothing else. On
@@ -48,10 +54,15 @@
  *             never a second charge, and never two rows that then wall her
  *   MINT      nothing is at this address at all, so the picture becomes the
  *             design. That is the whole of road (D)
- *   CONFLICT  something IS at this address and it did not come out of this
+ *   REPLACE   something IS at this address and it did not come out of this
  *             picture. Riding it would paint a different artwork onto her
  *             because it shares an address — the silent wrong answer, and the
- *             worst of the three outcomes this road can produce
+ *             worst outcome this road can produce. So she is ASKED, and the
+ *             resident is replaced only on her tap (founder ruling relayed
+ *             fable-1158 §1, amending the flat refusal below)
+ *   CONFLICT  the same thing where the offer cannot be shown, which is now the
+ *             corner rather than the rule: more than one design at one stated
+ *             address, a state only the studio upload door can build
  *
  * **The corner where the resident IS the same artwork, uploaded by hand, stays
  * a conflict** (ruled fable-1151 §3). Telling them apart would take a reader's
@@ -149,7 +160,36 @@ export type InkDesignForAsk =
    * condition). Re-asking with the word works immediately.
    */
   | { kind: "sideUnstated"; say: string }
-  /** Something else lives at this address — refused, and nothing is written. */
+  /**
+   * ONE other design lives at this address, and she may replace it (founder
+   * ruling relayed fable-1158 §1).
+   *
+   * Not an answer — an OFFER the caller has to raise. The resident is carried
+   * whole rather than by name because the offer's own question and its adopt
+   * both need it, and re-reading it on the answer path would be a second look
+   * at an unstable thing immediately before a deletion.
+   *
+   * The two address fields are here for {@link mint}'s reason: this outcome is
+   * only returned for an address a row can actually hold, so a caller cannot
+   * reach the mint holding a `string` and a `null`.
+   */
+  | {
+    kind: "replace";
+    placement: InkPlacement;
+    side: InkSide;
+    resident: StoredInkDesign;
+  }
+  /**
+   * Something else lives at this address and the offer cannot be shown —
+   * refused, and nothing is written.
+   *
+   * ⚠ THIS IS NOW THE CORNER RATHER THAN THE RULE (fable-1158 §1: *"(iii)'s
+   * refusal sentence survives only for the corner where the offer cannot be
+   * shown"*). It is reached when MORE THAN ONE design sits at a stated address,
+   * which the offer cannot name a single resident for — a state only the studio
+   * upload door can produce, since this road never mints a second row where one
+   * already lives.
+   */
   | { kind: "conflict"; count: number; say: string }
   /** Her design, stored before anybody looked at what is in its picture. */
   | { kind: "unexamined"; say: string };
@@ -176,8 +216,15 @@ export type InkAskSource = { readonly digest: string };
  * Through `inkPlacementBareNoun` rather than a second strip of the possessive:
  * the take's own spoken-back place comes from that owner too, so a customer who
  * meets both sentences hears one product rather than two.
+ *
+ * EXPORTED because the replace offer's question names the same place — *"her
+ * left upper arm already has a design"* — and a second speller would be a
+ * second product's worth of nouns for one surface (law 4). It is also why that
+ * question's handle carries the ADDRESS rather than the finished sentence: the
+ * two tokens are closed, so the rebuild composes the identical phrase here
+ * instead of keeping a copy of it.
  */
-function placeIn(address: InkAskAddress): string {
+export function inkAddressPhrase(address: InkAskAddress): string {
   const surface = isInkPlacement(address.placement)
     ? inkPlacementBareNoun(address.placement)
     : address.placement;
@@ -238,7 +285,7 @@ export function inkDesignForAsk(
   address: InkAskAddress,
   source: InkAskSource,
 ): InkDesignForAsk {
-  const place = placeIn(address);
+  const place = inkAddressPhrase(address);
   const here = matching(designs, address);
   /*
     THE ROWS THAT CAME OUT OF THIS PICTURE.
@@ -284,21 +331,47 @@ export function inkDesignForAsk(
       return mintable(address, place);
     }
     /*
-      SOMETHING ELSE LIVES AT THIS ADDRESS (ruled fable-1151 §3).
+      SOMETHING ELSE LIVES AT THIS ADDRESS — AND SHE MAY REPLACE IT (founder
+      ruling relayed fable-1158 §1, amending fable-1151 §3).
 
-      Three roads and two were refused. Riding the resident is a different
-      artwork painted onto her because it shares an address — the silent wrong
-      answer. Minting alongside builds the ambiguity out of its own row and
-      then walls her with it. So: refuse, before anything is cut or written.
+      1151 §3 weighed three roads and refused two of them: riding the resident
+      is a different artwork painted onto her for sharing an address — the
+      silent wrong answer — and minting alongside builds the ambiguity out of
+      its own row and then walls her with it. So it refused, and told her to
+      remove the resident and send the picture again.
 
-      The count is said because "you have one there" and "you have three there"
-      ask different amounts of thinking from her, and she cannot see the list.
-      Both moves that exist TODAY are named — the per-design delete that shipped
-      this week, and simply naming a place with room. Nothing is said about a
-      picker, because the ink studio's room does not exist and a hint at one is
-      the tap target with nothing behind it.
+      His answer to that dance was *"cant is just paint over the original rather
+      than you hving to remopve it just replace the reference image provided?"*.
+      So the third road is now an OFFER: the resident is named, she taps, and
+      the replacement happens in one consented act. What survives of 1151 §3
+      unchanged is the thing it was protecting — nothing rides silently, and no
+      row is destroyed without her word for it.
+
+      TWO GATES IN FRONT OF THE OFFER, and each is a corner rather than a
+      hedge:
+
+        the address must be one a ROW CAN HOLD, because an adopt ends in a mint
+        and a mint needs a measured placement and a stated side. On a paired
+        surface with no word this asks WHICH ARM before it asks anything about
+        the resident — she cannot consent to replacing a design on an arm
+        nobody has named, and after she says the word this offer is what she
+        meets. (Before today that ask met the refusal below, which is the dance
+        his ruling deleted.)
+
+        more than ONE design here keeps the refusal, because the offer's whole
+        content is naming what it is about to destroy and there is no sentence
+        that names two. Only the studio upload door can build that state: this
+        road never mints a second row where one already lives.
     */
-    return conflict(here.length, place);
+    const room = mintable(address, place);
+    if (room.kind !== "mint") return room;
+    if (here.length > 1) return conflict(here.length, place);
+    return {
+      kind: "replace",
+      placement: room.placement,
+      side: room.side,
+      resident: here[0]!,
+    };
   }
 
   const design = mine[0]!;
@@ -334,23 +407,35 @@ export function inkDesignForAsk(
 }
 
 /**
- * SOMETHING ELSE LIVES HERE — the sentence, spelled once.
+ * MORE THAN ONE THING LIVES HERE — the sentence, spelled once.
  *
- * The count is said because *"you have one there"* and *"you have three there"*
+ * The count is said because *"you have two there"* and *"you have four there"*
  * ask different amounts of thinking from her, and she cannot see the list. Both
- * moves that exist TODAY are named — the per-design delete that shipped this
- * week, and simply naming a place with room. Nothing is said about a picker,
- * because the ink studio's room does not exist and a hint at one is the tap
- * target with nothing behind it (D-180).
+ * moves that exist TODAY are named — the per-design delete, and simply naming a
+ * place with room. Nothing is said about a picker, because the ink studio's
+ * room does not exist and a hint at one is the tap target with nothing behind
+ * it (D-180).
+ *
+ * # IT IS ALWAYS PLURAL NOW, AND THAT IS DERIVED RATHER THAN HOPED
+ *
+ * This sentence used to have a singular arm. Since the replace offer landed,
+ * both call sites are guarded by a count of at least two — a single resident at
+ * an address a row can hold is an OFFER, not a refusal. So the singular wording
+ * would be a branch nothing could reach, which in this codebase is a branch
+ * with no test rather than a kindness (`corner declared synthetic`).
+ *
+ * It is not left to a comment: `inkDesignForAsk.test.ts` sweeps the outcomes
+ * this function is reachable through and proves none of them carries a count
+ * below two. A future path that reaches it with one reddens that arm on the day
+ * it is written, instead of shipping *"You've got 1 designs"*.
  */
 function conflict(count: number, place: string): InkDesignForAsk {
-  const held = count === 1 ? `a design for ${place} already` : `${count} designs for ${place} already`;
   return {
     kind: "conflict",
     count,
-    say: `You've got ${held}, and this picture isn't one of them. Remove the one you `
-      + "don't want and send this again, or put this one somewhere she's got room. "
-      + "Nothing was charged.",
+    say: `You've got ${count} designs for ${place} already, and this picture isn't one `
+      + "of them. Remove the one you don't want and send this again, or put this one "
+      + "somewhere she's got room. Nothing was charged.",
   };
 }
 

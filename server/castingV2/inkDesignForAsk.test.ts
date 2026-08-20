@@ -150,7 +150,23 @@ describe("the side she said narrows, and the side she did not say does not", () 
   });
 });
 
+/**
+ * SOMETHING ELSE ALREADY LIVES AT THE PLACE SHE NAMED — and since 2026-08-20
+ * she is OFFERED the replacement rather than told to go and delete something
+ * (founder ruling relayed fable-1158 §1, amending fable-1151 §3).
+ *
+ * # THE ADDRESSES HERE ARE ONES THE TAKE CAN ACTUALLY PRODUCE
+ *
+ * Every arm in this block used to ask about `{ neck, side: null }`, and the
+ * take cannot produce that: `sideFor` reads `sidesForInkPlacement`, and a
+ * measured one-sided surface comes back `centre` whatever the sentence says.
+ * So the fixtures were asking a question the product never asks — which cost
+ * nothing while every one of them refused identically, and would have hidden
+ * the whole of this ruling the moment one of them stopped. They now use the
+ * addresses the take builds.
+ */
 describe("something else already lives at the place she named", () => {
+  const NECK = { placement: "neck", side: "centre" } as const;
   const resident = [
     uploaded({ publicId: "d-a", createdAt: new Date("2026-08-01T00:00:00Z") }),
     takenFrom(OTHER_PICTURE, { publicId: "d-b", createdAt: new Date("2026-08-19T00:00:00Z") }),
@@ -162,65 +178,150 @@ describe("something else already lives at the place she named", () => {
       shared address is not a reason: nothing about sitting at her neck makes a
       design the one in the picture she just handed over, and painting it would
       be a different artwork on her body with no way for her to tell why.
+
+      His amendment did not touch this. Replace-on-confirm changes what she is
+      TOLD; it does not make a resident rideable, and this is the arm that would
+      go quietly green if it ever did.
     */
-    const answer = inkDesignForAsk(resident, { placement: "neck", side: null }, SOURCE);
-    expect(answer.kind).toBe("conflict");
-    expect(JSON.stringify(answer)).not.toContain("d-b");
-    expect(JSON.stringify(answer)).not.toContain("d-a");
+    for (const answer of [
+      inkDesignForAsk(resident, NECK, SOURCE),
+      inkDesignForAsk([resident[0]!], NECK, SOURCE),
+    ]) {
+      expect(answer.kind).not.toBe("ride");
+    }
   });
 
-  it("does not ride a row cut from a DIFFERENT picture, even when it is the only one", () => {
-    /* The reuse key is byte identity of what she POINTED AT. One resident, cut
-       from another photograph, is still not this design. */
-    const answer = inkDesignForAsk(
-      [takenFrom(OTHER_PICTURE, { publicId: "d-other" })],
-      { placement: "neck", side: null },
-      SOURCE,
-    );
-    expect(answer.kind).toBe("conflict");
-    expect(answer.kind === "conflict" && answer.count).toBe(1);
-  });
-
-  it("does not ride a HAND-UPLOADED row, because a null matches no digest", () => {
+  it("OFFERS THE REPLACEMENT when exactly one design is there", () => {
     /*
-      Migration 0048's own argument, driven. `sourceDigest` is `null` for every
-      design a customer uploaded through the studio door, and no digest equals
-      a null — so the safety is a property of the column's emptiness rather
-      than of a branch somebody remembered to write.
+      His words: *"cant is just paint over the original rather than you hving to
+      remopve it just replace the reference image provided?"*. One resident at
+      an address a row can hold is the case that ruling is about, and the two
+      address fields ride out with it so the caller cannot reach the mint
+      holding a placement and a null.
     */
-    const answer = inkDesignForAsk([uploaded({ publicId: "d-hand" })], {
-      placement: "neck", side: null,
-    }, SOURCE);
-    expect(answer.kind).toBe("conflict");
+    const answer = inkDesignForAsk([uploaded({ publicId: "d-hand" })], NECK, SOURCE);
+    expect(answer).toEqual({
+      kind: "replace",
+      placement: "neck",
+      side: "centre",
+      resident: expect.objectContaining({ publicId: "d-hand" }),
+    });
   });
 
-  it("says the count, and BOTH moves that exist today", () => {
-    /* fable-1151 §3's conditions, each asserted. She cannot see the list, so
-       the count is what tells her how much thinking this needs. */
-    const answer = inkDesignForAsk(resident, { placement: "neck", side: null }, SOURCE);
-    if (answer.kind !== "conflict") return expect.unreachable("a resident design must conflict");
+  it("carries the resident WHOLE, so the caller never re-reads it to name it", () => {
+    /*
+      The offer's question names the resident and its adopt deletes it. Handing
+      back an id would make the caller look that row up again at exactly the
+      moment before a deletion — the re-read-an-unstable-thing hazard the
+      handle exists to avoid.
+    */
+    const row = takenFrom(OTHER_PICTURE, { publicId: "d-other" });
+    const answer = inkDesignForAsk([row], NECK, SOURCE);
+    expect(answer.kind === "replace" && answer.resident).toBe(row);
+  });
+
+  it("offers on a row cut from a DIFFERENT picture, and on a HAND-UPLOADED one", () => {
+    /*
+      Migration 0048's argument, driven on both makers (fable-1150 §1's mixed
+      family). `sourceDigest` is `null` for every design she uploaded through
+      the studio door and no digest equals a null, so neither of these is the
+      design in the picture she just handed over — and both are now replaceable
+      rather than a wall.
+    */
+    expect(inkDesignForAsk([takenFrom(OTHER_PICTURE, { publicId: "d-other" })], NECK, SOURCE).kind)
+      .toBe("replace");
+    expect(inkDesignForAsk([uploaded({ publicId: "d-hand" })], NECK, SOURCE).kind)
+      .toBe("replace");
+  });
+
+  it("ASKS WHICH ARM before it offers to replace anything", () => {
+    /*
+      A paired surface with no word spans BOTH arms, so there is no single
+      resident to name and no side to mint against. She cannot consent to
+      replacing a design on an arm nobody has named.
+
+      **This arm is a behaviour change and it is the ruling's own direction**:
+      before today an unstated side with a resident met the refusal — remove it
+      yourself and send the picture again — which is the dance his amendment
+      deleted. Now the missing word is asked for, and the offer is what she
+      meets when she supplies it.
+    */
+    const arms = [
+      uploaded({ publicId: "d-left", placement: "upperArm", side: "left" }),
+      uploaded({ publicId: "d-right", placement: "upperArm", side: "right" }),
+    ];
+    expect(inkDesignForAsk(arms, { placement: "upperArm", side: null }, SOURCE).kind)
+      .toBe("sideUnstated");
+    /* And with the word, one resident is nameable — so it offers. */
+    expect(inkDesignForAsk(arms, { placement: "upperArm", side: "left" }, SOURCE))
+      .toMatchObject({ kind: "replace", side: "left", resident: { publicId: "d-left" } });
+  });
+
+  it("KEEPS THE REFUSAL where the offer cannot name what it would destroy", () => {
+    /*
+      fable-1158 §1: the refusal survives *"only for the corner where the offer
+      cannot be shown"*. Two designs at one stated address is that corner —
+      there is no sentence that names two residents, and picking one to offer
+      would be the unowned-axis default with a tap target for an alibi.
+
+      Only the studio upload door can build this state: this road never mints a
+      second row where one already lives.
+    */
+    const answer = inkDesignForAsk(resident, NECK, SOURCE);
+    if (answer.kind !== "conflict") return expect.unreachable("two residents must conflict");
+    expect(answer.count).toBe(2);
     expect(answer.say).toContain("2 designs");
     expect(answer.say).toContain("her neck");
-    /* The per-design delete shipped this week, so this is a move she can make
-       right now rather than a wall being polite about itself. */
+    /* The per-design delete is a move she can make right now rather than a wall
+       being polite about itself. */
     expect(answer.say).toContain("Remove the one you");
     /* And the second move: somewhere she has room. */
     expect(answer.say).toContain("somewhere she");
     expect(answer.say).toContain("Nothing was charged.");
+    expect(JSON.stringify(answer)).not.toContain("d-a");
+    expect(JSON.stringify(answer)).not.toContain("d-b");
   });
 
-  it("counts one as one, in her words rather than in a number", () => {
-    const answer = inkDesignForAsk([uploaded({ publicId: "d-only" })], {
-      placement: "neck", side: null,
-    }, SOURCE);
-    expect(answer.kind === "conflict" && answer.say).toContain("a design for her neck already");
+  it("never says the singular count — every road here reaches conflict with two or more", () => {
+    /*
+      The singular wording was deleted from `conflict` when the offer landed,
+      because a single resident at a holdable address is now an offer and that
+      branch could no longer be reached. A deleted branch needs the arm the
+      comment would otherwise stand in for (`corner declared synthetic`).
+
+      Swept over the shapes that can reach a conflict rather than asserted at
+      one of them — and the last row is the OTHER call site: two rows from HER
+      OWN picture at one stated address, which is `mine.length > 1`.
+    */
+    const many = (count: number, over: Partial<StoredInkDesign> = {}) =>
+      Array.from({ length: count }, (_, index) => uploaded({ publicId: `d-${index}`, ...over }));
+    const LEFT = { placement: "upperArm", side: "left" } as const;
+    const answers = [
+      inkDesignForAsk(many(1), NECK, SOURCE),
+      inkDesignForAsk(many(2), NECK, SOURCE),
+      inkDesignForAsk(many(3), NECK, SOURCE),
+      inkDesignForAsk(many(1, LEFT), LEFT, SOURCE),
+      inkDesignForAsk(many(2, LEFT), LEFT, SOURCE),
+      inkDesignForAsk([
+        takenFrom(SOURCE, { publicId: "d-l", ...LEFT }),
+        takenFrom(SOURCE, { publicId: "d-r", ...LEFT }),
+      ], LEFT, SOURCE),
+    ];
+    /* A sweep that never reached the outcome would pass by never looking. */
+    expect(answers.filter((answer) => answer.kind === "conflict").length).toBeGreaterThan(0);
+    for (const answer of answers) {
+      if (answer.kind !== "conflict") continue;
+      expect(answer.count).toBeGreaterThanOrEqual(2);
+      expect(answer.say).not.toContain("1 designs");
+      expect(answer.say).not.toContain("a design for");
+    }
   });
 
   it("promises nothing about a picker that does not exist", () => {
     /* D-180: a question whose every answer leads to "we can't yet" is a dead
        end wearing a tap target. The room is owed and unbuilt (fable-1138 §3),
        so the sentence must not hint at one. */
-    const answer = inkDesignForAsk(resident, { placement: "neck", side: null }, SOURCE);
+    const answer = inkDesignForAsk(resident, NECK, SOURCE);
     const said = answer.kind === "conflict" ? answer.say : "";
     /*
       The ban is on a PROMISE, not on plain speech. *"this picture isn't one of
@@ -239,7 +340,7 @@ describe("something else already lives at the place she named", () => {
       ...resident,
       uploaded({ publicId: "d-c", placement: "upperChest" }),
       uploaded({ publicId: "d-d", placement: "upperArm", side: "left" }),
-    ], { placement: "neck", side: null }, SOURCE);
+    ], NECK, SOURCE);
     expect(answer.kind === "conflict" && answer.count).toBe(2);
   });
 });

@@ -38,6 +38,13 @@ import {
   hairTakeEntry,
   hairTakeNamedIn,
 } from "./hairReferenceTake";
+import {
+  INK_PLACEMENTS,
+  isInkPlacement,
+  type InkPlacement,
+} from "../../shared/inkPlacementVocabulary";
+import { INK_SIDES, type InkSide } from "../../shared/inkReleasedPlacements";
+import { inkAddressPhrase } from "./inkDesignForAsk";
 import { HAIR_COLOURS, type HairColour } from "../../shared/castingVocabularies";
 import { EYE_COLOURS, type EyeColour } from "../../shared/castingRealization";
 import { facetOfSubject, type Facet } from "./refineFacets";
@@ -63,6 +70,7 @@ export const REASK_KINDS = [
   "same-again",
   "which-side",
   "this-design",
+  "replace-design",
 ] as const;
 
 export type ReaskKind = (typeof REASK_KINDS)[number];
@@ -150,7 +158,8 @@ export function reaskHandle(kind: ReaskKind, asked: string): string {
 }
 
 /**
- * THE ONE QUESTION WHOSE HANDLE NAMES A THING AS WELL AS A SENTENCE.
+ * THE TWO QUESTIONS WHOSE HANDLES NAME A THING AS WELL AS A SENTENCE, and how
+ * many things each names.
  *
  * `this-design` is asked about a design row that was just written, and its
  * decline has to be able to DELETE that row. Every other question here is
@@ -158,12 +167,24 @@ export function reaskHandle(kind: ReaskKind, asked: string): string {
  * same picture at different placements are the same sentence, and "the most
  * recent" is the unowned-axis default this product has killed twice.
  *
- * So the design's own name rides in the handle, and what a FORGED one buys is
- * nothing: `removeInkDesign` carries the authenticated owner inside the
- * statement, on both sides of its join, so a stranger's id is the same
- * NOT_FOUND as an id that never existed.
+ * `replace-design` is the same question asked where somebody already lives, and
+ * it names TWO rows: the new one, which a decline destroys, and the RESIDENT,
+ * which an adopt destroys. Re-deriving the resident on the answer would be
+ * re-reading an unstable thing at exactly the moment a row is about to be
+ * deleted — the hazard the handle exists to avoid (ruled fable-1158 §1,
+ * countersigned fable-1163 §4).
+ *
+ * What a FORGED handle buys is nothing on either: `removeInkDesign` carries the
+ * authenticated owner inside the statement, on both sides of its join, so a
+ * stranger's id is the same NOT_FOUND as an id that never existed.
+ *
+ * A COUNT rather than a membership list, because the room the wire must carry
+ * is per-name and the widest handle is the one that names two.
  */
-const HANDLE_NAMES_A_DESIGN: readonly ReaskKind[] = ["this-design"];
+const DESIGN_NAMES_IN_HANDLE: Partial<Record<ReaskKind, number>> = {
+  "this-design": 1,
+  "replace-design": 2,
+};
 
 /**
  * How much room that name needs, MEASURED off a real id rather than typed.
@@ -174,6 +195,23 @@ const HANDLE_NAMES_A_DESIGN: readonly ReaskKind[] = ["this-design"];
  * `crypto` already owns (law 4).
  */
 const DESIGN_NAME_ALLOWANCE = randomUUID().length + 1;
+
+/**
+ * AND THE ROOM THE REPLACE OFFER'S ADDRESS NEEDS, derived off both vocabularies.
+ *
+ * That question's sentence names WHERE the resident is — *"her left upper arm
+ * already has a design"* — and a rebuilt question that could not say the place
+ * would be a second, vaguer version of a sentence this server already wrote. So
+ * the address travels in the handle as its two closed tokens and the sentence
+ * is composed from them by {@link inkAddressPhrase}, the same owner that wrote
+ * it the first time.
+ *
+ * Both maxima are read off the vocabularies rather than typed: a fourth
+ * measured placement widens this by existing.
+ */
+const INK_ADDRESS_ALLOWANCE =
+  Math.max(...INK_PLACEMENTS.map((placement) => placement.length)) + 1
+  + Math.max(...INK_SIDES.map((side) => side.length)) + 1;
 
 /**
  * The longest a handle's own prefix can be, DERIVED over the kinds.
@@ -192,7 +230,8 @@ export const REASK_HANDLE_MAX_LENGTH = REASK_KINDS.reduce(
   (longest, kind) => Math.max(
     longest,
     reaskHandle(kind, "").length
-      + (HANDLE_NAMES_A_DESIGN.includes(kind) ? DESIGN_NAME_ALLOWANCE : 0),
+      + (DESIGN_NAMES_IN_HANDLE[kind] ?? 0) * DESIGN_NAME_ALLOWANCE
+      + (kind === "replace-design" ? INK_ADDRESS_ALLOWANCE : 0),
   ),
   0,
 );
@@ -204,14 +243,26 @@ export const REASK_HANDLE_MAX_LENGTH = REASK_KINDS.reduce(
  * total over {@link REASK_KINDS}: a question the words already rebuild does not
  * need a handle, and `same-again` must not have one (see above). The sweep
  * proves every kind is covered by one route or the other.
+ *
+ * A builder may answer `null`, and one does: a handle carrying tokens that are
+ * not an address is not a handle whatever it spells, and the sentence falls
+ * through to the word doors exactly as an unrecognised one does. Refusing it
+ * with a throw would turn a forged string into a 500.
  */
-const BY_HANDLE: Partial<Record<ReaskKind, (asked: string) => Reask>> = {
+const BY_HANDLE: Partial<Record<ReaskKind, (asked: string) => Reask | null>> = {
   "glasses-hide-eyes": (asked) => glassesHideEyesReask(asked),
   "which-side": (asked) => whichSideReask(asked),
   /* About a ROW rather than about the words — the sentence alone cannot say
      which design was cut, so the handle carries its name and this puts the two
      halves back (`splitDesignHandle`). */
   "this-design": (named) => thisDesignReask(splitDesignHandle(named)),
+  /* About TWO rows and an address, because the sentence names where the
+     resident is and the adopt has to delete exactly the row that sentence
+     named (`splitReplaceHandle`). */
+  "replace-design": (named) => {
+    const parts = splitReplaceHandle(named);
+    return parts === null ? null : replaceDesignReask(parts);
+  },
 };
 
 /**
@@ -731,6 +782,9 @@ export function resolveAnswer(reask: Reask, typed: string): string | null {
     /* The shown cut is a yes/no question like the four above it: "yes" is the
        design, "no" throws it away, and both work typed (D-180). */
     || reask.kind === "this-design"
+    /* And the replace offer is the same question where somebody already lives:
+       "yes" replaces, "no" keeps the resident, both typed. */
+    || reask.kind === "replace-design"
   ) {
     if (YES.includes(bare)) return reask.options[0]?.resolves ?? null;
     if (NO.includes(bare)) return reask.options[1]?.resolves ?? null;
@@ -831,7 +885,129 @@ export function designReaskHandle(designPublicId: string, asked: string): string
 }
 
 /**
- * The design a `this-design` handle names, or `null`.
+ * REPLACE-ON-CONFIRM — *"her left upper arm already has a design. Replace it
+ * with this one?"* (founder ruling relayed fable-1158 §1, atomic shape
+ * countersigned fable-1163 §4).
+ *
+ * # The refusal this replaces
+ *
+ * Until now a picture pointed at an OCCUPIED address was refused: *"remove the
+ * one you don't want and send this again"*. His words on it were
+ * *"cant is just paint over the original rather than you hving to remopve it
+ * just replace the reference image provided?"* — so the refuse-then-delete-
+ * then-reask dance is deleted from the design and the resident is replaced,
+ * via this surface and NEVER silently. What survives of the old rule is the
+ * whole of its point: no silent wrong answer, ever. The tap is the consent.
+ *
+ * # It is the shown cut's sibling, and it destroys something either way
+ *
+ * ADOPT deletes the RESIDENT and rides the new row. DISCARD deletes the NEW
+ * row and leaves the resident exactly where it was. Two answers, two different
+ * rows destroyed — which is why the handle names both and neither is
+ * re-derived on the answer path.
+ *
+ * # What it says and what it does not
+ *
+ * It names the PLACE, because that is what she can check — we have no words for
+ * what the resident depicts and inventing some would be a vision reader's
+ * opinion standing between her and her own design (law 9). It names no price,
+ * because nothing has been claimed and a question that mentions a charge reads
+ * as one.
+ *
+ * The adopt resolves into HER OWN SENTENCE, unchanged, exactly as the shown
+ * cut's does — so the take reads the placement out of her words a second time
+ * and the source containment that guards the side has something to contain.
+ */
+export function replaceDesignReask(input: {
+  newDesignPublicId: string;
+  residentDesignPublicId: string;
+  placement: InkPlacement;
+  side: InkSide;
+  asked: string;
+}): Reask {
+  const asked = input.asked.trim().replace(/[.!?]+$/, "");
+  const place = inkAddressPhrase({ placement: input.placement, side: input.side });
+  return {
+    kind: "replace-design",
+    about: replaceReaskHandle({ ...input, asked }),
+    question: `${sentenceCase(place)} already has a design. Replace it with this one? `
+      + "Nothing has been charged.",
+    options: [
+      /*
+        THE LABELS CARRY NO PLACE AND NO NAME, and that is load-bearing rather
+        than terse: the client submits a chip's LABEL and the server maps it
+        back through the REBUILT question, so a label built from anything the
+        rebuild might spell differently is an answer that stops resolving.
+      */
+      { label: "Yes — replace it", resolves: asked },
+      { label: "No, keep the one she has", resolves: DISCARD_THE_DESIGN },
+    ],
+  };
+}
+
+/** *"her neck"* → *"Her neck"* — the one capital this module needs. */
+function sentenceCase(phrase: string): string {
+  return phrase.charAt(0).toUpperCase() + phrase.slice(1);
+}
+
+/**
+ * The handle for {@link replaceDesignReask} — both rows, the address, then the
+ * ask, in that order and spelled once.
+ */
+export function replaceReaskHandle(input: {
+  newDesignPublicId: string;
+  residentDesignPublicId: string;
+  placement: InkPlacement;
+  side: InkSide;
+  asked: string;
+}): string {
+  return reaskHandle(
+    "replace-design",
+    `${input.newDesignPublicId} ${input.residentDesignPublicId} `
+      + `${input.placement} ${input.side} ${input.asked.trim()}`,
+  );
+}
+
+/**
+ * A `replace-design` handle's parts, or `null` when what it carries is not an
+ * address.
+ *
+ * POSITIVE ADMISSION against the two closed vocabularies, not a shape test: a
+ * forged handle naming a placement this product has never measured is not a
+ * question anybody asked, and the honest answer is that this is not a handle —
+ * the sentence falls through to the word doors, which is what every ordinary
+ * sentence does.
+ */
+function splitReplaceHandle(named: string): {
+  newDesignPublicId: string;
+  residentDesignPublicId: string;
+  placement: InkPlacement;
+  side: InkSide;
+  asked: string;
+} | null {
+  const parts = named.split(" ");
+  if (parts.length < 5) return null;
+  const [newDesignPublicId, residentDesignPublicId, placement, side] = parts;
+  if (!newDesignPublicId || !residentDesignPublicId) return null;
+  if (!isInkPlacement(placement!) || !INK_SIDES.includes(side as InkSide)) return null;
+  return {
+    newDesignPublicId,
+    residentDesignPublicId,
+    placement,
+    side: side as InkSide,
+    asked: parts.slice(4).join(" "),
+  };
+}
+
+/**
+ * The design a DECLINE would destroy, or `null` — across both questions that
+ * name one.
+ *
+ * On the shown cut that is the only design in the handle. On the replace offer
+ * it is the NEW one, because declining a replacement throws away the picture
+ * she just pointed at and leaves the resident standing. One reader for both, so
+ * the discard path cannot come to disagree with the question that raised it
+ * about which row "throw that away" means.
  *
  * Split rather than pattern-matched against a uuid's shape: what makes an id
  * real is the owner-scoped statement that fails to find it, never a regex here,
@@ -840,9 +1016,30 @@ export function designReaskHandle(designPublicId: string, asked: string): string
  */
 export function designNamedIn(answering: string | null | undefined): string | null {
   const match = HANDLE.exec((answering ?? "").trim());
-  if (!match || match[1] !== "this-design") return null;
-  const named = splitDesignHandle(match[2]!).designPublicId;
-  return named.length > 0 ? named : null;
+  if (!match) return null;
+  if (match[1] === "this-design") {
+    const named = splitDesignHandle(match[2]!).designPublicId;
+    return named.length > 0 ? named : null;
+  }
+  if (match[1] === "replace-design") {
+    return splitReplaceHandle(match[2]!)?.newDesignPublicId ?? null;
+  }
+  return null;
+}
+
+/**
+ * THE ROW AN ADOPT DESTROYS — the resident named in a `replace-design` handle,
+ * or `null`.
+ *
+ * Separate from {@link designNamedIn} on purpose. The two ids in that handle
+ * are destroyed by OPPOSITE answers, and a single reader returning "the design
+ * this handle is about" would be one refactor away from deleting the wrong one
+ * of them. The names say which answer each belongs to.
+ */
+export function residentNamedIn(answering: string | null | undefined): string | null {
+  const match = HANDLE.exec((answering ?? "").trim());
+  if (!match || match[1] !== "replace-design") return null;
+  return splitReplaceHandle(match[2]!)?.residentDesignPublicId ?? null;
 }
 
 /**

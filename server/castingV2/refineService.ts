@@ -169,6 +169,8 @@ import {
   whichFacetReask,
   whichSideReask,
   designNamedIn,
+  residentNamedIn,
+  replaceDesignReask,
   thisDesignReask,
   type Reask,
 } from "./refineReask";
@@ -1347,6 +1349,38 @@ async function refineCandidateCounted(
   const answeredTheOffer = outstanding?.kind === "same-again"
     && answered !== null
     && answered !== LEAVE_AS_SHE_IS;
+  /*
+    SHE TAPPED "REPLACE IT" — and this is the ONLY thing that authorises a
+    resident design's deletion (ruled fable-1158 §1, shape countersigned
+    fable-1163 §4).
+
+    Read here, beside its sibling, because this is where an answer is turned
+    back into an instruction and it must never be inferred anywhere else. Three
+    conditions and each removes a way a row could die unasked:
+
+      the outstanding question was the REPLACE OFFER — rebuilt by handle from
+      what the client echoed, not guessed from her words;
+
+      an answer was RECOGNISED. A reply that resolves to nothing is not a "no",
+      it is her moving on, and it runs as a fresh instruction with both designs
+      still standing;
+
+      and the answer was not the DISCARD sentinel, which destroys the new row
+      and leaves the resident exactly where it was.
+
+    The two ids come from the handle rather than from a re-read of the address,
+    because re-deriving the resident on the answer path is a second look at an
+    unstable thing immediately before a deletion — and the deletion is spent
+    down at the ride, where the row that replaces it is certain (see there).
+  */
+  const adoptedReplacement = outstanding?.kind === "replace-design"
+    && answered !== null
+    && answered !== DISCARD_THE_DESIGN
+    ? {
+      adopted: designNamedIn(input.answering),
+      resident: residentNamedIn(input.answering),
+    }
+    : null;
   /*
     AND THE OTHER DOOR INTO THE SAME ROOM — the Regenerate BUTTON (fable-733).
 
@@ -3822,7 +3856,11 @@ async function refineCandidateCounted(
         instructions: readInstructions(predecessorForParse?.instructions),
       };
     }
-    if (chosen.kind !== "ride" && chosen.kind !== "mint") return said(chosen.kind, chosen.say);
+    if (
+      chosen.kind !== "ride"
+      && chosen.kind !== "mint"
+      && chosen.kind !== "replace"
+    ) return said(chosen.kind, chosen.say);
 
     /*
       AND WHEN NOTHING IS THERE, THE PICTURE SHE POINTED AT BECOMES THE DESIGN
@@ -3902,6 +3940,99 @@ async function refineCandidateCounted(
         imageUrl: currentImageUrl,
         instructions: readInstructions(predecessorForParse?.instructions),
       };
+    }
+    /*
+      AND WHERE SOMETHING ALREADY LIVES, SHE IS ASKED BEFORE ANYTHING DIES —
+      replace-on-confirm (founder ruling relayed fable-1158 §1, atomic shape
+      countersigned fable-1163 §4).
+
+      His words: *"cant is just paint over the original rather than you hving to
+      remopve it just replace the reference image provided?"*. So the refusal
+      that used to stand here — remove the resident yourself and send the
+      picture again — is gone, and the resident is replaced on her tap.
+
+      **MINT-FIRST, and the Cast briefly holds both.** That is the countersigned
+      order and the cost is stated rather than discovered: at the eight-design
+      cap an ask that would have replaced can refuse for fullness, in the mint's
+      own *"remove one first"* sentence. It is worth it because the SHOWING is
+      the point — his own doubt about this surface was answered with it — and a
+      preview she cannot see is not a preview.
+
+      Nothing has been claimed here either: the two segmenter calls the mint
+      spends are house money, exactly as they are on the fresh-mint road above.
+    */
+    if (chosen.kind === "replace") {
+      log.info(
+        {
+          userId: input.userId,
+          candidate: input.candidatePublicId,
+          placement: chosen.placement,
+          side: chosen.side,
+          resident: chosen.resident.publicId,
+        },
+        "[refineService] a design already lives there — the replacement is offered before the claim, nothing spent",
+      );
+      return {
+        kind: "asked",
+        reask: replaceDesignReask({
+          newDesignPublicId: design.publicId,
+          residentDesignPublicId: chosen.resident.publicId,
+          placement: chosen.placement,
+          side: chosen.side,
+          asked: instruction,
+        }),
+        design: designAnswerFor({ designId: design.publicId }),
+        variantId: source.variantPublicId,
+        candidateId: input.candidatePublicId,
+        imageUrl: currentImageUrl,
+        instructions: readInstructions(predecessorForParse?.instructions),
+      };
+    }
+    /*
+      AND THE ADOPT SPENDS ITSELF HERE, one line before the design rides.
+
+      This is the deletion `adoptedReplacement` authorised, and it is deliberately
+      NOT taken up where the answer was read. Between there and here sit the
+      take, the address and the resolver — a model call among them — and a
+      resident deleted before those settle could be a resident deleted for a
+      render that never happened. Here the row that replaces it is IN HAND.
+
+      **Both halves of the handle are checked, not one.** The resident dies only
+      when the design about to ride is the very row the question offered; a
+      handle whose adopted id is not this design is not this question's answer,
+      and the ordinary road runs with both rows standing.
+
+      IT HAPPENS BEFORE THE CLAIM, which decides the failure modes (fable-1163
+      §4). Either nothing happened, or the resident is gone and the new design
+      rides. There is no order in which she pays and keeps neither — and a
+      rollback resurrecting a resident she asked us to replace would be worse
+      than the replacement she asked for.
+
+      **If the render fails AFTER the charge, the adopted design REMAINS HERS.**
+      Nothing here is undone, so the re-ask finds the new row at the address, and
+      `inkDesignForAsk` answers `ride` — reuse, no second cut, no second mint,
+      and no second question. That is a decided state rather than a leftover.
+    */
+    if (
+      adoptedReplacement
+      && adoptedReplacement.resident !== null
+      && adoptedReplacement.adopted === design.publicId
+    ) {
+      const removal = await (dependencies.removeInkDesign ?? removeInkDesign)({
+        userId: input.userId,
+        designPublicId: adoptedReplacement.resident,
+      });
+      log.info(
+        {
+          userId: input.userId,
+          candidate: input.candidatePublicId,
+          adopted: design.publicId,
+          resident: adoptedReplacement.resident,
+          removed: removal !== null,
+          objectsQueued: removal?.objectsQueued ?? 0,
+        },
+        "[refineService] the replacement was adopted — the resident is gone and the new design rides",
+      );
     }
     /*
       AND IT RIDES. The bytes are the design row's own — our copy, under the

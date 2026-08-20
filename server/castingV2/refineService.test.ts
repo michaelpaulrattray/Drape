@@ -9721,16 +9721,22 @@ describe("the picture she attached becomes the carrier that rides", () => {
     expect(result.kind, "a reuse re-asked a question she had already answered").toBe("rendered");
   });
 
-  it("REFUSES FREE when a DIFFERENT design already lives at that place — and cuts nothing", async () => {
+  it("NAMES THE UNMEASURED SURFACE when the resident sits at one — the road, not a dead end", async () => {
     /*
-      Ruled fable-1151 §3. She pointed at a picture and something else is
-      already at the address she named. Riding the resident would paint a
-      different artwork onto her because it shares a placement — the silent
-      wrong answer — and minting alongside would build the ambiguity out of its
-      own row and then wall her with it.
+      RE-AIMED 2026-08-20 by the founder's replace-on-confirm ruling (relayed
+      fable-1158 §1), and the re-aim is a repair as well as a change.
 
-      The assertion that matters is `inkMinted`: the refusal happens BEFORE the
-      cut, so it costs no house money either.
+      This arm used to assert the flat conflict refusal — *"remove the one you
+      don't want and send this again"* — on an ask about her SLEEVE. That
+      sentence was a dead end on this fixture and nobody had noticed: `sleeve`
+      is not a placement a row can be minted at (the column's type is still the
+      measured three), so doing exactly what it told her to do would have met
+      the unserved sentence on the next message.
+
+      Now the resolver asks whether the address can hold a row BEFORE it decides
+      what to say about the resident, so she gets the sentence with a road in
+      it. The `inkMinted` assertion is unchanged and is still the one that
+      matters: no house money is spent to produce a refusal.
     */
     const result = await refineCandidate(inkRoad({
       listInkDesigns: async () => [inkDesignRow({
@@ -9744,8 +9750,285 @@ describe("the picture she attached becomes the carrier that rides", () => {
 
     expect(painted, "a resident design was painted for a picture it did not come from").toHaveLength(0);
     expect(inkMinted, "a picture was cut for an ask that was refused").toHaveLength(0);
-    expect(result.note).toContain("a design for her left sleeve already");
+    expect(result.note).toContain("her left sleeve is more than I can place yet");
+    expect(result.note).toContain("her upper arm");
     expect(result.note).toContain("Nothing was charged.");
+  });
+
+  /*
+    REPLACE-ON-CONFIRM AT THE WIRE — the founder's amendment, driven end to end
+    (ruled fable-1158 §1, atomic shape countersigned fable-1163 §4).
+
+    His words: *"cant is just paint over the original rather than you hving to
+    remopve it just replace the reference image provided?"*. Everything below is
+    one question and its two answers, and the answers destroy OPPOSITE rows — so
+    these arms are driven as the client drives them (the chip's LABEL, the
+    handle echoed back) rather than by calling the offer's builder.
+  */
+  const replaceRoad = () => {
+    /*
+      THE STUDIO IS STATEFUL BECAUSE THE DATABASE IS. The resident is in it from
+      the start; the mint adds the new row; a removal takes one out. A fixed
+      double would let the second ask see a world the first one never made, and
+      every arm below is about what the SECOND ask does.
+    */
+    const resident = inkDesignRow({
+      publicId: "d-resident",
+      placement: "upperArm",
+      side: "left",
+      storageKey: "casting-v2/ink/d-resident.png",
+      sourceDigest: "e".repeat(64),
+    });
+    const studio: Array<Record<string, unknown>> = [resident as unknown as Record<string, unknown>];
+    const removals: Array<{ userId: number; designPublicId: string }> = [];
+    const road = inkRoad({
+      inkTake: async () => ({
+        placement: { kind: "measured" as const, placement: "upperArm" as const },
+        side: "left" as const,
+      }),
+      listInkDesigns: async () => studio,
+      mintInkDesign: async (request: {
+        placement: string;
+        side: string;
+        reference: { digest: string };
+        intents: readonly string[];
+      }) => {
+        inkMinted.push({
+          placement: request.placement,
+          side: request.side,
+          sourceDigest: request.reference.digest,
+        });
+        const design = inkDesignRow({
+          publicId: "d-minted",
+          placement: request.placement,
+          side: request.side,
+          storageKey: "casting-v2/ink/d-minted.png",
+          digest: TINY_MASTER_SHA,
+          intents: request.intents,
+        });
+        studio.push(design as unknown as Record<string, unknown>);
+        return { ok: true as const, design };
+      },
+      removeInkDesign: async (request: { userId: number; designPublicId: string }) => {
+        removals.push(request);
+        const at = studio.findIndex((row) => row.publicId === request.designPublicId);
+        if (at < 0) return null;
+        studio.splice(at, 1);
+        return { designPublicId: request.designPublicId, objectsQueued: 1, remaining: studio.length };
+      },
+    });
+    return { road, studio, removals };
+  };
+
+  const ASKED_AT_THE_ARM = "use this tattoo design on her left upper arm";
+
+  it("OFFERS THE REPLACEMENT instead of refusing — and mints FIRST, so she can see it", async () => {
+    /*
+      MINT-FIRST is the countersigned order (fable-1163 §4) and the SHOWING is
+      why: his own doubt about this surface was answered with *"discard is
+      free"*, and a preview she cannot see is not a preview.
+
+      So the cut happens before the question — house money, never hers — and
+      nothing is claimed. The Cast briefly holds both rows, which is the stated
+      cost of that order rather than a surprise.
+    */
+    const { road, studio } = replaceRoad();
+    const result = await refineCandidate(road, {
+      ...input, instruction: ASKED_AT_THE_ARM, referenceId: "ref-public",
+    });
+
+    expect(result.kind).toBe("asked");
+    expect(result.reask?.kind).toBe("replace-design");
+    /* THE RESIDENT IS NAMED IN THE SENTENCE — the offer's whole content. */
+    expect(result.reask?.question).toContain("Her left upper arm already has a design");
+    expect(result.reask?.question).toContain("Nothing has been charged.");
+    expect(result.reask?.options.map((one) => one.label))
+      .toEqual(["Yes — replace it", "No, keep the one she has"]);
+    /* The picture beside it is the NEW cut, at an address she can open. */
+    expect(result.design?.designId).toBe("d-minted");
+    expect(result.design?.imagePath).toBe(inkDesignImagePath("d-minted"));
+    /* Mint-first, nothing rendered, nothing charged, and BOTH rows standing. */
+    expect(inkMinted).toHaveLength(1);
+    expect(painted, "a replacement was painted before she agreed to it").toHaveLength(0);
+    expect(ledger.charges, "being offered a replacement cost her credits").toHaveLength(0);
+    expect(studio.map((row) => row.publicId)).toEqual(["d-resident", "d-minted"]);
+  });
+
+  it("ADOPT deletes the resident and rides the new design — ONE act, ONE claim", async () => {
+    /*
+      THE ATOMIC SHAPE (fable-1163 §4). The delete happens BEFORE the claim, so
+      the only two end states are *nothing happened* and *resident gone, new
+      design ridden, charged*. There is no order in which she pays and keeps
+      neither.
+    */
+    const { road, studio, removals } = replaceRoad();
+    const offer = await refineCandidate(road, {
+      ...input, instruction: ASKED_AT_THE_ARM, referenceId: "ref-public",
+    });
+    const chip = offer.reask!.options.find((one) => one.label === "Yes — replace it")!;
+
+    const rode = await refineCandidate(road, {
+      ...input,
+      instruction: chip.label,
+      answering: offer.reask!.about,
+      referenceId: "ref-public",
+    });
+
+    /* THE RESIDENT DIED, by the name the handle carried and under the
+       AUTHENTICATED owner (invariant 3, never from input). */
+    expect(removals).toEqual([{ userId: input.userId, designPublicId: "d-resident" }]);
+    expect(studio.map((row) => row.publicId)).toEqual(["d-minted"]);
+    /* AND THE NEW ONE RODE — one cut and one charge across the pair. */
+    expect(rode.kind).toBe("rendered");
+    expect(inkMinted, "the same picture was cut a second time to answer a question about it")
+      .toHaveLength(1);
+    expect(ledger.charges, "the round trip cost her two charges").toHaveLength(1);
+    expect(painted).toHaveLength(1);
+    expect(rode.design?.designId).toBe("d-minted");
+  });
+
+  it("DISCARD throws away the NEW design and leaves the resident exactly where it was", async () => {
+    /*
+      The opposite row from the arm above, off the same handle — which is the
+      whole reason the two ids have different readers. A discard that deleted
+      the resident would be the worst outcome this road can produce: she said
+      *keep the one she has* and it would be gone.
+    */
+    const { road, studio, removals } = replaceRoad();
+    const offer = await refineCandidate(road, {
+      ...input, instruction: ASKED_AT_THE_ARM, referenceId: "ref-public",
+    });
+    const chip = offer.reask!.options.find((one) => one.label === "No, keep the one she has")!;
+
+    const result = await refineCandidate(road, {
+      ...input,
+      instruction: chip.label,
+      answering: offer.reask!.about,
+      referenceId: "ref-public",
+    });
+
+    expect(removals, "declining a replacement destroyed the design she kept")
+      .toEqual([{ userId: input.userId, designPublicId: "d-minted" }]);
+    expect(studio.map((row) => row.publicId)).toEqual(["d-resident"]);
+    expect(painted, "a declined replacement was rendered").toHaveLength(0);
+    expect(ledger.charges, "declining a replacement cost her credits").toHaveLength(0);
+    expect(result.note).toContain("Discarded");
+  });
+
+  it("NO RESIDENT DIES WITHOUT AN ADOPT — the load-bearing arm", async () => {
+    /*
+      fable-1158 §1's condition, and the one an ordinary build gets wrong by
+      being helpful. Three ways of NOT adopting, each of which leaves the
+      resident standing:
+
+        she types something that is not an answer — she has moved on, and it
+        runs as a fresh instruction;
+        she declines — the arm above, restated here as part of the sweep;
+        and the handle names a design that is not the one about to ride, which
+        is what a replayed or forged answer looks like.
+
+      The third is the one reasoning alone would have missed: the deletion is
+      spent at the RIDE, and both halves of the handle are checked there.
+    */
+    const { road, studio, removals } = replaceRoad();
+    const offer = await refineCandidate(road, {
+      ...input, instruction: ASKED_AT_THE_ARM, referenceId: "ref-public",
+    });
+
+    /* (1) Not an answer. It runs as an ordinary ask about the same picture at
+       the same address — which the studio now holds a row for, so it RIDES
+       without anything dying. */
+    await refineCandidate(road, {
+      ...input,
+      instruction: "actually make her hair red",
+      answering: offer.reask!.about,
+      referenceId: "ref-public",
+    });
+    expect(removals, "a reply that was not an answer deleted her design").toEqual([]);
+    expect(studio.map((row) => row.publicId)).toEqual(["d-resident", "d-minted"]);
+
+    /* (2) A handle naming somebody ELSE'S adopted design. The answer resolves,
+       but the row about to ride is not the one the question offered, so nothing
+       is destroyed. */
+    const forged = offer.reask!.about!.replace("d-minted", "d-somebody-else");
+    await refineCandidate(road, {
+      ...input,
+      instruction: "Yes — replace it",
+      answering: forged,
+      referenceId: "ref-public",
+    });
+    expect(removals, "a handle naming a design that was not riding deleted a resident")
+      .toEqual([]);
+    expect(studio.map((row) => row.publicId)).toEqual(["d-resident", "d-minted"]);
+  });
+
+  it("KEEPS THE REFUSAL where two designs sit at one address — nothing to name, nothing cut", async () => {
+    /*
+      fable-1158 §1: the refusal survives *"only for the corner where the offer
+      cannot be shown"*. Two residents is that corner, and the assertion that
+      matters is `inkMinted`: the refusal happens before the cut, so it costs no
+      house money either.
+    */
+    const result = await refineCandidate(inkRoad({
+      inkTake: async () => ({
+        placement: { kind: "measured" as const, placement: "upperArm" as const },
+        side: "left" as const,
+      }),
+      listInkDesigns: async () => [
+        inkDesignRow({
+          publicId: "d-one",
+          placement: "upperArm",
+          side: "left",
+          sourceDigest: "e".repeat(64),
+        }),
+        inkDesignRow({
+          publicId: "d-two",
+          placement: "upperArm",
+          side: "left",
+          sourceDigest: "f".repeat(64),
+        }),
+      ],
+    }), {
+      ...input, instruction: ASKED_AT_THE_ARM, referenceId: "ref-public",
+    });
+
+    expect(inkMinted, "a picture was cut for an ask that was refused").toHaveLength(0);
+    expect(painted).toHaveLength(0);
+    expect(ledger.charges).toHaveLength(0);
+    expect(result.kind).toBe("selected");
+    expect(result.note).toContain("2 designs for her left upper arm");
+    expect(result.note).toContain("Nothing was charged.");
+  });
+
+  it("AFTER AN ADOPT, A RE-ASK RIDES REUSE — no second question, no second cut", async () => {
+    /*
+      THE POST-FAILURE STATE, DECIDED RATHER THAN LEFT OVER (fable-1163 §4's
+      addition: *"if the render fails AFTER the charge, the adopted design
+      REMAINS hers and the re-ask rides reuse without a second mint"*).
+
+      Nothing about the adopt is undone by a later failure, so the row is at the
+      address and `inkDesignForAsk` answers `ride`. This arm drives the third
+      ask — the one a customer sends after a render that went wrong — and proves
+      she meets neither the question nor the cutter a second time.
+    */
+    const { road } = replaceRoad();
+    const offer = await refineCandidate(road, {
+      ...input, instruction: ASKED_AT_THE_ARM, referenceId: "ref-public",
+    });
+    await refineCandidate(road, {
+      ...input,
+      instruction: "Yes — replace it",
+      answering: offer.reask!.about,
+      referenceId: "ref-public",
+    });
+
+    const again = await refineCandidate(road, {
+      ...input, instruction: ASKED_AT_THE_ARM, referenceId: "ref-public",
+    });
+
+    expect(again.kind, "a re-ask after an adopt asked the question again").toBe("rendered");
+    expect(inkMinted, "a re-ask after an adopt bought a second cut").toHaveLength(1);
+    expect(again.design?.designId).toBe("d-minted");
   });
 
   it("ASKS which arm — a question with chips, not a sentence telling her to retype", async () => {
@@ -10108,13 +10391,33 @@ describe("the picture she attached becomes the carrier that rides", () => {
       proves the sentence; this proves the DOOR — that the refusal happens
       before the claim and nothing is dispatched, which is the half a unit test
       of a pure function cannot see.
+
+      MOVED TO A MEASURED PLACEMENT 2026-08-20, and it had to be: this arm asked
+      about her SLEEVE, where the honest refusal is now that the surface is one
+      no row can be minted at. The count sentence survives only where an offer
+      COULD have been shown and could not name what it would destroy, which is a
+      measured address holding two designs (fable-1158 §1).
+
+      Both rows are HAND-UPLOADED here, which the replace-offer arms above are
+      not — the two makers between them keep the family mixed (fable-1150 §1)
+      rather than proving this door against one kind of row twice.
     */
     const at = (publicId: string) => inkDesignRow({
-      publicId, storageKey: `casting-v2/ink/${publicId}.png`, sourceDigest: null,
+      publicId,
+      placement: "upperArm",
+      side: "left",
+      storageKey: `casting-v2/ink/${publicId}.png`,
+      sourceDigest: null,
     });
     const result = await refineCandidate(
-      inkRoad({ listInkDesigns: async () => [at("d-one"), at("d-two")] }),
-      { ...input, instruction: "use this tattoo design on my left sleeve", referenceId: "ref-public" },
+      inkRoad({
+        inkTake: async () => ({
+          placement: { kind: "measured" as const, placement: "upperArm" as const },
+          side: "left" as const,
+        }),
+        listInkDesigns: async () => [at("d-one"), at("d-two")],
+      }),
+      { ...input, instruction: "use this tattoo design on her left upper arm", referenceId: "ref-public" },
     );
 
     expect(painted, "an ambiguous ask was painted").toHaveLength(0);

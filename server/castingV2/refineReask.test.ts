@@ -34,9 +34,15 @@ import {
   whichFacetReask,
   whichSideReask,
   designNamedIn,
+  residentNamedIn,
+  replaceDesignReask,
+  replaceReaskHandle,
   thisDesignReask,
+  DISCARD_THE_DESIGN,
   type Reask,
 } from "./refineReask";
+import { INK_PLACEMENTS } from "../../shared/inkPlacementVocabulary";
+import { INK_SIDES } from "../../shared/inkReleasedPlacements";
 
 describe("needsColourReferent — the ask with nothing attached (D-178)", () => {
   it("is true for a bare comparative or a bare colour", () => {
@@ -442,6 +448,24 @@ describe("the answer path rebuilds every question it asks", () => {
       build: (asked) => thisDesignReask({ designPublicId: "d-minted", asked }),
     },
     {
+      /*
+        The replace offer. Its handle names TWO rows and an ADDRESS, and the two
+        rows are destroyed by OPPOSITE answers — so this round trip is the one
+        that would break silently if the parts were ever put back in the wrong
+        order, and the break would be a customer's design deleted instead of
+        kept.
+      */
+      kind: "replace-design",
+      asked: "use this tattoo design on her left upper arm",
+      build: (asked) => replaceDesignReask({
+        newDesignPublicId: "d-minted",
+        residentDesignPublicId: "d-resident",
+        placement: "upperArm",
+        side: "left",
+        asked,
+      }),
+    },
+    {
       kind: "same-again",
       asked: "gold hoops please",
       build: (asked) => sameAgainReask({ asked, priceCredits: 25 }),
@@ -538,14 +562,205 @@ describe("the answering field is wide enough for a handled question", () => {
       front of the sentence, so the widest handle is no longer the longest NAME.
       Measured off a real `randomUUID()` here as well, so the two sides of the
       assertion cannot agree on a number neither of them checked.
+
+      **AND IT GREW AGAIN THE SAME DAY**, for the replace offer: that handle
+      names TWO designs and carries the address they are at, so the widest is no
+      longer the one that names one. Every term is re-measured here — the ids
+      off `randomUUID()`, the address off the two vocabularies — so the two
+      sides of this assertion cannot agree on a number neither of them checked.
     */
-    const NAMES_A_DESIGN = ["this-design"];
+    const DESIGN_NAMES: Record<string, number> = { "this-design": 1, "replace-design": 2 };
     const idAllowance = randomUUID().length + 1;
+    const addressAllowance =
+      Math.max(...INK_PLACEMENTS.map((placement) => placement.length)) + 1
+      + Math.max(...INK_SIDES.map((side) => side.length)) + 1;
     expect(REFINE_ANSWERING_MAX_LENGTH).toBe(REFINE_INSTRUCTION_MAX_LENGTH + REASK_HANDLE_MAX_LENGTH);
     expect(REASK_HANDLE_MAX_LENGTH).toBe(
       Math.max(...REASK_KINDS.map((kind) => reaskHandle(kind, "").length
-        + (NAMES_A_DESIGN.includes(kind) ? idAllowance : 0))),
+        + (DESIGN_NAMES[kind] ?? 0) * idAllowance
+        + (kind === "replace-design" ? addressAllowance : 0))),
     );
+  });
+
+  it("AND THE ONE THAT NAMES TWO — the widest handle the wire has to carry", () => {
+    /*
+      The arm above proves the derivation; this one proves it is enough for the
+      question that actually spends it, built the way the server builds it and
+      at the longest placement, the longest side and the longest sentence.
+    */
+    const longest = "x".repeat(REFINE_INSTRUCTION_MAX_LENGTH);
+    const widest = (list: readonly string[]) =>
+      [...list].sort((a, b) => b.length - a.length)[0]!;
+    const handle = replaceDesignReask({
+      newDesignPublicId: randomUUID(),
+      residentDesignPublicId: randomUUID(),
+      placement: widest(INK_PLACEMENTS) as "upperChest",
+      side: widest(INK_SIDES) as "centre",
+      asked: longest,
+    }).about!;
+    expect(handle.length).toBeLessThanOrEqual(REFINE_ANSWERING_MAX_LENGTH);
+    /* And both names survive at full length, in their own roles. */
+    expect(designNamedIn(handle)).toHaveLength(randomUUID().length);
+    expect(residentNamedIn(handle)).toHaveLength(randomUUID().length);
+    expect(designNamedIn(handle)).not.toBe(residentNamedIn(handle));
+  });
+});
+
+/**
+ * REPLACE-ON-CONFIRM — the question that destroys a different row depending on
+ * which way it is answered (founder ruling relayed fable-1158 §1, atomic shape
+ * countersigned fable-1163 §4).
+ *
+ * Every other question in this file is safe to get slightly wrong: a chip that
+ * stops resolving is a sentence that runs as a fresh instruction. This one is
+ * not. Its two answers delete OPPOSITE rows, so a handle read back in the wrong
+ * order is a customer's design destroyed instead of kept — which is why the two
+ * readers have different names and both are driven here.
+ */
+describe("the replace offer names what it would destroy", () => {
+  const ASKED = "put this tattoo on her left upper arm";
+  const offer = (over: Partial<Parameters<typeof replaceDesignReask>[0]> = {}) =>
+    replaceDesignReask({
+      newDesignPublicId: "d-new",
+      residentDesignPublicId: "d-resident",
+      placement: "upperArm",
+      side: "left",
+      asked: ASKED,
+      ...over,
+    });
+
+  it("names the RESIDENT'S PLACE in the sentence — the offer's whole content", () => {
+    /*
+      fable-1158 §1: *"the offer names what is there and asks"*. We have no
+      words for what the resident depicts and inventing some would put a vision
+      reader's opinion between her and her own design (law 9) — so what it names
+      is the place, which is the thing she can check.
+    */
+    expect(offer().question).toContain("Her left upper arm");
+    expect(offer({ placement: "neck", side: "centre" }).question).toContain("Her neck");
+    /* And it says the place ONCE — the "her left left" class, killed 2026-08-20. */
+    expect(offer().question.match(/left/gi)).toHaveLength(1);
+  });
+
+  it("names no price, because nothing has been claimed", () => {
+    const question = offer().question;
+    expect(question).toContain("Nothing has been charged.");
+    expect(question).not.toMatch(/credit/i);
+    for (const option of offer().options) expect(option.label).not.toMatch(/credit/i);
+  });
+
+  it("ADOPT resolves into her own sentence, unchanged", () => {
+    /*
+      The same road the shown cut takes: the take reads the placement out of her
+      words a second time, so the source containment that guards the side has
+      something to contain. A chip resolving into a server-authored paraphrase
+      would put the model's reading where her word belongs.
+    */
+    expect(offer().options[0]!.resolves).toBe(ASKED);
+  });
+
+  it("DISCARD resolves into the sentinel, so it can never be rendered", () => {
+    /* There is no sentence meaning "throw that away", so it travels as the
+       constant `refineCandidate` answers before the parse. A decline that fell
+       through would be read as an ordinary ask and RENDERED — the charge this
+       question stands in front of. */
+    expect(offer().options[1]!.resolves).toBe(DISCARD_THE_DESIGN);
+  });
+
+  it("the DECLINE names the NEW design and the ADOPT names the RESIDENT", () => {
+    /*
+      THE LOAD-BEARING ARM. Declining throws away the picture she just pointed
+      at and leaves the resident standing; adopting does the opposite. Two
+      readers, two roles, and this is what proves they have not been swapped.
+    */
+    const handle = offer().about!;
+    expect(designNamedIn(handle)).toBe("d-new");
+    expect(residentNamedIn(handle)).toBe("d-resident");
+  });
+
+  it("a shown-cut handle names no resident, so nothing of hers can die by it", () => {
+    /* The other question that names a design names ONE, and an adopt read off
+       it must find nothing rather than the design itself. */
+    const handle = thisDesignReask({ designPublicId: "d-minted", asked: ASKED }).about!;
+    expect(designNamedIn(handle)).toBe("d-minted");
+    expect(residentNamedIn(handle)).toBeNull();
+  });
+
+  it("rebuilds the IDENTICAL sentence, which is why the address rides in the handle", () => {
+    /*
+      The handle carries `(placement, side)` rather than the finished phrase
+      precisely so this holds: the rebuild composes the question through
+      `inkAddressPhrase`, the same owner that wrote it the first time. A rebuild
+      that could not say the place would be a second, vaguer version of a
+      sentence this server already wrote.
+    */
+    const raised = offer();
+    const rebuilt = pendingReaskFor(raised.about!, false);
+    expect(rebuilt).toEqual(raised);
+  });
+
+  it("a handle carrying a place this product never measured is NOT a handle", () => {
+    /*
+      Positive admission against the two closed vocabularies. A forged string
+      naming `sleeve` is not a question anybody asked, and the honest answer is
+      that it is not a handle at all — the sentence falls through to the word
+      doors, which is what every ordinary sentence does. A throw here would turn
+      a forged string into a 500.
+    */
+    for (const forged of [
+      replaceReaskHandle({
+        newDesignPublicId: "d-new",
+        residentDesignPublicId: "d-resident",
+        placement: "sleeve" as "neck",
+        side: "left",
+        asked: ASKED,
+      }),
+      replaceReaskHandle({
+        newDesignPublicId: "d-new",
+        residentDesignPublicId: "d-resident",
+        placement: "neck",
+        side: "middle" as "centre",
+        asked: ASKED,
+      }),
+      "«replace-design» d-new",
+      "«replace-design» d-new d-resident neck",
+    ]) {
+      expect(pendingReaskFor(forged, false), forged).toBeNull();
+      expect(designNamedIn(forged), forged).toBeNull();
+      expect(residentNamedIn(forged), forged).toBeNull();
+    }
+  });
+
+  it("is answerable by TYPING, both ways (D-180)", () => {
+    /*
+      The box is the interface: a chip and the word are one code path.
+
+      The vocabulary is the shared `YES`/`NO` list every yes/no question here
+      answers to — *"yes please"* is not on it and resolves to nothing on this
+      question exactly as it does on the other four, which is that list's
+      standing behaviour rather than anything this offer decides. What matters
+      here is that this question was ADMITTED to the branch at all: a kind left
+      off it would refuse both words and only ever be answerable by tapping.
+    */
+    const rebuilt = pendingReaskFor(offer().about!, false)!;
+    for (const yes of ["yes", "Yes", "yep", "ok"]) {
+      expect(resolveAnswer(rebuilt, yes), yes).toBe(ASKED);
+    }
+    for (const no of ["no", "No", "nope", "nah"]) {
+      expect(resolveAnswer(rebuilt, no), no).toBe(DISCARD_THE_DESIGN);
+    }
+  });
+
+  it("an unrecognised reply answers NOTHING — she has moved on, and both rows stand", () => {
+    /*
+      The null return is what stops a resident dying by accident: a reply that
+      is not an answer runs as a fresh instruction, and `refineService` reads
+      the adopt off a RECOGNISED answer only.
+    */
+    const rebuilt = pendingReaskFor(offer().about!, false)!;
+    for (const other of ["make her hair red", "actually put it on her neck", "hmm"]) {
+      expect(resolveAnswer(rebuilt, other), other).toBeNull();
+    }
   });
 });
 
