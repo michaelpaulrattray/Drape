@@ -950,3 +950,8 @@
   verdict: KEEP
   why: the delivered-crop fence's own instrument, and it is a TEST-ONLY symbol by design rather than by neglect — its whole job is to answer "did a model's reply TRY to name a crop of this customer's body", which is the question `readDeliveredInk` deliberately cannot answer (a malformed attempt reads as "nothing usable here", and an instrument reporting that as absence would certify the fence over a hole). Its sibling `deltaCarriesAppliedInk` is identical in every respect and is absent from this table only because the sweep counts a self-reference and that one happens to be named in its own module's header. Deleting it would leave the strict reader's blindness provable in one direction only
   argued: V3B §7.12 (migration 0050, ruled fable-1197 §1; the both-directions condition is fable-1167 §2a inherited)
+- symbol: overlapPixels
+  file: server/castingV2/inkReferenceCrop.ts
+  verdict: KEEP
+  why: the face exclusion's own ARM instrument, and test-only BY DESIGN — its whole job is to make the fence's property provable at the bytes ("the carried crop holds zero pixels of a stranger's face"), which is a reading of the produced object rather than a claim about the code that produced it. Both its callers are arms and that is correct: the production path SUBTRACTS (`subtractMask`) and never needs to count what it removed. Deleting it would push the count into an inline loop in each arm — two implementations of one measurement, which is the drift law 4 names, and it is exactly what the cutter's arm had before it was pointed at this owner
+  argued: V3B §7.12 (the region-crop road, condition fable-1183 §2b, countersigned fable-1201 §4)

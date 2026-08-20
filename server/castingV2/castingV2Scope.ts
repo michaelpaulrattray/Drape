@@ -1717,6 +1717,156 @@ export function captureCastingInkCutEnabled(userId: number): boolean {
   return captureCastingInkStudioEnabled(userId);
 }
 
+/**
+ * **WHETHER THE THING SHE POINTED AT IS THE SURFACE, NOT THE PATCH** — the
+ * region-crop road (approved for design fable-1183 §2, countersigned in full
+ * fable-1201).
+ *
+ * Off, and absent means off, an upload behaves exactly as `CASTING_INK_CUT_SCOPE`
+ * describes: the named region NARROWS the ink mask and what is stored is the ink
+ * inside it. On, the same upload may store the REGION ITSELF, face excluded —
+ * because on a heavily tattooed person the ink mask is one patch of a patchwork
+ * and the surface is the only picture that holds the sleeve she means.
+ *
+ * # The measurement that bought it
+ *
+ * ```
+ * S1   tattooed skin   10,779 px   140x167      one piece of a thirty-piece body
+ * S1   upper arm       38,079 px   183x353      the thing she is pointing at
+ * ```
+ *
+ * Two rescue hypotheses died at the wire first (opus-876 §2): the reader is
+ * exonerated — every ink read came back `masks 1`, so there was never a second
+ * mask being discarded — and asking the ink question INSIDE the region's own
+ * crop returns something smaller still (2,393 px). No word and no framing that
+ * court tested returns the work the customer is pointing at. The surface does.
+ *
+ * # ⚠ IT IS INERT BY ARITHMETIC TODAY, AND THAT IS DECLARED RATHER THAN QUIET
+ *
+ * ```
+ * S1 upper arm  183 short edge     S2 upper arm  229 short edge
+ * INK_DESIGN_MIN_EDGE = 256        BOTH SPECIMENS REFUSED
+ * ```
+ *
+ * **The road refuses both of its own founder specimens on today's floor.**
+ *
+ * ⚠ And the inertness is SHARPER than "a smaller cut instead", found by driving
+ * it: the scoped ink cut is `ink ∩ region`, which is INSIDE the region — so a
+ * surface under the floor guarantees the fallback is under it too, and the
+ * picture refuses `cutTooSmall` with this flag ON and refuses IDENTICALLY with
+ * it off. **On its own specimens this flag changes nothing at all today**, and
+ * `inkReferenceCutter.test.ts` asserts that as an equality between the two
+ * answers rather than as two separate claims.
+ *
+ * It does not inherit 256 silently and it does not get a floor invented for it
+ * either: per fable-1183 §3 no floor constant moves before the REALISM PASS's
+ * frames — an upscaled small cut and a native one side by side, his eyes
+ * deciding what a render needs. The road is built now so that pass has
+ * something to produce a native region cut FROM (fable-1201 §5). This is the
+ * fidelity law's DECLARED-scaffolding form: a shortcut is permitted when it is
+ * said out loud and the real source is on the board.
+ *
+ * **So the floor is this flag's first flip precondition.**
+ *
+ * # AND ITS SECOND IS A FOUNDER GATE THAT NO ARM CAN CLOSE
+ *
+ * This road sends more of a stranger's photograph to an engine than anything
+ * before it: today a photographed person contributes at most one ink patch, and
+ * this contributes a face-excluded SURFACE. fable-919 §3 is the gate — **a
+ * face-bearing reference must produce a plate with zero person content, at the
+ * frames, in front of him.**
+ *
+ * The face exclusion is armed at the bytes (`subtractMask`, `overlapPixels`, and
+ * the S2 positive with its S1 negative), and that arm proves PIXELS ARE ABSENT.
+ * It is not the gate. Law 9: only his eyes close it. Written here rather than
+ * only in a report so the gate survives seat rotation, in the place the flip
+ * will be argued.
+ *
+ * **It does not retire the widening tripwire either** — it enlarges what that
+ * tripwire is about, which is the opposite.
+ *
+ * # AND ITS THIRD IS THE OFFER, which is also the containment test's backstop
+ *
+ * The customer is shown the crop that will ride (fable-1183 §2c) — 3a.2(b)'s
+ * surface, the same prerequisite `CASTING_INK_CUT_SCOPE` carries. On this road
+ * the offer is load-bearing in a second way that fable-1201 §3 ordered written
+ * down: **region masks can overlap across adjacent surfaces in a contorted
+ * frame, so a borderline containment pass is survivable ONLY because she sees
+ * the crop before anything rides.** Nobody may relax the offer while believing
+ * the containment test stands alone.
+ *
+ * # The parent is the CUT scope and nothing else
+ *
+ * The region road is an escalation of the `cut` route — it is reached only after
+ * the routing has already decided to cut, so a user whose uploads are not cut
+ * has no road to escalate. The studio, repaint, library and transport parents
+ * ride in through that flag's own check rather than being restated here; two
+ * checks of one fact drift apart.
+ *
+ * It declares no fal allowance of its own. One extra call (`face`) on the road
+ * that already asks three, riding the shared `FAL_CONCURRENCY` courtesy pool, so
+ * `assertFalBudget`'s ceiling arithmetic is untouched.
+ */
+export const CASTING_INK_REGION_CROP_SCOPE_ENV = "CASTING_INK_REGION_CROP_SCOPE";
+
+export class CastingInkRegionCropScopeConfigurationError extends Error {
+  constructor() {
+    super(
+      `${CASTING_INK_REGION_CROP_SCOPE_ENV} must be "off", "all", or "users:" followed by unique positive integer user ids`,
+    );
+    this.name = "CastingInkRegionCropScopeConfigurationError";
+  }
+}
+
+export class CastingInkRegionCropCoverageError extends Error {
+  constructor(detail: string) {
+    super(`${CASTING_INK_REGION_CROP_SCOPE_ENV} ${detail}`);
+    this.name = "CastingInkRegionCropCoverageError";
+  }
+}
+
+export function parseCastingInkRegionCropScope(raw: string | undefined): CastingV2Scope {
+  return parseScopeGrammar(raw, () => {
+    throw new CastingInkRegionCropScopeConfigurationError();
+  });
+}
+
+/** Whether this user's cut may be the SURFACE rather than the ink inside it. */
+export function captureCastingInkRegionCropEnabled(userId: number): boolean {
+  const child = parseCastingInkRegionCropScope(process.env[CASTING_INK_REGION_CROP_SCOPE_ENV]);
+  if (!castingV2EnabledForUser(child, userId)) return false;
+  return captureCastingInkCutEnabled(userId);
+}
+
+export function validateCastingInkRegionCropEnvironment(input: {
+  scope: string | undefined;
+  cutScope: string | undefined;
+}): CastingV2Scope {
+  const child = parseCastingInkRegionCropScope(input.scope);
+  if (child.kind === "off") return child;
+
+  const parent = parseCastingInkCutScope(input.cutScope);
+  if (parent.kind === "off") {
+    throw new CastingInkRegionCropCoverageError(
+      `cannot be enabled while ${CASTING_INK_CUT_SCOPE_ENV} is off — the region road is an escalation of `
+      + "the cut, so a user whose uploads are stored whole has no road to escalate",
+    );
+  }
+  if (parent.kind === "all") return child;
+  if (child.kind === "all") {
+    throw new CastingInkRegionCropCoverageError(
+      `cannot be "all" while ${CASTING_INK_CUT_SCOPE_ENV} is limited to specific users`,
+    );
+  }
+  const uncovered = child.userIds.filter((userId) => !parent.userIds.includes(userId));
+  if (uncovered.length > 0) {
+    throw new CastingInkRegionCropCoverageError(
+      `names users outside ${CASTING_INK_CUT_SCOPE_ENV}: ${uncovered.join(",")}`,
+    );
+  }
+  return child;
+}
+
 export function validateCastingInkCutEnvironment(input: {
   scope: string | undefined;
   studioScope: string | undefined;

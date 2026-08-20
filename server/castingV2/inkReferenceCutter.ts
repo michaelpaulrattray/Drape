@@ -79,12 +79,14 @@ import {
   INK_REGION,
   PERSON_REGION,
   type CropBox,
+  FACE_REGION,
   cropClearsMinimumEdge,
   cutOutPixels,
   extentOf,
   paddedLicenceCanvas,
   routeInkUpload,
   scopeInkMask,
+  subtractMask,
 } from "./inkReferenceCrop";
 import type { PictureHalf } from "./sidePhrasing";
 import { INK_DESIGN_MIN_EDGE } from "./inkUploadDoor";
@@ -108,7 +110,25 @@ export type InkCutRefusalCode =
    */
   | "personWithoutDesign"
   /** The cut is real but smaller than a design — forty pixels of ink is not one. */
-  | "cutTooSmall";
+  | "cutTooSmall"
+  /**
+   * A PHOTOGRAPHED PERSON WHOSE INK IS SOMEWHERE ELSE — the region road's own
+   * free door (fable-1183 §2, amended fable-1203 §1).
+   *
+   * She named a surface and the reader found her design outside it. Today that
+   * cuts the tattoo it DID find and files it against the placement she named,
+   * which is the wrong-boundary class with a picture attached. Refused free
+   * instead, in a sentence that names what we could see.
+   *
+   * ⚠ **GATED ON THE LICENCE, and that gate is the difference between a door
+   * and a wall.** A flash sheet reaches this line — `upper arm` finds nothing on
+   * a photograph of a piece of paper, so the region holds no design there
+   * either — and walling it would refuse THE MOST ORDINARY UPLOAD A TATTOO
+   * CUSTOMER MAKES, which is exactly what fable-1172 §2's *"a scope narrows and
+   * never refuses"* was written to prevent. So this fires only when the licence
+   * says somebody is photographed: `personPixels > 0`.
+   */
+  | "inkNotOnThatSurface";
 
 export type InkCutRefusal = {
   readonly code: InkCutRefusalCode;
@@ -218,6 +238,12 @@ const REFUSALS: Readonly<Record<InkCutRefusalCode, string>> = Object.freeze({
     "I found the design in that picture, but it's too small a piece to draw from — "
     + `${INK_DESIGN_MIN_EDGE}px across, at least. A closer photo of the design works better. `
     + "Nothing was charged.",
+  /* Names what we COULD see, so she can tell whether we looked at the wrong
+     place or she picked the wrong one — and names the road that works, the
+     `personWithoutDesign` discipline (fable-1129 §3, D-180's spirit). */
+  inkNotOnThatSurface:
+    "I can see a tattoo in that picture, but not on the part of the body you picked. "
+    + "Pick the placement it's actually on, or attach a photo of that spot. Nothing was charged.",
 });
 
 function refuse(code: InkCutRefusalCode): CutInkDesignResult {
@@ -289,6 +315,15 @@ export type CutInkDesignInput = {
    * tattoo customer makes.
    */
   scope?: InkCutScope;
+  /**
+   * WHETHER THE CUT MAY BE THE SURFACE RATHER THAN THE PATCH INSIDE IT —
+   * `CASTING_INK_REGION_CROP_SCOPE`, decided by the caller because the flag is
+   * per user and this module knows nothing about users.
+   *
+   * Absent is off, which is the road this file drove yesterday: the region
+   * NARROWS the ink mask and the ink inside it is what is stored.
+   */
+  regionCrop?: boolean;
   /** For the log line, so a cut can be traced to the upload that bought it. */
   about?: { userId?: number; candidatePublicId?: string };
 };
@@ -462,7 +497,9 @@ export async function cutInkDesign(input: CutInkDesignInput): Promise<CutInkDesi
   */
   const scoped = await (async () => {
     const word = input.scope?.region ?? null;
-    if (word === null) return scopeInkMask({ ink: ink.value, region: null, half: null });
+    if (word === null) {
+      return { ...scopeInkMask({ ink: ink.value, region: null, half: null }), region: null };
+    }
     const region = await input.reader
       .region({ image: input.bytes, name: word, absentIsAnswer: true })
       .catch((error: unknown) => {
@@ -482,7 +519,7 @@ export async function cutInkDesign(input: CutInkDesignInput): Promise<CutInkDesi
         },
         "[inkReferenceCutter] the region mask is not in her picture's space — dropping the scope rather than resampling",
       );
-      return scopeInkMask({ ink: ink.value, region: null, half: null });
+      return { ...scopeInkMask({ ink: ink.value, region: null, half: null }), region: null };
     }
     const choice = scopeInkMask({ ink: ink.value, region, half: input.scope?.half ?? null });
     log.info(
@@ -498,13 +535,202 @@ export async function cutInkDesign(input: CutInkDesignInput): Promise<CutInkDesi
       },
       "[inkReferenceCutter] the cut was scoped to a region of her picture",
     );
-    return choice;
+    /* THE REGION'S OWN MASK TRAVELS OUT, because the region road below carries
+       the SURFACE and not the ink inside it. It is the same mask the choice was
+       made from — re-asking for it would be a second reading of one picture and
+       a second answer to disagree with. */
+    return { ...choice, region };
   })();
+
+  /*
+    ================================================================
+    THE REGION ROAD — the cut is the SURFACE, not the patch inside it
+    ================================================================
+
+    `CASTING_INK_REGION_CROP_SCOPE`, approved fable-1183 §2, countersigned
+    fable-1201, condition (c) amended fable-1203 §1.
+
+    # Why it exists, in two numbers
+
+    ```
+    S1  tattooed skin  10,779 px  140x167   one piece of a thirty-piece body
+    S1  upper arm      38,079 px  183x353   the thing she is pointing at
+    ```
+
+    On a heavily tattooed person the ink mask is ONE PATCH — the reader answers
+    a class with an instance, `masks 1` every time, so nothing is being discarded
+    and the reader is exonerated (opus-876 §2). Asking the ink question inside
+    the region's own crop returns something SMALLER still. No word and no framing
+    that court tested returns the work she is pointing at. **The surface does**,
+    and a picture of an inked upper arm IS a picture of the sleeve
+    (`crop-holds-the-region-it-depicts`).
+
+    # IT IS AN ESCALATION OF `cut`, so four properties come free
+
+    It is reached only here, after the routing has already decided to cut: a
+    flash sheet that rides whole never arrives, a refused picture is not being
+    cut at all, ink being PRESENT is the region road's own licence (we never
+    carry a piece of a stranger's arm on a picture with no tattoo in it), and
+    every refusal inside it falls back to the cut this file already makes. The
+    worst case of the whole road is the product behaving exactly as it does
+    today.
+
+    # `regionHeld` IS THE TEST, and the box test it replaced was backwards
+
+    `regionHeld` is `|ink ∩ region| > 0` — the reader found her ink IN the
+    surface she named, per pixel, computed already by `scopeInkMask` from masks
+    in hand, asking nobody anything.
+
+    A BOX containment test (`inkBox ⊆ regionBox`) was proposed and countersigned
+    first, and reading the code killed it: on this road's own population the ink
+    patch straddles the surface boundary — which is what a sleeve DOES — so the
+    box test refuses the sleeve and falls back to the fragment this road exists
+    to stop delivering. **A test that refuses the road's own population is the
+    defect wearing a guard's name.** The case the box test existed for — a bare
+    arm carried as "the design" because her only tattoo is on her chest — is
+    caught identically by overlap. And `pixels > 0` is this house's own licence
+    form: never a percentage, never a threshold (fable-1129's law).
+
+    ⚠ **NO THRESHOLD MAY EVER BE ADDED HERE** (fable-1203 §2). A sliver of
+    adjacent ink licensing a whole surface is the known slack in this test, and
+    it is survivable for ONE reason: **THE OFFER SHOWS HER THE CROP BEFORE
+    ANYTHING RIDES.** The box test's backstop is the offer, by design — so
+    nobody may relax the offer while believing this test stands alone, and if
+    the sliver ever annoys a real customer the fix is a better refusal sentence
+    or his ruling, never a percentage.
+
+    # AND THE FACE COMES OUT, unconditionally
+
+    fable-1183 §2b. A surface box is a rectangle over a body and on a torso
+    placement it climbs — the S2 specimen's box reaches y=80 and takes the face
+    with it. `subtractMask` is the arithmetic and its own docblock carries the
+    two-sites-two-questions rule: the LICENCE is a count and may be asked of a
+    padded copy; this is ONLY geometry and is asked of her own frame.
+
+    A reader that does not answer drops the ESCALATION rather than refusing her
+    picture — the same posture the region question above takes, and for the same
+    reason: this is an improvement on a cut we already know how to make.
+  */
+  const surface = await (async () => {
+    if (input.regionCrop !== true) return null;
+    /*  HERE IS A COST GUARD AND NOT A SAFETY ONE, and that is worth
+       knowing before somebody deletes it: the wrong-placement door below returns
+       before this crop could ride, so removing this line changes no frame — it
+       only spends a fal call on a picture we are about to refuse. Armed as the
+       cost it is, because a sabotage of it reddened nothing. */
+    /*
+      ⚠ `regionHeld` HERE IS A COST GUARD, NOT A SAFETY ONE, and that is worth
+      knowing before somebody deletes it as redundant: the wrong-placement door
+      below returns before this crop could ever ride, so removing this line
+      changes no frame — it only spends a fal call on a picture we are about to
+      turn away. Found by a sabotage that reddened NOTHING, and armed in the
+      refusal's own test as the cost it is.
+    */
+    if (!scoped.regionHeld || scoped.region === null) return null;
+    const face = await input.reader
+      .region({ image: input.bytes, name: FACE_REGION, absentIsAnswer: true })
+      .catch((error: unknown) => {
+        log.warn(
+          { ...input.about, err: error instanceof Error ? error.message : String(error) },
+          "[inkReferenceCutter] the face question went unanswered — dropping the region road rather than carrying a face",
+        );
+        return null;
+      });
+    if (face === null) return null;
+    if (!inHerSpace(face, decoded.width, decoded.height)) {
+      log.warn(
+        {
+          ...input.about,
+          mask: `${face.width}x${face.height}`,
+          picture: `${decoded.width}x${decoded.height}`,
+        },
+        "[inkReferenceCutter] the face mask is not in her picture's space — dropping the region road rather than resampling",
+      );
+      return null;
+    }
+    /* A HOLE IN THE MIDDLE OF THE CROP IS THE CORRECT OUTPUT where a face sits
+       inside the surface — see `subtractMask`. Refusing the crop instead would
+       turn the fence into a wall on the ordinary shoulders-and-chest photograph,
+       and the alternative to THAT is carrying the face. */
+    const kept = subtractMask(scoped.region, face);
+    const extent = extentOf(kept);
+    if (extent.box === null) {
+      log.info(
+        { ...input.about, face: extentOf(face).pixels },
+        "[inkReferenceCutter] the named surface is entirely face — the region road carries nothing and the ink cut stands",
+      );
+      return null;
+    }
+    /*
+      THE FLOOR, AND TODAY IT REFUSES BOTH FOUNDER SPECIMENS (183 and 229 short
+      edge against 256). That is declared rather than quiet — the flag's own
+      docblock carries it as the first flip precondition, and no floor constant
+      moves before the realism pass's frames (fable-1183 §3). Falling back to the
+      ink cut here is what makes the road inert rather than harmful while that
+      is true.
+    */
+    if (!cropClearsMinimumEdge(extent.box)) {
+      log.info(
+        {
+          ...input.about,
+          box: `${extent.box.width}x${extent.box.height}`,
+          floor: INK_DESIGN_MIN_EDGE,
+        },
+        "[inkReferenceCutter] the named surface is under the design floor — the ink cut stands, and this is the road's declared inert state",
+      );
+      return null;
+    }
+    log.info(
+      {
+        ...input.about,
+        region: input.scope?.region ?? null,
+        surface: extent.pixels,
+        face: extentOf(face).pixels,
+        ink: scoped.pixels,
+        box: `${extent.box.width}x${extent.box.height}`,
+      },
+      "[inkReferenceCutter] the cut is the SURFACE she named with the face taken out of it — not the patch inside it",
+    );
+    return { mask: kept, pixels: extent.pixels, box: extent.box };
+  })();
+
+  /*
+    AND THE DOOR THE REGION ROAD OPENS WHEN THE INK IS SOMEWHERE ELSE.
+
+    She named a surface, somebody is photographed, and the design the reader
+    found is not on it. Today that cuts the tattoo it DID find and files it
+    against the placement she named — the wrong-boundary class with a picture
+    attached.
+
+    ⚠ **`personExtent.pixels > 0` IS LOAD-BEARING AND IS NOT A TIGHTENING.** A
+    flash sheet reaches this line: `upper arm` finds nothing on a photograph of
+    a piece of paper, so `regionHeld` is false there too. Without the licence
+    gate this would refuse THE MOST ORDINARY UPLOAD A TATTOO CUSTOMER MAKES,
+    which is precisely what fable-1172 §2's *"a scope narrows and never refuses"*
+    exists to prevent. The licence is the one fact that tells the two apart, and
+    it has already been read.
+  */
+  if (
+    input.regionCrop === true
+    && input.scope?.region != null
+    && !scoped.regionHeld
+    && personExtent.pixels > 0
+  ) {
+    log.info(
+      { ...input.about, region: input.scope.region, ink: inkExtent.pixels, person: personExtent.pixels },
+      "[inkReferenceCutter] her design is not on the surface she named — refused free rather than filed against the wrong placement",
+    );
+    return refuse("inkNotOnThatSurface");
+  }
 
   /* `cut` implies `inkPixels > 0`, and a positive count implies a box — but the
      one thing a corner marked "cannot happen" reliably does is happen, so it is
-     answered rather than asserted. */
-  const box = scoped.box;
+     answered rather than asserted.
+
+     The SURFACE's box when the region road carried, the scoped ink's otherwise —
+     one expression, so the guard below and the extract below cannot end up
+     looking at two different boxes. */
+  const box = surface?.box ?? scoped.box;
   if (!box) return refuse("cutTooSmall");
 
   /*
@@ -536,10 +762,11 @@ export async function cutInkDesign(input: CutInkDesignInput): Promise<CutInkDesi
     rgba: decoded.rgba,
     width: decoded.width,
     height: decoded.height,
-    /* THE SCOPED MASK, which is the whole ink mask when nothing narrowed it —
-       so an unscoped cut is byte-identical to the one this file made before the
-       region question existed. */
-    mask: scoped.mask,
+    /* THE SURFACE when the region road carried, the SCOPED MASK otherwise —
+       which is the whole ink mask when nothing narrowed it, so an unscoped cut
+       is byte-identical to the one this file made before the region question
+       existed. */
+    mask: surface?.mask ?? scoped.mask,
   });
   const bytes = await sharp(cutRgba, { raw: { width: decoded.width, height: decoded.height, channels: 4 } })
     .extract({ left: box.left, top: box.top, width: box.width, height: box.height })
@@ -554,6 +781,10 @@ export async function cutInkDesign(input: CutInkDesignInput): Promise<CutInkDesi
       ink: scoped.pixels,
       ofWholeMask: inkExtent.pixels,
       person: personExtent.pixels,
+      /* WHICH ROAD PRODUCED THESE BYTES, so a frame can be traced to the
+         decision that made it rather than guessed at from its size. */
+      carried: surface ? "surface" : "ink",
+      surfacePixels: surface?.pixels ?? null,
       bytes: bytes.byteLength,
     },
     "[inkReferenceCutter] cut the design out of her picture — the person is not in the crop",

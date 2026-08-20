@@ -28,7 +28,7 @@ import { describe, expect, it } from "vitest";
 import sharp from "sharp";
 
 import { INK_PLACEMENTS, inkPlacementEntry } from "../../shared/inkPlacementVocabulary";
-import { INK_REGION, PERSON_REGION, sourceRegionWord } from "./inkReferenceCrop";
+import { FACE_REGION, INK_REGION, PERSON_REGION, overlapPixels, sourceRegionWord } from "./inkReferenceCrop";
 import { cutInkDesign } from "./inkReferenceCutter";
 import { INK_DESIGN_MIN_EDGE } from "./inkUploadDoor";
 import type { Mask } from "./maskedComposite";
@@ -813,6 +813,335 @@ describe("the cut is scoped to a region of her picture", () => {
     expect(result.ok && result.cut.route).toBe("rideWhole");
     expect(theTwoMeasuredQuestions(scripted.asked)).toEqual([INK_REGION, PERSON_REGION].sort());
     expect(scripted.asked, "a picture that rides whole bought the third question").toHaveLength(2);
+  });
+});
+
+describe("the region road — the cut is the SURFACE, not the patch inside it", () => {
+  /*
+    `CASTING_INK_REGION_CROP_SCOPE`. The court that bought it: on a heavily
+    tattooed person `tattooed skin` answers with ONE PATCH (10,779 px of a
+    thirty-piece body) while `upper arm` answers with the thing she is pointing
+    at (38,079 px). Every arm here is driven at `cutInkDesign` itself with the
+    decision as an argument, both ways round.
+  */
+  const W = 1000;
+  const H = 900;
+  /** The named surface: a limb down the left of the picture, comfortably big. */
+  const SURFACE: Rect = { x: 40, y: 200, w: 420, h: 600 };
+  /**
+   * ONE PATCH of ink inside it — the fragment the ink question returns.
+   *
+   * ⚠ It CLEARS `INK_DESIGN_MIN_EDGE` on purpose, and the first version of these
+   * arms did not: written at the court's own 140x167 it made every fallback arm
+   * refuse `cutTooSmall`, so six arms went red testing the floor instead of the
+   * road. The size of the patch is not what this describe block is about — WHICH
+   * BOX comes back is.
+   */
+  const PATCH: Rect = { x: 120, y: 400, w: 300, h: 300 };
+  /** A face, up where a face is, well clear of `SURFACE`. */
+  const FACE: Rect = { x: 600, y: 40, w: 200, h: 200 };
+  /** The torso case: a surface whose box climbs to y=80 and takes the face. */
+  const CLIMBING: Rect = { x: 500, y: 80, w: 420, h: 600 };
+  /** And its own patch, because the road only fires with the ink inside it. */
+  const PATCH_ON_TORSO: Rect = { x: 600, y: 300, w: 300, h: 300 };
+
+  const REGION_WORD = "upper arm";
+
+  /**
+   * A photographed man, one patch of ink on the named surface.
+   *
+   * The patch travels with the surface rather than being global, because the
+   * road's own licence is that the ink is IN the surface — a fixture where it
+   * is not would be testing the refusal, not the road.
+   *
+   * `over` lets an arm move exactly one answer, so a sabotage of a fixture
+   * cannot quietly move two.
+   */
+  const photographed = (
+    surface: Rect = SURFACE,
+    patch: Rect = PATCH,
+    over: (name: string, width: number, height: number) => Mask | Error | null = () => null,
+  ) => reader(({ name, width, height }) => {
+    const special = over(name, width, height);
+    if (special !== null) return special;
+    if (name === INK_REGION) return rectangle(width, height, patch);
+    if (name === PERSON_REGION) return rectangle(width, height, { x: 0, y: 0, w: width, h: height });
+    if (name === REGION_WORD) return rectangle(width, height, surface);
+    if (name === FACE_REGION) return rectangle(width, height, FACE);
+    throw new Error(`nothing scripted an answer for "${name}"`);
+  });
+
+  const scopeOf = () => ({ region: REGION_WORD, half: null });
+
+  it("CARRIES THE SURFACE, and the ink patch alone is what it replaces", async () => {
+    const picture = await coordinatePicture(W, H);
+    const scripted = photographed();
+
+    const result = await cutInkDesign({
+      bytes: picture, reader: scripted, scope: scopeOf(), regionCrop: true,
+    });
+
+    expect(result.ok).toBe(true);
+    /* THE WHOLE FINDING: the box is the surface's, not the patch's. */
+    expect(result.ok && result.cut.box).toEqual({
+      left: SURFACE.x, top: SURFACE.y, width: SURFACE.w, height: SURFACE.h,
+    });
+    expect(scripted.asked.map((one) => one.name)).toContain(FACE_REGION);
+  });
+
+  it("NEGATIVE CONTROL: with the flag off the SAME picture cuts the patch", async () => {
+    /*
+      The arm that makes the one above mean something. Identical fixture,
+      identical scope, one boolean different — so a build that carried the
+      surface unconditionally would fail here, and a build that never carried it
+      would fail above.
+    */
+    const picture = await coordinatePicture(W, H);
+    const scripted = photographed();
+
+    const result = await cutInkDesign({ bytes: picture, reader: scripted, scope: scopeOf() });
+
+    expect(result.ok).toBe(true);
+    expect(result.ok && result.cut.box).toEqual({
+      left: PATCH.x, top: PATCH.y, width: PATCH.w, height: PATCH.h,
+    });
+    /* And it did not buy the fourth question. */
+    expect(scripted.asked.map((one) => one.name)).not.toContain(FACE_REGION);
+  });
+
+  it("costs exactly ONE extra question, and asks it of HER OWN FRAME", async () => {
+    /*
+      House money, stated rather than discovered. The licence is asked of a
+      PADDED copy and this one may not be: it decides which pixels leave, so an
+      answer in a space that is not hers would be meaningless rather than merely
+      wrong.
+    */
+    const picture = await coordinatePicture(W, H);
+    const scripted = photographed();
+
+    await cutInkDesign({ bytes: picture, reader: scripted, scope: scopeOf(), regionCrop: true });
+
+    expect(scripted.asked).toHaveLength(4);
+    const face = scripted.asked.find((one) => one.name === FACE_REGION)!;
+    expect([face.width, face.height]).toEqual([W, H]);
+    expect(face.absentIsAnswer).toBe(true);
+  });
+
+  it("⚠ TAKES THE FACE OUT AT THE BYTES — the S2 torso case, counted", async () => {
+    /*
+      fable-1183 §2b's condition, proven on the produced object rather than on
+      the code that produced it. The surface box CLIMBS to y=80 and contains the
+      face, which is the specimen this condition was written from.
+    */
+    const picture = await coordinatePicture(W, H);
+    const scripted = photographed(CLIMBING, PATCH_ON_TORSO);
+
+    const result = await cutInkDesign({
+      bytes: picture,
+      reader: scripted,
+      /* The patch has to be inside the climbing surface for the road to fire. */
+      scope: scopeOf(),
+      regionCrop: true,
+    }, );
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const box = result.cut.box!;
+    const cut = await rgbaOf(result.cut.bytes);
+    /*
+      Both facts as MASKS in the crop's own space, and the count taken by
+      `overlapPixels` — the same owner the pure half's arms use, rather than a
+      second loop here that could drift from it (law 4).
+    */
+    const kept = { data: Buffer.alloc(cut.width * cut.height, 0), width: cut.width, height: cut.height };
+    const face = { data: Buffer.alloc(cut.width * cut.height, 0), width: cut.width, height: cut.height };
+    for (let y = 0; y < cut.height; y += 1) {
+      for (let x = 0; x < cut.width; x += 1) {
+        const at = y * cut.width + x;
+        if (cut.data[at * 4 + 3]! > 0) kept.data[at] = 255;
+        const frameX = box.left + x;
+        const frameY = box.top + y;
+        if (frameX >= FACE.x && frameX < FACE.x + FACE.w
+          && frameY >= FACE.y && frameY < FACE.y + FACE.h) face.data[at] = 255;
+      }
+    }
+    /* The fixture has to CONTAIN the thing being excluded, or a zero here is a
+       zero about nothing — the false-pass guard at a geometry arm. */
+    expect(face.data.some((one) => one > 127), "the crop does not overlap the face at all").toBe(true);
+    expect(overlapPixels(kept, face), "the carried crop holds pixels of a stranger's face").toBe(0);
+  });
+
+  it("NEGATIVE CONTROL: a face the surface does not reach takes NOTHING out", async () => {
+    /*
+      The S1 arm case. Without this, a subtractor that blanked the whole crop
+      would pass the arm above — and the count is what separates them: this crop
+      must be the WHOLE surface.
+    */
+    const picture = await coordinatePicture(W, H);
+    const result = await cutInkDesign({
+      bytes: picture, reader: photographed(), scope: scopeOf(), regionCrop: true,
+    });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const cut = await rgbaOf(result.cut.bytes);
+    let kept = 0;
+    for (let at = 3; at < cut.data.length; at += 4) if (cut.data[at]! > 0) kept += 1;
+    expect(kept).toBe(SURFACE.w * SURFACE.h);
+  });
+
+  it("keeps today's cut when the ink is NOT in the named surface, and REFUSES free", async () => {
+    /*
+      `regionHeld` is the test — the per-pixel intersection, amended in from box
+      containment (fable-1203 §1) because a box test refuses the sleeve that
+      straddles a shoulder, which is what a sleeve does.
+
+      Here the patch is genuinely elsewhere, so the surface must not ride AND
+      the wrong-placement door opens instead of filing a chest tattoo against
+      her upper arm.
+    */
+    const picture = await coordinatePicture(W, H);
+    const elsewhere = photographed(SURFACE, PATCH, (name, width, height) =>
+      name === INK_REGION ? rectangle(width, height, { x: 700, y: 500, w: 300, h: 300 }) : null);
+
+    const result = await cutInkDesign({
+      bytes: picture, reader: elsewhere, scope: scopeOf(), regionCrop: true,
+    });
+
+    expect(result.ok).toBe(false);
+    expect(!result.ok && result.refusal.code).toBe("inkNotOnThatSurface");
+    /*
+      ⚠ AND IT DOES NOT BUY THE FACE QUESTION FIRST — house money, and the only
+      thing `regionHeld` guards in the escalation above.
+
+      FOUND BY A SABOTAGE THAT REDDENED NOTHING: deleting `!scoped.regionHeld`
+      from the escalation left all 43 arms green, because the refusal below
+      returns before the surface can ride, so the only difference was one fal
+      call spent on a picture we were about to turn away. A branch whose whole
+      purpose is a cost has to be armed on the cost.
+    */
+    expect(
+      elsewhere.asked.map((one) => one.name),
+      "the face question was bought for a picture we then refused",
+    ).not.toContain(FACE_REGION);
+  });
+
+  it("⚠ AND A FLASH SHEET IS NOT WALLED BY THAT DOOR — the licence gate", async () => {
+    /*
+      THE ARM THAT MATTERS MOST HERE. `upper arm` finds nothing on a photograph
+      of a piece of paper, so `regionHeld` is false on the most ordinary upload
+      a tattoo customer makes. Without `personPixels > 0` on that door, this
+      refuses — which is exactly what fable-1172 §2's "a scope narrows and never
+      refuses" was written to prevent.
+    */
+    const picture = await coordinatePicture(W, H);
+    const sheet = reader(({ name, width, height }) => {
+      if (name === INK_REGION) return rectangle(width, height, DESIGN);
+      /* NOBODY in the picture — the licence's positive zero. */
+      if (name === PERSON_REGION) return empty(width, height);
+      /* And the named surface finds nothing on paper. */
+      return empty(width, height);
+    });
+
+    const result = await cutInkDesign({
+      bytes: picture, reader: sheet, scope: scopeOf(), regionCrop: true,
+    });
+
+    expect(result.ok, "a flash sheet was walled by the wrong-placement door").toBe(true);
+    /* It rode whole, which is the sheet's own road: ink found, nobody there. */
+    expect(result.ok && result.cut.route).toBe("cut");
+  });
+
+  it("⚠ IS INERT ON ITS OWN SPECIMENS — the same answer with the flag either way", async () => {
+    /*
+      THE DECLARED INERT STATE, driven rather than described — and it is
+      stronger than the design report predicted, which is why it is asserted
+      rather than assumed.
+
+      Both founder specimens measure 183 and 229 on the short edge against a
+      floor of 256. What follows is arithmetic and not a choice: the scoped ink
+      cut is `ink ∩ region`, which is INSIDE the region — so a surface under the
+      floor guarantees that the fallback is under it too. The picture refuses
+      `cutTooSmall` with the road on, and refuses identically with it off.
+
+      **So on this road's own specimens the flag changes NOTHING AT ALL today**,
+      which is the honest form of inert: not "a smaller cut instead", but the
+      same sentence to the same customer. No floor constant moves before the
+      realism pass's frames (fable-1183 §3), and that pass is what this arm will
+      have to be rewritten against.
+    */
+    const picture = await coordinatePicture(W, H);
+    /* The surface is 183 across — the S1 specimen's own short edge — and the
+       patch OVERLAPS it rather than sitting inside it, which is `regionHeld`
+       being an intersection rather than a containment (fable-1203 §1). A patch
+       that fitted inside a 183-wide surface could not itself clear the floor,
+       so a containment fixture could not express this case at all. */
+    const narrow = photographed({ x: 40, y: 200, w: 183, h: 600 }, { x: 100, y: 300, w: 300, h: 300 });
+
+    const on = await cutInkDesign({
+      bytes: picture, reader: narrow, scope: scopeOf(), regionCrop: true,
+    });
+    const off = await cutInkDesign({
+      bytes: picture, reader: photographed({ x: 40, y: 200, w: 183, h: 600 }, { x: 100, y: 300, w: 300, h: 300 }),
+      scope: scopeOf(),
+    });
+
+    expect(on.ok).toBe(false);
+    expect(!on.ok && on.refusal.code).toBe("cutTooSmall");
+    /* Byte-for-byte the same answer with the flag off — inert, said as an
+       equality rather than as two separate claims. */
+    expect(off.ok).toBe(false);
+    expect(!off.ok && off.refusal).toEqual(!on.ok ? on.refusal : null);
+  });
+
+  it("drops the road rather than refusing when the face question goes unanswered", async () => {
+    /*
+      The same posture the region question above takes: this is an improvement
+      on a cut we already know how to make, so a provider hiccup must not turn
+      her picture away. Fail-SAFE, and the safe thing here is today's cut.
+    */
+    const picture = await coordinatePicture(W, H);
+    const silent = photographed(SURFACE, PATCH, (name) =>
+      name === FACE_REGION ? new Error("the reader did not answer") : null);
+
+    const result = await cutInkDesign({
+      bytes: picture, reader: silent, scope: scopeOf(), regionCrop: true,
+    });
+
+    expect(result.ok).toBe(true);
+    expect(result.ok && result.cut.box).toEqual({
+      left: PATCH.x, top: PATCH.y, width: PATCH.w, height: PATCH.h,
+    });
+  });
+
+  it("drops the road rather than resampling a face mask in the wrong space", async () => {
+    const picture = await coordinatePicture(W, H);
+    const wrongSpace = photographed(SURFACE, PATCH, (name) =>
+      name === FACE_REGION ? rectangle(W - 1, H, FACE) : null);
+
+    const result = await cutInkDesign({
+      bytes: picture, reader: wrongSpace, scope: scopeOf(), regionCrop: true,
+    });
+
+    expect(result.ok).toBe(true);
+    expect(result.ok && result.cut.box).toEqual({
+      left: PATCH.x, top: PATCH.y, width: PATCH.w, height: PATCH.h,
+    });
+  });
+
+  it("never fires without a scope, however the flag is set", async () => {
+    /* The studio upload door passes no scope — it has only a picture. A road
+       that fired there would carry a surface nobody named. */
+    const picture = await coordinatePicture(W, H);
+    const scripted = photographed();
+
+    const result = await cutInkDesign({ bytes: picture, reader: scripted, regionCrop: true });
+
+    expect(result.ok).toBe(true);
+    expect(scripted.asked).toHaveLength(2);
+    expect(result.ok && result.cut.box).toEqual({
+      left: PATCH.x, top: PATCH.y, width: PATCH.w, height: PATCH.h,
+    });
   });
 });
 

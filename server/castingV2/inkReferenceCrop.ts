@@ -67,6 +67,22 @@ export const INK_REGION = "tattooed skin";
 export const PERSON_REGION = "human skin";
 
 /**
+ * THE WORD THAT SAYS WHAT MUST NOT RIDE — the region road's face exclusion
+ * (fable-1183 §2b).
+ *
+ * Third of three, and the one whose answer is used ONLY as geometry. It is
+ * asked of HER OWN FRAME, never of the padded canvas: `PERSON_REGION` is a
+ * count and may be asked of a picture that is not hers, and this one decides
+ * which pixels leave, so a mask in a space that is not hers would be
+ * meaningless rather than merely wrong.
+ *
+ * Measured answering 16,286 px on the frame `PERSON_REGION` read zero on (the
+ * measurement court, 2026-08-20) — which is why the exclusion can rest on it
+ * while the licence could not.
+ */
+export const FACE_REGION = "face";
+
+/**
  * ⚠ AND THE LICENCE QUESTION IS ASKED OF A PADDED COPY OF HER PICTURE — the
  * measurement court, 2026-08-20, ruled fable-1183 §1
  * (`scripts/court-ink-licence-words-disposable.mts`,
@@ -416,6 +432,93 @@ export function intersectMasks(a: Mask, b: Mask): Mask {
     data[at] = a.data[at]! > 127 && b.data[at]! > 127 ? 255 : 0;
   }
   return { data, width: a.width, height: a.height };
+}
+
+/**
+ * ONE MASK WITH EVERYTHING THE OTHER COVERS TAKEN OUT OF IT — the face
+ * exclusion's arithmetic (the region-crop road, condition fable-1183 §2b,
+ * countersigned fable-1201 §4).
+ *
+ * # Why this exists at all, and it is a fence rather than a tidy-up
+ *
+ * The region road carries a SURFACE of a stranger's photograph — an inked upper
+ * arm — because that is the only picture that holds the sleeve the customer is
+ * pointing at. A surface box is a rectangle over a body, and on a torso
+ * placement it climbs: the S2 specimen's `upper chest` box reaches y=80 and
+ * takes the face with it. Nothing else in this road stops that.
+ *
+ * # AND IT IS GEOMETRY, WHICH THE LICENCE MAY NEVER BE
+ *
+ * Two questions about a person are asked on this road and they are opposites in
+ * exactly one respect, stated here and at the licence's own site so neither can
+ * quietly become the other:
+ *
+ *   `human skin` (the LICENCE)  a COUNT, never geometry — which is what makes
+ *                               asking it of a PADDED copy structurally
+ *                               harmless (`LICENCE_PAD_FACTOR`)
+ *   `face` (this EXCLUSION)     ONLY geometry — which pixels leave — so it must
+ *                               be asked of her own frame and in her own space,
+ *                               and a padded answer here would be meaningless
+ *
+ * # A HOLE IN THE MIDDLE OF A CROP IS THE CORRECT OUTPUT
+ *
+ * Where a face sits inside the carried surface, subtracting it leaves
+ * transparency in the middle of the cut. That is the fence working, not a cut
+ * to be repaired: the alternative — refusing the whole crop — would turn the
+ * fence into a wall on the ordinary shoulders-and-chest photograph, and the
+ * alternative to THAT is carrying the face.
+ *
+ * # It errs in the safe direction, measured
+ *
+ * `face` answered 16,286 px on the very frame the licence question missed
+ * entirely (the measurement court, 2026-08-20), and its false positives on
+ * drawn portraits EXCLUDE MORE rather than less. A fence whose failure mode is
+ * carrying less of a stranger is the right way round.
+ *
+ * The result is a fresh buffer, like {@link intersectMasks}: both inputs may
+ * still be counted by a caller, and a subtraction that mutated the region mask
+ * would leave the log line reporting a surface that no longer exists.
+ */
+export function subtractMask(from: Mask, taken: Mask): Mask {
+  if (from.width !== taken.width || from.height !== taken.height) {
+    throw new Error(
+      `masks are ${from.width}x${from.height} and ${taken.width}x${taken.height} — refusing rather than resampling`,
+    );
+  }
+  if (from.data.length !== from.width * from.height || taken.data.length !== taken.width * taken.height) {
+    throw new Error("a mask is not one byte per pixel — refusing rather than indexing into it");
+  }
+  const data = Buffer.alloc(from.width * from.height, 0);
+  for (let at = 0; at < data.length; at += 1) {
+    data[at] = from.data[at]! > 127 && !(taken.data[at]! > 127) ? 255 : 0;
+  }
+  return { data, width: from.width, height: from.height };
+}
+
+/**
+ * HOW MANY PIXELS OF ONE MASK LIE INSIDE ANOTHER — the face exclusion's own
+ * ARM, counted rather than sampled.
+ *
+ * Exported because the property that matters is provable only at the bytes: a
+ * carried crop must contain ZERO lit pixels of the `face` mask, and *"we
+ * subtracted it"* is a claim about code while this is a reading of the output.
+ * The arm that uses it counts against the crop that is actually produced, in
+ * the crop's own coordinates.
+ *
+ * A count rather than a boolean, because the two failures read differently: one
+ * stray pixel is a rounding edge and ten thousand is a face.
+ */
+export function overlapPixels(a: Mask, b: Mask): number {
+  if (a.width !== b.width || a.height !== b.height) {
+    throw new Error(
+      `masks are ${a.width}x${a.height} and ${b.width}x${b.height} — refusing rather than resampling`,
+    );
+  }
+  let pixels = 0;
+  for (let at = 0; at < a.data.length; at += 1) {
+    if (a.data[at]! > 127 && b.data[at]! > 127) pixels += 1;
+  }
+  return pixels;
 }
 
 /**

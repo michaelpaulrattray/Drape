@@ -21,7 +21,10 @@ import {
   cropClearsMinimumEdge,
   cutOutPixels,
   extentOf,
+  FACE_REGION,
   intersectMasks,
+  overlapPixels,
+  subtractMask,
   maskOfHalf,
   paddedLicenceCanvas,
   routeInkUpload,
@@ -255,6 +258,89 @@ describe("cutOutPixels — a masked cutout, never a bounding rectangle", () => {
   that can flip the whole world, and each arm asserts the mirrored expectation
   rather than the same one twice.
 */
+describe("the face comes out of the surface — the region road's fence", () => {
+  /*
+    fable-1183 §2b, countersigned fable-1201 §4. The region road carries a
+    SURFACE of a stranger's photograph, and a surface box is a rectangle over a
+    body: on the S2 torso specimen it climbs to y=80 and takes the face with it.
+    This is the arithmetic that stops that, driven directly.
+  */
+  const W = 400;
+  const H = 400;
+
+  it("takes every face pixel out and leaves every other one", () => {
+    const surface = maskWithBox(W, H, { left: 50, top: 50, width: 200, height: 200 });
+    const face = maskWithBox(W, H, { left: 100, top: 100, width: 60, height: 60 });
+    const kept = subtractMask(surface, face);
+    /* Counted, not sampled — 200x200 minus a 60x60 hole. */
+    expect(extentOf(kept).pixels).toBe(200 * 200 - 60 * 60);
+    /* THE PROPERTY, said as the fence says it: nothing of the face survives. */
+    expect(overlapPixels(kept, face)).toBe(0);
+  });
+
+  it("leaves a HOLE rather than a smaller rectangle — the box does not shrink", () => {
+    /*
+      A face inside the surface must not be answered by cropping around it: the
+      alternative to a hole is either refusing the ordinary shoulders-and-chest
+      photograph or carrying the face. The extent's BOX is unchanged and only
+      its COUNT moves.
+    */
+    const surface = maskWithBox(W, H, { left: 50, top: 50, width: 200, height: 200 });
+    const kept = subtractMask(surface, maskWithBox(W, H, { left: 100, top: 100, width: 60, height: 60 }));
+    expect(extentOf(kept).box).toEqual({ left: 50, top: 50, width: 200, height: 200 });
+  });
+
+  it("NEGATIVE CONTROL: a face that does not touch the surface takes NOTHING", () => {
+    /*
+      Without this, a subtractor that blanked everything would pass the arm
+      above — and the S1 arm case is exactly this shape: `face` answers on the
+      frame and the surface box does not reach it, so the crop must be whole.
+    */
+    const surface = maskWithBox(W, H, { left: 200, top: 200, width: 150, height: 150 });
+    const face = maskWithBox(W, H, { left: 10, top: 10, width: 60, height: 60 });
+    const kept = subtractMask(surface, face);
+    expect(extentOf(kept).pixels).toBe(150 * 150);
+    expect(extentOf(kept).box).toEqual(extentOf(surface).box);
+  });
+
+  it("answers an EMPTY mask when the surface is entirely face", () => {
+    /* Reachable and handled rather than declared impossible: a tight head-and-
+       shoulders crop where the named surface is all jaw. The caller drops the
+       region road and the ink cut stands. */
+    const surface = maskWithBox(W, H, { left: 50, top: 50, width: 100, height: 100 });
+    expect(extentOf(subtractMask(surface, surface)).box).toBeNull();
+  });
+
+  it("REFUSES two masks that are not in one space — never resamples", () => {
+    /* `maskedRefine`'s house rule, at the second site that has to keep it. */
+    expect(() => subtractMask(maskWithBox(4, 4, null), maskWithBox(5, 4, null)))
+      .toThrow(/refusing rather than resampling/);
+    expect(() => overlapPixels(maskWithBox(4, 4, null), maskWithBox(5, 4, null)))
+      .toThrow(/refusing rather than resampling/);
+  });
+
+  it("counts overlap rather than answering yes or no", () => {
+    /* One stray pixel is a rounding edge and ten thousand is a face — the two
+       read differently and a boolean would make them one fact. */
+    const a = maskWithBox(W, H, { left: 0, top: 0, width: 100, height: 100 });
+    expect(overlapPixels(a, maskWithBox(W, H, { left: 99, top: 99, width: 50, height: 50 }))).toBe(1);
+    expect(overlapPixels(a, maskWithBox(W, H, { left: 0, top: 0, width: 100, height: 100 }))).toBe(100 * 100);
+    expect(overlapPixels(a, maskWithBox(W, H, null))).toBe(0);
+  });
+
+  it("the face word is the measured one, and it is NOT the licence's", () => {
+    /*
+      Two questions about a person on one road, and they are opposites in one
+      respect: the licence is a COUNT and may be asked of a padded copy; this is
+      ONLY geometry and must be asked of her own frame. Pinned so a later edit
+      cannot quietly point one at the other's picture.
+    */
+    expect(FACE_REGION).toBe("face");
+    expect(FACE_REGION).not.toBe(PERSON_REGION);
+    expect(FACE_REGION).not.toBe(INK_REGION);
+  });
+});
+
 describe("the region-scoped cut, by arithmetic and never by a reader", () => {
   /* Big enough that the DESIGN FLOOR is never accidentally the subject: a
      design must clear `INK_DESIGN_MIN_EDGE` on its shortest side, so a toy

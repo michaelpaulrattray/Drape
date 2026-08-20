@@ -27,6 +27,7 @@ import {
 import {
   CASTING_FACE_SCAN_SCOPE_ENV,
   CASTING_INK_CUT_SCOPE_ENV,
+  CASTING_INK_REGION_CROP_SCOPE_ENV,
   CASTING_INK_STUDIO_SCOPE_ENV,
   CASTING_OPEN_LANE_SCOPE_ENV,
   CASTING_REFERENCE_LIBRARY_SCOPE_ENV,
@@ -39,6 +40,7 @@ import {
   CASTING_V2_SCOPE_ENV,
   validateCastingFaceScanEnvironment,
   validateCastingInkCutEnvironment,
+  validateCastingInkRegionCropEnvironment,
   validateCastingInkStudioEnvironment,
   validateCastingHairReferenceEnvironment,
   validateCastingReferenceAttachEnvironment,
@@ -309,6 +311,16 @@ export function validateEnv(): void {
   validateCastingInkCutEnvironment({
     scope: process.env[CASTING_INK_CUT_SCOPE_ENV],
     studioScope: process.env[CASTING_INK_STUDIO_SCOPE_ENV],
+  });
+  /*
+    WHETHER THE CUT IS THE SURFACE RATHER THAN THE PATCH INSIDE IT. Its parent is
+    the CUT door and nothing else: the region road is reached only after the
+    routing has decided to cut, so a user whose uploads are stored whole has no
+    road to escalate. Every other parent rides in through that flag's own check.
+  */
+  validateCastingInkRegionCropEnvironment({
+    scope: process.env[CASTING_INK_REGION_CROP_SCOPE_ENV],
+    cutScope: process.env[CASTING_INK_CUT_SCOPE_ENV],
   });
 
   /*

@@ -96,7 +96,7 @@ import {
   storageCleanupManifestHeldUntil,
 } from "../db/storageCleanup";
 import { storagePut } from "../storage";
-import { captureCastingInkCutEnabled } from "./castingV2Scope";
+import { captureCastingInkCutEnabled, captureCastingInkRegionCropEnabled } from "./castingV2Scope";
 import { createFalRegionReader } from "./falRegionReader";
 import {
   cutInkDesign,
@@ -285,6 +285,18 @@ export function defaultCutDesign(
     bytes: input.bytes,
     reader: apiKey ? createFalRegionReader({ apiKey }) : refusingRegionReader,
     ...(input.scope ? { scope: input.scope } : {}),
+    /*
+      WHETHER THE CUT MAY BE THE SURFACE — read HERE rather than injected,
+      because this is the function that turns a request into the real world and
+      the flag is a fact about the world. The unit under test is `cutInkDesign`
+      itself, which takes the decision as an argument and is driven both ways.
+
+      It only ever matters when a `scope` arrived: the studio upload door passes
+      none (it has no ask yet, only a picture), so the region road belongs to the
+      attach-pointed mint, which derives its region word from the placement her
+      sentence named.
+    */
+    regionCrop: captureCastingInkRegionCropEnabled(input.userId),
     about: { userId: input.userId, candidatePublicId: input.candidatePublicId },
   });
 }

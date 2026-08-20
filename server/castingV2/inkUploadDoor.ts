@@ -106,7 +106,12 @@ export type InkUploadRefusalCode =
   | "couldNotRead"
   | "wrongSpace"
   | "personWithoutDesign"
-  | "cutTooSmall";
+  | "cutTooSmall"
+  /* The region road's own door: a photographed person whose ink is not on the
+     surface she picked. Carried rather than mapped, like its four siblings —
+     collapsing it into `personWithoutDesign` would tell her the design cannot
+     be taken from a model when the truth is that she chose the wrong spot. */
+  | "inkNotOnThatSurface";
 
 /** A refusal carries the customer's sentence, not a code the client re-words. */
 export type InkUploadRefusal = {
