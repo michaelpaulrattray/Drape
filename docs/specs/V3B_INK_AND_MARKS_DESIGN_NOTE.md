@@ -1652,6 +1652,26 @@ rather than approximated here."* `SourcePicture` likewise has one member,
 `hairOnRedactedForm`. Both are shape INSIDE the countersigned design
 (fable-1135 §4c) and are proposed and countersigned in the build's own report.
 
+#### The REGION-SCOPED cut, and what it is NOT yet claimed to do
+#### (built `c6940592`, ruled fable-1158 §2a / fable-1172; bound stated fable-1178 §4)
+
+A cut is now scoped to the address her sentence names — `tattooed skin ∩ the
+named region ∩ a half of the picture` — with the side decided by image geometry
+and never by the segmenter's laterality, the free single-inked-arm fallback
+riding by arithmetic, and the offer's own sentence naming which half of the
+picture the design came out of.
+
+⚠ **IT IS NOT CLAIMED TO WORK ON REAL PHOTOGRAPHS, AND THE FIRST MEASUREMENT
+SAYS IT DOES NOT YET.** On both founder specimens the region word ANSWERS well
+(`upper arm`: 38,327 px and 98,277 px) and the intersection with the ink mask is
+still EMPTY — because `tattooed skin` on a man covered in work returns one small
+patch somewhere else entirely (140x167 at x 0–140, against an arm at x 553–736).
+The scope narrows a mask that is already pointing at the wrong thing, so on the
+population this feature exists for it is currently INERT: it narrows nothing and,
+by design, refuses nothing. **The blocker is the INK question, not the region
+question**, and it is re-measured in the court ruled at fable-1178 §3 before any
+claim about selective takes is made anywhere.
+
 ### 7.13 THE CARRY — a delivered tattoo survives the next edit
 ### (measured opus-862/863, wire read opus-864, shape ruled fable-1167 §2)
 
