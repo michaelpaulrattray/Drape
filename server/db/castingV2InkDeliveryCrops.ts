@@ -61,18 +61,39 @@ function affectedRows(result: unknown): number {
 }
 
 /**
- * IS THIS THE UNIQUE INDEX SAYING NO?
+ * IS THIS THE UNIQUE INDEX SAYING NO? — asked of the WHOLE CHAIN.
  *
  * Read off the driver's own code rather than off the message text, which is
  * localized and versioned. Anything else is re-thrown: a mint that swallowed a
- * connection error as "already minted" would report a crop that does not
- * exist, and the carry would then fall back to the artwork with nothing in the
- * log to say why.
+ * connection error as "already minted" would report a crop that does not exist,
+ * and the carry would fall back to the artwork with nothing in the log to say
+ * why.
+ *
+ * ⚠ **THE CHAIN WALK IS THE WHOLE OF IT, and this file shipped without it.**
+ * Drizzle wraps the driver's error in a `DrizzleQueryError` and hangs the
+ * original off `cause`, so a top-level `error.code` read never matches and the
+ * duplicate escapes as a throw — the mint then reports `failed` over a
+ * perfectly working index. Driven live on the second delivery of one design
+ * (variant `486` after `492`): expected `already`, got `failed / threw`.
+ *
+ * EXPORTED so both shapes can be driven without a database — the arm that was
+ * missing is the arm that would have caught it, and one that can only run
+ * through a live insert is one nobody runs.
+ *
+ * It is the SAME MISTAKE `candidateRetention.isMissingTable` made and wrote
+ * down — *"the first version read `error.code` off the top-level error, which
+ * is the shape a hand-written test error has and NOT the shape the real path
+ * produces"* — and the reason it repeated is that the arm was written with an
+ * invented error, so the invention was what got tested. Both shapes are
+ * asserted now.
  */
-function isDuplicateKey(error: unknown): boolean {
-  const code = (error as { code?: unknown })?.code;
-  const errno = (error as { errno?: unknown })?.errno;
-  return code === "ER_DUP_ENTRY" || errno === 1062;
+export function isDuplicateKey(error: unknown): boolean {
+  for (let link: unknown = error, depth = 0; link && depth < 5; depth += 1) {
+    const { code, errno, cause } = link as { code?: string; errno?: number; cause?: unknown };
+    if (code === "ER_DUP_ENTRY" || errno === 1062) return true;
+    link = cause;
+  }
+  return false;
 }
 
 /** The Cast, the design or the frame is not this account's. */

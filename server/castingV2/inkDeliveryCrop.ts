@@ -4,9 +4,10 @@
  * §2). `inkDeliveryMint.ts` is the half that spends money and writes rows.
  *
  * The split is `inkReferenceCrop` / `inkReferenceCutter`'s, and that road's
- * pieces are IMPORTED rather than restated: `extentOf`, `cutOutPixels` and
- * `cropClearsMinimumEdge` are the same arithmetic on a different picture, and a
- * second copy of them is the second list that drifts (working law 4).
+ * pieces are IMPORTED rather than restated: `extentOf` and `cutOutPixels` are
+ * the same arithmetic on a different picture, and a second copy of them is the
+ * second list that drifts (working law 4). Its FLOOR is deliberately not
+ * imported — see below, because that mistake cost a frame.
  *
  * # WHAT THIS IS FOR, in the one sentence that survived three renders
  *
@@ -45,16 +46,52 @@
  * three. The only refusal here is the one that needs no calibration at all: a
  * mask covering the WHOLE frame is not a tattoo, it is the picture.
  *
+ *
+ * # ⚠ THE UPLOAD DOOR'S FLOOR IS NOT THIS ROAD'S FLOOR, and it took a paid
+ * # frame to find out
+ *
+ * The first version of this file imported `cropClearsMinimumEdge` — the
+ * shortest edge clears `INK_DESIGN_MIN_EDGE` (256 px) — and cited law 4 for it:
+ * one number, one owner, no second bar to drift. **It was the wrong number to
+ * derive from, and it refused a real tattoo on the very first frame it met**
+ * (variant `492`, live, `tooSmall` at 26,867 mask pixels).
+ *
+ * The two populations are not the same thing wearing one name:
+ *
+ * ```
+ *   the upload door   A PICTURE A CUSTOMER SUPPLIES, which an engine will draw
+ *                     a tattoo FROM. Below 256 px there is not enough artwork
+ *                     to reproduce, and the floor is a quality bar.
+ *   this road         A STATEMENT OF EXTENT. The crop is as big as the tattoo
+ *                     IS on her, and a small tattoo is small BY DEFINITION —
+ *                     its size is the fact being carried, not a defect in it.
+ * ```
+ *
+ * The measurement was already on the record and predates this build, which is
+ * what makes correcting the bar legitimate rather than optional stopping from
+ * the court's own data (opus-887 §2, boxes read before a line was written):
+ *
+ * ```
+ *   variant   box        shortest edge   the 256 px floor
+ *   484       201x194        194         REFUSED
+ *   486       281x268        268         passed
+ *   491        97x98          98         REFUSED   ← the court's cleanest frame
+ * ```
+ *
+ * **Two of three, and the one it called too small is the frame the founder is
+ * being shown as the best tattoo this court has produced.** A floor that turns
+ * away the good answer is not a floor.
+ *
+ * So there is no edge floor here. The refusals left are the ones that need no
+ * calibration: nothing found, the whole picture, and our own cut failing. If a
+ * floor is ever wanted it needs its own measurement on THIS population — what
+ * a crop is too small to CARRY, which nobody has asked yet.
+ *
  * `same-pixels-or-measuring-the-mask` and the floor scar both apply: a
  * percentage hid a whole object once already on this road (`tattoo` read 0.0%
  * and cut out to one complete star), so this file counts PIXELS.
  */
-import {
-  cropClearsMinimumEdge,
-  cutOutPixels,
-  extentOf,
-  type CropBox,
-} from "./inkReferenceCrop";
+import { cutOutPixels, extentOf, type CropBox } from "./inkReferenceCrop";
 import type { Mask } from "./maskedComposite";
 
 export type InkDeliveryCutRefusal =
@@ -62,8 +99,10 @@ export type InkDeliveryCutRefusal =
   | "noInk"
   /** The region is the entire picture — that is the man, not his tattoo. */
   | "wholeFrame"
-  /** Real, and smaller than a design: a crop of forty pixels carries nothing. */
-  | "tooSmall"
+/*
+   ⚠ AND THERE IS NO `tooSmall`. IT WAS HERE, IT REFUSED A REAL TATTOO ON THE
+   FIRST FRAME IT MET, AND IT IS GONE — see the header.
+*/
   /**
    * ⚠ THE CUT DID NOT CUT, read off the OUTPUT rather than off the mask.
    *
@@ -161,7 +200,11 @@ export function cutDeliveredInk(input: {
   if (maskPixels >= width * height) {
     return { ok: false, refusal: "wholeFrame", maskPixels };
   }
-  if (!cropClearsMinimumEdge(box)) return { ok: false, refusal: "tooSmall", maskPixels };
+  /*
+    NO EDGE FLOOR — see the header. `INK_DESIGN_MIN_EDGE` is the UPLOAD door's
+    bar and it refused two of the three frames this build was measured on,
+    including the court's cleanest.
+  */
 
   const cut = (input.cut ?? cutOutPixels)({ rgba, width, height, mask });
   const keptPixels = countKeptPixels({ rgba: cut, width, height });

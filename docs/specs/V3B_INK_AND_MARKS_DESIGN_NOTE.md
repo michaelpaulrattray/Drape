@@ -1944,6 +1944,70 @@ lane, or explicitly kept with the measurement cited.** The measurement is kept i
 `inkRealism.ts`'s own header. Prompt bloat accumulates because nobody wants to be
 the one to take a sentence out.
 
+#### THE PAIR, RUN — and it passes at the frames (2026-08-21)
+
+Same Cast, same second sentence (*"colour his hair silver"*), the carrier the
+only thing that differs. Every frame below was opened at full size before a word
+of this was written, and every image key was read off its own ROW rather than
+taken from a driver's saved file (see the instrument note below, which is why
+that matters):
+
+```
+487   artwork carrier, realism + the clothing prohibition   SHIRT — a long run
+                                                            down the front of
+                                                            the tee
+490   artwork carrier, + the boundary clause (b)            SHIRT — same class,
+                                                            slightly narrower
+NEW   THE DELIVERED CROP as the carrier                     NECK ONLY. The tee
+      (variant `10b0bfa8`, dispatch keys: the master and    is CLEAN. The design
+      `casting-v2/ink-delivery/220d3ca1…png`, `carried:     sits above the
+      ["ink:neck"]`, `edited: ["hair"]`)                    collar at its
+                                                            delivered size, and
+                                                            the hair is silver
+```
+
+**One asymmetry, and it runs AGAINST the new arm rather than for it.** The two
+before-arms branched from `486`, whose own frame is clean. The after-arm
+branched from `492`, whose fresh-lane frame had the design running a third of
+the way down the shirt already. The delivered crop pictures the neck patch
+alone — so the carry did not merely avoid the failure, it CORRECTED a parent
+that had it. That is the strongest form the result could have taken and it was
+not designed for; it fell out of the parent being picked by an ordinal that
+turned out to name a different version than intended (caught by re-reading
+`parentVariantId` off the row, not by the rail).
+
+#### ⚠ Two defects this pair found, both in code written the same day
+
+1. **THE UPLOAD DOOR'S FLOOR REFUSED A REAL TATTOO.** The cutter imported
+   `cropClearsMinimumEdge` (256 px shortest edge) citing law 4, and the first
+   live frame it met answered `no-cut / tooSmall` at 26,867 mask pixels. On the
+   boxes measured before the build it would have refused TWO of THREE — including
+   `491`, the frame this court shows the founder as its best. A crop here is a
+   STATEMENT OF EXTENT and a small tattoo is small by definition; the floor
+   belonged to a different population. Removed, with the measurement (which
+   predates the build, so this is a bar corrected against a prior artifact
+   rather than moved from the court's own data).
+2. **THE DUPLICATE READER COULD NOT SEE THROUGH DRIZZLE'S WRAPPER.**
+   `isDuplicateKey` read `error.code` off the top-level error; Drizzle wraps the
+   driver's error and hangs the original off `cause`, so MINTED ONCE reported
+   `failed` instead of `already` on the second delivery of one design. **This is
+   the identical mistake `candidateRetention.isMissingTable` made, fixed, and
+   wrote down in its own docblock** — it repeated because the new guard had no
+   arm, and the general lesson is that file's own: a test that invents the error
+   it expects is testing its own invention. Fixed with a chain walk; both shapes
+   are now driven directly.
+
+#### An instrument note the next reader needs
+
+`output/court-realism/after/2-after-unrelated-edit.png` — offered in opus-886 §5
+as the before-arm's frame for the founder's eyes — **is not `487`'s frame.** It
+shows black hair and a clean tee: it is the PARENT (`486`), saved because the
+driver's `saveFrame` ran while the step-two render was still in flight. The
+VERDICT in that report was right and was read off the row; the picture beside it
+was the wrong one. The frames in `output/court-carry-a/` are fetched by
+`imageKey` from each variant's own row, which is the only way to be sure a frame
+is the frame it is labelled as.
+
 #### Limits, declared
 
 1. **Nothing fails closed.** No crop, a reader that did not answer, a frame with
@@ -1967,3 +2031,6 @@ the one to take a sentence out.
    and 0.17%, and a ceiling written from three readings would be a bar nobody
    courted. The only refusal that needs no calibration is in: a mask covering
    the WHOLE frame is not a tattoo, it is the picture.
+5. **No SIZE floor either, and that is a correction rather than a choice** —
+   see the defect above. If one is ever wanted it needs its own measurement on
+   THIS population: what a crop is too small to CARRY, which nobody has asked.

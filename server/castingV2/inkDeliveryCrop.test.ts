@@ -97,17 +97,29 @@ describe("cutting the tattoo out of the frame that delivered it", () => {
     expect(result.refusal).toBe("wholeFrame");
   });
 
-  it("says `tooSmall` on a piece narrower than a design", () => {
-    /* The floor is the UPLOAD DOOR'S OWN, imported rather than restated, so a
-       second number cannot drift from it. The shortest edge decides, so a long
-       thin strip cannot pass on its length. */
+  it("⚠ KEEPS a small tattoo — the upload door's floor is not this road's", () => {
+    /*
+      RED FIRST if the floor comes back. `cropClearsMinimumEdge` stood here and
+      refused a real tattoo on the very first live frame it met (`492`,
+      `tooSmall` at 26,867 mask pixels) — and, on the boxes measured before this
+      build existed, it would have refused TWO of THREE, including `491`, the
+      frame this court is showing the founder as its best.
+
+      A crop on this road is a STATEMENT OF EXTENT, not artwork somebody will
+      draw from: a small tattoo is small by definition, and that size is the
+      fact being carried. `${INK_DESIGN_MIN_EDGE}` px is the UPLOAD door's bar
+      and belongs to a different population.
+    */
     const result = cutDeliveredInk({
       rgba: frame(), width: WIDTH, height: HEIGHT,
-      mask: maskOf({ left: 10, top: 10, width: INK_DESIGN_MIN_EDGE - 1, height: 400 }),
+      /* `491`'s own box, to the pixel. */
+      mask: maskOf({ left: 10, top: 10, width: 97, height: 98 }),
     });
-    expect(result.ok).toBe(false);
-    if (result.ok) return;
-    expect(result.refusal).toBe("tooSmall");
+    expect(result.ok, "the upload door's floor is back and it refuses real tattoos").toBe(true);
+    if (!result.ok) return;
+    expect(result.cut.box).toEqual({ left: 10, top: 10, width: 97, height: 98 });
+    expect(Math.min(result.cut.box.width, result.cut.box.height))
+      .toBeLessThan(INK_DESIGN_MIN_EDGE);
   });
 
   it("⚠ says `cutDidNotCut` when the cut returns the whole frame — the real trap", () => {

@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "3180ab612cafc8b4"
+    "sourceFingerprint": "c380092d0a638ece"
   },
   "domains": [
     {
@@ -10598,6 +10598,10 @@
     {
       "id": "test:server/creditsSQL.test.ts",
       "path": "server/creditsSQL.test.ts"
+    },
+    {
+      "id": "test:server/db/castingV2InkDeliveryCrops.test.ts",
+      "path": "server/db/castingV2InkDeliveryCrops.test.ts"
     },
     {
       "id": "test:server/db/castingV2OpenKindProperties.test.ts",
