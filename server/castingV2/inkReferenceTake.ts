@@ -109,6 +109,26 @@ export type InkReferenceTake = {
  */
 export async function resolveInkReferenceTake(input: {
   instruction: string;
+  /**
+   * WHICH ROAD THE SENTENCE CAME DOWN — `reference` (a picture is attached and
+   * she pointed at it) or `words` (D-137's face/neck road, no picture at all).
+   *
+   * It changes ONE line of the ask: whether the model is told a photograph
+   * exists. That is not cosmetic — `announced-cap-is-a-brief` is the measured
+   * law here, that a stated frame writes the answer rather than filtering it,
+   * and a sentence beginning *"a customer attached a photograph"* said about an
+   * ask with no photograph is the model being told something untrue about its
+   * own input.
+   *
+   * ONE OWNER, TWO FRAMINGS — the `sidePhrasing` precedent — because everything
+   * after the opening line is the part that must not drift: the placement is
+   * resolved and never believed, and a side is only accepted when the word is
+   * in her sentence. Two copies of that would be two products.
+   *
+   * Defaults to `reference` so the road that has always called this is byte
+   * identical.
+   */
+  lane?: "reference" | "words";
   /** Test seam and dependency injection; `undefined` takes the shipped engine. */
   engine?: TextEngine | null;
   signal?: AbortSignal;
@@ -124,7 +144,7 @@ export async function resolveInkReferenceTake(input: {
     const reply = await engine.complete({
       about: "interpret",
       system: "You read one sentence and answer with two short fields.",
-      user: TAKE_ASK(input.instruction),
+      user: TAKE_ASK(input.instruction, input.lane ?? "reference"),
       json: true,
       temperature: 0,
       maxOutputTokens: 200,
@@ -147,9 +167,14 @@ export async function resolveInkReferenceTake(input: {
  * code enforces it, because a model told to guess and then overruled produces a
  * worse first field as well as a rejected second one.
  */
-function TAKE_ASK(instruction: string): string {
+function TAKE_ASK(instruction: string, lane: "reference" | "words"): string {
   return [
-    "A customer attached a photograph of a tattoo design and wrote this instruction:",
+    /* The ONLY line that differs between the two roads, and it differs because
+       telling a model a photograph exists when none does is telling it
+       something untrue about its own input. */
+    lane === "reference"
+      ? "A customer attached a photograph of a tattoo design and wrote this instruction:"
+      : "A customer asked for a tattoo in words, with no picture at all, and wrote this instruction:",
     "",
     `"${instruction.trim()}"`,
     "",

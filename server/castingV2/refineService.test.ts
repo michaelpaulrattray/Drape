@@ -5516,28 +5516,45 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
       refused is what he read as a malfunction. Now the control is that the
       sentence is this door's own and mentions no makeup.
     */
-    await expect(refineCandidate({
-      ...repainting,
-      interpret: async () => ({
-        ok: true as const,
-        delta: { free: { ink: "a small star tattoo behind her ear" } },
-      }),
-    }, { ...input, instruction: "give her a small star tattoo behind her ear" }))
-      .rejects.toThrow(/I need to know where it goes/);
+    /*
+      RE-ANCHORED A THIRD TIME, 2026-08-21, and the contract STILL did not move
+      — it got cheaper for the customer.
 
-    const said = await refineCandidate({
+      D-137's words-only road now resolves the placement out of her own sentence
+      (fable-1192 §1), so "behind her ear" is answered BEFORE the claim instead
+      of travelling into it: `unplacedInk`'s own words, said by the pre-claim
+      branch that door's docblock always said should be the one she meets.
+
+      So this is `selected` rather than a throw, and the money assertion below
+      changed with it — from "charged and refunded, and they match" to NOTHING
+      WAS CHARGED AT ALL. Quoting the old shape over the new door would be an
+      assertion nothing writes, which is a guard that cannot fail. What the
+      control proves is unchanged and is asserted on the sentence: this door
+      speaks in its OWN voice, names no makeup, and does not read as a
+      malfunction.
+    */
+    const chargesBefore = ledger.charges.length;
+    const result = await refineCandidate({
       ...repainting,
       interpret: async () => ({
         ok: true as const,
         delta: { free: { ink: "a small star tattoo behind her ear" } },
       }),
-    }, { ...input, instruction: "give her a small star tattoo behind her ear" })
-      .then(() => "", (error: Error) => error.message);
+    }, { ...input, instruction: "give her a small star tattoo behind her ear" });
+
+    expect(result.kind).toBe("selected");
+    const said = result.note ?? "";
+    expect(said, "the door stopped naming the places she CAN have one")
+      .toContain("I need to know where it goes");
     expect(said, "the founder's makeup wording belongs to makeup").not.toContain("makeup");
     expect(said, "and it does not read as a malfunction").not.toContain("didn't come through");
+    expect(said, "a free outcome that does not say it is free reads as a silent 25 credits")
+      .toContain("Nothing was charged.");
 
     expect(painted).toHaveLength(0);
-    expect(ledger.charges.at(-1)?.amount).toBe(ledger.refunds.at(-1)?.amount);
+    /* Free BEFORE the claim: not a charge and a refund that happen to match —
+       no charge was raised at all. */
+    expect(ledger.charges.length, "a pre-claim answer took her money").toBe(chargesBefore);
   });
 
   /*
@@ -9474,6 +9491,98 @@ describe("the picture she attached becomes the carrier that rides", () => {
     }),
     inkTake: async () => ({ placement: { kind: "open" as const, phrase: "sleeve" }, side: "left" as const }),
     ...over,
+  });
+
+  /*
+    ---- D-137'S OWN ROAD: WORDS ALONE, AND NO PICTURE ANYWHERE ----
+
+    Until 2026-08-21 this road did not exist on the repaint lane. The ink facet
+    is `perPlacement` — it has NO slot until a caller supplies the placement —
+    and the only supplier was a design minted out of an attached picture. So a
+    words-only tattoo ask was CHARGED, refused `unplacedInk`, and REFUNDED, with
+    a sentence asking her where it goes; her filed delta held the words
+    *"on his neck"* the whole time (measured, opus-885 §1).
+
+    The fix is extraction, not inference (ruled fable-1192 §1): her own word,
+    pulled out of her own sentence by the take she already has, and put through
+    the closed vocabulary. `sleeve` is still open and still walls; a side is
+    still only hers; nothing is guessed anywhere.
+  */
+  const wordsRoad = (over: Record<string, unknown> = {}) => inkRoad({
+    /* NO PICTURE, and `fromReference: false` is what makes it this lane. */
+    interpret: async () => ({
+      ok: true as const,
+      fromReference: false,
+      delta: { free: { ink: "a small geometric skeleton design on his neck" } },
+    }),
+    inkTake: async () => ({ placement: { kind: "measured" as const, placement: "neck" }, side: null }),
+    ...over,
+  });
+
+  it("RENDERS a words-only neck tattoo — the promise D-137 made and this road never kept", async () => {
+    painted.length = 0;
+    const result = await refineCandidate(wordsRoad(), {
+      ...input, instruction: "give him a small geometric skeleton tattoo on his neck",
+    });
+    /* The whole finding, in one assertion: this used to be a refund. */
+    expect(result.kind).toBe("rendered");
+    expect(painted.length, "a words-only neck tattoo still did not reach the engine").toBeGreaterThan(0);
+  });
+
+  it("ASKS rather than guessing when she names a paired surface with no side", async () => {
+    /*
+      The EXISTING side machinery, reached from the new lane — fable-1192 §1's
+      condition. A wrong arm is a refund and an apology (300 credits, twice,
+      DECISION_LOG R7-7G); an unstated side is a question. `whichSideReask`
+      raises no operation and moves no credit, and it cannot loop: her answer
+      puts the word in her own sentence, where the containment that guards the
+      side will accept it.
+    */
+    painted.length = 0;
+    const result = await refineCandidate(wordsRoad({
+      inkTake: async () => ({ placement: { kind: "measured" as const, placement: "upperArm" }, side: null }),
+    }), { ...input, instruction: "give him a skull tattoo on his upper arm" });
+    expect(result.kind).toBe("asked");
+    expect(painted, "a paired surface with no side reached the engine").toHaveLength(0);
+  });
+
+  it("takes the side SHE said and renders it, without asking twice", async () => {
+    painted.length = 0;
+    const result = await refineCandidate(wordsRoad({
+      inkTake: async () => ({
+        placement: { kind: "measured" as const, placement: "upperArm" }, side: "left" as const,
+      }),
+    }), { ...input, instruction: "give him a skull tattoo on his left upper arm" });
+    expect(result.kind).toBe("rendered");
+    expect(painted.length).toBeGreaterThan(0);
+  });
+
+  it("ASKS when her sentence named no place at all — free, and never a guess", async () => {
+    painted.length = 0;
+    const result = await refineCandidate(wordsRoad({
+      inkTake: async () => ({ placement: { kind: "absent" as const }, side: null }),
+    }), { ...input, instruction: "give him a tattoo" });
+    expect(result.kind).toBe("selected");
+    expect(result.note).toContain("Nothing was charged.");
+    expect(painted, "an ask that named no place reached the engine").toHaveLength(0);
+  });
+
+  it("does NOT take this road when she pointed at a picture — the negative control", async () => {
+    /*
+      THE ARM THAT SHAPED THE CONDITION. Without `!namesInkFromReference`, an
+      ink-reference ask from an account OUTSIDE `CASTING_INK_REFERENCE_SCOPE`
+      got a placement question instead of D-137's document wall — the gate
+      being routed around by the fix for a different lane. `fromReference` is
+      read off the delta, the same predicate the gate itself uses.
+    */
+    let asked = 0;
+    await expect(refineCandidate(inkRoad({
+      inkReferenceEnabled: () => false,
+      inkTake: async () => { asked += 1; return { placement: { kind: "absent" as const }, side: null }; },
+    }), {
+      ...input, instruction: "use this tattoo design on my left sleeve", referenceId: "ref-public",
+    })).rejects.toThrow(/Nothing was charged/);
+    expect(asked, "the words lane read a sentence that pointed at a picture").toBe(0);
   });
 
   it("ANSWERS a reference-documented tattoo ask with NO DESIGN and dispatches NOTHING", async () => {

@@ -216,6 +216,8 @@ import {
 } from "./referenceSlotCatalogue";
 import { isInkSlot, isOpenSlot, openKindCarriedByCrops, openSlotKey } from "./referenceSlots";
 import { inkDesignForAsk, slotPlacementOf, type InkAskAddress } from "./inkDesignForAsk";
+import { sidesForInkPlacement } from "../../shared/inkReleasedPlacements";
+import { INK_PLACEMENTS } from "../../shared/inkPlacementVocabulary";
 import { mintInkDesignFromReference } from "./inkReferenceMint";
 import { listInkDesigns } from "../db/castingV2InkDesigns";
 import { removeInkDesign } from "../db/castingV2InkDesignRemoval";
@@ -4148,6 +4150,153 @@ async function refineCandidateCounted(
     };
   }
 
+  /*
+    ---- AND WHERE SHE SAID IT GOES WHEN THERE IS NO PICTURE AT ALL ----
+
+    D-137's promise, kept on the repaint road at last: **words alone document
+    ink where the anchor itself shows it — her face and her neck.** Until this
+    landed, that promise was not kept here at all.
+
+    # THE WALL THIS REMOVES, measured before it was written (opus-885 §1)
+
+    `slotsForFacet("ink", …)` is `perPlacement`: it answers with NO slots unless
+    the caller hands it a placement. And the ONLY thing that ever handed it one
+    was `inkSource` — a design minted out of an attached picture. So a
+    words-only tattoo ask reached `repaintAsksFor`, found no slot, and refused
+    `unplacedInk`: charged, refunded, and answered with
+
+        "I can put a tattoo on her, but I need to know where it goes —
+         her neck, an upper arm, her upper chest. Say where and I'll do it."
+
+    said to a customer whose own sentence was *"give him a small geometric
+    dinosaur skeleton tattoo ON HIS NECK"*, and whose FILED DELTA held those
+    words verbatim. The product asked her for the one thing she had already
+    said. In production that is `CASTING_REPAINT_SCOPE=users:1` — his own
+    account — on every tattoo ask.
+
+    # WHY THIS IS NOT THE INFERENCE fable-1115 §3 OUTLAWED
+
+    Ruled at fable-1192 §1, and the distinction is the whole licence for this
+    block: that ruling forbade DERIVING a fact she did not state from one she
+    did — *sleeve implies arm implies pick one*, whose cost is a design on the
+    wrong arm. **Extraction is not inference.** *"On his neck"* is HER WORD,
+    pulled out of HER SENTENCE and then put through the closed vocabulary,
+    which is `resolveInkPlacement`'s existing job and not a new judgement.
+
+    Everything downstream is the reference lane's own machinery, unchanged and
+    shared rather than re-implemented: the same take reader, the same closed
+    vocabulary, the same source containment on the side, and the same free
+    questions before the claim. `sleeve` still comes back OPEN and still walls
+    here — because a placement the vocabulary has not measured has no slot,
+    which is a separate decision from this one.
+  */
+  let wordsInkAddress: InkAskAddress | null = null;
+  /*
+    ⚠ `!pointedAtThePicture` IS THE LANE, AND IT IS NOT A CONVENIENCE.
+
+    D-137's road is words ALONE. An ask that POINTED AT A PICTURE is the other
+    road whatever came of it — and what comes of it when the account is outside
+    `CASTING_INK_REFERENCE_SCOPE` is that the picture cannot be read, which is
+    the document wall doing its job, not an invitation to ask her where it
+    goes. Without this condition an ink-reference ask from an account outside
+    that flag got a placement question instead of D-137's wall — the gate being
+    routed around by the fix for a different lane.
+
+    It is `pointedAtThePicture` — the interpreter's own `fromReference` on THIS
+    reading, and the SAME expression the reference branch above enters on, so
+    the two lanes cannot both claim a sentence or both disclaim one.
+
+    ⚠ AND IT IS NOT `namesInkFromReference`, WHOSE NAME SAYS OTHERWISE. That
+    predicate asks only whether the delta names ink AT ALL — the "FromReference"
+    in it is the gate's context, not a field it reads. Written with it, this
+    condition was false for every ink ask ever made and the whole block was
+    dead; the arms below caught it on the first run.
+  */
+  if (
+    inkSource === null
+    && editDelta !== null
+    && !pointedAtThePicture
+    && facetsWrittenBy(editDelta).has("ink")
+  ) {
+    const take = await (dependencies.inkTake ?? resolveInkReferenceTake)({
+      instruction,
+      lane: "words",
+    });
+    wordsInkAddress = inkAskAddressOf(take);
+    /*
+      CLOSED FIRST, AND EVERY OTHER ANSWER IS FREE — fable-1192 §1's condition.
+
+      Three of the resolver's answers cannot reach a slot: she named no place,
+      she said something too long to be a place name, or she named a surface the
+      vocabulary has not measured (`sleeve`, `behind her ear`). All three used
+      to travel INTO the claim and meet `unplacedInk` — charged, refused,
+      refunded. Here they are answered before any money moves, in that door's
+      OWN sentence, from that door's own owner: `cannotSayCopy` already holds
+      the words and its docblock already says this branch should be the one she
+      meets. A second sentence for the same gap is how a customer meets two
+      products.
+
+      `moneySafe: true` and it is arithmetic rather than kindness — this line is
+      above the claim, so nothing has been charged to give back.
+    */
+    const named = wordsInkAddress;
+    const measuredPlacement = named === null
+      ? null
+      : INK_PLACEMENTS.find((one) => one === named.placement) ?? null;
+    if (named === null || measuredPlacement === null) {
+      log.info(
+        {
+          userId: input.userId,
+          candidate: input.candidatePublicId,
+          placement: take?.placement.kind ?? null,
+          named: named?.placement ?? null,
+        },
+        "[refineService] a words-only tattoo ask with no measured place — answered before the claim, nothing spent",
+      );
+      wordsInkAddress = null;
+      return {
+        kind: "selected",
+        note: cannotSaySentence("unplacedInk", {
+          words: null, facet: "ink", scopeNoun: null, moneySafe: true,
+        }),
+        variantId: source.variantPublicId,
+        candidateId: input.candidatePublicId,
+        imageUrl: currentImageUrl,
+        instructions: readInstructions(predecessorForParse?.instructions),
+      };
+    }
+    /*
+      A PAIRED SURFACE AND NO WORD FOR WHICH ONE — the EXISTING side machinery,
+      never a guess (fable-1192 §1's condition).
+
+      `sidesForInkPlacement` is the one owner of which surfaces come in pairs,
+      and `whichSideReask` is the question the reference lane already asks. An
+      answer puts the word in her own sentence, so the take reads it and the
+      containment that guards the side accepts it — which is why this cannot
+      loop.
+
+      Only for a MEASURED placement: an open phrase has no sides to be unstated
+      about, and it walls one door along for a different reason.
+    */
+    if (
+      named.side === null
+      && sidesForInkPlacement(measuredPlacement).includes("left")
+    ) {
+      log.info(
+        { userId: input.userId, candidate: input.candidatePublicId, placement: named.placement },
+        "[refineService] a words-only tattoo ask on a paired surface with no side — asked before the claim, nothing spent",
+      );
+      return {
+        kind: "asked",
+        reask: whichSideReask(instruction),
+        variantId: source.variantPublicId,
+        candidateId: input.candidatePublicId,
+        imageUrl: currentImageUrl,
+        instructions: readInstructions(predecessorForParse?.instructions),
+      };
+    }
+  }
+
   let hairSource: { key: string; sha: string; scope: string } | null = null;
   let attachedPictureUnused = false;
   let secondViewNote: string | null = null;
@@ -4901,7 +5050,19 @@ async function refineCandidateCounted(
             disagreeing means a design on the wrong arm. Undefined on every
             render that is not an ink ask, which is every render so far.
           */
-          ...(inkSource ? { inkPlacement: slotPlacementOf(inkSource.address) } : {}),
+          /*
+            TWO ROADS, ONE FIELD. `inkSource` is the design minted from a
+            picture; `wordsInkAddress` is D-137's words-only road, where the
+            place came out of her own sentence and there is no design at all.
+            Both were derived ONCE in the pre-claim door and are carried here —
+            re-deriving would be a second reading of the same sentence, and the
+            two disagreeing means a design on the wrong part of her.
+          */
+          ...(inkSource
+            ? { inkPlacement: slotPlacementOf(inkSource.address) }
+            : wordsInkAddress
+              ? { inkPlacement: slotPlacementOf(wordsInkAddress) }
+              : {}),
           /*
             AND WHAT THE LIBRARY CANNOT PICTURE, SAID IN WORDS INSTEAD.
 

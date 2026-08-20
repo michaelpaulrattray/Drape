@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "3e2915f475e9b2b3"
+    "sourceFingerprint": "60eb398a21ef0cd3"
   },
   "domains": [
     {
@@ -22457,6 +22457,16 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/castingV2/refineService.ts",
+      "to": "module:shared/inkPlacementVocabulary.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/refineService.ts",
+      "to": "module:shared/inkReleasedPlacements.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/castingV2/refineSubjects.ts",
       "to": "module:server/castingV2/refineDelta.ts",
       "kind": "imports"
@@ -29741,17 +29751,17 @@
       "message": "Names 2 of HairColourSection's 3 fields (server/castingV2/hairColourFromReference.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/refineService.ts:673",
+      "id": "finding:redeclared-shape:server/castingV2/refineService.ts:675",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/refineService.ts:673",
+      "subject": "server/castingV2/refineService.ts:675",
       "message": "Names 3 of Thumbnail's 3 fields (server/castingV2/thumbnails.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/refineService.ts:780",
+      "id": "finding:redeclared-shape:server/castingV2/refineService.ts:782",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/refineService.ts:780",
+      "subject": "server/castingV2/refineService.ts:782",
       "message": "Names 3 of Thumbnail's 3 fields (server/castingV2/thumbnails.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
