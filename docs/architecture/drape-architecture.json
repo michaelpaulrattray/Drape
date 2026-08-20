@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "b1dcfbbf46002976"
+    "sourceFingerprint": "128abf41f8ebcc6c"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 158
+      "moduleCount": 159
     },
     {
       "id": "domain:castingV2",
@@ -3683,6 +3683,12 @@
     {
       "id": "module:server/castingV2/inkReferenceTake.ts",
       "path": "server/castingV2/inkReferenceTake.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/inkReferenceUpscale.ts",
+      "path": "server/castingV2/inkReferenceUpscale.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -10091,6 +10097,10 @@
     {
       "id": "test:server/castingV2/inkReferenceTake.test.ts",
       "path": "server/castingV2/inkReferenceTake.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/inkReferenceUpscale.test.ts",
+      "path": "server/castingV2/inkReferenceUpscale.test.ts"
     },
     {
       "id": "test:server/castingV2/inkRegionCropScope.test.ts",
@@ -20716,6 +20726,21 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/castingV2/inkReferenceUpscale.ts",
+      "to": "module:server/castingV2/inkUploadDoor.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/inkReferenceUpscale.ts",
+      "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/inkReferenceUpscale.ts",
+      "to": "module:server/providers/falTransport.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/castingV2/inkTemplates.ts",
       "to": "module:shared/castingVocabularies.ts",
       "kind": "imports"
@@ -20778,6 +20803,11 @@
     {
       "from": "module:server/castingV2/inkUploadService.ts",
       "to": "module:server/castingV2/inkReferenceCutter.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/inkUploadService.ts",
+      "to": "module:server/castingV2/inkReferenceUpscale.ts",
       "kind": "imports"
     },
     {
@@ -29826,17 +29856,17 @@
       "message": "Names 2 of InkUploadRefusal's 2 fields (server/castingV2/inkUploadDoor.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/inkUploadService.ts:192",
+      "id": "finding:redeclared-shape:server/castingV2/inkUploadService.ts:193",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/inkUploadService.ts:192",
+      "subject": "server/castingV2/inkUploadService.ts:193",
       "message": "Names 2 of InkPlateMintRequest's 4 fields (server/castingV2/inkPlateMint.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/inkUploadService.ts:250",
+      "id": "finding:redeclared-shape:server/castingV2/inkUploadService.ts:251",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/inkUploadService.ts:250",
+      "subject": "server/castingV2/inkUploadService.ts:251",
       "message": "Names 2 of InkPlateMintRequest's 4 fields (server/castingV2/inkPlateMint.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {

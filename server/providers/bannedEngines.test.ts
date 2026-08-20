@@ -99,6 +99,74 @@ describe("the ban list itself", () => {
   });
 });
 
+/**
+ * THE UPSCALER'S SHAPE, AND IT COST TWO PAID CALLS TO FIND (opus-903 §6b, ruled
+ * fable-1210 §1c).
+ *
+ * Every GENERATOR answers `images: [...]`. An UPSCALER answers `image: { url }`,
+ * SINGULAR — and this parser read only the plural, so a job that RAN and cost
+ * money came back as *"fal.ai completed without an image"*: a shape mismatch
+ * reported as a provider failure. Both shapes are arms, and the plural still
+ * wins where both are present, so no generator's behaviour moved.
+ */
+describe("the result shape", () => {
+  const singular = (url: string) => (target: string): Response => {
+    if (target.endsWith("/status")) return new Response(JSON.stringify({ status: "COMPLETED" }));
+    if (target.includes("/requests/")) {
+      return new Response(JSON.stringify({ image: { url, content_type: "image/png" } }));
+    }
+    return new Response(JSON.stringify({
+      request_id: "req-1",
+      status_url: "https://queue.fal.run/x/requests/req-1/status",
+      response_url: "https://queue.fal.run/x/requests/req-1",
+    }));
+  };
+
+  it("reads an upscaler's SINGULAR `image` answer", async () => {
+    countingFetch(singular(`data:image/png;base64,${PNG_BYTES.toString("base64")}`));
+    const job = await falJob("fal-ai/aura-sr");
+    expect(job.bytes.toString()).toBe(PNG_BYTES.toString());
+  });
+
+  it("still reads a generator's PLURAL answer — the negative control", async () => {
+    countingFetch(falHappyPath);
+    const job = await falJob("openai/gpt-image-2/edit");
+    expect(job.bytes.toString()).toBe(PNG_BYTES.toString());
+  });
+
+  it("prefers the plural when a payload somehow carries both", async () => {
+    countingFetch((target: string): Response => {
+      if (target.endsWith("/status")) return new Response(JSON.stringify({ status: "COMPLETED" }));
+      if (target.includes("/requests/")) {
+        return new Response(JSON.stringify({
+          images: [{ url: `data:image/png;base64,${Buffer.from("plural").toString("base64")}` }],
+          image: { url: `data:image/png;base64,${Buffer.from("singular").toString("base64")}` },
+        }));
+      }
+      return new Response(JSON.stringify({
+        request_id: "req-1",
+        status_url: "https://queue.fal.run/x/requests/req-1/status",
+        response_url: "https://queue.fal.run/x/requests/req-1",
+      }));
+    });
+    const job = await falJob("openai/gpt-image-2/edit");
+    expect(job.bytes.toString()).toBe("plural");
+  });
+
+  it("STILL FAILS when neither shape is present — the guard can fail", async () => {
+    countingFetch((target: string): Response => {
+      if (target.endsWith("/status")) return new Response(JSON.stringify({ status: "COMPLETED" }));
+      if (target.includes("/requests/")) return new Response(JSON.stringify({ nothing: true }));
+      return new Response(JSON.stringify({
+        request_id: "req-1",
+        status_url: "https://queue.fal.run/x/requests/req-1/status",
+        response_url: "https://queue.fal.run/x/requests/req-1",
+      }));
+    });
+    await expect(falJob("openai/gpt-image-2/edit")).rejects.toThrow(/without an image/);
+  });
+});
+
 describe("fal image dispatch", () => {
   it("refuses a banned engine BEFORE anything leaves the process", async () => {
     const calls = countingFetch(falHappyPath);

@@ -1122,6 +1122,83 @@ describe("the region road — the cut is the SURFACE, not the patch inside it", 
     expect(!off.ok && off.refusal).toEqual(!on.ok ? on.refusal : null);
   });
 
+  it("ENLARGES A CUT UNDER THE FLOOR when it is given somewhere to grow — the floor court's verdict", async () => {
+    /*
+      opus-903's six frames, ruled fable-1210 §1: `INK_DESIGN_MIN_EDGE` stays and
+      the picture is made to meet it. The arm above is the state this replaces
+      for a user inside the region flag — same specimen, same 183-wide surface,
+      and the only difference is that an enlarger is supplied.
+
+      The double MODELS THE MEASURED FINDING rather than a tidier one: the real
+      call answered 183x259 -> 732x1036, so this one scales by the model's own
+      ratio and the assertion is on the dimensions that come BACK, because those
+      are what the row records.
+    */
+    const picture = await coordinatePicture(W, H);
+    const asked: Array<{ width: number; height: number }> = [];
+    const result = await cutInkDesign({
+      bytes: picture,
+      reader: photographed({ x: 40, y: 200, w: 183, h: 600 }, { x: 100, y: 300, w: 300, h: 300 }),
+      scope: scopeOf(),
+      regionCrop: true,
+      upscale: async (cut) => {
+        asked.push({ width: cut.width, height: cut.height });
+        const grown = await sharp(cut.bytes)
+          .resize({ width: cut.width * 4, height: cut.height * 4, fit: "fill" })
+          .png()
+          .toBuffer();
+        return { bytes: grown, width: cut.width * 4, height: cut.height * 4 };
+      },
+    });
+
+    expect(result.ok, "the picture the floor refused now rides").toBe(true);
+    /* IT WAS ASKED ABOUT THE CUT, not about her whole picture — the enlarger
+       must never be handed the photograph. */
+    expect(asked.length).toBe(1);
+    expect(asked[0]!.width).toBeLessThan(INK_DESIGN_MIN_EDGE);
+    /* AND WHAT COMES BACK IS WHAT IS STORED: the row's width/height describe the
+       object, not the box it was cut from. */
+    expect(result.ok && result.cut.width).toBe(asked[0]!.width * 4);
+    expect(result.ok && result.cut.height).toBe(asked[0]!.height * 4);
+    const stored = await sharp(result.ok ? result.cut.bytes : Buffer.alloc(0)).metadata();
+    expect(stored.width).toBe(asked[0]!.width * 4);
+    /* THE BOX STILL SAYS WHERE IT CAME FROM — a crop means nothing except
+       against its own frame, and enlarging must not rewrite its provenance. */
+    expect(result.ok && result.cut.box?.width).toBe(asked[0]!.width);
+  });
+
+  it("refuses exactly as before when the enlarger cannot help — and NEVER stores a smaller picture", async () => {
+    /* The negative control the arm above needs: an enlarger that answers null
+       leaves today's refusal in place rather than admitting the cut anyway. */
+    const picture = await coordinatePicture(W, H);
+    const result = await cutInkDesign({
+      bytes: picture,
+      reader: photographed({ x: 40, y: 200, w: 183, h: 600 }, { x: 100, y: 300, w: 300, h: 300 }),
+      scope: scopeOf(),
+      regionCrop: true,
+      upscale: async () => null,
+    });
+
+    expect(result.ok).toBe(false);
+    expect(!result.ok && result.refusal.code).toBe("cutTooSmall");
+  });
+
+  it("does not buy an enlargement for a cut that already clears the floor", async () => {
+    /* The road must cost nothing on a picture it already handles. */
+    const picture = await coordinatePicture(W, H);
+    let calls = 0;
+    const result = await cutInkDesign({
+      bytes: picture,
+      reader: photographed({ x: 40, y: 200, w: 400, h: 600 }, { x: 100, y: 300, w: 300, h: 300 }),
+      scope: scopeOf(),
+      regionCrop: true,
+      upscale: async (cut) => { calls += 1; return { bytes: cut.bytes, width: cut.width, height: cut.height }; },
+    });
+
+    expect(result.ok).toBe(true);
+    expect(calls, "a cut over the floor must not reach the enlarger at all").toBe(0);
+  });
+
   it("drops the road rather than refusing when the face question goes unanswered", async () => {
     /*
       The same posture the region question above takes: this is an improvement

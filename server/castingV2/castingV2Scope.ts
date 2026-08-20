@@ -1766,17 +1766,30 @@ export function captureCastingInkCutEnabled(userId: number): boolean {
  * own ontology example names, *"copy his right arm sleeve"* — is the one it
  * blocks.
  *
- * It does not inherit 256 silently and it does not get a floor invented for it
- * either: per fable-1183 §3 no floor constant moves before the REALISM PASS's
- * frames — an upscaled small cut and a native one side by side, his eyes
- * deciding what a render needs. The road is built now so that pass has
- * something to produce a native region cut FROM (fable-1201 §5). This is the
- * fidelity law's DECLARED-scaffolding form: a shortcut is permitted when it is
- * said out loud and the real source is on the board.
+ * ⚠ **THE FLOOR QUESTION IS ANSWERED, AND THE ANSWER IS NOT A NEW CONSTANT**
+ * (the floor court, opus-903; ruled fable-1210 §1). Six paid frames, one
+ * design, one placement, and the reference's pixel size as the only variable:
  *
- * **So the floor is this flag's first flip precondition.**
+ * ```
+ *   reference     delivered ink        at the frames
+ *   1200x1697     73,820 / 63,712 px   the design, fully drawn
+ *    183x259      17,615 / 15,688 px   a sparse strand — THE DESIGN IS GONE
+ *    732x1036     26,804 / 37,066 px   the design is back
+ * ```
  *
- * # AND ITS SECOND IS A FOUNDER GATE THAT NO ARM CAN CLOSE
+ * Non-overlapping arms — the native smallest is 3.6x the small one's largest.
+ * So 256 was RIGHT, for the reason its own docblock asserted without evidence,
+ * and **the picture is made to meet it instead**: `inkReferenceUpscale.ts`
+ * enlarges a cut under the floor through a faithful super-resolution model
+ * (never a diffusion one — that would invent strokes the customer never drew),
+ * bought only for a cut that would otherwise be refused, on the shared courtesy
+ * pool. The enlarging is reached ONLY through this flag, and for a user inside
+ * it, it rescues both roads' small cuts rather than the surface alone.
+ *
+ * **So the floor is no longer a flip precondition — it is a solved problem, and
+ * the remaining two below are what stand.** No floor constant moved.
+ *
+ * # ITS FIRST REMAINING PRECONDITION IS A FOUNDER GATE THAT NO ARM CAN CLOSE
  *
  * This road sends more of a stranger's photograph to an engine than anything
  * before it: today a photographed person contributes at most one ink patch, and
@@ -1793,7 +1806,7 @@ export function captureCastingInkCutEnabled(userId: number): boolean {
  * **It does not retire the widening tripwire either** — it enlarges what that
  * tripwire is about, which is the opposite.
  *
- * # AND ITS THIRD IS THE OFFER, which is also the containment test's backstop
+ * # AND ITS SECOND IS THE OFFER, which is also the containment test's backstop
  *
  * The customer is shown the crop that will ride (fable-1183 §2c) — 3a.2(b)'s
  * surface, the same prerequisite `CASTING_INK_CUT_SCOPE` carries. On this road

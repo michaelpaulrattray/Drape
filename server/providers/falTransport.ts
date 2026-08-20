@@ -282,10 +282,23 @@ async function runFalImageJobUncounted(input: {
       );
     }
 
+    /*
+      EITHER SHAPE, AND THE SECOND ONE COST TWO PAID CALLS TO FIND (opus-903
+      §6b, ruled fable-1210 §1c).
+
+      Every GENERATOR this product dispatches to answers `images: [...]`. An
+      UPSCALER answers `image: { url }`, SINGULAR — and this parser read only
+      the first shape, so both attempts through it RAN, cost money, and came
+      back as *"fal.ai completed without an image"*: a shape mismatch reported
+      as a provider failure, which is the loudest way a caller can be wrong
+      about what it just bought. Nothing about the generators changes; the
+      plural is still read first and wins where both are present.
+    */
     const payload = (await result.json()) as {
       images?: Array<{ url?: string; content_type?: string; width?: number; height?: number }>;
+      image?: { url?: string; content_type?: string; width?: number; height?: number };
     };
-    const image = payload.images?.[0];
+    const image = payload.images?.[0] ?? payload.image;
     if (!image?.url) {
       throw new ProviderError("unknown", "fal.ai completed without an image", {
         providerRef: requestId,

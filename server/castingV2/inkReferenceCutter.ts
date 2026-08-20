@@ -324,6 +324,22 @@ export type CutInkDesignInput = {
    * NARROWS the ink mask and the ink inside it is what is stored.
    */
   regionCrop?: boolean;
+  /**
+   * ENLARGE A CUT THAT IS UNDER THE FLOOR RATHER THAN REFUSING IT — the floor
+   * court's verdict (opus-903, ruled fable-1210 §1).
+   *
+   * Absent is off and off is exactly today's behaviour: a cut below
+   * `INK_DESIGN_MIN_EDGE` is refused `cutTooSmall`. Supplied, it is asked ONLY
+   * for a cut that would otherwise be refused — so it costs nothing on a
+   * picture this road already handles — and a `null` answer refuses exactly as
+   * before.
+   *
+   * A function rather than a flag, because the enlarging spends money and this
+   * module must stay drivable without a provider: the suite hands it a double
+   * and the six frames that bought it live in `inkReferenceUpscale.ts`.
+   */
+  upscale?: (input: { bytes: Buffer; width: number; height: number }) =>
+    Promise<{ bytes: Buffer; width: number; height: number } | null>;
   /** For the log line, so a cut can be traced to the upload that bought it. */
   about?: { userId?: number; candidatePublicId?: string };
 };
@@ -840,7 +856,14 @@ export async function cutInkDesign(input: CutInkDesignInput): Promise<CutInkDesi
     is refused identically whether the smallness arrived as a whole picture or
     as the cut taken out of one.
   */
-  if (!cropClearsMinimumEdge(box)) {
+  const underFloor = !cropClearsMinimumEdge(box);
+  /*
+    AND WITH NOWHERE TO GROW IT, THAT IS STILL THE END OF THE ROAD — refused
+    before the pixels are touched, exactly as this file has always done. The
+    enlarging half is below, after the cut exists, because there is nothing to
+    enlarge until then.
+  */
+  if (underFloor && input.upscale === undefined) {
     log.info(
       { ...input.about, box: `${box.width}x${box.height}`, floor: INK_DESIGN_MIN_EDGE, ink: inkExtent.pixels },
       "[inkReferenceCutter] the design in that picture is smaller than a design — refused free",
@@ -866,15 +889,50 @@ export async function cutInkDesign(input: CutInkDesignInput): Promise<CutInkDesi
        existed. */
     mask: surface?.mask ?? scoped.mask,
   });
-  const bytes = await sharp(cutRgba, { raw: { width: decoded.width, height: decoded.height, channels: 4 } })
+  const cutBytes = await sharp(cutRgba, { raw: { width: decoded.width, height: decoded.height, channels: 4 } })
     .extract({ left: box.left, top: box.top, width: box.width, height: box.height })
     .png()
     .toBuffer();
 
+  /*
+    THE FLOOR COURT'S VERDICT: A SMALL CUT IS ENLARGED, NOT ADMITTED (opus-903,
+    ruled fable-1210 §1).
+
+    Six paid frames measured what 256 was asserting without evidence: at 183 px
+    the delivered ink is 17,615 / 15,688 px against 73,820 / 63,712 at native —
+    non-overlapping arms — and at the frames the design's own subject is GONE.
+    The same picture through a faithful upscaler brings it back. So the number
+    stays and the picture is made to meet it.
+
+    Asked ONLY for a cut that would otherwise be refused, so it never spends on
+    a picture this road already handles, and a null answer refuses exactly as
+    the line above does. `enlarged` carries the REAL dimensions the model
+    returned — no target size is invented anywhere on this road (fable-1210
+    §1b), and what is stored is what came back.
+  */
+  const enlarged = underFloor
+    ? await input.upscale!({ bytes: cutBytes, width: box.width, height: box.height })
+    : null;
+  if (underFloor && enlarged === null) {
+    log.info(
+      { ...input.about, box: `${box.width}x${box.height}`, floor: INK_DESIGN_MIN_EDGE, ink: inkExtent.pixels },
+      "[inkReferenceCutter] the design in that picture is smaller than a design and would not enlarge — refused free",
+    );
+    return refuse("cutTooSmall");
+  }
+  const bytes = enlarged?.bytes ?? cutBytes;
+  const width = enlarged?.width ?? box.width;
+  const height = enlarged?.height ?? box.height;
+
   log.info(
     {
       ...input.about,
-      size: `${box.width}x${box.height}`,
+      size: `${width}x${height}`,
+      /* THE BOX IS WHERE IT WAS CUT FROM AND `size` IS WHAT IS STORED — the two
+         differ only when the cut was enlarged, and a log that conflated them
+         would hide the one road where the stored picture is not the cut. */
+      cutFrom: `${box.width}x${box.height}`,
+      enlargedTo: enlarged === null ? null : `${enlarged.width}x${enlarged.height}`,
       at: `${box.left},${box.top}`,
       ink: scoped.pixels,
       ofWholeMask: inkExtent.pixels,
@@ -893,8 +951,8 @@ export async function cutInkDesign(input: CutInkDesignInput): Promise<CutInkDesi
     cut: {
       route: "cut",
       bytes,
-      width: box.width,
-      height: box.height,
+      width,
+      height,
       /* THE COUNT DESCRIBES THE PIXELS THAT WERE CUT, not the ones the reader
          found — a scoped cut of a two-sleeved man is a fraction of the ink in
          his photograph, and a number describing the wrong set is worse in a

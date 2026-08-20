@@ -97,6 +97,7 @@ import {
 } from "../db/storageCleanup";
 import { storagePut } from "../storage";
 import { captureCastingInkCutEnabled, captureCastingInkRegionCropEnabled } from "./castingV2Scope";
+import { upscaleToFloor } from "./inkReferenceUpscale";
 import { createFalRegionReader } from "./falRegionReader";
 import {
   cutInkDesign,
@@ -297,6 +298,36 @@ export function defaultCutDesign(
       sentence named.
     */
     regionCrop: captureCastingInkRegionCropEnabled(input.userId),
+    /*
+      AND A CUT UNDER THE FLOOR IS ENLARGED RATHER THAN REFUSED — the floor
+      court's verdict (opus-903, ruled fable-1210 §1), read here for the same
+      reason the line above is: this is where a request meets the world.
+
+      ⚠ **BEHIND THE REGION ROAD'S OWN FLAG, and it rescues BOTH roads' small
+      cuts for a user inside it.** The floor is that flag's first flip
+      precondition and the court that answered it was that road's, so this is
+      where the answer belongs — but the rescue is not narrowed to a surface
+      cut, because a road that enlarged the SURFACE and still refused the
+      smaller ink patch inside it would admit the bigger picture and refuse the
+      smaller one, which is the wrong way round.
+
+      Absent when the flag is off or there is no transport, and absent means the
+      cutter refuses `cutTooSmall` exactly as it does today — the enlarging is
+      unreachable rather than merely unused.
+    */
+    /* The parameter's type comes FROM the contract rather than being re-listed
+       beside it (law 4, and the Atlas says so mechanically): a second copy of
+       `{ bytes, width, height }` here would drift by losing a field nothing can
+       see. */
+    ...(apiKey && captureCastingInkRegionCropEnabled(input.userId)
+      ? {
+        upscale: ((cut) => upscaleToFloor({
+          ...cut,
+          apiKey,
+          about: { userId: input.userId, candidatePublicId: input.candidatePublicId },
+        })) satisfies NonNullable<CutInkDesignInput["upscale"]>,
+      }
+      : {}),
     about: { userId: input.userId, candidatePublicId: input.candidatePublicId },
   });
 }
