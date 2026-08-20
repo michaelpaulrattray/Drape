@@ -1954,10 +1954,63 @@ export function saysNothingNew(input: {
    * prior to compare against is new, which is what it was before this existed.
    */
   priorAbsent?: Partial<Record<FreeSubject, string[]>>;
+  /**
+   * WHICH DESIGN THIS INK ASK POINTS AT, AND WHICH ARE ALREADY ON HER.
+   *
+   * **AN INK SUBJECT'S IDENTITY LIVES IN BYTES, NOT WORDS** (ruled fable-1173
+   * §1, shape countersigned fable-1174 §1), and that asymmetry with every other
+   * subject's door is DELIBERATE rather than discovered.
+   *
+   * The reason is a measured fact about the words themselves: an ask that
+   * points at an attached picture spells the SAME SENTENCE for every design —
+   * *"the tattoo design in the attached picture on her neck"* — because the
+   * words name the place and the picture, never the artwork. So two different
+   * designs at one address are word-identical, the last writer wins the
+   * spelling, and this door reads the second ask as an echo of the first and
+   * refuses it free. That is the exact customer the replace offer was built
+   * for, turned away one door before it.
+   *
+   * Every other subject keeps answering by WORDS, because their words ARE
+   * discriminating: "meadow green" and "icey blue" are not the same sentence.
+   * If a second subject ever grows a byte identity, this docblock is its
+   * precedent rather than its accident.
+   *
+   * `askDigest` is the sha256 of the attachment the ask points at;
+   * `appliedDigests` is the `sourceDigest` of every design the chain records as
+   * already applied. A HAND-UPLOADED design has no source picture, so its
+   * digest is null and is never in this list — an ask pointing at a picture
+   * therefore stands aside from it, which is right: it did not come out of that
+   * picture.
+   *
+   * Optional, and absent means exactly today's behaviour — the `priorAbsent`
+   * precedent above. **The caller supplies it only for an ask that names ink
+   * from the attached picture, and `namesInkFromReference` is the one owner of
+   * that decision** — the same predicate that decides whether the tattoo branch
+   * is entered at all, so this door and that branch cannot come to disagree
+   * about what an ink ask is.
+   */
+  inkPointer?: {
+    askDigest: string | null;
+    appliedDigests: readonly string[];
+  };
   identity: ResolvedIdentity | null | undefined;
 }): { absorbed: false } | { absorbed: true; alreadyTrue: string; departed?: boolean } {
   const { delta } = input;
   const same = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase();
+  /*
+    THE PICTURE SHE IS POINTING AT IS NOT ONE OF THE ONES ALREADY ON HER — so
+    this ask says something new whatever its words repeat. See `inkPointer`.
+
+    A null `askDigest` is an ask carrying no picture, and that is the words-only
+    lane: unchanged, byte for byte, by construction.
+  */
+  const pointer = input.inkPointer;
+  if (pointer && pointer.askDigest !== null) {
+    const askDigest = pointer.askDigest;
+    if (!pointer.appliedDigests.some((applied) => same(applied, askDigest))) {
+      return { absorbed: false };
+    }
+  }
   const echoed: string[] = [];
   /*
     A DEPARTURE IS NEW BY DEFINITION — UNLESS IT HAS ALREADY LEFT.

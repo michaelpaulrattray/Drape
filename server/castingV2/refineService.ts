@@ -208,7 +208,7 @@ import {
 } from "./referenceLibrary";
 import { listLineageReferences, recordReferenceRows, retireReferenceSlot } from "../db/castingV2ReferenceLibrary";
 import type { RegionReader as MintRegionReader } from "./referenceCompleteness";
-import { withAppliedInk } from "./inkApplied";
+import { readAppliedInk, withAppliedInk } from "./inkApplied";
 import { assembleRecipe, type CarriedInkDesign, type FeatureSlot } from "./recipeAssembler";
 import {
   facetsOfSlot, slotDefinition, slotsForFacet, slotsForFeature, type SlotDefinition,
@@ -1689,6 +1689,71 @@ async function refineCandidateCounted(
   )) {
     priorAbsent[subject as FreeSubject] = itemsOf(value);
   }
+  /*
+    AND WHICH DESIGN THE ASK POINTS AT — the third half of the same door
+    (ruled fable-1173 §1, shape (C) countersigned fable-1174 §1).
+
+    The door above compares WORDS, and for every subject but this one the words
+    discriminate. An ask pointing at an attached picture spells the same
+    sentence for every design she could ever attach — the place and the picture
+    are in it, the artwork never is — so a SECOND design at an occupied address
+    read as an echo of the first and was refused free, one door before the
+    replace offer built for exactly her. `saysNothingNew`'s own docblock carries
+    the reasoning; here is where the two digests are fetched.
+
+    **It is READ LAZILY AND AT MOST ONCE, and the gate is the ordinary ask's
+    protection**: nothing happens at all unless she attached a picture, the
+    chain already records applied ink, AND the delta in hand names ink from that
+    picture. An ask with no reference, or on a Cast with no tattoo, pays not one
+    statement for this. The population that does pay pays a single owner-scoped
+    read — no engine, no money.
+
+    `namesInkFromReference` rather than a subject list written out here: it is
+    the same predicate that decides whether the tattoo branch is entered at all
+    (`ink` words, and `marks` naming a design), so the door cannot come to
+    disagree with the road about what an ink ask is.
+
+    **AND THAT GATE IS A CORRECTNESS CONTROL, NOT ONLY A COST ONE** — measured
+    by removing it, which reddened two arms rather than the one it was written
+    for. Without it, a picture riding along on an ask about HER HAIR builds a
+    pointer, the pointer says *not one of the designs she is wearing*, and an
+    ask that genuinely repeated her current hair would stand aside and be
+    charged. A digest may only speak for the subject whose identity it is.
+  */
+  const appliedInkOnChain = readAppliedInk(readStoredDelta(predecessorForParse?.deltas));
+  let inkPointerRead: Promise<{ askDigest: string | null; appliedDigests: readonly string[] }> | null
+    = null;
+  const inkPointerFor = async (
+    delta: RefineDelta,
+  ): Promise<{ askDigest: string | null; appliedDigests: readonly string[] } | undefined> => {
+    if (reference === null || appliedInkOnChain === null) return undefined;
+    if (!namesInkFromReference(delta)) return undefined;
+    inkPointerRead ??= (async () => {
+      const recorded = new Set(Object.values(appliedInkOnChain));
+      const designs = await (dependencies.listInkDesigns ?? listInkDesigns)({
+        userId: input.userId,
+        candidatePublicId: input.candidatePublicId,
+      });
+      return {
+        askDigest: reference.digest,
+        /*
+          THE DESIGNS THE CHAIN SAYS ARE ON HER, and only those. A design row
+          she owns that no step ever applied is not something this ask could be
+          restating — it is a picture in a drawer.
+
+          A hand-uploaded design's `sourceDigest` is null and is dropped here
+          rather than compared: it came out of no picture, so no picture's
+          digest can equal it, and the drop makes that the shape of the list
+          instead of a null slipping into a comparison.
+        */
+        appliedDigests: designs
+          .filter((design) => recorded.has(design.publicId))
+          .map((design) => design.sourceDigest)
+          .filter((digest): digest is string => digest !== null),
+      };
+    })();
+    return await inkPointerRead;
+  };
   const throughTheAlreadyTrueDoor = async (
     parse: Extract<Awaited<ReturnType<typeof readInstruction>>, { ok: true }>,
     mode?: "edit",
@@ -1704,8 +1769,10 @@ async function refineCandidateCounted(
       it had offered a moment earlier.
     */
     if (confirmedRegenerate) return parse;
+    const inkPointer = await inkPointerFor(parse.delta);
     const verdict = saysNothingNew({
       delta: parse.delta, prior: priorItems, priorAbsent, identity: currentIdentity,
+      ...(inkPointer ? { inkPointer } : {}),
     });
     if (!verdict.absorbed) return parse;
     log.warn(
@@ -1714,8 +1781,15 @@ async function refineCandidateCounted(
     );
     const again = await readInstruction({ ...(mode ? { mode } : {}), restated: true });
     if (again.ok && "delta" in again) {
+      /* The retry is a SECOND READING OF THE SAME SENTENCE, so it points at
+         the same picture — but the pointer is re-derived from the delta in
+         hand rather than reused, because the reading is what decides whether
+         this is an ink ask at all, and the memo means the re-derivation costs
+         no second statement. */
+      const againPointer = await inkPointerFor(again.delta);
       const second = saysNothingNew({
         delta: again.delta, prior: priorItems, priorAbsent, identity: currentIdentity,
+        ...(againPointer ? { inkPointer: againPointer } : {}),
       });
       if (!second.absorbed) {
         log.info(

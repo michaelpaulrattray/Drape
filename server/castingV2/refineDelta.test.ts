@@ -956,6 +956,52 @@ describe("a removal of something already gone says nothing new", () => {
     expect(verdict.absorbed).toBe(false);
   });
 
+  /*
+    THE PICTURE HALF — an ink subject's identity lives in BYTES, not words
+    (ruled fable-1173 §1, shape countersigned fable-1174 §1).
+
+    The service arms drive this end to end; these three pin the CONTRACT, and
+    the middle one is the compatibility arm the `priorAbsent` precedent above
+    is quoted for: absent means yesterday's behaviour, exactly.
+  */
+  const INK_ECHO = {
+    delta: { free: { ink: ["the tattoo design in the attached picture"] } },
+    prior: { ink: ["the tattoo design in the attached picture"] },
+    identity: ORIGINAL,
+  };
+
+  it("stands aside when the picture is not one she is already wearing", () => {
+    const verdict = saysNothingNew({
+      ...INK_ECHO,
+      inkPointer: { askDigest: "a".repeat(64), appliedDigests: ["b".repeat(64)] },
+    });
+    expect(verdict.absorbed).toBe(false);
+  });
+
+  it("absorbs the SAME picture, and absorbs it with no pointer at all", () => {
+    expect(saysNothingNew({
+      ...INK_ECHO,
+      inkPointer: { askDigest: "a".repeat(64), appliedDigests: ["b".repeat(64), "a".repeat(64)] },
+    }).absorbed, "the same picture at the same place stopped being free").toBe(true);
+    expect(saysNothingNew(INK_ECHO).absorbed, "a caller with no pointer got new behaviour")
+      .toBe(true);
+    /* A null digest is an ask carrying no picture — the words-only lane. */
+    expect(saysNothingNew({
+      ...INK_ECHO,
+      inkPointer: { askDigest: null, appliedDigests: [] },
+    }).absorbed).toBe(true);
+  });
+
+  it("stands aside when the chain records NOTHING she is wearing", () => {
+    /* An empty list is not a licence to absorb: nothing recorded means nothing
+       this ask could be restating, so the picture is new. */
+    const verdict = saysNothingNew({
+      ...INK_ECHO,
+      inkPointer: { askDigest: "a".repeat(64), appliedDigests: [] },
+    });
+    expect(verdict.absorbed).toBe(false);
+  });
+
   it("describes the delta by its POSITIVE half when it echoes both", () => {
     const verdict = saysNothingNew({
       delta: {

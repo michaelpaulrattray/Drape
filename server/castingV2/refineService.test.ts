@@ -9765,12 +9765,17 @@ describe("the picture she attached becomes the carrier that rides", () => {
     these arms are driven as the client drives them (the chip's LABEL, the
     handle echoed back) rather than by calling the offer's builder.
   */
-  const replaceRoad = () => {
+  const replaceRoad = (residentOver: Record<string, unknown> = {}) => {
     /*
       THE STUDIO IS STATEFUL BECAUSE THE DATABASE IS. The resident is in it from
       the start; the mint adds the new row; a removal takes one out. A fixed
       double would let the second ask see a world the first one never made, and
       every arm below is about what the SECOND ask does.
+
+      `residentOver` exists for the already-true arms below, and for exactly one
+      field: a chain that RECORDS this resident must name it by the shape this
+      product mints (`readAppliedInk` drops anything that is not a uuid), so
+      those arms hand in a real one rather than this file's readable stand-in.
     */
     const resident = inkDesignRow({
       publicId: "d-resident",
@@ -9778,6 +9783,7 @@ describe("the picture she attached becomes the carrier that rides", () => {
       side: "left",
       storageKey: "casting-v2/ink/d-resident.png",
       sourceDigest: "e".repeat(64),
+      ...residentOver,
     });
     const studio: Array<Record<string, unknown>> = [resident as unknown as Record<string, unknown>];
     const removals: Array<{ userId: number; designPublicId: string }> = [];
@@ -10029,6 +10035,363 @@ describe("the picture she attached becomes the carrier that rides", () => {
     expect(again.kind, "a re-ask after an adopt asked the question again").toBe("rendered");
     expect(inkMinted, "a re-ask after an adopt bought a second cut").toHaveLength(1);
     expect(again.design?.designId).toBe("d-minted");
+  });
+
+  /*
+    AND THE DOOR ONE STEP EARLIER — THE ALREADY-TRUE DOOR LEARNS TO COMPARE
+    PICTURES (ruled fable-1173 §1, shape (C) countersigned fable-1174 §1).
+
+    Every arm above starts from a Cast whose CHAIN says nothing about ink. The
+    customer the replace offer was built for does not: she is standing on a
+    version that already carries a tattoo, which means the chain already holds
+    the sentence *"the tattoo design in the attached picture"* — and the ask
+    that brings a SECOND design spells that sentence identically, because the
+    words name the place and the picture and never the artwork.
+
+    So the already-true door read the second ask as an echo of the first and
+    refused it free, 2,000 lines before the offer. The offer was unreachable for
+    exactly the person it exists for, and nothing was red.
+
+    The fix compares DIGESTS for this one subject and words for every other, and
+    that asymmetry is deliberate — `saysNothingNew`'s own docblock carries the
+    reason. These arms are what make it a decision rather than a coincidence:
+    the protection is KEPT (same picture, still free) and the wrong refusal is
+    gone (different picture, offered).
+  */
+  describe("a second design at an occupied address is not an echo of the first", () => {
+    /** The sentence the interpreter returns for EVERY reference tattoo — the
+     *  last-writer-wins fact, made a fixture. */
+    const THE_SAME_WORDS = "the tattoo design in the attached picture";
+
+    /**
+     * THE RESIDENT'S NAME, IN THE SHAPE THIS PRODUCT MINTS.
+     *
+     * `readAppliedInk` drops any id that is not a uuid — deliberately, because
+     * a stored delta is bytes on disk and "it can only have come from us" is
+     * the sentence that precedes every input-validation incident. So a chain
+     * fixture naming this file's readable `d-resident` records NOTHING, the
+     * gate closes, and every arm here would pass by comparing words. Asked for
+     * by the door under test, and that is why it is spelled out.
+     */
+    const RESIDENT_ID = "1f9d7c62-5a4b-4c8e-9f21-6b3a5d0e7c14";
+
+    /** A second one, for the arm where what she is WEARING is somewhere else. */
+    const WORN_ELSEWHERE_ID = "3c7f81ad-92e4-4b16-8d05-71ea4f2c9b38";
+
+    /**
+     * The branch a paid ink render left behind: her words, and OUR pointer.
+     *
+     * `applied` is passed explicitly by every caller — a default would let a
+     * negative control pass as a positive one, which is the trap the carry
+     * suite already paid for once.
+     */
+    const standingOnAnInkedVersion = (
+      applied: Record<string, string> | null,
+      alsoWearing: Record<string, string[]> = {},
+    ) => {
+      const delta = {
+        free: { ink: [THE_SAME_WORDS], ...alsoWearing },
+        ...(applied ? { inkApplied: applied } : {}),
+      };
+      variantRows = [{
+        id: 907,
+        publicId: "variant-inked",
+        candidateId: 1,
+        imageKey: "casting-v2/variants/inked.png",
+        internalPrompt: candidateRow.internalPrompt as Record<string, unknown>,
+        instructions: [ASKED_AT_THE_ARM],
+        deltas: delta,
+        stepDeltas: [delta],
+        status: "ready",
+      }];
+      candidateRow.selectedVariantPublicId = "variant-inked";
+    };
+
+    /** How many times her studio was read on this ask — the cost half of the
+     *  ruling, counted rather than asserted in prose. */
+    let studioReads = 0;
+    const counting = (rows: () => Array<Record<string, unknown>>) => async () => {
+      studioReads += 1;
+      return rows();
+    };
+    beforeEach(() => { studioReads = 0; });
+
+    it("KEEPS THE PROTECTION — the same picture at the same place, again, is still free", async () => {
+      /*
+        RED FIRST, and it is the arm that fails if this fix is written as
+        *"stand aside for any ink ask carrying a reference"* — the one-line
+        road that was refused (opus-871 §4 (A)). She sends the identical ask
+        twice; the second is a render that would change nothing, and it is the
+        25-credit mistake this door was built to stop.
+      */
+      const resident = inkDesignRow({
+        publicId: RESIDENT_ID,
+        placement: "upperArm",
+        side: "left",
+        storageKey: "casting-v2/ink/d-resident.png",
+        /* IT CAME OUT OF THE PICTURE SHE IS POINTING AT — the reuse key. */
+        sourceDigest: REFERENCE.digest,
+      });
+      standingOnAnInkedVersion({ "ink:upperArm@left": RESIDENT_ID });
+
+      await expect(refineCandidate(
+        inkRoad({
+          inkTake: async () => ({
+            placement: { kind: "measured" as const, placement: "upperArm" as const },
+            side: "left" as const,
+          }),
+          listInkDesigns: counting(() => [resident as unknown as Record<string, unknown>]),
+        }),
+        { ...input, instruction: ASKED_AT_THE_ARM, referenceId: "ref-public" },
+      )).rejects.toThrow(/already has/);
+
+      expect(ledger.charges, "an identical re-ask was charged for").toHaveLength(0);
+      expect(painted, "an identical re-ask was rendered").toHaveLength(0);
+      expect(inkMinted, "an identical re-ask bought a cut").toHaveLength(0);
+    });
+
+    it("REACHES THE OFFER — a DIFFERENT picture at that same place is not an echo", async () => {
+      /*
+        THE CUSTOMER THE FEATURE IS FOR. Same address, same words, different
+        artwork. Before this fix she was told *"she already has that"* about a
+        design she had never seen.
+      */
+      const { road, studio } = replaceRoad({ publicId: RESIDENT_ID });
+      standingOnAnInkedVersion({ "ink:upperArm@left": RESIDENT_ID });
+
+      /*
+        AND THE READING IS COUNTED, which is what pins the fix to the FIRST
+        verdict rather than to the retry.
+
+        The door asks once more before it refuses, and the second reading of
+        this same sentence carries the same pointer — so a fix wired only into
+        the retry reaches the offer too, and every arm here would pass while a
+        customer paid an extra interpreter call for the privilege. Measured
+        rather than reasoned: two readings is the sabotage, one is the fix.
+      */
+      let readings = 0;
+      const result = await refineCandidate(
+        { ...road, interpret: async () => {
+          readings += 1;
+          return {
+            ok: true as const,
+            fromReference: true,
+            delta: { free: { ink: THE_SAME_WORDS } },
+          };
+        } } as never,
+        { ...input, instruction: ASKED_AT_THE_ARM, referenceId: "ref-public" },
+      );
+
+      expect(readings, "the restatement retry fired on an ask the door should never have held")
+        .toBe(1);
+      expect(result.kind, "the already-true door swallowed the second design").toBe("asked");
+      expect(result.reask?.kind).toBe("replace-design");
+      expect(result.reask?.question).toContain("Her left upper arm already has a design");
+      /* Free, and both rows standing, exactly as the offer's own arms have it. */
+      expect(ledger.charges).toHaveLength(0);
+      expect(painted).toHaveLength(0);
+      expect(studio.map((row) => row.publicId)).toEqual([RESIDENT_ID, "d-minted"]);
+    });
+
+    it("STANDS ASIDE FROM A HAND-UPLOADED RESIDENT — it came out of no picture", async () => {
+      /*
+        `sourceDigest` is null for every design uploaded through the studio
+        door, and no digest can equal a null. So an ask pointing at a picture
+        is never absorbed into a design that did not come out of one — the
+        safety is a property of the column's own emptiness (migration 0048)
+        rather than of a branch somebody remembered to write.
+      */
+      const resident = inkDesignRow({
+        publicId: RESIDENT_ID,
+        placement: "upperArm",
+        side: "left",
+        storageKey: "casting-v2/ink/d-resident.png",
+        sourceDigest: null,
+      });
+      const studio: Array<Record<string, unknown>> = [resident as unknown as Record<string, unknown>];
+      standingOnAnInkedVersion({ "ink:upperArm@left": RESIDENT_ID });
+
+      const result = await refineCandidate(
+        inkRoad({
+          inkTake: async () => ({
+            placement: { kind: "measured" as const, placement: "upperArm" as const },
+            side: "left" as const,
+          }),
+          listInkDesigns: async () => studio,
+          mintInkDesign: async (request: {
+            placement: string;
+            side: string;
+            reference: { digest: string };
+            intents: readonly string[];
+          }) => {
+            inkMinted.push({
+              placement: request.placement,
+              side: request.side,
+              sourceDigest: request.reference.digest,
+            });
+            const design = inkDesignRow({
+              publicId: "d-minted",
+              placement: request.placement,
+              side: request.side,
+              storageKey: "casting-v2/ink/d-minted.png",
+              digest: TINY_MASTER_SHA,
+              intents: request.intents,
+            });
+            studio.push(design as unknown as Record<string, unknown>);
+            return { ok: true as const, design };
+          },
+        }),
+        { ...input, instruction: ASKED_AT_THE_ARM, referenceId: "ref-public" },
+      );
+
+      expect(result.kind, "a hand-uploaded resident absorbed an ask that points at a picture")
+        .toBe("asked");
+      expect(result.reask?.kind).toBe("replace-design");
+      expect(ledger.charges).toHaveLength(0);
+    });
+
+    it("THE WORDS-ONLY LANE IS UNTOUCHED — no picture, so nothing to compare", async () => {
+      /*
+        `askDigest` is null for an ask carrying no reference, and a null never
+        stands the door aside. This is the lane every ink customer was on
+        before the attach door existed, and it must behave today exactly as it
+        behaved yesterday.
+
+        The studio is never read either: the door's gate is *she attached a
+        picture*, and this ask did not.
+      */
+      standingOnAnInkedVersion({ "ink:upperArm@left": RESIDENT_ID });
+
+      await expect(refineCandidate(
+        inkRoad({ listInkDesigns: counting(() => []) }),
+        { ...input, instruction: ASKED_AT_THE_ARM },
+      )).rejects.toThrow(/already has/);
+
+      expect(studioReads, "a words-only ask read her studio at the door").toBe(0);
+      expect(ledger.charges).toHaveLength(0);
+    });
+
+    it("THE ORDINARY ASK PAYS NOTHING — a hair ask on an inked Cast reads the studio ONCE", async () => {
+      /*
+        THE COST HALF OF THE RULING, and the negative control for the gate.
+
+        The one read this ask makes is the CARRY's — the recipe asking which
+        designs are already on her so the tattoo survives an edit that never
+        mentions it. The door adds none, because `namesInkFromReference` is
+        false for a hair ask, and if that gate were ever deleted this number
+        would be two.
+      */
+      standingOnAnInkedVersion({ "ink:upperArm@left": RESIDENT_ID });
+
+      const result = await refineCandidate(
+        carrierRoad({ listInkDesigns: counting(() => []) }),
+        { ...input, instruction: "copy this hairstyle", referenceId: "ref-public" },
+      );
+
+      expect(result.kind, "an ordinary hair ask stopped rendering").toBe("rendered");
+      expect(studioReads, "the already-true door read her studio on an ask about hair").toBe(1);
+    });
+
+    it("COMPARES ONLY WHAT THE CHAIN SAYS IS ON HER — a design in the drawer absorbs nothing", async () => {
+      /*
+        THE ARM THAT MAKES `recorded.has` A DECISION.
+
+        Her studio holds a design cut from THIS picture that no step ever
+        applied — the ordinary state of a Cast whose owner has been trying
+        things. It is a picture in a drawer, not something she is wearing, so
+        it cannot be what a restatement is restating. Compared against her
+        whole studio instead of against the chain's own record, this ask would
+        match it and she would be told she already has a tattoo that is on
+        nobody.
+
+        She is standing on a version wearing a DIFFERENT design somewhere else
+        entirely, which is what keeps the gate open and makes this arm about
+        the filter rather than about the gate.
+      */
+      const wornOnHerNeck = inkDesignRow({
+        publicId: WORN_ELSEWHERE_ID,
+        placement: "neck",
+        side: "centre",
+        storageKey: "casting-v2/ink/d-neck.png",
+        sourceDigest: "e".repeat(64),
+      });
+      const inTheDrawer = inkDesignRow({
+        publicId: "d-drawer",
+        placement: "upperArm",
+        side: "left",
+        storageKey: "casting-v2/ink/d-drawer.png",
+        /* Cut from the picture she is pointing at — and applied to nothing. */
+        sourceDigest: REFERENCE.digest,
+        digest: TINY_MASTER_SHA,
+      });
+      standingOnAnInkedVersion({ "ink:neck": WORN_ELSEWHERE_ID });
+
+      const result = await refineCandidate(
+        inkRoad({
+          inkTake: async () => ({
+            placement: { kind: "measured" as const, placement: "upperArm" as const },
+            side: "left" as const,
+          }),
+          listInkDesigns: async () => [
+            wornOnHerNeck as unknown as Record<string, unknown>,
+            inTheDrawer as unknown as Record<string, unknown>,
+          ],
+        }),
+        { ...input, instruction: ASKED_AT_THE_ARM, referenceId: "ref-public" },
+      );
+
+      /* It rides the row she already has for this picture — the reuse rule —
+         rather than being refused for wearing something she is not wearing. */
+      expect(result.kind, "a design in the drawer absorbed the ask").toBe("rendered");
+      expect(result.design?.designId).toBe("d-drawer");
+      expect(inkMinted, "reuse bought a second cut").toHaveLength(0);
+    });
+
+    it("AND THE RETRY CARRIES THE PICTURE TOO — a reading that loses her ask still reaches the offer", async () => {
+      /*
+        THE SECOND CALL SITE, AND IT IS NOT DECORATION.
+
+        This door asks once more before it refuses, because a reading
+        sometimes comes back holding only a restatement and drops the ask
+        (fable-460, measured at 1 of 3). So the sequence that gets here is:
+        reading one loses the tattoo and echoes her hair, the door absorbs it,
+        the retry recovers the tattoo — and the RETRY's verdict is the one
+        that decides. A pointer wired into the first verdict alone would
+        refuse her at that second door, which is the same wrong refusal one
+        reading later.
+
+        Reading one names no ink, so it carries no pointer at all — which is
+        what makes this arm about the retry rather than a copy of the one
+        above.
+      */
+      const { road, studio } = replaceRoad({ publicId: RESIDENT_ID });
+      standingOnAnInkedVersion(
+        { "ink:upperArm@left": RESIDENT_ID },
+        { hairCut: ["a mid-length wavy cut"] },
+      );
+
+      let readings = 0;
+      const result = await refineCandidate(
+        { ...road, interpret: async () => {
+          readings += 1;
+          return readings === 1
+            /* The ask, lost — only her hair, which she already has. */
+            ? { ok: true as const, delta: { free: { hairCut: "a mid-length wavy cut" } } }
+            : {
+              ok: true as const,
+              fromReference: true,
+              delta: { free: { ink: THE_SAME_WORDS } },
+            };
+        } } as never,
+        { ...input, instruction: ASKED_AT_THE_ARM, referenceId: "ref-public" },
+      );
+
+      expect(readings, "the retry never fired").toBe(2);
+      expect(result.kind, "the retry's verdict refused a design she has never seen").toBe("asked");
+      expect(result.reask?.kind).toBe("replace-design");
+      expect(studio.map((row) => row.publicId)).toEqual([RESIDENT_ID, "d-minted"]);
+      expect(ledger.charges).toHaveLength(0);
+    });
   });
 
   it("ASKS which arm — a question with chips, not a sentence telling her to retype", async () => {
