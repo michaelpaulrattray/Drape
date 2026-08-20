@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "49fe07098af2d464"
+    "sourceFingerprint": "af48d0812c0c80ba"
   },
   "domains": [
     {
@@ -10258,6 +10258,10 @@
     {
       "id": "test:server/castingV2/refineInterpreterCeiling.test.ts",
       "path": "server/castingV2/refineInterpreterCeiling.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/refineInterpreterReferenceEntrance.test.ts",
+      "path": "server/castingV2/refineInterpreterReferenceEntrance.test.ts"
     },
     {
       "id": "test:server/castingV2/refineLegacy.test.ts",

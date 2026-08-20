@@ -522,6 +522,10 @@ const REFERENCE_CONSTRAINT = [
   "A PICTURE IS ATTACHED TO THIS INSTRUCTION. \"this\", \"this picture\", \"the photo\", \"the",
   "reference\", \"like this\" and \"from this\" mean THAT PICTURE — not a real person — so",
   "pointing at it for a feature is NOT the likeness wall.",
+  "SO DO \"her\", \"his\", \"their\", \"the woman's\" and \"the man's\": with a picture attached,",
+  "the person in it is THE PICTURE'S SUBJECT and not a real person being named. \"give him her",
+  "hairstyle\", \"his beard\", \"the woman's freckles\" point at the picture for a FEATURE and file",
+  "exactly the way \"copy this hairstyle\" does.",
   "When they point at it, set \"fromReference\": true beside the delta and file the feature",
   "they named in the FREE lane, in their own words, saying where it comes from:",
   '  "copy this hair" -> {"free": {"hairCut": "the hair in the attached picture"}, "fromReference": true}',
@@ -1089,6 +1093,10 @@ async function inventionDoor(
     subject: asked,
     value,
     prior: input.prior?.[asked] ?? [],
+    /* The same bit the reading itself was given, carried one door along. The
+       door was adjudicating a value the reading had been INSTRUCTED to produce
+       while blind to the reason it says what it says. */
+    referenceAttached: input.referenceAttached === true,
     signal: input.signal,
   });
   if (verdict === null || verdict.invents) {
@@ -1144,6 +1152,55 @@ const INVENTION_QUESTION = [
   'theirs, or null>"}',
 ].join("\n");
 
+/**
+ * THE ONE LINE THE DOOR NEEDS WHEN A PICTURE RIDES THE ASK (found 2026-08-20,
+ * courted from the founder's refused first touch — fable-1139).
+ *
+ * # The door was refusing the house's own instruction
+ *
+ * {@link REFERENCE_CONSTRAINT} TELLS the reading what to file for a feature
+ * taken from an attachment, in as many words:
+ *
+ *     "copy this hair" -> {"free": {"hairCut": "the hair in the attached picture"}}
+ *
+ * Containment then refuses that value, correctly — "attached picture" is not in
+ * her sentence — and the invention door is asked to adjudicate. But that door's
+ * question is put to a judge which has never been told a picture exists, so it
+ * reads *"in the attached picture"* as an asserted fact of its own and upholds
+ * the refusal. Measured on his own production Cast and on a foil: `invents:
+ * true`, with the fact quoted back as **"the hairstyle is shown in an attached
+ * picture"**, *"reference to an attached picture"*, *"attached picture"* — the
+ * judge naming as an invention the exact thing the customer did by hand
+ * thirty-nine seconds earlier.
+ *
+ * It is a COIN FLIP rather than a hard wall, which is worse than either: the
+ * same phrase was rescued on other samples of the same cell, so the feature
+ * worked sometimes.
+ *
+ * # Why a line here rather than a carve-out in containment
+ *
+ * Containment is D-172 and it is right: the value is not in her sentence. The
+ * defect is that the door adjudicating it was reasoning without a fact the
+ * caller already holds. This supplies that fact and nothing else — the
+ * attachment is HERS, so a value naming it is not an invention — and it does
+ * not tell the door which way to answer. A value that adds a colour, a length
+ * or a cause the picture was never asked to supply is still an invention, with
+ * a picture or without one, and that is the arm that keeps this honest.
+ *
+ * Absent an attachment the prompt is byte-identical, exactly like
+ * {@link REFERENCE_CONSTRAINT} above it.
+ */
+const INVENTION_REFERENCE_NOTE = [
+  "",
+  "",
+  "THEY ATTACHED A PICTURE TO THIS INSTRUCTION. That the picture exists, and that a",
+  'feature comes FROM it, are THEIR facts — they attached it. So a value like "the hair',
+  'in the attached picture" or "her hairstyle from the reference" invents nothing: it',
+  "names where they pointed. Judge only what the value adds BEYOND that — a colour, a",
+  "length, a texture, a cause or a story the picture was never asked to supply is still",
+  "not theirs.",
+].join("\n");
+
 export async function asksNothingOfItsOwn(
   engine: TextEngine,
   input: {
@@ -1151,13 +1208,16 @@ export async function asksNothingOfItsOwn(
     subject: string;
     value: string;
     prior: readonly string[];
+    /** A picture rides this ask — see {@link INVENTION_REFERENCE_NOTE}. */
+    referenceAttached?: boolean;
     signal?: AbortSignal;
   },
 ): Promise<{ invents: boolean; fact: string | null } | null> {
   try {
     const reply = await engine.complete({
       about: "gate",
-      system: INVENTION_QUESTION,
+      system: INVENTION_QUESTION
+        + (input.referenceAttached ? INVENTION_REFERENCE_NOTE : ""),
       user: [
         `Their instruction: ${input.instruction}`,
         `The feature: ${input.subject}`,
