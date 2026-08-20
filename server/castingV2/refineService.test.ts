@@ -9516,7 +9516,15 @@ describe("the picture she attached becomes the carrier that rides", () => {
       }),
     }), {
       ...input,
-      instruction: chip.resolves,
+      /*
+        THE LABEL, WHICH IS WHAT THE CLIENT SENDS — never the `resolves`.
+
+        `RefinePanel` submits `option.label` and echoes `about`; the server
+        rebuilds the question by its handle and maps the label back. An arm that
+        posted the resolved sentence would skip both of those and prove a road
+        nobody travels (`entrance-before-the-road`).
+      */
+      instruction: chip.label,
       answering: raised.about,
       referenceId: "ref-public",
     });
