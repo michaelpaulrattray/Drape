@@ -400,6 +400,17 @@ export async function uploadInkDesign(
     provenance: request.provenance,
     intents: request.intents,
     storageKey,
+    /*
+      THE DISPOSITION, RECORDED RATHER THAN RETURNED AND DROPPED (0047).
+
+      It used to be a local handed to the caller in the upload's projection and
+      then forgotten — so at read time a cutout, a frame that rode whole and a
+      photograph nobody looked at were indistinguishable, and fable-1137 §4's
+      containment condition had no fact to read. `null` here is the honest
+      answer for an account outside `CASTING_INK_CUT_SCOPE`: nobody looked, and
+      the design may not ride to a render until somebody has.
+    */
+    cutRoute: cut?.route ?? null,
     digest: createHash("sha256").update(stored).digest("hex"),
     mime: contentType,
     byteSize: stored.byteLength,

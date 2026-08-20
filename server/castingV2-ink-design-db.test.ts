@@ -74,6 +74,10 @@ describeWithDatabase("the ink design store (disposable DB)", () => {
       provenance: "consented" as const,
       intents: ["tattoo"] as const,
       storageKey,
+      /* NOBODY LOOKED — the honest disposition for a fixture that ran no
+         cutter, and the state of every row in both worlds today (0047). The
+         arm below files the other two. */
+      cutRoute: null,
       digest: randomUUID().replace(/-/g, "").repeat(2).slice(0, 64),
       mime: "image/png",
       byteSize: 40_137,
@@ -357,6 +361,36 @@ describeWithDatabase("the ink design store (disposable DB)", () => {
    * row, that a plate hanging off the design does not become an orphan, and
    * that the per-Cast cap is actually freed rather than merely reported freed.
    */
+  /**
+   * THE DISPOSITION SURVIVES THE ROUND TRIP (migration 0047).
+   *
+   * fable-1137 §4's containment condition reads this column and treats NULL as
+   * *nobody looked*, so all three answers have to come back as they went in.
+   * Asserted against MySQL rather than against the type: an enum that silently
+   * coerced a value, or a column that defaulted a NULL, would satisfy every
+   * unit test in the tree and lie to the one control that reads it.
+   */
+  it("keeps all three dispositions apart — cut, rode whole, and nobody looked", async () => {
+    const cast = await newCast(owner);
+    const filed = [];
+    for (const route of ["cut", "rideWhole", null] as const) {
+      filed.push(await designs.recordInkDesign({
+        ...design(cast.publicId, owner, `casting-v2/ink/${randomUUID()}.png`),
+        cutRoute: route,
+      }));
+    }
+    expect(filed.map((row) => row.cutRoute)).toEqual(["cut", "rideWhole", null]);
+
+    const listed = await designs.listInkDesigns({ userId: owner, candidatePublicId: cast.publicId });
+    expect(listed.map((row) => row.cutRoute)).toEqual(["cut", "rideWhole", null]);
+
+    /* And the single read the mint and the condition both use. */
+    for (const row of filed) {
+      const one = await designs.readInkDesign({ userId: owner, designPublicId: row.publicId });
+      expect(one?.cutRoute).toBe(row.cutRoute);
+    }
+  });
+
   it("removes ONE design, hands its bytes to the worker, and frees the slot", async () => {
     const cast = await newCast(owner);
     const kept = `casting-v2/ink/${randomUUID()}.png`;

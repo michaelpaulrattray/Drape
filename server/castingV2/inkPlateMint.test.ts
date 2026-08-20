@@ -40,6 +40,10 @@ const DESIGN: StoredInkDesign = {
   candidateId: 7,
   placement: "upperArm",
   side: "left",
+  /* NOBODY LOOKED (0047). The mint predates the cutter and is indifferent to
+     the disposition — it reads bytes and a digest — so the fixture states the
+     honest value rather than a convenient one. */
+  cutRoute: null,
   provenance: "consented",
   intents: ["tattoo"],
   storageKey: "casting-v2/ink/design-1.png",

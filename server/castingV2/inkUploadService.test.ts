@@ -40,6 +40,11 @@ function harness(overrides: Partial<InkUploadDependencies> = {}) {
         candidateId: 42,
         placement: one.placement,
         side: one.side,
+        /* ECHOED FROM THE INPUT, never defaulted here: the whole point of the
+           column is that the recorded disposition is the one the service
+           decided, and a double that answered `null` regardless would make the
+           arm asserting it vacuous. */
+        cutRoute: one.cutRoute,
         provenance: one.provenance,
         intents: one.intents,
         storageKey: one.storageKey,
@@ -569,6 +574,37 @@ describe("THE CUT, at the wire — build 3a.2's upload wire", () => {
     */
     expect(outcome.cut).toBeNull();
     expect(dependencies.cut).not.toHaveBeenCalled();
+  });
+
+  /**
+   * THE ANSWER IS KEPT, NOT JUST RETURNED (migration 0047).
+   *
+   * All three dispositions used to live in a local and leave with the HTTP
+   * response, so at read time a cutout, a frame that rode whole and a
+   * photograph nobody looked at were indistinguishable — and fable-1137 §4's
+   * containment condition, which refuses to let an unexamined design ride to a
+   * render, had no fact to read.
+   *
+   * Asserted on the ROW THE WRITER WAS HANDED rather than on the outcome the
+   * caller sees, because those are two different promises and it was the second
+   * one that already existed.
+   */
+  it("records the disposition on the row — all three of them, each as itself", async () => {
+    const bytes = await pngOf(600, 800);
+
+    const off = harness();
+    await uploadInkDesign({ ...ask, bytes }, off.dependencies);
+    expect(off.recorded[0]!.cutRoute, "nobody looked").toBeNull();
+
+    const { cut: cutter } = await cutterReturning("cut");
+    const cut = harness({ cutEnabled: () => true, cut: cutter });
+    await uploadInkDesign({ ...ask, bytes }, cut.dependencies);
+    expect(cut.recorded[0]!.cutRoute).toBe("cut");
+
+    const { cut: whole } = await cutterReturning("rideWhole");
+    const rode = harness({ cutEnabled: () => true, cut: whole });
+    await uploadInkDesign({ ...ask, bytes }, rode.dependencies);
+    expect(rode.recorded[0]!.cutRoute).toBe("rideWhole");
   });
 
   it("REFUSES the upload on the cutter's refusal, in her words, having written NOTHING", async () => {

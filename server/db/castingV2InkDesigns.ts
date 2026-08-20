@@ -45,6 +45,7 @@ import {
 } from "../../drizzle/schema";
 import type { InkPlacement } from "../../shared/inkPlacementVocabulary";
 import type { InkProvenance } from "../../shared/inkProvenance";
+import type { InkCutRoute } from "../../shared/inkCutRoute";
 import type { InkSide } from "../../shared/inkReleasedPlacements";
 import { isReferenceIntent, type ReferenceIntent } from "../../shared/referenceIntents";
 import { INK_DESIGNS_PER_CANDIDATE } from "../castingV2/inkUploadDoor";
@@ -94,6 +95,17 @@ export type InkDesignToRecord = {
   intents: readonly ReferenceIntent[];
   /** Our object, under the candidate's purge path. Never a pointer. */
   storageKey: string;
+  /**
+   * WHAT WAS DONE TO THE BYTES BEFORE THEY WERE STORED (migration 0047).
+   *
+   * `null` is a real answer and the one this field exists to carry: NOBODY
+   * LOOKED, because `CASTING_INK_CUT_SCOPE` was off for this account. It is
+   * therefore REQUIRED rather than optional — a writer that omitted it would be
+   * filing "nobody looked" by silence, and the containment condition that reads
+   * this column (fable-1137 §4) cannot tell a deliberate null from a forgotten
+   * one. Every caller says which of the three it is.
+   */
+  cutRoute: InkCutRoute | null;
   /** sha256 of the stored bytes — byte identity, as the library does it. */
   digest: string;
   mime: string;
@@ -118,6 +130,7 @@ export type RecordedInkDesign = {
   provenance: InkProvenance;
   intents: readonly ReferenceIntent[];
   storageKey: string;
+  cutRoute: InkCutRoute | null;
   createdAt: Date;
 };
 
@@ -161,6 +174,7 @@ export async function recordInkDesign(input: InkDesignToRecord): Promise<Recorde
       provenance: input.provenance,
       intents: input.intents,
       storageKey: input.storageKey,
+      cutRoute: input.cutRoute,
       digest: input.digest,
       mime: input.mime,
       byteSize: input.byteSize,
@@ -195,6 +209,7 @@ export async function recordInkDesign(input: InkDesignToRecord): Promise<Recorde
       provenance: input.provenance,
       intents: input.intents,
       storageKey: input.storageKey,
+      cutRoute: input.cutRoute,
       createdAt: now,
     };
   });
@@ -228,6 +243,7 @@ export async function listInkDesigns(input: {
       provenance: castingInkDesigns.provenance,
       intents: castingInkDesigns.intents,
       storageKey: castingInkDesigns.storageKey,
+      cutRoute: castingInkDesigns.cutRoute,
       digest: castingInkDesigns.digest,
       mime: castingInkDesigns.mime,
       byteSize: castingInkDesigns.byteSize,
@@ -294,6 +310,7 @@ export async function readInkDesign(input: {
       provenance: castingInkDesigns.provenance,
       intents: castingInkDesigns.intents,
       storageKey: castingInkDesigns.storageKey,
+      cutRoute: castingInkDesigns.cutRoute,
       digest: castingInkDesigns.digest,
       mime: castingInkDesigns.mime,
       byteSize: castingInkDesigns.byteSize,

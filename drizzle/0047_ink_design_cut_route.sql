@@ -1,0 +1,65 @@
+-- WHAT WAS DONE TO THIS DESIGN BEFORE IT WAS STORED — the cut disposition,
+-- proposed opus-846 and approved fable-1142 as written.
+--
+-- ============================================================================
+-- THE CONTROL THIS COLUMN EXISTS TO MAKE POSSIBLE
+-- ============================================================================
+--
+-- fable-1137 §4 ruled a containment condition on the refine wire: **a design row
+-- whose cut disposition is `null` NEVER RIDES TO A RENDER.** Rows written while
+-- `CASTING_INK_CUT_SCOPE` was off hold bytes nobody examined, and on this road
+-- unexamined means possibly a photograph of a person — the exact exposure the
+-- cutter exists to close, re-opened for exactly the rows the flag's off-period
+-- created.
+--
+-- That control needed a fact to read, and the fact did not exist. `uploadInkDesign`
+-- computes the route (`cut` | `rideWhole` | nothing looked), hands it to the
+-- caller in the upload's projection, and drops it: `let cut: { route } | null`
+-- is a LOCAL. At read time every row in this table is indistinguishable from
+-- every other — a cutout, a frame that rode whole, and a photograph nobody
+-- looked at all read identically.
+--
+-- ============================================================================
+-- NULL IS THE HONEST VALUE, AND THERE IS NO BACKFILL
+-- ============================================================================
+--
+-- NULL means *nobody looked*, which is the true state of every row that exists
+-- today, in both worlds. Nothing is back-filled because there is nothing to
+-- back-fill FROM, and the three ways one might try were each rejected with a
+-- reason (opus-846 §2, ratified fable-1142 §2):
+--
+--   from the bytes        a cut is a PNG with alpha; so is a photograph that
+--                         arrived as a transparent PNG, and `rideWhole` stores
+--                         her frame unchanged in her own format — which is
+--                         exactly what a pre-flag row is. No signal, only a
+--                         plausible one.
+--   from `createdAt`      a guess wearing a timestamp, and wrong for every row
+--                         written while the flag was on for one account and off
+--                         for another — the only configuration it has ever had.
+--   absence = rideWhole   the defect the control exists to prevent, spelled as
+--                         a default.
+--
+-- ============================================================================
+-- ENUM AND NOT varchar, WHICH IS 0046's ARGUMENT RUNNING THE OTHER WAY
+-- ============================================================================
+--
+-- One migration ago `placement` became `varchar(64)` because it holds a
+-- CUSTOMER'S OWN WORD and *"whatever words those are"* is not a set anybody can
+-- enumerate. This column holds OUR closed vocabulary — `InkCutRoute`, two
+-- members, decided by `inkReferenceCutter.ts` and by nothing else — so the
+-- narrow type is right here for the same reason the wide one was right there.
+--
+-- ============================================================================
+-- IT LANDS AHEAD OF ITS WRITER, AND ONE COMMIT AHEAD ONLY
+-- ============================================================================
+--
+-- A new column on a written table is in every INSERT the moment the writer
+-- ships, so there is no dark landing for one — the standing reason, and the
+-- reason `migration-before-code` is strict here. The writer records the route in
+-- the SAME commit as this file; the assembler's refusal reads it after.
+--
+-- Nullable, so the ALTER is safe on a table with rows in it and no default has
+-- to be invented. 7 design rows in dev; the founder's own uploads in production,
+-- where this runs by the `ceremony-ink-cut-route` script on his word, filed as a
+-- named prerequisite of the refine wire landing (fable-1142 §3).
+ALTER TABLE `casting_ink_designs` ADD COLUMN `cutRoute` enum('cut','rideWhole') NULL;

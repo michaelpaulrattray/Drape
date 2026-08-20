@@ -19,6 +19,7 @@ import { KIND_LOCALITIES } from "../shared/kindLocality";
 import type { InkPlacement } from "../shared/inkPlacementVocabulary";
 import { INK_SIDES } from "../shared/inkReleasedPlacements";
 import { INK_PROVENANCES } from "../shared/inkProvenance";
+import { INK_CUT_ROUTES } from "../shared/inkCutRoute";
 import { INK_FORM_DEMAND_KINDS, INK_FORM_DEMAND_OUTCOMES } from "../shared/inkFormDemand";
 import { INK_TEMPLATE_KINDS } from "../shared/inkTemplateKinds";
 import {
@@ -3152,6 +3153,34 @@ export const castingInkDesigns = mysqlTable("casting_ink_designs", {
   intents: json("intents").$type<readonly ReferenceIntent[]>().notNull(),
   /** Our copy of the bytes, under the candidate's purge path. Never a pointer. */
   storageKey: varchar("storageKey", { length: 512 }).notNull(),
+  /**
+   * WHAT WAS DONE TO THE BYTES ABOVE BEFORE THEY WERE STORED (migration 0047).
+   *
+   * `cut` — the design was cut out of the picture she gave us and what sits at
+   * `storageKey` is the artwork on transparency. `rideWhole` — the cutter
+   * looked and ruled the frame rides unchanged. **NULL — NOBODY LOOKED**, which
+   * is every row written while `CASTING_INK_CUT_SCOPE` was off, and on this
+   * road unexamined means the bytes may be a photograph of a person.
+   *
+   * That third answer is the reason the column is nullable and has no default.
+   * fable-1137 §4's containment condition reads it: a row whose disposition is
+   * NULL never rides to a render, refused free and named rather than skipped
+   * silently. Before this column the fact lived in a local inside
+   * `uploadInkDesign` and was dropped with the response — so at read time a
+   * cutout, a frame that rode whole, and an unexamined photograph were
+   * indistinguishable.
+   *
+   * A closed vocabulary and therefore an ENUM, which is 0046's argument running
+   * the other way: `placement` opened to `varchar(64)` because it holds a
+   * CUSTOMER'S word, and this holds OURS — `InkCutRoute`, decided by
+   * `inkReferenceCutter.ts` and by nothing else.
+   *
+   * **It is never inferred.** Not from the bytes (a cut is a PNG with alpha and
+   * so is a photograph that arrived as one), not from `createdAt` against a
+   * flag flip, and absence is never read as `rideWhole` — that last is the
+   * defect the condition exists to prevent, spelled as a default.
+   */
+  cutRoute: mysqlEnum("cutRoute", INK_CUT_ROUTES),
   /** sha256 of the object's bytes — byte identity, as the library does it. */
   digest: varchar("digest", { length: 64 }).notNull(),
   mime: varchar("mime", { length: 64 }).notNull(),

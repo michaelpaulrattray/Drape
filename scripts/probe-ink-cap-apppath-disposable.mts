@@ -52,6 +52,9 @@ function ask() {
     side: "left" as const,
     provenance: "consented" as const,
     intents: ["tattoo"] as const,
+    /* Nobody looked (0047) — this probe is about the CAP, and it writes rows
+       the way an account outside `CASTING_INK_CUT_SCOPE` writes them. */
+    cutRoute: null,
     storageKey: `casting-v2/ink/${randomUUID()}.png`,
     digest: randomUUID().replace(/-/g, "").repeat(2).slice(0, 64),
     mime: "image/png",

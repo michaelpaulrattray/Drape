@@ -68,6 +68,7 @@
  */
 import sharp from "sharp";
 
+import type { InkCutRoute } from "../../shared/inkCutRoute";
 import { createModuleLogger } from "../logging/logger";
 import {
   INK_REGION,
@@ -119,7 +120,14 @@ export type InkCutRefusal = {
  * and the shown-cut offer (fable-1127 §2) is the thing that makes this road's
  * two measured bounds survivable rather than defects.
  */
-export type InkCutRoute = "cut" | "rideWhole";
+/*
+  THE VOCABULARY MOVED TO `shared/` WITH MIGRATION 0047, and this is the same
+  list rather than a second one: the disposition is now a column, and
+  `drizzle/schema.ts` cannot import from `server/`. Re-exported here so every
+  caller that already names this module goes on working, and so there is
+  exactly one place the two members are written down (working law 4).
+*/
+export type { InkCutRoute };
 
 export type InkCut = {
   readonly route: InkCutRoute;
