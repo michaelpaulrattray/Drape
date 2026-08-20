@@ -190,6 +190,34 @@ export function detectionMap(injectedClasses?: readonly BornWornClass[]): Detect
       };
     }
 
+    /*
+      PER PLACEMENT — a facet whose slot exists and which the SCAN never asks.
+
+      It was a `notASlot` GAP until the ink lane was built, and it is still a
+      GAP: what changed is the reason, and the reason is now sharper than the
+      old one. The slot exists — `ink:neck`, `ink:upperArm@left` — and its
+      question is the placement's own measured word. Nothing asks it, on
+      purpose: ink is never cut for the library (fable-1137 §3), so the scan
+      buys no read of an upper arm on every face panel opened, and an ink key
+      is deliberately absent from `catalogueSlots()`.
+
+      Its own branch rather than a fall-through, because the branch below would
+      call it a VIOLATION — `mine.length === 0` against a list that structurally
+      cannot hold an ink key. A true fact reported as a defect is how an
+      instrument stops being read.
+    */
+    if (assignment !== undefined && "perPlacement" in assignment) {
+      return {
+        facet, heading, subjects,
+        lands: "ink:<placement>",
+        asked: [], armed: [], unarmed: [],
+        verdict: "GAP",
+        why: "one slot per placement, chosen by where she said it goes rather than looked up — "
+          + "and the scan never asks it: ink is never cut for the library, so an ink key is "
+          + "absent from the closed catalogue this map reads and no segmenter read is bought",
+      };
+    }
+
     const feature = assignment === undefined ? null : assignment.feature;
     const mine: SlotDefinition[] = feature === null
       ? []

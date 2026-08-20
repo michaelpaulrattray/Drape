@@ -173,6 +173,30 @@ export const CANNOT_SAY_COPY: Readonly<Record<CannotSayReason, CannotSayEntry>> 
         : `That isn't something I know where to put on her yet. ${MONEY(context.moneySafe)}`;
     },
   },
+  /*
+    AN INK ASK WITH NOWHERE ON HER NAMED.
+
+    Not `unnamedObject`'s sentence, and the difference is what she can DO about
+    it. That one says *I don't know where to put that on her* — a fact about our
+    table, which she cannot act on. This one is a fact about her sentence: she
+    asked for a tattoo and did not say where, and the answer that hands her the
+    next move is to ask where.
+
+    It reads as a QUESTION rather than a wall, because it is one — the same
+    shape the take's own unreadable-placement answer takes, so a customer who
+    reaches this door and one who reaches that one hear the product ask the same
+    thing rather than two different apologies.
+
+    `refunded` matches the door that raises it: `repaintAsksFor` runs inside the
+    claim. The pre-claim ink branch asks where BEFORE any money moves, which is
+    why this door should never be the one she meets — and why the sentence is
+    written anyway rather than left to the fall-through nobody would read.
+  */
+  unplacedInk: {
+    charge: "refunded",
+    say: (context) => "I can put a tattoo on her, but I need to know where it goes — her neck, "
+      + `an upper arm, her upper chest. Say where and I'll do it. ${MONEY(context.moneySafe)}`,
+  },
   uncatalogued: {
     charge: "refunded",
     say: (context) => "That's a part of her I can't work on yet. " + MONEY(context.moneySafe),

@@ -64,12 +64,52 @@ import {
 const ADDED_SUBJECTS = ["horns"];
 const ADDED_FACETS = ["horns"];
 
+/**
+ * WHAT HAS CHANGED VALUE SINCE THE PIN — the third thing, declared the same way.
+ *
+ * The header's question is *did the contents MOVE, or did they CHANGE?*, and
+ * the ADDED lists above answer a third case the pin met later: a key nobody had
+ * when it was taken. This is the fourth: a key whose PINNED VALUE was
+ * deliberately replaced.
+ *
+ * It is not a licence, and the shape is what keeps it from becoming one. The
+ * golden is still never rewritten — `vocabularyPin.json` holds what `ink` held
+ * before, untouched — and the new value is pinned HERE, in full. So the change
+ * is recorded twice, from and to, and **a SECOND change to the same key
+ * reddens exactly as the first one did**. A bare exclusion list would have made
+ * this key free forever after one edit, which is the failure mode a golden
+ * that agrees with whatever it is shown has, arrived at by a different road.
+ *
+ *   ink   `notASlot` → `{ perPlacement: "ink" }`, 2026-08-20, ruled fable-1146
+ *         §2 on the build in fable-1137 §2. The `notASlot` reason had been the
+ *         SPECIFICATION of the ink lane rather than a refusal of it — one slot
+ *         per placement, its question from the placement — and the lane was
+ *         built. The reason itself was not deleted: it rides verbatim in
+ *         `FacetAssignment`'s `perPlacement` docblock, with its own arm in
+ *         `referenceSlotCatalogue.test.ts` reading it off the source.
+ */
+const CHANGED_FACET_SLOTS: Record<string, unknown> = {
+  ink: { perPlacement: "ink" },
+};
+
 /** The pinned part of a table: what the golden actually has an opinion about. */
 function pinnedPart(
   table: Record<string, unknown>,
   added: readonly string[],
+  changed: readonly string[] = [],
 ): Record<string, unknown> {
-  return Object.fromEntries(Object.entries(table).filter(([key]) => !added.includes(key)));
+  return Object.fromEntries(Object.entries(table).filter(
+    ([key]) => !added.includes(key) && !changed.includes(key),
+  ));
+}
+
+/** The pinned entries a declared change removed from comparison, as they are
+ *  NOW — so the declaration is a pin of its own rather than a hole. */
+function changedPart(
+  table: Record<string, unknown>,
+  changed: Record<string, unknown>,
+): Record<string, unknown> {
+  return Object.fromEntries(Object.entries(table).filter(([key]) => key in changed));
 }
 
 /** The keys a table has gained since the pin, sorted. */
@@ -85,7 +125,23 @@ describe("the eight compile-closed tables", () => {
     expect(pinnedPart(SUBJECT_QUALIFIER, ADDED_SUBJECTS)).toEqual(pin.SUBJECT_QUALIFIER);
     expect(pinnedPart(CHANGE_AMPLITUDE, ADDED_SUBJECTS)).toEqual(pin.CHANGE_AMPLITUDE);
     expect(pinnedPart(ZONE_SCOPE, ADDED_FACETS)).toEqual(pin.ZONE_SCOPE);
-    expect(pinnedPart(FACET_SLOTS, ADDED_FACETS)).toEqual(pin.FACET_SLOTS);
+    expect(pinnedPart(FACET_SLOTS, ADDED_FACETS, Object.keys(CHANGED_FACET_SLOTS)))
+      .toEqual(pinnedPart(pin.FACET_SLOTS, [], Object.keys(CHANGED_FACET_SLOTS)));
+  });
+
+  /*
+    AND THE ONE VALUE SOMEBODY DELIBERATELY REPLACED IS PINNED TOO.
+
+    Without this the declaration above would be a hole: `ink` would be excluded
+    from the golden's comparison and compared to nothing, so the next edit to it
+    would pass in silence. Here it is compared to the value the ruling put
+    there, which is the pin doing its job one layer along.
+  */
+  it("hold the one value a ruling replaced, exactly as the ruling left it", () => {
+    expect(changedPart(FACET_SLOTS, CHANGED_FACET_SLOTS)).toEqual(CHANGED_FACET_SLOTS);
+    /* And the golden is untouched — it still holds what it held, which is the
+       whole reason a change can be told from a regenerated agreement. */
+    expect(pin.FACET_SLOTS).toHaveProperty("ink.notASlot");
   });
 
   it("have gained exactly the kinds somebody declared, and no others", () => {

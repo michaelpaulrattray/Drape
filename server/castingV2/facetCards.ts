@@ -327,10 +327,17 @@ export const FACET_CARDS = {
   },
   ink: {
     zone: "object",
-    slot: {
-      notASlot:
-        "OWED, not absent: ink is per placement and its question comes from the placement rather than from a region table, so its slots arrive with the tattoo studio and the flash-sheet path (D-138, roadmap §3). Inventing a `tattoo` question here would ask a segmenter an open question (D-213)",
-    },
+    /*
+      OWED UNTIL 2026-08-20, AND NOW ARRIVED.
+
+      This read `notASlot` with a reason that turned out to be the whole
+      specification — one slot per placement, its question from the placement
+      rather than from a region table, and no invented `tattoo` question for a
+      segmenter (D-213). The reason is not deleted: it lives on
+      `FacetAssignment`'s `perPlacement` branch, verbatim and load-bearing,
+      where the next person deciding what this facet's slot is will read it.
+    */
+    slot: { perPlacement: "ink" },
     region: null,
     movesItsEdge: { moves: false, why: "a design is drawn on skin; the skin stays where it is" },
     naming: { shape: "worn" },

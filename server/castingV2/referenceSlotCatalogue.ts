@@ -97,12 +97,14 @@ import {
   slotKey,
   INSTANCES,
   inkPlacementOfSlot,
+  inkSideSlotKey,
   inkSlotKey,
   isInkSlot,
   isOpenSlot,
   OPEN_SLOT_PREFIX,
   openKindOfSlot,
   type Instance,
+  type InkAskPlacement,
   type SlotFrame,
 } from "./referenceSlots";
 import type { Facet } from "./refineFacets";
@@ -854,6 +856,35 @@ export type FacetAssignment =
   | { feature: string }
   /** One slot per kind (and per side) from the accessory table. */
   | { family: "accessories" }
+  /**
+   * ONE SLOT PER PLACEMENT, decided by where on her she said it goes.
+   *
+   * # The reason, kept alive from the fence it used to be
+   *
+   * This facet read `notASlot` until the ink lane was built, and its reason was
+   * the specification nobody had recognised as one: *"ink is per placement and
+   * its question comes from the placement rather than from a region table, so
+   * its slots arrive with the tattoo studio and the flash-sheet path (D-138,
+   * roadmap §3). **Inventing a `tattoo` question here would ask a segmenter an
+   * open question (D-213)**."*
+   *
+   * That last sentence rides here verbatim because it is the caution that stops
+   * the next person collapsing this branch into `{ feature: "tattoo" }` for
+   * tidiness. There is no `tattoo` region. A segmenter asked one would be asked
+   * an open question, and the three words that DO cut these surfaces — `neck`,
+   * `upper arm`, `upper chest` — were bought on sixteen production masters, one
+   * per placement, which is why the slot has to be chosen rather than looked up.
+   *
+   * # Why it is `context` and not a table
+   *
+   * The same shape `family` is, for the same reason: the value that picks the
+   * slot is resolved at RUNTIME — there by the accessory's kind, here by the
+   * placement the customer's own sentence named — so the table cannot hold it
+   * and a caller has to carry it in. Absence is its own named refusal rather
+   * than `notASlot`, because *"she named no place"* and *"this facet has no
+   * slot by decision"* are different facts and only the first is answerable.
+   */
+  | { perPlacement: "ink" }
   | { notASlot: string };
 
 export const FACET_SLOTS: Record<Facet, FacetAssignment> = facetTableOf((card) => card.slot);
@@ -1506,7 +1537,7 @@ export function facetsOfSlot(slot: FeatureSlot): readonly Facet[] | null {
  */
 export function slotsForFacet(
   facet: Facet,
-  context: { accessoryKind?: string | null } = {},
+  context: { accessoryKind?: string | null; inkPlacement?: InkAskPlacement | null } = {},
 ): SlotDefinition[] {
   const assignment = FACET_SLOTS[facet];
   if ("notASlot" in assignment) return [];
@@ -1514,6 +1545,26 @@ export function slotsForFacet(
     const kind = context.accessoryKind;
     if (!kind) return [];
     return slotsForFeature(kind.replace(/ /g, "-")) ?? [];
+  }
+  if ("perPlacement" in assignment) {
+    /*
+      THE PLACEMENT COMES IN, exactly as the accessory's kind does — see
+      `FacetAssignment`'s own note for why it cannot come off the table.
+
+      Empty on absence, which the caller turns into ink's own named refusal.
+      It is NOT `notASlot`: this facet has a slot, and what is missing is the
+      one fact that says which. Through `slotDefinition` rather than
+      `slotsForFeature` because the ink lane is a dynamic branch and the closed
+      catalogue has never held these keys — the same call every other consumer
+      of an ink key makes, so a change to the grammar reaches here for free.
+    */
+    const placement = context.inkPlacement;
+    if (!placement) return [];
+    const key = placement.side === null
+      ? inkSlotKey(placement.placement)
+      : inkSideSlotKey(placement.placement, placement.side);
+    const definition = slotDefinition(key);
+    return definition === null ? [] : [definition];
   }
   return slotsForFeature(assignment.feature) ?? [];
 }

@@ -129,6 +129,25 @@ export function slotsNamedByChain(composed: RefineDelta): Set<FeatureSlot> {
       }
       continue;
     }
+    /*
+      AN INK FACET NAMES NO LIBRARY SLOT, AND THAT IS A FACT RATHER THAN A SKIP.
+
+      This set decides which library rows a prune leaves standing. An ink slot
+      has no library row and never will — ink is never minted into
+      `casting_reference_library` (fable-1137 §3), and the door refuses one — so
+      there is nothing here for a prune to take and nothing for this set to
+      protect.
+
+      **Stated rather than left to the fall-through, because this function is
+      exactly where the open lane lost a crop**: `facetsWrittenBy` was blind to
+      `delta.open`, the first open-kind crop was dropped one door after it was
+      minted, and the lesson banked from it is that a facet-derived list which
+      quietly cannot name a kind is how a carry disappears. The difference here
+      is that ink has nothing to lose, and that difference is the reason — so a
+      future ink row in the library would make this comment false out loud
+      instead of making a customer's design vanish.
+    */
+    if ("perPlacement" in assignment) continue;
     for (const slot of slots) {
       if (slot.feature === assignment.feature) named.add(slot.slot);
     }

@@ -637,11 +637,13 @@ describe("what it refuses rather than paints", () => {
        shape, arriving through the recipe instead of through the reader. */
     /* `expression` was on this list until 2026-08-14 and is not any more: it
        has no slot for the same decided reason and no longer needs one, because
-       a presentation fact rides the change clause (fable-446). Makeup and ink
-       still refuse, and they are the reason this test is not deleted. */
+       a presentation fact rides the change clause (fable-446). Makeup is the
+       reason this test is not deleted.
+
+       `ink` LEFT ON 2026-08-20 and did not stop refusing — it moved to its own
+       reason, and the arm below is where that distinction is held. */
     for (const [delta, facet] of [
       [{ makeup: "a red lip" }, "makeup"],
-      [{ free: { ink: "a small swallow on her wrist" } }, "ink"],
     ] as const) {
       const result = repaintAsksFor({ delta, prose });
       expect(result.ok, facet).toBe(false);
@@ -649,6 +651,65 @@ describe("what it refuses rather than paints", () => {
       expect(result.reason, facet).toBe("notASlot");
       expect(result.facet, facet).toBe(facet);
     }
+  });
+
+  /*
+    AN INK ASK WITH NOWHERE ON HER NAMED — its OWN reason, not makeup's.
+
+    Driven directly, because it is meant to be unreachable: the ink branch
+    upstream asks where before anything is claimed, so a take with no placement
+    never reaches this door. Unreachable is a CLAIM, and a comment calling a
+    branch synthetic has cost this codebase a whole walk before — so the door is
+    driven here rather than certified by the path that usually behaves.
+
+    The reason must NOT be `notASlot`: that one means the catalogue decided this
+    facet has no picture, which is the opposite of true now. A customer who is
+    told "that isn't something I can place yet" about a tattoo we can place has
+    been told something false about the product.
+  */
+  it("refuses an ink ask with no placement, in ink's own words", () => {
+    const result = repaintAsksFor({
+      delta: { free: { ink: "a small swallow" } },
+      prose,
+    });
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.reason).toBe("unplacedInk");
+    expect(result.facet).toBe("ink");
+    expect(result.detail).toContain("nothing says where on her it goes");
+  });
+
+  /*
+    AND WITH ONE, IT IS AN ASK ABOUT THE PLACEMENT'S OWN SLOT.
+
+    The other half of the same control: a door that refused whatever it was
+    handed would pass the arm above and take the whole wire down with it. This
+    is also the first time an ink ask has produced a slot at all.
+  */
+  it("takes an ink ask to the placement's slot once somebody says where", () => {
+    const result = repaintAsksFor({
+      delta: { free: { ink: "a small swallow" } },
+      prose,
+      inkPlacement: { placement: "neck", side: null },
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.asks.map((ask) => ask.slot)).toEqual(["ink:neck"]);
+  });
+
+  it("carries the side she named onto the slot, for a per-side placement", () => {
+    /* The side is this road's measured failure — 300 credits refunded twice for
+       a design on the wrong anatomical side (DECISION_LOG R7-7G) — so the slot
+       the ask lands on is the sided one, and the picture-half clause reads its
+       instance from exactly this. */
+    const result = repaintAsksFor({
+      delta: { free: { ink: "a small swallow" } },
+      prose,
+      inkPlacement: { placement: "upperArm", side: "left" },
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.asks.map((ask) => ask.slot)).toEqual(["ink:upperArm@left"]);
   });
 
   it("tells an unnamed worn object apart from a decided absence", () => {

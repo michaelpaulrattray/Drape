@@ -5332,10 +5332,19 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
 
   it("CONTROL — a door beside it says its OWN sentence, never makeup's", async () => {
     /*
-      THE ONE THAT MATTERS, RE-ANCHORED (fable-471 §1). `ink` refuses through the
-      SAME error class and the same `notASlot` reason as makeup — a different
-      facet is the only thing separating them — so this is what proves the
-      makeup wording is scoped to the door the founder ruled.
+      THE ONE THAT MATTERS, RE-ANCHORED TWICE (fable-471 §1).
+
+      `ink` used to refuse through the SAME error class and the same `notASlot`
+      reason as makeup, a different facet being the only thing separating them,
+      which is what made it the control that proves the makeup wording is
+      scoped to the door the founder ruled.
+
+      **On 2026-08-20 it stopped sharing the reason**, and the control got
+      stronger rather than weaker: ink now refuses with `unplacedInk` and its
+      own sentence, so the two doors are separated by their words as well as by
+      their facet. The literal below moved with it — quoting makeup's phrase
+      over a door that no longer says it would be an assertion nothing writes,
+      which is a guard that cannot fail.
 
       What changed is the other half: it used to prove that every other door got
       the GENERIC line, and the generic line over a road that knew exactly why it
@@ -5349,7 +5358,7 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
         delta: { free: { ink: "a small star tattoo behind her ear" } },
       }),
     }, { ...input, instruction: "give her a small star tattoo behind her ear" }))
-      .rejects.toThrow(/isn't something I can place yet/);
+      .rejects.toThrow(/I need to know where it goes/);
 
     const said = await refineCandidate({
       ...repainting,

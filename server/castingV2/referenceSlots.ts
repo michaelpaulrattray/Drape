@@ -255,9 +255,15 @@ export function inkSideSlotKey(placement: string, side: Instance): string {
  * not a missing one: a placement there is one of (`neck`, `upper chest`) files
  * exactly there.
  */
-export function inkPlacementOfSlot(
-  key: string,
-): { placement: string; side: Instance | null } | null {
+export type InkAskPlacement = {
+  /** The vocabulary's key for a measured surface, or her own word for one it
+   *  has not measured. Validated by the catalogue, never here. */
+  placement: string;
+  /** `null` is a real answer: a surface there is one of files exactly there. */
+  side: Instance | null;
+};
+
+export function inkPlacementOfSlot(key: string): InkAskPlacement | null {
   if (!isInkSlot(key)) return null;
   const rest = key.slice(INK_SLOT_PREFIX.length);
   const at = rest.indexOf("@");

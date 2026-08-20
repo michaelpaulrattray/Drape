@@ -12,6 +12,8 @@
  * a facet added to the refine vocabulary with no home here is a feature the
  * panel silently cannot show.
  */
+import { readFileSync } from "node:fs";
+
 import { describe, expect, it } from "vitest";
 
 import { LANDMARK_OF_ACCESSORY } from "./accessoryKinds";
@@ -286,9 +288,58 @@ describe("every facet has a home, or a stated reason for not having one", () => 
     }
   });
 
-  it("keeps ink and expression OUT, each with the reason rather than by omission", () => {
-    expect(FACET_SLOTS.ink).toMatchObject({ notASlot: expect.stringContaining("OWED") });
+  it("keeps expression OUT, with the reason rather than by omission", () => {
     expect(FACET_SLOTS.expression).toMatchObject({ notASlot: expect.stringContaining("D-136") });
+  });
+
+  /*
+    INK LEFT THIS LIST ON 2026-08-20, and the pin above is what noticed.
+
+    It read `notASlot` with a reason beginning "OWED" — and the reason turned
+    out to be the specification: one slot per placement, its question from the
+    placement rather than from a region table. The assignment is now the third
+    shape, `perPlacement`, and the fence became the spec.
+  */
+  it("gives ink a per-placement home now that the lane exists", () => {
+    expect(FACET_SLOTS.ink).toEqual({ perPlacement: "ink" });
+    /* And it is NOT a feature assignment: `{ feature: "tattoo" }` is the tidy
+       collapse the caution below exists to stop, and it would send a segmenter
+       an open question. */
+    expect("feature" in FACET_SLOTS.ink).toBe(false);
+  });
+
+  /*
+    THE CAUTION SURVIVED THE FENCE IT WAS WRITTEN ON (fable-1146 §2's condition).
+
+    The `notASlot` string is gone, and with it the sentence that has been
+    stopping people inventing a `tattoo` segmenter question. The ruling let the
+    string go on one condition — that D-213's caution rides along VERBATIM into
+    the assignment's own docblock — so the condition is made mechanical here
+    rather than left as a promise: read off the source, because a docblock is
+    the one kind of statement a normal assertion cannot see.
+
+    This is a `derive-never-mirror` exception on purpose. There is nothing to
+    derive from: the fact under test IS that a particular sentence is present in
+    a particular file.
+  */
+  it("carries D-213's caution forward, verbatim, where the decision is made", () => {
+    const source = readFileSync(
+      new URL("./referenceSlotCatalogue.ts", import.meta.url),
+      "utf8",
+    );
+    /* A docblock WRAPS, so the sentence is read the way a person reads it:
+       comment furniture off, whitespace collapsed. Asserting the raw file would
+       fail on a re-wrap, which would make this arm about line breaks rather
+       than about the caution. */
+    const prose = source
+      .replace(/^\s*\*\s?/gm, "")
+      .replace(/\s+/g, " ");
+    expect(prose).toContain(
+      "Inventing a `tattoo` question here would ask a segmenter an open question (D-213)",
+    );
+    /* And the half that says WHY there is no such region — the three measured
+       words, which is what makes the caution actionable rather than a rule. */
+    expect(prose).toContain("There is no `tattoo` region");
   });
 });
 

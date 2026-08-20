@@ -65,7 +65,12 @@ import {
 import {
   FACET_SLOTS, facetsOfSlot, narrowToScope, slotDefinition, slotsForFacet,
 } from "./referenceSlotCatalogue";
-import { isOpenSlot, openKindCarriedByCrops, openSlotKey } from "./referenceSlots";
+import {
+  isOpenSlot,
+  openKindCarriedByCrops,
+  openSlotKey,
+  type InkAskPlacement,
+} from "./referenceSlots";
 import { accessoryKindOf } from "./accessoryKinds";
 import { markCanDepart, markKindOf } from "./markKinds";
 import { vacantPhraseFor } from "./vacancyPhrases";
@@ -104,6 +109,21 @@ export type RepaintAsksInput = {
    * one string is how they come to disagree about ears and eyes.
    */
   accessoryKind?: string | null;
+  /**
+   * WHERE ON HER THE DESIGN GOES, and which of her — the ink facet's slot.
+   *
+   * Carried in for the same reason `accessoryKind` above is: the value that
+   * picks the slot is resolved at RUNTIME, from the customer's own sentence,
+   * so the facet table cannot hold it (`FacetAssignment`'s `perPlacement`
+   * branch states the whole argument). Derived ONCE by the caller that asked
+   * her, never re-derived here — three derivations of one fact is how they come
+   * to disagree, and on this road disagreeing means a design on the wrong arm,
+   * which is a refund and an apology (DECISION_LOG R7-7G).
+   *
+   * Absent on every render that is not an ink ask, which is every render this
+   * product has served so far.
+   */
+  inkPlacement?: InkAskPlacement | null;
   /**
    * WHAT THIS STEP TAKES BACK — a prune, named (V3(c), fable-536 §2).
    *
@@ -201,6 +221,24 @@ export type RepaintAsksRefusal = {
     | "departure"
     | "notASlot"
     | "unnamedObject"
+    /**
+     * AN INK ASK WITH NOWHERE ON HER NAMED — ink's sibling of `unnamedObject`,
+     * and it is a separate reason for the same purpose the pair above serves.
+     *
+     * `notASlot` means the catalogue decided this facet has no picture.
+     * `unnamedObject` means the placement table cannot say what she is wearing.
+     * This means the facet HAS a slot per placement and nobody said which — a
+     * different fact, answerable by a different sentence, and the three must
+     * never wear each other's label.
+     *
+     * **It should be unreachable, which is exactly why it is driven.** The ink
+     * branch upstream asks where on her it goes before anything is claimed, and
+     * a take with no placement never reaches a render. Unreachable is a CLAIM
+     * though, and this codebase has paid for a comment calling a branch
+     * synthetic when it was not — so its arm drives this door directly rather
+     * than through the path that usually behaves.
+     */
+    | "unplacedInk"
     | "uncatalogued"
     | "noWords"
     /**
@@ -758,7 +796,10 @@ export function repaintAsksFor(input: RepaintAsksInput): RepaintAsksResult {
     */
     if (vacatedFacets.has(facet) && statePhrase(facet, input.delta, input.prose) === null) continue;
     let definitions = narrowToScope(
-      slotsForFacet(facet, { accessoryKind: input.accessoryKind }),
+      slotsForFacet(facet, {
+        accessoryKind: input.accessoryKind,
+        inkPlacement: input.inkPlacement,
+      }),
       input.scope,
     );
     if (definitions.length === 0) {
@@ -766,8 +807,17 @@ export function repaintAsksFor(input: RepaintAsksInput): RepaintAsksResult {
          what the caller happened to pass, so a decided absence and an unnamed
          object never wear each other's label — the same split
          `mintedSlots.unfiledReasonFor` makes, read here on the way in rather
-         than on the way out. */
-      const unnamed = "family" in FACET_SLOTS[facet];
+         than on the way out. Three assignments now, three reasons, and the
+         third one names the fact the other two cannot: the slot exists and
+         nobody said WHICH. */
+      const assignment = FACET_SLOTS[facet];
+      if ("perPlacement" in assignment) {
+        return {
+          ok: false, reason: "unplacedInk", facet,
+          detail: `this render writes ${facet} and nothing says where on her it goes, so the recipe has no placement to ask about`,
+        };
+      }
+      const unnamed = "family" in assignment;
       return {
         ok: false, reason: unnamed ? "unnamedObject" : "notASlot", facet,
         detail: unnamed

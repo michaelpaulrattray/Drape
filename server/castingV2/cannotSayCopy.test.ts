@@ -21,6 +21,7 @@ const REASONS: readonly CannotSayReason[] = [
   "departure",
   "notASlot",
   "unnamedObject",
+  "unplacedInk",
   "uncatalogued",
   "noWords",
   "perSideRemoval",
