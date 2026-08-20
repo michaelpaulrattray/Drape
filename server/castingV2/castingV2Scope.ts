@@ -1744,19 +1744,27 @@ export function captureCastingInkCutEnabled(userId: number): boolean {
  * # ⚠ IT IS INERT BY ARITHMETIC TODAY, AND THAT IS DECLARED RATHER THAN QUIET
  *
  * ```
- * S1 upper arm  183 short edge     S2 upper arm  229 short edge
- * INK_DESIGN_MIN_EDGE = 256        BOTH SPECIMENS REFUSED
+ * S1 upper arm    183 short edge   S2 upper arm  229 short edge   REFUSED
+ * S2 upper chest  720x390          the road's first real crop     CARRIED
+ * INK_DESIGN_MIN_EDGE = 256
  * ```
  *
- * **The road refuses both of its own founder specimens on today's floor.**
+ * ⚠ **THE INERTNESS IS PER PLACEMENT, NOT PER ROAD, and this paragraph claimed
+ * otherwise for one commit.** It read *"the road refuses both of its own
+ * founder specimens"* — true of the ARM, measured; false of the CHEST, which
+ * nobody had asked until the real reader was driven (opus-899). `upper chest`
+ * on S2 answers a 720x390 surface, clears the floor comfortably, and produces
+ * a crop of the whole chest piece. **So this flag is NOT inert: armed, a chest
+ * placement changes what is stored today.** The arm placement stays
+ * floor-blocked, and where it blocks the inertness is total rather than a
+ * smaller cut — the scoped ink cut is `ink ∩ region` and therefore inside the
+ * region, so a surface under the floor guarantees the fallback is under it too
+ * and the picture refuses `cutTooSmall` with the flag either way
+ * (`inkReferenceCutter.test.ts` asserts that as an equality).
  *
- * ⚠ And the inertness is SHARPER than "a smaller cut instead", found by driving
- * it: the scoped ink cut is `ink ∩ region`, which is INSIDE the region — so a
- * surface under the floor guarantees the fallback is under it too, and the
- * picture refuses `cutTooSmall` with this flag ON and refuses IDENTICALLY with
- * it off. **On its own specimens this flag changes nothing at all today**, and
- * `inkReferenceCutter.test.ts` asserts that as an equality between the two
- * answers rather than as two separate claims.
+ * The floor is still a flip precondition, because the arm — the placement his
+ * own ontology example names, *"copy his right arm sleeve"* — is the one it
+ * blocks.
  *
  * It does not inherit 256 silently and it does not get a floor invented for it
  * either: per fable-1183 §3 no floor constant moves before the REALISM PASS's

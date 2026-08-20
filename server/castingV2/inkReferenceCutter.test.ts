@@ -861,10 +861,28 @@ describe("the region road — the cut is the SURFACE, not the patch inside it", 
     surface: Rect = SURFACE,
     patch: Rect = PATCH,
     over: (name: string, width: number, height: number) => Mask | Error | null = () => null,
+    /**
+     * ⚠ THE IN-SURFACE INK, asked of the surface's OWN CROP and therefore
+     * arriving at a different size — which is the only thing that tells the two
+     * `tattooed skin` questions apart here.
+     *
+     * Defaulted to a small patch inside the crop, because that is what the real
+     * reader answered on both founder specimens (2,393 px and 15,877 px). A
+     * fixture that answered the whole-frame patch to both questions would be
+     * the very confusion this road was rebuilt to end: `ink ∩ region` was EMPTY
+     * on both real pictures while every scripted arm said otherwise.
+     */
+    inSurface: Rect | null = { x: 4, y: 4, w: 60, h: 60 },
   ) => reader(({ name, width, height }) => {
     const special = over(name, width, height);
     if (special !== null) return special;
-    if (name === INK_REGION) return rectangle(width, height, patch);
+    if (name === INK_REGION) {
+      /* A CROP arrived, so this is the LICENCE and not the whole-frame read. */
+      if (width !== W || height !== H) {
+        return inSurface === null ? empty(width, height) : rectangle(width, height, inSurface);
+      }
+      return rectangle(width, height, patch);
+    }
     if (name === PERSON_REGION) return rectangle(width, height, { x: 0, y: 0, w: width, h: height });
     if (name === REGION_WORD) return rectangle(width, height, surface);
     if (name === FACE_REGION) return rectangle(width, height, FACE);
@@ -921,10 +939,19 @@ describe("the region road — the cut is the SURFACE, not the patch inside it", 
 
     await cutInkDesign({ bytes: picture, reader: scripted, scope: scopeOf(), regionCrop: true });
 
-    expect(scripted.asked).toHaveLength(4);
+    /* FIVE questions on the escalation road: ink, licence, region, the
+       IN-SURFACE licence, and face. Two of them are new (fable-1205 §1's
+       corrected cost), and the fifth is bought only once the fourth grants. */
+    expect(scripted.asked).toHaveLength(5);
     const face = scripted.asked.find((one) => one.name === FACE_REGION)!;
     expect([face.width, face.height]).toEqual([W, H]);
     expect(face.absentIsAnswer).toBe(true);
+    /* And the in-surface question is asked of the SURFACE'S OWN CROP, never of
+       her whole frame — a whole-frame answer here is the instrument that was
+       empty on both real photographs. */
+    const inSurface = scripted.asked.filter((one) => one.name === INK_REGION).at(-1)!;
+    expect([inSurface.width, inSurface.height]).toEqual([SURFACE.w, SURFACE.h]);
+    expect(inSurface.absentIsAnswer).toBe(true);
   });
 
   it("⚠ TAKES THE FACE OUT AT THE BYTES — the S2 torso case, counted", async () => {
@@ -992,17 +1019,17 @@ describe("the region road — the cut is the SURFACE, not the patch inside it", 
 
   it("keeps today's cut when the ink is NOT in the named surface, and REFUSES free", async () => {
     /*
-      `regionHeld` is the test — the per-pixel intersection, amended in from box
-      containment (fable-1203 §1) because a box test refuses the sleeve that
-      straddles a shoulder, which is what a sleeve does.
+      THE LICENCE IS THE IN-SURFACE READ (fable-1205 §1), so "not on that
+      surface" means the surface's own crop carries no ink — NOT that the
+      whole-frame patch failed to intersect it. That earlier test was empty on
+      both founder specimens and refused a man with two tattooed arms.
 
-      Here the patch is genuinely elsewhere, so the surface must not ride AND
-      the wrong-placement door opens instead of filing a chest tattoo against
-      her upper arm.
+      Here the surface's crop is genuinely bare, so the surface must not ride
+      AND the wrong-placement door opens instead of filing a chest tattoo
+      against her upper arm.
     */
     const picture = await coordinatePicture(W, H);
-    const elsewhere = photographed(SURFACE, PATCH, (name, width, height) =>
-      name === INK_REGION ? rectangle(width, height, { x: 700, y: 500, w: 300, h: 300 }) : null);
+    const elsewhere = photographed(SURFACE, PATCH, () => null, null);
 
     const result = await cutInkDesign({
       bytes: picture, reader: elsewhere, scope: scopeOf(), regionCrop: true,
@@ -1011,14 +1038,14 @@ describe("the region road — the cut is the SURFACE, not the patch inside it", 
     expect(result.ok).toBe(false);
     expect(!result.ok && result.refusal.code).toBe("inkNotOnThatSurface");
     /*
-      ⚠ AND IT DOES NOT BUY THE FACE QUESTION FIRST — house money, and the only
-      thing `regionHeld` guards in the escalation above.
+      ⚠ AND IT DOES NOT BUY THE FACE QUESTION — house money, armed rather than
+      assumed.
 
-      FOUND BY A SABOTAGE THAT REDDENED NOTHING: deleting `!scoped.regionHeld`
-      from the escalation left all 43 arms green, because the refusal below
-      returns before the surface can ride, so the only difference was one fal
-      call spent on a picture we were about to turn away. A branch whose whole
-      purpose is a cost has to be armed on the cost.
+      The licence is what gates the face call now: a surface known to carry no
+      ink is one we are about to leave alone, so the second new question must
+      not be spent on it. The ancestor of this assertion was found by a sabotage
+      that reddened NOTHING, which demoted a condition believed to be a safety
+      guard into the cost guard it actually was.
     */
     expect(
       elsewhere.asked.map((one) => one.name),
@@ -1039,7 +1066,8 @@ describe("the region road — the cut is the SURFACE, not the patch inside it", 
       if (name === INK_REGION) return rectangle(width, height, DESIGN);
       /* NOBODY in the picture — the licence's positive zero. */
       if (name === PERSON_REGION) return empty(width, height);
-      /* And the named surface finds nothing on paper. */
+      /* And the named surface finds nothing on paper, so the in-surface
+         question is never even reachable: there is no surface to crop. */
       return empty(width, height);
     });
 
@@ -1103,6 +1131,8 @@ describe("the region road — the cut is the SURFACE, not the patch inside it", 
     const picture = await coordinatePicture(W, H);
     const silent = photographed(SURFACE, PATCH, (name) =>
       name === FACE_REGION ? new Error("the reader did not answer") : null);
+    /* The LICENCE answered, so the road reached the face question and only
+       then lost it — which is the case this arm is about. */
 
     const result = await cutInkDesign({
       bytes: picture, reader: silent, scope: scopeOf(), regionCrop: true,
@@ -1127,6 +1157,31 @@ describe("the region road — the cut is the SURFACE, not the patch inside it", 
     expect(result.ok && result.cut.box).toEqual({
       left: PATCH.x, top: PATCH.y, width: PATCH.w, height: PATCH.h,
     });
+  });
+
+  it("⚠ a SILENT licence drops the road and never refuses her picture", async () => {
+    /*
+      The residual risk this road is priced on (fable-1205 §2c): a reader that
+      cannot answer the in-surface question must leave her picture alone, not
+      turn it away. The difference between *the reader answered nothing* and
+      *the reader did not answer* is the whole of it, and the two do not share
+      a sentinel in the code either.
+    */
+    const picture = await coordinatePicture(W, H);
+    const unanswered = photographed(SURFACE, PATCH, (name, width, height) =>
+      name === INK_REGION && width !== W ? new Error("the reader did not answer") : null);
+
+    const result = await cutInkDesign({
+      bytes: picture, reader: unanswered, scope: scopeOf(), regionCrop: true,
+    });
+
+    expect(result.ok, "a provider hiccup turned her picture away").toBe(true);
+    /* Today's cut, unchanged. */
+    expect(result.ok && result.cut.box).toEqual({
+      left: PATCH.x, top: PATCH.y, width: PATCH.w, height: PATCH.h,
+    });
+    /* And it did not go on to buy the face question. */
+    expect(unanswered.asked.map((one) => one.name)).not.toContain(FACE_REGION);
   });
 
   it("never fires without a scope, however the flag is set", async () => {

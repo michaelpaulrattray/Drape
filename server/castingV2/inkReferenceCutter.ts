@@ -569,35 +569,40 @@ export async function cutInkDesign(input: CutInkDesignInput): Promise<CutInkDesi
 
     It is reached only here, after the routing has already decided to cut: a
     flash sheet that rides whole never arrives, a refused picture is not being
-    cut at all, ink being PRESENT is the region road's own licence (we never
-    carry a piece of a stranger's arm on a picture with no tattoo in it), and
-    every refusal inside it falls back to the cut this file already makes. The
-    worst case of the whole road is the product behaving exactly as it does
-    today.
+    cut at all, and every refusal inside it falls back to the cut this file
+    already makes. The worst case of the whole road is the product behaving
+    exactly as it does today.
 
-    # `regionHeld` IS THE TEST, and the box test it replaced was backwards
+    **It costs TWO new calls, not one** — the in-surface licence and, only once
+    that licence is granted, `face`. The second is bought for a surface already
+    known to carry ink, so a picture this road is about to leave alone pays for
+    one extra question rather than two.
 
-    `regionHeld` is `|ink ∩ region| > 0` — the reader found her ink IN the
-    surface she named, per pixel, computed already by `scopeInkMask` from masks
-    in hand, asking nobody anything.
+    # THE LICENCE IS THE IN-SURFACE READ, and it took two wrong answers to get
 
-    A BOX containment test (`inkBox ⊆ regionBox`) was proposed and countersigned
-    first, and reading the code killed it: on this road's own population the ink
-    patch straddles the surface boundary — which is what a sleeve DOES — so the
-    box test refuses the sleeve and falls back to the fragment this road exists
-    to stop delivering. **A test that refuses the road's own population is the
-    defect wearing a guard's name.** The case the box test existed for — a bare
-    arm carried as "the design" because her only tattoo is on her chest — is
-    caught identically by overlap. And `pixels > 0` is this house's own licence
-    form: never a percentage, never a threshold (fable-1129's law).
+    Whether this road may carry a surface is decided by asking `tattooed skin`
+    INSIDE that surface's own crop — the block below, and its docblock carries
+    the court. Two earlier tests are on the record because each was defensible
+    and each was wrong on the real pictures:
 
-    ⚠ **NO THRESHOLD MAY EVER BE ADDED HERE** (fable-1203 §2). A sliver of
-    adjacent ink licensing a whole surface is the known slack in this test, and
-    it is survivable for ONE reason: **THE OFFER SHOWS HER THE CROP BEFORE
-    ANYTHING RIDES.** The box test's backstop is the offer, by design — so
-    nobody may relax the offer while believing this test stands alone, and if
-    the sliver ever annoys a real customer the fix is a better refusal sentence
-    or his ruling, never a percentage.
+      BOX CONTAINMENT   `inkBox ⊆ regionBox`. Refuses the sleeve that straddles
+                        a shoulder, which is what a sleeve DOES — a test that
+                        refuses the road's own population is the defect wearing
+                        a guard's name. Killed by reading the code (fable-1203).
+      `regionHeld`      `|ink ∩ region| > 0`, per pixel and free. **EMPTY on
+                        BOTH founder specimens**: the whole-frame read returns
+                        one patch of a patchwork body and the surface read
+                        outlines the limb, and the two do not touch. Killed by
+                        driving the real reader (fable-1205), after 43 unit arms
+                        agreed with it — every fixture put the ink inside the
+                        surface, because that is what the design sentence said.
+
+    ⚠ **NO THRESHOLD MAY EVER BE ADDED TO THE LICENCE** (fable-1203 §2, and it
+    survives the move): `pixels > 0` is this house's own licence form — never a
+    percentage. The known slack is survivable for ONE reason, **THE OFFER SHOWS
+    HER THE CROP BEFORE ANYTHING RIDES**, so nobody may relax the offer while
+    believing the licence stands alone, and if it ever annoys a real customer
+    the fix is a better refusal sentence or his ruling, never a percentage.
 
     # AND THE FACE COMES OUT, unconditionally
 
@@ -611,22 +616,101 @@ export async function cutInkDesign(input: CutInkDesignInput): Promise<CutInkDesi
     picture — the same posture the region question above takes, and for the same
     reason: this is an improvement on a cut we already know how to make.
   */
+  /*
+    ================================================================
+    THE LICENCE, ASKED INSIDE THE SURFACE — and it is the only
+    instrument that has ever answered this question correctly
+    ================================================================
+
+    Ruled fable-1205 §1, from a court on the founder's own two photographs
+    (opus-898). **`ink ∩ region` was the licence for one commit and it is EMPTY
+    on both specimens** — the reader returns ONE patch of a patchwork body,
+    somewhere on the torso, and separately outlines the arm, and the two do not
+    touch. So the road refused a man with two tattooed arms, in a sentence that
+    said his tattoo was not on his arm. A false statement about her picture is
+    not a refusal.
+
+    The answer was already in the court that opened this road, filed under a
+    hypothesis that had died:
+
+    ```
+    S1   upper arm        38,079 px          then, INSIDE that crop:
+    S1     tattooed skin   2,393 px  73x54   2/2
+    S2     tattooed skin  15,877 px 144x238  2/2
+    ```
+
+    **THE IN-REGION READ IS A LICENCE AND NEVER A CARRIER** (fable-1205 §1,
+    verbatim). It died as a way of GETTING the sleeve — it returns something
+    smaller than the whole-frame read, which is why opus-876 buried it. It is
+    alive as a way of ASKING WHETHER THE SURFACE CARRIES INK, which is a
+    different question and the only one it is being put here.
+
+    ⚠ **THE RESIDUAL RISK, PRICED** (fable-1205 §2c): a reader that misses
+    in-region ink on some future picture produces a FALSE REFUSAL — the same
+    shape this court just caught, one instrument along. Two backstops, named
+    where the refusal is composed rather than left to be remembered: the OFFER
+    loop, where she sees what we made of her picture, and fable-919 §3's eyes
+    gate before this road is flipped for anybody. And the sentence stays about
+    HER PICTURE and never about her judgement, because 1052 forbids a reader's
+    verdict that turns a customer away.
+
+    Three outcomes and they do not share a sentinel — `null` is *the road was
+    not taken*, `ok: false` is *the reader did not answer*, and `ok: true` with
+    zero pixels is *the surface carries no ink*, which is a reading.
+  */
+  const regionInk = await (async () => {
+    if (input.regionCrop !== true || scoped.region === null) return null;
+    const box = extentOf(scoped.region).box;
+    if (box === null) return null;
+    let cropped: Buffer;
+    try {
+      cropped = await sharp(input.bytes)
+        .extract({ left: box.left, top: box.top, width: box.width, height: box.height })
+        .png()
+        .toBuffer();
+    } catch (error) {
+      log.warn(
+        { ...input.about, err: error instanceof Error ? error.message : String(error) },
+        "[inkReferenceCutter] the named surface would not crop — dropping the region road",
+      );
+      return { ok: false } as const;
+    }
+    const inside = await input.reader
+      .region({ image: cropped, name: INK_REGION, absentIsAnswer: true })
+      .catch((error: unknown) => {
+        log.warn(
+          { ...input.about, err: error instanceof Error ? error.message : String(error) },
+          "[inkReferenceCutter] the in-surface ink question went unanswered — dropping the region road rather than refusing her picture",
+        );
+        return null;
+      });
+    if (inside === null) return { ok: false } as const;
+    if (!inHerSpace(inside, box.width, box.height)) {
+      log.warn(
+        {
+          ...input.about,
+          mask: `${inside.width}x${inside.height}`,
+          crop: `${box.width}x${box.height}`,
+        },
+        "[inkReferenceCutter] the in-surface ink mask is not in the crop's space — dropping the region road rather than resampling",
+      );
+      return { ok: false } as const;
+    }
+    const pixels = extentOf(inside).pixels;
+    log.info(
+      { ...input.about, region: input.scope?.region ?? null, inSurface: pixels, ofWholeFrame: inkExtent.pixels },
+      "[inkReferenceCutter] the ink the named surface actually carries",
+    );
+    return { ok: true, box, pixels } as const;
+  })();
+
   const surface = await (async () => {
-    if (input.regionCrop !== true) return null;
-    /*  HERE IS A COST GUARD AND NOT A SAFETY ONE, and that is worth
-       knowing before somebody deletes it: the wrong-placement door below returns
-       before this crop could ride, so removing this line changes no frame — it
-       only spends a fal call on a picture we are about to refuse. Armed as the
-       cost it is, because a sabotage of it reddened nothing. */
-    /*
-      ⚠ `regionHeld` HERE IS A COST GUARD, NOT A SAFETY ONE, and that is worth
-      knowing before somebody deletes it as redundant: the wrong-placement door
-      below returns before this crop could ever ride, so removing this line
-      changes no frame — it only spends a fal call on a picture we are about to
-      turn away. Found by a sabotage that reddened NOTHING, and armed in the
-      refusal's own test as the cost it is.
-    */
-    if (!scoped.regionHeld || scoped.region === null) return null;
+    /* Licensed, and only licensed: the face call is bought for a surface we
+       already know carries ink. A silent licence or an unanswered one drops the
+       road rather than spending a second call on a picture we are about to
+       leave alone. */
+    if (regionInk === null || !regionInk.ok || regionInk.pixels === 0) return null;
+    if (scoped.region === null) return null;
     const face = await input.reader
       .region({ image: input.bytes, name: FACE_REGION, absentIsAnswer: true })
       .catch((error: unknown) => {
@@ -710,15 +794,15 @@ export async function cutInkDesign(input: CutInkDesignInput): Promise<CutInkDesi
     exists to prevent. The licence is the one fact that tells the two apart, and
     it has already been read.
   */
-  if (
-    input.regionCrop === true
-    && input.scope?.region != null
-    && !scoped.regionHeld
-    && personExtent.pixels > 0
-  ) {
+  if (regionInk?.ok === true && regionInk.pixels === 0 && personExtent.pixels > 0) {
     log.info(
-      { ...input.about, region: input.scope.region, ink: inkExtent.pixels, person: personExtent.pixels },
-      "[inkReferenceCutter] her design is not on the surface she named — refused free rather than filed against the wrong placement",
+      {
+        ...input.about,
+        region: input.scope?.region ?? null,
+        ink: inkExtent.pixels,
+        person: personExtent.pixels,
+      },
+      "[inkReferenceCutter] the surface she named carries no ink — refused free rather than filed against the wrong placement",
     );
     return refuse("inkNotOnThatSurface");
   }
