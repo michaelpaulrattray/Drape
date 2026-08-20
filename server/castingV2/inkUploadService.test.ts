@@ -457,7 +457,7 @@ describe("THE CUT, at the wire — build 3a.2's upload wire", () => {
     }).png().toBuffer();
     return {
       design,
-      cut: vi.fn(async (input: { bytes: Buffer }) => (route === "cut"
+      cut: vi.fn(async (input: { userId: number; candidatePublicId: string; bytes: Buffer }) => (route === "cut"
         ? {
           ok: true as const,
           cut: {
@@ -468,6 +468,7 @@ describe("THE CUT, at the wire — build 3a.2's upload wire", () => {
             inkPixels: 84000,
             personPixels: 160000,
             box: { left: 50, top: 60, width: 300, height: 280 },
+            focus: null,
           },
         }
         : {
@@ -480,6 +481,7 @@ describe("THE CUT, at the wire — build 3a.2's upload wire", () => {
             inkPixels: 0,
             personPixels: 0,
             box: null,
+            focus: null,
           },
         })),
     };

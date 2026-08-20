@@ -84,7 +84,10 @@ import { createModuleLogger } from "../logging/logger";
 import { storageReadBytes } from "../storage";
 import { storagePut } from "../storage";
 import { defaultCutDesign, defaultManifest } from "./inkUploadService";
-import type { CutInkDesignResult } from "./inkReferenceCutter";
+import type { CutInkDesignResult, InkCutFocus, InkCutScope } from "./inkReferenceCutter";
+import { sourceRegionWord } from "./inkReferenceCrop";
+import { imageHalfOf } from "./sidePhrasing";
+import { inkPlacementEntry, isInkPlacement } from "../../shared/inkPlacementVocabulary";
 import {
   INK_DESIGN_MAX_BYTES,
   INK_DESIGNS_PER_CANDIDATE,
@@ -122,7 +125,23 @@ export type InkReferenceMintRefusal = {
 };
 
 export type InkReferenceMintOutcome =
-  | { ok: true; design: StoredInkDesign }
+  | {
+    ok: true;
+    design: StoredInkDesign;
+    /**
+     * WHAT THE CUT WAS NARROWED TO, carried out so the customer's own sentence
+     * can say it (ruled fable-1172 §2a).
+     *
+     * `null` when nothing narrowed anything — no region word could be asked, or
+     * the region found nothing in her picture. A caller that named a half in
+     * that case would be describing a decision the cut did not make.
+     *
+     * NOT a column and deliberately so: this is what she is told ONCE, at the
+     * offer, before anything is charged. Persisting it would be a second record
+     * of a fact the bytes already are.
+     */
+    focus: InkCutFocus | null;
+  }
   | { ok: false; refusal: InkReferenceMintRefusal };
 
 export type InkReferenceMintRequest = {
@@ -168,7 +187,12 @@ export type InkReferenceMintDependencies = {
   /** Her picture, read by the server from a key that never leaves it. */
   readBytes: (key: string) => Promise<{ bytes: Buffer }>;
   /** The one cutter, injected so a suite drives the order without a provider. */
-  cut: (input: { userId: number; candidatePublicId: string; bytes: Buffer }) => Promise<CutInkDesignResult>;
+  cut: (input: {
+    userId: number;
+    candidatePublicId: string;
+    bytes: Buffer;
+    scope?: InkCutScope;
+  }) => Promise<CutInkDesignResult>;
   manifest: (input: { id: string; userId: number; storageKeys: readonly string[] }) => Promise<void>;
   store: (input: { key: string; bytes: Buffer; contentType: string }) => Promise<{ key: string; url: string }>;
   record: (input: InkDesignToRecord) => Promise<RecordedInkDesign>;
@@ -275,10 +299,52 @@ export async function mintInkDesignFromReference(
   /* 2 — THE CUT, through the one owner. Its refusals are hers and travel
      unchanged, with the code kept so a caller can tell a provider failure from
      a fact about her picture. */
+  /*
+    AND IT IS CUT TO THE PLACE HER SENTENCE NAMED (ruled fable-1158 §2a, roads
+    and conditions ruled fable-1172).
+
+    `tattooed skin` on a photographed man covered in work answers a class with
+    one instance. So the address the ask already carries — the placement and the
+    side — is handed to the cutter as a SCOPE, and the design that comes back is
+    the piece at that place rather than whatever the reader named first.
+
+    Both halves are DERIVED and neither is invented here:
+
+      the REGION word from `sourceRegionWord`, which takes the vocabulary's own
+      measured word for a placement it knows and her phrase for one it does not
+      — and refuses to produce a question containing a side word at all, which
+      is what makes *"the segmenter is never asked a lateral question"*
+      mechanical rather than remembered;
+
+      the HALF from `sidePhrasing.imageHalfOf`, the one owner of *her left is
+      the picture's right*. A `centre` placement has no half and gets none.
+
+    ⚠ **THE HALF IS A GUESS ABOUT A PHOTOGRAPH WE DID NOT TAKE**, and it is
+    only safe because of what happens next: the cut goes in front of her, free,
+    with a sentence saying which half of the picture it came out of, and she
+    discards for nothing if the guess was wrong (road (c), ruled fable-1172 §1).
+    A subject photographed from behind swaps the halves back and nothing in an
+    arbitrary picture says which way he is turned.
+
+    A scope narrows and never refuses: a region the picture does not contain
+    leaves the whole ink mask, which is this road's behaviour one commit ago.
+  */
+  const scope = {
+    region: sourceRegionWord({
+      readerWord: isInkPlacement(request.placement)
+        ? inkPlacementEntry(request.placement).readerWord
+        : null,
+      phrase: isInkPlacement(request.placement) ? null : request.placement,
+    }),
+    half: request.side === "left" || request.side === "right"
+      ? imageHalfOf(request.side)
+      : null,
+  };
   const taken = await dependencies.cut({
     userId: request.userId,
     candidatePublicId: request.candidatePublicId,
     bytes: attached,
+    scope,
   });
   if (!taken.ok) {
     log.info(
@@ -433,5 +499,8 @@ export async function mintInkDesignFromReference(
       width: taken.cut.width,
       height: taken.cut.height,
     },
+    /* Carried out rather than stored: it is what she is told once, at the
+       offer, and the bytes are the durable record of the same fact. */
+    focus: taken.cut.focus,
   };
 }

@@ -21,6 +21,7 @@ import type { RefineDelta } from "./refineDelta";
 import type { StoredInkDesign } from "../db/castingV2InkDesigns";
 import { resolveInkReferenceTake } from "./inkReferenceTake";
 import { inkDesignImagePath } from "../../shared/inkDesignDelivery";
+import { pictureHalfPhrase } from "./sidePhrasing";
 
 /**
  * Refine's MONEY and its ORDER (M8 §10, §12).
@@ -10391,6 +10392,127 @@ describe("the picture she attached becomes the carrier that rides", () => {
       expect(result.reask?.kind).toBe("replace-design");
       expect(studio.map((row) => row.publicId)).toEqual([RESIDENT_ID, "d-minted"]);
       expect(ledger.charges).toHaveLength(0);
+    });
+  });
+
+  /*
+    AND THE OFFER SAYS WHICH HALF OF HER PICTURE THE CUT CAME OUT OF (ruled
+    fable-1172 §2a).
+
+    This is the condition road (c) was ruled ON. The side of a source
+    photograph is decided by image geometry, and geometry assumes a subject
+    facing the camera — a photograph taken from behind swaps the halves back.
+    (b), the honest refusal, was refused because *"discard is free"*; that
+    argument only holds if the preview says what was GUESSED, so a customer
+    looking at an arm can tell it was chosen rather than found.
+
+    Driven at the wire, on the question a customer actually receives, because a
+    sentence proved next to its builder is a sentence nobody was shown.
+  */
+  describe("the offer names the half of the picture the cut came from", () => {
+    const focused = (focus: { region: string; half: "left" | "right"; fellBack: boolean } | null) => ({
+      mintInkDesign: async (request: {
+        placement: string;
+        side: string;
+        reference: { digest: string };
+        intents: readonly string[];
+      }) => {
+        inkMinted.push({
+          placement: request.placement,
+          side: request.side,
+          sourceDigest: request.reference.digest,
+        });
+        return {
+          ok: true as const,
+          focus,
+          design: inkDesignRow({
+            publicId: "d-minted",
+            placement: request.placement,
+            side: request.side,
+            storageKey: "casting-v2/ink/d-minted.png",
+            digest: TINY_MASTER_SHA,
+          }),
+        };
+      },
+      inkTake: async () => ({
+        placement: { kind: "measured" as const, placement: "upperArm" as const },
+        side: "left" as const,
+      }),
+      listInkDesigns: async () => [],
+    });
+
+    it("SAYS WHICH HALF on a fresh cut — and the words come from the one owner", async () => {
+      const result = await refineCandidate(
+        inkRoad(focused({ region: "upper arm", half: "right", fellBack: false })),
+        { ...input, instruction: "use this tattoo design on her left upper arm", referenceId: "ref-public" },
+      );
+
+      expect(result.kind).toBe("asked");
+      expect(result.reask?.kind).toBe("this-design");
+      /* Derived from `sidePhrasing.pictureHalfPhrase`, never respelled in the
+         assertion either — a test that spells the phrase is a second copy of
+         the thing the module exists to own. */
+      expect(result.reask?.question).toContain(`I took it from the upper arm ${pictureHalfPhrase("right")}`);
+      expect(result.reask?.question).toContain("Nothing has been charged.");
+      /* Still free, still nothing painted. */
+      expect(ledger.charges).toHaveLength(0);
+      expect(painted).toHaveLength(0);
+    });
+
+    it("SAYS IT DIFFERENTLY WHEN IT FELL BACK — she is told it is not the side she asked for", async () => {
+      /*
+        The half she named held no design and the other one did. Naming the
+        half without saying it differs from her ask would be true and
+        misleading in one breath — she would read it as confirmation.
+      */
+      const result = await refineCandidate(
+        inkRoad(focused({ region: "upper arm", half: "left", fellBack: true })),
+        { ...input, instruction: "use this tattoo design on her left upper arm", referenceId: "ref-public" },
+      );
+
+      expect(result.reask?.question)
+        .toContain(`The only upper arm with a design on it is ${pictureHalfPhrase("left")}`);
+      expect(result.reask?.question).toContain("so that is the one I took");
+    });
+
+    it("SAYS NOTHING ABOUT A HALF when the cut narrowed nothing — the negative control", async () => {
+      /*
+        A flash sheet has no arm in it, so nothing was narrowed and no half was
+        chosen. A sentence claiming one here would describe a decision the cut
+        did not make — and it is the sentence a customer would rely on.
+      */
+      const result = await refineCandidate(
+        inkRoad(focused(null)),
+        { ...input, instruction: "use this tattoo design on her left upper arm", referenceId: "ref-public" },
+      );
+
+      expect(result.reask?.question).toBe(
+        "This is the design I took out of your picture. Use it? Nothing has been charged.",
+      );
+    });
+
+    it("does NOT say it again on a RIDE — the row was shown once, when it was cut", async () => {
+      /*
+        A reuse ride finds a row she has already looked at. Re-describing which
+        half of a picture it came from, on every later render, is the repeated
+        question D-180 forbids — and there is no fresh cut to describe.
+      */
+      const design = inkDesignRow({
+        publicId: "d-ridden",
+        placement: "upperArm",
+        side: "left",
+        digest: TINY_MASTER_SHA,
+      });
+      const result = await refineCandidate(
+        inkRoad({
+          ...focused({ region: "upper arm", half: "right", fellBack: false }),
+          listInkDesigns: async () => [design],
+        }),
+        { ...input, instruction: "use this tattoo design on her left upper arm", referenceId: "ref-public" },
+      );
+
+      expect(result.kind, "a ride asked a question").toBe("rendered");
+      expect(inkMinted, "a ride bought a cut").toHaveLength(0);
     });
   });
 

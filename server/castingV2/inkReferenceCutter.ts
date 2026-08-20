@@ -78,7 +78,9 @@ import {
   cutOutPixels,
   extentOf,
   routeInkUpload,
+  scopeInkMask,
 } from "./inkReferenceCrop";
+import type { PictureHalf } from "./sidePhrasing";
 import { INK_DESIGN_MIN_EDGE } from "./inkUploadDoor";
 import type { Mask } from "./maskedComposite";
 import type { RegionReader } from "./maskedRefine";
@@ -144,6 +146,47 @@ export type InkCut = {
   readonly personPixels: number;
   /** Where the design sat in her frame, or `null` when the frame rode whole. */
   readonly box: CropBox | null;
+  /**
+   * WHAT THE CUT WAS NARROWED TO, so the sentence she reads can say it.
+   *
+   * `null` when nothing narrowed anything — no scope was asked for, or the
+   * region found nothing in her picture and the whole ink mask was kept. A
+   * caller that showed a half in that case would be telling her something the
+   * cut does not depend on.
+   */
+  readonly focus: InkCutFocus | null;
+};
+
+/**
+ * THE NARROWING, described for the customer's own sentence (ruled fable-1172
+ * §2a: *"the offer's sentence NAMES the geometry for a sided source take"*).
+ *
+ * `half` is a half of HER PICTURE and never an anatomical side — the type says
+ * so, and that is the whole safety of it. `fellBack` is the §2b arithmetic
+ * having fired: the half her word pointed at held no design and the other one
+ * did, so what she is looking at is NOT the side she named and the sentence has
+ * to say which one it is.
+ */
+/**
+ * WHERE IN HER PICTURE TO LOOK — the ASK, named so that everything forwarding
+ * it references one shape rather than re-listing two fields (law 4; the Atlas
+ * flags the copy mechanically).
+ *
+ * Deliberately NOT the same type as {@link InkCutFocus} below, which is the
+ * ANSWER: both fields here may be null because a caller may have no region word
+ * and no side, and the answer carries a third field this cannot — whether the
+ * fallback fired. A shared type would have to make every field optional and
+ * would stop saying either thing.
+ */
+export type InkCutScope = {
+  readonly region: string | null;
+  readonly half: PictureHalf | null;
+};
+
+export type InkCutFocus = {
+  readonly region: string;
+  readonly half: PictureHalf | null;
+  readonly fellBack: boolean;
 };
 
 export type CutInkDesignResult =
@@ -224,6 +267,22 @@ export type CutInkDesignInput = {
    * that a cut may cost a matte.
    */
   reader: Pick<RegionReader, "region">;
+  /**
+   * WHERE IN HER PICTURE TO LOOK — optional, and absent is exactly the road
+   * this file drove yesterday (ruled fable-1158 §2a, roads ruled fable-1172).
+   *
+   * `region` is a question word that has already been through
+   * `sourceRegionWord`, which is what makes *"the segmenter is never asked a
+   * lateral question"* mechanical rather than remembered. `half` is a half of
+   * the PICTURE, already flipped from her anatomy by `sidePhrasing.imageHalfOf`
+   * — the one owner of that inversion.
+   *
+   * **A scope narrows and never refuses.** If the region finds nothing, the
+   * whole ink mask is kept: an ask that names a place on HER, applied to a
+   * photograph of a piece of paper, must not wall the most ordinary upload a
+   * tattoo customer makes.
+   */
+  scope?: InkCutScope;
   /** For the log line, so a cut can be traced to the upload that bought it. */
   about?: { userId?: number; candidatePublicId?: string };
 };
@@ -323,14 +382,77 @@ export async function cutInkDesign(input: CutInkDesignInput): Promise<CutInkDesi
         inkPixels: 0,
         personPixels: 0,
         box: null,
+        focus: null,
       },
     };
   }
 
+  /*
+    THE THIRD QUESTION — WHERE IN HER PICTURE, asked only now (ruled fable-1158
+    §2a, conditions fable-1172 §2).
+
+    **After the routing rather than beside the other two, and that is a money
+    decision made once.** A picture that rides whole has no region to narrow and
+    a refused one is not being cut at all, so asking three questions in the
+    first breath would spend a third of this road's house money on the two
+    outcomes that cannot use the answer. The cost is one serial round trip on
+    the road that CAN use it.
+
+    Never a lateral word — `sourceRegionWord` is the guard and it has already
+    run at the caller, so a `region` arriving here is a question this product is
+    allowed to ask. The half is arithmetic and asks nobody anything.
+
+    A reader that does not answer is NOT a refusal here, unlike the two above:
+    the narrowing is an improvement on a cut this file already knows how to
+    make, and turning her picture away because an optional question timed out
+    would be a wall bought with a nicety. The scope is dropped and the whole ink
+    mask is cut, which is this road's own behaviour one commit ago.
+  */
+  const scoped = await (async () => {
+    const word = input.scope?.region ?? null;
+    if (word === null) return scopeInkMask({ ink: ink.value, region: null, half: null });
+    const region = await input.reader
+      .region({ image: input.bytes, name: word, absentIsAnswer: true })
+      .catch((error: unknown) => {
+        log.warn(
+          { ...input.about, region: word, err: error instanceof Error ? error.message : String(error) },
+          "[inkReferenceCutter] the region question went unanswered — cutting the whole design rather than refusing",
+        );
+        return null;
+      });
+    if (region !== null && !inHerSpace(region, decoded.width, decoded.height)) {
+      log.warn(
+        {
+          ...input.about,
+          region: word,
+          mask: `${region.width}x${region.height}`,
+          picture: `${decoded.width}x${decoded.height}`,
+        },
+        "[inkReferenceCutter] the region mask is not in her picture's space — dropping the scope rather than resampling",
+      );
+      return scopeInkMask({ ink: ink.value, region: null, half: null });
+    }
+    const choice = scopeInkMask({ ink: ink.value, region, half: input.scope?.half ?? null });
+    log.info(
+      {
+        ...input.about,
+        region: word,
+        asked: input.scope?.half ?? null,
+        took: choice.half,
+        fellBack: choice.fellBack,
+        narrowed: choice.regionHeld,
+        pixels: choice.pixels,
+        of: inkExtent.pixels,
+      },
+      "[inkReferenceCutter] the cut was scoped to a region of her picture",
+    );
+    return choice;
+  })();
+
   /* `cut` implies `inkPixels > 0`, and a positive count implies a box — but the
      one thing a corner marked "cannot happen" reliably does is happen, so it is
      answered rather than asserted. */
-  const box = inkExtent.box;
+  const box = scoped.box;
   if (!box) return refuse("cutTooSmall");
 
   /*
@@ -362,7 +484,10 @@ export async function cutInkDesign(input: CutInkDesignInput): Promise<CutInkDesi
     rgba: decoded.rgba,
     width: decoded.width,
     height: decoded.height,
-    mask: ink.value,
+    /* THE SCOPED MASK, which is the whole ink mask when nothing narrowed it —
+       so an unscoped cut is byte-identical to the one this file made before the
+       region question existed. */
+    mask: scoped.mask,
   });
   const bytes = await sharp(cutRgba, { raw: { width: decoded.width, height: decoded.height, channels: 4 } })
     .extract({ left: box.left, top: box.top, width: box.width, height: box.height })
@@ -374,7 +499,8 @@ export async function cutInkDesign(input: CutInkDesignInput): Promise<CutInkDesi
       ...input.about,
       size: `${box.width}x${box.height}`,
       at: `${box.left},${box.top}`,
-      ink: inkExtent.pixels,
+      ink: scoped.pixels,
+      ofWholeMask: inkExtent.pixels,
       person: personExtent.pixels,
       bytes: bytes.byteLength,
     },
@@ -388,9 +514,16 @@ export async function cutInkDesign(input: CutInkDesignInput): Promise<CutInkDesi
       bytes,
       width: box.width,
       height: box.height,
-      inkPixels: inkExtent.pixels,
+      /* THE COUNT DESCRIBES THE PIXELS THAT WERE CUT, not the ones the reader
+         found — a scoped cut of a two-sleeved man is a fraction of the ink in
+         his photograph, and a number describing the wrong set is worse in a
+         log than no number at all. */
+      inkPixels: scoped.pixels,
       personPixels: personExtent.pixels,
       box,
+      focus: input.scope?.region && scoped.regionHeld
+        ? { region: input.scope.region, half: scoped.half, fellBack: scoped.fellBack }
+        : null,
     },
   };
 }

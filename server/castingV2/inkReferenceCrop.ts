@@ -35,6 +35,7 @@
  */
 import { INK_DESIGN_MIN_EDGE } from "./inkUploadDoor";
 import type { Mask } from "./maskedComposite";
+import type { PictureHalf } from "./sidePhrasing";
 
 /**
  * THE CUT QUESTION. Measured against seven rivals; see the table above.
@@ -64,6 +65,57 @@ export const INK_REGION = "tattooed skin";
  * never what kind of picture it is.**
  */
 export const PERSON_REGION = "human skin";
+
+/**
+ * THE THIRD QUESTION'S WORD — where in HER PICTURE to look, and the one place
+ * a lateral word is stopped from reaching a segmenter (fable-1172 §2d).
+ *
+ * It lives beside `INK_REGION` and `PERSON_REGION` because all three are
+ * question words this cutter puts to a reader, and a fourth file holding the
+ * third of them is how a rule about what may be asked comes to have two homes.
+ *
+ * # THE SIDE IS NEVER IN THE QUESTION — mechanically, not by intention
+ *
+ * SAM 3 ignores laterality and answers a class with an instance
+ * (`ask-what-cannot-be-answered-wrong`), so *"right arm"* buys a confident mask
+ * of whichever arm it felt like. The side is decided by geometry instead, one
+ * function along. **This one refuses to produce a question containing a side
+ * word at all** — and the refusal is FAIL-OPEN INTO TODAY'S BEHAVIOUR rather
+ * than into a wall: `null` means no region scope, which is the whole ink mask,
+ * which is exactly what this road did yesterday.
+ *
+ * A measured placement's word comes from the vocabulary and is already clean —
+ * `neck`, `upper arm`, `upper chest`, measured on sixteen masters. An OPEN
+ * placement is the customer's own phrase, and hers may hold anything; the
+ * take's model is asked for the side separately, so a clean phrase is the
+ * ordinary case and a dirty one is the corner this guard is for.
+ *
+ * # WHY A WORD LIST HERE IS NOT THE PHRASING LIST D-163 FORBIDS
+ *
+ * That rule outlaws code deciding what a customer MEANT from a list of
+ * spellings. This decides nothing about her meaning: it is a guard on what we
+ * are about to SEND, and its failure direction is to send less. A word it
+ * wrongly rejects costs a narrowing; a word it wrongly accepts costs an arm.
+ */
+const SIDE_WORDS = Object.freeze([
+  "left", "right", "lefthand", "righthand", "l/h", "r/h", "near", "far",
+]);
+
+export function sourceRegionWord(placement: {
+  /** The vocabulary's measured word, when this is a placement it knows. */
+  readerWord: string | null;
+  /** Her own phrase, when it is not. */
+  phrase: string | null;
+}): string | null {
+  const word = (placement.readerWord ?? placement.phrase ?? "").trim().toLowerCase();
+  if (word.length === 0) return null;
+  /* Split on anything that is not a letter, so `right-arm` and `right/arm` are
+     the same two words `right arm` is. A substring test would reject `bright`. */
+  const parts = word.split(/[^a-z]+/).filter((one) => one.length > 0);
+  if (parts.length === 0) return null;
+  if (parts.some((one) => SIDE_WORDS.includes(one))) return null;
+  return parts.join(" ");
+}
 
 /**
  * What the two answers decide. Deliberately asymmetric — the failing direction
@@ -228,4 +280,220 @@ export function cutOutPixels(input: {
     out[at * 4 + 3] = mask.data[at] > 127 ? 255 : 0;
   }
   return out;
+}
+
+/* ------------------------------------------------------------------ *
+ * THE REGION-SCOPED CUT — its arithmetic (ruled fable-1158 §2a,       *
+ * roads and conditions ruled fable-1172)                              *
+ * ------------------------------------------------------------------ */
+
+/**
+ * WHY A CUT NEEDS SCOPING AT ALL, in one measured number.
+ *
+ * `tattooed skin` on a wholly-tattooed man answers a class with ONE INSTANCE
+ * and the extent came back `140x167` (opus-862) — a fragment of a body covered
+ * in work. A customer who says *"copy his right arm sleeve"* is naming a
+ * REGION and a SIDE of somebody else's photograph, and neither of those is a
+ * question this product may put to the segmenter:
+ *
+ *   - the REGION is asked, but never laterally. `arm`, never `right arm` —
+ *     SAM 3 ignores laterality and answers a class with an instance, which is
+ *     this campaign's own `ask-what-cannot-be-answered-wrong`. Non-optional,
+ *     and it is the caller's word that is constrained rather than a filter
+ *     here (fable-1172 §2d);
+ *   - the SIDE is decided by IMAGE GEOMETRY — the half machinery, whose one
+ *     owner is `sidePhrasing.imageHalfOf`. A half of a frame is arithmetic; a
+ *     reader's opinion about somebody's left is not.
+ *
+ * **And the geometry assumes a subject facing the camera, which an arbitrary
+ * photograph does not promise.** That is the whole reason road (c) was ruled
+ * rather than (a) or (b): the cut goes in front of her, free, with the sentence
+ * saying which half of the picture it came out of, and she discards for nothing
+ * if the guess was wrong. Everything in this file is what makes that guess
+ * legible; nothing in it makes the guess safe on its own.
+ */
+
+/**
+ * ONE MASK MINUS EVERYTHING THE OTHER DOES NOT COVER.
+ *
+ * Both masks must be in the same space — a mask that is not is our error and
+ * never something to resample (`maskedRefine`'s house rule, and `cutOutPixels`
+ * throws for the same reason one line along).
+ *
+ * The result is a fresh buffer rather than a mutation of either input: both
+ * arrive from a reader that a caller may still want to count, and an
+ * intersection that quietly emptied the ink mask would make the fallback below
+ * compare a half against itself.
+ */
+export function intersectMasks(a: Mask, b: Mask): Mask {
+  if (a.width !== b.width || a.height !== b.height) {
+    throw new Error(
+      `masks are ${a.width}x${a.height} and ${b.width}x${b.height} — refusing rather than resampling`,
+    );
+  }
+  if (a.data.length !== a.width * a.height || b.data.length !== b.width * b.height) {
+    throw new Error("a mask is not one byte per pixel — refusing rather than indexing into it");
+  }
+  const data = Buffer.alloc(a.width * a.height, 0);
+  for (let at = 0; at < data.length; at += 1) {
+    data[at] = a.data[at]! > 127 && b.data[at]! > 127 ? 255 : 0;
+  }
+  return { data, width: a.width, height: a.height };
+}
+
+/**
+ * HALF A FRAME, AS A MASK — the geometry, and the only place a half is turned
+ * into pixels.
+ *
+ * The split is by COLUMN and the middle column belongs to neither half when the
+ * width is odd: `x < floor(w/2)` is the left, `x >= ceil(w/2)` is the right. A
+ * middle column claimed by both would put one strip of pixels in two halves,
+ * and the fallback below compares the two counts — so an overlap would be a
+ * thumb on the scale of exactly the decision this exists to make.
+ */
+export function maskOfHalf(input: { width: number; height: number; half: PictureHalf }): Mask {
+  const { width, height, half } = input;
+  if (!Number.isInteger(width) || !Number.isInteger(height) || width <= 0 || height <= 0) {
+    throw new Error(`a half needs a real frame, got ${width}x${height}`);
+  }
+  const data = Buffer.alloc(width * height, 0);
+  const from = half === "left" ? 0 : Math.ceil(width / 2);
+  const to = half === "left" ? Math.floor(width / 2) : width;
+  for (let y = 0; y < height; y += 1) {
+    const row = y * width;
+    for (let x = from; x < to; x += 1) data[row + x] = 255;
+  }
+  return { data, width, height };
+}
+
+/**
+ * WHICH PIXELS THE CUT IS TAKEN FROM, and WHY those.
+ *
+ * `half` is the half of the picture the pixels came out of, or `null` when no
+ * side narrowed anything. `fellBack` is the §2b arithmetic having fired: the
+ * half her word pointed at held no design-sized piece and the other one did.
+ */
+export type InkScopeChoice = {
+  readonly mask: Mask;
+  readonly pixels: number;
+  readonly box: CropBox | null;
+  readonly half: PictureHalf | null;
+  readonly fellBack: boolean;
+  /** Did the REGION narrow anything, or was the whole ink mask kept? */
+  readonly regionHeld: boolean;
+};
+
+/**
+ * SCOPE ONE INK MASK TO A REGION AND A HALF — the whole of fable-1172 §2b, by
+ * arithmetic and never by a reader.
+ *
+ * ```
+ *   region ∩ ink empty          →  the WHOLE ink mask, unnarrowed (see below)
+ *   no side named               →  region ∩ ink
+ *   the named half holds a cut  →  region ∩ ink ∩ that half        ← geometry
+ *   it does not, the other does →  region ∩ ink ∩ the OTHER half   ← the fallback
+ *   neither half holds a cut    →  region ∩ ink, both halves together
+ * ```
+ *
+ * # THE EMPTY REGION KEEPS THE WHOLE MASK, AND THAT IS THE IMPORTANT ROW
+ *
+ * A flash sheet has no arm in it. A stencil has no torso. So an ask that names
+ * a place on HER, applied as a scope to a picture of a piece of paper, finds
+ * nothing — and refusing there would take the most ordinary upload a tattoo
+ * customer makes and wall it on the strength of a region word. **The scope
+ * NARROWS where it can and never refuses on its own**: what walls a picture is
+ * `routeInkUpload`, upstream, on the two questions that were measured.
+ *
+ * # WHY "HOLDS A CUT" AND NOT "HOLDS A PIXEL"
+ *
+ * `~empty` in the ruling needed a number, and inventing one here would be a
+ * threshold nobody measured sitting in the middle of a money path. So it is not
+ * a new number: a half holds a design when the piece in it CLEARS THE UPLOAD
+ * DOOR'S OWN FLOOR (`cropClearsMinimumEdge`), the same test that decides
+ * whether a whole cut is a design at all. A few stray pixels of the far arm's
+ * ink bleeding over the midline is not a sleeve, and this is the product's
+ * existing sentence for that, rather than a second one.
+ *
+ * # AND THE FALLBACK IS FREE
+ *
+ * Both halves are measured off masks already in hand. No reader is asked
+ * anything, no laterality question is put to anybody, and the whole decision
+ * costs two passes over a buffer. That is what makes *"an empty offer where a
+ * design plainly exists would be a wall wearing a shrug"* answerable without
+ * paying for it.
+ */
+export function scopeInkMask(input: {
+  ink: Mask;
+  /** The named region's mask, or `null` when nothing was asked. */
+  region: Mask | null;
+  /** The half her word points at, already flipped by `sidePhrasing.imageHalfOf`. */
+  half: PictureHalf | null;
+}): InkScopeChoice {
+  const { ink, region, half } = input;
+  const whole = extentOf(ink);
+  const held = region === null ? null : intersectMasks(ink, region);
+  const heldExtent = held === null ? null : extentOf(held);
+
+  /* The region found nothing of the design — keep everything, narrow nothing. */
+  if (held === null || heldExtent === null || heldExtent.pixels === 0) {
+    return {
+      mask: ink,
+      pixels: whole.pixels,
+      box: whole.box,
+      half: null,
+      fellBack: false,
+      regionHeld: false,
+    };
+  }
+
+  if (half === null) {
+    return {
+      mask: held,
+      pixels: heldExtent.pixels,
+      box: heldExtent.box,
+      half: null,
+      fellBack: false,
+      regionHeld: true,
+    };
+  }
+
+  const other: PictureHalf = half === "left" ? "right" : "left";
+  const sideOf = (which: PictureHalf) => {
+    const mask = intersectMasks(held, maskOfHalf({ width: ink.width, height: ink.height, half: which }));
+    const extent = extentOf(mask);
+    return { which, mask, ...extent };
+  };
+  const named = sideOf(half);
+  if (named.box !== null && cropClearsMinimumEdge(named.box)) {
+    return {
+      mask: named.mask,
+      pixels: named.pixels,
+      box: named.box,
+      half,
+      fellBack: false,
+      regionHeld: true,
+    };
+  }
+  const opposite = sideOf(other);
+  if (opposite.box !== null && cropClearsMinimumEdge(opposite.box)) {
+    return {
+      mask: opposite.mask,
+      pixels: opposite.pixels,
+      box: opposite.box,
+      half: other,
+      fellBack: true,
+      regionHeld: true,
+    };
+  }
+  /* Neither half holds a design on its own — a piece across the midline, or a
+     design too small either side of it. The region's own intersection is the
+     honest answer, and the guard downstream decides whether it is big enough. */
+  return {
+    mask: held,
+    pixels: heldExtent.pixels,
+    box: heldExtent.box,
+    half: null,
+    fellBack: false,
+    regionHeld: true,
+  };
 }

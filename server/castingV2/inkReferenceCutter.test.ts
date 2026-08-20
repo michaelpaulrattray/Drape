@@ -27,7 +27,8 @@
 import { describe, expect, it } from "vitest";
 import sharp from "sharp";
 
-import { INK_REGION, PERSON_REGION } from "./inkReferenceCrop";
+import { INK_PLACEMENTS, inkPlacementEntry } from "../../shared/inkPlacementVocabulary";
+import { INK_REGION, PERSON_REGION, sourceRegionWord } from "./inkReferenceCrop";
 import { cutInkDesign } from "./inkReferenceCutter";
 import { INK_DESIGN_MIN_EDGE } from "./inkUploadDoor";
 import type { Mask } from "./maskedComposite";
@@ -458,5 +459,326 @@ describe("the refusals — all free, and none of them sharing a sentinel", () =>
       seen.set(result.refusal.message, result.refusal.code);
     }
     expect(seen.size).toBe(4);
+  });
+});
+
+/*
+  THE REGION-SCOPED CUT, AT THE WIRE (ruled fable-1158 §2a, roads and
+  conditions ruled fable-1172).
+
+  The arithmetic has its own suite and drives every branch of the choice. What
+  is proved HERE is the half that spends money and can go wrong invisibly:
+  WHICH question is asked, WHEN, what happens when the reader does not answer
+  it, and whether the bytes that come back are the piece she meant.
+
+  **The mirrored arm is mandatory** (fable-1172 §2c). A per-side claim that only
+  runs one way round passes on a road biased toward the picture's right, and the
+  failure looks exactly like a pass — this campaign's own measured trap.
+*/
+describe("the cut is scoped to a region of her picture", () => {
+  const W = 1000;
+  const H = 600;
+  /* Two sleeves, one in each half, both big enough to BE designs. */
+  const onTheLeft: Rect = { x: 60, y: 60, w: INK_DESIGN_MIN_EDGE + 40, h: INK_DESIGN_MIN_EDGE + 40 };
+  const onTheRight: Rect = { ...onTheLeft, x: W - onTheLeft.x - onTheLeft.w };
+
+  /**
+   * The first two questions, SORTED — because they are asked with
+   * `Promise.allSettled` and the recording order is whichever settles first.
+   *
+   * Found by a sabotage that reddened an arm it had nothing to do with: an
+   * ordered assertion over two concurrent calls is a coin flip that passes
+   * most of the time, which is the worst kind of green. The THIRD question is
+   * positional and stays positional — it is serial, after the routing, and
+   * that order is a decision about house money rather than an accident.
+   */
+  const theTwoMeasuredQuestions = (asked: Asked[]) =>
+    asked.slice(0, 2).map((one) => one.name).sort();
+
+  const bothSleeves = (width: number, height: number): Mask => {
+    const mask = rectangle(width, height, onTheLeft);
+    const other = rectangle(width, height, onTheRight);
+    for (let at = 0; at < mask.data.length; at += 1) {
+      if (other.data[at]! > 127) mask.data[at] = 255;
+    }
+    return mask;
+  };
+
+  /** A photographed man with ink on both arms — the road's own subject. */
+  const twoSleeves = (over: (name: string, width: number, height: number) => Mask | Error | null = () => null) =>
+    reader(({ name, width, height }) => {
+      const special = over(name, width, height);
+      if (special !== null) return special;
+      if (name === INK_REGION) return bothSleeves(width, height);
+      if (name === PERSON_REGION) return rectangle(width, height, { x: 0, y: 0, w: width, h: height });
+      /* Any other name is the third question: the whole frame is his arm, so
+         the HALF is the only thing that can separate the two sleeves. */
+      return rectangle(width, height, { x: 0, y: 0, w: width, h: height });
+    });
+
+  it("ASKS NOTHING EXTRA when no scope is given — the negative control", async () => {
+    /*
+      The road one commit ago, and it must be byte-identical. An unscoped cut
+      asks two questions and cuts the whole ink mask; if this arm ever needs
+      changing, the change is a change to every upload that names no region.
+    */
+    const picture = await coordinatePicture(W, H);
+    const scripted = twoSleeves();
+
+    const result = await cutInkDesign({ bytes: picture, reader: scripted });
+
+    expect(result.ok).toBe(true);
+    expect(theTwoMeasuredQuestions(scripted.asked)).toEqual([INK_REGION, PERSON_REGION].sort());
+    expect(scripted.asked, "an unscoped cut bought a third question").toHaveLength(2);
+    expect(result.ok && result.cut.focus, "an unscoped cut described a narrowing").toBeNull();
+    /* Both sleeves, so the box spans the frame. */
+    expect(result.ok && result.cut.box).toEqual({
+      left: onTheLeft.x,
+      top: onTheLeft.y,
+      width: onTheRight.x + onTheRight.w - onTheLeft.x,
+      height: onTheLeft.h,
+    });
+  });
+
+  it("takes the sleeve in the half she named — BOTH WAYS ROUND, and asks NO lateral question", async () => {
+    for (const [half, expected] of [["left", onTheLeft], ["right", onTheRight]] as const) {
+      const picture = await coordinatePicture(W, H);
+      const scripted = twoSleeves();
+
+      const result = await cutInkDesign({
+        bytes: picture,
+        reader: scripted,
+        scope: { region: "upper arm", half },
+      });
+
+      expect(result.ok, `the ${half} arm refused`).toBe(true);
+      /* THREE questions, and the third is the region word — asserted at the
+         wire, because a contract about what gets SENT is proved on the
+         outgoing request (invariant 5). */
+      expect(theTwoMeasuredQuestions(scripted.asked)).toEqual([INK_REGION, PERSON_REGION].sort());
+      expect(scripted.asked, "the third question was not asked exactly once").toHaveLength(3);
+      expect(scripted.asked[2]!.name, "the region question was not the last one").toBe("upper arm");
+      /* NOT A LATERAL QUESTION, on the request itself: no side word reached
+         the reader, whichever side she named. */
+      for (const question of scripted.asked) {
+        expect(question.name, "a side word reached the segmenter").not.toMatch(/\b(left|right)\b/);
+      }
+      /* And the third is asked with `absentIsAnswer`, like its siblings: a
+         region a picture does not contain is a READING, never a failure. */
+      expect(scripted.asked[2]!.absentIsAnswer).toBe(true);
+
+      expect(result.ok && result.cut.box)
+        .toEqual({ left: expected.x, top: expected.y, width: expected.w, height: expected.h });
+      expect(result.ok && result.cut.focus)
+        .toEqual({ region: "upper arm", half, fellBack: false });
+    }
+  });
+
+  it("FALLS BACK to the inked half and SAYS SO — BOTH WAYS ROUND", async () => {
+    /*
+      §2b's free fallback, at the wire. One arm carries the ink, she named the
+      other, and what comes back is the inked one WITH `fellBack` — which is
+      the flag the sentence she reads is built from. Without it she would be
+      shown the right picture under the wrong words.
+    */
+    for (const [inked, named] of [[onTheRight, "left"], [onTheLeft, "right"]] as const) {
+      const picture = await coordinatePicture(W, H);
+      const scripted = reader(({ name, width, height }) => {
+        if (name === INK_REGION) return rectangle(width, height, inked);
+        if (name === PERSON_REGION) return rectangle(width, height, { x: 0, y: 0, w: width, h: height });
+        return rectangle(width, height, { x: 0, y: 0, w: width, h: height });
+      });
+
+      const result = await cutInkDesign({
+        bytes: picture,
+        reader: scripted,
+        scope: { region: "upper arm", half: named },
+      });
+
+      expect(result.ok).toBe(true);
+      expect(result.ok && result.cut.focus?.fellBack, `the ${named} ask did not fall back`).toBe(true);
+      expect(result.ok && result.cut.focus?.half).toBe(named === "left" ? "right" : "left");
+      expect(result.ok && result.cut.box)
+        .toEqual({ left: inked.x, top: inked.y, width: inked.w, height: inked.h });
+    }
+  });
+
+  it("CUTS THE WHOLE DESIGN when the region question goes unanswered — never a refusal", async () => {
+    /*
+      THE DIRECTION THIS FAILURE MUST FALL IN. The two questions above are the
+      licence and refusing on them is right; this one is an improvement to a
+      cut we already know how to make. Turning her picture away because an
+      optional question timed out would be a wall bought with a nicety.
+    */
+    const picture = await coordinatePicture(W, H);
+    const scripted = twoSleeves((name) => (name === "upper arm" ? new Error("the reader is down") : null));
+
+    const result = await cutInkDesign({
+      bytes: picture,
+      reader: scripted,
+      scope: { region: "upper arm", half: "left" },
+    });
+
+    expect(result.ok, "an unanswered region question refused her picture").toBe(true);
+    expect(result.ok && result.cut.focus, "an unanswered question still claimed a narrowing").toBeNull();
+    expect(result.ok && result.cut.box?.width).toBe(onTheRight.x + onTheRight.w - onTheLeft.x);
+  });
+
+  it("DROPS THE SCOPE when the region mask is in the wrong space — never resamples, never refuses", async () => {
+    /*
+      The two measured questions refuse on a wrong-space mask, because a licence
+      read of the wrong picture is not a licence. This one drops instead: the
+      cut that remains is the unscoped one, which is a correct cut of her
+      design, and refusing it would trade a real design for a narrowing.
+    */
+    const picture = await coordinatePicture(W, H);
+    const scripted = twoSleeves((name, width, height) => (
+      name === "upper arm" ? rectangle(width + 7, height, { x: 0, y: 0, w: 10, h: 10 }) : null
+    ));
+
+    const result = await cutInkDesign({
+      bytes: picture,
+      reader: scripted,
+      scope: { region: "upper arm", half: "left" },
+    });
+
+    expect(result.ok).toBe(true);
+    expect(result.ok && result.cut.focus).toBeNull();
+  });
+
+  it("KEEPS THE WHOLE DESIGN when the region is not in her picture at all — a flash sheet has no arm", async () => {
+    /*
+      The most ordinary upload a tattoo customer makes, and the row that would
+      have been broken by a scope that refused: a sheet of flash with a design
+      on it, asked for a place on HER. The region finds nothing, nothing is
+      narrowed, and `focus` is null so no sentence claims a half.
+    */
+    const picture = await coordinatePicture(W, H);
+    const scripted = twoSleeves((name, width, height) => (
+      name === "upper arm" ? empty(width, height) : null
+    ));
+
+    const result = await cutInkDesign({
+      bytes: picture,
+      reader: scripted,
+      scope: { region: "upper arm", half: "left" },
+    });
+
+    expect(result.ok).toBe(true);
+    expect(result.ok && result.cut.focus).toBeNull();
+    expect(result.ok && result.cut.box?.width).toBe(onTheRight.x + onTheRight.w - onTheLeft.x);
+  });
+
+  it("CUTS THE REGION'S OWN SHAPE, not the box it happens to sit in", async () => {
+    /*
+      THE ARM THAT SAYS THE SCOPE REACHED THE PIXELS, and it exists because a
+      sabotage proved the others could not tell.
+
+      Cutting `ink` instead of `ink ∩ region` changes nothing a bounding box
+      can see when the region is a rectangle around the design — every arm
+      above went on passing with the scope thrown away one line before the
+      alpha was written. So the region here is a DIAMOND inside the ink, whose
+      bounding-box corners are lit in the ink mask and dark in the scoped one:
+      the corners are the discriminator, read at the bytes.
+
+      Same instrument the containment bound uses one describe above, for the
+      same reason — `dest-in` produced four convincing bounding-box crops
+      during this build's own reading before anybody looked at a corner.
+    */
+    const design: Rect = { x: 100, y: 100, w: INK_DESIGN_MIN_EDGE + 60, h: INK_DESIGN_MIN_EDGE + 60 };
+    const picture = await coordinatePicture(W, H);
+    const scripted = reader(({ name, width, height }) => {
+      if (name === INK_REGION) return rectangle(width, height, design);
+      if (name === PERSON_REGION) return rectangle(width, height, { x: 0, y: 0, w: width, h: height });
+      return diamond(width, height, design);
+    });
+
+    const result = await cutInkDesign({
+      bytes: picture,
+      reader: scripted,
+      scope: { region: "upper arm", half: null },
+    });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const cut = await rgbaOf(result.cut.bytes);
+    /* The box is the diamond's, which is the design's — the diamond touches
+       all four edges of it. The CORNERS are what differ. */
+    expect(result.cut.box).toEqual({ left: design.x, top: design.y, width: design.w, height: design.h });
+    for (const [x, y] of [[0, 0], [cut.width - 1, 0], [0, cut.height - 1], [cut.width - 1, cut.height - 1]]) {
+      expect(cut.data[(y * cut.width + x) * 4 + 3], `corner ${x},${y} is opaque — the scope never reached the alpha`)
+        .toBe(0);
+    }
+    /* And the middle IS there, so the arm cannot pass on an empty cut. */
+    const middle = (Math.floor(cut.height / 2) * cut.width + Math.floor(cut.width / 2)) * 4 + 3;
+    expect(cut.data[middle], "the design itself was cut away").toBe(255);
+  });
+
+  it("does not buy the third question for a picture that RIDES WHOLE", async () => {
+    /*
+      The money decision, asserted rather than described: a flat sheet with
+      nobody in it has no region to narrow, so the third call is never made.
+      Asked beside the other two it would have been spent on every upload of
+      this shape.
+    */
+    const picture = await coordinatePicture(W, H);
+    const scripted = reader(({ name, width, height }) => (
+      name === INK_REGION || name === PERSON_REGION ? empty(width, height) : empty(width, height)
+    ));
+
+    const result = await cutInkDesign({
+      bytes: picture,
+      reader: scripted,
+      scope: { region: "upper arm", half: "left" },
+    });
+
+    expect(result.ok && result.cut.route).toBe("rideWhole");
+    expect(theTwoMeasuredQuestions(scripted.asked)).toEqual([INK_REGION, PERSON_REGION].sort());
+    expect(scripted.asked, "a picture that rides whole bought the third question").toHaveLength(2);
+  });
+});
+
+describe("the third question's word", () => {
+  /*
+    THE GUARD THAT MAKES *"never ask a lateral question"* MECHANICAL
+    (fable-1172 §2d). Its failure direction is to ask for LESS: `null` means no
+    scope, which is the whole ink mask, which is what this road did yesterday.
+  */
+  it("takes the vocabulary's measured word for a placement it knows", () => {
+    expect(sourceRegionWord({ readerWord: "upper arm", phrase: null })).toBe("upper arm");
+  });
+
+  it("REFUSES A SIDE WORD, however it is spelled or joined", () => {
+    for (const dirty of ["right arm", "left sleeve", "Right-Arm", "arm/left", "his RIGHT shoulder"]) {
+      expect(sourceRegionWord({ readerWord: null, phrase: dirty }), dirty).toBeNull();
+    }
+  });
+
+  it("does not reject a word that merely CONTAINS a side word", () => {
+    /* `bright`, `rightmost` — a substring test would have taken these, and the
+       cost of a wrong rejection is a narrowing nobody gets. */
+    expect(sourceRegionWord({ readerWord: null, phrase: "bright sleeve" })).toBe("bright sleeve");
+  });
+
+  it("keeps her own phrase for a placement the vocabulary does not know", () => {
+    expect(sourceRegionWord({ readerWord: null, phrase: "  Sleeve " })).toBe("sleeve");
+  });
+
+  it("answers null for nothing at all", () => {
+    expect(sourceRegionWord({ readerWord: null, phrase: null })).toBeNull();
+    expect(sourceRegionWord({ readerWord: null, phrase: "   " })).toBeNull();
+  });
+
+  it("NO MEASURED PLACEMENT'S WORD IS LATERAL — the vocabulary itself, swept", () => {
+    /*
+      The guard above protects the OPEN lane. This arm protects the closed one
+      by proving it needs no protection: every measured `readerWord` survives
+      the guard unchanged, so a fourth vocabulary entry spelled `right upper
+      arm` would redden here rather than silently losing its scope.
+    */
+    for (const placement of INK_PLACEMENTS) {
+      const word = inkPlacementEntry(placement).readerWord;
+      expect(sourceRegionWord({ readerWord: word, phrase: null }), placement).toBe(word);
+    }
   });
 });

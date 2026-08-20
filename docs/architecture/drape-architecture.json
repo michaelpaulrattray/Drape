@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "fdac666211e8e7e1"
+    "sourceFingerprint": "3707b4a8b8ad16a6"
   },
   "domains": [
     {
@@ -20447,6 +20447,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/castingV2/inkReferenceCrop.ts",
+      "to": "module:server/castingV2/sidePhrasing.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/castingV2/inkReferenceCutter.ts",
       "to": "module:server/castingV2/inkReferenceCrop.ts",
       "kind": "imports"
@@ -20468,6 +20473,11 @@
     },
     {
       "from": "module:server/castingV2/inkReferenceCutter.ts",
+      "to": "module:server/castingV2/sidePhrasing.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/inkReferenceCutter.ts",
       "to": "module:server/logging/logger.ts",
       "kind": "imports"
     },
@@ -20483,6 +20493,11 @@
     },
     {
       "from": "module:server/castingV2/inkReferenceMint.ts",
+      "to": "module:server/castingV2/inkReferenceCrop.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/inkReferenceMint.ts",
       "to": "module:server/castingV2/inkReferenceCutter.ts",
       "kind": "imports"
     },
@@ -20494,6 +20509,11 @@
     {
       "from": "module:server/castingV2/inkReferenceMint.ts",
       "to": "module:server/castingV2/inkUploadService.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/inkReferenceMint.ts",
+      "to": "module:server/castingV2/sidePhrasing.ts",
       "kind": "imports"
     },
     {
@@ -21808,6 +21828,11 @@
     },
     {
       "from": "module:server/castingV2/refineReask.ts",
+      "to": "module:server/castingV2/inkReferenceCutter.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/refineReask.ts",
       "to": "module:server/castingV2/refineDelta.ts",
       "kind": "imports"
     },
@@ -21819,6 +21844,11 @@
     {
       "from": "module:server/castingV2/refineReask.ts",
       "to": "module:server/castingV2/refineSubjects.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/refineReask.ts",
+      "to": "module:server/castingV2/sidePhrasing.ts",
       "kind": "imports"
     },
     {
@@ -22039,6 +22069,11 @@
     {
       "from": "module:server/castingV2/refineService.ts",
       "to": "module:server/castingV2/inkDesignForAsk.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/refineService.ts",
+      "to": "module:server/castingV2/inkReferenceCutter.ts",
       "kind": "imports"
     },
     {
@@ -29625,24 +29660,24 @@
       "message": "Names 2 of InkUploadRefusal's 2 fields (server/castingV2/inkUploadDoor.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/inkReferenceCutter.ts:105",
+      "id": "finding:redeclared-shape:server/castingV2/inkReferenceCutter.ts:107",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/inkReferenceCutter.ts:105",
+      "subject": "server/castingV2/inkReferenceCutter.ts:107",
       "message": "Names 2 of InkUploadRefusal's 2 fields (server/castingV2/inkUploadDoor.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/inkUploadService.ts:187",
+      "id": "finding:redeclared-shape:server/castingV2/inkUploadService.ts:192",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/inkUploadService.ts:187",
+      "subject": "server/castingV2/inkUploadService.ts:192",
       "message": "Names 2 of InkPlateMintRequest's 4 fields (server/castingV2/inkPlateMint.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/inkUploadService.ts:245",
+      "id": "finding:redeclared-shape:server/castingV2/inkUploadService.ts:250",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/inkUploadService.ts:245",
+      "subject": "server/castingV2/inkUploadService.ts:250",
       "message": "Names 2 of InkPlateMintRequest's 4 fields (server/castingV2/inkPlateMint.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
@@ -29681,17 +29716,17 @@
       "message": "Names 2 of HairColourSection's 3 fields (server/castingV2/hairColourFromReference.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/refineService.ts:672",
+      "id": "finding:redeclared-shape:server/castingV2/refineService.ts:673",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/refineService.ts:672",
+      "subject": "server/castingV2/refineService.ts:673",
       "message": "Names 3 of Thumbnail's 3 fields (server/castingV2/thumbnails.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/refineService.ts:779",
+      "id": "finding:redeclared-shape:server/castingV2/refineService.ts:780",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/refineService.ts:779",
+      "subject": "server/castingV2/refineService.ts:780",
       "message": "Names 3 of Thumbnail's 3 fields (server/castingV2/thumbnails.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {

@@ -73,6 +73,9 @@ const cutOutcome = (over: Partial<{
     inkPixels: 12_000,
     personPixels: 800_000,
     box: { left: 10, top: 20, width: over.width ?? 400, height: over.height ?? 300 },
+    /* The studio's own uploads name no region, so a double that claimed a
+       narrowing would describe a road this file does not drive. */
+    focus: null,
   },
 });
 
@@ -82,6 +85,9 @@ type Recorder = {
   stored: Array<{ key: string; bytes: Buffer; contentType: string }>;
   recorded: any[];
   cutSaw: Buffer[];
+  /** WHAT THE CUTTER WAS TOLD TO LOOK FOR — recorded, because "the segmenter is
+   *  never asked a lateral question" is a claim about an outgoing request. */
+  scopeSaw: Array<{ region: string | null; half: string | null } | undefined>;
 };
 
 function recorder(over: Partial<InkReferenceMintDependencies> = {}): Recorder {
@@ -89,10 +95,12 @@ function recorder(over: Partial<InkReferenceMintDependencies> = {}): Recorder {
   const stored: Recorder["stored"] = [];
   const recorded: any[] = [];
   const cutSaw: Buffer[] = [];
+  const scopeSaw: Recorder["scopeSaw"] = [];
   const dependencies: InkReferenceMintDependencies = {
     readBytes: async () => ({ bytes: ATTACHED }),
     cut: async (input) => {
       cutSaw.push(input.bytes);
+      scopeSaw.push(input.scope);
       return cutOutcome();
     },
     manifest: async (input) => {
@@ -119,8 +127,68 @@ function recorder(over: Partial<InkReferenceMintDependencies> = {}): Recorder {
     },
     ...over,
   };
-  return { dependencies, manifested, stored, recorded, cutSaw };
+  return { dependencies, manifested, stored, recorded, cutSaw, scopeSaw };
 }
+
+/*
+  THE CUT IS SCOPED TO THE PLACE HER SENTENCE NAMED (ruled fable-1158 §2a,
+  conditions fable-1172 §2).
+
+  This file owns the ORDER, and the scope is part of it: the address is
+  already in hand here, and handing it to the cutter is what stops
+  `tattooed skin` on a wholly-tattooed man answering with whichever piece it
+  found first. Both halves are derived — the word from the vocabulary, the
+  half from the one owner of the flip — and this is where that derivation is
+  proved on the outgoing call rather than near it.
+*/
+describe("the address her sentence named becomes the cutter's scope", () => {
+  it("hands over the VOCABULARY'S word and the FLIPPED half — BOTH WAYS ROUND", async () => {
+    /* Her LEFT upper arm is on the picture's RIGHT, and her right on its left.
+       A flip written as an identity passes an arm that only runs one way. */
+    for (const [side, half] of [["left", "right"], ["right", "left"]] as const) {
+      const bench = recorder();
+      await mintInkDesignFromReference({ ...REQUEST, side }, bench.dependencies);
+      expect(bench.scopeSaw, `her ${side} asked for the wrong half`)
+        .toEqual([{ region: "upper arm", half }]);
+    }
+  });
+
+  it("NEVER SENDS A SIDE WORD — asserted on what the cutter was handed", async () => {
+    for (const side of ["left", "right"] as const) {
+      const bench = recorder();
+      await mintInkDesignFromReference({ ...REQUEST, side }, bench.dependencies);
+      expect(bench.scopeSaw[0]!.region, "a side word reached the question")
+        .not.toMatch(/(left|right)/);
+    }
+  });
+
+  it("asks for NO HALF on a surface there is one of", async () => {
+    /* `centre` is the vocabulary's answer for a surface she has one of, and a
+       half of the picture would be a narrowing of a thing that has no sides. */
+    const bench = recorder();
+    await mintInkDesignFromReference({ ...REQUEST, placement: "neck", side: "centre" }, bench.dependencies);
+    expect(bench.scopeSaw).toEqual([{ region: "neck", half: null }]);
+  });
+
+  it("carries the cutter's FOCUS out to the caller, and null when there was none", async () => {
+    /* The offer's sentence is built from this, so a mint that dropped it would
+       leave a customer looking at an arm nobody said was a guess. */
+    const taken = cutOutcome();
+    if (!taken.ok) throw new Error("the fixture must be a cut");
+    const focused = recorder({
+      cut: async () => ({
+        ok: true as const,
+        cut: { ...taken.cut, focus: { region: "upper arm", half: "right" as const, fellBack: true } },
+      }),
+    });
+    const outcome = await mintInkDesignFromReference(REQUEST, focused.dependencies);
+    expect(outcome.ok && outcome.focus).toEqual({ region: "upper arm", half: "right", fellBack: true });
+
+    const plain = recorder();
+    const unfocused = await mintInkDesignFromReference(REQUEST, plain.dependencies);
+    expect(unfocused.ok && unfocused.focus, "a cut that narrowed nothing claimed a half").toBeNull();
+  });
+});
 
 describe("the design in her picture becomes a row", () => {
   it("cuts HER attachment, stores the CUT, and files a row describing what was stored", () => {

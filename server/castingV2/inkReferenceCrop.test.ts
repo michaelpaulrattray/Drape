@@ -21,9 +21,13 @@ import {
   cropClearsMinimumEdge,
   cutOutPixels,
   extentOf,
+  intersectMasks,
+  maskOfHalf,
   routeInkUpload,
+  scopeInkMask,
 } from "./inkReferenceCrop";
 import type { Mask } from "./maskedComposite";
+import { imageHalfClause, imageHalfOf, pictureHalfPhrase } from "./sidePhrasing";
 
 /** A mask with a solid rectangle lit in it. */
 function maskWithBox(
@@ -235,5 +239,212 @@ describe("cutOutPixels — a masked cutout, never a bounding rectangle", () => {
     expect(() =>
       cutOutPixels({ rgba: Buffer.alloc(width * height * 3), width, height, mask: maskWithBox(width, height, null) }),
     ).toThrow(/expected/);
+  });
+});
+
+/*
+  THE REGION-SCOPED CUT — the arithmetic, driven directly (ruled fable-1158
+  §2a, roads and conditions ruled fable-1172).
+
+  **EVERY PER-SIDE ARM RUNS MIRRORED TOO, and that is not thoroughness — it is
+  fable-1172 §2c, from this campaign's own measured trap.** A per-side claim
+  that only ever runs one way round passes on a road that favours the picture's
+  right (`image-half-not-anatomy`, `per-side-paint-favours-image-right`), and
+  the failure looks exactly like a pass. So the fixtures are built by a helper
+  that can flip the whole world, and each arm asserts the mirrored expectation
+  rather than the same one twice.
+*/
+describe("the region-scoped cut, by arithmetic and never by a reader", () => {
+  /* Big enough that the DESIGN FLOOR is never accidentally the subject: a
+     design must clear `INK_DESIGN_MIN_EDGE` on its shortest side, so a toy
+     frame would make every arm here a test of the floor instead. */
+  const W = 1200;
+  const H = 700;
+
+  /** A box, and the same box mirrored about the frame's vertical midline. */
+  const flipBox = (box: { left: number; top: number; width: number; height: number }) => ({
+    ...box,
+    left: W - box.left - box.width,
+  });
+
+  /** A design big enough to BE a design, so the floor is never the subject. */
+  const bigEnough = { width: INK_DESIGN_MIN_EDGE + 40, height: INK_DESIGN_MIN_EDGE + 40 };
+
+  const onTheLeftOfThePicture = { left: 40, top: 40, ...bigEnough };
+  const onTheRightOfThePicture = flipBox(onTheLeftOfThePicture);
+
+  /** The whole frame — a region that holds everything, i.e. narrows nothing. */
+  const everywhere = maskWithBox(W, H, { left: 0, top: 0, width: W, height: H });
+
+  it("HALVES A FRAME BY COLUMN, and the middle column belongs to neither on an odd width", () => {
+    const left = maskOfHalf({ width: 5, height: 1, half: "left" });
+    const right = maskOfHalf({ width: 5, height: 1, half: "right" });
+    expect([...left.data].map((one) => (one > 127 ? 1 : 0))).toEqual([1, 1, 0, 0, 0]);
+    expect([...right.data].map((one) => (one > 127 ? 1 : 0))).toEqual([0, 0, 0, 1, 1]);
+    /* No pixel is in both — the fallback below compares the two counts, so an
+       overlapping midline would be a thumb on the scale of that comparison. */
+    for (let at = 0; at < 5; at += 1) {
+      expect(left.data[at]! > 127 && right.data[at]! > 127, `column ${at} is in both halves`).toBe(false);
+    }
+  });
+
+  it("REFUSES TO INTERSECT MASKS THAT ARE NOT IN ONE SPACE — never resamples", () => {
+    expect(() => intersectMasks(maskWithBox(4, 4, null), maskWithBox(5, 4, null)))
+      .toThrow(/refusing rather than resampling/);
+  });
+
+  it("takes the design in the half her word points at — BOTH WAYS ROUND", () => {
+    /*
+      Two designs, one in each half of the picture, and a region that holds
+      both. The half is the ONLY thing that separates them, so an arm that
+      passed for another reason could not pass this one.
+    */
+    const ink = maskWithBox(W, H, onTheLeftOfThePicture);
+    const alsoOnTheRight = maskWithBox(W, H, onTheRightOfThePicture);
+    for (let at = 0; at < ink.data.length; at += 1) {
+      if (alsoOnTheRight.data[at]! > 127) ink.data[at] = 255;
+    }
+
+    const left = scopeInkMask({ ink, region: everywhere, half: "left" });
+    expect(left.half).toBe("left");
+    expect(left.fellBack).toBe(false);
+    expect(left.box).toEqual(onTheLeftOfThePicture);
+
+    /* MIRRORED — the same world, the other word. */
+    const right = scopeInkMask({ ink, region: everywhere, half: "right" });
+    expect(right.half).toBe("right");
+    expect(right.fellBack).toBe(false);
+    expect(right.box).toEqual(onTheRightOfThePicture);
+  });
+
+  it("FALLS BACK to the inked half when the named one holds nothing — BOTH WAYS ROUND", () => {
+    /*
+      §2b's free fallback: *"an empty offer where a design plainly exists would
+      be a wall wearing a shrug"*. One arm is inked, she named the other, and
+      the answer is the inked one WITH `fellBack` set — because the sentence
+      she reads has to say which half it came out of, and this is the case
+      where that sentence differs from her own word.
+    */
+    const inkOnTheRight = maskWithBox(W, H, onTheRightOfThePicture);
+    const asked = scopeInkMask({ ink: inkOnTheRight, region: everywhere, half: "left" });
+    expect(asked.fellBack, "the named half was empty and the fallback did not fire").toBe(true);
+    expect(asked.half).toBe("right");
+    expect(asked.box).toEqual(onTheRightOfThePicture);
+
+    /* MIRRORED. */
+    const inkOnTheLeft = maskWithBox(W, H, onTheLeftOfThePicture);
+    const mirrored = scopeInkMask({ ink: inkOnTheLeft, region: everywhere, half: "right" });
+    expect(mirrored.fellBack).toBe(true);
+    expect(mirrored.half).toBe("left");
+    expect(mirrored.box).toEqual(onTheLeftOfThePicture);
+  });
+
+  it("does not fall back for a FEW STRAY PIXELS across the midline — BOTH WAYS ROUND", () => {
+    /*
+      THE NUMBER IS NOT A NEW NUMBER. `~empty` in the ruling is spelled as *the
+      piece in that half does not clear the upload door's own floor* — so a
+      smear of the far arm's ink bleeding over the midline is not a sleeve, and
+      the product says that with the sentence it already had rather than with a
+      threshold somebody picked.
+
+      Here the named half holds a REAL design and the other holds three pixels:
+      the answer must be the named half, un-fallen-back. Without the floor the
+      three pixels would be "the other half holds ink" and this would still
+      pass — which is why the arm below is its mirror rather than its repeat.
+    */
+    const ink = maskWithBox(W, H, onTheLeftOfThePicture);
+    for (const at of [W - 1, W + W - 1, W * 2 + W - 1]) ink.data[at] = 255;
+
+    const asked = scopeInkMask({ ink, region: everywhere, half: "left" });
+    expect(asked.half).toBe("left");
+    expect(asked.fellBack).toBe(false);
+    expect(asked.box).toEqual(onTheLeftOfThePicture);
+
+    /* MIRRORED: the stray pixels are now what she named, and the real design is
+       in the other half — so the fallback SHOULD fire. */
+    const mirroredInk = maskWithBox(W, H, onTheRightOfThePicture);
+    for (const at of [0, W, W * 2]) mirroredInk.data[at] = 255;
+    const mirrored = scopeInkMask({ ink: mirroredInk, region: everywhere, half: "left" });
+    expect(mirrored.fellBack, "a design in the other half was not reached over three pixels").toBe(true);
+    expect(mirrored.half).toBe("right");
+    expect(mirrored.box).toEqual(onTheRightOfThePicture);
+  });
+
+  it("KEEPS THE WHOLE MASK when the region finds nothing — a flash sheet has no arm in it", () => {
+    /*
+      THE ROW THAT MATTERS MOST HERE. The scope narrows where it can and never
+      refuses on its own: an ask that names a place on HER, applied to a
+      photograph of a piece of paper, finds no arm — and walling the most
+      ordinary upload a tattoo customer makes on the strength of a region word
+      would be the region scope deciding something `routeInkUpload` owns.
+    */
+    const ink = maskWithBox(W, H, onTheLeftOfThePicture);
+    const noArmInThisPicture = maskWithBox(W, H, null);
+
+    const scoped = scopeInkMask({ ink, region: noArmInThisPicture, half: "left" });
+    expect(scoped.regionHeld, "an empty region narrowed the cut").toBe(false);
+    expect(scoped.half, "an empty region still named a half").toBeNull();
+    expect(scoped.box).toEqual(onTheLeftOfThePicture);
+    expect(scoped.pixels).toBe(bigEnough.width * bigEnough.height);
+  });
+
+  it("NARROWS TO THE REGION when no side is named", () => {
+    /* Two designs, and a region that holds only one of them. No side word, so
+       nothing is halved — the region alone is the scope. */
+    const ink = maskWithBox(W, H, onTheLeftOfThePicture);
+    for (let y = onTheRightOfThePicture.top; y < onTheRightOfThePicture.top + onTheRightOfThePicture.height; y += 1) {
+      for (let x = onTheRightOfThePicture.left; x < onTheRightOfThePicture.left + onTheRightOfThePicture.width; x += 1) {
+        ink.data[y * W + x] = 255;
+      }
+    }
+    const region = maskWithBox(W, H, { ...onTheLeftOfThePicture, width: onTheLeftOfThePicture.width + 2 });
+
+    const scoped = scopeInkMask({ ink, region, half: null });
+    expect(scoped.regionHeld).toBe(true);
+    expect(scoped.half).toBeNull();
+    expect(scoped.fellBack).toBe(false);
+    expect(scoped.box).toEqual(onTheLeftOfThePicture);
+  });
+
+  it("keeps a design that STRADDLES THE MIDLINE rather than halving it", () => {
+    /*
+      Neither half holds a design-sized piece on its own, and the thing plainly
+      exists. Halving it here would hand her one side of her own tattoo; the
+      honest answer is the region's whole intersection, and the guard
+      downstream decides whether that is big enough to be a design.
+    */
+    const across = { left: W / 2 - 100, top: 10, width: 200, height: INK_DESIGN_MIN_EDGE + 40 };
+    const ink = maskWithBox(W, H, across);
+
+    for (const half of ["left", "right"] as const) {
+      const scoped = scopeInkMask({ ink, region: everywhere, half });
+      expect(scoped.half, `the ${half} arm halved a design that straddles the midline`).toBeNull();
+      expect(scoped.fellBack).toBe(false);
+      expect(scoped.box).toEqual(across);
+    }
+  });
+});
+
+describe("one owner of the flip, and it inverts", () => {
+  /*
+    HER LEFT IS THE PICTURE'S RIGHT. Both directions asserted, because a flip
+    written as an identity passes any arm that only ever checks one side —
+    `image-half-not-anatomy` is this campaign's own scar and it was bought on
+    exactly that shape.
+  */
+  it("puts her left on the picture's right, and her right on the picture's left", () => {
+    expect(imageHalfOf("left")).toBe("right");
+    expect(imageHalfOf("right")).toBe("left");
+  });
+
+  it("DERIVES the painting clause from the flip rather than spelling it twice", () => {
+    for (const side of ["left", "right"] as const) {
+      expect(imageHalfClause(side)).toBe(` (${pictureHalfPhrase(imageHalfOf(side))})`);
+    }
+    /* And the words themselves, pinned once — the clause is measured prose
+       (`V4_SIDE_INFERENCE_COURT`) and a tidy of it is a change to a court's
+       own subject. */
+    expect(imageHalfClause("left")).toBe(" (on the right of the picture as you look at it)");
+    expect(imageHalfClause("right")).toBe(" (on the left of the picture as you look at it)");
   });
 });

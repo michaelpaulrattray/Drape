@@ -209,6 +209,7 @@ import {
 import { listLineageReferences, recordReferenceRows, retireReferenceSlot } from "../db/castingV2ReferenceLibrary";
 import type { RegionReader as MintRegionReader } from "./referenceCompleteness";
 import { readAppliedInk, withAppliedInk } from "./inkApplied";
+import type { InkCutFocus } from "./inkReferenceCutter";
 import { assembleRecipe, type CarriedInkDesign, type FeatureSlot } from "./recipeAssembler";
 import {
   facetsOfSlot, slotDefinition, slotsForFacet, slotsForFeature, type SlotDefinition,
@@ -3957,6 +3958,16 @@ async function refineCandidateCounted(
       is — her own sentence, about this picture, naming a design — and an ask
       that is not a tattoo ask cannot reach this line to claim it was.
     */
+    /*
+      WHAT THE CUT WAS NARROWED TO, kept beside the design so the offer's
+      sentence can say it (ruled fable-1172 §2a).
+
+      A RIDE has none by construction and that is right rather than a gap: the
+      row it finds is one she was already shown, once, when it was cut. Telling
+      her again which half of a picture it came from — on every later render —
+      is the repeated question D-180 forbids.
+    */
+    let cutFocus: InkCutFocus | null = null;
     const design = chosen.kind === "ride" ? chosen.design : await (async () => {
       const minted = await (dependencies.mintInkDesign ?? mintInkDesignFromReference)({
         userId: input.userId,
@@ -3971,6 +3982,7 @@ async function refineCandidateCounted(
         side: chosen.side,
         intents: inkAskIntents(editDelta),
       });
+      if (minted.ok) cutFocus = minted.focus;
       return minted.ok ? minted.design : minted.refusal;
     })();
     if (!("storageKey" in design)) return said(`mint:${design.code}`, design.message);
@@ -4007,7 +4019,11 @@ async function refineCandidateCounted(
       );
       return {
         kind: "asked",
-        reask: thisDesignReask({ designPublicId: design.publicId, asked: instruction }),
+        reask: thisDesignReask({
+          designPublicId: design.publicId,
+          asked: instruction,
+          focus: cutFocus,
+        }),
         design: designAnswerFor({ designId: design.publicId }),
         variantId: source.variantPublicId,
         candidateId: input.candidatePublicId,
@@ -4054,6 +4070,7 @@ async function refineCandidateCounted(
           placement: chosen.placement,
           side: chosen.side,
           asked: instruction,
+          focus: cutFocus,
         }),
         design: designAnswerFor({ designId: design.publicId }),
         variantId: source.variantPublicId,

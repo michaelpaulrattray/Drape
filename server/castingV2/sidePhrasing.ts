@@ -28,15 +28,54 @@
 import type { Instance } from "./referenceSlots";
 
 /**
+ * WHICH HALF OF THE PICTURE ONE OF HER SIDES IS IN — **THE ONE OWNER OF THE
+ * FLIP** (approved fable-1172 §3).
+ *
+ * Her left is the viewer's right. That inversion used to be spelled inside the
+ * clause below's own return, which was right while prose was the only thing
+ * anybody wanted from it. A second consumer wants the HALF ITSELF — the region
+ * cut scopes a source picture to a half of its own frame — and a second copy of
+ * *her left is the picture's right* is exactly the parallel copy this module
+ * exists to prevent (law 4). So the flip happens once, here, and the clause
+ * below reads it.
+ *
+ * ⚠ **IT ASSUMES A SUBJECT FACING THE CAMERA, and that assumption is the
+ * caller's to own rather than this function's** (opus-869 §1). A photograph
+ * taken from behind swaps the halves back, and nothing in an arbitrary picture
+ * says which way its subject is turned. On the paint side the assumption is
+ * safe — the frame being painted is our own front-facing master. On the SOURCE
+ * side it is a guess, and the road that guesses is required to SHOW the cut
+ * before anything is charged (ruled fable-1172 §1), which is what converts
+ * *never guess a side* into *guess, show the guess, charge only on her yes*.
+ */
+export function imageHalfOf(side: Instance): PictureHalf {
+  return side === "left" ? "right" : "left";
+}
+
+/**
+ * The words for a half of a picture, without brackets and without a leading
+ * space — so a caller building a SENTENCE about a source picture and a caller
+ * building a painting CLAUSE both say it the same way.
+ *
+ * Separate from `pictureSideClause` below on purpose: that one is four words
+ * because it rides inside a hard character budget, and this one is the full
+ * phrase for a place that has room. Same fact, two lengths, one file — never
+ * two spellings of the flip, which is the only part that can be wrong.
+ */
+export function pictureHalfPhrase(half: PictureHalf): string {
+  return `on the ${half} of the picture as you look at it`;
+}
+
+/**
  * The parenthetical, with its leading space, for the side named.
  *
  * Said as the PAINTER sees it, because the painter is looking at the picture:
- * her left is the viewer's right.
+ * her left is the viewer's right. Both halves of that sentence are now DERIVED
+ * — the flip from `imageHalfOf`, the words from `pictureHalfPhrase` — so this
+ * function is a shape rather than a fact.
  */
 export function imageHalfClause(side: Instance): string {
-  return side === "left"
-    ? " (on the right of the picture as you look at it)"
-    : " (on the left of the picture as you look at it)";
+  return ` (${pictureHalfPhrase(imageHalfOf(side))})`;
 }
 
 /* ------------------------------------------------------------------ *

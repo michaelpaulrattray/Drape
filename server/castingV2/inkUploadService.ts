@@ -98,7 +98,12 @@ import {
 import { storagePut } from "../storage";
 import { captureCastingInkCutEnabled } from "./castingV2Scope";
 import { createFalRegionReader } from "./falRegionReader";
-import { cutInkDesign, type CutInkDesignResult, type InkCutRoute } from "./inkReferenceCutter";
+import {
+  cutInkDesign,
+  type CutInkDesignInput,
+  type CutInkDesignResult,
+  type InkCutRoute,
+} from "./inkReferenceCutter";
 import { inkPlateEngine } from "./inkPlateEngine";
 import { refusingRegionReader } from "./maskedRefine";
 import { mintInkPlate, type InkPlateMintOutcome } from "./inkPlateMint";
@@ -263,12 +268,23 @@ export function defaultMintPlate(
  * a fallback that disagree are how a fence gets a hole.
  */
 export function defaultCutDesign(
-  input: { userId: number; candidatePublicId: string; bytes: Buffer },
+  input: {
+    userId: number;
+    candidatePublicId: string;
+    bytes: Buffer;
+    /* WHERE IN HER PICTURE TO LOOK — forwarded, never invented here. The studio
+       upload door passes none (it has no ask yet, only a picture); the
+       attach-pointed mint passes one derived from the address her sentence
+       named. A `scope` this function made up would be a narrowing nobody
+       asked for. */
+    scope?: CutInkDesignInput["scope"];
+  },
 ): Promise<CutInkDesignResult> {
   const apiKey = process.env.FAL_KEY;
   return cutInkDesign({
     bytes: input.bytes,
     reader: apiKey ? createFalRegionReader({ apiKey }) : refusingRegionReader,
+    ...(input.scope ? { scope: input.scope } : {}),
     about: { userId: input.userId, candidatePublicId: input.candidatePublicId },
   });
 }

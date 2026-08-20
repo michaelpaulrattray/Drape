@@ -45,6 +45,8 @@ import {
 } from "../../shared/inkPlacementVocabulary";
 import { INK_SIDES, type InkSide } from "../../shared/inkReleasedPlacements";
 import { inkAddressPhrase } from "./inkDesignForAsk";
+import { pictureHalfPhrase } from "./sidePhrasing";
+import type { InkCutFocus } from "./inkReferenceCutter";
 import { HAIR_COLOURS, type HairColour } from "../../shared/castingVocabularies";
 import { EYE_COLOURS, type EyeColour } from "../../shared/castingRealization";
 import { facetOfSubject, type Facet } from "./refineFacets";
@@ -857,7 +859,50 @@ export const DISCARD_THE_DESIGN = "discard the design taken from that picture";
  * And the handle names the design, because the decline has to be able to
  * delete it — see {@link HANDLE_NAMES_A_DESIGN} for what a forged one buys.
  */
-export function thisDesignReask(input: { designPublicId: string; asked: string }): Reask {
+
+/**
+ * WHICH HALF OF HER PICTURE THE CUT CAME OUT OF — the sentence fable-1172 §2a
+ * made a condition of the whole road.
+ *
+ * > *"The offer's sentence NAMES the geometry for a sided source take — 'this
+ * > is the arm on the RIGHT of the picture as you look at it' — so her yes is
+ * > informed about exactly the thing we guessed."*
+ *
+ * # It is what makes a GUESS legal rather than reckless
+ *
+ * The side of a source photograph is decided by image geometry, and geometry
+ * assumes a subject facing the camera. A photograph taken from behind swaps the
+ * halves back, and nothing in an arbitrary picture says which way its subject is
+ * turned. Road (c) was ruled over the honest refusal (b) on one ground: *the cut
+ * goes in front of her before anything is charged, and discard is free.* **A
+ * preview that does not say what was guessed is not that** — she would be
+ * looking at an arm with no way of knowing it had been chosen rather than found.
+ *
+ * # The FALLBACK gets a different sentence, because it is a different fact
+ *
+ * When her word pointed at a half holding no design and the other half held
+ * one, what she is looking at is NOT the side she named. Naming the half without
+ * saying it differs from her ask would be true and misleading in the same
+ * breath — she would read it as confirmation.
+ *
+ * The phrase comes from `sidePhrasing.pictureHalfPhrase` and is never respelled
+ * here: her left is the picture's right, and that inversion has exactly one
+ * owner in this product.
+ */
+export function inkCutHalfSentence(focus: InkCutFocus): string {
+  if (focus.half === null) return "";
+  const where = pictureHalfPhrase(focus.half);
+  return focus.fellBack
+    ? ` The only ${focus.region} with a design on it is ${where}, so that is the one I took.`
+    : ` I took it from the ${focus.region} ${where}.`;
+}
+
+export function thisDesignReask(input: {
+  designPublicId: string;
+  asked: string;
+  /** What the cut was narrowed to, when it was — see {@link inkCutHalfSentence}. */
+  focus?: InkCutFocus | null;
+}): Reask {
   const asked = input.asked.trim().replace(/[.!?]+$/, "");
   return {
     kind: "this-design",
@@ -870,8 +915,9 @@ export function thisDesignReask(input: { designPublicId: string; asked: string }
       in the sentence she is looking at. What it does say is that the picture
       beside it came out of HERS — the whole content of 1127 §2's offer.
     */
-    question: "This is the design I took out of your picture. Use it? "
-      + "Nothing has been charged.",
+    question: "This is the design I took out of your picture."
+      + (input.focus ? inkCutHalfSentence(input.focus) : "")
+      + " Use it? Nothing has been charged.",
     options: [
       { label: "Yes — use this design", resolves: asked },
       { label: "No, discard it", resolves: DISCARD_THE_DESIGN },
@@ -924,14 +970,17 @@ export function replaceDesignReask(input: {
   placement: InkPlacement;
   side: InkSide;
   asked: string;
+  /** What the cut was narrowed to, when it was — see {@link inkCutHalfSentence}. */
+  focus?: InkCutFocus | null;
 }): Reask {
   const asked = input.asked.trim().replace(/[.!?]+$/, "");
   const place = inkAddressPhrase({ placement: input.placement, side: input.side });
   return {
     kind: "replace-design",
     about: replaceReaskHandle({ ...input, asked }),
-    question: `${sentenceCase(place)} already has a design. Replace it with this one? `
-      + "Nothing has been charged.",
+    question: `${sentenceCase(place)} already has a design.`
+      + (input.focus ? inkCutHalfSentence(input.focus) : "")
+      + " Replace it with this one? Nothing has been charged.",
     options: [
       /*
         THE LABELS CARRY NO PLACE AND NO NAME, and that is load-bearing rather
