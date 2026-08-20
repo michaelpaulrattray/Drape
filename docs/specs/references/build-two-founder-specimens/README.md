@@ -123,6 +123,33 @@ Three things it raises before any render is bought:
   A court records what the text actually came out as rather than scoring the
   shapes and calling it a pass.
 
+## 7. `tattoo-patchwork-man-selective-take.png` — ask: **copy his right arm sleeve / copy the torso tattoos / copy the mask tattoo on his stomach** (supplied 2026-08-20, filed fable-1158 §2)
+
+A real photograph, added by Fable from the founder's chat: a heavily tattooed
+man, chin cropped out, torso and both arms worked in fine-line patchwork — a
+hannya-mask piece on the stomach with a cobra beside it, roses on the chest,
+swallows, "19 70" at the collarbones, an eagle on his right shoulder, scorpion
+and dobermann on his left arm, an archer and butterfly on his right. Distinct
+from specimen 6: his asks against THIS file are SELECTIVE — one region, one
+collection, one named motif — so it is the corpus's test of region-collection
+takes (dependable, v1) versus single-motif takes (attempt-and-preview), the
+1158 §2 split. The description above was written from the file at working
+size.
+
+## 8. `tattoo-statue-artwork-figure-inspired-by.png` — ask: **copy all these tattoos onto my model / tattoos INSPIRED BY the attached** (supplied 2026-08-20, filed fable-1160)
+
+NOT a photograph: a rendered artwork of a classical marble statue wearing
+fine-line tattoos — dragon across the chest, skull and cameo medallion on the
+stomach, anchor on the thigh, ship at the hem, floral shoulders, drapery at the
+waist. Two things it exists to measure, per fable-1160 §3:
+
+- **the licence question on a FIGURE THAT IS NOT A PERSON.** "human skin" on
+  sculpted marble is unmeasured; cut and rideWhole differ in whether a
+  statue's face rides, and the reading is bought before any row depends on it;
+- **"inspired by" as a distinct ask shape** — a STYLE-scoped ride (claim the
+  style, disclaim the designs), the property-not-extent law on the words side,
+  filed to the open lane's §12.
+
 ---
 
 ## What these files are, and what they are not
