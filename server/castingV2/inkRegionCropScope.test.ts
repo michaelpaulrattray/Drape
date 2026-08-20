@@ -34,10 +34,17 @@ import {
  * # What these arms do NOT prove, said so it is not assumed
  *
  * Nothing here says the road is SAFE to flip. That is two things this file
- * cannot hold: the design floor (both founder specimens measure 183 and 229
- * against 256, so the road is inert by arithmetic today — driven in
- * `inkReferenceCutter.test.ts`), and fable-919 §3's founder gate, which is his
+ * cannot hold: the design floor, and fable-919 §3's founder gate, which is his
  * eyes on the frames and no arm's. Both live in the flag's own docblock.
+ *
+ * ⚠ The floor sentence here read *"both founder specimens measure 183 and 229
+ * against 256, so the road is inert by arithmetic today"* until 2026-08-21, and
+ * that was the claim opus-899 falsified on the real reader. **The floor blocks
+ * an ARM placement, not the road**: 183 and 229 are both specimens' UPPER ARM,
+ * while `upper chest` on S2 answers 720x390 and carries. Armed, a chest
+ * placement changes what is stored today. The equality that IS driven in
+ * `inkReferenceCutter.test.ts` is the narrower one — where the surface is under
+ * the floor the refusal is identical with the flag either way.
  */
 describe("the boot guard", () => {
   it("refuses while the cut door is shut — nothing to escalate", () => {

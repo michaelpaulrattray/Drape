@@ -746,12 +746,26 @@ export async function cutInkDesign(input: CutInkDesignInput): Promise<CutInkDesi
       return null;
     }
     /*
-      THE FLOOR, AND TODAY IT REFUSES BOTH FOUNDER SPECIMENS (183 and 229 short
-      edge against 256). That is declared rather than quiet — the flag's own
-      docblock carries it as the first flip precondition, and no floor constant
-      moves before the realism pass's frames (fable-1183 §3). Falling back to the
-      ink cut here is what makes the road inert rather than harmful while that
-      is true.
+      THE FLOOR, AND IT BLOCKS A PLACEMENT RATHER THAN THE ROAD.
+
+      ⚠ This comment read *"today it refuses both founder specimens"* until
+      2026-08-21, and that was the claim opus-899 falsified on the real reader
+      and corrected in CLAUDE.md and the flag's own docblock — leaving the two
+      CODE sites carrying the corrected sentence, which is law 7's sweep half
+      missing its last two hits. Measured, both roads driven:
+
+        S1 upper arm     183x353    REFUSED here
+        S2 upper arm     229 short  REFUSED here
+        S2 upper chest   720x390    CARRIED — the road's first real crop
+
+      So an ARM placement is floor-blocked and a CHEST placement is not: armed,
+      this road changes what is stored today. Declared rather than quiet — the
+      flag's own docblock carries the floor as the first flip precondition, and
+      no floor constant moves before the realism pass's frames (fable-1183 §3).
+      Falling back to the ink cut here is what makes the blocked placement inert
+      rather than harmful, and the fallback is inert TOTALLY rather than smaller:
+      the scoped ink cut is `ink ∩ region` and therefore inside the region, so a
+      surface under the floor guarantees the ink box is under it too.
     */
     if (!cropClearsMinimumEdge(extent.box)) {
       log.info(
