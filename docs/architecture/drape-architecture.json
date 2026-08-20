@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "c380092d0a638ece"
+    "sourceFingerprint": "322e852e1853ff9c"
   },
   "domains": [
     {
@@ -29878,13 +29878,6 @@
       "kind": "redeclared-shape",
       "subject": "server/castingV2/refineService.ts:794",
       "message": "Names 3 of Thumbnail's 3 fields (server/castingV2/thumbnails.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
-    },
-    {
-      "id": "finding:redeclared-shape:server/castingV2/repaintAsks.ts:84",
-      "severity": "warn",
-      "kind": "redeclared-shape",
-      "subject": "server/castingV2/repaintAsks.ts:84",
-      "message": "Names 5 of RefineDelta's 10 fields (server/castingV2/refineDelta.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
       "id": "finding:redeclared-shape:server/castingV2/rollProjection.ts:169",

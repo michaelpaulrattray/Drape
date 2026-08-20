@@ -3614,9 +3614,21 @@ export const castingInkDeliveryCrops = mysqlTable("casting_ink_delivery_crops", 
   publicId: varchar("publicId", { length: 36 }).notNull(),
   userId: int("userId").notNull(), // denormalized — single-statement ownership
   candidateId: int("candidateId").notNull(), // →casting_candidates
-  /** The design this delivered — →`casting_ink_designs.id`. The identity source
-   *  stays that row; this says how it LANDED. */
-  designId: int("designId").notNull(),
+  /**
+   * The design this delivered — →`casting_ink_designs.id`. The identity source
+   * stays that row; this says how it LANDED.
+   *
+   * **PROVENANCE, AND NOT THE KEY** (migration 0050, ruled fable-1197 §1). It
+   * was part of the unique index until a words-only delivery — D-137's road,
+   * where the ink comes out of her own sentence and there is no design row
+   * anywhere — proved the key could not hold one. NULL here means exactly that
+   * and never *"we lost track"*: the writer omits it only on the words road.
+   *
+   * A nullable column INSIDE a unique index would have been the worse repair:
+   * MySQL lets NULLs repeat there, so minted-once would have held for the
+   * design lane and silently stopped holding for its neighbour.
+   */
+  designId: int("designId"),
   /**
    * THE FRAME IT WAS CUT FROM — →`casting_candidate_variants.id`, and the one
    * that FIRST delivered this design.
@@ -3672,10 +3684,17 @@ export const castingInkDeliveryCrops = mysqlTable("casting_ink_delivery_crops", 
   /* Every read is "the delivered ink on this cast", so the candidate is the index. */
   index("ix_casting_ink_delivery_crops_candidate").on(table.candidateId),
   uniqueIndex("uq_casting_ink_delivery_crops_publicId").on(table.publicId),
-  /* MINTED ONCE, as a fact the database holds — see the header. */
-  uniqueIndex("uq_casting_ink_delivery_crops_design").on(
+  /*
+    MINTED ONCE, as a fact the database holds — see the header.
+
+    Over the DELIVERY (migration 0050): a delivering frame always exists, so
+    this key needs no sentinel and holds identically for the design road and
+    the words road. It was over (candidateId, designId, slot) until a
+    words-only tattoo had no design to be keyed by.
+  */
+  uniqueIndex("uq_casting_ink_delivery_crops_delivery").on(
     table.candidateId,
-    table.designId,
+    table.variantId,
     table.slot,
   ),
 ]));

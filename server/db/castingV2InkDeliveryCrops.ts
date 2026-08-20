@@ -1,13 +1,21 @@
 /**
- * THE DELIVERED-TATTOO STORE'S DATABASE HALF — migration 0049, countersigned
- * fable-1194 §2.
+ * THE DELIVERED-TATTOO STORE'S DATABASE HALF — migrations 0049 and 0050,
+ * countersigned fable-1194 §2 and re-keyed by fable-1197 §1.
  *
- * One row is the frame that FIRST delivered a design onto a Cast, cut down to
- * the tattoo as it sits on her, and where OUR copy of that cut lives. It is
- * what the carry lane sends instead of the customer's artwork, and the whole
- * reason is in the migration's own header: the artwork has no size in it and
- * the master has no tattoo on it, so a carry told to keep "the same size" had
+ * One row is the frame that delivered ink onto a Cast at one placement, cut
+ * down to the tattoo as it sits on her, and where OUR copy of that cut lives.
+ * It is what the carry lane sends instead of the customer's artwork, and the
+ * whole reason is in 0049's header: the artwork has no size in it and the
+ * master has no tattoo on it, so a carry told to keep "the same size" had
  * nothing to measure and put the design on his shirt three times out of three.
+ *
+ * # A ROW IS A DELIVERY, AND IT IS NOT ALWAYS A DESIGN
+ *
+ * D-137's words road paints real ink from the customer's own sentence with no
+ * design row anywhere. That delivery is as real as any other and carries the
+ * same way, so `designId` is PROVENANCE here rather than key: present on the
+ * picture road, NULL on the words road, and never part of what a row is found
+ * by. The chain names the crop's own `publicId` instead.
  *
  * # Three rules, and two of them are somebody's scar
  *
@@ -18,10 +26,13 @@
  *    caller passed.
  * 2. **MINTED ONCE is the database's rule, not this file's.** There is no
  *    read-then-insert here and deliberately no update: the insert runs and a
- *    duplicate on `uq_casting_ink_delivery_crops_design` comes back as
+ *    duplicate on `uq_casting_ink_delivery_crops_delivery` comes back as
  *    `already`, which is a fact rather than an error. A check-then-write would
  *    be the race invariant 1 exists about, and a rule enforced by a writer is
- *    a rule the next writer does not inherit.
+ *    a rule the next writer does not inherit. Since 0050 the key is the
+ *    DELIVERY — (candidateId, variantId, slot) — so the rule reads *once per
+ *    delivering frame*, which is what the mint's never-on-a-carry condition
+ *    already enforces one layer up.
  * 3. **The manifest is discharged in the transaction that files the row.** The
  *    bytes go to a permanently public key BEFORE this runs, registered for
  *    cleanup first and released here — a crash in between collects itself. The
@@ -36,7 +47,6 @@
  * sweep clause lands in the same commit as the writer rather than after it.
  */
 import { and, eq, inArray } from "drizzle-orm";
-import { randomUUID } from "node:crypto";
 
 import {
   castingCandidateVariants,
@@ -48,6 +58,14 @@ import {
 } from "../../drizzle/schema";
 import { getDb, withTransaction, type TransactionHandle } from "./connection";
 import { undischargedStorageCleanupBatchWhere } from "./storageCleanup";
+
+/**
+ * The shape this product mints for a public name — `randomUUID`, and the same
+ * fence `inkApplied`'s reader keeps one layer up, for the same reason: this
+ * value crosses a JSON boundary on its way here, and *"it can only have come
+ * from us"* is the sentence that precedes every input-validation incident.
+ */
+const CROP_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 async function requireDb() {
   const db = await getDb();
@@ -107,8 +125,29 @@ export class InkDeliveryCropOwnershipError extends Error {
 export type InkDeliveryCropToRecord = {
   userId: number;
   candidatePublicId: string;
-  /** The design that was delivered, by the name the chain carries. */
-  designPublicId: string;
+  /**
+   * THE NAME THE CHAIN ALREADY GAVE THIS CROP — pre-allocated by the caller
+   * before the render, ruled fable-1199 §1.
+   *
+   * Not generated here, and the reason is a sequencing fact rather than a
+   * preference: the delta is written at CLAIM time and no path amends it
+   * afterwards (`landVariant` takes an `internalPrompt` and no deltas), while
+   * this row is only minted once the frame exists. So the chain names the crop
+   * before the crop exists, and this writer is handed the name to honour.
+   *
+   * The case where the mint never happens — `no-cut`, `failed` — leaves the
+   * chain naming a row that is not there, and that is this path's oldest law
+   * rather than a new hole: THE ID POINTS AND THE ROW DECIDES, the same
+   * sentence `inkApplied` was written under for a design the customer has since
+   * deleted. The carry side skips it loudly.
+   */
+  publicId: string;
+  /**
+   * The design that was delivered, by the name the chain carries — or ABSENT on
+   * D-137's words road, where the ink came out of her own sentence and there is
+   * no design row anywhere (migration 0050).
+   */
+  designPublicId?: string;
   /** The frame it was cut from, by the name the ledger carries. */
   variantPublicId: string;
   slot: string;
@@ -136,8 +175,8 @@ export type InkDeliveryCropRecorded =
   /** Written. The bytes are now a row's and the manifest is discharged. */
   | { outcome: "minted"; publicId: string }
   /**
-   * The unique index refused it: this design already has its delivery crop on
-   * this Cast, and MINTED ONCE means the first one stands.
+   * The unique index refused it: this frame already has its delivery crop at
+   * this placement, and MINTED ONCE means the first one stands.
    *
    * **The manifest is NOT discharged in this case**, and that is the design:
    * nothing points at the bytes just written, so they must remain the cleanup
@@ -159,7 +198,17 @@ export async function recordInkDeliveryCrop(
   if (!Number.isInteger(input.userId) || input.userId <= 0) {
     throw new Error("userId must be a positive integer");
   }
-  const publicId = randomUUID();
+  /*
+    The name is the CALLER'S, and it is checked rather than trusted: it is
+    written into the chain a hundred lines before it reaches here, and a row
+    whose `publicId` is not the shape this product mints is a row the carry can
+    never look up. Refused loudly here because the caller catches — a bad name
+    costs a crop, never a picture.
+  */
+  if (!CROP_ID.test(input.publicId.trim())) {
+    throw new Error("publicId must be the uuid the chain named");
+  }
+  const publicId = input.publicId.trim();
 
   return withTransaction(async (tx) => {
     const [candidate] = await tx
@@ -174,17 +223,25 @@ export async function recordInkDeliveryCrop(
 
     /* The design is re-proved on BOTH sides of its own join — this account AND
        this Cast — so a design id from another of her Casts cannot file a
-       delivery against this one. */
-    const [design] = await tx
-      .select({ id: castingInkDesigns.id })
-      .from(castingInkDesigns)
-      .where(and(
-        eq(castingInkDesigns.publicId, input.designPublicId),
-        eq(castingInkDesigns.userId, input.userId),
-        eq(castingInkDesigns.candidateId, candidate.id),
-      ))
-      .limit(1);
-    if (!design) throw new InkDeliveryCropOwnershipError("design");
+       delivery against this one.
+
+       Skipped entirely, never loosened, when there is no design: D-137's words
+       road delivers real ink with no design row anywhere, and a lookup of
+       nothing is not a weaker check but a different fact. The column that
+       records it is nullable for that one case (migration 0050), and NULL here
+       means painted-from-words rather than unproven. */
+    const design = input.designPublicId === undefined
+      ? null
+      : (await tx
+        .select({ id: castingInkDesigns.id })
+        .from(castingInkDesigns)
+        .where(and(
+          eq(castingInkDesigns.publicId, input.designPublicId),
+          eq(castingInkDesigns.userId, input.userId),
+          eq(castingInkDesigns.candidateId, candidate.id),
+        ))
+        .limit(1))[0] ?? undefined;
+    if (design === undefined) throw new InkDeliveryCropOwnershipError("design");
 
     /* And the frame, scoped through the candidate it belongs to: a crop
        claiming to come from somebody else's render would be geometry about a
@@ -204,7 +261,7 @@ export async function recordInkDeliveryCrop(
         publicId,
         userId: input.userId,
         candidateId: candidate.id,
-        designId: design.id,
+        designId: design === null ? null : design.id,
         variantId: variant.id,
         slot: input.slot,
         region: input.region,
@@ -244,8 +301,23 @@ export async function recordInkDeliveryCrop(
 }
 
 export type StoredInkDeliveryCrop = {
-  /** The design this crop is OF, by the name the chain's `inkApplied` carries. */
-  designPublicId: string;
+  /**
+   * THE NAME THE CHAIN NAMES — this crop's own `publicId`, and what the carry
+   * matches on since 0050.
+   *
+   * It matched on (design, slot) before, which stopped being the row's key the
+   * day a words-only delivery had no design to be keyed by. Matching on less
+   * than the thing is keyed by is `uniqueness-proves-the-key`, and this is the
+   * repair rather than a second spelling of it.
+   */
+  publicId: string;
+  /**
+   * The design this crop is OF, by the name the chain's `inkApplied` carries —
+   * or NULL when the ink was painted from her words and there is no design.
+   *
+   * Provenance for a reader, never the thing the crop is found by.
+   */
+  designPublicId: string | null;
   slot: string;
   storageKey: string;
   digest: string;
@@ -255,12 +327,17 @@ export type StoredInkDeliveryCrop = {
 
 /**
  * Every delivered-tattoo crop on this Cast — owner-scoped in the read itself,
- * and joined to the design so the caller can match on the name the chain holds
- * rather than on an internal id it has no business seeing.
+ * and joined to the design so the caller can see the name the chain holds
+ * rather than an internal id it has no business seeing.
+ *
+ * **A LEFT join, and that is the words road's whole seat at this table.** An
+ * inner join here would silently drop every crop with no design — which is
+ * every words-only delivery, which is the lane this store was extended for.
+ * The join CONDITION is unchanged and still proves both keys.
  *
  * An explicit projection (invariant 8): the geometry stays in the row. It is
- * evidence for somebody re-reading a delivery, and the carry needs the key and
- * the digest and nothing else.
+ * evidence for somebody re-reading a delivery, and the carry needs the name,
+ * the key and the digest and nothing else.
  */
 export async function listInkDeliveryCrops(input: {
   userId: number;
@@ -269,6 +346,7 @@ export async function listInkDeliveryCrops(input: {
   const db = await requireDb();
   return db
     .select({
+      publicId: castingInkDeliveryCrops.publicId,
       designPublicId: castingInkDesigns.publicId,
       slot: castingInkDeliveryCrops.slot,
       storageKey: castingInkDeliveryCrops.storageKey,
@@ -280,8 +358,9 @@ export async function listInkDeliveryCrops(input: {
     .innerJoin(castingCandidates, eq(castingCandidates.id, castingInkDeliveryCrops.candidateId))
     /* The design is joined ON THE CANDIDATE as well as on the id, so the row's
        own two keys have to agree before a crop can be named — the ink-design
-       route's both-sides rule, one store along. */
-    .innerJoin(castingInkDesigns, and(
+       route's both-sides rule, one store along. LEFT, because a words-only
+       delivery has no design and must not be dropped by its own absence. */
+    .leftJoin(castingInkDesigns, and(
       eq(castingInkDesigns.id, castingInkDeliveryCrops.designId),
       eq(castingInkDesigns.candidateId, castingInkDeliveryCrops.candidateId),
     ))

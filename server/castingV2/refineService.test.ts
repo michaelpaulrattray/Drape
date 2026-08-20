@@ -4031,6 +4031,10 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
   describe("a design she already has rides the next unrelated edit", () => {
     const DESIGN_KEY = "casting-v2/ink/design.png";
     const DESIGN_ID = "6c66a44f-ccbc-46eb-aa7b-1cf86be8f859";
+    /* The delivered crop's own name, which the chain carries since 0050 and
+       which the carry now matches on. Uuid-shaped because `readDeliveredInk`
+       drops anything else, exactly as `readAppliedInk` does. */
+    const CROP_ID = "b9c1f4de-77a0-4a52-8f31-2d6e0c5ab914";
     /* The digest of the bytes the harness will actually serve for that key.
        Computed rather than typed, because `repaintRender` refuses a reference
        whose loaded bytes do not hash to the sha the recipe named — so a
@@ -4056,14 +4060,24 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
       ...over,
     });
 
-    /** The branch a paid ink render left behind: her words, and OUR pointer. */
+    /** The branch a paid ink render left behind: her words, and OUR pointers. */
     /* `null` rather than `undefined` for "nothing applied", because a default
        parameter swallows an explicitly passed `undefined` — which is how the
        negative control below first passed as a positive one. */
-    const wearingTheDesign = (applied: Record<string, string> | null = { "ink:upperChest": DESIGN_ID }) => {
+    const wearingTheDesign = (
+      applied: Record<string, string> | null = { "ink:upperChest": DESIGN_ID },
+      /*
+        AND WHICH CROP, since 0050 — the pointer a words-only tattoo has instead
+        of a design (ruled fable-1197 §1). Defaulted to the design road's shape,
+        so every arm written before it keeps testing what it was written for,
+        and passed explicitly by the arms that are about this field.
+      */
+      delivered: Record<string, string> | null = { "ink:upperChest": CROP_ID },
+    ) => {
       const delta = {
         free: { ink: ["the tattoo design in the attached picture on her upper chest"] },
         ...(applied ? { inkApplied: applied } : {}),
+        ...(delivered ? { inkDelivered: delivered } : {}),
       };
       variantRows = [{
         id: 703,
@@ -4180,7 +4194,8 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
     const DELIVERY_SHA = createHash("sha256")
       .update(Buffer.from(`crop:${DELIVERY_KEY}`)).digest("hex");
     const deliveredCrop = (over: Record<string, unknown> = {}) => ({
-      designPublicId: DESIGN_ID,
+      publicId: CROP_ID,
+      designPublicId: DESIGN_ID as string | null,
       slot: "ink:upperChest",
       storageKey: DELIVERY_KEY,
       digest: DELIVERY_SHA,
@@ -4211,20 +4226,31 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
       expect(dispatched().carried).toContain("ink:upperChest");
     });
 
-    it("matches the crop on the DESIGN AND THE SLOT, never on one of them", async () => {
+    it("matches the crop BY ITS OWN NAME, never by the design and the slot", async () => {
       /*
-        `uniqueness-proves-the-key`: the row's own key is (candidate, design,
-        slot), so matching on less than that is matching on less than the thing
-        is keyed by — and a crop of her neck sent as her upper arm's carry is
-        the wrong-boundary class with a picture attached.
+        `uniqueness-proves-the-key`, RE-AIMED BY 0050. The row used to be keyed
+        on (candidate, design, slot) and the carry matched it that way; the key
+        is now the DELIVERY, so the same design at the same placement can have
+        two crops from two frames and only the one the chain named may ride.
+
+        Both near-misses below would have PASSED the old match: they agree on
+        the design and on the slot and differ only in the name. If this arm ever
+        goes green while the artwork sentence disappears, the match has drifted
+        back onto the pair.
       */
       wearingTheDesign();
 
       await refineCandidate({
         ...withDesigns([designRow()]),
         listInkDeliveryCrops: async () => [
-          deliveredCrop({ slot: "ink:neck", storageKey: "casting-v2/ink-delivery/her-neck.png" }),
-          deliveredCrop({ designPublicId: "some-other-design", storageKey: "casting-v2/ink-delivery/other.png" }),
+          deliveredCrop({
+            publicId: "7d2b0a11-3c48-4f9e-b6a5-01e2c3d4f5a6",
+            storageKey: "casting-v2/ink-delivery/a-later-frame.png",
+          }),
+          deliveredCrop({
+            publicId: "1a2b3c4d-5e6f-4a8b-9c0d-1e2f3a4b5c6d",
+            storageKey: "casting-v2/ink-delivery/another-frame.png",
+          }),
         ],
       }, { ...input, instruction: "wear her hair down" });
 
@@ -4232,6 +4258,102 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
       expect(painted[0]!.references.map((reference) => String(reference.bytes)))
         .toContain(`crop:${DESIGN_KEY}`);
       expect(painted[0]!.prompt).toContain("artwork alone on a transparent background");
+    });
+
+    /*
+      ================================================================
+      D-137's WORDS ROAD, which had no seat at this table until 0050
+      ================================================================
+
+      `491` — the cleanest frame the realism court produced — was a tattoo
+      painted from the customer's own sentence with no design row anywhere. The
+      carry was keyed on a design id, so nothing recorded that delivery, nothing
+      carried it, and it vanished on her next unrelated edit (opus-888 §2).
+    */
+    /** The branch a paid WORDS-ONLY ink render leaves behind: no design at all. */
+    const wearingWordsOnlyInk = () => wearingTheDesign(null, { "ink:upperChest": CROP_ID });
+
+    it("carries a tattoo painted from WORDS, which has no design row at all", async () => {
+      wearingWordsOnlyInk();
+
+      await refineCandidate({
+        /* NO DESIGNS ON THE CAST. Not "a design that is not this one" — none,
+           which is the true state of a Cast whose ink came out of a sentence. */
+        ...withDesigns([]),
+        listInkDeliveryCrops: async () => [deliveredCrop({ designPublicId: null })],
+      }, { ...input, instruction: "wear her hair down" });
+
+      /* The crop rides, described as her own skin. */
+      expect(painted[0]!.references.map((reference) => String(reference.bytes)))
+        .toContain(`crop:${DELIVERY_KEY}`);
+      expect(painted[0]!.prompt).toContain("HER OWN skin");
+      expect(dispatched().carried).toContain("ink:upperChest");
+    });
+
+    it("NEGATIVE CONTROL: before 0050 that same branch carried NOTHING", async () => {
+      /*
+        The state this build exists to end, driven rather than described: the
+        identical render with the chain holding only what the old field could
+        hold. No design, so `inkApplied` is empty, so the loop had nothing to
+        iterate and the tattoo left the frame.
+
+        Without this arm "the words road carries" would pass on a build that
+        carried everything indiscriminately.
+      */
+      wearingTheDesign(null, null);
+
+      await refineCandidate({
+        ...withDesigns([]),
+        listInkDeliveryCrops: async () => [deliveredCrop({ designPublicId: null })],
+      }, { ...input, instruction: "wear her hair down" });
+
+      expect(painted[0]!.references.map((reference) => String(reference.bytes)))
+        .not.toContain(`crop:${DELIVERY_KEY}`);
+      expect(dispatched().carried).not.toContain("ink:upperChest");
+    });
+
+    it("skips a chain that names a crop NO ROW answers to — and never throws", async () => {
+      /*
+        The arm fable-1199 §1 required, and it is reachable without anything
+        being broken: the crop's name is minted at CLAIM and its row at
+        DELIVERY, so a render whose ink never actually arrived — `tattooed skin`
+        finding nothing on the frame — leaves this pointer dangling for good.
+
+        The render must still be painted and delivered. A refund here would be
+        losing a picture to a bookkeeping row.
+      */
+      wearingWordsOnlyInk();
+
+      await refineCandidate({
+        ...withDesigns([]),
+        listInkDeliveryCrops: async () => [],
+      }, { ...input, instruction: "wear her hair down" });
+
+      expect(painted).toHaveLength(1);
+      expect(dispatched().carried).not.toContain("ink:upperChest");
+    });
+
+    it("a DELETED design stops riding even when its crop survives", async () => {
+      /*
+        The per-design delete, still working after the re-key. A customer who
+        deletes a design has taken it off her Cast, and a crop of a frame it
+        once rode is not a licence to keep painting it.
+
+        This is the one place the two pointers must NOT be treated as a union of
+        equals: a slot naming a design is governed by that design's existence,
+        and only a slot naming NO design is the words road.
+      */
+      wearingTheDesign();
+
+      await refineCandidate({
+        ...withDesigns([]),
+        listInkDeliveryCrops: async () => [deliveredCrop()],
+      }, { ...input, instruction: "wear her hair down" });
+
+      expect(painted).toHaveLength(1);
+      expect(painted[0]!.references.map((reference) => String(reference.bytes)))
+        .not.toContain(`crop:${DELIVERY_KEY}`);
+      expect(dispatched().carried).not.toContain("ink:upperChest");
     });
 
     it("falls back to the artwork when the 0049 table is not there yet", async () => {
@@ -9220,14 +9342,17 @@ describe("the picture she attached becomes the carrier that rides", () => {
     /* Clause (a)'s mint at its own seam — see `deliveryCropsMinted`. */
     mintInkDeliveryCrop: async (request: {
       variantPublicId: string;
-      design: { publicId: string; slot: string };
+      delivered: { cropPublicId: string; slot: string; designPublicId?: string };
     }) => {
       deliveryCropsMinted.push({
         variant: request.variantPublicId,
-        design: request.design.publicId,
-        slot: request.design.slot,
+        /* `null` and never omitted: the words road has no design, and an
+           absent key would read the same as a field that moved. */
+        design: request.delivered.designPublicId ?? null,
+        crop: request.delivered.cropPublicId,
+        slot: request.delivered.slot,
       });
-      return { outcome: "minted" as const, slot: request.design.slot, maskPixels: 27374, keptPixels: 27374 };
+      return { outcome: "minted" as const, slot: request.delivered.slot, maskPixels: 27374, keptPixels: 27374 };
     },
     ...over,
   });
@@ -9577,7 +9702,12 @@ describe("the picture she attached becomes the carrier that rides", () => {
    * Recorded rather than merely swallowed, because "was it called at all, and
    * on which frame" is the whole of what the wire owes.
    */
-  const deliveryCropsMinted: Array<{ variant: string; design: string; slot: string }> = [];
+  const deliveryCropsMinted: Array<{
+    variant: string;
+    design: string | null;
+    crop: string;
+    slot: string;
+  }> = [];
 
   const inkRoad = (over: Record<string, unknown> = {}) => carrierRoad({
     inkReferenceEnabled: () => true,
@@ -9665,6 +9795,56 @@ describe("the picture she attached becomes the carrier that rides", () => {
     /* The whole finding, in one assertion: this used to be a refund. */
     expect(result.kind).toBe("rendered");
     expect(painted.length, "a words-only neck tattoo still did not reach the engine").toBeGreaterThan(0);
+  });
+
+  it("RECORDS that words-only tattoo as on her, and KEEPS the frame that delivered it", async () => {
+    /*
+      THE HOLE THIS CLOSES, AT THE WIRE (migration 0050, ruled fable-1197 §1).
+
+      The render above works and always did the moment fable-1180 opened this
+      lane — and the tattoo it painted vanished on her next unrelated edit. The
+      carry was keyed on a design id and this road has no design at all, so
+      nothing recorded the delivery, nothing kept a crop of it, and nothing put
+      it back (filed opus-888 §2).
+
+      Two facts and they are the whole of the repair:
+
+        1. the chain names a CROP for the neck — the pointer this road can have;
+        2. the mint runs and is handed THAT NAME, with no design beside it.
+
+      Both are read off the wire rather than off a return value: the delta is
+      what a later render composes, and the mint's argument is what decides
+      whether the crop is findable at all.
+    */
+    painted.length = 0;
+    deliveryCropsMinted.length = 0;
+    await refineCandidate(wordsRoad(), {
+      ...input, instruction: "give him a small geometric skeleton tattoo on his neck",
+    });
+
+    const claimed = (claimVariant as unknown as {
+      mock: { calls: Array<[{ deltas: RefineDelta; stepDeltas: RefineDelta[] }]> };
+    }).mock.calls.at(-1)![0];
+    /* NO DESIGN — there is none to name, and a pointer invented here would be
+       a lookup that can never succeed. */
+    expect(claimed.deltas.inkApplied).toBeUndefined();
+    const crop = claimed.deltas.inkDelivered?.["ink:neck"];
+    expect(crop, "a words-only delivery recorded no crop — it will vanish on her next edit")
+      .toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
+    /* Both lists, because a PRUNE takes the step's own delta away and the
+       composed one is what a later recipe reads. */
+    expect(claimed.stepDeltas.at(-1)!.inkDelivered).toEqual({ "ink:neck": crop });
+
+    /*
+      AND THE MINT RAN UNDER THAT EXACT NAME. Asserted against the delta rather
+      than against a literal: the whole point of minting the name at claim is
+      that these two agree, and a hard-coded uuid would pass with them
+      disagreeing — which is a crop nothing points at, filed while every log
+      line said `minted`.
+    */
+    expect(deliveryCropsMinted).toEqual([
+      { variant: "variant-1", design: null, crop, slot: "ink:neck" },
+    ]);
   });
 
   it("ASKS rather than guessing when she names a paired surface with no side", async () => {
@@ -9817,9 +9997,24 @@ describe("the picture she attached becomes the carrier that rides", () => {
       variant asserted is the one this render just claimed, because a crop cut
       from any other frame is a picture of a different moment.
     */
+    /*
+      AND THE CROP IS MINTED UNDER THE NAME THE CHAIN JUST WROTE (0050, ruled
+      fable-1199 §1). Asserted against the delta rather than against a literal:
+      the whole point of pre-allocating the name is that these two agree, and a
+      hard-coded uuid here would pass with them disagreeing.
+    */
     expect(deliveryCropsMinted).toEqual([
-      { variant: "variant-1", design: "d-sleeve", slot: "ink:sleeve@left" },
+      {
+        variant: "variant-1",
+        design: "d-sleeve",
+        crop: claimed.deltas.inkDelivered!["ink:sleeve@left"],
+        slot: "ink:sleeve@left",
+      },
     ]);
+    expect(claimed.deltas.inkDelivered!["ink:sleeve@left"]).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/,
+    );
+    expect(claimed.stepDeltas.at(-1)!.inkDelivered).toEqual(claimed.deltas.inkDelivered);
   });
 
   /*

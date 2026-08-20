@@ -47,14 +47,15 @@ import { isInkSlot } from "./referenceSlots";
 import type { RefineDelta } from "./refineDelta";
 
 /**
- * The shape this product mints for a design's public name — `randomUUID`, and
- * nothing else has ever been written into that column.
+ * The shape this product mints for a public name — `randomUUID`, and nothing
+ * else has ever been written into either of the columns these pointers name (a
+ * design's `publicId`, a delivered crop's).
  *
  * Checked rather than assumed because the value crosses a JSON boundary: a
  * stored delta is bytes on disk, and *"it can only have come from us"* is the
  * sentence that precedes every input-validation incident.
  */
-const DESIGN_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const MINTED_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
  * The applied designs a stored delta names, or null when it names none.
@@ -64,17 +65,33 @@ const DESIGN_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}
  * empty object written into every delta is a field that looks written.
  */
 export function readAppliedInk(value: unknown): Record<string, string> | null {
+  return readInkPointers(value, "inkApplied");
+}
+
+/**
+ * THE ONE READING BOTH POINTER FIELDS GET, so the two cannot drift into
+ * different ideas of what a well-formed entry is.
+ *
+ * `derive-never-mirror` at a boundary where a copy would be invisible: a second
+ * hand-written loop that forgot the `isInkSlot` drop would admit a key the
+ * recipe's carry refuses, and a refusal after the money has moved is worse than
+ * a drop before it.
+ */
+function readInkPointers(
+  value: unknown,
+  field: "inkApplied" | "inkDelivered",
+): Record<string, string> | null {
   if (!value || typeof value !== "object") return null;
-  const raw = (value as { inkApplied?: unknown }).inkApplied;
+  const raw = (value as Record<string, unknown>)[field];
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
 
-  const applied: Record<string, string> = {};
+  const read: Record<string, string> = {};
   for (const [slot, id] of Object.entries(raw as Record<string, unknown>)) {
     if (!isInkSlot(slot)) continue;
-    if (typeof id !== "string" || !DESIGN_ID.test(id.trim())) continue;
-    applied[slot] = id.trim();
+    if (typeof id !== "string" || !MINTED_ID.test(id.trim())) continue;
+    read[slot] = id.trim();
   }
-  return Object.keys(applied).length === 0 ? null : applied;
+  return Object.keys(read).length === 0 ? null : read;
 }
 
 /**
@@ -91,8 +108,12 @@ export function readAppliedInk(value: unknown): Record<string, string> | null {
  * cannot be allowed to share an answer.
  */
 export function deltaCarriesAppliedInk(value: unknown): boolean {
+  return deltaCarriesField(value, "inkApplied");
+}
+
+function deltaCarriesField(value: unknown, field: string): boolean {
   if (!value || typeof value !== "object") return false;
-  return "inkApplied" in (value as Record<string, unknown>);
+  return field in (value as Record<string, unknown>);
 }
 
 /**
@@ -109,4 +130,61 @@ export function withAppliedInk(
   designId: string,
 ): RefineDelta {
   return { ...delta, inkApplied: { ...(delta.inkApplied ?? {}), [slot]: designId } };
+}
+
+/**
+ * AND WHICH PICTURE OF HER THE NEXT RENDER SENDS — the reader for
+ * `RefineDelta`'s `inkDelivered`, and the one owner of what THAT field may
+ * contain (migration 0050, ruled fable-1197 §1).
+ *
+ * # It is `inkApplied`'s sibling and not its replacement
+ *
+ * `inkApplied` says WHICH DESIGN is on her and is what keeps the per-design
+ * delete honest; this says WHICH DELIVERED CROP shows how it landed, and it is
+ * the half a words-only tattoo can have. On D-137's road there is no design at
+ * all, so `inkApplied` is empty for that slot and this is the whole record of
+ * the tattoo — which is exactly the hole that made a words-painted tattoo
+ * vanish on the next unrelated edit.
+ *
+ * # Every sentence in this file's header applies here unchanged
+ *
+ * The strict reader must never see it (a reply free to name a crop id would be
+ * a model choosing which picture of a customer's body rides the next render);
+ * it enters only from the service that claimed the render; it comes back out
+ * through `readStoredDelta`; a key that is not an ink slot is dropped rather
+ * than refused after the money has moved; and an id that is not the shape this
+ * product mints is dropped for the same reason.
+ *
+ * The one difference worth stating out loud: this id may name a row that was
+ * never written, because the name is minted at claim and the crop at delivery.
+ * The carry treats that exactly as it treats a deleted design — skip, and say
+ * so loudly.
+ */
+export function readDeliveredInk(value: unknown): Record<string, string> | null {
+  return readInkPointers(value, "inkDelivered");
+}
+
+/**
+ * DOES THIS OBJECT CARRY `inkDelivered` AT ALL — `deltaCarriesAppliedInk`'s
+ * sibling, and the same false-pass guard in miniature: a malformed attempt to
+ * name a crop is still the thing the fence forbids, so the instrument answers
+ * *did this reply try* rather than *is there anything usable here*.
+ */
+export function deltaCarriesDeliveredInk(value: unknown): boolean {
+  return deltaCarriesField(value, "inkDelivered");
+}
+
+/**
+ * THE SAME DELTA WITH ONE DELIVERED CROP RECORDED AGAINST ITS SLOT.
+ *
+ * A copy, never a mutation — `withAppliedInk`'s reason exactly: the step delta
+ * and the composed delta are both already held by a dozen consumers by the time
+ * this runs.
+ */
+export function withDeliveredInk(
+  delta: RefineDelta,
+  slot: string,
+  cropId: string,
+): RefineDelta {
+  return { ...delta, inkDelivered: { ...(delta.inkDelivered ?? {}), [slot]: cropId } };
 }

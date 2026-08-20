@@ -43,7 +43,7 @@
  */
 import { REFINABLE_CUT_NAMES } from "./hairStyles";
 import { EYE_SHAPES } from "../../shared/castingRealization";
-import { readAppliedInk } from "./inkApplied";
+import { readAppliedInk, readDeliveredInk } from "./inkApplied";
 import { closedSubjectFor, readOpenKinds } from "./openLaneKind";
 import { readDelta, type FreeValue, type OpenKindAsk, type RefineDelta } from "./refineDelta";
 import type { FreeSubject } from "./refineSubjects";
@@ -183,12 +183,29 @@ export function readStoredDelta(value: unknown): RefineDelta | null {
     read and the tattoo would be lost on the very edit this exists to survive.
   */
   const inkApplied = readAppliedInk(migrated);
+  /*
+    AND THE PICTURE OF HOW IT LANDED, which `readDelta` is blind to for the same
+    reason and one degree more sharply (migration 0050, fable-1197 §1).
+
+    `inkDelivered` names a CROP OF THE CUSTOMER'S OWN BODY, so a reply free to
+    name one would be a model choosing which picture of her rides the next
+    render. It is written by the service that claimed the render and it re-enters
+    here, where a key we wrote is a fact already paid for.
+
+    It is read BESIDE `inkApplied` rather than instead of it: on the picture road
+    both are present and say different true things, and on D-137's words road
+    this one is present ALONE — which is the entire repair, because a words-only
+    tattoo has no design to be remembered by and used to vanish on the next
+    unrelated edit.
+  */
+  const inkDelivered = readDeliveredInk(migrated);
   const delta = readDelta(migrated);
   if (delta !== null) {
     return {
       ...delta,
       ...(open === null ? {} : { open }),
       ...(inkApplied === null ? {} : { inkApplied }),
+      ...(inkDelivered === null ? {} : { inkDelivered }),
     };
   }
   /*
@@ -204,25 +221,54 @@ export function readStoredDelta(value: unknown): RefineDelta | null {
     read.
 
     So the discriminator is what else is in the row.
-  */
-  if (open === null) return null;
-  /*
-    `inkApplied` joins `open` on the LEFT of this discriminator, and it is not a
-    widening: both are fields the strict reader cannot see, so counting either
-    as "other content" would mean a step the strict reader legitimately reads as
-    empty is declared unreadable for carrying a field we wrote ourselves.
 
-    An ink step always carries its own words (`free.ink`), so a delta holding
-    `inkApplied` and nothing the strict reader can read should not exist. It is
-    handled rather than declared unreachable, because a comment calling a branch
-    synthetic is a branch with no test, and this codebase has paid a walk for
-    that once already.
+    ⚠ `inkDelivered` JOINS `open` ON THE LEFT OF IT, and unlike `inkApplied`
+    that is a real widening rather than a symmetry. An open kind can be a step's
+    only content, and now so can a delivered crop: nothing else about a
+    words-only tattoo needs to survive here, and refusing the row would throw
+    away the very pointer this field was added to keep.
+  */
+  if (open === null && inkDelivered === null) return null;
+  /*
+    `inkApplied` sits on the RIGHT of the discriminator and is carried out
+    anyway, and that is not a widening: all three are fields the strict reader
+    cannot see, so counting any of them as "other content" would mean a step the
+    strict reader legitimately reads as empty is declared unreadable for
+    carrying a field we wrote ourselves.
+
+    An ink step on the PICTURE road always carries its own words (`free.ink`),
+    so a delta holding `inkApplied` and nothing the strict reader can read
+    should not exist. It is handled rather than declared unreachable, because a
+    comment calling a branch synthetic is a branch with no test, and this
+    codebase has paid a walk for that once already.
   */
   const others = Object.keys(migrated as Record<string, unknown>)
-    .filter((key) => key !== "open" && key !== "inkApplied");
+    .filter((key) => !CODE_WRITTEN_FIELDS.has(key));
   if (others.length > 0) return null;
-  return inkApplied === null ? { open } : { open, inkApplied };
+  return {
+    ...(open === null ? {} : { open }),
+    ...(inkApplied === null ? {} : { inkApplied }),
+    ...(inkDelivered === null ? {} : { inkDelivered }),
+  };
 }
+
+/**
+ * THE FIELDS THE STRICT READER CANNOT SEE — the discriminator's own list, and
+ * the reason it is a list rather than three `!==` comparisons.
+ *
+ * A stored row holding only these composes to something the strict reader
+ * legitimately reads as empty, and treating that as UNREADABLE would refuse the
+ * render and lose the branch (D-182). A row holding anything else the reader
+ * rejected is genuinely unreadable and must stay refused — eleven instructions
+ * erased and one carried is the original defect in a new coat.
+ *
+ * So every field written by code rather than read off a reply belongs here the
+ * day it is added, and a field added to `RefineDelta` without a line here fails
+ * closed (the row reads as unreadable) rather than open. `inkDelivered` is the
+ * newest member and the first that can legitimately stand ALONE: D-137's words
+ * road delivers a real tattoo whose only pointer is the crop of it.
+ */
+const CODE_WRITTEN_FIELDS = new Set(["open", "inkApplied", "inkDelivered"]);
 
 /**
  * A STORED OPEN KIND WHOSE NOUN THE CLOSED LANE NOW OWNS — moved into it.

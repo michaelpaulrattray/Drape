@@ -13,7 +13,14 @@
  */
 import { describe, expect, it } from "vitest";
 
-import { deltaCarriesAppliedInk, readAppliedInk, withAppliedInk } from "./inkApplied";
+import {
+  deltaCarriesAppliedInk,
+  deltaCarriesDeliveredInk,
+  readAppliedInk,
+  readDeliveredInk,
+  withAppliedInk,
+  withDeliveredInk,
+} from "./inkApplied";
 import { composeDeltas, readDelta, type RefineDelta } from "./refineDelta";
 import { readStoredDelta } from "./refineLegacy";
 import { composeChain, readChain } from "./refineRemoval";
@@ -22,10 +29,27 @@ import { composeChain, readChain } from "./refineRemoval";
 const DESIGN = "6c66a44f-ccbc-46eb-aa7b-1cf86be8f859";
 const OTHER = "b0eeab5c-b570-4a69-8fa5-4589cced2e9f";
 
-/** The step that put a design on her: her own words, and OUR pointer. */
-const inkStep = (design = DESIGN): RefineDelta => ({
+/** A delivered crop's public name — minted at claim, and uuid-shaped too. */
+const CROP = "b9c1f4de-77a0-4a52-8f31-2d6e0c5ab914";
+const OTHER_CROP = "7d2b0a11-3c48-4f9e-b6a5-01e2c3d4f5a6";
+
+/** The step that put a design on her: her own words, and OUR two pointers. */
+const inkStep = (design = DESIGN, crop = CROP): RefineDelta => ({
   free: { ink: ["the tattoo design in the attached picture on her upper chest"] },
   inkApplied: { "ink:upperChest": design },
+  inkDelivered: { "ink:upperChest": crop },
+});
+
+/**
+ * The step D-137's WORDS ROAD leaves behind — a real tattoo, and no design
+ * anywhere, because the place and the picture both came out of her sentence.
+ *
+ * This is the shape that could not be recorded at all before migration 0050,
+ * which is why a words-painted tattoo vanished on the next unrelated edit.
+ */
+const wordsInkStep = (crop = CROP): RefineDelta => ({
+  free: { ink: ["a grey-black dinosaur skeleton on his neck"] },
+  inkDelivered: { "ink:neck": crop },
 });
 
 describe("the strict reader is blind to the applied-design field", () => {
@@ -83,6 +107,198 @@ describe("the strict reader is blind to the applied-design field", () => {
     });
     expect(stored?.inkApplied).toEqual({ "ink:upperChest": DESIGN });
     expect(stored?.open?.["cat-ears"]?.noun).toBe("cat ears");
+  });
+});
+
+describe("the strict reader is blind to the delivered-crop field", () => {
+  /*
+    THE SAME FENCE, ONE DEGREE SHARPER (migration 0050, condition fable-1197
+    §2a). `inkApplied` names one of the customer's own designs; `inkDelivered`
+    names A CROP OF HER BODY, cut from one of our delivered frames. A reply free
+    to name one would be a model choosing which picture of her rides the next
+    render.
+
+    Armed in both directions, because a fence proved only from the inside is a
+    fence over a hole.
+  */
+  it("REFUSES to produce the field from a model reply that carries it", () => {
+    const planted = {
+      free: { ink: ["a small swallow on her neck"] },
+      inkDelivered: { "ink:neck": CROP },
+    };
+    const read = readDelta(planted, { instruction: "a small swallow on her neck" });
+    expect(read).not.toBeNull();
+    expect(deltaCarriesDeliveredInk(read)).toBe(false);
+  });
+
+  it("still reads everything else in that reply — the negative control", () => {
+    const read = readDelta(
+      { free: { ink: ["a small swallow on her neck"] }, inkDelivered: { "ink:neck": CROP } },
+      { instruction: "a small swallow on her neck" },
+    );
+    expect(read?.free?.ink).toEqual(["a small swallow on her neck"]);
+  });
+
+  it("carries it back out of OUR OWN record, unchanged", () => {
+    const stored = readStoredDelta(inkStep());
+    expect(stored?.inkDelivered).toEqual({ "ink:upperChest": CROP });
+    expect(deltaCarriesDeliveredInk(stored)).toBe(true);
+  });
+
+  it("carries a WORDS-ONLY step, whose only pointer is the crop", () => {
+    /*
+      THE WHOLE REPAIR, at the reader that used to drop it. The strict reader
+      legitimately reads this step's `free.ink` and knows nothing of the crop;
+      re-attaching it is what lets a tattoo with no design survive the next
+      edit.
+    */
+    const stored = readStoredDelta(wordsInkStep());
+    expect(stored?.inkDelivered).toEqual({ "ink:neck": CROP });
+    expect(stored?.inkApplied).toBeUndefined();
+  });
+
+  it("carries a crop out of a step the strict reader reads as EMPTY", () => {
+    /*
+      D-182's discriminator, with a new member on its left. A row whose only
+      content is a code-written field is not unreadable — it is a step the
+      strict reader has nothing to say about — and refusing it would throw away
+      the one pointer a words-only tattoo has.
+
+      `inkDelivered` is the first field that can legitimately stand alone here:
+      an open kind could already, and `inkApplied` never could, because an ink
+      step on the picture road always carries its own words.
+    */
+    const stored = readStoredDelta({ inkDelivered: { "ink:neck": CROP } });
+    expect(stored?.inkDelivered).toEqual({ "ink:neck": CROP });
+  });
+
+  it("still REFUSES a row whose other content it could not read", () => {
+    /*
+      The negative control for the line above, and the reason the discriminator
+      exists at all: carrying the crop out of a genuinely unreadable row would
+      be eleven instructions erased and one carried, with the money moving on an
+      input the code had already decided it could not read.
+    */
+    expect(readStoredDelta({ inkDelivered: { "ink:neck": CROP }, eyeColour: 7 })).toBeNull();
+  });
+
+  it("SEES a malformed attempt that it refuses to read", () => {
+    const malformed = { inkDelivered: { "ink:neck": "the one from before" } };
+    expect(readDeliveredInk(malformed)).toBeNull();
+    expect(deltaCarriesDeliveredInk(malformed)).toBe(true);
+  });
+
+  it("holds both pointers at once without either standing in for the other", () => {
+    const stored = readStoredDelta(inkStep());
+    expect(stored?.inkApplied).toEqual({ "ink:upperChest": DESIGN });
+    expect(stored?.inkDelivered).toEqual({ "ink:upperChest": CROP });
+    /* Different values on the same slot: an implementation that read one field
+       and copied it into the other would pass every arm above. */
+    expect(stored?.inkApplied?.["ink:upperChest"]).not.toBe(stored?.inkDelivered?.["ink:upperChest"]);
+  });
+});
+
+describe("what the delivered-crop reader will and will not accept", () => {
+  /* The same guards as its sibling, driven at THIS field: they share one
+     implementation, and an arm that only drove the sibling would certify a
+     shared body over a field nobody exercised. */
+  it("takes an ink slot with a real crop name", () => {
+    expect(readDeliveredInk({ inkDelivered: { "ink:upperArm@left": CROP } }))
+      .toEqual({ "ink:upperArm@left": CROP });
+  });
+
+  it("drops a key that is not an ink slot", () => {
+    expect(readDeliveredInk({ inkDelivered: { hair: CROP } })).toBeNull();
+  });
+
+  it("drops a value that is not the shape this product mints", () => {
+    for (const id of ["the one from before", "", "b9c1f4de", 7, null, { publicId: CROP }]) {
+      expect(readDeliveredInk({ inkDelivered: { "ink:neck": id } }), String(id)).toBeNull();
+    }
+  });
+
+  it("answers null for an absent, empty or wrong-shaped field", () => {
+    expect(readDeliveredInk({})).toBeNull();
+    expect(readDeliveredInk({ inkDelivered: {} })).toBeNull();
+    expect(readDeliveredInk({ inkDelivered: [CROP] })).toBeNull();
+    expect(readDeliveredInk(null)).toBeNull();
+  });
+
+  it("does not answer its sibling's field, in either direction", () => {
+    /* The two readers share a body since 0050, so the field name is the only
+       thing telling them apart — and a shared body with a hard-coded name would
+       pass every other arm in this file. */
+    expect(readDeliveredInk({ inkApplied: { "ink:neck": DESIGN } })).toBeNull();
+    expect(readAppliedInk({ inkDelivered: { "ink:neck": CROP } })).toBeNull();
+    expect(deltaCarriesDeliveredInk({ inkApplied: {} })).toBe(false);
+    expect(deltaCarriesAppliedInk({ inkDelivered: {} })).toBe(false);
+  });
+});
+
+describe("the delivered crops compose exactly as the designs do", () => {
+  /*
+    Both pointer fields go through ONE loop since 0050 (`INK_POINTER_FIELDS`),
+    so these arms are what stops that loop from being written for one field and
+    silently wrong for the other. The property that matters is that the THREE
+    halves of one fact — her words, which design, which picture — can never
+    disagree about whether she still has a tattoo.
+  */
+  it("carries forward through an unrelated later edit", () => {
+    const composed = composeDeltas([inkStep(), { eyeColour: "green" }]);
+    expect(composed.inkDelivered).toEqual({ "ink:upperChest": CROP });
+  });
+
+  it("is REPLACED, never accumulated, when she asks for a different tattoo", () => {
+    const composed = composeDeltas([
+      inkStep(),
+      { free: { ink: ["a swallow on her neck"] }, inkDelivered: { "ink:neck": OTHER_CROP } },
+    ]);
+    expect(composed.inkDelivered).toEqual({ "ink:neck": OTHER_CROP });
+  });
+
+  it("goes when the ink facet is answered with nothing — a removal removes", () => {
+    /* The expensive shape, at the new field: a crop that survived a removal
+       would go on painting the tattoo back onto every later render, from a
+       picture of her own body, with her words empty beside it. */
+    const composed = composeDeltas([inkStep(), { free: { ink: [] } }]);
+    expect(composed.inkDelivered).toBeUndefined();
+    expect(composed.inkApplied).toBeUndefined();
+    expect(composed.free?.ink).toEqual([]);
+  });
+
+  it("takes a WORDS-ONLY tattoo off just as completely", () => {
+    /* The road with no design at all: the crop is the only pointer, so it is
+       the only thing that could keep painting a removed tattoo. */
+    const composed = composeDeltas([wordsInkStep(), { free: { ink: [] } }]);
+    expect(composed.inkDelivered).toBeUndefined();
+    expect(composed.free?.ink).toEqual([]);
+  });
+
+  it("survives a prune exactly as its sibling does", () => {
+    const kept = readChain(
+      ["colour her hair copper", "a dinosaur skeleton on his neck"],
+      [{ hairColour: "copper" as const }, wordsInkStep()],
+    );
+    expect(composeChain(kept!).inkDelivered).toEqual({ "ink:neck": CROP });
+    const pruned = readChain(["colour her hair copper"], [{ hairColour: "copper" as const }]);
+    expect(composeChain(pruned!).inkDelivered).toBeUndefined();
+    /* The negative control: the prune took the ink step and nothing else. */
+    expect(composeChain(pruned!).hairColour).toBe("copper");
+  });
+});
+
+describe("recording a delivered crop against its slot", () => {
+  it("copies rather than mutating what the caller is holding", () => {
+    const original: RefineDelta = { free: { ink: ["a swallow on her neck"] } };
+    const recorded = withDeliveredInk(original, "ink:neck", CROP);
+    expect(recorded.inkDelivered).toEqual({ "ink:neck": CROP });
+    expect(original.inkDelivered).toBeUndefined();
+  });
+
+  it("leaves the design pointer alone", () => {
+    const recorded = withDeliveredInk(inkStep(), "ink:neck", OTHER_CROP);
+    expect(recorded.inkApplied).toEqual({ "ink:upperChest": DESIGN });
+    expect(recorded.inkDelivered).toEqual({ "ink:upperChest": CROP, "ink:neck": OTHER_CROP });
   });
 });
 

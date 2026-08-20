@@ -76,13 +76,16 @@ function harness(over: {
   return { calls, recorded, stored, dependencies };
 }
 
+/** The name the chain minted at claim time, which the mint must honour. */
+const CROP_ID = "0f7ae3c1-2b44-4a6d-9c81-6a2f4b0d7e35";
+
 async function mint(bag: ReturnType<typeof harness>, frame: Buffer) {
   return mintInkDeliveryCrop({
     userId: 1,
     candidatePublicId: "cast-1",
     variantPublicId: "variant-9",
     frame,
-    design: { publicId: "design-7", slot: "ink:neck" },
+    delivered: { cropPublicId: CROP_ID, slot: "ink:neck", designPublicId: "design-7" },
     operationId: "op-1",
     dependencies: bag.dependencies,
   });

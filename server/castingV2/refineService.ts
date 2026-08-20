@@ -208,7 +208,7 @@ import {
 } from "./referenceLibrary";
 import { listLineageReferences, recordReferenceRows, retireReferenceSlot } from "../db/castingV2ReferenceLibrary";
 import type { RegionReader as MintRegionReader } from "./referenceCompleteness";
-import { readAppliedInk, withAppliedInk } from "./inkApplied";
+import { readAppliedInk, readDeliveredInk, withAppliedInk, withDeliveredInk } from "./inkApplied";
 import type { InkCutFocus } from "./inkReferenceCutter";
 import { assembleRecipe, type CarriedInkDesign, type FeatureSlot } from "./recipeAssembler";
 import {
@@ -4539,14 +4539,79 @@ async function refineCandidateCounted(
     }
     return { slot, designId: inkSource.designId };
   })();
-  const claimedDeltas = appliedInk === null
-    ? composed
-    : withAppliedInk(composed, appliedInk.slot, appliedInk.designId);
-  const claimedStepDeltas = appliedInk === null || stepDeltas.length === 0
+  /*
+    AND WHICH PICTURE OF HER THE NEXT RENDER WILL SEND — the words road's whole
+    seat at the table (migration 0050, ruled fable-1197 §1 as shape (c)).
+
+    # Why this is a SECOND derivation and not a widening of the one above
+
+    `appliedInk` answers *which of her designs is on her*, and it is null on
+    D-137's road because there is no design there at all — the ink came out of
+    her own sentence. That is exactly how a words-painted tattoo came to vanish
+    on the next unrelated edit: nothing recorded the delivery, so nothing
+    carried it (opus-888 §2). This one answers *did this render deliver ink to a
+    placement*, which is true on BOTH roads, and it is what the carry now looks
+    a crop up by.
+
+    # The address comes from whichever road ran, through ONE owner
+
+    `inkSource.address` on the picture road, `wordsInkAddress` on the words
+    road — the same two variables the recipe's `inkPlacement` chooses between a
+    thousand lines below, in the same order and through the same `slotsForFacet`
+    owner. Two spellings of a placement is a design on the wrong part of her, so
+    there is only ever one.
+
+    # THE NAME IS MINTED HERE, BEFORE THE CROP EXISTS
+
+    The crop is cut from the frame this render has not painted yet, and the
+    delta is written by the claim below with nothing amending it afterwards
+    (`landVariant` takes an `internalPrompt` and no deltas). So the id travels
+    FORWARDS: minted here, written into the chain, handed to the mint to honour.
+
+    A render whose ink never actually arrives — the mint answering `no-cut`
+    because `tattooed skin` found nothing on the delivered frame — leaves the
+    chain naming a row that was never written. THE ID POINTS AND THE ROW
+    DECIDES: that is the sentence `inkApplied` has always been written under for
+    a design the customer has since deleted, and the carry skips a missing row
+    loudly rather than throwing into a paid render (condition, fable-1199 §1).
+  */
+  const deliveredInk = (() => {
+    const address = inkSource?.address ?? wordsInkAddress;
+    if (!address) return null;
+    const slot = slotsForFacet("ink", { inkPlacement: slotPlacementOf(address) })[0]?.slot;
+    if (slot === undefined) {
+      /* Unreachable through the pre-claim doors, which resolved this address
+         through the same vocabulary — and handled rather than assumed away, for
+         the reason the sibling above gives: the render still happens, and the
+         fact that this tattoo will not carry is LOUD. */
+      log.error(
+        { userId: input.userId, candidate: input.candidatePublicId, placement: address.placement },
+        "[refineService] ink is riding this render and the catalogue cannot name its slot — it will not carry to the next edit",
+      );
+      return null;
+    }
+    return { slot, cropId: randomUUID() };
+  })();
+  /*
+    BOTH POINTERS ONTO BOTH LISTS, in one place.
+
+    The step's own delta, so a prune takes them away by arithmetic, and the
+    composed one, so a reader of the branch state does not have to re-compose to
+    see them. Written as a fold rather than as four nested ternaries because
+    there are now two fields and a third would otherwise be a fifth ternary.
+  */
+  const withInkPointers = (delta: RefineDelta): RefineDelta => {
+    let next = delta;
+    if (appliedInk !== null) next = withAppliedInk(next, appliedInk.slot, appliedInk.designId);
+    if (deliveredInk !== null) next = withDeliveredInk(next, deliveredInk.slot, deliveredInk.cropId);
+    return next;
+  };
+  const claimedDeltas = withInkPointers(composed);
+  const claimedStepDeltas = stepDeltas.length === 0
     ? stepDeltas
     : [
       ...stepDeltas.slice(0, -1),
-      withAppliedInk(stepDeltas[stepDeltas.length - 1]!, appliedInk.slot, appliedInk.designId),
+      withInkPointers(stepDeltas[stepDeltas.length - 1]!),
     ];
 
   let variant: Awaited<ReturnType<typeof claimVariant>>;
@@ -5234,7 +5299,27 @@ async function refineCandidateCounted(
         render this product has served: no read, no allocation, no change.
       */
       const appliedBySlot = composed.inkApplied ?? {};
-      const carriedInk = Object.keys(appliedBySlot).length === 0
+      /*
+        AND THE TATTOOS SHE HAS THAT NO DESIGN ROW REMEMBERS (migration 0050,
+        ruled fable-1197 §1).
+
+        D-137's road paints ink from her own sentence, so `inkApplied` is empty
+        for that slot and the loop below had nothing to iterate — a
+        words-painted tattoo was never carried and vanished on her next
+        unrelated edit (opus-888 §2). `inkDelivered` is the record that road can
+        have: slot -> the crop of how it landed.
+
+        THE UNION, and never one list checked against the other. On the picture
+        road both fields name the same slot and say different true things; on
+        the words road only this one does; and a slot in either is a tattoo the
+        customer believes she has. Iterating one and looking the other up would
+        lose a feature somebody paid for, in whichever direction it was written.
+      */
+      const deliveredBySlot = composed.inkDelivered ?? {};
+      const inkSlots = Array.from(
+        new Set([...Object.keys(appliedBySlot), ...Object.keys(deliveredBySlot)]),
+      );
+      const carriedInk = inkSlots.length === 0
         ? []
         : await (async () => {
           const designs = await (dependencies.listInkDesigns ?? listInkDesigns)({
@@ -5271,16 +5356,59 @@ async function refineCandidateCounted(
              a copy drifts by losing a field nothing can see, and the Atlas
              says so mechanically. */
           const carried: CarriedInkDesign[] = [];
-          for (const [slot, designId] of Object.entries(appliedBySlot)) {
+          for (const slot of inkSlots) {
             /* A slot this render EDITS is handed the design as a SOURCE with
                the ask's own words; carrying it as well would send one picture
                twice with two sentences, and the assembler refuses that outright
                (`carriesItsOwnEdit`). Skipped here rather than refused because
                it is the ORDINARY state of every ink edit, not a defect. */
             if (editedSlots.has(slot)) continue;
-            const design = designs.find((row) => row.publicId === designId);
+            const designId = appliedBySlot[slot];
+            const cropId = deliveredBySlot[slot];
             const noun = slotDefinition(slot)?.noun;
-            if (design === undefined || noun === undefined) {
+            /*
+              THE CROP IS MATCHED BY ITS OWN NAME, and that is the 0050 change.
+
+              It used to be matched on (design, slot), which stopped being the
+              row's key the moment a words-only delivery had no design to be
+              keyed by — and matching on less than the thing is keyed by is the
+              `uniqueness-proves-the-key` class that once rode her left arm. The
+              chain names the crop, the crop's `publicId` is unique, and there is
+              nothing left to match loosely.
+            */
+            const delivered = cropId === undefined
+              ? undefined
+              : deliveredCrops.find((crop) => crop.publicId === cropId);
+            /*
+              A DESIGN NAMED ON THE CHAIN MUST STILL EXIST, even when a crop of
+              it does. That is what keeps the per-design delete working: a
+              customer who deletes a design has removed it from her Cast, and a
+              crop of a frame it once rode is not a licence to keep painting it.
+
+              A slot with NO design named is D-137's words road, where there is
+              nothing to delete and the crop is the entire record. `undefined`
+              here is that case and not a lookup failure — the two are told
+              apart by the chain, never by the absence of a row.
+            */
+            const design = designId === undefined
+              ? undefined
+              : designs.find((row) => row.publicId === designId);
+            /*
+              THE THREE WAYS A SLOT CAN FAIL TO CARRY, told apart rather than
+              merged. `noCrop` is the arm fable-1199 §1 required and it is
+              reachable without anything being broken: the crop's name is minted
+              at CLAIM and its row at DELIVERY, so a render whose ink never
+              actually arrived — `tattooed skin` finding nothing on the frame —
+              leaves the words road's only pointer dangling for good.
+            */
+            const missing = noun === undefined
+              ? "uncataloguedSlot"
+              : designId !== undefined && design === undefined
+                ? "noRow"
+                : designId === undefined && delivered === undefined
+                  ? "noCrop"
+                  : null;
+            if (missing !== null || noun === undefined) {
               /*
                 LOUD, ALWAYS. A design that has been deleted stops riding, which
                 is right and is what the per-design delete is for — but it is
@@ -5293,46 +5421,44 @@ async function refineCandidateCounted(
                   operationId,
                   variant: variant.publicId,
                   slot,
-                  design: designId,
-                  reason: design === undefined ? "noRow" : "uncataloguedSlot",
+                  design: designId ?? null,
+                  crop: cropId ?? null,
+                  reason: missing,
                 },
-                "[refineService] the branch says a design is on her and this render cannot carry it — the tattoo will not be in this frame",
+                "[refineService] the branch says ink is on her and this render cannot carry it — the tattoo will not be in this frame",
               );
               continue;
             }
-            /*
-              THE CROP IS MATCHED ON BOTH THE DESIGN AND THE SLOT.
-
-              Never on the design alone: the same design may in principle sit at
-              two placements, and a crop of her neck sent as her upper arm's
-              carry would be the wrong-boundary class with a picture attached.
-              The row's own unique key is (candidate, design, slot), so matching
-              on less than it here is matching on less than the thing is keyed by
-              (`uniqueness-proves-the-key`).
-            */
-            const delivered = deliveredCrops.find(
-              (crop) => crop.designPublicId === designId && crop.slot === slot,
-            );
-            carried.push(delivered
-              ? {
+            if (delivered !== undefined) {
+              carried.push({
                 slot,
                 picture: "deliveredCrop",
                 /* Same posture as the artwork below — by KEY and DIGEST, and
                    `repaintRender` refuses if the bytes at that key have moved. */
                 image: { key: delivered.storageKey, sha: delivered.digest },
                 noun,
-              }
-              : {
-                slot,
-                picture: "designArtwork",
-                /* By KEY and DIGEST, never fetched here: `repaintRender` re-reads
-                   every reference and refuses when the loaded bytes do not hash to
-                   the sha the recipe named, which is fable-1137 §3b's moved-bytes
-                   refusal met by machinery that already exists. */
-                image: { key: design.storageKey, sha: design.digest },
-                cutRoute: design.cutRoute,
-                noun,
               });
+              continue;
+            }
+            /*
+              NO CROP AND A LIVE DESIGN: yesterday's road, and still the right
+              answer for ink delivered before 0049 existed, or on a frame the
+              reader found nothing on. `design` is defined on this line — the
+              only way to arrive here without one is `noCrop`, which continued
+              above.
+            */
+            if (design === undefined) continue;
+            carried.push({
+              slot,
+              picture: "designArtwork",
+              /* By KEY and DIGEST, never fetched here: `repaintRender` re-reads
+                 every reference and refuses when the loaded bytes do not hash to
+                 the sha the recipe named, which is fable-1137 §3b's moved-bytes
+                 refusal met by machinery that already exists. */
+              image: { key: design.storageKey, sha: design.digest },
+              cutRoute: design.cutRoute,
+              noun,
+            });
           }
           return carried;
         })();
@@ -7713,17 +7839,25 @@ async function refineCandidateCounted(
       full argument, and it is the same one migration 0040 made for the
       customer-supplied crop store.
 
-      # Why the condition is `appliedInk` and not a flag
+      # Why the condition is `deliveredInk` and not a flag
 
-      `appliedInk` is non-null exactly when THIS render resolved a design and
-      put it on her, which already implies the ink scopes were open for this
+      `deliveredInk` is non-null exactly when THIS render put ink on a
+      placement, which already implies the ink scopes were open for this
       account. A second flag here would be a door on a corridor.
 
-      And it is `appliedInk` rather than the whole carried set on purpose:
-      fable-1193 §3b's MINTED ONCE, from the frame that FIRST delivered the
-      design, never re-cut from a later carry. A carry render's `appliedInk` is
-      null, so this line does not run on one at all — and the unique index says
-      so again for any caller that gets it wrong.
+      ⚠ **IT WAS `appliedInk` UNTIL 0050, AND THAT IS WHY A WORDS-PAINTED
+      TATTOO VANISHED.** `appliedInk` is null on D-137's road — no design row
+      exists there — so this line never ran for a tattoo painted from her own
+      sentence, no crop was ever kept, and the next unrelated edit lost it.
+      `deliveredInk` is true on both roads and is the condition the sentence
+      above actually describes.
+
+      And it is this render's own delivery rather than the whole carried set on
+      purpose: fable-1193 §3b's MINTED ONCE, from the frame that FIRST delivered
+      it, never re-cut from a later carry. A carry render delivers nothing, so
+      `deliveredInk` is null and this line does not run on one at all — and the
+      unique index over (candidate, variant, slot) says so again for any caller
+      that gets it wrong.
 
       # An unverified delivery needs no special case
 
@@ -7736,14 +7870,23 @@ async function refineCandidateCounted(
       own: this runs before the landing, and a throw here would refund a render
       nobody has seen because a bookkeeping step failed.
     */
-    if (appliedInk !== null) {
+    if (deliveredInk !== null) {
       try {
         const kept = await (dependencies.mintInkDeliveryCrop ?? mintInkDeliveryCrop)({
           userId: input.userId,
           candidatePublicId: input.candidatePublicId,
           variantPublicId: variant.publicId,
           frame: image.bytes,
-          design: { publicId: appliedInk.designId, slot: appliedInk.slot },
+          delivered: {
+            /* The name the chain wrote at claim time, honoured rather than
+               re-minted: a second `randomUUID` here would file a row under a
+               name nothing points at, and the carry would find nothing while
+               every log line said `minted`. */
+            cropPublicId: deliveredInk.cropId,
+            slot: deliveredInk.slot,
+            /* Absent on D-137's words road, where there is no design at all. */
+            ...(appliedInk === null ? {} : { designPublicId: appliedInk.designId }),
+          },
           operationId,
         });
         log.info(

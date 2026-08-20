@@ -1,6 +1,7 @@
 /**
  * KEEPING THE TATTOO AS IT LANDED — clause (a)'s spending half (design report
- * opus-886 §3, countersigned fable-1194 §2). The arithmetic it composes through
+ * opus-886 §3, countersigned fable-1194 §2; extended to the words road by
+ * migration 0050, ruled fable-1197 §1). The arithmetic it composes through
  * is `inkDeliveryCrop.ts`, which costs nothing and drives directly.
  *
  * This is the step that turns a delivered tattoo from the customer's ARTWORK
@@ -19,8 +20,16 @@
  *
  * The caller decides that by passing only the slots this render EDITED. The
  * database decides it again, and that is the one that holds: the unique index
- * over (candidateId, designId, slot) means a second mint writes nothing,
+ * over (candidateId, variantId, slot) means a second mint writes nothing,
  * whatever a caller believes.
+ *
+ * # IT RUNS FOR A TATTOO WITH NO DESIGN, AND THAT IS THE POINT OF 0050
+ *
+ * D-137's road paints ink from the customer's own sentence. There is no design
+ * row, so nothing could record the delivery and the tattoo vanished on her next
+ * unrelated edit. The crop needs no design — the picture of the ink on her neck
+ * IS the carrier — so `designPublicId` is optional here and NULL in the row,
+ * meaning *painted from words* and never *we lost track*.
  *
  * # WHAT IT COSTS, stated rather than discovered later
  *
@@ -61,7 +70,7 @@ export const INK_DELIVERY_KEY_PREFIX = "casting-v2/ink-delivery";
 export type InkDeliveryMintOutcome =
   /** The crop is a row's and the next carry will ride it. */
   | { outcome: "minted"; slot: string; maskPixels: number; keptPixels: number }
-  /** This design already has its delivery crop — MINTED ONCE, working. */
+  /** This frame already has its crop at this placement — MINTED ONCE, working. */
   | { outcome: "already"; slot: string }
   /** The frame said no: no ink found, the whole picture, or too small a piece. */
   | { outcome: "no-cut"; slot: string; reason: string; maskPixels: number }
@@ -84,8 +93,21 @@ export type InkDeliveryMintInput = {
   variantPublicId: string;
   /** The delivered frame's own bytes — the picture the customer is looking at. */
   frame: Buffer;
-  /** The design this render put on her, and where it went. */
-  design: { publicId: string; slot: string };
+  /**
+   * WHAT THIS RENDER PUT ON HER, and where it went.
+   *
+   * `cropPublicId` is the name the CHAIN ALREADY GAVE this crop, minted at
+   * claim time and handed down (ruled fable-1199 §1) — the delta is written
+   * before the render and nothing amends it afterwards, so the name has to
+   * travel forwards rather than back.
+   *
+   * `designPublicId` is ABSENT on D-137's words road, where the ink came out of
+   * the customer's own sentence and there is no design row anywhere. That
+   * delivery is as real as any other and carries identically; what it lacks is
+   * a design to be remembered by, which is precisely why the crop's own name is
+   * what the chain holds.
+   */
+  delivered: { cropPublicId: string; slot: string; designPublicId?: string };
   operationId?: string;
   dependencies?: InkDeliveryMintDependencies;
 };
@@ -111,12 +133,15 @@ function defaultReader(): Pick<RegionReader, "region"> {
 export async function mintInkDeliveryCrop(
   input: InkDeliveryMintInput,
 ): Promise<InkDeliveryMintOutcome> {
-  const slot = input.design.slot;
+  const slot = input.delivered.slot;
   const about = {
     userId: input.userId,
     candidate: input.candidatePublicId,
     variant: input.variantPublicId,
-    design: input.design.publicId,
+    crop: input.delivered.cropPublicId,
+    /* `null` and not omitted: absent-because-words and absent-because-a-field-
+       moved read identically in a log line, and only one of them is a fact. */
+    design: input.delivered.designPublicId ?? null,
     slot,
     operationId: input.operationId,
   };
@@ -204,7 +229,10 @@ export async function mintInkDeliveryCrop(
     const written = await record({
       userId: input.userId,
       candidatePublicId: input.candidatePublicId,
-      designPublicId: input.design.publicId,
+      publicId: input.delivered.cropPublicId,
+      ...(input.delivered.designPublicId === undefined
+        ? {}
+        : { designPublicId: input.delivered.designPublicId }),
       variantPublicId: input.variantPublicId,
       slot,
       region: INK_REGION,
@@ -227,7 +255,7 @@ export async function mintInkDeliveryCrop(
     if (written.outcome === "already") {
       /* MINTED ONCE, working. The bytes just written have no row and stay the
          cleanup worker's — the manifest is deliberately not discharged. */
-      log.info(about, "[inkDeliveryMint] this design already has its delivery crop — the first one stands");
+      log.info(about, "[inkDeliveryMint] this frame already has its delivery crop at this placement — the first one stands");
       return { outcome: "already", slot };
     }
 

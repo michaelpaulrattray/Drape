@@ -190,6 +190,54 @@ export type RefineDelta = {
    */
   inkApplied?: Readonly<Record<string, string>>;
   /**
+   * AND THE PICTURE OF HOW IT LANDED — slot -> the delivered crop's own
+   * `publicId` (migration 0050, ruled fable-1197 §1 as shape (c)).
+   *
+   * # Why `inkApplied` alone was not enough, and it is two failures not one
+   *
+   * **A words-only tattoo has no design.** D-137's road paints ink from the
+   * customer's own sentence, so `inkApplied` — which is `slot -> designId` and
+   * whose reader requires a UUID — can hold nothing for it. The delivery was
+   * never recorded, never carried, and vanished on the next unrelated edit
+   * (filed opus-888 §2, on the very lane fable-1180 §1 had just opened). This
+   * field can hold it because a crop needs no design row: the picture of the
+   * ink on her neck IS the carrier.
+   *
+   * **And the design lane was finding its crop by the wrong name.** The row
+   * used to be keyed on (candidate, design, slot) and the carry matched it that
+   * way; since 0050 the row is keyed on the DELIVERY, so a match on the design
+   * is a match on less than the thing is keyed by. Both lanes now look a crop
+   * up by the crop's own name.
+   *
+   * # It is written by CODE, and the id is minted BEFORE the crop exists
+   *
+   * `readDelta` — the strict reader guarding the boundary where a model's reply
+   * enters the record — does NOT read this field and must not, for
+   * `inkApplied`'s own reason one step sharper: a reply free to name a crop id
+   * would be a model choosing which picture of a customer's body rides the next
+   * render. It comes back out through `readStoredDelta`, which guards our own
+   * past.
+   *
+   * The name is allocated at CLAIM time and handed to the mint, because the
+   * delta is written at claim and no path amends it afterwards. So a render
+   * whose ink never arrived — the mint answering `no-cut` — leaves this field
+   * naming a row that does not exist. That is not a new hole: THE ID POINTS AND
+   * THE ROW DECIDES is what `inkApplied` was written under for a design the
+   * customer has since deleted, and the carry skips a missing row loudly.
+   *
+   * # It moves with `inkApplied` and with the WORDS, always
+   *
+   * Composed by the same rule and in the same loop, so the three halves of one
+   * fact — her words, which design, which picture — can never disagree about
+   * whether she still has a tattoo. A shared loop rather than a second copy of
+   * the rule: `derive-never-mirror`, at the one place where a drift would leave
+   * a paid removal not removing.
+   *
+   * Absent on every delta written before this existed, which reads as *nothing
+   * delivered* — true of all of them.
+   */
+  inkDelivered?: Readonly<Record<string, string>>;
+  /**
    * WHAT HAS LEFT HER — the one negative fact the recipe can hold (D-238).
    *
    * Every other field above is a positive assertion, and that omission is why no
@@ -1709,6 +1757,16 @@ function collapseWithinDelta(delta: RefineDelta): RefineDelta {
  * the record said pink. Superseding by facet makes a prompt with two answers to
  * one question unrepresentable rather than merely detectable.
  */
+/**
+ * THE POINTER HALVES OF THE INK FACT — the fields that must compose exactly as
+ * `free.ink` composes, and exactly as each other.
+ *
+ * A list rather than two hand-written blocks so that adding a third pointer is
+ * one line and cannot land with a subtly different restatement rule. Ordered
+ * only for readability; the loop is order-independent.
+ */
+const INK_POINTER_FIELDS = ["inkApplied", "inkDelivered"] as const;
+
 export function composeDeltas(deltas: readonly RefineDelta[]): RefineDelta {
   const composed: RefineDelta = {};
   for (const raw of deltas) {
@@ -1815,13 +1873,27 @@ export function composeDeltas(deltas: readonly RefineDelta[]): RefineDelta {
       step and the record stays honest — but the day a Cast wears two, THIS is
       the line to fix and `free.ink`'s restatement is the line to fix first.
     */
+    /*
+      BOTH POINTER FIELDS, IN ONE LOOP — never two copies of the rule.
+
+      `inkDelivered` (slot -> the delivered crop) obeys the paragraphs above
+      identically, and the reason it shares this loop rather than getting its
+      own is the reason the loop is worth reading twice: the three halves of one
+      fact are her WORDS (`free.ink`), WHICH DESIGN (`inkApplied`) and WHICH
+      PICTURE (`inkDelivered`), and the only thing that must never happen is
+      that they disagree about whether she still has a tattoo. Two copies of a
+      restatement rule drift, and the drift's cheapest shape is a paid removal
+      where the words go empty and a pointer stays — which is this product's
+      most expensive frame. `derive-never-mirror`, at the line that pays for it.
+    */
     const inkRestated = delta.free !== undefined && "ink" in delta.free;
-    if (inkRestated || delta.inkApplied) {
+    for (const field of INK_POINTER_FIELDS) {
+      if (!inkRestated && !delta[field]) continue;
       const next = inkRestated
-        ? { ...(delta.inkApplied ?? {}) }
-        : { ...(composed.inkApplied ?? {}), ...delta.inkApplied };
-      if (Object.keys(next).length === 0) delete composed.inkApplied;
-      else composed.inkApplied = next;
+        ? { ...(delta[field] ?? {}) }
+        : { ...(composed[field] ?? {}), ...delta[field] };
+      if (Object.keys(next).length === 0) delete composed[field];
+      else composed[field] = next;
     }
   }
   return composed;

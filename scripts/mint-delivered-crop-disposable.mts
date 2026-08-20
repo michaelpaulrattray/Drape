@@ -54,13 +54,31 @@ const [rows] = await connection.query<any[]>(
 );
 const row = rows[0];
 if (!row) throw new Error(`no variant ${wanted}`);
-const applied = (row.deltas as { inkApplied?: Record<string, string> } | null)?.inkApplied ?? {};
-const entries = Object.entries(applied);
-if (entries.length === 0) throw new Error("that variant applied no design — nothing to mint");
-const [slot, designPublicId] = entries[0]!;
+/*
+  BOTH POINTER FIELDS, since 0050 — `inkApplied` names the design (absent on
+  D-137's words road) and `inkDelivered` names the crop this render's chain
+  already promised. The crop's NAME comes from the chain and is never minted
+  here: a fresh uuid would file a row nothing points at, and the carry would
+  find nothing while this script printed `minted`.
+*/
+const chain = row.deltas as {
+  inkApplied?: Record<string, string>;
+  inkDelivered?: Record<string, string>;
+} | null;
+const applied = chain?.inkApplied ?? {};
+const delivered = chain?.inkDelivered ?? {};
+const slot = Object.keys(delivered)[0] ?? Object.keys(applied)[0];
+if (slot === undefined) throw new Error("that variant delivered no ink — nothing to mint");
+const designPublicId = applied[slot];
+const cropPublicId = delivered[slot];
+if (cropPublicId === undefined) {
+  throw new Error(
+    `that variant's chain names no crop for ${slot} — it was claimed before migration 0050, and re-minting one under a fresh name would file a row nothing points at`,
+  );
+}
 
 console.log(`variant ${row.variant} · candidate ${row.candidate} · user ${row.userId}`);
-console.log(`applied: ${slot} -> ${designPublicId}`);
+console.log(`delivered: ${slot} -> crop ${cropPublicId} · design ${designPublicId ?? "(painted from words)"}`);
 
 const url = `${base.replace(/\/$/, "")}/${row.imageKey}`;
 const frame = Buffer.from(await (await fetch(url)).arrayBuffer());
@@ -71,7 +89,11 @@ const outcome = await mintInkDeliveryCrop({
   candidatePublicId: row.candidate,
   variantPublicId: row.variant,
   frame,
-  design: { publicId: designPublicId, slot },
+  delivered: {
+    cropPublicId,
+    slot,
+    ...(designPublicId === undefined ? {} : { designPublicId }),
+  },
 });
 console.log("outcome:", outcome);
 

@@ -1,0 +1,93 @@
+-- THE DELIVERY IS THE KEY — re-keying `casting_ink_delivery_crops` off the
+-- DESIGN and onto the FRAME THAT DELIVERED IT (ruled fable-1197 §1, on the
+-- shape opus-890 §3 recommended as (c)).
+--
+-- ============================================================================
+-- WHAT WENT WRONG WITH THE FIRST KEY, and it is two things not one
+-- ============================================================================
+--
+-- 0049 keyed a delivered crop on (candidateId, designId, slot), and that column
+-- list encodes a claim: *one design lands on one placement once*. Both halves
+-- of the claim have now failed, for unrelated reasons.
+--
+-- 1. **A WORDS-ONLY TATTOO HAS NO DESIGN AT ALL.** D-137's face-and-neck road
+--    paints ink from the customer's own sentence with no design row anywhere —
+--    `491`, the cleanest frame the realism court produced, was one. Under the
+--    old key such a delivery cannot be recorded, so it cannot carry, so it
+--    vanishes on the next unrelated edit (filed opus-888 §2). The obvious
+--    repair — make `designId` nullable and leave the key alone — is WORSE than
+--    doing nothing, because **MySQL permits NULLs to repeat inside a unique
+--    index**: the minted-once rule would hold for the design lane and silently
+--    stop holding for the words lane. That is `casting_reference_library`'s own
+--    scar, quoted in its schema — *"a key that a master-minted row sits outside
+--    of is not a key at all"* — and a rule that holds for one lane and not its
+--    neighbour is the harder bug of the two, because the suite stays green.
+--
+-- 2. **TWO DELIVERIES OF ONE DESIGN ALREADY SHARE A ROW, IN DEV, TODAY.**
+--    Variants `486` and `492` both delivered the same design onto the same
+--    Cast. Under the old key the second mint hit the unique index and answered
+--    `already` — correctly, by that key's own rule — so ONE row stands for TWO
+--    deliveries, and its `variantId` column names `492` while `486`'s carry
+--    rides the same crop. Nothing is broken at the frames (same design, same
+--    placement, same person), and the column is not saying what it claims to
+--    say. A column that is true by coincidence is a column that will be false
+--    the first time the coincidence lapses.
+--
+-- ============================================================================
+-- THE NEW KEY IS WHAT THE ROW ALREADY IS
+-- ============================================================================
+--
+-- A row here has never meant *this design* — it has always meant **this frame
+-- delivered this ink onto this placement, and here is a cut of it**. The key
+-- now says that: (candidateId, variantId, slot).
+--
+-- It needs no sentinel, because a delivering frame ALWAYS exists — `variantId`
+-- was NOT NULL from birth and the migration header said why: *a library row may
+-- be minted from the master and a delivery cannot be*. So the one column the
+-- words lane cannot supply is the one column the key no longer contains.
+--
+-- MINTED ONCE survives the re-key with its meaning sharpened rather than lost.
+-- It was *once per design*; it is now **once per delivering frame**, which is
+-- the rule the mint's own condition already enforces — the mint runs on the
+-- render that DELIVERS and never on a carry (fable-1193 §3b's chained-anchor
+-- trap), so a second row for one frame's slot was never reachable by a correct
+-- caller and is now unreachable by any caller at all. Countersigned fable-1199
+-- §2.
+--
+-- ============================================================================
+-- `designId` BECOMES PROVENANCE, AND PROVENANCE IS NOT NOTHING
+-- ============================================================================
+--
+-- Nullable, and off the key. It still answers *which of her designs was this*,
+-- which is what makes the per-design delete keep working and what lets a reader
+-- tell a picture-carried tattoo from a words-carried one without opening the
+-- crop. What it stops being is the thing the row is FOUND by: the chain now
+-- names the crop's own `publicId`, so the carry looks a crop up by its own name
+-- rather than by a design that may not exist.
+--
+-- NULL therefore means one specific thing — **painted from her words, no design
+-- row** — and never *"we lost track"*. The writer only ever omits it on the
+-- words road.
+--
+-- ============================================================================
+-- THE STATEMENT ORDER IS DELIBERATE: NEW INDEX FIRST
+-- ============================================================================
+--
+-- Create the new unique index BEFORE dropping the old one, so that a table
+-- whose rows cannot satisfy the new rule FAILS WITH THE OLD RULE STILL IN
+-- PLACE. Dropping first would leave a window — and, on a failure, a table with
+-- no minted-once rule at all and a ceremony that reported an error, which is
+-- the worst of the three states to be left in.
+--
+-- Dev holds one row and takes it cleanly. Production has not taken 0049 yet:
+-- its ceremony is on the founder's desk, so production creates the table and
+-- then immediately re-keys it, and both commands land in one sitting.
+--
+-- PURELY ADDITIVE FOR EVERY READER. No column is removed, no column changes
+-- type, and the only widening is NOT NULL -> NULL, which no existing row and no
+-- existing reader can notice.
+CREATE UNIQUE INDEX `uq_casting_ink_delivery_crops_delivery` ON `casting_ink_delivery_crops` (`candidateId`,`variantId`,`slot`);
+--> statement-breakpoint
+DROP INDEX `uq_casting_ink_delivery_crops_design` ON `casting_ink_delivery_crops`;
+--> statement-breakpoint
+ALTER TABLE `casting_ink_delivery_crops` MODIFY COLUMN `designId` int NULL;

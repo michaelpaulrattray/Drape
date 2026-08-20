@@ -18,10 +18,10 @@
  */
 import { describe, expect, it } from "vitest";
 
-import { isDuplicateKey } from "./castingV2InkDeliveryCrops";
+import { isDuplicateKey, recordInkDeliveryCrop } from "./castingV2InkDeliveryCrops";
 
 /** What mysql2 actually throws, as the driver builds it. */
-const driverError = () => Object.assign(new Error("Duplicate entry '1-7-ink:neck' for key 'uq_casting_ink_delivery_crops_design'"), {
+const driverError = () => Object.assign(new Error("Duplicate entry '1-703-ink:neck' for key 'uq_casting_ink_delivery_crops_delivery'"), {
   code: "ER_DUP_ENTRY",
   errno: 1062,
   sqlState: "23000",
@@ -68,5 +68,69 @@ describe("the duplicate reader sees the index through drizzle's wrapper", () => 
     }))).toBe(false);
     expect(isDuplicateKey(null)).toBe(false);
     expect(isDuplicateKey("ER_DUP_ENTRY")).toBe(false);
+  });
+});
+
+/**
+ * THE NAME THE CHAIN GAVE THIS CROP, checked before anything is written
+ * (migration 0050, ruled fable-1199 §1).
+ *
+ * The writer no longer mints its own `publicId`: the chain wrote one at claim
+ * time, a hundred lines and one render earlier, and this row must be findable
+ * under it. A row filed under any other name is a crop nothing points at — the
+ * carry would find nothing while every log line said `minted`, which is the
+ * silent shape this whole build exists to end.
+ *
+ * Driven without a database on purpose: the guard runs before the transaction
+ * opens, so these arms exercise the real function rather than a double of it.
+ */
+describe("the writer honours the name the chain already wrote", () => {
+  const row = (over: Record<string, unknown> = {}) => ({
+    userId: 1,
+    candidatePublicId: "cast-1",
+    publicId: "b9c1f4de-77a0-4a52-8f31-2d6e0c5ab914",
+    variantPublicId: "variant-9",
+    slot: "ink:neck",
+    region: "tattooed skin",
+    storageKey: "casting-v2/ink-delivery/crop.png",
+    digest: "a".repeat(64),
+    mime: "image/png",
+    byteSize: 64,
+    width: 10,
+    height: 10,
+    bboxX: 0,
+    bboxY: 0,
+    bboxW: 10,
+    bboxH: 10,
+    frameWidth: 100,
+    frameHeight: 100,
+    maskPixels: 50,
+    keptPixels: 50,
+    ...over,
+  });
+
+  it("REFUSES a name that is not the shape this product mints", async () => {
+    for (const publicId of ["", "crop-1", "b9c1f4de", "  ", "not-a-uuid-at-all-really"]) {
+      await expect(recordInkDeliveryCrop(row({ publicId })), publicId)
+        .rejects.toThrow(/publicId/);
+    }
+  });
+
+  it("REFUSES a userId that is not a real account", async () => {
+    /* The guard beside it, kept armed: both run before the transaction, and an
+       arm for one is not an arm for the other. */
+    for (const userId of [0, -1, 1.5, Number.NaN]) {
+      await expect(recordInkDeliveryCrop(row({ userId })), String(userId))
+        .rejects.toThrow(/userId/);
+    }
+  });
+
+  it("NEGATIVE CONTROL: a well-formed name gets PAST the guard", async () => {
+    /*
+      The half that makes the refusals mean something. Without it, a guard that
+      rejected every input would pass every arm above — and this suite has no
+      database, so "past the guard" is exactly what a database error proves.
+    */
+    await expect(recordInkDeliveryCrop(row())).rejects.not.toThrow(/publicId|userId/);
   });
 });
