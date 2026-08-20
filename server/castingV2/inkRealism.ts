@@ -112,6 +112,12 @@ export const INK_SITS_ON_THE_FORM_LINES = Object.freeze([
  * `hairTakeSentence` fix one road along: the pronoun is the CAST's. Named here
  * rather than left for somebody to find, because a wart moved to a new house
  * quietly is a wart nobody owns.
+ *
+ * **The road it joins is `POST_SIGN_ROADMAP.md` §5e**, written 2026-08-21 —
+ * because until then it was not written anywhere, and this sentence pointed at
+ * a road that existed only in a mailbox message. The class is nineteen more
+ * literals across the refine surface, two of which are INSTRUCTIONS rather than
+ * captions (opus-913, ruled fable-1220).
  */
 export const INK_NOT_ON_CLOTHING =
   "It is ink on her skin — never printed, embroidered or otherwise placed on her clothing, and "

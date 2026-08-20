@@ -932,6 +932,95 @@ the family's members instead of letting the engine's prior pick one
 for all eight — latitude spent as spread. Slots with the V5-era
 interpreter work; not in the active queue by founder's word.
 
+## 5e. THE PRONOUN-FIX ROAD — the refine surface calls every Cast "her"
+## (class found opus-913, ruled fable-1220; the instance was named fable-1186 and
+## the road was written down nowhere until now)
+
+**This item exists because the road did not.** fable-1186 §1 said a hard-coded
+`her` *"joins the pronoun-fix road as stated"*; `inkRealism.ts` named its own
+instance honestly in a docblock. Neither reached a roadmap, so for five weeks the
+road was a phrase in a mailbox and the class was never swept. **A road named in a
+ruling is written into a roadmap or it does not exist** (fable-1220 §4) — the
+mailbox is the record, never the instruction.
+
+### The mechanism already exists and is good
+
+`server/castingV2/castPronouns.ts` derives `he`/`she`/`they` from the Cast's
+schema, falls back to `they` rather than guessing, and carries `plural` so no
+call site has to remember verb agreement. Its own docblock records the founding
+incident: *"The room called every Cast 'she'. Jericho is male, and the Siblings
+card told him to open the sheet **she** came from — a small thing that reads as
+the product not having looked at the person it is describing."* The recipe
+assembler threads it through everything it says. **The refine surface does not
+use it at all.**
+
+### The count, from a literals-only sweep (comments excluded)
+
+```
+CUSTOMER-FACING — she reads these
+  cannotSayCopy.ts     4   "…where to put on her yet"; "a part of her I can't
+                           work on yet"; the tattoo-placement sentence; "tap it
+                           on her picture"
+  refineReask.ts       7   "Her eyes already sweep up…"; "Her glasses are sitting
+                           over her eyes…"; "Which one — her left or her right?";
+                           the chips "Her left" / "Her right" / "No, keep the one
+                           she has"
+  refineRefusals.ts    2   "She already has …"; "that's already off her"
+
+ENGINE-FACING — the painter reads these
+  vacancyPhrases.ts    5   and they are SELF-INCONSISTENT: the beard phrase says
+                           "HIS jaw, chin and upper lip", the freckle phrase says
+                           "HER skin clear and even". `vacantPhraseFor(kind,
+                           instance)` takes no pronouns and cannot.
+
+INTERNAL — `detail:` on refusal objects, nobody reads them but us
+  repaintAsks.ts       5   harmless, left alone
+```
+
+### ⚠ THE PRIORITY INSIDE THE FIX IS THE TWO INSTRUCTION STRINGS
+
+`refineReask`'s options carry a `resolves` string that becomes **the customer's
+next instruction**, and two of them name a pronoun: `"remove her glasses"` and
+`LEAVE_AS_SHE_IS = "leave her as she is"`. Those are not captions — they are sent
+to the engine as her own words about a man. On a road where a positional clause
+measurably changed which eye got painted (`V4_SIDE_INFERENCE_COURT` §3b), a
+wrong-gender pronoun inside the instruction is a measurement question rather than
+a politeness one.
+
+### Shape: plumbing, not invention — and its one courted edge
+
+The reask builders and the refusal registry take the Cast's pronouns the way the
+recipe assembler already does, and `vacantPhraseFor` grows the parameter it
+should always have had.
+
+**The vacancy phrases MAY change in the same commit, as a CORRECTION rather than
+a prompt edit** (ruled fable-1220 §3), on three grounds that must travel with the
+change so it never becomes a precedent for tidying courted prose:
+
+1. the current state is **self-inconsistent** — *"his jaw"* and *"her skin"* about
+   one person is not a courted baseline, it is two guesses disagreeing;
+2. parameterising makes the phrase **agree** with the pronouns the recipe already
+   threads — the outlier joins an already-courted whole rather than departing
+   from one;
+3. the change is **pinned in the suite with this rationale**, and the commit's
+   report names the pronoun change as **the first suspect** if any vacate-class
+   delivery regression shows up at a later court — the suspicion filed in
+   advance, which is what an uncourted prompt edit owes.
+
+### Slot, and what it is not
+
+**Post-rite, its own commit.** It touches live customer-facing copy on
+`CASTING_V2_SCOPE=all` lanes, so it may not land between the founder's tattoo
+verdict and the rite (fable-1207 §1). **It is not a founder card** — he would be
+right to ask why the product calls his male Cast *"her"*, and the answer he
+should meet is *we found it and fixed it*, not a question.
+
+A mechanical guard over the class is a third option and is NOT taken here: a
+literals sweep that fails the suite on any gendered pronoun in prose would need
+its own court (the corpus is full of legitimate uses — the customer is "she" in
+every docblock in this house). The one-off sweep that produced the count above is
+`output/_pronounsweep.mts`, untracked; promote it only with that court.
+
 ## 5c. AUTO-DISCOVERY SCAN — founder demand, quality-gated (filed 2026-08-17, fable-880)
 
 His words: *"well id like for it to automatically pick features up on its
