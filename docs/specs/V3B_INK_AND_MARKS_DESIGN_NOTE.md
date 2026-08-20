@@ -1346,8 +1346,11 @@ casting_reference_crops (0040)         features that travel as crops into a
                                        RENDER — a different road; a tattoo's
                                        crop goes to a PLATE *when the mannequin
                                        resumes*, and into renders as reference
-                                       plus words TODAY (fable-1078, clause
-                                       ruled fable-1133 §3)
+                                       plus words TODAY (fable-1078's own
+                                       sentence; clause ruled fable-1133 §3,
+                                       withdrawn and RESTORED fable-1135 §4b —
+                                       the subsection at the end of this section
+                                       is why, and it is worth reading)
 ```
 
 #### AND THIS IS THE TRIPWIRE'S RETIREMENT MECHANISM (fable-1130 §4)
@@ -1539,7 +1542,112 @@ reason the storage exists rather than a follow-up to it. The shown cut
 no address, and the surface that puts it in front of her lands there — which is
 also why the flag should not be flipped for anyone until both halves are in.
 
-And the division table above has taken its clarifying clause **in this commit**
-rather than "when next touched" (fable-1133 §3): to a plate when the mannequin
-resumes; into renders as reference plus words today, per 1078. A deferral with
-no owner is a drop, and this file has lost two rulings that way already.
+And the division table above carries its clarifying clause (fable-1133 §3). It
+was withdrawn for part of a day on a partial reading and restored at fable-1135
+§4b; the subsection below is the whole record, kept because a document that shows
+its scars teaches.
+
+#### ✅ RESOLVED — A CUT MAY REACH A RENDER WITHOUT BECOMING A PLATE FIRST.
+#### (asked opus-842, answered fable-1135; the whole exchange kept on purpose)
+
+**The answer is yes, and the founder had already said so** — in a sentence
+sitting inside the docblock of the very flag that gates this road. What follows
+is the wrong reading first, because the way it went wrong is more useful than
+the conclusion.
+
+**THE HOLD, as it was argued.** 3a.2(b) was ordered as *"the cut riding as a
+carried reference into repaint and the sign views' words"*, and it was held on
+two founder-level statements that appeared to say the opposite:
+
+1. **§7.11's own mapping of his words**, written when he gave the carrier law:
+
+   > `tattoo` — EXTENDED — the row said the uploaded photograph never reaches a
+   > render, **which stands**. What is new: an upload may now BE a photograph
+   > containing a tattoo, and the design is CROPPED out of it **before it
+   > reaches the plate.**
+
+   His ruling named the design's SOURCE. The chain it feeds — cut → plate →
+   render — was preserved in the same breath.
+
+2. **`inkViewReferences.ts`'s docblock**, which is D-138 stated where it is
+   enforced: *"THE PLATE IS THE ONLY INK ARTIFACT AN ENGINE IS EVER SHOWN …
+   that is the real-person fence met by construction rather than by a filter,
+   and it is why this module takes plates and has no way to name an upload."*
+
+**AND THE COURT WAS PARTIAL — two sentences of six.** The repository holds four
+more, all newer, all founder-verbatim-backed, and all about THIS road:
+
+3. **`CASTING_INK_REFERENCE_SCOPE`'s own docblock** (`castingV2Scope.ts:1459`),
+   quoting him verbatim and deployed weeks ago:
+
+   > *"no any tattoo request from a reference image must be respected regardless
+   > if u can see it or not, if the sleeve cuts off and you cant see the full
+   > finished product in the image refinement **it should carry into the
+   > sign/angles as it will still have the reference + description**"*
+
+   That is the founder naming the DESTINATION, in his own words: reference plus
+   description, into the sign and angle views. It settles the question on its
+   own, and it was sitting in the docblock of the flag that gates this exact
+   road.
+
+4. **D-139(3)**, founder-adopted 2026-08-04 (`DECISION_LOG.md:3942`): *"Sign,
+   package and doll-view generation take region documents as conditioning
+   references — a named spec requirement with its own test."* Engines are shown
+   ink documents by founder design, and fable-1130's ruling makes the cut BE the
+   document.
+
+5. **`CASTING_INK_STUDIO_SCOPE`'s paragraph in `CLAUDE.md`**, the constitution:
+   *"a design reaches a photograph as a cropped reference carried by the repaint
+   recipe, and the paste road carries none."*
+
+6. **§7.11 ruling 2 itself** — he named the face-bearing photograph as the
+   crop's motivating case (*"e.g its a full person with thir face in it"*). A
+   design is only ever *used* one way in this product: shown to the engine that
+   paints it.
+
+#### How the two sentences that stopped it are reconciled rather than dismissed
+
+**`inkViewReferences.ts` is a PLATE-ROAD MODULE describing its own
+construction.** It takes plates because it is the mannequin road's module, and a
+fence met by construction inside one module legislates for that module. That is
+the general lesson and it is worth more than this case: **a module's
+construction prose is a fact about the module, never the product's law.**
+
+**§7.11's `which stands` row governs the PHOTOGRAPH, and it names its object** —
+*"the uploaded photograph never reaches a render"* — which **remains true on the
+new road**. The photograph never rides. The cut is a different object, and the
+difference is not asserted, it is COUNTED: the licence law (`pixels > 0`), the
+routing table, the five refusals. D-172 containment is satisfied the same way —
+no face rides toward the engine, because the cut has no person in it and refuses
+when it cannot prove that. **Prose that names its object survives new roads;
+prose that names a module's habit does not.**
+
+#### What the hold got right, kept because it was not all wrong
+
+The product argument that motivated the order is real and belongs on the page:
+with the mannequin road deferred, a customer who uploads a tattoo would otherwise
+get a stored design and no picture of themselves wearing it, ever — while a
+tattoo merely DESCRIBED in words rides end to end into the signing and angle
+views (§7.11 ruling 1). The hole was specific to a design that came from a
+picture, and closing it is what 3a.2(b) does.
+
+#### ⚠ AND WHAT STAYS CLOSED, so this resolution moves nothing it should not
+
+- **The raw photograph to any engine.** The widening tripwire is untouched and
+  still `users:1`.
+- **The MINT's input swap**, which is the resumption sitting's (fable-1133 §1).
+- **fable-919 §3's FRAMES GATE, which SURVIVES this resolution and is the
+  founder's involvement here.** Before `CASTING_INK_CUT_SCOPE` or the reference
+  arm opens for anyone — him included — the first frames from a face-bearing
+  source go in front of his eyes with the cut beside them, and zero person
+  content is confirmed by HIM at the frames. Eyes are king. That is evidence at
+  flip time, not a pre-build authorization.
+
+#### The catalogue gap is engineering shape, not a second question
+
+The repaint catalogue has no tattoo slot: `referenceSlotCatalogue.ts` folds marks
+into `skin` and says a mark editable as its own row *"needs an instance id from a
+detector, which is the tattoo studio's machinery (roadmap §3) — named as owed
+rather than approximated here."* `SourcePicture` likewise has one member,
+`hairOnRedactedForm`. Both are shape INSIDE the countersigned design
+(fable-1135 §4c) and are proposed and countersigned in the build's own report.
