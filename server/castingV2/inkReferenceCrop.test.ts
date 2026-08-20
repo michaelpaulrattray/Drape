@@ -23,6 +23,7 @@ import {
   extentOf,
   intersectMasks,
   maskOfHalf,
+  paddedLicenceCanvas,
   routeInkUpload,
   scopeInkMask,
 } from "./inkReferenceCrop";
@@ -446,5 +447,41 @@ describe("one owner of the flip, and it inverts", () => {
        own subject. */
     expect(imageHalfClause("left")).toBe(" (on the right of the picture as you look at it)");
     expect(imageHalfClause("right")).toBe(" (on the left of the picture as you look at it)");
+  });
+});
+
+describe("the padded licence canvas — the arithmetic under the pad fix", () => {
+  /*
+    The MEASUREMENT lives on `LICENCE_PAD_FACTOR`'s docblock; these are the two
+    things arithmetic can be wrong about, and both would arrive silently.
+  */
+  it("doubles each edge and centres her picture in it", () => {
+    expect(paddedLicenceCanvas({ width: 400, height: 300 })).toEqual({
+      width: 800, height: 600, left: 200, top: 150,
+    });
+    /* Not square, and the two edges are not interchangeable — a transposed
+       canvas would pass a square-only fixture. */
+    expect(paddedLicenceCanvas({ width: 909, height: 1333 })).toEqual({
+      width: 1818, height: 2666, left: 455, top: 667,
+    });
+  });
+
+  it("is INTEGER everywhere, on an odd picture as well as an even one", () => {
+    for (const size of [{ width: 1, height: 1 }, { width: 737, height: 981 }, { width: 3, height: 5 }]) {
+      const canvas = paddedLicenceCanvas(size);
+      for (const value of [canvas.width, canvas.height, canvas.left, canvas.top]) {
+        expect(Number.isInteger(value)).toBe(true);
+      }
+      /* And her picture actually FITS with the offsets given — a canvas she
+         hangs off the edge of is a licence read of a cropped person. */
+      expect(canvas.left + size.width).toBeLessThanOrEqual(canvas.width);
+      expect(canvas.top + size.height).toBeLessThanOrEqual(canvas.height);
+    }
+  });
+
+  it("refuses a size that is not a real picture rather than inventing one", () => {
+    for (const bad of [{ width: 0, height: 10 }, { width: 10, height: -1 }, { width: 1.5, height: 10 }]) {
+      expect(() => paddedLicenceCanvas(bad)).toThrow(/real size/);
+    }
   });
 });

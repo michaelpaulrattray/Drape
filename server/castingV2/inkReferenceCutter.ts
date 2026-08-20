@@ -27,9 +27,13 @@
  * # THE ORDER, and every step of it was decided somewhere else
  *
  *   1. DECODE — her picture as RGBA at its own resolution. The cut needs pixels.
- *   2. THE TWO QUESTIONS, both with `absentIsAnswer`, of the whole frame.
- *   3. SPACE — a mask that is not in her picture's space is refused, never
- *      resampled (`maskedRefine`'s house rule).
+ *   2. THE TWO QUESTIONS, both with `absentIsAnswer`. The INK is asked of her
+ *      own frame; the LICENCE is asked of a PADDED COPY of it, because the word
+ *      reads zero on photographs of tattooed people and answers on the same
+ *      pixels once they are not against the frame edge (the measurement court,
+ *      2026-08-20, ruled fable-1183 §1 — `LICENCE_PAD_FACTOR` carries it).
+ *   3. SPACE — a mask that is not in the space it was ASKED OF is refused, never
+ *      resampled (`maskedRefine`'s house rule). Two spaces now, one per question.
  *   4. EXTENT — count and box in one pass, per mask.
  *   5. ROUTE — `routeInkUpload`, on COUNTS. Fail-closed; the licence to send a
  *      frame whole comes from a positive *nobody is in it*, never from
@@ -39,10 +43,11 @@
  *
  * # WHAT IT COSTS, stated rather than discovered later
  *
- * **Two segmenter calls per uploaded design** — one `tattooed skin`, one
- * `human skin` — asked together. House money, and the second one is not
- * optional: it IS the licence, and without it a photograph of a person whose
- * ink the reader missed rides whole to an engine.
+ * **Two segmenter calls per uploaded design** — one `tattooed skin` of her
+ * picture, one `human skin` of a padded copy of it — asked together. The pad
+ * costs a bigger upload on that one call and not a third call. House money, and
+ * the second one is not optional: it IS the licence, and without it a photograph
+ * of a person whose ink the reader missed rides whole to an engine.
  *
  * # NOTHING IS STORED HERE, AND THAT IS WHY THERE IS NO MINT IN THIS FILE
  *
@@ -77,6 +82,7 @@ import {
   cropClearsMinimumEdge,
   cutOutPixels,
   extentOf,
+  paddedLicenceCanvas,
   routeInkUpload,
   scopeInkMask,
 } from "./inkReferenceCrop";
@@ -310,9 +316,44 @@ export async function cutInkDesign(input: CutInkDesignInput): Promise<CutInkDesi
     `allSettled` rather than `all`, so a second rejection cannot escape as an
     unhandled one while the first is being reported.
   */
+  /*
+    THE LICENCE IS ASKED OF A PADDED COPY, AND THE INK OF HER OWN PIXELS.
+
+    The measurement and the reason live on `LICENCE_PAD_FACTOR` in the pure half,
+    where the court that bought them can be found. What matters at this call
+    site is the asymmetry, and it is deliberate: `person` is a COUNT and `ink` is
+    GEOMETRY, so only one of them may be asked of a picture that is not hers.
+
+    A padding failure REFUSES rather than falling back to her own bytes. The
+    fallback is the tempting line and it is the wrong one — it would ask the
+    question the court proved is blind, get a confident zero, and ride her
+    photograph whole on the strength of it. Fail-closed, and she pays nothing.
+  */
+  const canvas = paddedLicenceCanvas({ width: decoded.width, height: decoded.height });
+  let paddedBytes: Buffer;
+  try {
+    paddedBytes = await sharp({
+      create: {
+        width: canvas.width,
+        height: canvas.height,
+        channels: 3,
+        background: { r: 245, g: 245, b: 245 },
+      },
+    })
+      .composite([{ input: input.bytes, left: canvas.left, top: canvas.top }])
+      .png()
+      .toBuffer();
+  } catch (error) {
+    log.warn(
+      { ...input.about, err: error instanceof Error ? error.message : String(error) },
+      "[inkReferenceCutter] her picture would not pad — refusing rather than asking the licence blind",
+    );
+    return refuse("couldNotRead");
+  }
+
   const [ink, person] = await Promise.allSettled([
     input.reader.region({ image: input.bytes, name: INK_REGION, absentIsAnswer: true }),
-    input.reader.region({ image: input.bytes, name: PERSON_REGION, absentIsAnswer: true }),
+    input.reader.region({ image: paddedBytes, name: PERSON_REGION, absentIsAnswer: true }),
   ]);
   if (ink.status === "rejected" || person.status === "rejected") {
     const failed = ink.status === "rejected" ? ink.reason : (person as PromiseRejectedResult).reason;
@@ -335,17 +376,28 @@ export async function cutInkDesign(input: CutInkDesignInput): Promise<CutInkDesi
     per pixel does not fail — it silently reads a third of a picture and reports
     success, which is the scar `extentOf`'s own door was written for.
   */
-  for (const [what, mask] of [[INK_REGION, ink.value], [PERSON_REGION, person.value]] as const) {
-    if (!inHerSpace(mask, decoded.width, decoded.height)) {
+  for (const [what, mask, space] of [
+    [INK_REGION, ink.value, decoded],
+    /* The licence was asked of the padded canvas, so ITS space is the padded
+       one. Checking it against her own size would refuse every upload — and
+       checking nothing would be worse, because the count would then be taken
+       from a buffer whose length nobody proved. */
+    [PERSON_REGION, person.value, canvas],
+  ] as const) {
+    if (!inHerSpace(mask, space.width, space.height)) {
       log.warn(
         {
           ...input.about,
           what,
           mask: `${mask.width}x${mask.height}`,
+          /* The space this mask was supposed to come back in — hers for the ink,
+             the padded canvas for the licence. Printing her size for both is how
+             a correct refusal reads as the wrong bug at 3am. */
+          expected: `${space.width}x${space.height}`,
           picture: `${decoded.width}x${decoded.height}`,
           bytes: mask.data.length,
         },
-        "[inkReferenceCutter] a mask is not in her picture's space — refusing rather than resampling",
+        "[inkReferenceCutter] a mask is not in the space it was asked of — refusing rather than resampling",
       );
       return refuse("wrongSpace");
     }

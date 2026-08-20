@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "3707b4a8b8ad16a6"
+    "sourceFingerprint": "42f2e633cac00cea"
   },
   "domains": [
     {
@@ -29660,10 +29660,10 @@
       "message": "Names 2 of InkUploadRefusal's 2 fields (server/castingV2/inkUploadDoor.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/inkReferenceCutter.ts:107",
+      "id": "finding:redeclared-shape:server/castingV2/inkReferenceCutter.ts:113",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/inkReferenceCutter.ts:107",
+      "subject": "server/castingV2/inkReferenceCutter.ts:113",
       "message": "Names 2 of InkUploadRefusal's 2 fields (server/castingV2/inkUploadDoor.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {

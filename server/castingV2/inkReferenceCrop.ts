@@ -67,6 +67,83 @@ export const INK_REGION = "tattooed skin";
 export const PERSON_REGION = "human skin";
 
 /**
+ * ⚠ AND THE LICENCE QUESTION IS ASKED OF A PADDED COPY OF HER PICTURE — the
+ * measurement court, 2026-08-20, ruled fable-1183 §1
+ * (`scripts/court-ink-licence-words-disposable.mts`,
+ * `output/_court-words-round{1,2,3}.log`).
+ *
+ * # WHAT WAS MEASURED — the consequence, which is the part that rules
+ *
+ * `human skin` read **ZERO** on two real photographs of two real heavily
+ * tattooed men, three reads each. Centred unchanged on a canvas twice the edge,
+ * the SAME PIXELS answered:
+ *
+ * ```
+ *                              as uploaded        padded x2
+ *   patchwork man                  0 px          464,859 px      2/2
+ *   torso/neck                     0 px          765,210 px      2/2
+ *   the first man's top quarter    0 px           91,713 px      2/2
+ *
+ *   the flash sheet (drawn)        0 px                0 px      2/2   ← negatives HOLD
+ *   the trex design (drawn)        0 px                0 px      2/2
+ *   the un-inked model       170,103 px          173,333 px      2/2   ← still answers
+ * ```
+ *
+ * So the pad rescued three photographs of three subjects and broke neither
+ * drawing. **The finding this encodes is not "the word is blind on inked skin".
+ * It is that the word's SILENCE CARRIES NO INFORMATION about whether a person is
+ * in the picture** — an answer that flips when you pad a canvas is not a fence,
+ * and the fence is what `routeInkUpload`'s last row rests on.
+ *
+ * # WHY IT WORKS IS NOT KNOWN, AND THIS DOCBLOCK DOES NOT GUESS
+ *
+ * Three hypotheses went into that court and all three came out dead: it is not a
+ * face anchor (`face` answers 16,286 px on the very frame the licence misses),
+ * not inked-over skin and not a skin-dominant field (the pad holds the picture's
+ * content fixed and flips the answer anyway). A fourth would be a story, and a
+ * story in this position is how a measured mitigation becomes a remembered one.
+ * **If this ever stops working, the court above is the thing to re-run** — its
+ * specimens, its arms and its negatives are all still on disk.
+ *
+ * # WHY IT IS SAFE, WHICH IS STRUCTURAL RATHER THAN CAREFUL
+ *
+ * **The licence answer is only ever a COUNT.** `routeInkUpload` takes
+ * `personPixels`; no geometry is taken from that mask, nothing is cut from it,
+ * and it never reaches a compositor. So a mask living in a padded space cannot
+ * put a correct-looking mask in the wrong place — the wrong-frame class this
+ * codebase keeps paying for is unreachable from here. **The INK mask, which IS
+ * geometry, is never asked of anything but her own pixels.**
+ */
+export const LICENCE_PAD_FACTOR = 2;
+
+/**
+ * THE PADDED CANVAS, AS ARITHMETIC — so the shape of the licence read can be
+ * driven for nothing, and so the space check downstream has one place to agree
+ * with.
+ *
+ * Integer throughout: a half-pixel offset would put her picture on a boundary
+ * sharp has to round, and the mask that comes back would be one row out of the
+ * space this says it is in.
+ */
+export function paddedLicenceCanvas(input: { width: number; height: number }): {
+  width: number;
+  height: number;
+  left: number;
+  top: number;
+} {
+  const { width, height } = input;
+  if (!Number.isInteger(width) || !Number.isInteger(height) || width <= 0 || height <= 0) {
+    throw new Error(`a picture to pad needs a real size, got ${width}x${height}`);
+  }
+  const padded = { width: width * LICENCE_PAD_FACTOR, height: height * LICENCE_PAD_FACTOR };
+  return {
+    ...padded,
+    left: Math.round((padded.width - width) / 2),
+    top: Math.round((padded.height - height) / 2),
+  };
+}
+
+/**
  * THE THIRD QUESTION'S WORD — where in HER PICTURE to look, and the one place
  * a lateral word is stopped from reaching a segmenter (fable-1172 §2d).
  *

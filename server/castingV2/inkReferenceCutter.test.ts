@@ -160,8 +160,21 @@ describe("population (ii) — a design ON A BODY, which is his own hard case", (
     /* THE STATED COST, counted rather than asserted in prose. */
     expect(script.asked.map((one) => one.name).sort()).toEqual([INK_REGION, PERSON_REGION].sort());
     expect(script.asked).toHaveLength(2);
-    /* Both of the whole frame — this road has no panels. */
-    expect(script.asked.every((one) => one.width === 400 && one.height === 400)).toBe(true);
+    /*
+      EACH OF THE PICTURE ITS OWN QUESTION IS ASKED OF — asserted at the wire,
+      because "the licence is asked of a padded copy" is a claim about an
+      outgoing call and nothing near it (ruled fable-1183 §1).
+
+      The INK is asked of her frame, at her size, because its answer is GEOMETRY
+      and a mask from any other space would be the wrong-frame class. The LICENCE
+      is asked of a canvas twice her edges, because on her own frame the word
+      reads ZERO on photographs of tattooed people — measured, three subjects,
+      `LICENCE_PAD_FACTOR`.
+    */
+    const inkAsk = script.asked.find((one) => one.name === INK_REGION);
+    const licenceAsk = script.asked.find((one) => one.name === PERSON_REGION);
+    expect(inkAsk).toMatchObject({ width: 400, height: 400 });
+    expect(licenceAsk).toMatchObject({ width: 800, height: 800 });
     /*
       AND BOTH WITH `absentIsAnswer`. This is the structural half of keeping a
       reading apart from a failure: without it an empty mask arrives as a thrown
@@ -304,6 +317,71 @@ describe("population (iv) — the ghost mannequin, and the row that never soften
     expect(result.ok).toBe(false);
     if (result.ok) return;
     expect(result.refusal.code).toBe("personWithoutDesign");
+  });
+
+  it("⚠ THE PADDED LICENCE, driven on a reader that MODELS the court's own finding", async () => {
+    /*
+      THE ARM THE FIX EXISTS FOR, and the reason it is shaped like this.
+
+      `fake-reader-must-model-the-measurement`: a double that simply answers
+      "person present" discriminates nothing — it would pass with the padding
+      removed, which is precisely the regression this must catch. So this reader
+      reproduces what the REAL one did, on the property that actually separated
+      the readings: **the size of the picture it is handed.**
+
+      Measured (the measurement court, 2026-08-20): `human skin` on the two
+      founder photographs read 0 px as uploaded, 3/3, and 464,859 / 765,210 px
+      on the same pixels padded, 2/2. This double says exactly that and nothing
+      else — zero on her own frame, a person on the padded one.
+
+      With the pad, the fence holds: no isolable design plus a photographed
+      person is `personWithoutDesign`, free. **Take the padding out and this
+      same test goes green-to-red the right way** — the licence reads zero, the
+      route becomes `rideWhole`, and her photograph is what would ride to an
+      engine.
+    */
+    const picture = await coordinatePicture(FRAME.width, FRAME.height);
+    const blind = reader(({ name, width, height }) => {
+      if (name === INK_REGION) return empty(width, height);
+      if (name !== PERSON_REGION) throw new Error(`nothing scripted an answer for "${name}"`);
+      const padded = width === FRAME.width * 2 && height === FRAME.height * 2;
+      return padded
+        ? rectangle(width, height, { x: 0, y: 0, w: width, h: height })
+        : empty(width, height);
+    });
+
+    const result = await cutInkDesign({ bytes: picture, reader: blind });
+
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.refusal.code).toBe("personWithoutDesign");
+
+    /* And the licence really was the question asked of the bigger picture. */
+    expect(blind.asked.find((one) => one.name === PERSON_REGION)).toMatchObject({
+      width: FRAME.width * 2,
+      height: FRAME.height * 2,
+    });
+  });
+
+  it("THE SAME READER, WITH A DRAWING'S ANSWER, still rides whole — the pad walls no sheet", async () => {
+    /*
+      The negative control of the arm above, and it is not optional
+      (`misaimed-guard-fails-both-ways`): a licence made more sensitive is a
+      licence that can start refusing the most ordinary upload a tattoo customer
+      makes. Measured on the real reader, padding a flash sheet and a drawn
+      design left both at ZERO — this is that finding as a double: nobody in the
+      picture at any size, so the frame rides whole exactly as it did before.
+    */
+    const picture = await coordinatePicture(FRAME.width, FRAME.height);
+    const drawing = reader(({ width, height }) => empty(width, height));
+
+    const result = await cutInkDesign({ bytes: picture, reader: drawing });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.cut.route).toBe("rideWhole");
+    expect(result.cut.personPixels).toBe(0);
+    expect(result.cut.bytes).toEqual(picture);
   });
 
   it("and ONE PIXEL of skin is enough — the separation is against a structural zero", async () => {

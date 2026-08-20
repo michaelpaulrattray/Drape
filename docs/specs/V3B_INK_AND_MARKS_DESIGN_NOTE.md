@@ -1243,6 +1243,56 @@ the MEDIUM directly — read **zero on all four frames, including both real
 photographs.** The discriminator cannot be bought by asking what KIND of picture
 it is; only by asking **what is in it**.
 
+#### ⚠ AND THE LICENCE IS ASKED OF A PADDED COPY OF HER PICTURE
+#### (the measurement court, 2026-08-20, ruled fable-1183 §1)
+
+Everything above about the WORD stands. What did not stand is the assumption
+underneath it — that asking the word of her own frame is asking it at all.
+
+`human skin` read **ZERO on two real photographs of two real heavily tattooed
+men**, three reads each. Centred unchanged on a canvas twice the edge, the SAME
+PIXELS answered:
+
+```
+                             as uploaded        padded x2
+  patchwork man                  0 px          464,859 px      2/2
+  torso/neck                     0 px          765,210 px      2/2
+  the first man's top quarter    0 px           91,713 px      2/2
+
+  the flash sheet (drawn)        0 px                0 px      2/2   ← negatives HOLD
+  the trex design (drawn)        0 px                0 px      2/2
+  the un-inked model       170,103 px          173,333 px      2/2   ← still answers
+```
+
+Three photographs of three subjects rescued; neither drawing broken. So the
+finding is **not** *"the word is blind on inked skin"* — it is that **the word's
+SILENCE CARRIES NO INFORMATION about whether a person is in the picture.** An
+answer that flips when you pad a canvas is not a fence, and the last row of the
+routing table is the fence.
+
+**Why padding works is not known, and this note does not guess.** Three
+hypotheses went into that court and all three came out dead: not a face anchor
+(`face` answers 16,286 px on the very frame the licence misses), not inked-over
+skin, and not a skin-dominant field — the pad holds the picture's content fixed
+and flips the answer anyway. A fourth would be a story, and a story here is how a
+measured mitigation becomes a remembered one. **If it ever stops working, re-run
+the court rather than reasoning about it**: `scripts/court-ink-licence-words-disposable.mts`,
+its specimens and its negatives are all on disk.
+
+**Why it is safe is structural rather than careful.** The licence answer is only
+ever a COUNT — `routeInkUpload` takes `personPixels`, nothing is cut from that
+mask and it never reaches a compositor — so a mask living in a padded space
+cannot put a correct-looking mask in the wrong place. **The INK mask, which IS
+geometry, is never asked of anything but her own pixels.** A padding failure
+REFUSES rather than falling back to her own bytes, because the fallback would ask
+the blind question, get a confident zero, and ride her photograph on it.
+
+It is carried by `LICENCE_PAD_FACTOR` (`inkReferenceCrop.ts`), armed in the unit
+suite by a double that models the finding rather than the outcome — remove the
+pad and the fence becomes `rideWhole` and goes red — and re-provable against the
+real segmenter with `scripts/arm-padded-licence-disposable.mts`, which drives the
+SHIPPED path over the court's own five specimens.
+
 #### THE FOUR POPULATIONS, and the one the first design missed
 
 ```
