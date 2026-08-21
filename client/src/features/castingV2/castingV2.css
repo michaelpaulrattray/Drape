@@ -4103,14 +4103,29 @@
   they are the whole separation — the translucent fill degrades to a tint, which
   is why the fill is a tint of `--onScrim` rather than a flat alpha of nothing.
 
-  THE SCRIM GROUP, not the surface group, and the token file says why in one
-  line: *"SCRIM (over media; identical in both themes)"*. This popover is
-  anchored on the PHOTOGRAPH inside the candidate viewer — the one place in the
-  product whose background is a person's face rather than a page — so it is the
-  same family as every other chip that floats over media. That is also what
-  makes the theme question go away rather than be answered twice: `--scrimChip`
-  and `--onScrim` are the same values in both themes, so there is no light-mode
-  variant of this panel to get wrong.
+  THE GLASS GROUP — the theme's own frosted bar, which is what he was pointing
+  at when he said *"like the normal prompt box"*.
+
+  ⚠ **THE FIRST VERSION OF THIS USED THE SCRIM GROUP AND HE CAUGHT IT AT THE
+  FRAME**: *"shouldnt the text box be white frosted to match the prompt box?
+  dark mode looks correct already."* The scrim family is identical in both
+  themes, so the panel came out dark-frosted in LIGHT mode, floating over a
+  light viewer beside a light prompt bar. The reasoning behind it was not
+  stupid and it was wrong: this popover is anchored on a photograph, but it is
+  READ against the surface beside it, and that surface follows the theme.
+
+  ⚠ And the frame that would have caught it was already in my hand. I drove
+  both themes, looked at the light one, and passed it — his eye found in one
+  glance what mine had photographed and excused. That is law 9 exactly: a
+  reading is a pointer to look, and looking is not the same as seeing.
+
+  MEASURED at the running app rather than guessed a second time — the prompt bar
+  it must match computes `rgba(255,255,255,0.08)` over the viewer scrim with the
+  shared `dp-btn--secondary` beside it, and both follow the theme. `--dockGlass`
+  is the token file's own frosted bar for exactly this: `rgba(255,255,255,.92)`
+  in light, `rgba(28,28,31,.92)` in dark. So the surface follows the theme and
+  the blur is what makes it glass; the hairline and the shadow stay, because
+  they are the whole separation where `backdrop-filter` is unsupported.
 */
 .dpc-regions__ask {
   position: absolute;
@@ -4120,10 +4135,10 @@
   gap: 8px;
   padding: 6px 6px 6px 10px;
   border-radius: 12px;
-  background: var(--scrimChip);
-  backdrop-filter: blur(12px) saturate(140%);
-  -webkit-backdrop-filter: blur(12px) saturate(140%);
-  border: 1px solid color-mix(in srgb, var(--onScrim) 22%, transparent);
+  background: var(--dockGlass);
+  backdrop-filter: blur(14px) saturate(140%);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+  border: 1px solid var(--borderCard);
   box-shadow: var(--shadowPop);
   pointer-events: auto;
   max-width: min(420px, 92%);
@@ -4148,22 +4163,23 @@
   things that get cut.
 */
 /*
-  THE FIELD TAKES THE NORMAL PROMPT BOX'S TREATMENT, through the same tokens
-  `.dpc-refine__field` uses rather than a second spelling of them (fable-1271's
-  *"one owner if the style can be shared rather than respelled"*). It reads on
-  glass because `--onScrim` is what the panel's own fill is mixed from.
+  THE FIELD READS AGAINST THE PANEL, so it takes the THEME's ink rather than
+  `--onScrim`. On a `--dockGlass` panel the text sits on white in light and on
+  near-black in dark, which is the one thing `--ink` is for — and it is why the
+  scrim-family version had to be undone in both places at once: a white-on-white
+  field is the same defect as a dark panel in a light room, one layer in.
 */
 .dpc-regions__field {
   flex: 1 1 auto;
   min-width: 0;
   border: 0;
   background: transparent;
-  color: var(--onScrim);
+  color: var(--ink);
   font-size: 13px;
   padding: 4px 0;
 }
 
-.dpc-regions__field::placeholder { color: color-mix(in srgb, var(--onScrim) 46%, transparent); }
+.dpc-regions__field::placeholder { color: var(--meta); }
 
 /* No inner outline on a field — the container carries focus (the standing law). */
 .dpc-regions__field:focus { outline: none; }
@@ -4179,22 +4195,18 @@
   behind it was black; on a white surface a white button is invisible.
 */
 /*
-  THE BUTTON STOPS BEING `--ink` ON `--surface` AND BECOMES A CHIP ON MEDIA.
-
-  The old pair was correct over an opaque light panel and is invisible over dark
-  glass — a near-black button on a near-black panel. `--scrimChipHov` is the
-  token file's own stronger weight of the same "button over media" role, so the
-  raised control and the panel it sits on come from one family and neither has a
-  theme variant to disagree about. The hairline is what separates two dark
-  translucencies when the photograph behind them is dark.
+  The primary button's own house pattern — `--ink` fill, `--surface` label — kept
+  exactly as it was before the glass landed, because the panel under it still
+  follows the theme. It inverts with the theme by construction, which is the
+  whole reason this pair is the house one.
 */
 .dpc-regions__submit {
   flex: none;
   padding: 5px 12px;
-  border: 1px solid color-mix(in srgb, var(--onScrim) 28%, transparent);
+  border: 0;
   border-radius: var(--r-btn);
-  background: var(--scrimChipHov);
-  color: var(--onScrim);
+  background: var(--ink);
+  color: var(--surface);
   font-size: 12.5px;
   cursor: pointer;
 }
