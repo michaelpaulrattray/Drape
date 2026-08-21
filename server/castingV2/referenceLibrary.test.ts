@@ -148,6 +148,33 @@ describe("a disputed delivery's row", () => {
     expect(live[0]!.storageKey).toBe("the-good-crop.png");
   });
 
+  /*
+    AND THE SAME PROPERTY ON A CARRIED DEGREE FACET, which is where it was
+    needed and was not reaching (his incident, fable-1242/1247).
+
+    Production candidate 1641: v#204 delivered a jacked build and minted
+    version 1; v#206 carried it, the engine dropped it, and version 3 was cut
+    from the frame that LOST it — so the branch's answer to WHAT IS HIS BUILD
+    became a picture of the un-jacked body, and every later carry would have
+    sent the loss as the fact.
+
+    The gate was never wrong; it was never handed this case. Marked disputed,
+    the branch heals with no repaint and no second reader: the next render
+    carries the jacked crop again.
+  */
+  it("HEALS a carried slot: the frame that LOST his build never displaces the one that had it", () => {
+    const live = liveReferences([
+      row({ slot: "build", version: 1, storageKey: "casting-v2/library/jacked.png" }),
+      row({ slot: "build", version: 2, storageKey: "casting-v2/library/jacked-2.png" }),
+      disputedRow("build", 3),
+    ]);
+
+    expect(live).toHaveLength(1);
+    expect(live[0]!.storageKey, "the branch adopted the body that lost the build")
+      .toBe("casting-v2/library/jacked-2.png");
+    expect(live[0]!.version).toBe(2);
+  });
+
   it("CHANGES THE ASSEMBLER'S LIBRARY BY EXACTLY NOTHING", () => {
     /* The additivity property, driven rather than argued: the same rows with and
        without a disputed row produce the same library. If this ever fails, a

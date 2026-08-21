@@ -5246,9 +5246,10 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
    * it. The affirmative half was already wired — `confirmed` is read ∧ verified
    * ∧ not-written — and this is its missing counterpart.
    */
+  let verifierCalls = 0;
   const readerDisputesOnly = (word: string, saw: string) => ({
     id: "verifier",
-    complete: async (ask: { user: string }) => ({
+    complete: async (ask: { user: string }) => (verifierCalls += 1, {
       text: JSON.stringify({
         results: ask.user.split(String.fromCharCode(10)).filter(Boolean).map((line, at) => ({
           id: at + 1,
@@ -5262,6 +5263,10 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
   } as never);
 
   it("does NOT re-cut a CARRIED slot its own reader disputed — the crop that lost his build may not become the truth", async () => {
+    /* Counted from ZERO inside the test that asserts it: a module-level
+       counter read without a reset asserts the order the file happens to
+       run in, which is a guard that passes by luck. */
+    verifierCalls = 0;
     /* HIS OWN CHAIN: step 1 wrote the build, step 2 asks for something else —
        so `build` is a CARRIED fact on this render, which is what makes the
        reader ask about it at all. */
@@ -5293,11 +5298,26 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
     expect(build, "the build slot is still cut; a disputed row keeps its pixels").toBeDefined();
     expect(build!.disputed ?? false,
       "a crop of the frame that LOST his build became the branch's newest answer").toBe(true);
+
+    /* AND IT NEVER REFUSES (fable-1247 §2c/§2d). D-187/D-246 are untouched:
+       the picture is delivered and charged, and all that changes is which
+       crop the NEXT render is told is the truth. A carry break that started
+       refunding would be a far worse product than one that healed quietly. */
+    expect(painted.length, "the render was taken back over a carried facet").toBe(1);
+
+    /* AND IT BUYS NO NEW READING — asserted as a COMPARISON against the
+       control below rather than against a number. The net takes one or two
+       readings per render depending on what it is asked, so a literal here
+       would pin the fixture instead of the property; what this fix promises
+       is that a disputed CARRY costs exactly what a believed one costs,
+       because the trigger is the verification already stored. */
+    expect(verifierCalls, "a delivered render always takes at least one reading").toBeGreaterThan(0);
   });
 
   it("CONTROL — the same carried slot, BELIEVED by the same reader, is unmarked", async () => {
     /* If both arms did not move, the marking would be a constant rather than a
        reading. Nothing changes here but the reader's answer. */
+    verifierCalls = 0;
     /* HIS OWN CHAIN: step 1 wrote the build, step 2 asks for something else —
        so `build` is a CARRIED fact on this render, which is what makes the
        reader ask about it at all. */
@@ -5325,6 +5345,27 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
 
     const build = mintAsks[0]!.slots.find((slot) => slot.slot === "build");
     expect(build!.disputed ?? false, "a believed carry must still re-cut cleanly").toBe(false);
+
+    /* AND THE COST PARITY, both runs inside ONE test so the comparison cannot
+       be broken by running the two apart. Same render, same net, only the
+       reader's answer differs — so the disputed road must not buy a single
+       extra look. The trigger is the verification already stored, and a fix
+       that cost a vision call per carried facet would be paying to find out
+       something we had already written down. */
+    const believedReadings = verifierCalls;
+    expect(believedReadings).toBeGreaterThan(0);
+    verifierCalls = 0;
+    await refineCandidate({
+      ...hairDown,
+      ...mintingLibrary,
+      harvest: compositing,
+      verifier: readerDisputesOnly("build", "loose grey t-shirt hides build"),
+    }, { ...input, instruction: "wear her hair down" });
+
+    expect(mintAsks.at(-1)!.slots.find((slot) => slot.slot === "build")!.disputed ?? false,
+      "the two runs differ only in the reader, so the mark must differ").toBe(true);
+    expect(verifierCalls, "a disputed carry bought a reading the believed one did not")
+      .toBe(believedReadings);
   });
 
 
