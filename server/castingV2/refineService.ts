@@ -235,6 +235,7 @@ import {
   RepaintCannotSayError, repaintAsksFor, repaintCannotRemove, scopedAskIsUnsayable,
 } from "./repaintAsks";
 import { attachedPictureUnusedNote, cannotSaySentence, likenessSetAsideNote } from "./cannotSayCopy";
+import { asksInkBeyondToday } from "./inkBeyondTodayAsk";
 import { censusOfAttempt, censusSoFar, type CallCensus } from "./callCensus";
 import { carriesAfterPruning } from "./prunedCarries";
 import { countRefusal } from "./refusalCounter";
@@ -4256,19 +4257,35 @@ async function refineCandidateCounted(
       ? null
       : INK_PLACEMENTS.find((one) => one === named.placement) ?? null;
     if (named === null || measuredPlacement === null) {
+      /*
+        ⚠ AND WHICH SENTENCE, because the same fact has two honest answers
+        (ordered fable-1233 §2, from HIS first live tattoo ask).
+
+        `unplacedInk` asks WHERE, which is right for a customer who simply did
+        not say. It is a nonsense question for an *"inspired by"* ask — she did
+        not omit a placement, she asked for a shape this road cannot state yet —
+        and D-180 forbids a question whose premise the ask rejects.
+
+        The test is on HER OWN SENTENCE (`asksInkBeyondToday`), never on the
+        interpreter's reading, so it cannot drift; and it is a NARROWING, never
+        a refusal — both roads out of here are free, before the claim, and
+        refuse for the same underlying fact.
+      */
+      const beyondToday = asksInkBeyondToday(instruction);
       log.info(
         {
           userId: input.userId,
           candidate: input.candidatePublicId,
           placement: take?.placement.kind ?? null,
           named: named?.placement ?? null,
+          beyondToday,
         },
         "[refineService] a words-only tattoo ask with no measured place — answered before the claim, nothing spent",
       );
       wordsInkAddress = null;
       return {
         kind: "selected",
-        note: cannotSaySentence("unplacedInk", {
+        note: cannotSaySentence(beyondToday ? "inkBeyondToday" : "unplacedInk", {
           words: null, facet: "ink", scopeNoun: null, moneySafe: true,
         }),
         variantId: source.variantPublicId,

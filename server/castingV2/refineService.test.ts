@@ -5794,6 +5794,44 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
     expect(ledger.charges.length, "a pre-claim answer took her money").toBe(chargesBefore);
   });
 
+  it("HIS OWN ASK — an inspired-by tattoo ask is TOLD what works, never asked where it goes", async () => {
+    /*
+      Ordered fable-1233 §2, from the founder's first live tattoo ask:
+
+        "add tattos to him inspired by the attached design"
+
+      He met the sentence asserted in the control above — *"I need to know where
+      it goes"* — for an ask that never omitted a placement. It asked for
+      something whose shape is *wherever it fits*, which is the OPEN LANE's, and
+      D-180 forbids a question whose premise the ask rejects.
+
+      Driven through the REAL service and not through the predicate, because
+      what is in doubt is the ROUTING: the same door, the same free pre-claim
+      answer, a different sentence. The instruction is his, typo included.
+    */
+    const chargesBefore = ledger.charges.length;
+    const result = await refineCandidate({
+      ...repainting,
+      interpret: async () => ({
+        ok: true as const,
+        delta: { free: { ink: "tattoos inspired by the attached design" } },
+      }),
+    }, { ...input, instruction: "add tattos to him inspired by the attached design" });
+
+    expect(result.kind).toBe("selected");
+    const said = result.note ?? "";
+    expect(said, "the nonsense question survived the fix").not.toContain("I need to know where it goes");
+    expect(said, "what he CAN have has to lead, or the reply is a wall")
+      .toContain("copy one design exactly");
+    expect(said, "and the limit is named without pretending it is his fault")
+      .toContain("isn't ready yet");
+    expect(said, "a free outcome that does not say it is free reads as a silent 25 credits")
+      .toContain("Nothing was charged.");
+
+    expect(painted).toHaveLength(0);
+    expect(ledger.charges.length, "a pre-claim answer took his money").toBe(chargesBefore);
+  });
+
   /*
     HIS EAR, AS A TEST (fable-471 §1) — the specimen that started this.
 

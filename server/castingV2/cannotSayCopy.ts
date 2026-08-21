@@ -26,13 +26,38 @@
  *
  * The founder's, from the makeup ruling: name the gap, never imply a
  * malfunction, say what she can do next where there is something, and say what
- * happened to the money. "It's coming" appears in exactly one sentence and only
- * while that thing is genuinely queued — a promise inside a refusal is the
- * easiest line in a product to leave rotting.
+ * happened to the money. **"It's coming" appears in exactly TWO sentences and
+ * only while each thing is genuinely queued** — a promise inside a refusal is
+ * the easiest line in a product to leave rotting, so each one is named here
+ * with what it is waiting on:
+ *
+ *   `notASlot` for makeup   — makeup has no library slot; the founder ruled
+ *                             this sentence himself (fable-354).
+ *   `inkBeyondToday`        — the OPEN LANE (`OPEN_LANE_DESIGN_NOTE.md` §12),
+ *                             designed, with the founder's own first live
+ *                             tattoo ask as its defining test case
+ *                             (fable-1233 §1).
+ *
+ * *(It said ONE until 2026-08-21. The count is written out rather than left as
+ * an adjective precisely so the next addition has to come here and say what it
+ * is waiting on — the promise this paragraph is about is the one that rots
+ * silently.)*
  */
 import type { RepaintAsksRefusal } from "./repaintAsks";
 
-export type CannotSayReason = RepaintAsksRefusal["reason"];
+/**
+ * Every reason this table must carry a sentence for.
+ *
+ * It is `repaintAsks`' own refusal union PLUS the doors that refuse a stateable
+ * ask BEFORE the claim, which that module never sees and therefore cannot
+ * name. `inkBeyondToday` is the first of those and it is written out rather
+ * than folded in: adding a member to `RepaintAsksRefusal` for a refusal that
+ * module can never raise would be a false sentence about what it does, and the
+ * whole reason this registry exists is that a reason must not be able to ship
+ * with the wrong label. The totality test still holds — one entry per member of
+ * THIS type, whichever side of the claim its door sits on.
+ */
+export type CannotSayReason = RepaintAsksRefusal["reason"] | "inkBeyondToday";
 
 /** What the settlement knows when it writes the sentence. */
 export type CannotSayContext = {
@@ -196,6 +221,30 @@ export const CANNOT_SAY_COPY: Readonly<Record<CannotSayReason, CannotSayEntry>> 
     charge: "refunded",
     say: (context) => "I can put a tattoo on her, but I need to know where it goes — her neck, "
       + `an upper arm, her upper chest. Say where and I'll do it. ${MONEY(context.moneySafe)}`,
+  },
+  /*
+    AN INK ASK WHOSE SHAPE THIS ROAD CANNOT STATE YET — told, never asked
+    (ordered fable-1233 §2, from his own first live tattoo ask).
+
+    The sibling above asks WHERE, and that is the right question for somebody
+    who simply did not say. It is a nonsense question for *"add tattos to him
+    inspired by the attached design"* with a whole flash sheet attached: he did
+    not omit a placement, he asked for something whose shape is *wherever it
+    fits* — plural pieces, a style rather than a copy. D-180 forbids a question
+    whose premise the ask rejects, so this door tells him what works instead.
+
+    The order in the sentence is deliberate: what he CAN have first, so the
+    reply is a road rather than a wall, and the limit second.
+
+    `asksInkBeyondToday` decides which of the two he reads, from HIS OWN WORDS —
+    see that module for why plurality is not part of the test.
+  */
+  inkBeyondToday: {
+    charge: "free",
+    say: (context) => "Right now I can copy one design exactly, onto her neck, an upper arm "
+      + "or her upper chest — point me at one design and one of those places and I'll do it. "
+      + "Taking a whole sheet and working from the feel of it, across her, is being built and "
+      + `isn't ready yet — it's coming. ${MONEY(context.moneySafe)}`,
   },
   uncatalogued: {
     charge: "refunded",
