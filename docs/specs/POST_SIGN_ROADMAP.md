@@ -207,15 +207,46 @@ the pinning arm.
   because offering the chest a door `gate_ink_uncarried` shuts one ask later is
   census 4(b)'s dead end in a new sentence.
 
-- **(C4b) THE RECORD ITSELF — settlement scrubs or marks a name the mint
-  answered no-cut for.** ⚠ **Split from C4a deliberately so it cannot evaporate**
-  (fable-1339 §3): with C4a in place a dangling name costs nobody anything, so
-  this is a repair of the record rather than a fix under pressure — and it wants
-  an unhurried hand, because `landVariant` takes an `internalPrompt` and no
-  deltas ON PURPOSE. The claim owns that column, and the claim/landing split is
-  what makes a replay return the same row. Giving the landing a delta patch is a
-  second write of a claim-owned column on the money path. **It also cannot repair
-  rows that already exist, which is why C4a came first.**
+- **(C4b) ⛔ CLOSED NOT-TO-BE-BUILT 2026-08-22 — no SHA, because nothing was
+  built: the card named a real smell and the
+  WRONG remedy** (my own C4 card and fable-1331 §5 said *scrubs*; stopped before
+  the commit at opus-986, ruled fable-1341). **Two independent kill shots, either
+  sufficient:**
+
+  **(1) THE DANGLING NAME IS LOAD-BEARING.** `refineService`'s carry already
+  carries the warning, written by opus-949 after driving it: *"if the newest name
+  has no row, the one before it still does… for a render that CHANGED a tattoo
+  she already had, it is a disaster — the minted-loss incident reborn at a new
+  door."* That rescue runs BECAUSE the name is still there: the carry's slot set
+  is `keys(inkApplied) ∪ keys(inkDelivered)`, and on D-137's words road there is
+  no applied entry at all, so scrubbing the delivered name removes the slot
+  entirely and the earlier crop is never looked for. **The repair would delete
+  the pointer that saves the tattoo.**
+
+  **(2) IT WOULD FILE A READER'S NEGATIVE AS A DURABLE FACT.** The mint answers
+  no-cut because `tattooed skin` found nothing on the delivered frame. Law 9 says
+  a reader's output is a pointer to look, never a fact to file, and fable-1052
+  forbids a reader's verdict that turns a customer away while tolerating one that
+  only chooses a lane. Today it chooses a lane; scrubbing would make it a verdict
+  about her Cast, permanently.
+
+  **THE ENUMERATION that makes this a finding rather than a hope** (condition,
+  fable-1341 §2) — every reader of `inkDelivered` names, each placed:
+
+  | reader | kind |
+  |---|---|
+  | the transform door (`refineService`, `cropRowExists`) | **consults the row** — C4a |
+  | the sign-view wire (`signService`, `InkCropDisposition.noRow`) | **consults the row** |
+  | the panel's ink cards (`routes/castingV2.ts`, `inkWornBy`) | **consults the row** — skips a nameless crop, draws no card, logs; its docblock is already *THE ID POINTS AND THE ROW DECIDES* |
+  | the carry and its earlier-crop rescue | **skips loudly by design** — and NEEDS the name |
+  | `inkDocumentedByDelivery` | **gate-opener made harmless** — the opened ask now meets C4a's free sentence |
+  | the misfiled-removal router (`want === "gone"`) | **row-independent** — it also requires the WORDS half, and the removal it routes to is a prune that needs no crop |
+  | the transform's pointer restatement | **preserves** the record; it is what keeps the rescue's pointer alive |
+  | `refineLegacy`, `prunedSlots` | **shape and key arithmetic** — neither believes a picture exists |
+
+  No reader is left over, so there is no successor card. ⚠ **A card corrected on
+  the record beats a card quietly completed**: what C4 actually bought is C4a's
+  money fix, and the "lie" underneath it turned out to be a live pointer.
 
 - **(C5) ✅ CLOSED 2b428251 — THIRTEEN SERVICE REFUSALS NAMED BY NO TEST**
   (census 4(e)). The census now reports **none**.
