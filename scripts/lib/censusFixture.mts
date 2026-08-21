@@ -41,9 +41,19 @@ export type CensusFixture = {
   candidatePublicId: string;
 };
 
+/**
+ * ⚠ THE COMPLAINT IS THE SENTENCE, not a frame around one (taken fable-1332 §3).
+ *
+ * It used to wrap every detail in *"the census fixture is not a bare master …
+ * refusing to measure a branch as a master"*, which was true of the one case it
+ * was written for and the OPPOSITE of the next one: a branch fixture whose
+ * record claims a delivered tattoo its table does not hold got a sentence about
+ * masters. An error class that explains a caller's complaint back to it in the
+ * wrong words is a smaller version of the thing this whole file guards against.
+ */
 export class ContaminatedFixtureError extends Error {
   constructor(detail: string) {
-    super(`the census fixture is not a bare master (${detail}) — refusing to measure a branch as a master; see scripts/lib/censusFixture.mts`);
+    super(`the census fixture is not the state the corpus declares: ${detail} — see scripts/lib/censusFixture.mts`);
   }
 }
 

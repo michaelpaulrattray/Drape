@@ -9583,6 +9583,79 @@ export function readAskScope(internalPrompt: unknown): string | null {
 }
 
 /**
+ * THE PICTURES A RENDER WAS GIVEN — url, kind and slot, and nothing else
+ * (his own ask, 1264 §1; shape ruled fable-1332 §4).
+ *
+ * *"The made-this-version line carries a thumbnail of every reference that ask
+ * used"* — so a customer can see, permanently, what the product was looking at
+ * when it made the picture she is looking at. It also answers *"what was asked
+ * for this crop"* without anybody keeping a note.
+ *
+ * # Derived, never a parallel note
+ *
+ * The references are already written down once, in the recipe the render was
+ * actually sent (`internalPrompt.repaint.references`). A second list beside it
+ * would drift from the wire on the first render that carried something the note
+ * did not know about — which is the shape working law 4 is made of, and the
+ * founder's ask says it in his own words: *derived from the dispatch record,
+ * never a parallel note*.
+ *
+ * # THREE FIELDS, and the rest of the recipe stays inside
+ *
+ * `internalPrompt` is INTERNAL (§J) and this reader is why it can stay that
+ * way: it lifts one safe slice and the projection never sees the object. The
+ * PROMPT is the composed instruction, the DIGEST is a byte-identity claim about
+ * a stored object, and the GEOMETRY is what we sent an engine — none of the
+ * three is hers to read and none of them answers her question. What she asked
+ * for is *which pictures*, and that is a url, a kind and a slot.
+ *
+ * `staffImageBoundary`'s own lesson, one surface along: a field group stays out
+ * by CONSTRUCTION rather than by callers remembering to omit it, and
+ * `referenceProjection.test.ts` pins the three so a fourth is a deliberate edit.
+ *
+ * Every reference here is the owner's own — her cast's master, her own library
+ * crops, her own uploaded designs — read on an owner-scoped statement, which is
+ * the same class as the `imageUrl` beside it in the projection.
+ *
+ * Empty for every row the paste road made and every row landed before the
+ * recipe was stored, which the client reads as *nothing to show* — the same
+ * answer those rows give today.
+ */
+export type ProjectedReference = {
+  /** The public URL of the picture itself. */
+  url: string;
+  /** `master` · `carry` · `source` — what this picture was FOR. */
+  kind: string;
+  /** The feature it belongs to, when it belongs to one. Null for the master. */
+  slot: string | null;
+};
+
+export function referencesOf(internalPrompt: unknown): ProjectedReference[] {
+  if (!internalPrompt || typeof internalPrompt !== "object") return [];
+  const repaint = (internalPrompt as { repaint?: unknown }).repaint;
+  if (!repaint || typeof repaint !== "object") return [];
+  const list = (repaint as { references?: unknown }).references;
+  if (!Array.isArray(list)) return [];
+  const projected: ProjectedReference[] = [];
+  for (const entry of list) {
+    if (!entry || typeof entry !== "object") continue;
+    const key = (entry as { key?: unknown }).key;
+    const kind = (entry as { kind?: unknown }).kind;
+    /* A reference with no key is a row we cannot show a picture for, and a
+       thumbnail with no image is worse than an absent one. */
+    if (typeof key !== "string" || key.length === 0) continue;
+    if (typeof kind !== "string" || kind.length === 0) continue;
+    const slot = (entry as { slot?: unknown }).slot;
+    projected.push({
+      url: storagePublicUrl(key),
+      kind,
+      slot: typeof slot === "string" && slot.length > 0 ? slot : null,
+    });
+  }
+  return projected;
+}
+
+/**
  * THE WORDS THE STABLE PHRASINGS ALREADY FILE.
  *
  * *"Take her hair off"* and *"make her bald"* both parse straight to this

@@ -43,10 +43,19 @@
  * FAILED. The one tool built to stop a green claim with no fact under it
  * produced one.
  *
- * Every run now writes its full transcript and its exit status to
+ * Every run writes its full transcript and its exit status to
  * `output/deploy-receipts/`, unconditionally and on every path, so a piped or
  * truncated invocation still leaves the durable record. Custody blocks quote
- * that file. Run it unpiped anyway.
+ * that file.
+ *
+ * ⚠ **AND ITS OWN VERDICT IS THE LAST LINE IT PRINTS** (2026-08-22). The rule
+ * above was broken twice in one shift by the seat that had just written about
+ * it, so it stopped being a rule. An `isTTY` refusal was ordered, built and
+ * BACKED OUT — no headless harness has a TTY, so it refused every operator this
+ * project actually has. What stands instead fails closed: a truncated run
+ * either carries `RITE EXIT STATUS: …` or visibly carries no verdict at all,
+ * and a custody block with nothing to quote is a missing reading rather than a
+ * green one. The tidy read is `output/deploy-receipts/index.log`.
  *
  *   npx tsx scripts/deploy-rite.mts [--dry]
  */
@@ -84,6 +93,24 @@ import {
 } from "./lib/falSpend.mts";
 
 const DRY = process.argv.includes("--dry");
+/*
+  ⚠ THE isTTY REFUSAL ORDERED AT fable-1332 §5 WAS BUILT, DRIVEN, AND BACKED
+  OUT — because its population is EVERYONE (found opus-978).
+
+  The order was right about the class: twice in one shift is not a memory
+  problem. But `process.stdout.isTTY` is undefined in every headless harness,
+  including the one every overnight shift runs in — so the guard refused the
+  rite's own operator on the FIRST unpiped invocation, which is a control that
+  turns off the product's only push path. Driven both ways before it was backed
+  out: piped → REFUSED exit 2; unpiped, from the seat that deploys → REFUSED
+  exit 2, identically.
+
+  What replaces it is below and it fails CLOSED rather than open: the rite's own
+  verdict is the LAST LINE of stdout, so a report quoting a truncated run either
+  carries the verdict or visibly carries no verdict at all. A grep that drops it
+  leaves a custody block with nothing to quote, which is a missing reading
+  rather than a green one.
+*/
 const SERVICE = process.env.RAILWAY_SERVICE ?? "Drape";
 const BASE = process.env.PROD_BASE_URL ?? "https://drape-production-0232.up.railway.app";
 /** The branches every deploy carries. Production builds from the second one. */
@@ -150,6 +177,19 @@ process.on("exit", (code) => {
        absent record reads as a run that never happened. */
     console.error(`[deploy-rite] could not write the receipt: ${String(error)}`);
   }
+  /*
+    ⚠ THE VERDICT IS THE LAST THING ON STDOUT, and it is deliberately AFTER the
+    receipt line so nothing can print below it (2026-08-22, replacing the
+    backed-out `isTTY` refusal — see the block near `DRY`).
+    
+    It is the rite's OWN status, not a pipeline's. A run read through `tail`
+    keeps it; a run read through a `grep` that drops it leaves a custody block
+    with no verdict to quote — which is a MISSING reading and refused as such,
+    rather than a green one. That is the difference the original incident turned
+    on: "exit code 0" was reported for a FAILED deploy because the shell handed
+    back the last command's status and nothing on screen contradicted it.
+  */
+  console.log(`RITE EXIT STATUS: ${code === 0 ? "OK" : `EXIT ${code}`}`);
 });
 /* Annotated on the VARIABLE, not just the arrow: TypeScript only narrows after
    a never-returning call when the binding itself carries the signature. */

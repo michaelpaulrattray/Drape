@@ -3182,6 +3182,19 @@
   text-overflow: ellipsis;
 }
 
+/*
+  A REFERENCE THUMBNAIL ON THE MADE LINE — the same square as the attached
+  picture's, one size smaller in nothing (his ask, 1264 §1).
+
+  It borrows `__thumb` whole and adds only what a ROW of them needs: they must
+  not stretch when the sentence is long, and they must not push it off the line
+  when there are three. Nothing else — no ring, no badge, no count. The chip is
+  already a bordered strip and a second border inside it would read as a control.
+*/
+.dpc-refine__madeRef {
+  flex: none;
+}
+
 .dpc-refine__madeUse {
   flex: none;
   background: none;

@@ -108,7 +108,7 @@ const tuple = <T extends string>(values: readonly T[]) => values as unknown as [
 import { createRoll, cancelRoll } from "../castingV2/rollService";
 import { signCandidate } from "../castingV2/signService";
 import { REFINE_ANSWERING_MAX_LENGTH, REFINE_INSTRUCTION_MAX_LENGTH } from "../castingV2/refineLimits";
-import { readAskScope, readRegeneratedFrom, refineCandidate } from "../castingV2/refineService";
+import { readAskScope, readRegeneratedFrom, referencesOf, refineCandidate } from "../castingV2/refineService";
 import { pendingStage } from "../castingV2/pendingStage";
 import {
   listCandidateVariants,
@@ -1516,6 +1516,20 @@ export const castingV2Router = router({
             stay internal.
           */
           filedAs: filedSubjectsOf(variant.deltas),
+          /*
+            AND THE PICTURES THIS VERSION WAS MADE FROM (his own ask, 1264 §1).
+
+            Derived from the recipe the render was actually sent — never a note
+            beside it — and three fields only: the url, what the picture was
+            FOR, and which feature it belongs to. The prompt, the digest and the
+            geometry stay inside with the rest of `internalPrompt` (§J); see
+            `referencesOf`, and `referenceProjection.test.ts` pins the three so a
+            fourth cannot arrive by accident.
+
+            Empty on every paste-road row and every row landed before the recipe
+            was stored, which reads as nothing to show.
+          */
+          references: referencesOf(variant.internalPrompt),
         })),
       };
     }),

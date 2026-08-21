@@ -67,6 +67,16 @@ export type RefineVariant = {
    * one. The composer chip reads it exactly as the rail's label does.
    */
   requestText?: string | null;
+  /**
+   * THE PICTURES THIS VERSION WAS MADE FROM (his ask, 1264 §1).
+   *
+   * Three fields and no more — the server's `referencesOf` lifts exactly these
+   * out of the recipe the render was actually sent, and the prompt, the digest
+   * and the geometry stay on the inside. Optional because every paste-road row
+   * and every row landed before the recipe was stored has none, and the panel
+   * reads that as nothing to show.
+   */
+  references?: Array<{ url: string; kind: string; slot: string | null }>;
 };
 
 /**
@@ -446,6 +456,17 @@ export function RefinePanel({
   const selectedRequest = selected
     ? (selected.requestText ?? selected.instructions.at(-1) ?? null)
     : null;
+  /*
+    AND THE PICTURES IT WAS MADE FROM (his ask, 1264 §1 — the Grok layout he
+    pointed at, chips above the ask).
+
+    Read off the SAME selected version as the sentence beside them, so the two
+    halves of "what made this" can never describe different rows. Empty is the
+    ordinary answer for a paste-road version and for anything landed before the
+    recipe was stored, and an empty list draws nothing rather than an empty
+    frame.
+  */
+  const selectedReferences = selected?.references ?? [];
   return (
     <div className="dpc-refine" onClick={(event) => event.stopPropagation()}>
       {/*
@@ -614,6 +635,28 @@ export function RefinePanel({
       */}
       {selectedRequest ? (
         <div className="dpc-refine__made">
+          {/*
+            THE PICTURES, BEFORE THE SENTENCE — his own layout (1264 §1).
+
+            They sit at the head of the line the way the attached picture sits
+            at the head of the box, because both answer the same question: what
+            is the product looking at. Same 32px square as that one, from the
+            same class, so there is one size for a thumbnail in this panel
+            rather than two that drift (fable-1101 §3 pinned it).
+
+            The title is the slot when there is one and the kind otherwise —
+            *what this picture was FOR* — which is the only thing we can say
+            without a catalogue the client does not have.
+          */}
+          {selectedReferences.map((reference) => (
+            <span
+              key={reference.url}
+              className="dpc-refine__thumb dpc-refine__madeRef"
+              title={reference.slot ?? reference.kind}
+            >
+              <img src={reference.url} alt="" />
+            </span>
+          ))}
           <span className="dpc-refine__madeText">{selectedRequest}</span>
           <button
             type="button"
