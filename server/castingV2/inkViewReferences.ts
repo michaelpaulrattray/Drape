@@ -197,11 +197,19 @@ export function inkPlacementPhrase(input: {
  * crew-necked has no skin to put the design on however the picture arrives, and
  * both outcomes fail the wardrobe axis and refund a slice — six times per Sign.
  *
- * **Two things lift it together and neither is code.** His own word on the
- * question already in front of him — a covered chest piece rides HIDDEN
- * (fable-1081's *"tattos can still ride they may just not be visible fully
- * yet"*), or signing views may SCOOP the way his v207 edit did — and then a
- * 450-credit dev Sign that measures six judged views on the moved clause.
+ * ⚠ **AND THE THING THIS PARAGRAPH SAID WOULD LIFT IT IS RETIRED — THE PATH
+ * DECIDES** (founder ruling 2026-08-21, relayed fable-1311; design
+ * `docs/specs/CASTING_V2_TWO_PATHS_DESIGN.md`, §10 item 5). It used to read
+ * *"two things lift it together and neither is code: his own word on hidden vs
+ * scoop, and then a 450-credit dev Sign"* — a question he replaced rather than
+ * answered. A cast is now born on the WARDROBE path or the BASICS path, and the
+ * path settles where ink can go: a chest design rides when this cast's own
+ * wardrobe leaves the chest bare and does not when it covers it.
+ *
+ * So this table stops being a fact about the PLACEMENT and becomes one about
+ * the WARDROBE — derived from the stored line rather than frozen — in the
+ * sitting that builds item 5. Until then it says `false` for the reason it
+ * always did: today every cast wears the crew tee.
  * `CAST_PACKAGE_WARDROBE_SPEC`'s own self-contradiction is repaired in that same
  * sitting: it hard-codes *crew-neck* while naming the reference photograph as
  * the authority, and on a Cast signed off a scooped anchor those two halves
@@ -219,7 +227,8 @@ const RIDES_PACKAGE_VIEWS: Readonly<Record<InkPlacement, boolean>> = Object.free
   upperArm: true,
   /* Covered by the package's own crew neck, which STAYS a crew neck (his
      ruling, fable-1081 §2). The crop road did NOT lift this — see above; what
-     lifts it is his hidden-vs-scoop word and the court that follows it. ONE
+     lifts it is the BASICS path, where the chest is bare and this answer is
+     derived from the cast's own wardrobe rather than from its placement. ONE
      OWNER for both ink lanes, so a chest tattoo cannot ride as a crop while
      being refused as a plate. */
   upperChest: false,

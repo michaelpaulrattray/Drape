@@ -101,7 +101,14 @@ carry the rulings, the courts and the histories.
                                           five nouns and clothing is not one —
                                           a stored wardrobe line is the clothing
                                           noun with an owner, which kills that
-                                          class rather than patching it
+                                          class rather than patching it.
+                                          ✍ THE DESIGN REPORT IS WRITTEN and
+                                          awaiting countersign:
+                                          `docs/specs/CASTING_V2_TWO_PATHS_DESIGN.md`
+                                          — it carries a MIGRATION that blocks
+                                          the code (not the flip), four open
+                                          questions, and a 1,220-credit dev court
+                                          staged 320 then 900
 3b KEYING + MULTI-TATTOO REMOVAL          after 5. No live customer yet (no branch
                                           has ever worn two); 1167 §2e is its own
                                           reason
@@ -118,6 +125,67 @@ the capability is absent. *"Does this already exist"* becomes a lookup rather
 than a memory — and this week is why it exists: the removal road, the inert sign
 carry, §5c already on the roadmap while it was being "sized", and a wall
 recorded CLOSED that no customer could reach.
+
+### §10c CENSUS CARDS — findings the instrument produced, each awaiting a slot
+
+**Filed 2026-08-22 (opus-979), ordered fable-1329 §4 and fable-1331 §5.** These
+are NOT queue items and they do not reorder the table above: each is a small,
+named defect the capability census surfaced, held here so it is picked up
+deliberately rather than rediscovered. **A finding with no card is a finding that
+gets found twice.** Each names its census row so the day it closes, the row is
+the pinning arm.
+
+- **(C1) ONE REASON ID, TWO MEANINGS — the `wall_stage` family.** Rows
+  `age.older` (*"make her ten years older"*) and `guard.compliment` (*"he looks
+  great"*) both refuse under `wall_stage`, which is the wall for *the shoot, not
+  the person*. Neither ask is about a garment, a prop or the set. They land on
+  the UNBACKED sentence — *"isn't one of the things this can name"* — which is
+  honest, but the reason ID they are filed under is not, and a report reading the
+  refusal counter cannot tell *she asked for the beach* from *she asked for
+  something we do not do yet*. **The fix is a second reason id, not new copy**:
+  the customer's sentence is already right, the record is what lies.
+  ⚠ `wardrobe.tee` used to be listed in this family and is NOT — it is §10 item
+  5's, and folding it in here would hide a capability decision inside a taxonomy
+  card.
+- **(C2) A SCOPED ASK THAT NAMED ITS FACET IS ASKED WHICH FACET.** Row
+  `eye.scoped.left` — *"make it green"* with scope `eye@left` — comes back
+  `asked:which-facet` (*"which part? Nothing's been coloured yet, so I don't want
+  to guess"*). The scope names the subject; the question is asking for something
+  it was already handed. Sibling of the tapped-rectangle preference that landed
+  for ink (`inkSlotSheAsksAbout`, fable-1291/1293): **a tap IS an answer**, and
+  the eye lane has not learned it.
+- **(C3) THE TYPO GATE DOES NOT FIRE ON A REAL TYPO.** Row `guard.typo` — *"give
+  her a nose rign"* — RENDERS rather than asking *did you mean*. Read beside its
+  own history: the gate once owned a real word (*"shave"* → *"shape"* blocked his
+  bald ask), so it was narrowed — and this row is the other edge of that same
+  narrowing. **Whoever opens it re-reads that incident first**; a gate that
+  cannot be wrong in one direction is usually wrong in the other.
+- **(C4) A DELIVERY NAME THAT SURVIVES SETTLEMENT WITH NO ROW** (fable-1331 §5).
+  A variant's delta can say `inkDelivered` naming a crop the mint answered
+  `noCrop` for, and nothing scrubs the name at settlement — the record lying
+  durably, in exactly the shape a fixture assertion caught on dev (v502). 949
+  §4's derived rescue only helps when an EARLIER row exists. **The fix is at
+  SETTLEMENT**: a name the mint refused is scrubbed or marked, so the row and the
+  record cannot disagree. Today its only instances are fenced dev specimens —
+  which is why it is a card and not a stop.
+- **(C5) THIRTEEN SERVICE REFUSALS NAMED BY NO TEST** (census 4(e)):
+  `already_original`, `already_signed`, `candidate_missing`,
+  `history_predates_undo`, `history_unreadable`, `kind_unserved`,
+  `master_missing`, `refine_limit`, `removal_not_in_brief`,
+  `removal_uncheckable`, `removal_unnamed`, `step_moved`, `version_missing` —
+  *doors nobody has proven can shut*, which is invariant 7's shape wearing a
+  refusal's name. The census reports them on every run, so this card is a place
+  to decide rather than a place to remember.
+  ⚠ **fable-1317 §4(e) said TWELVE and named twelve; the committed table says
+  thirteen** — `refine_limit` joined after that message was written. The count is
+  read off `capability-atlas.md` here rather than carried, which is the whole
+  reason a card cites its instrument instead of the message that ordered it.
+
+**Stale census BELIEFS are not on this list and are not ours** — the rows whose
+`expect` is behind the product's own correct answer (`hair.remove.none`,
+`makeup.lipstick`, `skin.freckles.remove.none`) are the census author's to
+update, folded into a later pass (fable-1329 §4). A card for somebody else's
+`expect` value would be this file mirroring another surface.
 
 **THE SELECTOR IS NOT A UI ITEM AND CANNOT BE SPLIT OFF** (founder, 2026-08-21:
 *"the open lane reference work includes the Pinterest-style selection or did you
