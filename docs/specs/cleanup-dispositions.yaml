@@ -14,6 +14,14 @@
 # previous shift is no longer on the sweep's list, so it has no row. The verdict
 # exists for the row that is flipped in the same commit that deletes its symbol —
 # git and the triage sections hold the history, and this table holds the door.
+#
+# A HELD OR TAKE ROW IS A CLAIM ABOUT THE REQUEST PATH, and since 2026-08-22 the
+# checker holds it: a symbol under either verdict that has a production importer
+# refuses as `rewired`. `stale` catches a row whose symbol went away; that one
+# catches a row whose symbol CAME BACK, which no other refusal could see — a
+# re-wired symbol simply drops off the sweep's reading list. It was born with a
+# live hit in this table (`hairTakeSentence`, triage §25c), so it is not a
+# hypothetical. **Do not flip a row to HELD to quiet it; check the callers.**
 
 - symbol: verifyBackView
   file: server/casting/backViewGate.ts
@@ -126,6 +134,13 @@
   verdict: KEEP
   why: the async wrapper its own module calls internally; its tests drive live planning through it
   argued: 18
+
+- symbol: commitBeginInkAddIntent
+  file: server/db/inkAddIntents.ts
+  verdict: HELD
+  why: "builds intents for a whole downstream lifecycle suite; §10 item 7's third unpinned un-wiring, and it reached no row because the sweep's reading list excludes it — two TRACKED disposable scripts mention it, so it classifies as having a production mention. Added by hand 2026-08-22 so the rewired arm can pin it"
+  argued: 8d/25d
+  blocker: a disposable database — r7-ink-add-lifecycle-db.test.ts skips without TEST_DATABASE_URL, so re-pointing it onto commitBeginInkAnywhereIntent would ship an unverified rewrite
 
 - symbol: buildInkAuthorizationProviderConfig
   file: server/casting/evidence/inkAddIntent.ts
@@ -800,10 +815,9 @@
 
 - symbol: hairTakeSentence
   file: server/castingV2/hairReferenceTake.ts
-  verdict: HELD
-  why: ruling 5's artifact — the sentence that rides with a hair crop, claiming the cut and explicitly not the colour; composed and proven here, spent by the recipe
-  argued: 13a
-  blocker: the hair crop chunk, where the recipe composes the outgoing prompt this sentence goes into (fable-1071 §5)
+  verdict: KEEP
+  why: "ITS BLOCKER WAS DISCHARGED AND THE ROW WAS NEVER FLIPPED (found by the rewired refusal on the day it was built, 2026-08-22). HELD until then, waiting on the hair crop chunk; refineService.ts:143 imports it and :5280 calls it, which IS that chunk. Ruling 5's artifact — the sentence riding a hair crop, claiming the cut and explicitly not the colour — is now on the request path and pinned by hairReferenceTake.test.ts"
+  argued: 25c
 
 - symbol: hairTakeAdmits
   file: server/castingV2/hairReferenceTake.ts

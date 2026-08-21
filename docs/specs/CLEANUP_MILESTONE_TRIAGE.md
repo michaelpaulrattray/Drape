@@ -1997,3 +1997,91 @@ does not read, and **the control line prints its verdict without ever printing
 the string.** The hand-run version was contaminated within one shift precisely
 because its report quoted the token into the corpus it searches. An instrument
 that publishes its own control specimen has an expiry date.
+
+## 25. THE DOOR LEARNS TO SEE A RE-WIRING — and the arm was born with a hit
+## (2026-08-22, discharging §10 item 7's three-symbol debt)
+
+`scripts/diff-importer-count-across-time.mts` gave this milestone the reading
+CLAUDE.md said could not exist: not *does anything call this*, but **did
+something STOP calling it**. Run over two windows it found seven un-wirings, all
+DECIDED, and named three that nothing pinned —
+`authorizeInkAddDescription`, `buildInkAuthorizationProviderConfig`,
+`commitBeginInkAddIntent`, all from `c99ff1c4`'s deliberate second ring (§8d).
+That trio is §10 item 7's stated debt.
+
+### 25a. The debt is discharged by an ARM, not by three hand-written assertions
+
+Two of the three already had rows in `cleanup-dispositions.yaml`. Writing a
+separate absence test for each would have been **a third list of the same
+symbols** — the yaml, §8d's table, and a new suite — which is law 4 in the one
+document that exists to quote it. So the pin is a refusal on the door instead:
+
+> **`rewired`** — a HELD or TAKE row whose symbol has a production importer.
+
+Both verdicts say the same thing about the request path, so a caller coming back
+under either is the row and the source disagreeing. It rides the existing
+ceremony: the day one of these three is deleted, its row must be flipped to
+`TAKEN` or the `stale` refusal shuts the door — and the day one is re-wired,
+`rewired` shuts it. **Every HELD row is now pinned, not three.**
+
+Its reader is `readTree` from `scripts/lib/importerCountDiff.mts` — the differ's
+own module half, not a second one — so the door and the instrument cannot drift
+on what a production importer IS. `scripts/` is outside that scope, which is the
+same call the differ makes: a drive bench naming a symbol is not the request
+path.
+
+### 25b. `unreadable`, because an arm must not pass by being blind
+
+A HELD row whose symbol the reader cannot see would answer zero for ever.
+`readTree` declares only `const`/`let`/`function`/`class`/`enum` under
+`server/`, so a `type` export — `BeginInkAddIntentResult`, §8d's fourth
+item — **cannot be pinned by this instrument, and that is said rather than
+faked.** It has no row, so it trips nothing; a HELD row that ever did would
+refuse. Zero today, on all 17 HELD-or-TAKE rows.
+
+### 25c. THE HIT — `hairTakeSentence` was HELD, and it is on the request path
+
+The arm found an instance in the table on the day it was built.
+
+```
+row      hairTakeSentence  HELD
+blocker  "the hair crop chunk, where the recipe composes the outgoing
+          prompt this sentence goes into (fable-1071 §5)"
+source   server/castingV2/refineService.ts:143   imports it
+         server/castingV2/refineService.ts:5280  CALLS it
+```
+
+That call site **is** the named blocker. The hair crop chunk landed, the symbol
+went onto the request path, and the row that said *waiting to be deleted* was
+never flipped. Read at the artifact, not recalled: line 5280 sits inside the
+`wantsCrop` mint branch, composing the scope sentence that rides out with a hair
+carrier.
+
+**Nothing was at risk.** The cost of a rotten HELD row is a cleanup sitting
+working its way down the list toward a live symbol, which is a hazard rather
+than an incident — but the shape is the expensive one this program keeps
+meeting: **a document confident about code that moved underneath it.**
+
+⚠ **The reason no existing refusal could catch it is the whole argument for
+making this mechanical.** A re-wired symbol simply DROPS OFF the sweep's reading
+list. `unread` only ever looks the other way — a listed symbol with no row,
+never a row with no listing — so the rot was invisible from every direction the
+door already faced. `stale` catches a row whose symbol went away; nothing
+caught one whose symbol came back.
+
+The row is now `KEEP`, with its history in its own `why` rather than in this
+paragraph alone, because the yaml is what the next knife reads.
+
+### 25d. And the third symbol had no row at all — for a mechanical reason
+
+`commitBeginInkAddIntent` was never on the sweep's reading list, so the seed
+never wrote its row, though `seed-cleanup-dispositions-disposable.mts` has
+carried its verdict text all along. The reason is exact: the reading list is the
+flagged set INTERSECTED with the classifier's *no production mention*, and two
+**tracked** disposable scripts name it, so it classifies as mentioned and drops
+out. Its row is now written by hand with §8d's blocker verbatim.
+
+**This is the differ and the sweep disagreeing productively rather than a
+defect in either.** The sweep asks whether anything in the repository says the
+name; the differ asks whether a production module IMPORTS it. `c99ff1c4`'s ring
+is exactly the population where those two answers come apart.

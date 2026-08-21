@@ -161,7 +161,25 @@ carry the rulings, the courts and the histories.
                                           `buildInkAuthorizationProviderConfig`,
                                           `commitBeginInkAddIntent`, all from
                                           `c99ff1c4`'s deliberate second ring)
-                                          are this item's debt
+                                          were this item's debt.
+                                          ✅ DISCHARGED 2026-08-22 — and not by
+                                          three hand-written absence tests,
+                                          which would have been a THIRD list of
+                                          the same symbols. The deletion door
+                                          gained a sixth refusal, `rewired`: a
+                                          HELD or TAKE row whose symbol has a
+                                          production importer, read with the
+                                          differ's OWN module so the two cannot
+                                          drift. Every HELD row is pinned now,
+                                          not three. ⚠ THE ARM WAS BORN WITH A
+                                          HIT — `hairTakeSentence` sat HELD,
+                                          blocked on "the hair crop chunk",
+                                          while `refineService.ts:5280` had
+                                          been CALLING it since that chunk
+                                          landed: the mirror of `stale`, a row
+                                          whose symbol came BACK, invisible to
+                                          every refusal the door already had.
+                                          Triage §25
 8  OPEN-LANE REFERENCE ROAD               selector first; one item, cannot split
 9  ANY-FEATURE DISCOVERY                  gated per §5c
 ```
