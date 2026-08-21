@@ -82,6 +82,9 @@ const rows = (await query(
 }));
 
 const asks = repaintAsksFor({
+  /* §5e: the reask questions and the vacancy phrases are a function of the
+     Cast's own pronouns now — a bench supplies one Cast. */
+  pronouns: { subject: "she", object: "her", possessive: "her", plural: false },
   delta: EDIT_DELTA,
   prose: EDIT_PROSE,
   restore: { state: EDIT_DELTA, slots: supersededCarrySlots(rows) },

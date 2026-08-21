@@ -258,29 +258,54 @@ export type CapabilityAtlas = {
  * is `free:unmatched`, which is itself worth reading: it means the product said
  * something the table does not own.
  */
+/**
+ * EVERY SET OF WORDS A CAST CAN BE SPOKEN ABOUT (§5e).
+ *
+ * These sentences stopped being constants on 2026-08-22 — the refine surface
+ * called every Cast "her" and now says what the Cast's own schema says. So the
+ * matcher tries all three, exactly as it already tries both money states and
+ * three nouns: the census reads a sentence off a fixture whose sex it does not
+ * carry, and a matcher that only knew one set would file the other two as
+ * `unmatched` — the product saying something the table does not own, which is
+ * a real finding and would here be an artifact of the reader.
+ */
+const PRONOUN_SETS = [
+  { subject: "she", object: "her", possessive: "her", plural: false },
+  { subject: "he", object: "him", possessive: "his", plural: false },
+  { subject: "they", object: "them", possessive: "their", plural: true },
+] as const;
+
 export function reasonOfNote(note: string, context: { facet: string | null; scopeNoun: string | null }): string {
   const normalize = (s: string) => s.replace(/\s+/g, " ").trim();
   const wanted = normalize(note);
   for (const reason of Object.keys(CANNOT_SAY_COPY) as CannotSayReason[]) {
     for (const words of [null, "it", "that"]) {
       for (const moneySafe of [true, false]) {
-        let rendered: string;
-        try {
-          rendered = cannotSaySentence(reason, { words, facet: context.facet, scopeNoun: context.scopeNoun, moneySafe });
-        } catch {
-          continue;
+        for (const pronouns of PRONOUN_SETS) {
+          let rendered: string;
+          try {
+            rendered = cannotSaySentence(reason, {
+              words, facet: context.facet, scopeNoun: context.scopeNoun, moneySafe, pronouns,
+            });
+          } catch {
+            continue;
+          }
+          if (normalize(rendered) === wanted) return reason;
         }
-        if (normalize(rendered) === wanted) return reason;
       }
     }
   }
   /* Second pass: a shared opening clause long enough to be this table's voice. */
   for (const reason of Object.keys(CANNOT_SAY_COPY) as CannotSayReason[]) {
-    try {
-      const rendered = normalize(cannotSaySentence(reason, { words: null, facet: context.facet, scopeNoun: context.scopeNoun, moneySafe: true }));
-      const head = rendered.slice(0, 40);
-      if (head.length >= 30 && wanted.startsWith(head)) return reason;
-    } catch { /* a member that needs a noun it was not given */ }
+    for (const pronouns of PRONOUN_SETS) {
+      try {
+        const rendered = normalize(cannotSaySentence(reason, {
+          words: null, facet: context.facet, scopeNoun: context.scopeNoun, moneySafe: true, pronouns,
+        }));
+        const head = rendered.slice(0, 40);
+        if (head.length >= 30 && wanted.startsWith(head)) return reason;
+      } catch { /* a member that needs a noun it was not given */ }
+    }
   }
   return "unmatched";
 }

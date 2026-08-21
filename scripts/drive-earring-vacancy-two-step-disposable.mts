@@ -30,6 +30,10 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
 import path from "node:path";
 
+/* §5e: the reask questions and the vacancy phrases are a function of the
+   Cast's own pronouns now — a bench supplies one Cast. */
+const HER_PRONOUNS = { subject: "she", object: "her", possessive: "her", plural: false } as const;
+
 import sharp from "sharp";
 
 import { openDatabase } from "./lib/dbConnection.mts";
@@ -166,7 +170,7 @@ check(stillCarrying.length === 0, "[db] neither hoop is still being carried", st
 
 /* ── the wire: the pair sentence, once, and no hoop crop ───────────────────── */
 
-const pair = vacantPhraseFor("earring")!;
+const pair = vacantPhraseFor("earring", HER_PRONOUNS)!;
 const second = walked[1]?.record;
 const prompt = String(second?.prompt ?? "");
 check(prompt.includes(pair), "[wire] step 2 says the PAIR sentence again", `"${pair}"`);

@@ -31,7 +31,32 @@
  * absence — "no glasses" alone leaves a painter looking at a photograph of her
  * in glasses with nothing to look AT. Both are proved in the tests beside this,
  * over every entry, so a kind added later cannot skip them.
+ *
+ * # ⚠ THE PRONOUNS ARE PLACEHOLDERS, AND THAT IS A CORRECTION RATHER THAN A
+ * # PROMPT EDIT (ruled fable-1220 §3, §5e's engine-facing half)
+ *
+ * These sentences go to the PAINTER, so changing one is changing a paid prompt
+ * and this house does not tidy courted prose. Three grounds travel with the
+ * change and they are the whole licence for it:
+ *
+ *   1. the previous state was SELF-INCONSISTENT — the beard phrase said *"HIS
+ *      jaw, chin and upper lip"* and the freckle phrase said *"HER skin clear
+ *      and even"*, about one person. That is not a courted baseline, it is two
+ *      guesses disagreeing;
+ *   2. parameterising makes these phrases AGREE with the pronouns the recipe
+ *      assembler already threads through everything else it says — the outlier
+ *      joins an already-courted whole rather than departing from one;
+ *   3. it is pinned in the suite with this rationale, and **the pronoun change
+ *      is named as the FIRST SUSPECT if any vacate-class delivery regression
+ *      shows up at a later court** — the suspicion filed in advance, which is
+ *      what an uncourted prompt edit owes.
+ *
+ * `{their}` · `{them}` · `{they}` fill from the Cast's own schema, exactly as
+ * `{side}` fills from a slot's instance. On a female Cast every sentence below
+ * is byte-identical to what it was except the beard's, which said "his".
  */
+
+import type { CastPronouns } from "./castPronouns";
 
 export type VacancyPhrase = {
   /** The whole absence, said about the kind: what is gone and where it was. */
@@ -59,13 +84,13 @@ export type VacancyPhrase = {
 export const VACANCY_BY_KIND: Readonly<Record<string, VacancyPhrase>> = {
   earring: {
     says: "no earrings — both earlobes bare, nothing hanging from either ear",
-    perInstance: "no earring on her {side} ear — that earlobe bare, nothing hanging from it",
+    perInstance: "no earring on {their} {side} ear — that earlobe bare, nothing hanging from it",
   },
   glasses: {
-    says: "no glasses — her face uncovered, no frames, no lenses and no rim shadow on her cheeks or brows",
+    says: "no glasses — {their} face uncovered, no frames, no lenses and no rim shadow on {their} cheeks or brows",
   },
   "nose stud": {
-    says: "no nose jewellery — her nose and septum bare, with no piercing visible",
+    says: "no nose jewellery — {their} nose and septum bare, with no piercing visible",
   },
   /*
     THE FIRST NON-ACCESSORY MEMBER, and the reason this file exists (V3(b)).
@@ -81,8 +106,8 @@ export const VACANCY_BY_KIND: Readonly<Record<string, VacancyPhrase>> = {
     or textured, or a different colour from the cheek above it.
   */
   "facial hair": {
-    says: "no beard, moustache or stubble — his jaw, chin and upper lip clean-shaven, "
-      + "the skin there the same tone as the rest of his face with no shadow or stubble texture",
+    says: "no beard, moustache or stubble — {their} jaw, chin and upper lip clean-shaven, "
+      + "the skin there the same tone as the rest of {their} face with no shadow or stubble texture",
   },
   /*
     FRECKLES — V3(b)'s second slot story, and a DECLARED shortcut (fable-537 §2).
@@ -99,7 +124,7 @@ export const VACANCY_BY_KIND: Readonly<Record<string, VacancyPhrase>> = {
     should look like instead.
   */
   freckles: {
-    says: "no freckles — her skin clear and even across her nose, cheeks and forehead, "
+    says: "no freckles — {their} skin clear and even across {their} nose, cheeks and forehead, "
       + "with its own natural texture and colour rather than a flattened or airbrushed patch",
   },
 };
@@ -113,13 +138,25 @@ export const VACANCY_BY_KIND: Readonly<Record<string, VacancyPhrase>> = {
  */
 export function vacantPhraseFor(
   kind: string | null | undefined,
+  /**
+   * HOW THE PRODUCT SPEAKS ABOUT THIS CAST — required, and required on purpose.
+   *
+   * A default here would be a fourth implementation of *which pronoun* with a
+   * silent wrong answer; the typechecker naming every call site is the point.
+   */
+  pronouns: CastPronouns,
   instance?: "left" | "right" | null,
 ): string | null {
   if (!kind) return null;
   const entry = VACANCY_BY_KIND[kind];
   if (!entry) return null;
-  if (instance && entry.perInstance) return entry.perInstance.replace("{side}", instance);
-  return entry.says;
+  const said = instance && entry.perInstance
+    ? entry.perInstance.replace("{side}", instance)
+    : entry.says;
+  return said
+    .replace(/\{their\}/g, pronouns.possessive)
+    .replace(/\{them\}/g, pronouns.object)
+    .replace(/\{they\}/g, pronouns.subject);
 }
 
 /** Every kind that can say it is gone — for the sweeps that must cover them all. */

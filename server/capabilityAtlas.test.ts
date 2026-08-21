@@ -80,7 +80,13 @@ describe("the corpus is well-formed", () => {
 
 describe("free answers are matched back to the member that wrote them", () => {
   it("POSITIVE CONTROL — a rendered member round-trips", () => {
-    const said = cannotSaySentence("noInkToChange", { words: null, facet: "ink", scopeNoun: null, moneySafe: true });
+    /* A male Cast on purpose: §5e made these sentences a function of the Cast's
+       own pronouns, and the round trip has to hold for a set the reader was not
+       written around. */
+    const said = cannotSaySentence("noInkToChange", {
+      words: null, facet: "ink", scopeNoun: null, moneySafe: true,
+      pronouns: { subject: "he", object: "him", possessive: "his", plural: false },
+    });
     expect(reasonOfNote(said, { facet: "ink", scopeNoun: null })).toEqual("noInkToChange");
   });
   it("NEGATIVE CONTROL — a sentence the table never wrote is unmatched", () => {

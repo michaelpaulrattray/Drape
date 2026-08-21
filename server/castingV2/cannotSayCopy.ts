@@ -44,6 +44,7 @@
  * silently.)*
  */
 import type { RepaintAsksRefusal } from "./repaintAsks";
+import { capitalize, type CastPronouns } from "./castPronouns";
 
 /**
  * Every reason this table must carry a sentence for.
@@ -91,6 +92,16 @@ export type CannotSayContext = {
    * that is the caller's fact, not this table's.
    */
   moneySafe: boolean;
+  /**
+   * HOW THE PRODUCT SPEAKS ABOUT THIS CAST (§5e, ruled fable-1220).
+   *
+   * Four sentences in this table said "her" about every Cast, including the
+   * male ones. The word is not decoration here — one of these sentences tells a
+   * customer to *"tap it on her picture"*, which is an instruction about a man's
+   * photograph. Derived once in the service from the Cast's own schema and
+   * handed in, never re-decided per sentence.
+   */
+  pronouns: CastPronouns;
 };
 
 const MONEY = (safe: boolean): string => (safe
@@ -171,7 +182,8 @@ export const CANNOT_SAY_COPY: Readonly<Record<CannotSayReason, CannotSayEntry>> 
     say: (context) => {
       const said = lead(context);
       return (said ? `"${said}" names one side` : "That names one side")
-        + " of a pair, and pointing at it is how I can work on just that one — tap it on her picture "
+        + " of a pair, and pointing at it is how I can work on just that one — tap it on "
+        + `${context.pronouns.possessive} picture `
         + "and say it there. Said in a sentence I would have to change both, which isn't what you asked "
         + `for. ${MONEY(context.moneySafe)}`;
     },
@@ -206,8 +218,8 @@ export const CANNOT_SAY_COPY: Readonly<Record<CannotSayReason, CannotSayEntry>> 
     say: (context) => {
       const noun = lead(context);
       return noun
-        ? `${noun} isn't something I know where to put on her yet. ${MONEY(context.moneySafe)}`
-        : `That isn't something I know where to put on her yet. ${MONEY(context.moneySafe)}`;
+        ? `${noun} isn't something I know where to put on ${context.pronouns.object} yet. ${MONEY(context.moneySafe)}`
+        : `That isn't something I know where to put on ${context.pronouns.object} yet. ${MONEY(context.moneySafe)}`;
     },
   },
   /*
@@ -231,8 +243,10 @@ export const CANNOT_SAY_COPY: Readonly<Record<CannotSayReason, CannotSayEntry>> 
   */
   unplacedInk: {
     charge: "refunded",
-    say: (context) => "I can put a tattoo on her, but I need to know where it goes — her neck, "
-      + `an upper arm, her upper chest. Say where and I'll do it. ${MONEY(context.moneySafe)}`,
+    say: (context) => `I can put a tattoo on ${context.pronouns.object}, but I need to know where it goes — `
+      + `${context.pronouns.possessive} neck, `
+      + `an upper arm, ${context.pronouns.possessive} upper chest. Say where and I'll do it. `
+      + MONEY(context.moneySafe),
   },
   /*
     AN INK ASK WHOSE SHAPE THIS ROAD CANNOT STATE YET — told, never asked
@@ -253,9 +267,9 @@ export const CANNOT_SAY_COPY: Readonly<Record<CannotSayReason, CannotSayEntry>> 
   */
   inkBeyondToday: {
     charge: "free",
-    say: (context) => "Right now I can copy one design exactly, onto her neck, an upper arm "
-      + "or her upper chest — point me at one design and one of those places and I'll do it. "
-      + "Taking a whole sheet and working from the feel of it, across her, is being built and "
+    say: (context) => `Right now I can copy one design exactly, onto ${context.pronouns.possessive} neck, an upper arm `
+      + `or ${context.pronouns.possessive} upper chest — point me at one design and one of those places and I'll do it. `
+      + `Taking a whole sheet and working from the feel of it, across ${context.pronouns.object}, is being built and `
       + `isn't ready yet — it's coming. ${MONEY(context.moneySafe)}`,
   },
   /*
@@ -308,8 +322,10 @@ export const CANNOT_SAY_COPY: Readonly<Record<CannotSayReason, CannotSayEntry>> 
       ? `I can't find ${context.scopeNoun} on this version, so there's nothing there to change `
         + `or take off. Ask me about one that's there, or say where to put a new one and I'll `
         + `do it. ${MONEY(context.moneySafe)}`
-      : "I can put a tattoo on her — her neck, an upper arm, her upper chest. "
-        + "She hasn't got one yet, though, so there's nothing there to change or take off. "
+      : `I can put a tattoo on ${context.pronouns.object} — ${context.pronouns.possessive} neck, an upper arm, `
+        + `${context.pronouns.possessive} upper chest. `
+        + `${capitalize(context.pronouns.subject)} ${context.pronouns.plural ? "haven't" : "hasn't"} got one yet, though, `
+        + "so there's nothing there to change or take off. "
         + MONEY(context.moneySafe)),
   },
   /*
@@ -387,7 +403,7 @@ export const CANNOT_SAY_COPY: Readonly<Record<CannotSayReason, CannotSayEntry>> 
   },
   uncatalogued: {
     charge: "refunded",
-    say: (context) => "That's a part of her I can't work on yet. " + MONEY(context.moneySafe),
+    say: (context) => `That's a part of ${context.pronouns.object} I can't work on yet. ` + MONEY(context.moneySafe),
   },
   /*
     NOTHING TO SAY IT WITH. The read-back came back empty, so the road has no

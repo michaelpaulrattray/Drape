@@ -14,6 +14,9 @@ import { EDIT_PROSE } from "../server/castingV2/refineService";
 
 for (const noun of ["earrings", "glasses"]) {
   const asks = repaintAsksFor({
+  /* §5e: the reask questions and the vacancy phrases are a function of the
+     Cast's own pronouns now — a bench supplies one Cast. */
+  pronouns: { subject: "she", object: "her", possessive: "her", plural: false },
     delta: { absent: { statedAccessories: [noun] }, free: { statedAccessories: [] } } as any,
     prose: EDIT_PROSE,
   });

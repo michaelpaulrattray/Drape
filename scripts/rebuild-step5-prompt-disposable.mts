@@ -121,6 +121,9 @@ for (const step of STEPS) {
   const editDelta = step.editDelta;
   const accessory = deltas?.free?.statedAccessories;
   const asks = repaintAsksFor({
+  /* §5e: the reask questions and the vacancy phrases are a function of the
+     Cast's own pronouns now — a bench supplies one Cast. */
+  pronouns: { subject: "she", object: "her", possessive: "her", plural: false },
     delta: editDelta,
     prose: EDIT_PROSE,
     accessoryKind: accessoryKindOf(Array.isArray(accessory) ? accessory.join(", ") : String(accessory ?? "")),

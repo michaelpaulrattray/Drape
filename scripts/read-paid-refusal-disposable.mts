@@ -100,7 +100,7 @@ for (const row of libraryRows) {
 }
 
 const delta = { absent: { statedAccessories: ["glasses"] }, free: { statedAccessories: [] } } as any;
-const asks = repaintAsksFor({ delta, prose: EDIT_PROSE, restore: { state: delta, slots: supersededCarrySlots(libraryRows) } });
+const asks = repaintAsksFor({ pronouns: { subject: "she", object: "her", possessive: "her", plural: false }, delta, prose: EDIT_PROSE, restore: { state: delta, slots: supersededCarrySlots(libraryRows) } });
 if (!asks.ok) {
   console.log(`\nthe bench's asks refuse here too: ${asks.reason} — ${asks.detail}`);
 } else {

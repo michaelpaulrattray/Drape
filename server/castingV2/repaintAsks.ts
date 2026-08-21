@@ -55,6 +55,7 @@
  * rather than a forgotten one.
  */
 import type { EyeColour, EyeShape, HairTexture } from "../../shared/castingRealization";
+import type { CastPronouns } from "./castPronouns";
 import type { HairColour } from "../../shared/castingVocabularies";
 
 import { facetOfAxis, facetOfSubject, type Facet } from "./refineFacets";
@@ -102,6 +103,16 @@ export type RepaintAsksInput = {
   delta: RefineDelta;
   /** The same prose the prompt is composed with (`EDIT_PROSE`). */
   prose: EditProse;
+  /**
+   * HOW THE PRODUCT SPEAKS ABOUT THIS CAST — the vacancy phrases' pronouns
+   * (§5e, ruled fable-1220 §3).
+   *
+   * A vacancy sentence names a SITE — *"{their} jaw, chin and upper lip"* — and
+   * those sentences went to the painter with one guess for a beard and another
+   * for freckles. It arrives here rather than being derived here for the reason
+   * everything else on this input does: one reading per request.
+   */
+  pronouns: CastPronouns;
   /**
    * What the instruction said the worn object IS, through the shared table's
    * longest-match rule (`accessoryKindOf`) — derived once by the caller and
@@ -334,10 +345,19 @@ export class RepaintCannotSayError extends Error {
    * her left ear" (fable-471 §1), which is the founder's own specimen.
    */
   readonly scopeNoun: string | null;
+  /**
+   * HOW THE PRODUCT SPEAKS ABOUT THIS CAST (§5e).
+   *
+   * It rides on the error for the same reason `scopeNoun` does: the sentence is
+   * written at SETTLEMENT, in a function that has the error and nothing else,
+   * and re-deriving pronouns there would be a second reading of a fact the
+   * request already knew.
+   */
+  readonly pronouns: CastPronouns;
 
   constructor(
     refusal: RepaintAsksRefusal,
-    options: { words?: string | null; scopeNoun?: string | null } = {},
+    options: { words?: string | null; scopeNoun?: string | null; pronouns: CastPronouns },
   ) {
     super(`the repaint cannot express this ask: ${refusal.detail}`);
     this.name = "RepaintCannotSayError";
@@ -345,6 +365,7 @@ export class RepaintCannotSayError extends Error {
     this.facet = refusal.facet;
     this.words = options.words ?? null;
     this.scopeNoun = options.scopeNoun ?? null;
+    this.pronouns = options.pronouns;
   }
 }
 
@@ -563,8 +584,8 @@ export function repaintAsksFor(input: RepaintAsksInput): RepaintAsksResult {
           earns it.
         */
         const says = markKind !== null
-          ? (markCanDepart(markKind) ? vacantPhraseFor(markKind) : null)
-          : vacantPhraseFor(definition.guardKind);
+          ? (markCanDepart(markKind) ? vacantPhraseFor(markKind, input.pronouns) : null)
+          : vacantPhraseFor(definition.guardKind, input.pronouns);
         if (says === null) {
           /*
             An absence sentence is never improvised at the call site — a

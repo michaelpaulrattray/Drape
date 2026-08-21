@@ -43,15 +43,29 @@ carry the rulings, the courts and the histories.
 2  ✅ THE TWO FREE READS                  5d5a1504 — 0 of 37 masters carry ink;
                                           both readers work. Population arrives
                                           with the BASICS path (item 5)
-3a ONE-TATTOO REMOVAL                     designed 1310, AMENDED 1314 — the free
-                                          A/B/C drive runs FIRST and the render
-                                          model follows its letter
+3a ✅ ONE-TATTOO REMOVAL                  10c270dd — LETTER A: the prune IS the
+                                          removal. Free when the survivor exists
+                                          (it navigates), a clean re-render when
+                                          it does not, and a `gone` reading
+                                          misfiled as an edit ROUTES to the same
+                                          road rather than apologising.
+                                          389b7706 closed the hole underneath it
+                                          — an ink prune that had to re-render
+                                          was CHARGED and REFUNDED, live for
+                                          every repaint customer
 4  POLISH SITTING                         IN PROGRESS — his four UI asks plus the
                                           TATTOO STYLE GLOSSARY, which is the
-                                          gate on ungating word-tattoos
-4b THE STUDIO CAPABILITY CENSUS           founder-ordered (1315 §3). BUILT BY
-                                          FABLE on a worktree (1316) — do not
-                                          start it; review and rite it
+                                          gate on ungating word-tattoos.
+                                          REMAINING: receipt reference
+                                          thumbnails, the preview eraser, any
+                                          open §5e pronoun instance
+4b ✅ THE STUDIO CAPABILITY CENSUS        615fe6eb — 41 declared doors, 56 corpus
+                                          rows, 54 driven, state fixtures for a
+                                          cast that already WEARS something. Its
+                                          own first law: A FREE ANSWER IS A
+                                          WRITE, so a stateful corpus
+                                          re-establishes its state in front of
+                                          EVERY row that declares one
 5  THE TWO PATHS (Wardrobe / Basics)      founder ruling 1311 — DESIGN REPORT for
                                           countersign first, written against the
                                           census rather than from recollection
@@ -907,7 +921,13 @@ item; both deferred together until this studio's turn.
   an account whose transform road is shut is strictly WORSE than the wall: the
   ask would fall through to the words road and charge 25 credits.
 - **The removal-wording note folded in and CLOSED** — see §5f item 4.
-- **The removal ACTION is NOT built and is its own build** — §10 item 3.
+- ✅ **The removal ACTION IS BUILT** (`10c270dd`, §10 item 3a) — the sentence
+  above said it was not, and it was true until 2026-08-22. The generic prune
+  road IS the removal: it takes the tattoo's step out of the chain, navigates
+  free to the version without it when that version exists, and re-renders
+  cleanly when it does not. What is still its own build is the MULTI-tattoo
+  case (§10 item 3b), which needs per-slot decomposition of `free.ink` — one
+  subject holding every tattoo she has.
 - **The "chest and neck only" bound is GONE.** It was never the transform's: one
   line in `refineService`'s scope door refused every `ink:` scope, so a paired
   surface sent `ink:upperArm@left` and died before her sentence was read. An ink
@@ -1340,9 +1360,52 @@ the family's members instead of letting the engine's prior pick one
 for all eight — latitude spent as spread. Slots with the V5-era
 interpreter work; not in the active queue by founder's word.
 
-## 5e. THE PRONOUN-FIX ROAD — the refine surface calls every Cast "her"
-## (class found opus-913, ruled fable-1220; the instance was named fable-1186 and
-## the road was written down nowhere until now)
+## 5e. THE PRONOUN-FIX ROAD — ✅ **CLOSED 2026-08-22: the refine surface calls
+## the Cast what the Cast is** (class found opus-913, ruled fable-1220; the
+## instance was named fable-1186 and the road was written down nowhere until
+## this section existed)
+
+**The reading, re-run after the fix** (`scripts/sweep-refine-pronouns-disposable.mts`,
+which is the untracked one-off below made repeatable):
+
+```
+cannotSayCopy.ts     0 customer-facing
+refineReask.ts       0
+refineRefusals.ts    0
+vacancyPhrases.ts    0
+refineService.ts     0   (23 internal — log lines)
+repaintAsks.ts       0   ( 5 internal — refusal `detail:`)
+```
+
+**What landed.** `castPronouns` is derived ONCE at the top of `refineCandidate`,
+beside the identity it comes from, and threaded into every question builder,
+every refusal sentence and the vacancy phrases. The two instruction strings §5e
+put first — *"remove her glasses"* and the decline — are pronoun-correct, and
+the decline is now three sentences recognised by one derived reader rather than
+one constant compared by `===`.
+
+**The sweep found more than the count did**, which is law 7 doing its job: eight
+further customer-facing sentences in `refineService` itself that §5e's original
+count never reached, including one written THIS SHIFT (`removal_unnameable`), and
+one ledger line that talked about the customer in the third person AND assumed
+she was a "she" — that one went to second person instead, which needs no pronoun
+at all.
+
+**The vacancy phrases changed as fable-1220 §3's CORRECTION**, with its three
+grounds carried in the file and the pin rewritten to read THROUGH the door with
+a female Cast — so the golden still proves nothing was rewritten, and the one
+sentence that did change (the beard's *"his jaw"*, said about everybody) is named
+in its own arm. **If any vacate-class delivery regression shows up at a later
+court, this parameterisation is the first suspect.**
+
+**The arms:** three driven through the real service with the Cast's sex as the
+only variable (him / her / them), and the sabotage that reddens them is the
+original defect itself — hard-code `pronounsForSex("female")` and the male and
+unstated arms go red while the female one stays green.
+
+*(The road as it was written is preserved below.)*
+
+### The road as it stood before it was built
 
 **This item exists because the road did not.** fable-1186 §1 said a hard-coded
 `her` *"joins the pronoun-fix road as stated"*; `inkRealism.ts` named its own
@@ -1531,8 +1594,23 @@ Its slot relative to this list: after the two courts above, its own commit,
 post-rite for the reason §5e states (it edits live customer-facing copy on
 `CASTING_V2_SCOPE=all` lanes).
 
-### 4. THE REMOVAL-WALL WORDING NOTE — ⚠ **NOT CLOSED. The copy exists and is
-### UNREACHABLE** (corrected 2026-08-21, driven opus-967 §3, ordered fable-1314 §3)
+### 4. THE REMOVAL-WALL WORDING NOTE — ✅ **CLOSED 2026-08-22 (`10c270dd`): the
+### copy is DELETED and its call site ROUTES** (ruled fable-1322 §1, unguarded
+### per fable-1324 §1)
+
+**The letter was A**, so fable-1314 §3's first branch fired: the generic prune
+road answers these asks, and `inkRemovalNotYet` is gone from `cannotSayCopy`
+rather than left as a sentence with no road. The call site is NOT gone, and that
+is the ruling rather than an oversight — the branch is unreachable today only
+because an LLM classifies a stated removal as `intent: "remove"` first, and a
+misfiled one dropped into the words road would paint a fresh tattoo for 25
+credits. So it converts the parse and falls into the same removal block, and its
+arm drives that conversion directly, which no model can rescue.
+
+*(The correction below is preserved because it is worth more than the closure —
+a grep proves a string exists; only a drive proves a customer can reach it.)*
+
+### The state it was in before that (corrected 2026-08-21, driven opus-967 §3)
 
 ⚠ **THIS SECTION SAID ✅ CLOSED FOR THREE HOURS ON 2026-08-21 AND IT WAS WRONG,
 which is worth more than the correction.** It was written from a grep that found
@@ -1566,10 +1644,19 @@ it, so one answer served all three branches. **And that arm is deliberately
 OUTSIDE `CASTING_INK_TRANSFORM_SCOPE`**: gating an apology is how the apology
 stays wrong for everyone outside the flag.
 
-**What is NOT closed is the removal ACTION** — see §10 item 3. Being told
-honestly that a thing cannot be done yet is a different deliverable from doing
-it, and the action needs a design for per-slot decomposition of `free.ink`,
-since that is ONE subject holding every tattoo she has.
+⚠ **THIS PARAGRAPH SAID "WHAT IS NOT CLOSED IS THE REMOVAL ACTION" AND THAT
+STOPPED BEING TRUE ON 2026-08-22** (`10c270dd`, §10 item 3a). The removal action
+is built for the one-tattoo case, which is the entire production population, and
+`inkRemovalNotYet` — the honest *"not yet"* this section is about — is DELETED
+with its own sentence, exactly as fable-1314 §3 predicted it would be if the
+prune road answered. Its call site is not deleted: a `gone` reading that the
+interpreter misfiles as an edit now ROUTES to the removal road, because deleting
+the branch would drop such an ask into the words road and paint a fresh tattoo
+for 25 credits.
+
+What is still its own build is the MULTI-tattoo case (§10 item 3b), which needs
+the design for per-slot decomposition of `free.ink`, since that is ONE subject
+holding every tattoo she has.
 
 *(Preserved below, unchanged, as the record of what was found and why it waited.)*
 

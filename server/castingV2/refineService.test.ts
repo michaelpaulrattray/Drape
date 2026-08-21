@@ -1,4 +1,9 @@
 import { createHash } from "node:crypto";
+import type { CastPronouns } from "./castPronouns";
+
+/* One Cast, one set of words for her — §5e made these sentences a function
+   of the Cast's own pronouns rather than a constant. */
+const HER_PRONOUNS: CastPronouns = { subject: "she", object: "her", possessive: "her", plural: false };
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -696,6 +701,61 @@ describe("the seam verdict is an artifact, not a log line", () => {
   it("writes nothing when nothing was composited — no boundary, no opinion", async () => {
     await refineCandidate({ ...greenEyes, harvest: unmasked }, input);
     expect((landedVariant?.internalPrompt as { seam?: unknown }).seam).toBeUndefined();
+  });
+});
+
+/**
+ * THE REFINE SURFACE CALLS THE CAST WHAT THE CAST IS (§5e, class found
+ * opus-913, ruled fable-1220; built 2026-08-22).
+ *
+ * `castPronouns` has derived `he`/`she`/`they` from a Cast's own schema since
+ * the room called every Cast "she" once before. The recipe assembler threaded
+ * it through everything it said to the PAINTER — and this surface, the one the
+ * customer reads, did not use it at all.
+ *
+ * Driven at the service with the sex as the ONLY variable, because that is the
+ * shape of the defect: the sentence was right for half the population and had
+ * no way of knowing which half it was talking to.
+ */
+describe("the refine surface speaks about the Cast the Cast's own way", () => {
+  const sexed = (sex: string | null) => {
+    candidateRow.internalPrompt = {
+      prompt: "the composed casting instruction",
+      resolved: {
+        ...(sex === null ? {} : { sex }),
+        ageBand: "30s",
+        energy: "warm",
+        heritage: [{ heritage: "Nordic", pct: 100 }],
+        realized: { eyeColour: "brown", eyeShape: null },
+      },
+    };
+  };
+
+  /* A scope the grammar cannot read — the earliest sentence in the function
+     that names the person, and the one the hoisted derivation exists for. */
+  const askAboutAnUnknownPart = async () => refineCandidate(
+    { harvest: unmasked, interpret: async () => ({ ok: true as const, delta: { eyeColour: "green" as const } }) },
+    { ...input, instruction: "make it green", scope: "kneecap" },
+  ).then(() => null, (error: unknown) => (error as Error).message);
+
+  it("says HIM about a male Cast", async () => {
+    sexed("male");
+    expect(await askAboutAnUnknownPart()).toBe("I don't know which part of him that is. Nothing was charged.");
+  });
+
+  it("says HER about a female Cast", async () => {
+    sexed("female");
+    expect(await askAboutAnUnknownPart()).toBe("I don't know which part of her that is. Nothing was charged.");
+  });
+
+  it("says THEM when the Cast's sex was never stated — never she", async () => {
+    /*
+      `they` is the fallback rather than the exception. A record that predates
+      the axis is a person whose pronouns we do not know, and the only default
+      that cannot misgender anybody is the one that does not guess.
+    */
+    sexed(null);
+    expect(await askAboutAnUnknownPart()).toBe("I don't know which part of them that is. Nothing was charged.");
   });
 });
 
@@ -7899,7 +7959,11 @@ describe("removal is typed, and most of it is free", () => {
         readBytes: async () => { throw new Error("storage unreachable"); },
       },
       { ...input, instruction: "remove her glasses" },
-    )).rejects.toThrow(/couldn't check her face/);
+    /* "their", not "her": this fixture's Cast has no stated sex, and §5e made
+       every sentence on this surface a function of the Cast's own pronouns —
+       `they` is the fallback because it is the one default that cannot
+       misgender anybody. */
+    )).rejects.toThrow(/couldn't check their face/);
     expect(ledger.charges).toEqual([]);
   });
 
@@ -7982,7 +8046,7 @@ describe("removal is typed, and most of it is free", () => {
       instrument that cannot answer must not be allowed to delete her work, and
       the charge must not happen either.
     */
-    expect(refusal).toMatch(/couldn't check her face/i);
+    expect(refusal).toMatch(/couldn't check their face/i);
     expect(refusal).toMatch(/nothing was charged/i);
     expect(ledger.charges).toEqual([]);
   });
@@ -11715,7 +11779,7 @@ describe("the picture she attached becomes the carrier that rides", () => {
       come back sideless, and the question would be asked a second time — the
       loop a question exists to end.
     */
-    const raised = whichSideReask("use this tattoo design on her upper arm");
+    const raised = whichSideReask("use this tattoo design on her upper arm", HER_PRONOUNS);
     const chip = raised.options.find((one) => one.label === "Her right")!;
 
     const result = await refineCandidate(inkRoad({

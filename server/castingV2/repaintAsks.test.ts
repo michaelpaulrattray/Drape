@@ -38,7 +38,7 @@ function recipeFrom(asks: ReturnType<typeof repaintAsksFor>) {
 
 describe("one step's delta becomes the recipe's asks", () => {
   it("says a free-lane ask as the user's own state, on the slot that owns it", () => {
-    const result = repaintAsksFor({ delta: { free: { hairWorn: "hair down" } }, prose });
+    const result = repaintAsksFor({ pronouns: her, delta: { free: { hairWorn: "hair down" } }, prose });
 
     expect(result).toEqual({
       ok: true,
@@ -50,6 +50,7 @@ describe("one step's delta becomes the recipe's asks", () => {
     /* fable-171 condition 1, and the road every new cast travels. It is the
        first fixture here for exactly that reason. */
     const recipe = recipeFrom(repaintAsksFor({
+      pronouns: her,
       delta: { free: { hairWorn: "hair down" } }, prose,
     }));
 
@@ -64,7 +65,7 @@ describe("one step's delta becomes the recipe's asks", () => {
   });
 
   it("says a guaranteed value through the SAME prose the prompt is composed with", () => {
-    const result = repaintAsksFor({ delta: { hairColour: "copper" }, prose });
+    const result = repaintAsksFor({ pronouns: her, delta: { hairColour: "copper" }, prose });
 
     expect(result).toEqual({
       ok: true,
@@ -77,6 +78,7 @@ describe("one step's delta becomes the recipe's asks", () => {
        slot would be two instructions about one feature, and the assembler
        refuses a slot twice referenced anyway (fable-174). */
     const result = repaintAsksFor({
+      pronouns: her,
       delta: { hairStyle: "mullet", hairColour: "copper" }, prose,
     });
 
@@ -91,7 +93,7 @@ describe("one step's delta becomes the recipe's asks", () => {
   it("gives a bilateral feature one ask per instance", () => {
     /* Stored as instances, spoken as pairs (fable-167). "Her eyes" is one
        sentence to the user and two slots to the recipe. */
-    const result = repaintAsksFor({ delta: { eyeColour: "green" }, prose });
+    const result = repaintAsksFor({ pronouns: her, delta: { eyeColour: "green" }, prose });
 
     expect(result.ok).toBe(true);
     if (!result.ok) return;
@@ -108,8 +110,8 @@ describe("one step's delta becomes the recipe's asks", () => {
       (opus-342). What the court changed was the SLOT LIST and nothing else, so
       this asserts both halves: one ask, and the identical sentence.
     */
-    const both = repaintAsksFor({ delta: { eyeColour: "green" }, prose });
-    const one = repaintAsksFor({ delta: { eyeColour: "green" }, prose, scope: "eye@left" });
+    const both = repaintAsksFor({ pronouns: her, delta: { eyeColour: "green" }, prose });
+    const one = repaintAsksFor({ pronouns: her, delta: { eyeColour: "green" }, prose, scope: "eye@left" });
 
     expect(one.ok).toBe(true);
     if (!one.ok || !both.ok) return;
@@ -128,7 +130,7 @@ describe("one step's delta becomes the recipe's asks", () => {
       correct render of a different question — which is exactly how this
       program's worst defects have looked.
     */
-    const result = repaintAsksFor({ delta: { eyeColour: "green" }, prose, scope: "lips" });
+    const result = repaintAsksFor({ pronouns: her, delta: { eyeColour: "green" }, prose, scope: "lips" });
 
     expect(result.ok).toBe(false);
     if (result.ok) return;
@@ -147,6 +149,7 @@ describe("one step's delta becomes the recipe's asks", () => {
   */
   it("still refuses a scoped ask whose facet has no slot in the scope", () => {
     const result = repaintAsksFor({
+      pronouns: her,
       delta: { free: { marks: ["cauliflower ear on her left ear"] } },
       prose,
       scope: "ear@left",
@@ -182,7 +185,7 @@ describe("one step's delta becomes the recipe's asks", () => {
 
   it("leaves an unscoped ask exactly as it was", () => {
     /* The inert half: every render before the panel sends a scope. */
-    const result = repaintAsksFor({ delta: { eyeColour: "green" }, prose, scope: undefined });
+    const result = repaintAsksFor({ pronouns: her, delta: { eyeColour: "green" }, prose, scope: undefined });
 
     expect(result.ok).toBe(true);
     if (!result.ok) return;
@@ -191,6 +194,7 @@ describe("one step's delta becomes the recipe's asks", () => {
 
   it("takes an accessory's slot from the described OBJECT, never from the facet", () => {
     const result = repaintAsksFor({
+      pronouns: her,
       delta: { free: { statedAccessories: ["small gold hoops"] } },
       prose,
       accessoryKind: "earring",
@@ -206,6 +210,7 @@ describe("one step's delta becomes the recipe's asks", () => {
     /* A plural value is the COMPLETE current answer rather than an increment,
        so the state phrase is the whole list. */
     const result = repaintAsksFor({
+      pronouns: her,
       delta: { free: { marks: ["a scar on her cheek", "freckles across her nose"] } },
       prose,
     });
@@ -234,6 +239,7 @@ describe("one step's delta becomes the recipe's asks", () => {
 describe("a departure vacates the slot and says so", () => {
   it("turns her own glasses leaving into a vacate ask that names the bare site", () => {
     const result = repaintAsksFor({
+      pronouns: her,
       delta: { free: { statedAccessories: [] }, absent: { statedAccessories: ["glasses"] } },
       prose,
       accessoryKind: "glasses",
@@ -261,6 +267,7 @@ describe("a departure vacates the slot and says so", () => {
       fix, and this is the door where the old refusal was raised.
     */
     const result = repaintAsksFor({
+      pronouns: her,
       delta: { free: {}, absent: { facialHair: ["beard"] } },
       prose,
     });
@@ -285,6 +292,7 @@ describe("a departure vacates the slot and says so", () => {
       studio), so it refuses exactly as it did before.
     */
     const result = repaintAsksFor({
+      pronouns: her,
       delta: { free: {}, absent: { ink: ["the star behind her ear"] } },
       prose,
     });
@@ -301,6 +309,7 @@ describe("a departure vacates the slot and says so", () => {
 
   it("vacates BOTH lobes when a pair leaves, because a pair is two slots", () => {
     const result = repaintAsksFor({
+      pronouns: her,
       delta: { free: { statedAccessories: [] }, absent: { statedAccessories: ["gold hoop earrings"] } },
       prose,
       accessoryKind: "earring",
@@ -328,6 +337,7 @@ describe("a departure vacates the slot and says so", () => {
    */
   it("REFUSES a side named in prose with nothing pointed at, rather than dispatching a contradiction", () => {
     const result = repaintAsksFor({
+      pronouns: her,
       delta: { free: { eyeColourFree: "her right eye fiery red" } },
       prose,
     });
@@ -340,6 +350,7 @@ describe("a departure vacates the slot and says so", () => {
 
   it("CONTROL — a sentence naming BOTH sides is about the pair, and goes through", () => {
     const result = repaintAsksFor({
+      pronouns: her,
       delta: { free: { eyeColourFree: "her left and right eyes fiery red" } },
       prose,
     });
@@ -351,6 +362,7 @@ describe("a departure vacates the slot and says so", () => {
 
   it("CONTROL — the same sentence WITH a scope is the path the refusal points at", () => {
     const result = repaintAsksFor({
+      pronouns: her,
       delta: { free: { eyeColourFree: "her right eye fiery red" } },
       prose,
       scope: "eye@right",
@@ -365,6 +377,7 @@ describe("a departure vacates the slot and says so", () => {
     /* "Parted on the left" is a haircut, and hair has one instance: there is no
        fan-out for a side word to contradict. */
     const result = repaintAsksFor({
+      pronouns: her,
       delta: { free: { hairWorn: "parted on the left" } },
       prose,
     });
@@ -386,6 +399,7 @@ describe("a departure vacates the slot and says so", () => {
    */
   it("ARMED — narrows to the side the words name, right", () => {
     const result = repaintAsksFor({
+      pronouns: her,
       delta: { free: { eyeColourFree: "her right eye fiery red" } },
       prose,
       inferSideFromWords: true,
@@ -398,6 +412,7 @@ describe("a departure vacates the slot and says so", () => {
 
   it("ARMED — and left, which is the mirrored half of the same claim", () => {
     const result = repaintAsksFor({
+      pronouns: her,
       delta: { free: { eyeColourFree: "her left eye fiery red" } },
       prose,
       inferSideFromWords: true,
@@ -410,6 +425,7 @@ describe("a departure vacates the slot and says so", () => {
 
   it("ARMED — a sentence about the pair still asks for both", () => {
     const result = repaintAsksFor({
+      pronouns: her,
       delta: { free: { eyeColourFree: "her left and right eyes fiery red" } },
       prose,
       inferSideFromWords: true,
@@ -433,6 +449,7 @@ describe("a departure vacates the slot and says so", () => {
       court has already seen fail, the door refuses free and whole.
     */
     const result = repaintAsksFor({
+      pronouns: her,
       delta: { free: { statedAccessories: [] }, absent: { statedAccessories: ["gold hoop earrings"] } },
       prose,
       accessoryKind: "earring",
@@ -453,6 +470,7 @@ describe("a departure vacates the slot and says so", () => {
       on a case it was never built for.
     */
     const result = repaintAsksFor({
+      pronouns: her,
       delta: { free: { statedAccessories: [] }, absent: { statedAccessories: ["glasses"] } },
       prose,
       accessoryKind: "glasses",
@@ -467,6 +485,7 @@ describe("a departure vacates the slot and says so", () => {
   it("CONTROL — an UNSCOPED pair removal still vacates both, exactly as it did", () => {
     /* The inert half. Every removal before the panel sends a scope. */
     const result = repaintAsksFor({
+      pronouns: her,
       delta: { free: { statedAccessories: [] }, absent: { statedAccessories: ["gold hoop earrings"] } },
       prose,
       accessoryKind: "earring",
@@ -483,6 +502,7 @@ describe("a departure vacates the slot and says so", () => {
        against, and the price of getting it wrong is a paid render that says
        something untrue about her face. */
     const result = repaintAsksFor({
+      pronouns: her,
       delta: { free: { statedAccessories: [] }, absent: { statedAccessories: ["her tiara"] } },
       prose,
       accessoryKind: null,
@@ -499,6 +519,7 @@ describe("a departure vacates the slot and says so", () => {
        and the surviving item has to keep being said or the next render drops
        it. The empty-value skip above is narrow for exactly this reason. */
     const result = repaintAsksFor({
+      pronouns: her,
       delta: {
         free: { statedAccessories: ["thin wire glasses"] },
         absent: { statedAccessories: ["gold hoop earrings"] },
@@ -524,7 +545,7 @@ describe("a departure vacates the slot and says so", () => {
 */
 describe("a presentation fact rides the words and files nowhere", () => {
   it("says it in the recipe rather than refusing the render", () => {
-    const result = repaintAsksFor({ delta: { free: { expression: "a soft, closed-mouth smile" } }, prose });
+    const result = repaintAsksFor({ pronouns: her, delta: { free: { expression: "a soft, closed-mouth smile" } }, prose });
 
     expect(result.ok).toBe(true);
     if (!result.ok) return;
@@ -544,6 +565,7 @@ describe("a presentation fact rides the words and files nowhere", () => {
       down, so it is re-said from there on every render of the branch.
     */
     const result = repaintAsksFor({
+      pronouns: her,
       delta: { hairColour: "copper" },
       prose,
       restore: { state: { hairColour: "copper", free: { expression: "a soft, closed-mouth smile" } }, slots: [] },
@@ -577,6 +599,7 @@ describe("a presentation fact rides the words and files nowhere", () => {
       and no roadmap item introduces it.
     */
     const result = repaintAsksFor({
+      pronouns: her,
       delta: { hairColour: "copper" },
       prose,
       restore: { state: { hairColour: "copper" }, slots: ["elbow@left", "hair"] },
@@ -592,6 +615,7 @@ describe("a presentation fact rides the words and files nowhere", () => {
     /* The negative half. Report unconditionally and this goes red rather than
        every render quietly acquiring a warning about slots that were fine. */
     const result = repaintAsksFor({
+      pronouns: her,
       delta: { hairColour: "copper" },
       prose,
       restore: { state: { hairColour: "copper" }, slots: ["hair"] },
@@ -606,6 +630,7 @@ describe("a presentation fact rides the words and files nowhere", () => {
     /* The inert half. Make the clause unconditional and this goes red rather
        than every render quietly acquiring a sentence about her face. */
     const result = repaintAsksFor({
+      pronouns: her,
       delta: { hairColour: "copper" },
       prose,
       restore: { state: { hairColour: "copper" }, slots: [] },
@@ -623,7 +648,7 @@ describe("a presentation fact rides the words and files nowhere", () => {
       nothing: she typed a sentence, the recipe says it, and the picture is
       supposed to change.
     */
-    const result = repaintAsksFor({ delta: { free: { expression: "a wide, open smile" } }, prose });
+    const result = repaintAsksFor({ pronouns: her, delta: { free: { expression: "a wide, open smile" } }, prose });
 
     expect(result.ok).toBe(true);
   });
@@ -645,7 +670,7 @@ describe("what it refuses rather than paints", () => {
     for (const [delta, facet] of [
       [{ makeup: "a red lip" }, "makeup"],
     ] as const) {
-      const result = repaintAsksFor({ delta, prose });
+      const result = repaintAsksFor({ pronouns: her, delta, prose });
       expect(result.ok, facet).toBe(false);
       if (result.ok) continue;
       expect(result.reason, facet).toBe("notASlot");
@@ -669,6 +694,7 @@ describe("what it refuses rather than paints", () => {
   */
   it("refuses an ink ask with no placement, in ink's own words", () => {
     const result = repaintAsksFor({
+      pronouns: her,
       delta: { free: { ink: "a small swallow" } },
       prose,
     });
@@ -688,6 +714,7 @@ describe("what it refuses rather than paints", () => {
   */
   it("takes an ink ask to the placement's slot once somebody says where", () => {
     const result = repaintAsksFor({
+      pronouns: her,
       delta: { free: { ink: "a small swallow" } },
       prose,
       inkPlacement: { placement: "neck", side: null },
@@ -703,6 +730,7 @@ describe("what it refuses rather than paints", () => {
        the ask lands on is the sided one, and the picture-half clause reads its
        instance from exactly this. */
     const result = repaintAsksFor({
+      pronouns: her,
       delta: { free: { ink: "a small swallow" } },
       prose,
       inkPlacement: { placement: "upperArm", side: "left" },
@@ -717,6 +745,7 @@ describe("what it refuses rather than paints", () => {
        each other's label: one is owed work on the placement table, the other is
        a ruling. */
     const result = repaintAsksFor({
+      pronouns: her,
       delta: { free: { statedAccessories: ["a lapel pin"] } },
       prose,
       accessoryKind: null,
@@ -729,7 +758,7 @@ describe("what it refuses rather than paints", () => {
   });
 
   it("refuses a written facet with nothing to say about it", () => {
-    const result = repaintAsksFor({ delta: { free: { lips: "  " } }, prose });
+    const result = repaintAsksFor({ pronouns: her, delta: { free: { lips: "  " } }, prose });
 
     expect(result.ok).toBe(false);
     if (result.ok) return;
@@ -740,7 +769,7 @@ describe("what it refuses rather than paints", () => {
     /* The assembler would accept it: no asks is a legitimate pure-carry recipe,
        and it would paint, land and bill. This caller is the only layer that
        knows somebody typed a sentence and paid for it. */
-    const result = repaintAsksFor({ delta: {}, prose });
+    const result = repaintAsksFor({ pronouns: her, delta: {}, prose });
 
     expect(result.ok).toBe(false);
     if (result.ok) return;
@@ -776,7 +805,7 @@ describe("the asks the assembler is actually handed", () => {
       { free: { statedAccessories: ["small gold hoops"] } },
       { free: { brows: "fuller, softly arched" } },
     ]) {
-      const recipe = recipeFrom(repaintAsksFor({ delta, prose, accessoryKind: "earring" }));
+      const recipe = recipeFrom(repaintAsksFor({ pronouns: her, delta, prose, accessoryKind: "earring" }));
       expect(recipe.ok, JSON.stringify(delta)).toBe(true);
       if (!recipe.ok) continue;
       expect(recipe.ask, JSON.stringify(delta)).toMatch(/^Change only /);
@@ -787,7 +816,7 @@ describe("the asks the assembler is actually handed", () => {
     /* `slotNotNamed` is the assembler's refusal for a slot with no library entry
        and no noun on the ask. Supplying the catalogue's noun on every ask is what
        makes a first-ever edit of a feature expressible at all. */
-    const asks = repaintAsksFor({ delta: { free: { nose: "a slightly narrower bridge" } }, prose });
+    const asks = repaintAsksFor({ pronouns: her, delta: { free: { nose: "a slightly narrower bridge" } }, prose });
     expect(asks.ok).toBe(true);
     if (!asks.ok) return;
     expect(asks.asks[0]!.noun).toBe("nose");
@@ -818,7 +847,7 @@ describe("an uncatalogued kind rides its own synthesized slot", () => {
   const catEars = { noun: "cat ears", words: "soft grey cat ears set high on her head" };
 
   it("becomes an ask on the open key, said with the STORED noun", () => {
-    const result = repaintAsksFor({ delta: { open: { "cat-ears": catEars } }, prose });
+    const result = repaintAsksFor({ pronouns: her, delta: { open: { "cat-ears": catEars } }, prose });
 
     expect(result).toEqual({
       ok: true,
@@ -834,7 +863,7 @@ describe("an uncatalogued kind rides its own synthesized slot", () => {
   });
 
   it("says it to the painter in her own words, through the real assembler", () => {
-    const recipe = recipeFrom(repaintAsksFor({ delta: { open: { "cat-ears": catEars } }, prose }));
+    const recipe = recipeFrom(repaintAsksFor({ pronouns: her, delta: { open: { "cat-ears": catEars } }, prose }));
 
     expect(recipe.ok).toBe(true);
     if (!recipe.ok) return;
@@ -854,6 +883,7 @@ describe("an uncatalogued kind rides its own synthesized slot", () => {
       so no library row), exactly as with a smile.
     */
     const result = repaintAsksFor({
+      pronouns: her,
       delta: { hairColour: "copper" },
       prose,
       restore: { state: { hairColour: "copper", open: { "cat-ears": catEars } }, slots: [] },
@@ -868,6 +898,7 @@ describe("an uncatalogued kind rides its own synthesized slot", () => {
     /* The inert half. Make the loop unconditional and this goes red rather than
        every render quietly acquiring a slot nobody asked about. */
     const result = repaintAsksFor({
+      pronouns: her,
       delta: { hairColour: "copper" },
       prose,
       restore: { state: { hairColour: "copper" }, slots: [] },
@@ -885,6 +916,7 @@ describe("an uncatalogued kind rides its own synthesized slot", () => {
       guard against *a charge for nothing* on every render after it.
     */
     const result = repaintAsksFor({
+      pronouns: her,
       delta: {},
       prose,
       restore: { state: { open: { "cat-ears": catEars } }, slots: [] },
@@ -899,6 +931,7 @@ describe("an uncatalogued kind rides its own synthesized slot", () => {
     /* The other half, which is the one that must not refuse: a door that says
        no to everybody would pass the arm above and take the feature away. */
     const result = repaintAsksFor({
+      pronouns: her,
       delta: { open: { "cat-ears": catEars } },
       prose,
       restore: { state: { open: { "cat-ears": catEars } }, slots: [] },
@@ -915,6 +948,7 @@ describe("an uncatalogued kind rides its own synthesized slot", () => {
       satisfied this door on every later render since.
     */
     const result = repaintAsksFor({
+      pronouns: her,
       delta: {},
       prose,
       restore: { state: { free: { expression: "a soft, closed-mouth smile" } }, slots: [] },
@@ -932,6 +966,7 @@ describe("an uncatalogued kind rides its own synthesized slot", () => {
       cat-ears: …"* at full price. A refusal is free.
     */
     const result = repaintAsksFor({
+      pronouns: her,
       delta: { open: { "cat-ears": { noun: "  ", words: "soft grey cat ears" } } },
       prose,
     });
@@ -951,6 +986,7 @@ describe("an uncatalogued kind rides its own synthesized slot", () => {
       the ask side.
     */
     const result = repaintAsksFor({
+      pronouns: her,
       delta: { open: { "cat ears": catEars } },
       prose,
     });
@@ -974,6 +1010,7 @@ describe("an uncatalogued kind rides its own synthesized slot", () => {
     const restate = [{ slot: "earring@left", taken: "gold hoops" }];
 
     const survived = repaintAsksFor({
+      pronouns: her,
       delta: {}, prose, restate,
       restore: { state: { free: { expression: "a soft, closed-mouth smile" } }, slots: [] },
     });
@@ -982,7 +1019,7 @@ describe("an uncatalogued kind rides its own synthesized slot", () => {
     expect(survived.presentation).toEqual([{ noun: "expression", words: "a soft, closed-mouth smile" }]);
 
     /* And the same prune against a composition the struck step is gone from. */
-    const struck = repaintAsksFor({ delta: {}, prose, restate, restore: { state: {}, slots: [] } });
+    const struck = repaintAsksFor({ pronouns: her, delta: {}, prose, restate, restore: { state: {}, slots: [] } });
     expect(struck.ok).toBe(true);
     if (!struck.ok) return;
     expect(struck.presentation).toBeUndefined();
@@ -1004,12 +1041,13 @@ describe("an uncatalogued kind rides its own synthesized slot", () => {
 
     for (const state of [{}, carrying]) {
       /* Writes nothing: refused, whatever she is carrying. */
-      const empty = repaintAsksFor({ delta: {}, prose, restore: { state, slots: [] } });
+      const empty = repaintAsksFor({ pronouns: her, delta: {}, prose, restore: { state, slots: [] } });
       expect(empty.ok, JSON.stringify(state)).toBe(false);
       if (!empty.ok) expect(empty.reason).toBe("nothingAsked");
 
       /* Writes something: served, whatever she is carrying. */
       const asking = repaintAsksFor({
+      pronouns: her,
         delta: { hairColour: "copper" }, prose,
         restore: { state: { ...state, hairColour: "copper" }, slots: [] },
       });
@@ -1026,6 +1064,7 @@ describe("an uncatalogued kind rides its own synthesized slot", () => {
       *make her smile* away from every customer.
     */
     const result = repaintAsksFor({
+      pronouns: her,
       delta: { free: { expression: "a wide, open smile" } },
       prose,
       restore: { state: { free: { expression: "a wide, open smile" } }, slots: [] },
@@ -1041,6 +1080,7 @@ describe("an uncatalogued kind rides its own synthesized slot", () => {
        painter — the defect class this whole module exists to close, arriving
        through a composition rather than through a gate. */
     const result = repaintAsksFor({
+      pronouns: her,
       delta: { open: { "cat-ears": catEars } },
       prose,
       restore: { state: { hairColour: "copper" }, slots: [] },
@@ -1105,6 +1145,7 @@ describe("an open kind splits into a CARRY and an EDIT (D-244, fable-909 §1)", 
   }];
 
   const carryingBranch = (cropped?: ReadonlySet<string>) => repaintAsksFor({
+      pronouns: her,
     delta: { hairColour: "copper" },
     prose,
     restore: { state: { hairColour: "copper", open: { "cat-ears": catEars } }, slots: [] },
@@ -1159,6 +1200,7 @@ describe("an open kind splits into a CARRY and an EDIT (D-244, fable-909 §1)", 
       backstop nothing has tested.
     */
     const asks = repaintAsksFor({
+      pronouns: her,
       delta: { open: { "cat-ears": catEars } },
       prose,
       restore: { state: { open: { "cat-ears": catEars } }, slots: [] },
@@ -1210,6 +1252,7 @@ describe("an open kind splits into a CARRY and an EDIT (D-244, fable-909 §1)", 
       photograph of the grey ones and asks for nothing.
     */
     const edited = repaintAsksFor({
+      pronouns: her,
       delta: { open: { "cat-ears": { noun: "cat ears", words: "sleek black cat ears" } } },
       prose,
       restore: { state: { open: { "cat-ears": { noun: "cat ears", words: "sleek black cat ears" } } }, slots: [] },
@@ -1247,6 +1290,7 @@ describe("a distributed open kind is carried by its two per-side crops", () => {
 
   it("(b) a CARRIED distributed kind whose two crops exist is not an ask at all", () => {
     const result = repaintAsksFor({
+      pronouns: her,
       delta: { hairColour: "copper" },
       prose,
       restore: { state: { hairColour: "copper", open: { wings } }, slots: [] },
@@ -1268,6 +1312,7 @@ describe("a distributed open kind is carried by its two per-side crops", () => {
       or she loses the other one.
     */
     const result = repaintAsksFor({
+      pronouns: her,
       delta: { hairColour: "copper" },
       prose,
       restore: { state: { hairColour: "copper", open: { wings } }, slots: [] },

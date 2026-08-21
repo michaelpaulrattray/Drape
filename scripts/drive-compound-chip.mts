@@ -23,6 +23,10 @@
  */
 import "dotenv/config";
 
+/* §5e: the reask questions and the vacancy phrases are a function of the
+   Cast's own pronouns now — a bench supplies one Cast. */
+const HER_PRONOUNS = { subject: "she", object: "her", possessive: "her", plural: false } as const;
+
 import { glassesHideEyesReask } from "../server/castingV2/refineReask";
 import { interpretRefinement } from "../server/castingV2/refineInterpreter";
 
@@ -30,7 +34,7 @@ const RUNS = Number(process.env.RUNS ?? 5);
 
 /* The sentence is TAKEN FROM THE CHIP, never retyped here. A driver that
    quotes its subject can pass while the shipped string drifts away from it. */
-const reask = glassesHideEyesReask("fox eyes");
+const reask = glassesHideEyesReask("fox eyes", HER_PRONOUNS);
 const COMPOUND = reask.options[0]!.resolves;
 const EYES_ONLY = reask.options[1]!.resolves;
 const REMOVAL_ONLY = "remove her glasses";

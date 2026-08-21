@@ -58,6 +58,7 @@ function recipeForEarringEdit(library: readonly LibraryEntry[]) {
     delta: { free: { statedAccessories: ["small gold hoop earrings"] } },
     prose: EDIT_PROSE,
     accessoryKind: "earring",
+    pronouns: { subject: "she", object: "her", possessive: "her", plural: false },
   });
   if (!asks.ok) throw new Error(`the ask layer refused: ${asks.reason}`);
   const recipe = assembleRecipe({ master: MASTER, pronouns: PRONOUNS, library, asks: asks.asks });

@@ -30,6 +30,7 @@
  * the answer resolves the question exactly as tapping it would.
  */
 import { randomUUID } from "node:crypto";
+import { capitalize, type CastPronouns } from "./castPronouns";
 
 import { mentionsUpsweptAsk } from "./eyeShapeRouting";
 import {
@@ -147,7 +148,7 @@ export type Reask = {
  *
  * Nothing. Every `resolves` reachable through this door is a sentence the
  * customer could have typed unaided — *"remove her glasses"*, her own sentence,
- * {@link LEAVE_AS_SHE_IS}. **`same-again` is deliberately NOT reachable through
+ * {@link leaveAsTheyAre}. **`same-again` is deliberately NOT reachable through
  * it**: answering that offer sets `confirmedRegenerate`, which stands down
  * doors that exist to stop somebody paying for a render that changes nothing,
  * and a handle must never be the thing that turns a door off. It keeps its own
@@ -251,19 +252,21 @@ export const REASK_HANDLE_MAX_LENGTH = REASK_KINDS.reduce(
  * through to the word doors exactly as an unrecognised one does. Refusing it
  * with a throw would turn a forged string into a 500.
  */
-const BY_HANDLE: Partial<Record<ReaskKind, (asked: string) => Reask | null>> = {
-  "glasses-hide-eyes": (asked) => glassesHideEyesReask(asked),
-  "which-side": (asked) => whichSideReask(asked),
+const BY_HANDLE: Partial<Record<ReaskKind, (asked: string, pronouns: CastPronouns) => Reask | null>> = {
+  "glasses-hide-eyes": (asked, pronouns) => glassesHideEyesReask(asked, pronouns),
+  "which-side": (asked, pronouns) => whichSideReask(asked, pronouns),
   /* About a ROW rather than about the words — the sentence alone cannot say
      which design was cut, so the handle carries its name and this puts the two
      halves back (`splitDesignHandle`). */
+  /* No pronoun in its prose, so it takes none — a parameter threaded to a
+     function that does not use it is a second place to keep in step. */
   "this-design": (named) => thisDesignReask(splitDesignHandle(named)),
   /* About TWO rows and an address, because the sentence names where the
      resident is and the adopt has to delete exactly the row that sentence
      named (`splitReplaceHandle`). */
-  "replace-design": (named) => {
+  "replace-design": (named, pronouns) => {
     const parts = splitReplaceHandle(named);
-    return parts === null ? null : replaceDesignReask(parts);
+    return parts === null ? null : replaceDesignReask({ ...parts, pronouns });
   },
 };
 
@@ -275,11 +278,11 @@ const BY_HANDLE: Partial<Record<ReaskKind, (asked: string) => Reask | null>> = {
  * sentence falls through to the word doors exactly as it does today, which is
  * the behaviour every caller had before this existed.
  */
-export function reaskByHandle(answering: string): Reask | null {
+export function reaskByHandle(answering: string, pronouns: CastPronouns): Reask | null {
   const match = HANDLE.exec(answering.trim());
   if (!match) return null;
   const build = BY_HANDLE[match[1] as ReaskKind];
-  return build ? build(match[2]!) : null;
+  return build ? build(match[2]!, pronouns) : null;
 }
 
 /**
@@ -697,6 +700,7 @@ export function nearMiss(instruction: string): { typed: string; meant: string } 
 export function pendingReaskFor(
   instruction: string,
   hasColourHistory: boolean,
+  pronouns: CastPronouns,
 ): Reask | null {
   /*
     THE HANDLE FIRST, because it is the only route that KNOWS which question was
@@ -708,7 +712,7 @@ export function pendingReaskFor(
     the wrong question's chips do not match, which is the dead end this door
     exists to close, arriving one line later.
   */
-  const handled = reaskByHandle(instruction);
+  const handled = reaskByHandle(instruction, pronouns);
   if (handled) return handled;
 
   const miss = nearMiss(instruction);
@@ -722,7 +726,7 @@ export function pendingReaskFor(
     should still be offered the correction first — the near-miss door is the more
     specific reading of the same sentence.
   */
-  if (mentionsUpsweptAsk(instruction)) return alreadyUpsweptReask(instruction);
+  if (mentionsUpsweptAsk(instruction)) return alreadyUpsweptReask(instruction, pronouns);
   return null;
 }
 
@@ -815,7 +819,31 @@ export function resolveAnswer(reask: Reask, typed: string): string | null {
  * a free outcome — one constant, read in two places, rather than a sentinel
  * spelled out at each of them.
  */
-export const LEAVE_AS_SHE_IS = "leave her as she is";
+export function leaveAsTheyAre(pronouns: CastPronouns): string {
+  /* "leave them as they ARE" — the plural flag is why this is a function of the
+     whole pronoun set rather than of one word. */
+  return `leave ${pronouns.object} as ${pronouns.subject} ${pronouns.plural ? "are" : "is"}`;
+}
+
+/**
+ * ⚠ EVERY SPELLING THIS DECLINE CAN HAVE, for the one reader that has to
+ * recognise it without knowing whose Cast it was.
+ *
+ * `refineCandidate` answers this sentence before the parse, and it is now three
+ * sentences rather than one. Derived from the pronoun sets rather than listed,
+ * so a fourth set could not arrive with a spelling this reader has never heard
+ * of (working law 4).
+ */
+export function isLeaveAsTheyAre(said: string): boolean {
+  const trimmed = said.trim().toLowerCase();
+  return DECLINE_SPELLINGS.some((one) => one === trimmed);
+}
+
+const DECLINE_SPELLINGS = [
+  { object: "him", subject: "he", plural: false },
+  { object: "her", subject: "she", plural: false },
+  { object: "them", subject: "they", plural: true },
+].map((pronouns) => leaveAsTheyAre(pronouns as CastPronouns).toLowerCase());
 
 /**
  * The answer that means "not this — throw it away", for the same reason and by
@@ -823,7 +851,7 @@ export const LEAVE_AS_SHE_IS = "leave her as she is";
  *
  * There is no sentence meaning "delete the design you just made", so the
  * decline resolves into this one shared string, recognised before the parse.
- * It is deliberately NOT {@link LEAVE_AS_SHE_IS}: that answer leaves everything
+ * It is deliberately NOT {@link leaveAsTheyAre}: that answer leaves everything
  * where it is, and this one destroys a row and hands its bytes to the cleanup
  * worker. Two outcomes that differ by a deletion must not share a constant.
  */
@@ -972,7 +1000,10 @@ export function replaceDesignReask(input: {
   asked: string;
   /** What the cut was narrowed to, when it was — see {@link inkCutHalfSentence}. */
   focus?: InkCutFocus | null;
+  /** How the product speaks about THIS Cast — see `castPronouns` (§5e). */
+  pronouns: CastPronouns;
 }): Reask {
+  const pronouns = input.pronouns;
   const asked = input.asked.trim().replace(/[.!?]+$/, "");
   const place = inkAddressPhrase({ placement: input.placement, side: input.side });
   return {
@@ -989,7 +1020,7 @@ export function replaceDesignReask(input: {
         rebuild might spell differently is an answer that stops resolving.
       */
       { label: "Yes — replace it", resolves: asked },
-      { label: "No, keep the one she has", resolves: DISCARD_THE_DESIGN },
+      { label: `No, keep the one ${pronouns.subject} ${pronouns.plural ? "have" : "has"}`, resolves: DISCARD_THE_DESIGN },
     ],
   };
 }
@@ -1123,7 +1154,12 @@ function splitDesignHandle(named: string): { designPublicId: string; asked: stri
  * price is said BEFORE the money moves (D-109), and the one-way door is stated
  * in the words he confirmed — the current picture is replaced.
  */
-export function sameAgainReask(input: { asked: string; priceCredits: number }): Reask {
+export function sameAgainReask(input: {
+  asked: string;
+  priceCredits: number;
+  /** How the product speaks about THIS Cast — see `castPronouns` (§5e). */
+  pronouns: CastPronouns;
+}): Reask {
   return {
     kind: "same-again",
     /*
@@ -1136,7 +1172,7 @@ export function sameAgainReask(input: { asked: string; priceCredits: number }): 
       + `The picture you are looking at is replaced · ${input.priceCredits} credits.`,
     options: [
       { label: `Yes — a fresh take · ${input.priceCredits} credits`, resolves: input.asked },
-      { label: "No, leave it", resolves: LEAVE_AS_SHE_IS },
+      { label: "No, leave it", resolves: leaveAsTheyAre(input.pronouns) },
     ],
     /* The version's own words, so answering lands on this question however the
        repeat that raised it was worded. */
@@ -1164,17 +1200,17 @@ export function sameAgainReask(input: { asked: string; priceCredits: number }): 
  * 8), and it is also what lets this be rebuilt identically on the answer path,
  * where no image has been read.
  */
-export function alreadyUpsweptReask(instruction: string): Reask {
+export function alreadyUpsweptReask(instruction: string, pronouns: CastPronouns): Reask {
   const asked = instruction.trim().replace(/[.!?]+$/, "");
   return {
     kind: "already-upswept",
-    question: "Her eyes already sweep up at the outer corners. Push them further, "
-      + "or leave her as she is? Either way this costs nothing.",
+    question: `${capitalize(pronouns.possessive)} eyes already sweep up at the outer corners. `
+      + `Push them further, or ${leaveAsTheyAre(pronouns)}? Either way this costs nothing.`,
     options: [
       { label: "More tilt", resolves: `${asked} — further than they already are` },
       /* As easy as the accept, and genuinely free: it lands on her current
          picture and never reaches the claim. */
-      { label: "Never mind", resolves: LEAVE_AS_SHE_IS },
+      { label: "Never mind", resolves: leaveAsTheyAre(pronouns) },
     ],
   };
 }
@@ -1224,7 +1260,7 @@ export function alreadyUpsweptReask(instruction: string): Reask {
  * Handing our own button a sentence the parser mangles would have been the
  * absorbed-ask defect, delivered by us rather than typed by her.
  */
-export function glassesHideEyesReask(instruction: string): Reask {
+export function glassesHideEyesReask(instruction: string, pronouns: CastPronouns): Reask {
   const asked = instruction.trim().replace(/[.!?]+$/, "");
   return {
     kind: "glasses-hide-eyes",
@@ -1237,13 +1273,20 @@ export function glassesHideEyesReask(instruction: string): Reask {
       and both chips ran as raw instructions. See `reaskHandle`.
     */
     about: reaskHandle("glasses-hide-eyes", asked),
-    question: "Her glasses are sitting over her eyes, so I can't tell whether "
-      + "they already do this. Take the glasses off first, or go ahead anyway? "
-      + "Either way this costs nothing.",
+    question: `${capitalize(pronouns.possessive)} glasses are sitting over `
+      + `${pronouns.possessive} eyes, so I can't tell whether they already do this. `
+      + "Take the glasses off first, or go ahead anyway? Either way this costs nothing.",
     options: [
-      /* One fact, the one the label names. See the header: two facts in one
-         sentence cost the second one. */
-      { label: "Take them off first", resolves: "remove her glasses" },
+      /*
+        One fact, the one the label names. See the header: two facts in one
+        sentence cost the second one.
+
+        ⚠ AND THIS `resolves` IS SENT TO THE ENGINE AS HER OWN WORDS (§5e), so
+        the pronoun in it is a measurement question rather than a politeness
+        one — the same road where a positional clause measurably changed which
+        eye got painted.
+      */
+      { label: "Take them off first", resolves: `remove ${pronouns.possessive} glasses` },
       { label: "Go ahead anyway", resolves: asked },
     ],
   };
@@ -1286,7 +1329,7 @@ export function glassesHideEyesReask(instruction: string): Reask {
  * placement wording untouched, which matters because a rewrite of that half is
  * the product choosing a body part for her.
  */
-export function whichSideReask(instruction: string): Reask {
+export function whichSideReask(instruction: string, pronouns: CastPronouns): Reask {
   const asked = instruction.trim().replace(/[.!?]+$/, "");
   return {
     kind: "which-side",
@@ -1300,10 +1343,11 @@ export function whichSideReask(instruction: string): Reask {
       been claimed and nothing will be until she answers — and a question that
       mentions a charge reads as one.
     */
-    question: "Which one — her left or her right? Nothing has been charged.",
+    question: `Which one — ${pronouns.possessive} left or ${pronouns.possessive} right? `
+      + "Nothing has been charged.",
     options: [
-      { label: "Her left", resolves: `${asked} (her left)` },
-      { label: "Her right", resolves: `${asked} (her right)` },
+      { label: `${capitalize(pronouns.possessive)} left`, resolves: `${asked} (${pronouns.possessive} left)` },
+      { label: `${capitalize(pronouns.possessive)} right`, resolves: `${asked} (${pronouns.possessive} right)` },
     ],
   };
 }

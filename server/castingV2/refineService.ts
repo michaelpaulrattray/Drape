@@ -154,7 +154,7 @@ import {
 } from "./referenceMediumDoor";
 import {
   DISCARD_THE_DESIGN,
-  LEAVE_AS_SHE_IS,
+  isLeaveAsTheyAre,
   alreadyUpsweptReask,
   glassesHideEyesReask,
   colourFacetLabel,
@@ -253,7 +253,7 @@ import { carriesAfterPruning } from "./prunedCarries";
 import { countRefusal } from "./refusalCounter";
 import { refusal, refusalOf } from "./refusalTag";
 import { padToFrame, studioBackgroundOf, type StudioBackground } from "./referenceFit";
-import { pronounsForSex } from "./castPronouns";
+import { capitalize, pronounsForSex } from "./castPronouns";
 import {
   captureCastingReferenceLibraryEnabled,
   captureCastingOpenLaneEnabled,
@@ -1198,6 +1198,32 @@ async function refineCandidateCounted(
   }
 
   /*
+    HOW THIS PRODUCT SPEAKS ABOUT THIS CAST — one derivation, every sentence in
+    this function (§5e, class found opus-913, ruled fable-1220).
+
+    The room called every Cast "she". `castPronouns` has derived `he`/`she`/
+    `they` from the Cast's own schema since the day that was found, and the
+    recipe assembler threads it through everything it says to the painter — but
+    the REFINE SURFACE did not use it at all. A customer's male Cast was told
+    *"Her glasses are sitting over her eyes"* and, worse, handed
+    *"remove her glasses"* as the sentence to send next: that string is not a
+    caption, it is what goes to the engine.
+
+    It sits HERE, at the top, rather than beside the reads it was first needed
+    for — the first refusals that name the person are two hundred lines above
+    those, and a derivation placed after its earliest reader is how two of them
+    ended up saying "her" about a man while the third said it correctly.
+
+    `they` is the fallback rather than the exception: a Cast whose sex was never
+    stated is `they`, which is correct English for a person whose pronouns you
+    do not know, and is the only default that cannot misgender anybody.
+  */
+  const resolvedIdentity = readResolvedIdentity(source.internalPrompt);
+  const pronouns = pronounsForSex(resolvedIdentity?.sex);
+  /** "is" · "are" — the agreement `plural` exists so no sentence has to remember. */
+  const isOrAre = pronouns.plural ? "are" : "is";
+
+  /*
     A SCOPE THAT NAMES NOTHING IS REFUSED AT THE DOOR — free (fable-444 §3).
 
     `scope` says *this ask is about one instance*, and the whole value of it is
@@ -1237,7 +1263,7 @@ async function refineCandidateCounted(
   if (input.scope !== undefined && isOpenSlot(input.scope)) {
     throw refusal("scope_unknown", {
       code: "BAD_REQUEST",
-      message: "I don't know which part of her that is. Nothing was charged.",
+      message: `I don't know which part of ${pronouns.object} that is. Nothing was charged.`,
     });
   }
   /*
@@ -1275,7 +1301,7 @@ async function refineCandidateCounted(
   if (input.scope !== undefined && slotDefinition(input.scope) === null) {
     throw refusal("scope_unknown", {
       code: "BAD_REQUEST",
-      message: "I don't know which part of her that is. Nothing was charged.",
+      message: `I don't know which part of ${pronouns.object} that is. Nothing was charged.`,
     });
   }
 
@@ -1286,7 +1312,7 @@ async function refineCandidateCounted(
     Read from the selected face, because "greener" means greener than the thing
     they are looking at, not greener than the sheet's original.
   */
-  const currentIdentity = readResolvedIdentity(source.internalPrompt);
+  const currentIdentity = resolvedIdentity;
   /*
     READ BY FACET, NOT BY FIELD (D-159).
 
@@ -1431,8 +1457,8 @@ async function refineCandidateCounted(
   const offeredAgain = answeringText.length > 0 && answeringText === madeThisVersion;
   const outstanding = input.answering
     ? (offeredAgain
-      ? sameAgainReask({ asked: input.answering.trim(), priceCredits: CASTING_V2_REFINE_PRICE_CREDITS })
-      : pendingReaskFor(input.answering, lastColourFacet != null))
+      ? sameAgainReask({ asked: input.answering.trim(), priceCredits: CASTING_V2_REFINE_PRICE_CREDITS, pronouns })
+      : pendingReaskFor(input.answering, lastColourFacet != null, pronouns))
     : null;
   const answered = outstanding ? resolveAnswer(outstanding, input.instruction) : null;
   const instruction = answered ?? input.instruction;
@@ -1452,7 +1478,7 @@ async function refineCandidateCounted(
   */
   const answeredTheOffer = outstanding?.kind === "same-again"
     && answered !== null
-    && answered !== LEAVE_AS_SHE_IS;
+    && !isLeaveAsTheyAre(answered);
   /*
     SHE TAPPED "REPLACE IT" — and this is the ONLY thing that authorises a
     resident design's deletion (ruled fable-1158 §1, shape countersigned
@@ -1537,10 +1563,10 @@ async function refineCandidateCounted(
     picture, a note saying so, and no claim. It has to be as easy as the accept
     or the question only has one real answer, which is not a question.
   */
-  if (answered === LEAVE_AS_SHE_IS) {
+  if (answered !== null && isLeaveAsTheyAre(answered)) {
     return {
       kind: "selected",
-      note: "Left her as she is — nothing was charged.",
+      note: `Left ${pronouns.object} as ${pronouns.subject} ${isOrAre} — nothing was charged.`,
       variantId: source.variantPublicId,
       candidateId: input.candidatePublicId,
       imageUrl: storagePublicUrl(source.imageKey ?? source.candidate.imageKey),
@@ -1974,8 +2000,10 @@ async function refineCandidateCounted(
           asked: verdict.alreadyTrue,
         },
       /* HIS OWN CAST, in his own frame: this sentence names the person,
-         and it said "she" about a male cast until fable-1244 SS1a. */
-      }, pronounsForSex(currentIdentity?.sex)),
+         and it said "she" about a male cast until fable-1244 SS1a. Through the
+         one `pronouns` derived beside the identity, so this call site and the
+         two below cannot disagree about the same Cast. */
+      }, pronouns),
       /*
         NO FACET HERE, deliberately. `alreadyTrue` is a phrase built out of what
         she asked for — "icey blue eyes" — and the count may carry the reason
@@ -2098,7 +2126,13 @@ async function refineCandidateCounted(
     // An honest boundary, not a fault — and free, which is the point of §10.
     throw refusal(parsed.refusal.reason, {
       code: "BAD_REQUEST",
-      message: refusalMessage(parsed),
+      /* ⚠ THE TWO CALL SITES THE OPTIONAL PARAMETER LET THROUGH (§5e's sweep).
+         `refusalMessage` defaults to `they` when nobody hands it pronouns, which
+         is correct English and is NOT the Cast — so `absorbed` reaching here on
+         a male Cast read "They already have…" about a man. The default exists so
+         a caller with no identity is honest, never so that forgetting is free,
+         and both callers below have had the identity in hand all along. */
+      message: refusalMessage(parsed, pronouns),
       facet: "asked" in parsed.refusal ? parsed.refusal.asked : null,
       outcome: parsed.door === "upheld" ? "upheld" : "refused",
     });
@@ -2309,7 +2343,7 @@ async function refineCandidateCounted(
       );
       throw refusal("kind_unserved", {
         code: "BAD_REQUEST",
-        message: "I can't do that to her yet. Nothing was charged.",
+        message: `I can't do that to ${pronouns.object} yet. Nothing was charged.`,
       });
     }
   }
@@ -2602,7 +2636,7 @@ async function refineCandidateCounted(
       throw refusal("removal_unnamed", {
         code: "BAD_REQUEST",
         message: "I didn't catch what should come off. Tell me the thing itself — "
-          + "\"the earrings\", \"her glasses\", \"the fringe\" — and I'll take it off. "
+          + `"the earrings", "${pronouns.possessive} glasses", "the fringe" — and I'll take it off. `
           + "Nothing was charged.",
       });
     }
@@ -2787,8 +2821,8 @@ async function refineCandidateCounted(
           );
           throw refusal("removal_uncheckable", {
             code: "PRECONDITION_FAILED",
-            message: "I couldn't check her face just now, and I won't undo a step without "
-              + "looking. Try that again in a moment — nothing was charged.",
+            message: `I couldn't check ${pronouns.possessive} face just now, and I won't undo a step `
+              + "without looking. Try that again in a moment — nothing was charged.",
           });
         }
       } catch (error) {
@@ -2804,8 +2838,8 @@ async function refineCandidateCounted(
         );
         throw refusal("removal_uncheckable", {
           code: "PRECONDITION_FAILED",
-          message: "I couldn't check her face just now, and I won't undo a step without "
-            + "looking. Try that again in a moment — nothing was charged.",
+          message: `I couldn't check ${pronouns.possessive} face just now, and I won't undo a step `
+            + "without looking. Try that again in a moment — nothing was charged.",
         });
       }
       log.info(
@@ -3011,8 +3045,9 @@ async function refineCandidateCounted(
           throw refusal("removal_not_in_brief", {
             code: "BAD_REQUEST",
             facet: subject,
-            message: `Her brief didn't ask for ${named}, and nothing since has added any, `
-              + `so there's nothing on record to take off. If she's wearing ${named} `
+            message: `${capitalize(pronouns.possessive)} brief didn't ask for ${named}, and nothing `
+              + `since has added any, so there's nothing on record to take off. If `
+              + `${pronouns.subject} ${isOrAre} wearing ${named} `
               + "in the picture, tell me what to change instead and I'll edit it. "
               + "Nothing was charged.",
           });
@@ -3097,7 +3132,7 @@ async function refineCandidateCounted(
       if (!asEdit.ok) {
         throw refusal(asEdit.refusal.reason, {
           code: "BAD_REQUEST",
-          message: refusalMessage(asEdit),
+          message: refusalMessage(asEdit, pronouns),
           facet: subject ?? null,
         });
       }
@@ -3364,7 +3399,7 @@ async function refineCandidateCounted(
         return {
           kind: "selected" as const,
           note: cannotSaySentence(reason, {
-            words: null, facet: "ink", scopeNoun, moneySafe: true,
+            words: null, facet: "ink", scopeNoun, moneySafe: true, pronouns,
           }),
           variantId: source.variantPublicId,
           candidateId: input.candidatePublicId,
@@ -3620,7 +3655,7 @@ async function refineCandidateCounted(
     );
     return {
       kind: "asked",
-      reask: sameAgainReask({ asked, priceCredits: price }),
+      reask: sameAgainReask({ asked, priceCredits: price, pronouns }),
       variantId: source.variantPublicId,
       candidateId: input.candidatePublicId,
       imageUrl: currentImageUrl,
@@ -3824,8 +3859,8 @@ async function refineCandidateCounted(
     throw refusal("removal_unnameable", {
       code: "BAD_REQUEST",
       facet: null,
-      message: "I can take that off, but I can't work out where on her it sits well enough "
-        + "to rebuild the picture — tell me which part it's on and I'll do it. "
+      message: `I can take that off, but I can't work out where on ${pronouns.object} it sits `
+        + "well enough to rebuild the picture — tell me which part it's on and I'll do it. "
         + "Nothing was charged.",
     });
   }
@@ -4266,7 +4301,7 @@ async function refineCandidateCounted(
       */
       return {
         kind: "asked",
-        reask: alreadyUpsweptReask(instruction),
+        reask: alreadyUpsweptReask(instruction, pronouns),
         variantId: source.variantPublicId,
         candidateId: input.candidatePublicId,
         imageUrl: storagePublicUrl(source.imageKey ?? source.candidate.imageKey),
@@ -4330,7 +4365,7 @@ async function refineCandidateCounted(
            above the claim, so nothing is reserved and nothing is charged. */
         return {
           kind: "asked",
-          reask: glassesHideEyesReask(instruction),
+          reask: glassesHideEyesReask(instruction, pronouns),
           variantId: source.variantPublicId,
           candidateId: input.candidatePublicId,
           imageUrl: storagePublicUrl(source.imageKey ?? source.candidate.imageKey),
@@ -4375,6 +4410,7 @@ async function refineCandidateCounted(
         code: "BAD_REQUEST",
         facet: outside.facets[0] ?? null,
         message: cannotSaySentence("notASlot", {
+          pronouns,
           words: null,
           facet: outside.facets[0] ?? null,
           scopeNoun,
@@ -4576,7 +4612,7 @@ async function refineCandidateCounted(
       );
       return {
         kind: "asked",
-        reask: whichSideReask(instruction),
+        reask: whichSideReask(instruction, pronouns),
         variantId: source.variantPublicId,
         candidateId: input.candidatePublicId,
         imageUrl: currentImageUrl,
@@ -4723,6 +4759,7 @@ async function refineCandidateCounted(
           side: chosen.side,
           asked: instruction,
           focus: cutFocus,
+          pronouns,
         }),
         design: designAnswerFor({ designId: design.publicId }),
         variantId: source.variantPublicId,
@@ -4932,7 +4969,7 @@ async function refineCandidateCounted(
       return {
         kind: "selected",
         note: cannotSaySentence(beyondToday ? "inkBeyondToday" : "unplacedInk", {
-          words: null, facet: "ink", scopeNoun: null, moneySafe: true,
+          words: null, facet: "ink", scopeNoun: null, moneySafe: true, pronouns,
         }),
         variantId: source.variantPublicId,
         candidateId: input.candidatePublicId,
@@ -4963,7 +5000,7 @@ async function refineCandidateCounted(
       );
       return {
         kind: "asked",
-        reask: whichSideReask(instruction),
+        reask: whichSideReask(instruction, pronouns),
         variantId: source.variantPublicId,
         candidateId: input.candidatePublicId,
         imageUrl: currentImageUrl,
@@ -5692,6 +5729,7 @@ async function refineCandidateCounted(
         /* Empty on purpose: a prune adds nothing. The asks below are the ask. */
         delta: {},
         prose: EDIT_PROSE,
+        pronouns,
         restate: slots.map((slot) => ({ slot, taken: takenBack! })),
         /*
           AND WHAT THE BRANCH IS STILL CARRYING WITH NOWHERE TO KEEP IT.
@@ -5785,6 +5823,8 @@ async function refineCandidateCounted(
           /* The prose the prompt above is composed with, handed over rather
              than copied: one definition of what "copper" looks like. */
           prose: EDIT_PROSE,
+          /* And the words for the person, from the one place they are read. */
+          pronouns,
           /* Derived once at the top of this block, beside the region override
              that has to name the same object. */
           accessoryKind: accessoryRegion,
@@ -5884,6 +5924,7 @@ async function refineCandidateCounted(
           "[refineService] the repaint cannot say this ask declaratively — refusing rather than painting a recipe that never mentions it",
         );
         throw new RepaintCannotSayError(asks, {
+          pronouns,
           /*
             THE ASK'S OWN WORDS, for the sentence the settlement writes.
 
@@ -8049,7 +8090,7 @@ async function refineCandidateCounted(
           back into the pair sentence — the measured one — for what actually
           goes on the wire.
         */
-        const phrase = vacantPhraseFor(definition.guardKind, definition.instance);
+        const phrase = vacantPhraseFor(definition.guardKind, pronouns, definition.instance);
         if (phrase === null) {
           throw new Error(`the removal of ${slot} cannot be remembered — its kind has no vacant phrase to file`);
         }
@@ -9297,6 +9338,9 @@ function failedFactsMessage(error: unknown): string | null {
       words: error.words,
       facet: error.facet,
       scopeNoun: error.scopeNoun,
+      /* Carried on the error, because this function has the error and nothing
+         else — see `RepaintCannotSayError.pronouns`. */
+      pronouns: error.pronouns,
       /*
         HER BALANCE REALLY IS WHERE SHE LEFT IT, and the caller is what makes
         that true: this function is only consulted when `refund.recorded` is
@@ -9406,7 +9450,11 @@ function refundDescriptionFor(error: unknown): string {
     const thing = error.message.trim();
     return thing
       ? `Refine refunded — the render still showed the ${thing}`
-      : "Refine refunded — the render still showed what she asked to remove";
+      /* SECOND PERSON, like its sibling one branch up ("without what you asked
+         for") — this line goes on a ledger row the customer can read, and it
+         was the one member of the family that talked about them in the third
+         person AND assumed they were a "she" (§5e's sweep). */
+      : "Refine refunded — the render still showed what you asked to remove";
   }
   /*
     NOT A FAILURE AT ALL, and the receipt has to stop calling it one.

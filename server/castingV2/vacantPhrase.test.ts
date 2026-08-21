@@ -10,6 +10,11 @@
  * where its properties are proved.
  */
 import { describe, expect, it } from "vitest";
+import type { CastPronouns } from "./castPronouns";
+
+/* One Cast, one set of words for her — §5e made these sentences a function
+   of the Cast's own pronouns rather than a constant. */
+const HER_PRONOUNS: CastPronouns = { subject: "she", object: "her", possessive: "her", plural: false };
 
 import { LANDMARK_OF_ACCESSORY, accessoryKindOf } from "./accessoryKinds";
 import { VACANCY_BY_KIND, VACANCY_KINDS, vacantPhraseFor } from "./vacancyPhrases";
@@ -32,7 +37,7 @@ describe("every kind the product can place can also say it is gone", () => {
       because the field is gone from that type entirely.
     */
     for (const entry of LANDMARK_OF_ACCESSORY) {
-      expect(vacantPhraseFor(entry.region), entry.region).not.toBeNull();
+      expect(vacantPhraseFor(entry.region, HER_PRONOUNS), entry.region).not.toBeNull();
     }
   });
 
@@ -62,19 +67,19 @@ describe("every kind the product can place can also say it is gone", () => {
   it("reads the phrase through the kind the same table decides", () => {
     /* End to end through the two functions a caller actually uses, so the pair
        cannot drift: the words name a kind, the kind names a phrase. */
-    expect(vacantPhraseFor(accessoryKindOf("her tortoiseshell glasses"))).toContain("no glasses");
-    expect(vacantPhraseFor(accessoryKindOf("gold hoop earrings"))).toContain("no earrings");
+    expect(vacantPhraseFor(accessoryKindOf("her tortoiseshell glasses"), HER_PRONOUNS)).toContain("no glasses");
+    expect(vacantPhraseFor(accessoryKindOf("gold hoop earrings"), HER_PRONOUNS)).toContain("no earrings");
     /* Longest match wins, so a nose stud is not an earring — the defect
        `accessoryEntry` was rewritten for, checked here on the new surface. */
-    expect(vacantPhraseFor(accessoryKindOf("a small nose stud"))).toContain("no nose jewellery");
+    expect(vacantPhraseFor(accessoryKindOf("a small nose stud"), HER_PRONOUNS)).toContain("no nose jewellery");
   });
 
   it("CONTROL — a kind the table does not hold says NOTHING rather than improvising", () => {
     /* The honest answer. A caller must refuse; an invented absence sentence is
        a paid render saying something untrue about her face. */
-    expect(vacantPhraseFor(accessoryKindOf("her tiara"))).toBeNull();
-    expect(vacantPhraseFor(null)).toBeNull();
-    expect(vacantPhraseFor("hair")).toBeNull();
+    expect(vacantPhraseFor(accessoryKindOf("her tiara"), HER_PRONOUNS)).toBeNull();
+    expect(vacantPhraseFor(null, HER_PRONOUNS)).toBeNull();
+    expect(vacantPhraseFor("hair", HER_PRONOUNS)).toBeNull();
   });
 });
 
@@ -97,15 +102,15 @@ describe("a pair records its empty lobe in words that lobe may file", () => {
   });
 
   it("fills the side from the instance it was handed, and never invents one", () => {
-    expect(vacantPhraseFor("earring", "left")).toBe(
+    expect(vacantPhraseFor("earring", HER_PRONOUNS, "left")).toBe(
       "no earring on her left ear — that earlobe bare, nothing hanging from it");
-    expect(vacantPhraseFor("earring", "right")).toContain("her right ear");
+    expect(vacantPhraseFor("earring", HER_PRONOUNS, "right")).toContain("her right ear");
     /* No instance, same table, the pair sentence — the call every existing
        caller makes is untouched. */
-    expect(vacantPhraseFor("earring")).toContain("both earlobes bare");
-    expect(vacantPhraseFor("earring", null)).toContain("both earlobes bare");
+    expect(vacantPhraseFor("earring", HER_PRONOUNS)).toContain("both earlobes bare");
+    expect(vacantPhraseFor("earring", HER_PRONOUNS, null)).toContain("both earlobes bare");
     /* A kind worn singly ignores the instance rather than growing a side. */
-    expect(vacantPhraseFor("glasses", "left")).toBe(vacantPhraseFor("glasses"));
+    expect(vacantPhraseFor("glasses", HER_PRONOUNS, "left")).toBe(vacantPhraseFor("glasses", HER_PRONOUNS));
   });
 
   it("THE POINT: the per-instance form may be FILED on its own slot and the pair form may not", () => {
@@ -116,15 +121,15 @@ describe("a pair records its empty lobe in words that lobe may file", () => {
     */
     for (const side of ["left", "right"] as const) {
       const slot = `earring@${side}`;
-      expect(slotWordsRefusal(slot, [vacantPhraseFor("earring", side)!]), slot).toBeNull();
-      expect(slotWordsRefusal(slot, [vacantPhraseFor("earring")!])?.reason, slot)
+      expect(slotWordsRefusal(slot, [vacantPhraseFor("earring", HER_PRONOUNS, side)!]), slot).toBeNull();
+      expect(slotWordsRefusal(slot, [vacantPhraseFor("earring", HER_PRONOUNS)!])?.reason, slot)
         .toBe("wordsClaimThePair");
     }
   });
 
   it("and it is still a STATE that names the site", () => {
     for (const side of ["left", "right"] as const) {
-      const phrase = vacantPhraseFor("earring", side)!;
+      const phrase = vacantPhraseFor("earring", HER_PRONOUNS, side)!;
       expect(imperativeOpenerIn(phrase)).toBeNull();
       expect(phrase).toMatch(/—/);
       expect(phrase.split("—")[1]!.trim().length).toBeGreaterThan(10);

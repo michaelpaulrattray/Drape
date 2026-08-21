@@ -18,7 +18,7 @@
  *
  * # What the code predicts before a pixel is bought
  *
- * `refineService` calls `repaintAsksFor({ delta: editDelta })` with THIS step's
+ * `refineService` calls `repaintAsksFor({ pronouns: { subject: "she", object: "her", possessive: "her", plural: false }, delta: editDelta })` with THIS step's
  * delta. A departure is `delta.absent`, authored by the step that asked for it,
  * and nothing re-derives it from the branch's composed state. `assembleRecipe`
  * is handed `{master, pronouns, library, asks}` — no branch state — and a
@@ -41,6 +41,10 @@
 import "dotenv/config";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
+
+/* §5e: the reask questions and the vacancy phrases are a function of the
+   Cast's own pronouns now — a bench supplies one Cast. */
+const HER_PRONOUNS = { subject: "she", object: "her", possessive: "her", plural: false } as const;
 
 import { openDatabase } from "./lib/dbConnection.mts";
 import { assertOneWorld } from "./lib/worldGuard.mts";
@@ -113,7 +117,7 @@ console.log(`CONTROL −  her master: ${control.gone ? "READ AS REMOVED — stop
 if (control.gone) { await connection.end(); process.exit(1); }
 
 const paint = async (label: string, delta: any) => {
-  const asks = repaintAsksFor({ delta, prose: EDIT_PROSE, restore: { state: delta, slots: supersededCarrySlots(rows) } });
+  const asks = repaintAsksFor({ pronouns: { subject: "she", object: "her", possessive: "her", plural: false }, delta, prose: EDIT_PROSE, restore: { state: delta, slots: supersededCarrySlots(rows) } });
   if (!asks.ok) throw new Error(`${label}: the asks refused — ${asks.reason}: ${asks.detail}`);
   const recipe = assembleRecipe({
     master: { key: face.imageKey },
@@ -154,7 +158,7 @@ const stepB = await paint("stepB-later-ask", LATER);
 const vacancy: StoredReference = {
   id: -1, publicId: "in-memory", candidateId: face.id, variantId: null,
   role: "vacancy", slot: "glasses" as any, tier: "item", noun: "glasses",
-  words: [vacantPhraseFor("glasses")!],
+  words: [vacantPhraseFor("glasses", HER_PRONOUNS)!],
   storageKey: null, maskKey: null, digest: null, geometry: null, guard: null,
   refusal: null, version: 99, retiredAt: null, createdAt: new Date(),
 };

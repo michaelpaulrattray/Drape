@@ -90,6 +90,9 @@ for (const step of STEPS) {
   }));
 
   const asks = repaintAsksFor({
+  /* §5e: the reask questions and the vacancy phrases are a function of the
+     Cast's own pronouns now — a bench supplies one Cast. */
+  pronouns: { subject: "she", object: "her", possessive: "her", plural: false },
     delta: step.editDelta,
     prose: EDIT_PROSE,
     restore: { state: step.editDelta, slots: supersededCarrySlots(rows) },

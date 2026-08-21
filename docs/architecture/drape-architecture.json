@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "c06ccb263f516077"
+    "sourceFingerprint": "657ef872bd82f96c"
   },
   "domains": [
     {
@@ -19726,6 +19726,11 @@
     },
     {
       "from": "module:server/castingV2/cannotSayCopy.ts",
+      "to": "module:server/castingV2/castPronouns.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/cannotSayCopy.ts",
       "to": "module:server/castingV2/repaintAsks.ts",
       "kind": "imports"
     },
@@ -22176,6 +22181,11 @@
     },
     {
       "from": "module:server/castingV2/refineReask.ts",
+      "to": "module:server/castingV2/castPronouns.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/refineReask.ts",
       "to": "module:server/castingV2/eyeShapeRouting.ts",
       "kind": "imports"
     },
@@ -22921,6 +22931,11 @@
     },
     {
       "from": "module:server/castingV2/repaintAsks.ts",
+      "to": "module:server/castingV2/castPronouns.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/repaintAsks.ts",
       "to": "module:server/castingV2/markKinds.ts",
       "kind": "imports"
     },
@@ -23577,6 +23592,11 @@
     {
       "from": "module:server/castingV2/thumbnails.ts",
       "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/vacancyPhrases.ts",
+      "to": "module:server/castingV2/castPronouns.ts",
       "kind": "imports"
     },
     {

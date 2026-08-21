@@ -6,6 +6,11 @@
  * widened would be the ceiling nobody meant to set.
  */
 import { describe, expect, it } from "vitest";
+import type { CastPronouns } from "./castPronouns";
+
+/* One Cast, one set of words for her — §5e made these sentences a function
+   of the Cast's own pronouns rather than a constant. */
+const HER_PRONOUNS: CastPronouns = { subject: "she", object: "her", possessive: "her", plural: false };
 
 import { MARK_KINDS, markCanDepart, markKindOf } from "./markKinds";
 import { vacantPhraseFor } from "./vacancyPhrases";
@@ -46,7 +51,7 @@ describe("the declared shortcut is visible in the table", () => {
   it("keeps the sentence ready for the run that earns it", () => {
     /* The phrase is correct and stays; `canDepart` is the door. Deleting the
        sentence would throw away the thing the next court needs. */
-    expect(vacantPhraseFor("freckles")).toContain("no freckles");
+    expect(vacantPhraseFor("freckles", HER_PRONOUNS)).toContain("no freckles");
     expect(markCanDepart("freckles")).toBe(false);
     for (const entry of MARK_KINDS.filter((one) => !one.canDepart)) {
       expect(markCanDepart(entry.kind), entry.kind).toBe(false);

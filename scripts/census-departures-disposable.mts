@@ -24,6 +24,10 @@ import { LANDMARK_OF_ACCESSORY, accessoryKindOf } from "../server/castingV2/acce
 import { vacantPhraseFor } from "../server/castingV2/vacancyPhrases";
 import { BORN_WORN_CLASSES } from "../server/castingV2/bornWornDetector";
 
+/* §5e: the reask questions and the vacancy phrases are a function of the
+   Cast's own pronouns now — a bench supplies one Cast. */
+const HER_PRONOUNS = { subject: "she", object: "her", possessive: "her", plural: false } as const;
+
 /**
  * What a person might ask to have taken off, per subject.
  *
@@ -52,6 +56,9 @@ for (const subject of DEPARTABLE_SUBJECTS) {
   console.log(`\n${subject}`);
   for (const noun of NOUNS[subject] ?? ["it"]) {
     const asks = repaintAsksFor({
+  /* §5e: the reask questions and the vacancy phrases are a function of the
+     Cast's own pronouns now — a bench supplies one Cast. */
+  pronouns: { subject: "she", object: "her", possessive: "her", plural: false },
       delta: { absent: { [subject]: [noun] }, free: { [subject]: [] } } as any,
       prose: EDIT_PROSE,
     });
@@ -72,7 +79,7 @@ console.log(`${sayable} departures the recipe can state · ${refused} it refuses
 
 console.log(`\nKINDS WITH A VACANT PHRASE (the only things an EMPTY row could say today):`);
 for (const entry of LANDMARK_OF_ACCESSORY) {
-  console.log(`  ${entry.region.padEnd(12)} "${vacantPhraseFor(entry.region)}"`);
+  console.log(`  ${entry.region.padEnd(12)} "${vacantPhraseFor(entry.region, HER_PRONOUNS)}"`);
 }
 
 /*

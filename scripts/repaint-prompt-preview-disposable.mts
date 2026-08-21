@@ -128,7 +128,7 @@ const master = { key: "casting-v2/candidates/<the master>.png" };
 for (const step of steps) {
   console.log(`\n${"=".repeat(72)}\n${step.name}`);
   const asks = step.delta
-    ? repaintAsksFor({ delta: step.delta, prose: EDIT_PROSE, accessoryKind: step.accessoryKind })
+    ? repaintAsksFor({ pronouns: { subject: "she", object: "her", possessive: "her", plural: false }, delta: step.delta, prose: EDIT_PROSE, accessoryKind: step.accessoryKind })
     : repaintCannotRemove();
   if (!asks.ok) {
     console.log(`REFUSED at the ask layer: ${asks.reason}`);

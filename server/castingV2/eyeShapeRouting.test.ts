@@ -1,4 +1,9 @@
 import { describe, expect, it } from "vitest";
+import type { CastPronouns } from "./castPronouns";
+
+/* One Cast, one set of words for her — §5e made these sentences a function
+   of the Cast's own pronouns rather than a constant. */
+const HER_PRONOUNS: CastPronouns = { subject: "she", object: "her", possessive: "her", plural: false };
 
 import sharp from "sharp";
 
@@ -97,7 +102,7 @@ describe("the already-true gate applies to this class from birth", () => {
   it("speaks like a person, not like a measurement", () => {
     /* The user is never shown degrees. The number decides; the sentence is what
        a stylist would actually say. */
-    expect(alreadyUpsweptReask("fox eyes").question).not.toMatch(/deg|°|canthal|[0-9]/);
+    expect(alreadyUpsweptReask("fox eyes", HER_PRONOUNS).question).not.toMatch(/deg|°|canthal|[0-9]/);
   });
 
   it("re-derives the question from RAW TEXT, because the answer path has no parse", () => {

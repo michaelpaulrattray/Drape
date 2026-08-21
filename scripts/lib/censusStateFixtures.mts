@@ -55,6 +55,25 @@ const refuseProduction = () => {
   }
 };
 
+/**
+ * THE FIXTURE IS THIS VARIANT, and it is named rather than searched for
+ * (ruled fable-1329 §3, my hands on fable's module).
+ *
+ * It used to be "the newest ready variant on this account with a delivered
+ * upper-chest crop" — a fixture defined by a QUERY, which is a fixture another
+ * seat's work can redefine without touching a line of this file. The bare-skin
+ * court needs to add a paid step to this very cast, and under newest-wins its
+ * new variant would silently BECOME the census's branch: every branch row after
+ * it would then measure a court's leftovers.
+ *
+ * That is the same shape as the defect this module was fixed for one message
+ * earlier — a state established once and then decided by something else — so it
+ * is closed the same way: by identity.
+ */
+const INK_BRANCH_VARIANT = "b0613485-2d75-49e2-a9e3-05a0b7185183"; /* v502,
+  opus-960's chest swallow — verified against the row before it was written
+  down, rather than copied from a message. */
+
 /** The REAL ink branch: pin the outsider's court cast to its chest variant. */
 export async function ensureInkBranchFixture(input: { userId: number }): Promise<BranchFixture> {
   refuseProduction();
@@ -64,13 +83,16 @@ export async function ensureInkBranchFixture(input: { userId: number }): Promise
       `SELECT v.id, v.publicId, v.candidateId, c.publicId AS candidatePublicId
          FROM casting_candidate_variants v
          JOIN casting_candidates c ON c.id = v.candidateId
-        WHERE c.userId = ? AND v.status = 'ready'
-          AND JSON_EXTRACT(v.deltas, '$.inkDelivered."ink:upperChest"') IS NOT NULL
-        ORDER BY v.id DESC LIMIT 1`,
-      [input.userId],
+        WHERE v.publicId = ? AND c.userId = ? AND v.status = 'ready'`,
+      [INK_BRANCH_VARIANT, input.userId],
     );
     const found = (rows as Array<{ id: number; publicId: string; candidateId: number; candidatePublicId: string }>)[0];
-    if (!found) throw new Error("no ink-bearing variant on this account — the words-road court's renders are gone");
+    /* The constant is NAMED in the failure, so the next court knows exactly
+       what died rather than being told a population is empty. */
+    if (!found) {
+      throw new Error(`the census's ink branch is variant ${INK_BRANCH_VARIANT} `
+        + "(opus-960's chest swallow) and it is not on this account, ready — the court's render is gone");
+    }
     const [prior] = await conn.execute(
       `SELECT selectedVariantId FROM casting_candidates WHERE id = ?`, [found.candidateId],
     );

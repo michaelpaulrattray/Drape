@@ -1,4 +1,9 @@
 import { describe, expect, it } from "vitest";
+import type { CastPronouns } from "./castPronouns";
+
+/* One Cast, one set of words for her — the sentences under test name a
+   person, and §5e made that the Cast's own fact rather than a constant. */
+const HER: CastPronouns = { subject: "she", object: "her", possessive: "her", plural: false };
 
 import { asksInkBeyondToday } from "./inkBeyondTodayAsk";
 import { cannotSaySentence } from "./cannotSayCopy";
@@ -57,7 +62,7 @@ describe("an ink ask this road cannot state yet is told, never asked", () => {
     told sentence, and present in the one it replaces.
   */
   it("replaces a question with a capability, and the question does not survive", () => {
-    const bare = { words: null, facet: "ink", scopeNoun: null, moneySafe: true };
+    const bare = { words: null, facet: "ink", scopeNoun: null, moneySafe: true, pronouns: HER };
     const asked = cannotSaySentence("unplacedInk", bare);
     const told = cannotSaySentence("inkBeyondToday", bare);
 

@@ -1,4 +1,9 @@
 import { describe, expect, it } from "vitest";
+import type { CastPronouns } from "./castPronouns";
+
+/* One Cast, one set of words for her — the sentences under test name a
+   person, and §5e made that the Cast's own fact rather than a constant. */
+const HER: CastPronouns = { subject: "she", object: "her", possessive: "her", plural: false };
 
 import { CANNOT_SAY_COPY, cannotSaySentence, type CannotSayReason } from "./cannotSayCopy";
 import { RECOVERED_REFINE_SENTENCE } from "./refineRecovery";
@@ -37,7 +42,7 @@ const REASONS: readonly CannotSayReason[] = [
   "nothingAsked",
 ];
 
-const bare = { words: null, facet: null, scopeNoun: null, moneySafe: true };
+const bare = { words: null, facet: null, scopeNoun: null, moneySafe: true, pronouns: HER };
 
 describe("the registry answers for every reason the road can refuse with", () => {
   it("has an entry for each, and the list here is the road's own", () => {

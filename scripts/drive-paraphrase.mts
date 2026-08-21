@@ -25,6 +25,10 @@ import { interpretRefinement } from "../server/castingV2/refineInterpreter";
 import { itemsOf, type RefineDelta } from "../server/castingV2/refineDelta";
 import { pendingReaskFor, resolveAnswer } from "../server/castingV2/refineReask";
 
+/* §5e: the reask questions and the vacancy phrases are a function of the
+   Cast's own pronouns now — a bench supplies one Cast. */
+const HER_PRONOUNS = { subject: "she", object: "her", possessive: "her", plural: false } as const;
+
 type Expect = {
   /** Which drawer it must land in — a delta key, or `free.<subject>`. */
   drawer: string;
@@ -211,7 +215,7 @@ for (const klass of CLASSES) {
       /* Every class here is a question about the WORDS. The reference argument
          this call used to carry went with the hair question it existed for
          (founder ruling 2026-08-19, fable-1087). */
-      const question = pendingReaskFor(ask, false);
+      const question = pendingReaskFor(ask, false, HER_PRONOUNS);
       const resolved = question ? resolveAnswer(question, klass.reask.answer) : null;
       const problems: string[] = [];
       if (!question) problems.push("no question was raised");

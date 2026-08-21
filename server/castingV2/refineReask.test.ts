@@ -8,8 +8,13 @@
  * well-behaved model.
  */
 import { randomUUID } from "node:crypto";
+import type { CastPronouns } from "./castPronouns";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
+
+/* One Cast, one set of words for her. §5e made every question below a
+   function of the Cast's own pronouns, so the fixture supplies them once. */
+const HER: CastPronouns = { subject: "she", object: "her", possessive: "her", plural: false };
 
 import { describe, expect, it } from "vitest";
 
@@ -299,18 +304,18 @@ describe("resolveAnswer — the sentence never dead-ends (D-180)", () => {
 
 describe("pendingReaskFor — the question is re-derived, never trusted", () => {
   it("rebuilds the typo question from the sentence alone", () => {
-    expect(pendingReaskFor("piink hair", false)?.kind).toBe("did-you-mean");
+    expect(pendingReaskFor("piink hair", false, HER)?.kind).toBe("did-you-mean");
   });
 
   it("rebuilds the cold-start question only when there is no colour history", () => {
-    expect(pendingReaskFor("pinker", false)?.kind).toBe("which-facet");
+    expect(pendingReaskFor("pinker", false, HER)?.kind).toBe("which-facet");
     /* With a colour edit behind it, history answers silently and there was
        never a question to reopen. */
-    expect(pendingReaskFor("pinker", true)).toBeNull();
+    expect(pendingReaskFor("pinker", true, HER)).toBeNull();
   });
 
   it("is null for an ordinary instruction", () => {
-    expect(pendingReaskFor("give her a fringe", false)).toBeNull();
+    expect(pendingReaskFor("give her a fringe", false, HER)).toBeNull();
   });
 
   /*
@@ -328,18 +333,18 @@ describe("pendingReaskFor — the question is re-derived, never trusted", () => 
     cold-start colour question is driven here rather than assumed.
   */
   it("raises nothing for a hair ask — the vague ask is not ambiguous", () => {
-    expect(pendingReaskFor("copy hair from reference", false)).toBeNull();
-    expect(pendingReaskFor("copy this hair", false)).toBeNull();
+    expect(pendingReaskFor("copy hair from reference", false, HER)).toBeNull();
+    expect(pendingReaskFor("copy this hair", false, HER)).toBeNull();
   });
 
   it("still asks every question that was never hair's", () => {
     /* The typo door, on the same misspelled hair ask that used to reach the
        reference question through it. */
-    expect(pendingReaskFor("copy hiar from reference", false)?.kind).toBe("did-you-mean");
+    expect(pendingReaskFor("copy hiar from reference", false, HER)?.kind).toBe("did-you-mean");
     /* And the cold-start colour question, which sat directly beneath the
        deleted branch. */
-    expect(pendingReaskFor("pinker", false)?.kind).toBe("which-facet");
-    expect(pendingReaskFor("pinker", true)).toBeNull();
+    expect(pendingReaskFor("pinker", false, HER)?.kind).toBe("which-facet");
+    expect(pendingReaskFor("pinker", true, HER)).toBeNull();
   });
 });
 
@@ -361,7 +366,7 @@ describe("a chip submits ONE instruction — the compound the parser cannot hold
   const COMPOUND = /,\s*then\s|\sand then\s|;/i;
 
   it("the glasses chip takes the frames off and asks for nothing else", () => {
-    const reask = glassesHideEyesReask("fox eyes");
+    const reask = glassesHideEyesReask("fox eyes", HER);
     expect(reask.options[0]!.resolves).toBe("remove her glasses");
     /* And the other chip is still exactly her own sentence. */
     expect(reask.options[1]!.resolves).toBe("fox eyes");
@@ -376,8 +381,8 @@ describe("a chip submits ONE instruction — the compound the parser cannot hold
        this defect lands. */
     const every = [
       whichFacetReask("pinker"),
-      alreadyUpsweptReask("fox eyes"),
-      glassesHideEyesReask("fox eyes"),
+      alreadyUpsweptReask("fox eyes", HER),
+      glassesHideEyesReask("fox eyes", HER),
       didYouMeanReask("piink hair", nearMiss("piink hair")!),
     ];
     for (const reask of every) {
@@ -433,9 +438,9 @@ describe("the answer path rebuilds every question it asks", () => {
       asked: "piink hair",
       build: (asked) => didYouMeanReask(asked, nearMiss(asked)!),
     },
-    { kind: "already-upswept", asked: "fox eyes", build: alreadyUpsweptReask },
-    { kind: "glasses-hide-eyes", asked: "give her a cat eye", build: glassesHideEyesReask },
-    { kind: "which-side", asked: "use this tattoo design on her arm", build: whichSideReask },
+    { kind: "already-upswept", asked: "fox eyes", build: (asked: string) => alreadyUpsweptReask(asked, HER) },
+    { kind: "glasses-hide-eyes", asked: "give her a cat eye", build: (asked: string) => glassesHideEyesReask(asked, HER) },
+    { kind: "which-side", asked: "use this tattoo design on her arm", build: (asked: string) => whichSideReask(asked, HER) },
     {
       /*
         The shown cut. Its handle names a DESIGN as well as a sentence, because
@@ -457,7 +462,8 @@ describe("the answer path rebuilds every question it asks", () => {
       */
       kind: "replace-design",
       asked: "use this tattoo design on her left upper arm",
-      build: (asked) => replaceDesignReask({
+      build: (asked: string) => replaceDesignReask({
+        pronouns: HER,
         newDesignPublicId: "d-minted",
         residentDesignPublicId: "d-resident",
         placement: "upperArm",
@@ -468,7 +474,7 @@ describe("the answer path rebuilds every question it asks", () => {
     {
       kind: "same-again",
       asked: "gold hoops please",
-      build: (asked) => sameAgainReask({ asked, priceCredits: 25 }),
+      build: (asked) => sameAgainReask({ asked, priceCredits: 25, pronouns: HER }),
       /*
         DELIBERATELY OUT, and it is the one exemption with teeth: answering the
         offer sets `confirmedRegenerate`, which stands doors down that exist to
@@ -491,7 +497,7 @@ describe("the answer path rebuilds every question it asks", () => {
       /* What the CLIENT sends back — `about` when the question carries one,
          the sentence they typed when it does not (`CastingSheet.tsx`). */
       const answering = raised.about ?? row.asked;
-      const rebuilt = pendingReaskFor(answering, false);
+      const rebuilt = pendingReaskFor(answering, false, HER);
       expect(rebuilt, `${row.kind} could not be rebuilt from ${JSON.stringify(answering)}`)
         .not.toBeNull();
       expect(rebuilt!.kind).toBe(row.kind);
@@ -592,6 +598,7 @@ describe("the answering field is wide enough for a handled question", () => {
     const widest = (list: readonly string[]) =>
       [...list].sort((a, b) => b.length - a.length)[0]!;
     const handle = replaceDesignReask({
+      pronouns: HER,
       newDesignPublicId: randomUUID(),
       residentDesignPublicId: randomUUID(),
       placement: widest(INK_PLACEMENTS) as "upperChest",
@@ -621,6 +628,7 @@ describe("the replace offer names what it would destroy", () => {
   const ASKED = "put this tattoo on her left upper arm";
   const offer = (over: Partial<Parameters<typeof replaceDesignReask>[0]> = {}) =>
     replaceDesignReask({
+      pronouns: HER,
       newDesignPublicId: "d-new",
       residentDesignPublicId: "d-resident",
       placement: "upperArm",
@@ -695,7 +703,7 @@ describe("the replace offer names what it would destroy", () => {
       sentence this server already wrote.
     */
     const raised = offer();
-    const rebuilt = pendingReaskFor(raised.about!, false);
+    const rebuilt = pendingReaskFor(raised.about!, false, HER);
     expect(rebuilt).toEqual(raised);
   });
 
@@ -725,7 +733,7 @@ describe("the replace offer names what it would destroy", () => {
       "«replace-design» d-new",
       "«replace-design» d-new d-resident neck",
     ]) {
-      expect(pendingReaskFor(forged, false), forged).toBeNull();
+      expect(pendingReaskFor(forged, false, HER), forged).toBeNull();
       expect(designNamedIn(forged), forged).toBeNull();
       expect(residentNamedIn(forged), forged).toBeNull();
     }
@@ -742,7 +750,7 @@ describe("the replace offer names what it would destroy", () => {
       here is that this question was ADMITTED to the branch at all: a kind left
       off it would refuse both words and only ever be answerable by tapping.
     */
-    const rebuilt = pendingReaskFor(offer().about!, false)!;
+    const rebuilt = pendingReaskFor(offer().about!, false, HER)!;
     for (const yes of ["yes", "Yes", "yep", "ok"]) {
       expect(resolveAnswer(rebuilt, yes), yes).toBe(ASKED);
     }
@@ -757,7 +765,7 @@ describe("the replace offer names what it would destroy", () => {
       is not an answer runs as a fresh instruction, and `refineService` reads
       the adopt off a RECOGNISED answer only.
     */
-    const rebuilt = pendingReaskFor(offer().about!, false)!;
+    const rebuilt = pendingReaskFor(offer().about!, false, HER)!;
     for (const other of ["make her hair red", "actually put it on her neck", "hmm"]) {
       expect(resolveAnswer(rebuilt, other), other).toBeNull();
     }
@@ -779,7 +787,7 @@ describe("which-side — the word has to land IN her sentence", () => {
   const asked = "use this tattoo design on her upper arm";
 
   it("puts the side word inside the sentence it resolves to", () => {
-    for (const option of whichSideReask(asked).options) {
+    for (const option of whichSideReask(asked, HER).options) {
       const side = option.label === "Her left" ? "left" : "right";
       /* The containment guard's own test, applied to our own chip. */
       expect(new RegExp(`\\b${side}\\b`, "i").test(option.resolves), option.label).toBe(true);
@@ -789,7 +797,7 @@ describe("which-side — the word has to land IN her sentence", () => {
   it("keeps HER placement wording untouched", () => {
     /* A rewrite of that half is the product choosing a body part for her, and
        the take reads the placement out of this same string. */
-    for (const option of whichSideReask(asked).options) {
+    for (const option of whichSideReask(asked, HER).options) {
       expect(option.resolves.startsWith(asked)).toBe(true);
     }
   });
@@ -798,7 +806,7 @@ describe("which-side — the word has to land IN her sentence", () => {
     /* R7-7G: 300 credits refunded twice for a design on the wrong anatomical
        side. A third chip that meant "you choose" would be that refund with a
        tap target. */
-    const raised = whichSideReask(asked);
+    const raised = whichSideReask(asked, HER);
     expect(raised.options).toHaveLength(2);
     expect(raised.options.map((one) => one.resolves)).toEqual([
       `${asked} (her left)`,
@@ -809,16 +817,16 @@ describe("which-side — the word has to land IN her sentence", () => {
   it("carries its own name, because her words cannot rebuild it", () => {
     /* It is raised on a MODEL'S READING of her sentence — a placement and an
        absent side — and re-reading the words recovers neither. */
-    const raised = whichSideReask(asked);
+    const raised = whichSideReask(asked, HER);
     expect(raised.about).toBe(reaskHandle("which-side", asked));
-    expect(pendingReaskFor(raised.about!, false)?.kind).toBe("which-side");
+    expect(pendingReaskFor(raised.about!, false, HER)?.kind).toBe("which-side");
     /* And without the handle her sentence rebuilds nothing at all, which is
        what the handle is for. */
-    expect(pendingReaskFor(asked, false)).toBeNull();
+    expect(pendingReaskFor(asked, false, HER)).toBeNull();
   });
 
   it("says nothing about a price, because nothing has been claimed", () => {
-    const said = whichSideReask(asked).question.toLowerCase();
+    const said = whichSideReask(asked, HER).question.toLowerCase();
     expect(said).toContain("her left or her right");
     for (const money of ["credit", "25", "charge you", "cost"]) {
       expect(said, money).not.toContain(money);

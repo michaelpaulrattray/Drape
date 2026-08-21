@@ -202,7 +202,7 @@ const ARMS: Arm[] = [
 
 const results: any[] = [];
 for (const arm of ARMS) {
-  const asks = repaintAsksFor({ delta: LATER, prose: EDIT_PROSE, restore: { state: LATER, slots: [] } });
+  const asks = repaintAsksFor({ pronouns: { subject: "she", object: "her", possessive: "her", plural: false }, delta: LATER, prose: EDIT_PROSE, restore: { state: LATER, slots: [] } });
   if (!asks.ok) throw new Error(`${arm.label}: the asks refused — ${asks.reason}: ${asks.detail}`);
   const recipe = assembleRecipe({
     master: { key: SYNTHETIC },

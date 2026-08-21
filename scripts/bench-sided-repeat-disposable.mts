@@ -89,7 +89,7 @@ for (const side of SIDES) {
     const rows = side === "both"
       ? [vacancyRow("left"), vacancyRow("right")]
       : [vacancyRow(side)];
-    const asks = repaintAsksFor({ delta: LATER, prose: EDIT_PROSE, restore: { state: LATER, slots: [] } });
+    const asks = repaintAsksFor({ pronouns: { subject: "she", object: "her", possessive: "her", plural: false }, delta: LATER, prose: EDIT_PROSE, restore: { state: LATER, slots: [] } });
     if (!asks.ok) throw new Error(`the asks refused — ${asks.reason}`);
     const recipe = assembleRecipe({
       master: { key: SYNTHETIC },

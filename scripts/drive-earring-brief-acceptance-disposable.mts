@@ -26,6 +26,10 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
 import path from "node:path";
 
+/* §5e: the reask questions and the vacancy phrases are a function of the
+   Cast's own pronouns now — a bench supplies one Cast. */
+const HER_PRONOUNS = { subject: "she", object: "her", possessive: "her", plural: false } as const;
+
 import sharp from "sharp";
 import { and, eq } from "drizzle-orm";
 
@@ -189,7 +193,7 @@ for (const row of vacancies) {
   check(slotWordsRefusal(String(row.slot), words) === null, `[db] ${row.slot} filed words that slot may say`, JSON.stringify(words));
 }
 
-const pair = vacantPhraseFor("earring")!;
+const pair = vacantPhraseFor("earring", HER_PRONOUNS)!;
 const prompt = String(walked[1]?.record?.prompt ?? "");
 check(prompt.includes(pair), "[wire] step 2 says the PAIR sentence again", pair);
 check(prompt.split(pair).length === 2, "[wire] and says it ONCE", `${Math.max(0, prompt.split(pair).length - 1)} occurrence(s)`);

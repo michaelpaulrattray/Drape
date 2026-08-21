@@ -1687,7 +1687,7 @@ export function assembleRecipe(input: AssembleInput): AssembleResult {
       const feature = pairFeature(entry.slot);
       if (feature !== null && whollyVacantPairs.has(feature)) {
         if (pairAlreadySaid.has(feature)) continue;
-        const pairWords = vacantPhraseFor(accessoryKindOfSlot(entry.slot));
+        const pairWords = vacantPhraseFor(accessoryKindOfSlot(entry.slot), input.pronouns);
         if (pairWords !== null) {
           /* Marked only once the collapse has actually happened. Marking it
              before would silence the SECOND lobe of a kind that has no pair

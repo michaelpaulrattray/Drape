@@ -141,6 +141,9 @@ for (const kind of KINDS) {
 
   /* ── the add, one paint, words only ──────────────────────────────────────── */
   const addAsks = repaintAsksFor({
+  /* §5e: the reask questions and the vacancy phrases are a function of the
+     Cast's own pronouns now — a bench supplies one Cast. */
+  pronouns: { subject: "she", object: "her", possessive: "her", plural: false },
     delta: { free: { statedAccessories: [kind.wear] } } as any,
     prose: EDIT_PROSE,
     accessoryKind: accessoryKindOf(kind.wear),
@@ -187,6 +190,9 @@ for (const kind of KINDS) {
   const SYNTHETIC = `synthetic:${short}:${kind.id}`;
   const specimenBytes: ReferenceBytes = { bytes: added.frame.bytes, contentType: "image/png" };
   const removeAsks = repaintAsksFor({
+  /* §5e: the reask questions and the vacancy phrases are a function of the
+     Cast's own pronouns now — a bench supplies one Cast. */
+  pronouns: { subject: "she", object: "her", possessive: "her", plural: false },
     delta: { absent: { statedAccessories: [kind.absent] }, free: { statedAccessories: [] } } as any,
     prose: EDIT_PROSE,
   });

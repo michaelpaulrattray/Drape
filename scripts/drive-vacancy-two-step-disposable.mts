@@ -44,6 +44,10 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
 import path from "node:path";
 
+/* §5e: the reask questions and the vacancy phrases are a function of the
+   Cast's own pronouns now — a bench supplies one Cast. */
+const HER_PRONOUNS = { subject: "she", object: "her", possessive: "her", plural: false } as const;
+
 import { openDatabase } from "./lib/dbConnection.mts";
 import { assertOneWorld } from "./lib/worldGuard.mts";
 import { refineCandidate } from "../server/castingV2/refineService";
@@ -177,7 +181,7 @@ check(vacancy !== undefined, "[db] the removal is on the record — a live vacan
 
 /* ── the wire: step 2 SAID the absence ─────────────────────────────────────── */
 
-const phrase = vacantPhraseFor("glasses")!;
+const phrase = vacantPhraseFor("glasses", HER_PRONOUNS)!;
 const second = walked[1]?.record;
 /*
   ON THE PROMPT, NOT ON `standing` — the record's `standing` is the list of

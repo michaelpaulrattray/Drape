@@ -91,7 +91,7 @@ console.log("Judge by eye: which ear lost its hoop, and on which side of the fra
 for (const side of ["left", "right"] as const) {
   for (let at = 1; at <= PAINTS; at += 1) {
     const rows = [vacancyRow(side)];
-    const asks = repaintAsksFor({ delta: LATER, prose: EDIT_PROSE, restore: { state: LATER, slots: [] } });
+    const asks = repaintAsksFor({ pronouns: { subject: "she", object: "her", possessive: "her", plural: false }, delta: LATER, prose: EDIT_PROSE, restore: { state: LATER, slots: [] } });
     if (!asks.ok) throw new Error(`the asks refused — ${asks.reason}`);
     const recipe = assembleRecipe({
       master: { key: SYNTHETIC },

@@ -170,6 +170,9 @@ for (const face of faces) {
   console.log(`${short}  control: still wearing them — "${control.saw}"  · library ${rows.length}`);
 
   const asks = repaintAsksFor({
+  /* §5e: the reask questions and the vacancy phrases are a function of the
+     Cast's own pronouns now — a bench supplies one Cast. */
+  pronouns: { subject: "she", object: "her", possessive: "her", plural: false },
     delta: EDIT_DELTA,
     prose: EDIT_PROSE,
     restore: { state: EDIT_DELTA, slots: supersededCarrySlots(rows) },
