@@ -40,6 +40,63 @@ describe("the migration reader can see what is there", () => {
   });
 });
 
+/**
+ * THE SPELLINGS THIS READER WAS BLIND TO UNTIL 2026-08-22 — and the reason
+ * every arm above passed while it was.
+ *
+ * MySQL spells the same three operations two ways each, `COLUMN` optional, and
+ * this repository's migrations use both: 51 `ADD \`col\`` against 17 `ADD
+ * COLUMN`, and — the other way round — 2 `MODIFY \`col\`` against 26 `MODIFY
+ * COLUMN`. The reader matched only the first of each pair.
+ *
+ * **The two `MODIFY \`col\`` statements are both in migration 0046, which is
+ * the file this reader was written against**, and every case in the suite above
+ * was picked from a column it could already read. So the controls inherited the
+ * instrument's blind spot instead of exposing it — the specimen joining the
+ * vocabulary it is supposed to be tested against.
+ *
+ * These arms are chosen the other way round: each one names a column the reader
+ * REFUSED to answer about before the fix, so removing the fix reddens them.
+ */
+describe("the migration reader understands both of MySQL's spellings", () => {
+  it("reads a MODIFY COLUMN, which is 26 of this repo's 28 MODIFYs", () => {
+    expect(effectiveColumn("boards", "startedWith"))
+      .toBe("enum('casting','wardrobe','blank') NOT NULL");
+  });
+
+  it("reads an ADD COLUMN", () => {
+    expect(effectiveColumn("casting_rolls", "path")).toBe("enum('wardrobe','basics') NULL");
+  });
+
+  it("reads EVERY column of one ALTER that adds eleven of them", () => {
+    /*
+      0029 adds eleven columns in a single statement, and this is the arm about
+      clause splitting rather than about spelling. The old reader ran its regex
+      over the whole statement with the `s` flag, so the FIRST column's answer
+      would have swallowed the DDL of all ten that follow it — a wrong answer
+      rather than a refusal, which is the one failure mode this file exists to
+      prevent.
+
+      The first and the LAST are both asserted on purpose: a splitter that drops
+      its final segment passes an arm that only checks the first.
+    */
+    expect(effectiveColumn("casting_reference_library", "refusedContentKey")).toBe("varchar(512)");
+    expect(effectiveColumn("casting_reference_library", "refusedCoverage")).toBe("int");
+    expect(effectiveColumn("casting_reference_library", "refusedFrameHeight")).toBe("int");
+  });
+
+  it("does not let an enum's own commas split a clause", () => {
+    /*
+      The negative control for the splitter. `enum('generated','carried',…)` is
+      one clause containing six commas; a naive `split(",")` hands the
+      classifier `MODIFY COLUMN \`selectionReason\` enum('generated'` and this
+      arm goes red with a truncated answer rather than a thrown one.
+    */
+    expect(effectiveColumn("model_package_snapshot_slots", "selectionReason"))
+      .toMatch(/^enum\('generated','carried',.*'evidence_accept'\) NOT NULL$/);
+  });
+});
+
 describe("the migration reader reports the PRESENT, not the CREATE", () => {
   /*
     THE ARM THAT SEPARATES THIS READER FROM THE ONE IT REPLACES.

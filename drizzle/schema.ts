@@ -22,6 +22,7 @@ import { INK_PROVENANCES } from "../shared/inkProvenance";
 import { INK_CUT_ROUTES } from "../shared/inkCutRoute";
 import { INK_FORM_DEMAND_KINDS, INK_FORM_DEMAND_OUTCOMES } from "../shared/inkFormDemand";
 import { INK_TEMPLATE_KINDS } from "../shared/inkTemplateKinds";
+import { CASTING_PATHS, WARDROBE_LINE_MAX_LENGTH } from "../shared/castingPaths";
 import {
   REFERENCE_INTENTS,
   referenceIntentIngestionForm,
@@ -2048,6 +2049,31 @@ export const castingRolls = mysqlTable("casting_rolls", {
    * derivation would have to guess which variant was selected at the time.
    */
   parentVariantId: int("parentVariantId"),
+  /**
+   * THE TWO PATHS (migration 0051, design §3.1) — which path this sheet was
+   * cast on, and what the person on it is wearing.
+   *
+   * On the roll because a roll IS the sheet and the ruling is one outfit per
+   * sheet (§B2's comparability law: a sheet compares people, not clothes). Not
+   * on the candidate — eight candidates in eight outfits is that law broken.
+   * Not on the session — two rolls in one session already differ by brief.
+   *
+   * **BOTH NULLABLE, NEITHER DEFAULTED, and that is load-bearing rather than
+   * incidental.** `NULL` means *cast before the paths existed*; a DEFAULT would
+   * have MySQL stamp every historical roll with a path it was not cast on, and
+   * the loss is permanent because the distinction destroyed is the only
+   * evidence of which rolls predate the feature. The argument is written out in
+   * the migration and pinned by `server/castingV2/twoPathsMigration.test.ts`.
+   *
+   * ⚠ **Nothing reads this column by name except the Follow.** Every other
+   * reader goes through `currentWardrobeLine(branch)` — condition (v),
+   * fable-1334 §2 — because a branch that has had a wardrobe edit is no longer
+   * wearing the born line, and six views judged against the born line is
+   * refunded slices. Reaching past that owner for `wardrobeLine` is the
+   * parallel-copy shape with money attached.
+   */
+  path: mysqlEnum("path", CASTING_PATHS),
+  wardrobeLine: varchar("wardrobeLine", { length: WARDROBE_LINE_MAX_LENGTH }),
   status: mysqlEnum("status", CASTING_ROLL_STATUSES).default("pending").notNull(),
   // = 8 × perCandidateCredits. Integer by construction: the ledger is
   // integer-only and refund slices come from each candidate's own row.

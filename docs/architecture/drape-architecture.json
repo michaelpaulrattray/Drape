@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "401f96948733c776"
+    "sourceFingerprint": "faac49b38c40a7e0"
   },
   "domains": [
     {
@@ -123,7 +123,7 @@
     {
       "id": "domain:shared",
       "name": "shared",
-      "moduleCount": 32
+      "moduleCount": 33
     },
     {
       "id": "domain:studio",
@@ -5325,6 +5325,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:shared/castingPaths.ts",
+      "path": "shared/castingPaths.ts",
+      "domain": "shared",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:shared/castingRealization.ts",
       "path": "shared/castingRealization.ts",
       "domain": "shared",
@@ -8544,6 +8550,11 @@
       "grammar": "off|all|users:<ids>"
     },
     {
+      "id": "flag:CASTING_TWO_PATHS_SCOPE",
+      "name": "CASTING_TWO_PATHS_SCOPE",
+      "grammar": "off|all|users:<ids>"
+    },
+    {
       "id": "flag:CASTING_V2_SCOPE",
       "name": "CASTING_V2_SCOPE",
       "grammar": "off|all|users:<ids>"
@@ -10643,6 +10654,10 @@
     {
       "id": "test:server/castingV2/twoPathsMigration.test.ts",
       "path": "server/castingV2/twoPathsMigration.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/twoPathsScope.test.ts",
+      "path": "server/castingV2/twoPathsScope.test.ts"
     },
     {
       "id": "test:server/castingV2/typecheckGate.test.ts",
@@ -16298,6 +16313,11 @@
     {
       "from": "module:drizzle/schema.ts",
       "to": "module:shared/bodyAnchorRegions.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:drizzle/schema.ts",
+      "to": "module:shared/castingPaths.ts",
       "kind": "imports"
     },
     {

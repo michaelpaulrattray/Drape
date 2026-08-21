@@ -44,6 +44,8 @@ import {
   validateCastingInkTransformEnvironment,
   validateCastingInkWordsEnvironment,
   CASTING_INK_WORDS_SCOPE_ENV,
+  CASTING_TWO_PATHS_SCOPE_ENV,
+  validateCastingTwoPathsEnvironment,
   validateCastingInkRegionCropEnvironment,
   validateCastingInkStudioEnvironment,
   validateCastingHairReferenceEnvironment,
@@ -345,6 +347,18 @@ export function validateEnv(): void {
   */
   validateCastingInkWordsEnvironment({
     scope: process.env[CASTING_INK_WORDS_SCOPE_ENV],
+    castingScope: process.env[CASTING_V2_SCOPE_ENV],
+  });
+  /*
+    WHETHER A CUSTOMER CHOOSES HOW HER CAST IS BORN. Its parent is
+    `CASTING_V2_SCOPE` and — alone among this road's sub-flags — NOT the repaint
+    scope: every other one gates something a refine does, while this gates THE
+    ROLL, which is already spendable surface at `all`. Hanging it off the
+    repaint scope would refuse the path to accounts that can already buy the
+    thing being pathed.
+  */
+  validateCastingTwoPathsEnvironment({
+    scope: process.env[CASTING_TWO_PATHS_SCOPE_ENV],
     castingScope: process.env[CASTING_V2_SCOPE_ENV],
   });
 

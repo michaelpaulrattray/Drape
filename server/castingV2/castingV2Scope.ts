@@ -2143,3 +2143,115 @@ export function validateCastingInkTransformEnvironment(input: {
   }
   return child;
 }
+
+/**
+ * THE TWO PATHS — whether a customer may choose how her cast is BORN (founder
+ * ruling 2026-08-21, *"this is the way foward 100%"*; relayed fable-1311 with
+ * fable-1312's addendum; design `docs/specs/CASTING_V2_TWO_PATHS_DESIGN.md`
+ * §10, countersigned fable-1334; migration `0051`, ceremony taken on both
+ * databases 2026-08-22).
+ *
+ * # What it gates
+ *
+ * Off, and absent means off: **no toggle is rendered, no path is written, every
+ * roll composes the wardrobe sentence exactly as it does today, and not one
+ * line of the new road runs.** The two columns stay NULL on every roll, which
+ * is what NULL means — *cast before the paths existed*.
+ *
+ * On, a roll is bought on a chosen path. `wardrobe` is born and signed in an
+ * outfit — hers if she named one, otherwise one the engine picks for the cast
+ * type, otherwise the plain grey tee — and ink lands where that outfit leaves
+ * skin. `basics` is born and signed in plain black basics: a clean body record,
+ * and the chest is bare.
+ *
+ * # Why the parent is `CASTING_V2_SCOPE` and nothing narrower
+ *
+ * ⚠ **This is the one sub-flag on this road whose parent is not the repaint
+ * scope, and the difference is the subject rather than a preference.** Every
+ * other flag here gates something a REFINE does, and a refine's road is the
+ * repaint one. This gates THE ROLL — the spendable surface that is already at
+ * `all` — so hanging it off the repaint scope would refuse the path to accounts
+ * that can already buy the very thing being pathed.
+ *
+ * The refine half is gated a second way and NOT by a second flag: the WARDROBE
+ * subject card is `admittedOn: "repaintOnly"`, so a garment edit is confined to
+ * the road it will be measured on by the card that describes it, which is a
+ * fact a reader of the card can see rather than a coupling they have to know.
+ *
+ * # It requires nothing new of the environment
+ *
+ * No stored bytes, so no cleanup worker. No new transport and no new engine
+ * call, so `assertFalBudget`'s ceiling arithmetic is untouched. The line is
+ * written by the interpreter call that already runs.
+ *
+ * # ⚠ THE COLUMNS ARE A PREREQUISITE OF THE CODE, WHICH IS STRICTER THAN A
+ * # PREREQUISITE OF THE FLIP — AND IT IS ALREADY DISCHARGED
+ *
+ * A new column on a table drizzle SELECTs is in every read, flag or no flag, so
+ * `casting_rolls.path` and `.wardrobeLine` had to exist in BOTH databases
+ * before any of this compiled — not before it was switched on. That is why the
+ * order is *ceremony → code lands dark → court → his eyes → flip* and why this
+ * boot guard does not check for the columns: by the time it can run, the schema
+ * naming them has already shipped. What would have caught the wrong order is
+ * `twoPathsMigration.test.ts`'s absence arm, and it did its job before being
+ * retired into the three-way arm that replaced it.
+ */
+export const CASTING_TWO_PATHS_SCOPE_ENV = "CASTING_TWO_PATHS_SCOPE";
+
+export class CastingTwoPathsScopeConfigurationError extends Error {
+  constructor() {
+    super(
+      `${CASTING_TWO_PATHS_SCOPE_ENV} must be "off", "all", or "users:" followed by unique positive integer user ids`,
+    );
+    this.name = "CastingTwoPathsScopeConfigurationError";
+  }
+}
+
+export class CastingTwoPathsCoverageError extends Error {
+  constructor(detail: string) {
+    super(`${CASTING_TWO_PATHS_SCOPE_ENV} ${detail}`);
+    this.name = "CastingTwoPathsCoverageError";
+  }
+}
+
+export function parseCastingTwoPathsScope(raw: string | undefined): CastingV2Scope {
+  return parseScopeGrammar(raw, () => {
+    throw new CastingTwoPathsScopeConfigurationError();
+  });
+}
+
+/** Whether this account chooses the path its casts are born on. */
+export function captureCastingTwoPathsEnabled(userId: number): boolean {
+  const child = parseCastingTwoPathsScope(process.env[CASTING_TWO_PATHS_SCOPE_ENV]);
+  if (!castingV2EnabledForUser(child, userId)) return false;
+  return captureCastingV2Enabled(userId);
+}
+
+export function validateCastingTwoPathsEnvironment(input: {
+  scope: string | undefined;
+  castingScope: string | undefined;
+}): CastingV2Scope {
+  const child = parseCastingTwoPathsScope(input.scope);
+  if (child.kind === "off") return child;
+
+  const parent = parseCastingV2Scope(input.castingScope);
+  if (parent.kind === "off") {
+    throw new CastingTwoPathsCoverageError(
+      `cannot be enabled while ${CASTING_V2_SCOPE_ENV} is off — a path is chosen when a roll is `
+      + "bought, and a user outside casting has no roll to buy",
+    );
+  }
+  if (parent.kind === "all") return child;
+  if (child.kind === "all") {
+    throw new CastingTwoPathsCoverageError(
+      `cannot be "all" while ${CASTING_V2_SCOPE_ENV} is limited to specific users`,
+    );
+  }
+  const uncovered = child.userIds.filter((userId) => !parent.userIds.includes(userId));
+  if (uncovered.length > 0) {
+    throw new CastingTwoPathsCoverageError(
+      `names users outside ${CASTING_V2_SCOPE_ENV}: ${uncovered.join(",")}`,
+    );
+  }
+  return child;
+}

@@ -969,3 +969,10 @@
   verdict: KEEP
   why: the face exclusion's own ARM instrument, and test-only BY DESIGN — its whole job is to make the fence's property provable at the bytes ("the carried crop holds zero pixels of a stranger's face"), which is a reading of the produced object rather than a claim about the code that produced it. Both its callers are arms and that is correct: the production path SUBTRACTS (`subtractMask`) and never needs to count what it removed. Deleting it would push the count into an inline loop in each arm — two implementations of one measurement, which is the drift law 4 names, and it is exactly what the cutter's arm had before it was pointed at this owner
   argued: V3B §7.12 (the region-crop road, condition fable-1183 §2b, countersigned fable-1201 §4)
+
+- symbol: captureCastingTwoPathsEnabled
+  file: server/castingV2/castingV2Scope.ts
+  verdict: HELD
+  why: "the two paths' capability gate, landed with its flag in the SCHEMA+FLAG slice and read by nothing yet. It is on this list for the ordinary reason a dark landing puts a symbol here — the door came before the road, which is the order the design requires (ceremony -> code lands dark -> court -> his eyes -> flip) and not an oversight. The boot guard beside it (validateCastingTwoPathsEnvironment) IS wired, at server/_core/env.ts, and was driven through validateEnv() itself both ways before this row was written; what has no caller is the per-user READ"
+  argued: CASTING_V2_TWO_PATHS_DESIGN §3.2/§10
+  blocker: "the WRITE PATH slice — roll creation asks this before it stamps a path. When that lands the row must be revisited rather than left, and the door will force it: a HELD row whose symbol has a production importer refuses as `rewired`. That is the ratchet working, not a false alarm — flip it to KEEP in the commit that wires it"
