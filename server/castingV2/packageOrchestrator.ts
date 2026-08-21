@@ -57,7 +57,13 @@ import {
   castPackageView,
   composePackageViewPrompt,
 } from "./castViewPackage";
-import { inkViewReferenceClause, type CarriedInkPlate } from "./inkViewReferences";
+import {
+  inkViewCropClause,
+  inkViewReferenceClause,
+  type CarriedInkCrop,
+  type CarriedInkPlate,
+} from "./inkViewReferences";
+import { pronounsForSex, type CastPronouns } from "./castPronouns";
 import {
   composeViewFeatureWordsClause,
   type CarriedFeatureWords,
@@ -160,6 +166,29 @@ export type BuildPackageInput = {
    * before this existed, which is what a Cast with no ink still gets.
    */
   inkPlates?: readonly CarriedInkPlate[];
+  /**
+   * THE TATTOOS SHE ACTUALLY HAS, AS PICTURES OF HER — the delivered-crop lane
+   * (fable-1297 §3, from his own *"crop and reference any tattos it can find
+   * and see - this would intrun carry into the signing angles"*).
+   *
+   * The lane above has never carried anything: its source is the plate table
+   * and the mannequin road is parked. This one's source is the frame that
+   * really delivered the ink, cut down to the tattoo as it sits on her — which
+   * is a better picture than a plate as well as an available one, because it
+   * holds her own skin, her own tone and the size the design really is on her.
+   *
+   * Absent or empty, every view composes exactly the prompt and the single
+   * reference it composed before this existed.
+   */
+  inkCrops?: readonly CarriedInkCrop[];
+  /**
+   * How the product refers to this Cast — `he`, `she`, `they`.
+   *
+   * Required by the delivered-crop sentence and by nothing else here, so it is
+   * optional and defaults to the record's own answer for a Cast whose sex was
+   * never stated: `they`, which is correct English rather than a guess.
+   */
+  pronouns?: CastPronouns;
   /**
    * WHAT THE ANCHOR CANNOT SHOW, AS WORDS — arrow 6 (FOUNDER, 2026-08-19:
    * *"when signing a cast to make the angles the refined image is supplied as
@@ -414,11 +443,27 @@ async function buildOneView(
         does not hold.
       */
       const plates = input.inkPlates ?? [];
+      /*
+        AND THE TATTOOS SHE REALLY HAS, BEHIND THEM.
+
+        Two ink lanes, one array, and every ordinal derived from the array
+        itself — the crops start where the plates stop, so neither sentence can
+        come to quote a slot the request does not hold. The two lanes never
+        carry one tattoo twice: the Sign hands the plate lane the slots this one
+        already took.
+      */
+      const crops = input.inkCrops ?? [];
       const references: ReferenceImage[] = [
         input.anchor,
         ...plates.map((plate) => ({ bytes: plate.bytes, contentType: plate.contentType })),
+        ...crops.map((crop) => ({ bytes: crop.bytes, contentType: crop.contentType })),
       ];
       const inkClause = inkViewReferenceClause({ plates, firstOrdinal: 2 });
+      const cropClause = inkViewCropClause({
+        crops,
+        firstOrdinal: 2 + plates.length,
+        pronouns: input.pronouns ?? pronounsForSex(null),
+      });
       /*
         THE WORDS FOR WHAT THE ANCHOR CANNOT SHOW ride in the same place the
         plates' clause does, so there is one shape for "things that travel
@@ -428,7 +473,7 @@ async function buildOneView(
       */
       const wordsClause = composeViewFeatureWordsClause(input.featureWords ?? []).clause;
       const image = await engine.generateView({
-        prompt: [composePackageViewPrompt(angle), inkClause, wordsClause]
+        prompt: [composePackageViewPrompt(angle), inkClause, cropClause, wordsClause]
           .filter((part) => part !== "")
           .join("\n"),
         references,

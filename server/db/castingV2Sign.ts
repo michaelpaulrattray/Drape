@@ -148,6 +148,24 @@ export type SignableCandidate = {
     imageKey: string | null;
     thumbKey: string | null;
     internalPrompt: unknown;
+    /**
+     * THE BRANCH'S OWN COMPOSED STATE — read in this statement and no other.
+     *
+     * The Sign's views carry this branch's delivered tattoos, and which ones it
+     * WEARS is the composed delta's `inkDelivered`, never the delivery store's
+     * full list: a Cast accumulates a crop per delivering frame, so the store
+     * holds every tattoo it has ever worn while the branch wears the ones its
+     * own steps left on it.
+     *
+     * Read HERE rather than in a second statement for the reason the field
+     * above it exists: the pixels, the recipe and the branch state describing
+     * one face is a property of being read together. A later read could return
+     * a different branch's answer and nothing would say so.
+     *
+     * NULL for the pristine master, which is a real answer — a master wears no
+     * tattoo, so the delivery store is not asked at all.
+     */
+    deltas: unknown;
   };
   roll: {
     id: number;
@@ -183,6 +201,7 @@ export async function getSignableCandidate(
       variantImageKey: castingCandidateVariants.imageKey,
       variantThumbKey: castingCandidateVariants.thumbKey,
       variantInternalPrompt: castingCandidateVariants.internalPrompt,
+      variantDeltas: castingCandidateVariants.deltas,
       rollId: castingRolls.id,
       rollPublicId: castingRolls.publicId,
       briefText: castingRolls.briefText,
@@ -244,6 +263,7 @@ export async function getSignableCandidate(
         imageKey: row.variantImageKey,
         thumbKey: row.variantThumbKey,
         internalPrompt: row.variantInternalPrompt,
+        deltas: row.variantDeltas,
       }
       : {
         variantId: null,
@@ -251,6 +271,8 @@ export async function getSignableCandidate(
         imageKey: row.candidate.imageKey,
         thumbKey: row.candidate.thumbKey,
         internalPrompt: row.candidate.internalPrompt,
+        /* The pristine master, which wears nothing. */
+        deltas: null,
       },
     roll: {
       id: row.rollId,

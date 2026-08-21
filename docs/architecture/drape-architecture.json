@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "b89ef738279b87d2"
+    "sourceFingerprint": "74453f1eebbe9fa8"
   },
   "domains": [
     {
@@ -10553,6 +10553,10 @@
       "path": "server/castingV2/signFeatureWords.test.ts"
     },
     {
+      "id": "test:server/castingV2/signInkCrops.test.ts",
+      "path": "server/castingV2/signInkCrops.test.ts"
+    },
+    {
       "id": "test:server/castingV2/signRecovery.test.ts",
       "path": "server/castingV2/signRecovery.test.ts"
     },
@@ -20988,6 +20992,11 @@
     },
     {
       "from": "module:server/castingV2/inkViewReferences.ts",
+      "to": "module:server/castingV2/castPronouns.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/inkViewReferences.ts",
       "to": "module:server/castingV2/inkRealism.ts",
       "kind": "imports"
     },
@@ -21329,6 +21338,11 @@
     {
       "from": "module:server/castingV2/packageOrchestrator.ts",
       "to": "module:server/casting/operationContract.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/packageOrchestrator.ts",
+      "to": "module:server/castingV2/castPronouns.ts",
       "kind": "imports"
     },
     {
@@ -23338,7 +23352,17 @@
     },
     {
       "from": "module:server/castingV2/signService.ts",
+      "to": "module:server/castingV2/castPronouns.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/signService.ts",
       "to": "module:server/castingV2/castViewPackage.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/signService.ts",
+      "to": "module:server/castingV2/inkApplied.ts",
       "kind": "imports"
     },
     {
@@ -23358,6 +23382,11 @@
     },
     {
       "from": "module:server/castingV2/signService.ts",
+      "to": "module:server/castingV2/referenceSlotCatalogue.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/signService.ts",
       "to": "module:server/castingV2/referenceSlots.ts",
       "kind": "imports"
     },
@@ -23369,6 +23398,11 @@
     {
       "from": "module:server/castingV2/signService.ts",
       "to": "module:server/castingV2/viewFeatureWords.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/signService.ts",
+      "to": "module:server/db/castingV2InkDeliveryCrops.ts",
       "kind": "imports"
     },
     {
@@ -23429,6 +23463,11 @@
     {
       "from": "module:server/castingV2/signService.ts",
       "to": "module:shared/inkMannequinDeferral.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/signService.ts",
+      "to": "module:shared/inkPlacementVocabulary.ts",
       "kind": "imports"
     },
     {

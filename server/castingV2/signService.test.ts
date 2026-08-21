@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 /**
@@ -91,6 +92,9 @@ vi.mock("../db/castingV2Sign", () => ({
           imageKey: selectedVariant.imageKey,
           thumbKey: selectedVariant.thumbKey,
           internalPrompt: selectedVariant.internalPrompt,
+          /* The branch's composed state, read in the same statement as its
+             pixels — which is what says WHICH tattoos this face wears. */
+          deltas: (selectedVariant as { deltas?: unknown }).deltas ?? null,
         }
         : {
           variantId: null,
@@ -98,6 +102,8 @@ vi.mock("../db/castingV2Sign", () => ({
           imageKey: candidateRow.imageKey,
           thumbKey: candidateRow.thumbKey,
           internalPrompt: candidateRow.internalPrompt,
+          /* The pristine master, which wears nothing. */
+          deltas: null,
         },
       roll: {
         id: 22,
@@ -255,6 +261,17 @@ type PackageBuildInput = {
     bytes: Buffer;
     contentType: string;
   }>;
+  /* The delivered-crop lane's half of the same wire. */
+  inkCrops?: ReadonlyArray<{
+    cropPublicId: string;
+    slot: string;
+    placement: string;
+    side: string;
+    noun: string;
+    bytes: Buffer;
+    contentType: string;
+  }>;
+  pronouns?: { subject: string; object: string; possessive: string; plural: boolean };
 };
 
 function packageReturning(result: {
@@ -756,6 +773,101 @@ describe("the tattoos a Sign carries into its views", () => {
     if (!sent.inkPlates) return;
     expect(sent.inkPlates.map((plate) => plate.designPublicId)).toEqual(["design-1"]);
     expect(journal).toContain("package");
+  });
+
+  /* A refined face WEARING a tattoo — the branch's composed state is what says
+     so, and it is read in the same statement as its pixels. Male on purpose:
+     "her" is this room's oldest scar, and a pronoun that is derived rather than
+     assumed has to be provable from a Cast that is not one. */
+  const inkedBranch = () => ({
+    id: 77,
+    publicId: "variant-public",
+    imageKey: "casting-v2/variants/refined.png",
+    thumbKey: null,
+    internalPrompt: {
+      prompt: "the composed casting instruction",
+      resolved: { sex: "male", eyeColour: "green" },
+    },
+    deltas: { inkDelivered: { "ink:upperArm@left": "11111111-1111-4111-8111-111111111111" } },
+  });
+
+  it("carries the tattoos the BRANCH wears into the package, as crops of her own frame", async () => {
+    /*
+      THE WIRE, end to end through a real Sign (fable-1297 §3). The plate lane
+      above has never carried anything in either world — its table is empty
+      while the mannequin road is parked — and this is the lane that does.
+
+      Asserted on what leaves the building rather than on a constant beside it.
+    */
+    selectedVariant = inkedBranch();
+    const buildPackage = packageReturning({});
+
+    await signCandidate({
+      schedulePackage: awaitPackage,
+      buildPackage,
+      listInkDeliveryCrops: async () => [{
+        publicId: "11111111-1111-4111-8111-111111111111",
+        designPublicId: null,
+        slot: "ink:upperArm@left",
+        storageKey: "casting-v2/candidates/ink-delivery/arm.png",
+        digest: createHash("sha256").update(Buffer.from("bytes:casting-v2/candidates/ink-delivery/arm.png")).digest("hex"),
+        width: 224,
+        height: 348,
+      }] as never,
+      readBytes: async (key: string) => ({
+        bytes: Buffer.from(`bytes:${key}`), contentType: "image/png",
+      }),
+    }, input);
+
+    const sent = buildPackage.mock.calls[0]![1];
+    expect(sent.inkCrops?.map((crop) => crop.slot)).toEqual(["ink:upperArm@left"]);
+    expect(sent.inkCrops?.[0]!.noun).toBe("left upper arm tattoo");
+    /* And the Cast's own pronoun rides with it, from the documents this Sign
+       just sealed rather than from a default. */
+    expect(sent.pronouns?.possessive).toBe("his");
+  });
+
+  it("never sends one tattoo TWICE when a design has both a plate and a delivered crop", async () => {
+    /*
+      Unreachable in production — the mannequin road is parked, so no plate row
+      exists — and closed at the moment both lanes exist rather than on the day
+      the deferral lifts (working law 7 run forwards). Two pictures of one
+      tattoo with two different sentences about what it is would be the shape
+      the recipe assembler refuses outright one road along.
+
+      The CROP wins, and not by accident of ordering: it is the ink as it
+      actually sits on her, and the plate is artwork on a grey form.
+    */
+    selectedVariant = inkedBranch();
+    const buildPackage = packageReturning({});
+
+    await signCandidate({
+      schedulePackage: awaitPackage,
+      buildPackage,
+      mannequinDeferred: false,
+      listInkPlates: async () => [plateRow(), plateRow({
+        designPublicId: "design-2", placement: "neck", side: "centre",
+        storageKey: "casting-v2/candidates/neck-plate.png",
+      })],
+      listInkDeliveryCrops: async () => [{
+        publicId: "11111111-1111-4111-8111-111111111111",
+        designPublicId: "design-1",
+        slot: "ink:upperArm@left",
+        storageKey: "casting-v2/candidates/ink-delivery/arm.png",
+        digest: createHash("sha256").update(Buffer.from("bytes:casting-v2/candidates/ink-delivery/arm.png")).digest("hex"),
+        width: 224,
+        height: 348,
+      }] as never,
+      readBytes: async (key: string) => ({
+        bytes: Buffer.from(`bytes:${key}`), contentType: "image/png",
+      }),
+    }, input);
+
+    const sent = buildPackage.mock.calls[0]![1];
+    expect(sent.inkCrops?.map((crop) => crop.slot)).toEqual(["ink:upperArm@left"]);
+    /* design-1 rode as a crop, so it does not ride again as a plate — and the
+       OTHER design still does: one lane's refusal never silences another's. */
+    expect(sent.inkPlates?.map((plate) => plate.designPublicId)).toEqual(["design-2"]);
   });
 
   it("signs anyway when the plate STATEMENT itself fails", async () => {

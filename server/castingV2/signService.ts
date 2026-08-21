@@ -62,6 +62,7 @@ import {
   signCandidateIntoCast,
   type SignableCandidate,
 } from "../db/castingV2Sign";
+import { createHash } from "node:crypto";
 import { createModuleLogger } from "../logging/logger";
 import { storageCopyExact, storageReadBytes } from "../storage";
 import { listCandidateInkPlates, type CandidateInkPlate } from "../db/castingV2InkPlates";
@@ -76,7 +77,18 @@ import {
   selectCarriedFeatureWords,
   type CarriedFeatureWords,
 } from "./viewFeatureWords";
-import { placementRidesPackageViews, type CarriedInkPlate } from "./inkViewReferences";
+import {
+  inkViewCropClause,
+  placementRidesPackageViews,
+  type CarriedInkCrop,
+  type CarriedInkPlate,
+} from "./inkViewReferences";
+import { listInkDeliveryCrops } from "../db/castingV2InkDeliveryCrops";
+import { readDeliveredInk } from "./inkApplied";
+import { inkPlacementOfSlot, inkSideSlotKey, inkSlotKey } from "./referenceSlots";
+import { slotDefinition } from "./referenceSlotCatalogue";
+import { isInkPlacement } from "../../shared/inkPlacementVocabulary";
+import { castPronouns, type CastPronouns } from "./castPronouns";
 
 /**
  * WHETHER A DESIGN'S ARTWORK REACHED THIS CAST'S VIEWS, AND IF NOT WHY — one
@@ -100,8 +112,55 @@ export type InkDesignDisposition =
   | {
     designPublicId: string;
     rode: false;
-    reason: "noPlate" | "engineUndecided" | "bytesUnreadable" | "surfaceCovered" | "mannequinDeferred";
+    reason:
+      | "noPlate"
+      | "engineUndecided"
+      | "bytesUnreadable"
+      | "surfaceCovered"
+      | "mannequinDeferred"
+      | "carriedAsDelivered";
     engines?: readonly string[];
+  };
+
+/**
+ * WHETHER A TATTOO THIS BRANCH WEARS REACHED ITS VIEWS, AND IF NOT WHY — the
+ * delivered-crop lane's own line, keyed by SLOT.
+ *
+ * # It is keyed by slot and NOT by design, and that is the 0050 lesson
+ *
+ * D-137's words road paints real ink with no design row anywhere, so a
+ * disposition keyed by design could not name half the tattoos this lane
+ * carries. The branch names its tattoos by slot; so does this.
+ *
+ * `noRow` — the branch names a crop nobody wrote. The name is minted at claim
+ * and the row at delivery, so a render whose ink never landed leaves exactly
+ * this. THE ID POINTS AND THE ROW DECIDES, on this surface as on the panel's.
+ * `bytesUnreadable` — the row is there and the object is not.
+ * `bytesMoved` — the object is there and it is not what the row minted. A
+ * reference whose bytes have moved is refused rather than painted, which is the
+ * repaint road's third door on the lane next to it.
+ * `surfaceCovered` — the package wardrobe covers this surface, so no view can
+ * show it honestly (see `placementRidesPackageViews`, the one owner).
+ * `unmeasuredPlacement` — an open placement, in her own word, that no reading
+ * has measured. It has no reader word, no ride-table entry and no image-half
+ * phrase, so where it sits on a freshly rendered view is a guess, and a guess
+ * about a customer's body is what this program refuses.
+ * `unnameableSlot` — the catalogue cannot name the key the branch wrote. It
+ * cannot be described to an engine at all.
+ */
+export type InkCropDisposition =
+  | { slot: string; cropPublicId: string; rode: true }
+  | {
+    slot: string;
+    cropPublicId: string;
+    rode: false;
+    reason:
+      | "noRow"
+      | "bytesUnreadable"
+      | "bytesMoved"
+      | "surfaceCovered"
+      | "unmeasuredPlacement"
+      | "unnameableSlot";
   };
 import { CASTING_V2_SIGN_PRICE_CREDITS } from "./castViewPackage";
 import { buildCastPackage, type PackageOrchestratorDependencies } from "./packageOrchestrator";
@@ -121,6 +180,10 @@ export type SignServiceDependencies = PackageOrchestratorDependencies & {
   /** Her plated tattoos, injected in tests. Absent, the real statement runs —
    *  owner-scoped through the design to the candidate. */
   listInkPlates?: typeof listCandidateInkPlates;
+  /** The tattoos she has actually been given, cut out of the frames that
+   *  delivered them. Injected in tests; absent, the real owner-scoped
+   *  statement runs. */
+  listInkDeliveryCrops?: typeof listInkDeliveryCrops;
   /**
    * Whether the mannequin road is parked — defaults to the ruling's own
    * constant, and is a seam rather than a switch.
@@ -447,6 +510,9 @@ export async function signCandidate(
        at build time as INPUTS — nothing about them is persisted into the Cast,
        so unlike the anchor there is no copy to take. */
     candidateId: source.candidate.id,
+    /* The same candidate by public name — what the delivered-crop store is
+       scoped by, and it is re-proved against `userId` inside that read. */
+    candidatePublicId: source.candidate.publicId,
     /*
       The package references the CAST'S OWN copy, never the candidate's object.
       The candidate's row and its object delete together at retention (§G.6),
@@ -457,6 +523,11 @@ export async function signCandidate(
     /* The same variant the anchor's pixels came from, so the words and the
        picture describe one branch (`branch-state-identity`). */
     selectedVariantId: source.face.variantId,
+    /* Which tattoos that branch wears, from the same read as its pixels. */
+    anchorDeltas: source.face.deltas,
+    /* From the documents this Sign just sealed, so the Cast's views speak about
+       the person the Cast's own record describes. */
+    pronouns: castPronouns(documents.technicalSchema),
     identityRevisionId: cast.identityRevisionId,
     identityText: documents.identityText,
     chargedCredits: price,
@@ -470,6 +541,188 @@ function detach(run: () => Promise<void>): void {
   void run().catch((error) => {
     log.error({ err: error }, "[signService] the detached package continuation threw");
   });
+}
+
+/**
+ * THE TATTOOS THIS BRANCH IS WEARING, CARRIED INTO EVERY VIEW AS PICTURES OF
+ * HER — the delivered-crop lane (fable-1297 §3, from his own two sentences:
+ * *"crop and reference any tattos it can find and see - this would intrun carry
+ * into the signing angles"*).
+ *
+ * # Why this exists beside a lane that already claimed to do it
+ *
+ * `carriedInkPlates` has carried tattoos into the six views since fable-987 §3,
+ * from `casting_ink_plates` — and the mannequin road is parked, so that table
+ * is empty in both worlds and **not one signed Cast has ever carried a tattoo
+ * into a view.** A control that reads as live and carries nothing is working
+ * law 7's exact face. Meanwhile the delivery store has held real crops of real
+ * ink since migration 0049, and nothing looked at it.
+ *
+ * # THE CHAIN DECIDES AND THE STORE ONLY LOOKS THINGS UP
+ *
+ * A Cast accumulates a delivery crop per delivering FRAME, so the store holds
+ * every tattoo it has ever worn — the dev Cast this was built against holds
+ * four while the version on screen wears one. So the branch's own composed
+ * delta says which crops it wears (`inkDelivered`, slot to crop id) and the
+ * store is asked only to resolve them. It is the same expression the panel
+ * reads (fable-1259 §2) and the same one the refine carry reads, which is what
+ * stops there being a second opinion for them to disagree over.
+ *
+ * The deltas come from the statement that read the anchor's own pixels and
+ * identity documents, never from a later read: the words, the picture and the
+ * branch state describing ONE face is a property of being read together
+ * (`branch-state-identity`). A Cast signed off the pristine master reads
+ * `null` here, wears nothing, and the store is not asked at all.
+ *
+ * # A DIGEST THAT HAS MOVED REFUSES RATHER THAN PAINTS
+ *
+ * The row records the sha256 of the bytes it minted. Bytes that hash to
+ * anything else are not the tattoo this row describes, and painting them would
+ * put an unknown picture on a customer's body in six frames she paid for. It is
+ * the repaint road's third door, one lane along.
+ *
+ * # A failure here NEVER fails the Sign
+ *
+ * The plate lane's rule and the words lane's, for the same reason: the Cast
+ * exists and the views are worth having. Everything that goes wrong is a named
+ * disposition on one line, and the Sign carries on with what it could read.
+ *
+ * **Exported to be driven** (working law 3): every refusal here is otherwise
+ * reachable only through a whole Sign.
+ */
+export async function carriedInkCrops(
+  dependencies: SignServiceDependencies,
+  input: {
+    userId: number;
+    candidatePublicId: string;
+    /** The anchor branch's composed delta, read in the Sign's own statement. */
+    anchorDeltas: unknown;
+    pronouns: CastPronouns;
+    operationId: string;
+  },
+): Promise<{ crops: readonly CarriedInkCrop[]; dispositions: readonly InkCropDisposition[] }> {
+  const worn = readDeliveredInk(input.anchorDeltas);
+  /* No tattoo on this branch — and the pristine master is the same answer. The
+     store is not asked, so a Cast with no ink is byte-identical to yesterday. */
+  if (worn === null) return { crops: [], dispositions: [] };
+
+  let rows: Awaited<ReturnType<typeof listInkDeliveryCrops>>;
+  try {
+    rows = await (dependencies.listInkDeliveryCrops ?? listInkDeliveryCrops)({
+      userId: input.userId,
+      candidatePublicId: input.candidatePublicId,
+    });
+  } catch (error) {
+    log.error(
+      { operationId: input.operationId, err: error },
+      "[signService] her delivered tattoos could not be read — the package renders without them",
+    );
+    return { crops: [], dispositions: [] };
+  }
+  const byId = new Map(rows.map((row) => [row.publicId, row]));
+
+  const crops: CarriedInkCrop[] = [];
+  const dispositions: InkCropDisposition[] = [];
+  const read = dependencies.readBytes ?? storageReadBytes;
+  for (const [slot, cropPublicId] of Object.entries(worn)) {
+    const row = byId.get(cropPublicId);
+    if (row === undefined) {
+      dispositions.push({ slot, cropPublicId, rode: false, reason: "noRow" });
+      continue;
+    }
+    const placed = inkPlacementOfSlot(slot);
+    /*
+      AN OPEN PLACEMENT DOES NOT RIDE, and the refusal is the honest one.
+
+      A surface the vocabulary has never measured has no reader word, no entry
+      in the ride table and no image-half phrase — so the only thing this lane
+      could say about it is where it GUESSES the surface is on a frame the
+      engine is about to render fresh. The catalogue accepts her own word for a
+      placement (fable-1078) because an EDIT paints onto a frame that already
+      shows her; a package view has no such anchor.
+    */
+    if (placed === null || !isInkPlacement(placed.placement)) {
+      dispositions.push({ slot, cropPublicId, rode: false, reason: "unmeasuredPlacement" });
+      continue;
+    }
+    const definition = slotDefinition(slot);
+    if (definition === null) {
+      dispositions.push({ slot, cropPublicId, rode: false, reason: "unnameableSlot" });
+      continue;
+    }
+    /*
+      THE SURFACE'S OWN DOOR, SHARED WITH THE PLATE LANE — one owner for
+      *"may a tattoo at this surface ride a package view at all"*, so the two
+      lanes cannot come to disagree about the wardrobe.
+    */
+    if (!placementRidesPackageViews(placed.placement)) {
+      dispositions.push({ slot, cropPublicId, rode: false, reason: "surfaceCovered" });
+      continue;
+    }
+    let bytes: Awaited<ReturnType<typeof storageReadBytes>>;
+    try {
+      bytes = await read(row.storageKey);
+    } catch (error) {
+      dispositions.push({ slot, cropPublicId, rode: false, reason: "bytesUnreadable" });
+      log.error(
+        { operationId: input.operationId, slot, cropPublicId, err: error },
+        "[signService] a delivered tattoo's own bytes could not be read",
+      );
+      continue;
+    }
+    const digest = createHash("sha256").update(bytes.bytes).digest("hex");
+    if (digest !== row.digest) {
+      dispositions.push({ slot, cropPublicId, rode: false, reason: "bytesMoved" });
+      log.error(
+        {
+          operationId: input.operationId,
+          slot,
+          cropPublicId,
+          mintedAs: row.digest.slice(0, 12),
+          loadedAs: digest.slice(0, 12),
+        },
+        "[signService] a delivered tattoo's bytes are not the ones its row minted — it does not ride",
+      );
+      continue;
+    }
+    crops.push({
+      cropPublicId,
+      slot,
+      placement: placed.placement,
+      /* `centre` is the vocabulary's word for a surface there is one of, and
+         `placed.side` is null for exactly that key — the catalogue has already
+         refused a sided key for a one-of-it surface above. */
+      side: placed.side ?? "centre",
+      noun: definition.noun,
+      bytes: bytes.bytes,
+      contentType: bytes.contentType,
+    });
+    dispositions.push({ slot, cropPublicId, rode: true });
+  }
+
+  /*
+    ONE LINE, EVERY TATTOO THIS BRANCH WEARS, RODE OR NOT — the plate lane's
+    amendment (fable-1005 §2) inherited rather than re-argued. A reference that
+    quietly did not ride is indistinguishable from a Cast with no tattoo, and
+    the customer paid for the tattoo.
+
+    ONE PATH IS EXEMPT AND IT IS NOT AN OVERSIGHT (footnote ordered fable-1305
+    §4): if the STORE ITSELF will not answer, this function has already
+    returned, so a branch wearing three tattoos that carries none leaves an
+    EMPTY dispositions array and only the `log.error` above says why. It is the
+    plate lane's behaviour exactly, and it is driven — a Sign must never fail
+    over a table. Named here because "every slot, rode or not" is otherwise read
+    as literal, and the next person deserves to meet the exception in the
+    docblock rather than in an empty array.
+
+    SLOTS AND CROP IDS ONLY. The words and the pictures are the customer's
+    creative content and never reach a log (`signServicePrivacy.test.ts`).
+  */
+  log.info(
+    { operationId: input.operationId, dispositions },
+    "[signService] the delivered tattoos this Cast's views carry — every one, rode or not",
+  );
+  return { crops, dispositions };
 }
 
 /**
@@ -503,7 +756,27 @@ function detach(run: () => Promise<void>): void {
  */
 export async function carriedInkPlates(
   dependencies: SignServiceDependencies,
-  input: { userId: number; candidateId: number; operationId: string },
+  input: {
+    userId: number;
+    candidateId: number;
+    operationId: string;
+    /**
+     * THE SLOTS THE DELIVERED-CROP LANE HAS ALREADY CARRIED — so one tattoo can
+     * never ride twice.
+     *
+     * Unreachable today and closed anyway, at the moment both lanes exist
+     * rather than on the day the second one wakes up. `MANNEQUIN_ROAD_DEFERRED`
+     * refuses every plate at the first door, so there is no configuration in
+     * which this fires — and the day that ruling lifts, a design with both a
+     * plate and a delivered crop would send ONE tattoo as TWO pictures with two
+     * different sentences about what it is, which is the shape the recipe
+     * assembler refuses outright (`carriesItsOwnEdit`) one road along.
+     *
+     * The crop wins, and not by accident of ordering: a crop is the ink as it
+     * actually sits on this person, and a plate is artwork on a grey form.
+     */
+    carriedSlots?: ReadonlySet<string>;
+  },
 ): Promise<{ plates: readonly CarriedInkPlate[]; dispositions: readonly InkDesignDisposition[] }> {
   let rows: readonly CandidateInkPlate[];
   try {
@@ -554,6 +827,18 @@ export async function carriedInkPlates(
     */
     if (!placementRidesPackageViews(rowsOfDesign[0]!.placement)) {
       dispositions.push({ designPublicId, rode: false, reason: "surfaceCovered" });
+      continue;
+    }
+    /*
+      AND NOT TWICE — see `carriedSlots`. The delivered crop of this very slot
+      is already riding, and it is the better picture of the two.
+    */
+    const placed = rowsOfDesign[0]!;
+    const slotOfPlate = placed.side === "centre"
+      ? inkSlotKey(placed.placement)
+      : inkSideSlotKey(placed.placement, placed.side);
+    if (input.carriedSlots?.has(slotOfPlate)) {
+      dispositions.push({ designPublicId, rode: false, reason: "carriedAsDelivered" });
       continue;
     }
     const minted = rowsOfDesign.filter((row) => row.storageKey !== null);
@@ -734,9 +1019,22 @@ async function completeSignPackage(
     modelId: number;
     agencyId: string;
     candidateId: number;
+    /** The same candidate, by the name its delivered crops are read under. */
+    candidatePublicId: string;
     anchorStorageKey: string;
     /** The branch the Sign was quoted against — the words come from it too. */
     selectedVariantId: number | null;
+    /**
+     * That branch's composed delta, read in the Sign's own statement.
+     *
+     * It says which tattoos this face is WEARING. Threaded from there rather
+     * than re-read here for the reason the anchor's pixels are: a second read
+     * could answer about a different branch and nothing would say so.
+     */
+    anchorDeltas: unknown;
+    /** How the product refers to this Cast — derived from the identity
+     *  documents this Sign just wrote, never guessed at a call site. */
+    pronouns: CastPronouns;
     identityRevisionId: string;
     identityText: string;
     chargedCredits: number;
@@ -744,10 +1042,26 @@ async function completeSignPackage(
 ): Promise<void> {
   try {
     const anchorBytes = await (dependencies.readBytes ?? storageReadBytes)(input.anchorStorageKey);
+    /*
+      THE DELIVERED CROPS FIRST, AND THE PLATES AFTER THEM.
+
+      Order matters for one reason and it is not preference: a design that has
+      both a plate and a delivered crop must ride ONCE, as the picture of the
+      ink on her rather than as artwork on a grey form. Unreachable while the
+      mannequin road is parked; closed anyway, at the moment both lanes exist.
+    */
+    const delivered = await carriedInkCrops(dependencies, {
+      userId: input.userId,
+      candidatePublicId: input.candidatePublicId,
+      anchorDeltas: input.anchorDeltas,
+      pronouns: input.pronouns,
+      operationId: input.operationId,
+    });
     const ink = await carriedInkPlates(dependencies, {
       userId: input.userId,
       candidateId: input.candidateId,
       operationId: input.operationId,
+      carriedSlots: new Set(delivered.crops.map((crop) => crop.slot)),
     });
     const featureWords = await carriedFeatureWords(dependencies, {
       userId: input.userId,
@@ -763,6 +1077,8 @@ async function completeSignPackage(
       identityText: input.identityText,
       anchor: anchorBytes,
       inkPlates: ink.plates,
+      inkCrops: delivered.crops,
+      pronouns: input.pronouns,
       featureWords,
     });
 

@@ -12,12 +12,18 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  INK_VIEW_PLACEMENT_DISCIPLINE,
   inkPlacementPhrase,
+  inkViewCropClause,
+  inkViewPlacementDisciplineClause,
   inkViewReferenceClause,
   placementRidesPackageViews,
+  type CarriedInkCrop,
   type CarriedInkPlate,
 } from "./inkViewReferences";
 import { INK_PLACEMENTS } from "../../shared/inkPlacementVocabulary";
+import { inkDeliveredCarrySentence } from "./inkRealism";
+import { pronounsForSex } from "./castPronouns";
 
 const plate = (over: Partial<CarriedInkPlate> = {}): CarriedInkPlate => ({
   designPublicId: "design-1",
@@ -37,17 +43,17 @@ describe("where a tattoo is said to live", () => {
     */
     /* The positional clause rides with it — see the per-side arms below. What is
        on trial here is the SURFACE word, so the assertion names the prefix. */
-    expect(inkPlacementPhrase({ placement: "upperArm", side: "left" }))
+    expect(inkPlacementPhrase({ placement: "upperArm", side: "left", possessive: "her" }))
       .toMatch(/^her left upper arm \(/);
-    expect(inkPlacementPhrase({ placement: "upperChest", side: "centre" })).toBe("her upper chest");
-    expect(inkPlacementPhrase({ placement: "neck", side: "centre" })).toBe("her neck");
+    expect(inkPlacementPhrase({ placement: "upperChest", side: "centre", possessive: "her" })).toBe("her upper chest");
+    expect(inkPlacementPhrase({ placement: "neck", side: "centre", possessive: "her" })).toBe("her neck");
   });
 
   it("never says a side for a centred surface", () => {
     /* "her centre neck" is not a sentence a stylist would say, and a laterality
        word on a surface that has one of itself is a claim about anatomy nobody
        measured. */
-    expect(inkPlacementPhrase({ placement: "neck", side: "centre" })).not.toContain("centre");
+    expect(inkPlacementPhrase({ placement: "neck", side: "centre", possessive: "her" })).not.toContain("centre");
   });
 });
 
@@ -259,5 +265,149 @@ describe("which surfaces can ride a package view at all", () => {
     for (const placement of INK_PLACEMENTS) {
       expect(typeof placementRidesPackageViews(placement)).toBe("boolean");
     }
+  });
+});
+
+/**
+ * THE DELIVERED-CROP CLAUSE — the lane that actually carries something
+ * (fable-1297 §3, countersigned fable-1303).
+ *
+ * The plate lane's fence is about a picture of a grey form. This lane's fence
+ * is the opposite one: the picture IS her, its skin is her skin, and the danger
+ * is a sentence that disclaims the very thing the picture was minted to say.
+ * Every arm here is a way that could go wrong.
+ */
+describe("the clause that carries the tattoos she really has", () => {
+  const HIM = pronounsForSex("male");
+
+  const crop = (over: Partial<CarriedInkCrop> = {}): CarriedInkCrop => ({
+    cropPublicId: "11111111-1111-4111-8111-111111111111",
+    slot: "ink:upperArm@left",
+    placement: "upperArm",
+    side: "left",
+    noun: "left upper arm tattoo",
+    bytes: Buffer.from("crop"),
+    contentType: "image/png",
+    ...over,
+  });
+
+  it("is EMPTY when nothing rides — every signed Cast without ink is untouched", () => {
+    /* The inertness control, and it is the one that matters most: this lane
+       reaches every package view in the product. */
+    expect(inkViewCropClause({ crops: [], firstOrdinal: 2, pronouns: HIM })).toBe("");
+  });
+
+  it("says the transform road's sentence, through its OWNER and not a second spelling", () => {
+    /*
+      Three clauses were said to this lane before the sentence landed and all
+      three put a design a third of the way down a white T-shirt. A copy of the
+      wording here would lose that measurement silently, on a frame somebody
+      paid for — so the assertion is identity with the owner's own output, and a
+      re-spelling reddens.
+    */
+    const clause = inkViewCropClause({ crops: [crop()], firstOrdinal: 2, pronouns: HIM });
+    expect(clause).toContain(inkDeliveredCarrySentence(2, "left upper arm tattoo", HIM));
+  });
+
+  it("NEVER says the mannequin sentence about a crop", () => {
+    /*
+      There is no grey form in this picture, and its surrounding surface is the
+      FACT being supplied rather than a hazard to disclaim. The plate lane's
+      closing sentence said here would tell the painter to ignore the one thing
+      the crop was minted to say.
+    */
+    const clause = inkViewCropClause({ crops: [crop()], firstOrdinal: 2, pronouns: HIM });
+    expect(clause).not.toContain("mannequin");
+    expect(clause).not.toContain("Do not take skin");
+    /* And it says whose skin it is, positively — the absence above could be had
+       by saying nothing at all. */
+    expect(clause).toContain("HIS OWN skin");
+  });
+
+  it("speaks the CAST'S pronoun, where the plate lane can only say her", () => {
+    const his = inkViewCropClause({ crops: [crop()], firstOrdinal: 2, pronouns: HIM });
+    expect(his).toContain("HIS TATTOOS");
+    expect(his).toContain("It is on his left upper arm");
+    expect(his).not.toContain(" her ");
+
+    const theirs = inkViewCropClause({
+      crops: [crop()], firstOrdinal: 2, pronouns: pronounsForSex(null),
+    });
+    /* `they` is correct English for a person whose pronouns the record cannot
+       say, and the verb has to agree with it. */
+    expect(theirs).toContain("they already have");
+  });
+
+  it("carries the SIDE in prose, because a crop cannot picture its own side", () => {
+    /*
+      A plate holds the side it pictures — the mirror court. A delivered crop is
+      the design alone on transparency, so the arm it came off is not in the
+      picture at all and prose is the only carrier there is. Through
+      `imageHalfClause`'s one owner: her left is the image's RIGHT.
+    */
+    const left = inkViewCropClause({ crops: [crop()], firstOrdinal: 2, pronouns: HIM });
+    expect(left).toContain("his left upper arm (on the right of the picture as you look at it)");
+
+    const right = inkViewCropClause({
+      crops: [crop({ slot: "ink:upperArm@right", side: "right", noun: "right upper arm tattoo" })],
+      firstOrdinal: 2,
+      pronouns: HIM,
+    });
+    expect(right).toContain("his right upper arm (on the left of the picture as you look at it)");
+  });
+
+  it("never says a side for a surface there is one of", () => {
+    const clause = inkViewCropClause({
+      crops: [crop({ slot: "ink:neck", placement: "neck", side: "centre", noun: "neck tattoo" })],
+      firstOrdinal: 2,
+      pronouns: HIM,
+    });
+    expect(clause).toContain("It is on his neck:");
+    expect(clause).not.toContain("centre");
+  });
+
+  it("quotes the ordinal it is GIVEN, so a sentence cannot point at another lane's picture", () => {
+    /* The crops sit behind the plates in one array. A clause that assumed 2
+       would describe a plate's picture as a crop the first time both lanes
+       carried anything. */
+    const clause = inkViewCropClause({
+      crops: [crop(), crop({ slot: "ink:neck", placement: "neck", side: "centre", noun: "neck tattoo" })],
+      firstOrdinal: 4,
+      pronouns: HIM,
+    });
+    expect(clause).toContain("Reference 4 is the exact left upper arm tattoo");
+    expect(clause).toContain("Reference 5 is the exact neck tattoo");
+    expect(clause).not.toContain("Reference 2");
+  });
+
+  it("ends on the placement discipline — the same words as the plate lane's, pronouns aside", () => {
+    /*
+      A second SHAPE of one fact and not a second fact. Held to the constant
+      with the pronoun substituted, so neither can be edited alone — the same
+      way `inkNotOnClothingClause` is held to `INK_NOT_ON_CLOTHING`.
+    */
+    expect(inkViewPlacementDisciplineClause({ possessive: "her" }))
+      .toBe(INK_VIEW_PLACEMENT_DISCIPLINE);
+    expect(inkViewPlacementDisciplineClause({ possessive: "his" }))
+      .toBe(INK_VIEW_PLACEMENT_DISCIPLINE.replace("her other side", "his other side"));
+
+    const clause = inkViewCropClause({ crops: [crop()], firstOrdinal: 2, pronouns: HIM });
+    expect(clause).toContain(inkViewPlacementDisciplineClause(HIM));
+    /* Both halves of the discipline, because each is a frame this product would
+       otherwise refund: the wrong arm, and a tattoo invented into a view whose
+       framing never shows its surface. */
+    expect(clause).toContain("do not mirror it to his other side");
+    expect(clause).toContain("that tattoo simply does not appear in that view");
+  });
+
+  it("says it once per crop and names each one", () => {
+    const clause = inkViewCropClause({
+      crops: [crop(), crop({ slot: "ink:neck", placement: "neck", side: "centre", noun: "neck tattoo" })],
+      firstOrdinal: 2,
+      pronouns: HIM,
+    });
+    expect(clause.match(/Reference \d is the exact/g)).toHaveLength(2);
+    /* And the discipline is said ONCE, at the end, rather than per picture. */
+    expect(clause.match(/simply does not appear in that view/g)).toHaveLength(1);
   });
 });

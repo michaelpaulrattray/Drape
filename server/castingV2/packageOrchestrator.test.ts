@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { ProviderError } from "../providers/types";
 import type { ViewConformanceVerdict } from "./viewConformance";
+import { pronounsForSex } from "./castPronouns";
 
 /**
  * The package's six independently refundable units (plan §F, §H.4).
@@ -549,6 +550,27 @@ describe("a signed Cast's tattoos ride into every view", () => {
     ...over,
   });
 
+  const crop = (over: Record<string, unknown> = {}) => ({
+    cropPublicId: "11111111-1111-4111-8111-111111111111",
+    slot: "ink:upperArm@left",
+    placement: "upperArm" as const,
+    side: "left" as const,
+    noun: "left upper arm tattoo",
+    bytes: Buffer.from("arm-crop"),
+    contentType: "image/png",
+    ...over,
+  });
+
+  /* Typed on the REQUEST, so `mock.calls` carries what was sent — an untyped
+     mock records the arguments and hands them back as `never`, which is how a
+     wire assertion turns into a cast that proves nothing. */
+  const recordView = () => vi.fn(async (_request: ViewRequest) => ({
+    bytes: Buffer.from("view"),
+    contentType: "image/png",
+    latencyMs: 1,
+    provenance: { provider: "fal" as const, model: "nbp", providerRef: "ref" },
+  }));
+
   it("sends the plate BESIDE the anchor on all five views, with the clause", async () => {
     /* Typed on the REQUEST, so `mock.calls` carries what was sent — an untyped
        mock records the arguments and hands them back as `never`, which is how a
@@ -643,6 +665,74 @@ describe("a signed Cast's tattoos ride into every view", () => {
         contradicts, and an assertion against the word would have failed on the
         product being right.
       */
+      expect(request.prompt).toBe(composePackageViewPrompt(request.viewAngle));
+    }
+  });
+
+  it("sends the DELIVERED CROP beside the anchor on every view, with its own sentence", async () => {
+    /*
+      The lane that actually carries something. Its source is the frame that
+      really delivered the ink, so the sentence is the transform road's — the
+      picture is HER, and the mannequin disclaimer would be a lie about it.
+    */
+    const generateView = recordView();
+    const identityEngine = () => ({ id: "e", editWithReferences: vi.fn(), generateView });
+
+    await buildCastPackage(deps({ identityEngine }), {
+      ...input,
+      inkCrops: [crop()],
+      pronouns: pronounsForSex("male"),
+    });
+
+    expect(generateView).toHaveBeenCalledTimes(CAST_PACKAGE_VIEWS.length);
+    for (const call of generateView.mock.calls) {
+      const request = call[0];
+      expect(request.references).toHaveLength(2);
+      expect(request.references[0]!.bytes.toString()).toBe("anchor");
+      expect(request.references[1]!.bytes.toString()).toBe("arm-crop");
+      /* The picture is named as what it IS — cut out of a photograph of him —
+         and placed where prose is the only thing that can carry the side. */
+      expect(request.prompt).toContain("Reference 2 is the exact left upper arm tattoo he already has");
+      expect(request.prompt).toContain("It is on his left upper arm (on the right");
+      /* And never the plate lane's sentence about a form that is not there. */
+      expect(request.prompt).not.toContain("plain grey mannequin form");
+      expect(request.prompt).toContain("Keep this exact person unchanged");
+    }
+  });
+
+  it("puts the crops AFTER the plates, with ordinals derived from the array itself", async () => {
+    /*
+      Two ink lanes, one reference array. A sentence quoting an ordinal the
+      array does not hold is a prompt pointing at the wrong tattoo, and nothing
+      downstream could tell. Unreachable in production while the mannequin road
+      is parked — which is exactly why it is driven here.
+    */
+    const generateView = recordView();
+    const identityEngine = () => ({ id: "e", editWithReferences: vi.fn(), generateView });
+
+    await buildCastPackage(deps({ identityEngine }), {
+      ...input,
+      inkPlates: [plate({ bytes: Buffer.from("arm-plate") })],
+      inkCrops: [crop({ bytes: Buffer.from("neck-crop"), slot: "ink:neck", placement: "neck", side: "centre", noun: "neck tattoo" })],
+      pronouns: pronounsForSex("male"),
+    });
+
+    const request = generateView.mock.calls[0]![0];
+    expect(request.references.map((reference) => reference.bytes.toString()))
+      .toEqual(["anchor", "arm-plate", "neck-crop"]);
+    expect(request.prompt).toContain("Reference 2 is the tattoo at her left upper arm (on the right");
+    expect(request.prompt).toContain("Reference 3 is the exact neck tattoo he already has");
+  });
+
+  it("is INERT for a Cast with no delivered crop — absent and empty alike", async () => {
+    const generateView = recordView();
+    const identityEngine = () => ({ id: "e", editWithReferences: vi.fn(), generateView });
+
+    await buildCastPackage(deps({ identityEngine }), { ...input, inkCrops: [] });
+
+    for (const call of generateView.mock.calls) {
+      const request = call[0];
+      expect(request.references).toHaveLength(1);
       expect(request.prompt).toBe(composePackageViewPrompt(request.viewAngle));
     }
   });
