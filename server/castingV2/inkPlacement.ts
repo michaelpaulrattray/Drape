@@ -342,6 +342,24 @@ export function inkNeedsDocumentMessage(wordsRoadOpen: boolean): string {
 }
 
 /**
+ * CAN THE WORDS ROAD PUT A NEW ONE HERE — the offer's own gate (census C4a,
+ * condition fable-1339 §2).
+ *
+ * A sentence that says *"I can put a new one on instead"* is only true where
+ * this road SERVES the placement. Said to an upper chest it offers a door
+ * `gate_ink_uncarried` shuts one ask later, which is the dead-end-offer class
+ * census 4(b) exists to close — so the tail is derived here, off the same two
+ * lists that decide the road, rather than promised in a sentence.
+ *
+ * Takes the placement KEY rather than a word: the caller has resolved a slot,
+ * and re-matching prose here would be a second answer to a question the slot
+ * already holds.
+ */
+export function wordsRoadServes(key: InkPlacementKey, wordsRoadOpen: boolean): boolean {
+  return (wordsRoadOpen ? WORDS_ROAD_PLACEMENTS_OPEN : WORDS_ROAD_PLACEMENTS).includes(key);
+}
+
+/**
  * A STATED PLACEMENT IS NEVER RELOCATED (D-145).
  *
  * Pre-gate, "chest tattoo of two swallows" rendered on the COLLARBONES. That is

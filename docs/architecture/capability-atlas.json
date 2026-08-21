@@ -64,7 +64,8 @@
         "kind": "interpreter-refusal",
         "pinnedBy": [
           "server/castingV2/refineDelta.test.ts",
-          "server/castingV2/refineRefusals.test.ts"
+          "server/castingV2/refineRefusals.test.ts",
+          "server/castingV2/refineService.test.ts"
         ]
       },
       {
@@ -88,6 +89,14 @@
         "pinnedBy": [
           "server/castingV2/cannotSayCopy.test.ts",
           "server/castingV2/inkBeyondTodayAsk.test.ts"
+        ]
+      },
+      {
+        "id": "inkNotKept",
+        "kind": "cannot-say",
+        "charge": "free",
+        "pinnedBy": [
+          "server/castingV2/cannotSayCopy.test.ts"
         ]
       },
       {
@@ -986,6 +995,13 @@
         "kind": "unreached",
         "subject": "inkBeyondToday",
         "message": "no corpus row expects \"inkBeyondToday\" — the census cannot say whether any ask reaches it"
+      },
+      {
+        "id": "unreached:inkNotKept",
+        "severity": "info",
+        "kind": "unreached",
+        "subject": "inkNotKept",
+        "message": "no corpus row expects \"inkNotKept\" — the census cannot say whether any ask reaches it"
       },
       {
         "id": "unreached:kind_unserved",
@@ -2078,6 +2094,13 @@
       "kind": "unreached",
       "subject": "inkBeyondToday",
       "message": "no corpus row expects \"inkBeyondToday\" — the census cannot say whether any ask reaches it"
+    },
+    {
+      "id": "unreached:inkNotKept",
+      "severity": "info",
+      "kind": "unreached",
+      "subject": "inkNotKept",
+      "message": "no corpus row expects \"inkNotKept\" — the census cannot say whether any ask reaches it"
     },
     {
       "id": "unreached:kind_unserved",

@@ -70,7 +70,11 @@ export type CannotSayReason =
   | "inkBeyondToday"
   | "noInkToChange"
   | "inkOneChangeAtATime"
-  | "whichInkToChange";
+  | "whichInkToChange"
+  /* THE PICTURE WE PROMISED TO KEEP AND DID NOT — census card C4a, and it is
+     the same door's fifth: raised at the pre-claim ink question, never by
+     `repaintAsks`. */
+  | "inkNotKept";
 
 /** What the settlement knows when it writes the sentence. */
 export type CannotSayContext = {
@@ -375,6 +379,39 @@ export const CANNOT_SAY_COPY: Readonly<Record<CannotSayReason, CannotSayEntry>> 
     Every answer ACTS (D-180): each names a tattoo that exists and can be
     changed.
   */
+  /*
+    THE TATTOO IS ON HER AND WE KEPT NO COPY OF IT — census card C4a, ruled
+    fable-1339.
+
+    A delivered crop's NAME is written when the render is CLAIMED and its ROW
+    when the crop is cut from the delivered frame. Those are different moments,
+    and nothing amends the delta in between — so a render whose ink never
+    actually arrived (`tattooed skin` finding nothing on the frame) leaves the
+    chain naming a picture that was never written, permanently.
+
+    The CARRY survives that: it skips the slot loudly, which is what fable-1199
+    §1 ruled and is right. A TRANSFORM cannot, because a transform whose source
+    picture is missing has nothing to change — and it used to find that out
+    AFTER the claim, so the customer was charged 25 credits and refunded them to
+    be told so.
+
+    ⚠ **THE OFFER DERIVES; IT NEVER PROMISES.** *"I can put a new one on
+    instead"* is true only where the words road serves that placement. Said to
+    an upper chest it offers a door `gate_ink_uncarried` shuts one ask later —
+    the dead-end-offer class census 4(b) spent a card closing. So `words`
+    carries the derived tail and this sentence adds none of its own.
+
+    It begins by agreeing with her eyes, for `inkRemovalNotYet`'s reason one
+    door over: she is looking at a tattoo, and a *"can't"* that starts by
+    doubting the picture is worse than the *"can't"*.
+  */
+  inkNotKept: {
+    charge: "free",
+    say: (context) => `${context.scopeNoun ? `That's ${context.scopeNoun}` : "That tattoo"} — `
+      + `${context.pronouns.subject} ${context.pronouns.plural ? "have" : "has"} it, and I `
+      + "didn't keep a copy of the artwork, so I can't change it from here."
+      + `${context.words ? ` ${context.words}` : ""} ${MONEY(context.moneySafe)}`,
+  },
   whichInkToChange: {
     charge: "free",
     say: (context) => `${context.scopeNoun ? `You've got more than one — ${context.scopeNoun}` : "You've got more than one tattoo"}`

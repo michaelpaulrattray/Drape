@@ -220,7 +220,10 @@ import {
 } from "./referenceSlots";
 import { inkDesignForAsk, slotPlacementOf, type InkAskAddress } from "./inkDesignForAsk";
 import { sidesForInkPlacement } from "../../shared/inkReleasedPlacements";
-import { INK_PLACEMENTS } from "../../shared/inkPlacementVocabulary";
+import { INK_PLACEMENTS, isInkPlacement } from "../../shared/inkPlacementVocabulary";
+/* Whether the words road can put a NEW tattoo at a placement — the derived tail
+   of C4a's answer, off the same lists that decide the road (fable-1339 §2). */
+import { wordsRoadServes } from "./inkPlacement";
 import { mintInkDesignFromReference } from "./inkReferenceMint";
 import { listInkDesigns } from "../db/castingV2InkDesigns";
 import { listInkDeliveryCrops } from "../db/castingV2InkDeliveryCrops";
@@ -3407,6 +3410,37 @@ async function refineCandidateCounted(
       */
       const onSlot = inkSlotSheAsksAbout(instruction, deliveredSlots, input.scope);
       /*
+        DOES THE DATABASE HOLD THE PICTURE THIS NAME POINTS AT — read once per
+        ask, lazily, and never at all unless a name is about to be believed.
+
+        ⚠ AN UNREADABLE ANSWER IS NOT A "NO". A read that throws — no table yet,
+        a pool that went away — tells us nothing about her tattoo, and answering
+        *"I didn't keep a copy of it"* on the strength of a failed query would be
+        a false sentence about a customer's own face. So the unknown case
+        travels exactly the road it travels today: the render refuses and
+        refunds, which is worse for her and honest for us, and the log line says
+        which of the two happened.
+      */
+      let keptCrops: Set<string> | null | undefined;
+      const cropRowExists = async (cropId: string): Promise<boolean> => {
+        if (keptCrops === undefined) {
+          keptCrops = await (dependencies.listInkDeliveryCrops ?? listInkDeliveryCrops)({
+            userId: input.userId,
+            candidatePublicId: input.candidatePublicId,
+          })
+            .then((rows) => new Set(rows.map((row) => row.publicId)))
+            .catch((error: unknown) => {
+              log.warn(
+                { userId: input.userId, candidate: input.candidatePublicId, err: error },
+                "[refineService] the delivered-crop rows could not be read at the transform door — the ask travels today's road",
+              );
+              return null;
+            });
+        }
+        /* `null` is UNKNOWN, and unknown means proceed — see the block above. */
+        return keptCrops === null ? true : keptCrops.has(cropId);
+      };
+      /*
         WHICH PLACE SHE POINTED AT, when the answer below has to say that this
         particular one holds nothing. Null for an unscoped ask, which is the
         state the general sentence was written for.
@@ -3420,7 +3454,14 @@ async function refineCandidateCounted(
         const noun = slotDefinition(slot)?.noun;
         return noun === undefined || noun === null ? null : `${inkPronouns.possessive} ${noun}`;
       };
-      const answeredFree = (reason: CannotSayReason, scopeNoun: string | null) => {
+      const answeredFree = (
+        reason: CannotSayReason,
+        scopeNoun: string | null,
+        /* THE DERIVED TAIL, never a promise (fable-1339 §2). Only `inkNotKept`
+           carries one today, and it is composed from the served lists rather
+           than written into the sentence. */
+        words: string | null = null,
+      ) => {
         log.info(
           {
             userId: input.userId,
@@ -3434,7 +3475,7 @@ async function refineCandidateCounted(
         return {
           kind: "selected" as const,
           note: cannotSaySentence(reason, {
-            words: null, facet: "ink", scopeNoun, moneySafe: true, pronouns,
+            words, facet: "ink", scopeNoun, moneySafe: true, pronouns,
           }),
           variantId: source.variantPublicId,
           candidateId: input.candidatePublicId,
@@ -3510,6 +3551,49 @@ async function refineCandidateCounted(
         */
         const address = inkPlacementOfSlot(onSlot.slot);
         const changingCrop = deliveredInkOnChain[onSlot.slot];
+        /*
+          ⚠ THE ID POINTS AND THE ROW DECIDES — census card C4a, ruled
+          fable-1339 §1, and it is a MONEY fix rather than a tidiness one.
+
+          The crop's NAME is minted at claim and its ROW at delivery, and
+          nothing amends the delta in between (`landVariant` takes an
+          internalPrompt and no deltas). So a render whose ink never arrived —
+          the mint answering no-cut because `tattooed skin` found nothing on the
+          delivered frame — leaves the chain naming a picture that was never
+          written, for good.
+
+          Until this line, that name alone was enough: D-137's gate opened on
+          names, the road was entered, and the recipe found no row and THREW —
+          after the claim. Measured at this service before the fix: one charge,
+          one refund, nothing painted. It is `389b7706`'s class arriving through
+          the record instead of through the prune.
+
+          Read once for this ask and only when there is a name to check, so a
+          branch with no delivered ink pays nothing for it.
+        */
+        if (address !== null && changingCrop !== undefined && !(await cropRowExists(changingCrop))) {
+          const place = inkPlacementOfSlot(onSlot.slot);
+          /*
+            THE OFFER IS DERIVED (fable-1339 §2's condition). "I can put a new
+            one on instead" is true only where the words road serves this
+            placement; said to an upper chest it offers a door
+            `gate_ink_uncarried` shuts one ask later, which is census 4(b)'s own
+            dead-end wearing a different sentence. Where it is not served the
+            answer simply closes, honestly, with no offer at all.
+          */
+          /* `placement` is a STRING here on purpose — an open placement is her
+             own word for a surface nothing has measured — so it is narrowed
+             through the vocabulary's own guard rather than cast. An unmeasured
+             surface is served by nothing, which is the right answer. */
+          const serves = place !== null
+            && isInkPlacement(place.placement)
+            && wordsRoadServes(place.placement, (dependencies.inkWordsEnabled ?? captureCastingInkWordsEnabled)(input.userId));
+          return answeredFree(
+            "inkNotKept",
+            names[0] ?? null,
+            serves ? "I can put a new one on instead — say what you'd like." : null,
+          );
+        }
         if (address !== null && changingCrop !== undefined) {
           /* Resolved ONCE and carried, like every other address on this road:
              re-deriving the crop at the recipe would be a second answer to

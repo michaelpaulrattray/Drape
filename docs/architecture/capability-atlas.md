@@ -77,10 +77,11 @@ Profile **fixture-as-founder** on fixture `outside-scope-bot-local / 34383040-62
 | departure | cannot-say | refunded | cannotSayCopy.test.ts |
 | empty | interpreter-refusal |  | diagnosticCapture.test.ts, faceScan.test.ts, faceScanService.test.ts, referenceSlotCatalogue.test.ts, refineRefusals.test.ts, server/casting/geminiMigration.test.ts |
 | gate_ink_document | interpreter-refusal |  | inkReferenceGate.test.ts, refineDelta.test.ts |
-| gate_ink_uncarried | interpreter-refusal |  | refineDelta.test.ts, refineRefusals.test.ts |
+| gate_ink_uncarried | interpreter-refusal |  | refineDelta.test.ts, refineRefusals.test.ts, refineService.test.ts |
 | history_predates_undo | service-refusal |  | refineService.test.ts |
 | history_unreadable | service-refusal |  | refineService.test.ts |
 | inkBeyondToday | cannot-say | free | cannotSayCopy.test.ts, inkBeyondTodayAsk.test.ts |
+| inkNotKept | cannot-say | free | cannotSayCopy.test.ts |
 | inkOneChangeAtATime | cannot-say | free | cannotSayCopy.test.ts |
 | kind_unserved | service-refusal |  | refineService.test.ts |
 | master_missing | service-refusal |  | refineService.test.ts |
@@ -116,7 +117,7 @@ Profile **fixture-as-founder** on fixture `outside-scope-bot-local / 34383040-62
 
 `CASTING_FACE_SCAN_SCOPE` · `CASTING_HAIR_REFERENCE_SCOPE` · `CASTING_INK_CUT_SCOPE` · `CASTING_INK_REFERENCE_SCOPE` · `CASTING_INK_REGION_CROP_SCOPE` · `CASTING_INK_STUDIO_SCOPE` · `CASTING_INK_TRANSFORM_SCOPE` · `CASTING_INK_WORDS_SCOPE` · `CASTING_OPEN_LANE_SCOPE` · `CASTING_REFERENCE_ATTACH_SCOPE` · `CASTING_REFERENCE_LIBRARY_SCOPE` · `CASTING_REFINE_DISPATCH_SCOPE` · `CASTING_REPAINT_SCOPE` · `CASTING_SCAN_TABLE_SCOPE` · `CASTING_SEGMENTS_DELIVERED_SCOPE` · `CASTING_SEGMENTS_SCOPE` · `CASTING_SIDE_PHRASING_SCOPE` · `CASTING_V2_SCOPE`
 
-## Findings (49)
+## Findings (50)
 
 - **warn** `belief-mismatch` acc.glasses.remove.none — "take her glasses off" — believed refused:removal_absent, observed refused:removal_not_in_brief
 - **warn** `belief-mismatch` acc.remove.branch.other — "take her earrings off" — believed refused:removal_absent, observed refused:removal_not_in_brief
@@ -150,6 +151,7 @@ Profile **fixture-as-founder** on fixture `outside-scope-bot-local / 34383040-62
 - **info** `unreached` history_predates_undo — no corpus row expects "history_predates_undo" — the census cannot say whether any ask reaches it
 - **info** `unreached` history_unreadable — no corpus row expects "history_unreadable" — the census cannot say whether any ask reaches it
 - **info** `unreached` inkBeyondToday — no corpus row expects "inkBeyondToday" — the census cannot say whether any ask reaches it
+- **info** `unreached` inkNotKept — no corpus row expects "inkNotKept" — the census cannot say whether any ask reaches it
 - **info** `unreached` kind_unserved — no corpus row expects "kind_unserved" — the census cannot say whether any ask reaches it
 - **info** `unreached` master_missing — no corpus row expects "master_missing" — the census cannot say whether any ask reaches it
 - **info** `unreached` nothingAsked — no corpus row expects "nothingAsked" — the census cannot say whether any ask reaches it

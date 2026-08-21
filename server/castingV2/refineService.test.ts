@@ -12516,6 +12516,88 @@ describe("the picture she attached becomes the carrier that rides", () => {
     expect(JSON.stringify(lastClaim().deltas)).not.toContain("larger");
   });
 
+  /*
+    ⚠ THE NAME POINTS AND NO ROW ANSWERS — census card C4, measured before it is
+    fixed.
+
+    The crop's NAME is minted at CLAIM and its ROW at DELIVERY, and nothing
+    amends the delta in between: `landVariant` takes an internalPrompt and no
+    deltas. So a render whose ink never actually arrived — the mint answering
+    no-cut because `tattooed skin` found nothing on the delivered frame — leaves
+    the chain naming a crop that was never written, for good.
+
+    The CARRY survives that: it skips the slot loudly, which is exactly what
+    fable-1199 §1 ruled. The TRANSFORM cannot, because a transform whose source
+    picture is missing has nothing to change — and refusing is right. What is
+    wrong is WHERE: the name alone opens D-137's gate (`inkDocumentedByDelivery`
+    reads names, never rows), so the refusal happens after the claim.
+
+    This arm is the price tag. It asserts what the ledger does today.
+  */
+  it("a transform on a crop nobody wrote is answered FREE, before the claim", async () => {
+    /*
+      ⚠ THE MEASURED BEFORE AND AFTER (fable-1339 §4). This arm was written
+      first against TODAY's behaviour and it PASSED:
+
+          expect(ledger.charges).toHaveLength(1);   // it charged
+          expect(ledger.refunds).toHaveLength(1);   // and gave it back
+
+      That is what a dangling crop name cost a customer — 25 credits out and
+      back, to be told the product could not do something it could have known
+      before taking the money. The assertions below are the same arm after C4a,
+      and the pair is the whole evidence that the fix moved anything.
+
+      The branch names `CHEST_CROP`; the rows answer with nothing. That is
+      exactly the state a no-cut settlement leaves behind.
+    */
+    inkedBranch();
+    painted.length = 0;
+    const result = await refineCandidate(
+      transformRoad({ listInkDeliveryCrops: deliveredCropRows([]) }),
+      { ...input, instruction: "make his chest tattoo bigger" },
+    );
+
+    expect(result.kind).toBe("selected");
+    /* It agrees with her eyes first — she IS looking at a tattoo — and then
+       says the true thing about our own record. */
+    expect(result.note).toContain("didn't keep a copy of the artwork");
+    /* THE MONEY: not moved at all, rather than moved and given back. */
+    expect(ledger.charges, "nothing was charged").toHaveLength(0);
+    expect(ledger.refunds, "so nothing needed refunding").toHaveLength(0);
+    expect(journal, "and nothing was claimed").not.toContain("claim");
+    expect(painted).toHaveLength(0);
+  });
+
+  it("⚠ THE OFFER DERIVES — an upper CHEST is not offered a road that shuts one ask later", async () => {
+    /*
+      fable-1339 §2's condition, and it is census 4(b)'s own lesson arriving in
+      a new sentence. *"I can put a new one on instead"* is true only where the
+      WORDS ROAD serves that placement; the upper chest is not served (the mint
+      cannot crop it under a crew neck), so offering it here would send her
+      straight into `gate_ink_uncarried` one ask later.
+
+      The chest branch gets the honest close and NO offer; the arm below proves
+      the offer is not simply missing everywhere.
+    */
+    inkedBranch();
+    const chest = await refineCandidate(
+      transformRoad({ listInkDeliveryCrops: deliveredCropRows([]) }),
+      { ...input, instruction: "make his chest tattoo bigger" },
+    );
+    expect(chest.note).not.toContain("put a new one on");
+
+    /* A NECK piece — served by the words road on every account — is offered
+       the road that really works. The two notes must DIFFER, or a derivation
+       that ignored its argument would satisfy both halves (fable-1333 §2). */
+    inkedBranch({ "ink:neck": NECK_CROP });
+    const neck = await refineCandidate(
+      transformRoad({ listInkDeliveryCrops: deliveredCropRows([]) }),
+      { ...input, instruction: "make his neck tattoo bigger" },
+    );
+    expect(neck.note).toContain("put a new one on");
+    expect(neck.note).not.toBe(chest.note);
+  });
+
   it("⚠ AND THE FLAG REALLY IS A FLAG — off, the ask travels today's road", async () => {
     /*
       THE NEGATIVE CONTROL, and it is the arm that proves the landing is dark.
@@ -12830,22 +12912,35 @@ describe("the picture she attached becomes the carrier that rides", () => {
     expect(measured!.fields.key).toBe(`casting-v2/ink-delivered/${CHEST_CROP}.png`);
   });
 
-  it("⚠ REFUSES rather than painting a new tattoo when the crop cannot be found", async () => {
+  it("⚠ NEVER PAINTS A NEW TATTOO when the crop cannot be found — and no longer pays to say so", async () => {
     /*
-      The one place this road refuses AFTER the claim, and the posture is
-      deliberate. Its two siblings DROP a source they cannot site — a dropped
-      hair carrier renders her hair from words, which is a worse render of the
-      right thing. A dropped transform source renders A FRESH TATTOO FROM WORDS,
-      which is the exact defect this whole road exists to end, so the render
-      goes down into the refund instead.
+      ⚠ THIS ARM MOVED DOORS (census card C4a, ruled fable-1339). It read:
+
+          .rejects.toThrow(/credits have been returned|didn't come through/)
+
+      and it was right about the POSTURE and wrong about the PLACE. Its two
+      siblings DROP a source they cannot site — a dropped hair carrier renders
+      her hair from words, which is a worse render of the right thing. A dropped
+      transform source renders A FRESH TATTOO FROM WORDS, which is the exact
+      defect this road exists to end, so refusing is correct and stays correct.
+
+      What changed is that the refusal is now reached BEFORE the claim, because
+      the door consults the rows instead of believing a name. The recipe's throw
+      is still there and is still the last line of defence; nothing routine
+      reaches it any more.
+
+      So this arm keeps its real subject — no engine call, ever, on a transform
+      with no crop — and stops asserting the price.
     */
     inkedBranch();
     painted.length = 0;
-    await expect(refineCandidate(transformRoad({
+    const result = await refineCandidate(transformRoad({
       listInkDeliveryCrops: deliveredCropRows([]),
-    }), { ...input, instruction: "make his chest tattoo bigger" }))
-      .rejects.toThrow(/credits have been returned|didn't come through/);
+    }), { ...input, instruction: "make his chest tattoo bigger" });
+
     expect(painted, "a transform with no crop reached the engine").toHaveLength(0);
+    expect(result.kind).toBe("selected");
+    expect(ledger.charges).toHaveLength(0);
   });
 
   it("⚠ WITH THE FLAG OFF, THE DOCUMENT GATE STILL WALLS — a free refusal beats a charged mistake", async () => {

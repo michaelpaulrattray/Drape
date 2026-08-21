@@ -35,6 +35,9 @@ const REASONS: readonly CannotSayReason[] = [
      road had quietly started doing it. Its edit-filed call site now ROUTES to
      that road rather than apologising. */
   "whichInkToChange",
+  /* THE PICTURE WE PROMISED TO KEEP AND DID NOT — census card C4a. The fifth
+     of the pre-claim ink door's own sentences. */
+  "inkNotKept",
   "uncatalogued",
   "noWords",
   "perSideRemoval",
