@@ -62,7 +62,7 @@
   so nothing it does can fall back to the dev database that `.env` names.
 */
 import "dotenv/config";
-import { execFileSync } from "node:child_process";
+import { execFileSync, spawnSync } from "node:child_process";
 import { appendFileSync, mkdirSync, writeFileSync } from "node:fs";
 
 import { openDatabase } from "./lib/dbConnection.mts";
@@ -209,6 +209,38 @@ if (hooksPath !== ".githooks") {
   );
   process.exit(1);
 }
+/*
+  THE CUSTODY CHECKS THAT ARE CHEAP ENOUGH TO RUN EVERY TIME (ruled fable-1320
+  §1, from the census landing).
+
+  These are CHECKS, not refusals: the founder-activity freeze below is the only
+  thing that says *"not now"*, and this says *"not like this"*. Red here means
+  the push does not fire, exactly as a red suite would — the difference being
+  that a suite takes a minute and these take seconds, so there is no honest
+  reason to leave them to memory.
+
+  **No path filter, deliberately.** *"Only run the capability census when
+  server/castingV2 changed"* is a second list of which files matter, and a
+  second list drifts from the first the day somebody adds a door somewhere new
+  (working law 4). Both are deterministic and both are seconds; running them
+  always costs less than deciding when to.
+
+  What is NOT here: `pnpm test` and `pnpm check`, which are minutes and belong
+  in the custody block of the report, and `capability:check --drive`, which
+  makes text calls and costs money — the census's own rule that a script whose
+  default action is to spend is never run casually.
+*/
+for (const [label, script] of [["atlas", "architecture:check"], ["capability", "capability:check"]]) {
+  const result = spawnSync("pnpm", [script!], { encoding: "utf8", shell: true });
+  const printed = `${result.stdout ?? ""}${result.stderr ?? ""}`
+    .trim().split(/\r?\n/).slice(-3).join(" · ");
+  if (result.status !== 0) {
+    console.log(`REFUSED: ${label} check is RED — the push does not fire. ${printed}`);
+    process.exit(1);
+  }
+  console.log(`  ${label}: ok`);
+}
+
 const railway = (...args: string[]) => run("railway.cmd", args, true);
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
