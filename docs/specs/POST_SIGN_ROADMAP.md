@@ -334,6 +334,28 @@ dependency named; a closed item is struck **with its SHA**. Mailbox queue blocks
 lives only in mailbox messages is the mirror law violated: the messages scroll
 and this file does not.
 
+⚠ **AND THE SAME RULE HAS AN UNSOLVED HALF ON THE FOUNDER'S OWN SURFACE: THE
+CLOSING ACT IS OPTIONAL, AND TWICE THIS WEEK A CARD WAS THE LAST THING TO LEARN
+IT HAD STOPPED BEING TRUE.** (Filed 2026-08-22 from the card sweep, opus-990 §4,
+ordered fable-1346 §3 — one line, deliberately not a design.) `founder-queue.md`
+is append-only by charter, so a card goes stale in two directions and neither
+raises anything: its deliverable never lands (it reads as blocked-on-him, so
+nobody re-reads it), or its ask is DONE and no receipt is written (so he is
+asked twice for one job). **Four instances are now on the record, and none of
+them is carelessness:** the two tattoo `--production` commands, which he ran the
+same night and which sat open for a day; the R2 credential rotation, which left
+every *"your desk"* summary after 2026-08-19 with the exposed key still live; and
+the two-paths card, which promised *"the exact command comes with it"* when no
+such command existed at HEAD.
+
+**A mechanism is owed and is NOT proposed here** — a reflex is what this file
+exists to prevent. What a deciding sitting needs is already gathered: the sweep's
+three arms (paths that must exist, cards that order an action with nothing
+runnable in them, and — the only one that reads an artifact rather than prose —
+every ceremony's table checked against production), and the finding that arm one
+PASSED the very card that bought the sweep. Whoever takes it starts from the
+observation that closing is the step with no owner, not from the symptoms.
+
 ## THE BRIEF DISCIPLINE — a known degraded path is told, not discovered
 
 **Ruled fable-851 §4, filed 2026-08-17.** When a whole FEATURE CLASS is
