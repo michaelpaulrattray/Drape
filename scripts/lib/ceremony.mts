@@ -106,6 +106,35 @@ export async function columnType(
 }
 
 /**
+ * Every column of one named index, in the order the index holds them.
+ *
+ * ONE OWNER, because two ceremonies now read the same table's keys and a second
+ * copy of this drifts from the first (law 4). It came from
+ * `ceremony-ink-delivery-rekey.mts`, where it was written, and moved here the
+ * day `ceremony-ink-delivery-crops.mts` needed the same reading.
+ *
+ * The ORDER is the half a `COUNT(*)` would miss: an index over the same columns
+ * in a different order is a different rule wearing the same name.
+ */
+export async function indexColumns(
+  connection: CeremonyWorld["connection"],
+  table: string,
+  name: string,
+): Promise<{ present: boolean; unique: boolean; columns: string[] }> {
+  const [rows] = await connection.query<any[]>(
+    `SHOW INDEX FROM \`${table}\` WHERE Key_name = ?`,
+    [name],
+  );
+  return {
+    present: rows.length > 0,
+    unique: rows.length > 0 && rows.every((row) => row.Non_unique === 0),
+    columns: [...rows]
+      .sort((a, b) => a.Seq_in_index - b.Seq_in_index)
+      .map((row) => row.Column_name as string),
+  };
+}
+
+/**
  * The migration file itself, replayed statement by statement.
  *
  * Never the DDL retyped into the ceremony: that is a second copy of the schema

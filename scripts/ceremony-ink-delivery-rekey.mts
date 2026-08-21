@@ -50,6 +50,7 @@ import {
   applyOnce,
   closeCeremony,
   columnType,
+  indexColumns,
   openCeremonyWorld,
   proveTheReader,
   replayMigration,
@@ -59,24 +60,6 @@ import {
 const TABLE = "casting_ink_delivery_crops";
 const NEW_KEY = "uq_casting_ink_delivery_crops_delivery";
 const OLD_KEY = "uq_casting_ink_delivery_crops_design";
-
-/** Every column of one named index, in the order the index holds them. */
-async function indexColumns(
-  connection: Awaited<ReturnType<typeof openCeremonyWorld>>["connection"],
-  name: string,
-): Promise<{ present: boolean; unique: boolean; columns: string[] }> {
-  const [rows] = await connection.query<any[]>(
-    `SHOW INDEX FROM \`${TABLE}\` WHERE Key_name = ?`,
-    [name],
-  );
-  return {
-    present: rows.length > 0,
-    unique: rows.length > 0 && rows.every((row) => row.Non_unique === 0),
-    columns: [...rows]
-      .sort((a, b) => a.Seq_in_index - b.Seq_in_index)
-      .map((row) => row.Column_name as string),
-  };
-}
 
 const world = await openCeremonyWorld(process.argv);
 let failure: unknown;
@@ -96,13 +79,13 @@ try {
 
   await applyOnce({
     what: "the delivered-tattoo store is keyed on the DELIVERY",
-    isApplied: async () => (await indexColumns(world.connection, NEW_KEY)).present,
+    isApplied: async () => (await indexColumns(world.connection, TABLE, NEW_KEY)).present,
     apply: () => replayMigration(world.connection, "drizzle/0050_ink_delivery_keyed_on_delivery.sql"),
   });
 
   /* THE NEW RULING, read back off the database — name, uniqueness and the
      column ORDER, which a COUNT would miss. */
-  const now = await indexColumns(world.connection, NEW_KEY);
+  const now = await indexColumns(world.connection, TABLE, NEW_KEY);
   if (!now.unique) throw new Error(`\`${NEW_KEY}\` exists and is NOT UNIQUE — it enforces nothing`);
   const wanted = ["candidateId", "variantId", "slot"];
   const same = now.columns.length === wanted.length && now.columns.every((name, at) => name === wanted[at]);
@@ -114,7 +97,7 @@ try {
   console.log(`  minted once  UNIQUE(${now.columns.join(", ")})`);
 
   /* AND THE OLD RULING, read back GONE — see the header. */
-  const before = await indexColumns(world.connection, OLD_KEY);
+  const before = await indexColumns(world.connection, TABLE, OLD_KEY);
   if (before.present) {
     throw new Error(
       `\`${OLD_KEY}\` is still here over [${before.columns.join(", ")}] — every words-only delivery would still refuse on a key it cannot satisfy, and the feature would look landed`,

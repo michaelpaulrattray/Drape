@@ -24,12 +24,19 @@
  * # WHAT IT READS BACK, and why each one is worth a round trip
  *
  * **The unique index is the ruling.** fable-1193 §3b's *minted ONCE, never
- * re-cut from a later carry* is `uq_casting_ink_delivery_crops_design` and
- * nothing else — no application code enforces it, deliberately, because a rule
- * that lives in a writer is a rule the next writer does not inherit. A table
- * created from an older copy of this file, or by a hand that dropped the index,
- * would take a second mint quietly and start the chained-anchor drift the whole
- * rule exists to prevent. So the index is read back BY NAME and BY COLUMNS.
+ * re-cut from a later carry* is enforced by an index and by nothing else — no
+ * application code enforces it, deliberately, because a rule that lives in a
+ * writer is a rule the next writer does not inherit. A table created from an
+ * older copy of this file, or by a hand that dropped the index, would take a
+ * second mint quietly and start the chained-anchor drift the whole rule exists
+ * to prevent. So the index is read back BY NAME and BY COLUMNS.
+ *
+ * **And there are TWO names it may legitimately wear**, because 0050 re-keys
+ * this table off the DESIGN and onto the FRAME THAT DELIVERED IT — see the
+ * read-back's own comment. *(This paragraph said `uq_casting_ink_delivery_crops_
+ * design` "and nothing else" until 2026-08-21, one migration after that stopped
+ * being true, and a real confirmation pass printed FAILED over a correct
+ * database because of it.)*
  *
  * **The counted columns are the anti-silence arm.** `maskPixels` and
  * `keptPixels` exist so the whole-frame cut failure — a raw greyscale alpha
@@ -48,6 +55,7 @@ import {
   applyOnce,
   closeCeremony,
   columnType,
+  indexColumns,
   openCeremonyWorld,
   proveTheReader,
   replayMigration,
@@ -73,29 +81,61 @@ try {
     miss: an index over (candidateId, slot) alone would permit two designs on
     one slot and refuse the second, which is a different rule wearing the same
     name.
+
+    ⚠ AND THERE ARE TWO CORRECT WORLDS NOW, WHICH IS WHY THIS READS BOTH
+    (ordered fable-1232 §3, from a real re-run that printed FAILED over a
+    correct database).
+
+    0050 re-keys this table off the DESIGN and onto the FRAME THAT DELIVERED IT.
+    Production has taken both, in one sitting, in that order. Written against
+    the original key alone, this ceremony's re-check then asserted the very
+    index its own sibling had legitimately removed — so re-running the pair to
+    confirm the world printed FAILED at 0049 and OK at 0050, about the same
+    correct table. **A confirmation pass that cries wolf is worse than none: the
+    next reader either stops trusting it or starts fixing a world that is not
+    broken.**
+
+    So MINTED ONCE is read as a PROPERTY rather than as one index's name — it is
+    enforced by exactly one of two, and which one says only how far the pair has
+    got. What this must still refuse, and does, is the world where NEITHER is
+    there: that is the enforcement genuinely absent, which is the whole reason
+    this block exists.
   */
-  const [indexRows] = await world.connection.query<any[]>(
-    `SHOW INDEX FROM \`${TABLE}\` WHERE Key_name = 'uq_casting_ink_delivery_crops_design'`,
+  const KEYS = [
+    { name: "uq_casting_ink_delivery_crops_design", columns: ["candidateId", "designId", "slot"], world: "0049 alone" },
+    { name: "uq_casting_ink_delivery_crops_delivery", columns: ["candidateId", "variantId", "slot"], world: "0050 applied" },
+  ] as const;
+
+  const seen = await Promise.all(
+    KEYS.map(async (key) => ({ key, read: await indexColumns(world.connection, TABLE, key.name) })),
   );
-  if (indexRows.length === 0) {
+  const live = seen.filter((one) => one.read.present);
+  if (live.length === 0) {
     throw new Error(
-      "`uq_casting_ink_delivery_crops_design` is absent — MINTED ONCE has no enforcement, and a second mint would start the chained-anchor drift",
+      `neither \`${KEYS[0].name}\` nor \`${KEYS[1].name}\` is here — MINTED ONCE has no enforcement at all, and a second mint would start the chained-anchor drift`,
     );
   }
-  if (indexRows.some((row) => row.Non_unique !== 0)) {
-    throw new Error("`uq_casting_ink_delivery_crops_design` exists and is NOT UNIQUE — it enforces nothing");
+  /*
+    BOTH is not a third correct world — it is 0050 half-applied, and it is the
+    exact state its own read-back refuses: the old key left in place makes every
+    words-only delivery refuse on a NULL-repeating index nobody is looking at.
+    Named here so a reader of THIS command is sent to the right one.
+  */
+  if (live.length === 2) {
+    throw new Error(
+      `both \`${KEYS[0].name}\` and \`${KEYS[1].name}\` are here — 0050 is HALF-APPLIED; run scripts/ceremony-ink-delivery-rekey.mts, whose read-back owns this`,
+    );
   }
-  const indexed = [...indexRows]
-    .sort((a, b) => a.Seq_in_index - b.Seq_in_index)
-    .map((row) => row.Column_name as string);
-  const wanted = ["candidateId", "designId", "slot"];
-  const same = indexed.length === wanted.length && indexed.every((name, at) => name === wanted[at]);
+  const { key, read } = live[0];
+  if (!read.unique) throw new Error(`\`${key.name}\` exists and is NOT UNIQUE — it enforces nothing`);
+  const wanted = [...key.columns];
+  const same = read.columns.length === wanted.length && read.columns.every((name, at) => name === wanted[at]);
   if (!same) {
     throw new Error(
-      `\`uq_casting_ink_delivery_crops_design\` is over [${indexed.join(", ")}] and the rule is [${wanted.join(", ")}]`,
+      `\`${key.name}\` is over [${read.columns.join(", ")}] and the rule is [${wanted.join(", ")}]`,
     );
   }
-  console.log(`  minted once  UNIQUE(${indexed.join(", ")})`);
+  console.log(`  minted once  UNIQUE(${read.columns.join(", ")})   [${key.world}]`);
 
   /* The columns whose absence would be silent — see the header. */
   for (const column of ["storageKey", "digest", "variantId", "maskPixels", "keptPixels"]) {
