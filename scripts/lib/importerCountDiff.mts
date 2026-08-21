@@ -11,7 +11,7 @@
  * should not need the ones that cannot.
  */
 import { readdirSync, readFileSync, statSync } from "node:fs";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 
 /** Windows path separator, by code point: see the entrypoint's §heredoc note. */
 const SEP = String.fromCharCode(92);
@@ -51,7 +51,26 @@ export type Tree = {
  * `sweep-uncalled-exports-disposable.mts` uses, so the two instruments are
  * talking about the same population. Importers are looked for wider.
  */
-export function readTree(root: string): Tree {
+export function readTree(rootArgument: string): Tree {
+  /*
+    ⚠ THE ROOT IS RESOLVED, AND A RELATIVE ONE USED TO READ NOTHING AT ALL.
+    `show` strips `root.length + 1` characters to make a path repo-relative,
+    so a root of "." chopped TWO characters off every path — `server/x.ts`
+    became `rver/x.ts`, the `startsWith("server/")` gate below never matched,
+    and the reader declared ZERO exports while happily reporting that it had
+    walked 1,471 files. Found 2026-08-22 by an operator typing the most
+    natural thing there is:
+
+        diff-importer-count-across-time.mts <worktree> .
+
+    The differ's sanity control caught it and REFUSED to report, which is that
+    control earning its place — but a blind reader that looks busy is exactly
+    the shape this program keeps paying for, and `check-cleanup-dispositions`
+    now shares this function for its `rewired` door. That caller passes an
+    absolute root and was never affected; this line is what keeps the next one
+    from being.
+  */
+  const root = resolve(rootArgument);
   const all = ["server", "client", "shared"].flatMap((r) => walk(join(root, r)));
   const show = (f: string) => f.slice(root.length + 1).split(SEP).join("/");
   const decl = new Map<string, string>();

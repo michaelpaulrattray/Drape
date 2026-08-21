@@ -140,4 +140,39 @@ describe("the un-wiring differ", () => {
     expect(importerCount(readTree(source), "isSensitiveAction")).toBe(1);
     expect(importerCount(readTree(source), "logAdminAction")).toBe(1);
   });
+
+  /**
+   * THE SECOND CLEAN-NULL DEFECT, found the same way as the first — by
+   * running it, not by reading it (2026-08-22, opus-1001).
+   *
+   * `show()` strips `root.length + 1` characters to make a path repo-relative,
+   * so a RELATIVE root of "." chopped two characters off every path:
+   * `server/x.ts` became `rver/x.ts`, the `startsWith("server/")` gate never
+   * matched, and the reader declared ZERO exports while reporting that it had
+   * walked 1,471 files. The differ's sanity control refused to report and that
+   * is the control earning its place — but `check-cleanup-dispositions` now
+   * shares this reader for its `rewired` door, and a door reading an empty
+   * tree finds nothing to refuse.
+   *
+   * The arm drives the reader BOTH ways over the same fixture and asserts they
+   * agree. It is written as a COMPARISON rather than a literal count, so it
+   * cannot be quieted by editing a number.
+   */
+  it("reads a RELATIVE root exactly as it reads an absolute one", () => {
+    const source = tree({ "server/adminSecurity.ts": GATE, "server/routers.ts": CALLER });
+    const absolute = readTree(source);
+    const previous = process.cwd();
+    try {
+      process.chdir(source);
+      const relative = readTree(".");
+      expect(relative.decl.size, "a relative root read no declarations at all").toBe(absolute.decl.size);
+      expect(importerCount(relative, "isSensitiveAction")).toBe(
+        importerCount(absolute, "isSensitiveAction"),
+      );
+      /* And the un-varied direction, so the arm cannot pass by both being empty. */
+      expect(importerCount(absolute, "isSensitiveAction")).toBe(1);
+    } finally {
+      process.chdir(previous);
+    }
+  });
 });

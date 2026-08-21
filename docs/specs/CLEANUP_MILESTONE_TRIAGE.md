@@ -2149,3 +2149,46 @@ rest being this document's own prose and the yaml row; the two `drizzle-orm`
 helpers the deleted body used (`or`, `inArray`) are still used by
 `getEdgesForItem` and `removeBoardEdge`, so no import goes dark with it; and the deletion path's real statements are where
 §23d says they are.
+
+## 27. AND RUNNING THE DIFFER OVER THIS SITTING'S OWN WINDOW FOUND A SECOND
+## CLEAN-NULL DEFECT IN THE DIFFER (2026-08-22, opus-1001)
+
+§10 item 7 (RETIREMENT + CLEANUP) says no retirement sitting closes without
+running `scripts/diff-importer-count-across-time.mts` over its own window. §26
+is a retirement act, so it was run — `613dd561 → cd4d8166`, a worktree at the
+older tree — **and the first invocation was this:**
+
+```
+diff-importer-count-across-time.mts C:/tmp/rite-window-1001 .
+
+  FAIL  sanity  both trees read   1470 files / 2478 exports -> 1471 files / 0 exports
+  REFUSING TO REPORT — 1 control(s) failed.
+```
+
+**A relative root read ZERO exports out of 1,471 files.** `readTree`'s `show()`
+strips `root.length + 1` characters to make a path repo-relative, so a root of
+`.` chopped TWO characters off every path — `server/x.ts` became `rver/x.ts`,
+the `startsWith("server/")` gate never matched, and the reader declared nothing
+while reporting that it had walked the whole tree.
+
+**The sanity control caught it and refused to report**, which is that control
+earning its place on its second outing — and it is the same shape as the
+multi-line-import defect the differ's own suite already keeps as an arm: *a
+clean, confident, wrong null.* Both were found by RUNNING the thing, neither by
+reading it.
+
+⚠ **The `rewired` door shares this reader, and was never affected** —
+`check-cleanup-dispositions.mts` passes `resolve(import.meta.dirname, "..")`,
+read at the code rather than assumed. But a door reading an empty tree finds
+nothing to refuse, and that is a door that passes by being blind. `readTree`
+now resolves its own root, and `server/unwiringDiffer.test.ts` drives the
+reader BOTH ways over one fixture and asserts they AGREE — a comparison rather
+than a literal count, so it cannot be quieted by editing a number. Proven able
+to fail: with the resolve removed, that arm reddens and the other eight stay
+green.
+
+**The window itself is clean and the arithmetic says the differ saw it**: zero
+un-wirings, `-1 exports, +1 file` across the window — exactly
+`removeEdgesForItems` gone and `queueOrdinalDiscipline.test.ts` arrived. The
+deleted symbol is correctly absent from the finding list: it had zero
+production importers at BOTH ends, so it was never un-wired, only removed.
