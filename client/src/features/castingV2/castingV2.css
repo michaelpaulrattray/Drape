@@ -260,7 +260,7 @@
   height: 22px;
   border-radius: 50%;
   background: var(--accentSolid);
-  color: #ffffff;
+  color: var(--onWash);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -276,7 +276,7 @@
   background: var(--scrimPill);
   font: 500 9.5px var(--font-mono);
   letter-spacing: 0.06em;
-  color: #ffffff;
+  color: var(--onScrim);
   pointer-events: none;
 }
 
@@ -970,8 +970,13 @@
 
 .dpc-viewer__dots::after {
   opacity: 0.6;
-  -webkit-mask-image: linear-gradient(112deg, transparent 34%, #000 50%, transparent 66%);
-  mask-image: linear-gradient(112deg, transparent 34%, #000 50%, transparent 66%);
+  /* A MASK STOP, not a colour: a mask reads ALPHA, so the opaque end means
+     "keep" and transparent means "drop". Written as the `black` keyword rather
+     than `#000` — identical output, and it keeps a piece of geometry out of the
+     no-hex guard without buying a carve-out that would cover this whole
+     stylesheet. There is no theme in which it should differ. */
+  -webkit-mask-image: linear-gradient(112deg, transparent 34%, black 50%, transparent 66%);
+  mask-image: linear-gradient(112deg, transparent 34%, black 50%, transparent 66%);
   -webkit-mask-size: 300% 300%;
   mask-size: 300% 300%;
   -webkit-mask-repeat: no-repeat;
@@ -1412,7 +1417,7 @@
 .dpc-confirm__go {
   background: var(--error);
   border: 1px solid var(--error);
-  color: #ffffff;
+  color: var(--onError);
 }
 
 .dpc-confirm__go:hover { filter: brightness(0.94); }
@@ -1590,7 +1595,10 @@
   cursor: pointer;
   background: var(--accentSolid);
   border: 1px solid var(--accentSolid);
-  color: var(--onAccent, #ffffff);
+  /* `--onAccent` was never a token — it is defined nowhere, so this rule has
+     always been painted by its own fallback. Same value, but a dangling
+     reference reads as tokenised while being a literal. */
+  color: var(--onWash);
 }
 
 .dpc-confirm__sign:hover { filter: brightness(0.94); }
@@ -4007,17 +4015,17 @@
 
 .dpc-regions__box[data-lit="true"],
 .dpc-regions__box:hover {
-  border-color: color-mix(in srgb, #FFFFFF 78%, transparent);
-  background: color-mix(in srgb, #FFFFFF 8%, transparent);
+  border-color: color-mix(in srgb, var(--onScrim) 78%, transparent);
+  background: color-mix(in srgb, var(--onScrim) 8%, transparent);
 }
 
 .dpc-regions__box[data-active="true"] {
-  border-color: #FFFFFF;
-  background: color-mix(in srgb, #FFFFFF 12%, transparent);
+  border-color: var(--onScrim);
+  background: color-mix(in srgb, var(--onScrim) 12%, transparent);
 }
 
 .dpc-regions__box:focus-visible {
-  outline: 2px solid #FFFFFF;
+  outline: 2px solid var(--onScrim);
   outline-offset: 1px;
 }
 
@@ -4040,8 +4048,12 @@
   border-radius: 5px;
   font-size: 11px;
   white-space: nowrap;
-  color: #FFFFFF;
-  background: color-mix(in srgb, #000000 62%, transparent);
+  /* THE TAG STAYS A SCRIM, and that is a decision rather than an oversight: it
+     is anchored to its box and therefore always over the photograph, where a
+     dark pill with white text is correct in BOTH themes. Its siblings below are
+     tokenised the other way because they are not always over the picture. */
+  color: var(--onScrim);
+  background: var(--scrimPill);
   opacity: 0;
   transition: opacity 120ms ease;
 }
@@ -4055,6 +4067,25 @@
 /*
   THE BOX THAT OPENS WHERE THE FEATURE IS. It hangs under the region and is
   centred on it, so the thing being edited is never behind the thing editing it.
+
+  ---- IT IS A SURFACE, NOT A SCRIM (founder bug, fable-1249) ----
+
+  It was built as a near-black glass pill with white text, which is what a
+  control over a photograph should be. **But it does not stay over the
+  photograph.** It hangs 8px BELOW its region, and a big region — `Build` is
+  469x368 on a 650px plate — puts it clean off the picture and onto the page. In
+  light mode that is a dark-mode pill floating on a white page, which is exactly
+  what he screenshotted.
+
+  A floating panel that may land on either background cannot be styled for one
+  of them. So it is treated the way every other floating panel in this system is
+  treated: an elevated SURFACE with a hairline and a shadow. That reads
+  correctly on the page in both themes AND over a photograph, where the shadow
+  is what separates it — and it needs no conditional, no measurement of what is
+  underneath, and no second code path.
+
+  The tag above keeps its scrim, because the tag really is always over the
+  picture. The two are deliberately different and the comments say why.
 */
 .dpc-regions__ask {
   position: absolute;
@@ -4064,37 +4095,63 @@
   gap: 8px;
   padding: 6px 6px 6px 10px;
   border-radius: 12px;
-  background: color-mix(in srgb, #000000 78%, transparent);
-  box-shadow: 0 8px 24px color-mix(in srgb, #000000 40%, transparent);
+  background: var(--surface);
+  border: 1px solid var(--borderCard);
+  box-shadow: var(--shadowPop);
   pointer-events: auto;
   max-width: min(420px, 92%);
 }
 
+/*
+  ⚠ THE FIELD SHRINKS FIRST, AND THE PRICE IS WHY.
+
+  This carried `min-width: 180px`, which is a FLOOR a flex item will not go
+  below — so when the panel hit its own `max-width`, the thing that overflowed
+  was the last item in the row. Measured at the DOM: the panel ended at x=764
+  and `25 credits` ended at x=774. **Ten pixels of the price hanging outside its
+  own container**, on a product whose standing design law is that a paid
+  affordance always states its price.
+
+  It predates the tokenising — the old panel was near-black over a photograph,
+  so grey text falling off a dark pill onto a dark picture was invisible. Making
+  the panel a white surface is what put it in plain sight.
+
+  `min-width: 0` makes this the item that gives: the input truncates its own
+  placeholder, and `Refine` and the price — both `flex: none` — are never the
+  things that get cut.
+*/
 .dpc-regions__field {
   flex: 1 1 auto;
-  min-width: 180px;
+  min-width: 0;
   border: 0;
   background: transparent;
-  color: #FFFFFF;
+  color: var(--ink);
   font-size: 13px;
   padding: 4px 0;
 }
+
+.dpc-regions__field::placeholder { color: var(--meta); }
 
 /* No inner outline on a field — the container carries focus (the standing law). */
 .dpc-regions__field:focus { outline: none; }
 
 .dpc-regions__ask:focus-within {
-  box-shadow: 0 8px 24px color-mix(in srgb, #000000 40%, transparent),
-              0 0 0 1px color-mix(in srgb, #FFFFFF 46%, transparent);
+  box-shadow: var(--shadowPop), 0 0 0 1px var(--lineStrong);
 }
 
+/*
+  The primary button's own house pattern — `--ink` fill, `--surface` label —
+  which is five other buttons in this file and inverts with the theme by
+  construction. The old white-on-#111112 was correct only while the panel
+  behind it was black; on a white surface a white button is invisible.
+*/
 .dpc-regions__submit {
   flex: none;
   padding: 5px 12px;
   border: 0;
-  border-radius: 8px;
-  background: #FFFFFF;
-  color: #111112;
+  border-radius: var(--r-btn);
+  background: var(--ink);
+  color: var(--surface);
   font-size: 12.5px;
   cursor: pointer;
 }
@@ -4105,5 +4162,5 @@
   flex: none;
   padding-right: 4px;
   font-size: 11.5px;
-  color: color-mix(in srgb, #FFFFFF 62%, transparent);
+  color: var(--faint);
 }

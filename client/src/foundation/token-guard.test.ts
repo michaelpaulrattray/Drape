@@ -34,10 +34,25 @@ import { describe, expect, it } from "vitest";
 
 const clientSrc = path.resolve(__dirname, "..");
 
-/** Directories and files under guard. Missing paths are fine — they arrive later. */
+/**
+ * Directories and files under guard.
+ *
+ * ⚠ **A PATH THAT DOES NOT EXIST IS NOT A GUARD, AND THIS LIST HELD ONE FOR
+ * MONTHS.** It read `features/casting-v2`; the directory is `features/castingV2`.
+ * `collect()` answered `[]` for it — under a comment reading *"Missing paths are
+ * fine — they arrive later"* — so the docblock above said this guarded "the
+ * foundation and V2 trees" while the V2 tree was never opened. It had
+ * accumulated 31 colour literals by the time the founder reported a popover
+ * rendering dark-mode styling in light mode (fable-1249), which is the exact
+ * failure the first paragraph promises to prevent.
+ *
+ * The tolerance is gone with it: every path here must resolve, and a path that
+ * has not arrived yet does not belong on the list. That is the arm below, and
+ * it is the one that would have caught this.
+ */
 const GUARDED_PATHS = [
   "foundation",
-  "features/casting-v2",
+  "features/castingV2",
   "pages/CastingFoundation.tsx",
 ];
 
@@ -50,9 +65,41 @@ const HEX_CARVE_OUTS: Record<string, string> = {
   "foundation/tokens.css": "the token source itself — the one place a colour may exist",
   "foundation/brand-orb.css":
     "the brand orb's gradient is artwork, identical in both themes, not a semantic colour",
+  /*
+    THE GUARD GUARDS ITSELF, and its controls are violations ON PURPOSE — the
+    planted hex that proves the net catches, and the arbitrary-value string that
+    proves the second net does. A guard whose own positive control it flags is a
+    guard that cannot be proven, so this row is the opposite of a convenience:
+    the honesty arm below REQUIRES this file to keep containing one.
+  */
+  "foundation/token-guard.test.ts":
+    "its own positive controls — a planted hex and an arbitrary value, which working law 2 requires it to contain",
 };
 
 const HEX_LITERAL = /#[0-9a-fA-F]{3,8}\b/g;
+
+/**
+ * THE GUARD READS CODE, NOT PROSE.
+ *
+ * `#[0-9a-fA-F]{3,8}` matches a great deal that is not a colour, and this house
+ * writes long docblocks: `screenshots #317–319`, `fable-703, founder shot #303`,
+ * `Screenshot #312`, and comments that QUOTE token values in order to explain
+ * them (*"`--surface` is #FFFFFF light, #1C1C1F dark"*). Every one of those is a
+ * hex-shaped string and none of them paints a pixel.
+ *
+ * Left un-stripped, turning the guard on over the V2 tree would have produced a
+ * page of false positives, and the cheapest way out of that is a carve-out per
+ * file — which is how a guard stops meaning anything. So comments come out
+ * first and what is left is what ships to a browser.
+ *
+ * The `//` rule skips a `://` so a URL in code is not half-eaten; block
+ * comments cover CSS entirely, since CSS has no line comment.
+ */
+function code(source: string): string {
+  return source
+    .replace(/\/\*[\s\S]*?\*\//g, " ")
+    .replace(/(^|[^:])\/\/[^\n]*/g, "$1");
+}
 /** Tailwind's arbitrary-value escape hatch — the drift vector the README warns about. */
 const ARBITRARY_COLOR = /\[#[0-9a-fA-F]{3,8}/g;
 
@@ -81,11 +128,52 @@ describe("foundation colours live only in tokens.css", () => {
     expect(guardedFiles.map((f) => f.relative)).toContain("foundation/tokens.css");
   });
 
+  /**
+   * ⚠ THE ARM THAT WOULD HAVE CAUGHT THE DEAD PATH.
+   *
+   * `collect()` cannot tell "this directory is empty" from "this directory does
+   * not exist", and for months it answered the second while the list said the
+   * first. Nothing went red, because nothing asked.
+   */
+  it("every guarded path actually resolves on disk", () => {
+    const missing = GUARDED_PATHS.filter(
+      (target) => !fs.existsSync(path.join(clientSrc, target)),
+    );
+    expect(
+      missing,
+      "A guarded path that does not exist guards nothing — fix the spelling or remove the row",
+    ).toEqual([]);
+  });
+
+  /**
+   * ⚠ AND THE ONE THAT PROVES THE NET STILL CATCHES (working law 2).
+   *
+   * Both arms below assert an EMPTY list, and an empty list is what a broken
+   * matcher returns too. So the matcher is driven against a planted violation
+   * and against a comment that merely looks like one — a positive and a
+   * negative control, on the same functions the real arms use.
+   */
+  it("catches a planted hex, and does not catch one in prose", () => {
+    const planted = code(".x { color: #A23E33; }");
+    expect(planted.match(HEX_LITERAL), "the net must catch a real declaration").toEqual(["#A23E33"]);
+
+    const prose = code("/* founder shot #303, and --surface is #FFFFFF light */\n.x { color: var(--ink); }");
+    expect(prose.match(HEX_LITERAL), "a hex inside a comment paints nothing").toBeNull();
+
+    const lineComment = code("// screenshots #317-319\nconst a = 1;");
+    expect(lineComment.match(HEX_LITERAL), "a hex inside a line comment paints nothing").toBeNull();
+
+    const url = code('const u = "https://example.test/#AABBCC";');
+    expect(url.match(HEX_LITERAL), "a :// is not a line comment").toEqual(["#AABBCC"]);
+
+    expect(code(".x { color: [#123456] }").match(ARBITRARY_COLOR)).toEqual(["[#123456"]);
+  });
+
   it("allows a hex only in the carved-out files", () => {
     const offenders = guardedFiles
       .filter(({ relative }) => !(relative in HEX_CARVE_OUTS))
       .flatMap(({ relative, source }) =>
-        (source.match(HEX_LITERAL) ?? []).map((hex) => `${relative}: ${hex}`),
+        (code(source).match(HEX_LITERAL) ?? []).map((hex) => `${relative}: ${hex}`),
       );
 
     expect(
@@ -95,9 +183,19 @@ describe("foundation colours live only in tokens.css", () => {
   });
 
   it("rejects Tailwind arbitrary colour values", () => {
-    const offenders = guardedFiles.flatMap(({ relative, source }) =>
-      (source.match(ARBITRARY_COLOR) ?? []).map((match) => `${relative}: ${match}`),
-    );
+    /*
+      ⚠ THIS ARM IGNORED THE CARVE-OUTS UNTIL 2026-08-21, and nothing noticed
+      because no carved-out file had ever contained a `[#`. The moment one did —
+      this file's own positive control — it went red over a string that exists
+      to prove the net works. An arbitrary value IS a hex, so it answers to the
+      same exception list as the arm above; the two nets are now consistent
+      rather than one of them being accidentally absolute.
+    */
+    const offenders = guardedFiles
+      .filter(({ relative }) => !(relative in HEX_CARVE_OUTS))
+      .flatMap(({ relative, source }) =>
+        (code(source).match(ARBITRARY_COLOR) ?? []).map((match) => `${relative}: ${match}`),
+      );
 
     expect(
       offenders,
@@ -110,7 +208,7 @@ describe("foundation colours live only in tokens.css", () => {
       const file = guardedFiles.find((candidate) => candidate.relative === relative);
       expect(file, `Carve-out ${relative} no longer exists — remove it (${reason})`).toBeDefined();
       expect(
-        file!.source.match(HEX_LITERAL),
+        code(file!.source).match(HEX_LITERAL),
         `Carve-out ${relative} has no hex left — remove the exception (${reason})`,
       ).not.toBeNull();
     }
@@ -180,7 +278,7 @@ describe("foundation tokens define every token in both themes", () => {
    * same in both themes by design, and the scrim group is identical on purpose
    * because media does not have a theme (README §6).
    */
-  const THEME_INVARIANT = /^--(s-|r-|t-|font-|rail-w|topbar-h|content-max|blur-bar|ease|scrim|onScrim|onWash|error)/;
+  const THEME_INVARIANT = /^--(s-|r-|t-|font-|rail-w|topbar-h|content-max|blur-bar|ease|scrim|onScrim|onWash|onError|error)/;
 
   it("overrides every themeable colour in dark", () => {
     const missing = [...light].filter(

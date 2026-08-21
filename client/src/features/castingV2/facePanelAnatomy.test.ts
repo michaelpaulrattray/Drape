@@ -274,13 +274,57 @@ describe("the box on the picture is the ask box, at the feature", () => {
     const css = await readFile(CSS, "utf8");
     const rules = css.slice(css.indexOf(".dpc-regions__box"), css.indexOf(".dpc-regions__tag"));
     expect(rules).toContain("border: 1px solid transparent");
-    expect(rules).toContain("border-color: #FFFFFF");
+    /*
+      ⚠ THIS READ `border-color: #FFFFFF` UNTIL 2026-08-21, and the rule it was
+      reading has been tokenised (fable-1249's sweep). The literal is gone, so
+      the old assertion was about to guard a string that no longer exists.
+    */
+    expect(rules).toContain("border-color: var(--onScrim)");
     /* Every colour in the block is black, white or a mix of them. A hex that is
        not grey — #ff2d55, the red the pack used to draw — fails here. */
     for (const hex of rules.match(/#[0-9a-fA-F]{6}/g) ?? []) {
       expect(hex.slice(1, 3).toLowerCase(), hex).toBe(hex.slice(3, 5).toLowerCase());
       expect(hex.slice(3, 5).toLowerCase(), hex).toBe(hex.slice(5, 7).toLowerCase());
     }
+    /*
+      AND THE SAME RULE FOR TOKENS, which is the door the tokenising opened.
+
+      The hex arm above is now a net over an empty pond: every colour here is a
+      `var()`, so `--accentSolid` would sail through a check that only reads
+      hexes and the founder's rule would be enforced against a notation nobody
+      uses any more. The allowlist is the neutrals — the boxes may be drawn in
+      white-over-media and nothing else.
+    */
+    const NEUTRAL = new Set(["--onScrim", "--scrimPill"]);
+    for (const [, token] of rules.matchAll(/var\((--[a-zA-Z0-9-]+)/g)) {
+      expect(NEUTRAL.has(token!), `${token} is not a neutral — a region box says *here*, not *wrong*`).toBe(true);
+    }
+  });
+
+  it("the ask panel's field is the item that shrinks, so the price is never the thing cut off", async () => {
+    /*
+      MEASURED, THEN MECHANISED (fable-1249's sweep). The field carried
+      `min-width: 180px` — a floor a flex item will not go below — so when the
+      panel met its own `max-width` the overflow landed on the LAST item in the
+      row, which is the price. At the DOM: panel right edge x=764, `25 credits`
+      right edge x=774. Ten pixels of a price outside its own container, in a
+      product whose standing law is that a paid affordance always states what it
+      costs.
+
+      Asserted on the CSS rather than in a browser because it is a static
+      property of the rule: `Refine` and the price are both `flex: none`, so the
+      only question is whether the field can give. A floor above zero means it
+      cannot.
+    */
+    const css = await readFile(CSS, "utf8");
+    const field = css.slice(css.indexOf(".dpc-regions__field {"));
+    const rule = field.slice(0, field.indexOf("}"));
+    expect(rule).toContain("min-width: 0");
+    expect(rule, "a floor above zero puts the overflow back on the price").not.toMatch(/min-width:\s*[1-9]/);
+
+    const ask = css.slice(css.indexOf(".dpc-regions__ask {"));
+    const askRule = ask.slice(0, ask.indexOf("}"));
+    expect(askRule, "the panel must still be bounded, or it can run off the plate").toMatch(/max-width:/);
   });
 });
 
