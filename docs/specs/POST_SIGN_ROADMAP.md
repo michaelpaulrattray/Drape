@@ -168,17 +168,36 @@ the pinning arm.
   SETTLEMENT**: a name the mint refused is scrubbed or marked, so the row and the
   record cannot disagree. Today its only instances are fenced dev specimens —
   which is why it is a card and not a stop.
-- **(C5) THIRTEEN SERVICE REFUSALS NAMED BY NO TEST** (census 4(e)):
-  `already_original`, `already_signed`, `candidate_missing`,
-  `history_predates_undo`, `history_unreadable`, `kind_unserved`,
-  `master_missing`, `refine_limit`, `removal_not_in_brief`,
-  `removal_uncheckable`, `removal_unnamed`, `step_moved`, `version_missing` —
-  *doors nobody has proven can shut*, which is invariant 7's shape wearing a
-  refusal's name. The census reports them on every run, so this card is a place
-  to decide rather than a place to remember.
-  ⚠ **fable-1317 §4(e) said TWELVE and named twelve; the committed table says
-  thirteen** — `refine_limit` joined after that message was written. The count is
-  read off `capability-atlas.md` here rather than carried, which is the whole
+- **(C5) ✅ CLOSED 2b428251 — THIRTEEN SERVICE REFUSALS NAMED BY NO TEST**
+  (census 4(e)). The census now reports **none**.
+
+  The thirteen, kept as the record of what was found: `already_original`,
+  `already_signed`, `candidate_missing`, `history_predates_undo`,
+  `history_unreadable`, `kind_unserved`, `master_missing`, `refine_limit`,
+  `removal_not_in_brief`, `removal_uncheckable`, `removal_unnamed`,
+  `step_moved`, `version_missing` — *doors nobody has proven can shut*, which is
+  invariant 7's shape wearing a refusal's name.
+
+  **Eight of them were being DRIVEN all along** and asserted only by their
+  SENTENCE, which is a reading and not a pin: a copy edit moves the sentence,
+  takes the arm with it, and the door goes back to unproven with a green suite
+  either side. Those now assert the REASON beside the sentence. **Four had no
+  arm at all** and got one that drives the door, names it, and proves the ledger
+  never moved. **Two more were written and deleted**: `history_predates_undo`
+  and `history_unreadable` each duplicated an existing drive that grep could not
+  find — one asserts a different fragment of the same sentence, the other
+  asserts no sentence at all and matches a code five refusals share — and the
+  per-guard sabotage is what caught it, by reddening two arms where one should.
+
+  ⚠ **Closing it emptied the census's own positive control.** That arm named two
+  real unpinned doors and told the next person to update the list if anybody
+  pinned them; there is no real id left to name, so it is now driven against the
+  pinning join with an id no file can contain, beside a real id several files
+  do. It cannot decay the next time a door closes.
+
+  ⚠ **fable-1317 §4(e) said TWELVE and named twelve; the committed table said
+  thirteen** — `refine_limit` joined after that message was written. The count
+  was read off `capability-atlas.md` rather than carried, which is the whole
   reason a card cites its instrument instead of the message that ordered it.
 
 **Stale census BELIEFS are not on this list and are not ours** — the rows whose
