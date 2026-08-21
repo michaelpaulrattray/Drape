@@ -1212,6 +1212,42 @@ export function readDelta(value: unknown, check?: FreeLaneCheck): RefineDelta | 
       if (promoted) { promotedAway = true; continue; }
 
       /*
+        WHICH ITEMS THIS SENTENCE ACTUALLY ASKED FOR — read HERE, above the ink
+        gate, because the gate is the first thing that needs the answer
+        (fable-1326 §3, from the census's own pinned branch).
+
+        `free.ink` is ONE subject holding every tattoo she has (fable-1167 §2e),
+        and plural subjects are told to restate all of them. So on a branch
+        already wearing a chest piece, *"give him a small swallow tattoo on his
+        NECK"* comes back as two items — the new neck one and the restated chest
+        one — and the gate below, which classified EVERY item, hit the carried
+        chest first and refused the whole ask with the CHEST sentence. Nobody
+        asked for the chest.
+
+        Nothing new is measured for this. `alreadyStated` and `fromInstruction`
+        are the two halves of source containment, which sat forty lines lower
+        and already answered exactly this question for `carriedRestatement`;
+        they are read once here and used twice (working law 4). Both are pure
+        string reads, so moving them changes no value and no order of walls —
+        the containment refusal itself still fires in its own place below.
+      */
+      const strip = (text: string) => text.replace(/['’]/g, "");
+      const alreadyStated = check === undefined
+        ? false
+        : (check.prior?.[subject as FreeSubject] ?? [])
+          .some((item) => strip(item).toLowerCase() === strip(scrubbed).toLowerCase());
+      const fromInstruction = check === undefined
+        ? false
+        : stemmedContainment(strip(scrubbed), strip(check.instruction));
+      /*
+        An item warranted ONLY by the prior is the restatement we instructed the
+        model to make; an item their sentence contains is what they said THIS
+        time — even when it also happens to be filed already ("keep the gold
+        hoops, add crosses" states both, deliberately).
+      */
+      const restatedFromPrior = alreadyStated && !fromInstruction;
+
+      /*
         THE INK GATE (D-137). Only pixels render a design, and the one case
         where words suffice is ink the anchor itself documents — face and neck.
         Everything else waits for the body-art studio rather than being rendered
@@ -1256,7 +1292,24 @@ export function readDelta(value: unknown, check?: FreeLaneCheck): RefineDelta | 
         behind it is a tattoo rendered from words, which is the render D-137
         forbids and the one this gate was built to stop.
       */
-      if (check && (subject === "ink" || (subject === "marks" && namesDesign(scrubbed)))) {
+      /*
+        AND A TATTOO SHE ALREADY HAS IS NOT BEING ASKED FOR AGAIN.
+
+        The gate asks *is there a document for this design*, and that question
+        was answered the day the design arrived — by the anchor, by a picture
+        she pointed at, or by the crop the delivery kept. Asking it a second
+        time of a RESTATEMENT is asking it of a decision already made, and the
+        answer it gives is about the wrong tattoo: on his own cast, a neck ask
+        was refused with the chest sentence, twice at the census on the properly
+        pinned branch and deterministically at the interpreter.
+
+        Only the items her sentence did NOT ask for are skipped, so nothing a
+        customer types can route around this gate — an item she typed is
+        `fromInstruction` and goes through it exactly as before, whether or not
+        she is already wearing one like it.
+      */
+      if (check && !restatedFromPrior
+        && (subject === "ink" || (subject === "marks" && namesDesign(scrubbed)))) {
         if (
           !check.inkDocumentedByReference
           /* AND THE THIRD DOCUMENT — a tattoo this product already delivered and
@@ -1328,7 +1381,8 @@ export function readDelta(value: unknown, check?: FreeLaneCheck): RefineDelta | 
           guard that refuses the user's own words with an apostrophe added is a
           guard doing the opposite of its job.
         */
-        const strip = (text: string) => text.replace(/['’]/g, "");
+        /* `strip`, `alreadyStated` and `fromInstruction` are read ABOVE, where
+           the ink gate needs them first. Same two reads, same values. */
         /*
           And STEMMED, for the same reason the apostrophe is stripped.
 
@@ -1354,9 +1408,6 @@ export function readDelta(value: unknown, check?: FreeLaneCheck): RefineDelta | 
           guard-too-strict shape, and the first where the guard was refusing
           something we ourselves asked for.
         */
-        const alreadyStated = (check.prior?.[subject as FreeSubject] ?? [])
-          .some((item) => strip(item).toLowerCase() === strip(scrubbed).toLowerCase());
-        const fromInstruction = stemmedContainment(strip(scrubbed), strip(check.instruction));
         /* The invention door's own answer about THIS value, exact on both the
            subject and the words — see `FreeLaneCheck.vouched`. */
         const vouchedHere = check.vouched !== undefined
@@ -1374,9 +1425,10 @@ export function readDelta(value: unknown, check?: FreeLaneCheck): RefineDelta | 
           this time — even when it also happens to be filed already ("keep the
           gold hoops, add crosses" states both, deliberately). Nothing new is
           measured for this: it is the two halves of containment, read for the
-          second question they can answer.
+          second question they can answer — and read ONCE, above the ink gate,
+          which is the first door that needs the same answer.
         */
-        carriedRestatement = alreadyStated && !fromInstruction;
+        carriedRestatement = restatedFromPrior;
       }
       kept.push({ value: scrubbed, carried: carriedRestatement });
       }

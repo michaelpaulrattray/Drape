@@ -688,6 +688,70 @@ describe("ink renders only where the anchor is the document", () => {
     expect(c.wall && "place" in c.wall ? c.wall.place : null).toContain("upper chest");
   });
 
+  /*
+    A TATTOO SHE ALREADY HAS IS NOT BEING ASKED FOR AGAIN (fable-1326 §3,
+    restored to a plain defect by the census's per-row repin).
+
+    `free.ink` is ONE subject holding every tattoo she has (fable-1167 §2e) and
+    plural subjects are told to restate all of them, so a NEW neck ask on a
+    branch that already wears a chest piece comes back as TWO items. The gate
+    classified every one of them, hit the carried chest first, and refused the
+    whole ask with the CHEST sentence — to somebody who said "neck".
+
+    Driven at the reader with a hand-built reply, so no model can rescue it
+    (law 3), and every arm below fixes the SUBJECT so the interpreter's own
+    filing is not the variable.
+  */
+  describe("a carried tattoo does not wall a new one", () => {
+    const withPrior = (instruction: string, prior: string[]): FreeLaneCheck => ({
+      instruction, prior: { ink: prior },
+    });
+
+    it("serves a NECK ask on a branch already wearing a chest piece", () => {
+      const c = withPrior("give him a small swallow tattoo on his neck", ["a fine-line swallow on his upper chest"]);
+      const delta = readDelta(
+        { free: { ink: ["a small swallow tattoo on his neck", "a fine-line swallow on his upper chest"] } },
+        c,
+      );
+      expect(c.wall, "the carried chest piece is not re-gated").toBeUndefined();
+      expect(delta?.free?.ink).toContain("a small swallow tattoo on his neck");
+    });
+
+    it("STILL WALLS the chest when SHE is the one asking for it", () => {
+      /*
+        The negative control, and it is the half that matters: an item her own
+        sentence contains is `fromInstruction` and goes through the gate exactly
+        as before, whether or not she is already wearing one like it. Without
+        this arm the fix is indistinguishable from switching the gate off on any
+        branch that already carries ink.
+      */
+      const c = withPrior("give him another swallow on his upper chest", ["a fine-line swallow on his upper chest"]);
+      expect(readDelta({ free: { ink: ["another swallow on his upper chest"] } }, c)).toBeNull();
+      expect(c.wall?.reason).toBe("gate_ink_uncarried");
+    });
+
+    it("STILL WALLS an undocumented place on an already-inked branch", () => {
+      const c = withPrior("give him a tattoo on his lower back", ["a fine-line swallow on his upper chest"]);
+      expect(readDelta({ free: { ink: ["a tattoo on his lower back"] } }, c)).toBeNull();
+      expect(c.wall?.reason).toBe("gate_ink_document");
+    });
+
+    it("CONTROL — with no prior, the same restated item walls as it always did", () => {
+      /*
+        The skip is warranted by the PRIOR and nothing else. Hand the same two
+        items to a bare branch and the chest one is her own new ask, so the wall
+        stands — which is what makes "already stated" a fact rather than a
+        loophole.
+      */
+      const c = check("give him a small swallow tattoo on his neck");
+      expect(readDelta(
+        { free: { ink: ["a small swallow tattoo on his neck", "a fine-line swallow on his upper chest"] } },
+        c,
+      )).toBeNull();
+      expect(c.wall?.reason).toBe("gate_ink_uncarried");
+    });
+  });
+
   it("gates a sleeve, a chest piece and a back piece", () => {
     for (const ask of [
       "a full sleeve tattoo on her left arm",
