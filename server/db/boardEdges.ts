@@ -75,11 +75,3 @@ export async function removeBoardEdge(input: {
     throw new TRPCError({ code: "NOT_FOUND", message: "Board edge not found" });
   }
 }
-
-export async function removeEdgesForItems(itemIds: number[]) {
-  if (itemIds.length === 0) return;
-  const db = (await getDb())!;
-  await db
-    .delete(boardEdges)
-    .where(or(inArray(boardEdges.sourceItemId, itemIds), inArray(boardEdges.targetItemId, itemIds)));
-}

@@ -741,6 +741,16 @@ debris — wiring it into `deleteBoardItems`'s transaction is a one-line build
 with an owner, and it is filed as one rather than taken here, because a boards
 write path is not a cleanup milestone's to change on its own reading.
 
+⚠ **THAT DISPOSITION WAS OVERTURNED — see §23d, executed §26.** It is left
+standing because it is what was true on the day it was read. The count that
+overturned it found three deletion paths rather than one and two child tables
+rather than one, and the turn that mattered is this: **wiring the helper would
+have satisfied the sentence above while breaking enforcement invariant 1 inside
+the very commit fixing a deletion path**, because it deletes by bare item id
+with no owner in the statement. The three paths were fixed forward with
+owner-scoped statements instead, and the helper — superseded rather than merely
+uncalled — was deleted 2026-08-22.
+
 ### 13d. The rest of `server/db` — INVESTIGATE with the milestone's own list (4)
 
 `listSegmentHistory`, `listOrphanedVariants`, `dbReferencePlateIngestionPersistence`,
@@ -2085,3 +2095,57 @@ out. Its row is now written by hand with §8d's blocker verbatim.
 defect in either.** The sweep asks whether anything in the repository says the
 name; the differ asks whether a production module IMPORTS it. `c99ff1c4`'s ring
 is exactly the population where those two answers come apart.
+
+## 26. THE LAST TAKE IS TAKEN — `removeEdgesForItems` is deleted, and §13c's
+## own sentence is the thing that had to be overruled to do it
+## (2026-08-22, opus-1001)
+
+`removeEdgesForItems` was the ONLY row left under `TAKE` — a verdict the door's
+own header describes as *"read, and the reading says remove; not yet done"*.
+Ten rows now read `TAKEN`; none reads `TAKE`.
+
+**The reading was re-read before the knife, because the file argues with
+itself.** §13c wrote, in bold, **"Disposition: NOT a deletion"** — it had found
+the helper written for the board-item deletion path and never invoked, and it
+filed it as the FIX rather than the debris, one wire away from closing. That
+sentence is still on this page and is deliberately not edited. **§23d overturned
+it with a count**, and the ground is not that §13c was careless — it is that
+wiring the helper would have *satisfied §13c's own sentence while breaking
+enforcement invariant 1 inside the commit that fixed a deletion path.* The
+helper deletes by bare item id with no ownership predicate. The three paths
+(`deleteBoard`, `deleteBoardItem`, `deleteBoardItems`) were fixed forward
+instead, each child statement re-anchored through the owned parent, guarded by
+`server/boardDeletionChildren.test.ts`. So the helper is not the unwired half of
+anything any more: it is **superseded**, and superseded is what makes it a
+deletion rather than a build.
+
+**§8c's question, asked first and answered by grep rather than by memory:**
+*which of this symbol's tests were testing the LIVE road through the dead one?*
+**None — it has no tests at all.** Its only code mentions in the repository were
+two disposable scripts — this milestone's own orphan census and the disposition
+seed. Nothing was re-pointed because there was nothing to re-point, and that is
+worth stating rather than skipping as a formality: the class §8c named exists
+precisely where a dead road and its successor share scaffolding, and this one
+never had any.
+
+⚠ **AND BOTH OF THOSE SCRIPTS ARE TRACKED, WHICH IS §25d's RULE POINTED AT THIS
+ROW.** I wrote *"untracked"* first, from `grep -rn`, and `git ls-files` says
+otherwise. It is not a spelling correction: the sweep's reading list is the
+flagged set INTERSECTED with the classifier's *no production mention*, and a
+TRACKED script naming a symbol counts as a mention — which is exactly why
+`commitBeginInkAddIntent` never reached a row (§25d). **So `removeEdgesForItems`
+would today be excluded from the list its own row came from**, and the reason is
+that both of its citers were written AFTER the row: the orphan census was built
+to produce §23d's count, and the seed is the register writing itself down. An
+instrument that publishes its control specimen into the corpus it searches
+stops being able to find it. Nothing was at risk here — the row existed, the
+door held it, and the symbol is now gone — but the next sweep should expect the
+same shape wherever a disposable was written to investigate a listed symbol.
+
+**What was checked at the artifacts before the cut**, each read rather than
+recalled: no production importer — across the whole repository the only CODE
+mentions were the two disposable scripts above and the definition itself, the
+rest being this document's own prose and the yaml row; the two `drizzle-orm`
+helpers the deleted body used (`or`, `inArray`) are still used by
+`getEdgesForItem` and `removeBoardEdge`, so no import goes dark with it; and the deletion path's real statements are where
+§23d says they are.
