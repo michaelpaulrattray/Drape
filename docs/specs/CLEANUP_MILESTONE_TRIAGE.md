@@ -2232,11 +2232,31 @@ customer is told:
 > *"Tattoo previews are not available for this Cast."*
 
 It is not this Cast. It is every Cast, for everyone, because the road is shut —
-and the tattoo road that WORKS is the V2 one at `/casting`. A dead-end sentence
-on a live linked surface, blaming the customer's own Cast. Narrow (it needs
-someone on the legacy studio typing a tattoo ask) but real, and it is the census
-cards' own class. **Filed as a finding here rather than sent to his desk**: it
-is a copy defect on the road V2 replaced, not money and not safety.
+and the tattoo road that WORKS is the V2 one at `/casting`.
+
+⚠ **AND IT IS WORSE THAN A WRONG SENTENCE: THE SURFACE OFFERS FIRST.** Read one
+file further (`components/ImageViewer/RefinePanel.tsx`) — when
+`looksLikeTattooInstruction` matches what the customer is typing, **the submit
+button RENAMES ITSELF to "Review tattoo"** with the aria-label *"Review tattoo
+request"*. So the product notices the ask, changes its own control to
+acknowledge it, invites the click, and then answers that previews are not
+available for her Cast. That is the dead-end-OFFER class D-180 exists to
+forbid, not merely a stale string — and it is the same shape as census 4(b),
+where `gate_ink_uncarried` offered a road the next door shut.
+
+**The trigger is not narrow; only the surface is.** `TATTOO_LANGUAGE` matches
+`tattoo`, `tattoos`, `tattooed`, `ink`, `inking`, `inked`, `body art` and
+every sleeve form — so ANY tattoo-word refine typed on the legacy studio takes
+this road. What is narrow is that `/casting` is where the work happens now.
+
+**Filed as a finding here rather than sent to his desk, and the recommendation
+is deliberately NOT a copy patch.** The honest fix is either to stop the button
+re-labelling when the capability is false — the panel already holds
+`capability.inkAdd` and could pass it down — or to retire the surface, which is
+the question §28 opened and cannot answer alone. Writing new copy for a road
+that may be retired is work thrown away; leaving a self-labelling dead end live
+while that is undecided is worse. **It needs a decision, not a string**, and
+law 6 puts any visual change in front of eyes in the running app first.
 
 ### 28b. The two doors, and the ONE import line that decides the whole boundary
 
