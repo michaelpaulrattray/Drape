@@ -75,7 +75,13 @@ export type FacePanelBox = {
  * A MINTED crop is its own picture and `crop` is null. A SCAN-BORN one is the
  * whole frame with a window on it — see `cutoutStyle`.
  */
-export type FacePanelCutout = { contentUrl: string; maskUrl: string; crop: FacePanelBox | null };
+export type FacePanelCutout = {
+  contentUrl: string;
+  /** The stencil, or NULL when the picture is already the cutout — see the
+   *  server's `PanelCutout.maskUrl` for why a null is not an empty string. */
+  maskUrl: string | null;
+  crop: FacePanelBox | null;
+};
 
 /**
  * One rectangle on the photograph. `name` is null when it covers what the row
@@ -205,10 +211,20 @@ export function pairScaleExtent(cutouts: readonly FacePanelCutout[]): { width: n
 export function cutoutStyle(thumb: FacePanelCutout, scaleTo?: { width: number; height: number }) {
   return {
     backgroundImage: `url(${JSON.stringify(thumb.contentUrl)})`,
-    /* Both spellings: the unprefixed property is the standard and the prefixed
-       one is what older WebKit still reads. */
-    WebkitMaskImage: `url(${JSON.stringify(thumb.maskUrl)})`,
-    maskImage: `url(${JSON.stringify(thumb.maskUrl)})`,
+    /*
+      NO STENCIL, NO MASK PROPERTY AT ALL — and it has to be the absence rather
+      than a value, because the tile masks by LUMINANCE. A picture that is
+      already a cutout (a delivered tattoo: black linework on transparency)
+      masked by its own luminance masks itself out, and `url("")` masks
+      everything out. Both render an empty tile, which is what shipped first.
+
+      Both spellings when there IS one: the unprefixed property is the standard
+      and the prefixed one is what older WebKit still reads.
+    */
+    ...(thumb.maskUrl === null ? {} : {
+      WebkitMaskImage: `url(${JSON.stringify(thumb.maskUrl)})`,
+      maskImage: `url(${JSON.stringify(thumb.maskUrl)})`,
+    }),
     ...(thumb.crop
       ? {
         "--dpc-cut-x": thumb.crop.x,

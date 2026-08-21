@@ -47,6 +47,7 @@
  * sweep clause lands in the same commit as the writer rather than after it.
  */
 import { and, eq, inArray } from "drizzle-orm";
+import type { AnyMySqlColumn } from "drizzle-orm/mysql-core";
 
 import {
   castingCandidateVariants,
@@ -344,22 +345,53 @@ export async function listInkDeliveryCrops(input: {
   candidatePublicId: string;
 }): Promise<readonly StoredInkDeliveryCrop[]> {
   const db = await requireDb();
+  const projection: Record<keyof StoredInkDeliveryCrop, AnyMySqlColumn> = {
+    publicId: castingInkDeliveryCrops.publicId,
+    designPublicId: castingInkDesigns.publicId,
+    slot: castingInkDeliveryCrops.slot,
+    storageKey: castingInkDeliveryCrops.storageKey,
+    digest: castingInkDeliveryCrops.digest,
+    width: castingInkDeliveryCrops.width,
+    height: castingInkDeliveryCrops.height,
+  };
+  return ownedCropsOf<StoredInkDeliveryCrop>(db, projection, input);
+}
+
+/**
+ * ONE OWNER FOR THE OWNERSHIP STATEMENT — the joins and the `WHERE`, shared by
+ * every read of this table that answers *"this account's crops on this Cast"*.
+ *
+ * There are two such reads now (the carry's, and the panel's below) and they
+ * differ ONLY in their projection, which is invariant 8's whole shape: an
+ * explicit projection per caller, over one scoping statement. Copying the three
+ * `eq`s into the second reader would be the thing invariant 1 is written
+ * against — a second place for the owner check to be got wrong, and it would go
+ * wrong silently, since a read that forgets `userId` returns MORE rows rather
+ * than failing.
+ *
+ * The design is joined ON THE CANDIDATE as well as on the id, so the row's own
+ * two keys have to agree before a crop can be named — the ink-design route's
+ * both-sides rule, one store along. LEFT, because a words-only delivery has no
+ * design and must not be dropped by its own absence.
+ */
+function ownedCropsOf<R>(
+  db: Awaited<ReturnType<typeof requireDb>>,
+  /*
+    THE PROJECTION IS TYPED AT ITS CALL SITE, NOT HERE (see both callers): each
+    is declared `Record<keyof R, AnyMySqlColumn>`, which makes excess-property
+    checking refuse a column the result type does not declare AND refuse a
+    declared field the projection forgets. That is what makes the one cast below
+    safe in both directions — without it, a column added to the projection and
+    not to the type would arrive as an untyped extra, and a field dropped from
+    the projection would read `undefined` at runtime while typechecking clean.
+  */
+  projection: Record<string, AnyMySqlColumn>,
+  input: { userId: number; candidatePublicId: string },
+): Promise<R[]> {
   return db
-    .select({
-      publicId: castingInkDeliveryCrops.publicId,
-      designPublicId: castingInkDesigns.publicId,
-      slot: castingInkDeliveryCrops.slot,
-      storageKey: castingInkDeliveryCrops.storageKey,
-      digest: castingInkDeliveryCrops.digest,
-      width: castingInkDeliveryCrops.width,
-      height: castingInkDeliveryCrops.height,
-    })
+    .select(projection as never)
     .from(castingInkDeliveryCrops)
     .innerJoin(castingCandidates, eq(castingCandidates.id, castingInkDeliveryCrops.candidateId))
-    /* The design is joined ON THE CANDIDATE as well as on the id, so the row's
-       own two keys have to agree before a crop can be named — the ink-design
-       route's both-sides rule, one store along. LEFT, because a words-only
-       delivery has no design and must not be dropped by its own absence. */
     .leftJoin(castingInkDesigns, and(
       eq(castingInkDesigns.id, castingInkDeliveryCrops.designId),
       eq(castingInkDesigns.candidateId, castingInkDeliveryCrops.candidateId),
@@ -368,7 +400,71 @@ export async function listInkDeliveryCrops(input: {
       eq(castingCandidates.publicId, input.candidatePublicId),
       eq(castingCandidates.userId, input.userId),
       eq(castingInkDeliveryCrops.userId, input.userId),
-    ));
+    )) as unknown as Promise<R[]>;
+}
+
+/**
+ * WHERE EACH DELIVERED TATTOO SITS ON HER — the panel's own projection
+ * (1246/1248's ink row).
+ *
+ * # Why this is a second projection and not a widened first one
+ *
+ * The read above deliberately drops the geometry, and its docblock says why:
+ * the carry needs the name, the key and the digest and nothing else. Handing it
+ * six more columns to satisfy a different caller is how a projection stops
+ * describing what its caller needs. So: same table, same scoping statement,
+ * different explicit projection — invariant 8 as written.
+ *
+ * # It is the ONLY source that can answer the question
+ *
+ * A delivery crop's six geometry columns (migration 0049) are the tattoo's box
+ * IN THE FRAME IT WAS DELIVERED IN, which is exactly the panel's `PanelBox`.
+ * The alternative pointer a chain carries — `inkApplied`, slot to DESIGN — can
+ * only reach `casting_ink_designs`, whose `width`/`height` are the size of the
+ * ARTWORK and say nothing about where it landed on her. Deriving the row from
+ * the design would be a box invented from the wrong measurement (law 4, and the
+ * wrong-boundary class this repo has paid for four times).
+ *
+ * # The words-born lane needs no branch
+ *
+ * `designId` is nullable and the join is LEFT, so a tattoo painted from her
+ * words alone — no design row anywhere — carries its box here exactly as a
+ * reference-born one does. One source, both lanes, which is what let 1248 §2
+ * say *"a words-born tattoo's crop carries its box the same way"*.
+ */
+export type InkDeliveryPlacement = {
+  publicId: string;
+  slot: string;
+  /** The placement word the row was minted under — `neck`, `upperArm`… */
+  region: string;
+  storageKey: string;
+  /** The box in the delivered frame, and the frame it was measured against. */
+  bboxX: number;
+  bboxY: number;
+  bboxW: number;
+  bboxH: number;
+  frameWidth: number;
+  frameHeight: number;
+};
+
+export async function listInkDeliveryPlacements(input: {
+  userId: number;
+  candidatePublicId: string;
+}): Promise<readonly InkDeliveryPlacement[]> {
+  const db = await requireDb();
+  const projection: Record<keyof InkDeliveryPlacement, AnyMySqlColumn> = {
+    publicId: castingInkDeliveryCrops.publicId,
+    slot: castingInkDeliveryCrops.slot,
+    region: castingInkDeliveryCrops.region,
+    storageKey: castingInkDeliveryCrops.storageKey,
+    bboxX: castingInkDeliveryCrops.bboxX,
+    bboxY: castingInkDeliveryCrops.bboxY,
+    bboxW: castingInkDeliveryCrops.bboxW,
+    bboxH: castingInkDeliveryCrops.bboxH,
+    frameWidth: castingInkDeliveryCrops.frameWidth,
+    frameHeight: castingInkDeliveryCrops.frameHeight,
+  };
+  return ownedCropsOf<InkDeliveryPlacement>(db, projection, input);
 }
 
 /**

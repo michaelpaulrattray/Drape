@@ -69,7 +69,10 @@ import { spokenError } from "../_core/spokenError";
 import { UNLOCKABLE_FIELDS } from "../castingV2/briefCompiler";
 import { listLineageSegments, resolveOwnedCandidateId } from "../db/castingV2Segments";
 import { maskFetchUrl, segmentsOnFace } from "../castingV2/segmentsOnFace";
-import { facePanel, type PanelScan } from "../castingV2/facePanel";
+import { facePanel, type PanelInkWorn, type PanelScan } from "../castingV2/facePanel";
+import { listInkDeliveryPlacements } from "../db/castingV2InkDeliveryCrops";
+import { createModuleLogger } from "../logging/logger";
+import { readDeliveredInk } from "../castingV2/inkApplied";
 import { declaredTakes, takeShownFor } from "../castingV2/railTakes";
 import { listLineageReferences } from "../db/castingV2ReferenceLibrary";
 import {
@@ -265,6 +268,11 @@ async function loadRollProjection(userId: number, rollPublicId: string): Promise
  * there is one — and every statement in it carries `userId` into its own WHERE
  * (invariant 1) rather than trusting a check before it.
  */
+/* This router had no logger — every path either answered or threw. The ink
+   read is the first thing here that SWALLOWS a failure, and a swallowed
+   failure with nothing in the log is indistinguishable from an empty list. */
+const log = createModuleLogger("routes/castingV2");
+
 async function readOwnedFaceForPanel(
   userId: number,
   input: { candidateId: string; variantId: string | null },
@@ -322,6 +330,10 @@ function panelFor(
   /* True while this version's own read is still running — the panel keeps a
      place for the rows it has not answered yet (fable-521). */
   scanning = false,
+  /* The tattoos this Cast is wearing — read by the caller, because this
+     function is a pure projection and both procedures already do their own
+     reads. Empty is both "she wears none" and "there was nothing to read". */
+  ink: readonly PanelInkWorn[] = [],
 ) {
   return facePanel({
     scanning,
@@ -333,7 +345,90 @@ function panelFor(
        neither. */
     maskUrl: (key) => maskFetchUrl(storagePublicUrl(key)),
     scan,
+    ink,
   });
+}
+
+/**
+ * THE TATTOOS THIS VERSION IS WEARING, for the panel's own row (his 1246/1248,
+ * source ruled fable-1259 §2).
+ *
+ * # ⚠ THE CHAIN DECIDES, AND THE STORE ONLY LOOKS THINGS UP
+ *
+ * This read is TWO halves and the first one is what makes it correct. A Cast
+ * accumulates a delivery crop per delivering frame, so the store holds every
+ * tattoo it has EVER worn: the dev Cast this was built against holds four —
+ * three at the neck from three different versions, one at the chest — while the
+ * version on screen wears one. Handing the panel the store's rows would draw
+ * four tattoo cards on a Cast with one tattoo, including ones a later edit
+ * removed.
+ *
+ * So the version's own composed delta names which crops it wears
+ * (`inkDelivered`, slot to crop id) and the store is asked only to resolve
+ * them. **That is the same expression the carry reads** — which is the point of
+ * fable-1259 §2's ruling: the panel shows what the next render would carry,
+ * because there is no second opinion for it to disagree with.
+ *
+ * `readDeliveredInk` is the fence rather than a formality: these ids crossed a
+ * JSON boundary, and it drops anything that is not an ink slot naming a
+ * uuid-shaped id.
+ *
+ * # A named crop that is not there is SKIPPED, and that is this path's old law
+ *
+ * THE ID POINTS AND THE ROW DECIDES. A crop's name is minted at claim and its
+ * row at delivery, so a render whose ink never landed leaves the chain naming a
+ * row that does not exist. The carry skips it loudly; so does this.
+ *
+ * # ⚠ IT NEVER FAILS THE PANEL
+ *
+ * A face chart that 500s because a tattoo store hiccupped would take away every
+ * row on the surface to avoid losing one, and the row it is protecting is the
+ * one the customer least depends on. A refusal here is an empty list and a
+ * warning — the same answer a Cast with no ink gives, told apart by the log
+ * line rather than by the caller.
+ */
+async function inkWornBy(
+  userId: number,
+  candidatePublicId: string,
+  anchor: Awaited<ReturnType<typeof readOwnedFaceForPanel>>["anchor"],
+): Promise<readonly PanelInkWorn[]> {
+  /* No version selected is the pristine master, which wears nothing — and it is
+     an answer rather than a gap, so the store is not asked at all. */
+  const delivered = readDeliveredInk(anchor?.deltas);
+  if (delivered === null) return [];
+
+  const crops = await listInkDeliveryPlacements({ userId, candidatePublicId })
+    .catch((error: unknown) => {
+      log.warn(
+        { err: error, userId, candidatePublicId },
+        "[castingV2] the delivered-tattoo read failed — the panel draws its other rows rather than none",
+      );
+      return [] as const;
+    });
+  const byId = new Map(crops.map((crop) => [crop.publicId, crop]));
+
+  const worn: PanelInkWorn[] = [];
+  for (const [slot, cropId] of Object.entries(delivered)) {
+    const crop = byId.get(cropId);
+    if (crop === undefined) {
+      log.warn(
+        { userId, candidatePublicId, slot, cropId },
+        "[castingV2] the chain names a delivered crop with no row — the panel draws no card for it",
+      );
+      continue;
+    }
+    worn.push({
+      slot,
+      storageKey: crop.storageKey,
+      bboxX: crop.bboxX,
+      bboxY: crop.bboxY,
+      bboxW: crop.bboxW,
+      bboxH: crop.bboxH,
+      frameWidth: crop.frameWidth,
+      frameHeight: crop.frameHeight,
+    });
+  }
+  return worn;
 }
 
 /**
@@ -1722,6 +1817,7 @@ export const castingV2Router = router({
           face,
           ready === null ? null : panelScanOf(ready),
           captureCastingFaceScanEnabled(ctx.user.id) && ready === null,
+          await inkWornBy(ctx.user.id, input.candidateId, face.anchor),
         ),
       };
     }),
@@ -1813,7 +1909,12 @@ export const castingV2Router = router({
       /* `scanning` is the panel's word for "a place is kept for rows not
          answered yet", so it is true exactly while the reading is still
          running — not merely because a scan happened. */
-      return { enabled: true as const, scanning: true, done, ...panelFor(face, scan, !done) };
+      return {
+        enabled: true as const,
+        scanning: true,
+        done,
+        ...panelFor(face, scan, !done, await inkWornBy(ctx.user.id, input.candidateId, face.anchor)),
+      };
     }),
 
   /** Refunds only what never started. Delivered work is never refunded (§H.6). */

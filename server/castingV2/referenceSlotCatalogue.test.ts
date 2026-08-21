@@ -228,6 +228,35 @@ describe("a pair carries the word it is spoken as", () => {
   });
 });
 
+describe("ink has a panel row and is still not in the enumeration", () => {
+  /**
+   * ⚠ THE ARM THAT KEEPS THE SCAN OFF EVERY FACE (ordered fable-1261 §3).
+   *
+   * `inkSlotDefinition.panel.row` became `"own"` on 2026-08-21 so a delivered
+   * tattoo can be drawn on the feature panel (his 1246/1248). That row is
+   * DERIVED PER CAST from the delivery crops — see `facePanel.ts` — and ink
+   * must stay out of `catalogueSlots()`.
+   *
+   * The reason is money and it is not small. `catalogueSlots()` is what the
+   * FACE SCAN walks: an ink slot inside it would have the segmenter hunting a
+   * tattoo on every face in the product, at $0.005 a question, on faces that
+   * have never had one. The obvious tidy — "ink has a row now, so it belongs in
+   * the catalogue" — is the exact edit this refuses.
+   */
+  it("catalogueSlots() names no ink slot, however many rows ink is allowed", () => {
+    const enumerated = catalogueSlots().map((definition) => definition.slot);
+    expect(enumerated.filter((slot) => slot.startsWith("ink:"))).toEqual([]);
+    /* The negative control: the definition IS resolvable, so an empty list
+       above cannot be a spelling that matches nothing. */
+    expect(slotDefinition("ink:neck"), "an ink slot still resolves on demand").not.toBeNull();
+  });
+
+  it("allows ink a row of its own — the panel stopped being the face chart", () => {
+    expect(slotDefinition("ink:neck")!.panel.row).toBe("own");
+    expect(slotDefinition("ink:upperArm@left")!.panel.row).toBe("own");
+  });
+});
+
 describe("the tier boundary, as the rulings left it", () => {
   it("has NO surface-tier slot — a surface worn on anatomy is the anatomy slot's stack", () => {
     expect(catalogueSlots().filter((definition) => definition.tier === "surface")).toEqual([]);
@@ -669,11 +698,27 @@ describe("a tattoo at a place", () => {
     expect(slotDefinition("ink:neck")!.tier).toBe("item");
   });
 
-  it("draws no panel row, and says the ROOM rather than the feature is missing", () => {
+  it("DRAWS a panel row — the refusal it used to assert was overturned", () => {
+    /*
+      ⚠ SUPERSEDED 2026-08-21, and the arm is rewritten rather than deleted so
+      the reversal has a place a reader lands on.
+
+      IT ASSERTED: `panel.row === "none"`, with a `why` containing *"ink
+      studio"* — the catalogue's own argument that a tattoo drawn on the FACE
+      CHART would be a feature in the wrong room, and that the right room was
+      owed and unbuilt (fable-1138 §3).
+
+      What ended it was not the argument being wrong but the room changing. His
+      report — *"i dont see his neck tatto on the feature panel?"* (1246) and
+      *"it just needs to show up on the feature panel with a bounding box"*
+      (1248) — is the instruction; the merits are that this panel stopped being
+      the face chart when BUILD and SKIN joined it and fable-398 renamed its
+      heading. Granted fable-1261 §1.
+
+      The row is DERIVED PER CAST and never enumerated — the arms above.
+    */
     const definition = slotDefinition("ink:upperArm@left")!;
-    expect(definition.panel.row).toBe("none");
-    expect(definition.panel.row === "none" && definition.panel.why)
-      .toContain("ink studio");
+    expect(definition.panel.row).toBe("own");
   });
 
   it("speaks the surface in the stylist's bare words", () => {

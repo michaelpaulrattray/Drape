@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "61bd9e4ee6177233"
+    "sourceFingerprint": "274d8ddffc52d696"
   },
   "domains": [
     {
@@ -25831,6 +25831,11 @@
     },
     {
       "from": "module:server/routes/castingV2.ts",
+      "to": "module:server/castingV2/inkApplied.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/castingV2.ts",
       "to": "module:server/castingV2/inkUploadDoor.ts",
       "kind": "imports"
     },
@@ -25916,6 +25921,11 @@
     },
     {
       "from": "module:server/routes/castingV2.ts",
+      "to": "module:server/db/castingV2InkDeliveryCrops.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/castingV2.ts",
       "to": "module:server/db/castingV2InkDesignRemoval.ts",
       "kind": "imports"
     },
@@ -25957,6 +25967,11 @@
     {
       "from": "module:server/routes/castingV2.ts",
       "to": "module:server/db/models.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/castingV2.ts",
+      "to": "module:server/logging/logger.ts",
       "kind": "imports"
     },
     {

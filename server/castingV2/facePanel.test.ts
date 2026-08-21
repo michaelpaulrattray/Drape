@@ -10,7 +10,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { CastPronouns } from "./castPronouns";
-import { facePanel, type PanelRow } from "./facePanel";
+import { facePanel, type PanelInkWorn, type PanelRow } from "./facePanel";
 import type { StoredReference } from "./referenceLibrary";
 
 let nextId = 1;
@@ -64,6 +64,31 @@ function panel(rows: StoredReference[], pronouns: CastPronouns = SHE) {
 
 function allRows(rows: StoredReference[], pronouns: CastPronouns = SHE): PanelRow[] {
   return panel(rows, pronouns).groups.flatMap((group) => group.rows);
+}
+
+/** One delivered tattoo, as the delivery-crop store hands it over. */
+function worn(overrides: Partial<PanelInkWorn> = {}): PanelInkWorn {
+  return {
+    slot: "ink:neck",
+    storageKey: "casting-v2/ink-delivery/abc.png",
+    bboxX: 120,
+    bboxY: 60,
+    bboxW: 200,
+    bboxH: 90,
+    frameWidth: 1024,
+    frameHeight: 1536,
+    ...overrides,
+  };
+}
+
+function panelWithInk(ink: PanelInkWorn[], rows: StoredReference[] = [], pronouns: CastPronouns = HE) {
+  return facePanel({
+    rows,
+    pronouns,
+    contentUrl: (key) => `https://bucket.example/${key}`,
+    maskUrl: (key) => `/api/image-proxy?url=${encodeURIComponent(`https://bucket.example/${key}`)}`,
+    ink,
+  });
 }
 
 function named(rows: StoredReference[], name: string): PanelRow | undefined {
@@ -892,5 +917,117 @@ describe("a row states a finding of nothing", () => {
     const pending = nothingFound([], [], true).find((one) => one.name === "Hair")!;
     expect(pending.state).toBe("pending");
     expect(pending.absent).toBeNull();
+  });
+});
+
+/**
+ * THE TATTOOS SHE IS WEARING (his 1246 — *"i dont see his neck tatto on the
+ * feature panel?"* — shaped 1248, source ruled fable-1259 §2).
+ *
+ * The row is DERIVED PER CAST from the delivery crops rather than enumerated by
+ * the catalogue, which is the one asymmetry in this projection. These arms hold
+ * both halves of it: that a worn tattoo draws a row, and that nothing about ink
+ * reaches the enumeration the face scan walks.
+ */
+describe("the tattoos she is wearing", () => {
+  it("draws a row for a delivered tattoo, named for its placement and boxed where it sits", () => {
+    const rows = panelWithInk([worn()]).groups.flatMap((group) => group.rows);
+    const ink = rows.find((row) => row.name.toLowerCase().includes("tattoo"));
+    expect(ink, "a worn tattoo has a row").toBeDefined();
+    expect(ink!.name).toBe("Neck tattoo");
+    /* The possessive is the CAST's — this panel was built with HE. */
+    expect(ink!.spoken).toBe("his neck tattoo");
+    expect(ink!.prefill).toBe("his neck tattoo — ");
+    expect(ink!.state).toBe("settled");
+  });
+
+  it("puts the box where the crop says, in the frame the crop was measured on", () => {
+    const rows = panelWithInk([worn()]).groups.flatMap((group) => group.rows);
+    const ink = rows.find((row) => row.name === "Neck tattoo")!;
+    expect(ink.regions).toHaveLength(1);
+    expect(ink.regions[0]!.box).toEqual({
+      x: 120, y: 60, width: 200, height: 90, frame: { width: 1024, height: 1536 },
+    });
+    /* One thing, one rectangle — so the row's own label names it, exactly as
+       every other unpaired row does. */
+    expect(ink.regions[0]!.name).toBeNull();
+    expect(ink.regions[0]!.slot).toBe("ink:neck");
+  });
+
+  it("shows OUR copy of the tattoo as it sits on her, not the artwork she uploaded", () => {
+    const rows = panelWithInk([worn({ storageKey: "casting-v2/ink-delivery/xyz.png" })])
+      .groups.flatMap((group) => group.rows);
+    const ink = rows.find((row) => row.name === "Neck tattoo")!;
+    expect(ink.cutouts).toHaveLength(1);
+    expect(ink.cutouts[0]!.contentUrl).toBe("https://bucket.example/casting-v2/ink-delivery/xyz.png");
+    /*
+      AND IT IS ITS OWN STENCIL — never an empty mask URL.
+
+      `cutoutStyle` applies `mask-image: url(...)` unconditionally, so `""` is
+      `url("")`, a mask that matches nothing and renders the thumbnail
+      invisible. That is what the first build shipped and what the frame caught:
+      the row drew with no picture while every assertion here passed.
+    */
+    /*
+      AND IT IS DRAWN WITH NO STENCIL AT ALL.
+
+      NULL, never `""`. The tile masks by LUMINANCE, so a black tattoo on
+      transparency handed its own picture as a mask masks itself out, and
+      `url("")` masks everything out — both render an empty tile, and both
+      shipped past every other assertion in this block before the frame caught
+      them. A picture that is already a cutout is drawn unmasked.
+    */
+    expect(ink.cutouts[0]!.maskUrl).toBeNull();
+    /* A minted crop is its own picture: no window to cut out of a bigger one. */
+    expect(ink.cutouts[0]!.crop).toBeNull();
+  });
+
+  it("says nothing about a tattoo it cannot describe", () => {
+    /*
+      Every other row's words are a description something wrote. Nothing
+      describes a tattoo — what we hold is the picture of it on her. Putting the
+      placement in `words` would be the row's own name pretending to be a
+      reading of the frame.
+    */
+    const rows = panelWithInk([worn()]).groups.flatMap((group) => group.rows);
+    const ink = rows.find((row) => row.name === "Neck tattoo")!;
+    expect(ink.words).toEqual([]);
+    expect(ink.absent, "an absence is a stated nothing, and this is not one").toBeNull();
+  });
+
+  it("carries a side when the placement has one, and files under the body group", () => {
+    const built = panelWithInk([worn({ slot: "ink:upperArm@left" })]);
+    const body = built.groups.find((group) => group.heading === "Body");
+    expect(body, "a tattoo is on the body").toBeDefined();
+    expect(body!.rows.map((row) => row.name)).toEqual(["Left upper arm tattoo"]);
+  });
+
+  it("draws a row per placement, so two tattoos are two rows", () => {
+    const rows = panelWithInk([worn(), worn({ slot: "ink:upperChest" })])
+      .groups.flatMap((group) => group.rows);
+    const names = rows.filter((row) => row.name.includes("tattoo")).map((row) => row.name).sort();
+    expect(names).toEqual(["Neck tattoo", "Upper chest tattoo"]);
+  });
+
+  it("has no ink row when she wears none, and none when the caller passes nothing", () => {
+    expect(panelWithInk([]).groups.flatMap((g) => g.rows).map((r) => r.name)).not.toContain("Neck tattoo");
+    const untouched = facePanel({
+      rows: [],
+      pronouns: HE,
+      contentUrl: (key) => key,
+      maskUrl: (key) => key,
+    });
+    expect(untouched.groups).toEqual([]);
+  });
+
+  it("SKIPS a slot it cannot read rather than drawing a row under a made-up name", () => {
+    /*
+      The slot string crossed a JSON boundary to get here. A row is a promise
+      that tapping it edits that thing, so an unreadable one is dropped — the
+      `inkApplied` reader's own fence, one surface along.
+    */
+    const rows = panelWithInk([worn({ slot: "ink:" }), worn({ slot: "not-an-ink-slot" })])
+      .groups.flatMap((group) => group.rows);
+    expect(rows).toEqual([]);
   });
 });

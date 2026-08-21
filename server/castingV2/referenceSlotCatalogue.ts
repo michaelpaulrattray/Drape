@@ -1360,18 +1360,35 @@ function inkSlotDefinition(slot: FeatureSlot): SlotDefinition | null {
        which is inert either way while the row below is `none`. */
     group: "body",
     /*
-      NO ROW, AND THE ROOM IS THE REASON RATHER THAN THE FEATURE.
+      ---- IT HAS A ROW. OVERTURNED 2026-08-21 (his 1246 and 1248, granted
+      fable-1261 §1). The argument it replaces is kept, because it was a good
+      one and because the thing that retired it was the room changing rather
+      than anybody being wrong. ----
 
-      The panel this catalogue draws is the FACE chart, and a tattoo on an upper
-      arm is not a face feature. The surface a customer sees her designs on is
-      the ink studio, which is owed and unbuilt (fable-1138 §3) — so drawing a
-      row here would put a tattoo in the wrong room to avoid saying it has none.
+      IT READ: *"NO ROW, AND THE ROOM IS THE REASON RATHER THAN THE FEATURE. The
+      panel this catalogue draws is the FACE chart, and a tattoo on an upper arm
+      is not a face feature. The surface a customer sees her designs on is the
+      ink studio, which is owed and unbuilt (fable-1138 §3) — so drawing a row
+      here would put a tattoo in the wrong room to avoid saying it has none."*
+
+      TWO THINGS ENDED IT. His own report — *"i dont see his neck tatto on the
+      feature panel?"* — is the instruction, and *"it just needs to show up on
+      the feature panel with a bounding box"* (1248) is its shape. And the
+      premise had already expired: **this panel stopped being the face chart**
+      when BUILD and SKIN joined it in a `body` group, and fable-398 renamed its
+      heading from *"On her face"* to *"Refine them"* for exactly that reason.
+      The docblock above was describing a room that had already changed.
+
+      ⚠ **AND THE ROW DOES NOT COME FROM HERE.** Every other row in this
+      catalogue is enumerated by `catalogueSlots()` and then dropped if it has
+      no content. An ink row cannot be: a Cast may carry a tattoo at `neck`, at
+      `upperArm@left`, at an open placement, or nowhere, and none of that is
+      knowable in advance. So ink rows are DERIVED PER CAST from the delivery
+      crops beside the enumeration — see `facePanel.ts` — and this field only
+      says that such a row is allowed to be drawn. `catalogueSlots()` must never
+      grow an ink slot, and there is an arm that proves it does not.
     */
-    panel: {
-      row: "none",
-      why: `a design belongs in the ink studio rather than the face chart, and that surface is `
-        + `owed — ${noun} is askable and carried, and it earns its row when the room exists`,
-    },
+    panel: { row: "own" },
     noun,
     /*
       THE PLACEMENT'S OWN MEASURED WORD, and NO NEW ONE (D-213, and the facet

@@ -74,6 +74,7 @@ import type { FeatureSlot } from "./recipeAssembler";
 import { liveReferences, type StoredReference } from "./referenceLibrary";
 import {
   catalogueSlots,
+  slotDefinition,
   type SlotDefinition,
   type SlotGroup,
 } from "./referenceSlotCatalogue";
@@ -147,7 +148,47 @@ export type PanelScan = {
  * frame with a window on it, so `crop` says which window — the browser cuts the
  * picture it already has, and no object was written to show it.
  */
-export type PanelCutout = { contentUrl: string; maskUrl: string; crop: PanelBox | null };
+export type PanelCutout = {
+  contentUrl: string;
+  /**
+   * THE STENCIL, or NULL when the picture is already the cutout.
+   *
+   * ⚠ The mask is read by LUMINANCE (`mask-mode: luminance` in the tile's own
+   * CSS), which is correct for a library stencil — a white-on-black shape — and
+   * catastrophic for a picture that is its own shape. A delivered tattoo is
+   * black linework on transparency: used as a luminance mask it MASKS ITSELF
+   * OUT, and the tile draws nothing. Found at the frame; every unit assertion
+   * about `cutouts` passed while the row rendered blank.
+   *
+   * So null is a real third state and not an empty string standing in for one:
+   * `""` would be `url("")`, a mask matching nothing, which is the same blank
+   * tile by a different route. Null means DO NOT MASK — the PNG's own alpha is
+   * the shape and the tile's background shows through around it.
+   */
+  maskUrl: string | null;
+  crop: PanelBox | null;
+};
+
+/**
+ * ONE DELIVERED TATTOO, as the panel needs it.
+ *
+ * Deliberately NOT the store's own row type: this is the subset a row is built
+ * from, so a column added to `casting_ink_delivery_crops` does not silently
+ * become something the panel is assumed to have been given. The names match the
+ * columns exactly (migration 0049) so the mapping needs no translation table.
+ */
+export type PanelInkWorn = {
+  /** The ink slot key — `ink:neck`, `ink:upperArm@left`. */
+  slot: string;
+  /** OUR copy of the tattoo as it sits on her, under the candidate's purge path. */
+  storageKey: string;
+  bboxX: number;
+  bboxY: number;
+  bboxW: number;
+  bboxH: number;
+  frameWidth: number;
+  frameHeight: number;
+};
 
 /**
  * ONE RECTANGLE ON THE PHOTOGRAPH, and what it actually covers.
@@ -519,6 +560,16 @@ export function facePanel(input: {
    * panel. Nothing about a SETTLED row depends on it.
    */
   scanning?: boolean;
+  /**
+   * THE TATTOOS THIS CAST IS WEARING, from the delivery-crop store.
+   *
+   * Absent is the ordinary case and means she wears none — not that the read
+   * failed, because a caller that could not read them has nothing to pass and a
+   * Cast with no ink has nothing either, and the panel's answer is the same
+   * empty list for both. The rows are built at the bottom of this function, and
+   * the comment there is where the source is argued.
+   */
+  ink?: readonly PanelInkWorn[];
 }): FacePanel {
   const live = liveReferences(input.rows);
   const bySlot = new Map<FeatureSlot, StoredReference[]>();
@@ -895,6 +946,116 @@ export function facePanel(input: {
   const stateOfRow = (row: PanelRow): PanelRow => (
     hasContent(row) ? row : { ...row, state: "pending" }
   );
+
+  /*
+    ---- THE TATTOOS SHE IS WEARING, DERIVED PER CAST (his 1246 and 1248,
+    shape ruled fable-1259 §2, countersigned fable-1261) ----
+
+    ⚠ **THIS IS THE ONE ROW THE CATALOGUE DOES NOT ENUMERATE, and that
+    asymmetry is deliberate.** Every loop above walks `catalogueSlots()` — a
+    closed, hand-authored vocabulary — and then drops whatever has no content.
+    Ink cannot work that way: a Cast may wear a tattoo at `neck`, at
+    `upperArm@left`, at a placement nobody has catalogued, or nowhere at all,
+    and none of that is knowable before the Cast exists.
+
+    **The failure mode this comment exists to prevent** is a later hand
+    "tidying" it by adding ink to `catalogueSlots()`. That enumeration is what
+    the face SCAN walks, so an ink slot inside it would have the segmenter
+    hunting a tattoo on every face in the product, at $0.005 a question, on
+    faces that have never had one. `referenceSlotCatalogue.test.ts` has an arm
+    that proves it does not.
+
+    # Where they come from, and why it is the only source that can answer
+
+    The delivery crops — `casting_ink_delivery_crops`, migration 0049 — whose
+    six geometry columns ARE this panel's `PanelBox`. The other pointer a chain
+    carries, `inkApplied`, names the DESIGN, and a design row's width and height
+    are the size of the ARTWORK: they say nothing about where it landed on her.
+    A box derived from that would be a measurement of the wrong thing, which is
+    a class this program has already paid for.
+
+    Deriving from the crops has a second property worth more than the geometry:
+    it is **the same expression the carry reads**, so the panel shows what the
+    next render would actually carry. Panel and carry cannot disagree, because
+    there is nothing for them to disagree about (law 4 answered by
+    construction rather than by discipline).
+
+    And the words road needs no branch here: `designId` is nullable and the
+    store's join is LEFT, so a tattoo painted from her own sentence — with no
+    design row anywhere — arrives with its box exactly as a picture-born one
+    does.
+  */
+  for (const worn of input.ink ?? []) {
+    const definition = slotDefinition(worn.slot);
+    /* An unreadable slot is SKIPPED rather than drawn under a made-up name: the
+       string crossed a JSON boundary to get here, and a row is a promise that
+       tapping it edits that thing. */
+    if (definition === null || definition.panel.row !== "own") continue;
+    const spokenName = spokenOf(definition, input.pronouns.possessive, false);
+    push({
+      state: "settled",
+      slots: [definition.slot],
+      group: definition.group,
+      name: labelOf(definition, false),
+      spoken: spokenName,
+      /*
+        NO WORDS, AND THAT IS THE HONEST ANSWER RATHER THAN A GAP.
+
+        Every other row's words are a DESCRIPTION the library or the scan wrote
+        for it. Nothing describes a tattoo: what we hold is the picture of it as
+        it sits on her, which is the row's thumbnail and its rectangle. Putting
+        the placement here — "neck" under a row already called "Neck tattoo" —
+        would be the row's own name pretending to be a reading of the frame.
+      */
+      words: [],
+      absent: null,
+      from: null,
+      prefill: prefillFor(spokenName),
+      /*
+        THE CROP IS ITS OWN STENCIL, and passing no mask is not an option.
+
+        `cutoutStyle` applies `mask-image: url(...)` unconditionally, so an
+        empty string there is `url("")` — a mask that matches nothing, which
+        renders the thumbnail INVISIBLE. Found at the frame rather than in an
+        arm: the row drew with no picture beside it while every unit assertion
+        about `cutouts` passed, because the defect was in what the browser did
+        with the value and not in the value.
+
+        A library cutout is two objects, a crop and a separate stencil. A
+        delivery crop is ONE: the tattoo is already cut out and its alpha is the
+        shape. So the same object is handed back as the mask — through the
+        caller's own `maskUrl`, because a CSS mask is a CORS fetch and the
+        public bucket sends no allow-origin.
+
+        `crop` stays null for the reason it always does: this is a minted
+        picture, not a window onto a bigger one.
+      */
+      cutouts: [{
+        contentUrl: input.contentUrl(worn.storageKey),
+        /* NO STENCIL: the crop is already the tattoo cut out of her frame, and
+           its alpha is the shape. See `PanelCutout.maskUrl` — masking a black
+           tattoo by its own luminance renders an empty tile. */
+        maskUrl: null,
+        crop: null,
+      }],
+      regions: [{
+        box: {
+          x: worn.bboxX,
+          y: worn.bboxY,
+          width: worn.bboxW,
+          height: worn.bboxH,
+          frame: { width: worn.frameWidth, height: worn.frameHeight },
+        },
+        /* One thing, one rectangle — so the row's own label names it, exactly
+           as every other unpaired row does. */
+        name: null,
+        spoken: null,
+        prefill: null,
+        slot: definition.slot,
+      }],
+      instances: [],
+    });
+  }
 
   return {
     possessive: input.pronouns.possessive,
