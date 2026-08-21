@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "955f8eecd953952f"
+    "sourceFingerprint": "5276997878e596bf"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 163
+      "moduleCount": 164
     },
     {
       "id": "domain:castingV2",
@@ -3863,6 +3863,12 @@
     {
       "id": "module:server/castingV2/prunedCarries.ts",
       "path": "server/castingV2/prunedCarries.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/prunedSlots.ts",
+      "path": "server/castingV2/prunedSlots.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -10329,6 +10335,10 @@
     {
       "id": "test:server/castingV2/prunedCarries.test.ts",
       "path": "server/castingV2/prunedCarries.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/prunedSlots.test.ts",
+      "path": "server/castingV2/prunedSlots.test.ts"
     },
     {
       "id": "test:server/castingV2/railTakes.test.ts",
@@ -21495,6 +21505,31 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/castingV2/prunedSlots.ts",
+      "to": "module:server/castingV2/inkPlacementResolve.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/prunedSlots.ts",
+      "to": "module:server/castingV2/referenceSlots.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/prunedSlots.ts",
+      "to": "module:server/castingV2/refineDelta.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/prunedSlots.ts",
+      "to": "module:server/castingV2/repaintAsks.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/prunedSlots.ts",
+      "to": "module:shared/inkPlacementVocabulary.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/castingV2/railTakes.ts",
       "to": "module:server/castingV2/refineDelta.ts",
       "kind": "imports"
@@ -22492,6 +22527,11 @@
     {
       "from": "module:server/castingV2/refineService.ts",
       "to": "module:server/castingV2/prunedCarries.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/refineService.ts",
+      "to": "module:server/castingV2/prunedSlots.ts",
       "kind": "imports"
     },
     {
@@ -30149,17 +30189,17 @@
       "message": "Names 2 of HairColourSection's 3 fields (server/castingV2/hairColourFromReference.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/refineService.ts:691",
+      "id": "finding:redeclared-shape:server/castingV2/refineService.ts:692",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/refineService.ts:691",
+      "subject": "server/castingV2/refineService.ts:692",
       "message": "Names 3 of Thumbnail's 3 fields (server/castingV2/thumbnails.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/refineService.ts:850",
+      "id": "finding:redeclared-shape:server/castingV2/refineService.ts:851",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/refineService.ts:850",
+      "subject": "server/castingV2/refineService.ts:851",
       "message": "Names 3 of Thumbnail's 3 fields (server/castingV2/thumbnails.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {

@@ -1846,7 +1846,7 @@ function collapseWithinDelta(delta: RefineDelta): RefineDelta {
  * one line and cannot land with a subtly different restatement rule. Ordered
  * only for readability; the loop is order-independent.
  */
-const INK_POINTER_FIELDS = ["inkApplied", "inkDelivered"] as const;
+export const INK_POINTER_FIELDS = ["inkApplied", "inkDelivered"] as const;
 
 export function composeDeltas(deltas: readonly RefineDelta[]): RefineDelta {
   const composed: RefineDelta = {};

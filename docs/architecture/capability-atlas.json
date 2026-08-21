@@ -197,6 +197,13 @@
         "pinnedBy": []
       },
       {
+        "id": "removal_unnameable",
+        "kind": "service-refusal",
+        "pinnedBy": [
+          "server/castingV2/refineService.test.ts"
+        ]
+      },
+      {
         "id": "removal_unnamed",
         "kind": "service-refusal",
         "pinnedBy": []
@@ -976,6 +983,13 @@
         "kind": "unreached",
         "subject": "removal_uncheckable",
         "message": "no corpus row expects \"removal_uncheckable\" — the census cannot say whether any ask reaches it"
+      },
+      {
+        "id": "unreached:removal_unnameable",
+        "severity": "info",
+        "kind": "unreached",
+        "subject": "removal_unnameable",
+        "message": "no corpus row expects \"removal_unnameable\" — the census cannot say whether any ask reaches it"
       },
       {
         "id": "unreached:removal_unnamed",
@@ -1882,6 +1896,13 @@
       "kind": "unreached",
       "subject": "removal_uncheckable",
       "message": "no corpus row expects \"removal_uncheckable\" — the census cannot say whether any ask reaches it"
+    },
+    {
+      "id": "unreached:removal_unnameable",
+      "severity": "info",
+      "kind": "unreached",
+      "subject": "removal_unnameable",
+      "message": "no corpus row expects \"removal_unnameable\" — the census cannot say whether any ask reaches it"
     },
     {
       "id": "unreached:removal_unnamed",

@@ -238,6 +238,7 @@ import { repaint, type ReferenceFitter, type RepaintEngine, type SentRequest } f
 import {
   RepaintCannotSayError, repaintAsksFor, repaintCannotRemove, scopedAskIsUnsayable,
 } from "./repaintAsks";
+import { slotsOfPrunedStep } from "./prunedSlots";
 import {
   attachedPictureUnusedNote, cannotSaySentence, likenessSetAsideNote,
   type CannotSayReason,
@@ -2324,6 +2325,17 @@ async function refineCandidateCounted(
   let outOfFrameNote: string | null = null;
   let chain: ChainStep[] = predecessorChain ?? [];
   let removedFacets = new Set<Facet>();
+  /**
+   * THE SLOTS A PRUNE STRUCK THAT ITS FACETS CANNOT NAME (ruled fable-1324).
+   *
+   * Ink is `perPlacement` and an open kind has no facet at all, so the facet
+   * set above is silent about both — and a re-rendering removal that can name
+   * no slot used to be CHARGED AND REFUNDED (opus-971, driven at the wire).
+   * `slotsOfPrunedStep` reads the struck step's own pointers, then its own
+   * words; this carries the answer from the prune down to the ask builder,
+   * which is a thousand lines away and has neither the step nor the chain.
+   */
+  const removedSlots = new Set<string>();
   /** What a prune took back, in the user's own words — see the prune branch. */
   let takenBack: string | null = null;
   /**
@@ -3008,6 +3020,17 @@ async function refineCandidateCounted(
         for (const facet of Array.from(facetsWrittenBy(predecessorChain[match.index]!.delta))) {
           removedFacets.add(facet);
         }
+        /*
+          AND WHAT THE FACETS CANNOT SAY — the ink placement and the open kind.
+
+          Read HERE, where the struck step is in hand, rather than at the ask
+          builder, which has only the facet names. Every other consumer below is
+          unchanged: this set is additive and empty on every prune of an
+          ordinary facet.
+        */
+        for (const slot of slotsOfPrunedStep(predecessorChain[match.index]!.delta)) {
+          removedSlots.add(slot);
+        }
       }
       /*
         AND WHAT THE PRUNE TAKES BACK, IN WORDS — the restate ask's subject
@@ -3538,6 +3561,58 @@ async function refineCandidateCounted(
     : composeChain(chain);
 
   /*
+    WHAT THE INSTRUCTION SAID THE OBJECT IS — derived once, four consumers.
+
+    It used to be computed inline at the harvest call. That was fine while the
+    harvest was the only thing that needed it; it is not, now that the corridor
+    it places has to be findable again by name. The placement, the segment
+    cutter's lookup and the painter's own clause all have to name the same kind
+    of object, and three inline derivations of one string is how they come to
+    disagree about whether an ask is about ears or eyes.
+
+    It sits HERE, beside `composed` — its only input — rather than inside the
+    render block, because the prune's pre-claim door below is the fourth
+    consumer and it runs a thousand lines earlier.
+  */
+  const describedAccessories = itemsOf(composed.free?.statedAccessories).join(" ") || undefined;
+  /* Through the shared table's longest-match rule, never a scan of the words
+     here — "a small nose stud" contains "stud", and first-match put it on her
+     earlobe once already. */
+  const accessoryRegion = describedAccessories ? accessoryKindOf(describedAccessories) : null;
+
+  /**
+   * EVERY SLOT A PRUNE CAN NAME — one derivation, two readers (working law 4).
+   *
+   * The repaint road's restate ask needs at least one slot, and the pre-claim
+   * door below needs to know whether there will be one BEFORE any money moves.
+   * Two answers to that question is how a customer gets charged for a render
+   * that was never going to be built, which is exactly what happened before
+   * fable-1324: `slotsForFacet("ink", …)` is `perPlacement`, a prune handed it
+   * nothing, and *"take his chest tattoo off"* on a mid-chain branch was
+   * charged 25 credits and refunded them.
+   */
+  const prunedRestateSlots = (): string[] => {
+    if (removedFacets.size === 0 && removedSlots.size === 0) return [];
+    if (takenBack === null) return [];
+    /*
+      THE KIND COMES FROM THE WORDS THAT LEFT, not from the ask.
+
+      `accessoryRegion` is derived from what the chain still holds, and a prune
+      files nothing of its own — so the same longest-match table answers it from
+      the words being taken back, which is where the kind actually is: "gold hoop
+      earrings" is an earring whether it is arriving or leaving.
+    */
+    const takenKind = accessoryRegion ?? accessoryKindOf(takenBack);
+    return Array.from(removedFacets)
+      .flatMap((facet) => slotsForFacet(facet, { accessoryKind: takenKind ?? null }))
+      .map((definition) => definition.slot)
+      /* And the two a facet cannot name — the struck step's own ink placement
+         and its own open kinds, read at the prune where the step was in hand. */
+      .concat(Array.from(removedSlots))
+      .filter((slot, at, all) => all.indexOf(slot) === at);
+  };
+
+  /*
     EVERYTHING THAT MUST NOT BE IN THIS PICTURE — standing, plus this render's own.
 
     Two sources, and neither one alone is enough:
@@ -3604,6 +3679,50 @@ async function refineCandidateCounted(
           : "You already have that version — nothing charged.",
       );
     }
+  }
+
+  /*
+    A PRUNE THIS ROAD CANNOT NAME IS ANSWERED FREE, BEFORE THE CLAIM
+    (fable-1324 (iii), from the paid court in opus-971 §2).
+
+    The repaint road builds a re-rendering prune's ask out of the slots it
+    struck, and a prune it cannot name meets `repaintCannotRemove()` — whose
+    charge class is `refunded`. Driven at the wire on a mid-chain branch: the
+    prune was computed perfectly, the ask could not be stated, and the customer
+    was charged 25 credits for taking a tattoo off and given them back.
+
+    The fix is `slotsOfPrunedStep`, which reads the placement the struck step
+    already recorded, and this door is what is left when even that is silent —
+    a per-side surface with no side in the step's words, or an accessory kind
+    the table cannot name. **Free and before the claim is the whole point**; a
+    refund is not an answer to a question, it is an apology for a charge.
+
+    THREE CONDITIONS, and each rules something out. Only a PRUNE
+    (`!editDelta` — an ordinary edit's asks come from its own delta). Only when
+    it will actually RE-RENDER (this line is below the materialization check, so
+    a prune that navigates has already returned free and untouched). And only on
+    the REPAINT road, because the paste road never asks for a slot and refusing
+    there would take away a removal that works today.
+  */
+  if (!editDelta && repaintServesThisUser && prunedRestateSlots().length === 0) {
+    log.info(
+      {
+        userId: input.userId,
+        candidate: input.candidatePublicId,
+        instruction,
+        takenBack,
+        facets: Array.from(removedFacets),
+        slots: Array.from(removedSlots),
+      },
+      "[refineService] a prune this road cannot name — refusing before the claim rather than charging and refunding",
+    );
+    throw refusal("removal_unnameable", {
+      code: "BAD_REQUEST",
+      facet: null,
+      message: "I can take that off, but I can't work out where on her it sits well enough "
+        + "to rebuild the picture — tell me which part it's on and I'll do it. "
+        + "Nothing was charged.",
+    });
   }
   /*
     The realizations this stack has already established, IN WORDS (D-152).
@@ -5328,11 +5447,9 @@ async function refineCandidateCounted(
       kind of object, and three inline derivations of one string is how they come
       to disagree about whether an ask is about ears or eyes.
     */
-    const describedAccessories = itemsOf(composed.free?.statedAccessories).join(" ") || undefined;
-    /* Through the shared table's longest-match rule, never a scan of the words
-       here — "a small nose stud" contains "stud", and first-match put it on her
-       earlobe once already. */
-    const accessoryRegion = describedAccessories ? accessoryKindOf(describedAccessories) : null;
+    /* Hoisted to sit beside `composed`, its only input, because the prune's
+       pre-claim door needs the same answer a thousand lines earlier and a
+       second derivation of it is how two readers come to disagree. */
     const regionOverrides: Partial<Record<Facet, string>> = {
       ...(askedFiled.makeup ? { makeup: makeupRegionFor(askedFiled.makeup) } : {}),
       /*
@@ -5450,23 +5567,22 @@ async function refineCandidateCounted(
      * exists to prevent.
      */
     const restateAsksForPrune = (): ReturnType<typeof repaintAsksFor> | null => {
-      if (removedFacets.size === 0 || takenBack === null) return null;
       /*
-        THE KIND COMES FROM THE WORDS THAT LEFT, not from the ask.
+        THE SAME LIST THE PRE-CLAIM DOOR READ — `prunedRestateSlots`, derived
+        once beside `composed` (working law 4).
 
-        `accessoryRegion` is derived from what this step FILES, and a prune files
-        nothing — so it is null here and `statedAccessories` (one facet over
-        several kinds) would resolve to no slot at all. The same longest-match
-        table answers it from the words being taken back, which is where the
-        kind actually is: "gold hoop earrings" is an earring whether it is
-        arriving or leaving.
+        It used to be computed here, and only here, which is precisely why the
+        money moved before anyone knew there would be no ask: this function runs
+        inside `repaintOnce`, a thousand lines below the claim. Two answers to
+        *can this prune be named* is what turned a correct removal into a charge
+        and a refund (opus-971 §2, ruled fable-1324).
+
+        `null` is still the honest answer for the three cases the header names,
+        and on this road it is now unreachable in practice — the door above
+        refuses them free, and this stays as the net rather than the gate.
       */
-      const takenKind = accessoryRegion ?? accessoryKindOf(takenBack);
-      const slots = Array.from(removedFacets)
-        .flatMap((facet) => slotsForFacet(facet, { accessoryKind: takenKind ?? null }))
-        .map((definition) => definition.slot)
-        .filter((slot, at, all) => all.indexOf(slot) === at);
-      if (slots.length === 0) return null;
+      const slots = prunedRestateSlots();
+      if (slots.length === 0 || takenBack === null) return null;
       return repaintAsksFor({
         /* Empty on purpose: a prune adds nothing. The asks below are the ask. */
         delta: {},

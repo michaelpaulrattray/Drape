@@ -80,6 +80,7 @@ Profile **fixture-as-founder** on fixture `outside-scope-bot-local / 34383040-62
 | removal_not_in_brief | service-refusal |  | **none** |
 | removal_reread_unmatched | service-refusal |  | refineService.test.ts |
 | removal_uncheckable | service-refusal |  | **none** |
+| removal_unnameable | service-refusal |  | refineService.test.ts |
 | removal_unnamed | service-refusal |  | **none** |
 | scope_mismatch | service-refusal |  | refineService.test.ts |
 | scope_unknown | service-refusal |  | refineService.test.ts |
@@ -99,7 +100,7 @@ Profile **fixture-as-founder** on fixture `outside-scope-bot-local / 34383040-62
 
 `CASTING_FACE_SCAN_SCOPE` · `CASTING_HAIR_REFERENCE_SCOPE` · `CASTING_INK_CUT_SCOPE` · `CASTING_INK_REFERENCE_SCOPE` · `CASTING_INK_REGION_CROP_SCOPE` · `CASTING_INK_STUDIO_SCOPE` · `CASTING_INK_TRANSFORM_SCOPE` · `CASTING_INK_WORDS_SCOPE` · `CASTING_OPEN_LANE_SCOPE` · `CASTING_REFERENCE_ATTACH_SCOPE` · `CASTING_REFERENCE_LIBRARY_SCOPE` · `CASTING_REFINE_DISPATCH_SCOPE` · `CASTING_REPAINT_SCOPE` · `CASTING_SCAN_TABLE_SCOPE` · `CASTING_SEGMENTS_DELIVERED_SCOPE` · `CASTING_SEGMENTS_SCOPE` · `CASTING_SIDE_PHRASING_SCOPE` · `CASTING_V2_SCOPE`
 
-## Findings (59)
+## Findings (60)
 
 - **warn** `belief-mismatch` acc.glasses.remove.none — "take her glasses off" — believed refused:removal_absent, observed refused:removal_not_in_brief
 - **warn** `belief-mismatch` eye.scoped.left — "make it green" — believed would-render, observed asked:which-facet
@@ -152,6 +153,7 @@ Profile **fixture-as-founder** on fixture `outside-scope-bot-local / 34383040-62
 - **info** `unreached` removal_not_in_brief — no corpus row expects "removal_not_in_brief" — the census cannot say whether any ask reaches it
 - **info** `unreached` removal_reread_unmatched — no corpus row expects "removal_reread_unmatched" — the census cannot say whether any ask reaches it
 - **info** `unreached` removal_uncheckable — no corpus row expects "removal_uncheckable" — the census cannot say whether any ask reaches it
+- **info** `unreached` removal_unnameable — no corpus row expects "removal_unnameable" — the census cannot say whether any ask reaches it
 - **info** `unreached` removal_unnamed — no corpus row expects "removal_unnamed" — the census cannot say whether any ask reaches it
 - **info** `unreached` scope_mismatch — no corpus row expects "scope_mismatch" — the census cannot say whether any ask reaches it
 - **info** `unreached` sideNamedWithoutScope — no corpus row expects "sideNamedWithoutScope" — the census cannot say whether any ask reaches it

@@ -17,6 +17,7 @@ import { departureFloorFor } from "./bornWornDetector";
 import { COVERAGE_BANDS } from "./maskGeometry";
 import { slotDefinition } from "./referenceSlotCatalogue";
 import { whichSideReask } from "./refineReask";
+import { refusalOf } from "./refusalTag";
 import type { RefineDelta } from "./refineDelta";
 import type { StoredInkDesign } from "../db/castingV2InkDesigns";
 import { resolveInkReferenceTake } from "./inkReferenceTake";
@@ -5072,6 +5073,223 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
         painted[0]!.prompt,
         "the prune's recipe still asks for the smile the branch is carrying",
       ).toContain("her expression: a soft, closed-mouth smile");
+    });
+  });
+
+  /**
+   * A PRUNE WHOSE FACET HAS NO SLOT — the charge-and-refund hole, closed
+   * (measured opus-971 §2, ruled fable-1324).
+   *
+   * The road builds a re-rendering prune's ask out of the slots it struck, and
+   * two facets could never answer: `ink` is `perPlacement` and a prune handed it
+   * no placement, and an open kind has no facet at all. Driven at the wire on a
+   * mid-chain branch, *"take his chest tattoo off"* computed its prune
+   * perfectly, then CHARGED 25 credits and REFUNDED them.
+   *
+   * These drive the SERVICE with a hand-built parse, so no model can rescue
+   * them (law 3), and every one of them re-renders: the surviving combination is
+   * a face this cast has never worn, which is exactly the case that navigates
+   * for free when it HAS been worn.
+   */
+  describe("a prune whose facet cannot name a slot", () => {
+    /** A chain the prune leaves in a state no variant row holds — so it renders. */
+    const branchWearing = (step: Record<string, unknown>, instruction: string) => {
+      variantRows = [{
+        id: 710,
+        publicId: "variant-midchain",
+        candidateId: 1,
+        imageKey: "casting-v2/variants/midchain.png",
+        internalPrompt: candidateRow.internalPrompt as Record<string, unknown>,
+        instructions: ["colour her hair copper", instruction, "give him green eyes"],
+        deltas: { hairColour: "copper", eyeColour: "green", ...step },
+        stepDeltas: [{ hairColour: "copper" }, step, { eyeColour: "green" }],
+        status: "ready",
+      }];
+      candidateRow.selectedVariantPublicId = "variant-midchain";
+    };
+
+    /** The base wears none of it, so the chain put it there and a prune is the
+     *  honest reading — the arbitration the post-run-7 guard requires. */
+    const blindBase = {
+      region: async () => ({ data: Buffer.alloc(64 * 64, 0), width: 64, height: 64 }),
+      subject: async () => ({ data: Buffer.alloc(64 * 64, 0), width: 64, height: 64 }),
+      landmark: async () => [],
+    } as never;
+
+    const removing = (parse: Record<string, unknown>) => {
+      let call = 0;
+      return (async () => {
+        call += 1;
+        return call === 1
+          ? { ok: true as const, intent: "remove" as const, ...parse }
+          : { ok: true as const, delta: {} };
+      }) as never;
+    };
+
+    const restatedSlots = () =>
+      ((landedVariant?.internalPrompt as { repaint?: { restated?: string[] } })?.repaint?.restated ?? []);
+
+    it("an INK prune that must re-render PAINTS, and names the slot its pointers recorded", async () => {
+      /* v500's own step shape, read off the dev row: a tattoo that minted. */
+      branchWearing(
+        {
+          free: { ink: ["the tattoo design in the attached picture on his upper chest"] },
+          /* Real id SHAPES, not placeholders: `readStoredDelta` validates both
+             pointer maps on the way in, so "design-1" is dropped silently and the
+             arm would quietly measure the WORDS path instead — caught by the
+             sabotage, which reddened this arm when only the words fallback died. */
+          inkApplied: { "ink:upperChest": "be0cfbe7-bb33-4993-8b98-fabc66aa7376" },
+          inkDelivered: { "ink:upperChest": "3f11f226-0d4b-45da-a1b0-6b12be842374" },
+        },
+        "use this tattoo design on his upper chest",
+      );
+
+      const result = await refineCandidate(
+        {
+          ...repainting,
+          regions: blindBase,
+          interpret: removing({
+            subject: "ink",
+            match: "chest tattoo",
+            items: ["the tattoo design in the attached picture on his upper chest"],
+          }),
+        },
+        { ...input, instruction: "take his chest tattoo off" },
+      );
+
+      expect(result.imageUrl, "it painted rather than refusing").toBeTruthy();
+      expect(painted).toHaveLength(1);
+      expect(restatedSlots(), "the verification has a question at the wire").toContain("ink:upperChest");
+      expect(ledger.refunds ?? [], "and no refund had to rescue a charge").toHaveLength(0);
+    });
+
+    it("an INK prune whose step MINTED NOTHING names the slot from its own words", async () => {
+      /*
+        v477's own step, same cast and the same sitting as the one above: the
+        SAME ask, no pointer written. Its words are the only record of where the
+        tattoo went, and the words road's own resolver reads them.
+      */
+      branchWearing(
+        { free: { ink: ["the tattoo design in the attached picture on her upper chest"] } },
+        "use this tattoo design on her upper chest",
+      );
+
+      const result = await refineCandidate(
+        {
+          ...repainting,
+          regions: blindBase,
+          interpret: removing({
+            subject: "ink",
+            match: "chest tattoo",
+            items: ["the tattoo design in the attached picture on her upper chest"],
+          }),
+        },
+        { ...input, instruction: "take her chest tattoo off" },
+      );
+
+      expect(result.imageUrl).toBeTruthy();
+      expect(restatedSlots()).toContain("ink:upperChest");
+    });
+
+    it("an OPEN KIND prune paints, and names the kind it took back", async () => {
+      /*
+        The sibling nobody had met. `facetsWrittenBy` is blind to `delta.open`,
+        so the struck facet set came out EMPTY and the road refused one line
+        EARLIER than it did for ink — the same blindness fable-900 §2b fixed at
+        the out-of-frame door, one door along.
+
+        No `items`: an open kind lives in `delta.open` and never in `free`, so
+        the identity path has nothing to match and the word path is the road —
+        which is why this arm would have gone green on a fix that only taught
+        the pointers.
+      */
+      branchWearing(
+        { open: { halo: { noun: "halo", words: "a thin golden halo" } } },
+        "give her a thin golden halo",
+      );
+
+      const result = await refineCandidate(
+        {
+          ...repainting,
+          regions: blindBase,
+          interpret: removing({ subject: null, match: "halo" }),
+        },
+        { ...input, instruction: "take the halo off" },
+      );
+
+      expect(result.imageUrl).toBeTruthy();
+      expect(painted).toHaveLength(1);
+      expect(restatedSlots()).toContain("open:halo");
+    });
+
+    it("a prune this road CANNOT name is answered free, BEFORE the claim", async () => {
+      /*
+        fable-1324 (iii). A per-side surface with no side in the step's own words
+        cannot be named without guessing which arm, and *sleeve implies arm
+        implies pick one* is the inference fable-1115 §3 outlawed — the legacy
+        ink road refunded 300 credits twice for the wrong anatomical side.
+
+        So it refuses. What matters is WHERE: nothing is begun, nothing is
+        deducted, and the ledger is untouched. A refund is not an answer to a
+        question, it is an apology for a charge.
+      */
+      branchWearing(
+        { free: { ink: ["a small swallow tattoo on his upper arm"] } },
+        "give him a small swallow tattoo on his upper arm",
+      );
+
+      const thrown = await refineCandidate(
+        {
+          ...repainting,
+          regions: blindBase,
+          interpret: removing({
+            subject: "ink",
+            match: "swallow tattoo",
+            items: ["a small swallow tattoo on his upper arm"],
+          }),
+        },
+        { ...input, instruction: "take the swallow off" },
+      ).then(() => null, (error: unknown) => error);
+
+      /* The REASON at the tag, not a regex over the sentence: the name is what
+         the audit trail and the census read, and a copy edit must not silently
+         unpin the door (`removal_unnameable`). */
+      expect(refusalOf(thrown)?.reason).toBe("removal_unnameable");
+      expect(String((thrown as Error).message)).toMatch(/can't work out where on her it sits/);
+
+      expect(painted, "nothing was painted").toHaveLength(0);
+      expect(journal, "nothing was begun").not.toContain("begin");
+      expect(journal, "and nothing was deducted").not.toContain("deduct");
+      expect(ledger.charges).toHaveLength(0);
+    });
+
+    it("CONTROL — the paste road is untouched by all of it", async () => {
+      /*
+        The door is the REPAINT road's, because only the repaint road asks for a
+        slot. Refusing on the paste road would take away a removal that works
+        there today, so the condition is driven rather than asserted at the line.
+      */
+      branchWearing(
+        { free: { ink: ["a small swallow tattoo on his upper arm"] } },
+        "give him a small swallow tattoo on his upper arm",
+      );
+
+      const result = await refineCandidate(
+        {
+          ...repainting,
+          repaintEnabled: () => false,
+          harvest: compositing,
+          regions: blindBase,
+          interpret: removing({
+            subject: "ink",
+            match: "swallow tattoo",
+            items: ["a small swallow tattoo on his upper arm"],
+          }),
+        },
+        { ...input, instruction: "take the swallow off" },
+      );
+
+      expect(result.imageUrl, "the paste road still renders it").toBeTruthy();
     });
   });
 
