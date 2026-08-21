@@ -862,6 +862,28 @@ comes from state). A removal ask on a cast with **no** delivered ink gets a new
 `cannotSayCopy` member saying there is nothing to remove, and that one member
 serves the bare-cast transform ask too.
 
+**⚠ TWO FOUNDER RULES JOINED THIS DESIGN AFTER IT WAS COUNTERSIGNED**, both on
+2026-08-21, and both live in `inkAsDelivered`'s docblock rather than only here:
+
+- **A delivered crop is NEVER edited directly** (fable-1275 §1). Its bytes are
+  always cut from a real delivered frame, because a retouched crop would claim a
+  state no render produced — the minted-loss class inverted, a record running
+  AHEAD of reality. Every change is a RENDER; the mint cuts the new baseline from
+  the new frame; a render that hides the surface cannot update the record, and
+  the disputed machinery correctly keeps the old baseline.
+- **The partial edit is a PICTURE, never an exclusion clause** (fable-1276 §1).
+  *"Remove one swallow"* hands the engine a per-ask COPY of the stored crop with
+  that motif alpha'd out — a reference that simply lacks the element. Instruction
+  material is editable and dies with its ask; the RECORD is not. Words isolate
+  until the tap lands; the tap makes it precise.
+
+**And the ASK-SCOPED VISIBILITY EXCEPTION joins this build's scope** (fable-1276
+§2): an edit targeting a COVERED piece lowers the neckline FOR THAT RENDER ONLY,
+and the next render re-anchors to his own outfit — the master winning is the
+feature, not the bug. It is the narrow thing that builds without settling the
+general wardrobe question, which now has an owner (§3c). Same pattern the
+frames-gate walk used.
+
 **Flag:** `CASTING_INK_TRANSFORM_SCOPE`, child of `CASTING_INK_STUDIO_SCOPE` —
 except the two copy items, which land UNGATED: they replace a wrong sentence with
 a right one on a live lane, and gating an apology is how the apology stays wrong
@@ -871,6 +893,38 @@ for everyone outside the flag.
 What would make it WRONG is the intensity member: *"make it darker"* against a
 crop has never been measured, and that is a court after scale lands, not part of
 this design.
+
+## 3c. CAST-TYPE OUTFITS — the owner of the wardrobe question (founder,
+## fable-1276 §2). Nothing builds; this exists so the question stops being
+## asked one edit at a time.
+
+**How it got an owner.** 1263 §2 put a wardrobe-visibility call on his desk — may
+a render change what a Cast is wearing so a covered feature can be seen? It sat
+open, and fable-1275 §2 gave it a functional stake rather than an aesthetic one:
+a delivered crop is only ever cut from a real frame, so **a covered tattoo is
+effectively un-editable** until something shows the skin.
+
+**His reasoning, which is why this is the owner and not a bigger version of the
+same question:** any STANDING wardrobe change fights the master anchor forever.
+Every render on this road is anchored on the pristine master, so a wardrobe the
+product decided on has to be re-won on every single render against a photograph
+that disagrees with it. Cast-type outfits — a cyborg dressed as a businessman,
+the default grey tee — are a planned future design where the outfit is a property
+of the CAST rather than a per-render argument, and that is the frame in which the
+general question is answerable at all.
+
+**What builds without it, narrowly, and has already joined the transform road
+(§3b):** the ask-scoped visibility exception — one render lowers the neckline
+because THAT ask targets a covered piece, and the next render re-anchors. It
+needs no standing decision because it makes no standing change.
+
+**Its neighbour, not its duplicate:** the digitals-pair item in §8b banks the
+same territory from the VIEWS end and carries the M8-takes connection. Whoever
+designs this inherits that note rather than rediscovering it — three designs
+answering overlapping questions is how a product grows three wardrobes.
+
+**What would make it unnecessary:** nothing. It is a capability, and its absence
+is currently paid for one covered tattoo at a time.
 
 ## 4. "Show her the refused frame" — ✅ **RULED AND SHIPPED 2026-08-16**
 

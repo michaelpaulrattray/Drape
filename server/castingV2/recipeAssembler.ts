@@ -404,6 +404,37 @@ type SourceKind =
    * `change` rides on the source rather than inside `scope` because it is a
    * CLOSED value the sentence owner reads, not free prose: the whole point is
    * that a transform cannot describe a design, only a change to one.
+   *
+   * # ⚠ A DELIVERED CROP IS NEVER EDITED DIRECTLY (founder rule, fable-1275 §1)
+   *
+   * The bytes this member points at are always cut from a REAL DELIVERED FRAME.
+   * A retouched crop would claim a state no render ever produced — the
+   * minted-loss class inverted, a record running AHEAD of reality instead of
+   * behind it. So every change to a tattoo is a RENDER: the mint cuts the new
+   * baseline from the new frame, and a render that hides the surface cannot
+   * update the record at all, which is the disputed machinery correctly keeping
+   * the old baseline rather than a gap.
+   *
+   * Its consequence is a real one and is on the founder's record: editing a
+   * COVERED piece needs a render that shows the skin. The narrow answer that
+   * builds without settling the whole wardrobe question is the ASK-SCOPED
+   * VISIBILITY EXCEPTION (fable-1276 §2) — an edit targeting a covered piece
+   * lowers the neckline FOR THAT RENDER ONLY, and the next render re-anchors to
+   * his own outfit, because the master winning is the feature rather than the
+   * bug.
+   *
+   * # The partial edit, and why it is not an exclusion clause (fable-1276 §1)
+   *
+   * *"Remove one swallow"* does NOT become prose the painter has to parse. The
+   * ask's source is a PER-ASK COPY of the stored crop with the named or tapped
+   * motif alpha'd out — the engine is handed a reference that simply lacks the
+   * element, which is the same discipline as every other picture on this road:
+   * the instruction is in the bytes, not in a sentence about the bytes.
+   *
+   * The two rules meet without contradicting: INSTRUCTION MATERIAL is editable
+   * (that copy is made for one ask and dies with it), the RECORD is not. The
+   * stored crop is untouched, and it updates only when a delivered frame says
+   * so. Words do the isolating until the tap lands; the tap makes it precise.
    */
   | {
     pictures: "inkAsDelivered";
