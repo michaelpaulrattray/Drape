@@ -2324,3 +2324,52 @@ is named here and NOT started.
   `lifecycle: retire` in the Atlas, along with 132 modules in total — of which
   ~55 are the server evidence road. **That number is the size of the sitting**
   this reading was scoping, and it is a sitting rather than a chunk.
+
+### 28e. The calibration island — two HELD rows whose BLOCKER was wrong, and
+### the module is the unit rather than the symbols
+
+§28d said `inkCalibration.ts` was the cheap half. Read at the artifacts, it is
+cheaper than that in one way and not cheap at all in another, and **both rows'
+`blocker:` line has been corrected** — the verdicts have not moved.
+
+**Written and never wired, CONFIRMED AT THE BIRTH COMMIT rather than assumed.**
+`git log -S` on both names returns `a63dbafe` (2026-07-27, *"R7-7D D3: add pure
+ink composer"*) and then nothing but this milestone's own bookkeeping. At that
+commit the only things naming `inkCalibration.ts` were its own suite and
+`r7-ink-add-d3-contract.test.ts`, which READS THE FILE AS TEXT. That is still
+exactly true today. It is CLAUDE.md's path ONE, held to the standard that entry
+sets for IP blocking — *"confirmed at birth"*, not inferred from a present-day
+grep.
+
+**One of the two IS pinned, and I had it the wrong way round in the mailbox
+before driving it.** `r7-ink-add-d3-contract.test.ts` asserts
+`toContain("createInkCalibrationRecorder")`. Driven — the module replaced with a
+single unused constant — **exactly one arm reddens**, and it is that one. So for
+the recorder this is NOT `velocityLimits`'s shape. For
+`evaluateInkCalibrationGate` there is no such pin: the contract test never names
+it. Same module, same suite, two different exposures.
+
+⚠ **AND THE UNIT IS THE MODULE, because the sweep can only see two of its four
+exports.** `inkCalibration.ts` exports `createInkCalibrationRecord`,
+`createInkCalibrationRecorder`, `summarizeInkCalibration` and
+`evaluateInkCalibrationGate`. The first is called at line 174 by the recorder;
+the third at 279 and 291 by the gate. **Both are consulted inside their own
+declaring module, so the uncalled-export sweep excludes them by construction and
+neither has a row** — the `isSensitiveAction` shape verbatim, the one the
+un-wiring differ's docblock was written about. The two rows are the island's two
+entry points and everything behind them is invisible to the list. Retiring "the
+two symbols" would leave a 299-line module with two unreachable functions in it.
+
+**So the blocker is not the composer road's boundary.** `inkCalibration.ts`
+appears in NO import closure at all, so §28c's fixpoint reading cannot reach it
+either way. What actually blocks it is a DECISION, and it is not a cleanup
+milestone's to make: **is R7-7D's founder visual/calibration gate still
+expected?** The design document requires one per authoring-matrix row
+(`CASTING_SYSTEM_R7_6_EVIDENCE_COMPOSER_DESIGN.md`, *"founder visual/calibration
+gate"*), and this module is the recorder and threshold gate built for it. If
+that programme is resumed the island is its scaffolding; if the V2 ink roads
+have replaced it, the island and its suite go together as a module.
+
+Both `blocker:` lines now say that, and both rows stay `HELD` — the door's own
+header forbids flipping a row to quiet it, and this is the opposite move: the
+row keeps its verdict and gains a blocker that is true.

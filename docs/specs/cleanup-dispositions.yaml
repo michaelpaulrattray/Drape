@@ -52,16 +52,16 @@
 - symbol: createInkCalibrationRecorder
   file: server/casting/evidence/composer/inkCalibration.ts
   verdict: HELD
-  why: an instrument for a calibration command that does not exist
-  argued: 18a
-  blocker: goes with the composer road's module-sized disposition
+  why: "an instrument for a calibration command that does not exist. READ 2026-08-22 (28e): the module is an ISLAND — its only importers at BIRTH (a63dbafe, 2026-07-27) were its own suite and a contract test that reads it as TEXT, and that is still true, so this is written-and-never-wired confirmed at the birth commit rather than assumed. It is also PINNED: r7-ink-add-d3-contract.test.ts asserts this name with toContain, driven by emptying the module — exactly one arm reddens"
+  argued: 18a/28e
+  blocker: "NOT the composer road's boundary — inkCalibration.ts is in no import closure at all, so the fixpoint reading 28c calls for cannot touch it. The real blocker is a DECISION: is R7-7D's founder visual/calibration gate still expected? The module is 4 exports and this is one of the 2 the sweep can SEE"
 
 - symbol: evaluateInkCalibrationGate
   file: server/casting/evidence/composer/inkCalibration.ts
   verdict: HELD
-  why: an instrument for a calibration command that does not exist
-  argued: 18a
-  blocker: goes with the composer road's module-sized disposition
+  why: "an instrument for a calibration command that does not exist. READ 2026-08-22 (28e) with createInkCalibrationRecorder, same island, same birth commit. UNLIKE that one it is pinned by NOTHING outside its own suite — the contract test names the recorder and not this"
+  argued: 18a/28e
+  blocker: "NOT the composer road's boundary — see the row above. A DECISION about R7-7D's calibration gate, and the unit is the MODULE: its other two exports (createInkCalibrationRecord, summarizeInkCalibration) are consulted inside inkCalibration.ts itself, so the uncalled-export sweep structurally cannot list them — the isSensitiveAction shape the un-wiring differ was built for"
 
 - symbol: probeOutcomeAllowsCanon
   file: server/casting/evidence/composer/inkRetryDecision.ts
