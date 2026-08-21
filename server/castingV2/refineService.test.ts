@@ -10241,6 +10241,51 @@ describe("the picture she attached becomes the carrier that rides", () => {
     expect(painted.length, "a words-only neck tattoo still did not reach the engine").toBeGreaterThan(0);
   });
 
+  /*
+    ⚠ D-137's FACE CARVE-OUT IS ALREADY INERT ON THIS ROAD — driven, not read
+    (opus-952 §3's question, ordered as a measurement by fable-1291 §1).
+
+    D-137 carved out FACE AND NECK as the two places words alone may document a
+    tattoo, because the anchor itself shows them. The neck half works and has an
+    arm above this one. The face half does not, and has not since this road was
+    built: the gate passes the ask, and the very next door requires a MEASURED
+    placement — `INK_PLACEMENTS` is `neck`, `upperArm`, `upperChest` and holds
+    no face surface at all — so a cheek ask is refused with `unplacedInk`.
+
+    THE SENTENCE IS THE FINDING. It asks *"I need to know where it goes"* of a
+    customer who has just said where it goes, which is D-180's dead-end wearing
+    a question. It is free and pre-claim, so nobody is charged for it; it is
+    still the wrong thing to say.
+
+    This arm exists to make the state a fact rather than an inference, because
+    it decides the shape of the words-road opening (fable-1290): a promise the
+    code stopped keeping is RETIRED, where a working road would have to be
+    kept. When that road opens, this arm should go red — deliberately — and be
+    rewritten to whatever the new answer is.
+  */
+  it("⚠ REFUSES a face ask with the WRONG sentence — the carve-out is a dead promise", async () => {
+    painted.length = 0;
+    ledger.charges.length = 0;
+    const result = await refineCandidate(wordsRoad({
+      interpret: async () => ({
+        ok: true as const,
+        fromReference: false,
+        delta: { free: { ink: "a small rose on her cheek" } },
+      }),
+      /* What `resolveInkPlacement` really answers for a surface the closed
+         vocabulary has not measured — the cheek is not in `INK_PLACEMENTS`. */
+      inkTake: async () => ({ placement: { kind: "open" as const, phrase: "cheek" }, side: null }),
+    }), { ...input, instruction: "give her a small rose tattoo on her cheek" });
+
+    expect(result.kind).toBe("selected");
+    expect(result.note, "the face half of D-137 renders after all").toContain("I need to know where it goes");
+    expect(painted, "a face tattoo reached the engine").toHaveLength(0);
+    /* Free, which is the one thing that keeps this a wrong sentence rather
+       than a wrong charge. */
+    expect(ledger.charges).toHaveLength(0);
+    expect(result.note).toContain("Nothing was charged.");
+  });
+
   it("RECORDS that words-only tattoo as on her, and KEEPS the frame that delivered it", async () => {
     /*
       THE HOLE THIS CLOSES, AT THE WIRE (migration 0050, ruled fable-1197 §1).
