@@ -17,9 +17,13 @@ import {
   REFUSAL_REASONS,
 } from "./refineRefusals";
 import { refusalMessage } from "./refineInterpreter";
+import { pronounsForSex } from "./castPronouns";
 import type { RefineRefusal } from "./refineDelta";
 
 const said = (refusal: RefineRefusal) => refusalMessage({ ok: false, refusal } as never);
+/** The same sentence about a Cast whose pronouns we actually know. */
+const saidOf = (refusal: RefineRefusal, sex: string | null) =>
+  refusalMessage({ ok: false, refusal } as never, pronounsForSex(sex));
 
 describe("every refusal answers all three questions", () => {
   it("covers every reason the type allows, with nothing extra", () => {
@@ -70,12 +74,53 @@ describe("the copy, pinned verbatim through the fold", () => {
     expect(said({ reason: "wall_content" })).toBe("That one can't be rendered. Nothing was charged.");
     expect(said({ reason: "empty" })).toBe(
       "Say what you'd like changed — anything about the person themselves.");
-    expect(said({ reason: "absorbed", asked: "freckles" })).toBe(
+    /*
+      ⚠ THE TWO SENTENCES THAT NAME A PERSON ARE NO LONGER PINNED TO "she", and
+      the old pin is why (fable-1244 §1a).
+
+      They said "She already has …" hard-coded, and the founder read that about
+      his own MALE cast — *"She already has jacked build"* — while trying to
+      rescue the build a carry break had lost. This test pinned the defect
+      verbatim and would have gone red for the FIX rather than for a regression,
+      which is the shape a pin takes when the thing it froze was wrong.
+
+      So the pin moves to what is actually invariant: the SENTENCE, per Cast,
+      with its own verb agreement.
+    */
+    expect(saidOf({ reason: "absorbed", asked: "freckles" }, "female")).toBe(
       "She already has freckles — this would have changed nothing, so nothing was charged. "
       + "Ask for more of it, or say it another way.");
-    expect(said({ reason: "absorbed_departure", asked: "Her glasses" })).toBe(
+    expect(saidOf({ reason: "absorbed", asked: "jacked build" }, "male")).toBe(
+      "He already has jacked build — this would have changed nothing, so nothing was charged. "
+      + "Ask for more of it, or say it another way.");
+    /* `they HAVE`, not `they has` — the agreement rides on `plural` rather than
+       on three call sites remembering it. */
+    expect(saidOf({ reason: "absorbed", asked: "freckles" }, null)).toBe(
+      "They already have freckles — this would have changed nothing, so nothing was charged. "
+      + "Ask for more of it, or say it another way.");
+    expect(saidOf({ reason: "absorbed_departure", asked: "Her glasses" }, "female")).toBe(
       "Her glasses — that's already off her, so this would have changed nothing and nothing "
       + "was charged. Say what you'd like instead and I'll put it on.");
+    expect(saidOf({ reason: "absorbed_departure", asked: "His glasses" }, "male")).toBe(
+      "His glasses — that's already off him, so this would have changed nothing and nothing "
+      + "was charged. Say what you'd like instead and I'll put it on.");
+  });
+
+  /*
+    AND THE DEFAULT IS `they`, WHICH IS THE HALF THAT KEEPS THIS FIXED.
+
+    `refusalMessage` has three call sites and only one of them had an identity
+    in hand when this landed. A `she` default would have left the founder's own
+    defect reachable through either of the other two, and reachable SILENTLY —
+    the whole failure mode being that nobody reads a refusal sentence until a
+    customer does. `they` is correct English for a person whose pronouns are
+    unknown and it cannot misgender anybody.
+  */
+  it("defaults to THEY, never to she, when no Cast is in hand", () => {
+    expect(said({ reason: "absorbed", asked: "freckles" }))
+      .toBe(saidOf({ reason: "absorbed", asked: "freckles" }, null));
+    expect(said({ reason: "absorbed", asked: "freckles" })).not.toContain("She already");
+    expect(said({ reason: "absorbed_departure", asked: "Her glasses" })).not.toContain("off her");
   });
 
   it("keeps the stage wall's TWO sentences apart", () => {

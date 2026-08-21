@@ -41,7 +41,8 @@ import { closedSubjectFor } from "./openLaneKind";
 import { acceptOpenKind } from "./openLaneAccept";
 import { ensureKindProperties } from "./openKindProperties";
 import { recordOpenLaneDemand } from "../db/castingV2OpenLaneDemand";
-import { REFINE_REFUSALS } from "./refineRefusals";
+import { REFINE_REFUSALS, UNKNOWN_PRONOUNS } from "./refineRefusals";
+import type { CastPronouns } from "./castPronouns";
 import { readRemovalSubject } from "./refineRemoval";
 import { namesUnknownProperNoun } from "./properNouns";
 
@@ -1740,7 +1741,17 @@ async function containReply(call: {
  * that DOES answer the ask — rolling again — because a refusal that leaves
  * someone with nowhere to go is a dead end wearing polite words.
  */
-export function refusalMessage(refusal: RefineParse & { ok: false }): string {
+export function refusalMessage(
+  refusal: RefineParse & { ok: false },
+  /*
+    ⚠ THE CAST'S OWN PRONOUNS, and the default is `they` rather than `she`
+    (fable-1244 §1a). Two of these sentences name the person; both said "she"
+    until the founder read one about his own male cast. Optional so a caller
+    with no identity in hand is correct English rather than a guess — never so
+    that forgetting is free.
+  */
+  of: CastPronouns = UNKNOWN_PRONOUNS,
+): string {
   /*
     ONE REGISTRY, LOOKED UP (fable-486 §f).
 
@@ -1753,6 +1764,6 @@ export function refusalMessage(refusal: RefineParse & { ok: false }): string {
     The reasons the copy gives are unchanged, verbatim; the `refusalCopy` suite
     is the pin that proves it.
   */
-  return REFINE_REFUSALS[refusal.refusal.reason].say(refusal.refusal);
+  return REFINE_REFUSALS[refusal.refusal.reason].say(refusal.refusal, of);
 }
 

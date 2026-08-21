@@ -32,13 +32,14 @@
  */
 import type { RefineRefusal } from "./refineDelta";
 import { INK_NEEDS_DOCUMENT_MESSAGE } from "./inkPlacement";
+import { capitalize, pronounsForSex, type CastPronouns } from "./castPronouns";
 
 export type RefusalCharge = "free" | "charged";
 export type RefusalReportClass = "wall" | "gate" | "absorbed" | "unread";
 
 export type RefusalEntry = {
   /** What the customer reads. */
-  readonly say: (refusal: RefineRefusal) => string;
+  readonly say: (refusal: RefineRefusal, of: CastPronouns) => string;
   readonly charge: RefusalCharge;
   readonly report: RefusalReportClass;
 };
@@ -46,6 +47,32 @@ export type RefusalEntry = {
 /** Narrow a refusal to the variant that carries `asked`. */
 const askedIn = (refusal: RefineRefusal): string =>
   ("asked" in refusal && typeof refusal.asked === "string" ? refusal.asked : "that");
+
+/**
+ * ⚠ THE CAST'S OWN PRONOUNS, AND `they` IS THE FALLBACK RATHER THAN `she`
+ * (§5e's instance, met by the founder himself — fable-1244 §1a).
+ *
+ * Two of these sentences named a person. Both said *she*, hard-coded, and he
+ * read one of them about his own male cast: *"She already has jacked build."*
+ * `castPronouns.ts` already exists and already says why — the room called every
+ * Cast "she" once before, and the segments panel called a male candidate's eyes
+ * "hers" for exactly the same reason: two implementations of *which pronoun*.
+ * This is the third, and it is now the same one.
+ *
+ * **The default is `they`, never `she`.** A caller with no identity in hand
+ * gets correct English for a person whose pronouns are not known, which is the
+ * only default that cannot misgender anybody. A `she` default would leave the
+ * exact defect reachable through whichever call site was forgotten — and
+ * `refusalMessage` has three.
+ *
+ * Verb agreement rides on `plural` rather than being remembered per sentence:
+ * *"they have"* and *"she has"* are different words, and this file now writes
+ * both.
+ */
+export const UNKNOWN_PRONOUNS: CastPronouns = pronounsForSex(null);
+
+/** "has" · "have" — the agreement `plural` exists to stop three call sites remembering. */
+const has = (of: CastPronouns): string => (of.plural ? "have" : "has");
 
 export const REFINE_REFUSALS = {
   wall_likeness: {
@@ -106,17 +133,18 @@ export const REFINE_REFUSALS = {
       something the face already has; the model losing her sentence into a
       restatement is our business and not a sentence anybody wants to read.
     */
-    say: (refusal) => `She already has ${askedIn(refusal)} — this would have changed nothing, `
-      + "so nothing was charged. Ask for more of it, or say it another way.",
+    say: (refusal, of) => `${capitalize(of.subject)} already ${has(of)} ${askedIn(refusal)} `
+      + "— this would have changed nothing, so nothing was charged. Ask for more of it, "
+      + "or say it another way.",
     charge: "free",
     report: "absorbed",
   },
   absorbed_departure: {
     /* The same fact about the other direction, in her words rather than ours:
        the thing is already off her, so there is nothing to take off. */
-    say: (refusal) => `${askedIn(refusal)} — that's already off her, so this would have `
-      + "changed nothing and nothing was charged. Say what you'd like instead and "
-      + "I'll put it on.",
+    say: (refusal, of) => `${askedIn(refusal)} — that's already off ${of.object}, so this `
+      + "would have changed nothing and nothing was charged. Say what you'd like instead "
+      + "and I'll put it on.",
     charge: "free",
     report: "absorbed",
   },

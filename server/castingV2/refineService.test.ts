@@ -5224,6 +5224,109 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
     expect(mintAsks[0]!.slots.map((slot) => slot.slot)).not.toContain("build");
   });
 
+  /**
+   * HIS OWN INCIDENT, RED FIRST — the compound class of fable-1242.
+   *
+   * Production candidate 1641, v#206. He set a jacked build, then asked for a
+   * cybersigilism tattoo on the neck. The build crop RODE (`carried:["build"]`,
+   * a `carry` reference at 1024x1536) and the engine dropped it — and this
+   * render's own reader said so at the time:
+   *
+   *     saw      "loose grey t-shirt hides build; frame appears average, not jacked"
+   *     asked    "jacked build"      absent true   verified false   binding false
+   *
+   * `binding: false` is D-187 and stays. What must not stand is what happened
+   * NEXT: `build` is re-cut every render, the re-cut pass files it clean because
+   * no facet of this render "mentioned" it, and version 3 — a crop of the body
+   * that LOST the build — became the branch's answer to *what is his build*.
+   * One silent miss made permanent, and every later carry re-asserting the loss.
+   *
+   * `disputed` was written `∩ not-carried`, so the gate that exists for exactly
+   * this (fable-220 §3: a disputed row is evidence, not a version) could not see
+   * it. The affirmative half was already wired — `confirmed` is read ∧ verified
+   * ∧ not-written — and this is its missing counterpart.
+   */
+  const readerDisputesOnly = (word: string, saw: string) => ({
+    id: "verifier",
+    complete: async (ask: { user: string }) => ({
+      text: JSON.stringify({
+        results: ask.user.split(String.fromCharCode(10)).filter(Boolean).map((line, at) => ({
+          id: at + 1,
+          present: !line.toLowerCase().includes(word),
+          saw: line.toLowerCase().includes(word) ? saw : "seen",
+        })),
+      }),
+      truncated: false,
+      latencyMs: 1,
+    }),
+  } as never);
+
+  it("does NOT re-cut a CARRIED slot its own reader disputed — the crop that lost his build may not become the truth", async () => {
+    /* HIS OWN CHAIN: step 1 wrote the build, step 2 asks for something else —
+       so `build` is a CARRIED fact on this render, which is what makes the
+       reader ask about it at all. */
+    variantRows = [{
+      id: 204,
+      publicId: "variant-jacked",
+      candidateId: 1,
+      imageKey: "casting-v2/variants/jacked.png",
+      internalPrompt: candidateRow.internalPrompt as Record<string, unknown>,
+      instructions: ["their build — jacked build"],
+      requestText: "their build — jacked build",
+      deltas: { free: { build: "jacked build" } },
+      stepDeltas: [{ free: { build: "jacked build" } }],
+      status: "ready",
+    }];
+    candidateRow.selectedVariantPublicId = "variant-jacked";
+    lineageReferences = [carryRow({ slot: "build", tier: "anatomy", noun: "build", words: ["jacked build"] })];
+    captionsRead = { hairWorn: "worn long and loose", build: "Broad, muscular build with wide shoulders" };
+    await refineCandidate({
+      ...hairDown,
+      ...mintingLibrary,
+      harvest: compositing,
+      verifier: readerDisputesOnly("build", "loose grey t-shirt hides build; frame appears average, not jacked"),
+    }, { ...input, instruction: "wear her hair down" });
+
+    expect(mintAsks).toHaveLength(1);
+    const build = mintAsks[0]!.slots.find((slot) => slot.slot === "build");
+    /* The re-cut itself is right and stays — what changes is the MARK on it. */
+    expect(build, "the build slot is still cut; a disputed row keeps its pixels").toBeDefined();
+    expect(build!.disputed ?? false,
+      "a crop of the frame that LOST his build became the branch's newest answer").toBe(true);
+  });
+
+  it("CONTROL — the same carried slot, BELIEVED by the same reader, is unmarked", async () => {
+    /* If both arms did not move, the marking would be a constant rather than a
+       reading. Nothing changes here but the reader's answer. */
+    /* HIS OWN CHAIN: step 1 wrote the build, step 2 asks for something else —
+       so `build` is a CARRIED fact on this render, which is what makes the
+       reader ask about it at all. */
+    variantRows = [{
+      id: 204,
+      publicId: "variant-jacked",
+      candidateId: 1,
+      imageKey: "casting-v2/variants/jacked.png",
+      internalPrompt: candidateRow.internalPrompt as Record<string, unknown>,
+      instructions: ["their build — jacked build"],
+      requestText: "their build — jacked build",
+      deltas: { free: { build: "jacked build" } },
+      stepDeltas: [{ free: { build: "jacked build" } }],
+      status: "ready",
+    }];
+    candidateRow.selectedVariantPublicId = "variant-jacked";
+    lineageReferences = [carryRow({ slot: "build", tier: "anatomy", noun: "build", words: ["jacked build"] })];
+    captionsRead = { hairWorn: "worn long and loose", build: "Broad, muscular build with wide shoulders" };
+    await refineCandidate({
+      ...hairDown,
+      ...mintingLibrary,
+      harvest: compositing,
+      verifier: readerDisputesOnly("nothing-matches-this", "unused"),
+    }, { ...input, instruction: "wear her hair down" });
+
+    const build = mintAsks[0]!.slots.find((slot) => slot.slot === "build");
+    expect(build!.disputed ?? false, "a believed carry must still re-cut cleanly").toBe(false);
+  });
+
 
 
   it("refuses a scope it cannot place, before the claim and for free", async () => {

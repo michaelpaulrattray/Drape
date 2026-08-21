@@ -1830,7 +1830,9 @@ async function refineCandidateCounted(
           reason: absorbedReason,
           asked: verdict.alreadyTrue,
         },
-      }),
+      /* HIS OWN CAST, in his own frame: this sentence names the person,
+         and it said "she" about a male cast until fable-1244 SS1a. */
+      }, pronounsForSex(currentIdentity?.sex)),
       /*
         NO FACET HERE, deliberately. `alreadyTrue` is a phrase built out of what
         she asked for — "icey blue eyes" — and the count may carry the reason
@@ -7406,6 +7408,53 @@ async function refineCandidateCounted(
         .filter((check) => check.verified && !missedFacets.has(facetOfCheck(check)!))
         .flatMap((check) => facetOfCheck(check) ?? []),
     ));
+    /*
+      ⚠ AND THE CARRIED FACETS THIS RENDER'S READER SAID ARE GONE — the missing
+      counterpart of `confirmed` (his own incident, fable-1242/1244).
+
+      # What it cost him
+
+      Production candidate 1641, v#206. He set a jacked build, then asked for a
+      cybersigilism tattoo on the neck. The build crop RODE — `carried:["build"]`,
+      a real `carry` reference on the wire — and the engine dropped it. This
+      render's own reader said so in the same minute:
+
+          saw   "loose grey t-shirt hides build; frame appears average, not jacked"
+          asked "jacked build"   absent true   verified false   binding false
+
+      `binding: false` is D-187 and is not what this touches: no refusal, no
+      refund, the render stays delivered and charged. What must not stand is
+      what happened NEXT. `build` is re-cut every render, and the re-cut pass in
+      `mintedSlotsForRender` files it clean because *"no facet of this render
+      mentioned it"* — so a crop of the body that had just LOST the build became
+      version 3 and the branch's answer to *what is his build*. Every later
+      carry would then send the loss as the fact. **One silent miss, made
+      permanent.**
+
+      The gate for exactly this already exists and is ruled — fable-220 §3, *a
+      `disputedDelivery` row is evidence, not a version; it must not even be a
+      candidate for newest, or it would displace the crop it has no verdict
+      about.* It could not see this because `disputed` was derived from
+      `readChecks`, which is filtered to WRITTEN facets.
+
+      # The shape, and why it is a mirror rather than a new idea
+
+      `confirmed` below is *read ∧ verified ∧ NOT written* — a carried fact the
+      reader agreed was still there. This is the same question with the answer
+      the other way up, and the two are written from the same expression so they
+      cannot drift into disagreeing about what "carried" means.
+
+      Disjoint from `missedFacets` by construction: that set is written-only and
+      this one is not-written, so the concatenation below needs no dedupe and a
+      facet can never arrive twice.
+    */
+    const carriedMissedFacets = verification.unavailable ? [] : Array.from(new Set(
+      verification.checks.flatMap((check) => {
+        const facet = facetOfCheck(check);
+        if (facet === null) return [];
+        return check.read && !check.verified && !writtenFacets.has(facet) ? [facet] : [];
+      }),
+    ));
     await keepSegmentsFromRender({
       userId: input.userId,
       variantId: variant.id,
@@ -7508,7 +7557,10 @@ async function refineCandidateCounted(
            computed once above: any missed item disputes its facet, so the two
            lists are complements by construction rather than by two filters
            happening to agree. */
-        const disputed = Array.from(missedFacets);
+        /* Written misses AND carried ones — the two are disjoint by
+           construction (see `carriedMissedFacets`), so this is a concatenation
+           rather than a merge. */
+        const disputed = [...Array.from(missedFacets), ...carriedMissedFacets];
         /*
           THE DIGESTS THIS BRANCH ALREADY HOLDS, so a byte-identical crop is
           caught whether it arrived this render or three renders ago. `marks`
@@ -7646,8 +7698,18 @@ async function refineCandidateCounted(
         }
         if (disputed.length > 0) {
           log.info(
-            { operationId, variant: variant.publicId, disputed },
-            "[refineService] this render's reader disputed a facet the ask wrote — its crop is cut for a human, not for the library",
+            {
+              operationId,
+              variant: variant.publicId,
+              disputed,
+              /* Split at the log rather than only in the code, because the two
+                 halves are different findings: a WRITTEN miss is an ask that
+                 did not land, and a CARRIED one is a feature she already had
+                 going missing under somebody else's edit. A single list would
+                 make a carry break read as a delivery failure. */
+              carried: carriedMissedFacets,
+            },
+            "[refineService] this render's reader disputed a facet — its crop is cut for a human, not for the library",
           );
         }
         if (slots.length > 0) {
