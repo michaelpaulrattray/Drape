@@ -389,10 +389,13 @@ update, folded into a later pass (fable-1329 §4). A card for somebody else's
 
 **THE SELECTOR IS NOT A UI ITEM AND CANNOT BE SPLIT OFF** (founder, 2026-08-21:
 *"the open lane reference work includes the Pinterest-style selection or did you
-forget that"*). Item 7 is one road — tap the thing in the picture → it is cut
-out cleanly → it becomes the reference → the ask carries it. Filed as two items
-it would be split, and without the selector the *take anything from any image*
-promise collapses back to describing the picture in words.
+forget that"*). **§10 item 8 (OPEN-LANE REFERENCE ROAD)** is one road: tap the
+thing in the picture → it is cut out cleanly → it becomes the reference → the
+ask carries it. Filed as two items it would be split, and without the selector the
+*take anything from any image* promise collapses back to describing the picture
+in words. ⚠ It read *"Item 7"* from 2026-08-21 to 2026-08-22, which is what this
+road was numbered the day the sentence was written — see the renumber note under
+*The one rule for keeping this organised*.
 
 **Parked on HIS word, and deliberately NOT in the build order** — ONE item only:
 **the words-road ungating**, ruled 1315 §1 to open to everyone AFTER the style
@@ -404,7 +407,7 @@ but-riding versus scoop-to-show is no longer a question anyone answers: **the
 PATH decides.** A Wardrobe cast is born and signed dressed and gets ink only
 where the outfit shows skin; a Basics cast is born and signed in plain basics and
 can carry a tattoo anywhere. The basics-anchor idea and the 450-credit chest Sign
-court are retired with it. See item 5.
+court are retired with it. See §10 item 5 (THE TWO PATHS).
 
 ### The one rule for keeping this organised
 
@@ -413,6 +416,64 @@ dependency named; a closed item is struck **with its SHA**. Mailbox queue blocks
 **CITE this section** — *"§10 item N"* — and do not restate it. A queue that
 lives only in mailbox messages is the mirror law violated: the messages scroll
 and this file does not.
+
+⚠ **AND THE CITATION FORM THIS RULE MANDATES IS THE ONE THAT ROTS SILENTLY —
+THREE OF ITS OWN POINTERS WERE WRONG WHEN THIS WAS SWEPT** (2026-08-22, at the
+artifacts, opus-1001). **An ordinal is not a name.** The table was written
+`813a2152` (2026-08-21 20:25) and RENUMBERED `1c44e03d` the same night (22:06),
+which inserted THE TWO PATHS as item 5 and moved every row below it by one:
+CAST-BORN INK DISCOVERY 5 → 6, RETIREMENT + CLEANUP 6 → 7, OPEN-LANE REFERENCE
+ROAD 7 → 8, ANY-FEATURE DISCOVERY 8 → 9. Three citations written against the old
+numbering were left behind, **and all three still landed on a real row** — which
+is why nothing looked broken. §5c's split called CAST-BORN INK DISCOVERY *"§10
+item 5"* (item 5 is THE TWO PATHS, blocked on his ceremony) and ANY-FEATURE
+DISCOVERY *"§10 item 8"* (item 8 is the open-lane road); the selector paragraph
+above said *"Item 7"* of a road that had become item 8. A shift following any of
+the three arrives at the wrong work with nothing to tell it so. **A line number
+rots loudly, by landing on nothing. An ordinal rots quietly, by landing on
+something else.**
+
+**So a citation carries the ROW'S NAME IN BRACKETS after the number** — *"§10
+item 6 (CAST-BORN INK DISCOVERY)"*, never *"item 6"* alone. The name does not
+prevent the rot, it makes it VISIBLE, and the three are the evidence: the two
+that carried their names read as wrong on sight, while the bare one took a
+paragraph of argument and a `git log -S` to settle. **Brackets rather than an
+em-dash, and that was decided by driving it**: read as a name claim, an em-dash
+after the ordinal accuses correct writing — `court-ink-removal-road-disposable`
+opens *"§10 item 3a — DOES THE REMOVAL ROAD THAT ALREADY EXISTS TAKE A TATTOO
+OFF?"*, where the dash introduces a question. In this file's prose an em-dash
+means *"and now a sentence"* more often than it means *"whose name is"*.
+
+`server/queueOrdinalDiscipline.test.ts` holds both halves as arms: the bracketed
+citations are checked against the table, and **the table's ordinal → title map
+is PINNED, so the next renumber reddens the suite on the commit that does it**
+and its message names the grep that is owed. The pin is a fingerprint and not a
+second copy — nothing reads it for an answer. Its stated floor: a citation with
+no brackets is invisible to the name arm, and one that was already wrong before
+the arm existed sails through both. **And the commit that INSERTS or REORDERS
+a row sweeps `§10 item` across the repository in the same commit** — the
+paragraph above already demands that a new road enter in the ruling that creates
+it; this is the same demand pointed at what the new road does to its NEIGHBOURS,
+which is law 7's second half aimed at a table. The sweep is one grep over
+sixteen tracked files (counted, 2026-08-22) — this one, `CLAUDE.md`, the Two
+Paths design, the cleanup triage and its yaml, the Atlas corpus and its
+generated json, `inkViewReferences.ts`, and nine `scripts/`.
+
+⚠ **A second ambiguity was found in the same sweep and is deliberately NOT
+repaired, because five of its six sites are not wrong.** Older prose here writes
+*"item 4's principle"*, *"item 6's routing question"*, *"item 5 (open-vocabulary
+regions)"* meaning this FILE's own §4, §6 and §5 — five such sites, each read
+and each correct, all predating §10 (`9edf1a68`, `d355fa53`). They are why the
+bare *"Item 7"* was the hard one of the three to judge, and why the rule above
+says NAME rather than *"always write the § prefix"*.
+
+**The sixth resolves to nothing, and it is reported rather than repaired.** §7's
+Stripe bullet says the key split *"remains the founder's, beside item 2's shared
+R2 credential"* (`67785690`, 2026-08-17). §2 was THE HONEST LOADER that day and
+still is; §7 has no numbered sub-list; the shared-credential line sits in a
+BULLET list further down the same section. **Guessing which list the author meant
+is how a wrong pointer becomes a permanent one**, so it stands as found, named
+here so the next reader knows it has been looked at and not merely skimmed past.
 
 ⚠ **AND THE SAME RULE HAS AN UNSOLVED HALF ON THE FOUNDER'S OWN SURFACE: THE
 CLOSING ACT IS OPTIONAL, AND TWICE THIS WEEK A CARD WAS THE LAST THING TO LEARN
@@ -2053,7 +2114,7 @@ born horns, scales and extras, things nobody has measured. They are the right
 gates for that, and they were quietly holding up something they were never
 about.
 
-- **§10 item 5 — CAST-BORN INK DISCOVERY. UNGATED, and it does not wait for any
+- **§10 item 6 (CAST-BORN INK DISCOVERY) — UNGATED, and it does not wait for any
   of the above.** A tattoo rolled in with the cast is not an open kind: every
   placement it can be read at already has a **measured `readerWord`** in
   `inkPlacementVocabulary`, a ride-table entry, and an image-half phrase. There
@@ -2063,7 +2124,7 @@ about.
   cards and the sign carry, and it needs **§10 items 1 and 2** and nothing else.
   Item 2's two free reads (~$0.05) SIZE it: whether a describer names ink on a
   master, and whether the segmenter finds rolled-in ink.
-- **§10 item 8 — ANY-FEATURE DISCOVERY. This section proper, gates intact.**
+- **§10 item 9 (ANY-FEATURE DISCOVERY) — this section proper, gates intact.**
   Describe-then-crop over open kinds, keeping the kind-property design, the
   declared-blindness budget, its own court with both controls, and its
   after-the-open-lane sequencing — because open kinds genuinely need the open
