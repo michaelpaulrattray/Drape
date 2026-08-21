@@ -69,6 +69,7 @@
  */
 
 import type { CastPronouns } from "./castPronouns";
+import { inkTransformClause, type InkTransform } from "../../shared/inkTransforms";
 
 /**
  * THE ANTI-STICKER CLAUSE — his bar, and it was already house prose.
@@ -222,6 +223,44 @@ export function inkDeliveredCarrySentence(
   noun: string,
   pronouns: CastPronouns,
 ): string {
+  return inkDeliveredSentence(ordinal, noun, pronouns, null);
+}
+
+/**
+ * THE SAME PICTURE, ASKED FOR A CHANGE — the transform lane (fable-1274 §1).
+ *
+ * A transform is an EDIT on the ink slot whose SOURCE is that slot's own
+ * delivered crop, so the picture on the wire is identical to the carry's and
+ * everything true of it is still true: it is the tattoo cut out of a photograph
+ * of her, the skin in it is her own, the transparent area is not the
+ * instruction, and whatever edge you can see is the real edge.
+ *
+ * **Exactly one clause differs, and that is why there is one function.** Written
+ * as two sentences side by side they would drift the first time somebody
+ * improved the carry's wording — and the carry's wording is not arbitrary: three
+ * clauses were said to this lane and all three put a design a third of the way
+ * down a white T-shirt, until the sentence was pointed at a picture that
+ * contains the size. A transform that lost that would lose it silently, on a
+ * render the customer paid for.
+ *
+ * `inkRealism.test.ts` holds the two to the same prefix, so neither can be
+ * edited alone.
+ */
+export function inkDeliveredTransformSentence(
+  ordinal: number,
+  noun: string,
+  pronouns: CastPronouns,
+  change: InkTransform,
+): string {
+  return inkDeliveredSentence(ordinal, noun, pronouns, change);
+}
+
+function inkDeliveredSentence(
+  ordinal: number,
+  noun: string,
+  pronouns: CastPronouns,
+  change: InkTransform | null,
+): string {
   const has = pronouns.plural ? "have" : "has";
   const their = pronouns.possessive;
   return [
@@ -232,8 +271,15 @@ export function inkDeliveredCarrySentence(
     "edges and extent are unambiguous.",
     `This picture is how big the design is on ${pronouns.object} and where on ${pronouns.object} it`,
     "sits, including where it stops: whatever edge you can see in it is the real edge of the",
-    "design. Put it back exactly as it is here — the same design, in the same place, at the same",
-    "size.",
+    "design.",
+    /*
+      AND THE ONE CLAUSE THAT DIFFERS. `null` is the carry — put it back as it
+      is. Anything else is the transform, and its clause is the vocabulary's
+      own: what changes, and that nothing else does.
+    */
+    change === null
+      ? "Put it back exactly as it is here — the same design, in the same place, at the same size."
+      : inkTransformClause(change, pronouns),
     /*
       AND WHAT A TATTOO IS ON SKIN, on this lane too.
 

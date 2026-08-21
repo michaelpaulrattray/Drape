@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "c1a46e7ff4c7804d"
+    "sourceFingerprint": "5d87b7800cf2a48f"
   },
   "domains": [
     {
@@ -123,7 +123,7 @@
     {
       "id": "domain:shared",
       "name": "shared",
-      "moduleCount": 31
+      "moduleCount": 32
     },
     {
       "id": "domain:studio",
@@ -5403,6 +5403,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:shared/inkTransforms.ts",
+      "path": "shared/inkTransforms.ts",
+      "domain": "shared",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:shared/kindLocality.ts",
       "path": "shared/kindLocality.ts",
       "domain": "shared",
@@ -10131,6 +10137,10 @@
     {
       "id": "test:server/castingV2/inkTemplates.test.ts",
       "path": "server/castingV2/inkTemplates.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/inkTransform.test.ts",
+      "path": "server/castingV2/inkTransform.test.ts"
     },
     {
       "id": "test:server/castingV2/inkUploadDoor.test.ts",
@@ -20584,6 +20594,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/castingV2/inkRealism.ts",
+      "to": "module:shared/inkTransforms.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/castingV2/inkReferenceCrop.ts",
       "to": "module:server/castingV2/inkUploadDoor.ts",
       "kind": "imports"
@@ -21501,6 +21516,11 @@
     {
       "from": "module:server/castingV2/recipeAssembler.ts",
       "to": "module:shared/inkCutRoute.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/recipeAssembler.ts",
+      "to": "module:shared/inkTransforms.ts",
       "kind": "imports"
     },
     {

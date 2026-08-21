@@ -86,7 +86,11 @@ import { slotDefinition } from "./referenceSlotCatalogue";
    than splitting a string (fable-1001 §1). `referenceSlots` imports nothing, so
    there is no cycle to weigh here. */
 import { isInkSlot, openKindOfSlot } from "./referenceSlots";
-import { inkDeliveredCarrySentence, inkNotOnClothingClause, inkRealismClause } from "./inkRealism";
+import {
+  inkDeliveredCarrySentence, inkDeliveredTransformSentence, inkNotOnClothingClause,
+  inkRealismClause,
+} from "./inkRealism";
+import type { InkTransform } from "../../shared/inkTransforms";
 import { imageHalfClause } from "./sidePhrasing";
 import { inkDesignWasExamined, type InkCutRoute } from "../../shared/inkCutRoute";
 
@@ -345,8 +349,19 @@ export type AssembleInput = {
  * string.
  *
  * The uploaded photograph is not a member and cannot become one by accident.
+ *
+ * `inkAsDelivered` (the transform road, fable-1274 §1) reads under exactly the
+ * same rule and passes it: those bytes are a crop of a frame THIS PRODUCT
+ * PAINTED, harvested by the delivery mint, never anything a customer uploaded.
+ *
+ * ⚠ **DERIVED FROM `SourceKind` AS OF 2026-08-21, and that is the fence too.**
+ * It was written out as a literal union, and the day `inkAsDelivered` joined
+ * `SourceKind` this list silently stopped naming every member — a second list
+ * shadowing a source of truth, drifting the way working law 4 says they always
+ * do, in the one place whose whole job is to enumerate what may be sent. It had
+ * no caller left to notice.
  */
-export type SourcePicture = "hairOnRedactedForm" | "inkDesignOnTransparency";
+export type SourcePicture = SourceKind["pictures"];
 
 /**
  * WHAT KIND OF PICTURE THIS IS, AND WHAT THAT KIND OWES.
@@ -370,6 +385,29 @@ type SourceKind =
     /** What was done to these bytes before they were stored — the design row's
      *  own column (migration 0047). `null` means nobody looked. */
     cutRoute: InkCutRoute | null;
+  }
+  /**
+   * THE TATTOO SHE ALREADY HAS, ON THE RENDER THAT CHANGES IT (fable-1274 1).
+   *
+   * The transform road's whole shape, and it is a SOURCE rather than a carry for
+   * the reason the two types already differ: a source belongs to an ASK and
+   * carries the ask's own words; a carry has no ask and says *keep what is
+   * there*. A customer asking to make it bigger is asking about that slot, so
+   * the slot is EDITED and its picture is a source.
+   *
+   * It is also why the naive build is already refused. Pass the same slot as a
+   * source AND in `carriedInk` and `carriesItsOwnEdit` fires -- *one picture
+   * twice with two sentences, keep it exactly as it is beside change it to
+   * this*. That refusal was written for D-244 line 2 and it stands guard over
+   * this road unaltered, which is the proof the road is sited correctly.
+   *
+   * `change` rides on the source rather than inside `scope` because it is a
+   * CLOSED value the sentence owner reads, not free prose: the whole point is
+   * that a transform cannot describe a design, only a change to one.
+   */
+  | {
+    pictures: "inkAsDelivered";
+    change: InkTransform;
   };
 
 export type RecipeSource = SourceKind & {
@@ -904,10 +942,11 @@ function identityClause(pronouns: CastPronouns): string {
  */
 function sourceSentence(
   ordinal: number,
-  pictures: SourcePicture,
+  source: SourceKind,
   pronouns: CastPronouns,
+  noun: string,
 ): string {
-  switch (pictures) {
+  switch (source.pictures) {
     case "hairOnRedactedForm":
       return [
         `Reference ${ordinal} is the picture supplied for ${pronouns.possessive} hair:`,
@@ -940,6 +979,16 @@ function sourceSentence(
         inkRealismClause(pronouns),
         inkNotOnClothingClause(pronouns),
       ].join(" ");
+    /*
+      THE TRANSFORM, SAID BY THE CARRY'S OWN OWNER.
+
+      Not composed here. `inkDeliveredTransformSentence` is the same function
+      that writes the carry sentence with one clause swapped, so the two cannot
+      come to disagree about what this picture IS — and what it is took three
+      frames and three clauses to get right.
+    */
+    case "inkAsDelivered":
+      return inkDeliveredTransformSentence(ordinal, noun, pronouns, source.change);
   }
 }
 
@@ -1279,8 +1328,14 @@ export function assembleRecipe(input: AssembleInput): AssembleResult {
         delivered, 2/2. Wiring a missing sentence and rewording a proven one in
         the same change would leave neither readable.
       */
+      /*
+        THE NOUN IS THE ASK'S OR THE LIBRARY'S, and an ink slot has no library
+        row at all (ink never enters the library), so it comes off the ask.
+        `slotNotNamed` below already refuses an ask that can supply neither.
+      */
+      const sourceNoun = entry?.noun ?? ask.noun ?? ask.slot;
       sentences.push(
-        `${sourceSentence(nextOrdinal(), source.pictures, pronouns)} ${source.scope}`,
+        `${sourceSentence(nextOrdinal(), source, pronouns, sourceNoun)} ${source.scope}`.trim(),
       );
       references.push({
         role: { kind: "source", slot: ask.slot },
