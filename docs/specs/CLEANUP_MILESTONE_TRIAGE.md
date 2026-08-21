@@ -2192,3 +2192,135 @@ un-wirings, `-1 exports, +1 file` across the window — exactly
 `removeEdgesForItems` gone and `queueOrdinalDiscipline.test.ts` arrived. The
 deleted symbol is correctly absent from the finding list: it had zero
 production importers at BOTH ends, so it was never un-wired, only removed.
+
+## 28. THE COMPOSER ROAD — the READING its four HELD rows are blocked on, and
+## the finding is that a MODULE-level graph cannot draw this boundary at all
+## (2026-08-22, opus-1001. A reading, not a verdict — no deletion is proposed
+## here and none is authorised by it.)
+
+Four HELD rows name one blocker: *"the composer road's module-sized
+disposition"* (`INK_ADD_RECIPE`, `authorizeInkAddDescription`,
+`createInkCalibrationRecorder`, `evaluateInkCalibrationGate`, plus
+`buildInkAuthorizationProviderConfig` naming the same road). Nobody could write
+that disposition without knowing where the road's edge is. This section is that
+reading.
+
+### 28a. The road is REACHABLE FROM A LIVE, LINKED SURFACE — it is dark by FLAG
+
+Read at the code rather than assumed, and this is the part that changes how the
+disposition has to be written:
+
+```
+/studio  (App.tsx, and linked from Navigation, AdminHeader and the lobby's
+          empty states — not an orphan URL)
+  -> pages/DrapeStudio -> studio/CastingWorkspace -> casting/ImageViewerPanel
+  -> casting/evidence/useInkAddWorkflow  -> trpc.evidence.*
+```
+
+The eleven ink procedures in `routes/evidence.ts` each call
+`requireInkCapability` → `captureEvidenceComposerEnabled` →
+**`R7_EVIDENCE_COMPOSER_SCOPE`, which the rite read off the service tonight as
+`off`.** So every mutation on this road answers `PRECONDITION_FAILED` for every
+account, the founder's included, and `readInkAddCapability` returns
+`inkAdd: false` so the panel does not offer itself.
+
+⚠ **THERE IS ONE USER-VISIBLE SENTENCE BEHIND THAT, AND IT NAMES THE WRONG
+SUBJECT.** `ImageViewerPanel` routes a Refine instruction that
+`looksLikeTattooInstruction` matches into this road, and with the flag off the
+customer is told:
+
+> *"Tattoo previews are not available for this Cast."*
+
+It is not this Cast. It is every Cast, for everyone, because the road is shut —
+and the tattoo road that WORKS is the V2 one at `/casting`. A dead-end sentence
+on a live linked surface, blaming the customer's own Cast. Narrow (it needs
+someone on the legacy studio typing a tattoo ask) but real, and it is the census
+cards' own class. **Filed as a finding here rather than sent to his desk**: it
+is a copy defect on the road V2 replaced, not money and not safety.
+
+### 28b. The two doors, and the ONE import line that decides the whole boundary
+
+`routes/evidence.ts` has exactly two gates, and they disagree:
+
+```
+requireCapability     -> captureEvidenceIngestEnabled   R7_EVIDENCE_INGEST_SCOPE=users:1   LIVE
+requireInkCapability  -> captureEvidenceComposerEnabled R7_EVIDENCE_COMPOSER_SCOPE=off     DEAD
+```
+
+Walking the static import closure from each door's own entry modules
+(disposable, since deleted; the method is thirty lines of BFS over relative
+`from "…"` specifiers, four controls, all passing):
+
+```
+                                        as written    with ONE edge cut
+  dead-door closure                     141 modules   141
+  live-door closure                     129 modules    71
+  rest-of-product closure               432 modules   432
+  REACHABLE ONLY THROUGH THE DEAD DOOR   11 modules    13
+  also reached by the LIVE ingest door  126 modules    68
+```
+
+**The cut edge is the finding.** `evidenceOperations.ts` imports
+`findOwnedPendingInkIntent` from `db/inkAddIntents.ts`, and the only function in
+that file which calls it is `stageOwnedInkIntentReference` — which sits behind
+`requireInkCapability`, the DEAD door. Read at the file. **That single import
+line drags 58 modules across the boundary, including every module the four HELD
+rows name.** One dual-purpose file, one line, and the whole partition moves.
+
+### 28c. So the answer is: THIS IS THE WRONG INSTRUMENT, and that is worth more
+### than the table it produced
+
+Three times in one reading the *"shared, therefore not ours to retire"* verdict
+turned out to rest on a single symbol rather than on a module:
+
+1. the import above — one symbol for a dead-gated function;
+2. `snapshotTransitions.ts` → `evidencePackageComposition.ts` →
+   `composer/inkComposer.ts`, where **the Sign road imports
+   `EVIDENCE_PACKAGE_COMPOSER_RECIPE_VERSION` and nothing else** — a version
+   CONSTANT, not the composer machinery. A module graph reports that as the
+   package-minting path depending on the composer road;
+3. `routes/evidence.ts` itself imports `INK_ADD_MIN/MAX_DESCRIPTOR_LENGTH` from
+   `composer/inkAddRecipe` at module scope, for a zod schema, on procedures the
+   same file refuses.
+
+**A module-level import closure cannot draw this boundary**, and a disposition
+written from one would either retire something live or refuse to retire
+something dead. The control that caught (2) is worth keeping in mind: it did not
+let the table be believed until the path had been read, and once read it was
+converted into an assertion about the REASON — the import is one named constant
+— so it still fires if that ever becomes a machinery import.
+
+**The instrument the disposition actually needs already exists in this
+repository.** `scripts/lib/importerCountDiff.mts`'s `readTree` is a
+symbol → production-importers map, and `diff-importer-count-across-time.mts`
+compares two trees. The shape that answers this question is: build a worktree
+with the eleven dead-gated procedures removed, diff it against HEAD, and
+**iterate to a fixpoint** — each pass un-wires a ring, exactly as §8d predicted
+the `beginInkAddIntent` ring would arrive *"on the NEXT sweep, which is the
+honest way for it to arrive"*. That is a real build with a real design question
+in it (what stops the fixpoint, and what stops it eating a live symbol), so it
+is named here and NOT started.
+
+### 28d. What the reading does establish, and can be used today
+
+- **Thirteen modules are reachable only through the dead door**, and this is a
+  floor rather than the road: `composer/inkRetryDecision.ts`,
+  `inkAcceptanceCommit.ts`, `inkAddIntent.ts`, `inkCandidateAcceptance.ts`,
+  `inkCandidateGeneration.ts`, `inkCandidatePublicStorage.ts`,
+  `inkInstructionPlanner.ts`, `inkIntentCancellation.ts`, `inkViewImpact.ts`,
+  `db/inkAddAcceptance.ts`, `db/inkAddCancellation.ts`, `db/inkAddCandidates.ts`,
+  `db/inkAddIntents.ts`.
+- **`inkCalibration.ts` is in NO closure at all.** Its only mentions anywhere
+  are its own suite and `r7-ink-add-d3-contract.test.ts`, which READS THE FILE
+  as text rather than importing it. So its two HELD rows
+  (`createInkCalibrationRecorder`, `evaluateInkCalibrationGate`) are the
+  cheapest of the four and do not need the fixpoint — they need only the
+  contract test's own question answered.
+- **Six of the eight `composer/` modules are reached from outside both evidence
+  doors**, so *"the composer directory"* is not the unit of retirement. The
+  directory name is not the road.
+- The road's client half (`InkAddPanel`, `useInkAddWorkflow`,
+  `inkAddUxPolicy`, `inkProjectionEvents`, `evidencePackageDisplay`) is already
+  `lifecycle: retire` in the Atlas, along with 132 modules in total — of which
+  ~55 are the server evidence road. **That number is the size of the sitting**
+  this reading was scoping, and it is a sitting rather than a chunk.
