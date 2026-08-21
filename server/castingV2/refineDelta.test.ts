@@ -573,14 +573,106 @@ describe("the free lane composes under its registered headings", () => {
 describe("ink renders only where the anchor is the document", () => {
   const check = (instruction: string): FreeLaneCheck => ({ instruction });
 
-  it("lets face and neck ink through — D-133(a)", () => {
+  it("lets NECK ink through — what is left of D-133(a)", () => {
     for (const ask of [
       "a small rose tattoo on her neck",
-      "a tiny star tattoo under her eye",
-      "a line tattoo along her jaw",
+      "a geometric band tattoo around the neck",
     ]) {
       const delta = readDelta({ free: { ink: ask } }, check(ask));
       expect(delta?.free?.ink, ask).toEqual([ask]);
+    }
+  });
+
+  /*
+    ⚠ AND THE FACE HALF IS RETIRED (driven opus-954 §3, ruled fable-1296 §1).
+
+    THIS ARM ASSERTED THE OPPOSITE and is inverted rather than deleted, because
+    the reversal deserves a place a reader lands on. It read *"lets face and
+    neck ink through"* and passed a cheek, a jaw and an under-eye ask.
+
+    What ended it is that the pass was never a render. Driven at the service, a
+    face ask goes through this gate and dies at the NEXT door, which needs a
+    placement the measured vocabulary holds — and `INK_PLACEMENTS` has no face
+    surface. The customer got *"I need to know where it goes"* after saying
+    where it goes: D-180's dead-end wearing a question.
+
+    So nothing that rendered stops rendering. What changes is WHERE the refusal
+    happens and WHICH sentence is said, and both were wrong.
+  */
+  it("⚠ WALLS a face ask, which never rendered anyway — with the honest sentence", () => {
+    for (const ask of [
+      "a tiny star tattoo under her eye",
+      "a line tattoo along her jaw",
+      "a small rose tattoo on her cheek",
+      "a tattoo on her forehead",
+    ]) {
+      const c = check(ask);
+      expect(readDelta({ free: { ink: ask } }, c), ask).toBeNull();
+      expect(c.wall?.reason, ask).toBe("gate_ink_document");
+    }
+  });
+
+  /*
+    AND THE LIST IS DERIVED, which is the half that stops this happening again.
+
+    Two hand-authored lists answered one question and drifted; the gate's is now
+    read off the measured vocabulary. This arm is the widening control: a
+    placement the vocabulary HOLDS but the words road does not yet SERVE must
+    still wall, or the derivation has quietly opened the road the court in
+    fable-1296 §3 exists to decide.
+  */
+  it("⚠ AND THE RETIREMENT IS PER LANE — his own scar sentence still renders", () => {
+    /*
+      THE ARM THE SUITE TAUGHT ME, and it caught a real regression rather than a
+      fixture.
+
+      The first version of this change retired the face words for BOTH subjects
+      this gate covers, and four arms went red on the founder's own production
+      sentence — *"give her a harry potter lighting bolt scar on her
+      forehead"*, which `namesDesign` pulls into this gate on the word
+      "lightning".
+
+      The generalisation was wrong: an INK value goes on to a door needing a
+      measured placement and dies there, which is what made the face carve-out
+      dead. A design-named MARK never travels that road — the words lane is
+      entered on `facetsWrittenBy(delta).has("ink")` — so it renders on a face
+      exactly as it always has.
+
+      The pair is the claim: the SAME PLACE, the two lanes, opposite answers.
+    */
+    const mark = "a lightning bolt scar on her forehead";
+    expect(readDelta({ free: { marks: mark } }, check(mark))?.free?.marks).toEqual([mark]);
+
+    const ink = "a lightning bolt tattoo on her forehead";
+    const c = check(ink);
+    expect(readDelta({ free: { ink: ink } }, c)).toBeNull();
+    expect(c.wall?.reason).toBe("gate_ink_document");
+  });
+
+  it("⚠ AND D-158's BYPASS STAYS SHUT ON BOTH LANES", () => {
+    /*
+      The control that keeps the arm above from being a hole. The gate exists
+      because a design filed as a MARK — "a small star behind her ear" — escaped
+      the ink law by choosing a drawer. Giving the mark lane its own list must
+      not give it its own exemption: the hidden rules run before either list, on
+      both lanes.
+    */
+    for (const subject of ["ink", "marks"] as const) {
+      const ask = "a small star behind her ear";
+      const c = check(ask);
+      expect(readDelta({ free: { [subject]: ask } }, c), subject).toBeNull();
+      expect(c.wall?.reason, subject).toBe("gate_ink_document");
+    }
+  });
+
+  it("⚠ still walls a measured placement the words road does not serve yet", () => {
+    for (const ask of [
+      "a swallow tattoo on her upper chest",
+      "a band tattoo on her left upper arm",
+    ]) {
+      const c = check(ask);
+      expect(readDelta({ free: { ink: ask } }, c), ask).toBeNull();
+      expect(c.wall?.reason, ask).toBe("gate_ink_document");
     }
   });
 
@@ -655,7 +747,10 @@ describe("ink renders only where the anchor is the document", () => {
     reported as their mistake, which is what `stripFence` already exists to stop.
   */
   it("hoists a free subject the interpreter put at the top level", () => {
-    const ask = "a small rose tattoo on her cheekbone";
+    /* A NECK ask, because this arm is about HOISTING and the gate's face half
+       retired on 2026-08-21 — a cheekbone ask now walls, which would have made
+       this test pass for the wrong reason or fail for an unrelated one. */
+    const ask = "a small rose tattoo on her neck";
     expect(readDelta({ ink: ask }, check(ask))?.free?.ink).toEqual([ask]);
   });
 
@@ -666,11 +761,20 @@ describe("ink renders only where the anchor is the document", () => {
     expect(c.wall?.reason).toBe("gate_ink_document");
   });
 
-  /* And the narrowness is load-bearing in the other direction: "under" hides
-     things only when hair is what is over them. An eye is still front-visible. */
-  it("keeps under-the-eye ink renderable", () => {
-    const ask = "a tiny star tattoo under her eye";
+  /*
+    THE HIDDEN RULES STAY NARROW, and the arm that proved it moved rather than
+    went: it used to show that "under her eye" still RENDERED, which the face
+    retirement ended. What it was really guarding is that the `under … hair`
+    rule does not swallow every "under", and that is asserted where it cannot be
+    confounded by the face change — on a NECK ask, the one surface still served.
+  */
+  it("does not let the under-the-hair rule swallow an ordinary 'under'", () => {
+    const ask = "a small rose tattoo under her neck";
     expect(readDelta({ free: { ink: ask } }, check(ask))?.free?.ink).toEqual([ask]);
+    /* And the rule itself still fires on what it is for. */
+    const hidden = check("a rose tattoo under her hair");
+    expect(readDelta({ free: { ink: "a rose tattoo under her hair" } }, hidden)).toBeNull();
+    expect(hidden.wall?.reason).toBe("gate_ink_document");
   });
 
   /*
@@ -688,9 +792,14 @@ describe("ink renders only where the anchor is the document", () => {
     /* It INVITES the missing fact rather than only closing a door (D-137 as
        amended): the user's next move is to say where. */
     expect(INK_NEEDS_DOCUMENT_MESSAGE).toContain("Tell me where");
-    expect(INK_NEEDS_DOCUMENT_MESSAGE).toContain("face and neck");
+    expect(INK_NEEDS_DOCUMENT_MESSAGE).toContain("neck tattoo");
     expect(INK_NEEDS_DOCUMENT_MESSAGE).toContain("body-art studio is coming");
     expect(INK_NEEDS_DOCUMENT_MESSAGE).toContain("Nothing was charged");
+    /* ⚠ AND IT NO LONGER CLAIMS FACE INK WORKS. It said "face and neck ink
+       works today" for as long as this road existed, and the face half was
+       never true — the sentence is the thing this retirement is FOR, so a
+       future edit putting it back must go red here. */
+    expect(INK_NEEDS_DOCUMENT_MESSAGE.toLowerCase()).not.toContain("face");
   });
 });
 

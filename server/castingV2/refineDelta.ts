@@ -1245,7 +1245,11 @@ export function readDelta(value: unknown, check?: FreeLaneCheck): RefineDelta | 
              kept a crop of. See the field's own docblock: the question is
              unchanged, the answers are now three. */
           && !check.inkDocumentedByDelivery
-          && classifyInkPlacement(scrubbed).kind !== "in_frame"
+          /* THE LANE IS THE SUBJECT, and it decides which list answers — see
+             `inkPlacement`'s per-lane note. The face carve-out is retired for
+             `ink`, which dies at the measured-placement door anyway, and KEPT
+             for a design-named mark, which renders on a face and always has. */
+          && classifyInkPlacement(scrubbed, subject === "ink" ? "ink" : "mark").kind !== "in_frame"
         ) {
           check.wall = { reason: "gate_ink_document" };
           return null;

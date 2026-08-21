@@ -13,25 +13,116 @@
  *
  * # So this is a placement question, answered in code
  *
- * Face and neck are in-frame. A sleeve, a chest piece, a back piece are not —
- * the anchor cannot show them, so no amount of prompt text makes the render
- * trustworthy. Until the body-art studio exists (D-138), those refuse.
- *
  * **Unnamed placement refuses too, and that is deliberate.** "A small rose
  * tattoo" with no location could land anywhere; rendering it somewhere and
  * hoping is exactly the drift the law exists to prevent. The refusal names what
  * DOES work, so it points somewhere rather than just closing a door.
+ *
+ * # ⚠ THE FACE HALF OF D-133(a) WAS RETIRED 2026-08-21 — it was a promise the
+ * # code had stopped keeping (driven opus-954 §3, ruled fable-1296 §1)
+ *
+ * This header used to open *"Face and neck are in-frame"*, and the face half of
+ * that sentence had not been true for as long as this road has existed. Driven
+ * at the service: a cheek ask passes this gate and dies at the NEXT door, which
+ * requires a placement the measured vocabulary holds — `INK_PLACEMENTS` is
+ * `neck`, `upperArm`, `upperChest` and contains no face surface at all. What the
+ * customer got was *"I need to know where it goes"*, said to somebody who had
+ * just said where it goes: D-180's dead-end wearing a question.
+ *
+ * So this list was never a CAPABILITY list. What renders is whatever the take
+ * resolves to a measured placement; this list only ever decided WHERE the
+ * refusal happened and WHICH sentence was said, and on fourteen face words it
+ * decided both wrong.
+ *
+ * # It is DERIVED now, and that is the repair rather than a shorter list
+ *
+ * {@link INK_LANE_PLACES} comes off the measured vocabulary, filtered by the one
+ * fact that decides this: which placements the WORDS road can serve today. Two
+ * hand-authored lists answering one question is working law 4, and the drift
+ * between them is what a customer was paying the price of.
+ *
+ * The founder's ruling (fable-1290) is that the road opens wherever the delivery
+ * mint can find and crop the result — which is the whole measured vocabulary.
+ * It has NOT been opened here: `upperChest` and `upperArm` wait on the court
+ * that measures whether the mint fires on what they deliver (fable-1296 §3).
+ * When it does, {@link WORDS_ROAD_PLACEMENTS} is the one line that widens.
+ *
+ * # ⚠ AND THE RETIREMENT IS PER LANE, WHICH THE SUITE HAD TO TEACH ME
+ *
+ * The first version of this change retired the face words for BOTH subjects the
+ * gate covers, and four arms went red on the founder's own sentence — *"give
+ * her a harry potter lighting bolt scar on her forehead"*.
+ *
+ * **The generalisation was wrong and the reason is worth keeping.** The face
+ * carve-out is dead for `ink` because an ink value goes on to a door that needs
+ * a MEASURED placement and dies there. A design-named MARK never travels that
+ * road at all — the words lane is entered on `facetsWrittenBy(delta).has("ink")`
+ * and a mark writes `marks` — so it renders on the face exactly as it always
+ * has. One promise the code stopped keeping, one it still keeps, and only the
+ * first is being retired.
+ *
+ * `namesDesign` still pulls a design-named mark into THIS gate, so D-158's
+ * bypass stays shut: *"a small star behind her ear"* is caught by
+ * {@link HIDDEN_RULES} before either list is consulted, on either lane.
  */
 
+import {
+  inkPlacementEntry,
+  type InkPlacement as InkPlacementKey,
+} from "../../shared/inkPlacementVocabulary";
+
 /**
- * Words that put ink inside the chest-up frame.
+ * WHICH MEASURED PLACEMENTS THE WORDS ROAD SERVES TODAY — the one line that
+ * widens when the court in fable-1296 §3 reports.
  *
- * Deliberately narrow. Anything not clearly in-frame is treated as not
- * in-frame, because the failure of being too generous here is a paid render of
- * a tattoo nobody can verify, and the failure of being too strict is a refusal
- * that names the studio.
+ * `neck` alone, and it is the only one of the three that was ever proven end to
+ * end: crop #1, his cybersigilism, minted from a delivered frame with no design
+ * row anywhere. `upperArm` and `upperChest` are measured SURFACES on masters and
+ * that is a different claim from *the mint fires on what a words render
+ * delivers there* — which is the court's question, not this file's assumption.
+ *
+ * Typed against the vocabulary so a placement that leaves it cannot be left
+ * behind here.
  */
-const IN_FRAME_PLACES = [
+const WORDS_ROAD_PLACEMENTS: readonly InkPlacementKey[] = ["neck"];
+
+/**
+ * Words that put INK where the words road can actually put it.
+ *
+ * DERIVED from the vocabulary rather than authored — see the header for the
+ * fourteen face words this replaces and what they cost. Each served placement
+ * contributes the two spellings the vocabulary already owns: the segmenter's
+ * measured word and the customer-facing noun with its possessive stripped, so
+ * *"her neck"* and *"the neck"* both match without a synonym list of our own.
+ *
+ * A synonym judgement is NOT made here and the omission is deliberate
+ * (`inkPlacementResolve`'s own rule, fable-1114 §2): *"throat"* is a word for
+ * this surface and it is not the vocabulary's, so an ask naming it walls with an
+ * honest sentence rather than being silently merged into `neck` by a machine.
+ * It walled in effect before this change too — the take could not resolve it and
+ * the next door refused it — so nothing renders today that stops rendering now.
+ */
+const INK_LANE_PLACES: readonly string[] = Array.from(new Set(
+  WORDS_ROAD_PLACEMENTS.flatMap((key) => {
+    const entry = inkPlacementEntry(key);
+    return [entry.readerWord, entry.noun.replace(/^(?:her|his|their)\s+/, "")];
+  }),
+)).sort((a, b) => b.length - a.length);
+
+/**
+ * Words that put a design-named MARK inside the chest-up frame — the list this
+ * file opened with, kept whole for the one lane it is still true of.
+ *
+ * See the header's per-lane note. A mark renders straight from words with no
+ * placement door in the way, so *"a lightning bolt scar on her forehead"* — the
+ * founder's own sentence — is a promise this road keeps, and retiring it here
+ * would take a working feature out on the strength of a measurement about a
+ * different lane.
+ *
+ * Deliberately narrow, for the reason it always was: the failure of being too
+ * generous is a paid render of a design nobody can verify.
+ */
+const MARK_LANE_PLACES: readonly string[] = [
   "face", "cheek", "cheekbone", "forehead", "temple", "brow", "chin", "jaw",
   "jawline", "nose", "lip", "eyebrow", "eye",
   "neck", "throat", "nape",
@@ -106,16 +197,28 @@ export function namesDesign(text: string): boolean {
   return DESIGN_WORDS.some((word) => new RegExp(`\\b${word}s?\\b`).test(lowered));
 }
 
-export function classifyInkPlacement(text: string): InkPlacement {
+/**
+ * Which lane this value arrived on — see the header's per-lane note.
+ *
+ * Not defaulted, and that is the point: the caller knows the subject, and a
+ * default here would let a future third caller inherit whichever answer was
+ * convenient rather than deciding. `"ink"` is the retired-face lane and
+ * `"mark"` is the one that still renders on a face.
+ */
+export type InkPlacementLane = "ink" | "mark";
+
+export function classifyInkPlacement(text: string, lane: InkPlacementLane): InkPlacement {
   const lowered = text.toLowerCase();
   /*
     VISIBILITY BEATS REGION, and checking it first is the whole fix: it is what
-    stops any phrasing of "behind the ear" from matching on "ear".
+    stops any phrasing of "behind the ear" from matching on "ear". It runs on
+    BOTH lanes — a thing behind an ear is behind it whatever drawer it is filed
+    in, which is D-158's finding and nothing here supersedes it.
   */
   for (const rule of HIDDEN_RULES) {
     if (rule.pattern.test(lowered)) return { kind: "needs_document" };
   }
-  for (const place of IN_FRAME_PLACES) {
+  for (const place of lane === "ink" ? INK_LANE_PLACES : MARK_LANE_PLACES) {
     if (new RegExp(`\\b${place}\\b`).test(lowered)) return { kind: "in_frame", place };
   }
   return { kind: "needs_document" };
@@ -128,8 +231,9 @@ export function classifyInkPlacement(text: string): InkPlacement {
  * wait, or give up. This one says which of the three.
  */
 export const INK_NEEDS_DOCUMENT_MESSAGE =
-  "Tell me where it goes — face and neck ink works today. Anywhere else needs a "
-  + "design document first, and the body-art studio is coming. Nothing was charged.";
+  "Tell me where it goes — a neck tattoo is the one I can do from a description "
+  + "alone. Anywhere else needs a design to work from first, and the body-art "
+  + "studio is coming. Nothing was charged.";
 
 /**
  * A STATED PLACEMENT IS NEVER RELOCATED (D-145).
@@ -149,7 +253,14 @@ const SIDES = ["left", "right"];
 
 export function placementClause(text: string): string {
   const lowered = text.toLowerCase();
-  const place = IN_FRAME_PLACES.find((p) => new RegExp(`\\b${p}\\b`).test(lowered));
+  /*
+    THE WIDER LIST, on purpose: this clause is written for whatever actually
+    reached a render, and the mark lane reaches one on every face word. Reading
+    the ink lane's shorter list here would silently drop the never-relocate
+    sentence from exactly the renders D-145 was written about — a face mark
+    landing on the wrong cheek.
+  */
+  const place = MARK_LANE_PLACES.find((p) => new RegExp(`\\b${p}\\b`).test(lowered));
   if (!place) return "";
   const side = SIDES.find((s) => new RegExp(`\\b${s}\\b`).test(lowered));
   const where = side ? `the ${side} ${place}` : `the ${place}`;

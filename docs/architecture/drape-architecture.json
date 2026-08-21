@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "d045362e4e452091"
+    "sourceFingerprint": "63a176dbe7cec01e"
   },
   "domains": [
     {
@@ -20500,6 +20500,11 @@
     {
       "from": "module:server/castingV2/inkDesignForAsk.ts",
       "to": "module:shared/inkReleasedPlacements.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/inkPlacement.ts",
+      "to": "module:shared/inkPlacementVocabulary.ts",
       "kind": "imports"
     },
     {
