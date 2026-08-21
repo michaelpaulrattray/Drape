@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "79ea6d4ed234cdec"
+    "sourceFingerprint": "955f8eecd953952f"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 162
+      "moduleCount": 163
     },
     {
       "id": "domain:castingV2",
@@ -3707,6 +3707,12 @@
     {
       "id": "module:server/castingV2/inkRideFloor.ts",
       "path": "server/castingV2/inkRideFloor.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/inkStyleGlossary.ts",
+      "path": "server/castingV2/inkStyleGlossary.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -10167,6 +10173,10 @@
     {
       "id": "test:server/castingV2/inkStudioScope.test.ts",
       "path": "server/castingV2/inkStudioScope.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/inkStyleGlossary.test.ts",
+      "path": "server/castingV2/inkStyleGlossary.test.ts"
     },
     {
       "id": "test:server/castingV2/inkTemplates.test.ts",
@@ -21582,6 +21592,11 @@
     {
       "from": "module:server/castingV2/recipeAssembler.ts",
       "to": "module:server/castingV2/inkRealism.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/recipeAssembler.ts",
+      "to": "module:server/castingV2/inkStyleGlossary.ts",
       "kind": "imports"
     },
     {

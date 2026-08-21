@@ -90,6 +90,9 @@ import {
   inkDeliveredCarrySentence, inkDeliveredTransformSentence, inkNotOnClothingClause,
   inkRealismClause,
 } from "./inkRealism";
+/* The style vocabulary, beside the realism clauses and never inside them
+   (fable-1313 §2) — one owner for every road that turns words into ink. */
+import { inkStyleClause } from "./inkStyleGlossary";
 import type { InkTransform } from "../../shared/inkTransforms";
 import { imageHalfClause } from "./sidePhrasing";
 import { inkDesignWasExamined, type InkCutRoute } from "../../shared/inkCutRoute";
@@ -1900,8 +1903,35 @@ export function assembleRecipe(input: AssembleInput): AssembleResult {
   const inkAsksWithoutAPicture = input.asks.some((one) => (
     isInkSlot(one.slot) && !one.restate && one.vacate === undefined && !sourceOf.has(one.slot)
   ));
+  /*
+    AND WHAT THE STYLE SHE NAMED ACTUALLY LOOKS LIKE (founder, fable-1313 §2).
+
+    His specimen: a **cybersigilism** neck tattoo came back circuit traces and
+    chip lines, because the engine reads the word the way the word looks. The
+    style is ornamental spikework and has nothing to do with technology. The
+    mechanism was never the problem — the render, the mint and the card all
+    worked — so the fix is a VOCABULARY beside the realism clauses rather than a
+    change to either.
+
+    Read from the ASKS' own words, and only for an ink ask with no picture: a
+    crop of her own tattoo IS the description, and prose about what a style
+    usually looks like would compete with the artwork in front of it.
+
+    Empty when she named no style, which is the common case, so an ink ask
+    without a style word composes exactly the prompt it composed before this
+    existed. `inkStyleClause` is the one owner; the reference road's prose lane
+    reads the same function.
+  */
+  const styleClause = inkAsksWithoutAPicture
+    ? inkStyleClause(input.asks
+      .filter((one) => isInkSlot(one.slot) && !one.restate && one.vacate === undefined && !sourceOf.has(one.slot))
+      .map((one) => one.words ?? "")
+      .join(" "))
+    : "";
   const inkWords = inkAsksWithoutAPicture
-    ? `${inkRealismClause(pronouns)} ${inkNotOnClothingClause(pronouns)}`
+    ? [styleClause, inkRealismClause(pronouns), inkNotOnClothingClause(pronouns)]
+      .filter((line) => line !== "")
+      .join(" ")
     : "";
 
   return {

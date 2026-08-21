@@ -1990,6 +1990,49 @@ describe("a words-only ink ask is told what a tattoo is on skin", () => {
     expect(recipe.prompt).not.toContain("her skin");
   });
 
+  /*
+    AND WHAT THE STYLE SHE NAMED LOOKS LIKE — at the wire (fable-1313 §2).
+
+    His specimen is the reason: a cybersigilism neck tattoo rendered as circuit
+    traces, because the engine reads the word the way the word looks. Asserted
+    on `recipe.prompt` rather than on the clause beside it, because a glossary
+    that composes correctly and never reaches the request is the inert-control
+    shape this program keeps paying for.
+  */
+  it("carries the STYLE clause, and its refusal, when she names a style", () => {
+    const recipe = wordsOnly(HE, {
+      asks: [{ slot: "ink:neck", noun: "neck tattoo", words: "a cybersigilism piece" }],
+    });
+    expect(recipe.ok).toBe(true);
+    if (!recipe.ok) return;
+    expect(recipe.prompt).toContain("ultra-fine spiky ornamental linework");
+    expect(recipe.prompt).toContain("NOT circuitry");
+    /* Beside the realism clauses, never instead of them. */
+    expect(recipe.prompt).toContain(inkRealismClause(HE));
+  });
+
+  it("is INERT for an ink ask that names no style — byte for byte", () => {
+    /*
+      The control that lets this be consulted on every ink road: an ask with no
+      style word must compose exactly the prompt it composed before the glossary
+      existed. Driven as a DIFFERENCE between two asks rather than as an
+      absence, so it cannot pass by the clause never working at all.
+    */
+    const plain = wordsOnly(HE, {
+      asks: [{ slot: "ink:neck", noun: "neck tattoo", words: "a small swallow" }],
+    });
+    const styled = wordsOnly(HE, {
+      asks: [{ slot: "ink:neck", noun: "neck tattoo", words: "a small cybersigilism swallow" }],
+    });
+    expect(plain.ok && styled.ok).toBe(true);
+    if (!plain.ok || !styled.ok) return;
+    expect(plain.prompt).not.toContain("The style named is");
+    expect(styled.prompt).toContain("The style named is");
+    /* The ONLY difference is the style clause — everything else is untouched. */
+    expect(styled.prompt.replace(/The style named is [^]*?technology or machinery\. /, ""))
+      .toBe(plain.prompt.replace("a small swallow", "a small cybersigilism swallow"));
+  });
+
   it("says it AFTER the ask, so \"it\" has the tattoo as its antecedent", () => {
     const recipe = wordsOnly();
     expect(recipe.ok).toBe(true);
