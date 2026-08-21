@@ -79,7 +79,8 @@
 import { vacantPhraseFor } from "./vacancyPhrases";
 import { capitalize, type CastPronouns } from "./castPronouns";
 import { IMPERATIVE_OPENER } from "./declarativeState";
-import { accessoryKindOfSlot } from "./slotWordShape";
+import { accessoryKindOfSlot, type SlotWordsRefusal } from "./slotWordShape";
+import { untrueWordsRefusal } from "./referenceWordsSupersession";
 import { slotDefinition } from "./referenceSlotCatalogue";
 /* The open lane's key grammar has ONE owner and this module reads it rather
    than splitting a string (fable-1001 §1). `referenceSlots` imports nothing, so
@@ -546,6 +547,17 @@ export type Recipe = {
    *  is asked (a pure carry render). */
   ask: string;
   /**
+   * THE STACK ENTRIES THIS RECIPE REFUSED TO SAY — usually empty.
+   *
+   * A row already in the database whose prose is UNTRUE about its own slot. The
+   * row is left exactly where it is (nothing here rewrites history); it simply
+   * does not speak on this render. Reported rather than dropped in silence,
+   * because a prompt that quietly says less than the library holds is
+   * indistinguishable from a library that lost a fact — see {@link
+   * withheldWords} for the whole argument.
+   */
+  withheld: readonly WithheldWords[];
+  /**
    * THE WHOLE PROMPT, in send order, and the only text a caller sends.
    *
    * It is built here so that "reference 3 is her hair" is true of the array
@@ -555,6 +567,20 @@ export type Recipe = {
    * in every output except the picture.
    */
   prompt: string;
+};
+
+/**
+ * One stack entry that did not reach the prompt, and why.
+ *
+ * `slot` and `word` are what was withheld; `reason` is the door's own vocabulary
+ * (`wordsNameAnotherKind`, `wordsClaimThePair`, `wordsDescribeTheArtifact`),
+ * never a second spelling invented here.
+ */
+export type WithheldWords = {
+  slot: FeatureSlot;
+  word: string;
+  reason: SlotWordsRefusal["reason"];
+  detail: string;
 };
 
 export type RecipeRefusal = {
@@ -975,8 +1001,69 @@ function inkCarrySentence(ordinal: number, noun: string, pronouns: CastPronouns)
   ].join(" ");
 }
 
+/**
+ * THE LIBRARY AS THIS RECIPE IS ALLOWED TO SAY IT (fable-1266 §1b).
+ *
+ * The write door has refused a malformed word stack since the earring rows named
+ * her glasses — but only from the day it landed, and only for the shapes it
+ * could reach. Two gaps meet here:
+ *
+ *   the past    every row written BEFORE the door existed is still in the
+ *               database, still carrying whatever it said, and D-244 re-says a
+ *               slot's whole stack on every edit. Eight production earring rows
+ *               named her glasses.
+ *   the reach   the door's kind check returned early for anatomy, so no skin or
+ *               build row was ever asked what its prose said. On a tattooed
+ *               torso, *"Describe this person's skin"* answers with the ink —
+ *               and the ink already has an author with GEOMETRY, the design's
+ *               own crop, which says the same design in the same place at the
+ *               same size. The words say "tattooed chest" and float.
+ *
+ * # Why it withholds instead of refusing the recipe
+ *
+ * `wordsNotDeclarative` a few lines below refuses the whole render for a bad
+ * persisted word, and this could have been written as its neighbour. It is not,
+ * and the reason is the module's own cost model: *a refusal costs the render its
+ * reference and costs the user nothing.* Refusing HERE would cost the user the
+ * render — a customer whose cast holds one old row would have every later refine
+ * fall into the refund until somebody rewrote her library. The correct outcome
+ * is the one the ink lane already has: the crop remains the single author, and
+ * the render proceeds.
+ *
+ * # Why it is not a repair
+ *
+ * The offending STACK ENTRY is withheld whole. Nothing edits prose — a door that
+ * rewrote the words would hide the regression it exists to catch, and a stack is
+ * a list of captions, so dropping one caption still leaves every other version's
+ * caption speaking. The database row is untouched.
+ *
+ * The untrue/untidy split is NOT re-derived here: `untrueWordsRefusal` owns it,
+ * and a trailing full stop is untidy rather than untrue — blanking a true
+ * sentence to fix its punctuation would delete a fact for nothing.
+ */
+function withheldWords(library: readonly LibraryEntry[]): {
+  spoken: readonly LibraryEntry[];
+  withheld: readonly WithheldWords[];
+} {
+  const withheld: WithheldWords[] = [];
+  const spoken = library.map((entry) => {
+    const kept = entry.words.filter((word) => {
+      const refusal = untrueWordsRefusal(entry.slot, [word]);
+      if (refusal === null) return true;
+      withheld.push({ slot: entry.slot, word, reason: refusal.reason, detail: refusal.detail });
+      return false;
+    });
+    return kept.length === entry.words.length ? entry : { ...entry, words: kept };
+  });
+  return { spoken, withheld };
+}
+
 export function assembleRecipe(input: AssembleInput): AssembleResult {
-  const bySlot = new Map(input.library.map((entry) => [entry.slot, entry]));
+  /* Derived ONCE and used everywhere below, so no branch of this function can
+     read a stack the recipe has decided not to say. `input.library` is not read
+     again after this line. */
+  const { spoken: library, withheld } = withheldWords(input.library);
+  const bySlot = new Map(library.map((entry) => [entry.slot, entry]));
   const restated = input.asks.filter((ask) => ask.restate).map((ask) => ask.slot);
   /* A taken-back slot is not an edited one: nothing is delivered into it, and
      `edited` is the DELIVERED column of the verification. */
@@ -1053,7 +1140,7 @@ export function assembleRecipe(input: AssembleInput): AssembleResult {
   /** Ordinal in the sent array: the master is 1, so the next is length + 1. */
   const nextOrdinal = () => references.length + 1;
 
-  for (const entry of input.library) {
+  for (const entry of library) {
     const imperative = entry.words.find((word) => IMPERATIVE_OPENER.test(word.trim()));
     if (imperative !== undefined) {
       return {
@@ -1252,7 +1339,7 @@ export function assembleRecipe(input: AssembleInput): AssembleResult {
     and how that state is SAID is the assembler's job.
   */
   const sidedOpenCarries = new Map<string, FeatureSlot[]>();
-  for (const entry of input.library) {
+  for (const entry of library) {
     if (!entry.carry || editedSet.has(entry.slot)) continue;
     const open = openKindOfSlot(entry.slot);
     if (open === null || open.side === null) continue;
@@ -1276,7 +1363,7 @@ export function assembleRecipe(input: AssembleInput): AssembleResult {
    *  quiet — the wholly-vacant pair's own mechanism, one loop along. */
   const openPairSaid = new Set<string>();
 
-  for (const entry of input.library) {
+  for (const entry of library) {
     if (entry.carry && entry.tier === "surface") {
       /*
         A surface's carrier is words, always — that tier's crop was never proven
@@ -1471,7 +1558,7 @@ export function assembleRecipe(input: AssembleInput): AssembleResult {
     mirror bench of 2026-08-12 found "her right ear" clearing BOTH ears in five
     attempts out of six, so a one-sided promise is not one the product can keep.
   */
-  const vacantSlots = input.library
+  const vacantSlots = library
     .filter((entry) => entry.vacant === true && !editedSet.has(entry.slot))
     .map((entry) => entry.slot);
   const pairFeature = (slot: FeatureSlot): string | null => {
@@ -1488,7 +1575,7 @@ export function assembleRecipe(input: AssembleInput): AssembleResult {
   );
   const pairAlreadySaid = new Set<string>();
 
-  for (const entry of input.library) {
+  for (const entry of library) {
     if (editedSet.has(entry.slot)) continue;
     /*
       AN EMPTY SLOT SAYS SO, WHATEVER TIER IT IS.
@@ -1603,7 +1690,7 @@ export function assembleRecipe(input: AssembleInput): AssembleResult {
       if (openPairSaid.has(openSide.kind)) continue;
       openPairSaid.add(openSide.kind);
       const sides = (sidedOpenCarries.get(openSide.kind) ?? [])
-        .map((slot) => input.library.find((row) => row.slot === slot))
+        .map((slot) => library.find((row) => row.slot === slot))
         .filter((row): row is LibraryEntry => row !== undefined)
         .map((row) => row.words.join(", "));
       const [first, second] = sides;
@@ -1635,7 +1722,7 @@ export function assembleRecipe(input: AssembleInput): AssembleResult {
     from it (working law 4), and this one would have had to agree with both.
   */
   const carried = [
-    ...input.library
+    ...library
       .filter((entry) => !editedSet.has(entry.slot))
       .filter((entry) => entry.carry !== undefined || (entry.tier !== "item" && entry.words.length > 0))
       .map((entry) => entry.slot),
@@ -1733,6 +1820,7 @@ export function assembleRecipe(input: AssembleInput): AssembleResult {
 
   return {
     ok: true, references, edited, restated, carried, vacated, wordStacks, sentences, standing, ask,
+    withheld,
     prompt: [...sentences, ...standing.map((entry) => entry.sentence), ask, inkWords]
       .filter((line) => line !== "")
       .join(" "),

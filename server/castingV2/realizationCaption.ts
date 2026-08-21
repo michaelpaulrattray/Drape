@@ -38,6 +38,7 @@ import { scrubBrands } from "./brandScrub";
 import { HAIR_ARRANGEMENT_IDS } from "./hairArrangement";
 import { interpreterEngine } from "./interpreter";
 import { facetHeading, type Facet } from "./refineFacets";
+import { INK_IS_NOT_THIS_SLOT } from "./slotWordShape";
 
 const log = createModuleLogger("castingV2/realizationCaption");
 
@@ -348,6 +349,23 @@ async function askAboutSlot(input: {
           about one thing, filed as the state of another — arriving through the
           fix's own front door.
         */
+        /*
+          AND HER INK IS NEVER THIS SLOT (fable-1266 §1a).
+
+          Said to EVERY slot rather than to skin alone, because a tattoo is
+          not the subject of ANY library slot — ink never enters the library.
+          Skin is where it was found (`Describe this person's skin` on a
+          tattooed torso returns the ink, and those words are PERSISTED and
+          re-said on every later edit); `build` is where it would have been
+          found next, since that slot is re-cut from a below-head crop on
+          every single render, and an inked chest is inside that crop.
+
+          The sentence has ONE OWNER, shared with `SKIN_ASK`, so the words he
+          reads under his picture and the words a paid render carries cannot
+          come to disagree about what a slot may say.
+        */
+        "",
+        INK_IS_NOT_THIS_SLOT,
         "",
         "If you cannot actually SEE the thing — the picture is too dark, too small,",
         "or does not contain it — answer visible:false and leave the caption empty.",

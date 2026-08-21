@@ -53,7 +53,7 @@ function earring(instance: "left" | "right", words: readonly string[]): LibraryE
 }
 
 /** The founder's step 1, the ask that carried the glasses sentence in shift 55. */
-function promptForEarringEdit(library: readonly LibraryEntry[]): string {
+function recipeForEarringEdit(library: readonly LibraryEntry[]) {
   const asks = repaintAsksFor({
     delta: { free: { statedAccessories: ["small gold hoop earrings"] } },
     prose: EDIT_PROSE,
@@ -62,7 +62,12 @@ function promptForEarringEdit(library: readonly LibraryEntry[]): string {
   if (!asks.ok) throw new Error(`the ask layer refused: ${asks.reason}`);
   const recipe = assembleRecipe({ master: MASTER, pronouns: PRONOUNS, library, asks: asks.asks });
   if (!recipe.ok) throw new Error(`the assembler refused: ${recipe.reason} on ${recipe.slot}`);
-  return recipe.prompt;
+  return recipe;
+}
+
+/** The same call, read as the string a paying render carries. */
+function promptForEarringEdit(library: readonly LibraryEntry[]): string {
+  return recipeForEarringEdit(library).prompt;
 }
 
 /**
@@ -103,21 +108,57 @@ describe("the prompt a paid render carries", () => {
     expect(prompt.toLowerCase()).not.toContain("spectacles");
   });
 
-  it("FAILS on the production sentence, which is what makes it an instrument", () => {
+  it("SEES the production sentence, and now withholds it instead of emitting it", () => {
     /*
-      The negative control. This library is what production actually held, and
-      the assertion above must be able to fail on it — otherwise it is a green
-      light that proves nothing (working law 2, and D-235's "an affirmative
-      without a `saw` is not a reading").
-    */
-    const library = [earring("left", [GLASSES_ROW]), earring("right", [GLASSES_ROW])];
-    const prompt = promptForEarringEdit(library);
+      THIS ARM CHANGED ON 2026-08-21, and the change is the finding rather than
+      a fixture repair (fable-1266 §1b).
 
-    expect(namesAKindOutsideItsSlot(library)).toEqual([
+      It used to end `expect(prompt).toContain("glasses")` — the control that
+      made the assertion above failable: production's own row, folded through
+      the real assembler, and the glasses came out the other end. That is no
+      longer true, and it is no longer true BY CONSTRUCTION: the assembler now
+      asks `untrueWordsRefusal` of every stack entry before it says one, so a
+      row whose prose is untrue about its own slot does not speak on any render.
+      These two rows are in that class — an earring row naming her glasses is
+      the founding specimen of it.
+
+      So the control is re-pointed rather than deleted, because the thing it
+      guards still needs to be failable. It is now a COMPARISON between two runs
+      of the real assembler over the same code path, differing only in the row:
+
+        the production row   the instrument sees the stray, the prompt is clean,
+                             and the recipe SAYS what it withheld
+        the clean row        the instrument sees nothing, the prompt is clean,
+                             and nothing is withheld
+
+      Remove the withholding and the first run's prompt carries "glasses" again
+      and its `withheld` empties — both halves flip, in opposite directions,
+      which is what a control has to be able to do. Remove the DOOR instead and
+      only `withheld` empties. Neither failure can pass quietly.
+
+      (The specimen has joined the vocabulary, which is the whole point: what
+      was once a live defect is now a shape the product refuses. The row is kept
+      verbatim so the refusal is proved against production's own prose and not
+      against a sentence written to be refused.)
+    */
+    const strayed = [earring("left", [GLASSES_ROW]), earring("right", [GLASSES_ROW])];
+    const clean = [earring("left", [CLEAN_ROW]), earring("right", [CLEAN_ROW])];
+
+    expect(namesAKindOutsideItsSlot(strayed)).toEqual([
       "earring@left names glasses",
       "earring@right names glasses",
     ]);
-    expect(prompt.toLowerCase()).toContain("glasses");
+    expect(namesAKindOutsideItsSlot(clean)).toEqual([]);
+
+    expect(promptForEarringEdit(strayed).toLowerCase()).not.toContain("glasses");
+    expect(promptForEarringEdit(clean).toLowerCase()).not.toContain("glasses");
+
+    expect(recipeForEarringEdit(strayed).withheld.map((one) => `${one.slot} ${one.reason}`))
+      .toEqual([
+        "earring@left wordsNameAnotherKind",
+        "earring@right wordsNameAnotherKind",
+      ]);
+    expect(recipeForEarringEdit(clean).withheld).toEqual([]);
   });
 
   it("never emits a doubled terminator, whatever the stack holds", () => {

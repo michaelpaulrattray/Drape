@@ -39,7 +39,7 @@ import type {
   ReferenceRefusalToRecord,
 } from "../db/castingV2ReferenceLibrary";
 import type { StoredReference } from "./referenceLibrary";
-import { slotWordsRefusal, tidyStackWord } from "./slotWordShape";
+import { slotWordsRefusal, tidyStackWord, type SlotWordsRefusal } from "./slotWordShape";
 
 /**
  * The row to write so that `existing`'s slot says `words` and carries exactly
@@ -160,6 +160,25 @@ export function keysIntroducedBy(
  * answer there for the wrong reason and the wrong answer on the next row.
  */
 export function wordsAreUntrue(slot: string, words: readonly string[]): boolean {
+  return untrueWordsRefusal(slot, words) !== null;
+}
+
+/**
+ * THE SAME QUESTION, ANSWERED WITH THE REFUSAL RATHER THAN A BOOLEAN.
+ *
+ * `wordsAreUntrue` is the predicate this file was written for and it stays,
+ * because its callers ask a yes/no question. The recipe assembler asks the same
+ * question and then has to SAY what it withheld and why, and a caller that
+ * re-derived the reason would be the second list working law 4 names — it would
+ * have to agree with the untrue/untidy split below, and it would drift the first
+ * time a fifth refusal was added.
+ *
+ * So the split lives here once and both shapes read it.
+ */
+export function untrueWordsRefusal(
+  slot: string,
+  words: readonly string[],
+): SlotWordsRefusal | null {
   /*
     THE TERMINATOR IS STRIPPED BEFORE THE QUESTION IS ASKED, and this is the
     whole reason the function exists rather than a comparison at the call site.
@@ -173,8 +192,9 @@ export function wordsAreUntrue(slot: string, words: readonly string[]): boolean 
     first.
   */
   const refusal = slotWordsRefusal(slot, words.map(tidyStackWord));
-  if (refusal === null) return false;
-  return refusal.reason === "wordsNameAnotherKind"
+  if (refusal === null) return null;
+  const untrue = refusal.reason === "wordsNameAnotherKind"
     || refusal.reason === "wordsClaimThePair"
     || refusal.reason === "wordsDescribeTheArtifact";
+  return untrue ? refusal : null;
 }

@@ -54,6 +54,7 @@
 import { createModuleLogger } from "../logging/logger";
 import { catalogueSlots, isAskable } from "./referenceSlotCatalogue";
 import { interpreterEngine } from "./interpreter";
+import { INK_IS_NOT_THIS_SLOT } from "./slotWordShape";
 import type { TextEngine } from "../providers/types";
 
 const log = createModuleLogger("castingV2/faceDescribe");
@@ -121,6 +122,13 @@ const SKIN_ASK = [
   "HER SKIN: its tone and its surface —",
   'e.g. "warm olive, freckled across the nose" or "fair and even, a light flush on the cheeks".',
   "Her skin, not her makeup and not the lighting.",
+  /* AND NOT HER INK (fable-1266 §1a). The exclusion above is the precedent
+     and this is the same shape: a tattoo has a slot of its own and a picture
+     of its own. This reader is display-only, so what it costs HERE is a
+     caption under his picture claiming a fact a different row already owns.
+     The paid half of the same mistake is `askAboutSlot`, which shares this
+     sentence rather than repeating it. */
+  INK_IS_NOT_THIS_SLOT,
 ].join("\n");
 
 /**

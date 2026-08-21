@@ -29,7 +29,7 @@
  * the user nothing.
  */
 import { LANDMARK_OF_ACCESSORY } from "./accessoryKinds";
-import { parseSlot } from "./referenceSlots";
+import { isInkSlot, parseSlot } from "./referenceSlots";
 
 /**
  * EVERY accessory kind this text names — not just the best one.
@@ -159,6 +159,70 @@ export function artifactPhraseIn(described: string): string | null {
   return null;
 }
 
+/**
+ * INK IS NEVER A SLOT'S WORDS — the vocabulary, and the sentence that asks a
+ * reader not to say it.
+ *
+ * A tattoo is its own slot family (`ink:*`), it is carried into every later
+ * render as a CROP of the design, and the library never holds one — the write
+ * door refuses an ink slot outright. So a tattoo named inside ANY library row's
+ * prose is a second author of a fact that already has one, and the second author
+ * has no geometry: the crop says the same design, in the same place, at the same
+ * size, while the words say only "tattooed chest" and float.
+ *
+ * The class is the module's own (`wordsNameAnotherKind`) arriving on a slot the
+ * door could not reach: its accessory check returns early for anatomy, and skin
+ * and build are anatomy. It is not hypothetical for `build` in particular — that
+ * slot is re-cut from a below-head crop on EVERY render, and an inked chest is
+ * inside that crop.
+ *
+ * # Why this is not `looksLikeTattooInstruction`
+ *
+ * `shared/inkInstructionRoute.ts` owns a wider list for ROUTING — bare "ink",
+ * "full sleeve", "half sleeve". Routing may over-match cheaply; a door may not.
+ * `\bink\b` matches "ink-black", which is a legitimate thing to say about hair,
+ * and "half sleeves" is a garment. This module's standing rule is *only words
+ * that can ONLY be about the thing* (see {@link ARTIFACT_WORDS}), so the door
+ * gets its own narrow list and says here why the two differ rather than drifting
+ * from it silently.
+ */
+const INK_WORDS: readonly RegExp[] = [
+  /\btattoos?\b/i,
+  /\btattooed\b/i,
+  /\btattooing\b/i,
+  /\binked\b/i,
+  /\bbody art\b/i,
+];
+
+/** The ink word this text uses, or null. */
+export function inkWordIn(described: string): string | null {
+  for (const word of INK_WORDS) {
+    const found = word.exec(described ?? "");
+    if (found) return found[0];
+  }
+  return null;
+}
+
+/**
+ * THE SAME RULE SAID TO THE READER, so the source and the door cannot drift.
+ *
+ * One owner, two callers — `SKIN_ASK` in `faceDescribe` (the words he reads
+ * under his own picture) and `askAboutSlot` in `realizationCaption` (the words a
+ * paid render carries). The precedent is inside `SKIN_ASK` already: *"Her skin,
+ * not her makeup and not the lighting."* This is the same shape for the one
+ * thing that now has a slot of its own.
+ *
+ * Said to EVERY slot's caption rather than to skin's alone (working law 7): a
+ * tattoo is not the subject of ANY library slot, because ink never enters the
+ * library at all. Skin is where it was found; build is where it would have been
+ * found next.
+ */
+export const INK_IS_NOT_THIS_SLOT = [
+  "Never mention a tattoo here, whatever you can see. A tattoo is not part of",
+  "any of this — it is kept as a picture of the design itself, and describing",
+  "one in words here would ask a later render to paint a second one.",
+].join("\n");
+
 export type SlotWordsRefusal =
   | { reason: "wordsNameAnotherKind"; detail: string }
   | { reason: "wordsClaimThePair"; detail: string }
@@ -194,6 +258,28 @@ export function slotWordsRefusal(slot: string, words: readonly string[]): SlotWo
         reason: "wordsDescribeTheArtifact",
         detail: `${slot}'s words say "${artifact}" — that describes the PICTURE, and filed here it becomes a fact about a person's face handed to a painter on every later render`,
       };
+    }
+  }
+
+  /*
+    AND NO SLOT'S WORDS NAME HER INK — applied to every slot, ABOVE the accessory
+    early return, which is the line that made this reachable in the first place.
+
+    `accessoryKindOfSlot` answers null for anatomy and the function returned, so
+    skin and build were never asked what their prose said. An ink slot itself is
+    excluded because the library never holds one (the write door refuses it by
+    name) — the check is written against that fact rather than trusting it, so a
+    day when ink DOES have a row is not a day this refuses it.
+  */
+  if (!isInkSlot(slot)) {
+    for (const word of words) {
+      const ink = inkWordIn(word);
+      if (ink !== null) {
+        return {
+          reason: "wordsNameAnotherKind",
+          detail: `${slot}'s words say "${ink}" — her ink is its own slot and rides as a CROP of the design, so a second, geometry-free author here would ask a paid render to put a tattoo on top of the one it is already carrying`,
+        };
+      }
     }
   }
 

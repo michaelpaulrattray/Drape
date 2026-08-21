@@ -5629,6 +5629,33 @@ async function refineCandidateCounted(
         throw new Error(`the repaint recipe was refused: ${recipe.detail}`);
       }
       /*
+        AND WHAT THE RECIPE REFUSED TO SAY, SAID OUT LOUD (fable-1266 §1b).
+
+        Normally empty. When it is not, a row already in the library carries
+        prose that is untrue about its own slot — an old earring row naming her
+        glasses, a skin row that absorbed her tattoo — and the recipe withheld
+        that one stack entry rather than handing a paid render a second,
+        geometry-free author for a fact the carry already owns.
+
+        Logged HERE rather than left on the result, because a prompt that
+        quietly says less than the library holds looks exactly like a library
+        that lost a fact, and the difference is the whole point. `about` sat
+        collecting a latency answer for months with no reader; a column with no
+        reader is the same mistake wearing a different name.
+      */
+      if (recipe.withheld.length > 0) {
+        log.warn(
+          {
+            operationId,
+            variant: variant.publicId,
+            withheld: recipe.withheld.map((one) => ({
+              slot: one.slot, reason: one.reason, word: one.word,
+            })),
+          },
+          "[refineService] a persisted word stack is untrue about its own slot — withheld from this recipe, and the row is left exactly where it is",
+        );
+      }
+      /*
         ONE DEFINITION OF THE RECORD, written at two moments.
 
         At DISPATCH it is the only account a refused render will ever leave; at
