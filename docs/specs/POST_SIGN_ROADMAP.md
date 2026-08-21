@@ -38,43 +38,39 @@ reference behind it: each item below names its own section, and the sections
 carry the rulings, the courts and the histories.
 
 ```
-1  SIGN-VIEW WIRE                        ✅ CLOSED a6550e6a (2026-08-21)
-   unblocks signing his tattooed cast; everything ink
-   downstream assumes it. See §3d
-2  THE TWO FREE READS (~$0.05)           minutes, no renders
-   does a describer name ink on a master; does the
-   segmenter find rolled-in ink. They SIZE item 5 and
-   cost nothing to run early
-3  TATTOO REMOVAL ACTION                 design -> countersign -> build
-   the tattoo card's verb set is incomplete while
-   "remove" answers "coming"; prune BY SLOT, free.ink
-   per-slot decomposition is the shape question. See §3b
-4  POLISH SITTING — his direct UI asks   small, founder-visible, batched
-   hint text + no credits chip (AMEND price arm), frosted
-   glass both themes, receipt reference thumbnails,
-   preview eraser, §5e pronoun road if any instance is
-   still open. One sitting, one rite
-5  CAST-BORN INK DISCOVERY               closed vocabulary, no gate
-   general table + once-per-candidate mint of rolled-in
-   ink -> panel cards + sign carry (needs 1, 2). The
-   INK-ONLY half of §5c, and it does NOT wait on §5c's
-   gates, because every placement it reads has a measured
-   readerWord already
-6  RETIREMENT + CLEANUP                  §0b's bar is the finish line
-   mannequin/plate island via the Atlas retirement view,
-   paste road, repo outputs; dispositions.yaml
-   strict-green. After 5 so no live road is swept mid-use
-7  OPEN-LANE REFERENCE ROAD = ONE ITEM
-   (a) the point/box-prompt read on the segmenter
-   endpoint; (b) the Pinterest-style selector on the
-   proven cutter; (c) take ANY feature from ONE
-   reference; @-tagging banked after
-8  ANY-FEATURE DISCOVERY (§5c proper)    gated, as §5c says
-   describe-then-crop over open kinds — keeps §5c's own
-   gates (kind-property design, declared blindness, its
-   court with both controls) and its after-7 sequencing,
-   because open kinds need the open lane's machinery
+1  ✅ SIGN-VIEW WIRE                      a6550e6a — her own tattoos ride the
+                                          six signing angles
+2  ✅ THE TWO FREE READS                  5d5a1504 — 0 of 37 masters carry ink;
+                                          both readers work. Population arrives
+                                          with the BASICS path (item 5)
+3a ONE-TATTOO REMOVAL                     designed 1310, AMENDED 1314 — the free
+                                          A/B/C drive runs FIRST and the render
+                                          model follows its letter
+4  POLISH SITTING                         IN PROGRESS — his four UI asks plus the
+                                          TATTOO STYLE GLOSSARY, which is the
+                                          gate on ungating word-tattoos
+4b THE STUDIO CAPABILITY CENSUS           founder-ordered (1315 §3). BUILT BY
+                                          FABLE on a worktree (1316) — do not
+                                          start it; review and rite it
+5  THE TWO PATHS (Wardrobe / Basics)      founder ruling 1311 — DESIGN REPORT for
+                                          countersign first, written against the
+                                          census rather than from recollection
+3b KEYING + MULTI-TATTOO REMOVAL          after 5. No live customer yet (no branch
+                                          has ever worn two); 1167 §2e is its own
+                                          reason
+6  CAST-BORN INK DISCOVERY                after 5 — the Basics path is its
+                                          population
+7  RETIREMENT + CLEANUP                   §0b's bar is the finish line
+8  OPEN-LANE REFERENCE ROAD               selector first; one item, cannot split
+9  ANY-FEATURE DISCOVERY                  gated per §5c
 ```
+
+**THE CENSUS'S RULE RIDES WITH THE QUEUE** (1315 §3): no design report is
+countersigned without citing the census rows it extends, or the census saying
+the capability is absent. *"Does this already exist"* becomes a lookup rather
+than a memory — and this week is why it exists: the removal road, the inert sign
+carry, §5c already on the roadmap while it was being "sized", and a wall
+recorded CLOSED that no customer could reach.
 
 **THE SELECTOR IS NOT A UI ITEM AND CANNOT BE SPLIT OFF** (founder, 2026-08-21:
 *"the open lane reference work includes the Pinterest-style selection or did you
@@ -83,10 +79,17 @@ out cleanly → it becomes the reference → the ask carries it. Filed as two it
 it would be split, and without the selector the *take anything from any image*
 promise collapses back to describing the picture in words.
 
-**Parked on HIS word, and deliberately NOT in the build order** — chest ink in
-signed views (hidden-but-riding vs scoop-to-show → the 450-credit dev Sign court
-plus the wardrobe-sentence repair, §3d); and the words-road ungating, on his OK
-after one arm tattoo of his own.
+**Parked on HIS word, and deliberately NOT in the build order** — ONE item only:
+**the words-road ungating**, ruled 1315 §1 to open to everyone AFTER the style
+glossary lands and its court passes his eyes, so the glossary is the gate rather
+than his patience.
+
+⚠ **THE CHEST QUESTION IS RETIRED, not parked** (founder ruling, 1311). Hidden-
+but-riding versus scoop-to-show is no longer a question anyone answers: **the
+PATH decides.** A Wardrobe cast is born and signed dressed and gets ink only
+where the outfit shows skin; a Basics cast is born and signed in plain basics and
+can carry a tattoo anywhere. The basics-anchor idea and the 450-credit chest Sign
+court are retired with it. See item 5.
 
 ### The one rule for keeping this organised
 
@@ -1111,12 +1114,18 @@ byte, and the store is not even asked. **Any sitting that widens an ink scope
 must read this paragraph rather than the superseded sentence**, which would tell
 it the wire moves with the ink doors — false in both directions.
 
-### The chest, in signed views — PARKED ON HIS WORD, and it is one question
+### The chest, in signed views — ⚠ **RETIRED 2026-08-21. THE PATH DECIDES**
+### (founder ruling, §3e below). What follows is the record of the question.
 
 `placementRidesPackageViews` says `upperChest: false` for **both** ink lanes,
 and the crop road landing did not lift it: a view whose wardrobe comes back
 crew-necked has no skin to put the design on however the picture arrives, and
 both outcomes fail the wardrobe axis and refund a slice — six times per Sign.
+
+⚠ **NOBODY ANSWERS THIS NOW.** He replaced the question with a product decision:
+a cast is born on the WARDROBE path or the BASICS path, and the path settles
+where ink can go. The two paragraphs below are kept as the record of what was
+being weighed, not as work anybody owes.
 
 Two things lift it together and neither is code: **his hidden-vs-scoop word**
 (*"tattos can still ride they may just not be visible fully yet"* versus the
@@ -1126,6 +1135,71 @@ six judged views on the moved clause. Both halves land in one sitting, and
 sitting**: it hard-codes *crew-neck* while naming the reference photograph as
 the authority, and on a Cast signed off a scooped anchor those two halves
 already disagree.
+
+## 3e. THE TWO PATHS — WARDROBE or BASICS, chosen at cast (FOUNDER RULING,
+## 2026-08-21: *"this is the way foward 100%"*; relayed fable-1311, addendum
+## fable-1312). §10 item 5. Design report for countersign BEFORE any build.
+
+**His own framing, and it is a product decision rather than an engineering
+one:** *"if someone doesnt cast in basics and they want a chest tattoo then
+thats just unfortunately as long as we make it clear before they go to cast
+someone"*, and *"this solves our issue for when people want to be very detailed
+on their edits and when people just want to cast somthing fast"*.
+
+**A toggle at cast, WARDROBE (default) / BASICS**, with the tradeoff told before
+the roll rather than discovered after it (the brief discipline):
+
+- **Wardrobe** — born and signed in the outfit; tattoos and skin detail only
+  where the outfit shows skin.
+- **Basics** — born and signed in plain black basics; full body record, tattoos
+  anywhere, a clean base for try-on. Men shirtless with plain black fitted
+  shorts; women a plain black sports top and black fitted shorts cut low enough
+  to show a chest piece.
+
+**Wardrobe resolution, in order:** an outfit named in her words wins; else the
+brief stage writes ONE engine-chosen outfit per sheet matching the cast type
+inside house taste — *matches the type, stays plain*, no props, no weapons, no
+logos, no headwear, nothing costumey (the caveman gets a one-shoulder hide and
+bare feet, not a club); else anything basic (*"woman mid 30s"*) gets the default
+grey tee. Whatever resolves is written as a COMPLETE line — top, bottoms,
+footwear — so the chest-up sheet, the hero, the full-body views and the takes
+all agree, and it is **stored as the cast's wardrobe property** and shown on the
+sheet. Identical across all eight candidates: **a sheet compares people, not
+clothes.**
+
+**Signing follows the path.** Wardrobe casts sign dressed and the wardrobe judge
+checks the FULL line rather than *"same grey top"*; Basics casts sign in basics.
+The package layout is unchanged — only the wardrobe inside it follows the path.
+
+**Wardrobe EDITS** are allowed on the Wardrobe path and REWRITE the stored line
+(derive, never mirror — hero, views and takes follow it), and are REFUSED on the
+Basics path with an honest sentence.
+
+**Hidden-surface ink on a Wardrobe cast** gets the honest refusal that names why
+and offers what ACTS — neck or arm now, or recast in Basics — and **tallies**,
+so a *"convert to Basics"* upgrade is ever built from a number rather than a
+guess.
+
+**It ships dark** behind a new flag on the standard ladder (parent
+`CASTING_V2_SCOPE`), because the roll is spendable surface at `all`. Court
+before his eyes: one test sheet and one test sign per path on dev, including a
+deliberately awkward type (the caveman) to measure irregular-garment drift
+across the six views.
+
+**Carried in from 1310 §5, and it is this ruling's own consequence:**
+master-born ink — a Basics cast rolled WITH a tattoo — **cannot be removed by
+repainting from a master that wears it.** Every removal design today rests on
+*the master never had it*, which is true of all 37 production masters and stops
+being true the day this ships. The sitting that ships births-with-ink owns that
+removal clause.
+
+**And the analyzer question he raised** (fable-1312): garment pieces become
+WARDROBE CARDS on the Wardrobe path — a separate panel section derived from the
+stored line, never mixed with body features — and their crops may ride into the
+signed views the way delivery crops do, which is the intended fix for
+irregular-garment drift. Body facts (build, skin, scars, ink) are MEASURED on
+the Basics path and merely CARRIED on Wardrobe without a measurement claim. No
+collision: it is a split of what each path can honestly claim to see.
 
 ## 4. "Show her the refused frame" — ✅ **RULED AND SHIPPED 2026-08-16**
 
@@ -1457,15 +1531,34 @@ Its slot relative to this list: after the two courts above, its own commit,
 post-rite for the reason §5e states (it edits live customer-facing copy on
 `CASTING_V2_SCOPE=all` lanes).
 
-### 4. THE REMOVAL-WALL WORDING NOTE — ✅ **CLOSED 2026-08-21** (`inkRemovalNotYet`,
-### struck per fable-1307 §B)
+### 4. THE REMOVAL-WALL WORDING NOTE — ⚠ **NOT CLOSED. The copy exists and is
+### UNREACHABLE** (corrected 2026-08-21, driven opus-967 §3, ordered fable-1314 §3)
 
-**The offer-to-add-in-reply-to-an-ask-to-remove is gone.** A removal ask on a
-tattoo she really has is now answered by name — *"That's his upper chest
-tattoo"* — and pointed at backing up to an earlier version, which genuinely
-works. The copy is `inkRemovalNotYet` in `cannotSayCopy.ts`, and the answer is
-**free and before the claim**, which is what makes it an apology rather than a
-charge.
+⚠ **THIS SECTION SAID ✅ CLOSED FOR THREE HOURS ON 2026-08-21 AND IT WAS WRONG,
+which is worth more than the correction.** It was written from a grep that found
+the copy (`inkRemovalNotYet` in `cannotSayCopy.ts`) and found a call site, and
+those two facts together are not reachability — **the conditions UPSTREAM
+decide.** Driven at the real entrance, they do not hold:
+
+- The ink prior-ask block requires `editDelta !== null` and an ink facet on it.
+- A plainly-worded removal — *"take his chest tattoo off"* — never produces an
+  `editDelta` at all. It parses as `intent: "remove"`, `subject: "ink"`, and is
+  handled ~800 lines earlier, on the generic removal road.
+- The re-read that WOULD produce a delta only fires when the removal word is
+  weak (`evidence !== "stated"`), and every plain phrasing measured is `stated`.
+
+So the sentence this item was closed on answers almost nobody. **A grep proves a
+string exists; only a drive proves a customer can reach it.**
+
+**Its fate follows the removal drive's letter** (fable-1314 §3): if the generic
+prune road already answers these asks, `inkRemovalNotYet` is DELETED rather than
+left as copy nobody can reach — a sentence with no road is a document describing
+a control that is not there, which is this repo's oldest failure wearing new
+words. If the road refuses ink, the sentence is made reachable where stated
+removals actually land.
+
+*(What the item was ORIGINALLY about — the offer-to-add in reply to an ask to
+remove — is recorded below, unchanged.)*
 
 **It was closed by its owner exactly as this item predicted** — the transform
 road's prior question (*is this ask about ink she already has?*) is what routes
