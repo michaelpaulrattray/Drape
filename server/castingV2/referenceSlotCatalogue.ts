@@ -1526,11 +1526,58 @@ export function slotsForFeature(feature: string): SlotDefinition[] | null {
     : [definitionOf(entry, null)];
 }
 
-/** The facets whose words land in this slot's stack, in catalogue order. */
+/**
+ * The facets whose words land in this slot's stack, in catalogue order.
+ *
+ * # ⚠ THE INK NAMESPACE IS ANSWERED HERE TOO, AND IT WAS NOT (found opus-953
+ * §4, ordered fable-1293 §2a)
+ *
+ * This is the SECOND READER OF THE SLOT GRAMMAR, and until 2026-08-21 it had
+ * never learned that a second namespace exists — the same shape as the bug that
+ * bought {@link slotDefinition}'s own branch (fable-1137 §2a). `parseSlot`
+ * accepts `ink:upperArm@left` as a feature called `ink:upperArm` worn on the
+ * left, hands that to `entryOf`, which has never heard of it, and the answer is
+ * `null` BY ACCIDENT rather than by decision — the unowned-axis class through
+ * the back door, one function along from where it was last caught.
+ *
+ * It mattered at exactly one caller and it mattered quietly:
+ * `refineService`'s per-side narrowing builds *the facets this scope covers*
+ * from this list (`inScope`), so a scoped ink render would have narrowed to an
+ * EMPTY set and asked the whole-frame question of a one-arm ask — the very
+ * defect fable-444 condition 2 exists to prevent, arriving through a slot
+ * grammar this function could not read.
+ *
+ * # The facets are DERIVED, never listed here
+ *
+ * An ink slot holds the facets the card table itself assigns `perPlacement` —
+ * `FACET_SLOTS` read backwards, exactly as {@link slotsForFacet} reads it
+ * forwards. A literal `["ink"]` here would be law 4's second list, free to
+ * disagree with the cards the day a second per-placement facet is written.
+ *
+ * `null` for a key this lane could not have minted, resolved through the SAME
+ * branch {@link slotDefinition} resolves it through: a spaced placement, a
+ * sided key for a one-of-it surface and a sideless key for a paired one are all
+ * refusals there, and two readers disagreeing about whether a key is legal is
+ * the drift this delegation removes.
+ */
 export function facetsOfSlot(slot: FeatureSlot): readonly Facet[] | null {
+  if (isInkSlot(slot)) return inkSlotDefinition(slot) === null ? null : perPlacementFacets();
   const parsed = parseSlot(slot);
   if (parsed === null) return null;
   return entryOf(parsed.feature)?.facets ?? null;
+}
+
+/**
+ * The facets whose slot is chosen by a PLACEMENT — the ink lane's facet list,
+ * read off the facet cards rather than spelled a second time.
+ *
+ * Computed on each call and deliberately not memoised: `FACET_SLOTS` is a
+ * module constant built once at load, the record has a few dozen keys, and a
+ * cached copy would be a third place the answer lives.
+ */
+function perPlacementFacets(): readonly Facet[] {
+  return (Object.keys(FACET_SLOTS) as Facet[])
+    .filter((facet) => "perPlacement" in FACET_SLOTS[facet]);
 }
 
 /**

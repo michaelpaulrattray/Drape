@@ -9,6 +9,8 @@
  */
 import { describe, expect, it } from "vitest";
 
+import { accessoryKindOfSlot } from "./slotWordShape";
+
 import {
   INK_SLOT_PREFIX,
   inkPlacementOfSlot,
@@ -178,5 +180,56 @@ describe("the ink lane's keys", () => {
     expect(isFeatureSlot("ink:neck")).toBe(true);
     /* A spaced placement is the one shape the grammar does refuse. */
     expect(parseSlot("ink:left forearm")).toBeNull();
+  });
+
+  /*
+    ⚠ AND EVERY OTHER READER OF THE GRAMMAR, ANSWERING BY DECISION RATHER THAN
+    BY ACCIDENT — working law 7's first half, discharged (ordered fable-1293
+    §2a: *teach the reader, then sweep for a THIRD reader before closing*).
+
+    `facetsOfSlot` was the second reader and it was found answering `null` for
+    an ink key by accident, which cost the scoped narrowing its facet list. The
+    sweep for the rest of them is this arm. It is modelled on the open lane's
+    own — `openLanePinning.test.ts`'s *"leaves the other slot-keyed readers
+    refusing rather than guessing"* — because the two namespaces have the same
+    problem and should not be answered in two styles.
+
+    THE FOUR READERS AND THEIR ANSWERS, each pinned so a later hand cannot move
+    one without meeting a red test:
+
+      slotDefinition      RESOLVES it (fable-1137 §2a's branch)
+      facetsOfSlot        RESOLVES it (this shift) — pinned in the catalogue's
+                          own suite, beside the rejections it shares
+      accessoryKindOfSlot NULL, and it is REACHED: `slotWordsRefusal` runs it
+                          on every slot including an ink one. A tattoo is not a
+                          worn accessory, so null is the right answer and this
+                          line is what makes it a decision
+      parseSlot.instance  the SIDE, which `referenceMint` reads to know which
+                          half of a pair a spec is about — correct, and the one
+                          reader that needed no teaching because the instance
+                          suffix is genuinely the closed grammar's
+
+    ONE READER IS DELIBERATELY ABSENT and its absence is the interesting half:
+    `viewFeatureWords.regionForSlot` knows the OPEN namespace and has never
+    heard of this one. It is not taught here because it CANNOT receive an ink
+    key — its entries come from `deriveLibrary(rows)`, and the library write
+    door refuses an ink slot by name (`slotNeverEntersTheLibrary`, pinned in
+    `castingV2ReferenceLibrary.test.ts`). That is unreachable BY A TESTED DOOR
+    rather than by luck, which is the only kind of unreachable this campaign
+    accepts — and the day ink is allowed a library row is the day that reader
+    needs its branch.
+  */
+  it("answers in every OTHER reader of the grammar by decision, not by accident", () => {
+    for (const key of ["ink:neck", "ink:upperArm@left", "ink:sleeve"]) {
+      expect(accessoryKindOfSlot(key), `${key} — a tattoo is not a worn accessory`).toBeNull();
+    }
+    /* The side is the closed grammar's own suffix and reads straight through,
+       which is what `referenceMint`'s `instanceOf` depends on. */
+    expect(parseSlot("ink:upperArm@left")?.instance).toBe("left");
+    expect(parseSlot("ink:upperArm@right")?.instance).toBe("right");
+    expect(parseSlot("ink:neck")?.instance).toBeUndefined();
+    /* The negative control kept after the positive: a real accessory slot must
+       still answer, or this arm would pass with the reader broken outright. */
+    expect(accessoryKindOfSlot("earring@left")).not.toBeNull();
   });
 });

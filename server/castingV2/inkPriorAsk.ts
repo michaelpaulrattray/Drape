@@ -52,7 +52,7 @@ import {
 import {
   INK_PLACEMENTS, inkPlacementBareNoun, isInkPlacement,
 } from "../../shared/inkPlacementVocabulary";
-import { inkPlacementOfSlot } from "./referenceSlots";
+import { inkPlacementOfSlot, isInkSlot } from "./referenceSlots";
 import { removalEvidence } from "./removalWords";
 
 /**
@@ -269,6 +269,25 @@ function changeOnAxis(axis: InkTransformAxis, said: string): InkTransform | null
  * NOUN (`inkPlacementBareNoun`, one owner, never a second list of synonyms
  * here), so it can only ever confirm a slot she named and never invent one. If
  * her word matches two, or none, the ask-which stands.
+ *
+ * # AND A TAPPED RECTANGLE OUTRANKS BOTH (approved fable-1293 §2b)
+ *
+ * A `scope` is not a hint about which tattoo she means — it is the strongest
+ * answer either question in this function can get, because she put her finger
+ * on the pixels. `FaceRegions` sends it when the panel card she tapped carries
+ * an instance, and the card was drawn FROM the delivery crop this transform
+ * would use as its source, so the gesture and the source are the same fact.
+ * A scoped ask therefore never reaches the ask-which question and never
+ * consults her wording: asking *"which one?"* of somebody who just pointed is
+ * the product not listening, one gesture louder than the case above.
+ *
+ * **It only ever answers for a slot the chain really delivered.** A scope
+ * naming ink this branch does not hold is `none` — never a fallback to the
+ * unscoped reading, which for a customer with exactly one OTHER tattoo would
+ * resize the tattoo she did not point at. That is `slots[0]` wearing a
+ * different hat, and this function's whole shape is that there is nowhere in it
+ * to write one. The caller says so in her own words, naming the place she
+ * pointed at rather than claiming she has no ink at all.
  */
 export type InkSlotFromState =
   | { kind: "none" }
@@ -278,11 +297,29 @@ export type InkSlotFromState =
 export function inkSlotSheAsksAbout(
   instruction: string,
   deliveredSlots: readonly string[],
+  /* The slot the tapped rectangle named, when she tapped one. `undefined` is
+     the ask box with no gesture behind it — every route into this function
+     before the panel's ink cards existed. */
+  scope?: string,
 ): InkSlotFromState {
   /* Sorted so the ask-which question is stable across two identical asks —
      a question whose options reorder between renders reads as a different
      question about a different face. */
   const slots = Array.from(new Set(deliveredSlots)).sort();
+  /*
+    THE GESTURE FIRST, and BEFORE the `length === 0` exit on purpose: a scope
+    that names nothing delivered is `none` for the reason the header gives, and
+    routing it through the general answer would make the two indistinguishable
+    at the call site — which is the difference between telling her she has no
+    tattoos and telling her there is none where she pointed.
+
+    Non-ink scopes are not this function's business and fall straight through:
+    a scoped hair ask never reaches here, and one that did must not have its
+    ink resolved by a slot that is not one.
+  */
+  if (scope !== undefined && isInkSlot(scope)) {
+    return slots.includes(scope) ? { kind: "one", slot: scope } : { kind: "none" };
+  }
   if (slots.length === 0) return { kind: "none" };
   if (slots.length === 1) return { kind: "one", slot: slots[0]! };
   const said = instruction.toLowerCase();

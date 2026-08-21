@@ -1233,27 +1233,37 @@ async function refineCandidateCounted(
     });
   }
   /*
-    AND THE INK LANE DOES NOT EITHER — the same finding, the same sentence, one
-    namespace later (fable-1137 §2a).
+    ⚠ AND THE INK LANE **IS** SCOPABLE SINCE 2026-08-21 — the wall that stood
+    here is GONE, and this paragraph is what it left behind (traced opus-953
+    §4, ordered fable-1291 §3 / fable-1293 §2).
 
-    `slotDefinition` resolves `ink:neck` since the catalogue chunk, for the same
-    reason it resolves an open key: so a design can be CARRIED. Scopability is a
-    different question and nobody has answered it — a scope is *this ask is
-    about one instance of a thing on the panel*, and a design has no panel row
-    to point at until the ink studio exists (fable-1138 §3). Without this line
-    the answer would be yes, arrived at by nobody, which is the unowned-axis
-    class coming through the back door a second time.
+    It was written under fable-1138 §3 on a premise with a date on it: *a design
+    has no panel row to point at until the ink studio exists*. The ink studio
+    has had panel rows since `85d73b5b` — `facePanel` draws one card per
+    delivered crop, with its own rectangle on the photograph — so the sentence
+    stopped being true and the refusal outlived its reason. That is the RULING
+    half of working law 7 read the other way round: a wall keeps its ground only
+    while the fact under it holds, and nothing goes red on the day it stops.
 
-    Restated in its own terms rather than left resting on the resolver below,
-    which has stopped answering the question it is being asked here — exactly
-    what the open branch above had to do when its key started resolving.
+    What it cost: `FaceRegions` sends a scope precisely when the tapped
+    rectangle's slot carries an instance, so a one-of-it surface (her neck, her
+    upper chest) sent none and worked, while a PAIRED one (an upper arm) sent
+    `ink:upperArm@left` and died here — before her sentence was read, on three
+    roads at once. The transform road, the words road and the removal answer
+    were all "chest and neck only" for this one line.
+
+    **Scopability is now ANSWERED rather than merely allowed**, which is what
+    the open branch above still withholds and why that one stays: a tapped ink
+    rectangle is the strongest possible answer to *which one* — she pointed at
+    the pixels — and `inkSlotSheAsksAbout` reads it as exactly that. The open
+    lane has no such gesture and three rulings withholding it.
+
+    The key still has to RESOLVE, and the line below is what does it: an ink
+    slot goes through `slotDefinition`'s own branch, so a sided key for a
+    one-of-it surface (`ink:neck@left`), a sideless key for a paired one, and a
+    placement the grammar refuses are all still `scope_unknown` here. The
+    namespace is admitted; the grammar is not relaxed.
   */
-  if (input.scope !== undefined && isInkSlot(input.scope)) {
-    throw refusal("scope_unknown", {
-      code: "BAD_REQUEST",
-      message: "I don't know which part of her that is. Nothing was charged.",
-    });
-  }
   if (input.scope !== undefined && slotDefinition(input.scope) === null) {
     throw refusal("scope_unknown", {
       code: "BAD_REQUEST",
@@ -3182,7 +3192,25 @@ async function refineCandidateCounted(
         one*. It is also the reader that cannot be fooled by the ask itself.
       */
       const deliveredSlots = Object.keys(deliveredInkOnChain);
-      const onSlot = inkSlotSheAsksAbout(instruction, deliveredSlots);
+      /*
+        AND THE TAPPED RECTANGLE IS THE ANSWER TO *WHICH ONE* (fable-1293 §2b).
+
+        `input.scope` reaches here for the first time today: the wall a thousand
+        lines up refused every ink scope before her sentence was read, so this
+        function has only ever been asked the unscoped question. A card she
+        tapped was drawn from the very delivery crop this transform reads as its
+        source, so the gesture is not a hint to weigh against her wording — it
+        is the same fact, arriving earlier and unambiguously.
+      */
+      const onSlot = inkSlotSheAsksAbout(instruction, deliveredSlots, input.scope);
+      /*
+        WHICH PLACE SHE POINTED AT, when the answer below has to say that this
+        particular one holds nothing. Null for an unscoped ask, which is the
+        state the general sentence was written for.
+      */
+      const scopedInkSlot = input.scope !== undefined && isInkSlot(input.scope)
+        ? input.scope
+        : null;
       /* How the product speaks about a tattoo it has actually delivered —
          "his upper chest tattoo", from the catalogue's own noun. */
       const nameOfSlot = (slot: string): string | null => {
@@ -3215,7 +3243,19 @@ async function refineCandidateCounted(
         NOTHING TO CHANGE AND NOTHING TO TAKE OFF — one sentence for both verbs,
         because the customer's situation is one situation.
       */
-      if (onSlot.kind === "none") return answeredFree("noInkToChange", null);
+      /*
+        NOTHING TO CHANGE AND NOTHING TO TAKE OFF — and WHERE, when she pointed.
+
+        The unscoped sentence says *"she hasn't got one yet"*, which is true of
+        the face and false of nobody. Scoped, it would be said to a customer
+        looking at a card the panel drew for a tattoo she has — the
+        record-versus-pixels absurdity fable-1287 §3 spent a ruling killing, one
+        gesture along. So the scoped answer speaks only about the place she
+        pointed at, where it is true either way.
+      */
+      if (onSlot.kind === "none") {
+        return answeredFree("noInkToChange", scopedInkSlot === null ? null : nameOfSlot(scopedInkSlot));
+      }
       const names = (onSlot.kind === "one" ? [onSlot.slot] : onSlot.slots)
         .map(nameOfSlot)
         .filter((name): name is string => name !== null);

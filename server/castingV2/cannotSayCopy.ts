@@ -286,9 +286,28 @@ export const CANNOT_SAY_COPY: Readonly<Record<CannotSayReason, CannotSayEntry>> 
       so that sentence was a promise inside a refusal, which the header of this
       file names as the easiest line in a product to leave rotting.
     */
-    say: (context) => "I can put a tattoo on her — her neck, an upper arm, her upper chest. "
-      + "She hasn't got one yet, though, so there's nothing there to change or take off. "
-      + MONEY(context.moneySafe),
+    /*
+      AND ONE BRANCH FOR THE CUSTOMER WHO POINTED (fable-1293 §2b's road).
+
+      The sentence above is about the FACE — *"she hasn't got one yet"* — and a
+      scoped ask is not about the face. Said to somebody who tapped a tattoo
+      card, it denies the picture they are looking at, which is exactly what
+      `inkRemovalNotYet` four lines down was ruled into existence to stop
+      (fable-1287 §3: a *"not yet"* that begins by doubting what he is looking
+      at is the one thing worse than a *"not yet"*).
+
+      So the scoped answer narrows to the place and says nothing about the rest
+      of her — true whether this is her only tattoo or her fourth — and it still
+      ends on the road out, because a refusal with no next move is the line this
+      file's header names as the easiest one in a product to leave rotting.
+    */
+    say: (context) => (context.scopeNoun
+      ? `I can't find ${context.scopeNoun} on this version, so there's nothing there to change `
+        + `or take off. Ask me about one that's there, or say where to put a new one and I'll `
+        + `do it. ${MONEY(context.moneySafe)}`
+      : "I can put a tattoo on her — her neck, an upper arm, her upper chest. "
+        + "She hasn't got one yet, though, so there's nothing there to change or take off. "
+        + MONEY(context.moneySafe)),
   },
   /*
     SHE ASKED FOR A TATTOO TO COME OFF, AND IT IS REALLY THERE (ruled

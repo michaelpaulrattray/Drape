@@ -222,3 +222,94 @@ describe("which tattoo she means comes from STATE, and `slots[0]` is forbidden",
     expect(first).toEqual(second);
   });
 });
+
+/*
+  AND A TAPPED RECTANGLE OUTRANKS ALL OF IT (approved fable-1293 §2b, from
+  opus-953 §4's design opportunity).
+
+  A `scope` reaches this function for the first time on 2026-08-21: until the
+  wall in `refineService` came down, every ink scope was refused before her
+  sentence was read. It is not a hint to weigh against her wording — the panel
+  card she tapped was drawn FROM the delivery crop this transform reads as its
+  source, so the gesture and the source are one fact, and asking *"which one?"*
+  of somebody who just pointed is the product not listening.
+*/
+describe("a tapped rectangle answers `which one` outright", () => {
+  const NECK = "ink:neck";
+  const CHEST = "ink:upperChest";
+  const ARM = "ink:upperArm@left";
+
+  it("skips the ask-which question she has already answered with her finger", () => {
+    /* The unscoped arm above proves this same call asks. One argument's
+       difference, and the two arms are the pair. */
+    expect(inkSlotSheAsksAbout("make it bigger", [CHEST, NECK]).kind).toBe("several");
+    expect(inkSlotSheAsksAbout("make it bigger", [CHEST, NECK], NECK))
+      .toEqual({ kind: "one", slot: NECK });
+  });
+
+  it("⚠ RESOLVES A MATCHED PAIR, which her words provably cannot", () => {
+    /*
+      THE CASE THIS PREFERENCE EXISTS FOR, and it is the one her own sentence
+      can never answer: both slots carry the bare noun "upper arm", so the word
+      narrowing matches BOTH and asks which — on the exact sentence the arm
+      popover composes for her.
+
+      Driven against the real interpreter too (`entrance-scoped-ink-disposable`,
+      2026-08-21): same words, same branch, tap versus no tap, and the two
+      answers differ. The cost of the alternative is on the record — a design on
+      the wrong anatomical side, 300 credits refunded twice (R7-7G).
+    */
+    const LEFT = "ink:upperArm@left";
+    const RIGHT = "ink:upperArm@right";
+    const said = "her left upper arm tattoo — make it bigger";
+
+    expect(inkSlotSheAsksAbout(said, [LEFT, RIGHT]), "her words alone")
+      .toEqual({ kind: "several", slots: [LEFT, RIGHT] });
+    expect(inkSlotSheAsksAbout(said, [LEFT, RIGHT], LEFT), "the same words, tapped")
+      .toEqual({ kind: "one", slot: LEFT });
+    /* And the other side of the same pair, so the arm is about the tap rather
+       than about "left" being first in the sorted list. */
+    expect(inkSlotSheAsksAbout(said, [LEFT, RIGHT], RIGHT))
+      .toEqual({ kind: "one", slot: RIGHT });
+  });
+
+  it("outranks her wording, rather than being weighed against it", () => {
+    /*
+      She typed "the upper chest one" and then tapped the NECK card. The
+      gesture wins: it is about the pixels she put a finger on, and a resolver
+      that let a word overrule a tap would be a second opinion about a fact
+      that has only one.
+    */
+    expect(inkSlotSheAsksAbout("make the upper chest one bigger", [CHEST, NECK], NECK))
+      .toEqual({ kind: "one", slot: NECK });
+  });
+
+  it("⚠ NEVER falls back to the one she did NOT point at", () => {
+    /*
+      THE ARM THIS WHOLE BRANCH EXISTS FOR. A scope naming ink the chain does
+      not hold, on a customer with exactly one OTHER tattoo, is the shape where
+      a fallback silently resizes the wrong design — `slots[0]` wearing a
+      different hat, and the 300-credit anatomical-side refund is what it costs.
+
+      `none` is the answer, and the caller says so in her own words, naming the
+      place she pointed at rather than claiming she has no ink at all.
+    */
+    expect(inkSlotSheAsksAbout("make it bigger", [CHEST], ARM)).toEqual({ kind: "none" });
+    expect(inkSlotSheAsksAbout("make it bigger", [CHEST, NECK], ARM)).toEqual({ kind: "none" });
+    expect(inkSlotSheAsksAbout("make the upper chest one bigger", [CHEST], ARM))
+      .toEqual({ kind: "none" });
+  });
+
+  it("leaves an unscoped ask and a NON-ink scope exactly as they were", () => {
+    /*
+      The widening control. A scoped hair ask never reaches this function, and
+      one that did must not have its ink resolved by a slot that is not ink —
+      the misaimed-guard pair, kept after the positive arms passed.
+    */
+    expect(inkSlotSheAsksAbout("make it bigger", [CHEST, NECK], undefined).kind).toBe("several");
+    expect(inkSlotSheAsksAbout("make it bigger", [CHEST, NECK], "eye@left").kind).toBe("several");
+    expect(inkSlotSheAsksAbout("make it bigger", [CHEST], "eye@left"))
+      .toEqual({ kind: "one", slot: CHEST });
+    expect(inkSlotSheAsksAbout("make it bigger", [], "eye@left")).toEqual({ kind: "none" });
+  });
+});

@@ -28,6 +28,7 @@ import { regionNameOf } from "./maskedRefine";
 import { assembleRecipe } from "./recipeAssembler";
 import {
   catalogueSlots,
+  facetsOfSlot,
   slotDefinition,
   slotSpecFor,
   FACET_SLOTS,
@@ -37,7 +38,7 @@ import {
   isAskable,
   DISPLAY_REGION_VOCABULARY,
 } from "./referenceSlotCatalogue";
-import { allFacets } from "./refineFacets";
+import { allFacets, type Facet } from "./refineFacets";
 
 const SHE = { subject: "she", object: "her", possessive: "her", plural: false } as const;
 
@@ -785,5 +786,70 @@ describe("a tattoo at a place", () => {
   */
   it("is absent from the closed catalogue's own list", () => {
     expect(catalogueSlots().some((one) => one.slot.startsWith("ink:"))).toBe(false);
+  });
+
+  /*
+    ⚠ AND THE SECOND READER OF THE GRAMMAR ANSWERS FOR IT TOO (found opus-953
+    §4, ordered fable-1293 §2a).
+
+    `facetsOfSlot` is `parseSlot` → `entryOf`, and until 2026-08-21 it had never
+    heard of this namespace: `ink:upperArm@left` parsed as a feature called
+    `ink:upperArm`, `entryOf` had no row for it, and the answer was `null` BY
+    ACCIDENT — the same shape as the bug that bought `slotDefinition`'s own ink
+    branch (fable-1137 §2a), one function along.
+
+    It is not cosmetic. `refineService`'s per-side narrowing builds *the facets
+    this scope covers* from this list, so a scoped ink render narrowed to an
+    EMPTY set and asked the whole-frame question of a one-arm ask — fable-444
+    condition 2's defect, arriving through a grammar the reader could not read.
+  */
+  it("answers the SECOND reader of the grammar, and derives the facet rather than naming it", () => {
+    /*
+      The expectation is computed from the facet CARDS, not typed as `["ink"]`.
+      A literal here would be law 4's second list — free to disagree with the
+      cards the day a second per-placement facet is written, and this arm would
+      keep passing while the two drifted.
+    */
+    const perPlacement = (Object.keys(FACET_SLOTS) as Facet[])
+      .filter((facet) => "perPlacement" in FACET_SLOTS[facet]);
+    expect(perPlacement.length, "the cards must still assign SOMETHING per placement").toBeGreaterThan(0);
+
+    expect(facetsOfSlot("ink:neck")).toEqual(perPlacement);
+    expect(facetsOfSlot("ink:upperArm@left")).toEqual(perPlacement);
+    expect(facetsOfSlot("ink:upperArm@right")).toEqual(perPlacement);
+    /* An OPEN placement resolves in the catalogue, so it resolves here — the
+       two readers agree about which keys are legal because one asks the
+       other. */
+    expect(facetsOfSlot("ink:sleeve")).toEqual(perPlacement);
+  });
+
+  it("refuses in the second reader exactly what the first one refuses", () => {
+    /*
+      THE NEGATIVE CONTROL, and it is the half that makes the arm above mean
+      something: a branch answering `["ink"]` for anything starting `ink:` would
+      pass every assertion up there and quietly hand the narrowing a facet list
+      for a key nobody could mean. Each of these is a rejection `slotDefinition`
+      makes on the vocabulary's own answer, asserted here on BOTH readers in one
+      loop so the day they disagree is the day this goes red.
+    */
+    for (const key of ["ink:", "ink:neck@left", "ink:upperArm", "ink:upperChest@right", "ink:left forearm"]) {
+      expect(slotDefinition(key), `${key} — first reader`).toBeNull();
+      expect(facetsOfSlot(key), `${key} — second reader`).toBeNull();
+    }
+  });
+
+  it("leaves the closed catalogue's own answers untouched", () => {
+    /* The widening half of the tightening-versus-widening pair: the ink branch
+       must not have moved what a catalogued slot answers, and a slot the
+       catalogue has never heard of is still `null` rather than an empty list. */
+    for (const entry of SLOT_CATALOGUE) {
+      const key = entry.instances.of === "perSide" ? `${entry.feature}@left` : entry.feature;
+      expect(facetsOfSlot(key), key).toEqual(entry.facets);
+    }
+    expect(facetsOfSlot("notAFeature")).toBeNull();
+    /* And the OPEN namespace keeps its own decided answer, which is a different
+       one and stays that way: `openLanePinning.test.ts` pins it, because an
+       open kind has no facet the cards assign. */
+    expect(facetsOfSlot("open:horns")).toBeNull();
   });
 });

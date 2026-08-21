@@ -9032,38 +9032,70 @@ describe("an open kind is never scopable — the door, at the wire", () => {
 });
 
 /*
-  AND THE INK LANE IS NOT SCOPABLE EITHER — the same finding, one namespace on.
+  ⚠ AND THE INK LANE **IS** SCOPABLE SINCE 2026-08-21 — this block used to hold
+  the opposite contract and it is inverted rather than deleted (traced opus-953
+  §4, ordered fable-1291 §3 / fable-1293 §2).
 
-  The first assertion is the one that makes the second mean anything: the
-  catalogue RESOLVES `ink:neck` now, so the door written as *the catalogue
-  cannot name it* has stopped answering the question it is being asked. Without
-  its own line a design would become scopable through a resolver change nobody
-  read as a decision about scoping — the unowned-axis class through the back
-  door, which is exactly how the open lane got here.
+  The wall it pinned rested on fable-1138 §3's *a design has no panel row to
+  point at until the ink studio exists*, and `facePanel` has drawn one card per
+  delivered crop since `85d73b5b`. `FaceRegions` sends a scope exactly when the
+  tapped rectangle carries an instance, so a paired surface — an upper arm —
+  died here before her sentence was read, while her neck and upper chest went
+  through because they send no scope at all. That is the whole of why three ink
+  roads were "chest and neck only".
 
-  Driven at the WIRE rather than on the predicate: the contract is about what
-  `refineCandidate` does with a customer's field, and a helper answering
-  correctly beside a door that never calls it is the shape this campaign has
-  already paid for.
+  THE TWO ARMS ARE A PAIR AND NEITHER MEANS ANYTHING ALONE. The first proves
+  the namespace is ADMITTED; the second proves the GRAMMAR was not relaxed on
+  the way in, which is the tightening-versus-widening pair this campaign keeps
+  paying for. A single admit-arm would pass identically if the door had been
+  deleted outright.
+
+  Driven at the WIRE rather than on the predicate, for the reason the old block
+  gave and which survives its inversion: the contract is about what
+  `refineCandidate` does with a customer's field.
 */
-describe("an ink design is never scopable — the door, at the wire", () => {
-  it("resolves the ink key AND still refuses it as a scope", async () => {
-    expect(
-      slotDefinition("ink:neck" as never),
-      "the ink branch does not exist yet — this arm is the build's definition of done",
-    ).not.toBeNull();
+describe("an ink design IS scopable — the door, at the wire", () => {
+  it("admits a well-formed ink key, and says so by naming the tattoo back", async () => {
+    /*
+      An eye-colour reading under an ink scope, so the ask lands OUTSIDE what
+      she pointed at. It is refused either way — the arm is about WHICH refusal,
+      because only one of the two proves the key resolved.
 
-    await expect(refineCandidate({ harvest: unmasked,
-        interpret: async () => ({ ok: true as const, delta: { eyeColour: "green" as const } }),
-      } as never,
-      { ...input, instruction: "make it bigger", scope: "ink:neck" as never },
-    )).rejects.toThrow(/which part of her/);
-
-    await expect(refineCandidate({ harvest: unmasked,
+      `scope_unknown` is the dead wall: *"I don't know which part of her that
+      is"*, thrown before anything is interpreted. `scope_mismatch` composes its
+      sentence from `slotDefinition(scope).noun`, so a message naming *her left
+      upper arm tattoo* cannot be produced by a door that failed to resolve the
+      key — the assertion is the resolution, not a proxy for it.
+    */
+    const refused = await refineCandidate({ harvest: unmasked,
         interpret: async () => ({ ok: true as const, delta: { eyeColour: "green" as const } }),
       } as never,
       { ...input, instruction: "make it bigger", scope: "ink:upperArm@left" as never },
-    )).rejects.toThrow(/which part of her/);
+    ).then(() => null, (error: unknown) => error);
+
+    expect(refused, "an eye ask inside an ink scope is still refused").not.toBeNull();
+    expect(String((refused as { message?: string }).message ?? refused))
+      .toMatch(/left upper arm tattoo/);
+    expect(String((refused as { message?: string }).message ?? refused),
+      "the dead wall's sentence must not be what comes back")
+      .not.toMatch(/which part of her/);
+  });
+
+  it("still refuses an ink key the grammar refuses", async () => {
+    /*
+      Three shapes, and each is a rejection `inkSlotDefinition` makes on the
+      vocabulary's own answer rather than on a rule restated here: a sided key
+      for a surface there is one of, a sideless key for a paired one, and an
+      empty placement. All three still meet `scope_unknown`, because the line
+      that admits the namespace admits it THROUGH `slotDefinition`.
+    */
+    for (const scope of ["ink:neck@left", "ink:upperArm", "ink:"]) {
+      await expect(refineCandidate({ harvest: unmasked,
+          interpret: async () => ({ ok: true as const, delta: { eyeColour: "green" as const } }),
+        } as never,
+        { ...input, instruction: "make it bigger", scope: scope as never },
+      ), scope).rejects.toThrow(/which part of her/);
+    }
   });
 });
 
@@ -12116,6 +12148,99 @@ describe("the picture she attached becomes the carrier that rides", () => {
     expect(result.kind).toBe("selected");
     expect(result.note).toContain("one thing about a tattoo at a time");
     expect(painted).toHaveLength(0);
+  });
+
+  /*
+    ---- AND THE TAPPED RECTANGLE, which is what the scope wall cost (opus-953
+    §4, ordered fable-1291 §3 / fable-1293 §2) ----
+
+    Until 2026-08-21 an ink scope was refused a thousand lines before this road,
+    so the panel's card for a PAIRED surface — an upper arm — died at
+    `scope_unknown` while her neck and upper chest went through, because those
+    send no scope at all. "Chest and neck only" was that one line, on three
+    roads at once.
+
+    These arms are at the SERVICE because routing is the finding: the pieces
+    each pass in their own suites and the question is whether a tapped
+    rectangle reaches the transform lane carrying its own answer.
+  */
+  const ARM_CROP = "33333333-3333-4333-8333-333333333333";
+
+  it("⚠ TRANSFORMS THE ONE SHE TAPPED, on a surface the old wall refused outright", async () => {
+    /*
+      The whole road for an upper arm, which had none. Two tattoos on the branch
+      and a bare *"make it bigger"* — the exact sentence that must ASK WHICH
+      when nobody pointed (the arm below this one) — and here it does not ask,
+      because she did.
+    */
+    inkedBranch({ "ink:upperChest": CHEST_CROP, "ink:upperArm@left": ARM_CROP });
+    painted.length = 0;
+    const result = await refineCandidate(transformRoad({
+      listInkDeliveryCrops: deliveredCropRows([CHEST_CROP, ARM_CROP]),
+    }), { ...input, instruction: "make it bigger", scope: "ink:upperArm@left" as never });
+
+    expect(result.kind, "the tapped arm still refuses somewhere").toBe("rendered");
+    expect(painted).toHaveLength(1);
+    /* HER ARM'S CROP on the wire, and not the chest one — the whole reason the
+       gesture may not be weighed against anything. */
+    const prompt = painted[0]!.prompt;
+    expect(prompt).toContain("left upper arm tattoo she already has");
+    expect(prompt).toContain("Change only her left upper arm tattoo");
+    /*
+      ⚠ AND EXACTLY ONE PICTURE IS BEING CHANGED, which is the assertion this
+      arm is really for.
+
+      Her chest piece IS on the wire and must be — a transform that dropped her
+      other tattoo would deliver a frame missing a feature she paid for, which
+      is the build-lost class. What separates them is the CLAUSE: the tapped one
+      is told to grow, the other is told to stay. An earlier draft of this arm
+      asserted the chest crop was absent and went red on the road working
+      correctly.
+    */
+    expect(prompt).toContain("upper chest tattoo she already has");
+    expect(prompt.match(/Draw this same tattoo noticeably larger/g), "two tattoos told to grow")
+      .toHaveLength(1);
+    expect(prompt).toContain("Put it back exactly as it is here");
+    /*
+      AND THE GROW CLAUSE BELONGS TO THE ARM'S REFERENCE, read by POSITION
+      rather than by a longer quotation: a count of one says only that one
+      tattoo was told to grow, not WHICH. The clause has to fall between the arm
+      reference that opens and the chest reference that follows it.
+    */
+    const arm = prompt.indexOf("left upper arm tattoo she already has");
+    const chest = prompt.indexOf("upper chest tattoo she already has");
+    const grow = prompt.indexOf("Draw this same tattoo noticeably larger");
+    expect(arm, "the arm reference is not on the wire").toBeGreaterThan(-1);
+    expect(chest, "the carried chest piece is not on the wire").toBeGreaterThan(arm);
+    expect(grow, "the grow clause is not inside the arm's own reference")
+      .toBeGreaterThan(arm);
+    expect(grow, "the grow clause landed on the chest piece she did not point at")
+      .toBeLessThan(chest);
+  });
+
+  it("⚠ NEVER resizes the tattoo she did not point at", async () => {
+    /*
+      THE ARM THE `none` BRANCH EXISTS FOR, at the service. A scope naming ink
+      the chain does not hold, on a customer with exactly one OTHER tattoo, is
+      where a fallback silently paints the wrong design — `slots[0]` wearing a
+      different hat, and the 300-credit anatomical-side refund is its price.
+
+      Free, before the claim, and the sentence speaks about the PLACE she
+      pointed at rather than telling somebody with a chest piece that she has no
+      tattoos.
+    */
+    inkedBranch();
+    painted.length = 0;
+    ledger.charges.length = 0;
+    const result = await refineCandidate(transformRoad(), {
+      ...input, instruction: "make it bigger", scope: "ink:upperArm@left" as never,
+    });
+
+    expect(result.kind).toBe("selected");
+    expect(result.note).toContain("left upper arm tattoo");
+    expect(result.note, "it denied a tattoo he is looking at").not.toContain("hasn't got one yet");
+    expect(painted, "it painted the tattoo she did not point at").toHaveLength(0);
+    expect(ledger.charges).toHaveLength(0);
   });
 
   it("⚠ ASKS WHICH when she has two and said 'it' — never picks one", async () => {

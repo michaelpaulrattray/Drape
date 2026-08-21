@@ -133,6 +133,38 @@ describe("his own ask, in the sentence it should have had", () => {
     const said = cannotSaySentence("notASlot", { ...bare, facet: "marks", words: "a scar" });
     expect(said).toBe("A scar isn't something I can place yet. Nothing was charged.");
   });
+
+  /*
+    AND THE SAME DISCIPLINE ON THE TRANSFORM ROAD'S `none` (built with the ink
+    scope door, 2026-08-21).
+
+    The unscoped sentence is about the FACE — *"she hasn't got one yet"* — and a
+    scoped ask is not about the face. Said to somebody who tapped a tattoo card,
+    it denies the picture they are looking at, which is what `inkRemovalNotYet`
+    was ruled into existence to stop (fable-1287 §3). The scoped branch narrows
+    to the place, where it is true whether this is her only tattoo or her
+    fourth.
+  */
+  it("speaks about the place she pointed at when a scope names ink she has not got", () => {
+    const said = cannotSaySentence("noInkToChange", {
+      ...bare, facet: "ink", scopeNoun: "his left upper arm tattoo",
+    });
+    expect(said).toContain("his left upper arm tattoo");
+    expect(said, "it must not deny tattoos she may well have elsewhere")
+      .not.toContain("hasn't got one yet");
+    expect(said, "a refusal with no next move is the line this file's header names")
+      .toContain("say where to put a new one");
+    expect(said).toContain("Nothing was charged.");
+  });
+
+  it("keeps the unscoped `none` sentence exactly as it was", () => {
+    /* The control kept after the positive passes: the founder-facing sentence
+       for a face with no ink at all is untouched by the scoped branch. */
+    expect(cannotSaySentence("noInkToChange", { ...bare, facet: "ink" }))
+      .toBe("I can put a tattoo on her — her neck, an upper arm, her upper chest. "
+        + "She hasn't got one yet, though, so there's nothing there to change or take off. "
+        + "Nothing was charged.");
+  });
 });
 
 /**
