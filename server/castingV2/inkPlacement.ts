@@ -301,15 +301,45 @@ function uncarriedInkPlaces(): readonly string[] {
 }
 
 /**
- * What the user is told, and it names the thing that DOES work.
+ * What the user is told, and it names the things that DO work.
  *
  * A refusal that only closes a door leaves someone guessing whether to rephrase,
  * wait, or give up. This one says which of the three.
+ *
+ * # ⚠ IT IS DERIVED, and it was a hard-coded sentence until 2026-08-22
+ * # (census finding 4(c), filed fable-1317)
+ *
+ * It said *"a neck tattoo is the one I can do from a description alone"* — to
+ * every account, including the ones whose UPPER ARM the words road serves.
+ * `WORDS_ROAD_PLACEMENTS_OPEN` had already grown and the sentence had not, which
+ * is a refusal telling a customer the product is smaller than it is. Nothing was
+ * broken and nothing rendered differently; she was simply talked out of an ask
+ * that would have worked.
+ *
+ * So it comes off the same lists that decide the road, through the same
+ * `inkLanePlaces` the classifier uses — one derivation, two readers. The day a
+ * fourth surface earns its place, this sentence grows with it in the same edit,
+ * which is the whole reason `uncarriedInkPlaces` above is written the same way.
+ *
+ * The customer-facing NOUN rather than the segmenter's word: `inkLanePlaces`
+ * returns both spellings and the shorter one is the reader's — *"upper arm"* is
+ * what a person says, and the possessive is stripped so the sentence can put
+ * its own article in front.
  */
-export const INK_NEEDS_DOCUMENT_MESSAGE =
-  "Tell me where it goes — a neck tattoo is the one I can do from a description "
-  + "alone. Anywhere else needs a design to work from first, and the body-art "
-  + "studio is coming. Nothing was charged.";
+export function inkNeedsDocumentMessage(wordsRoadOpen: boolean): string {
+  const places = (wordsRoadOpen ? WORDS_ROAD_PLACEMENTS_OPEN : WORDS_ROAD_PLACEMENTS)
+    .map((key) => inkPlacementEntry(key).noun.replace(/^(?:her|his|their)\s+/, ""));
+  /* "a neck tattoo" · "a neck or an upper arm tattoo" — the article agrees with
+     the word after it, because "a upper arm" is the kind of sentence that makes
+     a careful product look careless. */
+  const article = (word: string) => (/^[aeiou]/i.test(word) ? "an" : "a");
+  const named = places.length === 1
+    ? `${article(places[0]!)} ${places[0]!} tattoo is the one I can do`
+    : `${places.map((place) => `${article(place)} ${place}`).join(" or ")} tattoo is what I can do`;
+  return `Tell me where it goes — ${named} from a description alone. `
+    + "Anywhere else needs a design to work from first, and the body-art "
+    + "studio is coming. Nothing was charged.";
+}
 
 /**
  * A STATED PLACEMENT IS NEVER RELOCATED (D-145).

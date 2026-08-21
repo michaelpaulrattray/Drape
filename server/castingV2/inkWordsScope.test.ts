@@ -24,7 +24,7 @@ import {
   parseCastingInkWordsScope,
   validateCastingInkWordsEnvironment,
 } from "./castingV2Scope";
-import { classifyInkPlacement, INK_NEEDS_DOCUMENT_MESSAGE } from "./inkPlacement";
+import { classifyInkPlacement, inkNeedsDocumentMessage } from "./inkPlacement";
 
 describe("the boot guard", () => {
   it("refuses while casting itself is off — a words tattoo is painted by a refine", () => {
@@ -163,11 +163,50 @@ describe("the gate, both sides of the flag", () => {
     expect(classifyInkPlacement(ink, "ink", true).kind).toBe("needs_document");
   });
 
-  it("keeps the refusal sentence the one the closed road earns", () => {
-    /* The message is not per-account, so it describes the CLOSED road — which
-       is right while the flag is dark everywhere. The day it is not, this arm
-       is where somebody has to decide what an opened account is told. */
-    expect(INK_NEEDS_DOCUMENT_MESSAGE).toContain("neck tattoo");
-    expect(INK_NEEDS_DOCUMENT_MESSAGE.toLowerCase()).not.toContain("face");
+  it("keeps the refusal sentence the one the CLOSED road earns", () => {
+    expect(inkNeedsDocumentMessage(false)).toContain("a neck tattoo");
+    expect(inkNeedsDocumentMessage(false).toLowerCase()).not.toContain("face");
+    /* And it does not offer the arm to somebody who cannot have it. */
+    expect(inkNeedsDocumentMessage(false).toLowerCase()).not.toContain("upper arm");
+  });
+
+  /*
+    ⚠ AND THE OPEN ROAD IS TOLD WHAT IT CAN ACTUALLY HAVE — census finding 4(c)
+    (filed fable-1317, fixed 2026-08-22).
+    
+    The sentence above used to be the ONLY one: a hard-coded *"a neck tattoo is
+    the one I can do"*, said to every account including the ones whose upper arm
+    the words road serves. Nothing rendered differently and nothing was charged
+    — she was simply talked out of an ask that would have worked, which is a
+    refusal describing the product as smaller than it is.
+    
+    The arm below is the pair, and the pair is the point: one list decides the
+    ROAD and the same list writes the SENTENCE, so a fourth surface cannot land
+    in one and be left out of the other.
+  */
+  it("⚠ TELLS AN OPEN ACCOUNT ABOUT ITS ARM", () => {
+    const said = inkNeedsDocumentMessage(true);
+    expect(said).toContain("neck");
+    expect(said).toContain("upper arm");
+    /* "an upper arm", never "a upper arm" — the article agrees with the word
+       after it, which is the kind of thing that makes a careful product look
+       careless when it is wrong. */
+    expect(said).toContain("an upper arm");
+    expect(said).not.toContain("a upper arm");
+  });
+
+  it("CONTROL — the two sentences DIFFER, so neither can pass by never changing", () => {
+    /*
+      The arm that would go red if the derivation were quietly replaced by a
+      constant again: a pair of assertions about one string is satisfied by a
+      string that ignores its argument.
+    */
+    expect(inkNeedsDocumentMessage(true)).not.toBe(inkNeedsDocumentMessage(false));
+    /* And both still say the two things every refusal on this road owes: what
+       to do instead, and that nothing was charged. */
+    for (const open of [true, false]) {
+      expect(inkNeedsDocumentMessage(open), String(open)).toContain("body-art studio is coming");
+      expect(inkNeedsDocumentMessage(open), String(open)).toContain("Nothing was charged");
+    }
   });
 });

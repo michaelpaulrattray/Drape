@@ -51,7 +51,7 @@ describe("without a picture, the gate is exactly what it was", () => {
   it("walls a sleeve asked in words alone", () => {
     const seen = check();
     readDelta(inkReply(), seen);
-    expect(seen.wall).toEqual({ reason: "gate_ink_document" });
+    expect(seen.wall).toEqual({ reason: "gate_ink_document", wordsRoadOpen: false });
   });
 
   it("still lets the anchor's own surfaces through — face and neck", () => {
@@ -67,7 +67,7 @@ describe("without a picture, the gate is exactly what it was", () => {
        would kill his never-refused ruling at a subject boundary. */
     const seen = check({ instruction: "give her a small star on her left sleeve" });
     readDelta(markReply(), seen);
-    expect(seen.wall).toEqual({ reason: "gate_ink_document" });
+    expect(seen.wall).toEqual({ reason: "gate_ink_document", wordsRoadOpen: false });
   });
 });
 
@@ -138,7 +138,7 @@ describe("⚠ AND A TATTOO THIS PRODUCT ALREADY PAINTED IS THE THIRD DOCUMENT", 
        not both driven is a gate nobody has measured. */
     const seen = check({ instruction: "make his fine-line swallow chest piece bigger" });
     readDelta(inkReply("a bigger fine-line swallow chest piece"), seen);
-    expect(seen.wall).toEqual({ reason: "gate_ink_document" });
+    expect(seen.wall).toEqual({ reason: "gate_ink_document", wordsRoadOpen: false });
   });
 
   it("walls when the bit is explicitly false, exactly as when it is absent", () => {
@@ -147,7 +147,7 @@ describe("⚠ AND A TATTOO THIS PRODUCT ALREADY PAINTED IS THE THIRD DOCUMENT", 
       inkDocumentedByDelivery: false,
     });
     readDelta(inkReply("a bigger fine-line swallow chest piece"), seen);
-    expect(seen.wall).toEqual({ reason: "gate_ink_document" });
+    expect(seen.wall).toEqual({ reason: "gate_ink_document", wordsRoadOpen: false });
   });
 
   it("opens ONLY this gate — the likeness wall still stands behind it", () => {
@@ -193,12 +193,12 @@ describe("the flag and the pointing are BOTH required — proven separately", ()
   it("walls when the bit is absent", () => {
     const seen = check();
     readDelta(inkReply(), seen);
-    expect(seen.wall).toEqual({ reason: "gate_ink_document" });
+    expect(seen.wall).toEqual({ reason: "gate_ink_document", wordsRoadOpen: false });
   });
 
   it("walls when the bit is explicitly false", () => {
     const seen = check({ inkDocumentedByReference: false });
     readDelta(inkReply(), seen);
-    expect(seen.wall).toEqual({ reason: "gate_ink_document" });
+    expect(seen.wall).toEqual({ reason: "gate_ink_document", wordsRoadOpen: false });
   });
 });

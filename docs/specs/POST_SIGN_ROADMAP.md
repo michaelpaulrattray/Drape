@@ -53,18 +53,28 @@ carry the rulings, the courts and the histories.
                                           — an ink prune that had to re-render
                                           was CHARGED and REFUNDED, live for
                                           every repaint customer
-4  ✅ POLISH SITTING                     094f5ea7 — his four UI asks and the
-                                          TATTOO STYLE GLOSSARY (b53b5893, the
-                                          gate on ungating word-tattoos; its
-                                          court's frames are his). The last two:
-                                          the receipt's reference thumbnails
-                                          (1264 §1) and §5e's pronoun road
-                                          (14c7ded7). ⚠ The PREVIEW ERASER is
-                                          NOT skipped polish — it is a scrub
-                                          tool on the CONSENT SURFACE that shows
-                                          a customer her cut, and that surface is
-                                          3a.2(b), unbuilt. Filed there, ruled
-                                          fable-1330 §5
+4  ✅ POLISH SITTING                     his four UI asks, the TATTOO STYLE
+                                          GLOSSARY (b53b5893, the gate on
+                                          ungating word-tattoos; its court's
+                                          frames are his), the receipt's
+                                          reference thumbnails (094f5ea7, 1264
+                                          §1), §5e's pronoun road (14c7ded7) and
+                                          census 4(c) — the document refusal now
+                                          names the surfaces the road serves THIS
+                                          account instead of saying "a neck
+                                          tattoo" to an account whose arm is
+                                          open. ⚠ It was struck once at 094f5ea7
+                                          and RE-OPENED an hour later: 4(c) was
+                                          assigned to this sitting at fable-1317
+                                          §6.2 and the strike was written from
+                                          the mailbox rather than from the
+                                          sitting's own list. ⚠ The PREVIEW
+                                          ERASER is NOT skipped polish — it is a
+                                          scrub tool on the CONSENT SURFACE that
+                                          shows a customer her cut, and that
+                                          surface is 3a.2(b), unbuilt. Filed
+                                          there, ruled fable-1330 §5. 4(b) is a
+                                          Two Paths card — see item 5
 4b ✅ THE STUDIO CAPABILITY CENSUS        615fe6eb — 41 declared doors, 56 corpus
                                           rows, 54 driven, state fixtures for a
                                           cast that already WEARS something. Its
@@ -74,7 +84,24 @@ carry the rulings, the courts and the histories.
                                           EVERY row that declares one
 5  THE TWO PATHS (Wardrobe / Basics)      founder ruling 1311 — DESIGN REPORT for
                                           countersign first, written against the
-                                          census rather than from recollection
+                                          census rather than from recollection.
+                                          CARRIES census 4(b), a dead end we
+                                          shipped: "put him in a plain black
+                                          tee" walls `wall_stage` while
+                                          `gate_ink_uncarried`'s own sentence
+                                          offers "change what they are wearing
+                                          first" — the product suggesting a road
+                                          it refuses. The stage wall must admit
+                                          garments on the Wardrobe path, so the
+                                          fix IS this design rather than a patch
+                                          in front of it. AND its evidence
+                                          section carries opus-977 §3: a removal
+                                          re-render changed a grey tee to BLACK,
+                                          unasked, because `identityClause` names
+                                          five nouns and clothing is not one —
+                                          a stored wardrobe line is the clothing
+                                          noun with an owner, which kills that
+                                          class rather than patching it
 3b KEYING + MULTI-TATTOO REMOVAL          after 5. No live customer yet (no branch
                                           has ever worn two); 1167 §2e is its own
                                           reason

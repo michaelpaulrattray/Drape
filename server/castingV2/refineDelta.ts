@@ -436,7 +436,18 @@ export type RefineRefusal =
    */
   | { reason: "wall_unfileable"; asked: string; value?: string }
   /** Not a wall — a GATE. It names what does work and what is coming (D-137). */
-  | { reason: "gate_ink_document" }
+  /**
+   * ⚠ IT CARRIES WHICH PLACES THE ROAD SERVES THIS ACCOUNT (census 4(c)).
+   *
+   * The sentence names the surfaces words alone can document, and it named them
+   * as a hard-coded *"a neck tattoo"* — to accounts whose upper arm was open
+   * too. A refusal that under-states what the product can do is the
+   * inert-control failure with its sign flipped, one copy string along, and the
+   * fix is the one this file uses everywhere: the sentence is DERIVED from the
+   * list that decides the road, so a placement joining `WORDS_ROAD_PLACEMENTS`
+   * cannot be left behind in prose that has outgrown it.
+   */
+  | { reason: "gate_ink_document"; wordsRoadOpen: boolean }
   /**
    * A PLACE WE CAN SEE AND CANNOT KEEP — the words-road court's own answer
    * (opus-960, ratified fable-1301 §1). `place` is the surface in her own kind
@@ -1342,7 +1353,12 @@ export function readDelta(value: unknown, check?: FreeLaneCheck): RefineDelta | 
             return null;
           }
           if (placement.kind !== "in_frame") {
-            check.wall = { reason: "gate_ink_document" };
+            check.wall = {
+              reason: "gate_ink_document",
+              /* The same bit the classifier above was handed, so the refusal
+                 and the routing cannot disagree about which road she is on. */
+              wordsRoadOpen: check.inkWordsRoadOpen === true,
+            };
             return null;
           }
         }

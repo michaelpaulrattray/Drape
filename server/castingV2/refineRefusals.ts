@@ -31,7 +31,7 @@
  * sentence that did not come through.
  */
 import type { RefineRefusal } from "./refineDelta";
-import { INK_NEEDS_DOCUMENT_MESSAGE } from "./inkPlacement";
+import { inkNeedsDocumentMessage } from "./inkPlacement";
 import { capitalize, pronounsForSex, type CastPronouns } from "./castPronouns";
 
 export type RefusalCharge = "free" | "charged";
@@ -123,7 +123,12 @@ export const REFINE_REFUSALS = {
     report: "wall",
   },
   gate_ink_document: {
-    say: () => INK_NEEDS_DOCUMENT_MESSAGE,
+    /* The places the road serves THIS account, off the refusal's own bit —
+       census 4(c): this sentence said "a neck tattoo" to accounts whose upper
+       arm was open too. */
+    say: (refusal) => inkNeedsDocumentMessage(
+      "wordsRoadOpen" in refusal && refusal.wordsRoadOpen === true,
+    ),
     charge: "free",
     report: "gate",
   },

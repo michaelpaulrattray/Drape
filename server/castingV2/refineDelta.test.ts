@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { INK_NEEDS_DOCUMENT_MESSAGE } from "./inkPlacement";
+import { inkNeedsDocumentMessage } from "./inkPlacement";
 
 import {
   applyDelta,
@@ -867,15 +867,15 @@ describe("ink renders only where the anchor is the document", () => {
   it("names what DOES work, so the refusal points somewhere", () => {
     /* It INVITES the missing fact rather than only closing a door (D-137 as
        amended): the user's next move is to say where. */
-    expect(INK_NEEDS_DOCUMENT_MESSAGE).toContain("Tell me where");
-    expect(INK_NEEDS_DOCUMENT_MESSAGE).toContain("neck tattoo");
-    expect(INK_NEEDS_DOCUMENT_MESSAGE).toContain("body-art studio is coming");
-    expect(INK_NEEDS_DOCUMENT_MESSAGE).toContain("Nothing was charged");
+    expect(inkNeedsDocumentMessage(false)).toContain("Tell me where");
+    expect(inkNeedsDocumentMessage(false)).toContain("neck tattoo");
+    expect(inkNeedsDocumentMessage(false)).toContain("body-art studio is coming");
+    expect(inkNeedsDocumentMessage(false)).toContain("Nothing was charged");
     /* ⚠ AND IT NO LONGER CLAIMS FACE INK WORKS. It said "face and neck ink
        works today" for as long as this road existed, and the face half was
        never true — the sentence is the thing this retirement is FOR, so a
        future edit putting it back must go red here. */
-    expect(INK_NEEDS_DOCUMENT_MESSAGE.toLowerCase()).not.toContain("face");
+    expect(inkNeedsDocumentMessage(false).toLowerCase()).not.toContain("face");
   });
 });
 
