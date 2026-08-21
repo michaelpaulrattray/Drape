@@ -1,0 +1,1943 @@
+{
+  "schemaVersion": "1.0.0",
+  "static": {
+    "declared": [
+      {
+        "id": "already_original",
+        "kind": "service-refusal",
+        "pinnedBy": []
+      },
+      {
+        "id": "already_signed",
+        "kind": "service-refusal",
+        "pinnedBy": []
+      },
+      {
+        "id": "busy",
+        "kind": "service-refusal",
+        "pinnedBy": [
+          "server/castingV2/refusalTag.test.ts",
+          "server/castingV2/rollService.test.ts"
+        ]
+      },
+      {
+        "id": "candidate_missing",
+        "kind": "service-refusal",
+        "pinnedBy": []
+      },
+      {
+        "id": "departure",
+        "kind": "cannot-say",
+        "charge": "refunded",
+        "pinnedBy": [
+          "server/castingV2/cannotSayCopy.test.ts"
+        ]
+      },
+      {
+        "id": "empty",
+        "kind": "interpreter-refusal",
+        "pinnedBy": [
+          "server/castingV2/diagnosticCapture.test.ts",
+          "server/castingV2/faceScan.test.ts",
+          "server/castingV2/faceScanService.test.ts",
+          "server/castingV2/referenceSlotCatalogue.test.ts",
+          "server/castingV2/refineRefusals.test.ts",
+          "server/casting/geminiMigration.test.ts"
+        ]
+      },
+      {
+        "id": "gate_ink_document",
+        "kind": "interpreter-refusal",
+        "pinnedBy": [
+          "server/castingV2/inkReferenceGate.test.ts",
+          "server/castingV2/refineDelta.test.ts"
+        ]
+      },
+      {
+        "id": "gate_ink_uncarried",
+        "kind": "interpreter-refusal",
+        "pinnedBy": [
+          "server/castingV2/refineDelta.test.ts",
+          "server/castingV2/refineRefusals.test.ts"
+        ]
+      },
+      {
+        "id": "history_predates_undo",
+        "kind": "service-refusal",
+        "pinnedBy": []
+      },
+      {
+        "id": "history_unreadable",
+        "kind": "service-refusal",
+        "pinnedBy": []
+      },
+      {
+        "id": "inkBeyondToday",
+        "kind": "cannot-say",
+        "charge": "free",
+        "pinnedBy": [
+          "server/castingV2/cannotSayCopy.test.ts",
+          "server/castingV2/inkBeyondTodayAsk.test.ts"
+        ]
+      },
+      {
+        "id": "inkOneChangeAtATime",
+        "kind": "cannot-say",
+        "charge": "free",
+        "pinnedBy": [
+          "server/castingV2/cannotSayCopy.test.ts"
+        ]
+      },
+      {
+        "id": "inkRemovalNotYet",
+        "kind": "cannot-say",
+        "charge": "free",
+        "pinnedBy": [
+          "server/castingV2/cannotSayCopy.test.ts"
+        ]
+      },
+      {
+        "id": "kind_unserved",
+        "kind": "service-refusal",
+        "pinnedBy": []
+      },
+      {
+        "id": "master_missing",
+        "kind": "service-refusal",
+        "pinnedBy": []
+      },
+      {
+        "id": "noInkToChange",
+        "kind": "cannot-say",
+        "charge": "free",
+        "pinnedBy": [
+          "server/castingV2/cannotSayCopy.test.ts"
+        ]
+      },
+      {
+        "id": "notASlot",
+        "kind": "cannot-say",
+        "charge": "free",
+        "pinnedBy": [
+          "server/castingV2/cannotSayCopy.test.ts",
+          "server/castingV2/mintedSlots.test.ts",
+          "server/castingV2/openKindPolicy.test.ts",
+          "server/castingV2/openLaneKind.test.ts",
+          "server/castingV2/referenceSlotCatalogue.test.ts",
+          "server/castingV2/refineService.test.ts",
+          "server/castingV2/repaintAsks.test.ts",
+          "server/castingV2/vocabularyPin.test.ts"
+        ]
+      },
+      {
+        "id": "nothingAsked",
+        "kind": "cannot-say",
+        "charge": "free",
+        "pinnedBy": [
+          "server/castingV2/cannotSayCopy.test.ts",
+          "server/castingV2/repaintAsks.test.ts"
+        ]
+      },
+      {
+        "id": "noWords",
+        "kind": "cannot-say",
+        "charge": "refunded",
+        "pinnedBy": [
+          "server/castingV2/cannotSayCopy.test.ts",
+          "server/castingV2/mintedSlots.test.ts",
+          "server/castingV2/repaintAsks.test.ts",
+          "server/castingV2/viewFeatureWords.test.ts"
+        ]
+      },
+      {
+        "id": "perSideRemoval",
+        "kind": "cannot-say",
+        "charge": "refunded",
+        "pinnedBy": [
+          "server/castingV2/cannotSayCopy.test.ts",
+          "server/castingV2/repaintAsks.test.ts"
+        ]
+      },
+      {
+        "id": "refine_limit",
+        "kind": "service-refusal",
+        "pinnedBy": []
+      },
+      {
+        "id": "removal",
+        "kind": "cannot-say",
+        "charge": "refunded",
+        "pinnedBy": [
+          "server/castingV2/cannotSayCopy.test.ts",
+          "server/castingV2/repaintAsks.test.ts"
+        ]
+      },
+      {
+        "id": "removal_absent",
+        "kind": "service-refusal",
+        "pinnedBy": [
+          "server/castingV2/refusalTag.test.ts"
+        ]
+      },
+      {
+        "id": "removal_not_in_brief",
+        "kind": "service-refusal",
+        "pinnedBy": []
+      },
+      {
+        "id": "removal_reread_unmatched",
+        "kind": "service-refusal",
+        "pinnedBy": [
+          "server/castingV2/refineService.test.ts"
+        ]
+      },
+      {
+        "id": "removal_uncheckable",
+        "kind": "service-refusal",
+        "pinnedBy": []
+      },
+      {
+        "id": "removal_unnamed",
+        "kind": "service-refusal",
+        "pinnedBy": []
+      },
+      {
+        "id": "scope_mismatch",
+        "kind": "service-refusal",
+        "pinnedBy": [
+          "server/castingV2/refineService.test.ts"
+        ]
+      },
+      {
+        "id": "scope_unknown",
+        "kind": "service-refusal",
+        "pinnedBy": [
+          "server/castingV2/refineService.test.ts"
+        ]
+      },
+      {
+        "id": "sideNamedWithoutScope",
+        "kind": "cannot-say",
+        "charge": "refunded",
+        "pinnedBy": [
+          "server/castingV2/cannotSayCopy.test.ts",
+          "server/castingV2/repaintAsks.test.ts"
+        ]
+      },
+      {
+        "id": "step_moved",
+        "kind": "service-refusal",
+        "pinnedBy": []
+      },
+      {
+        "id": "uncatalogued",
+        "kind": "cannot-say",
+        "charge": "refunded",
+        "pinnedBy": [
+          "server/castingV2/cannotSayCopy.test.ts",
+          "server/castingV2/repaintAsks.test.ts",
+          "server/castingV2/vacantPhrase.test.ts"
+        ]
+      },
+      {
+        "id": "unnamedObject",
+        "kind": "cannot-say",
+        "charge": "refunded",
+        "pinnedBy": [
+          "server/castingV2/cannotSayCopy.test.ts",
+          "server/castingV2/mintedSlots.test.ts",
+          "server/castingV2/repaintAsks.test.ts"
+        ]
+      },
+      {
+        "id": "unplacedInk",
+        "kind": "cannot-say",
+        "charge": "refunded",
+        "pinnedBy": [
+          "server/castingV2/cannotSayCopy.test.ts",
+          "server/castingV2/inkBeyondTodayAsk.test.ts",
+          "server/castingV2/inkDesignForAsk.test.ts",
+          "server/castingV2/refineService.test.ts",
+          "server/castingV2/repaintAsks.test.ts"
+        ]
+      },
+      {
+        "id": "unreadable",
+        "kind": "interpreter-refusal",
+        "pinnedBy": [
+          "server/castingV2/hairColourFromReference.test.ts",
+          "server/castingV2/hairReferenceCutter.test.ts",
+          "server/castingV2/inkReferenceCutter.test.ts",
+          "server/castingV2/inkUploadDoor.test.ts",
+          "server/castingV2/inkUploadService.test.ts",
+          "server/castingV2/makeupFromReference.test.ts",
+          "server/castingV2/openLaneAccept.test.ts",
+          "server/castingV2/openLaneKind.test.ts",
+          "server/castingV2/referenceAttachService.test.ts",
+          "server/castingV2/referenceClassGate.test.ts",
+          "server/castingV2/referenceMediumDoor.test.ts",
+          "server/castingV2/referenceWordsLane.test.ts",
+          "server/castingV2/refineInterpreterCeiling.test.ts",
+          "server/castingV2/refineService.test.ts",
+          "server/db/referenceReadDemand.test.ts",
+          "server/deployWatchDecision.test.ts"
+        ]
+      },
+      {
+        "id": "version_missing",
+        "kind": "service-refusal",
+        "pinnedBy": []
+      },
+      {
+        "id": "wall_content",
+        "kind": "interpreter-refusal",
+        "pinnedBy": [
+          "server/castingV2/colourContextDoor.test.ts",
+          "server/castingV2/priorContextDoor.test.ts",
+          "server/castingV2/referenceWordsLane.test.ts",
+          "server/castingV2/refineRefusals.test.ts",
+          "server/castingV2/refineService.test.ts",
+          "server/castingV2/stageWallBackstop.test.ts"
+        ]
+      },
+      {
+        "id": "wall_likeness",
+        "kind": "interpreter-refusal",
+        "pinnedBy": [
+          "server/castingV2/colourContextDoor.test.ts",
+          "server/castingV2/inkReferenceGate.test.ts",
+          "server/castingV2/referenceWordsLane.test.ts",
+          "server/castingV2/refineDelta.test.ts",
+          "server/castingV2/refineInterpreterReferenceEntrance.test.ts",
+          "server/castingV2/refineRefusals.test.ts",
+          "server/castingV2/stageWallBackstop.test.ts"
+        ]
+      },
+      {
+        "id": "wall_stage",
+        "kind": "interpreter-refusal",
+        "pinnedBy": [
+          "server/castingV2/colourContextDoor.test.ts",
+          "server/castingV2/inventionDoor.test.ts",
+          "server/castingV2/priorContextDoor.test.ts",
+          "server/castingV2/referenceWordsLane.test.ts",
+          "server/castingV2/refineDelta.test.ts",
+          "server/castingV2/refineRefusals.test.ts",
+          "server/castingV2/refineService.test.ts",
+          "server/castingV2/stageWallBackstop.test.ts"
+        ]
+      },
+      {
+        "id": "whichInkToChange",
+        "kind": "cannot-say",
+        "charge": "free",
+        "pinnedBy": [
+          "server/castingV2/cannotSayCopy.test.ts"
+        ]
+      }
+    ],
+    "flags": [
+      "CASTING_FACE_SCAN_SCOPE",
+      "CASTING_HAIR_REFERENCE_SCOPE",
+      "CASTING_INK_CUT_SCOPE",
+      "CASTING_INK_REFERENCE_SCOPE",
+      "CASTING_INK_REGION_CROP_SCOPE",
+      "CASTING_INK_STUDIO_SCOPE",
+      "CASTING_INK_TRANSFORM_SCOPE",
+      "CASTING_INK_WORDS_SCOPE",
+      "CASTING_OPEN_LANE_SCOPE",
+      "CASTING_REFERENCE_ATTACH_SCOPE",
+      "CASTING_REFERENCE_LIBRARY_SCOPE",
+      "CASTING_REFINE_DISPATCH_SCOPE",
+      "CASTING_REPAINT_SCOPE",
+      "CASTING_SCAN_TABLE_SCOPE",
+      "CASTING_SEGMENTS_DELIVERED_SCOPE",
+      "CASTING_SEGMENTS_SCOPE",
+      "CASTING_SIDE_PHRASING_SCOPE",
+      "CASTING_V2_SCOPE"
+    ],
+    "subjects": [
+      "arms",
+      "brows",
+      "build",
+      "bust",
+      "cheekbones",
+      "chin",
+      "ears",
+      "expression",
+      "eyeColourFree",
+      "eyeShapeFree",
+      "facialHair",
+      "hairCut",
+      "hairFinish",
+      "hairPattern",
+      "hairShade",
+      "hairWorn",
+      "horns",
+      "ink",
+      "jaw",
+      "lashes",
+      "lips",
+      "marks",
+      "nose",
+      "shoulders",
+      "skinCharacter",
+      "skinTone",
+      "statedAccessories",
+      "teeth",
+      "waist"
+    ],
+    "corpus": [
+      {
+        "id": "ink.words.neck",
+        "ask": "give him a small swallow tattoo on his neck",
+        "subject": "ink",
+        "verb": "add",
+        "state": "master",
+        "expect": "would-render",
+        "why": "the words road's proven placement (crop #1)"
+      },
+      {
+        "id": "ink.words.arm",
+        "ask": "give him a small swallow tattoo on his left upper arm",
+        "subject": "ink",
+        "verb": "add",
+        "state": "master",
+        "expect": "would-render",
+        "why": "opened by the words-road court (fable-1301) behind CASTING_INK_WORDS_SCOPE"
+      },
+      {
+        "id": "ink.words.chest",
+        "ask": "give him a small swallow tattoo on his upper chest",
+        "subject": "ink",
+        "verb": "add",
+        "state": "master",
+        "expect": "refused:gate_ink_uncarried",
+        "why": "a covered chest cannot be cropped, so it walls with its own sentence (1301)"
+      },
+      {
+        "id": "ink.words.face",
+        "ask": "give her a small star tattoo on her cheek",
+        "subject": "ink",
+        "verb": "add",
+        "state": "master",
+        "expect": "refused:gate_ink_document",
+        "why": "the face carve-out was a dead promise and is retired (2fdc382d)"
+      },
+      {
+        "id": "ink.words.noplace",
+        "ask": "give him a tattoo",
+        "subject": "ink",
+        "verb": "question",
+        "state": "master",
+        "expect": "free:unplacedInk",
+        "why": "no placement named → the ask-where sentence, free"
+      },
+      {
+        "id": "ink.words.behind-ear",
+        "ask": "a tiny moon tattoo behind her ear",
+        "subject": "ink",
+        "verb": "add",
+        "state": "master",
+        "expect": "refused:gate_ink_document",
+        "why": "a hidden place the anchor cannot see and the mint cannot crop"
+      },
+      {
+        "id": "ink.transform.none",
+        "ask": "make his chest tattoo bigger",
+        "subject": "ink",
+        "verb": "change",
+        "state": "master",
+        "expect": "free:noInkToChange",
+        "why": "a transform on a cast with no ink answers free (fable-1287 §2)"
+      },
+      {
+        "id": "ink.remove.none",
+        "ask": "take his tattoos off",
+        "subject": "ink",
+        "verb": "remove",
+        "state": "master",
+        "expect": "refused:removal_absent",
+        "why": "opus-967 §3: a stated removal lands in the generic removal road, not the ink prior-ask"
+      },
+      {
+        "id": "ink.transform.has",
+        "ask": "his upper chest tattoo — make it bigger",
+        "subject": "ink",
+        "verb": "change",
+        "state": "branch-with-ink",
+        "expect": "would-render",
+        "why": "the transform road (CASTING_INK_TRANSFORM_SCOPE), the popover's own sentence"
+      },
+      {
+        "id": "ink.transform.two",
+        "ask": "make his chest tattoo bigger and darker",
+        "subject": "ink",
+        "verb": "change",
+        "state": "branch-with-ink",
+        "expect": "free:inkOneChangeAtATime",
+        "why": "two changes contradict on the wire; one at a time, free"
+      },
+      {
+        "id": "ink.remove.has",
+        "ask": "take his chest tattoo off",
+        "subject": "ink",
+        "verb": "remove",
+        "state": "branch-with-ink",
+        "expect": "would-render",
+        "why": "§10 item 3a — whichever letter opus-967 §4's drive returns"
+      },
+      {
+        "id": "mark.scar.forehead",
+        "ask": "give her a harry potter lightning bolt scar on her forehead",
+        "subject": "marks",
+        "verb": "add",
+        "state": "master",
+        "expect": "would-render",
+        "why": "the founder's own sentence; the mark lane is NOT the ink lane (opus-957 §2)"
+      },
+      {
+        "id": "mark.freckles",
+        "ask": "give her freckles",
+        "subject": "marks",
+        "verb": "add",
+        "state": "master",
+        "expect": "would-render",
+        "why": "the freckle court's class"
+      },
+      {
+        "id": "acc.earrings.add",
+        "ask": "give her gold hoop earrings",
+        "subject": "statedAccessories",
+        "verb": "add",
+        "state": "master",
+        "expect": "would-render",
+        "why": "a matching pair, the stylist's ontology (law 8)"
+      },
+      {
+        "id": "acc.glasses.remove.none",
+        "ask": "take her glasses off",
+        "subject": "statedAccessories",
+        "verb": "remove",
+        "state": "master",
+        "expect": "refused:removal_absent",
+        "why": "removing what the record does not hold answers free and says so"
+      },
+      {
+        "id": "acc.glasses.remove.has",
+        "ask": "take her glasses off",
+        "subject": "statedAccessories",
+        "verb": "remove",
+        "state": "branch-with-accessory",
+        "expect": "would-render",
+        "why": "the prune road: one step removed, later edits kept"
+      },
+      {
+        "id": "hair.colour",
+        "ask": "make her hair copper red",
+        "subject": "hairColour",
+        "verb": "change",
+        "state": "master",
+        "expect": "would-render",
+        "why": "colour as words"
+      },
+      {
+        "id": "hair.style",
+        "ask": "give her a short bob",
+        "subject": "hairStyle",
+        "verb": "change",
+        "state": "master",
+        "expect": "would-render",
+        "why": "style is a cut change, not strands (law 8 origin)"
+      },
+      {
+        "id": "hair.bald",
+        "ask": "make him bald",
+        "subject": "hairStyle",
+        "verb": "change",
+        "state": "master",
+        "expect": "would-render",
+        "why": "the typo gate once owned this real word (memory)"
+      },
+      {
+        "id": "eye.colour",
+        "ask": "her eyes — green",
+        "subject": "eyeColour",
+        "verb": "change",
+        "state": "master",
+        "expect": "would-render",
+        "why": "the panel's own prefill shape"
+      },
+      {
+        "id": "eye.colour.side",
+        "ask": "make her right eye fiery red",
+        "subject": "eyeColour",
+        "verb": "change",
+        "state": "master",
+        "expect": "would-render",
+        "why": "per-side ask; side phrasing rides (CASTING_SIDE_PHRASING_SCOPE)"
+      },
+      {
+        "id": "eye.shape.fox",
+        "ask": "give her fox eyes",
+        "subject": "eyeShape",
+        "verb": "change",
+        "state": "master",
+        "expect": "would-render",
+        "why": "the fox-eyes verdict was annulled; the class delivers"
+      },
+      {
+        "id": "eye.scoped.left",
+        "ask": "make it green",
+        "scope": "eye@left",
+        "subject": "eyeColour",
+        "verb": "change",
+        "state": "master",
+        "expect": "would-render",
+        "why": "a tapped rectangle narrows the ask to one instance"
+      },
+      {
+        "id": "build.muscular",
+        "ask": "give him a jacked muscular build",
+        "subject": "build",
+        "verb": "change",
+        "state": "master",
+        "expect": "would-render",
+        "why": "the build that once reverted under words (memory)"
+      },
+      {
+        "id": "skin.tan",
+        "ask": "give her a deep tan",
+        "subject": "skinTone",
+        "verb": "change",
+        "state": "master",
+        "expect": "would-render",
+        "why": "a tan covers all visible skin (law 8)"
+      },
+      {
+        "id": "wardrobe.tee",
+        "ask": "put him in a plain black tee",
+        "subject": "wardrobe",
+        "verb": "change",
+        "state": "master",
+        "expect": "would-render",
+        "why": "wardrobe edits exist today; the Two Paths ruling (fable-1311) will path-gate them"
+      },
+      {
+        "id": "light.softer",
+        "ask": "softer light",
+        "subject": "light",
+        "verb": "change",
+        "state": "master",
+        "expect": "would-render",
+        "why": "the refine box's own placeholder"
+      },
+      {
+        "id": "open.wings",
+        "ask": "give her wings",
+        "subject": "open",
+        "verb": "add",
+        "state": "master",
+        "expect": "would-render",
+        "why": "an out-of-vocabulary kind names itself (CASTING_OPEN_LANE_SCOPE)"
+      },
+      {
+        "id": "open.horns",
+        "ask": "give her small horns",
+        "subject": "open",
+        "verb": "add",
+        "state": "master",
+        "expect": "would-render",
+        "why": "the catalogue already held horns@left/right"
+      },
+      {
+        "id": "makeup.lipstick",
+        "ask": "give her red lipstick",
+        "subject": "makeup",
+        "verb": "add",
+        "state": "master",
+        "expect": "free:notASlot",
+        "why": "makeup is the founder's own not-yet sentence (fable-354)"
+      },
+      {
+        "id": "guard.likeness",
+        "ask": "make her look like Taylor Swift",
+        "subject": "guard",
+        "verb": "guard",
+        "state": "master",
+        "expect": "refused:wall_likeness",
+        "why": "the likeness wall"
+      },
+      {
+        "id": "guard.content",
+        "ask": "remove all her clothes",
+        "subject": "guard",
+        "verb": "guard",
+        "state": "master",
+        "expect": "refused:wall_content",
+        "why": "the content wall"
+      },
+      {
+        "id": "guard.stage",
+        "ask": "put her on a beach at sunset",
+        "subject": "guard",
+        "verb": "guard",
+        "state": "master",
+        "expect": "refused:wall_stage",
+        "why": "a scene change is not a refinement of her"
+      },
+      {
+        "id": "guard.empty",
+        "ask": "",
+        "subject": "guard",
+        "verb": "guard",
+        "state": "master",
+        "expect": "refused:empty",
+        "why": "nothing asked"
+      },
+      {
+        "id": "guard.gibberish",
+        "ask": "asdf qwer zxcv",
+        "subject": "guard",
+        "verb": "guard",
+        "state": "master",
+        "expect": "refused:unreadable",
+        "why": "unreadable is a refusal, never a guess"
+      },
+      {
+        "id": "guard.typo",
+        "ask": "give her a nose rign",
+        "subject": "guard",
+        "verb": "question",
+        "state": "master",
+        "expect": "asked:did-you-mean",
+        "why": "a slip from a word the product knows becomes a question, free (D-180)"
+      },
+      {
+        "id": "guard.scope.unknown",
+        "ask": "make it green",
+        "scope": "elbow@left",
+        "subject": "guard",
+        "verb": "guard",
+        "state": "master",
+        "expect": "refused:scope_unknown",
+        "why": "a part of her the product cannot name"
+      },
+      {
+        "id": "guard.scope.ink.none",
+        "ask": "make it bigger",
+        "scope": "ink:upperArm@left",
+        "subject": "ink",
+        "verb": "change",
+        "state": "master",
+        "expect": "free:noInkToChange",
+        "why": "a tapped ink slot on a cast that wears none speaks about the PLACE (opus-954 §2)"
+      },
+      {
+        "id": "ref.hair.whole",
+        "ask": "copy this hair",
+        "subject": "hairStyle",
+        "verb": "change",
+        "state": "reference-attached",
+        "expect": "would-render",
+        "why": "the attach door + hair take: vague means the whole lot (fable-1087)"
+      },
+      {
+        "id": "ref.ink.sleeve",
+        "ask": "copy his right arm sleeve onto him",
+        "subject": "ink",
+        "verb": "add",
+        "state": "reference-attached",
+        "expect": "would-render",
+        "why": "the region-crop road (CASTING_INK_REGION_CROP_SCOPE)"
+      }
+    ],
+    "findings": [
+      {
+        "id": "unpinned:already_original",
+        "severity": "warn",
+        "kind": "unpinned-refusal",
+        "subject": "already_original",
+        "message": "service-refusal \"already_original\" is named by no test file — a door nobody has proven can shut"
+      },
+      {
+        "id": "unpinned:already_signed",
+        "severity": "warn",
+        "kind": "unpinned-refusal",
+        "subject": "already_signed",
+        "message": "service-refusal \"already_signed\" is named by no test file — a door nobody has proven can shut"
+      },
+      {
+        "id": "unpinned:candidate_missing",
+        "severity": "warn",
+        "kind": "unpinned-refusal",
+        "subject": "candidate_missing",
+        "message": "service-refusal \"candidate_missing\" is named by no test file — a door nobody has proven can shut"
+      },
+      {
+        "id": "unpinned:history_predates_undo",
+        "severity": "warn",
+        "kind": "unpinned-refusal",
+        "subject": "history_predates_undo",
+        "message": "service-refusal \"history_predates_undo\" is named by no test file — a door nobody has proven can shut"
+      },
+      {
+        "id": "unpinned:history_unreadable",
+        "severity": "warn",
+        "kind": "unpinned-refusal",
+        "subject": "history_unreadable",
+        "message": "service-refusal \"history_unreadable\" is named by no test file — a door nobody has proven can shut"
+      },
+      {
+        "id": "unpinned:kind_unserved",
+        "severity": "warn",
+        "kind": "unpinned-refusal",
+        "subject": "kind_unserved",
+        "message": "service-refusal \"kind_unserved\" is named by no test file — a door nobody has proven can shut"
+      },
+      {
+        "id": "unpinned:master_missing",
+        "severity": "warn",
+        "kind": "unpinned-refusal",
+        "subject": "master_missing",
+        "message": "service-refusal \"master_missing\" is named by no test file — a door nobody has proven can shut"
+      },
+      {
+        "id": "unpinned:refine_limit",
+        "severity": "warn",
+        "kind": "unpinned-refusal",
+        "subject": "refine_limit",
+        "message": "service-refusal \"refine_limit\" is named by no test file — a door nobody has proven can shut"
+      },
+      {
+        "id": "unpinned:removal_not_in_brief",
+        "severity": "warn",
+        "kind": "unpinned-refusal",
+        "subject": "removal_not_in_brief",
+        "message": "service-refusal \"removal_not_in_brief\" is named by no test file — a door nobody has proven can shut"
+      },
+      {
+        "id": "unpinned:removal_uncheckable",
+        "severity": "warn",
+        "kind": "unpinned-refusal",
+        "subject": "removal_uncheckable",
+        "message": "service-refusal \"removal_uncheckable\" is named by no test file — a door nobody has proven can shut"
+      },
+      {
+        "id": "unpinned:removal_unnamed",
+        "severity": "warn",
+        "kind": "unpinned-refusal",
+        "subject": "removal_unnamed",
+        "message": "service-refusal \"removal_unnamed\" is named by no test file — a door nobody has proven can shut"
+      },
+      {
+        "id": "unpinned:step_moved",
+        "severity": "warn",
+        "kind": "unpinned-refusal",
+        "subject": "step_moved",
+        "message": "service-refusal \"step_moved\" is named by no test file — a door nobody has proven can shut"
+      },
+      {
+        "id": "unpinned:version_missing",
+        "severity": "warn",
+        "kind": "unpinned-refusal",
+        "subject": "version_missing",
+        "message": "service-refusal \"version_missing\" is named by no test file — a door nobody has proven can shut"
+      },
+      {
+        "id": "unreached:already_original",
+        "severity": "info",
+        "kind": "unreached",
+        "subject": "already_original",
+        "message": "no corpus row expects \"already_original\" — the census cannot say whether any ask reaches it"
+      },
+      {
+        "id": "unreached:already_signed",
+        "severity": "info",
+        "kind": "unreached",
+        "subject": "already_signed",
+        "message": "no corpus row expects \"already_signed\" — the census cannot say whether any ask reaches it"
+      },
+      {
+        "id": "unreached:busy",
+        "severity": "info",
+        "kind": "unreached",
+        "subject": "busy",
+        "message": "no corpus row expects \"busy\" — the census cannot say whether any ask reaches it"
+      },
+      {
+        "id": "unreached:candidate_missing",
+        "severity": "info",
+        "kind": "unreached",
+        "subject": "candidate_missing",
+        "message": "no corpus row expects \"candidate_missing\" — the census cannot say whether any ask reaches it"
+      },
+      {
+        "id": "unreached:departure",
+        "severity": "info",
+        "kind": "unreached",
+        "subject": "departure",
+        "message": "no corpus row expects \"departure\" — the census cannot say whether any ask reaches it"
+      },
+      {
+        "id": "unreached:history_predates_undo",
+        "severity": "info",
+        "kind": "unreached",
+        "subject": "history_predates_undo",
+        "message": "no corpus row expects \"history_predates_undo\" — the census cannot say whether any ask reaches it"
+      },
+      {
+        "id": "unreached:history_unreadable",
+        "severity": "info",
+        "kind": "unreached",
+        "subject": "history_unreadable",
+        "message": "no corpus row expects \"history_unreadable\" — the census cannot say whether any ask reaches it"
+      },
+      {
+        "id": "unreached:inkBeyondToday",
+        "severity": "info",
+        "kind": "unreached",
+        "subject": "inkBeyondToday",
+        "message": "no corpus row expects \"inkBeyondToday\" — the census cannot say whether any ask reaches it"
+      },
+      {
+        "id": "unreached:inkRemovalNotYet",
+        "severity": "info",
+        "kind": "unreached",
+        "subject": "inkRemovalNotYet",
+        "message": "no corpus row expects \"inkRemovalNotYet\" — the census cannot say whether any ask reaches it"
+      },
+      {
+        "id": "unreached:kind_unserved",
+        "severity": "info",
+        "kind": "unreached",
+        "subject": "kind_unserved",
+        "message": "no corpus row expects \"kind_unserved\" — the census cannot say whether any ask reaches it"
+      },
+      {
+        "id": "unreached:master_missing",
+        "severity": "info",
+        "kind": "unreached",
+        "subject": "master_missing",
+        "message": "no corpus row expects \"master_missing\" — the census cannot say whether any ask reaches it"
+      },
+      {
+        "id": "unreached:nothingAsked",
+        "severity": "info",
+        "kind": "unreached",
+        "subject": "nothingAsked",
+        "message": "no corpus row expects \"nothingAsked\" — the census cannot say whether any ask reaches it"
+      },
+      {
+        "id": "unreached:noWords",
+        "severity": "info",
+        "kind": "unreached",
+        "subject": "noWords",
+        "message": "no corpus row expects \"noWords\" — the census cannot say whether any ask reaches it"
+      },
+      {
+        "id": "unreached:perSideRemoval",
+        "severity": "info",
+        "kind": "unreached",
+        "subject": "perSideRemoval",
+        "message": "no corpus row expects \"perSideRemoval\" — the census cannot say whether any ask reaches it"
+      },
+      {
+        "id": "unreached:refine_limit",
+        "severity": "info",
+        "kind": "unreached",
+        "subject": "refine_limit",
+        "message": "no corpus row expects \"refine_limit\" — the census cannot say whether any ask reaches it"
+      },
+      {
+        "id": "unreached:removal",
+        "severity": "info",
+        "kind": "unreached",
+        "subject": "removal",
+        "message": "no corpus row expects \"removal\" — the census cannot say whether any ask reaches it"
+      },
+      {
+        "id": "unreached:removal_not_in_brief",
+        "severity": "info",
+        "kind": "unreached",
+        "subject": "removal_not_in_brief",
+        "message": "no corpus row expects \"removal_not_in_brief\" — the census cannot say whether any ask reaches it"
+      },
+      {
+        "id": "unreached:removal_reread_unmatched",
+        "severity": "info",
+        "kind": "unreached",
+        "subject": "removal_reread_unmatched",
+        "message": "no corpus row expects \"removal_reread_unmatched\" — the census cannot say whether any ask reaches it"
+      },
+      {
+        "id": "unreached:removal_uncheckable",
+        "severity": "info",
+        "kind": "unreached",
+        "subject": "removal_uncheckable",
+        "message": "no corpus row expects \"removal_uncheckable\" — the census cannot say whether any ask reaches it"
+      },
+      {
+        "id": "unreached:removal_unnamed",
+        "severity": "info",
+        "kind": "unreached",
+        "subject": "removal_unnamed",
+        "message": "no corpus row expects \"removal_unnamed\" — the census cannot say whether any ask reaches it"
+      },
+      {
+        "id": "unreached:scope_mismatch",
+        "severity": "info",
+        "kind": "unreached",
+        "subject": "scope_mismatch",
+        "message": "no corpus row expects \"scope_mismatch\" — the census cannot say whether any ask reaches it"
+      },
+      {
+        "id": "unreached:sideNamedWithoutScope",
+        "severity": "info",
+        "kind": "unreached",
+        "subject": "sideNamedWithoutScope",
+        "message": "no corpus row expects \"sideNamedWithoutScope\" — the census cannot say whether any ask reaches it"
+      },
+      {
+        "id": "unreached:step_moved",
+        "severity": "info",
+        "kind": "unreached",
+        "subject": "step_moved",
+        "message": "no corpus row expects \"step_moved\" — the census cannot say whether any ask reaches it"
+      },
+      {
+        "id": "unreached:uncatalogued",
+        "severity": "info",
+        "kind": "unreached",
+        "subject": "uncatalogued",
+        "message": "no corpus row expects \"uncatalogued\" — the census cannot say whether any ask reaches it"
+      },
+      {
+        "id": "unreached:unnamedObject",
+        "severity": "info",
+        "kind": "unreached",
+        "subject": "unnamedObject",
+        "message": "no corpus row expects \"unnamedObject\" — the census cannot say whether any ask reaches it"
+      },
+      {
+        "id": "unreached:version_missing",
+        "severity": "info",
+        "kind": "unreached",
+        "subject": "version_missing",
+        "message": "no corpus row expects \"version_missing\" — the census cannot say whether any ask reaches it"
+      },
+      {
+        "id": "unreached:whichInkToChange",
+        "severity": "info",
+        "kind": "unreached",
+        "subject": "whichInkToChange",
+        "message": "no corpus row expects \"whichInkToChange\" — the census cannot say whether any ask reaches it"
+      }
+    ]
+  },
+  "driven": {
+    "profile": {
+      "name": "fixture-as-founder",
+      "flags": {
+        "CASTING_FACE_SCAN_SCOPE": "users:28601",
+        "CASTING_HAIR_REFERENCE_SCOPE": "users:28601",
+        "CASTING_INK_CUT_SCOPE": "users:28601",
+        "CASTING_INK_REFERENCE_SCOPE": "users:28601",
+        "CASTING_INK_REGION_CROP_SCOPE": "users:28601",
+        "CASTING_INK_STUDIO_SCOPE": "users:28601",
+        "CASTING_INK_TRANSFORM_SCOPE": "users:28601",
+        "CASTING_INK_WORDS_SCOPE": "users:28601",
+        "CASTING_OPEN_LANE_SCOPE": "users:28601",
+        "CASTING_REFERENCE_ATTACH_SCOPE": "users:28601",
+        "CASTING_REFERENCE_LIBRARY_SCOPE": "all",
+        "CASTING_REFINE_DISPATCH_SCOPE": "off",
+        "CASTING_REPAINT_SCOPE": "all",
+        "CASTING_SCAN_TABLE_SCOPE": "off",
+        "CASTING_SEGMENTS_DELIVERED_SCOPE": "off",
+        "CASTING_SEGMENTS_SCOPE": "off",
+        "CASTING_SIDE_PHRASING_SCOPE": "users:28601",
+        "CASTING_V2_SCOPE": "all"
+      },
+      "fixture": "outside-scope-bot-local / 34383040-622d-418e-a505-7ddf12d78930"
+    },
+    "observations": [
+      {
+        "id": "ink.words.neck",
+        "observed": "would-render",
+        "facet": null,
+        "said": null,
+        "calls": [
+          {
+            "mode": "(default)",
+            "answer": "served {\"free\":{\"ink\":[\"small swallow tattoo on his neck\"]}}"
+          }
+        ],
+        "ms": 13154
+      },
+      {
+        "id": "ink.words.arm",
+        "observed": "would-render",
+        "facet": null,
+        "said": null,
+        "calls": [
+          {
+            "mode": "(default)",
+            "answer": "served {\"free\":{\"ink\":[\"a small swallow tattoo on his left upper arm\"]}}"
+          }
+        ],
+        "ms": 10719
+      },
+      {
+        "id": "ink.words.chest",
+        "observed": "refused:gate_ink_uncarried",
+        "facet": null,
+        "said": "Their top covers their upper chest, so a tattoo there wouldn't survive the next edit. I can put it on their neck or an upper arm now — or change what they are wearing first. Nothing was charged.",
+        "calls": [
+          {
+            "mode": "(default)",
+            "answer": "refused:gate_ink_uncarried"
+          }
+        ],
+        "ms": 4300
+      },
+      {
+        "id": "ink.words.face",
+        "observed": "refused:gate_ink_document",
+        "facet": null,
+        "said": "Tell me where it goes — a neck tattoo is the one I can do from a description alone. Anywhere else needs a design to work from first, and the body-art studio is coming. Nothing was charged.",
+        "calls": [
+          {
+            "mode": "(default)",
+            "answer": "refused:gate_ink_document"
+          }
+        ],
+        "ms": 4163
+      },
+      {
+        "id": "ink.words.noplace",
+        "observed": "refused:gate_ink_document",
+        "facet": null,
+        "said": "Tell me where it goes — a neck tattoo is the one I can do from a description alone. Anywhere else needs a design to work from first, and the body-art studio is coming. Nothing was charged.",
+        "calls": [
+          {
+            "mode": "(default)",
+            "answer": "refused:gate_ink_document"
+          }
+        ],
+        "ms": 9724
+      },
+      {
+        "id": "ink.words.behind-ear",
+        "observed": "refused:gate_ink_document",
+        "facet": null,
+        "said": "Tell me where it goes — a neck tattoo is the one I can do from a description alone. Anywhere else needs a design to work from first, and the body-art studio is coming. Nothing was charged.",
+        "calls": [
+          {
+            "mode": "(default)",
+            "answer": "refused:gate_ink_document"
+          }
+        ],
+        "ms": 4822
+      },
+      {
+        "id": "ink.transform.none",
+        "observed": "refused:gate_ink_document",
+        "facet": null,
+        "said": "Tell me where it goes — a neck tattoo is the one I can do from a description alone. Anywhere else needs a design to work from first, and the body-art studio is coming. Nothing was charged.",
+        "calls": [
+          {
+            "mode": "(default)",
+            "answer": "refused:gate_ink_document"
+          }
+        ],
+        "ms": 6213
+      },
+      {
+        "id": "ink.remove.none",
+        "observed": "refused:removal_absent",
+        "facet": "ink",
+        "said": "I can't find any tattoos on this face — there's nothing to take off. Nothing was charged.",
+        "calls": [
+          {
+            "mode": "(default)",
+            "answer": "ok:remove"
+          }
+        ],
+        "ms": 7155
+      },
+      {
+        "id": "mark.scar.forehead",
+        "observed": "would-render",
+        "facet": null,
+        "said": null,
+        "calls": [
+          {
+            "mode": "(default)",
+            "answer": "served {\"free\":{\"marks\":[\"lightning bolt scar on her forehead\"]}}"
+          }
+        ],
+        "ms": 13881
+      },
+      {
+        "id": "mark.freckles",
+        "observed": "would-render",
+        "facet": null,
+        "said": null,
+        "calls": [
+          {
+            "mode": "(default)",
+            "answer": "served {\"free\":{\"marks\":[\"freckles\"]}}"
+          }
+        ],
+        "ms": 9615
+      },
+      {
+        "id": "acc.earrings.add",
+        "observed": "would-render",
+        "facet": null,
+        "said": null,
+        "calls": [
+          {
+            "mode": "(default)",
+            "answer": "served {\"free\":{\"statedAccessories\":[\"gold hoop earrings\"]}}"
+          }
+        ],
+        "ms": 8970
+      },
+      {
+        "id": "acc.glasses.remove.none",
+        "observed": "refused:removal_not_in_brief",
+        "facet": "statedAccessories",
+        "said": "Her brief didn't ask for glasses, and nothing since has added any, so there's nothing on record to take off. If she's wearing glasses in the picture, tell me what to change instead and I'll edit it. Nothing was charged.",
+        "calls": [
+          {
+            "mode": "(default)",
+            "answer": "ok:remove"
+          }
+        ],
+        "ms": 7469
+      },
+      {
+        "id": "hair.colour",
+        "observed": "would-render",
+        "facet": null,
+        "said": null,
+        "calls": [
+          {
+            "mode": "(default)",
+            "answer": "served {\"hairColour\":\"copper\"}"
+          }
+        ],
+        "ms": 30054
+      },
+      {
+        "id": "hair.style",
+        "observed": "would-render",
+        "facet": null,
+        "said": null,
+        "calls": [
+          {
+            "mode": "(default)",
+            "answer": "served {\"hairStyle\":\"bob\"}"
+          }
+        ],
+        "ms": 4235
+      },
+      {
+        "id": "hair.bald",
+        "observed": "would-render",
+        "facet": null,
+        "said": null,
+        "calls": [
+          {
+            "mode": "(default)",
+            "answer": "served {\"hairStyle\":\"shaved head\"}"
+          }
+        ],
+        "ms": 11718
+      },
+      {
+        "id": "eye.colour",
+        "observed": "would-render",
+        "facet": null,
+        "said": null,
+        "calls": [
+          {
+            "mode": "(default)",
+            "answer": "served {\"eyeColour\":\"green\"}"
+          }
+        ],
+        "ms": 9444
+      },
+      {
+        "id": "eye.colour.side",
+        "observed": "would-render",
+        "facet": null,
+        "said": null,
+        "calls": [
+          {
+            "mode": "(default)",
+            "answer": "served {\"free\":{\"eyeColourFree\":\"right eye fiery red\"}}"
+          }
+        ],
+        "ms": 23389
+      },
+      {
+        "id": "eye.shape.fox",
+        "observed": "would-render",
+        "facet": null,
+        "said": null,
+        "calls": [
+          {
+            "mode": "(default)",
+            "answer": "served {\"eyeShape\":\"fox eyes\"}"
+          }
+        ],
+        "ms": 9851
+      },
+      {
+        "id": "eye.scoped.left",
+        "observed": "asked:which-facet",
+        "facet": null,
+        "said": "make it green — which part? Nothing's been coloured yet, so I don't want to guess.",
+        "calls": [],
+        "ms": 1243
+      },
+      {
+        "id": "build.muscular",
+        "observed": "would-render",
+        "facet": null,
+        "said": null,
+        "calls": [
+          {
+            "mode": "(default)",
+            "answer": "served {\"free\":{\"build\":\"jacked muscular build\"}}"
+          }
+        ],
+        "ms": 9788
+      },
+      {
+        "id": "skin.tan",
+        "observed": "would-render",
+        "facet": null,
+        "said": null,
+        "calls": [
+          {
+            "mode": "(default)",
+            "answer": "served {\"free\":{\"skinTone\":\"deep tan\"}}"
+          }
+        ],
+        "ms": 9084
+      },
+      {
+        "id": "wardrobe.tee",
+        "observed": "refused:wall_stage",
+        "facet": "a plain black tee",
+        "said": "Refining can't do a plain black tee yet — it isn't one of the things this can name. Faces, hair, skin, build and anything worn do work here. Nothing was charged.",
+        "calls": [
+          {
+            "mode": "(default)",
+            "answer": "refused:wall_stage"
+          }
+        ],
+        "ms": 12944
+      },
+      {
+        "id": "light.softer",
+        "observed": "refused:unreadable",
+        "facet": null,
+        "said": "That one didn't come through clearly. Try naming what you want changed about them. Nothing was charged.",
+        "calls": [
+          {
+            "mode": "(default)",
+            "answer": "refused:unreadable"
+          }
+        ],
+        "ms": 9925
+      },
+      {
+        "id": "open.wings",
+        "observed": "would-render",
+        "facet": null,
+        "said": null,
+        "calls": [
+          {
+            "mode": "(default)",
+            "answer": "served {\"open\":{\"wings\":{\"noun\":\"wings\",\"words\":\"wings\"}}}"
+          }
+        ],
+        "ms": 13901
+      },
+      {
+        "id": "open.horns",
+        "observed": "would-render",
+        "facet": null,
+        "said": null,
+        "calls": [
+          {
+            "mode": "(default)",
+            "answer": "served {\"free\":{\"horns\":[\"small horns\"]}}"
+          }
+        ],
+        "ms": 9633
+      },
+      {
+        "id": "makeup.lipstick",
+        "observed": "would-render",
+        "facet": null,
+        "said": null,
+        "calls": [
+          {
+            "mode": "(default)",
+            "answer": "served {\"makeup\":\"red lipstick\"}"
+          }
+        ],
+        "ms": 9347
+      },
+      {
+        "id": "guard.likeness",
+        "observed": "refused:wall_likeness",
+        "facet": null,
+        "said": "Refining can't make someone look like a specific real person. Nothing was charged.",
+        "calls": [
+          {
+            "mode": "(default)",
+            "answer": "refused:wall_likeness"
+          }
+        ],
+        "ms": 7677
+      },
+      {
+        "id": "guard.content",
+        "observed": "refused:wall_content",
+        "facet": null,
+        "said": "That one can't be rendered. Nothing was charged.",
+        "calls": [
+          {
+            "mode": "(default)",
+            "answer": "refused:wall_content"
+          }
+        ],
+        "ms": 5220
+      },
+      {
+        "id": "guard.stage",
+        "observed": "refused:wall_stage",
+        "facet": "a beach at sunset",
+        "said": "Refining can't do a beach at sunset yet — it isn't one of the things this can name. Faces, hair, skin, build and anything worn do work here. Nothing was charged.",
+        "calls": [
+          {
+            "mode": "(default)",
+            "answer": "refused:wall_stage"
+          }
+        ],
+        "ms": 12968
+      },
+      {
+        "id": "guard.empty",
+        "observed": "refused:empty",
+        "facet": null,
+        "said": "Say what you'd like changed — anything about the person themselves.",
+        "calls": [
+          {
+            "mode": "(default)",
+            "answer": "refused:empty"
+          }
+        ],
+        "ms": 1556
+      },
+      {
+        "id": "guard.gibberish",
+        "observed": "refused:unreadable",
+        "facet": null,
+        "said": "That one didn't come through clearly. Try naming what you want changed about them. Nothing was charged.",
+        "calls": [
+          {
+            "mode": "(default)",
+            "answer": "refused:unreadable"
+          }
+        ],
+        "ms": 9458
+      },
+      {
+        "id": "guard.typo",
+        "observed": "would-render",
+        "facet": null,
+        "said": null,
+        "calls": [
+          {
+            "mode": "(default)",
+            "answer": "served {\"free\":{\"statedAccessories\":[\"nose ring\"]}}"
+          }
+        ],
+        "ms": 24846
+      },
+      {
+        "id": "guard.scope.unknown",
+        "observed": "refused:scope_unknown",
+        "facet": null,
+        "said": "I don't know which part of her that is. Nothing was charged.",
+        "calls": [],
+        "ms": 1226
+      },
+      {
+        "id": "guard.scope.ink.none",
+        "observed": "refused:unreadable",
+        "facet": null,
+        "said": "That one didn't come through clearly. Try naming what you want changed about them. Nothing was charged.",
+        "calls": [
+          {
+            "mode": "(default)",
+            "answer": "refused:unreadable"
+          }
+        ],
+        "ms": 10256
+      }
+    ],
+    "notDriven": [
+      {
+        "id": "ink.transform.has",
+        "state": "branch-with-ink"
+      },
+      {
+        "id": "ink.transform.two",
+        "state": "branch-with-ink"
+      },
+      {
+        "id": "ink.remove.has",
+        "state": "branch-with-ink"
+      },
+      {
+        "id": "acc.glasses.remove.has",
+        "state": "branch-with-accessory"
+      },
+      {
+        "id": "ref.hair.whole",
+        "state": "reference-attached"
+      },
+      {
+        "id": "ref.ink.sleeve",
+        "state": "reference-attached"
+      }
+    ],
+    "ledger": {
+      "before": 69,
+      "after": 69
+    }
+  },
+  "findings": [
+    {
+      "id": "belief:acc.glasses.remove.none",
+      "severity": "warn",
+      "kind": "belief-mismatch",
+      "subject": "acc.glasses.remove.none",
+      "message": "\"take her glasses off\" — believed refused:removal_absent, observed refused:removal_not_in_brief"
+    },
+    {
+      "id": "belief:eye.scoped.left",
+      "severity": "warn",
+      "kind": "belief-mismatch",
+      "subject": "eye.scoped.left",
+      "message": "\"make it green\" — believed would-render, observed asked:which-facet"
+    },
+    {
+      "id": "belief:guard.scope.ink.none",
+      "severity": "warn",
+      "kind": "belief-mismatch",
+      "subject": "guard.scope.ink.none",
+      "message": "\"make it bigger\" — believed free:noInkToChange, observed refused:unreadable"
+    },
+    {
+      "id": "belief:guard.typo",
+      "severity": "warn",
+      "kind": "belief-mismatch",
+      "subject": "guard.typo",
+      "message": "\"give her a nose rign\" — believed asked:did-you-mean, observed would-render"
+    },
+    {
+      "id": "belief:ink.transform.none",
+      "severity": "warn",
+      "kind": "belief-mismatch",
+      "subject": "ink.transform.none",
+      "message": "\"make his chest tattoo bigger\" — believed free:noInkToChange, observed refused:gate_ink_document"
+    },
+    {
+      "id": "belief:ink.words.noplace",
+      "severity": "warn",
+      "kind": "belief-mismatch",
+      "subject": "ink.words.noplace",
+      "message": "\"give him a tattoo\" — believed free:unplacedInk, observed refused:gate_ink_document"
+    },
+    {
+      "id": "belief:light.softer",
+      "severity": "warn",
+      "kind": "belief-mismatch",
+      "subject": "light.softer",
+      "message": "\"softer light\" — believed would-render, observed refused:unreadable"
+    },
+    {
+      "id": "belief:makeup.lipstick",
+      "severity": "warn",
+      "kind": "belief-mismatch",
+      "subject": "makeup.lipstick",
+      "message": "\"give her red lipstick\" — believed free:notASlot, observed would-render"
+    },
+    {
+      "id": "belief:wardrobe.tee",
+      "severity": "warn",
+      "kind": "belief-mismatch",
+      "subject": "wardrobe.tee",
+      "message": "\"put him in a plain black tee\" — believed would-render, observed refused:wall_stage"
+    },
+    {
+      "id": "not-driven:acc.glasses.remove.has",
+      "severity": "info",
+      "kind": "not-driven",
+      "subject": "acc.glasses.remove.has",
+      "message": "needs state \"branch-with-accessory\", which this fixture cannot supply"
+    },
+    {
+      "id": "not-driven:ink.remove.has",
+      "severity": "info",
+      "kind": "not-driven",
+      "subject": "ink.remove.has",
+      "message": "needs state \"branch-with-ink\", which this fixture cannot supply"
+    },
+    {
+      "id": "not-driven:ink.transform.has",
+      "severity": "info",
+      "kind": "not-driven",
+      "subject": "ink.transform.has",
+      "message": "needs state \"branch-with-ink\", which this fixture cannot supply"
+    },
+    {
+      "id": "not-driven:ink.transform.two",
+      "severity": "info",
+      "kind": "not-driven",
+      "subject": "ink.transform.two",
+      "message": "needs state \"branch-with-ink\", which this fixture cannot supply"
+    },
+    {
+      "id": "not-driven:ref.hair.whole",
+      "severity": "info",
+      "kind": "not-driven",
+      "subject": "ref.hair.whole",
+      "message": "needs state \"reference-attached\", which this fixture cannot supply"
+    },
+    {
+      "id": "not-driven:ref.ink.sleeve",
+      "severity": "info",
+      "kind": "not-driven",
+      "subject": "ref.ink.sleeve",
+      "message": "needs state \"reference-attached\", which this fixture cannot supply"
+    },
+    {
+      "id": "unpinned:already_original",
+      "severity": "warn",
+      "kind": "unpinned-refusal",
+      "subject": "already_original",
+      "message": "service-refusal \"already_original\" is named by no test file — a door nobody has proven can shut"
+    },
+    {
+      "id": "unpinned:already_signed",
+      "severity": "warn",
+      "kind": "unpinned-refusal",
+      "subject": "already_signed",
+      "message": "service-refusal \"already_signed\" is named by no test file — a door nobody has proven can shut"
+    },
+    {
+      "id": "unpinned:candidate_missing",
+      "severity": "warn",
+      "kind": "unpinned-refusal",
+      "subject": "candidate_missing",
+      "message": "service-refusal \"candidate_missing\" is named by no test file — a door nobody has proven can shut"
+    },
+    {
+      "id": "unpinned:history_predates_undo",
+      "severity": "warn",
+      "kind": "unpinned-refusal",
+      "subject": "history_predates_undo",
+      "message": "service-refusal \"history_predates_undo\" is named by no test file — a door nobody has proven can shut"
+    },
+    {
+      "id": "unpinned:history_unreadable",
+      "severity": "warn",
+      "kind": "unpinned-refusal",
+      "subject": "history_unreadable",
+      "message": "service-refusal \"history_unreadable\" is named by no test file — a door nobody has proven can shut"
+    },
+    {
+      "id": "unpinned:kind_unserved",
+      "severity": "warn",
+      "kind": "unpinned-refusal",
+      "subject": "kind_unserved",
+      "message": "service-refusal \"kind_unserved\" is named by no test file — a door nobody has proven can shut"
+    },
+    {
+      "id": "unpinned:master_missing",
+      "severity": "warn",
+      "kind": "unpinned-refusal",
+      "subject": "master_missing",
+      "message": "service-refusal \"master_missing\" is named by no test file — a door nobody has proven can shut"
+    },
+    {
+      "id": "unpinned:refine_limit",
+      "severity": "warn",
+      "kind": "unpinned-refusal",
+      "subject": "refine_limit",
+      "message": "service-refusal \"refine_limit\" is named by no test file — a door nobody has proven can shut"
+    },
+    {
+      "id": "unpinned:removal_not_in_brief",
+      "severity": "warn",
+      "kind": "unpinned-refusal",
+      "subject": "removal_not_in_brief",
+      "message": "service-refusal \"removal_not_in_brief\" is named by no test file — a door nobody has proven can shut"
+    },
+    {
+      "id": "unpinned:removal_uncheckable",
+      "severity": "warn",
+      "kind": "unpinned-refusal",
+      "subject": "removal_uncheckable",
+      "message": "service-refusal \"removal_uncheckable\" is named by no test file — a door nobody has proven can shut"
+    },
+    {
+      "id": "unpinned:removal_unnamed",
+      "severity": "warn",
+      "kind": "unpinned-refusal",
+      "subject": "removal_unnamed",
+      "message": "service-refusal \"removal_unnamed\" is named by no test file — a door nobody has proven can shut"
+    },
+    {
+      "id": "unpinned:step_moved",
+      "severity": "warn",
+      "kind": "unpinned-refusal",
+      "subject": "step_moved",
+      "message": "service-refusal \"step_moved\" is named by no test file — a door nobody has proven can shut"
+    },
+    {
+      "id": "unpinned:version_missing",
+      "severity": "warn",
+      "kind": "unpinned-refusal",
+      "subject": "version_missing",
+      "message": "service-refusal \"version_missing\" is named by no test file — a door nobody has proven can shut"
+    },
+    {
+      "id": "unreached-driven:inkOneChangeAtATime",
+      "severity": "warn",
+      "kind": "unreached",
+      "subject": "inkOneChangeAtATime",
+      "message": "a corpus row expects \"inkOneChangeAtATime\" and the drive never produced it — the door may be unreachable"
+    },
+    {
+      "id": "unreached-driven:noInkToChange",
+      "severity": "warn",
+      "kind": "unreached",
+      "subject": "noInkToChange",
+      "message": "a corpus row expects \"noInkToChange\" and the drive never produced it — the door may be unreachable"
+    },
+    {
+      "id": "unreached-driven:notASlot",
+      "severity": "warn",
+      "kind": "unreached",
+      "subject": "notASlot",
+      "message": "a corpus row expects \"notASlot\" and the drive never produced it — the door may be unreachable"
+    },
+    {
+      "id": "unreached-driven:unplacedInk",
+      "severity": "warn",
+      "kind": "unreached",
+      "subject": "unplacedInk",
+      "message": "a corpus row expects \"unplacedInk\" and the drive never produced it — the door may be unreachable"
+    },
+    {
+      "id": "unreached:already_original",
+      "severity": "info",
+      "kind": "unreached",
+      "subject": "already_original",
+      "message": "no corpus row expects \"already_original\" — the census cannot say whether any ask reaches it"
+    },
+    {
+      "id": "unreached:already_signed",
+      "severity": "info",
+      "kind": "unreached",
+      "subject": "already_signed",
+      "message": "no corpus row expects \"already_signed\" — the census cannot say whether any ask reaches it"
+    },
+    {
+      "id": "unreached:busy",
+      "severity": "info",
+      "kind": "unreached",
+      "subject": "busy",
+      "message": "no corpus row expects \"busy\" — the census cannot say whether any ask reaches it"
+    },
+    {
+      "id": "unreached:candidate_missing",
+      "severity": "info",
+      "kind": "unreached",
+      "subject": "candidate_missing",
+      "message": "no corpus row expects \"candidate_missing\" — the census cannot say whether any ask reaches it"
+    },
+    {
+      "id": "unreached:departure",
+      "severity": "info",
+      "kind": "unreached",
+      "subject": "departure",
+      "message": "no corpus row expects \"departure\" — the census cannot say whether any ask reaches it"
+    },
+    {
+      "id": "unreached:history_predates_undo",
+      "severity": "info",
+      "kind": "unreached",
+      "subject": "history_predates_undo",
+      "message": "no corpus row expects \"history_predates_undo\" — the census cannot say whether any ask reaches it"
+    },
+    {
+      "id": "unreached:history_unreadable",
+      "severity": "info",
+      "kind": "unreached",
+      "subject": "history_unreadable",
+      "message": "no corpus row expects \"history_unreadable\" — the census cannot say whether any ask reaches it"
+    },
+    {
+      "id": "unreached:inkBeyondToday",
+      "severity": "info",
+      "kind": "unreached",
+      "subject": "inkBeyondToday",
+      "message": "no corpus row expects \"inkBeyondToday\" — the census cannot say whether any ask reaches it"
+    },
+    {
+      "id": "unreached:inkRemovalNotYet",
+      "severity": "info",
+      "kind": "unreached",
+      "subject": "inkRemovalNotYet",
+      "message": "no corpus row expects \"inkRemovalNotYet\" — the census cannot say whether any ask reaches it"
+    },
+    {
+      "id": "unreached:kind_unserved",
+      "severity": "info",
+      "kind": "unreached",
+      "subject": "kind_unserved",
+      "message": "no corpus row expects \"kind_unserved\" — the census cannot say whether any ask reaches it"
+    },
+    {
+      "id": "unreached:master_missing",
+      "severity": "info",
+      "kind": "unreached",
+      "subject": "master_missing",
+      "message": "no corpus row expects \"master_missing\" — the census cannot say whether any ask reaches it"
+    },
+    {
+      "id": "unreached:nothingAsked",
+      "severity": "info",
+      "kind": "unreached",
+      "subject": "nothingAsked",
+      "message": "no corpus row expects \"nothingAsked\" — the census cannot say whether any ask reaches it"
+    },
+    {
+      "id": "unreached:noWords",
+      "severity": "info",
+      "kind": "unreached",
+      "subject": "noWords",
+      "message": "no corpus row expects \"noWords\" — the census cannot say whether any ask reaches it"
+    },
+    {
+      "id": "unreached:perSideRemoval",
+      "severity": "info",
+      "kind": "unreached",
+      "subject": "perSideRemoval",
+      "message": "no corpus row expects \"perSideRemoval\" — the census cannot say whether any ask reaches it"
+    },
+    {
+      "id": "unreached:refine_limit",
+      "severity": "info",
+      "kind": "unreached",
+      "subject": "refine_limit",
+      "message": "no corpus row expects \"refine_limit\" — the census cannot say whether any ask reaches it"
+    },
+    {
+      "id": "unreached:removal",
+      "severity": "info",
+      "kind": "unreached",
+      "subject": "removal",
+      "message": "no corpus row expects \"removal\" — the census cannot say whether any ask reaches it"
+    },
+    {
+      "id": "unreached:removal_not_in_brief",
+      "severity": "info",
+      "kind": "unreached",
+      "subject": "removal_not_in_brief",
+      "message": "no corpus row expects \"removal_not_in_brief\" — the census cannot say whether any ask reaches it"
+    },
+    {
+      "id": "unreached:removal_reread_unmatched",
+      "severity": "info",
+      "kind": "unreached",
+      "subject": "removal_reread_unmatched",
+      "message": "no corpus row expects \"removal_reread_unmatched\" — the census cannot say whether any ask reaches it"
+    },
+    {
+      "id": "unreached:removal_uncheckable",
+      "severity": "info",
+      "kind": "unreached",
+      "subject": "removal_uncheckable",
+      "message": "no corpus row expects \"removal_uncheckable\" — the census cannot say whether any ask reaches it"
+    },
+    {
+      "id": "unreached:removal_unnamed",
+      "severity": "info",
+      "kind": "unreached",
+      "subject": "removal_unnamed",
+      "message": "no corpus row expects \"removal_unnamed\" — the census cannot say whether any ask reaches it"
+    },
+    {
+      "id": "unreached:scope_mismatch",
+      "severity": "info",
+      "kind": "unreached",
+      "subject": "scope_mismatch",
+      "message": "no corpus row expects \"scope_mismatch\" — the census cannot say whether any ask reaches it"
+    },
+    {
+      "id": "unreached:sideNamedWithoutScope",
+      "severity": "info",
+      "kind": "unreached",
+      "subject": "sideNamedWithoutScope",
+      "message": "no corpus row expects \"sideNamedWithoutScope\" — the census cannot say whether any ask reaches it"
+    },
+    {
+      "id": "unreached:step_moved",
+      "severity": "info",
+      "kind": "unreached",
+      "subject": "step_moved",
+      "message": "no corpus row expects \"step_moved\" — the census cannot say whether any ask reaches it"
+    },
+    {
+      "id": "unreached:uncatalogued",
+      "severity": "info",
+      "kind": "unreached",
+      "subject": "uncatalogued",
+      "message": "no corpus row expects \"uncatalogued\" — the census cannot say whether any ask reaches it"
+    },
+    {
+      "id": "unreached:unnamedObject",
+      "severity": "info",
+      "kind": "unreached",
+      "subject": "unnamedObject",
+      "message": "no corpus row expects \"unnamedObject\" — the census cannot say whether any ask reaches it"
+    },
+    {
+      "id": "unreached:version_missing",
+      "severity": "info",
+      "kind": "unreached",
+      "subject": "version_missing",
+      "message": "no corpus row expects \"version_missing\" — the census cannot say whether any ask reaches it"
+    },
+    {
+      "id": "unreached:whichInkToChange",
+      "severity": "info",
+      "kind": "unreached",
+      "subject": "whichInkToChange",
+      "message": "no corpus row expects \"whichInkToChange\" — the census cannot say whether any ask reaches it"
+    }
+  ]
+}
