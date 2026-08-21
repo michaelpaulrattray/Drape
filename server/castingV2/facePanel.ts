@@ -1022,19 +1022,29 @@ export function facePanel(input: {
         with the value and not in the value.
 
         A library cutout is two objects, a crop and a separate stencil. A
-        delivery crop is ONE: the tattoo is already cut out and its alpha is the
-        shape. So the same object is handed back as the mask — through the
-        caller's own `maskUrl`, because a CSS mask is a CORS fetch and the
-        public bucket sends no allow-origin.
+        delivery crop is ONE object either way, so no stencil is passed.
+
+        ⚠ **WHAT THAT ONE OBJECT IS CHANGED ON 2026-08-21** (ruled fable-1273
+        §2 / fable-1284 §2), and this paragraph used to state the old fact as
+        the reason. It said *the tattoo is already cut out and its alpha is the
+        shape*. That was true while the mint asked `tattooed skin` and wrote an
+        alpha; the mint now asks the SLOT'S OWN word and stores **an opaque
+        RECTANGLE of the surface**, because the convicted word returned one mark
+        of seven on a scattered piece (`inkDeliveryCrop.ts`'s header).
+
+        So the tile draws a rectangle of him with the whole piece on it, rather
+        than a floating cutout — and rows minted before that change still carry
+        their alpha, so a Cast can legitimately show one of each. No stencil is
+        still the right answer for BOTH: masking a black tattoo by its own
+        luminance renders an empty tile, and a rectangle has no shape to mask
+        to.
 
         `crop` stays null for the reason it always does: this is a minted
         picture, not a window onto a bigger one.
       */
       cutouts: [{
         contentUrl: input.contentUrl(worn.storageKey),
-        /* NO STENCIL: the crop is already the tattoo cut out of her frame, and
-           its alpha is the shape. See `PanelCutout.maskUrl` — masking a black
-           tattoo by its own luminance renders an empty tile. */
+        /* NO STENCIL — see above: neither shape wants one. */
         maskUrl: null,
         crop: null,
       }],

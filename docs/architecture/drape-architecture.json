@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "1906b2baa55a52f6"
+    "sourceFingerprint": "0bba49847425bcf6"
   },
   "domains": [
     {
@@ -20414,6 +20414,16 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/castingV2/inkDeliveryCrop.ts",
+      "to": "module:server/castingV2/referenceSlots.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/inkDeliveryCrop.ts",
+      "to": "module:shared/inkPlacementVocabulary.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/castingV2/inkDeliveryMint.ts",
       "to": "module:server/castingV2/falRegionReader.ts",
       "kind": "imports"
@@ -20421,11 +20431,6 @@
     {
       "from": "module:server/castingV2/inkDeliveryMint.ts",
       "to": "module:server/castingV2/inkDeliveryCrop.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/inkDeliveryMint.ts",
-      "to": "module:server/castingV2/inkReferenceCrop.ts",
       "kind": "imports"
     },
     {

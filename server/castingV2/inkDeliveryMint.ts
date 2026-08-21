@@ -54,8 +54,7 @@ import { createHash, randomUUID } from "node:crypto";
 import sharp from "sharp";
 
 import { createFalRegionReader } from "./falRegionReader";
-import { cutDeliveredInk } from "./inkDeliveryCrop";
-import { INK_REGION } from "./inkReferenceCrop";
+import { countKeptPixels, cutDeliveredInk, deliveryRegionWord } from "./inkDeliveryCrop";
 import { defaultManifest } from "./inkUploadService";
 import { refusingRegionReader, type RegionReader } from "./maskedRefine";
 import { createModuleLogger } from "../logging/logger";
@@ -173,7 +172,23 @@ export async function mintInkDeliveryCrop(
       provider failure and file "we could not tell" over a picture that told us
       plainly.
     */
-    const mask = await reader.region({ image: input.frame, name: INK_REGION, absentIsAnswer: true });
+    /*
+      ⚠ THE SLOT'S OWN WORD, NEVER `tattooed skin` (courted opus-945, ruled
+      fable-1273 §2 / fable-1284 §2).
+
+      This line used to ask `tattooed skin` of the whole delivered frame. On a
+      chest piece of seven separate marks it answered with ONE SWALLOW — 1 of 7,
+      about a fifth of the ink — and that one swallow became the crop every
+      later carry rode under the sentence *"the exact tattoo he already has …
+      put it back exactly as it is here"*, leaving the engine to redraw the
+      other six. The slot's own `readerWord` answered with the surface holding
+      all seven, 16x the pixels, on the same frame in the same minute.
+
+      Derived from the slot inside `deliveryRegionWord` so the word ASKED here
+      and the word RECORDED on the row below are one read of one thing.
+    */
+    const regionWord = deliveryRegionWord(slot);
+    const mask = await reader.region({ image: input.frame, name: regionWord, absentIsAnswer: true });
     /*
       A MASK NOT IN THE FRAME'S SPACE IS OUR ERROR, never something to resample
       (`maskedRefine`'s house rule). It is `failed` rather than `no-cut`: nothing
@@ -193,23 +208,29 @@ export async function mintInkDeliveryCrop(
     const cut = cutDeliveredInk({ rgba, width: info.width, height: info.height, mask });
     if (!cut.ok) {
       /*
-        LOUD ON EVERY ONE OF THEM, and `cutDidNotCut` loudest.
+        LOUD ON BOTH, and both are facts about a FRAME rather than defects in
+        this file: the reader found nothing on it, or what it found was the
+        whole picture. Either way the carry goes on riding the design's own
+        artwork, which is the road this product drove before crops existed.
 
-        `noInk` and `tooSmall` are facts about a frame and the carry simply goes
-        on riding the artwork. `cutDidNotCut` is a DEFECT IN THIS FILE that has
-        landed twice on this road already, and the whole reason the count is
-        taken from the produced bytes is so it can never again be silent.
+        ⚠ `cutDidNotCut` used to be reported from here and is NOT any more —
+        it is raised below, against the extracted bytes, because that is where
+        the bytes now are. It is deliberately absent from this branch rather
+        than left as an unreachable ternary saying otherwise.
       */
-      log.warn({ ...about, reason: cut.refusal, maskPixels: cut.maskPixels },
-        cut.refusal === "cutDidNotCut"
-          ? "[inkDeliveryMint] THE CUT DID NOT CUT — the produced bytes keep pixels the mask did not; nothing stored"
-          : "[inkDeliveryMint] the delivered frame yielded no usable crop — the next carry rides the design's own artwork");
+      log.warn(
+        { ...about, region: regionWord, reason: cut.refusal, maskPixels: cut.maskPixels },
+        "[inkDeliveryMint] the delivered frame yielded no usable crop — the next carry rides the design's own artwork",
+      );
       return { outcome: "no-cut", slot, reason: cut.refusal, maskPixels: cut.maskPixels };
     }
 
-    /* Extracted to the tattoo's own box, so the stored object is the crop and
-       not a full frame carrying a mostly-transparent picture of a person. */
-    const bytes = await sharp(cut.cut.rgba, {
+    /*
+      Extracted to the surface's own padded box, out of the DELIVERED FRAME'S
+      OWN BYTES — there is no alpha-written copy any more, because there is no
+      alpha. What is stored is a rectangle of him with the whole piece on it.
+    */
+    const bytes = await sharp(rgba, {
       raw: { width: info.width, height: info.height, channels: 4 },
     })
       .extract({
@@ -220,6 +241,46 @@ export async function mintInkDeliveryCrop(
       })
       .png()
       .toBuffer();
+
+    /*
+      ⚠ `cutDidNotCut`, FOLLOWING THE BYTES RATHER THAN DYING WITH THE ALPHA.
+
+      The guard was `countKeptPixels` over the alpha-written frame, and its
+      whole reason for existing is that this road has TWICE produced an uncut
+      photograph of a man while every number beside it stayed correct. Retiring
+      the alpha would have retired the guard silently — working law 7's second
+      half, a control orphaned by a change aimed at something else — so it moves
+      to where the produced bytes now are.
+
+      Re-decoding the crop costs one sharp pass on an object the size of a
+      tattoo, off the customer's paid wait entirely (this whole mint runs after
+      the picture is delivered). It is asked of the ARTIFACT: the rectangle that
+      came back has the dimensions we asked for, and every pixel in it is
+      opaque. A `sharp.extract` that quietly returned the frame fails both.
+    */
+    const produced = await sharp(bytes).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+    const keptPixels = countKeptPixels({
+      rgba: produced.data,
+      width: produced.info.width,
+      height: produced.info.height,
+    });
+    if (
+      produced.info.width !== cut.cut.box.width
+      || produced.info.height !== cut.cut.box.height
+      || keptPixels !== cut.cut.keptPixels
+    ) {
+      log.warn(
+        {
+          ...about,
+          asked: `${cut.cut.box.width}x${cut.cut.box.height}`,
+          came: `${produced.info.width}x${produced.info.height}`,
+          keptPixels,
+          expected: cut.cut.keptPixels,
+        },
+        "[inkDeliveryMint] THE CUT DID NOT CUT — the produced bytes are not the rectangle that was asked for; nothing stored",
+      );
+      return { outcome: "no-cut", slot, reason: "cutDidNotCut", maskPixels: cut.cut.maskPixels };
+    }
 
     const key = `${INK_DELIVERY_KEY_PREFIX}/${randomUUID()}.png`;
     const cleanupBatchId = randomUUID();
@@ -235,7 +296,10 @@ export async function mintInkDeliveryCrop(
         : { designPublicId: input.delivered.designPublicId }),
       variantPublicId: input.variantPublicId,
       slot,
-      region: INK_REGION,
+      /* WHICH WORD PRODUCED THIS ROW, so a crop minted before the word changed
+         is tellable from one minted after it — by reading the row, not by
+         reading its timestamp against a deploy. */
+      region: regionWord,
       storageKey: key,
       digest: createHash("sha256").update(bytes).digest("hex"),
       mime: "image/png",
@@ -249,7 +313,7 @@ export async function mintInkDeliveryCrop(
       frameWidth: info.width,
       frameHeight: info.height,
       maskPixels: cut.cut.maskPixels,
-      keptPixels: cut.cut.keptPixels,
+      keptPixels,
       cleanupBatchId,
     });
     if (written.outcome === "already") {
@@ -259,9 +323,9 @@ export async function mintInkDeliveryCrop(
       return { outcome: "already", slot };
     }
 
-    log.info({ ...about, maskPixels: cut.cut.maskPixels, keptPixels: cut.cut.keptPixels, key },
+    log.info({ ...about, region: regionWord, maskPixels: cut.cut.maskPixels, keptPixels, key },
       "[inkDeliveryMint] the tattoo as it landed on her is kept — the next carry rides this rather than her artwork");
-    return { outcome: "minted", slot, maskPixels: cut.cut.maskPixels, keptPixels: cut.cut.keptPixels };
+    return { outcome: "minted", slot, maskPixels: cut.cut.maskPixels, keptPixels };
   } catch (error) {
     log.error({ ...about, err: error },
       "[inkDeliveryMint] the delivered tattoo could not be kept — the picture stands and the next carry rides the artwork");
