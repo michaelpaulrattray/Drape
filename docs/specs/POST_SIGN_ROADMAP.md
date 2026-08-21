@@ -816,6 +816,62 @@ reference — per-feature slots remain the source of truth). The
 fable-168 "grouped Makeup look row" taste question folds into this
 item; both deferred together until this studio's turn.
 
+## 3b. TRANSFORM THE DESIGN YOU HAVE — founder-ordered 2026-08-21 (fable-1269
+## §2), design report opus-940. The removal-wording note folds in here.
+
+**His words, the hour his tattoo card went live:** *"Can i actually make edits to
+the upper chest tattoo? like make it bigger or somthing now it has a bounding
+box?"* He was answered honestly — talk, replace and remove work today; TRANSFORMS
+do not, and *"make it bigger"* would misroute as a NEW words-tattoo and risk
+replacing his specific piece with a reinvention.
+
+**The road.** Scale / position / intensity asks about an EXISTING tattoo re-ride
+THE SAME delivered crop with a changed instruction — never a reinvention. It is
+the carry mechanism with one more trick.
+
+**The shape, read at the code rather than reasoned about (opus-940):** a
+transform is an EDIT on the ink slot whose SOURCE is that slot's own delivered
+crop — one new member of `SourceKind` (`inkAsDelivered`) and one new arm in
+`sourceSentence`, built from `inkDeliveredCarrySentence` with the size/place
+clause parameterised so the carry and the transform cannot drift about what the
+picture is. The naive build — an ask on the ink slot PLUS its own carry — is
+already refused by name (`carriesItsOwnEdit`, D-244 line 2), so the assembler
+needs no new refusal.
+
+**Three things the design fixed that are not obvious:**
+
+- the SLOT comes from STATE, never from her sentence, because *"make it bigger"*
+  contains no placement. One delivered slot means "it" is unambiguous; two or
+  more means she is ASKED (every answer acts, so D-180 is satisfied); zero is
+  the sentence below. **`slots[0]` is forbidden** — an ask that omits a key
+  member spanning two rows is how a design once rode the wrong arm.
+- a transform files **NO new `free.ink` words**. Its natural wording is a DELTA
+  (*"twice the size"*), `free.ink` is re-said on every later unrelated edit, and
+  two renders on that reads as an instruction with no referent beside a crop
+  that already is the new size. It is `wordsNotDeclarative`'s rule one field
+  along. The instruction lives in `source.scope` and dies with its ask.
+- the two-tattoo limit (fable-1167 §2e) is UNTOUCHED, and sidestepped rather
+  than solved: a transform that stops writing `free.ink` cannot clobber the
+  other placement's words.
+
+**§5f item 4 — the removal-wall wording — closes HERE**, because it is the same
+prior question and not a separate repair: *is this ask about ink she already
+has?* has three branches — no (today's placement road), yes-and-changed (this
+road), yes-and-gone (the removal road, which needs no placement because the slot
+comes from state). A removal ask on a cast with **no** delivered ink gets a new
+`cannotSayCopy` member saying there is nothing to remove, and that one member
+serves the bare-cast transform ask too.
+
+**Flag:** `CASTING_INK_TRANSFORM_SCOPE`, child of `CASTING_INK_STUDIO_SCOPE` —
+except the two copy items, which land UNGATED: they replace a wrong sentence with
+a right one on a live lane, and gating an apology is how the apology stays wrong
+for everyone outside the flag.
+
+**What would make it unnecessary:** nothing — it is a capability, not a repair.
+What would make it WRONG is the intensity member: *"make it darker"* against a
+crop has never been measured, and that is a court after scale lands, not part of
+this design.
+
 ## 4. "Show her the refused frame" — ✅ **RULED AND SHIPPED 2026-08-16**
 
 **The reader stopped being a cashier.** Founder, in person, second statement
@@ -1141,6 +1197,13 @@ on a live lane, and those get their own sitting.
 **What would make it unnecessary:** routing a removal ask to the removal road
 before the placement question is ever asked. (Note the pronoun in that sentence
 is §5e's class too — the same string says *"his"* and *"her"* about one person.)
+
+⚠ **AND IT NOW HAS AN OWNER: §3b** (fable-1269 §2, 2026-08-21). This item stops
+being unclaimed work the moment the transform road builds, because both are the
+same prior question — *is this ask about ink she already has?* — and answering it
+once serves all three branches. It stays listed HERE because this list is what
+runs post-rite and its slot in that order is unchanged; §3b holds the design and
+this holds the position. A pointer, never a copy.
 
 ### And the sibling instance this sweep turned up in a different sitting
 
