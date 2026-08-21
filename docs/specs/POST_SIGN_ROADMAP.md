@@ -102,13 +102,34 @@ carry the rulings, the courts and the histories.
                                           a stored wardrobe line is the clothing
                                           noun with an owner, which kills that
                                           class rather than patching it.
-                                          ✍ THE DESIGN REPORT IS WRITTEN and
-                                          awaiting countersign:
+                                          ✅ THE DESIGN REPORT IS WRITTEN AND
+                                          COUNTERSIGNED (fable-1334, with
+                                          condition (v) written in as §3.1a and
+                                          all four open questions RULED):
                                           `docs/specs/CASTING_V2_TWO_PATHS_DESIGN.md`
                                           — it carries a MIGRATION that blocks
-                                          the code (not the flip), four open
-                                          questions, and a 1,220-credit dev court
-                                          staged 320 then 900
+                                          the code (not the flip) and a
+                                          1,220-credit dev court staged 320 then
+                                          900, the 320 granted.
+                                          ✅ THE MIGRATION AND ITS CEREMONY NOW
+                                          EXIST AND ARE DEV-APPLIED (2026-08-22,
+                                          shift 102, approved fable-1343):
+                                          `drizzle/0051_casting_rolls_two_paths.sql`
+                                          — two nullable columns, no DEFAULT —
+                                          and `scripts/ceremony-two-paths.mts`.
+                                          Dev read-back: 44 rolls, path set on 0,
+                                          line set on 0.
+                                          ⚠ BLOCKED ON ONE FOUNDER COMMAND, and
+                                          it is now a command that EXISTS: until
+                                          `--production` has run, `drizzle/
+                                          schema.ts` must NOT name either column
+                                          — a column drizzle SELECTs is in every
+                                          read, so the schema half overtaking the
+                                          ceremony is roll history failing to
+                                          load for everybody rather than a dark
+                                          landing. `twoPathsMigration.test.ts`
+                                          pins that absence and says in its own
+                                          arm what to replace it with
 3b KEYING + MULTI-TATTOO REMOVAL          after 5. No live customer yet (no branch
                                           has ever worn two); 1167 §2e is its own
                                           reason

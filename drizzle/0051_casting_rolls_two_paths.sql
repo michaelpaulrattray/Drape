@@ -1,0 +1,101 @@
+-- THE TWO PATHS — a roll records WHICH PATH it was cast on and WHAT THE PERSON
+-- IS WEARING (founder ruling 2026-08-21, *"this is the way foward 100%"*;
+-- relayed fable-1311 with fable-1312's addendum; design
+-- `docs/specs/CASTING_V2_TWO_PATHS_DESIGN.md`, countersigned fable-1334).
+--
+-- ============================================================================
+-- WHY A COLUMN AND NOT A CONSTANT
+-- ============================================================================
+--
+-- Today nothing in this product owns the sentence *what is this person
+-- wearing*. The roll prompt hard-codes one wardrobe line inside a framing
+-- constant, the six signed views hard-code a different one, the sheet's notice
+-- describes a third, and the refine recipe names FIVE nouns of which clothing
+-- is not one. Measured at the frames (design §2): a removal re-render turned a
+-- grey tee BLACK, unasked, because no part of the recipe ever said the tee was
+-- grey — and it had gone unseen only because the step before it happened to
+-- carry an ink crop cut from the sleeve, so a picture spoke for the garment.
+--
+-- **A fact nothing names is a fact the engine is free to reinterpret.** That is
+-- the same argument `presentationState` already makes about how the hair is
+-- worn, and this is the clothing half of it.
+--
+-- ============================================================================
+-- ON THE ROLL, WHICH IS THE SHEET
+-- ============================================================================
+--
+-- One outfit per sheet, because §B2's comparability law says a sheet compares
+-- people and not clothes. NOT on the candidate: eight candidates in eight
+-- outfits is that law broken. NOT on the session: two rolls in one session
+-- already differ by brief, and a Follow may legitimately change nothing else.
+--
+-- ============================================================================
+-- `path` IS AN ENUM, AND THAT IS NOT 0046 REPEATED
+-- ============================================================================
+--
+-- 0046 widened two placement columns enum -> varchar, and its ground was that
+-- the value is **a customer's own word** on a vocabulary nobody can enumerate.
+-- This value is the opposite kind of fact: it is CODE-OWNED and closed by his
+-- ruling, the same kind as `casting_rolls.status` and `casting_sessions.
+-- originType`, which are enums on this table and its parent. `casting_ink_
+-- designs.cutRoute` (0047) is the closest precedent — a two-member, code-owned
+-- route, `enum(...) NULL`.
+--
+-- Here the fence is the feature. This database runs `STRICT_TRANS_TABLES` (read
+-- off the dev server 2026-08-20, recorded in 0046 rather than assumed), so a
+-- third path arriving without a migration ERRORS at the insert instead of being
+-- written and read back as a word no reader handles.
+--
+-- ============================================================================
+-- NULL, AND NO DEFAULT — the half that would be a silent, permanent loss
+-- ============================================================================
+--
+-- `NULL` means **cast before the paths existed**, and that is only true if the
+-- ALTER leaves the historical rows alone. `ADD COLUMN ... NULL DEFAULT
+-- 'wardrobe'` does NOT leave them alone: MySQL fills every existing row with
+-- the default, so all 44 dev rolls and every production roll would be stamped
+-- with a claim that they were cast on a path that did not exist when they were
+-- cast. There is no repair for that afterwards — the distinction it destroys is
+-- the only evidence of which rolls predate the feature.
+--
+-- So: nullable, no default, both columns. The ceremony reads the null count
+-- back for exactly this reason.
+--
+-- ============================================================================
+-- `wardrobeLine` IS THE RESOLVED OUTFIT, COMPLETE
+-- ============================================================================
+--
+-- varchar(240), holding a complete line — top, bottoms, footwear — so the
+-- waist-up sheet, the hero and the three full-length signed views cannot
+-- disagree about what she is wearing below the crop. It is a stored line rather
+-- than a re-derivation because two live self-contradictions come from the
+-- latitude: `CAST_PACKAGE_WARDROBE_SPEC` hard-codes *crew-neck* while naming
+-- the reference photograph as the authority, and it deliberately names no
+-- colour because the sheet casts in *"neutral grey OR off-white"* — a Cast
+-- signed in off-white had a package whose contract it could not satisfy, and
+-- **the customer paid for our inconsistency** (`castViewPackage.ts`, first real
+-- Sign, 2026-08-02).
+--
+-- It is NOT hidden inside `compiledBrief`, and that cheaper-looking alternative
+-- is refused on purpose (design §3.2): Sign would then read an internal blob
+-- for a durable fact, and the sheet would lift a display string out of a column
+-- whose own docblock says *"INTERNAL — never projected"*.
+--
+-- ============================================================================
+-- IT LANDS DARK, AND THE ORDER IS THE POINT
+-- ============================================================================
+--
+-- A new column on a table drizzle SELECTs is in every read, flag or no flag —
+-- so the order is **migration ceremony -> code lands dark -> court -> his eyes
+-- -> flip**, and the ceremony is a founder-only production act. At the commit
+-- that carries this file, `drizzle/schema.ts` does NOT name either column and
+-- nothing in the product can write one. That is deliberate: the file is inert
+-- bytes until `scripts/ceremony-two-paths.mts` is run, and the schema half
+-- lands in the sitting AFTER production has taken it.
+--
+-- PURELY ADDITIVE. No column is removed, no column changes type, no index
+-- moves, no row is rewritten. Every existing reader of `casting_rolls` sees
+-- exactly what it saw before.
+ALTER TABLE `casting_rolls` ADD COLUMN `path` enum('wardrobe','basics') NULL;
+--> statement-breakpoint
+ALTER TABLE `casting_rolls` ADD COLUMN `wardrobeLine` varchar(240) NULL;

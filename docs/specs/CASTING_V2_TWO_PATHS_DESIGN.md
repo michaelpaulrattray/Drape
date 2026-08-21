@@ -207,6 +207,38 @@ order is **migration ceremony → code lands dark → court → his eyes → fli
 the ceremony is a founder-only production act. It is carded in
 `founder-queue.md` with this design, not assumed.
 
+✅ **BOTH HALVES NOW EXIST AND DEV HAS TAKEN THEM** (2026-08-22, shift 102;
+approved fable-1343). The card had promised *"the migration file will be written
+and tested on dev before it reaches you, and the exact command comes with it"*
+and neither existed — a card reading blocked-on-him whose deliverable was ours.
+
+```
+drizzle/0051_casting_rolls_two_paths.sql     two ADD COLUMNs, nothing else
+scripts/ceremony-two-paths.mts               the house rite; safe to run twice
+
+npx tsx scripts/ceremony-two-paths.mts --dev                      ← run, exit 0
+railway.cmd run --service MySQL -- npx tsx scripts/ceremony-two-paths.mts --production
+```
+
+Dev read-back, quoted rather than described: `path enum('wardrobe','basics')
+NULL no default` · `wardrobeLine varchar(240) NULL no default` · `rows: 44 · path
+set on 0 · line set on 0`.
+
+⚠ **NULLABLE WITH NO DEFAULT, and that is the load-bearing detail.** §3.1's *NULL
+= cast before the paths existed* is only true if the ALTER leaves the historical
+rows alone, and MySQL fills every existing row with a column's DEFAULT when one
+is given. `NULL DEFAULT 'wardrobe'` would therefore stamp all 44 dev rolls and
+every production roll with a claim that they were cast on a path that did not
+exist when they were cast — unrepairable afterwards, because the distinction it
+destroys is the only evidence of which rolls predate the feature, and the
+resulting table looks entirely healthy. The ceremony reads the default back by
+value and asserts the non-null count is zero on the sitting that applies it; the
+migration text is pinned by `server/castingV2/twoPathsMigration.test.ts`.
+
+**Until `--production` has run, `drizzle/schema.ts` must not name either column.**
+That absence is an arm rather than a note, and the arm says in its own comment
+what to replace it with.
+
 The cheaper-looking alternative — hiding both facts inside the existing
 `compiledBrief` JSON — is refused on purpose. Sign would then read an internal
 blob for a durable fact, and the sheet would lift a display string out of a

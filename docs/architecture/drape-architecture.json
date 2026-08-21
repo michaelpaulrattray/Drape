@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "6666723e26b5a795"
+    "sourceFingerprint": "c93253036d631c84"
   },
   "domains": [
     {
@@ -10639,6 +10639,10 @@
     {
       "id": "test:server/castingV2/truncation.test.ts",
       "path": "server/castingV2/truncation.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/twoPathsMigration.test.ts",
+      "path": "server/castingV2/twoPathsMigration.test.ts"
     },
     {
       "id": "test:server/castingV2/typecheckGate.test.ts",
