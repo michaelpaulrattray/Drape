@@ -160,13 +160,27 @@ the pinning arm.
   `wardrobe.tee` was never part of this family — it is §10 item 5's — and the
   Two Paths design carries the footnote that its row now reads `wall_unbacked`.
 
-- **(C2) A SCOPED ASK THAT NAMED ITS FACET IS ASKED WHICH FACET.** Row
-  `eye.scoped.left` — *"make it green"* with scope `eye@left` — comes back
-  `asked:which-facet` (*"which part? Nothing's been coloured yet, so I don't want
-  to guess"*). The scope names the subject; the question is asking for something
-  it was already handed. Sibling of the tapped-rectangle preference that landed
-  for ink (`inkSlotSheAsksAbout`, fable-1291/1293): **a tap IS an answer**, and
-  the eye lane has not learned it.
+- **(C2) ✅ CLOSED 747a44e1 — A SCOPED ASK THAT NAMED ITS FACET WAS ASKED WHICH
+  FACET.** Row `eye.scoped.left`: *"make it green"* with scope `eye@left` came
+  back `asked:which-facet`. She had pointed at the eye. The scope is now a colour
+  referent everywhere the remembered facet already is one — the question, the
+  prompt and D-178's backstop — and **it outranks the memory**, which is
+  `inkSlotSheAsksAbout`'s ruling one lane over (fable-1291/1293).
+
+  ⚠ **The question could not simply be skipped**: with no referent the parse is
+  free to file the colour on the hair, and a hair colour on an eye-scoped ask
+  meets `scope_mismatch` — a free question turned into a free refusal.
+
+  **Two things the real-model drive found that no unit arm could.** ONE REFERENT
+  REACHES THE PROMPT, never both: sent together, the model followed the memory
+  and filed `hairColour` on an eye-scoped ask, so the prompt half was doing
+  nothing while the backstop carried it alone. AND THE FIRST WORDING DID NOT
+  CARRY even alone — the line that works says the instruction is about that part
+  *and nothing else, whatever the colour is usually associated with* (3/3 on the
+  sentence that was failing). The precedence arm had to change sentences to
+  separate at all: on *"make it green"* the model files the eyes with no tap
+  whatsoever, 3/3.
+
 - **(C3) THE TYPO GATE DOES NOT FIRE ON A REAL TYPO.** Row `guard.typo` — *"give
   her a nose rign"* — RENDERS rather than asking *did you mean*. Read beside its
   own history: the gate once owned a real word (*"shave"* → *"shape"* blocked his
