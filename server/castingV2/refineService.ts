@@ -1290,6 +1290,19 @@ async function refineCandidateCounted(
   const predecessorForParse = source.variantPublicId
     ? existing.find((variant) => variant.publicId === source.variantPublicId) ?? null
     : null;
+  /*
+    THE TATTOOS THIS BRANCH ALREADY CARRIES — read ONCE, here, because two very
+    different readers need the same answer and a second derivation of it is the
+    mirror law 4 forbids.
+
+    The INK DOCUMENT GATE needs it before the parse runs (a transform of a
+    delivered tattoo is documented by the crop, so the gate must not wall it),
+    and the PRIOR QUESTION needs it a thousand lines below to decide which slot
+    she means. Two spellings of *"does she already have one"* is how a road comes
+    to open a wall for an ask its own door then answers *"she hasn't got one"*.
+  */
+  const deliveredInkOnChain =
+    readDeliveredInk(readStoredDelta(predecessorForParse?.deltas)) ?? {};
   const priorItems: Partial<Record<FreeSubject, string[]>> = {};
   for (const [subject, value] of Object.entries(readStoredDelta(predecessorForParse?.deltas)?.free ?? {})) {
     priorItems[subject as FreeSubject] = itemsOf(value);
@@ -1637,6 +1650,30 @@ async function refineCandidateCounted(
         keeps his ruling off a live road until it is flipped.
       */
       inkReferenceEnabled: (dependencies.inkReferenceEnabled ?? captureCastingInkReferenceEnabled)(input.userId),
+      /*
+        ⚠ AND WHETHER THIS ASK IS ABOUT A TATTOO WE ALREADY PAINTED — the gate's
+        THIRD document, and without it the transform road is unreachable.
+
+        Measured at the real entrance rather than assumed (fable-1288 §5): *"his
+        upper chest tattoo — make it bigger"*, the sentence the panel popover
+        itself composes, came back `gate_ink_document`. D-137's wall is right
+        about a design invented from a sentence and wrong about a change to one
+        this product already delivered and kept a crop of — that design has a
+        document, and the document is the crop.
+
+        BOTH HALVES, and neither alone: her own sentence has to point at ink she
+        has and name a change to it (a pointer, a change word, no indefinite
+        form — `readInkPriorAsk`), and the branch has to really hold a delivered
+        crop. *"Give him a tattoo on his chest"* satisfies neither and still
+        walls, which is the gate doing exactly what it was built for.
+
+        `gone` opens it too and that is deliberate: an ask to take an existing
+        tattoo OFF invents no design either, and walling it would mean the free
+        honest sentence one door along could never be reached — the wall
+        answering, in D-137's voice, an ask that is not about drawing anything.
+      */
+      inkDocumentedByDelivery: Object.keys(deliveredInkOnChain).length > 0
+        && readInkPriorAsk(instruction).want !== "fresh",
       prior: priorItems,
       lastColourFacet: lastColourFacet ? colourFacetLabel(lastColourFacet) : null,
       currentEyeColour: currentValueOfFacet(currentIdentity, "eye.colour"),
@@ -3117,7 +3154,7 @@ async function refineCandidateCounted(
         what the prior question is actually asking about: *does she already have
         one*. It is also the reader that cannot be fooled by the ask itself.
       */
-      const deliveredSlots = Object.keys(priorDelta.inkDelivered ?? {});
+      const deliveredSlots = Object.keys(deliveredInkOnChain);
       const onSlot = inkSlotSheAsksAbout(instruction, deliveredSlots);
       /* How the product speaks about a tattoo it has actually delivered —
          "his upper chest tattoo", from the catalogue's own noun. */
@@ -3193,7 +3230,7 @@ async function refineCandidateCounted(
           the transformed tattoo the next carry's baseline.
         */
         const address = inkPlacementOfSlot(onSlot.slot);
-        const changingCrop = (priorDelta.inkDelivered ?? {})[onSlot.slot];
+        const changingCrop = deliveredInkOnChain[onSlot.slot];
         if (address !== null && changingCrop !== undefined) {
           /* Resolved ONCE and carried, like every other address on this road:
              re-deriving the crop at the recipe would be a second answer to

@@ -670,6 +670,37 @@ export type FreeLaneCheck = {
    * Absent means the gate behaves exactly as it always has.
    */
   inkDocumentedByReference?: boolean;
+  /**
+   * WHETHER THE DESIGN IS DOCUMENTED BY A PICTURE THIS PRODUCT ALREADY PAINTED
+   * — the ink gate's THIRD answer (the transform road, opus-949).
+   *
+   * # The wall this opens, and why it is the same question rather than a wider one
+   *
+   * The gate has always asked ONE thing: *is there a document for this design*.
+   * The anchor was the first answer, a photograph she pointed at the second, and
+   * the third arrived with the delivery crop store (migration `0049`): **the
+   * tattoo as it actually landed on her, kept by the mint**. An ask to make that
+   * design BIGGER is not a design invented from a sentence — it is the same
+   * documented design with one clause changed, and the picture on the wire is
+   * the crop.
+   *
+   * Found by driving the real entrance rather than the service (fable-1288 §5):
+   * *"his upper chest tattoo — make it bigger"*, the sentence the panel popover
+   * itself composes, came back `gate_ink_document` — refused 1,860 lines before
+   * the transform road it was built to reach. Five commits of road, unreachable,
+   * which is the entrance-before-the-road class exactly.
+   *
+   * # It cannot open the wall for a FRESH tattoo, which is what the gate is for
+   *
+   * Set by the service and only when BOTH are true: the prior question read her
+   * own sentence as pointing at ink she already has AND naming a change to it
+   * (`inkPriorAsk` — a pointer, a change word, and no indefinite form), and the
+   * branch really holds a delivered crop for a resolvable slot. *"Give him a
+   * tattoo on his chest"* satisfies neither and still walls.
+   *
+   * Absent means the gate behaves exactly as it always has.
+   */
+  inkDocumentedByDelivery?: boolean;
   /** Set when the value hit a wall, so the caller can name which one. */
   wall?: RefineRefusal;
   /**
@@ -1208,7 +1239,14 @@ export function readDelta(value: unknown, check?: FreeLaneCheck): RefineDelta | 
         forbids and the one this gate was built to stop.
       */
       if (check && (subject === "ink" || (subject === "marks" && namesDesign(scrubbed)))) {
-        if (!check.inkDocumentedByReference && classifyInkPlacement(scrubbed).kind !== "in_frame") {
+        if (
+          !check.inkDocumentedByReference
+          /* AND THE THIRD DOCUMENT — a tattoo this product already delivered and
+             kept a crop of. See the field's own docblock: the question is
+             unchanged, the answers are now three. */
+          && !check.inkDocumentedByDelivery
+          && classifyInkPlacement(scrubbed).kind !== "in_frame"
+        ) {
           check.wall = { reason: "gate_ink_document" };
           return null;
         }

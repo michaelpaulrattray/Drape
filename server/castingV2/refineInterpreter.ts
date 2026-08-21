@@ -754,6 +754,17 @@ export type RefineInterpretInput = {
    * flipped a switch for.
    */
   inkReferenceEnabled?: boolean;
+  /**
+   * WHETHER THIS ASK IS ABOUT A TATTOO THIS PRODUCT ALREADY DELIVERED — the ink
+   * gate's third document, resolved by the service and never decided here.
+   *
+   * Passed as one derived bit for the reason its sibling above is: this reader
+   * has no business knowing what a delivered crop is, and the gate has no
+   * business re-deciding what *"about a tattoo she already has"* means. The
+   * service owns that reading (`inkPriorAsk`) and owns the branch state it is
+   * checked against.
+   */
+  inkDocumentedByDelivery?: boolean;
   /** The hybrid-likeness pass — the comparison is already settled (D-181). */
   hybrid?: boolean;
   /**
@@ -1569,6 +1580,13 @@ async function containReply(call: {
     ...(fromReference && input.inkReferenceEnabled === true
       ? { inkDocumentedByReference: true }
       : {}),
+    /*
+      AND THE THIRD DOCUMENT — a picture THIS PRODUCT painted and kept, which is
+      the one document that needs no flag and no pointing: it exists because she
+      already paid for the tattoo it shows. The service proved both halves before
+      setting it.
+    */
+    ...(input.inkDocumentedByDelivery === true ? { inkDocumentedByDelivery: true } : {}),
   };
   const delta = readDelta(reply, check);
   /* A WALL is an answer, not a hiccup — it must not be re-sampled. */
