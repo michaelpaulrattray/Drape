@@ -12226,6 +12226,87 @@ describe("the picture she attached becomes the carrier that rides", () => {
     expect(painted, "a transform with no crop reached the engine").toHaveLength(0);
   });
 
+  it("⚠ WITH THE FLAG OFF, THE DOCUMENT GATE STILL WALLS — a free refusal beats a charged mistake", async () => {
+    /*
+      THE REGRESSION THIS ARM EXISTS FOR, caught by asking what the FLAG-OFF path
+      does with an opened wall rather than by a failing test.
+
+      The transform road had to open D-137's ink document gate for a change to a
+      tattoo the product already delivered — otherwise the road is unreachable
+      and the popover's own sentence is refused 1,860 lines before it. But
+      opening that gate for an account whose transform road is SHUT is strictly
+      worse than the wall: the ask stops being refused free, reaches the prior
+      question, finds the flag closed, and falls through to today's words road —
+      which paints a fresh design from her prose and charges 25 credits for it.
+
+      So the gate's third document is granted only where the road can serve it.
+      The evidence is the interpreter's own input, read at the wire: with the
+      flag off, the bit the service hands it is FALSE, whatever the branch holds.
+    */
+    inkedBranch();
+    const asked: Array<{ inkDocumentedByDelivery?: boolean }> = [];
+    painted.length = 0;
+    await refineCandidate(transformRoad({
+      inkTransformEnabled: () => false,
+      interpret: async (request: { inkDocumentedByDelivery?: boolean }) => {
+        asked.push(request);
+        return {
+          ok: true as const,
+          fromReference: false,
+          delta: { free: { ink: "a fine-line swallow chest piece, larger" } },
+        };
+      },
+    }), { ...input, instruction: "make his chest tattoo bigger" });
+
+    expect(asked.length).toBeGreaterThan(0);
+    expect(
+      asked.every((one) => one.inkDocumentedByDelivery !== true),
+      "the gate was opened for an account that cannot transform",
+    ).toBe(true);
+  });
+
+  it("AND WITH IT ON, the same ask carries the document", async () => {
+    /* The positive half of the pair, on the same branch and the same sentence,
+       so the two differ by the flag and nothing else. */
+    inkedBranch();
+    const asked: Array<{ inkDocumentedByDelivery?: boolean }> = [];
+    await refineCandidate(transformRoad({
+      interpret: async (request: { inkDocumentedByDelivery?: boolean }) => {
+        asked.push(request);
+        return {
+          ok: true as const,
+          fromReference: false,
+          delta: { free: { ink: "a fine-line swallow chest piece, larger" } },
+        };
+      },
+    }), { ...input, instruction: "make his chest tattoo bigger" });
+
+    expect(asked.some((one) => one.inkDocumentedByDelivery === true)).toBe(true);
+  });
+
+  it("⚠ AND A REMOVAL CARRIES IT WITH THE FLAG OFF — its arm is ungated by ruling", async () => {
+    /*
+      The one case that needs no flag: a removal answers FREE before the claim,
+      so the wall it would otherwise meet is D-137's voice refusing a sentence
+      that is not about drawing anything. fable-1287 §2.
+    */
+    inkedBranch();
+    const asked: Array<{ inkDocumentedByDelivery?: boolean }> = [];
+    await refineCandidate(transformRoad({
+      inkTransformEnabled: () => false,
+      interpret: async (request: { inkDocumentedByDelivery?: boolean }) => {
+        asked.push(request);
+        return {
+          ok: true as const,
+          fromReference: false,
+          delta: { free: { ink: "no tattoos" } },
+        };
+      },
+    }), { ...input, instruction: "take his chest tattoo off" });
+
+    expect(asked.some((one) => one.inkDocumentedByDelivery === true)).toBe(true);
+  });
+
   it("⚠ A DISPUTED TRANSFORM DOES NOT BECOME THE NEXT CARRY'S BASELINE", async () => {
     /*
       fable-1274 §5's arm — and it was written expecting the existing machinery

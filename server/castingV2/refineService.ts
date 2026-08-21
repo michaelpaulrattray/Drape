@@ -1418,6 +1418,15 @@ async function refineCandidateCounted(
     : null;
   const answered = outstanding ? resolveAnswer(outstanding, input.instruction) : null;
   const instruction = answered ?? input.instruction;
+  /* Her own sentence, read once. Pure, code-owned and free — but read TWICE it
+     would be two answers to one question in a function where the two readers are
+     a thousand lines apart. */
+  const inkPriorReading = readInkPriorAsk(instruction);
+  /* Whether the transform road can actually SERVE what that reading found. Read
+     here rather than at the door alone, because the ink document gate below has
+     to know it — see the paragraph on that line. */
+  const inkTransformOpen =
+    (dependencies.inkTransformEnabled ?? captureCastingInkTransformEnabled)(input.userId);
   /*
     SHE SAID YES TO THE OFFER. The already-true door must not refuse the very
     thing it just offered, and the re-roll rides the version's own chain rather
@@ -1673,7 +1682,25 @@ async function refineCandidateCounted(
         answering, in D-137's voice, an ask that is not about drawing anything.
       */
       inkDocumentedByDelivery: Object.keys(deliveredInkOnChain).length > 0
-        && readInkPriorAsk(instruction).want !== "fresh",
+        && (inkPriorReading.want === "gone"
+          /*
+            ⚠ AND A `change` ONLY WHERE THE TRANSFORM ROAD IS OPEN — which is
+            the whole difference between opening a wall and moving a customer
+            from a free refusal to a charged mistake.
+
+            Caught before it shipped, by asking what the FLAG-OFF path does with
+            an opened gate: the ask stops being refused free, reaches the prior
+            question, finds the flag shut, and falls through to today's words
+            road — which paints a fresh design from her prose and charges 25
+            credits for it. D-137's wall is the RIGHT answer for an account that
+            cannot transform, and it stays.
+
+            `gone` needs no flag because its arm is ungated by ruling
+            (fable-1287 §2) and answers free before the claim: for that ask the
+            wall is D-137's voice refusing a sentence that is not about drawing
+            anything.
+          */
+          || (inkPriorReading.want === "change" && inkTransformOpen)),
       prior: priorItems,
       lastColourFacet: lastColourFacet ? colourFacetLabel(lastColourFacet) : null,
       currentEyeColour: currentValueOfFacet(currentIdentity, "eye.colour"),
@@ -3132,7 +3159,7 @@ async function refineCandidateCounted(
     && !pointedAtThePicture
     && facetsWrittenBy(editDelta).has("ink")
   ) {
-    const prior = readInkPriorAsk(instruction);
+    const prior = inkPriorReading;
     if (prior.want !== "fresh") {
       const inkPronouns = pronounsForSex(currentIdentity?.sex);
       /*
@@ -3213,7 +3240,7 @@ async function refineCandidateCounted(
         the wrong road, and which is nevertheless what a dark landing has to
         mean.
       */
-      if ((dependencies.inkTransformEnabled ?? captureCastingInkTransformEnabled)(input.userId)) {
+      if (inkTransformOpen) {
         /* Two axes in one sentence is not one instruction — every transform
            clause ends by saying that everything else stays as the picture shows
            it, so two of them contradict each other on the wire. */
