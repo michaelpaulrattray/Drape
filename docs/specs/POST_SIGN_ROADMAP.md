@@ -135,18 +135,31 @@ deliberately rather than rediscovered. **A finding with no card is a finding tha
 gets found twice.** Each names its census row so the day it closes, the row is
 the pinning arm.
 
-- **(C1) ONE REASON ID, TWO MEANINGS — the `wall_stage` family.** Rows
-  `age.older` (*"make her ten years older"*) and `guard.compliment` (*"he looks
-  great"*) both refuse under `wall_stage`, which is the wall for *the shoot, not
-  the person*. Neither ask is about a garment, a prop or the set. They land on
-  the UNBACKED sentence — *"isn't one of the things this can name"* — which is
-  honest, but the reason ID they are filed under is not, and a report reading the
-  refusal counter cannot tell *she asked for the beach* from *she asked for
-  something we do not do yet*. **The fix is a second reason id, not new copy**:
-  the customer's sentence is already right, the record is what lies.
-  ⚠ `wardrobe.tee` used to be listed in this family and is NOT — it is §10 item
-  5's, and folding it in here would hide a capability decision inside a taxonomy
-  card.
+- **(C1) ✅ CLOSED 722caf29 — ONE REASON ID, TWO MEANINGS: `wall_stage` was two
+  walls.** The card named two rows (`age.older`, `guard.compliment`). Reading the
+  census's COPY column rather than its outcome column found the population:
+  **five of the six rows that reach this wall carry the UNBACKED sentence** —
+  only `background.white` is backed, on the word `background`. So the meaning
+  the id was named for was the minority case, one row in six.
+
+  The customer's sentences did not move; both ship byte-identical. The NAME the
+  record files them under did: `wall_stage` keeps the garment-prop-or-set
+  sentence and keeps it only where the lexicon PROVED that is what she asked
+  about, and **`wall_unbacked`** carries the other. The id is the CONDITION and
+  never a claim about the subject — `wall_out_of_tier` would be false of a beach
+  (which IS the shoot, unbacked only because `STAGE_WORDS` has no `beach`) and
+  `wall_unnamed` would collide with `removal_unnamed`'s opposite subject.
+
+  ⚠ **A live control moved with it**: the STAGE_WORDS-candidate log line is the
+  only instrument that ever widens the lexicon from measurement rather than
+  taste, and its condition was the old id. Left alone it would have stopped
+  firing with nothing red — law 7's second half inside the fix for a census
+  card. Driven at the real interpreter, three arms, backed and unbacked and a
+  not-a-wall control.
+
+  `wardrobe.tee` was never part of this family — it is §10 item 5's — and the
+  Two Paths design carries the footnote that its row now reads `wall_unbacked`.
+
 - **(C2) A SCOPED ASK THAT NAMED ITS FACET IS ASKED WHICH FACET.** Row
   `eye.scoped.left` — *"make it green"* with scope `eye@left` — comes back
   `asked:which-facet` (*"which part? Nothing's been coloured yet, so I don't want
