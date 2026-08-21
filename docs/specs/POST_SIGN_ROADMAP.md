@@ -135,7 +135,33 @@ carry the rulings, the courts and the histories.
                                           reason
 6  CAST-BORN INK DISCOVERY                after 5 — the Basics path is its
                                           population
-7  RETIREMENT + CLEANUP                   §0b's bar is the finish line
+7  RETIREMENT + CLEANUP                   §0b's bar is the finish line.
+                                          ⚠ ITS MISSING TOOL NOW EXISTS AND IS
+                                          NOT OPTIONAL (built opus-993, ruled
+                                          fable-1349 §3): the Atlas answers
+                                          "does anything call this", and
+                                          `scripts/diff-importer-count-across-
+                                          time.mts` answers "did something
+                                          STOP". NO RETIREMENT SITTING CLOSES
+                                          WITHOUT RUNNING IT OVER ITS OWN
+                                          WINDOW — a symbol whose production
+                                          importers fell to zero is either a
+                                          path closed on purpose (DECIDED) or a
+                                          control orphaned by a change aimed at
+                                          something else (ACCIDENT), and only
+                                          the second kind is what killed three
+                                          controls in this product. Proven on
+                                          the February window: it rediscovers
+                                          both deaths CLAUDE.md records from
+                                          that morning. Run 2026-08-22 over two
+                                          windows (7-day and one-month) — seven
+                                          un-wirings, ALL DECIDED, four already
+                                          pinned by an absence test; the three
+                                          unpinned (`authorizeInkAddDescription`,
+                                          `buildInkAuthorizationProviderConfig`,
+                                          `commitBeginInkAddIntent`, all from
+                                          `c99ff1c4`'s deliberate second ring)
+                                          are this item's debt
 8  OPEN-LANE REFERENCE ROAD               selector first; one item, cannot split
 9  ANY-FEATURE DISCOVERY                  gated per §5c
 ```
