@@ -854,6 +854,74 @@ describe("an ask absorbed into a restatement is refused before the charge", () =
     expect(verdict.absorbed).toBe(false);
   });
 
+  /*
+    ⚠ THE FRAME SHE IS LOOKING AT, WHICH THE CHAIN DOES NOT KNOW ABOUT
+    (his incident: fable-1244 §2b, countersigned fable-1250 §1).
+
+    He set a jacked build, asked for a neck tattoo, and the render dropped the
+    build. Asking for the build again was ABSORBED — "already has jacked build,
+    this would have changed nothing" — because the chain still said so. The
+    absorption was right about the CHAIN and wrong about the FRAME, and the
+    frame is what he was looking at. A dropped feature the record still claims
+    is a dropped feature nobody may re-buy.
+  */
+  it("does NOT absorb a facet THIS FRAME's own reader could not find", () => {
+    const verdict = saysNothingNew({
+      delta: { free: { build: ["jacked build"] } },
+      prior: { build: ["jacked build"] },
+      disputedFacets: ["build"],
+      identity: ORIGINAL,
+    });
+    expect(verdict.absorbed, "the one sentence that is true about the picture was refused")
+      .toBe(false);
+  });
+
+  it("STILL absorbs a facet the frame does not dispute — the protection is kept", () => {
+    /* The other way, and it is the half that matters as much: this door exists
+       because a model can lose her sentence into a restatement, and a fix that
+       quietly stopped absorbing would charge her for nothing on every echo. A
+       dispute about a DIFFERENT facet changes nothing here. */
+    const verdict = saysNothingNew({
+      delta: { free: { build: ["jacked build"] } },
+      prior: { build: ["jacked build"] },
+      disputedFacets: ["hair.colour"],
+      identity: ORIGINAL,
+    });
+    expect(verdict.absorbed).toBe(true);
+    expect(verdict.absorbed && verdict.alreadyTrue).toBe("jacked build");
+  });
+
+  it("ABSENT means today's bytes — the precedent this follows for the third time", () => {
+    /* `priorAbsent` and `inkPointer` are both optional for the same reason: a
+       caller that does not supply the extra fact gets exactly the behaviour it
+       had. Asserted rather than assumed, because "absent = unchanged" is the
+       claim every optional input makes and the one nobody checks. */
+    const without = saysNothingNew({
+      delta: { free: { build: ["jacked build"] } },
+      prior: { build: ["jacked build"] },
+      identity: ORIGINAL,
+    });
+    const withEmpty = saysNothingNew({
+      delta: { free: { build: ["jacked build"] } },
+      prior: { build: ["jacked build"] },
+      disputedFacets: [],
+      identity: ORIGINAL,
+    });
+    expect(without).toEqual(withEmpty);
+    expect(without.absorbed).toBe(true);
+  });
+
+  it("carries the SAME question to the labelled lane, which is half a guard without it", () => {
+    expect(saysNothingNew({
+      delta: { eyeColour: "brown" }, prior: {}, identity: ORIGINAL,
+      disputedFacets: ["eye.colour"],
+    }).absorbed, "a brown-eyed record whose frame lost the brown").toBe(false);
+    expect(saysNothingNew({
+      delta: { eyeColour: "brown" }, prior: {}, identity: ORIGINAL,
+      disputedFacets: ["hair.colour"],
+    }).absorbed).toBe(true);
+  });
+
   it("sees a labelled axis echoed back as itself", () => {
     /* The free lane is where it was measured; the same shape exists one lane
        over, and a guard that only knows the lane it was born in is half a

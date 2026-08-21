@@ -837,6 +837,63 @@ describe("refusals land before anything is claimed", () => {
     expect(ledger.charges, "and nothing was charged").toHaveLength(0);
   });
 
+  /*
+    ⚠ AND THE FRAME OVERRULES THE CHAIN — his rescue ask, at the wire
+    (fable-1244 §2b, countersigned fable-1250 §1).
+
+    The unit arms in `refineDelta.test.ts` prove the door. Only THIS caller can
+    be wrong about whether the door is ever handed the fact — and a fact nobody
+    passes is a door that does nothing, which is how half of CLAUDE.md's inert
+    list was written. So the selected variant carries a real stored
+    verification here, exactly the shape v#206 holds in production.
+  */
+  it("lets a re-ask THROUGH when the selected frame's own reader lost that facet", async () => {
+    variantRows = [{
+      id: 206,
+      publicId: "variant-lost-build",
+      candidateId: 1,
+      imageKey: "casting-v2/variants/lost-build.png",
+      internalPrompt: {
+        ...(candidateRow.internalPrompt as Record<string, unknown>),
+        /* v#206's own record, verbatim in shape: read, and NOT verified. */
+        verification: {
+          checks: [{
+            saw: "loose grey t-shirt hides build; frame appears average, not jacked",
+            read: true,
+            asked: "jacked build",
+            absent: true,
+            binding: false,
+            subject: { kind: "facet", facet: "build" },
+            verified: false,
+          }],
+        },
+      },
+      instructions: ["their build — jacked build"],
+      requestText: "their build — jacked build",
+      deltas: { free: { build: "jacked build" } },
+      stepDeltas: [{ free: { build: "jacked build" } }],
+      status: "ready",
+    }];
+    candidateRow.selectedVariantPublicId = "variant-lost-build";
+
+    let asks = 0;
+    const interpret = (async () => {
+      asks += 1;
+      return { ok: true as const, delta: { free: { build: ["jacked build"] } } };
+    }) as never;
+
+    const result = await refineCandidate(
+      { harvest: unmasked, interpret },
+      { ...input, instruction: "give him a jacked build" },
+    );
+
+    /* The absorption would have thrown "already has jacked build" and read the
+       sentence a second time first. Neither happens: one reading, and the ask
+       goes on to be painted. */
+    expect(result.kind).not.toBe("refused");
+    expect(asks, "the door re-read a sentence it should not have doubted").toBe(1);
+  });
+
   it("and asks only ONCE — a second restatement is still refused, free", async () => {
     /*
       The negative control, and the reason this is not simply "retry until it

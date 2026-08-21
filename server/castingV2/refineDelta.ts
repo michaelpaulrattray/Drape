@@ -2065,6 +2065,42 @@ export function saysNothingNew(input: {
     askDigest: string | null;
     appliedDigests: readonly string[];
   };
+  /**
+   * ⚠ WHAT THE FRAME SHE IS LOOKING AT NO LONGER HAS (ordered fable-1244 §2b,
+   * countersigned fable-1250 §1).
+   *
+   * # The trap, and it was his
+   *
+   * He set a jacked build, asked for a neck tattoo, and the render dropped the
+   * build. He asked for the build again — and was told *"already has jacked
+   * build — this would have changed nothing, so nothing was charged."*
+   *
+   * **The absorption was right about the CHAIN and wrong about the FRAME.** The
+   * chain does say jacked build; the picture in front of him does not. So a
+   * dropped feature that the record still claims became a dropped feature
+   * nobody could re-buy — LOST-UNDER-WORDS plus ABSORBED-ON-REASK, and the
+   * customer could not self-heal the exact state the carry break had created.
+   *
+   * # The discriminator, and it costs nothing
+   *
+   * Every delivered render stores its own verification on its row. A facet
+   * whose check there reads `read ∧ !verified` is one this frame's own reader
+   * looked for and did not find. An ask naming it is NEW, however exactly its
+   * words repeat the chain.
+   *
+   * This is `inkPointer`'s precedent one door along, for the third time in this
+   * function: **when words cannot discriminate, consult what actually
+   * happened.** Optional, and absent means exactly today's behaviour, byte for
+   * byte — the `priorAbsent` shape.
+   *
+   * # What it deliberately does NOT do
+   *
+   * It never reads a facet the verifier did not look at, and it does not touch
+   * the DEPARTURE direction: an item a reader disputes as still-present is a
+   * different question and would want its own measurement before a re-ask of
+   * *"take it off"* stopped being absorbed.
+   */
+  disputedFacets?: readonly Facet[];
   identity: ResolvedIdentity | null | undefined;
 }): { absorbed: false } | { absorbed: true; alreadyTrue: string; departed?: boolean } {
   const { delta } = input;
@@ -2107,9 +2143,15 @@ export function saysNothingNew(input: {
     gone.push(...departures);
   }
 
+  /* See `disputedFacets`. A `Set` because both loops below ask it per item. */
+  const disputed = new Set<Facet>(input.disputedFacets ?? []);
+
   for (const subject of FREE_SUBJECT_KEYS) {
     const filed = itemsOf(delta.free?.[subject]);
     if (filed.length === 0) continue;
+    /* THE FRAME DISAGREES WITH THE CHAIN — his build. Asked for again, this is
+       not a repeat: it is the one sentence that is true about the picture. */
+    if (disputed.has(facetOfSubject(subject))) return { absorbed: false };
     const already = input.prior[subject] ?? [];
     for (const item of filed) {
       if (!already.some((held) => same(held, item))) return { absorbed: false };
@@ -2128,6 +2170,9 @@ export function saysNothingNew(input: {
   for (const [field, facet] of labelled) {
     const filed = asText(delta[field]);
     if (filed === null) continue;
+    /* The same question on the guaranteed lane: a hair colour the chain holds
+       and this frame's own reader could not find is a re-ask, not an echo. */
+    if (disputed.has(facet)) return { absorbed: false };
     const current = currentValueOfFacet(input.identity, facet);
     if (current === null || !same(current, filed)) return { absorbed: false };
     echoed.push(filed);

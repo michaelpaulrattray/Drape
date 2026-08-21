@@ -1786,8 +1786,14 @@ async function refineCandidateCounted(
     */
     if (confirmedRegenerate) return parse;
     const inkPointer = await inkPointerFor(parse.delta);
+    /* WHAT THE FRAME SHE IS LOOKING AT NO LONGER HAS — read off the selected
+       variant's own stored verification, which is already in hand. See
+       `disputedFacetsOfFrame`: this is the door being right about the CHAIN
+       and wrong about the FRAME, and the frame is what she can see. */
+    const disputedFacets = disputedFacetsOfFrame(source.internalPrompt);
     const verdict = saysNothingNew({
       delta: parse.delta, prior: priorItems, priorAbsent, identity: currentIdentity,
+      ...(disputedFacets.length > 0 ? { disputedFacets } : {}),
       ...(inkPointer ? { inkPointer } : {}),
     });
     if (!verdict.absorbed) return parse;
@@ -8583,6 +8589,40 @@ function readCaptions(internalPrompt: unknown): RealizationCaptions {
     if (typeof value === "string" && value.trim()) captions[key] = value.trim();
   }
   return captions;
+}
+
+/**
+ * ⚠ WHAT THE FRAME SHE IS LOOKING AT NO LONGER HAS — the already-true door's
+ * divergence question (ordered fable-1244 §2b, countersigned fable-1250 §1).
+ *
+ * Every delivered render stores its own verification on its own row. A facet
+ * whose check there reads `read ∧ !verified` is one that frame's own reader
+ * looked for and did not find — so an ask naming it is NEW however exactly its
+ * words repeat the chain.
+ *
+ * **It buys nothing.** The fact was written the minute the frame landed; this
+ * is a JSON read of a column already in hand. Validated rather than trusted,
+ * like every other json column here (D-163): anything unexpected reads as an
+ * empty list, which is today's behaviour and never a refusal.
+ */
+function disputedFacetsOfFrame(internalPrompt: unknown): Facet[] {
+  if (!internalPrompt || typeof internalPrompt !== "object") return [];
+  const verification = (internalPrompt as { verification?: unknown }).verification;
+  if (!verification || typeof verification !== "object") return [];
+  const checks = (verification as { checks?: unknown }).checks;
+  if (!Array.isArray(checks)) return [];
+  const out = new Set<Facet>();
+  for (const entry of checks) {
+    if (!entry || typeof entry !== "object") continue;
+    const check = entry as { read?: unknown; verified?: unknown; subject?: unknown };
+    if (check.read !== true || check.verified === true) continue;
+    /* `facetIn` is the one owner of "which facet is this check about", and it
+       answers null for an open kind — which is correct here: an open kind has
+       no facet for the absorption door to compare against either. */
+    const facet = facetIn(check.subject as never);
+    if (facet !== null) out.add(facet);
+  }
+  return Array.from(out);
 }
 
 /** Two chains are the same sentences in the same order, or they are not. */
