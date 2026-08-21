@@ -222,6 +222,8 @@ import { mintInkDesignFromReference } from "./inkReferenceMint";
 import { listInkDesigns } from "../db/castingV2InkDesigns";
 import { listInkDeliveryCrops } from "../db/castingV2InkDeliveryCrops";
 import { mintInkDeliveryCrop } from "./inkDeliveryMint";
+import { inkCarryAtFloor, type InkFloorUpscale } from "./inkRideFloor";
+import { upscaleToFloor } from "./inkReferenceUpscale";
 import { removeInkDesign } from "../db/castingV2InkDesignRemoval";
 import { inkDesignImagePath } from "../../shared/inkDesignDelivery";
 import type { InkCutRoute } from "../../shared/inkCutRoute";
@@ -790,7 +792,36 @@ export type RefineServiceDependencies = {
    * exercise one branch would be testing sharp.
    */
   fitReference?: ReferenceFitter;
+  /**
+   * BRINGS AN INK CARRY UP TO THE LEGIBILITY FLOOR ON ITS WAY OUT (opus-941 §5,
+   * granted fable-1280 §1).
+   *
+   * Injectable for the same reason `fitReference` is, and for one more: the
+   * default spends house money at a vendor, so a suite that could not replace
+   * it would either buy an upscale per arm or leave the wire unproven.
+   *
+   * ⚠ **`null` is `there is no upscaler on this path`; ABSENT is `ask the
+   * world`.** They cannot share a sentinel, and the reason is not tidiness:
+   * `.env` carries a real `FAL_KEY` into the unit suite, so an omitted
+   * dependency falling through to the default would have the no-upscaler
+   * CONTROL arm buy a live enlargement at a vendor — a test that spends house
+   * money to prove that nothing is spent.
+   */
+  upscaleInkCarry?: InkFloorUpscale | null;
 };
+
+/**
+ * The production enlargement, absent when there is no transport to buy it with.
+ *
+ * `undefined` rather than a refusing stub, because {@link inkCarryAtFloor}
+ * distinguishes *no upscaler on this path* from *the upscaler could not help*
+ * in its own log, and a stub would collapse the two.
+ */
+function defaultInkCarryUpscale(): InkFloorUpscale | undefined {
+  const apiKey = process.env.FAL_KEY;
+  if (!apiKey) return undefined;
+  return (cut, about) => upscaleToFloor({ ...cut, apiKey, about: { ...about, road: "inkCarry" } });
+}
 
 async function defaultStoreImage(input: { key: string; bytes: Buffer; contentType: string }) {
   return storagePut(input.key, input.bytes, input.contentType);
@@ -5015,6 +5046,17 @@ async function refineCandidateCounted(
         anchorVariantId: variant.id,
       })
       : [];
+    /*
+      THE INK CARRY'S ENLARGEMENT, RESOLVED ONCE PER RENDER.
+
+      Beside the rows rather than inside the fitter for the same reason they are
+      read here: whether this process has a transport is a fact about the world,
+      not about a reference, and reading it per reference would ask the same
+      question of `process.env` on every picture in the recipe.
+    */
+    const inkCarryUpscale = dependencies.upscaleInkCarry === undefined
+      ? defaultInkCarryUpscale()
+      : (dependencies.upscaleInkCarry ?? undefined);
     /**
      * The prune's own asks, or null when this is not a prune we can name.
      *
@@ -5785,6 +5827,37 @@ async function refineCandidateCounted(
             reason is a decision rather than an accident of a lookup.
           */
           if (role.kind === "source") return unpadded();
+          /*
+            AND AN INK CARRY GOES OUT BIG ENOUGH TO BE READ (opus-941 §5,
+            granted fable-1280 §1).
+
+            It sits HERE, above the pad, and the position is the decision. An
+            ink carry is not a library row — a delivered crop lives in
+            `casting_ink_delivery_crops` and a design in `casting_ink_designs` —
+            so the `branchRows` lookup below misses it and it falls through to
+            `unpadded()`. That is correct and stays correct: the pad exists to
+            put a crop back at its own coordinate in HER frame, and a tattoo
+            reference is instruction material about a design, not a patch to be
+            re-seated. What was missing is the other half — the crop is cut 1:1
+            and both rows in production went out under the 256 px floor his own
+            court bought.
+
+            Nothing stored moves. This is a per-ask copy, made after the digest
+            has already been taken against the library's bytes (`repaintRender`
+            fits AFTER it takes that digest, by contract), and it dies with
+            the request.
+          */
+          if (role.kind === "carry" && isInkSlot(role.slot)) {
+            return await inkCarryAtFloor({
+              bytes: reference.bytes,
+              contentType: reference.contentType,
+              /* Read once per service call rather than per reference: the key
+                 is a fact about the process, and `undefined` here is "no
+                 transport", which rides small and says so. */
+              ...(inkCarryUpscale ? { upscale: inkCarryUpscale } : {}),
+              about: { operationId, variant: variant.publicId, slot: role.slot, key: image.key },
+            });
+          }
           const stored = branchRows.find((row) => row.storageKey === image.key)?.geometry ?? null;
           /*
             NO GEOMETRY MEANS NO PAD, dispatched exactly as production does

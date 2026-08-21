@@ -276,6 +276,20 @@ vi.mock("./renderFault", () => ({
   Partial mock, so everything else in the module keeps its real implementation.
 */
 /* Built once, at module scope, so every mock can hand back the same master. */
+/**
+ * A REAL picture at a REAL size, for the arms whose subject IS a size.
+ *
+ * The suite's standard doubles serve distinguishable text per key, which is
+ * right for "which reference went out" and useless for "how big was it" — sharp
+ * cannot open them, and the ride-time floor reads that as UNKNOWN rather than
+ * as small. Anything asserting on dimensions mints one of these instead.
+ */
+const sharpPng = async (width: number, height: number): Promise<Buffer> => (
+  await import("sharp")
+).default({
+  create: { width, height, channels: 4, background: { r: 120, g: 110, b: 100, alpha: 1 } },
+}).png().toBuffer();
+
 const TINY_MASTER_PNG = Buffer.from(
   "iVBORw0KGgoAAAANSUhEUgAAACAAAAAwCAIAAAD/zu84AAAACXBIWXMAAAPoAAAD6AG1e1JrAAAASklEQVR4nO3YwQkAMAxC0c7uEE7igJ2i0MOD3AMhUX/Omqd1NKgRxRbNoYVUjJqW4YxlVqqI4FXRMdL1AEgg1FBmgfi8Evrxt+UCvS/Il+tSa9kAAAAASUVORK5CYII=",
   "base64",
@@ -4281,6 +4295,165 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
       expect(painted[0]!.prompt).not.toContain("artwork alone on a transparent background");
       /* Still a CARRY, so the verification still has a question about it. */
       expect(dispatched().carried).toContain("ink:upperChest");
+    });
+
+    /*
+      ---- THE RIDE-TIME FLOOR, AT THE WIRE (opus-941 §5, granted fable-1280 §1) ----
+
+      The founder's chest piece came back re-arranged on a render that never
+      mentioned ink, and the cause was in the dispatch record all along:
+      `sentGeometry: "504x223"` for the ink carry, against a 256 px floor his own
+      six-frame court bought. Every delivered crop in production was under it,
+      because the crop is cut 1:1 from the frame and nothing enlarged it.
+
+      Driven through `refineCandidate` with the REAL fitter — no `fitReference`
+      injection — because the claim is about what the engine was handed and what
+      the row says it was handed. The bytes below are real pictures at real
+      sizes: the decision under test is a size.
+    */
+    describe("an ink carry too small to read", () => {
+      /* Real, and DETERMINISTIC — the digest the recipe names has to be the
+         digest of the bytes storage serves, or `repaintRender` refuses and this
+         arm proves the refusal instead of the floor. */
+      const realCrop = (width: number, height: number) => sharpPng(width, height);
+
+      /** Serves a real picture for the delivered crop and leaves every other
+       *  key exactly as the block's own double does. */
+      const servingCrop = async (bytes: Buffer) => ({
+        readBytes: async (key: string) => (key === DELIVERY_KEY
+          ? { bytes, contentType: "image/png" }
+          : key === "casting-v2/candidates/abc.png"
+            ? { bytes: TINY_MASTER_PNG, contentType: "image/png" }
+            : { bytes: Buffer.from(`crop:${key}`), contentType: "image/png" }),
+        listInkDeliveryCrops: async () => [deliveredCrop({
+          digest: createHash("sha256").update(bytes).digest("hex"),
+        })],
+      });
+
+      /** The dispatch record's geometry column, which is read off the bytes the
+       *  engine received rather than off any column beside them. */
+      const geometryOf = (slot: string | null) => (dispatchRecords[0]!.repaint as {
+        references: Array<{ slot: string | null; sentGeometry: string | null }>;
+      }).references.find((reference) => reference.slot === slot)?.sentGeometry ?? null;
+
+      it("GOES OUT ENLARGED, and the record says the size it went out at", async () => {
+        wearingTheDesign();
+        const stored = await realCrop(504, 223);
+        const asked: Array<{ width: number; height: number }> = [];
+
+        await refineCandidate({
+          ...withDesigns([designRow()]),
+          ...(await servingCrop(stored)),
+          /* A fake of the MEASUREMENT, not of the outcome: it returns a
+             genuinely larger picture, so this cannot pass by agreement. */
+          upscaleInkCarry: async (cut: { bytes: Buffer; width: number; height: number }) => {
+            asked.push({ width: cut.width, height: cut.height });
+            const bytes = await sharpPng(cut.width * 4, cut.height * 4);
+            return { bytes, width: cut.width * 4, height: cut.height * 4, model: "test:sr", passes: 1 };
+          },
+        } as never, { ...input, instruction: "wear her hair down" });
+
+        expect(asked, "the enlargement saw the crop at its stored size").toEqual([
+          { width: 504, height: 223 },
+        ]);
+        expect(geometryOf("ink:upperChest"), "and the wire says the big one went out")
+          .toBe("2016x892");
+        /* Read off the bytes the ENGINE received, never off the record that
+           describes them — the record is the thing under test here. */
+        const carried = painted[0]!.references.find((reference) => reference.bytes !== stored
+          && !reference.bytes.equals(TINY_MASTER_PNG));
+        const meta = await (await import("sharp")).default(carried!.bytes).metadata();
+        expect([meta.width, meta.height]).toEqual([2016, 892]);
+      });
+
+      it("⚠ AND THE STORED ROW'S DIGEST IS THE STORED ROW'S — an arm, not a promise", async () => {
+        /*
+          THE ONE THAT KEEPS 1275 §1 TRUE. The record updates only from delivered
+          frames; instruction material is editable and dies with its ask. If the
+          digest on the dispatch row were taken after the enlargement, the
+          pixel-frozen proof would be proving a transport artefact — and a moved
+          object in storage could be laundered by the very rescue that made it
+          bigger.
+
+          `repaintRender` hashes BEFORE it fits, by contract in its own header.
+          This is that contract, asserted through the production caller against
+          the bytes storage actually served.
+        */
+        wearingTheDesign();
+        const stored = await realCrop(504, 223);
+
+        await refineCandidate({
+          ...withDesigns([designRow()]),
+          ...(await servingCrop(stored)),
+          upscaleInkCarry: async (cut: { bytes: Buffer; width: number; height: number }) => ({
+            bytes: await sharpPng(cut.width * 4, cut.height * 4),
+            width: cut.width * 4, height: cut.height * 4, model: "test:sr", passes: 1,
+          }),
+        } as never, { ...input, instruction: "wear her hair down" });
+
+        const recorded = dispatched().references.find((one) => one.slot === "ink:upperChest");
+        expect(recorded!.digest).toBe(createHash("sha256").update(stored).digest("hex"));
+        /* Said the other way round too, because the two hashes agreeing by
+           accident is the failure mode a single assertion cannot see. */
+        expect(recorded!.digest).not.toBe(
+          createHash("sha256").update(painted[0]!.references.at(-1)!.bytes).digest("hex"),
+        );
+        /* And the enlargement really did happen on this render — otherwise the
+           assertion above is true for the boring reason. */
+        expect(geometryOf("ink:upperChest")).toBe("2016x892");
+      });
+
+      it("CONTROL — a crop already over the floor rides NATIVE and buys nothing", async () => {
+        /*
+          The arm that makes the two above mean something. If every ink carry
+          were enlarged, this road would spend house money on pictures that
+          never needed it and run a customer's readable artwork through a GAN
+          that admits to inventing a sub-1% rim on the boundary.
+        */
+        wearingTheDesign();
+        const stored = await realCrop(504, 300);
+        const asked: Array<unknown> = [];
+
+        await refineCandidate({
+          ...withDesigns([designRow()]),
+          ...(await servingCrop(stored)),
+          upscaleInkCarry: async (cut: { bytes: Buffer; width: number; height: number }) => {
+            asked.push(cut);
+            return { bytes: cut.bytes, width: cut.width, height: cut.height, model: "x", passes: 0 };
+          },
+        } as never, { ...input, instruction: "wear her hair down" });
+
+        expect(asked, "no house call was bought").toEqual([]);
+        expect(geometryOf("ink:upperChest"), "the crop's own size, exactly as today")
+          .toBe("504x300");
+        /* Byte-identical on the wire, not merely the same size. */
+        expect(painted[0]!.references.some((reference) => reference.bytes.equals(stored))).toBe(true);
+      });
+
+      it("CONTROL — with no upscaler on the path the small crop still rides", async () => {
+        /*
+          A deployment without `FAL_KEY` reaches the fitter with nothing to buy
+          the rescue with. The render is already paid for, so the answer is the
+          picture that would have gone out anyway — this is transport, not a
+          door, and a new rescue that can take the old road down is worse than
+          the old road.
+        */
+        wearingTheDesign();
+        const stored = await realCrop(504, 223);
+
+        await refineCandidate({
+          ...withDesigns([designRow()]),
+          ...(await servingCrop(stored)),
+          /* EXPLICITLY none. Absent would mean "ask the world", and the world
+             this suite runs in has a real `FAL_KEY` in `.env` — so an omitted
+             dependency here would buy a live enlargement at a vendor to prove
+             that nothing is bought. */
+          upscaleInkCarry: null,
+        } as never, { ...input, instruction: "wear her hair down" });
+
+        expect(geometryOf("ink:upperChest")).toBe("504x223");
+        expect(painted[0]!.references.some((reference) => reference.bytes.equals(stored))).toBe(true);
+      });
     });
 
     it("matches the crop BY ITS OWN NAME, never by the design and the slot", async () => {
