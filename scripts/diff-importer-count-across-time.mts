@@ -54,18 +54,50 @@
  *   COMPLETE sabotage (every production mention gone)                             FOUND
  *   clean tree                                                                    not found
  *
- * # WHAT IT CANNOT SEE, stated rather than discovered later
+ * # THREE NAMED WAYS TO BE WRONG — two toward silence, one toward noise
  *
- * A call site that still EXISTS but has become unreachable — sitting after an
- * early return, or behind a flag that is never on. `recordInkFormDemand` is
- * exactly that shape and CLAUDE.md records it. Namespace imports
- * (`import * as ns`) and computed dynamic specifiers are not resolved. Every
- * bias points the same way, so **a clean run is a floor and not coverage.**
+ * **(1) TOWARD SILENCE — an unreachable call site that still exists.** Sitting
+ * after an early return, or behind a flag that is never on. `recordInkFormDemand`
+ * is exactly that shape and CLAUDE.md records it. Namespace imports
+ * (`import * as ns`) and computed dynamic specifiers are not resolved either.
+ *
+ * **(2) TOWARD SILENCE — born AND un-wired inside one window, invisible.** A
+ * symbol absent from the `before` tree is skipped, because it cannot have lost
+ * importers it never had. This is demonstrated rather than asserted, on this
+ * instrument's own two control specimens: tiling the history on 2026-08-22, the
+ * window `3dad2280 → a08fb0cd` (2026-02-02 → 02-08) reported **ZERO** — and
+ * BOTH February deaths happened on 2026-02-07, inside it. `isSensitiveAction`
+ * and `getRecentTopupCredits` were simply absent from the bootstrap commit.
+ * **Finer tiles shrink this gap and never close it, so every zero is only as
+ * trustworthy as its window is narrow.**
+ *
+ * **(3) TOWARD NOISE — a DEAD importer still counts as an importer.** This is
+ * the file's one bias in the opposite direction, so it is stated apart. The
+ * reading is ONE HOP: it asks who imports the symbol, not whether that importer
+ * is itself reachable. Worked example, 2026-08-22: `isIpBlocked` appeared to
+ * lose a live importer, `server/security/rateLimit.ts` — but that importer was
+ * the wrapper `checkIpBlocked`, whose only consumer was a test, under a docblock
+ * reading *"This should be called early in request processing."* The chain
+ * looked wired at each link and was dead as a whole, and CLAUDE.md's
+ * *"Road: never wired"* verdict survived the accusation. **Read the importer
+ * before believing the finding.**
+ *
+ * So: **a clean run is a floor and not coverage, and a finding is a question.**
  *
  * And the reading is only as wide as its window. Run against a `before` tree
  * from inside the current campaign, most of this product did not exist to be
  * un-wired: window B on 2026-08-22 held 703 exports against HEAD's 2,478.
  * A seven-DECIDED result over such a window is not a clean bill of health.
+ *
+ * # WHAT IT HAS ACTUALLY FOUND
+ *
+ * Its first full pass over the product's history (2026-08-22, nine tiles,
+ * `3dad2280` → `68765827`) produced 15 findings and ONE ACCIDENT: the
+ * site-wide login-attack detector, live on the request path from `8830fc95`
+ * (2026-02-05) and killed by `b1f5187d` (2026-04-03), the commit that removed
+ * the Manus OAuth platform — *"All 64 auth tests passing."* CLAUDE.md had that
+ * control filed as a road that was never wired; it is a path-three death, and
+ * the file now says so.
  *
  * # CONTROLS
  *
