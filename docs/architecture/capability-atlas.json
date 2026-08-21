@@ -89,14 +89,6 @@
         ]
       },
       {
-        "id": "inkRemovalNotYet",
-        "kind": "cannot-say",
-        "charge": "free",
-        "pinnedBy": [
-          "server/castingV2/cannotSayCopy.test.ts"
-        ]
-      },
-      {
         "id": "kind_unserved",
         "kind": "service-refusal",
         "pinnedBy": []
@@ -1050,13 +1042,6 @@
         "kind": "unreached",
         "subject": "inkBeyondToday",
         "message": "no corpus row expects \"inkBeyondToday\" — the census cannot say whether any ask reaches it"
-      },
-      {
-        "id": "unreached:inkRemovalNotYet",
-        "severity": "info",
-        "kind": "unreached",
-        "subject": "inkRemovalNotYet",
-        "message": "no corpus row expects \"inkRemovalNotYet\" — the census cannot say whether any ask reaches it"
       },
       {
         "id": "unreached:kind_unserved",
@@ -2032,27 +2017,6 @@
       "message": "\"put him in a plain black tee\" — believed would-render, observed refused:wall_stage"
     },
     {
-      "id": "changed:hair.remove.none",
-      "severity": "error",
-      "kind": "route-changed",
-      "subject": "hair.remove.none",
-      "message": "\"remove her fringe\" — committed refused:removal_absent, now would-render"
-    },
-    {
-      "id": "changed:ink.words.neck.branch",
-      "severity": "error",
-      "kind": "route-changed",
-      "subject": "ink.words.neck.branch",
-      "message": "\"give him a small star tattoo on his neck\" — committed refused:gate_ink_uncarried, now would-render"
-    },
-    {
-      "id": "changed:light.softer",
-      "severity": "error",
-      "kind": "route-changed",
-      "subject": "light.softer",
-      "message": "\"softer light\" — committed refused:wall_stage, now refused:unreadable"
-    },
-    {
       "id": "not-driven:ref.hair.whole",
       "severity": "info",
       "kind": "not-driven",
@@ -2240,13 +2204,6 @@
       "kind": "unreached",
       "subject": "inkBeyondToday",
       "message": "no corpus row expects \"inkBeyondToday\" — the census cannot say whether any ask reaches it"
-    },
-    {
-      "id": "unreached:inkRemovalNotYet",
-      "severity": "info",
-      "kind": "unreached",
-      "subject": "inkRemovalNotYet",
-      "message": "no corpus row expects \"inkRemovalNotYet\" — the census cannot say whether any ask reaches it"
     },
     {
       "id": "unreached:kind_unserved",

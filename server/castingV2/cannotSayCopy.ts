@@ -57,8 +57,10 @@ import type { RepaintAsksRefusal } from "./repaintAsks";
  * with the wrong label. The totality test still holds — one entry per member of
  * THIS type, whichever side of the claim its door sits on.
  *
- * `noInkToChange`, `inkOneChangeAtATime`, `inkRemovalNotYet` and
- * `whichInkToChange` are the transform road's four, and they belong here for
+ * `noInkToChange`, `inkOneChangeAtATime` and `whichInkToChange` are the
+ * transform road's three — `inkRemovalNotYet` was the fourth and is DELETED
+ * (fable-1322 §1): it said taking a tattoo off was not something the product
+ * could do yet, and the product had quietly started doing it. They belong here for
  * the same reason: all are raised by the prior question at the pre-claim ink
  * door (`inkPriorAsk`), which `repaintAsks` never sees.
  */
@@ -67,7 +69,6 @@ export type CannotSayReason =
   | "inkBeyondToday"
   | "noInkToChange"
   | "inkOneChangeAtATime"
-  | "inkRemovalNotYet"
   | "whichInkToChange";
 
 /** What the settlement knows when it writes the sentence. */
@@ -291,10 +292,12 @@ export const CANNOT_SAY_COPY: Readonly<Record<CannotSayReason, CannotSayEntry>> 
 
       The sentence above is about the FACE — *"she hasn't got one yet"* — and a
       scoped ask is not about the face. Said to somebody who tapped a tattoo
-      card, it denies the picture they are looking at, which is exactly what
-      `inkRemovalNotYet` four lines down was ruled into existence to stop
-      (fable-1287 §3: a *"not yet"* that begins by doubting what he is looking
-      at is the one thing worse than a *"not yet"*).
+      card, it denies the picture they are looking at — the thing the deleted
+      `inkRemovalNotYet` was ruled into existence to stop (fable-1287 §3: a
+      *"not yet"* that begins by doubting what he is looking at is the one thing
+      worse than a *"not yet"*). That sentence is gone because the removal is
+      real now; the rule it was built on is not, and this branch is where it
+      still applies.
 
       So the scoped answer narrows to the place and says nothing about the rest
       of her — true whether this is her only tattoo or her fourth — and it still
@@ -360,12 +363,6 @@ export const CANNOT_SAY_COPY: Readonly<Record<CannotSayReason, CannotSayEntry>> 
     charge: "free",
     say: (context) => `${context.scopeNoun ? `You've got more than one — ${context.scopeNoun}` : "You've got more than one tattoo"}`
       + `. Say which one and I'll do it. ${MONEY(context.moneySafe)}`,
-  },
-  inkRemovalNotYet: {
-    charge: "free",
-    say: (context) => `${context.scopeNoun ? `That's ${context.scopeNoun}, and taking` : "Taking"} `
-      + "a tattoo off again isn't something I can do yet. For now, backing up to a version from "
-      + `before it was added is the way to get rid of it. ${MONEY(context.moneySafe)}`,
   },
   /*
     TWO CHANGES IN ONE SENTENCE, and the road can state one (opus-948 §4).

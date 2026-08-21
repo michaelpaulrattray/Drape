@@ -26,7 +26,11 @@ describe("the static half reads what the source declares", () => {
     expect(interpreter).toContain("unreadable");
     expect(interpreter).toContain("gate_ink_document");
     const ids = buildStaticAtlas(CORPUS).declared.map((d) => d.id);
-    expect(ids).toContain("inkRemovalNotYet");
+    /* `inkRemovalNotYet` stood here until 2026-08-22 and was DELETED with its
+       door (fable-1322 §1) — a positive control has to name a door that
+       exists, and a control pinning a deleted one is the census asserting its
+       own history. `inkOneChangeAtATime` is its live sibling on the same road. */
+    expect(ids).toContain("inkOneChangeAtATime");
     expect(ids).toContain("noInkToChange");
   });
 

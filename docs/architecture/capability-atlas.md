@@ -82,7 +82,6 @@ Profile **fixture-as-founder** on fixture `outside-scope-bot-local / 34383040-62
 | history_unreadable | service-refusal |  | **none** |
 | inkBeyondToday | cannot-say | free | cannotSayCopy.test.ts, inkBeyondTodayAsk.test.ts |
 | inkOneChangeAtATime | cannot-say | free | cannotSayCopy.test.ts |
-| inkRemovalNotYet | cannot-say | free | cannotSayCopy.test.ts |
 | kind_unserved | service-refusal |  | **none** |
 | master_missing | service-refusal |  | **none** |
 | noInkToChange | cannot-say | free | cannotSayCopy.test.ts |
@@ -116,7 +115,7 @@ Profile **fixture-as-founder** on fixture `outside-scope-bot-local / 34383040-62
 
 `CASTING_FACE_SCAN_SCOPE` · `CASTING_HAIR_REFERENCE_SCOPE` · `CASTING_INK_CUT_SCOPE` · `CASTING_INK_REFERENCE_SCOPE` · `CASTING_INK_REGION_CROP_SCOPE` · `CASTING_INK_STUDIO_SCOPE` · `CASTING_INK_TRANSFORM_SCOPE` · `CASTING_INK_WORDS_SCOPE` · `CASTING_OPEN_LANE_SCOPE` · `CASTING_REFERENCE_ATTACH_SCOPE` · `CASTING_REFERENCE_LIBRARY_SCOPE` · `CASTING_REFINE_DISPATCH_SCOPE` · `CASTING_REPAINT_SCOPE` · `CASTING_SCAN_TABLE_SCOPE` · `CASTING_SEGMENTS_DELIVERED_SCOPE` · `CASTING_SEGMENTS_SCOPE` · `CASTING_SIDE_PHRASING_SCOPE` · `CASTING_V2_SCOPE`
 
-## Findings (63)
+## Findings (59)
 
 - **warn** `belief-mismatch` acc.glasses.remove.none — "take her glasses off" — believed refused:removal_absent, observed refused:removal_not_in_brief
 - **warn** `belief-mismatch` acc.remove.branch.other — "take her earrings off" — believed refused:removal_absent, observed refused:removal_not_in_brief
@@ -133,9 +132,6 @@ Profile **fixture-as-founder** on fixture `outside-scope-bot-local / 34383040-62
 - **warn** `belief-mismatch` makeup.lipstick — "give her red lipstick" — believed free:notASlot, observed would-render
 - **warn** `belief-mismatch` skin.freckles.remove.none — "she never had freckles" — believed refused:removal_not_in_brief, observed refused:removal_absent
 - **warn** `belief-mismatch` wardrobe.tee — "put him in a plain black tee" — believed would-render, observed refused:wall_stage
-- **error** `route-changed` hair.remove.none — "remove her fringe" — committed refused:removal_absent, now would-render
-- **error** `route-changed` ink.words.neck.branch — "give him a small star tattoo on his neck" — committed refused:gate_ink_uncarried, now would-render
-- **error** `route-changed` light.softer — "softer light" — committed refused:wall_stage, now refused:unreadable
 - **info** `not-driven` ref.hair.whole — needs state "reference-attached", which this fixture cannot supply
 - **info** `not-driven` ref.ink.sleeve — needs state "reference-attached", which this fixture cannot supply
 - **warn** `unpinned-refusal` already_original — service-refusal "already_original" is named by no test file — a door nobody has proven can shut
@@ -163,7 +159,6 @@ Profile **fixture-as-founder** on fixture `outside-scope-bot-local / 34383040-62
 - **info** `unreached` history_predates_undo — no corpus row expects "history_predates_undo" — the census cannot say whether any ask reaches it
 - **info** `unreached` history_unreadable — no corpus row expects "history_unreadable" — the census cannot say whether any ask reaches it
 - **info** `unreached` inkBeyondToday — no corpus row expects "inkBeyondToday" — the census cannot say whether any ask reaches it
-- **info** `unreached` inkRemovalNotYet — no corpus row expects "inkRemovalNotYet" — the census cannot say whether any ask reaches it
 - **info** `unreached` kind_unserved — no corpus row expects "kind_unserved" — the census cannot say whether any ask reaches it
 - **info** `unreached` master_missing — no corpus row expects "master_missing" — the census cannot say whether any ask reaches it
 - **info** `unreached` nothingAsked — no corpus row expects "nothingAsked" — the census cannot say whether any ask reaches it

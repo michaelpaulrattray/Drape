@@ -25,7 +25,10 @@ const REASONS: readonly CannotSayReason[] = [
   "inkBeyondToday",
   "noInkToChange",
   "inkOneChangeAtATime",
-  "inkRemovalNotYet",
+  /* `inkRemovalNotYet` was here and is DELETED (fable-1322 §1): it said taking
+     a tattoo off was not something the product could do yet, and the removal
+     road had quietly started doing it. Its edit-filed call site now ROUTES to
+     that road rather than apologising. */
   "whichInkToChange",
   "uncatalogued",
   "noWords",

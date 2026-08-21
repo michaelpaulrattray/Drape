@@ -12349,38 +12349,63 @@ describe("the picture she attached becomes the carrier that rides", () => {
     }
   });
 
-  it("⚠ NAMES THE TATTOO IT CAN SEE before it says it cannot take one off", async () => {
-    /*
-      fable-1287 §3, condition (i). The three sentences this replaces are all
-      worse and two of them are false — driven, this ask landed on *"I can't
-      find any tattoos on this face"*, said about a branch that names a
-      delivered chest piece. The honest form of *"not yet"* starts by agreeing
-      with his eyes.
+  /**
+   * THE MASTER DOES NOT WEAR WHAT THE CHAIN PUT ON HER.
+   *
+   * The prune's provenance guard asks the ORIGINAL whether the chain added the
+   * thing, and refuses to undo anything it could not look at. Without a reader
+   * this fixture answers with whatever an unconfigured one does, and the branch
+   * that decides a paid step's fate is then decided by the double rather than
+   * by the case — which is the shape opus-970 §3 could not classify. An empty
+   * mask is the faithful answer here: `inkedBranch` is a chain-added tattoo.
+   */
+  const masterWearsNothing = {
+    region: async () => ({ data: Buffer.alloc(64 * 64, 0), width: 64, height: 64 }),
+    subject: async () => ({ data: Buffer.alloc(64 * 64, 0), width: 64, height: 64 }),
+    landmark: async () => [],
+  } as never;
 
-      Condition (ii): it persists NOTHING. A half-filed ink removal would put
-      *"no tattoos"* on the wire beside *"put the chest piece back exactly as it
-      is"* — D-244's contradiction at full price.
+  it("⚠ TAKES IT OFF rather than apologising — a `gone` reading filed as an edit ROUTES", async () => {
+    /*
+      Ruled fable-1322 §1 and landed unguarded per fable-1324 §1. This arm used
+      to assert the apology (`inkRemovalNotYet`, *"taking a tattoo off again
+      isn't something I can do yet"*) — a sentence that was true when it was
+      written and stopped being true without anybody noticing. The removal road
+      takes tattoos off, and a paid drive at the real entrance proved it.
+
+      Driven with a hand-built edit-filed parse, which is the whole point: the
+      branch is unreachable through today's routing because a stated removal is
+      classified `intent: "remove"` ~800 lines earlier — BY A MODEL. The net
+      exists for the day that classification slips, and law 3 says a backstop
+      needs a test the model cannot rescue.
+
+      What it must never do is fall through to the words road, which would paint
+      a FRESH tattoo for 25 credits in reply to an ask to take one off.
     */
     inkedBranch();
     painted.length = 0;
     ledger.charges.length = 0;
     const claimsBefore = (claimVariant as unknown as { mock: { calls: unknown[] } }).mock.calls.length;
 
-    const result = await refineCandidate(transformRoad(), {
+    const result = await refineCandidate(transformRoad({ regions: masterWearsNothing }), {
       ...input, instruction: "take his chest tattoo off",
     });
 
+    /* The one step on this branch was the tattoo, so taking it off IS the
+       original — the free navigate, which is the removal road's own answer. */
     expect(result.kind).toBe("selected");
-    expect(result.note).toContain("upper chest tattoo");
-    expect(result.note).toContain("Nothing was charged.");
+    expect(result.note).toContain("takes it back to the original");
+    expect(result.note).toContain("nothing charged");
     /* And never the placement question — the offer to ADD in reply to an ask to
        REMOVE, which is what §5f item 4 filed. */
     expect(result.note).not.toContain("I need to know where it goes");
-    expect(painted).toHaveLength(0);
+    /* Nor the apology it used to give. */
+    expect(result.note).not.toContain("isn't something I can do yet");
+    expect(painted, "an ask to take a tattoo off painted something").toHaveLength(0);
     expect(ledger.charges).toHaveLength(0);
     expect(
       (claimVariant as unknown as { mock: { calls: unknown[] } }).mock.calls.length,
-      "a free pre-claim refusal claimed a variant",
+      "a free removal claimed a variant",
     ).toBe(claimsBefore);
   });
 
@@ -12682,6 +12707,10 @@ describe("the picture she attached becomes the carrier that rides", () => {
     const asked: Array<{ inkDocumentedByDelivery?: boolean }> = [];
     await refineCandidate(transformRoad({
       inkTransformEnabled: () => false,
+      /* The chain put the tattoo there, so the master does not wear it — see
+         `masterWearsNothing`. Without it the prune's provenance guard decides
+         this arm rather than the case does. */
+      regions: masterWearsNothing,
       interpret: async (request: { inkDocumentedByDelivery?: boolean }) => {
         asked.push(request);
         return {

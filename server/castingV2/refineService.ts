@@ -2450,6 +2450,102 @@ async function refineCandidateCounted(
     }
   }
 
+  /*
+    ⚠ A REMOVAL THE INTERPRETER FILED AS AN EDIT IS STILL A REMOVAL — the net
+    under a model's coin flip (ruled fable-1322 §1, landed UNGUARDED per
+    fable-1324 §1).
+
+    # Why this exists on a branch nothing can reach today
+
+    `readInkPriorAsk` answers `gone` only when `removalEvidence` is `stated`,
+    and a stated removal is classified `intent: "remove"` by the interpreter and
+    handled below. So the two conditions are mutually exclusive — **by a
+    classification an LLM makes**, which is the one participant this program
+    never assumes is constant.
+
+    The branch that used to sit ~800 lines down said *"taking a tattoo off isn't
+    something I can do yet"*. That sentence is now FALSE — the removal road
+    takes tattoos off, and a paid drive at the real entrance proved it end to
+    end — so the copy is deleted. Deleting the BRANCH as well was the tempting
+    tidy-up and it is the dangerous one: an ask to take a tattoo off, misfiled
+    as an edit, would fall through to the words road and **paint a fresh tattoo
+    for 25 credits**.
+
+    So it ROUTES rather than answers. One removal implementation, entered from
+    two doors (working law 4) — this converts the parse and falls into the same
+    block the stated path uses, so nothing about matching, pruning, provenance
+    or pricing is decided twice.
+
+    # It carries NO GUARD, and that is a ruling rather than an omission
+
+    The first build of this was held back because the route turned a FREE
+    pre-claim apology into a CHARGED-then-refunded refusal (opus-970 §3): the
+    removal road could not name an ink prune's slot and met
+    `repaintCannotRemove()`. That was never this route's defect — it was under
+    the road the route joins, it is fixed (`slotsOfPrunedStep`), and the guard
+    that would have hidden it dies unborn.
+
+    # `whole` stays FALSE, and that is the run-7 lesson honoured
+
+    Width is never inferred from what a sentence failed to say. The identity
+    path is what finds the step here: `items` carries the branch's own stored
+    ink words verbatim, which `matchSteps` prefers over any word matching, so
+    the steps holding THOSE words are pruned and nothing else is. Claiming
+    `whole` would ask for the widest prune there is on the strength of a
+    misfiled parse, which is the exact shape that once took a paid earrings step
+    on a question about glasses.
+
+    It fires only when the branch really wears ink AND the words half is there
+    to identify it by — the two halves of one fact that composition guarantees
+    move together.
+  */
+  const wornInkWords = priorItems.ink ?? [];
+  if (
+    parsed.intent !== "remove"
+    && inkPriorReading.want === "gone"
+    && Object.keys(deliveredInkOnChain).length > 0
+    && wornInkWords.length > 0
+  ) {
+    log.warn(
+      {
+        userId: input.userId,
+        candidate: input.candidatePublicId,
+        instruction,
+        slots: Object.keys(deliveredInkOnChain),
+      },
+      "[refineService] a removal arrived filed as an edit — routing it to the removal road",
+    );
+    parsed = {
+      ok: true,
+      intent: "remove",
+      subject: "ink",
+      /* Non-null because the road refuses a removal with no noun in it, and the
+         branch's own words are the truest noun available — the same strings
+         `items` identifies the step by. */
+      match: wornInkWords.join(", "),
+      whole: false,
+      items: wornInkWords,
+    };
+    /*
+      ⚠ AND THE EDIT IT ARRIVED AS IS DISCARDED — the line the parked build was
+      missing, and the reason it looked like a defect in the removal road.
+
+      `editDelta` was taken from the parse two hundred lines up, before anything
+      knew this was a removal. **A removal is subtraction: there is nothing to
+      add**, and the whole road below is written on `editDelta === null` — the
+      prune's own composition, the navigate check, the restate ask. Left
+      standing, the ask travels as an EDIT wearing a removal's parse: the prune
+      is computed and thrown away, the repaint composes asks from the ink delta
+      the model filed, and the customer is charged and refunded for a sentence
+      that asked to take something off.
+
+      That is the refusal opus-970 §3 met and could not classify, and it was
+      here rather than in the road it was blamed on. The road had a real hole of
+      its own (`slotsOfPrunedStep`, fable-1324) — two defects, one symptom.
+    */
+    editDelta = null;
+  }
+
   if (parsed.intent === "remove") {
     /* Carried from here, before any pruning can erase the evidence of it. */
     if (parsed.match) departed = parsed.match;
@@ -3297,27 +3393,36 @@ async function refineCandidateCounted(
         .map(nameOfSlot)
         .filter((name): name is string => name !== null);
       /*
-        SHE WANTS IT GONE. Routed away from the placement door and answered
-        free, naming what the product can see before it says no (condition (i),
-        fable-1287 §3) — the three sentences this replaces include one telling a
-        customer looking at his own chest piece that no tattoo exists.
+        ⚠ SHE WANTS IT GONE — AND IT IS TAKEN OFF RATHER THAN APOLOGISED FOR
+        (ruled fable-1322 §1; the copy `inkRemovalNotYet` is deleted with it).
 
-        It persists NOTHING (condition (ii)). A half-filed ink removal would put
-        "no tattoos" on the wire beside "put the chest piece back exactly as it
-        is", which is D-244's contradiction at full price — read at the code
-        rather than feared: `carriedInk` is built from `inkApplied` union
-        `inkDelivered`, and `absent` touches neither.
+        This used to answer *"taking a tattoo off again isn't something I can do
+        yet"*. That sentence was written when it was true and it stopped being
+        true without anybody noticing: the generic removal road takes tattoos
+        off, surgically and for free, and a paid drive at the real entrance
+        proved it end to end. A wall describing a capability the product HAS is
+        the same failure as a control nobody calls, with the sign flipped.
+
+        Nothing is answered here now, because a `gone` reading never reaches
+        this line: it is converted into a removal ~900 lines up and handled by
+        the one removal road. If a reading somehow arrives here anyway, falling
+        through is correct — the transform arm below refuses an ask with no
+        change in it, free and before the claim.
       */
-      if (prior.want === "gone") {
-        return answeredFree("inkRemovalNotYet", names.length > 0 ? names.join(" and ") : null);
-      }
       /*
         AND THE CHANGE ARM, the only one behind the flag. Off, this block does
         nothing at all and the ask travels the road it travels today — which is
         the wrong road, and which is nevertheless what a dark landing has to
         mean.
+
+        `prior.want === "change"` is spelled out rather than inherited from a
+        guard above it. It used to be narrowed by the `gone` branch's own early
+        return, and when that branch stopped answering, the lines below quietly
+        lost the only thing that told them `changes` exists. Naming the condition
+        the arm is actually about is what keeps the next deletion from being a
+        behaviour error instead of a type error.
       */
-      if (inkTransformOpen) {
+      if (inkTransformOpen && prior.want === "change") {
         /* Two axes in one sentence is not one instruction — every transform
            clause ends by saying that everything else stays as the picture shows
            it, so two of them contradict each other on the wire. */
