@@ -288,6 +288,60 @@ the pinning arm.
   neighbourhood walked, rather than whether the gate was over-narrowed. The
   paid half — does the real interpreter behave as `nearMiss` does in isolation
   — is unchanged and still waits on the OpenRouter episode.
+
+  ✅ **AND THAT NARROWER QUESTION IS NOW ANSWERED — the free half is DONE**
+  (2026-08-22, opus-1001; driven at the real `nearMiss`, no model, no money).
+  Every noun in the gate's own *worn things* block was added to `KNOWN_WORDS`
+  one at a time and a 12,984-word corpus taken from `docs/specs/*.md` was run
+  through the gate for each. **The answer is not a list of safe nouns — it is a
+  RULE**, and it is the one `VALID_IN_CONTEXT`'s own docblock already states:
+  *"when a new colour or subject joins the vocabulary, walk its neighbourhood
+  too."*
+
+  | joins the target list | what it exposes |
+  |---|---|
+  | `chain` `chains` `frames` | **nothing** |
+  | `frame` | `iframe` — a code token, not a refine word |
+  | `stud` `studs` | `stub` `stubs` |
+  | `glass` `glasses` | `class` `gloss` — **`gloss` is a makeup word** |
+  | `hoop` `hoops` | `hook` `loop` `hops` |
+  | `lens` `lenses` | `leans` `legs` `lets` `tens` `leases` `senses` |
+  | `band` `bands` | `bang` **`bangs`** `bank` `brand` `land` `sand` |
+  | `ring` `rings` | `rign` `riing` `king` `rung` **`wing` `wings`** |
+
+  ⚠ **THE CARD'S OWN EXAMPLE IS THE WORST CASE.** Closing this row means adding
+  `ring` — and `ring` is one slip from `wing`, which this very roadmap quotes
+  as a real customer sentence (*"give her wings"* is winged eyeliner, the open
+  lane's own example). `band` is the same shape and worse: **`bangs` is a
+  hairstyle.** A gate that asks a customer taking her bangs shorter whether she
+  meant *bands* is the `shave`→`shape` incident with a new noun.
+
+  **So the recipe is: a noun may join the target list when its exposed
+  neighbourhood joins the exclusion list IN THE SAME COMMIT.** That direction is
+  safe by construction — the exclusion list only ever protects, it can never
+  create a target — and the table above is the exact set of words each addition
+  owes. Nothing about the founder's absolute rule bends.
+
+  ⚠ **AND THREE OF THIS CARD'S SIX NAMED HAZARDS ARE NOT HAZARDS.** The
+  paragraph above says `wild` → *will*, `bold` → *hold* and `study` → *stud*.
+  **Driven one pair at a time, with only that one target added, none of the
+  three fires.** `validInContext` is not the literal list — it is a function
+  with two-directional inflection matching — and `wild`+`er` = `wilder`,
+  `bold`+`er` = `bolder` and `study` minus `y` = `stud` are all already on
+  it. The reading that produced those three was taken against the LISTS and
+  could not see the function. **The conclusion it supports is untouched** —
+  wholesale promotion still takes the corpus from 41 accusations to 485 — but
+  three of the six sentences making the case were wrong, and `crop` → *drop*,
+  `loop` → *hoop*, `cold` → *could* are the three that survive. The
+  discriminating arm is in the record because it is what separates *"the corpus
+  is too thin"* from *"the claim is wrong"*: it hands the typed word straight to
+  the gate with the corpus absent entirely.
+
+  ⚠ **One limit, stated:** the corpus is this repository's own specs prose, so
+  it contains `riing` — a probe word THIS CARD introduced. A corpus that
+  catalogues its own specimens is a known trap here; it is harmless in this run
+  (that word is a typo and is supposed to fire) but the next reader should not
+  treat corpus membership as evidence that customers type a word.
 - **(C4a) ✅ CLOSED 09f625a2 — A DELIVERY NAME THAT SURVIVES SETTLEMENT WITH NO ROW,
   and it was a MONEY hole rather than a tidiness card** (fable-1331 §5, traced
   opus-984, ruled fable-1339). A crop's NAME is minted at CLAIM and its ROW at
