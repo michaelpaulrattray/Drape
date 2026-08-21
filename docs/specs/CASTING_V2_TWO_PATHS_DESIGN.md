@@ -1,9 +1,14 @@
 # The Two Paths — Wardrobe or Basics: a design for countersign
 
 **Founder ruling: fable-1311** (chat, 2026-08-21 — *"this is the way foward
-100%"*), with fable-1312's addendum. **Roadmap §10 item 5.** Nothing here is built
-before the countersign; nothing here is flipped on for anybody before the court
-and his eyes.
+100%"*), with fable-1312's addendum. **Roadmap §10 item 5.**
+
+✅ **COUNTERSIGNED 2026-08-22 (fable-1334)** with one added condition — **(v),
+written into §3.1a**: the edited line's resolution is `currentWardrobeLine`, one
+owner, and Sign snapshots ITS answer. The four questions in §13 are ruled, as
+recommended, and recorded there. **Nothing of item 5 is built until the migration
+ceremony lands and condition (v) is in the code.** Nothing is flipped on for
+anybody before the court and his eyes.
 
 **The census rule is discharged in §1** (fable-1315 §3): every capability this
 design touches is cited by its row id in `docs/architecture/capability-atlas.md`,
@@ -160,6 +165,32 @@ sheet's own display of the line comes from the roll column through an **explicit
 projection** (invariant 8), never lifted out of the document blob and never out
 of `compiledBrief`, which is declared internal.
 
+### 3.1a ⚠ CONDITION (v) — `currentWardrobeLine(branch)` IS THE ONLY ANSWER, and Sign snapshots ITS answer
+
+**Added at countersign (fable-1334 §2), and it closes a refund hole this report
+had left open by omission.** Three sentences of the design implied a fourth
+nobody had written: the roll's line is snapshotted at Sign (§3.1), a wardrobe
+edit rewrites *the stored line* (§7.1), and a Follow inherits the BORN line
+(above). Together those imply a **per-branch edited line**, and therefore a Cast
+**signed after a wardrobe edit** whose six views would be judged against the born
+line it is no longer wearing — six views, the wardrobe axis, **refunded slices**,
+which is precisely how the crew-neck chest design already cost money.
+
+So it is stated rather than left to be resolved at the keyboard:
+
+```
+currentWardrobeLine(branch)  =  the branch's edited line, if one exists
+                                else the roll's born line
+```
+
+**ONE function, and every reader in §3.3 reads it** — the recipe derives from it,
+Sign snapshots ITS answer, the judge judges against ITS answer, the sheet shows
+ITS answer. **Exactly one caller reads the born column by name: the Follow**
+(above), because a Follow is the one case that deliberately wants the sheet's
+outfit rather than this person's. Anything else reaching past this function for
+`casting_rolls.wardrobeLine` is the parallel-copy shape (law 4) with a refund
+attached.
+
 ### 3.2 ⚠ THE MIGRATION IS A BLOCKING PREREQUISITE OF THE CODE, NOT OF THE FLIP
 
 A new column on a table drizzle SELECTs is in every read, flag or no flag. So the
@@ -175,15 +206,18 @@ codebase keeps paying for.
 
 ### 3.3 One owner: `server/castingV2/wardrobeLine.ts`
 
-Everything that needs to say what this person is wearing derives from that module:
+Everything that needs to say what this person is wearing derives from that
+module, and — per condition (v), §3.1a — every row below reads
+`currentWardrobeLine(branch)`, never the column:
 
 | reader | today | with the line |
 |---|---|---|
-| the roll prompt | `cohortPhotorealHuman.FRAMING`'s fixed *"WARDROBE: plain unbranded clothing in neutral grey or off-white"* | the stored line, composed per roll |
-| the refine recipe | nothing at all (§2's five nouns) | the line, stated as already true, dropped the moment a wardrobe edit writes it |
-| the six signed views | `CAST_PACKAGE_WARDROBE_SPEC`, hard-coded *crew-neck* | the line |
-| the wardrobe judge | the same constant, via `packageViewExpectation` | the same line — one owner, so generator and judge cannot drift |
-| the sheet | `sheetNotice`'s *"casting sheets keep the studio tee"* | *"Wardrobe: … · engine's pick"* when it was picked for her |
+| the roll prompt | `cohortPhotorealHuman.FRAMING`'s fixed *"WARDROBE: plain unbranded clothing in neutral grey or off-white"* | the born line, composed per roll (no branch exists yet) |
+| the refine recipe | nothing at all (§2's five nouns) | `currentWardrobeLine`, stated as already true, dropped the moment this edit writes the slot |
+| the six signed views | `CAST_PACKAGE_WARDROBE_SPEC`, hard-coded *crew-neck* | `currentWardrobeLine` of the branch being signed |
+| the wardrobe judge | the same constant, via `packageViewExpectation` | the SAME answer the views were composed from — one owner, so generator and judge cannot drift, and a Cast signed after a wardrobe edit is judged against what it is wearing |
+| the sheet | `sheetNotice`'s *"casting sheets keep the studio tee"* | `currentWardrobeLine`, with *"· engine's pick"* when it was picked for her |
+| a Follow | — | the BORN column, by name, and it is the only caller that may (§3.1) |
 
 **Two live self-contradictions close as a side effect, and both are recorded in
 the code already.** `CAST_PACKAGE_WARDROBE_SPEC` hard-codes *crew-neck* while
@@ -210,9 +244,15 @@ the WARDROBE line becomes the one thing the description may set, because it is n
 longer the description setting it — **it is a code-owned field the code composed.**
 Location, activity, props and text are untouched.
 
-`promptShape` / the craft-port guard reads `CONSTANT_BLOCKS` as one list, so the
-wardrobe sentence leaving `FRAMING` for a composed line is a guard change with its
-own arm, not a silent edit.
+**A guard already stands over this and it will go red, which is the point.**
+`briefCompiler.test.ts`'s *"keeps the framing constant intact and last in every
+compiled prompt"* asserts every member of `COHORT_CONSTANT_MARKERS` (=
+`CONSTANT_BLOCKS`, derived — never re-listed) appears verbatim in each of the
+eight compiled prompts, and separately that `AUTHORITY:` is present and last. So
+the wardrobe sentence leaving `FRAMING` for a composed line **cannot be a silent
+edit**: that arm fails until the guard is re-pointed at the composed line, and
+the re-pointing is a decision somebody signs rather than a diff nobody sees.
+Verified by reading the arm, not assumed from the block's name.
 
 ---
 
@@ -534,14 +574,15 @@ here, prose only, no behaviour moved. What remains carried into the build is the
 DERIVATION — the table becoming a fact about the wardrobe instead of about the
 placement (§5.2).
 
-**Open for the countersign:**
+**The four questions, ✅ RULED at countersign (fable-1334 §3) — kept with their
+answers rather than deleted, because the reasoning is the record:**
 
-1. **Flag name** — `CASTING_TWO_PATHS_SCOPE` is what everyone calls it and what
-   the roadmap item is named; house style otherwise names the capability
-   (`CASTING_WARDROBE_PATH_SCOPE`). My recommendation is the first, on the
-   ground that a reader of the variable will find the ruling.
-2. **`casting_ink_form_demand` widened vs a second table** (§9). Recommendation:
-   widen.
+1. **Flag name** — ✅ `CASTING_TWO_PATHS_SCOPE`. It is what everyone calls it and
+   what the roadmap item is named; house style otherwise names the capability
+   (`CASTING_WARDROBE_PATH_SCOPE`). **The findability ground won**: a reader of
+   the variable finds the ruling.
+2. **`casting_ink_form_demand` widened vs a second table** (§9). ✅ **WIDEN**,
+   with §9's driven-through-the-refusal arm as a condition of the landing.
 3. **Where the picked outfit is first seen.** He ruled it shows on the sheet, so
    *shown on the sheet* is also *shown after 160 credits*. **Showing it earlier
    is not a copy change**, and the product already knows why: the brief is
@@ -550,7 +591,7 @@ placement (§5.2).
    has paid"* (`CastingSheet.tsx`, the variance-confession note, which is the
    same problem one feature earlier). Recommendation: ship as ruled; a pre-roll
    echo is its own item and it would fix both lines at once, not a rider on this
-   one.
-4. **The court's price** — 1,220 dev credits, staged 320 then 900. My
-   recommendation is to grant the 320 with the countersign and hold the 900 until
-   the sheet frames are read.
+   one. ✅ **SHIP AS RULED**; the pre-roll echo is banked as its own item.
+4. **The court's price** — 1,220 dev credits, staged 320 then 900. ✅ **THE 320
+   IS GRANTED** with the countersign; the 900 is held until the sheet frames are
+   read. **All of it waits behind the ceremony and the dark code** (§3.2).

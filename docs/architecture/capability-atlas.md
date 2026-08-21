@@ -70,42 +70,42 @@ Profile **fixture-as-founder** on fixture `outside-scope-bot-local / 34383040-62
 
 | id | kind | charge | pinned by |
 |---|---|---|---|
-| already_original | service-refusal |  | **none** |
-| already_signed | service-refusal |  | **none** |
+| already_original | service-refusal |  | refineService.test.ts |
+| already_signed | service-refusal |  | refineService.test.ts |
 | busy | service-refusal |  | refusalTag.test.ts, rollService.test.ts |
-| candidate_missing | service-refusal |  | **none** |
+| candidate_missing | service-refusal |  | refineService.test.ts |
 | departure | cannot-say | refunded | cannotSayCopy.test.ts |
 | empty | interpreter-refusal |  | diagnosticCapture.test.ts, faceScan.test.ts, faceScanService.test.ts, referenceSlotCatalogue.test.ts, refineRefusals.test.ts, server/casting/geminiMigration.test.ts |
 | gate_ink_document | interpreter-refusal |  | inkReferenceGate.test.ts, refineDelta.test.ts |
 | gate_ink_uncarried | interpreter-refusal |  | refineDelta.test.ts, refineRefusals.test.ts |
-| history_predates_undo | service-refusal |  | **none** |
-| history_unreadable | service-refusal |  | **none** |
+| history_predates_undo | service-refusal |  | refineService.test.ts |
+| history_unreadable | service-refusal |  | refineService.test.ts |
 | inkBeyondToday | cannot-say | free | cannotSayCopy.test.ts, inkBeyondTodayAsk.test.ts |
 | inkOneChangeAtATime | cannot-say | free | cannotSayCopy.test.ts |
-| kind_unserved | service-refusal |  | **none** |
-| master_missing | service-refusal |  | **none** |
+| kind_unserved | service-refusal |  | refineService.test.ts |
+| master_missing | service-refusal |  | refineService.test.ts |
 | noInkToChange | cannot-say | free | cannotSayCopy.test.ts |
 | notASlot | cannot-say | free | cannotSayCopy.test.ts, mintedSlots.test.ts, openKindPolicy.test.ts, openLaneKind.test.ts, referenceSlotCatalogue.test.ts, refineService.test.ts, repaintAsks.test.ts, vocabularyPin.test.ts |
 | nothingAsked | cannot-say | free | cannotSayCopy.test.ts, repaintAsks.test.ts |
 | noWords | cannot-say | refunded | cannotSayCopy.test.ts, mintedSlots.test.ts, repaintAsks.test.ts, viewFeatureWords.test.ts |
 | perSideRemoval | cannot-say | refunded | cannotSayCopy.test.ts, repaintAsks.test.ts |
-| refine_limit | service-refusal |  | **none** |
+| refine_limit | service-refusal |  | refineService.test.ts |
 | removal | cannot-say | refunded | cannotSayCopy.test.ts, repaintAsks.test.ts |
 | removal_absent | service-refusal |  | refusalTag.test.ts |
-| removal_not_in_brief | service-refusal |  | **none** |
+| removal_not_in_brief | service-refusal |  | refineService.test.ts |
 | removal_reread_unmatched | service-refusal |  | refineService.test.ts |
-| removal_uncheckable | service-refusal |  | **none** |
+| removal_uncheckable | service-refusal |  | refineService.test.ts |
 | removal_unnameable | service-refusal |  | refineService.test.ts |
-| removal_unnamed | service-refusal |  | **none** |
+| removal_unnamed | service-refusal |  | refineService.test.ts |
 | scope_mismatch | service-refusal |  | refineService.test.ts |
 | scope_unknown | service-refusal |  | refineService.test.ts |
 | sideNamedWithoutScope | cannot-say | refunded | cannotSayCopy.test.ts, repaintAsks.test.ts |
-| step_moved | service-refusal |  | **none** |
+| step_moved | service-refusal |  | refineService.test.ts |
 | uncatalogued | cannot-say | refunded | cannotSayCopy.test.ts, repaintAsks.test.ts, vacantPhrase.test.ts |
 | unnamedObject | cannot-say | refunded | cannotSayCopy.test.ts, mintedSlots.test.ts, repaintAsks.test.ts |
 | unplacedInk | cannot-say | refunded | cannotSayCopy.test.ts, inkBeyondTodayAsk.test.ts, inkDesignForAsk.test.ts, refineService.test.ts, repaintAsks.test.ts |
 | unreadable | interpreter-refusal |  | hairColourFromReference.test.ts, hairReferenceCutter.test.ts, inkReferenceCutter.test.ts, inkUploadDoor.test.ts, inkUploadService.test.ts, makeupFromReference.test.ts, openLaneAccept.test.ts, openLaneKind.test.ts, referenceAttachService.test.ts, referenceClassGate.test.ts, referenceMediumDoor.test.ts, referenceWordsLane.test.ts, refineInterpreterCeiling.test.ts, refineService.test.ts, server/db/referenceReadDemand.test.ts, server/deployWatchDecision.test.ts |
-| version_missing | service-refusal |  | **none** |
+| version_missing | service-refusal |  | refineService.test.ts |
 | wall_content | interpreter-refusal |  | colourContextDoor.test.ts, priorContextDoor.test.ts, referenceWordsLane.test.ts, refineRefusals.test.ts, refineService.test.ts, stageWallBackstop.test.ts |
 | wall_likeness | interpreter-refusal |  | colourContextDoor.test.ts, inkReferenceGate.test.ts, referenceWordsLane.test.ts, refineDelta.test.ts, refineInterpreterReferenceEntrance.test.ts, refineRefusals.test.ts, stageWallBackstop.test.ts |
 | wall_stage | interpreter-refusal |  | colourContextDoor.test.ts, inventionDoor.test.ts, priorContextDoor.test.ts, referenceWordsLane.test.ts, refineDelta.test.ts, refineRefusals.test.ts, refineService.test.ts, stageWallBackstop.test.ts |
@@ -115,7 +115,7 @@ Profile **fixture-as-founder** on fixture `outside-scope-bot-local / 34383040-62
 
 `CASTING_FACE_SCAN_SCOPE` · `CASTING_HAIR_REFERENCE_SCOPE` · `CASTING_INK_CUT_SCOPE` · `CASTING_INK_REFERENCE_SCOPE` · `CASTING_INK_REGION_CROP_SCOPE` · `CASTING_INK_STUDIO_SCOPE` · `CASTING_INK_TRANSFORM_SCOPE` · `CASTING_INK_WORDS_SCOPE` · `CASTING_OPEN_LANE_SCOPE` · `CASTING_REFERENCE_ATTACH_SCOPE` · `CASTING_REFERENCE_LIBRARY_SCOPE` · `CASTING_REFINE_DISPATCH_SCOPE` · `CASTING_REPAINT_SCOPE` · `CASTING_SCAN_TABLE_SCOPE` · `CASTING_SEGMENTS_DELIVERED_SCOPE` · `CASTING_SEGMENTS_SCOPE` · `CASTING_SIDE_PHRASING_SCOPE` · `CASTING_V2_SCOPE`
 
-## Findings (59)
+## Findings (46)
 
 - **warn** `belief-mismatch` acc.glasses.remove.none — "take her glasses off" — believed refused:removal_absent, observed refused:removal_not_in_brief
 - **warn** `belief-mismatch` acc.remove.branch.other — "take her earrings off" — believed refused:removal_absent, observed refused:removal_not_in_brief
@@ -134,19 +134,6 @@ Profile **fixture-as-founder** on fixture `outside-scope-bot-local / 34383040-62
 - **warn** `belief-mismatch` wardrobe.tee — "put him in a plain black tee" — believed would-render, observed refused:wall_stage
 - **info** `not-driven` ref.hair.whole — needs state "reference-attached", which this fixture cannot supply
 - **info** `not-driven` ref.ink.sleeve — needs state "reference-attached", which this fixture cannot supply
-- **warn** `unpinned-refusal` already_original — service-refusal "already_original" is named by no test file — a door nobody has proven can shut
-- **warn** `unpinned-refusal` already_signed — service-refusal "already_signed" is named by no test file — a door nobody has proven can shut
-- **warn** `unpinned-refusal` candidate_missing — service-refusal "candidate_missing" is named by no test file — a door nobody has proven can shut
-- **warn** `unpinned-refusal` history_predates_undo — service-refusal "history_predates_undo" is named by no test file — a door nobody has proven can shut
-- **warn** `unpinned-refusal` history_unreadable — service-refusal "history_unreadable" is named by no test file — a door nobody has proven can shut
-- **warn** `unpinned-refusal` kind_unserved — service-refusal "kind_unserved" is named by no test file — a door nobody has proven can shut
-- **warn** `unpinned-refusal` master_missing — service-refusal "master_missing" is named by no test file — a door nobody has proven can shut
-- **warn** `unpinned-refusal` refine_limit — service-refusal "refine_limit" is named by no test file — a door nobody has proven can shut
-- **warn** `unpinned-refusal` removal_not_in_brief — service-refusal "removal_not_in_brief" is named by no test file — a door nobody has proven can shut
-- **warn** `unpinned-refusal` removal_uncheckable — service-refusal "removal_uncheckable" is named by no test file — a door nobody has proven can shut
-- **warn** `unpinned-refusal` removal_unnamed — service-refusal "removal_unnamed" is named by no test file — a door nobody has proven can shut
-- **warn** `unpinned-refusal` step_moved — service-refusal "step_moved" is named by no test file — a door nobody has proven can shut
-- **warn** `unpinned-refusal` version_missing — service-refusal "version_missing" is named by no test file — a door nobody has proven can shut
 - **warn** `unreached` noInkToChange — a corpus row expects "noInkToChange" and the drive never produced it — the door may be unreachable
 - **warn** `unreached` notASlot — a corpus row expects "notASlot" and the drive never produced it — the door may be unreachable
 - **warn** `unreached` removal_unnamed — a corpus row expects "removal_unnamed" and the drive never produced it — the door may be unreachable

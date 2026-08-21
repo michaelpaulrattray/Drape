@@ -12,7 +12,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   buildStaticAtlas, declaredInterpreterRefusals, declaredServiceRefusals, drivenFindings, outcomeId,
-  readCommittedAtlas, reasonOfNote,
+  pinningTests, readCommittedAtlas, reasonOfNote,
 } from "../scripts/lib/capabilityAtlas.mts";
 import { CORPUS, type CorpusRow } from "../scripts/capability-atlas-corpus.mts";
 import { cannotSaySentence } from "./castingV2/cannotSayCopy";
@@ -45,16 +45,36 @@ describe("the static half reads what the source declares", () => {
     expect(withRow.findings.some((f) => f.kind === "unreached" && f.subject === "scope_unknown")).toBe(false);
   });
 
-  it("knows which doors no test file names — and the ones it finds today are real", () => {
-    /* A positive control for the pinning join: these ids were found unpinned by
-       hand on 2026-08-21 (fable seat). If someone pins them, update this list —
-       that is the instrument being right, not wrong. */
+  it("knows which doors no test file names — both directions, on ids it cannot be wrong about", () => {
+    /*
+      ⚠ THIS CONTROL WAS REAL AND IS NOW SYNTHETIC, on purpose.
+
+      It named `history_predates_undo` and `refine_limit` — two doors found
+      unpinned by hand on 2026-08-21 — and told the next person, in its own
+      comment, "if someone pins them, update this list; that is the instrument
+      being right, not wrong." Census card C5 pinned all thirteen of the
+      service's unpinned doors on 2026-08-22, so **the real unpinned set is now
+      EMPTY**, and a positive control with nothing to point at is not a control.
+
+      So the join is driven directly instead, on an id no source file can
+      contain — which is stronger than the old form was, because it cannot decay
+      the next time somebody closes a door. The negative half is a REAL id
+      several files name: without it, a join that had simply stopped reading
+      would pass the positive half perfectly.
+    */
+    const pins = pinningTests(["a_door_no_file_will_ever_name_zzz", "busy"]);
+    expect(pins.get("a_door_no_file_will_ever_name_zzz")).toEqual([]);
+    expect(pins.get("busy")!.length).toBeGreaterThan(0);
+
+    /* And the finding is really produced from an empty pin list, rather than
+       the emptiness being read straight off the map above. */
     const atlas = buildStaticAtlas(CORPUS);
-    const unpinned = atlas.findings.filter((f) => f.kind === "unpinned-refusal").map((f) => f.subject);
-    expect(unpinned).toContain("history_predates_undo");
-    expect(unpinned).toContain("refine_limit");
-    const busy = atlas.declared.find((d) => d.id === "busy")!;
-    expect(busy.pinnedBy.length).toBeGreaterThan(0);
+    for (const entry of atlas.declared) {
+      const reported = atlas.findings.some(
+        (f) => f.kind === "unpinned-refusal" && f.subject === entry.id,
+      );
+      expect(reported).toBe(entry.pinnedBy.length === 0);
+    }
   });
 
   it("NEGATIVE CONTROL — this file's own mention of an id is never counted as its pin", () => {

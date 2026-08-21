@@ -651,6 +651,46 @@ const greenEyes = {
   harvest: unmasked,
 };
 
+/**
+ * THE DOOR THAT SHUT, BY NAME AS WELL AS BY SENTENCE — census card C5's hands.
+ *
+ * # Why a sentence alone does not pin a door
+ *
+ * The capability census reports, on every run, which refusal ids **no test names
+ * as a quoted literal** — *doors nobody has proven can shut*, which is invariant
+ * 7 wearing a refusal's name. Thirteen of the service's own were on that list,
+ * and six of those thirteen were being DRIVEN all along: an arm reached the
+ * refusal and asserted the customer's sentence with a regex.
+ *
+ * That is a real reading and it is not a pin. A copy edit — the most ordinary
+ * change this product makes, and one that has been made to every refusal in this
+ * file at least once — moves the sentence and takes the arm with it, and the
+ * door goes back to being unproven with a green suite either side of the move.
+ * The REASON is what the audit trail, the refusal counter and the census all
+ * read; the sentence is what the customer reads. Both are worth asserting and
+ * they fail for different reasons, which is the whole argument for asserting
+ * both (the sibling reasoning is already written at `removal_unnameable`'s arm).
+ *
+ * # It refuses to pass on a resolve
+ *
+ * A helper that returned a null reason when the call SUCCEEDED would let an arm
+ * pass by not refusing at all — the shape where a test's own subject disappears
+ * and nothing goes red. So the absence of a refusal throws here, loudly, naming
+ * what was expected.
+ */
+const doorShut = async (
+  run: Promise<unknown>,
+): Promise<{ reason: string | null; message: string }> => {
+  const thrown = await run.then(() => null, (error: unknown) => error);
+  if (thrown === null) {
+    throw new Error("expected this call to refuse, and it resolved — the door did not shut");
+  }
+  return {
+    reason: refusalOf(thrown)?.reason ?? null,
+    message: String((thrown as Error).message ?? thrown),
+  };
+};
+
 /*
   THE SEAM VERDICT RIDES THE ROW ON EVERY RENDER (fable-119).
 
@@ -1636,7 +1676,11 @@ describe("refusals land before anything is claimed", () => {
 
   it("refuses a candidate that has already been signed", async () => {
     candidateRow.signedCastId = 42;
-    await expect(refineCandidate(greenEyes, input)).rejects.toThrow(/already been signed/);
+    /* Sentence AND reason — see `doorShut`: a copy edit must not silently unpin
+       `already_signed`, which is what the census reads. */
+    const shut = await doorShut(refineCandidate(greenEyes, input));
+    expect(shut.message).toMatch(/already been signed/);
+    expect(shut.reason).toBe("already_signed");
     expect(journal).not.toContain("begin");
   });
 
@@ -1751,7 +1795,11 @@ describe("an unreadable history stops the money", () => {
     }];
     candidateRow.selectedVariantPublicId = "variant-legacy";
 
-    await expect(refineCandidate(greenEyes, input)).rejects.toThrow(/won't guess at it/);
+    const shut = await doorShut(refineCandidate(greenEyes, input));
+    expect(shut.message).toMatch(/won't guess at it/);
+    /* And the reason, which is what the census reads — this arm drove the door
+       all along and named it nowhere (census card C5). */
+    expect(shut.reason).toBe("history_unreadable");
     expect(journal).not.toContain("begin");
     expect(journal).not.toContain("deduct");
     expect(ledger.charges).toHaveLength(0);
@@ -2666,7 +2714,7 @@ describe("a removal with no removal word is re-read as an edit", () => {
          accessory nobody named — but it no longer claims to have looked at her
          face when all it read was a record. */
       briefWorn = null;
-      await expect(refineCandidate({ harvest: unmasked,
+      const shut = await doorShut(refineCandidate({ harvest: unmasked,
           interpret: async () => ({
             ok: true as const,
             intent: "remove" as const,
@@ -2675,7 +2723,10 @@ describe("a removal with no removal word is re-read as an edit", () => {
           }),
         } as never,
         { ...input, instruction: "remove her glasses" },
-      )).rejects.toThrow(/brief didn't ask for glasses/);
+      ));
+      expect(shut.message).toMatch(/brief didn't ask for glasses/);
+      /* The reason too — `removal_not_in_brief` is one of C5's thirteen. */
+      expect(shut.reason).toBe("removal_not_in_brief");
     });
 
     /* The founder's own face: brief edited to ask for glasses, re-rolled, and
@@ -3152,9 +3203,11 @@ describe("how many refinements one face can carry", () => {
   it("refuses the twenty-fifth, for free", async () => {
     variantRows = chainOf(24);
     candidateRow.selectedVariantPublicId = "variant-24";
-    await expect(refineCandidate({ harvest: unmasked, interpret: async () => ({ ok: true as const, delta: { eyeColour: "green" } }) } as never,
+    const shut = await doorShut(refineCandidate({ harvest: unmasked, interpret: async () => ({ ok: true as const, delta: { eyeColour: "green" } }) } as never,
       { ...input, instruction: "make her eyes green" },
-    )).rejects.toThrow(/as many refinements as it can carry/);
+    ));
+    expect(shut.message).toMatch(/as many refinements as it can carry/);
+    expect(shut.reason).toBe("refine_limit");
     expect(ledger.charges).toHaveLength(0);
   });
 });
@@ -5438,10 +5491,12 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
 
     it("refuses an index the chain does not have", async () => {
       twoSteps();
-      await expect(refineCandidate(
+      const shut = await doorShut(refineCandidate(
         { ...repainting },
         { ...input, instruction: "", removeStep: { at: 7, instruction: "gold hoop earrings" } },
-      )).rejects.toThrow(/that step has moved/i);
+      ));
+      expect(shut.message).toMatch(/that step has moved/i);
+      expect(shut.reason).toBe("step_moved");
       expect(ledger.charges).toHaveLength(0);
     });
   });
@@ -5489,10 +5544,12 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
     };
 
     it("refuses on the OLD road, free, before anything is claimed", async () => {
-      await expect(refineCandidate(
+      const shut = await doorShut(refineCandidate(
         { ...horns, repaintEnabled: () => false, harvest: compositing },
         { ...input, instruction: "give her curved ram horns" },
-      )).rejects.toThrow(/can't do that to her yet/i);
+      ));
+      expect(shut.message).toMatch(/can't do that to her yet/i);
+      expect(shut.reason).toBe("kind_unserved");
     });
 
     it("is served on the repaint road — the arm that matters", async () => {
@@ -7868,14 +7925,17 @@ describe("removal is typed, and most of it is free", () => {
   */
   it("REFUSES TO PRUNE when the parse named no words — run-7's mechanism", async () => {
     twoStep();
-    await expect(refineCandidate(
+    const shut = await doorShut(refineCandidate(
       {
         ...asks({ ok: true, intent: "remove", subject: "statedAccessories", match: null, items: [] }),
         ...seesInBase(true),
       },
       { ...input, instruction: "remove her glasses" },
-      /* Free, and it asks for the one thing that would let it act. */
-    )).rejects.toThrow(/didn't catch what should come off/);
+    ));
+    /* Free, and it asks for the one thing that would let it act — and the
+       REASON beside the sentence, because `removal_unnamed` is C5's. */
+    expect(shut.message).toMatch(/didn't catch what should come off/);
+    expect(shut.reason).toBe("removal_unnamed");
 
     /*
       Run-7's exact harm, and the only assertion that matters: she asked about
@@ -7948,7 +8008,7 @@ describe("removal is typed, and most of it is free", () => {
        dependency is missing is invariant 7's violation wearing a new hat — it
        is the exact path that corrupted a paid chain. */
     twoStep();
-    await expect(refineCandidate(
+    const shut = await doorShut(refineCandidate(
       {
         ...asks({ ok: true, intent: "remove", subject: "statedAccessories", match: "glasses", items: ["small gold hoops"] }),
         regions: {
@@ -7959,11 +8019,13 @@ describe("removal is typed, and most of it is free", () => {
         readBytes: async () => { throw new Error("storage unreachable"); },
       },
       { ...input, instruction: "remove her glasses" },
+    ));
     /* "their", not "her": this fixture's Cast has no stated sex, and §5e made
        every sentence on this surface a function of the Cast's own pronouns —
        `they` is the fallback because it is the one default that cannot
        misgender anybody. */
-    )).rejects.toThrow(/couldn't check their face/);
+    expect(shut.message).toMatch(/couldn't check their face/);
+    expect(shut.reason).toBe("removal_uncheckable");
     expect(ledger.charges).toEqual([]);
   });
 
@@ -8207,10 +8269,15 @@ describe("removal is typed, and most of it is free", () => {
       internalPrompt: {},
     }];
     candidateRow.selectedVariantPublicId = "variant-1";
-    await expect(refineCandidate(
+    const shut = await doorShut(refineCandidate(
       asks({ ok: true, intent: "remove", subject: "makeup", match: null }),
       { ...input, instruction: "remove the makeup" },
-    )).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
+    ));
+    /* The REASON, not the HTTP-ish code: `PRECONDITION_FAILED` is shared by
+       five of this service's refusals, so it could never have said which door
+       shut (census card C5). */
+    expect(shut.reason).toBe("history_predates_undo");
+    expect(shut.message).toMatch(/before undoing by name existed/);
     expect(ledger.charges).toEqual([]);
   });
 });
@@ -13031,5 +13098,124 @@ describe("a regenerate re-sends the picture, and none of the replaced take", () 
        without it — the pronoun has its own arm in the assembler's suite. */
     expect(painted[0]!.prompt).toContain("Reference 2 is the picture supplied for");
     expect(painted[0]!.prompt).toContain("plain grey form standing in for a head");
+  });
+});
+
+
+/*
+  ─────────────────────────────────────────────────────────────────────────────
+  THE DOORS NOBODY HAD PROVEN CAN SHUT — census card C5, and it is invariant 7
+  in a place nobody thought to look.
+
+  The capability census reports, every run, which refusal ids no test names as a
+  quoted literal. Thirteen of this service's own were on that list. Seven of them
+  were being DRIVEN all along and asserted only by their SENTENCE — those now
+  carry their reason beside the sentence, at their own arms, through `doorShut`.
+
+  These four had nothing at all. Each is a guard somebody wrote deliberately,
+  with a paragraph of reasoning above it, and not one of them had ever been made
+  to fire: `candidate_missing` and `master_missing` (the two load guards),
+  `already_original` (the undo that has nowhere to go) and `version_missing`
+  (the face that moved under a free answer). "A control that is not invoked does
+  not exist" is the invariant; a control nothing has ever fired is the same
+  sentence with a longer fuse.
+
+  ⚠ **IT WAS SIX UNTIL THE SABOTAGE RAN.** Two more were written here —
+  `history_predates_undo` and `history_unreadable` — and each turned out to
+  duplicate an arm that had been driving that door all along. Grep did not find
+  them: one asserts a different fragment of the same sentence, the other asserts
+  no sentence at all and matches on `code: "PRECONDITION_FAILED"`, which five of
+  this service's refusals share. **Sabotaging each guard in turn is what showed
+  two arms biting where one should**, so the duplicates were deleted and the
+  reason pinned at the arm that already existed — derive, never mirror.
+
+  Every arm below asserts the REASON, the customer's SENTENCE, and that **the
+  ledger never moved** — because the one thing all six have in common is that
+  they refuse before anything is claimed, and a free refusal that silently
+  became a charged one is the defect this campaign has paid for twice.
+  ─────────────────────────────────────────────────────────────────────────────
+*/
+describe("the doors nobody had proven can shut", () => {
+  /** Free means free: no claim, no deduction, no ledger row. Asserted on every
+   *  arm rather than on one of them, because each door is a different exit. */
+  const nothingMoved = () => {
+    expect(journal, "nothing was begun").not.toContain("begin");
+    expect(journal, "nothing was claimed").not.toContain("claim");
+    expect(journal, "and nothing was deducted").not.toContain("deduct");
+    expect(ledger.charges).toHaveLength(0);
+    expect(ledger.refunds).toHaveLength(0);
+  };
+
+  it("candidate_missing — the face is gone before the request arrives", async () => {
+    /* The row the whole request is about does not resolve. Everything after
+       this line reads through `source`, so it is the first door in the file. */
+    candidateRow = null as never;
+    const shut = await doorShut(refineCandidate(greenEyes, input));
+    expect(shut.reason).toBe("candidate_missing");
+    expect(shut.message).toMatch(/no longer available/);
+    nothingMoved();
+  });
+
+  it("master_missing — the row is there and its picture is not", async () => {
+    /*
+      A DIFFERENT DOOR FROM THE ONE ABOVE, and the difference is the point: the
+      candidate exists, so "not found" would be a lie about her record. Every
+      render anchors on the master's bytes, so with no key there is nothing to
+      paint from and the honest sentence names the image, not the face.
+    */
+    candidateRow.imageKey = null;
+    const shut = await doorShut(refineCandidate(greenEyes, input));
+    expect(shut.reason).toBe("master_missing");
+    expect(shut.message).toMatch(/image isn't available/);
+    nothingMoved();
+  });
+
+  it("already_original — an undo with nothing behind it", async () => {
+    /* No selected variant, so the navigate has no predecessor to walk back to.
+       This is the honest end of the undo road and it must be free — a charge
+       for pressing undo on the original would be indefensible. */
+    variantRows = [];
+    candidateRow.selectedVariantPublicId = null;
+    const shut = await doorShut(refineCandidate(
+      { interpret: async () => ({ ok: true, intent: "navigate" }) as never, harvest: unmasked },
+      { ...input, instruction: "undo" },
+    ));
+    expect(shut.reason).toBe("already_original");
+    expect(shut.message).toMatch(/already looking at the original/);
+    nothingMoved();
+  });
+
+  it("version_missing — the face moved under a FREE answer, and it says so", async () => {
+    /*
+      The subtlest of the four. A navigate resolves a target and then MOVES the
+      selection; if that write finds nothing to move — expired, discarded,
+      signed in another tab — reporting a selection that did not happen would be
+      the record-lies class on a surface the customer is looking at.
+
+      Driven by making the write itself answer false, which is the only way this
+      branch can be reached: everything up to it succeeded.
+    */
+    const variants = await import("../db/castingV2Variants");
+    (variants.selectVariant as never as { mockResolvedValueOnce: (value: unknown) => void })
+      .mockResolvedValueOnce(false);
+    variantRows = [{
+      id: 801,
+      publicId: "variant-1",
+      imageKey: "casting-v2/variants/one.png",
+      instructions: ["a smokey eye"],
+      stepDeltas: [{ makeup: "a smokey eye" }],
+      deltas: { makeup: "a smokey eye" },
+      internalPrompt: {},
+      status: "ready",
+    }];
+    candidateRow.selectedVariantPublicId = "variant-1";
+
+    const shut = await doorShut(refineCandidate(
+      { interpret: async () => ({ ok: true, intent: "navigate" }) as never, harvest: unmasked },
+      { ...input, instruction: "undo" },
+    ));
+    expect(shut.reason).toBe("version_missing");
+    expect(shut.message).toMatch(/isn't available any more/);
+    nothingMoved();
   });
 });

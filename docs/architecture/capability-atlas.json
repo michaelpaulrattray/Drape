@@ -5,12 +5,16 @@
       {
         "id": "already_original",
         "kind": "service-refusal",
-        "pinnedBy": []
+        "pinnedBy": [
+          "server/castingV2/refineService.test.ts"
+        ]
       },
       {
         "id": "already_signed",
         "kind": "service-refusal",
-        "pinnedBy": []
+        "pinnedBy": [
+          "server/castingV2/refineService.test.ts"
+        ]
       },
       {
         "id": "busy",
@@ -23,7 +27,9 @@
       {
         "id": "candidate_missing",
         "kind": "service-refusal",
-        "pinnedBy": []
+        "pinnedBy": [
+          "server/castingV2/refineService.test.ts"
+        ]
       },
       {
         "id": "departure",
@@ -64,12 +70,16 @@
       {
         "id": "history_predates_undo",
         "kind": "service-refusal",
-        "pinnedBy": []
+        "pinnedBy": [
+          "server/castingV2/refineService.test.ts"
+        ]
       },
       {
         "id": "history_unreadable",
         "kind": "service-refusal",
-        "pinnedBy": []
+        "pinnedBy": [
+          "server/castingV2/refineService.test.ts"
+        ]
       },
       {
         "id": "inkBeyondToday",
@@ -91,12 +101,16 @@
       {
         "id": "kind_unserved",
         "kind": "service-refusal",
-        "pinnedBy": []
+        "pinnedBy": [
+          "server/castingV2/refineService.test.ts"
+        ]
       },
       {
         "id": "master_missing",
         "kind": "service-refusal",
-        "pinnedBy": []
+        "pinnedBy": [
+          "server/castingV2/refineService.test.ts"
+        ]
       },
       {
         "id": "noInkToChange",
@@ -153,7 +167,9 @@
       {
         "id": "refine_limit",
         "kind": "service-refusal",
-        "pinnedBy": []
+        "pinnedBy": [
+          "server/castingV2/refineService.test.ts"
+        ]
       },
       {
         "id": "removal",
@@ -174,7 +190,9 @@
       {
         "id": "removal_not_in_brief",
         "kind": "service-refusal",
-        "pinnedBy": []
+        "pinnedBy": [
+          "server/castingV2/refineService.test.ts"
+        ]
       },
       {
         "id": "removal_reread_unmatched",
@@ -186,7 +204,9 @@
       {
         "id": "removal_uncheckable",
         "kind": "service-refusal",
-        "pinnedBy": []
+        "pinnedBy": [
+          "server/castingV2/refineService.test.ts"
+        ]
       },
       {
         "id": "removal_unnameable",
@@ -198,7 +218,9 @@
       {
         "id": "removal_unnamed",
         "kind": "service-refusal",
-        "pinnedBy": []
+        "pinnedBy": [
+          "server/castingV2/refineService.test.ts"
+        ]
       },
       {
         "id": "scope_mismatch",
@@ -226,7 +248,9 @@
       {
         "id": "step_moved",
         "kind": "service-refusal",
-        "pinnedBy": []
+        "pinnedBy": [
+          "server/castingV2/refineService.test.ts"
+        ]
       },
       {
         "id": "uncatalogued",
@@ -285,7 +309,9 @@
       {
         "id": "version_missing",
         "kind": "service-refusal",
-        "pinnedBy": []
+        "pinnedBy": [
+          "server/castingV2/refineService.test.ts"
+        ]
       },
       {
         "id": "wall_content",
@@ -896,97 +922,6 @@
       }
     ],
     "findings": [
-      {
-        "id": "unpinned:already_original",
-        "severity": "warn",
-        "kind": "unpinned-refusal",
-        "subject": "already_original",
-        "message": "service-refusal \"already_original\" is named by no test file — a door nobody has proven can shut"
-      },
-      {
-        "id": "unpinned:already_signed",
-        "severity": "warn",
-        "kind": "unpinned-refusal",
-        "subject": "already_signed",
-        "message": "service-refusal \"already_signed\" is named by no test file — a door nobody has proven can shut"
-      },
-      {
-        "id": "unpinned:candidate_missing",
-        "severity": "warn",
-        "kind": "unpinned-refusal",
-        "subject": "candidate_missing",
-        "message": "service-refusal \"candidate_missing\" is named by no test file — a door nobody has proven can shut"
-      },
-      {
-        "id": "unpinned:history_predates_undo",
-        "severity": "warn",
-        "kind": "unpinned-refusal",
-        "subject": "history_predates_undo",
-        "message": "service-refusal \"history_predates_undo\" is named by no test file — a door nobody has proven can shut"
-      },
-      {
-        "id": "unpinned:history_unreadable",
-        "severity": "warn",
-        "kind": "unpinned-refusal",
-        "subject": "history_unreadable",
-        "message": "service-refusal \"history_unreadable\" is named by no test file — a door nobody has proven can shut"
-      },
-      {
-        "id": "unpinned:kind_unserved",
-        "severity": "warn",
-        "kind": "unpinned-refusal",
-        "subject": "kind_unserved",
-        "message": "service-refusal \"kind_unserved\" is named by no test file — a door nobody has proven can shut"
-      },
-      {
-        "id": "unpinned:master_missing",
-        "severity": "warn",
-        "kind": "unpinned-refusal",
-        "subject": "master_missing",
-        "message": "service-refusal \"master_missing\" is named by no test file — a door nobody has proven can shut"
-      },
-      {
-        "id": "unpinned:refine_limit",
-        "severity": "warn",
-        "kind": "unpinned-refusal",
-        "subject": "refine_limit",
-        "message": "service-refusal \"refine_limit\" is named by no test file — a door nobody has proven can shut"
-      },
-      {
-        "id": "unpinned:removal_not_in_brief",
-        "severity": "warn",
-        "kind": "unpinned-refusal",
-        "subject": "removal_not_in_brief",
-        "message": "service-refusal \"removal_not_in_brief\" is named by no test file — a door nobody has proven can shut"
-      },
-      {
-        "id": "unpinned:removal_uncheckable",
-        "severity": "warn",
-        "kind": "unpinned-refusal",
-        "subject": "removal_uncheckable",
-        "message": "service-refusal \"removal_uncheckable\" is named by no test file — a door nobody has proven can shut"
-      },
-      {
-        "id": "unpinned:removal_unnamed",
-        "severity": "warn",
-        "kind": "unpinned-refusal",
-        "subject": "removal_unnamed",
-        "message": "service-refusal \"removal_unnamed\" is named by no test file — a door nobody has proven can shut"
-      },
-      {
-        "id": "unpinned:step_moved",
-        "severity": "warn",
-        "kind": "unpinned-refusal",
-        "subject": "step_moved",
-        "message": "service-refusal \"step_moved\" is named by no test file — a door nobody has proven can shut"
-      },
-      {
-        "id": "unpinned:version_missing",
-        "severity": "warn",
-        "kind": "unpinned-refusal",
-        "subject": "version_missing",
-        "message": "service-refusal \"version_missing\" is named by no test file — a door nobody has proven can shut"
-      },
       {
         "id": "unreached:already_original",
         "severity": "info",
@@ -2029,97 +1964,6 @@
       "kind": "not-driven",
       "subject": "ref.ink.sleeve",
       "message": "needs state \"reference-attached\", which this fixture cannot supply"
-    },
-    {
-      "id": "unpinned:already_original",
-      "severity": "warn",
-      "kind": "unpinned-refusal",
-      "subject": "already_original",
-      "message": "service-refusal \"already_original\" is named by no test file — a door nobody has proven can shut"
-    },
-    {
-      "id": "unpinned:already_signed",
-      "severity": "warn",
-      "kind": "unpinned-refusal",
-      "subject": "already_signed",
-      "message": "service-refusal \"already_signed\" is named by no test file — a door nobody has proven can shut"
-    },
-    {
-      "id": "unpinned:candidate_missing",
-      "severity": "warn",
-      "kind": "unpinned-refusal",
-      "subject": "candidate_missing",
-      "message": "service-refusal \"candidate_missing\" is named by no test file — a door nobody has proven can shut"
-    },
-    {
-      "id": "unpinned:history_predates_undo",
-      "severity": "warn",
-      "kind": "unpinned-refusal",
-      "subject": "history_predates_undo",
-      "message": "service-refusal \"history_predates_undo\" is named by no test file — a door nobody has proven can shut"
-    },
-    {
-      "id": "unpinned:history_unreadable",
-      "severity": "warn",
-      "kind": "unpinned-refusal",
-      "subject": "history_unreadable",
-      "message": "service-refusal \"history_unreadable\" is named by no test file — a door nobody has proven can shut"
-    },
-    {
-      "id": "unpinned:kind_unserved",
-      "severity": "warn",
-      "kind": "unpinned-refusal",
-      "subject": "kind_unserved",
-      "message": "service-refusal \"kind_unserved\" is named by no test file — a door nobody has proven can shut"
-    },
-    {
-      "id": "unpinned:master_missing",
-      "severity": "warn",
-      "kind": "unpinned-refusal",
-      "subject": "master_missing",
-      "message": "service-refusal \"master_missing\" is named by no test file — a door nobody has proven can shut"
-    },
-    {
-      "id": "unpinned:refine_limit",
-      "severity": "warn",
-      "kind": "unpinned-refusal",
-      "subject": "refine_limit",
-      "message": "service-refusal \"refine_limit\" is named by no test file — a door nobody has proven can shut"
-    },
-    {
-      "id": "unpinned:removal_not_in_brief",
-      "severity": "warn",
-      "kind": "unpinned-refusal",
-      "subject": "removal_not_in_brief",
-      "message": "service-refusal \"removal_not_in_brief\" is named by no test file — a door nobody has proven can shut"
-    },
-    {
-      "id": "unpinned:removal_uncheckable",
-      "severity": "warn",
-      "kind": "unpinned-refusal",
-      "subject": "removal_uncheckable",
-      "message": "service-refusal \"removal_uncheckable\" is named by no test file — a door nobody has proven can shut"
-    },
-    {
-      "id": "unpinned:removal_unnamed",
-      "severity": "warn",
-      "kind": "unpinned-refusal",
-      "subject": "removal_unnamed",
-      "message": "service-refusal \"removal_unnamed\" is named by no test file — a door nobody has proven can shut"
-    },
-    {
-      "id": "unpinned:step_moved",
-      "severity": "warn",
-      "kind": "unpinned-refusal",
-      "subject": "step_moved",
-      "message": "service-refusal \"step_moved\" is named by no test file — a door nobody has proven can shut"
-    },
-    {
-      "id": "unpinned:version_missing",
-      "severity": "warn",
-      "kind": "unpinned-refusal",
-      "subject": "version_missing",
-      "message": "service-refusal \"version_missing\" is named by no test file — a door nobody has proven can shut"
     },
     {
       "id": "unreached-driven:noInkToChange",
