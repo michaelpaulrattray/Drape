@@ -2669,7 +2669,6 @@ export default function CastingSheet() {
             <FaceRegions
               rows={faceRows}
               selection={faceSelection}
-              priceCredits={refinePrice}
               busy={viewerBusy}
               onAsk={askRefine}
             />

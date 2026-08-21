@@ -239,17 +239,55 @@ describe("the box on the picture is the ask box, at the feature", () => {
     expect(regions).toContain('className="dpc-regions__away"');
   });
 
-  it("opens with their sentence already begun, scoped to the one instance", async () => {
+  it("opens EMPTY and still sends the noun — the prefill moved, it did not go", async () => {
+    /*
+      AMENDED, not deleted (FOUNDER, fable-1270 §1). This pinned
+      `setDraft(open.prefill)` — the box opening with *"his upper chest tattoo
+      — "* as typed text — and he asked for hint text instead.
+
+      What it pins NOW is the half that is load-bearing rather than the half
+      that was cosmetic: the field opens empty, and the feature's noun still
+      reaches the wire at submit. A bare *"make it bigger"* with no noun is
+      `unreadable` to the interpreter, which runs BEFORE the prior question that
+      would resolve which tattoo she means — so dropping the prefill outright
+      would turn a tap into an unreadable sentence, and this arm is what would
+      go red if a later tidy-up did exactly that.
+    */
     const regions = await readFile(REGIONS, "utf8");
-    expect(regions).toContain("setDraft(open.prefill)");
-    expect(regions).toContain("setSelectionRange(field.value.length, field.value.length)");
+    expect(regions).toContain('setDraft("")');
+    expect(regions).not.toContain("setDraft(open.prefill)");
+    expect(regions).toContain("onAsk(`${open.prefill}${said}`, open.scope)");
   });
 
-  it("keeps the price OFF the button and says it quietly beside it (D-15/D-109)", async () => {
+  it("states the price ONCE PER SURFACE — not on this popover, and never on a button", async () => {
+    /*
+      ⚠ AMENDED BY FOUNDER RULING, NEVER SILENTLY DROPPED (fable-1270 §2):
+      *"its already stated in the description under the chatbar."*
+
+      This arm used to require a price chip ON this popover. D-15/D-109 — a paid
+      affordance states its price — is NOT repealed; it is read as **once per
+      SURFACE rather than once per control**. The refine panel under the picture
+      says "… · 25 credits each" for this same edit, and a second chip eight
+      pixels from a photograph of somebody's face was one fact said twice.
+
+      So the arm keeps the half that is still law — the price is never ON the
+      button — and inverts the half he ruled on. It can still fail in both
+      directions: put the chip back and the second expectation reddens; put a
+      price on the button and the first does.
+    */
     const regions = await readFile(REGIONS, "utf8");
     const button = regions.slice(regions.indexOf('className="dpc-regions__submit"'));
     expect(button.slice(0, button.indexOf("</button>"))).not.toContain("priceCredits");
-    expect(regions).toContain('className="dpc-regions__price"');
+    expect(regions).not.toContain('className="dpc-regions__price"');
+    /* And the surface that DOES state it still does — so "once per surface" is
+       pinned rather than "nowhere", which is the failure this amendment could
+       otherwise become. `RefinePanel` is the ask box under the picture, and its
+       line is the one he was pointing at. */
+    const refine = await readFile(
+      new URL("./components/RefinePanel.tsx", import.meta.url),
+      "utf8",
+    );
+    expect(refine).toContain("{priceCredits} credits each");
   });
 
   it("draws no ring inside the field — the container carries focus", async () => {
@@ -571,7 +609,12 @@ describe("the rectangle names what it covers (fable-378 (c))", () => {
       readFile(SHEET, "utf8").then(withoutProse),
     ]);
 
-    expect(regions).toContain("onAsk(said, open.scope);");
+    /* The sentence gained the feature's noun at this call (fable-1270 §1) and
+       the SCOPE is unchanged — which is the point of this arm. Asserting the
+       whole call rather than the scope alone keeps both halves pinned: the
+       rectangle's scope reaches the wire, and so does the noun the interpreter
+       needs to read the sentence at all. */
+    expect(regions).toContain("onAsk(`${open.prefill}${said}`, open.scope);");
     /* The third parameter is the replay marker (fable-733 §2) and the FOURTH is
        the picture she attached (fable-1051); both ride the same handler,
        because each is the same paid edit arriving with one more thing known

@@ -4087,6 +4087,31 @@
   The tag above keeps its scrim, because the tag really is always over the
   picture. The two are deliberately different and the comments say why.
 */
+/*
+  ⚠ AND THE SOLID SURFACE ABOVE IS SUPERSEDED BY TASTE (FOUNDER, fable-1271):
+  *"also make the text box more frosted glass look like the normal prompt box."*
+
+  The paragraph above is kept because its REASONING is still the thing to
+  answer, not because its conclusion survived: a panel that may land on the page
+  or on a photograph cannot be styled for one of them. Frosted glass answers
+  that the way an opaque surface did, and by the mechanism the name describes —
+  `backdrop-filter` blurs whatever is actually behind it, so the panel separates
+  from a face and from the page without either being measured.
+
+  The hairline and the shadow STAY. They are what carry the edge when the
+  backdrop is low-contrast, and on a browser with no `backdrop-filter` support
+  they are the whole separation — the translucent fill degrades to a tint, which
+  is why the fill is a tint of `--onScrim` rather than a flat alpha of nothing.
+
+  THE SCRIM GROUP, not the surface group, and the token file says why in one
+  line: *"SCRIM (over media; identical in both themes)"*. This popover is
+  anchored on the PHOTOGRAPH inside the candidate viewer — the one place in the
+  product whose background is a person's face rather than a page — so it is the
+  same family as every other chip that floats over media. That is also what
+  makes the theme question go away rather than be answered twice: `--scrimChip`
+  and `--onScrim` are the same values in both themes, so there is no light-mode
+  variant of this panel to get wrong.
+*/
 .dpc-regions__ask {
   position: absolute;
   transform: translate(-50%, 8px);
@@ -4095,8 +4120,10 @@
   gap: 8px;
   padding: 6px 6px 6px 10px;
   border-radius: 12px;
-  background: var(--surface);
-  border: 1px solid var(--borderCard);
+  background: var(--scrimChip);
+  backdrop-filter: blur(12px) saturate(140%);
+  -webkit-backdrop-filter: blur(12px) saturate(140%);
+  border: 1px solid color-mix(in srgb, var(--onScrim) 22%, transparent);
   box-shadow: var(--shadowPop);
   pointer-events: auto;
   max-width: min(420px, 92%);
@@ -4120,17 +4147,23 @@
   placeholder, and `Refine` and the price — both `flex: none` — are never the
   things that get cut.
 */
+/*
+  THE FIELD TAKES THE NORMAL PROMPT BOX'S TREATMENT, through the same tokens
+  `.dpc-refine__field` uses rather than a second spelling of them (fable-1271's
+  *"one owner if the style can be shared rather than respelled"*). It reads on
+  glass because `--onScrim` is what the panel's own fill is mixed from.
+*/
 .dpc-regions__field {
   flex: 1 1 auto;
   min-width: 0;
   border: 0;
   background: transparent;
-  color: var(--ink);
+  color: var(--onScrim);
   font-size: 13px;
   padding: 4px 0;
 }
 
-.dpc-regions__field::placeholder { color: var(--meta); }
+.dpc-regions__field::placeholder { color: color-mix(in srgb, var(--onScrim) 46%, transparent); }
 
 /* No inner outline on a field — the container carries focus (the standing law). */
 .dpc-regions__field:focus { outline: none; }
@@ -4145,22 +4178,28 @@
   construction. The old white-on-#111112 was correct only while the panel
   behind it was black; on a white surface a white button is invisible.
 */
+/*
+  THE BUTTON STOPS BEING `--ink` ON `--surface` AND BECOMES A CHIP ON MEDIA.
+
+  The old pair was correct over an opaque light panel and is invisible over dark
+  glass — a near-black button on a near-black panel. `--scrimChipHov` is the
+  token file's own stronger weight of the same "button over media" role, so the
+  raised control and the panel it sits on come from one family and neither has a
+  theme variant to disagree about. The hairline is what separates two dark
+  translucencies when the photograph behind them is dark.
+*/
 .dpc-regions__submit {
   flex: none;
   padding: 5px 12px;
-  border: 0;
+  border: 1px solid color-mix(in srgb, var(--onScrim) 28%, transparent);
   border-radius: var(--r-btn);
-  background: var(--ink);
-  color: var(--surface);
+  background: var(--scrimChipHov);
+  color: var(--onScrim);
   font-size: 12.5px;
   cursor: pointer;
 }
 
 .dpc-regions__submit:disabled { opacity: 0.5; cursor: default; }
 
-.dpc-regions__price {
-  flex: none;
-  padding-right: 4px;
-  font-size: 11.5px;
-  color: var(--faint);
-}
+/* `.dpc-regions__price` was here and is GONE with the chip (fable-1270 §2) —
+   the price is stated once per SURFACE, by the panel under the picture. */

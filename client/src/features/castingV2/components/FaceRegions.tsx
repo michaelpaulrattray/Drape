@@ -56,18 +56,27 @@ import type { FaceSelectionModel } from "./faceSelection";
  *                                         'Left eye'"*. The side stays, because
  *                                         the side is the information the
  *                                         pronoun never was
- *   "Change something about them…"        VERIFIED — the shipped ask box's own
- *                                         placeholder (`RefinePanel:295`),
- *                                         reused verbatim: two doors to one
- *                                         edit must not speak differently
+ *   "Describe your edit…"                 ADAPTED  — the founder's own words for
+ *                                         what this field should now show
+ *                                         (fable-1270 §1). It REPLACES the ask
+ *                                         box's "Change something about them…",
+ *                                         which was reused verbatim while this
+ *                                         field opened pre-filled with the
+ *                                         feature's name; the two doors still do
+ *                                         not disagree, because this one is now
+ *                                         a HINT over an empty box and the other
+ *                                         is a hint over an unscoped one
  *   "Refine" · "Refining…"                VERIFIED — the shipped submit label
  *                                         and its busy state (`RefinePanel:301`)
- *   "{25} credits"                        ADAPTED  — the panel below reads
- *                                         "…· 25 credits each", which is a RATE
- *                                         across tiles. This box is one edit to
- *                                         one feature, so the "each" would be
- *                                         false here. Beside the button and
- *                                         never on it (D-15/D-109)
+ *   "{25} credits"                        DELETED  — founder, fable-1270 §2:
+ *                                         *"its already stated in the
+ *                                         description under the chatbar."*
+ *                                         D-15/D-109 is not repealed; it is read
+ *                                         as ONCE PER SURFACE rather than once
+ *                                         per control, and the panel under the
+ *                                         picture is where this surface says it.
+ *                                         The drive arm that pinned it is
+ *                                         AMENDED, never silently dropped
  *   "What to change about {her lips}"     INVENTED — the field's screen-reader
  *                                         label. The one label here that is a
  *                                         SENTENCE, so it keeps the possessive
@@ -89,13 +98,15 @@ import type { FaceSelectionModel } from "./faceSelection";
 export function FaceRegions({
   rows,
   selection,
-  priceCredits,
   busy,
   onAsk,
 }: {
   rows: readonly FacePanelRow[];
   selection: FaceSelectionModel;
-  priceCredits: number;
+  /* `priceCredits` was here and is GONE with the chip it fed (fable-1270 §2).
+     Removed rather than left unread: a prop nothing renders is a caller still
+     being asked for a fact, and the next person would put a chip back to use
+     it. */
   busy: boolean;
   /** The same paid edit the ask box submits, scoped to one instance when she
    *  clicked one instance's rectangle. */
@@ -108,14 +119,27 @@ export function FaceRegions({
   const open = selection.selected;
   const openRow = open ? rows.find((row) => row.slots.join(" ") === open.slots.join(" ")) : undefined;
 
-  /* The box opens with their sentence already begun and the caret after it. */
+  /*
+    THE BOX OPENS EMPTY, AND THE FEATURE IT IS ABOUT IS CARRIED INVISIBLY
+    (FOUNDER, fable-1270 §1, on his own screenshot of the popover).
+
+    It used to open with `open.prefill` as TYPED TEXT — *"his upper chest tattoo
+    — "* sitting in the field with the caret after it. He wants hint text
+    instead, and the box already says which feature it belongs to: the tag on
+    the rectangle it is anchored under names it, and the field's own
+    `aria-label` says it as a sentence.
+
+    ⚠ **THE PREFILL IS NOT DROPPED, IT MOVES TO SUBMIT — and that is
+    load-bearing rather than tidy.** A bare *"make it bigger"* with no noun in
+    it is `unreadable` to the interpreter, which runs BEFORE the prior question
+    that would have resolved WHICH tattoo she means. So the noun still has to
+    reach the wire; what changed is only whether she has to look at it. Composed
+    in `onSubmit` below, from the same `open.prefill` this line used to paste.
+  */
   useEffect(() => {
     if (!open) return;
-    setDraft(open.prefill);
-    const field = fieldRef.current;
-    if (!field) return;
-    field.focus();
-    field.setSelectionRange(field.value.length, field.value.length);
+    setDraft("");
+    fieldRef.current?.focus();
   }, [open?.slots.join(" "), open?.prefill]);
 
   /*
@@ -318,7 +342,11 @@ export function FaceRegions({
             event.preventDefault();
             const said = draft.trim();
             if (!said || busy) return;
-            onAsk(said, open.scope);
+            /* THE NOUN REJOINS HER WORDS HERE — see the open effect above. The
+               field shows hint text; the wire still gets the whole sentence,
+               because the interpreter reads it before anything knows which
+               rectangle she tapped. */
+            onAsk(`${open.prefill}${said}`, open.scope);
             close();
           }}
           /* Esc closes it and spends nothing — there is nothing to undo,
@@ -334,7 +362,7 @@ export function FaceRegions({
             className="dpc-regions__field"
             value={draft}
             onChange={(event) => setDraft(event.target.value)}
-            placeholder="Change something about them…"
+            placeholder="Describe your edit…"
             maxLength={200}
             disabled={busy}
             /* The one label that is a SENTENCE, so it keeps the possessive
@@ -345,9 +373,23 @@ export function FaceRegions({
           <button type="submit" className="dpc-regions__submit" disabled={!draft.trim() || busy}>
             {busy ? "Refining…" : "Refine"}
           </button>
-          {/* The price is stated quietly and never on the button (D-15/D-109),
-              the same way the panel below states it. */}
-          <span className="dpc-regions__price">{priceCredits} credits</span>
+          {/*
+            ⚠ THE PRICE CHIP IS GONE FROM THIS POPOVER (FOUNDER, fable-1270 §2):
+            *"its already stated in the description under the chatbar."*
+
+            The standing law is D-15/D-109 — a paid affordance states its price
+            — and it is NOT being repealed. It is being read the way he reads
+            it: **the price is stated once per SURFACE, not once per control.**
+            The refine panel under the picture already says *"… · 25 credits
+            each"*, and this popover is a second control on that same surface,
+            so a second chip was the same fact said twice, eight pixels from a
+            picture of somebody's face.
+
+            The browser-drive arm that pinned the chip is AMENDED rather than
+            deleted, citing this ruling — a founder ruling and a mechanised law
+            disagreeing is a thing to resolve out loud, never by quietly
+            dropping the assertion and never by fighting him with a test.
+          */}
         </form>
       ) : null}
     </span>

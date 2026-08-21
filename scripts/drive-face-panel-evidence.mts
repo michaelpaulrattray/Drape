@@ -1046,15 +1046,32 @@ for (const theme of THEMES) {
     await page.click(measuredSelector);
     await page.waitForSelector(".dpc-regions__ask", { timeout: 10_000 });
     const opened = await page.evaluate(READ_REGIONS) as any;
+    /*
+      AMENDED BY FOUNDER RULING (fable-1270 §1) — the box used to open carrying
+      "her lips — " as typed text and now opens EMPTY behind hint text. The noun
+      still reaches the wire, composed at submit; that half is pinned in
+      `facePanelAnatomy.test.ts`, which can read the handler this drive cannot.
+    */
     check(
-      opened.draft === "her lips — ",
-      `${theme}: the box opens carrying the opening of her sentence`,
-      `field value "${opened.draft}"`,
+      opened.draft === "" && (opened.fieldPlaceholder ?? "").length > 0,
+      `${theme}: the box opens empty, with hint text rather than a pasted sentence`,
+      `field value "${opened.draft}", placeholder "${opened.fieldPlaceholder}"`,
     );
+    /*
+      ⚠ AMENDED, NEVER SILENTLY DROPPED (FOUNDER, fable-1270 §2): *"its already
+      stated in the description under the chatbar."*
+
+      D-15/D-109 stands and is read as ONCE PER SURFACE rather than once per
+      control: the refine panel under the picture states this edit's price, and
+      the chip that repeated it beside this button is gone. The arm keeps the
+      half that is still law — never a price ON the button — and now also
+      proves the chip's ABSENCE, so putting it back reddens this rather than
+      passing silently.
+    */
     check(
-      opened.submitHasPrice === false && /\d+ credits/.test(opened.priceText ?? ""),
-      `${theme}: the price is stated beside the button and never on it`,
-      `button "${opened.submitText}", price "${opened.priceText}"`,
+      opened.submitHasPrice === false && opened.priceText === null,
+      `${theme}: the price is stated once per surface — not on this popover, never on a button`,
+      `button "${opened.submitText}", popover price ${JSON.stringify(opened.priceText)}`,
     );
     check(
       opened.fieldOutline === "none",
