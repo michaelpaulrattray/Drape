@@ -329,6 +329,13 @@ export async function driveRow(input: {
       return { id: input.row.id, observed: "offered", facet: null, said: null, calls, ms };
     }
     if (result.note) {
+      /* The NAVIGATE answers are the removal road's own copy, not the
+         cannot-say table's — a display label so the table reads as what
+         happened. If the product's sentence drifts, the observed string
+         drifts with it and the route-change finding says so. */
+      if (/^That takes (it back to the original|off ["'“])/.test(result.note)) {
+        return { id: input.row.id, observed: "free:navigate", facet: null, said: result.note, calls, ms };
+      }
       const reason = reasonOfNote(result.note, { facet: input.row.subject === "guard" ? null : input.row.subject, scopeNoun });
       return { id: input.row.id, observed: `free:${reason}`, facet: null, said: result.note, calls, ms };
     }

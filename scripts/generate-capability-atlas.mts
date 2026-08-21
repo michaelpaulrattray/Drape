@@ -33,6 +33,13 @@ const args = new Set(process.argv.slice(2));
 const WANT_DRIVE = args.has("--drive");
 const WANT_CHECK = args.has("--check");
 const WANT_HELP = args.has("--help") || args.has("-h");
+/**
+ * `--state=<s>` — diagnostic runs drive ONLY that state's rows and NEVER write
+ * the committed table (a partial run written whole would delete every other
+ * row's observation — the truncated-inventory class). Exists for cheap
+ * sabotage proofs of the harness itself.
+ */
+const ONLY_STATE = [...args].map((a) => /^--state=(.+)$/.exec(a)?.[1]).find(Boolean) ?? null;
 
 const usage = () => {
   console.log("capability census — --drive to put the corpus through the real entrance (dev only, text calls), --check to verify, --help for this.");
@@ -89,12 +96,47 @@ async function drive(committed: CapabilityAtlas | null): Promise<DrivenAtlas> {
   };
   const before = await ledger();
 
+  /*
+    STATE → CAST. "master" drives the pristine clone; the two branch states
+    drive their own fixtures (the REAL ink branch pinned to its court variant,
+    the manufactured accessory branch), and their selections are RESTORED after
+    the run so no other court inherits the census's pin. "reference-attached"
+    stays not-driven until the attach door has its own harness.
+  */
+  const { ensureInkBranchFixture, ensureAccessoryBranchFixture, restoreSelection } = await import("./lib/censusStateFixtures.mts");
+  const inkBranch = await ensureInkBranchFixture({ userId: fixture.id }).catch((error) => { console.error(`[census] ink branch unavailable: ${error instanceof Error ? error.message : error}`); return null; });
+  const accessoryBranch = await ensureAccessoryBranchFixture({ userId: fixture.id }).catch((error) => { console.error(`[census] accessory branch unavailable: ${error instanceof Error ? error.message : error}`); return null; });
+  const castFor = (state: string): string | null => {
+    if (state === "master") return fixture.candidatePublicId;
+    if (state === "branch-with-ink") return inkBranch?.candidatePublicId ?? null;
+    if (state === "branch-with-accessory") return accessoryBranch?.candidatePublicId ?? null;
+    return null;
+  };
+
   const observations: Observation[] = [];
   const notDriven: DrivenAtlas["notDriven"] = [];
   const priorById = new Map((committed?.driven?.observations ?? []).map((o) => [o.id, o]));
+  /*
+    A FREE ANSWER IS A WRITE (opus-972, overturning fable-1321 §2). The
+    navigate moves the cast's selection, so a state pinned once per run is the
+    previous row's side effect from the first state-moving answer onward — the
+    census measured a bare master and filed a false "live defect". So: the
+    declared state is RE-ESTABLISHED AND RE-ASSERTED in front of EVERY row
+    that declares one. Proven by sabotage before it was claimed: with this
+    re-pin, `ink.remove.branch.whole` observes `would-render`; with it
+    removed, the row flips back to `refused:removal_absent`.
+  */
+  const repin = async (state: string): Promise<void> => {
+    if (state === "branch-with-ink" && inkBranch) await ensureInkBranchFixture({ userId: fixture.id });
+    if (state === "branch-with-accessory" && accessoryBranch) await ensureAccessoryBranchFixture({ userId: fixture.id });
+  };
+  try {
   for (const row of CORPUS) {
-    if (row.state !== "master") { notDriven.push({ id: row.id, state: row.state }); continue; }
-    let observation = await driveRow({ row, userId: fixture.id, candidatePublicId: fixture.candidatePublicId, refine: refineCandidate, interpret: interpretRefinement });
+    if (ONLY_STATE && row.state !== ONLY_STATE) continue;
+    const cast = castFor(row.state);
+    if (!cast) { notDriven.push({ id: row.id, state: row.state }); continue; }
+    await repin(row.state);
+    let observation = await driveRow({ row, userId: fixture.id, candidatePublicId: cast, refine: refineCandidate, interpret: interpretRefinement });
     /*
       A ROUTE THAT MOVED GETS ASKED AGAIN, because the interpreter is the one
       unstable participant (memory: the model's read is the unstable thing). Two
@@ -105,7 +147,11 @@ async function drive(committed: CapabilityAtlas | null): Promise<DrivenAtlas> {
     if (WANT_CHECK && prior && prior.observed !== observation.observed) {
       const reads = [observation];
       for (let n = 0; n < 2; n += 1) {
-        reads.push(await driveRow({ row, userId: fixture.id, candidatePublicId: fixture.candidatePublicId, refine: refineCandidate, interpret: interpretRefinement }));
+        /* Re-pin AND the row's own cast — the first cut re-drove every row
+           against the master, which would have re-judged a branch row on the
+           wrong face (found while landing the repin, 2026-08-22). */
+        await repin(row.state);
+        reads.push(await driveRow({ row, userId: fixture.id, candidatePublicId: cast, refine: refineCandidate, interpret: interpretRefinement }));
       }
       const tally = new Map<string, number>();
       for (const read of reads) tally.set(read.observed, (tally.get(read.observed) ?? 0) + 1);
@@ -117,6 +163,11 @@ async function drive(committed: CapabilityAtlas | null): Promise<DrivenAtlas> {
     }
     observations.push(observation);
     console.log(`${observation.observed.padEnd(34)} ${String(observation.ms).padStart(6)}ms  ${row.id}  ${row.expect === observation.observed ? "" : `(believed ${row.expect})`}`);
+  }
+  } finally {
+    /* No other court inherits the census's pin. */
+    if (inkBranch) await restoreSelection(inkBranch).catch((error) => console.error("[census] ink-branch selection restore FAILED", error));
+    if (accessoryBranch) await restoreSelection(accessoryBranch).catch((error) => console.error("[census] accessory selection restore FAILED", error));
   }
   const after = await ledger();
   await connection.end();
@@ -156,6 +207,14 @@ async function main(): Promise<number> {
     return problems.length === 0 ? 0 : 1;
   }
 
+  if (ONLY_STATE) {
+    /* THE DOCBLOCK'S PROMISE, IMPLEMENTED — the first cut promised "never
+       writes" in prose and wrote anyway; the sabotage run clobbered the
+       committed 54-row table with its 5 rows before this guard existed
+       (2026-08-22). A partial drive is a diagnostic, never the record. */
+    console.log(`[capability] --state=${ONLY_STATE}: diagnostic run, ${driven?.observations.length ?? 0} rows driven, NOTHING WRITTEN`);
+    return errors.length === 0 ? 0 : 1;
+  }
   writeAtlas(atlas);
   console.log(`[capability] wrote ${CAPABILITY_JSON} — ${staticAtlas.declared.length} declared doors, ${staticAtlas.corpus.length} corpus rows (${driven ? `${driven.observations.length} driven, ${driven.notDriven.length} not driven` : "no drive"}), ${findings.length} findings (${errors.length} error)`);
   for (const f of findings.filter((x) => x.severity !== "info")) console.log(`  ${f.severity.padEnd(5)} ${f.kind.padEnd(16)} ${f.subject} — ${f.message}`);

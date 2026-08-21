@@ -17,14 +17,14 @@ Profile **fixture-as-founder** on fixture `outside-scope-bot-local / 34383040-62
 | ink.words.behind-ear | a tiny moon tattoo behind her ear | master | refused:gate_ink_document | refused:gate_ink_document | Tell me where it goes — a neck tattoo is the one I can do from a description alone. Anywhere else needs a design to work from first, and the |
 | ink.transform.none | make his chest tattoo bigger | master | free:noInkToChange | **refused:gate_ink_document** | Tell me where it goes — a neck tattoo is the one I can do from a description alone. Anywhere else needs a design to work from first, and the |
 | ink.remove.none | take his tattoos off | master | refused:removal_absent | refused:removal_absent | I can't find any tattoos on this face — there's nothing to take off. Nothing was charged. |
-| ink.transform.has | his upper chest tattoo — make it bigger | branch-with-ink | would-render | _not driven_ |  |
-| ink.transform.two | make his chest tattoo bigger and darker | branch-with-ink | free:inkOneChangeAtATime | _not driven_ |  |
-| ink.remove.has | take his chest tattoo off | branch-with-ink | would-render | _not driven_ |  |
+| ink.transform.has | his upper chest tattoo — make it bigger | branch-with-ink | would-render | would-render |  |
+| ink.transform.two | make his chest tattoo bigger and darker | branch-with-ink | free:inkOneChangeAtATime | free:inkOneChangeAtATime | I can change one thing about a tattoo at a time — bigger or smaller, higher or lower, darker or lighter. Say which one you'd like first and  |
+| ink.remove.has | take his chest tattoo off | branch-with-ink | free:navigate | free:navigate | That takes it back to the original — nothing charged. |
 | mark.scar.forehead | give her a harry potter lightning bolt scar on her forehead | master | would-render | would-render |  |
 | mark.freckles | give her freckles | master | would-render | would-render |  |
 | acc.earrings.add | give her gold hoop earrings | master | would-render | would-render |  |
 | acc.glasses.remove.none | take her glasses off | master | refused:removal_absent | **refused:removal_not_in_brief** | Her brief didn't ask for glasses, and nothing since has added any, so there's nothing on record to take off. If she's wearing glasses in the |
-| acc.glasses.remove.has | take her glasses off | branch-with-accessory | would-render | _not driven_ |  |
+| acc.glasses.remove.has | take her glasses off | branch-with-accessory | free:navigate | free:navigate | That takes it back to the original — nothing charged. |
 | hair.colour | make her hair copper red | master | would-render | would-render |  |
 | hair.style | give her a short bob | master | would-render | would-render |  |
 | hair.bald | make him bald | master | would-render | would-render |  |
@@ -49,6 +49,22 @@ Profile **fixture-as-founder** on fixture `outside-scope-bot-local / 34383040-62
 | guard.scope.ink.none | make it bigger _(scope ink:upperArm@left)_ | master | free:noInkToChange | **refused:unreadable** | That one didn't come through clearly. Try naming what you want changed about them. Nothing was charged. |
 | ref.hair.whole | copy this hair | reference-attached | would-render | _not driven_ |  |
 | ref.ink.sleeve | copy his right arm sleeve onto him | reference-attached | would-render | _not driven_ |  |
+| ink.words.neck.branch | give him a small star tattoo on his neck | branch-with-ink | would-render | would-render |  |
+| ink.remove.branch.whole | take his tattoos off | branch-with-ink | free:navigate | free:navigate | That takes it back to the original — nothing charged. |
+| acc.remove.branch.other | take her earrings off | branch-with-accessory | refused:removal_absent | **refused:removal_not_in_brief** | Her brief didn't ask for earrings, and nothing since has added any, so there's nothing on record to take off. If she's wearing earrings in t |
+| age.older | make her ten years older | master | would-render | **refused:wall_stage** | Refining can't do her age yet — it isn't one of the things this can name. Faces, hair, skin, build and anything worn do work here. Nothing w |
+| expression.smile | make him smile | master | would-render | would-render |  |
+| hair.remove.none | remove her fringe | master | refused:removal_not_in_brief | **would-render** |  |
+| acc.piercing | give him a silver nose ring | master | would-render | would-render |  |
+| eye.both.sides | make her left eye blue and her right eye green | master | would-render | would-render |  |
+| skin.freckles.remove.none | she never had freckles | master | refused:removal_not_in_brief | **refused:removal_absent** | I can't find any freckles on this face — there's nothing to take off. Nothing was charged. |
+| brows.thicker | give her thicker eyebrows | master | would-render | would-render |  |
+| beard.full | give him a full beard | master | would-render | would-render |  |
+| guard.undo | undo | master | refused:removal_unnamed | **refused:already_original** | You're already looking at the original. Nothing was charged. |
+| guard.multi | green eyes, copper hair, and freckles | master | would-render | would-render |  |
+| guard.compliment | he looks great | master | refused:unreadable | **refused:wall_stage** | Refining can't do how attractive they look yet — it isn't one of the things this can name. Faces, hair, skin, build and anything worn do wor |
+| wardrobe.colour | make his tee black | master | refused:wall_stage | refused:wall_stage | Refining can't do his tee yet — it isn't one of the things this can name. Faces, hair, skin, build and anything worn do work here. Nothing w |
+| background.white | make the background pure white | master | refused:wall_stage | refused:wall_stage | Refining changes the person, not the shoot — the background is a garment, a prop or the set, which comes after Sign. Jewellery, glasses and  |
 
 ## Every door the source declares
 
@@ -100,21 +116,26 @@ Profile **fixture-as-founder** on fixture `outside-scope-bot-local / 34383040-62
 
 `CASTING_FACE_SCAN_SCOPE` · `CASTING_HAIR_REFERENCE_SCOPE` · `CASTING_INK_CUT_SCOPE` · `CASTING_INK_REFERENCE_SCOPE` · `CASTING_INK_REGION_CROP_SCOPE` · `CASTING_INK_STUDIO_SCOPE` · `CASTING_INK_TRANSFORM_SCOPE` · `CASTING_INK_WORDS_SCOPE` · `CASTING_OPEN_LANE_SCOPE` · `CASTING_REFERENCE_ATTACH_SCOPE` · `CASTING_REFERENCE_LIBRARY_SCOPE` · `CASTING_REFINE_DISPATCH_SCOPE` · `CASTING_REPAINT_SCOPE` · `CASTING_SCAN_TABLE_SCOPE` · `CASTING_SEGMENTS_DELIVERED_SCOPE` · `CASTING_SEGMENTS_SCOPE` · `CASTING_SIDE_PHRASING_SCOPE` · `CASTING_V2_SCOPE`
 
-## Findings (60)
+## Findings (63)
 
 - **warn** `belief-mismatch` acc.glasses.remove.none — "take her glasses off" — believed refused:removal_absent, observed refused:removal_not_in_brief
+- **warn** `belief-mismatch` acc.remove.branch.other — "take her earrings off" — believed refused:removal_absent, observed refused:removal_not_in_brief
+- **warn** `belief-mismatch` age.older — "make her ten years older" — believed would-render, observed refused:wall_stage
 - **warn** `belief-mismatch` eye.scoped.left — "make it green" — believed would-render, observed asked:which-facet
+- **warn** `belief-mismatch` guard.compliment — "he looks great" — believed refused:unreadable, observed refused:wall_stage
 - **warn** `belief-mismatch` guard.scope.ink.none — "make it bigger" — believed free:noInkToChange, observed refused:unreadable
 - **warn** `belief-mismatch` guard.typo — "give her a nose rign" — believed asked:did-you-mean, observed would-render
+- **warn** `belief-mismatch` guard.undo — "undo" — believed refused:removal_unnamed, observed refused:already_original
+- **warn** `belief-mismatch` hair.remove.none — "remove her fringe" — believed refused:removal_not_in_brief, observed would-render
 - **warn** `belief-mismatch` ink.transform.none — "make his chest tattoo bigger" — believed free:noInkToChange, observed refused:gate_ink_document
 - **warn** `belief-mismatch` ink.words.noplace — "give him a tattoo" — believed free:unplacedInk, observed refused:gate_ink_document
 - **warn** `belief-mismatch` light.softer — "softer light" — believed would-render, observed refused:unreadable
 - **warn** `belief-mismatch` makeup.lipstick — "give her red lipstick" — believed free:notASlot, observed would-render
+- **warn** `belief-mismatch` skin.freckles.remove.none — "she never had freckles" — believed refused:removal_not_in_brief, observed refused:removal_absent
 - **warn** `belief-mismatch` wardrobe.tee — "put him in a plain black tee" — believed would-render, observed refused:wall_stage
-- **info** `not-driven` acc.glasses.remove.has — needs state "branch-with-accessory", which this fixture cannot supply
-- **info** `not-driven` ink.remove.has — needs state "branch-with-ink", which this fixture cannot supply
-- **info** `not-driven` ink.transform.has — needs state "branch-with-ink", which this fixture cannot supply
-- **info** `not-driven` ink.transform.two — needs state "branch-with-ink", which this fixture cannot supply
+- **error** `route-changed` hair.remove.none — "remove her fringe" — committed refused:removal_absent, now would-render
+- **error** `route-changed` ink.words.neck.branch — "give him a small star tattoo on his neck" — committed refused:gate_ink_uncarried, now would-render
+- **error** `route-changed` light.softer — "softer light" — committed refused:wall_stage, now refused:unreadable
 - **info** `not-driven` ref.hair.whole — needs state "reference-attached", which this fixture cannot supply
 - **info** `not-driven` ref.ink.sleeve — needs state "reference-attached", which this fixture cannot supply
 - **warn** `unpinned-refusal` already_original — service-refusal "already_original" is named by no test file — a door nobody has proven can shut
@@ -130,9 +151,9 @@ Profile **fixture-as-founder** on fixture `outside-scope-bot-local / 34383040-62
 - **warn** `unpinned-refusal` removal_unnamed — service-refusal "removal_unnamed" is named by no test file — a door nobody has proven can shut
 - **warn** `unpinned-refusal` step_moved — service-refusal "step_moved" is named by no test file — a door nobody has proven can shut
 - **warn** `unpinned-refusal` version_missing — service-refusal "version_missing" is named by no test file — a door nobody has proven can shut
-- **warn** `unreached` inkOneChangeAtATime — a corpus row expects "inkOneChangeAtATime" and the drive never produced it — the door may be unreachable
 - **warn** `unreached` noInkToChange — a corpus row expects "noInkToChange" and the drive never produced it — the door may be unreachable
 - **warn** `unreached` notASlot — a corpus row expects "notASlot" and the drive never produced it — the door may be unreachable
+- **warn** `unreached` removal_unnamed — a corpus row expects "removal_unnamed" and the drive never produced it — the door may be unreachable
 - **warn** `unreached` unplacedInk — a corpus row expects "unplacedInk" and the drive never produced it — the door may be unreachable
 - **info** `unreached` already_original — no corpus row expects "already_original" — the census cannot say whether any ask reaches it
 - **info** `unreached` already_signed — no corpus row expects "already_signed" — the census cannot say whether any ask reaches it
@@ -150,11 +171,9 @@ Profile **fixture-as-founder** on fixture `outside-scope-bot-local / 34383040-62
 - **info** `unreached` perSideRemoval — no corpus row expects "perSideRemoval" — the census cannot say whether any ask reaches it
 - **info** `unreached` refine_limit — no corpus row expects "refine_limit" — the census cannot say whether any ask reaches it
 - **info** `unreached` removal — no corpus row expects "removal" — the census cannot say whether any ask reaches it
-- **info** `unreached` removal_not_in_brief — no corpus row expects "removal_not_in_brief" — the census cannot say whether any ask reaches it
 - **info** `unreached` removal_reread_unmatched — no corpus row expects "removal_reread_unmatched" — the census cannot say whether any ask reaches it
 - **info** `unreached` removal_uncheckable — no corpus row expects "removal_uncheckable" — the census cannot say whether any ask reaches it
 - **info** `unreached` removal_unnameable — no corpus row expects "removal_unnameable" — the census cannot say whether any ask reaches it
-- **info** `unreached` removal_unnamed — no corpus row expects "removal_unnamed" — the census cannot say whether any ask reaches it
 - **info** `unreached` scope_mismatch — no corpus row expects "scope_mismatch" — the census cannot say whether any ask reaches it
 - **info** `unreached` sideNamedWithoutScope — no corpus row expects "sideNamedWithoutScope" — the census cannot say whether any ask reaches it
 - **info** `unreached` step_moved — no corpus row expects "step_moved" — the census cannot say whether any ask reaches it
