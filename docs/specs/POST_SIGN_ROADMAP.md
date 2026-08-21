@@ -252,6 +252,42 @@ the pinning arm.
   bald ask), so it was narrowed — and this row is the other edge of that same
   narrowing. **Whoever opens it re-reads that incident first**; a gate that
   cannot be wrong in one direction is usually wrong in the other.
+
+  ⚠ **THE SENTENCE ABOVE POINTS AT THE WRONG MECHANISM, and the free half of
+  the measurement is now done** (2026-08-22, at the code, no model and no
+  money — the paid half is still post-episode). **The narrowing is innocent.**
+  The cause is that `KNOWN_WORDS` — the list a correction is proposed FROM —
+  has never contained `ring`, or any other accessory noun. Those live only in
+  `VALID_IN_CONTEXT`, which is the *do not accuse this word* list. Two lists,
+  and the accessory vocabulary is in the exclusion one and in no target one, so
+  **no slip of `ring` can ever be offered, however the gate is tuned.**
+
+  Driven directly at `nearMiss`, which is what killed the tempting second
+  hypothesis: *"give her a nose **riing**"* — a pure single insertion, the exact
+  shape of `piink` → `pink`, which works — **also renders.** So the distance
+  metric is not the problem, and it is worth saying that it handles the swap
+  too (`hiar` → `hair`, driven, correct): a Damerau arm is already in
+  `withinOne` with the incident that bought it in its comment. One cause, not
+  two.
+
+  ⚠ **AND THE OBVIOUS FIX IS MEASURED AND REFUSED.** Promoting
+  `VALID_IN_CONTEXT` wholesale into `KNOWN_WORDS` looks like a two-line change.
+  Walked over a 53-word probe of ordinary refine words: **30 are already
+  protected** — they are on the exclusion list themselves, so they can never be
+  accused however the target list grows, and *that includes `bald` → `band`,
+  which is the founder's own word and is SAFE* — but **14 are not**, and they
+  are ordinary things customers type: `wild` → *will*, `bold` → *hold*,
+  `crop` → *drop*, `loop` → *hoop*, `cold` → *could*, `study` → *stud*. His
+  rule on this gate is absolute — the question never fires on a word that is
+  valid in context — so a fix that buys `rign` at the price of *"wild curls"*
+  being asked whether she meant *will* is a worse product than the row it
+  closes.
+
+  **So whoever opens C3 inherits a narrower question than the card first
+  asked**: which accessory nouns join the TARGET list, each with its own
+  neighbourhood walked, rather than whether the gate was over-narrowed. The
+  paid half — does the real interpreter behave as `nearMiss` does in isolation
+  — is unchanged and still waits on the OpenRouter episode.
 - **(C4a) ✅ CLOSED 09f625a2 — A DELIVERY NAME THAT SURVIVES SETTLEMENT WITH NO ROW,
   and it was a MONEY hole rather than a tidiness card** (fable-1331 §5, traced
   opus-984, ruled fable-1339). A crop's NAME is minted at CLAIM and its ROW at
