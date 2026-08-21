@@ -158,6 +158,7 @@ import {
   alreadyUpsweptReask,
   glassesHideEyesReask,
   colourFacetLabel,
+  colourFacetOfScope,
   colourFacetOf,
   didYouMeanReask,
   nearMiss,
@@ -1394,6 +1395,22 @@ async function refineCandidateCounted(
     edit at all reaches the question.
   */
   const lastColourFacet = colourFacetOf(readStoredDelta(predecessorForParse?.deltas));
+  /*
+    THE PART SHE POINTED AT IS A REFERENT, AND IT OUTRANKS THE ONE WE REMEMBER —
+    census card C2.
+
+    `eye.scoped.left` is the row: "make it green" with `eye@left` came back
+    asking *which part?*, which is asking for the thing the request already
+    carried. A tap is an answer (`inkSlotSheAsksAbout`, fable-1291/1293).
+
+    Used in all THREE places the remembered facet is used — the question, the
+    prompt line and D-178's backstop — because skipping only the question would
+    leave the parse free to file the colour on the hair, and a hair colour on an
+    eye-scoped ask meets `scope_mismatch`: a free question turned into a free
+    refusal, which is worse than the defect.
+  */
+  const scopedColourFacet = colourFacetOfScope(input.scope);
+  const colourReferent = scopedColourFacet ?? lastColourFacet;
 
   /*
     THE ANSWER ARRIVES THE SAME WAY THE QUESTION WAS ASKED — through the box.
@@ -1656,7 +1673,7 @@ async function refineCandidateCounted(
     that lived here is gone with the door, and `pendingReaskFor` lost the
     reference argument it only ever had for this.
   */
-  if (!answered && !lastColourFacet && needsColourReferent(instruction)) {
+  if (!answered && !colourReferent && needsColourReferent(instruction)) {
     return {
       kind: "asked",
       reask: whichFacetReask(instruction),
@@ -1753,7 +1770,25 @@ async function refineCandidateCounted(
           */
           || (inkPriorReading.want === "change" && inkTransformOpen)),
       prior: priorItems,
-      lastColourFacet: lastColourFacet ? colourFacetLabel(lastColourFacet) : null,
+      /*
+        ⚠ ONE REFERENT REACHES THE PROMPT, NEVER BOTH — measured, and the first
+        cut of this sent both (census card C2).
+
+        With the tap saying THE EYES and the memory saying THE HAIR, the prompt
+        carried two contradictory instructions and the model followed the
+        memory: "make it copper" came back `hairColour` on a request scoped to
+        an eye. The backstop corrected it, so the customer was fine and the
+        PROMPT half was doing nothing — which is the shape D-178 already warned
+        about from the other side, a law living in only one of its two homes.
+
+        So the referent that wins is the only one said. `colourReferent` is that
+        decision, made once, above.
+      */
+      lastColourFacet: colourReferent && !scopedColourFacet ? colourFacetLabel(colourReferent) : null,
+      /* The tap, said in the same ordinary words the remembered facet uses, and
+         in its own field so the prompt never claims a history that is not
+         there (census card C2). */
+      scopedColourFacet: scopedColourFacet ? colourFacetLabel(scopedColourFacet) : null,
       currentEyeColour: currentValueOfFacet(currentIdentity, "eye.colour"),
       currentEyeShape: currentValueOfFacet(currentIdentity, "eye.shape"),
       currentHairStyle: currentValueOfFacet(currentIdentity, "hair.cut"),
@@ -2309,8 +2344,8 @@ async function refineCandidateCounted(
     makeup on the next, so the drawer is corrected here rather than left to the
     sampler.
   */
-  if (editDelta && lastColourFacet && needsColourReferent(instruction)) {
-    editDelta = redirectColourTo(editDelta, lastColourFacet);
+  if (editDelta && colourReferent && needsColourReferent(instruction)) {
+    editDelta = redirectColourTo(editDelta, colourReferent);
   }
   /*
     A KIND THE OLD ROAD HAS NEVER BEEN MEASURED ON REFUSES HERE — free, before

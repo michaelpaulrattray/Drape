@@ -1718,6 +1718,84 @@ describe("the questions cost nothing, and never dead-end", () => {
     expect(ledger.charges).toHaveLength(0);
   });
 
+  /*
+    ⚠ AND A TAP IS AN ANSWER — census card C2.
+
+    `eye.scoped.left` was the census row: "make it green" with `eye@left` came
+    back asking *which part? Nothing's been coloured yet, so I don't want to
+    guess.* She had pointed at the eye. The question was asking for the thing
+    the request already carried, which is the same defect
+    `inkSlotSheAsksAbout` was ruled on one lane over (fable-1291/1293).
+
+    Four arms, and the last two are the ones that keep the fix honest.
+  */
+  it("does NOT ask when she pointed at a part that can hold a colour", async () => {
+    /* The interpreter is reached — that is the whole assertion, since
+       `explodes` throws if a question fires. A real reading, then a render. */
+    const result = await refineCandidate(
+      { interpret: async () => ({ ok: true as const, delta: { eyeColour: "green" as const } }), harvest: unmasked },
+      { ...input, instruction: "make it green", scope: "eye@left" },
+    );
+    expect(result.kind).not.toBe("asked");
+    expect(result.imageUrl).toBeTruthy();
+  });
+
+  it("NEGATIVE CONTROL — the same sentence with NO scope still asks", async () => {
+    /* The question is not deleted, it is answered. Without this arm a fix that
+       simply removed the door would pass the arm above perfectly. */
+    const result = await refineCandidate(explodes, { ...input, instruction: "make it green" });
+    expect(result.kind).toBe("asked");
+    expect(result.reask?.kind).toBe("which-facet");
+  });
+
+  it("NEGATIVE CONTROL — a scope that holds no colour still asks", async () => {
+    /*
+      `brow@left` carries the `brows` facet and no colour-bearing one, so it
+      cannot answer *which colour facet* and the question is still the honest
+      reply. This is the branch that stops the fix from reading "any scope at
+      all silences the question".
+    */
+    const result = await refineCandidate(explodes, { ...input, instruction: "make it green", scope: "brow@left" });
+    expect(result.kind).toBe("asked");
+    expect(result.reask?.kind).toBe("which-facet");
+  });
+
+  it("the TAP OUTRANKS THE MEMORY, and the backstop is what proves it", async () => {
+    /*
+      D-178 remembers the last colour-bearing facet and resolves a bare colour to
+      it. Here the memory says HAIR and the tap says EYE, and the tap wins — a
+      tap now beats a memory.
+
+      Driven through the BACKSTOP rather than through the prompt: the interpreter
+      is made to file `hairColour`, which is exactly what a model that ignored
+      the new prompt line would do, and the delta that reaches the painter must
+      still be the eye. Without the redirect this ask would not merely be
+      mis-filed — it would meet `scope_mismatch` and refuse, turning a free
+      question into a free refusal.
+    */
+    variantRows = [{
+      id: 901,
+      publicId: "variant-1",
+      imageKey: "casting-v2/variants/one.png",
+      instructions: ["make her hair copper"],
+      stepDeltas: [{ hairColour: "copper" }],
+      deltas: { hairColour: "copper" },
+      internalPrompt: {},
+      status: "ready",
+    }];
+    candidateRow.selectedVariantPublicId = "variant-1";
+
+    const result = await refineCandidate(
+      {
+        interpret: async () => ({ ok: true as const, delta: { hairColour: "green" } }) as never,
+        harvest: unmasked,
+      },
+      { ...input, instruction: "make it green", scope: "eye@left" },
+    );
+    expect(result.kind).not.toBe("asked");
+    expect(result.imageUrl).toBeTruthy();
+  });
+
   it("asks about a near-miss typo before the money moves", async () => {
     const result = await refineCandidate(explodes, { ...input, instruction: "piink hair" });
     expect(result.kind).toBe("asked");

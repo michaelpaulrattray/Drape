@@ -47,6 +47,7 @@ import {
 import { INK_SIDES, type InkSide } from "../../shared/inkReleasedPlacements";
 import { inkAddressPhrase } from "./inkDesignForAsk";
 import { pictureHalfPhrase } from "./sidePhrasing";
+import { facetsOfSlot } from "./referenceSlotCatalogue";
 import type { InkCutFocus } from "./inkReferenceCutter";
 import { HAIR_COLOURS, type HairColour } from "../../shared/castingVocabularies";
 import { EYE_COLOURS, type EyeColour } from "../../shared/castingRealization";
@@ -311,6 +312,35 @@ export function colourFacetOf(delta: RefineDelta | null | undefined): Facet | nu
     if (COLOUR_BEARING.some((entry) => entry.facet === facet)) return facet;
   }
   return null;
+}
+
+/**
+ * THE FACET SHE POINTED AT, when what she pointed at can hold a colour at all —
+ * census card C2.
+ *
+ * # Why this is a referent and not a convenience
+ *
+ * D-178's question exists because a bare colour has nothing to attach to. A
+ * SCOPE attaches it: `eye@left` is the customer tapping her own picture, and
+ * `inkSlotSheAsksAbout` already ruled that gesture the strongest possible answer
+ * to *which one* (fable-1291/1293). This is the same ruling one lane over.
+ *
+ * # It answers NULL for anything ambiguous, and that is the whole safety of it
+ *
+ * `null` when the scoped slot carries no colour-bearing facet (`lips`,
+ * `brow@left`, an ink slot) and `null` when it carries more than one — because a
+ * referent that has to choose between two colour facets is not a referent, and
+ * guessing there is the defect this file exists to prevent. Measured on the
+ * catalogue the day it was written: `eye@left` and `eye@right` carry exactly
+ * one (`eye.colour`), `hair` carries exactly one (`hair.colour`), and every
+ * other slot carries none — so the ambiguous branch is unreachable today and is
+ * written anyway, because the catalogue is what decides and it grows.
+ */
+export function colourFacetOfScope(slot: string | undefined | null): Facet | null {
+  if (!slot) return null;
+  const facets = facetsOfSlot(slot) ?? [];
+  const bearing = facets.filter((facet) => COLOUR_BEARING.some((entry) => entry.facet === facet));
+  return bearing.length === 1 ? bearing[0]! : null;
 }
 
 /** The label a facet answers to, for a question written in ordinary words. */

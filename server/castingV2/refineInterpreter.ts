@@ -727,6 +727,21 @@ export type RefineInterpretInput = {
    */
   lastColourFacet?: string | null;
   /**
+   * THE PART SHE POINTED AT, when it can hold a colour — census card C2.
+   *
+   * A SEPARATE FIELD FROM `lastColourFacet` ON PURPOSE, and the reason is that
+   * the other one's prompt line is a statement of fact: *"the last colour they
+   * changed was X"*. On a scoped ask nothing has been changed at all, so
+   * borrowing that field would put a false sentence in front of the model — and
+   * a prompt that lies about the history is how a model learns to distrust the
+   * rest of it.
+   *
+   * Set by the service from the ask's own scope, which is the customer tapping
+   * her picture. It OUTRANKS the remembered facet where both exist: a tap now
+   * beats a memory (`inkSlotSheAsksAbout`, fable-1291/1293, one lane over).
+   */
+  scopedColourFacet?: string | null;
+  /**
    * This is the ECHO PASS — say it in their words only (D-172).
    *
    * Set by `interpretRefinement` after a containment failure, never by a
@@ -1339,6 +1354,12 @@ async function runOnce(
         ...(Object.entries(input.prior ?? {})
           .filter(([, items]) => (items?.length ?? 0) > 0)
           .map(([subject, items]) => `Currently filed under ${subject}: ${JSON.stringify(items)}`)),
+        ...(input.scopedColourFacet
+          ? [`They TAPPED ${input.scopedColourFacet} in the picture, so this instruction is `
+            + `about ${input.scopedColourFacet} and about nothing else. A colour with no `
+            + `feature named belongs to ${input.scopedColourFacet}, whatever that colour is `
+            + "usually associated with."]
+          : []),
         ...(input.lastColourFacet
           ? [`The last colour they changed was ${input.lastColourFacet} — an unqualified or `
             + "relative colour ask means THAT, unless this sentence names something else."]

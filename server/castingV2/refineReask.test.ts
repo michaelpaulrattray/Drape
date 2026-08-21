@@ -21,12 +21,15 @@ import { describe, expect, it } from "vitest";
 import { readDelta } from "./refineDelta";
 import { REFINE_ANSWERING_MAX_LENGTH, REFINE_INSTRUCTION_MAX_LENGTH } from "./refineLimits";
 import { FREE_SUBJECTS, FREE_SUBJECT_KEYS } from "./refineSubjects";
+import { SLOT_CATALOGUE } from "./referenceSlotCatalogue";
+import { facetOfAxis, facetOfSubject } from "./refineFacets";
 import {
   REASK_HANDLE_MAX_LENGTH,
   REASK_KINDS,
   alreadyUpsweptReask,
   colourFacetLabel,
   colourFacetOf,
+  colourFacetOfScope,
   didYouMeanReask,
   glassesHideEyesReask,
   nearMiss,
@@ -831,5 +834,61 @@ describe("which-side — the word has to land IN her sentence", () => {
     for (const money of ["credit", "25", "charge you", "cost"]) {
       expect(said, money).not.toContain(money);
     }
+  });
+});
+
+/*
+  THE PART SHE POINTED AT, AS A REFERENT — census card C2.
+
+  A tap answers *which part?*, so the question must not be asked of somebody who
+  already answered it. These arms are about the DERIVATION; the service arms
+  (`refineService.test.ts`) drive what the answer is used for.
+*/
+describe("a scope can be a colour referent", () => {
+  it("answers the one colour-bearing facet a scoped slot carries", () => {
+    expect(colourFacetOfScope("eye@left")).toBe(facetOfSubject("eyeColourFree"));
+    expect(colourFacetOfScope("eye@right")).toBe(facetOfSubject("eyeColourFree"));
+    expect(colourFacetOfScope("hair")).toBe(facetOfSubject("hairShade"));
+  });
+
+  it("answers NULL for a scope that cannot hold a colour, and for none at all", () => {
+    /* `brow@left` and `lips` are real slots with real facets and no colour
+       among them — the question is still the honest reply there. */
+    expect(colourFacetOfScope("brow@left")).toBeNull();
+    expect(colourFacetOfScope("lips")).toBeNull();
+    expect(colourFacetOfScope(undefined)).toBeNull();
+    expect(colourFacetOfScope(null)).toBeNull();
+    /* A key the catalogue cannot name at all — the service refuses those long
+       before this point, and the derivation must not invent an answer either. */
+    expect(colourFacetOfScope("kneecap")).toBeNull();
+  });
+
+  it("THE PREMISE, PINNED — no slot carries two colour-bearing facets today", () => {
+    /*
+      ⚠ THIS ARM EXISTS BECAUSE A SABOTAGE FOUND NOTHING.
+
+      `colourFacetOfScope` refuses to answer when a slot carries MORE than one
+      colour-bearing facet, and removing that guard reddens no test — because no
+      slot in the catalogue carries two. A branch with no test, under a comment
+      calling itself unreachable, is the shape this codebase has paid for
+      before.
+
+      So the premise is pinned instead of the branch: the day a slot gains a
+      second colour-bearing facet, THIS goes red, the guard becomes reachable,
+      and whoever made that change owns writing its arm. That is a test that
+      cannot be satisfied by editing a number, and it fails for a real reason.
+    */
+    const colourBearing = new Set([
+      facetOfSubject("hairShade"), facetOfSubject("eyeColourFree"), facetOfAxis("makeup"),
+    ]);
+    const twoOrMore = SLOT_CATALOGUE
+      .filter((entry) => entry.facets.filter((facet) => colourBearing.has(facet)).length > 1)
+      .map((entry) => entry.feature);
+    expect(twoOrMore).toEqual([]);
+    /* And the positive half: some catalogue entry really does carry exactly
+       one, so an empty catalogue could not pass the line above. */
+    const exactlyOne = SLOT_CATALOGUE
+      .filter((entry) => entry.facets.filter((facet) => colourBearing.has(facet)).length === 1);
+    expect(exactlyOne.length).toBeGreaterThan(0);
   });
 });
