@@ -42,6 +42,8 @@ import {
   validateCastingFaceScanEnvironment,
   validateCastingInkCutEnvironment,
   validateCastingInkTransformEnvironment,
+  validateCastingInkWordsEnvironment,
+  CASTING_INK_WORDS_SCOPE_ENV,
   validateCastingInkRegionCropEnvironment,
   validateCastingInkStudioEnvironment,
   validateCastingHairReferenceEnvironment,
@@ -333,6 +335,17 @@ export function validateEnv(): void {
   validateCastingInkTransformEnvironment({
     scope: process.env[CASTING_INK_TRANSFORM_SCOPE_ENV],
     studioScope: process.env[CASTING_INK_STUDIO_SCOPE_ENV],
+  });
+  /*
+    WHETHER A WORDS-BORN TATTOO MAY LAND BEYOND HER NECK. Its parent is
+    `CASTING_V2_SCOPE` and nothing narrower: this road needs no design row and
+    no uploaded picture — crop #1 is a delivery with `designId` NULL — so
+    hanging it off the studio door would gate a lane whose subject does not
+    require it.
+  */
+  validateCastingInkWordsEnvironment({
+    scope: process.env[CASTING_INK_WORDS_SCOPE_ENV],
+    castingScope: process.env[CASTING_V2_SCOPE_ENV],
   });
 
   /*

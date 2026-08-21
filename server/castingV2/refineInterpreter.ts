@@ -765,6 +765,12 @@ export type RefineInterpretInput = {
    * checked against.
    */
   inkDocumentedByDelivery?: boolean;
+  /**
+   * `CASTING_INK_WORDS_SCOPE`, resolved by the service — how far the words road
+   * reaches on this account. Absent means her neck alone, which is today's
+   * product for everybody.
+   */
+  inkWordsRoadOpen?: boolean;
   /** The hybrid-likeness pass — the comparison is already settled (D-181). */
   hybrid?: boolean;
   /**
@@ -1587,6 +1593,9 @@ async function containReply(call: {
       setting it.
     */
     ...(input.inkDocumentedByDelivery === true ? { inkDocumentedByDelivery: true } : {}),
+    /* AND HOW FAR THE WORDS ROAD REACHES — the same shape as its siblings:
+       present only when true, so absent and off are one state rather than two. */
+    ...(input.inkWordsRoadOpen === true ? { inkWordsRoadOpen: true } : {}),
   };
   const delta = readDelta(reply, check);
   /* A WALL is an answer, not a hiccup — it must not be re-sampled. */

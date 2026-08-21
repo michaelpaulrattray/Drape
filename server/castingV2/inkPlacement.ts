@@ -36,7 +36,7 @@
  *
  * # It is DERIVED now, and that is the repair rather than a shorter list
  *
- * {@link INK_LANE_PLACES} comes off the measured vocabulary, filtered by the one
+ * {@link inkLanePlaces} comes off the measured vocabulary, filtered by the one
  * fact that decides this: which placements the WORDS road can serve today. Two
  * hand-authored lists answering one question is working law 4, and the drift
  * between them is what a customer was paying the price of.
@@ -67,6 +67,7 @@
  */
 
 import {
+  INK_PLACEMENTS,
   inkPlacementEntry,
   type InkPlacement as InkPlacementKey,
 } from "../../shared/inkPlacementVocabulary";
@@ -87,6 +88,18 @@ import {
 const WORDS_ROAD_PLACEMENTS: readonly InkPlacementKey[] = ["neck"];
 
 /**
+ * AND THE SET THE FLAG OPENS — the whole measured vocabulary, which is exactly
+ * what the founder's condition names: wherever the delivery mint can find and
+ * crop the result.
+ *
+ * Derived from `INK_PLACEMENTS` rather than listed, so a placement joining the
+ * vocabulary joins the open road with it and nobody has to remember this line.
+ * The CLOSED set above stays hand-written, because "which of these is proven"
+ * is a fact about courts rather than about the vocabulary.
+ */
+const WORDS_ROAD_PLACEMENTS_OPEN: readonly InkPlacementKey[] = INK_PLACEMENTS;
+
+/**
  * Words that put INK where the words road can actually put it.
  *
  * DERIVED from the vocabulary rather than authored — see the header for the
@@ -102,8 +115,8 @@ const WORDS_ROAD_PLACEMENTS: readonly InkPlacementKey[] = ["neck"];
  * It walled in effect before this change too — the take could not resolve it and
  * the next door refused it — so nothing renders today that stops rendering now.
  */
-const INK_LANE_PLACES: readonly string[] = Array.from(new Set(
-  WORDS_ROAD_PLACEMENTS.flatMap((key) => {
+const inkLanePlaces = (open: boolean): readonly string[] => Array.from(new Set(
+  (open ? WORDS_ROAD_PLACEMENTS_OPEN : WORDS_ROAD_PLACEMENTS).flatMap((key) => {
     const entry = inkPlacementEntry(key);
     return [entry.readerWord, entry.noun.replace(/^(?:her|his|their)\s+/, "")];
   }),
@@ -207,7 +220,19 @@ export function namesDesign(text: string): boolean {
  */
 export type InkPlacementLane = "ink" | "mark";
 
-export function classifyInkPlacement(text: string, lane: InkPlacementLane): InkPlacement {
+export function classifyInkPlacement(
+  text: string,
+  lane: InkPlacementLane,
+  /**
+   * Whether this account's words road is open past her neck —
+   * `CASTING_INK_WORDS_SCOPE`, resolved by the service and passed in.
+   *
+   * REQUIRED, and not defaulted, for the reason `lane` is not: a default would
+   * let a future caller inherit whichever answer was convenient. `false` is
+   * today's product for everybody.
+   */
+  wordsRoadOpen: boolean,
+): InkPlacement {
   const lowered = text.toLowerCase();
   /*
     VISIBILITY BEATS REGION, and checking it first is the whole fix: it is what
@@ -218,7 +243,7 @@ export function classifyInkPlacement(text: string, lane: InkPlacementLane): InkP
   for (const rule of HIDDEN_RULES) {
     if (rule.pattern.test(lowered)) return { kind: "needs_document" };
   }
-  for (const place of lane === "ink" ? INK_LANE_PLACES : MARK_LANE_PLACES) {
+  for (const place of lane === "ink" ? inkLanePlaces(wordsRoadOpen) : MARK_LANE_PLACES) {
     if (new RegExp(`\\b${place}\\b`).test(lowered)) return { kind: "in_frame", place };
   }
   return { kind: "needs_document" };

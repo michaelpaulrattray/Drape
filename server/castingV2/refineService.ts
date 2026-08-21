@@ -262,6 +262,7 @@ import {
   captureCastingHairReferenceEnabled,
   captureCastingInkReferenceEnabled,
   captureCastingInkTransformEnabled,
+  captureCastingInkWordsEnabled,
 } from "./castingV2Scope";
 import { isUpsweptAsk, readCanthalTilt } from "./eyeShapeRouting";
 import { alreadyUpswept, wearsGlassesByPixels } from "./canthalTilt";
@@ -799,6 +800,12 @@ export type RefineServiceDependencies = {
    * so without setting a process-wide variable.
    */
   inkTransformEnabled?: (userId: number) => boolean;
+  /**
+   * `CASTING_INK_WORDS_SCOPE` — whether a words-born tattoo may land past her
+   * neck. Injectable for the same reason as its siblings, and for one more:
+   * its court has to drive both sides of the flag in one sitting.
+   */
+  inkWordsEnabled?: (userId: number) => boolean;
   /** Writes the sent recipe onto the variant at dispatch — see `recordVariantDispatch`. */
   recordDispatch?: typeof recordVariantDispatch;
   /**
@@ -1669,6 +1676,13 @@ async function refineCandidateCounted(
         keeps his ruling off a live road until it is flipped.
       */
       inkReferenceEnabled: (dependencies.inkReferenceEnabled ?? captureCastingInkReferenceEnabled)(input.userId),
+      /*
+        AND HOW FAR THE WORDS ROAD REACHES on this account — `neck` alone with
+        the flag off, which is today's product for everybody, and the whole
+        measured vocabulary with it on. It is a fact about the ACCOUNT and never
+        about the sentence, so it is resolved once here beside its siblings.
+      */
+      inkWordsRoadOpen: (dependencies.inkWordsEnabled ?? captureCastingInkWordsEnabled)(input.userId),
       /*
         ⚠ AND WHETHER THIS ASK IS ABOUT A TATTOO WE ALREADY PAINTED — the gate's
         THIRD document, and without it the transform road is unreachable.

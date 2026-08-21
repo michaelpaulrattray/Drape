@@ -701,6 +701,18 @@ export type FreeLaneCheck = {
    * Absent means the gate behaves exactly as it always has.
    */
   inkDocumentedByDelivery?: boolean;
+  /**
+   * WHETHER THIS ACCOUNT'S WORDS ROAD REACHES PAST HER NECK —
+   * `CASTING_INK_WORDS_SCOPE`, resolved by the service.
+   *
+   * Absent means off, which is today's product for everybody: an ask naming an
+   * upper arm or an upper chest walls here, free, before the claim. On, those
+   * two join `neck` and the same ask renders and mints.
+   *
+   * It governs the INK lane only. The mark lane's list is not a capability
+   * question and no flag moves it.
+   */
+  inkWordsRoadOpen?: boolean;
   /** Set when the value hit a wall, so the caller can name which one. */
   wall?: RefineRefusal;
   /**
@@ -1249,7 +1261,11 @@ export function readDelta(value: unknown, check?: FreeLaneCheck): RefineDelta | 
              `inkPlacement`'s per-lane note. The face carve-out is retired for
              `ink`, which dies at the measured-placement door anyway, and KEPT
              for a design-named mark, which renders on a face and always has. */
-          && classifyInkPlacement(scrubbed, subject === "ink" ? "ink" : "mark").kind !== "in_frame"
+          && classifyInkPlacement(
+            scrubbed,
+            subject === "ink" ? "ink" : "mark",
+            check.inkWordsRoadOpen === true,
+          ).kind !== "in_frame"
         ) {
           check.wall = { reason: "gate_ink_document" };
           return null;
