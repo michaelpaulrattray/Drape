@@ -214,7 +214,9 @@ import { assembleRecipe, type CarriedInkDesign, type FeatureSlot } from "./recip
 import {
   facetsOfSlot, slotDefinition, slotsForFacet, slotsForFeature, type SlotDefinition,
 } from "./referenceSlotCatalogue";
-import { isInkSlot, isOpenSlot, openKindCarriedByCrops, openSlotKey } from "./referenceSlots";
+import {
+  inkPlacementOfSlot, isInkSlot, isOpenSlot, openKindCarriedByCrops, openSlotKey,
+} from "./referenceSlots";
 import { inkDesignForAsk, slotPlacementOf, type InkAskAddress } from "./inkDesignForAsk";
 import { sidesForInkPlacement } from "../../shared/inkReleasedPlacements";
 import { INK_PLACEMENTS } from "../../shared/inkPlacementVocabulary";
@@ -236,7 +238,14 @@ import { repaint, type ReferenceFitter, type RepaintEngine, type SentRequest } f
 import {
   RepaintCannotSayError, repaintAsksFor, repaintCannotRemove, scopedAskIsUnsayable,
 } from "./repaintAsks";
-import { attachedPictureUnusedNote, cannotSaySentence, likenessSetAsideNote } from "./cannotSayCopy";
+import {
+  attachedPictureUnusedNote, cannotSaySentence, likenessSetAsideNote,
+  type CannotSayReason,
+} from "./cannotSayCopy";
+/* The prior question — is this ask about ink she already has, and does she
+   want it changed or gone (opus-940 §2, countersigned fable-1274 §2). */
+import { inkSlotSheAsksAbout, readInkPriorAsk } from "./inkPriorAsk";
+import type { InkTransform } from "../../shared/inkTransforms";
 import { asksInkBeyondToday } from "./inkBeyondTodayAsk";
 import { censusOfAttempt, censusSoFar, type CallCensus } from "./callCensus";
 import { carriesAfterPruning } from "./prunedCarries";
@@ -252,6 +261,7 @@ import {
   captureCastingSidePhrasingEnabled,
   captureCastingHairReferenceEnabled,
   captureCastingInkReferenceEnabled,
+  captureCastingInkTransformEnabled,
 } from "./castingV2Scope";
 import { isUpsweptAsk, readCanthalTilt } from "./eyeShapeRouting";
 import { alreadyUpswept, wearsGlassesByPixels } from "./canthalTilt";
@@ -782,6 +792,13 @@ export type RefineServiceDependencies = {
   hairReferenceEnabled?: (userId: number) => boolean;
   /** `CASTING_INK_REFERENCE_SCOPE`, injectable for the same reason as its siblings. */
   inkReferenceEnabled?: (userId: number) => boolean;
+  /**
+   * `CASTING_INK_TRANSFORM_SCOPE` — whether she may change a tattoo she
+   * already has. Injectable for the same reason as its siblings: the arm that
+   * proves the flag OFF leaves today's road untouched has to be able to say
+   * so without setting a process-wide variable.
+   */
+  inkTransformEnabled?: (userId: number) => boolean;
   /** Writes the sent recipe onto the variant at dispatch — see `recordVariantDispatch`. */
   recordDispatch?: typeof recordVariantDispatch;
   /**
@@ -3028,6 +3045,226 @@ async function refineCandidateCounted(
 
   const priorInstructions = readInstructions(predecessor?.instructions);
   const priorSteps = readStepDeltas(predecessor?.stepDeltas);
+  const priorDelta = predecessor?.deltas != null ? readStoredDelta(predecessor.deltas) : {};
+  if (priorDelta === null) {
+    log.error(
+      { candidate: input.candidatePublicId, variant: predecessor?.publicId },
+      "[refineService] UNREADABLE PREDECESSOR — refusing rather than composing from nothing",
+    );
+    throw refusal("history_unreadable", {
+      code: "BAD_REQUEST",
+      message: "Something's wrong with this face's history and I won't guess at it — "
+        + "the edit would have dropped what you already asked for. Nothing was charged.",
+    });
+  }
+  /*
+    ---- IS THIS ASK ABOUT INK SHE ALREADY HAS? THE PRIOR QUESTION ----
+
+    Designed opus-940 §2/§3, countersigned fable-1274, three arms ruled
+    fable-1287 §2. It sits ABOVE the placement question because two of its three
+    answers make that question nonsense, and one of them makes it expensive:
+
+      change   "make his chest tattoo bigger" -> the transform road. Driven
+               before it was built, this ask RENDERED and CHARGED: the take read
+               a placement out of the word "chest" and the road painted a fresh
+               design invented from his prose, on a master with no ink. His own
+               piece was never on the wire (opus-948 §1)
+      gone     "take his tattoos off" -> answered, never asked where it goes.
+               An offer to ADD in reply to an ask to REMOVE
+      none     she has no tattoo at all -> one honest sentence for both verbs
+
+    **Only the CHANGE arm is behind the flag** (granted fable-1274 §4): a gated
+    apology stays wrong for everyone outside the flag, so the other two are live
+    for every account on the repaint road.
+
+    Both halves are required and `inkPriorAsk` says why neither works alone.
+    What is asked here is only whether a slot can be resolved from STATE — never
+    `slots[0]`, which on this road is a design on the wrong part of somebody.
+  */
+  let inkTransformOnSlot: { slot: string; change: InkTransform; cropId: string } | null = null;
+  let inkTransformAddress: InkAskAddress | null = null;
+  if (
+    /*
+      `!pointedAtThePicture` IS THE LANE, and it is the same expression the
+      words road enters on far below — a picture riding along while she asks
+      for something else documents nothing, and an ink-reference ask is the
+      other road whatever came of it. The design road's own `inkSource` is
+      not consulted here because it cannot exist without this being true.
+    */
+    editDelta !== null
+    && !pointedAtThePicture
+    && facetsWrittenBy(editDelta).has("ink")
+  ) {
+    const prior = readInkPriorAsk(instruction);
+    if (prior.want !== "fresh") {
+      const inkPronouns = pronounsForSex(currentIdentity?.sex);
+      /*
+        ⚠ THE STATE IS THE PREDECESSOR'S, AND `composed` IS THE WRONG READER
+        HERE — measured by driving it (opus-949).
+
+        The first version of this line read `composed.inkDelivered` and found
+        NOTHING on a branch that plainly held a delivered chest piece, so every
+        transform ask was answered *"she hasn't got one yet"*. The cause is a
+        composition rule doing exactly its job one door away: **a step that says
+        anything at all about `free.ink` replaces the pointer set with its
+        own** (`refineDelta.ts`, `inkRestated`) — because the words and the
+        pointers are two halves of one fact and must never disagree about
+        whether she still has a tattoo. This ask says something about ink by
+        definition, so by the time `composed` exists the previous pointers are
+        already gone from it.
+
+        `priorDelta` is the branch as it stood BEFORE this sentence, which is
+        what the prior question is actually asking about: *does she already have
+        one*. It is also the reader that cannot be fooled by the ask itself.
+      */
+      const deliveredSlots = Object.keys(priorDelta.inkDelivered ?? {});
+      const onSlot = inkSlotSheAsksAbout(instruction, deliveredSlots);
+      /* How the product speaks about a tattoo it has actually delivered —
+         "his upper chest tattoo", from the catalogue's own noun. */
+      const nameOfSlot = (slot: string): string | null => {
+        const noun = slotDefinition(slot)?.noun;
+        return noun === undefined || noun === null ? null : `${inkPronouns.possessive} ${noun}`;
+      };
+      const answeredFree = (reason: CannotSayReason, scopeNoun: string | null) => {
+        log.info(
+          {
+            userId: input.userId,
+            candidate: input.candidatePublicId,
+            want: prior.want,
+            delivered: deliveredSlots,
+            reason,
+          },
+          "[refineService] an ask about ink she already has, answered before the claim — nothing spent",
+        );
+        return {
+          kind: "selected" as const,
+          note: cannotSaySentence(reason, {
+            words: null, facet: "ink", scopeNoun, moneySafe: true,
+          }),
+          variantId: source.variantPublicId,
+          candidateId: input.candidatePublicId,
+          imageUrl: currentImageUrl,
+          instructions: readInstructions(predecessorForParse?.instructions),
+        };
+      };
+      /*
+        NOTHING TO CHANGE AND NOTHING TO TAKE OFF — one sentence for both verbs,
+        because the customer's situation is one situation.
+      */
+      if (onSlot.kind === "none") return answeredFree("noInkToChange", null);
+      const names = (onSlot.kind === "one" ? [onSlot.slot] : onSlot.slots)
+        .map(nameOfSlot)
+        .filter((name): name is string => name !== null);
+      /*
+        SHE WANTS IT GONE. Routed away from the placement door and answered
+        free, naming what the product can see before it says no (condition (i),
+        fable-1287 §3) — the three sentences this replaces include one telling a
+        customer looking at his own chest piece that no tattoo exists.
+
+        It persists NOTHING (condition (ii)). A half-filed ink removal would put
+        "no tattoos" on the wire beside "put the chest piece back exactly as it
+        is", which is D-244's contradiction at full price — read at the code
+        rather than feared: `carriedInk` is built from `inkApplied` union
+        `inkDelivered`, and `absent` touches neither.
+      */
+      if (prior.want === "gone") {
+        return answeredFree("inkRemovalNotYet", names.length > 0 ? names.join(" and ") : null);
+      }
+      /*
+        AND THE CHANGE ARM, the only one behind the flag. Off, this block does
+        nothing at all and the ask travels the road it travels today — which is
+        the wrong road, and which is nevertheless what a dark landing has to
+        mean.
+      */
+      if ((dependencies.inkTransformEnabled ?? captureCastingInkTransformEnabled)(input.userId)) {
+        /* Two axes in one sentence is not one instruction — every transform
+           clause ends by saying that everything else stays as the picture shows
+           it, so two of them contradict each other on the wire. */
+        if (prior.changes.length > 1) return answeredFree("inkOneChangeAtATime", null);
+        if (onSlot.kind === "several") {
+          return answeredFree("whichInkToChange", names.length > 0 ? names.join(" and ") : null);
+        }
+        /*
+          AND THE ADDRESS COMES FROM THE SLOT, through the same field the words
+          road uses. `wordsInkAddress` is what the recipe's `inkPlacement` and
+          the delivery mint's slot are both derived from a thousand lines below,
+          so a transform cannot come to disagree with either about where on her
+          this render is about — and the mint writing the NEW crop is what makes
+          the transformed tattoo the next carry's baseline.
+        */
+        const address = inkPlacementOfSlot(onSlot.slot);
+        const changingCrop = (priorDelta.inkDelivered ?? {})[onSlot.slot];
+        if (address !== null && changingCrop !== undefined) {
+          /* Resolved ONCE and carried, like every other address on this road:
+             re-deriving the crop at the recipe would be a second answer to
+             which picture of her body rides this render. */
+          inkTransformAddress = { placement: address.placement, side: address.side };
+          inkTransformOnSlot = {
+            slot: onSlot.slot, change: prior.changes[0]!, cropId: changingCrop,
+          };
+          /*
+            HER EXISTING DESCRIPTION, RE-SAID — and the assembler taught the
+            design this rather than the other way round. `words: "make it
+            bigger"` is refused by name (`wordsNotDeclarative`: "the interpreter
+            owes a state phrase"), which is opus-940 §4's conclusion arriving
+            from the other direction: **a transform files no new `free.ink`
+            words at all.** The change rides on the source, where it dies with
+            its ask; a delta re-said on every later edit is "twice the size of
+            what?" two renders on, beside a crop that already IS the new size.
+
+            The fallback is the slot's own noun rather than her sentence,
+            because it is a state phrase that describes nothing about the
+            design — describing the design is the picture's job.
+          */
+          /*
+            `free.ink` is a FreeValue and ink is a PLURAL subject, so its
+            stored shape may be a list — read through `itemsOf`, the same
+            owner the prior-items reader uses, rather than assuming a string
+            and calling `.trim()` on an array.
+          */
+          const alreadySaid = itemsOf(priorDelta.free?.ink).join(", ").trim();
+          editDelta = {
+            ...editDelta,
+            free: {
+              ...editDelta.free,
+              ink: alreadySaid.length > 0
+                ? alreadySaid
+                : (nameOfSlot(onSlot.slot) ?? "the tattoo already there"),
+            },
+            /*
+              AND HER OTHER TATTOOS SURVIVE THIS SENTENCE — restated by the code
+              that knows them, because the composition rule above cuts both ways.
+
+              Re-saying `free.ink` replaces the whole pointer set, which is right
+              for a NEW design and wrong for a change to one of two: without
+              these two lines, a customer with a neck piece and a chest piece who
+              says *"make the chest one bigger"* would have the NECK one quietly
+              stop carrying — a tattoo somebody paid for vanishing on an ask that
+              was not about it. Restated rather than merged, so the set filed is
+              always the complete current answer, which is the plural subject's
+              own rule.
+
+              The transformed slot's own pointer is overwritten a few hundred
+              lines below by the crop this render mints, which is what makes the
+              transformed tattoo the next carry's baseline.
+            */
+            ...(priorDelta.inkApplied ? { inkApplied: priorDelta.inkApplied } : {}),
+            ...(priorDelta.inkDelivered ? { inkDelivered: priorDelta.inkDelivered } : {}),
+          };
+          log.info(
+            {
+              userId: input.userId,
+              candidate: input.candidatePublicId,
+              slot: onSlot.slot,
+              change: prior.changes[0],
+              delivered: deliveredSlots,
+            },
+            "[refineService] a transform of a tattoo she already has — her own delivered crop is the source",
+          );
+        }
+      }
+    }
+  }
   /*
     A REPEAT OF THE SAME ASK RE-ROLLS THIS VERSION IN PLACE (founder,
     2026-08-15): *"just allow a refresh or regeneration of the same edit which
@@ -3049,7 +3286,25 @@ async function refineCandidateCounted(
     toward treating two asks as different — a false split costs one chip, a
     false merge would take a picture she paid for off the rail.
   */
+  /*
+    ⚠ AND A TRANSFORM IS NEVER ONE, because its whole content is invisible to
+    `sameStep` (opus-949).
+
+    A transform files no new `free.ink` words — that is the design's best
+    decision (opus-940 §4) and it means the STEP DELTA of *"make it bigger"* is
+    identical to the state it started from. `sameStep` compares deltas, so the
+    first transform after a tattoo lands reads as a repeat of the step that
+    painted it, and *"make it bigger"* then *"make it smaller"* read as repeats
+    of each other — two different renders collapsing onto one version, with her
+    second sentence dropped from the list.
+
+    The change lives in `source.change`, which dies with its ask, and the record
+    of it is the CROP this render mints. So this door is stood down for a
+    transform, in the direction the comment above already prefers: a false split
+    costs one chip, a false merge takes a picture she paid for off the rail.
+  */
   const repeatsThisVersion = Boolean(editDelta)
+    && inkTransformOnSlot === null
     && priorSteps.length > 0
     && (confirmedRegenerate || sameStep(priorSteps[priorSteps.length - 1]!, editDelta!));
   const instructions = editDelta
@@ -3147,18 +3402,19 @@ async function refineCandidateCounted(
     and it refuses before the claim, for free, rather than buying a picture that
     silently drops what somebody already paid for.
   */
-  const priorDelta = predecessor?.deltas != null ? readStoredDelta(predecessor.deltas) : {};
-  if (priorDelta === null) {
-    log.error(
-      { candidate: input.candidatePublicId, variant: predecessor?.publicId },
-      "[refineService] UNREADABLE PREDECESSOR — refusing rather than composing from nothing",
-    );
-    throw refusal("history_unreadable", {
-      code: "BAD_REQUEST",
-      message: "Something's wrong with this face's history and I won't guess at it — "
-        + "the edit would have dropped what you already asked for. Nothing was charged.",
-    });
-  }
+  /*
+    ⚠ READ AND REFUSED A FEW HUNDRED LINES ABOVE AS OF 2026-08-21, and the move
+    is what makes the transform road possible.
+
+    The prior question has to amend THIS STEP'S DELTA — a transform re-says her
+    existing description as the state rather than filing her imperative — and
+    `stepDeltas`, `instructions` and this composition are all taken from it. Read
+    here, the branch state arrived after the only reader that needed it.
+
+    It still sits BELOW the removal machinery, so a legacy row still meets
+    `history_predates_undo` first and nothing about which refusal a customer
+    reads has moved.
+  */
   const composed = editDelta
     ? composeDeltas([priorDelta, editDelta])
     : composeChain(chain);
@@ -4242,7 +4498,12 @@ async function refineCandidateCounted(
     here — because a placement the vocabulary has not measured has no slot,
     which is a separate decision from this one.
   */
-  let wordsInkAddress: InkAskAddress | null = null;
+  /* The transform resolved its address from STATE a thousand lines above,
+     and it travels in this field because everything downstream — the
+     recipe's `inkPlacement`, the delivery mint's slot — already reads it.
+     One owner, so a transform cannot disagree with either about where on
+     her this render is about. */
+  let wordsInkAddress: InkAskAddress | null = inkTransformAddress;
   /*
     ⚠ `!pointedAtThePicture` IS THE LANE, AND IT IS NOT A CONVENIENCE.
 
@@ -4266,6 +4527,10 @@ async function refineCandidateCounted(
   */
   if (
     inkSource === null
+    /* A transform has already resolved this ask against STATE; re-reading
+       her sentence for a placement would be the second reading the prior
+       question exists to prevent. */
+    && inkTransformOnSlot === null
     && editDelta !== null
     && !pointedAtThePicture
     && facetsWrittenBy(editDelta).has("ink")
@@ -5386,8 +5651,20 @@ async function refineCandidateCounted(
       const inkSlots = Array.from(
         new Set([...Object.keys(appliedBySlot), ...Object.keys(deliveredBySlot)]),
       );
-      const carriedInk = inkSlots.length === 0
-        ? []
+      /*
+        THE ROWS, READ ONCE FOR BOTH READERS OF THEM (opus-949).
+
+        Hoisted out of the carry's own closure when the transform road landed: a
+        transform's SOURCE is a delivered crop of the very slot the carry skips,
+        so a second read here would be a second answer to "what does the
+        database say about her tattoos" inside one render — law 4's mirror, at a
+        seam where the two copies would be invisible to each other.
+
+        Both are skipped entirely when the branch has no ink at all, which is
+        every render this product has served: no read, no allocation, no change.
+      */
+      const inkRows = inkSlots.length === 0
+        ? null
         : await (async () => {
           const designs = await (dependencies.listInkDesigns ?? listInkDesigns)({
             userId: input.userId,
@@ -5419,6 +5696,12 @@ async function refineCandidateCounted(
             );
             return [] as const;
           });
+          return { designs, deliveredCrops };
+        })();
+      const carriedInk = inkRows === null
+        ? []
+        : (() => {
+          const { designs, deliveredCrops } = inkRows;
           /* The assembler's own type rather than a re-listing of its fields:
              a copy drifts by losing a field nothing can see, and the Atlas
              says so mechanically. */
@@ -5443,9 +5726,62 @@ async function refineCandidateCounted(
               chain names the crop, the crop's `publicId` is unique, and there is
               nothing left to match loosely.
             */
-            const delivered = cropId === undefined
+            const named = cropId === undefined
               ? undefined
               : deliveredCrops.find((crop) => crop.publicId === cropId);
+            /*
+              ⚠ AND IF THE NEWEST NAME HAS NO ROW, THE ONE BEFORE IT STILL DOES
+              (fable-1274 §5's arm, built after driving it — opus-949).
+
+              The crop's NAME is minted at claim and its ROW at delivery, so a
+              render whose ink never actually arrived — the mint answering
+              `no-cut` because the reader found nothing on the delivered frame —
+              leaves the branch naming a row nobody wrote. For a FIRST tattoo
+              that is correct and nothing changes: there is no earlier name, the
+              slot carries nothing, and nothing is what she has.
+
+              **For a render that CHANGED a tattoo she already had, it is a
+              disaster.** A failed *"twice the size"* would take the real crop
+              with it and the piece would vanish on her next unrelated edit —
+              the minted-loss incident reborn at a new door, which is exactly
+              what fable-1274 §5 required an arm for. Driven before it was
+              built: the branch named a fresh uuid, no row existed for it, and
+              the next render carried nothing.
+
+              So the branch's own steps are asked for the newest name that a row
+              was actually written for. It is a DERIVED VIEW of the chain rather
+              than a second record of it — a prune takes an entry away by
+              arithmetic exactly as it always did — and it can only ever fire
+              where today the slot is dropped entirely, so the only outcome it
+              can change is a tattoo somebody paid for going missing.
+
+              The class rather than the instance: nothing here knows what a
+              transform is, and a re-ask on an already-delivered slot is rescued
+              by the same lines.
+            */
+            const delivered = named ?? (cropId === undefined
+              ? undefined
+              : (() => {
+                for (let at = stepDeltas.length - 1; at >= 0; at -= 1) {
+                  const earlier = stepDeltas[at]?.inkDelivered?.[slot];
+                  if (earlier === undefined || earlier === cropId) continue;
+                  const row = deliveredCrops.find((crop) => crop.publicId === earlier);
+                  if (row !== undefined) {
+                    log.warn(
+                      {
+                        operationId,
+                        variant: variant.publicId,
+                        slot,
+                        namedByTheBranch: cropId,
+                        carriedInstead: earlier,
+                      },
+                      "[refineService] the newest delivered crop for this tattoo was never written — carrying the last one that was, rather than losing her tattoo",
+                    );
+                    return row;
+                  }
+                }
+                return undefined;
+              })());
             /*
               A DESIGN NAMED ON THE CHAIN MUST STILL EXIST, even when a crop of
               it does. That is what keeps the per-design delete working: a
@@ -5629,6 +5965,71 @@ async function refineCandidateCounted(
                 pictures: "inkDesignOnTransparency" as const,
                 cutRoute: inkSource.cutRoute,
                 scope: inkSource.scope,
+              }],
+            };
+          })()
+          : {}),
+        /*
+          AND THE TATTOO SHE ALREADY HAS, ON THE RENDER THAT CHANGES IT
+          (fable-1274 §1, wired opus-949).
+
+          The whole road, in one object: the picture is the DELIVERED CROP of
+          the slot this render edits, so what the painter is shown is the design
+          as it actually sits on her, at her own tone and in her own light — and
+          the instruction is one clause of the carry's own sentence, swapped.
+          Never a reinvention, structurally rather than by promise.
+
+          The slot is taken from the ASK LIST for the same reason the two
+          sources above take theirs: the assembler refuses a source naming a
+          slot no ask names. The agreement is structural here — both sides come
+          from `wordsInkAddress`, which the prior question set from this very
+          slot.
+
+          IT REFUSES RATHER THAN DROPPING, and that is the difference from its
+          siblings. A dropped hair carrier renders her hair from words; a
+          dropped transform source renders A FRESH TATTOO FROM WORDS, which is
+          the exact defect this road exists to end — so a missing crop row takes
+          the render down into the refund rather than quietly buying the
+          customer the thing she was trying to avoid.
+        */
+        ...(inkTransformOnSlot
+          ? (() => {
+            const cropId = inkTransformOnSlot.cropId;
+            const crop = inkRows?.deliveredCrops
+              .find((row) => row.publicId === cropId);
+            const slot = asks.asks.map((ask) => ask.slot).find((one) => isInkSlot(one));
+            if (crop === undefined || slot === undefined) {
+              log.error(
+                {
+                  operationId,
+                  variant: variant.publicId,
+                  slot: inkTransformOnSlot.slot,
+                  crop: cropId ?? null,
+                  slots: asks.asks.map((ask) => ask.slot),
+                },
+                "[refineService] a transform has no delivered crop to change — refusing rather than painting a new tattoo over the one she asked about",
+              );
+              throw new Error("the transform's delivered crop could not be found");
+            }
+            return {
+              sources: [{
+                slot,
+                /* By KEY and DIGEST, never fetched here: `repaintRender`
+                   re-reads every reference and refuses when the loaded bytes do
+                   not hash to the sha the recipe named. */
+                image: { key: crop.storageKey, sha: crop.digest },
+                pictures: "inkAsDelivered" as const,
+                change: inkTransformOnSlot.change,
+                /*
+                  EMPTY, AND THAT IS THE MEMBER'S OWN DESIGN. `scope` is the
+                  second sentence a source may add about what its picture may
+                  give her — the hair road's `style` versus `fullLook`. A
+                  transform's picture may give her exactly one thing, and
+                  `inkDeliveredTransformSentence` has already said it in full;
+                  a second sentence here would be a second author for one
+                  instruction.
+                */
+                scope: "",
               }],
             };
           })()
@@ -5826,7 +6227,24 @@ async function refineCandidateCounted(
             missed it anyway. Said here rather than left to fall through, so the
             reason is a decision rather than an accident of a lookup.
           */
-          if (role.kind === "source") return unpadded();
+          /*
+            ⚠ EXCEPT AN INK SOURCE, WHICH IS THE SAME BYTES AS AN INK CARRY.
+
+            The paragraph above is about GEOMETRY and it still holds: a source
+            has no coordinate in her frame to be put back into. But the floor
+            below is not a pad — it is a LEGIBILITY floor, and the transform
+            road makes a delivered crop ride as a SOURCE rather than as a carry
+            (opus-949). Same bytes, same mint, same 256 px his own court bought
+            (fable-1210 §1); keyed on the role, the floor would have missed them
+            on the one road whose whole subject is that picture.
+
+            The design-artwork source is deliberately not the reason this line
+            exists — an uploaded design is already floored at the upload door
+            (`INK_DESIGN_MIN_EDGE`), so it arrives over the floor — but it costs
+            nothing for it to pass through the same measurement, and a condition
+            written as "ink source, except that one" is the second list.
+          */
+          if (role.kind === "source" && !isInkSlot(role.slot)) return unpadded();
           /*
             AND AN INK CARRY GOES OUT BIG ENOUGH TO BE READ (opus-941 §5,
             granted fable-1280 §1).
@@ -5847,7 +6265,7 @@ async function refineCandidateCounted(
             fits AFTER it takes that digest, by contract), and it dies with
             the request.
           */
-          if (role.kind === "carry" && isInkSlot(role.slot)) {
+          if ((role.kind === "carry" || role.kind === "source") && isInkSlot(role.slot)) {
             return await inkCarryAtFloor({
               bytes: reference.bytes,
               contentType: reference.contentType,

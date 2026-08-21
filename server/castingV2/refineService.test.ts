@@ -11899,6 +11899,386 @@ describe("the picture she attached becomes the carrier that rides", () => {
     expect(painted).toHaveLength(0);
     expect(result.note).toContain("couldn't tell where on her you meant");
   });
+
+  /*
+    ---- TRANSFORM THE TATTOO SHE ALREADY HAS (fable-1274 §1, arms fable-1287) ----
+
+    His ask, the hour his tattoo card went live: *"like make it bigger or
+    somthing now it has a bounding box?"*
+
+    `inkTransform.test.ts` drives the vocabulary, the sentence and the assembler;
+    `inkPriorAsk.test.ts` drives the reading. What only THIS file can prove is
+    the ROUTING — and routing is the whole finding, because before this the ask
+    did not refuse anything. It RENDERED, and it CHARGED: the take read a
+    placement out of the word *"chest"* and the road painted a fresh design
+    invented from his prose, on a master with no ink, with his own piece never on
+    the wire (driven at this service, opus-948 §1).
+  */
+  const CHEST_CROP = "11111111-1111-4111-8111-111111111111";
+  const NECK_CROP = "22222222-2222-4222-8222-222222222222";
+
+  /** A branch that already carries a delivered tattoo — the state the prior
+   *  question reads, and the only thing that makes a transform possible. */
+  const inkedBranch = (delivered: Record<string, string> = { "ink:upperChest": CHEST_CROP }) => {
+    const deltas = { free: { ink: "a fine-line swallow chest piece" }, inkDelivered: delivered };
+    variantRows = [{
+      id: 707,
+      publicId: "variant-inked",
+      candidateId: 1,
+      imageKey: "casting-v2/variants/inked.png",
+      internalPrompt: candidateRow.internalPrompt,
+      instructions: ["give him a swallow chest piece"],
+      deltas,
+      stepDeltas: [deltas],
+      status: "ready",
+    }];
+    candidateRow.selectedVariantPublicId = "variant-inked";
+  };
+
+  /** Rows for the crops that branch names, at the mint's own seam. */
+  const deliveredCropRows = (ids: readonly string[] = [CHEST_CROP]) => async () => ids.map((id) => ({
+    publicId: id,
+    storageKey: `casting-v2/ink-delivered/${id}.png`,
+    digest: TINY_MASTER_SHA,
+  }));
+
+  /**
+   * The words road with the transform flag ARMED and her crops readable.
+   *
+   * The interpreter is left saying what it says for this sentence — an ordinary
+   * ink delta — because the routing must not depend on it having any opinion
+   * about transforms. Everything that decides this road is read off HER OWN
+   * SENTENCE and off the branch.
+   */
+  const transformRoad = (over: Record<string, unknown> = {}) => wordsRoad({
+    inkTransformEnabled: () => true,
+    listInkDeliveryCrops: deliveredCropRows(),
+    interpret: async () => ({
+      ok: true as const,
+      fromReference: false,
+      delta: { free: { ink: "a fine-line swallow chest piece, larger" } },
+    }),
+    ...over,
+  });
+
+  const lastClaim = () => (claimVariant as unknown as {
+    mock: { calls: Array<[{ deltas: RefineDelta; stepDeltas: RefineDelta[] }]> };
+  }).mock.calls.at(-1)![0];
+
+  it("SENDS HER OWN DELIVERED CROP, with one clause of the carry's sentence changed", async () => {
+    /*
+      The whole road, at the wire. Two things have to be true together and
+      neither is enough alone: the bytes are the crop of the tattoo as it
+      actually sits on her, and the instruction about them is a CHANGE rather
+      than a description — because a description is what invents a new design.
+    */
+    inkedBranch();
+    painted.length = 0;
+    const result = await refineCandidate(transformRoad(), {
+      ...input, instruction: "make his chest tattoo bigger",
+    });
+
+    expect(result.kind).toBe("rendered");
+    expect(painted).toHaveLength(1);
+    const prompt = painted[0]!.prompt;
+    /* The picture is named as HER OWN, by the carry lane's own owner. */
+    expect(prompt).toContain("is the exact upper chest tattoo she already has");
+    /* And the one clause that makes it a transform rather than a carry. */
+    expect(prompt).toContain("Draw this same tattoo noticeably larger than it appears in this picture");
+    expect(prompt).toContain("Everything else about it stays exactly as this picture shows it");
+    /* The carry's own sentence must NOT also be on the wire: one picture twice
+       with two sentences is what `carriesItsOwnEdit` exists to refuse. */
+    expect(prompt).not.toContain("keep it exactly as it is, in the same place and at the same size");
+  });
+
+  it("⚠ files NO NEW WORDS — the ask re-says the state that was already true", async () => {
+    /*
+      opus-940 §4, ratified fable-1274 §3, and the assembler taught it to the
+      design from the other direction: `words: "make it bigger"` is refused by
+      name (`wordsNotDeclarative` — *"the interpreter owes a state phrase"*).
+
+      The deeper reason is the double-carry's sibling. `free.ink` is re-said on
+      every later edit, so a delta holding *"larger"* would two renders on be
+      *"twice the size of what?"* beside a crop that already IS the new size.
+      The change rides on the source, where it dies with its ask.
+    */
+    inkedBranch();
+    painted.length = 0;
+    await refineCandidate(transformRoad(), {
+      ...input, instruction: "make his chest tattoo bigger",
+    });
+
+    expect(lastClaim().deltas.free?.ink).toBe("a fine-line swallow chest piece");
+    expect(JSON.stringify(lastClaim().deltas)).not.toContain("larger");
+  });
+
+  it("⚠ AND THE FLAG REALLY IS A FLAG — off, the ask travels today's road", async () => {
+    /*
+      THE NEGATIVE CONTROL, and it is the arm that proves the landing is dark.
+      Off, this ask still renders — that is what off has to mean — but what it
+      renders is a FRESH design from words, with her delivered crop nowhere on
+      the wire. The wrongness of that road is the reason the flag exists; its
+      unchangedness is the reason the flag is a flag.
+    */
+    inkedBranch();
+    painted.length = 0;
+    const result = await refineCandidate(transformRoad({ inkTransformEnabled: () => false }), {
+      ...input, instruction: "make his chest tattoo bigger",
+    });
+
+    expect(result.kind).toBe("rendered");
+    expect(painted).toHaveLength(1);
+    expect(painted[0]!.prompt).not.toContain("is the exact upper chest tattoo she already has");
+    expect(painted[0]!.prompt).not.toContain("Draw this same tattoo noticeably larger");
+  });
+
+  it("ANSWERS an ask about ink she has not got — free, and for BOTH verbs", async () => {
+    /*
+      UNGATED, by ruling (fable-1274 §4, fable-1287 §2): a gated apology stays
+      wrong for everyone outside the flag. One sentence serves *"make it
+      bigger"* and *"take it off"* alike, because the customer's situation is
+      one situation.
+    */
+    for (const said of ["make his tattoo bigger", "take his tattoo off"]) {
+      painted.length = 0;
+      ledger.charges.length = 0;
+      const result = await refineCandidate(transformRoad({
+        inkTransformEnabled: () => false,
+        listInkDeliveryCrops: deliveredCropRows([]),
+      }), { ...input, instruction: said });
+
+      expect(result.kind, said).toBe("selected");
+      expect(result.note, said).toContain("She hasn't got one yet");
+      expect(painted, said).toHaveLength(0);
+      expect(ledger.charges, said).toHaveLength(0);
+    }
+  });
+
+  it("⚠ NAMES THE TATTOO IT CAN SEE before it says it cannot take one off", async () => {
+    /*
+      fable-1287 §3, condition (i). The three sentences this replaces are all
+      worse and two of them are false — driven, this ask landed on *"I can't
+      find any tattoos on this face"*, said about a branch that names a
+      delivered chest piece. The honest form of *"not yet"* starts by agreeing
+      with his eyes.
+
+      Condition (ii): it persists NOTHING. A half-filed ink removal would put
+      *"no tattoos"* on the wire beside *"put the chest piece back exactly as it
+      is"* — D-244's contradiction at full price.
+    */
+    inkedBranch();
+    painted.length = 0;
+    ledger.charges.length = 0;
+    const claimsBefore = (claimVariant as unknown as { mock: { calls: unknown[] } }).mock.calls.length;
+
+    const result = await refineCandidate(transformRoad(), {
+      ...input, instruction: "take his chest tattoo off",
+    });
+
+    expect(result.kind).toBe("selected");
+    expect(result.note).toContain("upper chest tattoo");
+    expect(result.note).toContain("Nothing was charged.");
+    /* And never the placement question — the offer to ADD in reply to an ask to
+       REMOVE, which is what §5f item 4 filed. */
+    expect(result.note).not.toContain("I need to know where it goes");
+    expect(painted).toHaveLength(0);
+    expect(ledger.charges).toHaveLength(0);
+    expect(
+      (claimVariant as unknown as { mock: { calls: unknown[] } }).mock.calls.length,
+      "a free pre-claim refusal claimed a variant",
+    ).toBe(claimsBefore);
+  });
+
+  it("⚠ LEAVES A FRESH ASK ALONE on the same inked branch — the routing control", async () => {
+    /*
+      The arm that would go red if the prior question ever widened to "her
+      sentence mentions a tattoo". *"Give him a bigger tattoo on his neck"* is
+      an ordinary NEW design on a person who already has one, and it must still
+      travel the words road it travels today.
+    */
+    inkedBranch();
+    painted.length = 0;
+    const result = await refineCandidate(transformRoad(), {
+      ...input, instruction: "give him a bigger tattoo on his neck",
+    });
+
+    expect(result.kind).toBe("rendered");
+    expect(painted[0]!.prompt).not.toContain("Draw this same tattoo noticeably larger");
+  });
+
+  it("says so when she asked for two changes at once, rather than serving half", async () => {
+    inkedBranch();
+    painted.length = 0;
+    const result = await refineCandidate(transformRoad(), {
+      ...input, instruction: "make his chest tattoo bigger and darker",
+    });
+
+    expect(result.kind).toBe("selected");
+    expect(result.note).toContain("one thing about a tattoo at a time");
+    expect(painted).toHaveLength(0);
+  });
+
+  it("⚠ ASKS WHICH when she has two and said 'it' — never picks one", async () => {
+    /*
+      The left-arm scar, at the service. An ask that omitted a key member
+      spanned two rows and `matches[0]` rode her left arm; a transform that
+      silently picks one of two tattoos is that defect with a paid render
+      attached.
+    */
+    inkedBranch({ "ink:upperChest": CHEST_CROP, "ink:neck": NECK_CROP });
+    painted.length = 0;
+    const result = await refineCandidate(transformRoad({
+      listInkDeliveryCrops: deliveredCropRows([CHEST_CROP, NECK_CROP]),
+    }), { ...input, instruction: "make it bigger" });
+
+    expect(result.kind).toBe("selected");
+    expect(result.note).toContain("more than one");
+    expect(result.note).toContain("upper chest tattoo");
+    expect(result.note).toContain("neck tattoo");
+    expect(painted).toHaveLength(0);
+  });
+
+  it("⚠ AND HER OTHER TATTOO SURVIVES THE ONE SHE CHANGED", async () => {
+    /*
+      The composition rule that makes this arm necessary is doing its job one
+      door away: a step that says anything at all about `free.ink` REPLACES the
+      pointer set with its own, because the words and the pointers are two
+      halves of one fact. A transform re-says `free.ink` by construction — so
+      without the code restating her other pointers, the NECK piece would
+      quietly stop carrying on an ask that was not about it.
+
+      Read off the claimed delta, which is what a later render composes from.
+    */
+    inkedBranch({ "ink:upperChest": CHEST_CROP, "ink:neck": NECK_CROP });
+    painted.length = 0;
+    const result = await refineCandidate(transformRoad({
+      listInkDeliveryCrops: deliveredCropRows([CHEST_CROP, NECK_CROP]),
+    }), { ...input, instruction: "make the upper chest one bigger" });
+
+    expect(result.kind, "her own word did not narrow two tattoos to one").toBe("rendered");
+    const claimed = lastClaim().deltas.inkDelivered ?? {};
+    /* The neck piece, untouched. */
+    expect(claimed["ink:neck"]).toBe(NECK_CROP);
+    /* And the chest piece now names the crop THIS render mints — the
+       transformed tattoo becoming the next carry's baseline. */
+    expect(claimed["ink:upperChest"]).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/,
+    );
+    expect(claimed["ink:upperChest"]).not.toBe(CHEST_CROP);
+  });
+
+  it("⚠ AND IT IS NEVER READ AS A REPEAT OF THE STEP THAT PAINTED IT", async () => {
+    /*
+      A transform's whole content is invisible to `sameStep`, which compares
+      DELTAS: the delta of *"make it bigger"* is identical to the state it
+      started from, so the first transform after a tattoo lands would read as a
+      re-roll of the step that painted it — her sentence dropped from the list
+      and the version count not growing.
+
+      The evidence is the instruction list on the claim, which is what the rail
+      and every later composition read.
+    */
+    inkedBranch();
+    await refineCandidate(transformRoad(), {
+      ...input, instruction: "make his chest tattoo bigger",
+    });
+
+    expect((lastClaim() as unknown as { instructions: string[] }).instructions)
+      .toEqual(["give him a swallow chest piece", "make his chest tattoo bigger"]);
+  });
+
+  it("⚠ AND THE RIDE-TIME FLOOR REACHES IT, because a source is the same bytes", async () => {
+    /*
+      The floor was keyed on `role.kind === "carry"`, and the transform road
+      makes a delivered crop ride as a SOURCE — same mint, same bytes, same
+      256 px his own court bought (fable-1210 §1). Keyed on the role, the floor
+      would have missed them on the one road whose entire subject is that
+      picture.
+
+      Read off the floor's own decision line, which names the key it measured.
+    */
+    inkedBranch();
+    logged.length = 0;
+    await refineCandidate(transformRoad(), {
+      ...input, instruction: "make his chest tattoo bigger",
+    });
+
+    const measured = logged.find((line) => line.message.startsWith("[inkRideFloor]"));
+    expect(measured, "the floor never looked at the transform's own picture").toBeDefined();
+    expect(measured!.fields.key).toBe(`casting-v2/ink-delivered/${CHEST_CROP}.png`);
+  });
+
+  it("⚠ REFUSES rather than painting a new tattoo when the crop cannot be found", async () => {
+    /*
+      The one place this road refuses AFTER the claim, and the posture is
+      deliberate. Its two siblings DROP a source they cannot site — a dropped
+      hair carrier renders her hair from words, which is a worse render of the
+      right thing. A dropped transform source renders A FRESH TATTOO FROM WORDS,
+      which is the exact defect this whole road exists to end, so the render
+      goes down into the refund instead.
+    */
+    inkedBranch();
+    painted.length = 0;
+    await expect(refineCandidate(transformRoad({
+      listInkDeliveryCrops: deliveredCropRows([]),
+    }), { ...input, instruction: "make his chest tattoo bigger" }))
+      .rejects.toThrow(/credits have been returned|didn't come through/);
+    expect(painted, "a transform with no crop reached the engine").toHaveLength(0);
+  });
+
+  it("⚠ A DISPUTED TRANSFORM DOES NOT BECOME THE NEXT CARRY'S BASELINE", async () => {
+    /*
+      fable-1274 §5's arm — and it was written expecting the existing machinery
+      to cover it. Driven, it did not: a transform whose delivery the mint
+      disputes (`no-cut` — the reader found nothing on the delivered frame)
+      leaves the branch naming a crop row nobody wrote, and the next render
+      carried NOTHING. His chest piece would have vanished on the following
+      unrelated edit, which is the minted-loss incident reborn at a new door.
+
+      Two renders, because one cannot see it: the first is the failed transform,
+      the second is the ordinary edit that comes after it.
+    */
+    inkedBranch();
+    await refineCandidate(transformRoad({
+      mintInkDeliveryCrop: async () => ({ outcome: "no-cut" as const, slot: "ink:upperChest" }),
+    }), { ...input, instruction: "make his chest tattoo bigger" });
+
+    /* The branch as the failed transform left it — the claim's own lists, not a
+       hand-written guess at what they hold. */
+    const failed = lastClaim();
+    variantRows = [{
+      id: 708,
+      publicId: "variant-after-failed-transform",
+      candidateId: 1,
+      imageKey: "casting-v2/variants/inked.png",
+      internalPrompt: candidateRow.internalPrompt,
+      instructions: ["give him a swallow chest piece", "make his chest tattoo bigger"],
+      deltas: failed.deltas,
+      stepDeltas: failed.stepDeltas,
+      status: "ready",
+    }];
+    candidateRow.selectedVariantPublicId = "variant-after-failed-transform";
+
+    painted.length = 0;
+    logged.length = 0;
+    await refineCandidate(transformRoad({
+      interpret: async () => ({
+        ok: true as const,
+        fromReference: false,
+        delta: { free: { eyeColourFree: "neon blue" } },
+      }),
+    }), { ...input, instruction: "make his eyes neon blue" });
+
+    expect(painted, "the edit after a failed transform never reached the engine").toHaveLength(1);
+    /* HER TATTOO IS STILL ON THE WIRE, said as a carry. */
+    expect(painted[0]!.prompt).toContain("is the exact upper chest tattoo she already has");
+    /* And the fact is LOUD rather than silently repaired: a record naming a row
+       nobody wrote is worth a line in the log every time it is worked around. */
+    expect(
+      logged.some((line) => line.message.includes("carrying the last one that was")),
+      "the fallback ran silently",
+    ).toBe(true);
+  });
 });
 
 

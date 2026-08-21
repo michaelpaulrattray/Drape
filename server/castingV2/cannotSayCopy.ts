@@ -56,8 +56,19 @@ import type { RepaintAsksRefusal } from "./repaintAsks";
  * whole reason this registry exists is that a reason must not be able to ship
  * with the wrong label. The totality test still holds — one entry per member of
  * THIS type, whichever side of the claim its door sits on.
+ *
+ * `noInkToChange`, `inkOneChangeAtATime`, `inkRemovalNotYet` and
+ * `whichInkToChange` are the transform road's four, and they belong here for
+ * the same reason: all are raised by the prior question at the pre-claim ink
+ * door (`inkPriorAsk`), which `repaintAsks` never sees.
  */
-export type CannotSayReason = RepaintAsksRefusal["reason"] | "inkBeyondToday";
+export type CannotSayReason =
+  | RepaintAsksRefusal["reason"]
+  | "inkBeyondToday"
+  | "noInkToChange"
+  | "inkOneChangeAtATime"
+  | "inkRemovalNotYet"
+  | "whichInkToChange";
 
 /** What the settlement knows when it writes the sentence. */
 export type CannotSayContext = {
@@ -245,6 +256,118 @@ export const CANNOT_SAY_COPY: Readonly<Record<CannotSayReason, CannotSayEntry>> 
       + "or her upper chest — point me at one design and one of those places and I'll do it. "
       + "Taking a whole sheet and working from the feel of it, across her, is being built and "
       + `isn't ready yet — it's coming. ${MONEY(context.moneySafe)}`,
+  },
+  /*
+    SHE ASKED ABOUT A TATTOO SHE DOES NOT HAVE — and ONE sentence serves both
+    ways of asking (designed opus-940 §3, ratified fable-1274 §3).
+
+    *"Make it bigger"* and *"take his tattoos off"* are different asks with the
+    same answer on a bare cast: there is nothing there. Before this, the first
+    rendered a fresh design invented from her prose and charged for it, and the
+    second was answered with *"I can put a tattoo on her, but I need to know
+    where it goes"* — an offer to ADD, in reply to an ask to REMOVE. One
+    sentence rather than two because the customer's situation is one situation,
+    and two apologies for one gap is how a person comes to think they are using
+    two products.
+
+    The order is the house order: what she CAN have first, so the reply is a
+    road rather than a wall, and the fact second. It hands her the same three
+    places `unplacedInk` does, because that IS the next move from here and the
+    two doors must not describe different products.
+
+    `free`, and it is arithmetic: this door is above the claim, so there is
+    nothing to give back.
+  */
+  noInkToChange: {
+    charge: "free",
+    /*
+      IT OFFERS ONLY WHAT EXISTS. An earlier draft ended *"…and then make it
+      bigger, move it, or take it off again"* — and taking one off is not built,
+      so that sentence was a promise inside a refusal, which the header of this
+      file names as the easiest line in a product to leave rotting.
+    */
+    say: (context) => "I can put a tattoo on her — her neck, an upper arm, her upper chest. "
+      + "She hasn't got one yet, though, so there's nothing there to change or take off. "
+      + MONEY(context.moneySafe),
+  },
+  /*
+    SHE ASKED FOR A TATTOO TO COME OFF, AND IT IS REALLY THERE (ruled
+    fable-1287 §3, condition (i)).
+
+    The three sentences this replaces are all worse and two of them are false.
+    Driven at the service (opus-948 §2), *"take his tattoos off"* landed on
+    *"I can't find any tattoos on this face"* — said about a chain that names a
+    delivered chest piece, which is the record-versus-pixels absurdity — or on
+    *"That isn't something I know where to put on her yet"*, or on the placement
+    question, an offer to ADD in reply to an ask to REMOVE.
+
+    **So it starts by agreeing with his eyes.** `scopeNoun` is composed by the
+    caller from the slot the chain resolved — *"his upper chest tattoo"* — and
+    the sentence names it before it says no, because a *"not yet"* that begins
+    by doubting what he is looking at is the one thing worse than a *"not yet"*.
+
+    And the way out it names is REAL rather than a promise: backing up to an
+    earlier version genuinely removes it today, and every delivered tattoo has a
+    version before it by construction — `inkDelivered` is only ever written by a
+    refine step.
+
+    It persists NOTHING (condition (ii)): free, pre-claim, no absent facet and
+    no delta a later carry could read. A half-filed ink removal would put *"no
+    tattoos"* on the wire beside *"put the chest piece back exactly as it is"*,
+    which is D-244's contradiction at full price.
+  */
+  /*
+    SHE HAS TWO AND SAID "IT" — asked, never guessed (opus-940 §2, ratified
+    fable-1274 §2).
+
+    `slots[0]` is forbidden on this road and the price of the alternative is on
+    the record: an ask that omitted a key member spanned two rows and
+    `matches[0]` rode her LEFT ARM — 300 credits refunded twice for a design on
+    the wrong anatomical side (DECISION_LOG R7-7G). A transform that silently
+    picks one of two tattoos is that defect with a paid render attached.
+
+    It is a QUESTION IN WORDS rather than a chip question, and that is the
+    sibling's shape rather than a shortcut: `unplacedInk` directly above asks
+    *"say where and I'll do it"* with no chips at all, and a chip question here
+    would have to carry the slot list through the answer handle — machinery
+    whose only purpose would be to re-say a sentence she can answer by typing
+    three words. Her reply names a placement, and the narrowing that reads it is
+    her own word matched against the surface's own noun.
+
+    Every answer ACTS (D-180): each names a tattoo that exists and can be
+    changed.
+  */
+  whichInkToChange: {
+    charge: "free",
+    say: (context) => `${context.scopeNoun ? `You've got more than one — ${context.scopeNoun}` : "You've got more than one tattoo"}`
+      + `. Say which one and I'll do it. ${MONEY(context.moneySafe)}`,
+  },
+  inkRemovalNotYet: {
+    charge: "free",
+    say: (context) => `${context.scopeNoun ? `That's ${context.scopeNoun}, and taking` : "Taking"} `
+      + "a tattoo off again isn't something I can do yet. For now, backing up to a version from "
+      + `before it was added is the way to get rid of it. ${MONEY(context.moneySafe)}`,
+  },
+  /*
+    TWO CHANGES IN ONE SENTENCE, and the road can state one (opus-948 §4).
+
+    *"Make it bigger and darker"* is a reasonable thing to type and it is not
+    one instruction: every transform clause ends by saying that everything else
+    about the tattoo stays exactly as the picture shows it, so two of them
+    contradict each other on the wire — the same design, the same ink, and
+    darker ink, all in one prompt. Serving the first half silently would be a
+    paid render answering half an ask, which is the thing D-181's law exists to
+    stop.
+
+    So it is said, free, before the claim, and it names the axes rather than
+    apologising vaguely: every answer to it ACTS (D-180), because each one is a
+    change this road can make today.
+  */
+  inkOneChangeAtATime: {
+    charge: "free",
+    say: (context) => "I can change one thing about a tattoo at a time — bigger or smaller, "
+      + "higher or lower, darker or lighter. Say which one you'd like first and I'll do it, "
+      + `then we can do the other. ${MONEY(context.moneySafe)}`,
   },
   uncatalogued: {
     charge: "refunded",

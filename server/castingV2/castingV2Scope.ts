@@ -1919,3 +1919,107 @@ export function validateCastingInkCutEnvironment(input: {
   }
   return child;
 }
+
+/**
+ * **WHETHER SHE MAY CHANGE A TATTOO SHE ALREADY HAS** — the transform road
+ * (founder-ordered fable-1269 §2, designed opus-940, countersigned fable-1274).
+ *
+ * His own words, the hour his tattoo card went live: *"Can i actually make
+ * edits to the upper chest tattoo? like make it bigger or somthing now it has
+ * a bounding box?"*
+ *
+ * # What it gates, and what it deliberately does not
+ *
+ * Off, and absent means off, *"make his chest tattoo bigger"* travels the road
+ * it travels today: the ink facet is read, a placement is resolved out of the
+ * word *"chest"*, and the render paints **a fresh design invented from her
+ * prose** on a master that has no ink. That is charged and it is wrong, and it
+ * is nevertheless what off must mean — a dark landing changes nothing on the
+ * deploy that ships it.
+ *
+ * On, the same ask carries her own DELIVERED CROP as the source with one clause
+ * of the instruction changed (`inkAsDelivered`), so the tattoo on the wire is
+ * the tattoo on her rather than a reinvention of it.
+ *
+ * **Two of the road's three arms are OUTSIDE this flag and that is deliberate**
+ * (granted fable-1274 §4): an ask about ink she does not have, and an ask
+ * naming two changes at once, are both answered free before the claim with an
+ * honest sentence. Gating an apology is how the apology stays wrong for
+ * everyone outside the flag.
+ *
+ * # WHY THE PARENT IS THE STUDIO SCOPE
+ *
+ * A transform's whole content is a picture of a tattoo this product already
+ * delivered, and the studio door is the road that makes a tattoo deliverable at
+ * all. Armed over a user outside it, the flag would guard a lane whose subject
+ * cannot exist — inert, and indistinguishable from mistaken. The repaint,
+ * library and cleanup-worker parents ride in through the studio flag's own
+ * check rather than being restated here; two checks of one fact drift apart.
+ *
+ * # It spends nothing new
+ *
+ * No engine call, no segmenter call, no text call. The picture already exists
+ * (migration `0049`), her words are already hers, and the change is a clause
+ * swap read out of her own sentence by code (`inkPriorAsk`). `assertFalBudget`
+ * is untouched, and there is no new stored byte anywhere, which is why this
+ * flag needs no table and no migration.
+ */
+export const CASTING_INK_TRANSFORM_SCOPE_ENV = "CASTING_INK_TRANSFORM_SCOPE";
+
+export class CastingInkTransformScopeConfigurationError extends Error {
+  constructor() {
+    super(
+      `${CASTING_INK_TRANSFORM_SCOPE_ENV} must be "off", "all", or "users:" followed by unique positive integer user ids`,
+    );
+    this.name = "CastingInkTransformScopeConfigurationError";
+  }
+}
+
+export class CastingInkTransformCoverageError extends Error {
+  constructor(detail: string) {
+    super(`${CASTING_INK_TRANSFORM_SCOPE_ENV} ${detail}`);
+    this.name = "CastingInkTransformCoverageError";
+  }
+}
+
+export function parseCastingInkTransformScope(raw: string | undefined): CastingV2Scope {
+  return parseScopeGrammar(raw, () => {
+    throw new CastingInkTransformScopeConfigurationError();
+  });
+}
+
+/** Whether this user may change a tattoo she already has. */
+export function captureCastingInkTransformEnabled(userId: number): boolean {
+  const child = parseCastingInkTransformScope(process.env[CASTING_INK_TRANSFORM_SCOPE_ENV]);
+  if (!castingV2EnabledForUser(child, userId)) return false;
+  return captureCastingInkStudioEnabled(userId);
+}
+
+export function validateCastingInkTransformEnvironment(input: {
+  scope: string | undefined;
+  studioScope: string | undefined;
+}): CastingV2Scope {
+  const child = parseCastingInkTransformScope(input.scope);
+  if (child.kind === "off") return child;
+
+  const parent = parseCastingInkStudioScope(input.studioScope);
+  if (parent.kind === "off") {
+    throw new CastingInkTransformCoverageError(
+      `cannot be enabled while ${CASTING_INK_STUDIO_SCOPE_ENV} is off — a transform changes a tattoo `
+      + "this product delivered, and a user outside the studio door has none",
+    );
+  }
+  if (parent.kind === "all") return child;
+  if (child.kind === "all") {
+    throw new CastingInkTransformCoverageError(
+      `cannot be "all" while ${CASTING_INK_STUDIO_SCOPE_ENV} is limited to specific users`,
+    );
+  }
+  const uncovered = child.userIds.filter((userId) => !parent.userIds.includes(userId));
+  if (uncovered.length > 0) {
+    throw new CastingInkTransformCoverageError(
+      `names users outside ${CASTING_INK_STUDIO_SCOPE_ENV}: ${uncovered.join(",")}`,
+    );
+  }
+  return child;
+}

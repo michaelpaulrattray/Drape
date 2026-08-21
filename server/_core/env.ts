@@ -27,6 +27,7 @@ import {
 import {
   CASTING_FACE_SCAN_SCOPE_ENV,
   CASTING_INK_CUT_SCOPE_ENV,
+  CASTING_INK_TRANSFORM_SCOPE_ENV,
   CASTING_INK_REGION_CROP_SCOPE_ENV,
   CASTING_INK_STUDIO_SCOPE_ENV,
   CASTING_OPEN_LANE_SCOPE_ENV,
@@ -40,6 +41,7 @@ import {
   CASTING_V2_SCOPE_ENV,
   validateCastingFaceScanEnvironment,
   validateCastingInkCutEnvironment,
+  validateCastingInkTransformEnvironment,
   validateCastingInkRegionCropEnvironment,
   validateCastingInkStudioEnvironment,
   validateCastingHairReferenceEnvironment,
@@ -321,6 +323,16 @@ export function validateEnv(): void {
   validateCastingInkRegionCropEnvironment({
     scope: process.env[CASTING_INK_REGION_CROP_SCOPE_ENV],
     cutScope: process.env[CASTING_INK_CUT_SCOPE_ENV],
+  });
+  /*
+    WHETHER SHE MAY CHANGE A TATTOO SHE ALREADY HAS. Its parent is the STUDIO
+    door and nothing else: a transform's whole content is a picture of a tattoo
+    this product already delivered, so a user outside that door has no subject
+    for it. Every other parent rides in through the studio flag's own check.
+  */
+  validateCastingInkTransformEnvironment({
+    scope: process.env[CASTING_INK_TRANSFORM_SCOPE_ENV],
+    studioScope: process.env[CASTING_INK_STUDIO_SCOPE_ENV],
   });
 
   /*
