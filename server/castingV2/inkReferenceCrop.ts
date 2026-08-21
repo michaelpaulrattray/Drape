@@ -478,8 +478,21 @@ export function intersectMasks(a: Mask, b: Mask): Mask {
  * The region road carries a SURFACE of a stranger's photograph — an inked upper
  * arm — because that is the only picture that holds the sleeve the customer is
  * pointing at. A surface box is a rectangle over a body, and on a torso
- * placement it climbs: the S2 specimen's `upper chest` box reaches y=80 and
- * takes the face with it. Nothing else in this road stops that.
+ * placement it can climb far enough to take the face with it. Nothing else in
+ * this road stops that.
+ *
+ * ⚠ **AND ON EVERY REAL PHOTOGRAPH WE HOLD, IT HAS NEVER HAD ANYTHING TO DO.**
+ * This paragraph named *"the S2 specimen's `upper chest` box reaches y=80"*
+ * until 2026-08-21. Measured at the real reader, twice, by two different
+ * sittings: that surface's top edge is **y=210** (opus-899 §3, re-measured at
+ * the frames gate walk), and `face ∩ upper chest` is **0 px on BOTH founder
+ * specimens** — S1 16,286 px of face against an 85,371 px surface, S2 10,134
+ * against 215,532, and the box is byte-identical with the subtraction and
+ * without it. So the fence is proven at fixtures and at the bytes and NOT on a
+ * real photograph, and the geometry below is AUTHORED to model the danger
+ * rather than copied from a specimen that exhibits it. Keep it: a fence whose
+ * failure mode is carrying LESS of a stranger is the right way round, and a
+ * closer-cropped upload would engage it. `V3B_FRAMES_GATE_WALK.md` §5(b).
  *
  * # AND IT IS GEOMETRY, WHICH THE LICENCE MAY NEVER BE
  *

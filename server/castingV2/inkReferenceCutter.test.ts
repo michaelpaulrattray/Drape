@@ -840,7 +840,16 @@ describe("the region road — the cut is the SURFACE, not the patch inside it", 
   const PATCH: Rect = { x: 120, y: 400, w: 300, h: 300 };
   /** A face, up where a face is, well clear of `SURFACE`. */
   const FACE: Rect = { x: 600, y: 40, w: 200, h: 200 };
-  /** The torso case: a surface whose box climbs to y=80 and takes the face. */
+  /**
+   * A surface whose box climbs high enough to take the face with it.
+   *
+   * ⚠ AUTHORED, not traced from a specimen. This was labelled *"the torso
+   * case"* after S2 until 2026-08-21; at the real reader S2's `upper chest`
+   * starts at y=210 and `face ∩ upper chest` is 0 px on BOTH founder
+   * photographs, so this rect is the danger modelled rather than observed —
+   * which is exactly why it must stay driveable here (`V3B_FRAMES_GATE_WALK.md`
+   * §5(b)).
+   */
   const CLIMBING: Rect = { x: 500, y: 80, w: 420, h: 600 };
   /** And its own patch, because the road only fires with the ink inside it. */
   const PATCH_ON_TORSO: Rect = { x: 600, y: 300, w: 300, h: 300 };
@@ -954,11 +963,15 @@ describe("the region road — the cut is the SURFACE, not the patch inside it", 
     expect(inSurface.absentIsAnswer).toBe(true);
   });
 
-  it("⚠ TAKES THE FACE OUT AT THE BYTES — the S2 torso case, counted", async () => {
+  it("⚠ TAKES THE FACE OUT AT THE BYTES — a climbing surface, counted", async () => {
     /*
       fable-1183 §2b's condition, proven on the produced object rather than on
-      the code that produced it. The surface box CLIMBS to y=80 and contains the
-      face, which is the specimen this condition was written from.
+      the code that produced it. The surface box CLIMBS and contains the face.
+
+      ⚠ Named "the S2 torso case" until 2026-08-21. It is not: at the real
+      reader S2's `upper chest` starts at y=210 and holds 0 face pixels, as does
+      S1's. This is the modelled danger, and it is the ONLY place the fence has
+      ever been observed to do work (`V3B_FRAMES_GATE_WALK.md` §5(b)).
     */
     const picture = await coordinatePicture(W, H);
     const scripted = photographed(CLIMBING, PATCH_ON_TORSO);

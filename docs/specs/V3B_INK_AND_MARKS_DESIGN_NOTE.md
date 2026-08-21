@@ -1709,6 +1709,16 @@ picture, and closing it is what 3a.2(b) does.
   content is confirmed by HIM at the frames. Eyes are king. That is evidence at
   flip time, not a pre-build authorization.
 
+  **The frames were BOUGHT 2026-08-21 and are waiting on his eyes —
+  `V3B_FRAMES_GATE_WALK.md` is the gate's own artifact.** Read it before
+  reading this paragraph as still-unstarted. Two things in it change what the
+  gate is about, and both belong here rather than only there: the ARTIFACT IS
+  SUBSTITUTED — cut and delivered frame instead of the plate, because minting
+  is behind `MANNEQUIN_ROAD_DEFERRED` and the plate cannot exist today (ruled
+  fable-1243 §2a, a decision with a date and not an executor's convenience) —
+  and the FENCE HAS NEVER BEEN SEEN TO FIRE, measured at the real reader on
+  both founder photographs, `face ∩ upper chest` = 0 px on each.
+
 #### The catalogue gap is engineering shape, not a second question
 
 The repaint catalogue has no tattoo slot: `referenceSlotCatalogue.ts` folds marks

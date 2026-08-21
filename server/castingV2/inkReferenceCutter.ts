@@ -623,8 +623,12 @@ export async function cutInkDesign(input: CutInkDesignInput): Promise<CutInkDesi
     # AND THE FACE COMES OUT, unconditionally
 
     fable-1183 §2b. A surface box is a rectangle over a body and on a torso
-    placement it climbs — the S2 specimen's box reaches y=80 and takes the face
-    with it. `subtractMask` is the arithmetic and its own docblock carries the
+    placement it can climb far enough to take the face with it — though on both
+    founder photographs, measured at the real reader, it does not and the
+    subtraction removes nothing (`V3B_FRAMES_GATE_WALK.md` §5(b); this comment
+    said *"the S2 specimen's box reaches y=80"* until 2026-08-21, and that
+    surface's top edge reads y=210). `subtractMask` is the arithmetic and its
+    own docblock carries the
     two-sites-two-questions rule: the LICENCE is a count and may be asked of a
     padded copy; this is ONLY geometry and is asked of her own frame.
 

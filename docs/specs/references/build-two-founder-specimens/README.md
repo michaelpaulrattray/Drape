@@ -129,7 +129,7 @@ Three things it raises before any render is bought:
 ## 7. `tattoo-patchwork-man-selective-take.png` — ask: **copy his right arm sleeve / copy the torso tattoos / copy the mask tattoo on his stomach** (supplied 2026-08-20, filed fable-1158 §2)
 
 A real photograph, added by Fable from the founder's chat: a heavily tattooed
-man, chin cropped out, torso and both arms worked in fine-line patchwork — a
+man, torso and both arms worked in fine-line patchwork — a
 hannya-mask piece on the stomach with a cobra beside it, roses on the chest,
 swallows, "19 70" at the collarbones, an eagle on his right shoulder, scorpion
 and dobermann on his left arm, an archer and butterfly on his right. Distinct
@@ -138,6 +138,15 @@ collection, one named motif — so it is the corpus's test of region-collection
 takes (dependable, v1) versus single-motif takes (attempt-and-preview), the
 1158 §2 split. The description above was written from the file at working
 size.
+
+⚠ **CORRECTED 2026-08-21 — it said *"chin cropped out"*, and the chin is IN.**
+Opened at working size for the frames gate walk, the top edge cuts across his
+face **just below the eyes**: nose, nostrils, mouth, chin and jaw are all in the
+frame, and the segmenter reads **16,286 px of `face`** on it. The correction is
+kept visible because the error was load-bearing — this is the specimen fable-1243
+§2b sent to fable-919 §3's gate precisely FOR being face-bearing, and its own
+entry said the face was not there. A caption that denies the property a court
+selected the file for is worse than no caption.
 
 ## 8. `tattoo-statue-artwork-figure-inspired-by.png` — ask: **copy all these tattoos onto my model / tattoos INSPIRED BY the attached** (supplied 2026-08-20, filed fable-1160)
 

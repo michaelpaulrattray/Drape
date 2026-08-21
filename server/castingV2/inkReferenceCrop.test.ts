@@ -338,8 +338,14 @@ describe("the face comes out of the surface — the region road's fence", () => 
   /*
     fable-1183 §2b, countersigned fable-1201 §4. The region road carries a
     SURFACE of a stranger's photograph, and a surface box is a rectangle over a
-    body: on the S2 torso specimen it climbs to y=80 and takes the face with it.
-    This is the arithmetic that stops that, driven directly.
+    body: it can climb far enough to take the face with it. This is the
+    arithmetic that stops that, driven directly.
+
+    ⚠ The geometry below is AUTHORED and not traced from a specimen. This
+    comment cited *"the S2 torso specimen… climbs to y=80"* until 2026-08-21;
+    measured at the real reader that surface starts at y=210 and `face ∩ upper
+    chest` is 0 px on both founder photographs, so no real upload we hold
+    exercises this. `V3B_FRAMES_GATE_WALK.md` §5(b).
   */
   const W = 400;
   const H = 400;

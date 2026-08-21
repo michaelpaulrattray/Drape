@@ -73,8 +73,11 @@ const SPECIMENS = [
   {
     id: "S2-torso-neck",
     file: "docs/specs/references/build-two-founder-specimens/tattoo-patchwork-torso-neck-continuation.png",
-    /* THE TORSO CASE — the one whose surface box climbs to y=80 and takes the
-       face with it, which is the cell the face exclusion was written from. */
+    /* THE TORSO CASE — filed as *"the one whose surface box climbs to y=80 and
+       takes the face with it"* until 2026-08-21. Measured twice at the real
+       reader it does NOT: `upper chest` here starts at y=210 and holds 0 face
+       pixels, as does S1's. The cell the face exclusion was written from has
+       never been found in a real photograph (`V3B_FRAMES_GATE_WALK.md` §5(b)). */
     placement: "upperChest" as const,
     half: null,
     seen: "shirtless tanned man against a rough white wall, cropped at the mouth; "
