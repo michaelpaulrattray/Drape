@@ -28,6 +28,74 @@ quotation** of `CASTING_SYSTEM_R7_6_EVIDENCE_COMPOSER_DESIGN.md`, and
 correcting a quote's pointer would make the quote false. The eight in
 frozen blocks are left exactly as they are.
 
+## §10 ACTIVE QUEUE — the dependency-ordered pipeline (founder order,
+## 2026-08-21: *"make sure everything on the current roadmap/pipeline for opus
+## is intelligently organised"*; consolidated fable-1307)
+
+**THIS SECTION SUPERSEDES EVERY EARLIER QUEUE BLOCK, and it is at the top
+because it is the thing a new shift needs first.** The rest of this file is the
+reference behind it: each item below names its own section, and the sections
+carry the rulings, the courts and the histories.
+
+```
+1  SIGN-VIEW WIRE                        ✅ CLOSED a6550e6a (2026-08-21)
+   unblocks signing his tattooed cast; everything ink
+   downstream assumes it. See §3d
+2  THE TWO FREE READS (~$0.05)           minutes, no renders
+   does a describer name ink on a master; does the
+   segmenter find rolled-in ink. They SIZE item 5 and
+   cost nothing to run early
+3  TATTOO REMOVAL ACTION                 design -> countersign -> build
+   the tattoo card's verb set is incomplete while
+   "remove" answers "coming"; prune BY SLOT, free.ink
+   per-slot decomposition is the shape question. See §3b
+4  POLISH SITTING — his direct UI asks   small, founder-visible, batched
+   hint text + no credits chip (AMEND price arm), frosted
+   glass both themes, receipt reference thumbnails,
+   preview eraser, §5e pronoun road if any instance is
+   still open. One sitting, one rite
+5  CAST-BORN INK DISCOVERY               closed vocabulary, no gate
+   general table + once-per-candidate mint of rolled-in
+   ink -> panel cards + sign carry (needs 1, 2). The
+   INK-ONLY half of §5c, and it does NOT wait on §5c's
+   gates, because every placement it reads has a measured
+   readerWord already
+6  RETIREMENT + CLEANUP                  §0b's bar is the finish line
+   mannequin/plate island via the Atlas retirement view,
+   paste road, repo outputs; dispositions.yaml
+   strict-green. After 5 so no live road is swept mid-use
+7  OPEN-LANE REFERENCE ROAD = ONE ITEM
+   (a) the point/box-prompt read on the segmenter
+   endpoint; (b) the Pinterest-style selector on the
+   proven cutter; (c) take ANY feature from ONE
+   reference; @-tagging banked after
+8  ANY-FEATURE DISCOVERY (§5c proper)    gated, as §5c says
+   describe-then-crop over open kinds — keeps §5c's own
+   gates (kind-property design, declared blindness, its
+   court with both controls) and its after-7 sequencing,
+   because open kinds need the open lane's machinery
+```
+
+**THE SELECTOR IS NOT A UI ITEM AND CANNOT BE SPLIT OFF** (founder, 2026-08-21:
+*"the open lane reference work includes the Pinterest-style selection or did you
+forget that"*). Item 7 is one road — tap the thing in the picture → it is cut
+out cleanly → it becomes the reference → the ask carries it. Filed as two items
+it would be split, and without the selector the *take anything from any image*
+promise collapses back to describing the picture in words.
+
+**Parked on HIS word, and deliberately NOT in the build order** — chest ink in
+signed views (hidden-but-riding vs scoop-to-show → the 450-credit dev Sign court
+plus the wardrobe-sentence repair, §3d); and the words-road ungating, on his OK
+after one arm tattoo of his own.
+
+### The one rule for keeping this organised
+
+A new road enters THIS table **in the ruling that creates it**, with its
+dependency named; a closed item is struck **with its SHA**. Mailbox queue blocks
+**CITE this section** — *"§10 item N"* — and do not restate it. A queue that
+lives only in mailbox messages is the mirror law violated: the messages scroll
+and this file does not.
+
 ## THE BRIEF DISCIPLINE — a known degraded path is told, not discovered
 
 **Ruled fable-851 §4, filed 2026-08-17.** When a whole FEATURE CLASS is
@@ -816,8 +884,35 @@ reference — per-feature slots remain the source of truth). The
 fable-168 "grouped Makeup look row" taste question folds into this
 item; both deferred together until this studio's turn.
 
-## 3b. TRANSFORM THE DESIGN YOU HAVE — founder-ordered 2026-08-21 (fable-1269
-## §2), design report opus-940. The removal-wording note folds in here.
+## 3b. TRANSFORM THE DESIGN YOU HAVE — ✅ **LIVE 2026-08-21, `users:1`**
+## (`CASTING_INK_TRANSFORM_SCOPE`; founder-ordered fable-1269 §2, design
+## opus-940, countersigned fable-1274, arms ruled fable-1287 §2)
+
+**Status, so the section is not read as pending work:**
+
+- **The transform action is BUILT and the flag is `users:1` in production.** An
+  ask about ink she has carries HER OWN DELIVERED CROP as the source
+  (`inkAsDelivered`) with one clause swapped, so the tattoo on the wire is the
+  tattoo on her — never a reinvention, structurally rather than by promise.
+- **It had to open D-137's ink document gate, and that is the one part not
+  dark.** The gate has always asked *is there a document for this design*, and
+  the answers are now three: the anchor itself, a photograph she pointed at, and
+  the crop of the tattoo as it actually landed on her. The bit is set only when
+  BOTH are true — her sentence points at ink she has AND names a change to it —
+  so *"give him a tattoo of an anchor on his chest"* still walls. The `change`
+  half of that opening is itself behind the flag, because opening the wall for
+  an account whose transform road is shut is strictly WORSE than the wall: the
+  ask would fall through to the words road and charge 25 credits.
+- **The removal-wording note folded in and CLOSED** — see §5f item 4.
+- **The removal ACTION is NOT built and is its own build** — §10 item 3.
+- **The "chest and neck only" bound is GONE.** It was never the transform's: one
+  line in `refineService`'s scope door refused every `ink:` scope, so a paired
+  surface sent `ink:upperArm@left` and died before her sentence was read. An ink
+  scope is now admitted, and a tapped rectangle IS the answer to *which one* —
+  preferred over word narrowing, and never falling back to a tattoo she did not
+  point at.
+
+*(The design record below is kept unchanged.)*
 
 **His words, the hour his tattoo card went live:** *"Can i actually make edits to
 the upper chest tattoo? like make it bigger or somthing now it has a bounding
@@ -925,6 +1020,112 @@ answering overlapping questions is how a product grows three wardrobes.
 
 **What would make it unnecessary:** nothing. It is a capability, and its absence
 is currently paid for one covered tattoo at a time.
+
+## 3d. THE WORDS ROAD AND THE SIGN-VIEW WIRE — the two ink roads that landed
+## 2026-08-21 (founder ruling fable-1290; court opus-960/fable-1301; wire
+## opus-962/fable-1303/opus-963)
+
+Written down here because both were live before this file said either existed,
+which is the mirror law's own failure — a road whose only record is a mailbox
+message is a road the next shift rediscovers.
+
+### The WORDS ROAD — a tattoo invented from words, where the engine can find it again
+
+**His condition is the whole design** (2026-08-21, verbatim): *"word invented
+tattoos are fine as long as the engine can find and crop them to be references
+moving foward into other edits"*. So the test of a placement is not whether it
+renders — it is whether the delivery can be CROPPED and carried, because a
+tattoo that survives one frame and dies on the next unrelated edit is the
+one-frame loss his condition forbids.
+
+`WORDS_ROAD_PLACEMENTS` is the single line that widens, and the court decided
+its members at the frames rather than by argument:
+
+- **`neck` — served, flag or no flag.** The one placement proven end to end by
+  crop #1, a delivery with `designId` NULL.
+- **`upperArm` — served with `CASTING_INK_WORDS_SCOPE` on** (`users:1`). The
+  court delivered a swallow on the correct anatomical side and the mint wrote a
+  clean 224×348 crop.
+- **`upperChest` — SHUT, and shut on his own condition.** The frame is
+  defensible: the engine obeys the clothing clause and puts the ink on the
+  sliver of skin above the collar, which is his own fable-1081 sentence
+  rendered. What fails is the RECORD — the reader is asked `upper chest` of a
+  chest under a crew tee and finds nothing (D-226, *you cannot segment a thing
+  that is hidden*), so the customer pays, receives a tattoo, and the product
+  keeps no crop of it. It gets its own wall and its own sentence
+  (`gate_ink_uncarried`) naming the two placements that work and the wardrobe
+  change that opens this one — never the document apology it used to get.
+
+**The scoop is a fact about a RENDER, not about the engine.** Production cast
+1641 v207 scooped the neckline and delivered onto bare skin on the REFERENCE
+road; the words road on the same placement did not scoop at all. All three
+outcomes — under the shirt, on the shirt, scooped — are reachable, and the road
+decides which.
+
+**Parked on his word:** the words-road ungating past `users:1`, after one arm
+tattoo of his own.
+
+### The SIGN-VIEW WIRE — her own tattoos ride into the six signing angles
+
+**His sentence** (2026-08-21, verbatim): *"crop and reference any tattos it can
+find and see - this would intrun carry into the signing angles"*.
+
+Before it, a signed Cast's six views had **never once carried a tattoo**: the
+lane that claimed to (`carriedInkPlates`, from `casting_ink_plates`) reads a
+table the parked mannequin road keeps empty in both worlds, so five views were
+rendered by an engine that had never been shown the artwork. Whatever it drew
+there, it invented. Meanwhile `casting_ink_delivery_crops` has held real crops
+of real ink since migration 0049 and nothing looked at it.
+
+**THE CHAIN DECIDES AND THE STORE LOOKS THINGS UP.** A Cast accumulates a crop
+per delivering frame, so the store holds every tattoo it has ever worn; the
+branch's composed `inkDelivered` says which it wears NOW, and it is read in the
+same statement as the anchor's pixels and identity documents so the words, the
+picture and the branch state describe one face by construction.
+
+Six doors, each refusing rather than guessing, each driven directly and each
+proven by sabotage to redden exactly one arm: a crop nobody wrote is skipped, a
+digest that has moved refuses rather than paints, an unreadable object is named,
+a covered surface does not ride, an open placement does not ride, and a key
+whose sidedness the catalogue disagrees with is refused — that last is what
+keeps `side ?? "centre"` honest, since a sideless key on a paired surface riding
+as `centre` is R7-7G's wrong-arm refund arriving through a key instead of a
+reader. **A failure never fails the Sign.**
+
+**⚠ WHY IT HAS NO FLAG, stated correctly rather than as it was first argued.**
+The countersign accepted *no flag* on the premise that *the wire's population IS
+the ink doors' population*, all `users:1`. **That premise does not hold and the
+correction belongs here rather than in a message** (found at the service flags
+and driven to the code, opus-964 §2): `WORDS_ROAD_PLACEMENTS` serves `neck` with
+`CASTING_INK_WORDS_SCOPE` **off**, D-137's gate passes a neck ask on its first
+answer, and the mint deliberately has no flag of its own — so the road that
+creates this wire's input is open to every account inside `CASTING_V2_SCOPE=all`
++ `CASTING_REPAINT_SCOPE=all`. Measured at the production rows the same day:
+**two crops, one Cast, owner user 1, none signed** — so the exposure is empty
+today, which is a fact about who has walked a road and *not* about a door
+holding it shut.
+
+The true inertness claim, and the one the arms actually prove, is **absence of
+input**: a Cast with no delivered crop composes yesterday's prompt byte for
+byte, and the store is not even asked. **Any sitting that widens an ink scope
+must read this paragraph rather than the superseded sentence**, which would tell
+it the wire moves with the ink doors — false in both directions.
+
+### The chest, in signed views — PARKED ON HIS WORD, and it is one question
+
+`placementRidesPackageViews` says `upperChest: false` for **both** ink lanes,
+and the crop road landing did not lift it: a view whose wardrobe comes back
+crew-necked has no skin to put the design on however the picture arrives, and
+both outcomes fail the wardrobe axis and refund a slice — six times per Sign.
+
+Two things lift it together and neither is code: **his hidden-vs-scoop word**
+(*"tattos can still ride they may just not be visible fully yet"* versus the
+scoop his own v207 edit produced), and then a **450-credit dev Sign** measuring
+six judged views on the moved clause. Both halves land in one sitting, and
+`CAST_PACKAGE_WARDROBE_SPEC`'s **self-contradiction is repaired in that same
+sitting**: it hard-codes *crew-neck* while naming the reference photograph as
+the authority, and on a Cast signed off a scooped anchor those two halves
+already disagree.
 
 ## 4. "Show her the refused frame" — ✅ **RULED AND SHIPPED 2026-08-16**
 
@@ -1172,7 +1373,29 @@ that are dark or strictly-better-than-before, and each carries the thing that
 would make it unnecessary — because an item that cannot say what would retire it
 is a chore, not a road.
 
-### 1. THE UNPADDED DELIVERED CROP COURT — ruled the first item after the rite
+### 1. THE UNPADDED DELIVERED CROP COURT — ✅ **CLOSED 2026-08-21, SUPERSEDED
+### RATHER THAN RUN** (ordered fable-1307 §B)
+
+**Two commits aimed at other things took its subject with them, which is why it
+is struck rather than answered:**
+
+- **`121d8275`** — *the carry that came back wrong was too small to read, and the
+  fix is a bigger picture*: the ride-time floor. A crop under the floor is
+  enlarged before it rides, so the size question this court was going to ask is
+  no longer decided by the stored extent alone.
+- **`296561ea`** — *the carry was holding one mark of seven, and the defect was
+  the question we asked*: the mint's region word. The extents the court would
+  have read were produced by the question this commit replaced, so the stored
+  population predates its own premise.
+
+**The honest reason to strike it, and not a tidy one:** the six stored columns
+are still there and still readable, but they now answer a question about a
+pipeline that no longer exists. Running the court would produce a real number
+about a dead configuration — the *bar must match the estimator* failure with the
+subject moved instead of the bar. If the padding question returns, it returns as
+a fresh reading over crops minted after `296561ea`.
+
+*(Preserved below, unchanged, as the record of what was ruled and why.)*
 
 **Ruling: fable-1207 §1.** A fix landing between the founder's tattoo verdict and
 the rite invalidates the frames on his desk, so this waits; and the class was
@@ -1234,7 +1457,28 @@ Its slot relative to this list: after the two courts above, its own commit,
 post-rite for the reason §5e states (it edits live customer-facing copy on
 `CASTING_V2_SCOPE=all` lanes).
 
-### 4. THE REMOVAL-WALL WORDING NOTE — filed rather than fixed, deliberately
+### 4. THE REMOVAL-WALL WORDING NOTE — ✅ **CLOSED 2026-08-21** (`inkRemovalNotYet`,
+### struck per fable-1307 §B)
+
+**The offer-to-add-in-reply-to-an-ask-to-remove is gone.** A removal ask on a
+tattoo she really has is now answered by name — *"That's his upper chest
+tattoo"* — and pointed at backing up to an earlier version, which genuinely
+works. The copy is `inkRemovalNotYet` in `cannotSayCopy.ts`, and the answer is
+**free and before the claim**, which is what makes it an apology rather than a
+charge.
+
+**It was closed by its owner exactly as this item predicted** — the transform
+road's prior question (*is this ask about ink she already has?*) is what routes
+it, so one answer served all three branches. **And that arm is deliberately
+OUTSIDE `CASTING_INK_TRANSFORM_SCOPE`**: gating an apology is how the apology
+stays wrong for everyone outside the flag.
+
+**What is NOT closed is the removal ACTION** — see §10 item 3. Being told
+honestly that a thing cannot be done yet is a different deliverable from doing
+it, and the action needs a design for per-slot decomposition of `free.ink`,
+since that is ONE subject holding every tattoo she has.
+
+*(Preserved below, unchanged, as the record of what was found and why it waited.)*
 
 **Found opus-912 §3, filed fable-1219 §1.** The words-only ink branch fires on
 any delta whose facets include ink and which points at no picture — **including a
@@ -1297,6 +1541,35 @@ its good at what it does"*. So it ships only after:
 Sequenced after the open lane is live and the kind-property design
 lands; the demand tally will also say which discoveries matter to real
 users. Not started, nothing spent.
+
+### ⚠ THIS SECTION IS NOW TWO ITEMS, AND ONLY ONE OF THEM CARRIES THE GATES
+### ABOVE (split ordered fable-1307 §B)
+
+The gates in this section were written about **open kinds** — a sci-fi cast's
+born horns, scales and extras, things nobody has measured. They are the right
+gates for that, and they were quietly holding up something they were never
+about.
+
+- **§10 item 5 — CAST-BORN INK DISCOVERY. UNGATED, and it does not wait for any
+  of the above.** A tattoo rolled in with the cast is not an open kind: every
+  placement it can be read at already has a **measured `readerWord`** in
+  `inkPlacementVocabulary`, a ride-table entry, and an image-half phrase. There
+  is nothing to discover about *what kind of thing this is* — only *is there ink
+  on this surface*, asked with a word the product already owns. So it needs the
+  general table plus a once-per-candidate mint of rolled-in ink, feeding panel
+  cards and the sign carry, and it needs **§10 items 1 and 2** and nothing else.
+  Item 2's two free reads (~$0.05) SIZE it: whether a describer names ink on a
+  master, and whether the segmenter finds rolled-in ink.
+- **§10 item 8 — ANY-FEATURE DISCOVERY. This section proper, gates intact.**
+  Describe-then-crop over open kinds, keeping the kind-property design, the
+  declared-blindness budget, its own court with both controls, and its
+  after-the-open-lane sequencing — because open kinds genuinely need the open
+  lane's machinery.
+
+**Why the split is not a loophole:** the gates exist because an unmeasured
+surface produces a guess about a customer's body. The ink half has no unmeasured
+surface in it. Keeping them married would have made a closed-vocabulary read
+wait on a court about horns.
 
 ## 5d. THE SCI-FI NORTH STAR — his specimen, and the sheets CAN birth it
 

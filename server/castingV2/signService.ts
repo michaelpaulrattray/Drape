@@ -587,6 +587,27 @@ function detach(run: () => Promise<void>): void {
  * exists and the views are worth having. Everything that goes wrong is a named
  * disposition on one line, and the Sign carries on with what it could read.
  *
+ * # WHY THERE IS NO FLAG ON THIS, stated the way it is actually true
+ *
+ * It is INERT BY ABSENCE OF INPUT: a Cast with no delivered crop reads `null`
+ * below, never asks the store, and composes the prompt it composed yesterday
+ * byte for byte. That is what the arms prove, and it is the whole claim.
+ *
+ * ⚠ **IT IS NOT *"the ink flags fence this to one account"*, WHICH IS WHAT THE
+ * COUNTERSIGN FIRST ACCEPTED AND THREE OF US REPEATED** (corrected opus-964 §2,
+ * ruled fable-1308). `WORDS_ROAD_PLACEMENTS` serves `neck` with
+ * `CASTING_INK_WORDS_SCOPE` **off**, D-137's gate passes a neck ask on its first
+ * answer, and the delivery mint deliberately has no flag of its own — so any
+ * account inside `CASTING_V2_SCOPE=all` + `CASTING_REPAINT_SCOPE=all` can mint a
+ * crop and reach this code. Measured at the production rows the day it shipped:
+ * two crops, one Cast, one owner, none signed. **That is EMPTY, not FENCED, and
+ * a population being empty is a fact about who has walked a road rather than
+ * about a door.**
+ *
+ * Kept open deliberately: for anyone who ever reaches it, this replaces artwork
+ * the engine invented with a picture of the tattoo they actually paid for, so a
+ * flag would hold strangers on the worse road.
+ *
  * **Exported to be driven** (working law 3): every refusal here is otherwise
  * reachable only through a whole Sign.
  */
