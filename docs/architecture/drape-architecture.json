@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "c173876f35ddd44f"
+    "sourceFingerprint": "4b75798f911387a0"
   },
   "domains": [
     {
@@ -9411,6 +9411,10 @@
     {
       "id": "test:server/bulkRefreshDialog.test.ts",
       "path": "server/bulkRefreshDialog.test.ts"
+    },
+    {
+      "id": "test:server/capabilityAtlas.test.ts",
+      "path": "server/capabilityAtlas.test.ts"
     },
     {
       "id": "test:server/castModelModal.test.ts",
