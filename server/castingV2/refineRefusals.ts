@@ -127,6 +127,32 @@ export const REFINE_REFUSALS = {
     charge: "free",
     report: "gate",
   },
+  /*
+    SHE NAMED A REAL PLACE AND THE PRODUCT CANNOT KEEP IT THERE — the words-road
+    court's own sentence (drafted opus-960 §5, accepted verbatim fable-1301 §2).
+
+    The court bought this: a chest ask RENDERS a perfectly good frame — the
+    engine obeys the clothing clause and puts the ink on the sliver of skin above
+    the collar — and the mint then finds nothing, because the reader is being
+    asked about a chest under a t-shirt (D-226). The customer would pay, receive
+    a tattoo, and lose it on the next edit.
+
+    So the sentence does not apologise about documents, which is what she used to
+    get. It names the real obstacle, the two places that work RIGHT NOW, and the
+    one change that opens this one — and every answer to it acts, which is D-180
+    satisfied rather than argued. The wardrobe road is real today.
+  */
+  gate_ink_uncarried: {
+    say: (refusal, of) => {
+      const place = "place" in refusal ? refusal.place : "there";
+      return `${capitalize(of.possessive)} top covers ${of.possessive} ${place}, so a tattoo `
+        + `there wouldn't survive the next edit. I can put it on ${of.possessive} neck or an `
+        + `upper arm now — or change what ${of.subject} ${of.plural ? "are" : "is"} wearing `
+        + "first. Nothing was charged.";
+    },
+    charge: "free",
+    report: "gate",
+  },
   absorbed: {
     /*
       HER ONTOLOGY, NOT OURS (law 8). What she can see is that she asked for

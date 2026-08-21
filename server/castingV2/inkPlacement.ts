@@ -88,16 +88,29 @@ import {
 const WORDS_ROAD_PLACEMENTS: readonly InkPlacementKey[] = ["neck"];
 
 /**
- * AND THE SET THE FLAG OPENS — the whole measured vocabulary, which is exactly
- * what the founder's condition names: wherever the delivery mint can find and
- * crop the result.
+ * AND THE SET THE FLAG OPENS — measured, and PROVEN TO CARRY.
  *
- * Derived from `INK_PLACEMENTS` rather than listed, so a placement joining the
- * vocabulary joins the open road with it and nobody has to remember this line.
- * The CLOSED set above stays hand-written, because "which of these is proven"
- * is a fact about courts rather than about the vocabulary.
+ * ⚠ It was the whole measured vocabulary for one commit, on the reading that
+ * the founder's condition names every placement the mint can crop. **The court
+ * narrowed it** (run opus-960, ratified fable-1301 §1): `upperArm` renders on
+ * the correct anatomical side and mints a clean crop, and `upperChest` renders
+ * something and mints NOTHING.
+ *
+ * The chest frame is defensible — the engine obeyed the clothing clause and put
+ * the swallow on the sliver of skin above the collar, which is his own
+ * fable-1081 sentence rendered. What fails is the RECORD: the reader is asked
+ * `upper chest` of a chest under a t-shirt and finds nothing (D-226, *you
+ * cannot segment a thing that is hidden*), so the customer pays, receives a
+ * tattoo, and the product keeps no crop of it — gone on the next unrelated
+ * edit. That is the one-frame loss HIS OWN condition forbids: *"as long as the
+ * engine can find and crop them"*.
+ *
+ * So this list is hand-written rather than derived, and the difference from its
+ * neighbour is the point: "which placements does the vocabulary hold" is a fact
+ * about measurement, and "which of them can this road carry" is a fact about
+ * courts. Deriving the second from the first is what put `upperChest` here.
  */
-const WORDS_ROAD_PLACEMENTS_OPEN: readonly InkPlacementKey[] = INK_PLACEMENTS;
+const WORDS_ROAD_PLACEMENTS_OPEN: readonly InkPlacementKey[] = ["neck", "upperArm"];
 
 /**
  * Words that put INK where the words road can actually put it.
@@ -145,6 +158,18 @@ const MARK_LANE_PLACES: readonly string[] = [
 export type InkPlacement =
   /** Fully inside the canonical frame — D-133(a), renders today. */
   | { kind: "in_frame"; place: string }
+  /**
+   * MEASURED, AND THIS ROAD CANNOT KEEP IT — the court's own answer
+   * (opus-960, ratified fable-1301 §1).
+   *
+   * Distinct from `needs_document` because the customer's situation is
+   * different and so is her next move. She named a place the vocabulary holds
+   * and the product can see; what it cannot do is CROP the result, because a
+   * garment is over it — so the tattoo would be delivered and then lost. The
+   * sentence names the two places that work and the wardrobe change that opens
+   * this one, and every answer to it acts.
+   */
+  | { kind: "not_carried"; place: string }
   /** Needs a design document. Gated until the body-art studio ships (D-137). */
   | { kind: "needs_document" };
 
@@ -246,7 +271,33 @@ export function classifyInkPlacement(
   for (const place of lane === "ink" ? inkLanePlaces(wordsRoadOpen) : MARK_LANE_PLACES) {
     if (new RegExp(`\\b${place}\\b`).test(lowered)) return { kind: "in_frame", place };
   }
+  /*
+    AND THE ONE SHE NAMED THAT WE CAN SEE AND CANNOT KEEP — checked only on the
+    ink lane and only after the served set has had its say, so a place that
+    RENDERS is never described as one that cannot.
+  */
+  if (lane === "ink") {
+    for (const place of uncarriedInkPlaces()) {
+      if (new RegExp(`\\b${place}\\b`).test(lowered)) return { kind: "not_carried", place };
+    }
+  }
   return { kind: "needs_document" };
+}
+
+/**
+ * The measured surfaces the words road can SEE and cannot KEEP — the whole
+ * vocabulary minus what it serves at its most open.
+ *
+ * Derived from the two lists above rather than named a third time: the day the
+ * chest earns its place in `WORDS_ROAD_PLACEMENTS_OPEN`, it leaves this one in
+ * the same edit and cannot be left behind speaking a refusal it has outgrown.
+ */
+function uncarriedInkPlaces(): readonly string[] {
+  const served = new Set<string>(WORDS_ROAD_PLACEMENTS_OPEN);
+  return INK_PLACEMENTS.filter((key) => !served.has(key)).flatMap((key) => {
+    const entry = inkPlacementEntry(key);
+    return [entry.readerWord, entry.noun.replace(/^(?:her|his|their)\s+/, "")];
+  }).sort((a, b) => b.length - a.length);
 }
 
 /**

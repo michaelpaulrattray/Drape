@@ -666,14 +666,26 @@ describe("ink renders only where the anchor is the document", () => {
   });
 
   it("⚠ still walls a measured placement the words road does not serve yet", () => {
-    for (const ask of [
-      "a swallow tattoo on her upper chest",
-      "a band tattoo on her left upper arm",
-    ]) {
-      const c = check(ask);
-      expect(readDelta({ free: { ink: ask } }, c), ask).toBeNull();
-      expect(c.wall?.reason, ask).toBe("gate_ink_document");
-    }
+    /* The arm: measured, and the flag that would serve it is off here. */
+    const arm = "a band tattoo on her left upper arm";
+    const c = check(arm);
+    expect(readDelta({ free: { ink: arm } }, c)).toBeNull();
+    expect(c.wall?.reason).toBe("gate_ink_document");
+  });
+
+  it("⚠ AND WALLS THE CHEST ITS OWN WAY — seen, and not keepable", () => {
+    /*
+      The court's third answer at the wire (opus-960, ratified fable-1301 §1).
+      She named a place the vocabulary holds; what the product cannot do is CROP
+      the result, because a garment is over it. Telling her she needs a design
+      document would be untrue and unactionable, so it is a different wall with
+      a sentence that names the two places that work.
+    */
+    const ask = "a swallow tattoo on her upper chest";
+    const c = check(ask);
+    expect(readDelta({ free: { ink: ask } }, c)).toBeNull();
+    expect(c.wall?.reason).toBe("gate_ink_uncarried");
+    expect(c.wall && "place" in c.wall ? c.wall.place : null).toContain("upper chest");
   });
 
   it("gates a sleeve, a chest piece and a back piece", () => {

@@ -91,14 +91,29 @@ describe("the gate, both sides of the flag", () => {
 
   it("⚠ OFF is today's product — her neck alone", () => {
     expect(closed("a small rose tattoo on her neck").kind).toBe("in_frame");
-    expect(closed("a swallow tattoo on her upper chest").kind).toBe("needs_document");
     expect(closed("a band tattoo on her left upper arm").kind).toBe("needs_document");
+    /* The chest is a place we can SEE and cannot KEEP, on either side of the
+       flag — see the court arm below. That is a different refusal from "the
+       road does not reach here yet", and it says so. */
+    expect(closed("a swallow tattoo on her upper chest").kind).toBe("not_carried");
   });
 
-  it("⚠ ON opens exactly the measured vocabulary and nothing else", () => {
+  it("⚠ ON opens the ARM and NOT the chest — the court's own split", () => {
+    /*
+      ⚠ THIS ARM ASSERTED THE WHOLE VOCABULARY for one commit, and the court
+      narrowed it (opus-960, ratified fable-1301 §1): `upperArm` rendered on the
+      correct anatomical side and minted a clean crop; `upperChest` rendered a
+      defensible frame and minted NOTHING, because the reader is asked about a
+      chest under a t-shirt and D-226 says you cannot segment what is hidden.
+
+      A tattoo delivered and not carried is the one-frame loss the founder's own
+      condition forbids — *"as long as the engine can find and crop them"* — so
+      the chest stays shut with the flag wide open, which is what this pair
+      proves.
+    */
     expect(open("a small rose tattoo on her neck").kind).toBe("in_frame");
-    expect(open("a swallow tattoo on her upper chest").kind).toBe("in_frame");
     expect(open("a band tattoo on her left upper arm").kind).toBe("in_frame");
+    expect(open("a swallow tattoo on her upper chest").kind).toBe("not_carried");
     /*
       AND NOT A PLACEMENT THE VOCABULARY HAS NEVER MEASURED. The founder's
       condition is that the mint can find and crop the result, and a surface with
@@ -108,6 +123,22 @@ describe("the gate, both sides of the flag", () => {
     expect(open("a full sleeve tattoo on her left arm").kind).toBe("needs_document");
     expect(open("a large back piece").kind).toBe("needs_document");
     expect(open("a rose tattoo on her thigh").kind).toBe("needs_document");
+  });
+
+  it("⚠ tells the two refusals apart — a place unmeasured vs one we cannot keep", () => {
+    /*
+      The pair that keeps `not_carried` honest. A thigh is a place nobody has
+      measured and the product genuinely cannot name; an upper chest is a place
+      it can see, on a customer who said exactly where. Collapsing them would
+      tell somebody who named a real surface that they need a design document,
+      which is neither true nor actionable — and it is what she got before the
+      court.
+    */
+    expect(open("a rose tattoo on her thigh").kind).toBe("needs_document");
+    const chest = open("a swallow tattoo on her upper chest");
+    expect(chest.kind).toBe("not_carried");
+    expect(chest.kind === "not_carried" ? chest.place : null, "the sentence needs the surface")
+      .toContain("upper chest");
   });
 
   it("⚠ AND THE FLAG NEVER REACHES A HIDDEN PLACE, on either side", () => {

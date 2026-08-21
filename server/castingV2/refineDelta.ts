@@ -437,6 +437,12 @@ export type RefineRefusal =
   | { reason: "wall_unfileable"; asked: string; value?: string }
   /** Not a wall — a GATE. It names what does work and what is coming (D-137). */
   | { reason: "gate_ink_document" }
+  /**
+   * A PLACE WE CAN SEE AND CANNOT KEEP — the words-road court's own answer
+   * (opus-960, ratified fable-1301 §1). `place` is the surface in her own kind
+   * of words, so the sentence can name it rather than apologise generically.
+   */
+  | { reason: "gate_ink_uncarried"; place: string }
   | { reason: "unreadable" }
   | { reason: "empty" }
   /**
@@ -1257,18 +1263,35 @@ export function readDelta(value: unknown, check?: FreeLaneCheck): RefineDelta | 
              kept a crop of. See the field's own docblock: the question is
              unchanged, the answers are now three. */
           && !check.inkDocumentedByDelivery
+        ) {
+          /*
+            THREE ANSWERS NOW, AND THE THIRD IS NOT A DOCUMENT PROBLEM (the
+            words-road court, opus-960, ratified fable-1301 §1).
+
+            `not_carried` is a place the vocabulary HOLDS and this road cannot
+            KEEP — measured, visible, and under a garment the reader cannot see
+            through, so the render would land and the crop would not. Sending
+            that to `gate_ink_document` would tell somebody who named a real
+            place that they need a design document, which is neither true nor
+            actionable. It has its own wall and its own sentence.
+          */
           /* THE LANE IS THE SUBJECT, and it decides which list answers — see
              `inkPlacement`'s per-lane note. The face carve-out is retired for
              `ink`, which dies at the measured-placement door anyway, and KEPT
              for a design-named mark, which renders on a face and always has. */
-          && classifyInkPlacement(
+          const placement = classifyInkPlacement(
             scrubbed,
             subject === "ink" ? "ink" : "mark",
             check.inkWordsRoadOpen === true,
-          ).kind !== "in_frame"
-        ) {
-          check.wall = { reason: "gate_ink_document" };
-          return null;
+          );
+          if (placement.kind === "not_carried") {
+            check.wall = { reason: "gate_ink_uncarried", place: placement.place };
+            return null;
+          }
+          if (placement.kind !== "in_frame") {
+            check.wall = { reason: "gate_ink_document" };
+            return null;
+          }
         }
       }
 

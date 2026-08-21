@@ -27,9 +27,22 @@ const saidOf = (refusal: RefineRefusal, sex: string | null) =>
 
 describe("every refusal answers all three questions", () => {
   it("covers every reason the type allows, with nothing extra", () => {
-    /* `satisfies Record<RefineRefusal["reason"], …>` is the compile half; this
-       is the runtime half, and it is what a report can count. */
-    expect(REFUSAL_REASONS.length).toBe(9);
+    /*
+      `satisfies Record<RefineRefusal["reason"], …>` is the compile half; this
+      is the runtime half, and it is what a report can count.
+
+      ⚠ THE LITERAL IS GONE (2026-08-21). It read `toBe(9)`, and a hand-typed
+      count is a fixture pin rather than a contract: adding a tenth reason —
+      `gate_ink_uncarried`, the words-road court's own answer — reddened this
+      arm for having done the thing correctly, and the only available repair was
+      to retype the number. What the test is FOR is that the registry and the
+      type agree, so it asserts THAT instead, and it cannot be satisfied by
+      editing a digit.
+    */
+    expect(REFUSAL_REASONS.length).toBe(Object.keys(REFINE_REFUSALS).length);
+    expect(REFUSAL_REASONS.length, "the registry emptied itself").toBeGreaterThan(0);
+    expect(new Set(REFUSAL_REASONS).size, "a reason is listed twice")
+      .toBe(REFUSAL_REASONS.length);
     for (const reason of REFUSAL_REASONS) {
       const entry = REFINE_REFUSALS[reason];
       expect(typeof entry.say, reason).toBe("function");
