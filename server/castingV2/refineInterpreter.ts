@@ -95,7 +95,7 @@ function firstObject(text: string): string {
 /**
  * The one hard instruction: say what they meant, or say you cannot.
  *
- * `outOfTier` carries the user's own subject back, so the refusal can name what
+ * `unbacked` carries the user's own subject back, so the refusal can name what
  * was asked rather than saying "unsupported" — a refusal that does not
  * demonstrate it understood reads as a bug rather than as a boundary.
  */
@@ -973,16 +973,19 @@ async function priorContextDoor(
   instruction: string,
   refused: RefineParse,
 ): Promise<RefineParse> {
-  if (refused.ok || refused.refusal.reason !== "wall_stage") return refused;
-  /* UNBACKED ONLY. `backed` absent means a refusal written before the field
-     existed, which came from a matched stage word — treated as backed, the same
-     reading `refusalMessage` gives it. */
-  if (refused.refusal.backed !== false) return refused;
+  /*
+    UNBACKED ONLY — and since census card C1 the unbacked wall HAS ITS OWN NAME,
+    so the id is the whole condition. The `backed !== false` line that used to
+    stand here is gone rather than kept as a belt: `wall_unbacked` cannot be
+    reached with a matched stage word, so the extra check would have been a
+    branch no arm could ever exercise.
+  */
+  if (refused.ok || refused.refusal.reason !== "wall_unbacked") return refused;
   if (input.priorWithheld) return refused;
   const filed = Object.values(input.prior ?? {}).some((items) => (items?.length ?? 0) > 0);
   if (!filed) return refused;
 
-  const upheld = { ...refused, door: "upheld" as const, doorAt: "wall_stage" as const };
+  const upheld = { ...refused, door: "upheld" as const, doorAt: "wall_unbacked" as const };
   const reread = await runOnce(engine, { ...input, prior: {}, priorWithheld: true }, instruction, "reask.prior");
   if (!reread || !reread.ok) return upheld;
   /* EDIT ONLY (fable-639 §2). A removal read without the prior can resolve no
@@ -992,7 +995,7 @@ async function priorContextDoor(
     { instruction, claimed: refused.refusal.asked },
     "[refineInterpreter] the unbacked stage wall did not survive its own re-read without her filed items — serving",
   );
-  return { ...reread, door: "rescued" as const, doorAt: "wall_stage" as const };
+  return { ...reread, door: "rescued" as const, doorAt: "wall_unbacked" as const };
 }
 
 /**
@@ -1488,7 +1491,17 @@ async function runOnce(
         "reask.relook",
       );
       if (relooked?.ok) return relooked;
-      if (relooked && !relooked.ok && relooked.refusal.reason === "wall_stage") {
+      /*
+        ⚠ THIS CONDITION MOVED WITH THE SPLIT, AND IT IS THE ONE THING HERE THAT
+        WOULD HAVE DIED SILENTLY. This log line is the ONLY evidence that would
+        ever widen `STAGE_WORDS` from measurement rather than taste, and what it
+        watches for is a re-claim the lexicon still cannot back — which now
+        arrives as `wall_unbacked`. Left spelled `wall_stage` it would have
+        stopped firing with nothing red anywhere: a live control orphaned by a
+        change aimed at something else (law 7's second half), inside the change
+        itself.
+      */
+      if (relooked && !relooked.ok && relooked.refusal.reason === "wall_unbacked") {
         log.warn(
           { claimed: relooked.refusal.asked, instruction },
           "[refineInterpreter] the stage wall was re-claimed with a word the lexicon lacks — "
@@ -1507,10 +1520,14 @@ async function runOnce(
       the copy the founder's D-160 note already caught once wearing a different
       wall's clothes.
     */
-    return {
-      ok: false,
-      refusal: { reason: "wall_stage", asked: asked || "that", backed: backing !== null },
-    };
+    /*
+      AND THE ANSWER THE LEXICON GAVE DECIDES WHICH WALL THIS IS, rather than
+      riding as a bit on one of them (census card C1, ruled fable-1335 §1). The
+      sentences are unchanged; the NAME the record files them under is not.
+    */
+    return backing !== null
+      ? { ok: false, refusal: { reason: "wall_stage", asked: asked || "that", backed: true } }
+      : { ok: false, refusal: { reason: "wall_unbacked", asked: asked || "that" } };
   }
   return containReply({ engine, input, instruction, reply });
 }

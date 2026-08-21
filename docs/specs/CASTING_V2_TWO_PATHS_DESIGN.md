@@ -67,7 +67,16 @@ prop or the set"*.
 
 So the wall that stands between a customer and a wardrobe edit today is the
 model's claim plus a re-look — *the model's read is the unstable thing*, this
-program's own finding, measured at 4-in-5 on `wall_stage` once before. **Two
+program's own finding, measured at 4-in-5 on `wall_stage` once before.
+
+⚠ **FOOTNOTE, 2026-08-22: the two wardrobe rows above now refuse under
+`wall_unbacked`, not `wall_stage`** (census card C1, ruled fable-1336). Nothing
+the customer reads changed — the sentence in the table is still the sentence —
+and nothing about this design's argument changes either. What changed is the
+NAME the record files it under, and it changed for the reason this section
+found: the wall a tee meets was never the shoot's, it was *the model said out of
+scope and the code could not confirm what about*. The table's `observed` column
+is quoted as the census had it on the day this was written. **Two
 consequences the design owes:** opening the Wardrobe path is not a matter of
 deleting lexicon words (they were never what refused a tee), and refusing on the
 Basics path needs a real code-owned door (§7.2) rather than the absence of a

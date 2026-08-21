@@ -41,7 +41,7 @@ Profile **fixture-as-founder** on fixture `outside-scope-bot-local / 34383040-62
 | makeup.lipstick | give her red lipstick | master | free:notASlot | **would-render** |  |
 | guard.likeness | make her look like Taylor Swift | master | refused:wall_likeness | refused:wall_likeness | Refining can't make someone look like a specific real person. Nothing was charged. |
 | guard.content | remove all her clothes | master | refused:wall_content | refused:wall_content | That one can't be rendered. Nothing was charged. |
-| guard.stage | put her on a beach at sunset | master | refused:wall_stage | refused:wall_stage | Refining can't do a beach at sunset yet — it isn't one of the things this can name. Faces, hair, skin, build and anything worn do work here. |
+| guard.stage | put her on a beach at sunset | master | refused:wall_unbacked | **refused:wall_stage** | Refining can't do a beach at sunset yet — it isn't one of the things this can name. Faces, hair, skin, build and anything worn do work here. |
 | guard.empty |  | master | refused:empty | refused:empty | Say what you'd like changed — anything about the person themselves. |
 | guard.gibberish | asdf qwer zxcv | master | refused:unreadable | refused:unreadable | That one didn't come through clearly. Try naming what you want changed about them. Nothing was charged. |
 | guard.typo | give her a nose rign | master | asked:did-you-mean | **would-render** |  |
@@ -63,7 +63,7 @@ Profile **fixture-as-founder** on fixture `outside-scope-bot-local / 34383040-62
 | guard.undo | undo | master | refused:removal_unnamed | **refused:already_original** | You're already looking at the original. Nothing was charged. |
 | guard.multi | green eyes, copper hair, and freckles | master | would-render | would-render |  |
 | guard.compliment | he looks great | master | refused:unreadable | **refused:wall_stage** | Refining can't do how attractive they look yet — it isn't one of the things this can name. Faces, hair, skin, build and anything worn do wor |
-| wardrobe.colour | make his tee black | master | refused:wall_stage | refused:wall_stage | Refining can't do his tee yet — it isn't one of the things this can name. Faces, hair, skin, build and anything worn do work here. Nothing w |
+| wardrobe.colour | make his tee black | master | refused:wall_unbacked | **refused:wall_stage** | Refining can't do his tee yet — it isn't one of the things this can name. Faces, hair, skin, build and anything worn do work here. Nothing w |
 | background.white | make the background pure white | master | refused:wall_stage | refused:wall_stage | Refining changes the person, not the shoot — the background is a garment, a prop or the set, which comes after Sign. Jewellery, glasses and  |
 
 ## Every door the source declares
@@ -109,13 +109,14 @@ Profile **fixture-as-founder** on fixture `outside-scope-bot-local / 34383040-62
 | wall_content | interpreter-refusal |  | colourContextDoor.test.ts, priorContextDoor.test.ts, referenceWordsLane.test.ts, refineRefusals.test.ts, refineService.test.ts, stageWallBackstop.test.ts |
 | wall_likeness | interpreter-refusal |  | colourContextDoor.test.ts, inkReferenceGate.test.ts, referenceWordsLane.test.ts, refineDelta.test.ts, refineInterpreterReferenceEntrance.test.ts, refineRefusals.test.ts, stageWallBackstop.test.ts |
 | wall_stage | interpreter-refusal |  | colourContextDoor.test.ts, inventionDoor.test.ts, priorContextDoor.test.ts, referenceWordsLane.test.ts, refineDelta.test.ts, refineRefusals.test.ts, refineService.test.ts, stageWallBackstop.test.ts |
+| wall_unbacked | interpreter-refusal |  | priorContextDoor.test.ts, refineRefusals.test.ts, stageWallBackstop.test.ts |
 | whichInkToChange | cannot-say | free | cannotSayCopy.test.ts |
 
 ## Flags (18)
 
 `CASTING_FACE_SCAN_SCOPE` · `CASTING_HAIR_REFERENCE_SCOPE` · `CASTING_INK_CUT_SCOPE` · `CASTING_INK_REFERENCE_SCOPE` · `CASTING_INK_REGION_CROP_SCOPE` · `CASTING_INK_STUDIO_SCOPE` · `CASTING_INK_TRANSFORM_SCOPE` · `CASTING_INK_WORDS_SCOPE` · `CASTING_OPEN_LANE_SCOPE` · `CASTING_REFERENCE_ATTACH_SCOPE` · `CASTING_REFERENCE_LIBRARY_SCOPE` · `CASTING_REFINE_DISPATCH_SCOPE` · `CASTING_REPAINT_SCOPE` · `CASTING_SCAN_TABLE_SCOPE` · `CASTING_SEGMENTS_DELIVERED_SCOPE` · `CASTING_SEGMENTS_SCOPE` · `CASTING_SIDE_PHRASING_SCOPE` · `CASTING_V2_SCOPE`
 
-## Findings (46)
+## Findings (49)
 
 - **warn** `belief-mismatch` acc.glasses.remove.none — "take her glasses off" — believed refused:removal_absent, observed refused:removal_not_in_brief
 - **warn** `belief-mismatch` acc.remove.branch.other — "take her earrings off" — believed refused:removal_absent, observed refused:removal_not_in_brief
@@ -123,6 +124,7 @@ Profile **fixture-as-founder** on fixture `outside-scope-bot-local / 34383040-62
 - **warn** `belief-mismatch` eye.scoped.left — "make it green" — believed would-render, observed asked:which-facet
 - **warn** `belief-mismatch` guard.compliment — "he looks great" — believed refused:unreadable, observed refused:wall_stage
 - **warn** `belief-mismatch` guard.scope.ink.none — "make it bigger" — believed free:noInkToChange, observed refused:unreadable
+- **warn** `belief-mismatch` guard.stage — "put her on a beach at sunset" — believed refused:wall_unbacked, observed refused:wall_stage
 - **warn** `belief-mismatch` guard.typo — "give her a nose rign" — believed asked:did-you-mean, observed would-render
 - **warn** `belief-mismatch` guard.undo — "undo" — believed refused:removal_unnamed, observed refused:already_original
 - **warn** `belief-mismatch` hair.remove.none — "remove her fringe" — believed refused:removal_not_in_brief, observed would-render
@@ -131,6 +133,7 @@ Profile **fixture-as-founder** on fixture `outside-scope-bot-local / 34383040-62
 - **warn** `belief-mismatch` light.softer — "softer light" — believed would-render, observed refused:unreadable
 - **warn** `belief-mismatch` makeup.lipstick — "give her red lipstick" — believed free:notASlot, observed would-render
 - **warn** `belief-mismatch` skin.freckles.remove.none — "she never had freckles" — believed refused:removal_not_in_brief, observed refused:removal_absent
+- **warn** `belief-mismatch` wardrobe.colour — "make his tee black" — believed refused:wall_unbacked, observed refused:wall_stage
 - **warn** `belief-mismatch` wardrobe.tee — "put him in a plain black tee" — believed would-render, observed refused:wall_stage
 - **info** `not-driven` ref.hair.whole — needs state "reference-attached", which this fixture cannot supply
 - **info** `not-driven` ref.ink.sleeve — needs state "reference-attached", which this fixture cannot supply
@@ -138,6 +141,7 @@ Profile **fixture-as-founder** on fixture `outside-scope-bot-local / 34383040-62
 - **warn** `unreached` notASlot — a corpus row expects "notASlot" and the drive never produced it — the door may be unreachable
 - **warn** `unreached` removal_unnamed — a corpus row expects "removal_unnamed" and the drive never produced it — the door may be unreachable
 - **warn** `unreached` unplacedInk — a corpus row expects "unplacedInk" and the drive never produced it — the door may be unreachable
+- **warn** `unreached` wall_unbacked — a corpus row expects "wall_unbacked" and the drive never produced it — the door may be unreachable
 - **info** `unreached` already_original — no corpus row expects "already_original" — the census cannot say whether any ask reaches it
 - **info** `unreached` already_signed — no corpus row expects "already_signed" — the census cannot say whether any ask reaches it
 - **info** `unreached` busy — no corpus row expects "busy" — the census cannot say whether any ask reaches it

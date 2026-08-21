@@ -108,7 +108,7 @@ describe("the prior-context door", () => {
     });
 
     expect(parse.ok).toBe(false);
-    expect(parse.ok === false && parse.refusal.reason).toBe("wall_stage");
+    expect(parse.ok === false && parse.refusal.reason).toBe("wall_unbacked");
     expect(parse.ok === false && parse.door).toBe("upheld");
   });
 
@@ -119,6 +119,9 @@ describe("the prior-context door", () => {
     });
 
     expect(parse.ok).toBe(false);
+    /* BACKED — `coat` is in the lexicon — so this keeps `wall_stage`, and it is
+       the control for the door's aim after the split: the door now fires on the
+       new id alone, and a door that fired on both would show here. */
     expect(parse.ok === false && parse.refusal.reason).toBe("wall_stage");
     /* One call, and a scripted engine that WOULD have filed on its second and
        third replies is what makes that assertion mean something. */
@@ -145,7 +148,7 @@ describe("the prior-context door", () => {
     });
 
     expect(parse.ok).toBe(false);
-    expect(parse.ok === false && parse.refusal.reason).toBe("wall_stage");
+    expect(parse.ok === false && parse.refusal.reason).toBe("wall_unbacked");
   });
 
   it("does not fire when there is nothing filed to withhold", async () => {
@@ -162,7 +165,7 @@ describe("the prior-context door", () => {
     const parse = await interpretRefinement({ instruction: ASK, engine, ...FACE, prior: PRIOR });
 
     expect(parse.ok).toBe(false);
-    expect(parse.ok === false && parse.refusal.reason).toBe("wall_stage");
+    expect(parse.ok === false && parse.refusal.reason).toBe("wall_unbacked");
     /*
       FOUR, and the fourth is worth naming rather than trimming: the read,
       fable-363's re-look, this door's re-read — and that re-read claims the
@@ -190,26 +193,29 @@ describe("the prior-context door", () => {
     });
 
     expect(parse.ok).toBe(false);
-    expect(parse.ok === false && parse.refusal.reason === "wall_stage" && parse.refusal.backed).toBe(true);
+    /* The POSITIVE control for the door's aim, and the split sharpened it: a
+       BACKED wall keeps the old id, so a door that ignored the distinction
+       would now be visible as one that fired on `wall_stage` itself. */
+    expect(parse.ok === false && parse.refusal.reason).toBe("wall_stage");
     expect(engine.seen).toHaveLength(1);
   });
 });
 
 describe("(e) the tally counts this door at its own wall", () => {
-  it("stamps a rescue with wall_stage", async () => {
+  it("stamps a rescue with wall_unbacked", async () => {
     const engine = scripted([STAGE, STAGE, FILED]);
     const parse = await interpretRefinement({ instruction: ASK, engine, ...FACE, prior: PRIOR });
 
     expect(parse.ok && "door" in parse && parse.door).toBe("rescued");
-    expect(parse.ok && "doorAt" in parse && parse.doorAt).toBe("wall_stage");
+    expect(parse.ok && "doorAt" in parse && parse.doorAt).toBe("wall_unbacked");
   });
 
-  it("stamps an upheld refusal with wall_stage", async () => {
+  it("stamps an upheld refusal with wall_unbacked", async () => {
     const engine = scripted([STAGE]);
     const parse = await interpretRefinement({ instruction: ASK, engine, ...FACE, prior: PRIOR });
 
     expect(parse.ok === false && parse.door).toBe("upheld");
-    expect(parse.ok === false && parse.doorAt).toBe("wall_stage");
+    expect(parse.ok === false && parse.doorAt).toBe("wall_unbacked");
   });
 
   it("does not relabel the COLOUR door's outcomes — three doors, three names", async () => {

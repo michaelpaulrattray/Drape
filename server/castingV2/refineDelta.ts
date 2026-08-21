@@ -400,10 +400,16 @@ export function joinItems(value: FreeValue | undefined): string {
 /**
  * Why an instruction was refused — the copy is the caller's, the reason is ours.
  *
- * `out_of_tier` is the honest one and the one users will meet: a real ask the
- * product cannot do yet. It is deliberately NOT phrased as an error, because it
- * is not one — Refine is narrow on purpose, and the refusal is the product
- * telling the truth about its own edges.
+ * The honest one, and the one users will meet, is a REAL ask the product cannot
+ * do yet. It is deliberately NOT phrased as an error, because it is not one —
+ * Refine is narrow on purpose, and the refusal is the product telling the truth
+ * about its own edges.
+ *
+ * ⚠ This paragraph said `out_of_tier` until 2026-08-22, naming a reason that
+ * never existed in the union below. Census card C1 gave the class an id at last
+ * and it is NOT that word — see `wall_unbacked` for why the better-sounding
+ * name is false on a beach. A header naming a member the type does not have is
+ * how a reader ends up grepping for a door that was never built.
  */
 export type RefineRefusal =
   /** A wall, and refusals always NAME theirs (D-131). */
@@ -423,6 +429,30 @@ export type RefineRefusal =
    * matched stage word, which is what the field says.
    */
   | { reason: "wall_stage"; asked: string; backed?: boolean }
+  /**
+   * THE MODEL CLAIMED A WALL AND THE LEXICON COULD NOT BACK IT — the unbacked
+   * half of the wall above, given its own name (census card C1, ruled
+   * fable-1336 §1).
+   *
+   * The two SENTENCES were already different and neither moves; only the RECORD
+   * said they were the same thing, and the record is what a report counts.
+   * Measured on the census the day it split: **five of the six rows that
+   * reached `wall_stage` carried this sentence**, so the id the pair was named
+   * for was the minority case, one row in six.
+   *
+   * ⚠ **The name is the CONDITION, never a claim about the subject, and two
+   * better-sounding names died on exactly that.** `wall_out_of_tier` would say
+   * *a real ask the product cannot do yet* — false of a beach, which IS the
+   * shoot and lands here only because `STAGE_WORDS` has no `beach`, and false
+   * of a tee the day the Two Paths road ships. `wall_unnamed` would collide
+   * with `removal_unnamed`, where "unnamed" means SHE named nothing while here
+   * it would mean WE could name nothing — one spelling, two subjects.
+   *
+   * So the pair means exactly what its two sentences claim and no more:
+   * `wall_stage` is *provably the shoot*; this is *claimed out of scope,
+   * unconfirmed*. It is named for the `backed?` field it derives from.
+   */
+  | { reason: "wall_unbacked"; asked: string }
   | { reason: "wall_content" }
   /**
    * `value` is WHAT THE MODEL ACTUALLY SAID, carried so the refusal can be
@@ -517,7 +547,9 @@ export type InventionDoorOutcome = "rescued" | "upheld";
  *
  * Three doors now produce `rescued` / `upheld`: the invention door at
  * `wall_unfileable`, the colour-context door at `wall_content`, and the
- * prior-context door at an UNBACKED `wall_stage`. Without
+ * prior-context door at `wall_unbacked` — which UNTIL 2026-08-22 was
+ * spelled "an UNBACKED `wall_stage`", the same door under the name the split
+ * gave it (census card C1). Without
  * this the service's rescue count would file every rescue under the first
  * one's name — it hard-coded that reason, correctly, on the day it was the
  * only door — and the honest-ask-refused rate would be reading two different
@@ -526,7 +558,7 @@ export type InventionDoorOutcome = "rescued" | "upheld";
  * A closed pair rather than the whole `reason` union, so it can only ever mean
  * "a door ran here" and never drift into a second copy of the refusal reason.
  */
-export type DoorAt = "wall_unfileable" | "wall_content" | "wall_stage";
+export type DoorAt = "wall_unfileable" | "wall_content" | "wall_unbacked";
 
 export type RefineParse =
   | {

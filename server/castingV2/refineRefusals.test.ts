@@ -143,11 +143,19 @@ describe("the copy, pinned verbatim through the fold", () => {
       refusal is worse than a vague one.
     */
     const backed = said({ reason: "wall_stage", asked: "a red coat" });
-    const unbacked = said({ reason: "wall_stage", asked: "antlers", backed: false });
+    /* SINCE CENSUS CARD C1 THE TWO SENTENCES ARE TWO WALLS, and this arm is why
+       the split was safe to make: it already asserted that they must DIFFER and
+       that the unbacked one must not claim what the thing is. Both halves still
+       hold, on the id each half now has. */
+    const unbacked = said({ reason: "wall_unbacked", asked: "antlers" });
     expect(backed).toContain("a garment, a prop or the set");
     expect(unbacked).not.toContain("a garment, a prop or the set");
     expect(unbacked).toContain("isn't one of the things this can name");
-    /* And absence means backed — every refusal written before the field existed
+    /* The pair must DIFFER — two assertions about one string are satisfied by a
+       string that ignores its argument (fable-1333 §2), and here they would be
+       satisfied by one wall having quietly swallowed the other. */
+    expect(unbacked).not.toBe(backed);
+    /* And absence of `backed` means backed — every refusal written before the field existed
        came from a matched stage word. */
     expect(said({ reason: "wall_stage", asked: "a red coat", backed: true })).toBe(backed);
   });

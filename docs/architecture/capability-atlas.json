@@ -353,6 +353,15 @@
         ]
       },
       {
+        "id": "wall_unbacked",
+        "kind": "interpreter-refusal",
+        "pinnedBy": [
+          "server/castingV2/priorContextDoor.test.ts",
+          "server/castingV2/refineRefusals.test.ts",
+          "server/castingV2/stageWallBackstop.test.ts"
+        ]
+      },
+      {
         "id": "whichInkToChange",
         "kind": "cannot-say",
         "charge": "free",
@@ -708,7 +717,7 @@
         "subject": "guard",
         "verb": "guard",
         "state": "master",
-        "expect": "refused:wall_stage",
+        "expect": "refused:wall_unbacked",
         "why": "a scene change is not a refinement of her"
       },
       {
@@ -908,8 +917,8 @@
         "subject": "wardrobe",
         "verb": "change",
         "state": "master",
-        "expect": "refused:wall_stage",
-        "why": "census 4(b)'s sibling: recolouring the garment he already wears — same wall or different?"
+        "expect": "refused:wall_unbacked",
+        "why": "census 4(b)'s sibling: recolouring the garment he already wears — and `tee` is not in the stage lexicon, so the wall is UNBACKED rather than provably the shoot"
       },
       {
         "id": "background.white",
@@ -1889,6 +1898,13 @@
       "message": "\"make it bigger\" — believed free:noInkToChange, observed refused:unreadable"
     },
     {
+      "id": "belief:guard.stage",
+      "severity": "warn",
+      "kind": "belief-mismatch",
+      "subject": "guard.stage",
+      "message": "\"put her on a beach at sunset\" — believed refused:wall_unbacked, observed refused:wall_stage"
+    },
+    {
       "id": "belief:guard.typo",
       "severity": "warn",
       "kind": "belief-mismatch",
@@ -1945,6 +1961,13 @@
       "message": "\"she never had freckles\" — believed refused:removal_not_in_brief, observed refused:removal_absent"
     },
     {
+      "id": "belief:wardrobe.colour",
+      "severity": "warn",
+      "kind": "belief-mismatch",
+      "subject": "wardrobe.colour",
+      "message": "\"make his tee black\" — believed refused:wall_unbacked, observed refused:wall_stage"
+    },
+    {
       "id": "belief:wardrobe.tee",
       "severity": "warn",
       "kind": "belief-mismatch",
@@ -1992,6 +2015,13 @@
       "kind": "unreached",
       "subject": "unplacedInk",
       "message": "a corpus row expects \"unplacedInk\" and the drive never produced it — the door may be unreachable"
+    },
+    {
+      "id": "unreached-driven:wall_unbacked",
+      "severity": "warn",
+      "kind": "unreached",
+      "subject": "wall_unbacked",
+      "message": "a corpus row expects \"wall_unbacked\" and the drive never produced it — the door may be unreachable"
     },
     {
       "id": "unreached:already_original",

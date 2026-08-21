@@ -168,6 +168,9 @@ describe("the stage wall's backstop", () => {
     });
 
     expect(parse.ok).toBe(false);
+    /* BACKED — `backdrop`, `studio` and `wall` are all in the lexicon — so this
+       one keeps `wall_stage`, and that is the control the split needs: if the
+       new id had swallowed both halves this arm would say so. */
     expect(parse.ok === false && parse.refusal.reason).toBe("wall_stage");
     /* One call. The lexicon settled it before any money or latency was spent,
        and a scripted engine that WOULD have filed on its second reply is what
@@ -180,7 +183,7 @@ describe("the stage wall's backstop", () => {
     const parse = await interpretRefinement({ instruction: "make her albino", engine, ...FACE });
 
     expect(parse.ok).toBe(false);
-    expect(parse.ok === false && parse.refusal.reason).toBe("wall_stage");
+    expect(parse.ok === false && parse.refusal.reason).toBe("wall_unbacked");
     /* Two, not three and not forever: the re-look sets `stageRelook`, and the
        override is gated on its absence. The worst case is exactly the
        behaviour that shipped before this existed, plus one call. */
@@ -196,8 +199,11 @@ describe("the stage wall's backstop", () => {
        the log — the audit trail fable-363 asked for, carried by the mechanism
        rather than by a promise. */
     const refusal = parse.ok === false ? parse.refusal : null;
-    expect(refusal?.reason).toBe("wall_stage");
-    expect(refusal?.reason === "wall_stage" && refusal.asked).toBe("a beach");
+    /* A beach IS the shoot and it lands on the OUT-OF-TIER wall, because
+       `STAGE_WORDS` has no `beach` and a lexicon cannot disprove what it does
+       not contain (census card C1's own caveat, ruled fable-1335 §1). */
+    expect(refusal?.reason).toBe("wall_unbacked");
+    expect(refusal?.reason === "wall_unbacked" && refusal.asked).toBe("a beach");
   });
 
   it("leaves the other two walls alone", async () => {
@@ -236,8 +242,8 @@ describe("a refusal the lexicon could not back says so", () => {
     const parse = await interpretRefinement({ instruction: "give her antlers", engine, ...FACE });
 
     const refusal = parse.ok === false ? parse.refusal : null;
-    expect(refusal?.reason).toBe("wall_stage");
-    expect(refusal?.reason === "wall_stage" && refusal.backed).toBe(false);
+    /* `backed: false` became an ID rather than a field (census card C1). */
+    expect(refusal?.reason).toBe("wall_unbacked");
   });
 
   it("marks a wall the lexicon DID back as backed — the positive control", async () => {
@@ -256,7 +262,7 @@ describe("a refusal the lexicon could not back says so", () => {
   it("tells the truth to the customer instead of naming a category it does not know", () => {
     const unbacked = refusalMessage({
       ok: false,
-      refusal: { reason: "wall_stage", asked: "antlers", backed: false },
+      refusal: { reason: "wall_unbacked", asked: "antlers" },
     });
     expect(unbacked).toContain("antlers");
     expect(unbacked).toContain("isn't one of the things this can name");

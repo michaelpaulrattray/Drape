@@ -82,28 +82,41 @@ export const REFINE_REFUSALS = {
   },
   wall_stage: {
     /*
-      TWO SENTENCES UNDER ONE WALL, and the split is measured.
+      TWO SENTENCES UNDER ONE WALL — AND THEY ARE NOW TWO WALLS (census card C1,
+      ruled fable-1335 §1). This entry keeps the BACKED sentence; the unbacked
+      one moved to `wall_unbacked` below, with its own id, so the record can
+      tell them apart the way the customer already could.
 
       BACKED — the stage lexicon matched a word in her sentence, so we know what
       she asked for and can say so, and can name what DOES work: "wardrobe or
       set" as a whole sentence read as a product that does not do jewellery,
       when jewellery is exactly what Refine is the stated channel for (D-160).
 
-      UNBACKED — the model claimed the wall, took its re-look, and the lexicon
-      still finds no stage word. Measured, that is where fantastical anatomy
-      lands: *"give her antlers"* re-claims 3/3. Telling somebody that antlers
-      are "a garment, a prop or the set" is a FALSE sentence, and a false
-      refusal is worse than a vague one. So the unbacked half claims nothing
-      about what the thing IS.
+      `backed` survives on the type for refusals written before the field
+      existed, and this sentence is what such a refusal has always been given.
     */
-    say: (refusal) => (
-      "backed" in refusal && refusal.backed === false
-        ? `Refining can't do ${askedIn(refusal)} yet — it isn't one of the things this can `
-          + "name. Faces, hair, skin, build and anything worn do work here. Nothing was charged."
-        : `Refining changes the person, not the shoot — ${askedIn(refusal)} is a garment, a `
-          + "prop or the set, which comes after Sign. Jewellery, glasses and piercings do work "
-          + "here. Nothing was charged."
-    ),
+    say: (refusal) => `Refining changes the person, not the shoot — ${askedIn(refusal)} is a `
+      + "garment, a prop or the set, which comes after Sign. Jewellery, glasses and piercings "
+      + "do work here. Nothing was charged.",
+    charge: "free",
+    report: "wall",
+  },
+  wall_unbacked: {
+    /*
+      THE UNBACKED HALF, WITH ITS OWN NAME — and the sentence is unchanged, byte
+      for byte, because nothing about what she reads was wrong.
+
+      The model claimed the wall, took its re-look, and the lexicon still finds
+      no stage word. Measured, that is where fantastical anatomy lands:
+      *"give her antlers"* re-claims 3/3. Telling somebody that antlers are "a
+      garment, a prop or the set" is a FALSE sentence, and a false refusal is
+      worse than a vague one — so this half claims nothing about what the thing
+      IS. That is exactly why it deserved its own id rather than a bit on
+      another wall's: a reason that means two things cannot be counted.
+    */
+    say: (refusal) => `Refining can't do ${askedIn(refusal)} yet — it isn't one of the things `
+      + "this can name. Faces, hair, skin, build and anything worn do work here. "
+      + "Nothing was charged.",
     charge: "free",
     report: "wall",
   },
