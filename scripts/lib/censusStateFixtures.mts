@@ -70,9 +70,31 @@ const refuseProduction = () => {
  * earlier — a state established once and then decided by something else — so it
  * is closed the same way: by identity.
  */
-const INK_BRANCH_VARIANT = "b0613485-2d75-49e2-a9e3-05a0b7185183"; /* v502,
-  opus-960's chest swallow — verified against the row before it was written
-  down, rather than copied from a message. */
+const INK_BRANCH_VARIANT = "f33e485e-9dfa-4ea0-a7d0-25cfb851ff99"; /* v501, the
+  LEFT UPPER ARM swallow — verified against the row and READ AT THE FRAME before
+  it was written down. */
+
+/**
+ * ⚠ WHY IT IS NOT v502, WHICH THIS CONSTANT NAMED FOR ONE SHIFT (ordered
+ * fable-1331 §2, from the bare-skin court's wreckage).
+ *
+ * v502's chest swallow is real in the picture and its delta says
+ * `inkDelivered {"ink:upperChest": …}` — and **no such row was ever written to
+ * `casting_ink_delivery_crops`**, because the mint is asked `upper chest` of a
+ * chest under a crew tee and D-226 says you cannot segment what is hidden. So
+ * the branch's RECORD claims a delivery its table does not hold, and the very
+ * next unrelated edit erased the tattoo (measured, opus-976: a freckles ask
+ * about his FACE, and the swallow was gone from the frame while the delta went
+ * on claiming it).
+ *
+ * That is the record-versus-pixels shape stored durably, and it is not a
+ * branch-with-ink. The corpus's branch rows mean *a cast already WEARING one
+ * delivered tattoo*, and `ink.transform.has`'s whole road is *carry her own
+ * delivered crop as the source* — which needs a crop that exists.
+ *
+ * v501 is that branch: one step, same cast, visible ink, and a live crop row
+ * (`d27c9c99`, `ink:upperArm@left`, 224x348).
+ */
 
 /** The REAL ink branch: pin the outsider's court cast to its chest variant. */
 export async function ensureInkBranchFixture(input: { userId: number }): Promise<BranchFixture> {
@@ -104,6 +126,38 @@ export async function ensureInkBranchFixture(input: { userId: number }): Promise
     );
     const slots = Number((check as Array<{ slots: number }>)[0]!.slots);
     if (slots !== 1) throw new ContaminatedFixtureError(`ink branch wears ${slots} delivered slots, corpus assumes 1`);
+    /*
+      ⚠ AND THE NAME THE DELTA CARRIES MUST BE A ROW — the assertion's second
+      half (ordered fable-1331 §2a).
+      
+      `JSON_LENGTH(inkDelivered) === 1` reads the RECORD, and a dangling pointer
+      passes it perfectly: v502 claimed a delivered chest piece for a crop the
+      mint never wrote, and every branch row would have inherited a fixture
+      whose record and picture disagree. The corpus means a cast that is WEARING
+      one, and only the row can say so.
+    */
+    const [named] = await conn.execute(
+      `SELECT JSON_EXTRACT(deltas, '$.inkDelivered') AS delivered
+         FROM casting_candidate_variants WHERE id = ?`,
+      [found.id],
+    );
+    const raw = (named as Array<{ delivered: unknown }>)[0]?.delivered ?? null;
+    /* The column comes back as a string on some drivers and an object on
+       others — read both rather than trusting one. */
+    const delivered = (typeof raw === "string" ? JSON.parse(raw) : raw) as Record<string, string> | null;
+    const cropId = delivered === null ? null : Object.values(delivered)[0] ?? null;
+    if (cropId === null || cropId === undefined) {
+      throw new ContaminatedFixtureError("ink branch names no delivered crop id at all");
+    }
+    const [row] = await conn.execute(
+      `SELECT id FROM casting_ink_delivery_crops WHERE publicId = ?`, [cropId],
+    );
+    if ((row as Array<unknown>).length === 0) {
+      throw new ContaminatedFixtureError(
+        `ink branch's delta names delivered crop ${cropId} and no such row exists — `
+        + "a record claiming a delivery whose row was never written is not a branch-with-ink",
+      );
+    }
     return { candidatePublicId: found.candidatePublicId, selectedVariant: found.publicId, candidateId: found.candidateId, priorSelection };
   } finally {
     await conn.end();
