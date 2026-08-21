@@ -1608,6 +1608,16 @@ reason the storage exists rather than a follow-up to it. The shown cut
 no address, and the surface that puts it in front of her lands there — which is
 also why the flag should not be flipped for anyone until both halves are in.
 
+**AND THE PREVIEW ERASER BELONGS TO IT** (his own idea, 1254 §2b; filed here by
+fable-1330 §5). The consent screen gains a scrub tool so a customer can clean
+artifacts and fragments off the cut before it stores — user-owned cleanup for
+whatever the automatic boundary cannot judge. It rode item 4's polish sitting on
+the list for a fortnight and was closed out of it 2026-08-22 for the reason that
+matters: **it is not skipped polish, it is a feature of a surface that does not
+exist.** There is nowhere to put a scrub tool until the screen showing her the
+cut is built, and item 4 closes honestly without it rather than carrying it as
+outstanding work nobody could have done.
+
 And the division table above carries its clarifying clause (fable-1133 §3). It
 was withdrawn for part of a day on a partial reading and restored at fable-1135
 §4b; the subsection below is the whole record, kept because a document that shows

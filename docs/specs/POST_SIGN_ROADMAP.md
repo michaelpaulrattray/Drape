@@ -53,12 +53,18 @@ carry the rulings, the courts and the histories.
                                           — an ink prune that had to re-render
                                           was CHARGED and REFUNDED, live for
                                           every repaint customer
-4  POLISH SITTING                         IN PROGRESS — his four UI asks plus the
-                                          TATTOO STYLE GLOSSARY, which is the
-                                          gate on ungating word-tattoos.
-                                          REMAINING: receipt reference
-                                          thumbnails, the preview eraser, any
-                                          open §5e pronoun instance
+4  ✅ POLISH SITTING                     094f5ea7 — his four UI asks and the
+                                          TATTOO STYLE GLOSSARY (b53b5893, the
+                                          gate on ungating word-tattoos; its
+                                          court's frames are his). The last two:
+                                          the receipt's reference thumbnails
+                                          (1264 §1) and §5e's pronoun road
+                                          (14c7ded7). ⚠ The PREVIEW ERASER is
+                                          NOT skipped polish — it is a scrub
+                                          tool on the CONSENT SURFACE that shows
+                                          a customer her cut, and that surface is
+                                          3a.2(b), unbuilt. Filed there, ruled
+                                          fable-1330 §5
 4b ✅ THE STUDIO CAPABILITY CENSUS        615fe6eb — 41 declared doors, 56 corpus
                                           rows, 54 driven, state fixtures for a
                                           cast that already WEARS something. Its
