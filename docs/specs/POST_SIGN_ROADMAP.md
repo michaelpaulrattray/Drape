@@ -187,14 +187,36 @@ the pinning arm.
   bald ask), so it was narrowed — and this row is the other edge of that same
   narrowing. **Whoever opens it re-reads that incident first**; a gate that
   cannot be wrong in one direction is usually wrong in the other.
-- **(C4) A DELIVERY NAME THAT SURVIVES SETTLEMENT WITH NO ROW** (fable-1331 §5).
-  A variant's delta can say `inkDelivered` naming a crop the mint answered
-  `noCrop` for, and nothing scrubs the name at settlement — the record lying
-  durably, in exactly the shape a fixture assertion caught on dev (v502). 949
-  §4's derived rescue only helps when an EARLIER row exists. **The fix is at
-  SETTLEMENT**: a name the mint refused is scrubbed or marked, so the row and the
-  record cannot disagree. Today its only instances are fenced dev specimens —
-  which is why it is a card and not a stop.
+- **(C4a) ✅ CLOSED 09f625a2 — A DELIVERY NAME THAT SURVIVES SETTLEMENT WITH NO ROW,
+  and it was a MONEY hole rather than a tidiness card** (fable-1331 §5, traced
+  opus-984, ruled fable-1339). A crop's NAME is minted at CLAIM and its ROW at
+  DELIVERY, and nothing amends the delta in between — so a render whose ink never
+  arrived leaves the chain naming a picture that was never written, for good.
+
+  The name alone opened D-137's gate, the transform road was entered, and the
+  recipe found no row and **threw after the claim**: one charge, one refund,
+  nothing painted, measured at the service before the fix. `389b7706`'s class
+  arriving through the record instead of through the prune.
+
+  **The door now consults the rows** — THE ID POINTS AND THE ROW DECIDES, read
+  once per ask and never unless a name is about to be believed. An unreadable
+  answer is not a "no": unknown travels today's road, because *"I didn't keep a
+  copy of it"* said on the strength of a failed query is a false sentence about a
+  customer's own face. **And the offer derives**: *"I can put a new one on
+  instead"* only where the words road serves that placement, off the same lists,
+  because offering the chest a door `gate_ink_uncarried` shuts one ask later is
+  census 4(b)'s dead end in a new sentence.
+
+- **(C4b) THE RECORD ITSELF — settlement scrubs or marks a name the mint
+  answered no-cut for.** ⚠ **Split from C4a deliberately so it cannot evaporate**
+  (fable-1339 §3): with C4a in place a dangling name costs nobody anything, so
+  this is a repair of the record rather than a fix under pressure — and it wants
+  an unhurried hand, because `landVariant` takes an `internalPrompt` and no
+  deltas ON PURPOSE. The claim owns that column, and the claim/landing split is
+  what makes a replay return the same row. Giving the landing a delta patch is a
+  second write of a claim-owned column on the money path. **It also cannot repair
+  rows that already exist, which is why C4a came first.**
+
 - **(C5) ✅ CLOSED 2b428251 — THIRTEEN SERVICE REFUSALS NAMED BY NO TEST**
   (census 4(e)). The census now reports **none**.
 
