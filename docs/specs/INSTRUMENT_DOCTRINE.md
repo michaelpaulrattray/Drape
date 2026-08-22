@@ -407,6 +407,35 @@ it throw, and its overshoot should be bounded by one UNIT of work rather than
 one batch: checked between atoms instead, the same case stops at $2.4525.
 *Banked:* fable-882 §3 (findings at opus-635 §4 and opus-650 §1).
 
+**23. AN ARM IS PLACED AT THE PRODUCER, AND ITS SABOTAGE IS DELETING THE
+PRODUCING LINE.**
+An arm written where a value is CONSUMED reads identically whether the line that
+MAKES it works or not, and a green suite cannot tell the two apart. So the
+mechanizable half is a definition of done: **an arm is not finished until the
+producer-deletion sabotage has been run and reddened exactly it** — and **a
+guard proving an ABSENCE first proves its population non-empty**, or it is
+proving nothing over nothing.
+*Incident:* five instruments passed while proving nothing in a single day
+(2026-08-22), and none was found by a failing test — all five by asking what the
+green meant. A boot rehearsal matched a SIBLING flag's refusal and printed
+REHEARSED; a measurement gate scored the interpreter instead of the compression
+it was built for; a projection guard proved an absence over a list a product
+change had quietly emptied; a write-then-replay feature was armed at the read
+and not at the write.
+*The type specimen is the fifth,* because the same file got it right in one
+direction and wrong in the other. `storageManifestReceipt.test.ts` sweeps every
+manifest caller and splits them into KEEPERS and COLLECTORS. Its COLLECTOR arm
+*"reads the ACT and not the word"* and carries a CAN-FAIL arm proving its reader
+both ways. Its KEEPER arm asked whether the file MENTIONED `cleanupBatchId` —
+which every broken keeper also does, in the declaration and in the manifest call.
+**The rigorous control was the negative one.** Under that green,
+`referenceAttachService` minted a receipt, handed it to the manifest and never
+passed it on, so the cleanup worker collected every picture a customer had ever
+attached and left the rows pointing at nothing. Found by building the route that
+shows her the picture and getting `NoSuchKey` from a live row's own key.
+*Banked:* fable-1422 §2 (the rule, named before the worst specimen surfaced) and
+fable-1427 (this entry), findings at opus-1058 §4, opus-1060 and opus-1061 §4.
+
 ---
 
 ## Adding to this file
@@ -414,4 +443,4 @@ one batch: checked between atoms instead, the same case stops at $2.4525.
 Follow the admission rule at the top: numbered Fable ruling, real incident, one
 line each, citation. Keep it to a page or two — **terse over complete.** A
 doctrine file long enough to skim past is an instrument nobody reads, which is
-the failure mode all twenty-two of these describe.
+the failure mode all twenty-three of these describe.
