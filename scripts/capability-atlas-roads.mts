@@ -98,13 +98,15 @@ export const ROADS: readonly Road[] = [
       + "An unreadable or empty sentence refuses free — the product never guesses.",
     doors: [
       "empty", "unreadable", "wall_likeness", "wall_content", "wall_stage", "wall_unbacked", "wall_unfileable",
-      "gate_ink_document", "gate_ink_uncarried", "scope_unknown", "scope_mismatch",
+      "gate_ink_document", "gate_ink_uncarried", "gate_ink_unkeepable",
+      "gate_ink_coverage_unread", "scope_unknown", "scope_mismatch",
     ],
     flags: ["CASTING_OPEN_LANE_SCOPE", "CASTING_SIDE_PHRASING_SCOPE", "CASTING_INK_WORDS_SCOPE"],
     notes: [
       "wall_stage = PROVABLY the shoot (the lexicon backed the claim); wall_unbacked = the model claimed out-of-scope and the lexicon could not confirm — one wall was two walls wearing one name until census card C1.",
       "gate_ink_document asks 'is there a document for this design'; its answers are the anchor itself, a pointed-at photograph, the delivered crop, and (words road) the delivery about to be minted.",
       "gate_ink_uncarried is a place the product can SEE and cannot KEEP (a covered chest): render would land, the mint could not crop, the tattoo would die on the next edit — his own find-and-crop condition enforced.",
+      "item 7a split that gate three ways, because its two reasons only COINCIDED while the product had one outfit: gate_ink_uncarried = a garment is over it; gate_ink_unkeepable = the surface is bare and the road still cannot crop a result there (a shirtless Basics chest); gate_ink_coverage_unread = nobody has read this outfit's coverage, which fails closed and says so in its OWN words rather than borrowing the covering's.",
       "A tapped rectangle (scope) outranks the words and the memory — the tap is the customer's freshest act; a scope naming nothing the instruction writes refuses free (scope_mismatch).",
     ],
   },

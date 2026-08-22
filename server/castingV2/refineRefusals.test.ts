@@ -72,6 +72,73 @@ describe("every refusal answers all three questions", () => {
     }
   });
 
+  /*
+    ⚠ ITEM 7a — THREE SENTENCES WHERE THERE WAS ONE (fable-1368 ruling 1).
+
+    The gate's reasons only COINCIDED while the product had a single outfit.
+    Each arm below is one of the three, and what is asserted is that each says
+    the thing that is TRUE for its own case and does not say the others'.
+  */
+  describe("the ink gate's three reasons say three different things", () => {
+    const alternatives = ["neck", "upper arm"];
+
+    it("a covering says her top covers it — and offers the surfaces that work", () => {
+      const sentence = saidOf(
+        { reason: "gate_ink_uncarried", place: "upper chest", alternatives } as RefineRefusal,
+        "female",
+      );
+      expect(sentence).toContain("top covers her upper chest");
+      expect(sentence).toContain("her neck or an upper arm");
+      expect(sentence).toContain("change what she is wearing");
+    });
+
+    it("⚠ a BARE surface the road cannot keep NEVER claims a garment", () => {
+      /*
+        The false-sentence this split exists to prevent: said to somebody
+        looking at a shirtless render, "your top covers your chest" is untrue
+        about the picture in front of her.
+      */
+      const sentence = saidOf(
+        { reason: "gate_ink_unkeepable", place: "upper chest", alternatives } as RefineRefusal,
+        "male",
+      );
+      expect(sentence).not.toContain("covers");
+      expect(sentence).toContain("lost on the next edit");
+      expect(sentence).toContain("his neck or an upper arm");
+    });
+
+    it("⚠ an UNREAD outfit names OUR gap, never a covering", () => {
+      /* Fails closed exactly like a covering and must never be reported as one:
+         a fail-closed gate that lies about why it closed is how somebody learns
+         to distrust every refusal this product writes. */
+      const sentence = saidOf(
+        { reason: "gate_ink_coverage_unread", place: "neck", alternatives: [] } as RefineRefusal,
+        "female",
+      );
+      expect(sentence).toContain("can't tell yet");
+      expect(sentence).not.toContain("covers");
+      /* And with nothing to offer it says so rather than inventing a door —
+         D-180's dead-end-offer class. */
+      expect(sentence).toContain("nowhere else");
+    });
+
+    it("⚠ CONTROL — the surfaces offered are the REFUSAL'S, not the sentence's", () => {
+      /*
+        The frozen-promise defect the census caught one file over
+        (`inkNeedsDocumentMessage`, finding 4(c)) and did not catch here: this
+        sentence read "I can put it on her neck or an upper arm now" as a
+        constant, so on a roll-neck cast it would have named two surfaces under
+        a jumper. Hand it a different list and the sentence must move.
+      */
+      const sentence = saidOf(
+        { reason: "gate_ink_uncarried", place: "upper chest", alternatives: ["upper arm"] } as RefineRefusal,
+        "female",
+      );
+      expect(sentence).toContain("her upper arm");
+      expect(sentence).not.toContain("neck");
+    });
+  });
+
   it("classes them for the report without inventing a fourth family", () => {
     expect(REFINE_REFUSALS.wall_stage.report).toBe("wall");
     expect(REFINE_REFUSALS.gate_ink_document.report).toBe("gate");

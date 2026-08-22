@@ -74,6 +74,34 @@ export const UNKNOWN_PRONOUNS: CastPronouns = pronounsForSex(null);
 /** "has" · "have" — the agreement `plural` exists to stop three call sites remembering. */
 const has = (of: CastPronouns): string => (of.plural ? "have" : "has");
 
+/**
+ * WHERE ELSE A TATTOO WOULD ACTUALLY WORK ON THIS CAST, as a clause.
+ *
+ * ⚠ The list is the REFUSAL'S, never this file's. `servedAndBare` derives it
+ * where both facts are in hand — what this account's words road serves, and
+ * what this cast's outfit leaves showing — and hands it over on the refusal.
+ * A sentence that named the surfaces itself is the defect census finding 4(c)
+ * caught in `inkNeedsDocumentMessage`: *"a neck tattoo is the one I can do"*,
+ * said to accounts whose upper arm was already open. `gate_ink_uncarried` was
+ * carrying the identical frozen promise — *"her neck or an upper arm"* — one
+ * file over, and on a roll-neck cast it would name two surfaces under a jumper.
+ *
+ * **Empty is a real answer and it gets a real sentence.** An outfit that covers
+ * everything this road serves leaves nowhere to offer, and offering somewhere
+ * anyway is the dead-end-offer class D-180 forbids.
+ */
+const elsewhereClause = (refusal: RefineRefusal, of: CastPronouns): string => {
+  const places = "alternatives" in refusal ? refusal.alternatives : [];
+  if (places.length === 0) {
+    return `There's nowhere else on ${of.object} I can put one from a description right now`;
+  }
+  const article = (word: string) => (/^[aeiou]/i.test(word) ? "an" : "a");
+  const named = places
+    .map((place, at) => (at === 0 ? `${of.possessive} ${place}` : `${article(place)} ${place}`))
+    .join(" or ");
+  return `I can put it on ${named} now`;
+};
+
 export const REFINE_REFUSALS = {
   wall_likeness: {
     say: () => "Refining can't make someone look like a specific real person. Nothing was charged.",
@@ -164,9 +192,51 @@ export const REFINE_REFUSALS = {
     say: (refusal, of) => {
       const place = "place" in refusal ? refusal.place : "there";
       return `${capitalize(of.possessive)} top covers ${of.possessive} ${place}, so a tattoo `
-        + `there wouldn't survive the next edit. I can put it on ${of.possessive} neck or an `
-        + `upper arm now — or change what ${of.subject} ${of.plural ? "are" : "is"} wearing `
-        + "first. Nothing was charged.";
+        + `there wouldn't survive the next edit. ${elsewhereClause(refusal, of)} — or change `
+        + `what ${of.subject} ${of.plural ? "are" : "is"} wearing first. Nothing was charged.`;
+    },
+    charge: "free",
+    report: "gate",
+  },
+  /*
+    ITS TWIN, AND THE SPLIT IS THE WHOLE POINT (item 7a, fable-1368 ruling 1).
+
+    While the product had ONE outfit these were one sentence about one surface:
+    the upper chest, under the house crew tee, which the mint cannot segment
+    because you cannot read a thing that is hidden. The Two Paths ruling pulls
+    them apart — a cast born shirtless still cannot have a chest piece KEPT
+    (the court on whether the mint fires there has not reported), and telling
+    her *"your top covers your chest"* would be plainly false about the picture
+    in front of her.
+
+    So this one claims nothing about her clothes. It says the true thing: the
+    render would land and the record would not, so it is not worth her money.
+  */
+  gate_ink_unkeepable: {
+    say: (refusal, of) => {
+      const place = "place" in refusal ? refusal.place : "there";
+      return `I can't keep a tattoo on ${of.possessive} ${place} yet — it would render, and `
+        + "then be lost on the next edit, so it isn't worth charging you for. "
+        + `${elsewhereClause(refusal, of)}. Nothing was charged.`;
+    },
+    charge: "free",
+    report: "gate",
+  },
+  /*
+    AND THE THIRD, WHICH IS ABOUT US RATHER THAN ABOUT HER (fable-1368 ruling 1).
+
+    Fails closed exactly like a covering and must never be REPORTED as one. The
+    sentence therefore names OUR gap and not her outfit: we have not read what
+    this outfit leaves showing, and we will not put a tattoo somewhere we cannot
+    see. A fail-closed gate that lies about why it closed is how somebody learns
+    to distrust every refusal this product writes.
+  */
+  gate_ink_coverage_unread: {
+    say: (refusal, of) => {
+      const place = "place" in refusal ? refusal.place : "there";
+      return `I can't tell yet whether what ${of.subject} ${of.plural ? "are" : "is"} wearing `
+        + `leaves ${of.possessive} ${place} showing, and I won't put a tattoo somewhere I `
+        + `can't see. ${elsewhereClause(refusal, of)}. Nothing was charged.`;
     },
     charge: "free",
     report: "gate",

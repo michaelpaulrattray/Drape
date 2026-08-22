@@ -552,6 +552,21 @@ CASTING_TWO_PATHS_SCOPE     off | all | users:<ids>      parent: CASTING_V2_SCOP
 - **Named prerequisite of the FLIP**: the `path` / `wardrobeLine` columns must
   exist (§3.2) — and that one is a prerequisite of the CODE, which is stricter.
 
+- ⚠ **AND A SECOND NAMED PREREQUISITE OF THE FLIP, added when item 7a landed**
+  (ruling fable-1368 §2): **every ink placement refuses on a Wardrobe-path cast
+  with a picked or customer-named outfit until the coverage reader exists.** 7a
+  gave *does this cast's wardrobe cover this surface* one owner
+  (`server/castingV2/inkSurfaceCoverage.ts`) in place of three frozen constants
+  all measured on sixteen masters in the house crew tee. It answers for the
+  lines this product WROTE — the house line, the two Basics forms — and
+  `unknown` for anything else, and `unknown` fails closed. With the flag absent
+  that costs nobody anything (every roll is `unpathed` and answers the house
+  table byte for byte). The flip carries either **7a-bis**, the reader that
+  answers an arbitrary line, or **his explicit acceptance** of the
+  refuse-until-read state — which is a real option, since he may want the paths
+  before the tattoos.
+
+
 ---
 
 ## 11. The court — bounds, price, and it is staged

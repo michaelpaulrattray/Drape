@@ -236,6 +236,12 @@ export const KNOWN_DEBTS: readonly string[] = [
 ];
 
 export const UNREACHABLE_DOORS: ReadonlyArray<{ id: string; reason: string; becomesReachable: string }> = [
+  { id: "gate_ink_unkeepable",
+    reason: "item 7a's split of gate_ink_uncarried: the surface is BARE and the words road still cannot crop a result there. Both halves need a cast whose wardrobe leaves the chest showing, and the only line that does is the Basics one — which no roll can be cast on while CASTING_TWO_PATHS_SCOPE is absent, so every corpus roll answers the house crew tee and lands on gate_ink_uncarried instead",
+    becomesReachable: "a Basics-path fixture asking for an upper-chest tattoo, once CASTING_TWO_PATHS_SCOPE is armed for the corpus account" },
+  { id: "gate_ink_coverage_unread",
+    reason: "item 7a's third answer: the outfit is one nobody has read the coverage of. Only a PICKED or customer-named wardrobe line produces it, and both are written by the roll's brief stage behind CASTING_TWO_PATHS_SCOPE — with the flag absent every roll has a NULL line, which the coverage owner reads as the house tee rather than as unknown",
+    becomesReachable: "the same fixture on the Wardrobe path with a named outfit, plus 7a-bis's reader deciding whether this door survives at all" },
   { id: "unplacedInk",
     reason: "raised at the pre-claim ink door only for a DOCUMENTED ask with no placement; every master-state words ask dies earlier at the document gate (measured, drive-4), and the documented states (reference attached, delivered ink) resolve their placement before that door",
     becomesReachable: "a reference-attached fixture whose take carries no placement" },

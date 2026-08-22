@@ -72,6 +72,8 @@ import {
   type InkPlacement as InkPlacementKey,
 } from "../../shared/inkPlacementVocabulary";
 
+import { bareSurfacesOfLine, coverageOfWardrobeLine } from "./inkSurfaceCoverage";
+
 /**
  * WHICH MEASURED PLACEMENTS THE WORDS ROAD SERVES TODAY — the one line that
  * widens when the court in fable-1296 §3 reports.
@@ -136,6 +138,28 @@ const inkLanePlaces = (open: boolean): readonly string[] => Array.from(new Set(
 )).sort((a, b) => b.length - a.length);
 
 /**
+ * THE KEY BEHIND A MATCHED WORD — the same two spellings, read backwards.
+ *
+ * `inkLanePlaces` fans each placement out to its segmenter word and its
+ * customer noun; this folds a match back to the key, so the coverage owner can
+ * be asked about the surface the customer actually named. Derived from
+ * `INK_PLACEMENTS` and the same two spellings rather than a third list, which
+ * is what stops it from answering about a placement that has grown a synonym
+ * the classifier does not match.
+ *
+ * `null` cannot happen for a word this file produced and is not folded to a
+ * default: a caller that gets it treats the surface as bare, which is
+ * today's behaviour for every word the vocabulary does not own.
+ */
+function placementKeyOfWord(word: string): InkPlacementKey | null {
+  return INK_PLACEMENTS.find((key) => {
+    const entry = inkPlacementEntry(key);
+    return entry.readerWord === word
+      || entry.noun.replace(/^(?:her|his|their)\s+/, "") === word;
+  }) ?? null;
+}
+
+/**
  * Words that put a design-named MARK inside the chest-up frame — the list this
  * file opened with, kept whole for the one lane it is still true of.
  *
@@ -169,7 +193,36 @@ export type InkPlacement =
    * sentence names the two places that work and the wardrobe change that opens
    * this one, and every answer to it acts.
    */
-  | { kind: "not_carried"; place: string }
+  | { kind: "not_carried"; place: string; alternatives: readonly string[] }
+  /**
+   * ⚠ THE SURFACE IS BARE AND THIS ROAD STILL CANNOT KEEP A RESULT THERE
+   * (item 7a).
+   *
+   * Split out of `not_carried` because the two reasons COINCIDED while the
+   * product had one outfit and stop coinciding the moment it has two. A
+   * shirtless Basics cast asking for a chest piece is refused — the court on
+   * whether the mint fires there has not reported (fable-1296 §3) — and telling
+   * her *"your top covers your chest"* would be a refusal that is simply untrue
+   * about the picture she is looking at.
+   *
+   * Same road, same wait, honest sentence.
+   */
+  | { kind: "road_cannot_keep"; place: string; alternatives: readonly string[] }
+  /**
+   * ⚠ THE SURFACE IS THERE, THE ROAD SERVES IT, AND NOBODY HAS READ WHETHER
+   * THIS CAST'S OUTFIT LEAVES IT SHOWING (item 7a, fable-1368 ruling 1).
+   *
+   * A THIRD refusal rather than a second use of `not_carried`, and the split is
+   * the ruling: `not_carried` says *your top covers it*, which is a claim about
+   * her clothes, and saying that about an outfit whose coverage has never been
+   * read is a refusal that lies about why it closed. Its own sentence names its
+   * own reason and offers the surfaces that DO work on this cast.
+   *
+   * Unreachable while `CASTING_TWO_PATHS_SCOPE` is absent — every roll is
+   * `unpathed` and answers the house table — and reachable the day it widens,
+   * which is why 7a-bis is an enumerated precondition of that flip.
+   */
+  | { kind: "coverage_unread"; place: string; alternatives: readonly string[] }
   /** Needs a design document. Gated until the body-art studio ships (D-137). */
   | { kind: "needs_document" };
 
@@ -257,6 +310,21 @@ export function classifyInkPlacement(
    * today's product for everybody.
    */
   wordsRoadOpen: boolean,
+  /**
+   * WHAT THIS CAST IS WEARING — the second half of *can a tattoo go there*
+   * (item 7a).
+   *
+   * `null` and absent both mean *no line recorded*, which is every roll cast
+   * before the paths, and `inkSurfaceCoverage` reads that as the house crew tee
+   * — today's answers, byte for byte, for all 206 of them.
+   *
+   * Optional where `lane` and `wordsRoadOpen` are required, and the asymmetry is
+   * deliberate rather than lazy: those two are CAPABILITY facts a caller could
+   * get wrong in either direction, while this one has a correct absent value
+   * that the vocabulary's own rule already names (`WardrobeBranch.rollPath`:
+   * absent is not a claim, it is silence).
+   */
+  wardrobeLine?: string | null,
 ): InkPlacement {
   const lowered = text.toLowerCase();
   /*
@@ -269,7 +337,33 @@ export function classifyInkPlacement(
     if (rule.pattern.test(lowered)) return { kind: "needs_document" };
   }
   for (const place of lane === "ink" ? inkLanePlaces(wordsRoadOpen) : MARK_LANE_PLACES) {
-    if (new RegExp(`\\b${place}\\b`).test(lowered)) return { kind: "in_frame", place };
+    if (!new RegExp(`\\b${place}\\b`).test(lowered)) continue;
+    /*
+      ⚠ AND THE SECOND HALF: THE ROAD SERVES IT, BUT IS IT UNDER A GARMENT
+      (item 7a).
+
+      The list above answers *can the mint find and crop a result there* — a
+      capability question, resolved per account. This answers *is there a
+      garment over it on THIS cast* — a question about her outfit, which had no
+      owner until now because the product had exactly one outfit and the answer
+      was frozen into three constants.
+
+      THE MARK LANE IS NOT ASKED. A design-named mark renders on a face and
+      always has; it never travels the measured-placement road at all, so a
+      wardrobe question about a forehead is the over-generalisation that took
+      four arms red the last time this file grew a rule (see the header).
+    */
+    if (lane === "ink") {
+      const key = placementKeyOfWord(place);
+      const coverage = key === null ? ("bare" as const) : coverageOfWardrobeLine(wardrobeLine, key);
+      if (coverage !== "bare") {
+        const alternatives = servedAndBare(wordsRoadOpen, wardrobeLine);
+        return coverage === "covered"
+          ? { kind: "not_carried", place, alternatives }
+          : { kind: "coverage_unread", place, alternatives };
+      }
+    }
+    return { kind: "in_frame", place };
   }
   /*
     AND THE ONE SHE NAMED THAT WE CAN SEE AND CANNOT KEEP — checked only on the
@@ -278,10 +372,58 @@ export function classifyInkPlacement(
   */
   if (lane === "ink") {
     for (const place of uncarriedInkPlaces()) {
-      if (new RegExp(`\\b${place}\\b`).test(lowered)) return { kind: "not_carried", place };
+      if (!new RegExp(`\\b${place}\\b`).test(lowered)) continue;
+      /*
+        ⚠ AND WHICH OF THE TWO REASONS IT IS (item 7a).
+
+        Until the paths, *"the road cannot keep it here"* and *"a garment is
+        over it"* were the same sentence about the same surface: the upper
+        chest, under the house crew tee, which the mint cannot segment because
+        D-226 says you cannot read a thing that is hidden. They come apart the
+        moment a cast can be born shirtless — the road still cannot keep a chest
+        piece (the court has not reported) and her top plainly does not cover
+        her chest, so the old sentence would be false about the picture she is
+        looking at.
+
+        `unknown` lands on `road_cannot_keep` and that is the honest one: we do
+        not know what her outfit covers, and it would not matter if we did,
+        because this road cannot carry a result here either way.
+      */
+      const key = placementKeyOfWord(place);
+      const covered = key !== null && coverageOfWardrobeLine(wardrobeLine, key) === "covered";
+      const alternatives = servedAndBare(wordsRoadOpen, wardrobeLine);
+      return covered
+        ? { kind: "not_carried", place, alternatives }
+        : { kind: "road_cannot_keep", place, alternatives };
     }
   }
   return { kind: "needs_document" };
+}
+
+/**
+ * THE SURFACES THAT WOULD ACTUALLY WORK FOR THIS CAST, in her own words.
+ *
+ * Both halves, and neither alone is the truth: a placement has to be one this
+ * account's words road SERVES *and* one this cast's outfit leaves showing. The
+ * refusals carry the result rather than deriving it themselves, so the sentence
+ * a customer reads and the door that refused her come from one statement.
+ *
+ * ⚠ **This is the fix for a defect the census caught next door and not here.**
+ * `inkNeedsDocumentMessage` was a hard-coded *"a neck tattoo is the one I can
+ * do"* said to accounts whose upper arm the road already served (finding 4(c),
+ * fable-1317), and it was derived. `gate_ink_uncarried`'s own sentence was left
+ * saying *"I can put it on her neck or an upper arm now"* — the identical
+ * frozen promise, one file over, and on a roll-neck cast it would name two
+ * surfaces under a jumper.
+ */
+export function servedAndBare(
+  wordsRoadOpen: boolean,
+  wardrobeLine?: string | null,
+): readonly string[] {
+  const bare = new Set(bareSurfacesOfLine(wardrobeLine));
+  return (wordsRoadOpen ? WORDS_ROAD_PLACEMENTS_OPEN : WORDS_ROAD_PLACEMENTS)
+    .filter((key) => bare.has(key))
+    .map((key) => inkPlacementEntry(key).noun.replace(/^(?:her|his|their)\s+/, ""));
 }
 
 /**

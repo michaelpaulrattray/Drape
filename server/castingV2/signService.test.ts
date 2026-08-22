@@ -265,6 +265,7 @@ vi.mock("../storage", () => ({
 
 const { carriedInkPlates, signCandidate } = await import("./signService");
 const { CASTING_V2_SIGN_PRICE_CREDITS } = await import("./castViewPackage");
+const { basicsWardrobeLine } = await import("./wardrobeLine");
 
 /** A package that behaves however the case needs it to. */
 /** What the package build is handed — typed so `mock.calls` carries it, rather
@@ -1119,11 +1120,52 @@ describe("a covered surface says so on the same disposition surface", () => {
       mannequinDeferred: false,
       listInkPlates: async () => [chestRow] as never,
       readBytes: async () => ({ bytes: Buffer.from("plate"), contentType: "image/png" }),
-    } as never, { userId: 1, candidateId: 9, operationId: "op-1" });
+    } as never, { userId: 1, candidateId: 9, operationId: "op-1", wardrobeLine: null });
 
     expect(plates).toEqual([]);
     expect(dispositions).toEqual([{
       designPublicId: "chest-1", rode: false, reason: "surfaceCovered",
+    }]);
+  });
+
+  it("⚠ AND ON A BASICS CAST THE SAME DESIGN RIDES — the outfit decides, not the placement", async () => {
+    /*
+      Item 7a (countersigned fable-1368). The arm above passes `undefined` for
+      the line, which is *no line recorded* and answers the house crew tee — so
+      the two arms differ in exactly one thing, which is the whole claim.
+    */
+    const { plates, dispositions } = await carriedInkPlates({
+      mannequinDeferred: false,
+      listInkPlates: async () => [chestRow] as never,
+      readBytes: async () => ({ bytes: Buffer.from("plate"), contentType: "image/png" }),
+    } as never, {
+      userId: 1, candidateId: 9, operationId: "op-1",
+      wardrobeLine: basicsWardrobeLine("male"),
+    });
+
+    expect(plates).toHaveLength(1);
+    expect(dispositions).toEqual([{ designPublicId: "chest-1", rode: true }]);
+  });
+
+  it("⚠ AN OUTFIT NOBODY HAS READ SAYS SO — it does not borrow the covering's name", async () => {
+    /*
+      fable-1368 ruling 1. Unknown fails closed like a covering and must never be
+      REPORTED as one: *"her top covers her chest"* said about an outfit whose
+      coverage nobody has read is a refusal that lies about why it closed, and
+      that is how a customer learns to distrust every refusal we write.
+    */
+    const { plates, dispositions } = await carriedInkPlates({
+      mannequinDeferred: false,
+      listInkPlates: async () => [chestRow] as never,
+      readBytes: async () => ({ bytes: Buffer.from("plate"), contentType: "image/png" }),
+    } as never, {
+      userId: 1, candidateId: 9, operationId: "op-1",
+      wardrobeLine: "a charcoal roll-neck jumper, dark jeans and boots",
+    });
+
+    expect(plates).toEqual([]);
+    expect(dispositions).toEqual([{
+      designPublicId: "chest-1", rode: false, reason: "surfaceCoverageUnread",
     }]);
   });
 

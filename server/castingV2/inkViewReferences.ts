@@ -67,6 +67,7 @@
  * guess.
  */
 import { inkPlacementEntry, type InkPlacement } from "../../shared/inkPlacementVocabulary";
+import { coverageOfWardrobeLine, type SurfaceCoverage } from "./inkSurfaceCoverage";
 import { INK_NOT_ON_CLOTHING, inkDeliveredCarrySentence } from "./inkRealism";
 import type { CastPronouns } from "./castPronouns";
 import { imageHalfClause } from "./sidePhrasing";
@@ -206,36 +207,59 @@ export function inkPlacementPhrase(input: {
  * path settles where ink can go: a chest design rides when this cast's own
  * wardrobe leaves the chest bare and does not when it covers it.
  *
- * So this table stops being a fact about the PLACEMENT and becomes one about
- * the WARDROBE — derived from the stored line rather than frozen — in the
- * sitting that builds item 5. Until then it says `false` for the reason it
- * always did: today every cast wears the crew tee.
- * `CAST_PACKAGE_WARDROBE_SPEC`'s own self-contradiction is repaired in that same
- * sitting: it hard-codes *crew-neck* while naming the reference photograph as
- * the authority, and on a Cast signed off a scooped anchor those two halves
- * already disagree.
+ * ✅ **AND THAT SITTING IS THIS ONE — THE TABLE IS GONE** (item 7a,
+ * countersigned fable-1368). It is not a fact about the PLACEMENT and never
+ * was: `neck: true` and `upperArm: true` were read off sixteen masters in the
+ * house crew tee exactly as `upperChest: false` was, and the two `true`s are
+ * the dangerous direction — `false` refuses a capability, `true` SELLS one, and
+ * a neck design sold onto a roll-neck jumper rides all six views and fails the
+ * wardrobe axis on every one.
  *
- * TOTAL over the vocabulary, like `TEMPLATE_FOR` and the anchor regions and for
- * the same reason: a default would decide a new surface's visibility by
- * whichever value was listed first, and nothing would say so.
+ * The answer now comes from `inkSurfaceCoverage.ts`, which holds the
+ * measurement (quoted there in full) and applies it to the cast's OWN stored
+ * line. ONE OWNER for both ink lanes, so a chest tattoo cannot ride as a crop
+ * while being refused as a plate — and one owner for the gate as well, so it
+ * cannot be sold and then refused.
+ *
+ * TOTALITY is the owner's now, and for the same reason it was this table's: a
+ * default would decide a new surface's visibility by whichever value was listed
+ * first, and nothing would say so.
+ *
+ * `CAST_PACKAGE_WARDROBE_SPEC`'s own self-contradiction — it hard-codes
+ * *crew-neck* while naming the reference photograph as the authority — was
+ * repaired by item 6's `castPackageWardrobeSpec(line)` and is not this
+ * function's to carry.
  */
-const RIDES_PACKAGE_VIEWS: Readonly<Record<InkPlacement, boolean>> = Object.freeze({
-  /* The crew tee's neckline sits below it; every measured master shows it bare. */
-  neck: true,
-  /* A short sleeve leaves it bare, and the court's passing arm is exactly this
-     case: ink on skin, below the sleeve, the garment untouched. */
-  upperArm: true,
-  /* Covered by the package's own crew neck, which STAYS a crew neck (his
-     ruling, fable-1081 §2). The crop road did NOT lift this — see above; what
-     lifts it is the BASICS path, where the chest is bare and this answer is
-     derived from the cast's own wardrobe rather than from its placement. ONE
-     OWNER for both ink lanes, so a chest tattoo cannot ride as a crop while
-     being refused as a plate. */
-  upperChest: false,
-});
+export function placementRidesPackageViews(
+  placement: InkPlacement,
+  /**
+   * The Cast's snapshotted outfit. `null` is *no line recorded*, which is every
+   * Cast signed before the paths, and it answers the house table exactly — the
+   * compatibility contract, not a default.
+   */
+  wardrobeLine: string | null | undefined,
+): boolean {
+  /*
+    `unknown` DOES NOT RIDE, and the caller must not report it as a covering
+    (fable-1368 ruling 1). A design whose surface nobody has read the coverage
+    of would be a view painted on a guess about a customer's body; the honest
+    disposition is its own, and `signService` carries both names.
+  */
+  return coverageOfWardrobeLine(wardrobeLine, placement) === "bare";
+}
 
-export function placementRidesPackageViews(placement: InkPlacement): boolean {
-  return RIDES_PACKAGE_VIEWS[placement];
+/**
+ * WHY a placement did not ride, for the caller that has to name it honestly.
+ *
+ * Split from the boolean above rather than folded into it, because a `false`
+ * that cannot say whether it means *a garment is over this* or *nobody has read
+ * this outfit* is exactly the refusal ruling 1 forbids.
+ */
+export function placementRideCoverage(
+  placement: InkPlacement,
+  wardrobeLine: string | null | undefined,
+): SurfaceCoverage {
+  return coverageOfWardrobeLine(wardrobeLine, placement);
 }
 
 /**

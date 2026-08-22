@@ -10,8 +10,8 @@
           "server/castingV2/refineRefusals.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineDelta.ts:506",
-          "server/castingV2/refineDelta.ts:506"
+          "server/castingV2/refineDelta.ts:522",
+          "server/castingV2/refineDelta.ts:522"
         ]
       },
       {
@@ -21,8 +21,8 @@
           "server/castingV2/refineRefusals.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineDelta.ts:520",
-          "server/castingV2/refineDelta.ts:520"
+          "server/castingV2/refineDelta.ts:536",
+          "server/castingV2/refineDelta.ts:536"
         ]
       },
       {
@@ -32,7 +32,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:2282"
+          "server/castingV2/refineService.ts:2307"
         ]
       },
       {
@@ -42,7 +42,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:1198"
+          "server/castingV2/refineService.ts:1200"
         ]
       },
       {
@@ -53,7 +53,7 @@
           "server/castingV2/rollService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:4569",
+          "server/castingV2/refineService.ts:4594",
           "server/castingV2/rollEngine.ts:65",
           "server/castingV2/rollEngine.ts:77"
         ]
@@ -65,7 +65,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:1181"
+          "server/castingV2/refineService.ts:1183"
         ]
       },
       {
@@ -91,9 +91,24 @@
           "server/casting/geminiMigration.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineDelta.ts:488",
-          "server/castingV2/refineInterpreter.ts:854",
-          "server/castingV2/refineDelta.ts:488"
+          "server/castingV2/refineDelta.ts:504",
+          "server/castingV2/refineInterpreter.ts:860",
+          "server/castingV2/refineDelta.ts:504"
+        ]
+      },
+      {
+        "id": "gate_ink_coverage_unread",
+        "kind": "interpreter-refusal",
+        "pinnedBy": [
+          "server/castingV2/refineDelta.test.ts",
+          "server/castingV2/refineRefusals.test.ts"
+        ],
+        "sites": [
+          "server/castingV2/refineDelta.ts:502",
+          "server/castingV2/refineDelta.ts:502",
+          "server/castingV2/refineDelta.ts:1435",
+          "server/castingV2/refineDelta.ts:1435",
+          "server/castingV2/refineDelta.ts:502"
         ]
       },
       {
@@ -106,8 +121,8 @@
         "sites": [
           "server/castingV2/refineDelta.ts:480",
           "server/castingV2/refineDelta.ts:480",
-          "server/castingV2/refineDelta.ts:1389",
-          "server/castingV2/refineDelta.ts:1389",
+          "server/castingV2/refineDelta.ts:1443",
+          "server/castingV2/refineDelta.ts:1443",
           "server/castingV2/refineDelta.ts:480"
         ]
       },
@@ -122,9 +137,24 @@
         "sites": [
           "server/castingV2/refineDelta.ts:486",
           "server/castingV2/refineDelta.ts:486",
-          "server/castingV2/refineDelta.ts:1384",
-          "server/castingV2/refineDelta.ts:1384",
+          "server/castingV2/refineDelta.ts:1415",
+          "server/castingV2/refineDelta.ts:1415",
           "server/castingV2/refineDelta.ts:486"
+        ]
+      },
+      {
+        "id": "gate_ink_unkeepable",
+        "kind": "interpreter-refusal",
+        "pinnedBy": [
+          "server/castingV2/refineDelta.test.ts",
+          "server/castingV2/refineRefusals.test.ts"
+        ],
+        "sites": [
+          "server/castingV2/refineDelta.ts:495",
+          "server/castingV2/refineDelta.ts:495",
+          "server/castingV2/refineDelta.ts:1427",
+          "server/castingV2/refineDelta.ts:1427",
+          "server/castingV2/refineDelta.ts:495"
         ]
       },
       {
@@ -134,7 +164,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:2631"
+          "server/castingV2/refineService.ts:2656"
         ]
       },
       {
@@ -144,7 +174,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:3334"
+          "server/castingV2/refineService.ts:3359"
         ]
       },
       {
@@ -188,7 +218,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:2382"
+          "server/castingV2/refineService.ts:2407"
         ]
       },
       {
@@ -198,7 +228,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:1187"
+          "server/castingV2/refineService.ts:1189"
         ]
       },
       {
@@ -276,7 +306,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:4028"
+          "server/castingV2/refineService.ts:4053"
         ]
       },
       {
@@ -299,7 +329,7 @@
           "server/castingV2/refusalTag.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:3102",
+          "server/castingV2/refineService.ts:3127",
           "server/castingV2/refusalTag.ts:22"
         ]
       },
@@ -310,7 +340,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:3083"
+          "server/castingV2/refineService.ts:3108"
         ]
       },
       {
@@ -320,7 +350,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:3178"
+          "server/castingV2/refineService.ts:3203"
         ]
       },
       {
@@ -330,8 +360,8 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:2860",
-          "server/castingV2/refineService.ts:2877"
+          "server/castingV2/refineService.ts:2885",
+          "server/castingV2/refineService.ts:2902"
         ]
       },
       {
@@ -341,7 +371,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:3998"
+          "server/castingV2/refineService.ts:4023"
         ]
       },
       {
@@ -351,7 +381,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:2674"
+          "server/castingV2/refineService.ts:2699"
         ]
       },
       {
@@ -361,7 +391,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:4548"
+          "server/castingV2/refineService.ts:4573"
         ]
       },
       {
@@ -371,8 +401,8 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:1268",
-          "server/castingV2/refineService.ts:1306"
+          "server/castingV2/refineService.ts:1270",
+          "server/castingV2/refineService.ts:1308"
         ]
       },
       {
@@ -394,7 +424,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:2328"
+          "server/castingV2/refineService.ts:2353"
         ]
       },
       {
@@ -474,10 +504,10 @@
           "server/castingV2/openLaneKind.ts:243",
           "server/castingV2/openLaneKind.ts:248",
           "server/castingV2/openLaneKind.ts:252",
-          "server/castingV2/refineDelta.ts:487",
-          "server/castingV2/refineInterpreter.ts:860",
-          "server/castingV2/refineInterpreter.ts:921",
-          "server/castingV2/refineDelta.ts:487"
+          "server/castingV2/refineDelta.ts:503",
+          "server/castingV2/refineInterpreter.ts:866",
+          "server/castingV2/refineInterpreter.ts:927",
+          "server/castingV2/refineDelta.ts:503"
         ]
       },
       {
@@ -487,7 +517,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:2254"
+          "server/castingV2/refineService.ts:2279"
         ]
       },
       {
@@ -503,7 +533,7 @@
         ],
         "sites": [
           "server/castingV2/refineDelta.ts:456",
-          "server/castingV2/refineInterpreter.ts:1480",
+          "server/castingV2/refineInterpreter.ts:1486",
           "server/castingV2/refineDelta.ts:456"
         ]
       },
@@ -521,8 +551,8 @@
         ],
         "sites": [
           "server/castingV2/refineDelta.ts:416",
-          "server/castingV2/refineDelta.ts:1403",
-          "server/castingV2/refineInterpreter.ts:1478",
+          "server/castingV2/refineDelta.ts:1457",
+          "server/castingV2/refineInterpreter.ts:1484",
           "server/castingV2/refineDelta.ts:416"
         ]
       },
@@ -541,8 +571,8 @@
         ],
         "sites": [
           "server/castingV2/refineDelta.ts:431",
-          "server/castingV2/refineDelta.ts:1413",
-          "server/castingV2/refineInterpreter.ts:1550",
+          "server/castingV2/refineDelta.ts:1467",
+          "server/castingV2/refineInterpreter.ts:1556",
           "server/castingV2/refineDelta.ts:431"
         ]
       },
@@ -556,7 +586,7 @@
         ],
         "sites": [
           "server/castingV2/refineDelta.ts:455",
-          "server/castingV2/refineInterpreter.ts:1551",
+          "server/castingV2/refineInterpreter.ts:1557",
           "server/castingV2/refineDelta.ts:455"
         ]
       },
@@ -576,8 +606,8 @@
         ],
         "sites": [
           "server/castingV2/refineDelta.ts:467",
-          "server/castingV2/refineDelta.ts:1164",
-          "server/castingV2/refineDelta.ts:1465",
+          "server/castingV2/refineDelta.ts:1190",
+          "server/castingV2/refineDelta.ts:1519",
           "server/castingV2/refineDelta.ts:467"
         ]
       },
@@ -1249,6 +1279,8 @@
           "wall_unfileable",
           "gate_ink_document",
           "gate_ink_uncarried",
+          "gate_ink_unkeepable",
+          "gate_ink_coverage_unread",
           "scope_unknown",
           "scope_mismatch"
         ],
@@ -1261,6 +1293,7 @@
           "wall_stage = PROVABLY the shoot (the lexicon backed the claim); wall_unbacked = the model claimed out-of-scope and the lexicon could not confirm — one wall was two walls wearing one name until census card C1.",
           "gate_ink_document asks 'is there a document for this design'; its answers are the anchor itself, a pointed-at photograph, the delivered crop, and (words road) the delivery about to be minted.",
           "gate_ink_uncarried is a place the product can SEE and cannot KEEP (a covered chest): render would land, the mint could not crop, the tattoo would die on the next edit — his own find-and-crop condition enforced.",
+          "item 7a split that gate three ways, because its two reasons only COINCIDED while the product had one outfit: gate_ink_uncarried = a garment is over it; gate_ink_unkeepable = the surface is bare and the road still cannot crop a result there (a shirtless Basics chest); gate_ink_coverage_unread = nobody has read this outfit's coverage, which fails closed and says so in its OWN words rather than borrowing the covering's.",
           "A tapped rectangle (scope) outranks the words and the memory — the tap is the customer's freshest act; a scope naming nothing the instruction writes refuses free (scope_mismatch)."
         ]
       },
@@ -1427,6 +1460,20 @@
         "kind": "documented-unreachable",
         "subject": "candidate_missing",
         "message": "unreachable by design: answers a request naming a cast the account does not own — request shape — becomes reachable via: deliberately never as a corpus row; pinned by its C5 service arm"
+      },
+      {
+        "id": "documented:gate_ink_coverage_unread",
+        "severity": "info",
+        "kind": "documented-unreachable",
+        "subject": "gate_ink_coverage_unread",
+        "message": "unreachable by design: item 7a's third answer: the outfit is one nobody has read the coverage of. Only a PICKED or customer-named wardrobe line produces it, and both are written by the roll's brief stage behind CASTING_TWO_PATHS_SCOPE — with the flag absent every roll has a NULL line, which the coverage owner reads as the house tee rather than as unknown — becomes reachable via: the same fixture on the Wardrobe path with a named outfit, plus 7a-bis's reader deciding whether this door survives at all"
+      },
+      {
+        "id": "documented:gate_ink_unkeepable",
+        "severity": "info",
+        "kind": "documented-unreachable",
+        "subject": "gate_ink_unkeepable",
+        "message": "unreachable by design: item 7a's split of gate_ink_uncarried: the surface is BARE and the words road still cannot crop a result there. Both halves need a cast whose wardrobe leaves the chest showing, and the only line that does is the Basics one — which no roll can be cast on while CASTING_TWO_PATHS_SCOPE is absent, so every corpus roll answers the house crew tee and lands on gate_ink_uncarried instead — becomes reachable via: a Basics-path fixture asking for an upper-chest tattoo, once CASTING_TWO_PATHS_SCOPE is armed for the corpus account"
       },
       {
         "id": "documented:history_predates_undo",
@@ -2428,6 +2475,20 @@
       "kind": "documented-unreachable",
       "subject": "candidate_missing",
       "message": "unreachable by design: answers a request naming a cast the account does not own — request shape — becomes reachable via: deliberately never as a corpus row; pinned by its C5 service arm"
+    },
+    {
+      "id": "documented:gate_ink_coverage_unread",
+      "severity": "info",
+      "kind": "documented-unreachable",
+      "subject": "gate_ink_coverage_unread",
+      "message": "unreachable by design: item 7a's third answer: the outfit is one nobody has read the coverage of. Only a PICKED or customer-named wardrobe line produces it, and both are written by the roll's brief stage behind CASTING_TWO_PATHS_SCOPE — with the flag absent every roll has a NULL line, which the coverage owner reads as the house tee rather than as unknown — becomes reachable via: the same fixture on the Wardrobe path with a named outfit, plus 7a-bis's reader deciding whether this door survives at all"
+    },
+    {
+      "id": "documented:gate_ink_unkeepable",
+      "severity": "info",
+      "kind": "documented-unreachable",
+      "subject": "gate_ink_unkeepable",
+      "message": "unreachable by design: item 7a's split of gate_ink_uncarried: the surface is BARE and the words road still cannot crop a result there. Both halves need a cast whose wardrobe leaves the chest showing, and the only line that does is the Basics one — which no roll can be cast on while CASTING_TWO_PATHS_SCOPE is absent, so every corpus roll answers the house crew tee and lands on gate_ink_uncarried instead — becomes reachable via: a Basics-path fixture asking for an upper-chest tattoo, once CASTING_TWO_PATHS_SCOPE is armed for the corpus account"
     },
     {
       "id": "documented:history_predates_undo",

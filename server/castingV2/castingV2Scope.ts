@@ -1998,8 +1998,11 @@ export function validateCastingInkCutEnvironment(input: {
  * with money attached (rejected fable-1298 §3).
  *
  * What the court decides (fable-1296 §2) is whether this flag also has to carry
- * an OCCLUSION REFUSAL. `upperChest` is `dependsOnGarment` and the roll prompt
- * dresses her in a crew-neck tee, so the ordinary master's chest is covered —
+ * an OCCLUSION REFUSAL. The house line dresses her in a crew-neck tee, so the
+ * ordinary master's chest is covered — `inkSurfaceCoverage.ts` is where that
+ * fact now lives and is asked (item 7a; it used to be `dependsOnGarment` frozen
+ * onto the placement itself, which was the crew tee's answer wearing the
+ * clothes of an anatomical one) —
  * and there are three possible outcomes rather than the two a paragraph
  * predicts. Production has shown the third: on the reference road the engine
  * SCOOPED THE NECKLINE and delivered onto bare skin, which the founder saw and
@@ -2183,6 +2186,37 @@ export function validateCastingInkTransformEnvironment(input: {
  * No stored bytes, so no cleanup worker. No new transport and no new engine
  * call, so `assertFalBudget`'s ceiling arithmetic is untouched. The line is
  * written by the interpreter call that already runs.
+ *
+ * # ⚠ AND A SECOND FLIP PRECONDITION, ADDED BY ITEM 7a (fable-1368 ruling 2)
+ *
+ * **Every ink placement refuses on a Wardrobe-path cast with a picked or
+ * customer-named outfit, until the coverage reader lands.**
+ *
+ * Item 7a made *does this cast's wardrobe cover this surface* a real question
+ * with one owner (`inkSurfaceCoverage.ts`) instead of three frozen constants
+ * measured on sixteen masters in the house crew tee. It answers `bare` or
+ * `covered` for the lines this product WROTE — the house line and the two
+ * Basics forms — and `unknown` for anything else, because guessing what a
+ * customer's outfit covers is guessing about her body.
+ *
+ * `unknown` fails closed. While this flag is absent that costs nobody anything:
+ * every roll is `unpathed`, which answers the house table byte for byte. **The
+ * day it widens, a cast born in an outfit the picker invented meets an ink
+ * refusal on every placement** — an honest one, naming its own reason rather
+ * than claiming a covering, but a refusal.
+ *
+ * So the flip carries ONE of these two, enumerated here rather than remembered:
+ *
+ *   1. **7a-bis**, the reader that answers coverage for an arbitrary line —
+ *      one text read per distinct outfit ever, on the
+ *      `casting_open_kind_properties` pattern (a fact about the WORDS, no owner
+ *      column, its own migration by ceremony); or
+ *   2. **an explicit founder acceptance** of the refuse-until-read state, which
+ *      is a real option and not a lesser one — ink and wardrobe are different
+ *      features and he may well want the paths before the tattoos.
+ *
+ * A road named in a ruling is written where the next person acts or it does not
+ * exist, and this is that place.
  *
  * # ⚠ THE COLUMNS ARE A PREREQUISITE OF THE CODE, WHICH IS STRICTER THAN A
  * # PREREQUISITE OF THE FLIP — AND IT IS ALREADY DISCHARGED

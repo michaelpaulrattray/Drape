@@ -129,15 +129,30 @@ export type InkPlacement = (typeof INK_PLACEMENTS)[number];
 /** Whether a placement comes in a matching pair, or is one thing. */
 export type InkPlacementSides = "one" | "perSide";
 
-/**
- * Whether bare skin is there in every frame, or only when the garment allows.
- *
- * `dependsOnGarment` is not a hedge — it is the reading's §6.4 finding, that
- * the same placement is available on a scoop neck and absent on a crew neck in
- * the same product at the same moment. The reader answers that per frame, for
- * free, because it is already looking at the garment.
- */
-export type InkPlacementSkin = "bare" | "dependsOnGarment";
+/*
+  ⚠ `InkPlacementSkin` AND THE `skin` FIELD WERE DELETED HERE (item 7a,
+  fable-1368 ruling 3). They said whether bare skin is there in every frame —
+  `bare` for the neck and the upper arm, `dependsOnGarment` for the upper chest
+  — and every one of those readings was taken on sixteen production masters
+  that were all wearing the same crew-neck tee.
+
+  That is a fact about ONE OUTFIT, and the Two Paths ruling ends the era in
+  which this product had one. It could not be re-pointed in place: a frozen
+  field on a frozen entry cannot be a function of what a particular cast is
+  wearing, and leaving it here as "the answer under the house tee" would be a
+  second source of truth with a comment explaining why it disagrees with the
+  first.
+
+  It was also INERT — read in exactly one function, whose one production caller
+  ADMITS `mayBeCovered` (fable-932 §3) — which is the worst possible state for
+  a claim to be in: right-shaped, wrong-sourced, and consequential nowhere, so
+  nothing would have gone red when it became false.
+
+  THE MEASUREMENT SURVIVES IT. It is quoted in full in the header of
+  `server/castingV2/inkSurfaceCoverage.ts`, which is the one owner of *does
+  this cast's wardrobe cover this surface* and answers it from the cast's own
+  stored line.
+*/
 
 export interface InkPlacementEntry {
   readonly key: InkPlacement;
@@ -148,7 +163,6 @@ export interface InkPlacementEntry {
   /** Which of the eight anchor regions this surface belongs to. */
   readonly anchor: BodyAnchorRegion;
   readonly sides: InkPlacementSides;
-  readonly skin: InkPlacementSkin;
 }
 
 const ENTRIES: Readonly<Record<InkPlacement, InkPlacementEntry>> = Object.freeze({
@@ -159,7 +173,6 @@ const ENTRIES: Readonly<Record<InkPlacement, InkPlacementEntry>> = Object.freeze
     readerWord: "neck",
     anchor: "neck",
     sides: "one",
-    skin: "bare",
   }),
   /*
     4/4 found, and PARTIAL: what is in shot is the sliver below the sleeve at
@@ -174,7 +187,6 @@ const ENTRIES: Readonly<Record<InkPlacement, InkPlacementEntry>> = Object.freeze
     readerWord: "upper arm",
     anchor: "arms",
     sides: "perSide",
-    skin: "bare",
   }),
   /*
     FOUND 2.69% on the bare scoop frame, and correctly nothing on the covered
@@ -188,7 +200,6 @@ const ENTRIES: Readonly<Record<InkPlacement, InkPlacementEntry>> = Object.freeze
     readerWord: "upper chest",
     anchor: "torso",
     sides: "one",
-    skin: "dependsOnGarment",
   }),
 });
 
@@ -235,14 +246,18 @@ export function inkPlacementBareNoun(key: InkPlacement): string {
  *   available     the frame shows this region
  *   outOfFrame    the camera did not take it — only a different photograph
  *                 answers this (the fifth refuse-before-dispatch door)
- *   mayBeCovered  the frame shows the region and a garment may be over it —
- *                 D-226's door, answered per frame by a read, and answerable
- *                 by a different top rather than a different shoot
+ *
+ * ⚠ **There were THREE, and `mayBeCovered` went with the `skin` field** (item
+ * 7a). It said *a garment may be over this* — which is a real question and not
+ * this module's: whether a garment is over a surface depends on which garment,
+ * and the vocabulary knows nothing about a particular cast. Its one production
+ * caller admitted it anyway. The question now has an owner that can answer it,
+ * `inkSurfaceCoverage.ts`, and this door is back to the one thing it can
+ * genuinely settle: is the region in the picture at all.
  */
 export type InkPlacementAvailability =
   | { kind: "available" }
-  | { kind: "outOfFrame"; what: string }
-  | { kind: "mayBeCovered"; what: string };
+  | { kind: "outOfFrame"; what: string };
 
 /**
  * The derivation, on the region rather than the placement.
@@ -268,14 +283,14 @@ export function inkPlacementAvailability(
   framing: AnchorFraming,
 ): InkPlacementAvailability {
   const entry = ENTRIES[key];
-  const framed = anchorAvailability(entry.anchor, framing, entry.noun);
-  if (framed.kind !== "available") return framed;
   /*
-    Order matters and this is the reason: a region that is not in the picture
-    cannot be occluded in it. The frame question is answered first, and only a
-    surface the camera took is asked what is over it.
+    The frame question, and now ONLY the frame question. What is OVER a surface
+    the camera took is `inkSurfaceCoverage`'s, because the answer depends on
+    what this particular cast is wearing and nothing in this file knows that.
+
+    The ordering note this replaced is still true and still holds, one layer up:
+    a region that is not in the picture cannot be occluded in it, so every
+    caller asks this door before it asks the coverage owner.
   */
-  return entry.skin === "dependsOnGarment"
-    ? { kind: "mayBeCovered", what: entry.noun }
-    : { kind: "available" };
+  return anchorAvailability(entry.anchor, framing, entry.noun);
 }

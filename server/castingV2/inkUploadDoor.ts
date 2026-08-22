@@ -155,12 +155,20 @@ export function inkPlacementRefusal(input: {
     };
   }
   /*
-    `mayBeCovered` ADMITS (ruled fable-932 §3). The design is a fact about the
-    CAST and the garment is a fact about a FRAME: at upload nobody knows what
-    she is wearing in the render this design is eventually carried into. The
-    occlusion door (D-226) answers it there, per frame, where the garment is
-    visible. Refusing here would refuse the scoop-neck case the placement
-    reading measured as available.
+    AND NOTHING ABOUT THE GARMENT IS ASKED HERE (ruled fable-932 §3, unchanged
+    in substance by item 7a).
+
+    The design is a fact about the CAST and the garment is a fact about a
+    FRAME: at upload nobody knows what she is wearing in the render this design
+    is eventually carried into. Refusing here would refuse the scoop-neck case
+    the placement reading measured as available.
+
+    ⚠ This used to be an explicit `mayBeCovered` branch that ADMITTED, which is
+    a door written as though it decided something. `inkPlacementAvailability`
+    no longer returns that answer at all — the coverage question has a real
+    owner now (`inkSurfaceCoverage.ts`) and it is asked where a cast's own
+    wardrobe line is in hand: at the ink gate before the money, and at the Sign
+    before a design rides a view.
   */
   return null;
 }

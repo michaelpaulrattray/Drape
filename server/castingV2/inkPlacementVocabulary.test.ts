@@ -82,19 +82,26 @@ describe("the frame gate — derived from the region table, never mirrored besid
     expect(inkPlacementAvailability("upperArm", "master").kind).toBe("available");
   });
 
-  it("sends the upper chest to the OCCLUSION door, not the out-of-frame one", () => {
+  it("⚠ THE UPPER CHEST IS IN FRAME — what is OVER it is not this door's question", () => {
     /*
-      The reading's §6.4: "upper chest" is available on a scoop neck and absent
-      on a crew neck, in the same product, at the same moment — and the roll
-      prompt asks for "a simple crew-neck tee or plain shirt". A covered upper
-      chest is a different garment away; a waist is a different photograph away.
-      `castingFrame.ts`'s own header draws exactly that line (D-226 vs the
-      out-of-frame door), and this is which side of it the neckline sits on.
+      This arm used to expect `mayBeCovered`, and the reading behind it is
+      unchanged and still true: "upper chest" is available on a scoop neck and
+      absent on a crew neck, in the same product, at the same moment.
+
+      What moved (item 7a, fable-1368 ruling 3) is WHO ANSWERS IT. That reading
+      is a fact about a GARMENT, and this module knows nothing about which
+      garment a particular cast is wearing — it had `dependsOnGarment` frozen
+      onto the placement, which is the crew tee's answer wearing the clothes of
+      an anatomical one. `inkSurfaceCoverage.ts` owns the question now and
+      answers it from the cast's own stored line; `inkSurfaceCoverage.test.ts`
+      is where "the crew tee covers the upper chest" is now pinned.
+
+      What is left here is the one thing this door can genuinely settle, and it
+      is still the D-226-versus-out-of-frame line `castingFrame.ts` draws: a
+      covered upper chest is a different GARMENT away, so the camera took it;
+      a waist is a different PHOTOGRAPH away, so it did not.
     */
-    const verdict = inkPlacementAvailability("upperChest", "master");
-    expect(verdict.kind).toBe("mayBeCovered");
-    if (verdict.kind !== "mayBeCovered") throw new Error("unreachable");
-    expect(verdict.what).toContain("upper chest");
+    expect(inkPlacementAvailability("upperChest", "master").kind).toBe("available");
   });
 
   it("answers for every framing the product can produce", () => {

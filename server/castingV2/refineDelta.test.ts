@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { inkNeedsDocumentMessage } from "./inkPlacement";
+import { basicsWardrobeLine } from "./wardrobeLine";
 
 import {
   applyDelta,
@@ -686,6 +687,63 @@ describe("ink renders only where the anchor is the document", () => {
     expect(readDelta({ free: { ink: ask } }, c)).toBeNull();
     expect(c.wall?.reason).toBe("gate_ink_uncarried");
     expect(c.wall && "place" in c.wall ? c.wall.place : null).toContain("upper chest");
+  });
+
+  /*
+    ⚠ ITEM 7a AT THE WIRE — the gate's two reasons, which only COINCIDED while
+    the product had one outfit (countersigned fable-1368).
+
+    Driven at the reader with a hand-built reply, so no model can rescue either
+    branch (law 3), and the ONLY thing varied between the three arms is what the
+    cast is wearing. That is the property under test.
+  */
+  describe("what she is wearing decides which wall she meets", () => {
+    const wearing = (instruction: string, wardrobeLine: string | null): FreeLaneCheck => ({
+      instruction, wardrobeLine,
+    });
+
+    it("⚠ a BASICS cast's bare chest gets `unkeepable`, not `your top covers it`", () => {
+      /*
+        The road still cannot keep a chest piece — the court on whether the mint
+        fires there has not reported — so the ask is still refused, free, before
+        the claim. What changes is the SENTENCE: telling somebody looking at a
+        shirtless render that her top covers her chest is a refusal that is
+        plainly false about the picture in front of her.
+      */
+      const ask = "a swallow tattoo on her upper chest";
+      const c = wearing(ask, basicsWardrobeLine("male"));
+      expect(readDelta({ free: { ink: ask } }, c)).toBeNull();
+      expect(c.wall?.reason).toBe("gate_ink_unkeepable");
+    });
+
+    it("⚠ an outfit nobody has read walls the NECK — which renders today", () => {
+      /*
+        The over-promising direction, and the one this whole item exists for. A
+        neck ask renders and rides all six package views on the strength of a
+        reading taken on sixteen masters in a crew-neck tee. On a roll-neck
+        jumper the same `true` sells a tattoo painted onto wool.
+
+        The refusal names OUR gap rather than her clothes, because we have not
+        read them.
+      */
+      const ask = "a small swallow tattoo on her neck";
+      const c = wearing(ask, "a charcoal roll-neck jumper, dark jeans and boots");
+      expect(readDelta({ free: { ink: ask } }, c)).toBeNull();
+      expect(c.wall?.reason).toBe("gate_ink_coverage_unread");
+    });
+
+    it("CONTROL — the same neck ask on a cast with NO line recorded renders", () => {
+      /*
+        Every roll in production is this one: `CASTING_TWO_PATHS_SCOPE` is
+        absent, both roll columns are NULL, and the coverage owner reads that as
+        the house crew tee whose neckline sits below the neck. Without this arm
+        the two above are satisfied by a gate that refuses every neck ask.
+      */
+      const ask = "a small swallow tattoo on her neck";
+      const c = wearing(ask, null);
+      expect(readDelta({ free: { ink: ask } }, c)?.free?.ink).toBeTruthy();
+      expect(c.wall).toBeUndefined();
+    });
   });
 
   /*

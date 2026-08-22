@@ -17,11 +17,13 @@ import {
   inkViewCropClause,
   inkViewPlacementDisciplineClause,
   inkViewReferenceClause,
+  placementRideCoverage,
   placementRidesPackageViews,
   type CarriedInkCrop,
   type CarriedInkPlate,
 } from "./inkViewReferences";
 import { INK_PLACEMENTS } from "../../shared/inkPlacementVocabulary";
+import { basicsWardrobeLine } from "./wardrobeLine";
 import { inkDeliveredCarrySentence } from "./inkRealism";
 import { pronounsForSex } from "./castPronouns";
 
@@ -236,8 +238,36 @@ describe("a per-side tattoo says which half of the picture it is in", () => {
  * repaired.
  */
 describe("which surfaces can ride a package view at all", () => {
-  it("says the upper chest cannot — the wardrobe covers it", () => {
-    expect(placementRidesPackageViews("upperChest")).toBe(false);
+  it("says the upper chest cannot — THE HOUSE TEE covers it", () => {
+    /* `null` is *no line recorded* — every Cast signed before the paths — and it
+       answers the house table, which is what makes this landing dark. */
+    expect(placementRidesPackageViews("upperChest", null)).toBe(false);
+  });
+
+  it("⚠ AND A BASICS CAST'S CHEST DOES RIDE — the answer is the OUTFIT'S, not the placement's", () => {
+    /*
+      Item 7a, the whole point of it. This used to be a frozen `false` keyed on
+      the placement, so a cast born shirtless was refused a chest piece by a
+      reading taken on sixteen masters in a crew-neck tee.
+    */
+    expect(placementRidesPackageViews("upperChest", basicsWardrobeLine("male"))).toBe(true);
+    expect(placementRidesPackageViews("upperChest", basicsWardrobeLine(null))).toBe(true);
+  });
+
+  it("⚠ AND AN OUTFIT NOBODY HAS READ RIDES NOTHING — including the neck", () => {
+    /*
+      The over-promising direction. `neck: true` was measured under a crew tee
+      whose neckline sits below it; on a roll-neck jumper the same `true` sells
+      a design that rides all six views and fails the wardrobe axis on every one.
+      Unknown fails closed, and `placementRideCoverage` is what stops the caller
+      reporting it as a covering.
+    */
+    const jumper = "a charcoal roll-neck jumper, dark jeans and boots";
+    for (const placement of INK_PLACEMENTS) {
+      expect(placementRidesPackageViews(placement, jumper)).toBe(false);
+      expect(placementRideCoverage(placement, jumper)).toBe("unknown");
+    }
+    expect(placementRideCoverage("upperChest", null)).toBe("covered");
   });
 
   it("says the upper arm and the neck can", () => {
@@ -252,8 +282,8 @@ describe("which surfaces can ride a package view at all", () => {
       a mislabel). Nothing appeared anywhere else in any of the three, which is
       the must-not this placement can honestly carry.
     */
-    expect(placementRidesPackageViews("upperArm")).toBe(true);
-    expect(placementRidesPackageViews("neck")).toBe(true);
+    expect(placementRidesPackageViews("upperArm", null)).toBe(true);
+    expect(placementRidesPackageViews("neck", null)).toBe(true);
   });
 
   it("is TOTAL over the vocabulary, so a fourth placement cannot compile silently", () => {
@@ -263,7 +293,7 @@ describe("which surfaces can ride a package view at all", () => {
       value was listed first, and nothing would say so.
     */
     for (const placement of INK_PLACEMENTS) {
-      expect(typeof placementRidesPackageViews(placement)).toBe("boolean");
+      expect(typeof placementRidesPackageViews(placement, null)).toBe("boolean");
     }
   });
 });

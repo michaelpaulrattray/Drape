@@ -80,7 +80,7 @@ import {
 } from "./viewFeatureWords";
 import {
   inkViewCropClause,
-  placementRidesPackageViews,
+  placementRideCoverage,
   type CarriedInkCrop,
   type CarriedInkPlate,
 } from "./inkViewReferences";
@@ -101,12 +101,18 @@ import { castPronouns, type CastPronouns } from "./castPronouns";
  * tattoo is the plate court's open question; picking one by array order is the
  * quiet dispatch fallback this product has already paid for.
  * `bytesUnreadable` — the row is there and the object is not.
- * `surfaceCovered` — the package's own wardrobe covers the surface this design
- * sits on, so no view can honestly show it. The court measured what happens
- * without this: told to put an upper-chest design on a crew-necked frame the
- * engine printed it on the shirt, and told that ink goes on skin it rewrote the
+ * `surfaceCovered` — THIS CAST'S wardrobe covers the surface this design sits
+ * on, so no view can honestly show it. The court measured what happens without
+ * this: told to put an upper-chest design on a crew-necked frame the engine
+ * printed it on the shirt, and told that ink goes on skin it rewrote the
  * neckline into a scoop — both of which the wardrobe check fails and refunds.
- * The interim until he rules on the wardrobe itself (fable-1006 §2).
+ * It used to be a fact about the PLACEMENT (fable-1006 §2's interim); item 7a
+ * made it a fact about the outfit, which is what it always described.
+ * `surfaceCoverageUnread` — nobody has read whether THIS outfit leaves that
+ * surface showing. A separate name on purpose (fable-1368 ruling 1): it fails
+ * closed like a covering and it must never be REPORTED as one, because a
+ * refusal that lies about why it closed teaches a customer to distrust every
+ * refusal this product writes.
  */
 export type InkDesignDisposition =
   | { designPublicId: string; rode: true }
@@ -118,6 +124,7 @@ export type InkDesignDisposition =
       | "engineUndecided"
       | "bytesUnreadable"
       | "surfaceCovered"
+      | "surfaceCoverageUnread"
       | "mannequinDeferred"
       | "carriedAsDelivered";
     engines?: readonly string[];
@@ -140,8 +147,10 @@ export type InkDesignDisposition =
  * `bytesMoved` — the object is there and it is not what the row minted. A
  * reference whose bytes have moved is refused rather than painted, which is the
  * repaint road's third door on the lane next to it.
- * `surfaceCovered` — the package wardrobe covers this surface, so no view can
- * show it honestly (see `placementRidesPackageViews`, the one owner).
+ * `surfaceCovered` — this cast's wardrobe covers this surface, so no view can
+ * show it honestly (see `inkSurfaceCoverage`, the one owner).
+ * `surfaceCoverageUnread` — nobody has read this outfit's coverage. Fails
+ * closed and says so in its own words rather than borrowing `surfaceCovered`'s.
  * `unmeasuredPlacement` — an open placement, in her own word, that no reading
  * has measured. It has no reader word, no ride-table entry and no image-half
  * phrase, so where it sits on a freshly rendered view is a guess, and a guess
@@ -160,6 +169,7 @@ export type InkCropDisposition =
       | "bytesUnreadable"
       | "bytesMoved"
       | "surfaceCovered"
+      | "surfaceCoverageUnread"
       | "unmeasuredPlacement"
       | "unnameableSlot";
   };
@@ -673,6 +683,23 @@ export async function carriedInkCrops(
     anchorDeltas: unknown;
     pronouns: CastPronouns;
     operationId: string;
+    /**
+     * THE CAST'S SNAPSHOTTED OUTFIT — what decides whether a surface is showing.
+     *
+     * `null` is *no line recorded*, which is every Cast signed before the paths,
+     * and it answers the house table exactly. Threaded from the Sign's own
+     * statement rather than re-read here for the reason `anchorDeltas` is: a
+     * second read could answer about a different branch and nothing would say
+     * so.
+     *
+     * ⚠ **Optional, and absent means the same as `null`** — `WardrobeBranch`'s
+     * own rule, and the same one `classifyInkPlacement` carries. An absent
+     * column is not a claim; it is silence, and silence is *no line recorded*,
+     * which answers the house table. A required field here would turn every
+     * partial projection and every test double into a compile error over a
+     * question that has a correct absent answer.
+     */
+    wardrobeLine?: string | null;
   },
 ): Promise<{ crops: readonly CarriedInkCrop[]; dispositions: readonly InkCropDisposition[] }> {
   const worn = readDeliveredInk(input.anchorDeltas);
@@ -728,9 +755,19 @@ export async function carriedInkCrops(
       THE SURFACE'S OWN DOOR, SHARED WITH THE PLATE LANE — one owner for
       *"may a tattoo at this surface ride a package view at all"*, so the two
       lanes cannot come to disagree about the wardrobe.
+
+      Two reasons, never one (fable-1368 ruling 1): a garment over the surface
+      and an outfit nobody has read are both `does not ride`, and only one of
+      them is a fact about her clothes.
     */
-    if (!placementRidesPackageViews(placed.placement)) {
-      dispositions.push({ slot, cropPublicId, rode: false, reason: "surfaceCovered" });
+    const coverage = placementRideCoverage(placed.placement, input.wardrobeLine);
+    if (coverage !== "bare") {
+      dispositions.push({
+        slot,
+        cropPublicId,
+        rode: false,
+        reason: coverage === "covered" ? "surfaceCovered" : "surfaceCoverageUnread",
+      });
       continue;
     }
     let bytes: Awaited<ReturnType<typeof storageReadBytes>>;
@@ -850,6 +887,23 @@ export async function carriedInkPlates(
      * actually sits on this person, and a plate is artwork on a grey form.
      */
     carriedSlots?: ReadonlySet<string>;
+    /**
+     * THE CAST'S SNAPSHOTTED OUTFIT — what decides whether a surface is showing.
+     *
+     * `null` is *no line recorded*, which is every Cast signed before the paths,
+     * and it answers the house table exactly. Threaded from the Sign's own
+     * statement rather than re-read here for the reason `anchorDeltas` is: a
+     * second read could answer about a different branch and nothing would say
+     * so.
+     *
+     * ⚠ **Optional, and absent means the same as `null`** — `WardrobeBranch`'s
+     * own rule, and the same one `classifyInkPlacement` carries. An absent
+     * column is not a claim; it is silence, and silence is *no line recorded*,
+     * which answers the house table. A required field here would turn every
+     * partial projection and every test double into a compile error over a
+     * question that has a correct absent answer.
+     */
+    wardrobeLine?: string | null;
   },
 ): Promise<{ plates: readonly CarriedInkPlate[]; dispositions: readonly InkDesignDisposition[] }> {
   let rows: readonly CandidateInkPlate[];
@@ -899,8 +953,13 @@ export async function carriedInkPlates(
       show honestly does not ride, whether or not it was ever plated, and saying
       `noPlate` about it would name the wrong fact.
     */
-    if (!placementRidesPackageViews(rowsOfDesign[0]!.placement)) {
-      dispositions.push({ designPublicId, rode: false, reason: "surfaceCovered" });
+    const coverage = placementRideCoverage(rowsOfDesign[0]!.placement, input.wardrobeLine);
+    if (coverage !== "bare") {
+      dispositions.push({
+        designPublicId,
+        rode: false,
+        reason: coverage === "covered" ? "surfaceCovered" : "surfaceCoverageUnread",
+      });
       continue;
     }
     /*
@@ -1132,12 +1191,14 @@ async function completeSignPackage(
       anchorDeltas: input.anchorDeltas,
       pronouns: input.pronouns,
       operationId: input.operationId,
+      wardrobeLine: input.wardrobeLine,
     });
     const ink = await carriedInkPlates(dependencies, {
       userId: input.userId,
       candidateId: input.candidateId,
       operationId: input.operationId,
       carriedSlots: new Set(delivered.crops.map((crop) => crop.slot)),
+      wardrobeLine: input.wardrobeLine,
     });
     const featureWords = await carriedFeatureWords(dependencies, {
       userId: input.userId,

@@ -483,7 +483,23 @@ export type RefineRefusal =
    * (opus-960, ratified fable-1301 §1). `place` is the surface in her own kind
    * of words, so the sentence can name it rather than apologise generically.
    */
-  | { reason: "gate_ink_uncarried"; place: string }
+  | { reason: "gate_ink_uncarried"; place: string; alternatives: readonly string[] }
+  /**
+   * THE SURFACE IS BARE AND THIS ROAD STILL CANNOT KEEP A RESULT THERE
+   * (item 7a). `gate_ink_uncarried`'s twin, split from it because the two
+   * reasons coincided while the product had one outfit: on a shirtless Basics
+   * cast, *"your top covers your chest"* is false about the picture she is
+   * looking at, and the true sentence is that the road cannot crop a result
+   * there yet.
+   */
+  | { reason: "gate_ink_unkeepable"; place: string; alternatives: readonly string[] }
+  /**
+   * NOBODY HAS READ WHETHER THIS CAST'S OUTFIT LEAVES THE SURFACE SHOWING
+   * (item 7a, fable-1368 ruling 1). Fails closed like a covering and says so in
+   * its own words — a fail-closed gate that lies about WHY it closed is how a
+   * customer learns to distrust every refusal this product writes.
+   */
+  | { reason: "gate_ink_coverage_unread"; place: string; alternatives: readonly string[] }
   | { reason: "unreadable" }
   | { reason: "empty" }
   /**
@@ -762,6 +778,16 @@ export type FreeLaneCheck = {
    * question and no flag moves it.
    */
   inkWordsRoadOpen?: boolean;
+  /**
+   * WHAT THIS CAST IS WEARING — the roll's born line, or its edited one, resolved
+   * by the service (item 7a).
+   *
+   * Absent and `null` both mean *no line recorded*, which is every roll cast
+   * before the paths, and `inkSurfaceCoverage` reads that as the house crew tee.
+   * So an absent value is today's answer for all 206 of them rather than a
+   * refusal, which is what makes this landing dark.
+   */
+  wardrobeLine?: string | null;
   /** Set when the value hit a wall, so the caller can name which one. */
   wall?: RefineRefusal;
   /**
@@ -1379,9 +1405,37 @@ export function readDelta(value: unknown, check?: FreeLaneCheck): RefineDelta | 
             scrubbed,
             subject === "ink" ? "ink" : "mark",
             check.inkWordsRoadOpen === true,
+            /* AND WHAT THIS CAST IS WEARING (item 7a). Absent is *no line
+               recorded*, which is every roll cast before the paths and answers
+               the house crew tee — today's product, byte for byte. */
+            check.wardrobeLine,
           );
           if (placement.kind === "not_carried") {
-            check.wall = { reason: "gate_ink_uncarried", place: placement.place };
+            check.wall = {
+              reason: "gate_ink_uncarried",
+              place: placement.place,
+              alternatives: placement.alternatives,
+            };
+            return null;
+          }
+          /* Item 7a's two siblings. Same road, same wait, different true
+             sentence — and the ALTERNATIVES ride with each of them, derived
+             where both the account's road and this cast's outfit are in hand,
+             so the copy cannot freeze the way `gate_ink_uncarried`'s did. */
+          if (placement.kind === "road_cannot_keep") {
+            check.wall = {
+              reason: "gate_ink_unkeepable",
+              place: placement.place,
+              alternatives: placement.alternatives,
+            };
+            return null;
+          }
+          if (placement.kind === "coverage_unread") {
+            check.wall = {
+              reason: "gate_ink_coverage_unread",
+              place: placement.place,
+              alternatives: placement.alternatives,
+            };
             return null;
           }
           if (placement.kind !== "in_frame") {

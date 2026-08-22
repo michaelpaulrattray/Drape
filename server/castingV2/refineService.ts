@@ -224,6 +224,8 @@ import { INK_PLACEMENTS, inkPlacementBareNoun, isInkPlacement } from "../../shar
 /* Whether the words road can put a NEW tattoo at a placement — the derived tail
    of C4a's answer, off the same lists that decide the road (fable-1339 §2). */
 import { wordsRoadServes } from "./inkPlacement";
+import { currentWardrobeLine } from "./wardrobeLine";
+import type { CastingPath } from "../../shared/castingPaths";
 import { mintInkDesignFromReference } from "./inkReferenceMint";
 import { listInkDesigns } from "../db/castingV2InkDesigns";
 import { listInkDeliveryCrops } from "../db/castingV2InkDeliveryCrops";
@@ -1730,6 +1732,29 @@ async function refineCandidateCounted(
         about the sentence, so it is resolved once here beside its siblings.
       */
       inkWordsRoadOpen: (dependencies.inkWordsEnabled ?? captureCastingInkWordsEnabled)(input.userId),
+      /*
+        AND WHAT THIS CAST IS WEARING — the second half of *can a tattoo go
+        there* (item 7a).
+
+        Resolved through `currentWardrobeLine`, the one owner, off the two roll
+        columns the candidate load now joins. A roll cast before the paths has
+        both columns NULL, which resolves to `unpathed`, which the coverage owner
+        reads as the house crew tee — so every roll in production answers exactly
+        what it answered before this landed.
+
+        The BRANCH'S edited line is not threaded yet and its absence is the
+        honest state rather than an omission: the WARDROBE subject that writes it
+        is the refine slice (item 8), and `currentWardrobeLine` already names
+        `editedLine` as the seam it will land on. Until then a wardrobe edit
+        cannot exist, so there is nothing for this to miss.
+      */
+      wardrobeLine: (() => {
+        const resolved = currentWardrobeLine({
+          rollPath: source.rollPath as CastingPath | null,
+          rollLine: source.rollWardrobeLine,
+        });
+        return resolved.kind === "line" ? resolved.line : null;
+      })(),
       /*
         ⚠ AND WHETHER THIS ASK IS ABOUT A TATTOO WE ALREADY PAINTED — the gate's
         THIRD document, and without it the transform road is unreachable.

@@ -659,6 +659,22 @@ export type OwnedCandidateFace = {
   imageKey: string | null;
   thumbKey: string | null;
   internalPrompt: unknown;
+  /**
+   * WHAT THE ROLL THIS FACE CAME FROM WAS CAST ON, and what it was born wearing
+   * (item 7a).
+   *
+   * Joined here rather than read a second time, and joined THROUGH the owned
+   * candidate so the roll is reached only by somebody who already owns the face
+   * — the same shape the compiled brief's join uses, for the same reason.
+   *
+   * `null` on both is the honest state of every roll cast before the paths, and
+   * `currentWardrobeLine` reads that pair as `unpathed`: paint what you always
+   * painted. They travel as the ROW'S OWN two fields rather than as a resolved
+   * line, because a caller needs to tell *"this cast wears the house line"* from
+   * *"this cast predates the paths"* and a bare string cannot say the second.
+   */
+  rollPath: string | null;
+  rollWardrobeLine: string | null;
 };
 
 export async function getOwnedCandidateWithSelectedFace(
@@ -675,6 +691,8 @@ export async function getOwnedCandidateWithSelectedFace(
       variantImageKey: castingCandidateVariants.imageKey,
       variantThumbKey: castingCandidateVariants.thumbKey,
       variantInternalPrompt: castingCandidateVariants.internalPrompt,
+      rollPath: castingRolls.path,
+      rollWardrobeLine: castingRolls.wardrobeLine,
     })
     .from(castingCandidates)
     .leftJoin(castingCandidateVariants, and(
@@ -682,6 +700,12 @@ export async function getOwnedCandidateWithSelectedFace(
       eq(castingCandidateVariants.userId, userId),
       eq(castingCandidateVariants.candidateId, castingCandidates.id),
       eq(castingCandidateVariants.status, "ready"),
+    ))
+    /* THROUGH the owned candidate, and scoped to the same owner in the same
+       statement — enforcement invariant 1, on a join rather than on a check. */
+    .leftJoin(castingRolls, and(
+      eq(castingRolls.id, castingCandidates.rollId),
+      eq(castingRolls.userId, userId),
     ))
     .where(and(
       eq(castingCandidates.publicId, candidatePublicId),
@@ -692,6 +716,10 @@ export async function getOwnedCandidateWithSelectedFace(
   if (!row) return null;
   /* All of the face or none of it — never a variant's image with the
      original's record, which is the mix that makes a record lie. */
+  /* The roll's two fields belong to the CANDIDATE and not to whichever face is
+     selected, so they are the same either way — written once rather than in
+     both branches, where a copy would be free to drift. */
+  const roll = { rollPath: row.rollPath, rollWardrobeLine: row.rollWardrobeLine };
   return row.variantId
     ? {
       candidate: row.candidate,
@@ -700,6 +728,7 @@ export async function getOwnedCandidateWithSelectedFace(
       imageKey: row.variantImageKey,
       thumbKey: row.variantThumbKey,
       internalPrompt: row.variantInternalPrompt,
+      ...roll,
     }
     : {
       candidate: row.candidate,
@@ -708,6 +737,7 @@ export async function getOwnedCandidateWithSelectedFace(
       imageKey: row.candidate.imageKey,
       thumbKey: row.candidate.thumbKey,
       internalPrompt: row.candidate.internalPrompt,
+      ...roll,
     };
 }
 
