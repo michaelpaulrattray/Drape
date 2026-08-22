@@ -138,7 +138,7 @@ import {
   type ReferenceRowToRecord,
 } from "../db/castingV2ReferenceLibrary";
 import { storagePut } from "../storage";
-import { openKindAsk } from "./openKindQuestion";
+import { askWordsForSlot, openKindAsk } from "./openKindQuestion";
 import { createModuleLogger } from "../logging/logger";
 import { captureCastingReferenceLibraryEnabled } from "./castingV2Scope";
 import {
@@ -169,6 +169,34 @@ import { accessoryKindOfSlot, tidyStackWord } from "./slotWordShape";
 import type { FeatureSlot, FeatureTier } from "./recipeAssembler";
 
 const log = createModuleLogger("castingV2/referenceMint");
+
+/**
+ * AN OPEN KIND'S READ CAME BACK EMPTY — one string, so the count is one grep
+ * (ruled fable-1420 (b) condition 2).
+ *
+ *     grep openKindReadEmpty <the service log>
+ *
+ * # ⚠ WHY A LOG AND NOT A COLUMN, AND WHY IT EXISTS AT ALL
+ *
+ * The rung record — `openKindRungOfRow` — derives which rung a stored row came
+ * off by reading the row. It answers `"none"` for a row with no crop, and **a
+ * row with no crop is two different events**: the segmenter was asked and
+ * answered nothing, or the slot never reached a read at all. Both store
+ * `guardKind: null` and no refusal, so the row cannot say which.
+ *
+ * That matters because the site-rung's EXPIRY is armed on exactly this
+ * distinction (`openKindSiteQuestion`): *build the site-proposing read when
+ * rung-1 failures arrive*. A trigger nobody can read is a trigger that gets
+ * settled by docblock archaeology, which is how the founder's orb was
+ * diagnosed twice from prose rather than from data.
+ *
+ * A LOG rather than a refusal column because a refusal is a GUARD verdict —
+ * `GUARD_REFUSAL_REASONS` is closed, validated at the write door, and every
+ * member of it is a crop that was cut and then turned away. Nothing was cut
+ * here. The `sideUnread` shape is the precedent: the reason the crop was not
+ * filed, greppable, with the subject on the line.
+ */
+export const OPEN_KIND_READ_EMPTY = "openKindReadEmpty";
 
 /** One prefix, so an operator can see every library object in one place. */
 export const LIBRARY_KEY_PREFIX = "casting-v2/library";
@@ -574,6 +602,37 @@ export type MintInput = {
    * bought, and every disputed slot behaves as it did before this existed.
    */
   anchorFrame?: { bytes: Buffer };
+  /**
+   * ⚠ EVERYTHING SHE HAS EVER SAID ABOUT A SLOT — for the QUESTION only, never
+   * for the row (fable-1419 §1(a), measured on the founder's own v218).
+   *
+   * `SlotSpec.words` is THIS RENDER's own, deliberately, so a row filed by this
+   * mint can never re-assert a feature the render has just changed. That is
+   * right about what is FILED and wrong about what is ASKED: on v218 this
+   * render's words were the EDIT's phrase — *"orb glowing slightly brighter"* —
+   * and the segmenter answered nothing, so the founder's orb got no crop and no
+   * box for the second render running.
+   *
+   * `openKindWordsQuestion`'s own docblock had already said the answer:
+   * *"a later refinement ('make it brighter') is not a description of the thing
+   * on its own … the whole stack is what the row means by the feature."* This is
+   * the field that lets the mint obey it.
+   *
+   * Measured on v218's delivered frame, four cells, one variable:
+   *
+   * ```
+   * the edit phrase alone                          0 px   ← what it asked
+   * the rich phrase from her first ask         1,402 px   44x41 on the orb
+   * the JOINED STACK (rich + edit)             1,402 px   IDENTICAL box
+   * "orb"                     CONTROL             0 px   the reader is unchanged
+   * ```
+   *
+   * The stack costs nothing and rescues the case, so the stack is what is asked.
+   * **Absent, every slot asks exactly what it asked before** — a caller that
+   * does not pass it gets today's behaviour, which is why this is optional
+   * rather than threaded through every test.
+   */
+  priorWords?: ReadonlyMap<string, readonly string[]>;
   /** For the log line, so a reference can be traced to its operation. */
   operationId?: string;
   dependencies?: MintDependencies;
@@ -1149,7 +1208,17 @@ export async function mintReferencesForRender(input: MintInput): Promise<MintRes
         `null` when she has said nothing about it, which falls through to the
         token exactly as before — nothing regresses for a kind with no words.
       */
-      const asked = openKind ? openKindAsk({ words: slot.words }) : null;
+      /*
+        AND IT IS ASKED THE WHOLE STACK, not this render's sentence alone —
+        see {@link MintInput.priorWords} for the measurement. Oldest first and
+        deduplicated: her declarations in the order she made them, which is the
+        string `openKindWordsQuestion` was written for and measured on.
+      */
+      const asked = openKind
+        ? openKindAsk({
+          words: askWordsForSlot({ slot: slot.slot, words: slot.words, prior: input.priorWords }),
+        })
+        : null;
       const question = asked?.question ?? slot.question;
       /*
         THE RECORD'S KIND, WHICH IS NOT A SPECIMEN FAMILY HERE. For a closed
@@ -1881,6 +1950,30 @@ export async function mintReferencesForRender(input: MintInput): Promise<MintRes
            not a judgement about her picture at all. Withholding the words
            there would let one blank read delete a paid feature from every
            render after it (fable-930 §2). */
+        /*
+          AND AN OPEN KIND SAYS SO WHERE IT CAN BE COUNTED — see
+          {@link OPEN_KIND_READ_EMPTY}. Its row will look identical to a row
+          that never reached a read, and the site-rung's expiry is armed on the
+          difference between them.
+
+          Open kinds only: every catalogued slot's empty read is an ordinary
+          fact about a frame with a whole vocabulary of instruments already
+          watching it, and a line per blank read across the catalogue would
+          bury the two-a-month that matter.
+        */
+        if (slot.openKind === true) {
+          log.warn(
+            {
+              reason: OPEN_KIND_READ_EMPTY,
+              slot: slot.slot,
+              variantId: input.variantId,
+              question: slot.question,
+              operationId: input.operationId,
+            },
+            "[referenceMint] openKindReadEmpty — the segmenter was asked her words for an "
+            + "uncatalogued kind and found nothing, so the row files words and has no box",
+          );
+        }
         const said = await wordsOrAsk(slot);
         if (said === null) { unread(slot); continue; }
         rows.push({ role: "carry", slot: slot.slot, tier: slot.tier, noun: slot.noun, words: said.words });

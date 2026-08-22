@@ -359,3 +359,53 @@ export function deriveLibrary(rows: readonly StoredReference[]): LibraryEntry[] 
     return entry;
   });
 }
+
+/**
+ * EVERY WORD A BRANCH HOLDS PER SLOT, oldest first — the ASKING stack
+ * (fable-1419 §1(a)).
+ *
+ * The library keeps one row per (slot, role) version and each carries the stack
+ * as it stood then, so a slot's declarations across a lineage are the union of
+ * its live rows read in version order. This is what an open kind's segmenter
+ * question is keyed on: her first sentence describes the thing, and a later
+ * refinement — *"make it brighter"* — amends it and does not describe it.
+ *
+ * ⚠ **It is for the QUESTION and never for a ROW.** `SlotSpec.words` is this
+ * render's own precisely so a filed row cannot re-assert a feature the render
+ * just changed, and nothing here weakens that: this string is handed to a
+ * segmenter to find pixels with, and is never written anywhere.
+ *
+ * Lives here, beside `liveReferences`, because it is the same fold over the same
+ * rows — a caller composing it from a second walk is the parallel copy working
+ * law 4 is about.
+ */
+export function priorWordsBySlot(
+  rows: readonly StoredReference[],
+): Map<FeatureSlot, readonly string[]> {
+  const byslot = new Map<FeatureSlot, { version: number; words: readonly string[] }[]>();
+  for (const row of rows) {
+    /* ⚠ ARRAY-CHECKED, and this is not belt-and-braces: these rows crossed a
+       database boundary, this fold runs on the PAID refine path, and a throw
+       here would take the whole mint down with it — losing every crop the
+       render earned to a malformed `words` column. Caught by the suite before
+       it shipped, on a fixture that carried no words at all. */
+    if (!Array.isArray(row.words) || row.words.length === 0) continue;
+    const held = byslot.get(row.slot) ?? [];
+    held.push({ version: row.version, words: row.words });
+    byslot.set(row.slot, held);
+  }
+  const said = new Map<FeatureSlot, readonly string[]>();
+  for (const [slot, versions] of Array.from(byslot.entries())) {
+    const ordered = [...versions].sort((a, b) => a.version - b.version);
+    const words: string[] = [];
+    for (const one of ordered) {
+      for (const word of one.words) {
+        const trimmed = word.trim();
+        if (trimmed === "" || words.includes(trimmed)) continue;
+        words.push(trimmed);
+      }
+    }
+    if (words.length > 0) said.set(slot, words);
+  }
+  return said;
+}

@@ -117,14 +117,23 @@ export function openKindWordsQuestion(words: readonly string[]): string | null {
  * codebase has found four times and written a law about. So the decision point
  * is written here, where whoever next reads the function meets it:
  *
- *   BUILD the site-proposing read   when the rung record shows rung-1 failures
- *                                   arriving — the bare-phrase kinds ("a halo",
- *                                   "wings") that n=2 never tested
+ *   BUILD the site-proposing read   when a kind whose WHOLE STACK is thin
+ *                                   ("a halo", "wings") fails a read
  *   DELETE this function            if a quarter's rows say the phrase rung
  *                                   suffices on its own
  *
- * `openKindRungOfRow` over the library's open rows is the reading that decides
- * it. Neither outcome is *leave it here unexamined*.
+ * ⚠ **The trigger was CORRECTED on 2026-08-22 and is narrower than it was**
+ * (fable-1420 (b)). It used to read *"when the rung record shows rung-1
+ * failures arriving"*, and the first apparent arrival was not one: the mint was
+ * asking the EDIT's phrase rather than her stack, which is fixed. A rung-1
+ * failure only belongs to this class when the whole stack is thin — and see
+ * {@link openKindAsk}, because building this rung ALSO means reshaping the
+ * ladder to fall through on an empty ANSWER rather than an empty STRING.
+ *
+ * The reading that decides it is `OPEN_KIND_READ_EMPTY` in `referenceMint`,
+ * NOT `openKindRungOfRow`: a stored row answers `"none"` both when the read
+ * came back empty and when no read happened, so the row cannot carry this
+ * trigger. Neither outcome is *leave it here unexamined*.
  */
 export function openKindSiteQuestion(
   words: readonly string[],
@@ -141,8 +150,91 @@ export function openKindSiteQuestion(
 }
 
 /**
+ * THE WORDS A SLOT IS ASKED ABOUT — her whole stack, oldest first
+ * (fable-1419 §1(a), measured on the founder's own v218).
+ *
+ * The mint used to hand {@link openKindAsk} `SlotSpec.words`, which is THIS
+ * RENDER's words. That is right about what a row FILES — a filed row must never
+ * re-assert a feature the render just changed — and wrong about what is ASKED.
+ * On v218 this render's words were the EDIT's phrase, *"orb glowing slightly
+ * brighter"*, and the segmenter answered nothing, so the founder's orb went a
+ * second render with no crop and no box.
+ *
+ * Measured on that frame, four cells, one variable:
+ *
+ * ```
+ * "orb glowing slightly brighter"                 0 px   ← what it asked
+ * "a glowing red vertical slit orb embedded…"  1,402 px  44x41, on the orb
+ * the two JOINED                               1,402 px  IDENTICAL box
+ * "orb"                            CONTROL        0 px   the reader is unchanged
+ * ```
+ *
+ * The stack costs nothing and rescues the case, which is what
+ * {@link openKindWordsQuestion} said from the day it was written.
+ *
+ * **Order is hers**: the description first, the amendment after. Leading with
+ * the amendment is the string that returned zero.
+ *
+ * Exported and pure so it can be driven directly rather than through a render
+ * (working law 3), and it lives beside the ladder it feeds rather than inside
+ * the caller, so the two cannot come to disagree about what "her words" means.
+ */
+export function askWordsForSlot(input: {
+  readonly slot: string;
+  /** This render's own words for the slot. */
+  readonly words: readonly string[];
+  /** Everything the branch already held, by slot. Absent is today's behaviour. */
+  readonly prior?: ReadonlyMap<string, readonly string[]>;
+}): readonly string[] {
+  const prior = input.prior?.get(input.slot) ?? [];
+  if (prior.length === 0) return input.words;
+  const said: string[] = [];
+  for (const word of [...prior, ...input.words]) {
+    const trimmed = word.trim();
+    if (trimmed === "" || said.includes(trimmed)) continue;
+    said.push(trimmed);
+  }
+  return said;
+}
+
+/**
  * THE LADDER, in order — the string to ask and the rung it came from, or `null`
  * when neither rung has anything and the slot files words as it does today.
+ *
+ * # ⚠ IT IS ONE RUNG WITH AN UNREACHABLE SPARE, AND THAT IS WHAT IT IS TODAY
+ *
+ * Said plainly here rather than left to be discovered (ruled fable-1420 (b)
+ * condition 1). Read the code: rung 2 is reached only when
+ * {@link openKindWordsQuestion} produces **no string at all** — and
+ * `mintedSlots` refuses an open ask with no words (`noWords`), so that state
+ * cannot arrive through the product.
+ *
+ * The class rung 2 was designed for is the THIN STACK — *"a halo"*, *"wings"* —
+ * where rung 1 produces a perfectly good STRING that the segmenter answers
+ * nothing to. This shape never looks further, because it branches on the
+ * string's existence and not on the read's answer.
+ *
+ * **What it becomes when that class arrives**: the asks, IN ORDER, walked by a
+ * caller that reads once per rung until one answers. That is a change to this
+ * function's return type and to the mint's loop, and it is deliberately not
+ * built yet — a paid second read on a road nobody has been down is the
+ * inert-control shape bought on purpose.
+ *
+ * # The expiry, RE-ARMED on the corrected condition
+ *
+ * n=3 arrived on 2026-08-22 and looked like the trigger: the founder's
+ * *"make her orb glow slightly brighter"* produced no crop. It was not this
+ * class. The mint had asked the EDIT's phrase alone — a defect against
+ * {@link openKindWordsQuestion}'s own stated contract — and her whole stack
+ * measures 1,402 px on that same frame where the edit phrase measures 0.
+ * `askWordsForSlot` fixed it, and that specimen no longer belongs to this
+ * class.
+ *
+ * So the trigger is narrower than it looked and **n for it is still ZERO**:
+ * BUILD when a kind whose WHOLE STACK is thin fails a read. The instrument
+ * that will say so is `OPEN_KIND_READ_EMPTY` in `referenceMint` — one grep,
+ * slot and variant on the line — because the stored row cannot tell an empty
+ * answer from a read that never happened.
  */
 export function openKindAsk(input: {
   readonly words: readonly string[];

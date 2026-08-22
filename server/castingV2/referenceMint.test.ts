@@ -103,6 +103,7 @@ async function mint(slots: SlotSpec[], harnessed: ReturnType<typeof harness>, ex
   applied?: Mask | null;
   knownDigests?: Map<string, string>;
   masterRegions?: Map<string, Mask>;
+  priorWords?: Map<string, readonly string[]>;
 } = {}) {
   return mintReferencesForRender({
     userId: 1,
@@ -112,6 +113,7 @@ async function mint(slots: SlotSpec[], harnessed: ReturnType<typeof harness>, ex
     masterRegions: extra.masterRegions ?? new Map([["hair", rect(HAIR)]]),
     slots,
     knownDigests: extra.knownDigests,
+    priorWords: extra.priorWords,
     dependencies: harnessed.dependencies,
   });
 }
@@ -2502,5 +2504,90 @@ describe("the D1 count gate for a distributed open kind", () => {
       { side: "left", declaredTwoSided: true },
       { side: "right", declaredTwoSided: true },
     ]);
+  });
+});
+
+/*
+  ⚠ WHAT THE SEGMENTER IS ACTUALLY ASKED FOR AN OPEN KIND — asserted on the
+  GROUND READER'S OWN INPUT, not on the helper that composes it
+  (fable-1419 §1(a)).
+
+  This block exists because of how the defect it fixes was possible.
+  `openKindWordsQuestion` had said from the day it was written that the string
+  is the whole STACK — *"a later refinement ('make it brighter') is not a
+  description of the thing on its own"* — and its caller handed it this render's
+  words instead. A contract stated in one module and disobeyed by another, with
+  every arm on the stated side green.
+
+  So these arms fail at the CALLER. Point the mint back at `slot.words` and the
+  first goes red; the helper's own arms in `openKindQuestion.test.ts` do not,
+  which is exactly the gap that let the founder's orb go two renders with no box.
+
+  `readGround` rather than `read`: the ground read is the one that finds the
+  thing on the frame, and it is the call this question is the key to.
+*/
+describe("the question an open kind is asked", () => {
+  const RICH = "a glowing red vertical slit orb embedded in the centre of her forehead";
+  const EDIT = "orb glowing slightly brighter";
+  const orb = (words: string[]): SlotSpec => ({
+    slot: "open:orb",
+    tier: "anatomy",
+    noun: "orb",
+    words,
+    question: "orb",
+    guardKind: null,
+    noSpecimen: "an open kind has no measured specimen family",
+    frame: "wholeFrame",
+  });
+
+  /** Mint one slot with a recording ground reader, and return what it was asked. */
+  async function groundQuestions(
+    slot: SlotSpec,
+    prior?: Map<string, readonly string[]>,
+  ): Promise<string[]> {
+    const bench = harness();
+    const asked: string[] = [];
+    await mintReferencesForRender({
+      userId: 1,
+      variantId: 11,
+      frame: { bytes: await frameBytes() },
+      applied: rect({ x: 0, y: 0, width: 40, height: 40 }),
+      masterRegions: new Map(),
+      slots: [slot],
+      ...(prior === undefined ? {} : { priorWords: prior }),
+      dependencies: {
+        ...bench.dependencies,
+        readGround: (async (input: { question: string }) => {
+          asked.push(input.question);
+          return rect(HAIR);
+        }) as never,
+      },
+    });
+    return asked;
+  }
+
+  it("asks HER WHOLE STACK, oldest first — not the edit that arrived last", async () => {
+    const asked = await groundQuestions(orb([EDIT]), new Map([["open:orb", [RICH]]]));
+    expect(asked).toContain(`${RICH}, ${EDIT}`);
+    /* And never the edit alone, which measured 0 px on the founder's own frame
+       while the joined stack measured 1,402. */
+    expect(asked).not.toContain(EDIT);
+  });
+
+  it("CONTROL — with no prior words it asks exactly what it always did", async () => {
+    expect(await groundQuestions(orb([EDIT]))).toContain(EDIT);
+  });
+
+  it("CONTROL — a CATALOGUED slot's question is untouched by any of this", async () => {
+    /* The stack is the open lane's answer to an uncatalogued noun. A courted
+       slot asks its measured region word and must go on doing so, prior words
+       or not — otherwise this change has quietly rewritten every question in
+       the product. */
+    const asked = await groundQuestions(
+      hairSlot(),
+      new Map([["hair", ["a copper shag", "shorter"]]]),
+    );
+    expect(asked).toContain("hair");
+    expect(asked.some((one) => one.includes("copper shag"))).toBe(false);
   });
 });

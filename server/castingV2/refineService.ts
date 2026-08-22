@@ -204,7 +204,7 @@ import { mintReferencesForRender } from "./referenceMint";
 import type { DeliveryAdjudication } from "./deliveryCourt";
 import { mintedSlotsForRender } from "./mintedSlots";
 import {
-  deriveLibrary, instanceLastWritten, libraryWithoutEditedCrops, liveReferences,
+  deriveLibrary, instanceLastWritten, libraryWithoutEditedCrops, liveReferences, priorWordsBySlot,
   supersededCarrySlots,
 } from "./referenceLibrary";
 import { listLineageReferences, recordReferenceRows, retireReferenceSlot } from "../db/castingV2ReferenceLibrary";
@@ -8897,6 +8897,23 @@ async function refineCandidateCounted(
             deliveredSideRegions: image.evidence?.deliveredSideRegions ?? null,
             slots,
             knownDigests: known,
+            /*
+              EVERYTHING SHE HAS EVER SAID ABOUT EACH SLOT — for the QUESTION
+              only (fable-1419 §1(a)).
+
+              Derived from `live`, the lineage walk this function already read,
+              rather than fetched again: a second read of the same rows is a
+              second answer to the same question waiting to disagree. It reaches
+              exactly one decision — the string an OPEN KIND's segmenter call is
+              keyed on — and `MintInput.priorWords` carries the measurement.
+
+              What it fixes: the founder's orb got no crop on v218 because the
+              mint asked *"orb glowing slightly brighter"*, this render's own
+              words, and the segmenter answered nothing. Her first sentence for
+              the same orb answers 1,402 px, and the two joined answer
+              identically.
+            */
+            priorWords: priorWordsBySlot(live),
             /*
               THE FRAME THIS RENDER WAS PAINTED FROM — the ruler's other end.
 

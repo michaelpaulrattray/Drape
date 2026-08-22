@@ -1,11 +1,13 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  askWordsForSlot,
   openKindAsk,
   openKindRungOfRow,
   openKindSiteQuestion,
   openKindWordsQuestion,
 } from "./openKindQuestion";
+import { priorWordsBySlot, type StoredReference } from "./referenceLibrary";
 
 /**
  * WHAT WORD TO ASK FOR A THING NOBODY HAS CATALOGUED.
@@ -132,5 +134,110 @@ describe("which rung a row came off, read back off the row", () => {
     for (const words of [ORB, TAIL]) {
       expect(openKindRungOfRow({ words, guardKind: null, hasCrop: false })).toBe("none");
     }
+  });
+});
+
+/*
+  ⚠ THE ASKING STACK — n=3 arriving from the founder's own render
+  (fable-1419 §1(a)).
+
+  He ran "make her orb glow slightly brighter" on cand 1653 minutes after a
+  shift parked. v218 delivered a visibly brighter orb and filed a row with NO
+  CROP, so his panel still has no orb and no box — the second render running.
+
+  The mint had asked the segmenter `slot.words`, which is THIS RENDER's words,
+  and this render's words were the EDIT's phrase. Measured on v218's own
+  delivered frame, four cells, one variable:
+
+      "orb glowing slightly brighter"                 0 px   ← what it asked
+      "a glowing red vertical slit orb embedded…"  1,402 px  44x41, on the orb
+      the two JOINED                               1,402 px  IDENTICAL box
+      "orb"                            CONTROL        0 px   reader unchanged
+
+  `openKindWordsQuestion`'s docblock had already said this: *"a later refinement
+  ('make it brighter') is not a description of the thing on its own."* The
+  ladder was obeying a contract its caller was not.
+*/
+describe("what an open kind is ASKED about", () => {
+  const RICH = "a glowing red vertical slit orb embedded in the centre of her forehead";
+  const EDIT = "orb glowing slightly brighter";
+
+  it("asks her WHOLE STACK, not the edit that arrived last", () => {
+    expect(askWordsForSlot({
+      slot: "open:orb", words: [EDIT], prior: new Map([["open:orb", [RICH]]]),
+    })).toEqual([RICH, EDIT]);
+  });
+
+  it("keeps her order — the description first, the amendment after", () => {
+    /* The measurement was taken on a string that reads as a description. The
+       amendment qualifies it; leading with the amendment is what returned 0. */
+    const asked = askWordsForSlot({
+      slot: "open:orb", words: [EDIT], prior: new Map([["open:orb", [RICH]]]),
+    });
+    expect(asked[0]).toBe(RICH);
+  });
+
+  it("says each sentence once, however many rows repeat it", () => {
+    /* A stack that repeats a clause asks the segmenter the same words twice for
+       nothing — and on this road every character is a paid question's key. */
+    expect(askWordsForSlot({
+      slot: "open:orb", words: [RICH], prior: new Map([["open:orb", [RICH, RICH]]]),
+    })).toEqual([RICH]);
+  });
+
+  it("⚠ IS TODAY'S BEHAVIOUR when no prior words are handed in", () => {
+    /* The field is optional so a caller that does not pass it — every test, and
+       any road that has no lineage — gets exactly what it got before. */
+    expect(askWordsForSlot({ slot: "open:orb", words: [EDIT] })).toEqual([EDIT]);
+    expect(askWordsForSlot({
+      slot: "open:orb", words: [EDIT], prior: new Map(),
+    })).toEqual([EDIT]);
+  });
+
+  it("does not mix one slot's words into another's", () => {
+    expect(askWordsForSlot({
+      slot: "open:orb", words: [EDIT], prior: new Map([["open:tail", ["a long scaled tail"]]]),
+    })).toEqual([EDIT]);
+  });
+});
+
+/*
+  AND THE FOLD THAT PRODUCES THEM, over the rows a lineage actually holds.
+*/
+describe("the stack a branch holds per slot", () => {
+  const row = (over: { slot: string; version: number; words: string[] }): StoredReference => ({
+    id: over.version, publicId: `p${over.version}`, candidateId: 1, variantId: over.version,
+    role: "carry", slot: over.slot, tier: "anatomy", noun: "orb", words: over.words,
+    storageKey: null, maskKey: null, digest: null, geometry: null, guard: null,
+    refusal: null, version: over.version, retiredAt: null, createdAt: new Date(),
+  });
+
+  it("reads in VERSION order, whatever order the rows arrive in", () => {
+    const said = priorWordsBySlot([
+      row({ slot: "open:orb", version: 2, words: ["orb glowing slightly brighter"] }),
+      row({ slot: "open:orb", version: 1, words: ["a glowing red vertical slit orb"] }),
+    ]);
+    expect(said.get("open:orb")).toEqual([
+      "a glowing red vertical slit orb",
+      "orb glowing slightly brighter",
+    ]);
+  });
+
+  it("⚠ NEVER THROWS on a row whose words are not an array", () => {
+    /* This fold runs on the PAID refine path. A throw here takes the whole mint
+       with it and loses every crop the render earned — and the rows crossed a
+       database boundary to get here. Caught by the suite on a fixture that
+       carried no words at all, before it shipped. */
+    const malformed = [
+      { ...row({ slot: "open:orb", version: 1, words: [] }), words: undefined as never },
+      row({ slot: "open:orb", version: 2, words: ["a glowing red orb"] }),
+    ];
+    expect(() => priorWordsBySlot(malformed)).not.toThrow();
+    expect(priorWordsBySlot(malformed).get("open:orb")).toEqual(["a glowing red orb"]);
+  });
+
+  it("holds nothing for a slot whose rows say nothing", () => {
+    expect(priorWordsBySlot([row({ slot: "open:orb", version: 1, words: [] })]).size).toBe(0);
+    expect(priorWordsBySlot([]).size).toBe(0);
   });
 });
