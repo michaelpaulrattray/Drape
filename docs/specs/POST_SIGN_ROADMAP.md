@@ -119,17 +119,53 @@ carry the rulings, the courts and the histories.
                                           and `scripts/ceremony-two-paths.mts`.
                                           Dev read-back: 44 rolls, path set on 0,
                                           line set on 0.
-                                          ⚠ BLOCKED ON ONE FOUNDER COMMAND, and
-                                          it is now a command that EXISTS: until
-                                          `--production` has run, `drizzle/
-                                          schema.ts` must NOT name either column
-                                          — a column drizzle SELECTs is in every
-                                          read, so the schema half overtaking the
-                                          ceremony is roll history failing to
-                                          load for everybody rather than a dark
-                                          landing. `twoPathsMigration.test.ts`
-                                          pins that absence and says in its own
-                                          arm what to replace it with
+                                          ⛔ **IT IS NOT BLOCKED ON THE FOUNDER,
+                                          AND THIS BLOCK SAID IT WAS FOR A DAY**
+                                          (corrected 2026-08-23, at the
+                                          artifacts). What stood here read
+                                          *"BLOCKED ON ONE FOUNDER COMMAND …
+                                          until `--production` has run,
+                                          `drizzle/schema.ts` must NOT name
+                                          either column"*, and every clause of it
+                                          had been discharged: he DELEGATED the
+                                          ceremony in chat (*"u run the commands
+                                          i gave you authority or did you
+                                          forget"*), the fable seat RAN it — 206
+                                          production rolls, 0 backfilled — the
+                                          columns landed in `drizzle/schema.ts`
+                                          at `292bdd0e`, and
+                                          `twoPathsMigration.test.ts` RETIRED its
+                                          absence arm in that same commit for the
+                                          three-way arm its own comment named.
+                                          The resolution reached
+                                          `founder-queue.md` and never reached
+                                          HERE — and this is the file a shift
+                                          reads for the build order, so the whole
+                                          pipeline below (3b, 6, 8, 9, all
+                                          *"after 5"*) read as parked behind a
+                                          man who had already answered. That is
+                                          PROTOCOL's own rule biting the survivor
+                                          document: *a ruling is landed when it
+                                          is written where the next person will
+                                          act on it.*
+                                          ✅ BUILT AND LIVE DARK SINCE: slices
+                                          1–7a — `cf192abd` (the one owner of
+                                          what a person is wearing), `4417d42a`
+                                          (a roll is stamped with its path),
+                                          `981fdda9` (the engine picks the
+                                          outfit), `9fe2135a` (the outfit reaches
+                                          the picture), `739bebf5` (a Cast
+                                          records what it is wearing),
+                                          `b1520cb2` + `33f6e229` (7a — the
+                                          wardrobe decides where a tattoo can
+                                          go).
+                                          ⚠ WHAT ACTUALLY REMAINS is the FLIP,
+                                          and it is held on the reviewer's word
+                                          rather than the founder's:
+                                          **the 320-credit dev court has not
+                                          run**, and his eyes come after it
+                                          (fable-1429). Nothing here is waiting
+                                          on a command from him
 3b KEYING + MULTI-TATTOO REMOVAL          after 5. No live customer yet (no branch
                                           has ever worn two); 1167 §2e is its own
                                           reason
@@ -480,7 +516,7 @@ CAST-BORN INK DISCOVERY 5 → 6, RETIREMENT + CLEANUP 6 → 7, OPEN-LANE REFEREN
 ROAD 7 → 8, ANY-FEATURE DISCOVERY 8 → 9. Three citations written against the old
 numbering were left behind, **and all three still landed on a real row** — which
 is why nothing looked broken. §5c's split called CAST-BORN INK DISCOVERY *"§10
-item 5"* (item 5 is THE TWO PATHS, blocked on his ceremony) and ANY-FEATURE
+item 5"* (item 5 is THE TWO PATHS, whose ceremony has since RUN) and ANY-FEATURE
 DISCOVERY *"§10 item 8"* (item 8 is the open-lane road); the selector paragraph
 above said *"Item 7"* of a road that had become item 8. A shift following any of
 the three arrives at the wrong work with nothing to tell it so. **A line number

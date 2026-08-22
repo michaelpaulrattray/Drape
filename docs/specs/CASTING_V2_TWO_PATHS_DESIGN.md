@@ -235,9 +235,22 @@ resulting table looks entirely healthy. The ceremony reads the default back by
 value and asserts the non-null count is zero on the sitting that applies it; the
 migration text is pinned by `server/castingV2/twoPathsMigration.test.ts`.
 
-**Until `--production` has run, `drizzle/schema.ts` must not name either column.**
-That absence is an arm rather than a note, and the arm says in its own comment
-what to replace it with.
+⛔ **THAT STAGING IS OVER — corrected 2026-08-23, at the artifacts.** This
+paragraph read *"Until `--production` has run, `drizzle/schema.ts` must not name
+either column. That absence is an arm rather than a note"*, and by then
+`--production` HAD run: the founder delegated the command in chat (*"u run the
+commands i gave you authority or did you forget"*), the fable seat performed it —
+**206 production rolls, 0 backfilled** — the columns landed in `drizzle/schema.ts`
+at `292bdd0e`, and the absence arm was RETIRED in that same commit for the
+three-way arm its own comment named. `server/castingV2/twoPathsMigration.test.ts`
+carries the whole handover in its header.
+
+**Keep the sentence's reasoning, not its instruction.** *A new column on a table
+drizzle SELECTs is in every read* is why the staging existed and it is exactly as
+true for the NEXT migration on a written table; what is finished is this one.
+Slices 1–7a are built on the columns and live dark (`cf192abd` → `33f6e229`), and
+what remains of the order above is **court → his eyes → flip**, with the
+320-credit dev court not yet run.
 
 The cheaper-looking alternative — hiding both facts inside the existing
 `compiledBrief` JSON — is refused on purpose. Sign would then read an internal
