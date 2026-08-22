@@ -169,6 +169,50 @@ describe("architecture atlas", () => {
   });
 
   /**
+   * ⚠ A FLAG IS AN ENVIRONMENT VARIABLE, AND FOR MOST OF THIS ATLAS'S LIFE THE
+   * TWO LISTS DID NOT AGREE THAT IT WAS.
+   *
+   * `collectFlags` was hardened to read three access forms — `process.env.NAME`,
+   * `process.env["NAME"]`, and `const SOMETHING_ENV = "NAME"` — because the
+   * rollout scopes are all reached through that third one. `collectEnvVars` was
+   * a separate reader that knew only the first two, and nothing ever compared
+   * them. Read off the committed artifact on 2026-08-23: **25 of the 29 flags
+   * were absent from `envVars`**, among them `CASTING_V2_SCOPE`, the root flag
+   * of the whole program. Four evidence-bucket credential NAMES were missing
+   * with them (`R2_EVIDENCE_BUCKET` and its two keys, `R7_EVIDENCE_COMPOSER_RECIPE`).
+   *
+   * This is the strongest kind of finding an artifact can carry, because it
+   * needs no outside reference: **one list contradicted the other inside the
+   * same file.**
+   *
+   * `collectFlags` is now a filtered VIEW of the env-var set rather than a
+   * parallel reading of the same source (working law 4), so the inclusion holds
+   * by construction. This asserts it anyway — the construction is the fix, and
+   * this is what notices if someone un-derives it.
+   */
+  it("every flag is also an env var — one reader, not two", () => {
+    const atlas = JSON.parse(
+      fs.readFileSync(
+        path.join(repoRoot, "docs", "architecture", "drape-architecture.json"),
+        "utf8",
+      ),
+    ) as { envVars: Array<{ name: string }>; flags: Array<{ name: string }> };
+
+    const envNames = new Set(atlas.envVars.map((entry) => entry.name));
+    const flagNames = atlas.flags.map((entry) => entry.name);
+
+    /* Population first: an empty flag list is a subset of anything, and that
+       reads exactly like coverage (`absence-only-expect-passes-on-nothing`). */
+    expect(flagNames.length).toBeGreaterThan(20);
+    expect(envNames.size).toBeGreaterThan(flagNames.length);
+
+    expect(
+      flagNames.filter((name) => !envNames.has(name)),
+      "flags the env-var inventory has never heard of — the two readers have stopped seeing the same access forms",
+    ).toEqual([]);
+  });
+
+  /**
    * THE FRESHNESS VERDICT ABOVE IS ONLY A READING IF ITS HASH IS OF THE SOURCE
    * (found opus-926 §5, ordered fable-1234 §2b).
    *

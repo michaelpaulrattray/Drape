@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "860f97cc04411f0e"
+    "sourceFingerprint": "4ca738d97e27b00a"
   },
   "domains": [
     {
@@ -8337,8 +8337,113 @@
       "valueRecorded": false
     },
     {
+      "id": "env:CASTING_BORN_INK_SCOPE",
+      "name": "CASTING_BORN_INK_SCOPE",
+      "valueRecorded": false
+    },
+    {
+      "id": "env:CASTING_DIAGNOSTIC_CAPTURE_SCOPE",
+      "name": "CASTING_DIAGNOSTIC_CAPTURE_SCOPE",
+      "valueRecorded": false
+    },
+    {
+      "id": "env:CASTING_FACE_SCAN_SCOPE",
+      "name": "CASTING_FACE_SCAN_SCOPE",
+      "valueRecorded": false
+    },
+    {
+      "id": "env:CASTING_HAIR_REFERENCE_SCOPE",
+      "name": "CASTING_HAIR_REFERENCE_SCOPE",
+      "valueRecorded": false
+    },
+    {
+      "id": "env:CASTING_INK_CUT_SCOPE",
+      "name": "CASTING_INK_CUT_SCOPE",
+      "valueRecorded": false
+    },
+    {
+      "id": "env:CASTING_INK_REFERENCE_SCOPE",
+      "name": "CASTING_INK_REFERENCE_SCOPE",
+      "valueRecorded": false
+    },
+    {
+      "id": "env:CASTING_INK_REGION_CROP_SCOPE",
+      "name": "CASTING_INK_REGION_CROP_SCOPE",
+      "valueRecorded": false
+    },
+    {
+      "id": "env:CASTING_INK_STUDIO_SCOPE",
+      "name": "CASTING_INK_STUDIO_SCOPE",
+      "valueRecorded": false
+    },
+    {
+      "id": "env:CASTING_INK_TRANSFORM_SCOPE",
+      "name": "CASTING_INK_TRANSFORM_SCOPE",
+      "valueRecorded": false
+    },
+    {
+      "id": "env:CASTING_INK_WORDS_SCOPE",
+      "name": "CASTING_INK_WORDS_SCOPE",
+      "valueRecorded": false
+    },
+    {
+      "id": "env:CASTING_OPEN_LANE_SCOPE",
+      "name": "CASTING_OPEN_LANE_SCOPE",
+      "valueRecorded": false
+    },
+    {
+      "id": "env:CASTING_REFERENCE_ATTACH_SCOPE",
+      "name": "CASTING_REFERENCE_ATTACH_SCOPE",
+      "valueRecorded": false
+    },
+    {
+      "id": "env:CASTING_REFERENCE_LIBRARY_SCOPE",
+      "name": "CASTING_REFERENCE_LIBRARY_SCOPE",
+      "valueRecorded": false
+    },
+    {
+      "id": "env:CASTING_REFINE_DISPATCH_SCOPE",
+      "name": "CASTING_REFINE_DISPATCH_SCOPE",
+      "valueRecorded": false
+    },
+    {
+      "id": "env:CASTING_REPAINT_SCOPE",
+      "name": "CASTING_REPAINT_SCOPE",
+      "valueRecorded": false
+    },
+    {
+      "id": "env:CASTING_SCAN_TABLE_SCOPE",
+      "name": "CASTING_SCAN_TABLE_SCOPE",
+      "valueRecorded": false
+    },
+    {
+      "id": "env:CASTING_SEGMENTS_DELIVERED_SCOPE",
+      "name": "CASTING_SEGMENTS_DELIVERED_SCOPE",
+      "valueRecorded": false
+    },
+    {
+      "id": "env:CASTING_SEGMENTS_SCOPE",
+      "name": "CASTING_SEGMENTS_SCOPE",
+      "valueRecorded": false
+    },
+    {
       "id": "env:CASTING_SIDE_INFERENCE",
       "name": "CASTING_SIDE_INFERENCE",
+      "valueRecorded": false
+    },
+    {
+      "id": "env:CASTING_SIDE_PHRASING_SCOPE",
+      "name": "CASTING_SIDE_PHRASING_SCOPE",
+      "valueRecorded": false
+    },
+    {
+      "id": "env:CASTING_TWO_PATHS_SCOPE",
+      "name": "CASTING_TWO_PATHS_SCOPE",
+      "valueRecorded": false
+    },
+    {
+      "id": "env:CASTING_V2_SCOPE",
+      "name": "CASTING_V2_SCOPE",
       "valueRecorded": false
     },
     {
@@ -8487,6 +8592,21 @@
       "valueRecorded": false
     },
     {
+      "id": "env:R2_EVIDENCE_ACCESS_KEY_ID",
+      "name": "R2_EVIDENCE_ACCESS_KEY_ID",
+      "valueRecorded": false
+    },
+    {
+      "id": "env:R2_EVIDENCE_BUCKET",
+      "name": "R2_EVIDENCE_BUCKET",
+      "valueRecorded": false
+    },
+    {
+      "id": "env:R2_EVIDENCE_SECRET_ACCESS_KEY",
+      "name": "R2_EVIDENCE_SECRET_ACCESS_KEY",
+      "valueRecorded": false
+    },
+    {
       "id": "env:R2_PUBLIC_URL",
       "name": "R2_PUBLIC_URL",
       "valueRecorded": false
@@ -8497,8 +8617,33 @@
       "valueRecorded": false
     },
     {
+      "id": "env:R7_EVIDENCE_COMPOSER_RECIPE",
+      "name": "R7_EVIDENCE_COMPOSER_RECIPE",
+      "valueRecorded": false
+    },
+    {
+      "id": "env:R7_EVIDENCE_COMPOSER_SCOPE",
+      "name": "R7_EVIDENCE_COMPOSER_SCOPE",
+      "valueRecorded": false
+    },
+    {
+      "id": "env:R7_EVIDENCE_INGEST_SCOPE",
+      "name": "R7_EVIDENCE_INGEST_SCOPE",
+      "valueRecorded": false
+    },
+    {
+      "id": "env:R7_EVIDENCE_PACKAGE_SCOPE",
+      "name": "R7_EVIDENCE_PACKAGE_SCOPE",
+      "valueRecorded": false
+    },
+    {
       "id": "env:R7_SNAPSHOT_READ_SCOPE",
       "name": "R7_SNAPSHOT_READ_SCOPE",
+      "valueRecorded": false
+    },
+    {
+      "id": "env:R7_SNAPSHOT_RESTORE_SCOPE",
+      "name": "R7_SNAPSHOT_RESTORE_SCOPE",
       "valueRecorded": false
     },
     {

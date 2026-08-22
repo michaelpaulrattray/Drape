@@ -608,15 +608,43 @@ export function expressSurfacesFrom(source: string): Entity[] {
 /* ------------------------------------------------- env, flags, workers, ops */
 
 /** Names only. The generator must never be able to read a value (§P.3). */
-function collectEnvVars(): Entity[] {
+/**
+ * EVERY ENVIRONMENT VARIABLE NAME THIS SERVER READS, from one reader.
+ *
+ * THREE ACCESS FORMS, because this repo uses all three:
+ *
+ *   process.env.NAME
+ *   process.env["NAME"]
+ *   const SOMETHING_ENV = "NAME"   the constant the bracket form reads
+ *
+ * ⚠ THE THIRD WAS IN THE FLAG INVENTORY AND NOT HERE, AND THE TWO LISTS DRIFTED
+ * EXACTLY AS FAR APART AS THAT DIFFERENCE (found 2026-08-23). Read off the
+ * committed Atlas: **25 of the 29 flags were absent from `envVars`** — among
+ * them `CASTING_V2_SCOPE`, the root flag of the whole program. So the artifact
+ * contradicted itself, which is the strongest kind of finding because it needs
+ * no outside reference: a flag IS an environment variable, and one list said so
+ * while the other had never heard of it.
+ *
+ * The repair is not a third copy of the third pattern. `collectFlags` is now a
+ * FILTERED VIEW of this set (working law 4), so the two cannot disagree by
+ * construction — the drift was possible only because they were parallel
+ * readings of the same source with different shape coverage.
+ */
+function envVarNames(): string[] {
   const names = new Set<string>();
   for (const file of sourceFiles.filter((f) => f.startsWith("server/") || f.startsWith("shared/"))) {
-    for (const hit of read(file).matchAll(/process\.env\.([A-Z0-9_]+)/g)) names.add(hit[1]);
-    for (const hit of read(file).matchAll(/process\.env\[\s*["']([A-Z0-9_]+)["']\s*\]/g)) names.add(hit[1]);
+    const source = read(file);
+    for (const hit of source.matchAll(/process\.env\.([A-Z0-9_]+)/g)) names.add(hit[1]);
+    for (const hit of source.matchAll(/process\.env\[\s*["']([A-Z0-9_]+)["']\s*\]/g)) names.add(hit[1]);
+    for (const hit of source.matchAll(/const\s+[A-Z0-9_]+_ENV\s*=\s*["']([A-Z0-9_]+)["']/g)) {
+      names.add(hit[1]);
+    }
   }
-  return [...names]
-    .sort()
-    .map((name) => ({ id: `env:${name}`, name, valueRecorded: false }));
+  return [...names].sort();
+}
+
+function collectEnvVars(): Entity[] {
+  return envVarNames().map((name) => ({ id: `env:${name}`, name, valueRecorded: false }));
 }
 
 const FLAG_NAME = /^[A-Z0-9_]*(SCOPE|ENABLE|STAGE)[A-Z0-9_]*$/;
@@ -631,29 +659,15 @@ const FLAG_NAME = /^[A-Z0-9_]*(SCOPE|ENABLE|STAGE)[A-Z0-9_]*$/;
  * Atlas showed four flags while the server validated eight.
  */
 function collectFlags(): Entity[] {
-  const flags = new Set<string>();
-  for (const file of sourceFiles.filter((f) => f.startsWith("server/"))) {
-    const source = read(file);
-    // process.env.NAME
-    for (const hit of source.matchAll(/process\.env\.([A-Z0-9_]+)/g)) {
-      if (FLAG_NAME.test(hit[1])) flags.add(hit[1]);
-    }
-    // process.env["NAME"]
-    for (const hit of source.matchAll(/process\.env\[\s*["']([A-Z0-9_]+)["']\s*\]/g)) {
-      if (FLAG_NAME.test(hit[1])) flags.add(hit[1]);
-    }
-    // const SOMETHING_ENV = "NAME" — the constant that the bracket form reads.
-    for (const hit of source.matchAll(/const\s+[A-Z0-9_]+_ENV\s*=\s*["']([A-Z0-9_]+)["']/g)) {
-      if (FLAG_NAME.test(hit[1])) flags.add(hit[1]);
-    }
-  }
-  return [...flags].sort().map((name) => ({
-    id: `flag:${name}`,
-    name,
-    // Stated per flag rather than assumed: an ENABLE_ switch is a boolean and
-    // describing it with the scope grammar was simply untrue.
-    grammar: name.startsWith("ENABLE_") ? "true|false" : "off|all|users:<ids>",
-  }));
+  return envVarNames()
+    .filter((name) => FLAG_NAME.test(name))
+    .map((name) => ({
+      id: `flag:${name}`,
+      name,
+      // Stated per flag rather than assumed: an ENABLE_ switch is a boolean and
+      // describing it with the scope grammar was simply untrue.
+      grammar: name.startsWith("ENABLE_") ? "true|false" : "off|all|users:<ids>",
+    }));
 }
 
 function collectWorkers(): Entity[] {
