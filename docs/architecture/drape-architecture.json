@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "f9ce3b32f0cd69d3"
+    "sourceFingerprint": "9ee1488543bdf31b"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 165
+      "moduleCount": 166
     },
     {
       "id": "domain:castingV2",
@@ -4277,6 +4277,12 @@
     {
       "id": "module:server/castingV2/viewFeatureWords.ts",
       "path": "server/castingV2/viewFeatureWords.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/wardrobeDoor.ts",
+      "path": "server/castingV2/wardrobeDoor.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -10710,8 +10716,16 @@
       "path": "server/castingV2/wallDOpenKind.test.ts"
     },
     {
+      "id": "test:server/castingV2/wardrobeDoor.test.ts",
+      "path": "server/castingV2/wardrobeDoor.test.ts"
+    },
+    {
       "id": "test:server/castingV2/wardrobeLine.test.ts",
       "path": "server/castingV2/wardrobeLine.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/wardrobePick.test.ts",
+      "path": "server/castingV2/wardrobePick.test.ts"
     },
     {
       "id": "test:server/castingV2/zoneScope.test.ts",
@@ -19862,6 +19876,16 @@
     },
     {
       "from": "module:server/castingV2/castingIntent.ts",
+      "to": "module:server/castingV2/wardrobeDoor.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/castingIntent.ts",
+      "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/castingIntent.ts",
       "to": "module:shared/castingRealization.ts",
       "kind": "imports"
     },
@@ -23738,6 +23762,11 @@
     {
       "from": "module:server/castingV2/viewFeatureWords.ts",
       "to": "module:shared/bodyAnchorRegions.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/wardrobeDoor.ts",
+      "to": "module:server/castingV2/brandScrub.ts",
       "kind": "imports"
     },
     {

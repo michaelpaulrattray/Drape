@@ -330,6 +330,44 @@ export async function createRoll(
     followIdentity = readResolvedIdentity(parent.internalPrompt);
   }
 
+  /*
+    WHICH PATH THIS SHEET IS CAST ON — asked once, before anything is compiled.
+
+    `input.path` absent is not `wardrobe`: it is *the toggle was not sent*,
+    which is every client today. Only inside the flag does an unsent toggle
+    become the default the control would have been showing (§6).
+
+    ⚠ **It is read HERE, above the compile, because the PICK is a question the
+    interpreter has to be asked** (§4 case (b), item 4). It used to sit just
+    above the insert, which was the right place while the only thing it decided
+    was two columns.
+  */
+  const twoPathsEnabled = dependencies.twoPathsEnabled ?? captureCastingTwoPathsEnabled;
+  const bornPath: CastingPath | null = twoPathsEnabled(input.userId)
+    ? input.path ?? DEFAULT_CASTING_PATH
+    : null;
+
+  /*
+    ⚠ THREE CONDITIONS, AND EACH ONE IS A ROLL WHOSE PROMPT MUST NOT MOVE.
+
+    A prompt is live behaviour: every fact on a paid sheet comes out of that one
+    reply, and context is not additive here — this campaign measured a SUBSET of
+    prompt context raising the stage wall twice as often as its superset. So the
+    wardrobe question is asked only where its answer is READ:
+
+      outside the flag  the columns are NULL and nothing reads a pick;
+      on BASICS         the path IS the outfit and a brief cannot negotiate it
+                        (`bornWardrobeLine` ignores `named` on that path), so
+                        asking would perturb the reply to fill a field the
+                        resolution discards;
+      on a FOLLOW       the db layer inherits the parent roll's pair inside the
+                        transaction, so anything picked here is overwritten —
+                        and a Follow inherits the BORN line by design (§3.1),
+                        which is the one case that deliberately wants the
+                        sheet's outfit rather than a fresh choice.
+  */
+  const pickWardrobe = bornPath === "wardrobe" && !input.followCandidatePublicId;
+
   let compiled: CompiledRollBrief;
   try {
     compiled = await compile({
@@ -341,6 +379,7 @@ export async function createRoll(
       rollSeed: input.clientRequestId,
       unlock: input.unlock ?? [],
       overrides: input.overrides,
+      pickWardrobe,
       followPersonaLine,
       followIdentity,
     });
@@ -385,18 +424,6 @@ export async function createRoll(
     };
   }
 
-  /*
-    WHICH PATH THIS SHEET IS CAST ON — asked once, before the row exists.
-
-    `input.path` absent is not `wardrobe`: it is *the toggle was not sent*,
-    which is every client today. Only inside the flag does an unsent toggle
-    become the default the control would have been showing (§6).
-  */
-  const twoPathsEnabled = dependencies.twoPathsEnabled ?? captureCastingTwoPathsEnabled;
-  const bornPath: CastingPath | null = twoPathsEnabled(input.userId)
-    ? input.path ?? DEFAULT_CASTING_PATH
-    : null;
-
   // ---- the locked transaction. Nothing here spends money. ----
   let created;
   try {
@@ -439,12 +466,16 @@ export async function createRoll(
           path: bornPath,
           sex: sheetBasicsSex(compiled.candidates.map((spec) => spec.resolvedIdentity.sex)),
           /*
-            Cases (a) — her words win — and (b) — the engine picks one per
-            sheet — are THE PICK, and they arrive with the brief stage. Until
-            then every Wardrobe roll is born in the house line, which is §4(c)
-            and is today's picture unchanged.
+            THE PICK — cases (a) *her words win* and (b) *the engine picks one
+            per sheet*, both resolved by the brief stage and both already
+            through §4.1's door by the time they arrive here.
+
+            `null` is the ordinary answer and it is not a failure: it means the
+            picker was not asked, could not be reached, or answered with
+            something the door refused — and all three resolve to §4(c), the
+            house line, which is today's picture unchanged.
           */
-          named: null,
+          named: compiled.wardrobePick,
         }),
       candidates: compiled.candidates.map((spec) => ({
         publicId: randomUUID(),

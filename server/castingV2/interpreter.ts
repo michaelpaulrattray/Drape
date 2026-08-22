@@ -132,6 +132,62 @@ function namesSomethingSpecific(briefText: string): boolean {
 /** Exported for the prompt-contract tests; never used at runtime. */
 export const SYSTEM_PROMPT_FOR_TESTS = () => SYSTEM_PROMPT;
 
+/**
+ * THE WARDROBE BLOCK — appended only when the roll will actually use a pick
+ * (design `CASTING_V2_TWO_PATHS_DESIGN.md` §4, case (b)).
+ *
+ * ⚠ **IT IS CONDITIONAL BECAUSE A PROMPT IS LIVE BEHAVIOUR, and adding a field
+ * to it is not a dark landing.** Every fact on a paid sheet comes out of this
+ * one reply, and this campaign has MEASURED that context is not additive: a
+ * SUBSET of prompt context raised the stage wall twice as often as its
+ * superset, so per-line attribution is invalid and claim rates swing tens of
+ * percent between windows. Sending this block to an account outside
+ * `CASTING_TWO_PATHS_SCOPE` would therefore change what that account's sheet
+ * says about age, heritage and hair — in a direction nobody has measured — in
+ * exchange for a field their roll cannot read.
+ *
+ * So the flag decides the prompt, and outside it the bytes on the wire are
+ * byte-identical to yesterday's. `interpreterSystemPrompt` is the one composer;
+ * `SYSTEM_PROMPT` remains the base and is what every existing contract test
+ * reads.
+ */
+const WARDROBE_BLOCK = `ONE MORE KEY, in the same JSON object and nowhere else:
+
+  "wardrobe": string | null
+
+- "wardrobe": THE ONE OUTFIT ALL EIGHT OF THESE PEOPLE WEAR.
+  This sheet dresses its cast, so unlike every other field here you should fill
+  this one even when the brief says nothing about clothes — that is the normal
+  case and choosing well is the job.
+  IF THE BRIEF NAMES AN OUTFIT, that outfit is the answer, in their words, and
+  you complete it in the same restrained register: "a barista in a red apron"
+  gives "a red apron over a plain white tee, dark straight jeans, plain low
+  shoes".
+  OTHERWISE CHOOSE ONE that matches the kind of person being cast and stays
+  plain. A caveman gets a one-shoulder hide and bare feet. A surgeon gets plain
+  scrubs. Someone the brief describes only as "a woman in her 30s" gets ordinary
+  plain clothes.
+  ALWAYS COMPLETE — top, bottoms, footwear, in one phrase under 30 words. The
+  sheet is waist-up but the signed portrait set is full length, so an outfit
+  that stops at the waist is an outfit those pictures have to invent.
+  PLAIN, AND NEVER COSTUME. No props and nothing held. No weapons. No hats,
+  caps or anything on the head. No logos, brand names, slogans or writing of any
+  kind. No numbers. No setting, no activity, no pose — say what they are
+  wearing and stop.
+  A reply that breaks any of those is thrown away whole and the sheet falls back
+  to its plain studio clothes, so keep it simple rather than interesting.`;
+
+/**
+ * The system prompt this roll will actually send.
+ *
+ * One composer, so there is no second copy of the base to drift. The `wardrobe`
+ * option is the Wardrobe path's own question and nothing else changes with it.
+ */
+export function interpreterSystemPrompt(options?: { wardrobe?: boolean }): string {
+  return options?.wardrobe === true ? `${SYSTEM_PROMPT}
+${WARDROBE_BLOCK}` : SYSTEM_PROMPT;
+}
+
 const SYSTEM_PROMPT = `You read a casting brief and extract only what it actually says about WHO to cast.
 
 Reply with a single JSON object and nothing else:
@@ -476,6 +532,14 @@ export async function interpretBrief(input: {
   briefText: string;
   engine?: TextEngine;
   signal?: AbortSignal;
+  /**
+   * Ask for a wardrobe pick as well — the Wardrobe path's case (b), §4.
+   *
+   * Absent means no, and no means the prompt is the one every account has been
+   * getting. See `WARDROBE_BLOCK` for why this is a flag rather than a
+   * permanent addition.
+   */
+  wardrobe?: boolean;
 }): Promise<InterpretOutcome> {
   const textEngine = input.engine ?? interpreterEngine();
   if (!textEngine) {
@@ -488,7 +552,7 @@ export async function interpretBrief(input: {
   const runOnce = () =>
     textEngine.complete({
       about: "interpret",
-      system: SYSTEM_PROMPT,
+      system: interpreterSystemPrompt({ wardrobe: input.wardrobe === true }),
       user: input.briefText,
       json: true,
       // Low, because this is extraction. Creativity belongs downstream, in the

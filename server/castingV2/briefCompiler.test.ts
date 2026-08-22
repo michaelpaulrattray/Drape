@@ -32,6 +32,7 @@ const BASE_INTENT: CastingIntent = {
   statedHair: EMPTY_STATED_HAIR,
   statedAccessories: [],
   poolTendencies: NO_TENDENCIES,
+  wardrobe: null,
   characterNotes: null,
   sex: null,
   ageBand: null,
@@ -74,8 +75,8 @@ describe("the precedence fix", () => {
     expect(parsed.ok).toBe(true);
     if (!parsed.ok) return;
 
-    // The intent is a closed type: there is nowhere for wardrobe, background,
-    // camera, lighting or props to live, so they are gone rather than carried.
+    // The intent is a closed type: there is nowhere for background, camera,
+    // lighting or props to live, so they are gone rather than carried.
     expect(Object.keys(parsed.intent).sort()).toEqual([
       "ageBand",
       "agePhase",
@@ -99,7 +100,46 @@ describe("the precedence fix", () => {
       // interpreter never decides WHETHER — that is the code-owned gate.
       "statedHair",
       "variationAxis",
+      /*
+        ⚠ `wardrobe` IS ON THIS LIST NOW, and it was the poison fixture's own
+        example of a field that must not survive (design §4, 2026-08-22). The
+        rule it stood for has not been relaxed — it moved one layer up, to the
+        only place that knows whether the field was ASKED FOR. This fixture is
+        an unasked reply volunteering an outfit, and the arm below is what
+        proves the compiler still throws it away.
+      */
+      "wardrobe",
     ]);
+  });
+
+  it("⚠ an UNASKED wardrobe never becomes this sheet's outfit", async () => {
+    /*
+      The M3 defect in its newest costume. A model may volunteer a field nobody
+      offered it — that is how a plaid shirt and a captioned mug reached all
+      eight candidates in the first place — and the PARSE cannot tell an offer
+      from an answer, because it does not know what was asked. So the compiler
+      is where the two are matched, and this is the arm that says so.
+
+      Both directions in one test, because an assertion that a value is absent
+      is worth nothing beside a fixture that could never have produced it.
+    */
+    const engine = engineReturning(POISONED);
+    const unasked = await castingBriefCompiler({
+      briefText: "a handyman in his 30s",
+      candidateCount: 8,
+      rollSeed: "seed-unasked",
+      engine,
+    });
+    expect(unasked.wardrobePick).toBeNull();
+
+    const asked = await castingBriefCompiler({
+      briefText: "a handyman in his 30s",
+      candidateCount: 8,
+      rollSeed: "seed-asked",
+      pickWardrobe: true,
+      engine,
+    });
+    expect(asked.wardrobePick).toBe("plaid flannel");
   });
 
   it("strips the quoted caption before it can be rendered as letters", async () => {

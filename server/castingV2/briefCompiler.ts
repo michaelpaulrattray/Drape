@@ -192,6 +192,21 @@ export type CompiledRollBrief = {
   /** Sheet candidates render at 1K, medium quality (§H.10). */
   size: `${number}x${number}`;
   quality: "low" | "medium" | "high";
+  /**
+   * THE PICK — the outfit this sheet wears, or `null`.
+   *
+   * An explicit field rather than something the caller lifts out of
+   * `compiledBrief`: that column's own docblock says INTERNAL and never
+   * projected, and a durable fact read out of an internal blob is the shape
+   * §3.2 refuses by name. `rollService` hands it to `bornWardrobeLine` as
+   * `named`, where `null` resolves to §4(c).
+   *
+   * Always `null` when `pickWardrobe` was not asked for, so a reader cannot
+   * tell "the picker declined" from "nobody asked" — deliberately, because the
+   * two have the same answer and inventing a distinction would be a second
+   * source of truth about the same silence.
+   */
+  wardrobePick: string | null;
 };
 
 export type BriefRefusalCode =
@@ -233,6 +248,16 @@ export type BriefCompilerInput = {
    * the whole guarantee.
    */
   overrides?: LockOverrides;
+  /**
+   * Ask the interpreter for a WARDROBE PICK as well — cases (a) and (b) of the
+   * Wardrobe path (design §4).
+   *
+   * Absent means no, which is every caller outside `CASTING_TWO_PATHS_SCOPE`
+   * and every Basics roll and every Follow. It is a question about the PROMPT,
+   * not about the sheet: see `WARDROBE_BLOCK` in `interpreter.ts` for why a
+   * field nobody will read is not free to ask for.
+   */
+  pickWardrobe?: boolean;
   /** Set on a follow roll; the sheet narrows around this candidate. */
   followPersonaLine?: string | null;
   followIdentity?: ResolvedIdentity | null;
@@ -291,6 +316,12 @@ function fallbackIntent(briefText: string): CastingIntent {
     statedAccessories: [],
     // No interpreter ran, so no category was read and nothing is implied.
     poolTendencies: NO_TENDENCIES,
+    /*
+      No pick, and the fallback is exactly where that is safest: `null` resolves
+      to §4(c), the house line, which is today's picture. An interpreter outage
+      costs a Wardrobe roll its engine-chosen outfit and nothing else.
+    */
+    wardrobe: null,
   };
 }
 
@@ -726,7 +757,11 @@ export const castingBriefCompiler: BriefCompiler = async (input) => {
     );
   }
 
-  const outcome = await interpretBrief({ briefText, engine: input.engine });
+  const outcome = await interpretBrief({
+    briefText,
+    engine: input.engine,
+    wardrobe: input.pickWardrobe === true,
+  });
 
   /*
     DEFENCE IN DEPTH: an interpreter outage must never become a photoreal
@@ -873,6 +908,24 @@ export const castingBriefCompiler: BriefCompiler = async (input) => {
     variance: sheet.variance,
     size: "1024x1536",
     quality: "medium",
+    /*
+      THE PICK, taken off the finalized intent rather than off the raw reply.
+
+      That ordering is not incidental: `intent` above is what survives the
+      unlocks, the overrides and the brand scrub, and reading the pick from
+      anywhere earlier would be a second copy of the same field diverging from
+      the one the sheet was compiled with.
+
+      ⚠ **AN UNASKED WARDROBE IS DISCARDED HERE, and it is discarded rather
+      than trusted not to arrive.** A language model may volunteer a field it
+      was never offered — the M3 defect this whole module exists for was exactly
+      that, a plaid shirt and a captioned mug nobody asked for — and the parse
+      cannot tell an answer from an offer, because it does not know what was
+      asked. This function does. So the question and the answer are gated at the
+      same place, and no roll outside the Wardrobe path can be dressed by a
+      reply that volunteered an outfit.
+    */
+    wardrobePick: input.pickWardrobe === true ? intent.wardrobe : null,
   };
 };
 
@@ -921,5 +974,7 @@ export const deterministicBriefCompiler: BriefCompiler = async (input) => {
     variance,
     size: "1024x1536",
     quality: "medium",
+    /* No interpreter runs here at all, so there is nothing to pick with. §4(c). */
+    wardrobePick: null,
   };
 };

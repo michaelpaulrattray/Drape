@@ -60,6 +60,12 @@ vi.mock("../db/castingV2", () => ({
     priceCredits: 160,
     operationId: OPERATION_ID,
   })),
+  /* A follow's parent. Only the pick arms roll a follow, and all they need is
+     for the read to succeed — the lineage itself is `followAnchor`'s suite. */
+  getOwnedCandidateWithSelectedFace: vi.fn(async () => ({
+    candidate: { id: 1, publicId: "66666666-6666-4666-8666-666666666666", position: 3 },
+    internalPrompt: null,
+  })),
   getOwnedRoll: vi.fn(async () => ({
     id: 100,
     publicId: "roll-public",
@@ -731,5 +737,75 @@ describe("the two paths, at the wire", () => {
     const basics = await rollWith(true, "basics");
     expect(wardrobe.wardrobeLine).not.toBe(basics.wardrobeLine);
     expect(wardrobe.path).not.toBe(basics.path);
+  });
+
+  /**
+   * THE PICK, at its own two wires (design §4, item 4).
+   *
+   * Two questions, and they are separate: whether the interpreter is ASKED for
+   * an outfit, and whether what it picked becomes the roll's line. The first is
+   * asserted on the compiler's argument object because the ask is a change to a
+   * paid prompt, which is live behaviour on every account it reaches.
+   */
+  describe("the pick", () => {
+    const PICKED = "dark canvas work jacket, straight jeans, plain boots";
+    const FOLLOW_CANDIDATE_PUBLIC_ID = "66666666-6666-4666-8666-666666666666";
+
+    /** Records what the service asked the compiler for, and answers with a pick. */
+    function compilerSpy() {
+      const asked: (boolean | undefined)[] = [];
+      const compileBrief = async (compilerInput: { pickWardrobe?: boolean }) => {
+        asked.push(compilerInput.pickWardrobe);
+        const compiled = await deterministicBriefCompiler(compilerInput as never);
+        return { ...compiled, wardrobePick: compilerInput.pickWardrobe === true ? PICKED : null };
+      };
+      return { asked, compileBrief };
+    }
+
+    async function rollAsking(
+      enabled: boolean,
+      extra: Record<string, unknown> = {},
+    ) {
+      seedCandidates();
+      const spy = compilerSpy();
+      await createRoll(
+        {
+          ...(baseDependencies() as object),
+          twoPathsEnabled: () => enabled,
+          compileBrief: spy.compileBrief,
+        } as never,
+        { ...INPUT, ...extra },
+      );
+      return { asked: spy.asked, written: await lastInsert() };
+    }
+
+    it("⚠ is asked for ONLY on a fresh Wardrobe roll inside the flag", async () => {
+      /*
+        Four rolls, one question each, and three of them must not carry it.
+
+        A prompt is live behaviour: every fact on a paid sheet comes out of that
+        one reply, and context is not additive here — a SUBSET of prompt context
+        was measured raising the stage wall twice as often as its superset. So
+        the question is asked only where the answer is read. Outside the flag
+        nothing reads a pick; on BASICS the path IS the outfit and
+        `bornWardrobeLine` discards `named`; on a FOLLOW the db layer inherits
+        the parent roll's pair inside the transaction, so a pick made here is
+        overwritten before it is a row.
+      */
+      expect((await rollAsking(false)).asked).toEqual([false]);
+      expect((await rollAsking(true)).asked).toEqual([true]);
+      expect((await rollAsking(true, { path: "basics" })).asked).toEqual([false]);
+      expect(
+        (await rollAsking(true, { followCandidatePublicId: FOLLOW_CANDIDATE_PUBLIC_ID })).asked,
+      ).toEqual([false]);
+    });
+
+    it("writes the picked outfit as the roll's born line", async () => {
+      const { written } = await rollAsking(true);
+      expect(written.wardrobeLine).toBe(PICKED);
+      /* CONTROL — the same service with no pick writes the house line, so the
+         arm above is reading the pick and not a constant. */
+      expect((await rollWith(true, "wardrobe")).wardrobeLine).toBe(HOUSE_WARDROBE_LINE);
+    });
   });
 });

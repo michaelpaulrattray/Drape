@@ -106,6 +106,18 @@ export { FACIAL_HAIR_LEANS, LEAN_STRENGTHS, NO_TENDENCIES };
 export type { FacialHairLean, LeanStrength, PoolTendencies };
 import { mentionsGarments, scrubBrands } from "./brandScrub";
 import { mentionsWornClothing } from "./statedWardrobe";
+import { wardrobePickDoor } from "./wardrobeDoor";
+import { createModuleLogger } from "../logging/logger";
+
+/*
+  The one logger in a file of pure parses, and it has exactly one caller.
+
+  Every other field here drops in silence, which is right for a caption and was
+  wrong exactly once: a hair field deleted by a word list, found by a founder
+  looking at eight tiles rather than by anything saying so. A refused WARDROBE
+  pick changes the picture, so it says so. See `parseWardrobePick`.
+*/
+const log = createModuleLogger("castingV2/castingIntent");
 
 /* ------------------------------------------------------------ vocabularies */
 
@@ -415,6 +427,32 @@ export type CastingIntent = {
    * stated fact and never make a value impossible. See `poolTendencies.ts`.
    */
   poolTendencies: PoolTendencies;
+  /**
+   * THE OUTFIT THIS SHEET WEARS — cases (a) and (b) of the Wardrobe path
+   * (design `CASTING_V2_TWO_PATHS_DESIGN.md` §4), and the newest field here.
+   *
+   * ⚠ **It is the ONE field in this type that may contain words the customer
+   * never typed, and that is the whole point of it.** Every other free value
+   * here is source-contained (D-172): `statedHair` and `statedAccessories` are
+   * checked token by token against her own sentence and dropped if they carry
+   * an invention. Case (b) — *"else the engine picks ONE per sheet, matching
+   * the cast type"* — cannot be: *"a caveman"* names no clothes, and the pick
+   * is the answer to that. So the exception is DECLARED (§4.1) and it carries
+   * two things a contained field does not need: a code-owned door
+   * (`wardrobeDoor.ts`), and a label where she reads it, so she is never told
+   * she asked for it.
+   *
+   * **Null is the ordinary state and costs nothing.** It means the picker was
+   * not asked, or answered with something the door refused — and
+   * `bornWardrobeLine` then falls back to §4(c), the house line, which is
+   * today's picture unchanged.
+   *
+   * **Nothing outside the Wardrobe path ever reads it.** Basics is the path's
+   * own outfit and a brief cannot negotiate it; a roll outside the flag never
+   * asks for a pick at all, so the interpreter's reply is byte-identical to
+   * today's for every account that does not have the paths.
+   */
+  wardrobe: string | null;
 };
 
 /** The same shape an  entry uses, and reviewed the same way. */
@@ -509,8 +547,14 @@ function cleanFreeText(value: unknown, max: number): string | null {
  * return `"none"`, `""` and `null` interchangeably for absence, and a schema
  * that rejects the whole payload over one such field would fail a roll that a
  * single coercion saves. Unknown keys are stripped rather than refused for the
- * same reason — a hallucinated `wardrobe` field must not reach the prompt, but
- * it also must not cost the user their sheet.
+ * same reason — a hallucinated field must not reach the prompt, but it also
+ * must not cost the user their sheet.
+ *
+ * ⚠ **This paragraph used to end "a hallucinated `wardrobe` field must not
+ * reach the prompt", and `wardrobe` is now a real field** (design §4,
+ * 2026-08-22). The rule it stated is unchanged and now runs one layer down: an
+ * unasked-for wardrobe is still dropped, because a pick is only ever READ on
+ * the Wardrobe path and only ever ADMITTED through `wardrobeDoor.ts`.
  */
 const nullableEnum = <T extends readonly [string, ...string[]]>(values: T) =>
   z
@@ -539,6 +583,7 @@ const wireSchema = z.object({
   statedHair: z.unknown().nullable().optional(),
   statedAccessories: z.unknown().nullable().optional(),
   poolTendencies: z.unknown().nullable().optional(),
+  wardrobe: z.unknown().nullable().optional(),
   /*
     `.nullable()` matters as much as `.optional()` here, and the difference
     cost a founder 160 credits. Models return `null` and `undefined`
@@ -808,6 +853,46 @@ export function parseStatedAccessories(raw: unknown, briefText: string): string[
 }
 
 /**
+ * THE PICK — an outfit for the whole sheet, cases (a) and (b) of §4.
+ *
+ * # Why this one is not token-checked against the brief
+ *
+ * Every other free-text parse in this file ends in `tokensComeFromBrief`, and
+ * that rule is load-bearing: it is what makes a free field safe to read back
+ * without a closed vocabulary. **This field is the declared exception** (§4.1).
+ * Case (b) is the engine choosing an outfit for a brief that named none, so a
+ * containment check here would not filter the field — it would DELETE the
+ * feature, keeping only case (a) and silently.
+ *
+ * What stands in its place is a code-owned door that refuses by ACTING:
+ * `wardrobePickDoor` rejects props, weapons, headwear, printed text and logos,
+ * scrubs a brand mark, and refuses digits and an over-long line. A refused pick
+ * is `null`, which falls back to §4(c) — the house line, today's picture.
+ *
+ * # The refusal is LOGGED, and it is the only parse here that logs
+ *
+ * The others drop in silence, and this file records what that cost: a hair
+ * field lost to a word list, found by a founder tripping over eight tiles. A
+ * dropped pick changes the PICTURE rather than a caption, so the reason travels
+ * to the log where it can be counted — with the offending word, because a
+ * refusal that cannot say which class fired it is a refusal nobody can act on.
+ */
+export function parseWardrobePick(raw: unknown): string | null {
+  if (raw === null || raw === undefined) return null;
+  const verdict = wardrobePickDoor(raw);
+  if (verdict.ok) return verdict.line;
+  /* `blank` is the ordinary "the brief named no outfit and the picker declined"
+     answer on a road where declining is correct — not worth a line each time. */
+  if (verdict.reason !== "blank") {
+    log.warn(
+      { reason: verdict.reason, word: verdict.word },
+      "[castingIntent] wardrobe pick refused at the door — falling back to the house line",
+    );
+  }
+  return null;
+}
+
+/**
  * Closed vocabularies both, so a bad reply degrades to "no tendency".
  *
  * This is the narrowest possible channel for a stage that influences weights:
@@ -904,6 +989,11 @@ export function parseCastingIntent(raw: unknown, briefText = ""): IntentParseRes
       statedHair: parseStatedHair(wire.statedHair, briefText),
       statedAccessories: parseStatedAccessories(wire.statedAccessories, briefText),
       poolTendencies: parsePoolTendencies(wire.poolTendencies),
+      /*
+        Not source-contained, by design and by declaration (§4.1). The door is
+        what stands in containment's place; see `parseWardrobePick`.
+      */
+      wardrobe: parseWardrobePick(wire.wardrobe),
     },
   };
 }
