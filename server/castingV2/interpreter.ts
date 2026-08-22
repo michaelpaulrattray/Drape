@@ -605,15 +605,38 @@ export function resetInterpreterForTests(): void {
  *
  *   THE SHARPENED INSTRUCTION — the model is told *"Limit: 180 characters"*
  *   and answered 208. Parked behind a DATA TRIGGER, not a whim (fable-1416):
- *   **when `outcome: "reaskFailed"` has accumulated FIVE real instances, a
- *   fresh-sample court runs on THOSE** — never on the gate's original two. That
- *   is the trigger; this is where it is written down so it is found.
+ *   when `outcome: "reaskFailed"` has accumulated FIVE real instances, a
+ *   fresh-sample court runs on THOSE — never on the gate's original two.
  *
- *   RAISING `NOTES_MAX` — cheapest of all and parked UNMEASURED. A future
- *   court has to answer the context-is-not-additive question FIRST: a longer
- *   character detail reaches the image model on every roll that produces one,
- *   and this program has measured a subset of prompt context moving the stage
- *   wall twice as often as its superset. Nobody takes this one in passing.
+ *   ⚠ **THAT TRIGGER RETIRED 2026-08-23 (ruled fable-1431 §3), because it
+ *   COULD NOT BE COUNTED.** `reaskFailed` is written HERE and nowhere else —
+ *   no column, no table, only a log line over rotating logs — so a park behind
+ *   it was a park nobody could ever close. The honest instrument is the
+ *   population census below, and the trigger is now: **re-run it when
+ *   `CASTING_BORN_INK_SCOPE` widens, or on the next real cap-hit seen in a
+ *   report.** The five-instances number is retired.
+ *
+ *   RAISING `NOTES_MAX` — ⚠ **CLOSED 2026-08-23 as NOT WORTH IT** (ruled
+ *   fable-1431 §1), which is a different and more honest disposition than the
+ *   UNMEASURED it sat at. Measured over production, 207 rolls / 22 days:
+ *
+ *       carrying characterNotes             96
+ *       length min/median/p90/max     4 / 20 / 34 / 180
+ *       within 10 of the cap                 2   (rolls 128 and 129)
+ *       …and both are ONE SITTING, 09:20 and 09:35 on 2026-08-01
+ *
+ *   Raising the cap would change the outcome for two rolls in three weeks,
+ *   against a measured context risk: this program has seen a SUBSET of prompt
+ *   context move the stage wall twice as often as its superset.
+ *
+ *   ⚠ **AND THE CLOSURE IS CONDITIONAL ON A POPULATION THAT IS ABOUT TO
+ *   CHANGE.** Those two rolls are the BORN-INK pair — the only briefs long
+ *   enough to be cut are the only briefs that describe tattoos, which makes
+ *   sense, because ink takes words. So the cap's population and
+ *   `CASTING_BORN_INK_SCOPE`'s population are ONE population. The day that flag
+ *   widens, tattooed briefs stop being rare and this census is re-read BEFORE
+ *   the flip, not after. A closure whose premise is "this is rare" must name
+ *   the thing that would make it common.
  */
 export const NOTES_OVERFLOW = "notesOverflow";
 

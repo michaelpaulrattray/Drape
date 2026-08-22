@@ -433,8 +433,18 @@ which every broken keeper also does, in the declaration and in the manifest call
 passed it on, so the cleanup worker collected every picture a customer had ever
 attached and left the rows pointing at nothing. Found by building the route that
 shows her the picture and getting `NoSuchKey` from a live row's own key.
-*Banked:* fable-1422 §2 (the rule, named before the worst specimen surfaced) and
-fable-1427 (this entry), findings at opus-1058 §4, opus-1060 and opus-1061 §4.
+*The rule's first recursion — a SABOTAGE that proved the wrong thing* (2026-08-23,
+banked fable-1431): a fix handed its pointer to the same door at TWO sites, once
+on the first reading and once on the retry the door itself triggers. Deleting the
+first hand-off reddened **nothing** — the retry rescued it — and that green would
+have been filed as *"producer-sabotage run, arm proven"*. The honest producer was
+the builder they both call; emptying THAT reddened exactly the new arm. So the
+rule needs its own corollary: **find the single line the value cannot exist
+without, not the first line that mentions it.** A value handed over twice is
+proven by neither hand-off alone.
+*Banked:* fable-1422 §2 (the rule, named before the worst specimen surfaced),
+fable-1427 (this entry) and fable-1431 (the recursion), findings at opus-1058 §4,
+opus-1060, opus-1061 §4 and opus-1068 §3.
 
 ---
 

@@ -1491,6 +1491,24 @@ async function refineCandidateCounted(
 
   const answeringText = (input.answering ?? "").trim().toLowerCase();
   const madeThisVersion = (predecessorForParse?.requestText ?? "").trim().toLowerCase();
+  /*
+    ⚠ THIS COMPARE DOES NOT KNOW ABOUT DIGESTS, AND THAT IS A DECISION
+    (ruled fable-1431 §2, found while fixing the already-true door's version of
+    the same blind spot).
+
+    A reference ask spells the same sentence for every photograph, so a customer
+    attaching a SECOND picture and saying *"copy this hair"* meets this offer
+    even though nothing about her ask is a repeat. `saysNothingNew` was taught
+    digests for exactly that reason (`referencePointer`); this was deliberately
+    NOT.
+
+    The difference is what happens next. There, the customer was REFUSED FREE
+    and turned away. Here she is ASKED, at a stated price, and one tap proceeds
+    — and she did type the same words. An honest offer is not the wrongful
+    refusal, so this stays a question rather than growing a second copy of the
+    digest machinery. Named here so the next reader finds a decision rather
+    than a gap.
+  */
   const offeredAgain = answeringText.length > 0 && answeringText === madeThisVersion;
   const outstanding = input.answering
     ? (offeredAgain
