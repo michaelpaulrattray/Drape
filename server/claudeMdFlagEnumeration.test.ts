@@ -59,6 +59,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
+import { FAL_ALLOWANCES, falAccountCeiling } from "./castingV2/falBudget";
+
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
 /** Every non-test TypeScript file under the server and shared trees. */
@@ -137,5 +139,110 @@ describe("the flag list is the flag list", () => {
       + "a flag that exists but is not on the list is how the list stops being the list. "
       + "Add a line to the feature-gated section naming its grammar and its parent.",
     ).toEqual([]);
+  });
+});
+
+/**
+ * ⚠ THE SECOND DECLARATION FAMILY, WHICH THIS FILE'S OWN DOCBLOCK NAMED AS ITS
+ * FLOOR AND LEFT UNCOVERED (2026-08-23, one commit after that floor was stated).
+ *
+ * `a0eb2889` found that `declaredEnvNames` sees ONE shape — a string literal
+ * assigned to an exported `*_ENV*` constant — and that a real second family is
+ * invisible to it: `FAL_ALLOWANCES` carries five environment variables as `env:`
+ * fields on a table. It verified all five BY HAND and reasoned that the family
+ * is "covered, differently" by `assertFalBudget`, which refuses to boot when the
+ * allowances overspend the account ceiling.
+ *
+ * ⚠ THE CODE SIDE TURNED OUT TO BE BETTER COVERED THAN THAT NOTE IMPLIED, and
+ * saying so is the point of writing this down. `falBudget.test.ts:64` pins all
+ * five per-path defaults BY NAME and the total at 20, precisely so that a sixth
+ * path quietly taking its slot from `roll images` reddens rather than booting.
+ * Between that arm and `assertFalBudget`, the code cannot drift alone.
+ *
+ * WHAT NOTHING REACHED IS THE DOCUMENT. The boot check counts slots and the pin
+ * reads the table; neither has ever opened CLAUDE.md. So the gap is narrower
+ * than "uncovered" and it is real: change an allowance deliberately, update
+ * `falBudget.test.ts` alongside it as any careful hand would, and the whole
+ * suite is green while CLAUDE.md carries an undocumented variable and an
+ * arithmetic sentence that no longer adds up. That exact sequence is the
+ * sabotage this pair was proven on — code and its own suite moved together,
+ * document left behind, and only the two arms below went red.
+ *
+ * A hand verification is a reading of one day, which is the thing this whole
+ * file exists to stop relying on.
+ *
+ * So the population is taken from `FAL_ALLOWANCES` ITSELF rather than by a
+ * second regex — imported, not matched, so no declaration shape can hide from
+ * it — and the document's arithmetic is read back out of the sentence: every
+ * name, every per-path number, the total, the count word, and the ceiling.
+ * Neither side can move alone.
+ */
+describe("the fal allowances — the family the scanner above cannot see", () => {
+  const claude = readFileSync(path.join(repoRoot, "CLAUDE.md"), "utf8");
+
+  /** CLAUDE.md's arithmetic sentence, parsed rather than trusted. */
+  const sentence =
+    /\`FAL_ACCOUNT_CEILING\` \(default (\d+)\)[\s\S]{0,200}?(\w+) paths spend it[\s\S]{0,200}?zero: ([^=]+)= (\d+)\./
+      .exec(claude);
+
+  it("⚠ CONTROL — the arithmetic sentence was found, and it is the real one", () => {
+    /*
+      Everything below reads out of this match. An anchor that stopped matching
+      after a reword would make every assertion throw on `null` — loudly, which
+      is fine — but an anchor that matched something SHORTER would quietly
+      compare fewer pairs, and that is the failure mode worth a control.
+    */
+    expect(sentence, "CLAUDE.md's FAL_ACCOUNT_CEILING arithmetic sentence has moved — re-point this arm at it").not.toBeNull();
+    expect(sentence![3]).toContain("ROLL_IMAGE_CONCURRENCY");
+    expect(sentence![3]).toContain("INK_PLATE_CONCURRENCY");
+  });
+
+  it("⚠ names every fal allowance, with the number the code actually defaults to", () => {
+    /*
+      DERIVED FROM THE TABLE, not from a regex over it: `FAL_ALLOWANCES` is
+      imported, so a sixth entry in any declaration style at all joins this
+      population. The pairs are compared in ORDER as well as by value, because
+      the sentence is arithmetic — `8 + 3` and `3 + 8` are the same sum and
+      different documents.
+    */
+    expect(FAL_ALLOWANCES.length).toBeGreaterThan(3);
+
+    const stated = [...sentence![3]!.matchAll(/`([A-Z][A-Z0-9_]+)`\s+(\d+)/g)]
+      .map((hit) => `${hit[1]} ${hit[2]}`);
+    const declared = FAL_ALLOWANCES.map((allowance) => `${allowance.env} ${allowance.fallback}`);
+
+    expect(
+      stated,
+      "CLAUDE.md's fal arithmetic and FAL_ALLOWANCES name different paths or different defaults — one of them moved without the other",
+    ).toEqual(declared);
+  });
+
+  it("⚠ and the count, the total and the ceiling are tied to the same table", () => {
+    /*
+      Three numbers in one sentence, each able to drift on its own: how many
+      paths there are, what they add up to, and what they are allowed to add up
+      to. `assertFalBudget` enforces the RELATION between the last two at boot;
+      nothing until now checked that the document states them correctly, and a
+      rebalanced sixth path keeps the boot check green while making all three
+      wrong at once.
+    */
+    const words: Record<string, number> = { Three: 3, Four: 4, Five: 5, Six: 6, Seven: 7, Eight: 8 };
+    const total = FAL_ALLOWANCES.reduce((sum, allowance) => sum + allowance.fallback, 0);
+
+    expect(words[sentence![2]!], `CLAUDE.md says "${sentence![2]}" paths spend the fal ceiling; the code declares ${FAL_ALLOWANCES.length}`)
+      .toBe(FAL_ALLOWANCES.length);
+    expect(Number(sentence![4]), "CLAUDE.md's fal arithmetic no longer adds up to the sum of the declared defaults")
+      .toBe(total);
+
+    /* The ceiling is read from the code the same way the boot check reads it,
+       with the variable unset — the default is what the document quotes. */
+    const previous = process.env.FAL_ACCOUNT_CEILING;
+    delete process.env.FAL_ACCOUNT_CEILING;
+    try {
+      expect(Number(sentence![1]), "CLAUDE.md quotes a different FAL_ACCOUNT_CEILING default than falAccountCeiling() returns")
+        .toBe(falAccountCeiling());
+    } finally {
+      if (previous !== undefined) process.env.FAL_ACCOUNT_CEILING = previous;
+    }
   });
 });
