@@ -122,9 +122,28 @@ describe("the open lane's acceptance path", () => {
     expect(opened).toMatchObject({ ok: false, reason: "collides", outcome: "refused" });
   });
 
+  it("⚠ CONTROL — a QUALIFIED noun whose key is the bare closed one still refuses", async () => {
+    /*
+      fable-1374 §1's condition: one control per way the fallback must NOT
+      rescue, and this is the second way. *"A third eye"* keyed by the
+      interpreter as `eye` folds to a subject the closed lane owns
+      (`eyeShapeFree`, driven), so the rescue refuses it in turn and the ask
+      stays refused — which is correct until the creature lane gives qualified
+      nouns their own answer.
+    */
+    const opened = await acceptOpenKind({
+      instruction: "give her antlers and a third eye",
+      unowned: unowned("eye", "a third eye on her forehead"),
+      engine: engineSaying('{"kind":"antlers"}'),
+    });
+
+    expect(opened).toMatchObject({ ok: false, reason: "collides", outcome: "refused" });
+  });
+
   it("CONTROL — a subject key that is not a plain noun is not rescued", async () => {
-    /* The rescue reads a KEY, and a key that could not be a kind is left alone:
-       the namer's refusal stands rather than being replaced by nonsense. */
+    /* The rescue reads a KEY, and a key that could not be a kind — a phrase,
+       punctuation, four words — is left alone: the namer's refusal stands rather
+       than being replaced by something nobody could key a slot on. */
     const opened = await acceptOpenKind({
       instruction: "give her antlers and a third eye",
       unowned: unowned("a third eye on her forehead, glowing", "glowing"),
