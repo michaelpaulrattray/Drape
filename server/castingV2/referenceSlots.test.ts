@@ -10,8 +10,13 @@
 import { describe, expect, it } from "vitest";
 
 import { accessoryKindOfSlot } from "./slotWordShape";
+import { BODY_ANCHOR_REGIONS } from "../../shared/bodyAnchorRegions";
 
 import {
+  BORN_INK_SLOT_PREFIX,
+  bornInkRegionOfSlot,
+  bornInkSlotKey,
+  isBornInkSlot,
   INK_SLOT_PREFIX,
   inkPlacementOfSlot,
   inkSideSlotKey,
@@ -19,6 +24,7 @@ import {
   isFeatureSlot,
   isInkSlot,
   isOpenSlot,
+  openKindOfSlot,
   openSlotKey,
   pairHasDiverged,
   parseSlot,
@@ -231,5 +237,55 @@ describe("the ink lane's keys", () => {
     /* The negative control kept after the positive: a real accessory slot must
        still answer, or this arm would pass with the reader broken outright. */
     expect(accessoryKindOfSlot("earring@left")).not.toBeNull();
+  });
+});
+
+/*
+  THE THIRD NAMESPACE — a tattoo the BRIEF described (7b(a), countersigned
+  fable-1399 §2).
+
+  The arms that matter are the same two the other prefixes have: it cannot
+  collide with either of them, and it survives `parseSlot` — because the open
+  lane already paid for a key that resolved in the catalogue and was refused at
+  the library door AFTER the render was paid for.
+*/
+describe("the born-ink namespace", () => {
+  it("keys a described region, and the region is spelled in exactly one place", () => {
+    expect(bornInkSlotKey("torso")).toBe("bornInk:torso");
+    expect(bornInkSlotKey("wholeBody")).toBe("bornInk:wholeBody");
+    expect(bornInkSlotKey("torso").startsWith(BORN_INK_SLOT_PREFIX)).toBe(true);
+  });
+
+  it("SURVIVES `parseSlot` for every region the vocabulary holds", () => {
+    /* The open lane's own scar: `open:cat ears` resolved in the catalogue and
+       was refused at the library door after the render was paid for. Every
+       region is asserted rather than a representative one — a vocabulary gains
+       members. */
+    for (const region of BODY_ANCHOR_REGIONS) {
+      const key = bornInkSlotKey(region);
+      expect(parseSlot(key), `${key} must parse`).not.toBeNull();
+      expect(parseSlot(key)?.instance, `${key} has no side`).toBeUndefined();
+      expect(bornInkRegionOfSlot(key)).toBe(region);
+    }
+  });
+
+  it("reads back only a region the vocabulary holds", () => {
+    /* The string may have come from a row written by an older build. A region
+       nobody has measured is a claim about a customer's body. */
+    expect(bornInkRegionOfSlot("bornInk:elbow")).toBeNull();
+    expect(bornInkRegionOfSlot("bornInk:")).toBeNull();
+    expect(bornInkRegionOfSlot("bornInk:torso@left")).toBeNull();
+  });
+
+  it("cannot be confused with the other two namespaces, in either direction", () => {
+    expect(isBornInkSlot("bornInk:torso")).toBe(true);
+    expect(isBornInkSlot("ink:neck")).toBe(false);
+    expect(isBornInkSlot("open:orb")).toBe(false);
+    expect(isBornInkSlot("hair")).toBe(false);
+    /* And the readers of the OTHER two must not answer for this one — the arm
+       that would fail if somebody folded the vocabularies together. */
+    expect(inkPlacementOfSlot("bornInk:torso")).toBeNull();
+    expect(openKindOfSlot("bornInk:torso")).toBeNull();
+    expect(accessoryKindOfSlot("bornInk:torso"), "a described tattoo is not worn").toBeNull();
   });
 });

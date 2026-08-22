@@ -44,6 +44,8 @@ import {
   validateCastingInkTransformEnvironment,
   validateCastingInkWordsEnvironment,
   CASTING_INK_WORDS_SCOPE_ENV,
+  validateCastingBornInkEnvironment,
+  CASTING_BORN_INK_SCOPE_ENV,
   CASTING_TWO_PATHS_SCOPE_ENV,
   validateCastingTwoPathsEnvironment,
   validateCastingInkRegionCropEnvironment,
@@ -347,6 +349,17 @@ export function validateEnv(): void {
   */
   validateCastingInkWordsEnvironment({
     scope: process.env[CASTING_INK_WORDS_SCOPE_ENV],
+    castingScope: process.env[CASTING_V2_SCOPE_ENV],
+  });
+  /*
+    WHETHER A CAST MAY BE BORN WITH TATTOOS THE PRODUCT KNOWS ABOUT. Its parent
+    is `CASTING_V2_SCOPE` and nothing narrower for the same reason the words
+    road's is: the BRIEF is the document, so this lane needs no studio door, no
+    design row and no repaint. What it does need is a roll — the row is minted
+    when a candidate lands — and that is exactly what the casting scope gates.
+  */
+  validateCastingBornInkEnvironment({
+    scope: process.env[CASTING_BORN_INK_SCOPE_ENV],
     castingScope: process.env[CASTING_V2_SCOPE_ENV],
   });
   /*

@@ -2087,6 +2087,113 @@ export function validateCastingInkWordsEnvironment(input: {
   return child;
 }
 
+
+/**
+ * WHETHER A CAST MAY BE BORN WITH TATTOOS THE PRODUCT KNOWS ABOUT — 7b(a)
+ * (design opus-1031/1040/1042, countersigned fable-1381 ruling 3 and
+ * fable-1399; the write site and its three judgement calls endorsed
+ * fable-1412).
+ *
+ * Off, and **absent means off**, the product behaves exactly as it does today:
+ * the interpreter is not asked about ink at all, so an unflagged roll's prompt
+ * is BYTE-IDENTICAL to today's, `statedInk` is null on every roll, and no
+ * `bornInk:` row has ever been written. On, a brief that describes tattoos
+ * files one words-only library row per described region, minted at the landing
+ * of each candidate it produced.
+ *
+ * # The population is real, and it is two rolls
+ *
+ * Production has 207 rolls. TWO name ink, fifteen minutes apart, the same
+ * text — *"Bare-chested, displaying extensive black-and-grey ornamental tattoos
+ * covering most of his chest, shoulders, upper arms, and lower neck."* Both
+ * have zero surviving candidates today, so this feature has **no living
+ * population at all**, which is stated here rather than discovered later.
+ *
+ * # Why the parent is `CASTING_V2_SCOPE` and nothing narrower
+ *
+ * A brief-born tattoo needs no studio door, no design row, no uploaded picture
+ * and no repaint: the BRIEF is the document, which is D-137's boundary met by
+ * the only route that meets it without a picture. Hanging this off the ink
+ * studio would gate a lane whose subject does not require it — the words road's
+ * own argument, one lane over.
+ *
+ * # It spends nothing new
+ *
+ * No new engine call, no new segmenter call, no new text call, no table and no
+ * migration. The reading rides the interpreter call that already runs
+ * (`statedInk`, beside `statedHair` and `statedAccessories`), and the row is
+ * written from what that call already answered. `assertFalBudget` is untouched.
+ *
+ * # ⚠ What it does NOT buy, said here rather than found
+ *
+ * A born tattoo is RECORDED and DISCLOSED; it is not editable and it is not
+ * pixels. 7b-ii — the sign-mint that would make it a picture — is not designed
+ * and not started, and waits on the fable-1296 §3 court. The row's own lane
+ * says the same thing in code: `selectCarriedFeatureWords` declines it
+ * `markingDiscloses`, because a tattoo under fabric has zero visible
+ * consequence and carrying its words would either do nothing or fight the view
+ * prompt's placement discipline (fable-1396 §2).
+ */
+export const CASTING_BORN_INK_SCOPE_ENV = "CASTING_BORN_INK_SCOPE";
+
+export class CastingBornInkScopeConfigurationError extends Error {
+  constructor() {
+    super(
+      `${CASTING_BORN_INK_SCOPE_ENV} must be "off", "all", or "users:" followed by unique positive integer user ids`,
+    );
+    this.name = "CastingBornInkScopeConfigurationError";
+  }
+}
+
+export class CastingBornInkCoverageError extends Error {
+  constructor(detail: string) {
+    super(`${CASTING_BORN_INK_SCOPE_ENV} ${detail}`);
+    this.name = "CastingBornInkCoverageError";
+  }
+}
+
+export function parseCastingBornInkScope(raw: string | undefined): CastingV2Scope {
+  return parseScopeGrammar(raw, () => {
+    throw new CastingBornInkScopeConfigurationError();
+  });
+}
+
+/** Whether this account's briefs may be read for ink, and file a row when they name it. */
+export function captureCastingBornInkEnabled(userId: number): boolean {
+  const child = parseCastingBornInkScope(process.env[CASTING_BORN_INK_SCOPE_ENV]);
+  if (!castingV2EnabledForUser(child, userId)) return false;
+  return captureCastingV2Enabled(userId);
+}
+
+export function validateCastingBornInkEnvironment(input: {
+  scope: string | undefined;
+  castingScope: string | undefined;
+}): CastingV2Scope {
+  const child = parseCastingBornInkScope(input.scope);
+  if (child.kind === "off") return child;
+
+  const parent = parseCastingV2Scope(input.castingScope);
+  if (parent.kind === "off") {
+    throw new CastingBornInkCoverageError(
+      `cannot be enabled while ${CASTING_V2_SCOPE_ENV} is off — the row is minted when a CANDIDATE `
+      + "lands, and a user outside casting rolls none",
+    );
+  }
+  if (parent.kind === "all") return child;
+  if (child.kind === "all") {
+    throw new CastingBornInkCoverageError(
+      `cannot be "all" while ${CASTING_V2_SCOPE_ENV} is limited to specific users`,
+    );
+  }
+  const uncovered = child.userIds.filter((userId) => !parent.userIds.includes(userId));
+  if (uncovered.length > 0) {
+    throw new CastingBornInkCoverageError(
+      `names users outside ${CASTING_V2_SCOPE_ENV}: ${uncovered.join(",")}`,
+    );
+  }
+  return child;
+}
+
 export const CASTING_INK_TRANSFORM_SCOPE_ENV = "CASTING_INK_TRANSFORM_SCOPE";
 
 export class CastingInkTransformScopeConfigurationError extends Error {

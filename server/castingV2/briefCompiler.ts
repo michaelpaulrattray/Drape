@@ -53,6 +53,7 @@ import {
   type LookKey,
   type ResolvedIdentity,
   type Sex,
+  type StatedInk,
 } from "./castingIntent";
 import {
   composeCandidatePrompt,
@@ -218,6 +219,21 @@ export type CompiledRollBrief = {
    * outside the flag.
    */
   wardrobeLine: string | null;
+  /**
+   * TATTOOS THE BRIEF ITSELF DESCRIBED — 7b(a), and `null` on every roll
+   * outside `CASTING_BORN_INK_SCOPE` because the interpreter was never asked.
+   *
+   * An explicit field for `wardrobeLine`'s own reason, one line up: a durable
+   * fact read out of `compiledBrief` is the shape §3.2 refuses by name — that
+   * column says INTERNAL and never projected, and the row this becomes is
+   * neither internal nor a projection but a record of what she was told she was
+   * buying.
+   *
+   * It is the SAME OBJECT the intent carries, handed on rather than re-derived,
+   * so the row that gets written and the sheet that was compiled cannot come to
+   * disagree about what the brief said.
+   */
+  statedInk: StatedInk | null;
 };
 
 export type BriefRefusalCode =
@@ -293,6 +309,16 @@ export type BriefCompilerInput = {
    * field nobody will read is not free to ask for.
    */
   pickWardrobe?: boolean;
+  /**
+   * ASK THE INTERPRETER ABOUT TATTOOS THE BRIEF DESCRIBED — 7b(a), inside
+   * `CASTING_BORN_INK_SCOPE`.
+   *
+   * The flag is read at the ROLL, once, and its answer travels — never read
+   * here, so the compiler stays a pure function of its input and the prompt a
+   * roll sent can be reconstructed from what it was handed. Absent means no,
+   * and no means the bytes on the wire are byte-identical to today's.
+   */
+  readInk?: boolean;
   /** Set on a follow roll; the sheet narrows around this candidate. */
   followPersonaLine?: string | null;
   followIdentity?: ResolvedIdentity | null;
@@ -854,6 +880,7 @@ export const castingBriefCompiler: BriefCompiler = async (input) => {
     briefText,
     engine: input.engine,
     wardrobe: input.pickWardrobe === true,
+    ink: input.readInk === true,
   });
 
   /*
@@ -1004,6 +1031,10 @@ export const castingBriefCompiler: BriefCompiler = async (input) => {
     variance: sheet.variance,
     size: "1024x1536",
     quality: "medium",
+    /* What the brief said about ink, handed on from the intent the sheet was
+       compiled from. Null on every roll outside the flag, because the
+       interpreter was not asked. */
+    statedInk: intent.statedInk,
     /*
       The line the eight prompts above were composed from, returned so the
       caller writes it rather than resolving it a second time.
@@ -1060,6 +1091,10 @@ export const deterministicBriefCompiler: BriefCompiler = async (input) => {
     variance,
     size: "1024x1536",
     quality: "medium",
+    /* No interpreter runs here at all, so the brief said nothing this compiler
+       could hear — `fallbackIntent` answers null and this hands that on rather
+       than composing a second null beside it. */
+    statedInk: intent.statedInk,
     /* No interpreter runs here at all, so there is nothing to pick with; the
        path still resolves, so a Basics roll compiled this way is still dressed
        in basics. §4(c) is the Wardrobe fallback. */

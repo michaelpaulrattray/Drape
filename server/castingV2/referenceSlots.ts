@@ -37,6 +37,8 @@
  * and the wrong one for the stylist.
  */
 
+import { isBodyAnchorRegion, type BodyAnchorRegion } from "../../shared/bodyAnchorRegions";
+
 /** The instances the product knows. A key's suffix is one of these or nothing. */
 export const INSTANCES = ["left", "right"] as const;
 export type Instance = (typeof INSTANCES)[number];
@@ -271,6 +273,119 @@ export function inkPlacementOfSlot(key: string): InkAskPlacement | null {
   const side = rest.slice(at + 1);
   if (!(INSTANCES as readonly string[]).includes(side)) return null;
   return { placement: rest.slice(0, at), side: side as Instance };
+}
+
+/* ------------------------------------------------------------------ *
+ * THE BORN-INK NAMESPACE — a tattoo the BRIEF described, before any     *
+ * render existed                                                       *
+ * ------------------------------------------------------------------ */
+
+/**
+ * THE THIRD PREFIX, and its reason is D-137's boundary made STRUCTURAL
+ * (7b(a); design opus-1031/1040/1042, countersigned fable-1381 and
+ * fable-1399 §2).
+ *
+ * A cast can be BORN with tattoos: the brief itself says so — production roll
+ * 129's verbatim words are *"Bare-chested, displaying extensive black-and-grey
+ * ornamental tattoos covering most of his chest, shoulders, upper arms, and
+ * lower neck."* Nobody uploaded a design and nobody typed a refine. The brief is
+ * the document, and it is the ONLY document this namespace ever has.
+ *
+ * # Why a prefix at all, rather than the ink lane's key
+ *
+ * A born row is keyed by REGION and **regions are not instances**: the library's
+ * grammar is `feature` or `feature@left|right`, so `ink:described@torso` does
+ * not parse and the region has to live inside the feature. `ink:<placement>` is
+ * the measured placement vocabulary a DESIGN lands at; this is the eight-member
+ * `BODY_ANCHOR_REGIONS` a BRIEF names. Two vocabularies, two questions, and
+ * folding them would be the unowned-axis collapse with two meanings under one
+ * word.
+ *
+ * # ⚠ WHAT I DISLIKE ABOUT IT, SAID HERE RATHER THAN DISCOVERED
+ *
+ * A third prefix is a third thing every enumeration point has to learn, and that
+ * class is at SIX. So the consumers were WALKED rather than hoped at, and the
+ * walk is the table below — re-walk it, do not trust it, when a seventh arrives:
+ *
+ *     facePanel                  ignores it — no catalogue definition, and the
+ *                                open-row loop keys on `open:` alone. It SHOULD
+ *                                ignore it until 7b(b): a row is a disclosure
+ *     selectCarriedFeatureWords  declines `markingDiscloses` (fable-1399 §3) —
+ *                                and the reason matters: we know this region
+ *                                exactly, it is in the key, so `regionUnknown`
+ *                                would have been true behaviour under a false
+ *                                stated reason
+ *     recipeAssembler            never asked for it; it is not an edit's slot
+ *     liveReferences             keyed by `${slot} ${role}` — no change
+ *     parseSlot                  parses it as a feature with no instance, the
+ *                                same way `ink:neck` and `open:orb` do
+ *
+ * The class-at-six design will cover prefixes when it lands (fable-1399 §2).
+ *
+ * # ⚠ WHERE `readFailed` LIVES, so a row-reader does not read silence
+ *
+ * `parseStatedInk` answers `wholeBody` with `readFailed: true` when the brief
+ * named ink and no region survived — never WRONG about where the ink is, only
+ * wider than the truth, and fable-1381 ruling 2 refused a SILENT fallback
+ * because *"a silent fallback is how a bad reader hides for six months"*.
+ *
+ * **That provenance is not on the library row, and its absence is not silence.**
+ * There is no column for it, and adding a migration to hold a boolean the roll
+ * already stores would be the mirror working law 4 forbids. It is persisted
+ * with the READING — on the roll's own `compiledBrief.intent.statedInk.readFailed`,
+ * reachable from any row through candidate → roll — and it is COUNTED at the
+ * moment it decides a row (`BORN_INK_REGION_UNREAD`, one grep, beside
+ * `BORN_INK_NOT_RECORDED`). Confirmed fable-1413 §2.
+ *
+ * So a `bornInk:wholeBody` row is one of two things and the row alone cannot
+ * say which: the brief put the ink everywhere, or no region was read. Ask the
+ * roll, or count the log.
+ *
+ * # THE ROLL-TIME MINT IS THE ONLY WRITER, and that is the boundary
+ *
+ * fable-1381: *"BORN-WITH-INK ONLY — the brief is the document. Put that
+ * boundary in code (the roll-time mint is the ONLY writer of the born row; no
+ * refine path may create one) and in the docblock, not just in the design
+ * note."* A prefix nothing on the refine road spells is that boundary as a fact
+ * about the code rather than a rule someone has to remember.
+ */
+export const BORN_INK_SLOT_PREFIX = "bornInk:";
+
+/**
+ * Is this key in the born-ink namespace? String shape only — whether the token
+ * after the prefix is a region the vocabulary knows is
+ * {@link bornInkRegionOfSlot}'s question, asked where the answer is acted on.
+ */
+export function isBornInkSlot(key: string): boolean {
+  return key.startsWith(BORN_INK_SLOT_PREFIX);
+}
+
+/**
+ * The key a described region carries under — spelled ONCE, here, beside the two
+ * prefixes it sits with, so no call site writes it out (working law 4).
+ *
+ * It does not validate: whether `region` is one the vocabulary holds is
+ * {@link bornInkRegionOfSlot}'s question. Every `BODY_ANCHOR_REGIONS` member is
+ * a bare token with no space and no `@`, so the composed key survives
+ * `parseSlot` — asserted rather than assumed, in this module's own suite.
+ */
+export function bornInkSlotKey(region: BodyAnchorRegion): string {
+  return `${BORN_INK_SLOT_PREFIX}${region}`;
+}
+
+/**
+ * THE REGION BEHIND A BORN-INK KEY — the parser half of the grammar.
+ *
+ * `null` for anything outside the namespace AND for a token the vocabulary does
+ * not hold: this string may have come back from a database row written by an
+ * older build, and a region nobody has measured is a claim about a customer's
+ * body. There is no side — a described region has no instances, which is why
+ * the region lives in the feature half in the first place.
+ */
+export function bornInkRegionOfSlot(key: string): BodyAnchorRegion | null {
+  if (!isBornInkSlot(key)) return null;
+  const region = key.slice(BORN_INK_SLOT_PREFIX.length);
+  return isBodyAnchorRegion(region) ? region : null;
 }
 
 /**

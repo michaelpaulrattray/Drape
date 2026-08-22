@@ -29,7 +29,7 @@
  * the user nothing.
  */
 import { LANDMARK_OF_ACCESSORY } from "./accessoryKinds";
-import { isInkSlot, parseSlot } from "./referenceSlots";
+import { isBornInkSlot, isInkSlot, parseSlot } from "./referenceSlots";
 
 /**
  * EVERY accessory kind this text names — not just the best one.
@@ -270,8 +270,42 @@ export function slotWordsRefusal(slot: string, words: readonly string[]): SlotWo
     excluded because the library never holds one (the write door refuses it by
     name) — the check is written against that fact rather than trusting it, so a
     day when ink DOES have a row is not a day this refuses it.
+
+    ⚠ **THAT DAY ARRIVED 2026-08-22, THROUGH A NAMESPACE THAT DID NOT EXIST WHEN
+    THE SENTENCE ABOVE WAS WRITTEN** (7b(a), ruled fable-1413 §1). A `bornInk:`
+    row records tattoos THE BRIEF ITSELF DESCRIBED — the cast is born with them,
+    the brief is the document (D-137, fable-1381) — so its whole subject is ink
+    and refusing it would be this fence refusing its own population. The two
+    alternatives are both worse: scrubbing her words is a paraphrase read back
+    as her own sentence (D-172), and storing none is a claim about her body with
+    nothing she said under it.
+
+    # ⚠ AND THE EXEMPTION IS NOT THE SAME EXEMPTION, which is why it is paid for
+
+    `isInkSlot`'s safety is that an ink slot's words ride BESIDE A CROP: the
+    picture is the authority and the words caption it. **A born-ink row has no
+    crop at all** — it is precisely the geometry-free author this fence
+    describes. What makes it harmless is downstream: `selectCarriedFeatureWords`
+    declines it `markingDiscloses`, `recipeAssembler` never asks for it, and the
+    panel has no definition for it. Three consumers behaving, which is exactly
+    the kind of guarantee that decays.
+
+    So the widening is paid for by two arms rather than by this comment:
+
+      viewFeatureWords.test.ts   the born row declines `markingDiscloses`
+                                 BEFORE the region lookup, so a future resolver
+                                 that learns the namespace cannot let ink ride
+      recipeAssembler.test.ts    THE WIRE: a branch holding a born-ink row
+                                 composes a recipe and her ink words appear
+                                 NOWHERE in the sentences sent. A consumer-side
+                                 arm dies the day a fourth consumer is born; a
+                                 wire-side negative survives any number of them,
+                                 because it asserts where the harm model lives
+
+    If you are here because you want born-ink words to reach a render, the
+    second arm is the one that will stop you, and it is the one to argue with.
   */
-  if (!isInkSlot(slot)) {
+  if (!isInkSlot(slot) && !isBornInkSlot(slot)) {
     for (const word of words) {
       const ink = inkWordIn(word);
       if (ink !== null) {

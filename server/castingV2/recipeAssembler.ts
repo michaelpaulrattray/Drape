@@ -85,7 +85,7 @@ import { slotDefinition } from "./referenceSlotCatalogue";
 /* The open lane's key grammar has ONE owner and this module reads it rather
    than splitting a string (fable-1001 §1). `referenceSlots` imports nothing, so
    there is no cycle to weigh here. */
-import { isInkSlot, openKindOfSlot } from "./referenceSlots";
+import { isBornInkSlot, isInkSlot, openKindOfSlot } from "./referenceSlots";
 import {
   inkDeliveredCarrySentence, inkDeliveredTransformSentence, inkNotOnClothingClause,
   inkRealismClause,
@@ -1847,6 +1847,39 @@ export function assembleRecipe(input: AssembleInput): AssembleResult {
     */
     if (entry.words.length === 0) continue;
     /*
+      ⚠ A MARKING DISCLOSES; IT DOES NOT RIDE — and this line is the one the
+      whole 7b(a) design rests on (fable-1396 §2, the wire arm ordered
+      fable-1413 §1).
+
+      A `bornInk:` row records tattoos THE BRIEF DESCRIBED — a cast born with
+      them, no picture anywhere, the brief as the document. Everything above
+      this line would carry it: a `surface` tier is words-only-always, so the
+      loop would compose *"Keep his tattoos exactly: extensive black-and-grey
+      ornamental tattoos."* and send it.
+
+      **That sentence is precisely what `slotWordShape`'s ink fence exists to
+      stop** — a geometry-free author asking a paid render to paint a tattoo
+      that no crop is carrying. The fence was widened to let the ROW be stored
+      (its whole subject is ink; refusing it would be a fence refusing its own
+      population), and this line is the other half of that bargain.
+
+      The design's own axis, one law up (law 8): a clawed FOOT inside a shoe
+      rides, because the body is always there and shapes what the view draws. A
+      TATTOO under fabric has zero visible consequence, so carrying its words
+      either does nothing — inert tokens in a paid prompt — or fights the view
+      prompt's placement discipline, and winning THAT fight is ink drawn onto a
+      sleeve.
+
+      ⚠ **It is here rather than only in `viewFeatureWords` because the premise
+      that this assembler "never asks for it" was FALSE, and the wire arm is
+      what said so.** The consumer walk that produced that premise looked at the
+      EDIT path; the CARRY path takes every library entry there is. A guarantee
+      held by counting consumers dies the day a fourth one is born —
+      `recipeAssembler.test.ts`'s born-ink block asserts on the sentences the
+      engine receives instead.
+    */
+    if (isBornInkSlot(entry.slot)) continue;
+    /*
       A SLOT THAT SENT A CROP STILL SAYS ITS WORDS — IF IT IS ANATOMY.
       (Measured 2026-08-17, opus-638; ruled fable-863 §3.)
 
@@ -1936,6 +1969,10 @@ export function assembleRecipe(input: AssembleInput): AssembleResult {
   const carried = [
     ...library
       .filter((entry) => !editedSet.has(entry.slot))
+      /* A born-ink row is not carried, for the reason the standing loop skips
+         it: this list is every slot the render PROMISES to hold, and a render
+         that was never told about her tattoos promises nothing about them. */
+      .filter((entry) => !isBornInkSlot(entry.slot))
       .filter((entry) => entry.carry !== undefined || (entry.tier !== "item" && entry.words.length > 0))
       .map((entry) => entry.slot),
     /*

@@ -21,7 +21,11 @@ import {
   selectCarriedFeatureWords,
   type FeatureEntry,
 } from "./viewFeatureWords";
-import { anchorPresentsIn, type BodyAnchorRegion } from "../../shared/bodyAnchorRegions";
+import {
+  BODY_ANCHOR_REGIONS,
+  anchorPresentsIn,
+  type BodyAnchorRegion,
+} from "../../shared/bodyAnchorRegions";
 
 const entry = (over: Partial<FeatureEntry> & { slot: string }): FeatureEntry => ({
   noun: "thing",
@@ -223,5 +227,76 @@ describe("the clause", () => {
     ]);
     expect(dropped).toEqual([]);
     expect(clause.length).toBeGreaterThan(MAX_CLAUSE_CHARACTERS);
+  });
+});
+
+/*
+  A MARKING DISCLOSES; IT DOES NOT RIDE (fable-1396 §2, reason granted
+  fable-1399 §3).
+
+  The pair below is the whole point. A born-ink row would decline anyway — the
+  region resolver has no answer for its namespace — so the BEHAVIOUR arm alone
+  would pass with the branch deleted. The discriminating arm is the REASON, and
+  its control is a slot whose region is genuinely unknown, which must go on
+  saying `regionUnknown`.
+*/
+describe("a described tattoo declines for its own reason", () => {
+  const entry = (slot: string): FeatureEntry => ({
+    slot,
+    noun: "tattoos",
+    words: ["extensive black-and-grey ornamental tattoos"],
+  });
+
+  it("declines a born-ink row as `markingDiscloses`, naming the axis it is on", () => {
+    const chosen = selectCarriedFeatureWords({
+      entries: [entry("bornInk:torso")],
+      /* The resolver is handed the real one: this arm must not pass because a
+         double answered conveniently. */
+      regionOf: (slot) => regionForSlot(slot, () => null),
+    });
+    expect(chosen.carried).toEqual([]);
+    expect(chosen.declined).toEqual([{ slot: "bornInk:torso", reason: "markingDiscloses" }]);
+  });
+
+  it("CONTROL — a genuinely unknown region still says `regionUnknown`", () => {
+    /* An open kind whose properties row was never written: we do not know where
+       it is, and that is a different sentence from "we know, and it discloses".
+       Without this arm the new reason could swallow the old one and nothing
+       would go red. */
+    const chosen = selectCarriedFeatureWords({
+      entries: [entry("open:orb")],
+      regionOf: (slot) => regionForSlot(slot, () => null),
+    });
+    expect(chosen.declined).toEqual([{ slot: "open:orb", reason: "regionUnknown" }]);
+  });
+
+  it("declines EVERY described region the same way, not just the one in the specimen", () => {
+    const entries = BODY_ANCHOR_REGIONS.map((region) => entry(`bornInk:${region}`));
+    const chosen = selectCarriedFeatureWords({
+      entries,
+      regionOf: (slot) => regionForSlot(slot, () => null),
+    });
+    expect(chosen.carried).toEqual([]);
+    expect(chosen.declined.map((one) => one.reason))
+      .toEqual(BODY_ANCHOR_REGIONS.map(() => "markingDiscloses"));
+  });
+
+  it("and it is decided BEFORE the region lookup, so a future resolver cannot let ink ride", () => {
+    /*
+      The branch sits above `regionOf` deliberately. If somebody later teaches
+      `regionForSlot` to answer for the born-ink namespace — which is a
+      reasonable thing to want, since the region IS in the key — a born row
+      would otherwise fall through to `anchorPresentsIn` and, for a region the
+      master does not show, RIDE. That is the tattoo drawn onto a sleeve.
+    */
+    const chosen = selectCarriedFeatureWords({
+      entries: [entry("bornInk:belowWaist")],
+      /* A resolver that DOES answer for the namespace, and answers with a
+         region the waist-up master cannot show — the exact combination that
+         would carry it. */
+      regionOf: () => "belowWaist",
+    });
+    expect(chosen.carried).toEqual([]);
+    expect(chosen.declined[0]!.reason).toBe("markingDiscloses");
   });
 });

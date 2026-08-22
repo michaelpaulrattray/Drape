@@ -31,6 +31,7 @@ import {
   parseCastingIntent,
   type CastingIntent,
 } from "./castingIntent";
+import { BODY_ANCHOR_REGIONS } from "../../shared/bodyAnchorRegions";
 import { containsBrand } from "./brandScrub";
 import { namesUnknownProperNoun } from "./properNouns";
 
@@ -178,14 +179,65 @@ const WARDROBE_BLOCK = `ONE MORE KEY, in the same JSON object and nowhere else:
   to its plain studio clothes, so keep it simple rather than interesting.`;
 
 /**
+ * THE INK BLOCK — asked only inside `CASTING_BORN_INK_SCOPE` (7b(a), gating
+ * endorsed fable-1412 (a)).
+ *
+ * The reason is `WARDROBE_BLOCK`'s, verbatim, and it is the reason this field
+ * waited for its consumer rather than shipping with its parser: **context is
+ * not additive in this program, measured.** A SUBSET of prompt context raised
+ * the stage wall twice as often as its superset, so adding a section changes
+ * what a sheet says about age, heritage and hair in a direction nobody has
+ * measured. Sending it to an account whose roll cannot write a `bornInk:` row
+ * would buy that risk for nothing.
+ *
+ * So outside the flag the bytes on the wire are byte-identical to yesterday's,
+ * and `SYSTEM_PROMPT` stays the base every existing contract test reads.
+ *
+ * # What it asks, and the two things it must not do
+ *
+ * The brief is the document (D-137, fable-1381), so this asks for exactly what
+ * the brief SAID and nothing about what a tattooed person usually has. The
+ * regions are the closed eight; anything else is dropped by the parser rather
+ * than argued with here.
+ */
+const BORN_INK_BLOCK = `ONE MORE KEY, in the same JSON object and nowhere else:
+
+  "statedInk": { "words": string[], "regions": string[] } | null
+
+- "statedInk": TATTOOS THE BRIEF ITSELF DESCRIBED — the person is being cast
+  already wearing them.
+  null is the ordinary answer and means the brief named none. Most briefs do.
+  "words": their own phrases for the ink, up to three, as short phrases —
+  ["extensive black-and-grey ornamental tattoos"], ["a sleeve of fine linework"].
+  USE ONLY WORDS THAT APPEAR IN THE BRIEF, the same rule as "statedHair" and
+  "statedAccessories": anything containing a word the user did not type is
+  dropped, so a paraphrase is worse than a null.
+  "regions": where the brief puts it, from this closed list and nothing else —
+  ${BODY_ANCHOR_REGIONS.map((region) => `"${region}"`).join(", ")}.
+  Several are normal: a brief naming chest, shoulders and upper arms answers
+  with the regions that cover them. Leave the array EMPTY rather than guessing
+  when the brief describes ink without saying where.
+  NEVER INFER. A biker, a sailor and a punk are not evidence of tattoos; only
+  the brief saying so is. A brief that does not mention ink answers null, and a
+  cast this field invents ink for is a person the user did not ask for.
+  IT IS RECORDED, NOT DRAWN. Nothing here changes the picture — this is the
+  product remembering what the brief said, so it can say it back.`;
+
+/**
  * The system prompt this roll will actually send.
  *
- * One composer, so there is no second copy of the base to drift. The `wardrobe`
- * option is the Wardrobe path's own question and nothing else changes with it.
+ * One composer, so there is no second copy of the base to drift. Each option is
+ * its own flag's question and nothing else changes with it; the blocks append in
+ * a FIXED ORDER so that two accounts with the same pair of flags get the same
+ * bytes, and an account with neither gets `SYSTEM_PROMPT` itself.
  */
-export function interpreterSystemPrompt(options?: { wardrobe?: boolean }): string {
-  return options?.wardrobe === true ? `${SYSTEM_PROMPT}
-${WARDROBE_BLOCK}` : SYSTEM_PROMPT;
+export function interpreterSystemPrompt(
+  options?: { wardrobe?: boolean; ink?: boolean },
+): string {
+  const blocks: string[] = [];
+  if (options?.wardrobe === true) blocks.push(WARDROBE_BLOCK);
+  if (options?.ink === true) blocks.push(BORN_INK_BLOCK);
+  return blocks.length === 0 ? SYSTEM_PROMPT : [SYSTEM_PROMPT, ...blocks].join("\n");
 }
 
 const SYSTEM_PROMPT = `You read a casting brief and extract only what it actually says about WHO to cast.
@@ -540,6 +592,16 @@ export async function interpretBrief(input: {
    * permanent addition.
    */
   wardrobe?: boolean;
+  /**
+   * Ask about tattoos the brief described — 7b(a), inside
+   * `CASTING_BORN_INK_SCOPE`.
+   *
+   * Absent means no, and no means the prompt is the one every account has been
+   * getting. See `BORN_INK_BLOCK` for why this is a flag rather than a
+   * permanent addition — it is `WARDROBE_BLOCK`'s argument and the same
+   * measurement.
+   */
+  ink?: boolean;
 }): Promise<InterpretOutcome> {
   const textEngine = input.engine ?? interpreterEngine();
   if (!textEngine) {
@@ -552,7 +614,10 @@ export async function interpretBrief(input: {
   const runOnce = () =>
     textEngine.complete({
       about: "interpret",
-      system: interpreterSystemPrompt({ wardrobe: input.wardrobe === true }),
+      system: interpreterSystemPrompt({
+        wardrobe: input.wardrobe === true,
+        ink: input.ink === true,
+      }),
       user: input.briefText,
       json: true,
       // Low, because this is extraction. Creativity belongs downstream, in the

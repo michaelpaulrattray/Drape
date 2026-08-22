@@ -69,7 +69,7 @@
  * nothing in the record saying why.
  */
 import { anchorPresentsIn, type BodyAnchorRegion } from "../../shared/bodyAnchorRegions";
-import { openKindOfSlot, parseSlot } from "./referenceSlots";
+import { isBornInkSlot, openKindOfSlot, parseSlot } from "./referenceSlots";
 
 /**
  * One feature the anchor cannot show, as a view render is told about it.
@@ -118,10 +118,13 @@ export type FeatureWordsSelection = {
    * Every entry that did NOT ride, and why — one line per feature, the single
    * surface fable-1005 §2 ordered for the plate lane. `shown` is the ordinary
    * answer and is not a problem; `regionUnknown` and `capped` are.
+   *
+   * `markingDiscloses` is a DECIDED absence like `vacant`: see the branch that
+   * writes it. It is not a gap and nothing is owed against it.
    */
   readonly declined: readonly {
     readonly slot: string;
-    readonly reason: "shown" | "cropped" | "vacant" | "noWords" | "regionUnknown" | "capped";
+    readonly reason: "shown" | "cropped" | "vacant" | "noWords" | "markingDiscloses" | "regionUnknown" | "capped";
   }[];
 };
 
@@ -202,7 +205,7 @@ export function selectCarriedFeatureWords(input: {
   const carried: CarriedFeatureWords[] = [];
   const declined: Array<{
     slot: string;
-    reason: "shown" | "cropped" | "vacant" | "noWords" | "regionUnknown" | "capped";
+    reason: "shown" | "cropped" | "vacant" | "noWords" | "markingDiscloses" | "regionUnknown" | "capped";
   }> = [];
 
   for (const entry of input.entries) {
@@ -215,6 +218,34 @@ export function selectCarriedFeatureWords(input: {
     const words = entry.words.map((word) => word.trim()).filter((word) => word !== "");
     if (words.length === 0) {
       declined.push({ slot: entry.slot, reason: "noWords" });
+      continue;
+    }
+    /*
+      ⚠ A MARKING DISCLOSES; IT DOES NOT RIDE (fable-1396 §2, reason granted
+      fable-1399 §3) — and this branch exists for the REASON, not the behaviour.
+
+      A born-ink row would decline anyway, one line down, as `regionUnknown`:
+      `regionForSlot` has no answer for the `bornInk:` namespace and null
+      declines. That is the right OUTCOME under a false stated reason, because
+      we know this region exactly — it is in the key. Declining for a reason we
+      know to be wrong behaves correctly today and lies to whoever reads the
+      dispositions later, which is the collected-never-asserted cousin.
+
+      The axis it is on is law 8's ontology (fable-1396 §2):
+
+        a clawed FOOT inside a shoe   the body is always there and shapes what
+                                      the view draws, so its WORDS RIDE
+        a TATTOO under fabric         zero visible consequence. Carrying its
+                                      words either does nothing — inert tokens
+                                      in a paid prompt — or fights the view
+                                      prompt's own placement discipline, and
+                                      winning that fight is ink drawn onto a
+                                      sleeve. The ROW records it, the package
+                                      DISCLOSES it, and the wardrobe path
+                                      decides when it becomes pixels
+    */
+    if (isBornInkSlot(entry.slot)) {
+      declined.push({ slot: entry.slot, reason: "markingDiscloses" });
       continue;
     }
     const region = input.regionOf(entry.slot);

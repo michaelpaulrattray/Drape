@@ -2446,3 +2446,80 @@ describe("the carry rides the tattoo as it landed, not the artwork", () => {
     expect(recipe.references).toHaveLength(3);
   });
 });
+
+/*
+  ⚠ A CAST BORN WITH TATTOOS SENDS NONE OF THOSE WORDS TO THE ENGINE — 7b(a),
+  ordered fable-1413 §1 as the payment for widening the library door's ink
+  fence.
+
+  # Why this arm is here rather than only in `viewFeatureWords`' suite
+
+  `slotWordsRefusal` refuses every slot whose words name a tattoo, and its harm
+  model is exact: a geometry-free description of ink, filed as a slot's state,
+  is re-said on every later edit, so a paid render is asked to paint a SECOND
+  tattoo on top of the one the crop already carries. A `bornInk:` row is
+  literally that geometry-free author — it has no crop at all — and the fence
+  was widened to admit it because its whole subject IS ink.
+
+  What makes it harmless is downstream: `selectCarriedFeatureWords` declines it
+  `markingDiscloses`, this assembler never asks for it, and the panel has no
+  definition for it. THREE CONSUMERS BEHAVING, which is exactly the kind of
+  guarantee that decays — a consumer-side arm dies the day a fourth consumer is
+  born. This one asserts on the SENTENCES THE ENGINE RECEIVES, which is where
+  the harm model lives, so it survives any number of consumers.
+
+  If you are here because this went red: you have made born-ink words reach a
+  render. That is the thing D-137's boundary and this fence exist to prevent,
+  and it needs a ruling rather than a fixture change.
+*/
+describe("a cast born with tattoos — the words the engine never sees", () => {
+  /* Production roll 129's brief, verbatim, because a reworded specimen is a
+     different specimen. */
+  const BORN_INK_WORDS = "extensive black-and-grey ornamental tattoos";
+  const bornInk = (region: string): LibraryEntry => ({
+    slot: `bornInk:${region}`,
+    tier: "surface",
+    noun: "tattoos",
+    words: [BORN_INK_WORDS],
+  });
+
+  it("composes a recipe that says NOTHING about her ink, anywhere on the wire", () => {
+    const recipe = assembleRecipe({
+      master: MASTER, pronouns: HE,
+      /* A branch that holds them beside an ordinary feature, so the recipe is a
+         real one rather than an empty one that could not have said anything. */
+      library: [bornInk("torso"), bornInk("arms"), lips()],
+      asks: [{ slot: "hair", noun: "hair", words: "cropped and dark" }],
+    });
+
+    expect(recipe.ok).toBe(true);
+    if (!recipe.ok) return;
+    /* The POSITIVE CONTROL first: this recipe did compose something, so a clean
+       negative below is an absence rather than an empty prompt. */
+    expect(recipe.prompt).toContain("cropped and dark");
+
+    for (const phrase of [BORN_INK_WORDS, "tattoo", "ornamental", "black-and-grey"]) {
+      expect(recipe.prompt, `"${phrase}" reached the engine`).not.toContain(phrase);
+      for (const sentence of recipe.sentences) {
+        expect(sentence, `"${phrase}" reached the engine`).not.toContain(phrase);
+      }
+    }
+    /* And no reference is minted for one either — the row has no pixels, so a
+       reference naming it would be a picture that does not exist. */
+    expect(recipe.references.some((one) => JSON.stringify(one.role).includes("bornInk"))).toBe(false);
+  });
+
+  it("and the row is not carried, so it cannot arrive by that door either", () => {
+    const recipe = assembleRecipe({
+      master: MASTER, pronouns: HE,
+      library: [bornInk("wholeBody"), lips()],
+      asks: [{ slot: "hair", noun: "hair", words: "cropped and dark" }],
+    });
+    expect(recipe.ok).toBe(true);
+    if (!recipe.ok) return;
+    expect(recipe.carried).not.toContain("bornInk:wholeBody");
+    /* CONTROL — an ordinary anatomy row on the same branch DOES carry, so this
+       arm cannot pass by the assembler carrying nothing at all. */
+    expect(recipe.carried).toContain("lips");
+  });
+});

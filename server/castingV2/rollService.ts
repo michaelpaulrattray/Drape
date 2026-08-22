@@ -39,7 +39,9 @@ import { randomUUID } from "node:crypto";
 import { TRPCError } from "@trpc/server";
 
 import { DEFAULT_CASTING_PATH, type CastingPath } from "../../shared/castingPaths";
-import { captureCastingTwoPathsEnabled } from "./castingV2Scope";
+import { captureCastingBornInkEnabled, captureCastingTwoPathsEnabled } from "./castingV2Scope";
+import { mintBornInkRows } from "./bornInkMint";
+import type { StatedInk } from "./castingIntent";
 
 import { CASTING_V2_COSTS } from "../casting/castingCreditCosts";
 import { censusOfAttempt, censusSoFar } from "./callCensus";
@@ -387,6 +389,21 @@ export async function createRoll(
   */
   const pickWardrobe = bornPath === "wardrobe" && !input.followCandidatePublicId;
 
+  /*
+    MAY THIS BRIEF BE READ FOR TATTOOS — 7b(a), asked ONCE, here.
+
+    Read at the roll rather than inside the compiler so the compiler stays a
+    pure function of its input: the prompt a roll sent is reconstructible from
+    what it was handed, which is what made the two-paths prompt auditable and is
+    the same reason `pickWardrobe` is resolved on this line.
+
+    Off, and absent means off, the interpreter is not asked about ink at all —
+    the bytes on the wire are byte-identical to today's, `statedInk` comes back
+    null, and no `bornInk:` row is ever written. `BORN_INK_BLOCK` carries the
+    measurement that makes that gating the point rather than caution.
+  */
+  const readInk = captureCastingBornInkEnabled(input.userId);
+
   let compiled: CompiledRollBrief;
   try {
     compiled = await compile({
@@ -410,6 +427,7 @@ export async function createRoll(
         ? { path: inheritedWardrobe.path, line: inheritedWardrobe.wardrobeLine }
         : undefined,
       pickWardrobe,
+      readInk,
       followPersonaLine,
       followIdentity,
     });
@@ -613,6 +631,11 @@ export async function createRoll(
         prompt: promptByPosition.get(candidate.position) ?? "",
         size: compiled.size,
         quality: compiled.quality,
+        /* Handed on from the compile that produced these eight prompts, so the
+           row written and the sheet compiled cannot disagree about what the
+           brief said. Null outside the flag. */
+        statedInk: compiled.statedInk,
+        rollPublicId: created.roll.publicId,
       })).then(({ value, error, census }) => {
         log.info(
           {
@@ -815,6 +838,20 @@ async function dispatchCandidate(input: {
    * first one already said.
    */
   accountDown: { tripped: boolean };
+  /**
+   * TATTOOS THE BRIEF ITSELF DESCRIBED — 7b(a), and `null` on every roll
+   * outside `CASTING_BORN_INK_SCOPE` because the interpreter was never asked.
+   *
+   * Handed in from the compiled brief rather than re-read from the persisted
+   * one: a second source of truth for a fact this flow already holds is the
+   * parallel copy working law 4 is about, and re-reading would put the writer
+   * somewhere a refine could reach — which is exactly the boundary fable-1381
+   * asked to be structural (`bornInkMint`'s header).
+   */
+  statedInk: StatedInk | null;
+  /** For the born-ink log line only — a count nobody can trace back is half a
+   *  count (fable-1412 (b)). */
+  rollPublicId: string;
 }): Promise<Settlement> {
   const { candidate, userId, operationId } = input;
   const engineId = input.engine.id;
@@ -1012,6 +1049,24 @@ async function dispatchCandidate(input: {
       });
       return { outcome: "skipped", refundedCredits: 0 };
     }
+    /*
+      AND THE TATTOOS THE BRIEF DESCRIBED, WRITTEN DOWN — 7b(a).
+
+      After the landing and only on `ready`: an `expired` candidate is never
+      projected and a `lost` one has no row to hang a record on, so a born-ink
+      row on either would describe a face nobody will ever see.
+
+      It cannot fail this candidate. She paid for a face and it landed;
+      `mintBornInkRows` catches its own failure and says so countably, and the
+      whole argument for that trade is in its header.
+    */
+    await mintBornInkRows({
+      userId,
+      candidateId: candidate.id,
+      rollPublicId: input.rollPublicId,
+      candidatePublicId: candidate.publicId,
+      statedInk: input.statedInk,
+    });
     return { outcome: "ready", refundedCredits: 0 };
   } catch (error) {
     const failureClass = error instanceof ProviderError ? error.failureClass : "unknown";

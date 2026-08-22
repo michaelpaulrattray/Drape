@@ -627,6 +627,7 @@
       }
     ],
     "flags": [
+      "CASTING_BORN_INK_SCOPE",
       "CASTING_FACE_SCAN_SCOPE",
       "CASTING_HAIR_REFERENCE_SCOPE",
       "CASTING_INK_CUT_SCOPE",
