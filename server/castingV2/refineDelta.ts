@@ -2272,6 +2272,27 @@ export function saysNothingNew(input: {
   /** What each free subject already held — the same map the parse was shown. */
   prior: Partial<Record<FreeSubject, string[]>>;
   /**
+   * ⚠ THE OPEN KINDS THE CHAIN ALREADY HOLDS — and this door was BLIND to the
+   * open lane until 2026-08-22 (founder hit, filed fable-1378).
+   *
+   * He re-used the combo prompt on his horned, orbless frame and was told *"she
+   * already has two smooth bone-white horns … this would have changed nothing"*
+   * about an ask whose ORB half names a feature she does not have. Free, so no
+   * money moved — and it walled the exact recovery loop three fixes had just
+   * built, with a sentence that was not true.
+   *
+   * **Fourth instance of one class**: `facetsWrittenBy` blind to `delta.open`,
+   * wall (d)'s strict re-read, this door, and 1371(A)'s namer as a cousin. Four
+   * says the ENUMERATION POINTS are the defect rather than the doors — every
+   * one of them walks `FREE_SUBJECT_KEYS` or the labelled axes and stops, and
+   * the open lane is reachable through neither.
+   *
+   * Optional, and absent means exactly today's behaviour for a caller with no
+   * chain in hand: an open kind with no prior to compare against is NEW, which
+   * is the safe direction and the one `priorAbsent` chose for the same reason.
+   */
+  priorOpen?: Partial<Record<string, string>>;
+  /**
    * What has ALREADY LEFT, from the composed recipe she is standing on.
    *
    * The exemption below used to be unconditional, and that was the hole the
@@ -2397,6 +2418,28 @@ export function saysNothingNew(input: {
     gone.push(...departures);
   }
 
+  /*
+    ⚠ AN OPEN KIND THE CHAIN DOES NOT HOLD IS NEW, and it is checked BEFORE the
+    closed loops so an echo cannot answer for it (fable-1378).
+
+    A delta with a closed half that echoes and an open half that is brand new
+    used to absorb on the echo alone, because `delta.open` appeared nowhere in
+    this function. The sentence it produced named the horns she has and said
+    "this would have changed nothing" — about an orb she has not got.
+
+    An open kind that word-for-word echoes one the chain already holds joins
+    `echoed` instead, so the honest refusal still fires for a genuine repeat:
+    the door keeps working, it just stops answering for a lane it cannot see.
+  */
+  const openEchoes: string[] = [];
+  for (const [kind, ask] of Object.entries(delta.open ?? {})) {
+    const words = typeof ask?.words === "string" ? ask.words : "";
+    if (words.trim() === "") continue;
+    const held = input.priorOpen?.[kind];
+    if (held === undefined || !same(held, words)) return { absorbed: false };
+    openEchoes.push(words);
+  }
+
   /* See `disputedFacets`. A `Set` because both loops below ask it per item. */
   const disputed = new Set<Facet>(input.disputedFacets ?? []);
 
@@ -2437,6 +2480,7 @@ export function saysNothingNew(input: {
     the free-question and rule-3 paths, which have their own answers; claiming
     it here would take a sentence those paths handle away from them.
   */
+  echoed.push(...openEchoes);
   if (echoed.length === 0 && gone.length === 0) return { absorbed: false };
   /*
     A DELTA THAT ONLY RESTATES A DEPARTURE gets the departure's own sentence:

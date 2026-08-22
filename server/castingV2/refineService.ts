@@ -1358,6 +1358,20 @@ async function refineCandidateCounted(
     priorItems[subject as FreeSubject] = itemsOf(value);
   }
   /*
+    AND THE OPEN KINDS THE CHAIN HOLDS — the same read, the lane the absorbed
+    door could not see (fable-1378).
+
+    Off the SAME `readStoredDelta` as the closed half rather than a second read:
+    two derivations of *what does this branch already have* is how one of them
+    comes to answer about a different branch. Words only, because words are what
+    the door compares.
+  */
+  const priorOpen: Record<string, string> = {};
+  for (const [kind, ask] of Object.entries(readStoredDelta(predecessorForParse?.deltas)?.open ?? {})) {
+    const words = (ask as { words?: unknown } | null)?.words;
+    if (typeof words === "string" && words.trim() !== "") priorOpen[kind] = words;
+  }
+  /*
     THE RECORD IS SHOWN TOO, not only the recipe (D-173, parent C).
 
     D-167's confession asks whether the face HAS the thing, and it asked with
@@ -2020,7 +2034,7 @@ async function refineCandidateCounted(
        and wrong about the FRAME, and the frame is what she can see. */
     const disputedFacets = disputedFacetsOfFrame(source.internalPrompt);
     const verdict = saysNothingNew({
-      delta: parse.delta, prior: priorItems, priorAbsent, identity: currentIdentity,
+      delta: parse.delta, prior: priorItems, priorAbsent, priorOpen, identity: currentIdentity,
       ...(disputedFacets.length > 0 ? { disputedFacets } : {}),
       ...(inkPointer ? { inkPointer } : {}),
     });
@@ -2038,7 +2052,7 @@ async function refineCandidateCounted(
          no second statement. */
       const againPointer = await inkPointerFor(again.delta);
       const second = saysNothingNew({
-        delta: again.delta, prior: priorItems, priorAbsent, identity: currentIdentity,
+        delta: again.delta, prior: priorItems, priorAbsent, priorOpen, identity: currentIdentity,
         ...(againPointer ? { inkPointer: againPointer } : {}),
       });
       if (!second.absorbed) {

@@ -1076,6 +1076,84 @@ describe("an ask absorbed into a restatement is refused before the charge", () =
     expect(verdict.absorbed && verdict.alreadyTrue).toBe("lightly freckled");
   });
 
+  it("⚠ A NEW OPEN KIND BESIDE AN ECHOED CLOSED ONE IS NOT ABSORBED", () => {
+    /*
+      Founder hit, filed fable-1378. He re-used the combo prompt on his horned,
+      orbless frame and was told *"she already has two smooth bone-white horns …
+      this would have changed nothing"* — about an ask whose ORB half names a
+      feature she does not have.
+
+      Free, so no money moved. What it cost was the recovery loop three fixes had
+      just built, walled with a sentence that was not true.
+
+      `delta.open` appeared NOWHERE in this function: the closed half echoed, the
+      echo answered for the whole delta, and the open lane was invisible to it.
+      FOURTH instance of the enumeration-point class.
+    */
+    const verdict = saysNothingNew({
+      delta: {
+        free: { horns: ["two smooth bone-white horns rising from the top of her head"] },
+        open: { orb: { noun: "orb", words: "a glowing red vertical slit orb" } },
+      },
+      prior: { horns: ["two smooth bone-white horns rising from the top of her head"] },
+      priorOpen: {},
+      identity: FRECKLED,
+    });
+
+    expect(verdict.absorbed).toBe(false);
+  });
+
+  it("CONTROL — the SAME sentence absorbs once she has BOTH, and names both", () => {
+    /*
+      The door must keep working. A genuine repeat — every half of it already on
+      her — is still refused free, and the sentence names what she already has
+      including the open kind, which it could not do before either.
+
+      Without this arm the fix is indistinguishable from switching absorption off
+      for any delta with open content.
+    */
+    const verdict = saysNothingNew({
+      delta: {
+        free: { horns: ["two smooth bone-white horns rising from the top of her head"] },
+        open: { orb: { noun: "orb", words: "a glowing red vertical slit orb" } },
+      },
+      prior: { horns: ["two smooth bone-white horns rising from the top of her head"] },
+      priorOpen: { orb: "a glowing red vertical slit orb" },
+      identity: FRECKLED,
+    });
+
+    expect(verdict.absorbed).toBe(true);
+  });
+
+  it("CONTROL — an open kind whose WORDS moved is new, not an echo", () => {
+    /* The same word test every closed subject faces. A different orb is a
+       different ask, and the key alone must not answer for it. */
+    const verdict = saysNothingNew({
+      delta: { open: { orb: { noun: "orb", words: "a pale blue orb" } } },
+      prior: {},
+      priorOpen: { orb: "a glowing red vertical slit orb" },
+      identity: FRECKLED,
+    });
+
+    expect(verdict.absorbed).toBe(false);
+  });
+
+  it("CONTROL — a caller with no chain in hand gets the old behaviour", () => {
+    /* `priorOpen` absent means an open kind has no prior to compare against, so
+       it is NEW — the safe direction, and the one `priorAbsent` chose for the
+       same reason. */
+    const verdict = saysNothingNew({
+      delta: {
+        free: { horns: ["two smooth bone-white horns"] },
+        open: { orb: { noun: "orb", words: "a glowing red vertical slit orb" } },
+      },
+      prior: { horns: ["two smooth bone-white horns"] },
+      identity: FRECKLED,
+    });
+
+    expect(verdict.absorbed).toBe(false);
+  });
+
   it("lets the SAME reading through the moment her ask survives beside it", () => {
     /* Sixteen of the nineteen came back like this, and they are correct: the
        prior restated AND her word kept. One new item is enough. */
