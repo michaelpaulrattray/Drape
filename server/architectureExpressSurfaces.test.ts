@@ -233,3 +233,207 @@ describe("against the real bootstrap", () => {
     ).toBe(userRateLimitedRouters().length);
   });
 });
+
+/**
+ * ⚠ AND THE HALF NEITHER ARM ABOVE COULD SEE: A NEW **PUBLIC** EXPRESS ROUTE.
+ *
+ * Everything above is about the AUTHENTICATED five. `userRateLimitedRouters()`
+ * is derived on `checkUserRateLimit`, so a router that calls it lands in the
+ * population and reddens the arms — but a router that does NOT call it lands
+ * nowhere at all. Mount a new anonymous `/api/…` route today and every arm in
+ * this file stays green while invariant 5's public Express sentence quietly
+ * stops being the list, which is the failure the enumeration exists to prevent
+ * and the one CLAUDE.md has already suffered twice.
+ *
+ * So this last group asks the whole question instead of half of it: **every API
+ * path this application registers, by any mechanism, is named in invariant 5.**
+ * Both mechanisms, because there are exactly two and the second is the one that
+ * carries the webhook:
+ *
+ *   app.post("/api/webhooks/stripe", …)      registered on the app directly
+ *   app.use("/api/auth", emailAuthRouter)    a mounted router, prefix on the mount
+ *   app.use(imageProxyRouter)                a mounted router, paths inside it
+ *
+ * Compared at the GROUP — the first two segments, `/api/ink-design` rather than
+ * `/api/ink-design/:designId` — because the document writes `/api/hero/*` and
+ * names "the auth routes" collectively. That is a stated limit and not a silent
+ * one: a sixth route under an ALREADY-NAMED group passes here, and the arms
+ * above are what catch it when it authenticates. A route under a NEW group —
+ * which is what a new feature's public surface actually looks like — cannot.
+ *
+ * ⚠ AND IT REFUSES RATHER THAN SKIPPING. Two of the five routers register their
+ * path as `CONSTANT + "/:id"` and a textual reader finds no literal in them at
+ * all. A reader that shrugged at those would have dropped `/api/ink-design` and
+ * `/api/reference` — the two newest authenticated routes, and precisely the
+ * members this file exists because somebody lost. So the constant is resolved
+ * from its declaration, and a registration that still cannot be read FAILS the
+ * arm by name (`arm-asserts-its-own-reason`).
+ */
+
+/** Resolves an `export const NAME = "/api/…"` path constant from the tree. */
+function constantPathValue(name: string): string | null {
+  const sources: string[] = [];
+  const walk = (dir: string): void => {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) walk(full);
+      else if (entry.name.endsWith(".ts")) sources.push(readFileSync(full, "utf8"));
+    }
+  };
+  walk(path.join(repoRoot, "server"));
+  walk(path.join(repoRoot, "shared"));
+  const declaration = new RegExp(`const\\s+${name}\\s*(?::[^=]+)?=\\s*"([^"]+)"`);
+  for (const source of sources) {
+    const hit = declaration.exec(source);
+    if (hit) return hit[1]!;
+  }
+  return null;
+}
+
+const apiGroup = (p: string): string =>
+  `/${p.split("/").filter(Boolean).slice(0, 2).join("/")}`;
+
+/** The symbol → module map for both import forms the bootstrap uses. */
+function bootstrapImports(bootstrap: string): Record<string, string> {
+  const map: Record<string, string> = {};
+  for (const hit of bootstrap.matchAll(/import\s+(?:(\w+)|\{([^}]+)\})\s+from\s+"([^"]+)"/g)) {
+    const names = hit[1]
+      ? [hit[1]]
+      : hit[2]!.split(",").map((n) => n.trim().split(/\s+as\s+/).pop()!);
+    for (const name of names) map[name] = hit[3]!;
+  }
+  for (const hit of bootstrap.matchAll(/\{\s*([\w,\s]+)\s*\}\s*=\s*await\s+import\("([^"]+)"\)/g)) {
+    for (const name of hit[1]!.split(",").map((n) => n.trim())) map[name] = hit[2]!;
+  }
+  return map;
+}
+
+/** The API groups a mounted router registers, or the reasons it could not be read. */
+function groupsOfRouterModule(modulePath: string): { groups: string[]; unreadable: string[] } {
+  const source = readFileSync(modulePath, "utf8");
+  const groups = new Set<string>();
+  const unreadable: string[] = [];
+  for (const hit of source.matchAll(/\brouter\.(get|post|put|patch|delete|all)\(\s*([^,]+),/g)) {
+    const argument = hit[2]!;
+    const literal = /"(\/api\/[^"]*)"/.exec(argument);
+    if (literal) {
+      groups.add(apiGroup(literal[1]!));
+      continue;
+    }
+    const constant = /\b([A-Z][A-Z0-9_]{3,})\b/.exec(argument);
+    const value = constant ? constantPathValue(constant[1]!) : null;
+    if (value) {
+      groups.add(apiGroup(value));
+      continue;
+    }
+    unreadable.push(`${path.basename(modulePath)}: ${argument.trim().replace(/\s+/g, " ")}`);
+  }
+  return { groups: [...groups], unreadable };
+}
+
+function registeredApiGroups(bootstrap: string): { groups: string[]; unreadable: string[] } {
+  const imports = bootstrapImports(bootstrap);
+  const groups = new Set<string>();
+  const unreadable: string[] = [];
+
+  for (const hit of bootstrap.matchAll(/app\.(get|post|put|patch|delete|all)\(\s*"(\/api\/[^"]+)"/g)) {
+    groups.add(apiGroup(hit[2]!));
+  }
+  for (const hit of bootstrap.matchAll(
+    /app\.use\(\s*(?:"([^"]+)"\s*,\s*)?([A-Za-z_$][\w$]*)\s*(\(\s*\))?\s*\)/g,
+  )) {
+    const [, prefix, name] = hit;
+    if (!/router/i.test(name!)) continue;
+    if (prefix) {
+      groups.add(apiGroup(prefix));
+      continue;
+    }
+    const specifier = imports[name!];
+    if (!specifier) {
+      unreadable.push(`${name} is mounted but its import could not be resolved`);
+      continue;
+    }
+    const read = groupsOfRouterModule(`${path.resolve(repoRoot, "server/_core", specifier)}.ts`);
+    unreadable.push(...read.unreadable);
+    if (read.groups.length === 0 && read.unreadable.length === 0) {
+      unreadable.push(`${specifier} is mounted as a router and registers no /api path this reader can see`);
+    }
+    for (const group of read.groups) groups.add(group);
+  }
+  return { groups: [...groups].sort(), unreadable };
+}
+
+describe("the whole Express surface against invariant 5", () => {
+  const bootstrap = readFileSync(path.join(repoRoot, "server/_core/index.ts"), "utf8");
+
+  it("reads every registration — a path it cannot resolve is a FAILURE, never a skip", () => {
+    /*
+      The arm below compares a derived list with the document, so everything
+      turns on that list being whole; its wholeness is stated here first and
+      separately (`absence-only-expect-passes-on-nothing`). Both
+      constant-prefixed routers pass through `constantPathValue` — if that
+      declaration is ever renamed or moved out of `server/` and `shared/`, this
+      says so instead of the surface silently getting smaller.
+    */
+    const { groups, unreadable } = registeredApiGroups(bootstrap);
+    expect(
+      unreadable,
+      `Express registrations this reader could not resolve: ${unreadable.join(" | ")}`,
+    ).toEqual([]);
+
+    /* POSITIVE CONTROL FOR THE CONSTANT RESOLVER, named rather than counted.
+       These two are the whole reason it exists: they are registered as
+       `CONSTANT + "/:id"` and a literal-only reader finds nothing in them. A
+       `groups.length` floor would go on passing without them. */
+    expect(groups).toContain("/api/ink-design");
+    expect(groups).toContain("/api/reference");
+
+    /* And the surface as a whole, so the comparison below cannot be vacuous. */
+    expect(groups).toEqual([
+      "/api/auth", "/api/cast", "/api/evidence", "/api/health", "/api/hero",
+      "/api/image-proxy", "/api/ink-design", "/api/reference", "/api/slack",
+      "/api/webhooks",
+    ]);
+  });
+
+  it("⚠ every API group the app registers is named in CLAUDE.md's invariant 5", () => {
+    /*
+      DERIVED ON BOTH SIDES. The left is the running application's own
+      registrations; the right is the paragraph that claims to enumerate them.
+      A new public route under a new group reddens here, with the group to add.
+    */
+    const invariant = /^5\. \*\*Public endpoints are an enumerated allowlist\.\*\*.*$/m.exec(
+      readFileSync(path.join(repoRoot, "CLAUDE.md"), "utf8"),
+    );
+    expect(
+      invariant,
+      "CLAUDE.md's invariant 5 has been renumbered or reworded — re-point this arm at it",
+    ).not.toBeNull();
+
+    /* The paragraph must be the real one. An empty match would fail every check
+       below for the wrong reason; a loose anchor that swallowed the whole
+       document would pass them all for a worse one. */
+    expect(invariant![0].length).toBeGreaterThan(500);
+    expect(invariant![0]).toContain("/api/webhooks/stripe");
+
+    const { groups } = registeredApiGroups(bootstrap);
+    for (const group of groups) {
+      expect(
+        invariant![0].includes(group),
+        `${group} is registered in server/_core/index.ts and invariant 5 does not name it — a route that exists but is not on the list is how the list stops being the list`,
+      ).toBe(true);
+    }
+  });
+
+  it("CONTROL — an unnamed group is caught", () => {
+    /*
+      The arm above passes today, so by itself it proves only that nothing is
+      wrong at this moment. This drives the defect it is for: a new anonymous
+      public route, mounted the simplest way there is.
+    */
+    const withNewRoute = `${bootstrap}\n  app.get("/api/telemetry/ping", pingHandler);\n`;
+    const { groups } = registeredApiGroups(withNewRoute);
+    expect(groups).toContain("/api/telemetry");
+    expect(readFileSync(path.join(repoRoot, "CLAUDE.md"), "utf8").includes("/api/telemetry")).toBe(false);
+  });
+});
