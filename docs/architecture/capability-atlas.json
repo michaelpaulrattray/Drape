@@ -398,6 +398,7 @@
         "id": "scope_unknown",
         "kind": "service-refusal",
         "pinnedBy": [
+          "server/castingV2/facePanel.test.ts",
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [

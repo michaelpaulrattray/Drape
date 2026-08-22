@@ -63,7 +63,7 @@ _Entrances:_ `server/castingV2/refineInterpreter.ts` · `server/castingV2/refine
 | `gate_ink_uncarried` | interpreter-refusal |  | server/castingV2/refineDelta.ts:487<br>server/castingV2/refineDelta.ts:487<br>(+3) | 3 test(s) | ink.words.chest |
 | `gate_ink_unkeepable` | interpreter-refusal |  | server/castingV2/refineDelta.ts:496<br>server/castingV2/refineDelta.ts:496<br>(+3) | 2 test(s) | _documented-unreachable or gap — see findings_ |
 | `gate_ink_coverage_unread` | interpreter-refusal |  | server/castingV2/refineDelta.ts:503<br>server/castingV2/refineDelta.ts:503<br>(+3) | 2 test(s) | _documented-unreachable or gap — see findings_ |
-| `scope_unknown` | service-refusal |  | server/castingV2/refineService.ts:1270<br>server/castingV2/refineService.ts:1308 | 1 test(s) | guard.scope.unknown |
+| `scope_unknown` | service-refusal |  | server/castingV2/refineService.ts:1270<br>server/castingV2/refineService.ts:1308 | 2 test(s) | guard.scope.unknown |
 | `scope_mismatch` | service-refusal |  | server/castingV2/refineService.ts:4606 | 1 test(s) | _documented-unreachable or gap — see findings_ |
 
 - wall_stage = PROVABLY the shoot (the lexicon backed the claim); wall_unbacked = the model claimed out-of-scope and the lexicon could not confirm — one wall was two walls wearing one name until census card C1.
@@ -252,7 +252,7 @@ _Entrances:_ `server/castingV2/facePanel.ts` · `server/castingV2/faceScanServic
 | removal_unnameable | service-refusal |  | refineService.test.ts |
 | removal_unnamed | service-refusal |  | refineService.test.ts |
 | scope_mismatch | service-refusal |  | refineService.test.ts |
-| scope_unknown | service-refusal |  | refineService.test.ts |
+| scope_unknown | service-refusal |  | facePanel.test.ts, refineService.test.ts |
 | sideNamedWithoutScope | cannot-say | refunded | cannotSayCopy.test.ts, repaintAsks.test.ts |
 | step_moved | service-refusal |  | refineService.test.ts |
 | uncatalogued | cannot-say | refunded | cannotSayCopy.test.ts, repaintAsks.test.ts, vacantPhrase.test.ts |

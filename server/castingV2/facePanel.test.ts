@@ -297,7 +297,7 @@ describe("what the library adds to a row", () => {
     expect(built.regions).toEqual([
       {
         box: { x: 12, y: 30, width: 200, height: 140, frame: { width: 1024, height: 1536 } },
-        name: null, spoken: null, prefill: null, slot: "hair",
+        name: null, spoken: null, prefill: null, slot: "hair", scopable: false,
       },
     ]);
   });
@@ -497,7 +497,7 @@ describe("what a scan adds to a row", () => {
       maskUrl: "data:image/png;base64,nose",
       crop: { x: 400, y: 600, width: 120, height: 160, frame },
     }]);
-    expect(nose.regions).toEqual([{ box: { x: 400, y: 600, width: 120, height: 160, frame }, name: null, spoken: null, prefill: null, slot: "nose" }]);
+    expect(nose.regions).toEqual([{ box: { x: 400, y: 600, width: 120, height: 160, frame }, name: null, spoken: null, prefill: null, slot: "nose", scopable: false }]);
   });
 
   it("leaves the MINTED cutout in place where an edit made one", () => {
@@ -518,7 +518,7 @@ describe("what a scan adds to a row", () => {
     */
     expect(hair.cutouts[0]!.contentUrl).toBe("https://bucket.example/library/hair.png");
     expect(hair.cutouts[0]!.crop).toBeNull();
-    expect(hair.regions).toEqual([{ box: { x: 12, y: 30, width: 200, height: 140, frame }, name: null, spoken: null, prefill: null, slot: "hair" }]);
+    expect(hair.regions).toEqual([{ box: { x: 12, y: 30, width: 200, height: 140, frame }, name: null, spoken: null, prefill: null, slot: "hair", scopable: false }]);
   });
 
   it("gives a measured row its click target even when the crop came from an edit", () => {
@@ -535,7 +535,7 @@ describe("what a scan adds to a row", () => {
       .find((panelRow) => panelRow.name === "Hair")!;
 
     expect(hair.cutouts[0]!.contentUrl).toBe("https://bucket.example/library/hair.png");
-    expect(hair.regions).toEqual([{ box: { x: 900, y: 900, width: 50, height: 50, frame }, name: null, spoken: null, prefill: null, slot: "hair" }]);
+    expect(hair.regions).toEqual([{ box: { x: 900, y: 900, width: 50, height: 50, frame }, name: null, spoken: null, prefill: null, slot: "hair", scopable: false }]);
   });
 
   it("still refuses to invent a box for a region the scan did not find", () => {
@@ -576,11 +576,11 @@ describe("what a scan adds to a row", () => {
     expect(eyes.regions).toEqual([
       {
         box: { x: 300, y: 500, width: 60, height: 30, frame },
-        name: "Right eye", spoken: "her right eye", prefill: "her right eye — ", slot: "eye@right",
+        name: "Right eye", spoken: "her right eye", prefill: "her right eye — ", slot: "eye@right", scopable: true,
       },
       {
         box: { x: 640, y: 500, width: 60, height: 30, frame },
-        name: "Left eye", spoken: "her left eye", prefill: "her left eye — ", slot: "eye@left",
+        name: "Left eye", spoken: "her left eye", prefill: "her left eye — ", slot: "eye@left", scopable: true,
       },
     ]);
   });
@@ -639,7 +639,7 @@ describe("a pair whose geometry is one instance", () => {
     expect(eyes.regions).toEqual([
       {
         box: { x: 640, y: 500, width: 60, height: 30, frame },
-        name: "Right eye", spoken: "her right eye", prefill: "her right eye — ", slot: "eye@right",
+        name: "Right eye", spoken: "her right eye", prefill: "her right eye — ", slot: "eye@right", scopable: true,
       },
     ]);
     expect(eyes.cutouts).toHaveLength(1);
@@ -659,7 +659,7 @@ describe("a pair whose geometry is one instance", () => {
     /* Null is not an omission: it means the row's own name is the label. */
     const nose = scanned({ nose: { x: 400, y: 600, width: 120, height: 160 } })
       .find((row) => row.name === "Nose")!;
-    expect(nose.regions).toEqual([{ box: { x: 400, y: 600, width: 120, height: 160, frame }, name: null, spoken: null, prefill: null, slot: "nose" }]);
+    expect(nose.regions).toEqual([{ box: { x: 400, y: 600, width: 120, height: 160, frame }, name: null, spoken: null, prefill: null, slot: "nose", scopable: false }]);
   });
 
   it("draws no row at all when nothing can place it — not an unclickable one", () => {
@@ -1029,5 +1029,203 @@ describe("the tattoos she is wearing", () => {
     const rows = panelWithInk([worn({ slot: "ink:" }), worn({ slot: "not-an-ink-slot" })])
       .groups.flatMap((group) => group.rows);
     expect(rows).toEqual([]);
+  });
+});
+
+/*
+  THE KINDS NOBODY HAS CATALOGUED — his own words on his own cast (1394): *"the
+  orb isnt showing up in the features panel"*.
+
+  The mechanism was one line: the row loop walks `catalogueSlots()`, an open
+  kind has no catalogue definition, and the enumeration walked past a library
+  row that was sitting right there in the same function. These arms are the
+  design countersigned in fable-1397 §1, and the two that matter most are the
+  ones about what the panel REFUSES to compose — her word is her word, and a
+  rectangle over an uncatalogued thing scopes nothing.
+*/
+describe("an open kind — a thing the catalogue has no word for", () => {
+  const orb = () => row({
+    slot: "open:orb",
+    noun: "orb",
+    words: ["a glowing red vertical slit orb embedded in the centre of her forehead"],
+  });
+
+  it("draws a row for it, in her own word, in a section that claims no anatomy", () => {
+    const built = panel([orb()]);
+    const section = built.groups.find((group) => group.heading === "Also on this cast");
+    expect(section, "an uncatalogued kind has a section of its own").toBeDefined();
+    expect(section!.rows.map((one) => one.name)).toEqual(["Orb"]);
+    expect(section!.rows[0]!.spoken).toBe("her orb");
+    expect(section!.rows[0]!.prefill).toBe("her orb — ");
+    expect(section!.rows[0]!.words)
+      .toEqual(["a glowing red vertical slit orb embedded in the centre of her forehead"]);
+  });
+
+  it("puts that section LAST, and never under the region the kind's store believes", () => {
+    /*
+      The obvious grouping is wrong, measured on the only two specimens there
+      are: the property store says the orb's `anchorRegion` is `wholeBody`,
+      while her own sentence says it is on her forehead. Grouped by the store, a
+      forehead feature files under Body — law 8's ontology failure produced by
+      trusting a reader on a question the customer already answered.
+    */
+    const built = panel([orb(), row({ slot: "hair", noun: "hair", words: ["a copper shag"] })]);
+    expect(built.groups.map((group) => group.heading))
+      .toEqual(["Hair", "Also on this cast"]);
+    expect(built.groups.find((group) => group.heading === "Body")).toBeUndefined();
+  });
+
+  it("takes her noun from the LIBRARY ROW, never from the key", () => {
+    /*
+      `cat ears` and `cat-ears` both key as `open:cat-ears`, so the key cannot
+      say which she typed — `openLaneKind`'s binding condition is that nothing a
+      customer reads is derived from it. The CONTROL is the key itself: read
+      from there the row would be named "Cat-ears", which is a word she did not
+      use.
+    */
+    const built = panel([row({ slot: "open:cat-ears", noun: "cat ears", words: ["soft grey fur"] })]);
+    const section = built.groups.find((group) => group.heading === "Also on this cast")!;
+    expect(section.rows[0]!.name).toBe("Cat ears");
+    expect(section.rows[0]!.name, "the key's own spelling never reaches her").not.toBe("Cat-ears");
+    expect(section.rows[0]!.spoken).toBe("her cat ears");
+  });
+
+  it("invents no plural — the row is her word and nothing composed from it", () => {
+    const built = panel([row({ slot: "open:halo", noun: "halo", words: ["a thin gold ring"] })]);
+    const section = built.groups.find((group) => group.heading === "Also on this cast")!;
+    expect(section.rows[0]!.name).toBe("Halo");
+    expect(section.rows[0]!.spoken).toBe("her halo");
+  });
+
+  it("says where it came from, the way every other row does", () => {
+    const fromEdit = allRows([orb()]).find((one) => one.name === "Orb")!;
+    expect(fromEdit.from).toBe("from an edit");
+    const bornWith = allRows([row({
+      slot: "open:orb", noun: "orb", words: ["a glowing red orb"], variantId: null,
+    })]).find((one) => one.name === "Orb")!;
+    expect(bornWith.from).toBe("she came with it");
+  });
+
+  it("DRAWS NO ROW while nothing has measured where it is (fable-414)", () => {
+    /*
+      This is the state of every open kind in production the day the panel
+      learned to draw them: two library rows, both words-only, neither with a
+      crop — because the segmenter was asked the bare noun and answered nothing.
+      The rule is the founder's own overrule of fable-382 and it is not bent
+      here: a name with nowhere to point is not a row.
+    */
+    const built = panel([row({
+      slot: "open:orb", noun: "orb", words: ["a glowing red orb"], geometry: null,
+    })]);
+    expect(built.groups.find((group) => group.heading === "Also on this cast")).toBeUndefined();
+  });
+
+  it("is NOT kept open as a placeholder while a scan runs", () => {
+    /*
+      A pending row is a place kept for an answer that is coming. The scan walks
+      the catalogue and can never answer an open kind, so a placeholder here
+      would be a working state outliving its work — fable-521's own warning.
+    */
+    const built = facePanel({
+      rows: [row({ slot: "open:orb", noun: "orb", words: ["a glowing red orb"], geometry: null })],
+      pronouns: SHE,
+      contentUrl: (key) => key,
+      maskUrl: (key) => key,
+      scanning: true,
+    });
+    expect(built.groups.find((group) => group.heading === "Also on this cast")).toBeUndefined();
+  });
+
+  it("draws its rectangle, and that rectangle SCOPES NOTHING", () => {
+    /*
+      `refineService` refuses an `open:` scope with `scope_unknown`, deliberately
+      and with three rulings holding it there. A rectangle that sent one would
+      be a tap dead-ending 1,860 lines before the road it appears to promise.
+    */
+    const one = allRows([orb()]).find((entry) => entry.name === "Orb")!;
+    expect(one.regions).toHaveLength(1);
+    expect(one.regions[0]!.slot).toBe("open:orb");
+    expect(one.regions[0]!.scopable).toBe(false);
+    expect(one.instances, "one of it, so there is nothing to open").toEqual([]);
+  });
+
+  it("LEAVES THE PANEL when the kind is pruned (fable-1397 §1)", () => {
+    /*
+      By the same mechanism that puts it there rather than by a second rule: a
+      pruned kind's library rows retire, and a retired row is not live. Driven
+      because the behaviour has no code of its own, which is the kind that
+      breaks silently.
+    */
+    const built = panel([row({
+      slot: "open:orb", noun: "orb", words: ["a glowing red orb"], retiredAt: new Date(),
+    })]);
+    expect(built.groups.find((group) => group.heading === "Also on this cast")).toBeUndefined();
+  });
+
+  it("has no section at all on a cast that has none", () => {
+    const built = panel([row({ slot: "hair", noun: "hair", words: ["a copper shag"] })]);
+    expect(built.groups.map((group) => group.heading)).toEqual(["Hair"]);
+  });
+
+  /*
+    A DISTRIBUTED KIND — wings, not fangs. The library files one row per side
+    because one rectangle cannot honestly hold two things on opposite sides; the
+    PANEL is still one row, because that is how the product speaks about them
+    and because naming one of her wings needs a singular of her word.
+  */
+  describe("a kind filed one side each", () => {
+    const wings = (words: { left: string[]; right: string[] }) => [
+      row({
+        slot: "open:wings@left", noun: "wings", words: words.left,
+        geometry: { bbox: { x: 700, y: 300, width: 200, height: 400 }, frame: { width: 1000, height: 1500 } },
+      }),
+      row({
+        slot: "open:wings@right", noun: "wings", words: words.right,
+        geometry: { bbox: { x: 100, y: 300, width: 200, height: 400 }, frame: { width: 1000, height: 1500 } },
+      }),
+    ];
+
+    it("folds into ONE row that speaks her plural, with both rectangles", () => {
+      const built = panel(wings({ left: ["black feathered"], right: ["black feathered"] }));
+      const section = built.groups.find((group) => group.heading === "Also on this cast")!;
+      expect(section.rows).toHaveLength(1);
+      expect(section.rows[0]!.name).toBe("Wings");
+      expect(section.rows[0]!.spoken).toBe("her wings");
+      expect(section.rows[0]!.slots).toEqual(["open:wings@left", "open:wings@right"]);
+      expect(section.rows[0]!.words).toEqual(["black feathered"]);
+      expect(section.rows[0]!.regions).toHaveLength(2);
+    });
+
+    it("orders the rectangles as the PHOTOGRAPH reads them, not by the side word", () => {
+      /* `left` is HER left, which is the image's right — ordering by the word
+         would mirror every tile on the panel. */
+      const built = allRows(wings({ left: ["black"], right: ["black"] }));
+      const one = built.find((entry) => entry.name === "Wings")!;
+      expect(one.regions.map((region) => region.box.x)).toEqual([100, 700]);
+    });
+
+    it("OPENS NO CHILDREN — the product has no word for one of her wings", () => {
+      const one = allRows(wings({ left: ["black"], right: ["black"] }))
+        .find((entry) => entry.name === "Wings")!;
+      expect(one.instances).toEqual([]);
+      expect(one.regions.every((region) => region.scopable === false)).toBe(true);
+      expect(one.regions.every((region) => region.name === null)).toBe(true);
+    });
+
+    it("says each side's own words when they diverge, and claims neither for the pair", () => {
+      const one = allRows(wings({ left: ["black feathered"], right: ["white feathered"] }))
+        .find((entry) => entry.name === "Wings")!;
+      expect(one.words).toEqual(["left black feathered · right white feathered"]);
+    });
+
+    it("stays ONE row when only one side has ever been filed", () => {
+      const built = panel([row({
+        slot: "open:wings@left", noun: "wings", words: ["black feathered"],
+      })]);
+      const section = built.groups.find((group) => group.heading === "Also on this cast")!;
+      expect(section.rows).toHaveLength(1);
+      expect(section.rows[0]!.name).toBe("Wings");
+      expect(section.rows[0]!.regions).toHaveLength(1);
+    });
   });
 });

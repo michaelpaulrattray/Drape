@@ -586,7 +586,12 @@ describe("the rectangle names what it covers (fable-378 (c))", () => {
   it("scopes only when both of the pair are actually on the picture", async () => {
     const regions = withoutProse(await readFile(REGIONS, "utf8"));
 
-    expect(regions).toContain("region.slot.includes(\"@\")");
+    /* THE FIRST HALF IS THE SERVER'S ANSWER NOW, and the change is not
+       cosmetic: `slot.includes("@")` was true of `open:wings@left`, a key the
+       scope door refuses on purpose, so the browser would have scoped a tap
+       straight into a wall the day the panel learned to draw an open kind. */
+    expect(regions).toContain("region.scopable");
+    expect(regions).not.toContain("region.slot.includes(\"@\")");
     expect(regions).toContain("(row.regions.length > 1 || row.slots.length === 1)");
     /* And an unscoped click still speaks about the ROW, never about the one
        rectangle it happened to land on. */

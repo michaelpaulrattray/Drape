@@ -78,14 +78,48 @@ import {
   type SlotDefinition,
   type SlotGroup,
 } from "./referenceSlotCatalogue";
-import { pairHasDiverged, slotKey } from "./referenceSlots";
+import {
+  INSTANCES,
+  type Instance,
+  openKindOfSlot,
+  pairHasDiverged,
+  slotKey,
+} from "./referenceSlots";
 
-/** The panel's sections, in the order they are read on a face. */
-export const PANEL_GROUPS: readonly { group: SlotGroup; heading: string }[] = [
+/**
+ * A PANEL SECTION — the catalogue's four groups, and the one that is not a
+ * catalogue group at all.
+ *
+ * `SlotGroup` is a fact about the CATALOGUE: which part of a face a courted
+ * slot belongs to. `open` is a fact about this PANEL: a place for the things
+ * this cast has that the catalogue has no word for. Widening `SlotGroup` to
+ * hold it would put a value in the closed vocabulary that no catalogue entry
+ * can ever carry, so the widening lives here, where the concept does.
+ */
+export type PanelSection = SlotGroup | "open";
+
+/**
+ * The panel's sections, in the order they are read on a face.
+ *
+ * # AND THE LAST ONE IS NOT A PART OF A FACE (design opus-1041 §4, heading
+ * ruled fable-1397 §2)
+ *
+ * An open kind carries an `anchorRegion` read off the KIND, and grouping by it
+ * was measured wrong on the only two specimens there are: the store says the
+ * orb's region is `wholeBody` while her own sentence says *"embedded in the
+ * centre of her forehead"*, so grouped by the store it files under **Body**,
+ * where nobody would look for a forehead. That is law 8's ontology failure
+ * produced by trusting a reader on a question the customer already answered.
+ *
+ * So it is a section of its own, and the heading claims nothing about anatomy:
+ * it says these are also on this cast, which is the only thing we know.
+ */
+export const PANEL_GROUPS: readonly { group: PanelSection; heading: string }[] = [
   { group: "face", heading: "Face" },
   { group: "hair", heading: "Hair" },
   { group: "body", heading: "Body" },
   { group: "accessories", heading: "Accessories" },
+  { group: "open", heading: "Also on this cast" },
 ];
 
 export type PanelBox = {
@@ -223,6 +257,27 @@ export type PanelRegion = {
    */
   slot: FeatureSlot;
   /**
+   * MAY AN ASK BE NARROWED TO THESE PIXELS — the SERVER's answer, never the
+   * browser's guess (working law 4).
+   *
+   * The picture used to decide this itself, from the shape of the key: a slot
+   * with an `@` in it was one of a pair and therefore scopable. That was true
+   * of every key that existed when it was written, and it stops being true the
+   * moment the panel draws an OPEN kind: `open:wings@left` has the `@` and is
+   * refused by `refineService`'s scope door on purpose (`scope_unknown`, three
+   * rulings holding it there — `ZONE_SCOPE` is `fullFrame`, an uncatalogued
+   * kind has no promoted instance, and the one-of-a-pair ask refuses into the
+   * refund rather than guessing). A rectangle that scopes into that wall is a
+   * tap that dead-ends, which is the entrance-before-the-road class with the
+   * entrance drawn by us.
+   *
+   * So the fact travels from the side that knows it. It answers ONE half of the
+   * question — *are these pixels one instance the product can narrow to* — and
+   * the row-level half (are both of the pair drawn) stays where it was, because
+   * that one is about what this face's read found rather than about the key.
+   */
+  scopable: boolean;
+  /**
    * The opening of their sentence for THIS rectangle, when it differs from the
    * row's — non-null exactly when {@link PanelRegion.name} is, and for the same
    * reason. Written here rather than composed in the browser from the name: how
@@ -259,7 +314,7 @@ export type PanelRow = {
    * one row, and an edit to it means both sides.
    */
   slots: readonly FeatureSlot[];
-  group: SlotGroup;
+  group: PanelSection;
   /** How the row reads: "Her lips", "Her earrings", "Her left earring". */
   name: string;
   /** Everything ever accepted about it, oldest first. Empty until something is. */
@@ -359,7 +414,7 @@ export type PanelInstance = {
 
 export type FacePanel = {
   possessive: string;
-  groups: readonly { group: SlotGroup; heading: string; rows: readonly PanelRow[] }[];
+  groups: readonly { group: PanelSection; heading: string; rows: readonly PanelRow[] }[];
 };
 
 type SlotState = {
@@ -689,7 +744,7 @@ export function facePanel(input: {
   };
 
   const spoken = new Set<FeatureSlot>();
-  const rowsOf = new Map<SlotGroup, PanelRow[]>();
+  const rowsOf = new Map<PanelSection, PanelRow[]>();
   const push = (row: PanelRow) => {
     const held = rowsOf.get(row.group);
     if (held) held.push(row);
@@ -724,7 +779,19 @@ export function facePanel(input: {
         cutouts: state.thumb ? [state.thumb] : [],
         /* The row is one thing and the rectangle covers it, so it needs no name
            of its own — the row's is the label. */
-        regions: state.box ? [{ box: state.box, name: null, spoken: null, prefill: null, slot: definition.slot }] : [],
+        regions: state.box
+          ? [{
+            box: state.box,
+            name: null,
+            spoken: null,
+            prefill: null,
+            slot: definition.slot,
+            /* There is only one of it, so there is nothing to narrow to — a
+               scope naming the whole face is the silent whole-face render the
+               server's door refuses. */
+            scopable: definition.instance !== null,
+          }]
+          : [],
         /* There is only one of it, so there is nothing to open. */
         instances: [],
       });
@@ -839,6 +906,9 @@ export function facePanel(input: {
              row's `slots` still carries both: one row, and an edit to the ROW
              means both, while an edit to this RECTANGLE means this one. */
           slot: side.definition.slot,
+          /* A catalogued instance, which is exactly what the scope door
+             admits. */
+          scopable: side.definition.instance !== null,
         })),
         /*
           THE TWO CHILDREN (founder, fable-452) — always both, whether or not
@@ -942,7 +1012,20 @@ export function facePanel(input: {
     the panel (fable-414), so a pending row that finds nothing removes itself
     rather than leaving a husk.
   */
-  const keep = (row: PanelRow): boolean => hasContent(row) || (input.scanning === true);
+  /*
+    AND THE GRACE IS THE SCAN'S, so it does not reach an open row.
+
+    A pending row is a place kept for an answer that is COMING: the scan walks
+    the catalogue, so every row it holds open will be answered or will remove
+    itself when the read settles. The scan never asks about an open kind — the
+    catalogue it walks has no definition for one, and buying a segmenter read
+    for an uncatalogued word is the thing the rung ladder measured as answering
+    nothing. So an open row kept open by `scanning` would be a placeholder for
+    a read that is not running, which is fable-521's own warning: a working
+    state that can outlive its work.
+  */
+  const keep = (row: PanelRow): boolean => hasContent(row)
+    || (input.scanning === true && row.group !== "open");
   const stateOfRow = (row: PanelRow): PanelRow => (
     hasContent(row) ? row : { ...row, state: "pending" }
   );
@@ -1062,7 +1145,174 @@ export function facePanel(input: {
         spoken: null,
         prefill: null,
         slot: definition.slot,
+        /* The placement vocabulary decides: `upperArm` is per-side and the
+           other two are one-of-it, so a sided ink rectangle narrows and a
+           sideless one has nothing to narrow to (fable-1291 §3). */
+        scopable: definition.instance !== null,
       }],
+      instances: [],
+    });
+  }
+
+  /*
+    ---- THE KINDS NOBODY HAS CATALOGUED (the founder on his own cast, 1394:
+    "the orb isnt showing up in the features panel"; design opus-1041 §5,
+    countersigned fable-1397 §1) ----
+
+    A THIRD SOURCE, and like the ink rows above it is one the catalogue cannot
+    enumerate — for the opposite reason. Ink is a design at a PLACE the
+    catalogue has never had a slot for; an open kind is a thing the catalogue
+    has never had a WORD for. Both are facts about this cast that only this
+    cast's own rows can answer, so both are built here rather than walked.
+
+    **Nothing is fetched and nothing is invented.** The data was already inside
+    this function: `input.rows` is the branch's library, `liveReferences` keeps
+    the open rows, `bySlot` holds `open:orb` — and the enumeration above simply
+    walks past it, because `catalogueSlots()` has no definition to yield. That
+    is the whole of his first sentence.
+
+    # HER WORD, AND ONLY HER WORD
+
+    The catalogue supplies `name`, `pairNoun` and a plural for a courted slot.
+    An open kind has none of those, so the row is named from the library row's
+    own noun and **no plural and no singular is ever composed from it**. A naive
+    `+s` on a customer's noun — or a `wing` cut out of her `wings` — is the same
+    class as a rectangle placed by proportion, one grammar down: the product
+    asserting a form of her word that she never used.
+
+    That is also why a distributed kind's row opens no children. A pair of
+    catalogued eyes has "Left eye" to put on each child, and her wings have
+    nothing the product may call one of them. `referenceSlots` already ruled the
+    surface this way — *"the panel says her wings and derives its boxes from the
+    two rows … the panel still draws no per-side row"* — so the sides are
+    storage and the row is the kind.
+
+    # AND THE ROW LEAVES WHEN THE KIND DOES
+
+    Nothing here checks for a prune (fable-1397 §1's condition). A pruned kind's
+    library rows retire, `liveReferences` drops a retired row, and the kind is
+    simply not in `bySlot` — so the row disappears by the same mechanism that
+    makes it appear, rather than by a second rule that could disagree with the
+    first. Driven in the suite, because a behaviour with no code of its own is
+    the one that breaks silently.
+  */
+  const openFiled = new Map<string, { slot: FeatureSlot; side: Instance | null }[]>();
+  for (const slot of Array.from(bySlot.keys())) {
+    const parsed = openKindOfSlot(slot);
+    if (parsed === null) continue;
+    const held = openFiled.get(parsed.kind) ?? [];
+    held.push({ slot, side: parsed.side });
+    openFiled.set(parsed.kind, held);
+  }
+
+  /** The noun the LIBRARY recorded for this slot — never one derived from the
+   *  key. `cat ears` and `cat-ears` both key as `open:cat-ears`, so the key
+   *  cannot say which she typed and nothing a customer reads may come from it
+   *  (`openLaneKind`'s own binding condition). */
+  const openNounOf = (slot: FeatureSlot): string | null => {
+    const rows = bySlot.get(slot) ?? [];
+    if (rows.length === 0) return null;
+    return rows.reduce((held, row) => (row.version > held.version ? row : held)).noun;
+  };
+
+  /* An open rectangle is never scopable — see {@link PanelRegion.scopable}. */
+  const openRegion = (slot: FeatureSlot, box: PanelBox): PanelRegion => ({
+    box,
+    /* One row, whatever the library filed underneath it, so the row's own label
+       names every rectangle — and on a distributed kind that is a deliberate
+       silence rather than an omission: naming one of her wings needs a singular
+       of her word, and composing one is the invention this row refuses. */
+    name: null,
+    spoken: null,
+    prefill: null,
+    slot,
+    scopable: false,
+  });
+
+  for (const filed of Array.from(openFiled.values())) {
+    /* THE SIDELESS KEY IS THE WHOLE KIND when the library filed one — a
+       `single` or `coLocated` kind files exactly there, and the per-side keys
+       are the distributed class's alone. A kind holding both is two grammars
+       disagreeing rather than two features, so the whole kind wins and the row
+       is one row either way. */
+    const sideless = filed.find((one) => one.side === null) ?? null;
+    if (sideless !== null) {
+      const noun = openNounOf(sideless.slot);
+      if (noun === null || noun.trim() === "") continue;
+      const state = stateOf(sideless.slot);
+      const spokenName = `${input.pronouns.possessive} ${noun}`;
+      push({
+        state: "settled",
+        slots: [sideless.slot],
+        group: "open",
+        name: capitalize(noun),
+        spoken: spokenName,
+        words: state.words,
+        /* A stated absence is `whenAbsent`'s, authored per catalogued slot
+           beside the argument that an empty read there cannot mean "hidden".
+           Nobody has catalogued this thing, so nobody has made that argument
+           about it. */
+        absent: null,
+        from: state.from,
+        prefill: prefillFor(spokenName),
+        cutouts: state.thumb ? [state.thumb] : [],
+        regions: state.box ? [openRegion(sideless.slot, state.box)] : [],
+        /* One of it, so there is nothing to open. */
+        instances: [],
+      });
+      continue;
+    }
+
+    /* ---- a distributed kind: one row, its pixels filed one side each ---- */
+
+    const sides: { slot: FeatureSlot; side: Instance; state: SlotState; noun: string | null }[] = [];
+    for (const side of INSTANCES) {
+      const one = filed.find((entry) => entry.side === side);
+      if (one === undefined) continue;
+      sides.push({ slot: one.slot, side, state: stateOf(one.slot), noun: openNounOf(one.slot) });
+    }
+    if (sides.length === 0) continue;
+    const noun = sides.map((side) => side.noun).find((word) => word !== null && word.trim() !== "");
+    if (noun === undefined || noun === null) continue;
+    const spokenName = `${input.pronouns.possessive} ${noun}`;
+    const left = sides.find((side) => side.side === "left") ?? null;
+    const right = sides.find((side) => side.side === "right") ?? null;
+    /* Derived every time from the words themselves, never a flag — the same
+       rule a matched pair of earrings has always followed. */
+    const diverged = left !== null && right !== null && pairHasDiverged({
+      feature: noun,
+      left: { words: left.state.words },
+      right: { words: right.state.words },
+    });
+    /* Ordered as the PHOTOGRAPH reads them, from where the boxes ARE: `left` is
+       HER left, which is the image's right, so ordering by the side word would
+       mirror every tile on the panel. */
+    const pictured = [...sides]
+      .map((side) => ({ ...side, at: side.state.thumb?.crop?.x ?? side.state.box?.x ?? null }))
+      .sort((a, b) => (a.at === null || b.at === null ? 0 : a.at - b.at));
+    push({
+      state: "settled",
+      slots: sides.map((side) => side.slot),
+      group: "open",
+      name: capitalize(noun),
+      spoken: spokenName,
+      words: diverged && left !== null && right !== null
+        ? attributedWords(
+          { noun: "left", words: left.state.words },
+          { noun: "right", words: right.state.words },
+        )
+        : sides.find((side) => side.state.words.length > 0)?.state.words ?? [],
+      absent: null,
+      /* Sayable only when both sides came from the same place; two provenances
+         is not a fact about the kind. */
+      from: sides.every((side) => side.state.from === sides[0]!.state.from) ? sides[0]!.state.from : null,
+      prefill: prefillFor(spokenName),
+      cutouts: pictured.filter((side) => side.state.thumb !== null).map((side) => side.state.thumb!),
+      regions: pictured
+        .filter((side) => side.state.box !== null)
+        .map((side) => openRegion(side.slot, side.state.box!)),
+      /* No children — see the block comment: the product has no word for one of
+         her wings and will not compose one. */
       instances: [],
     });
   }

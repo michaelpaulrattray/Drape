@@ -102,6 +102,17 @@ export type FacePanelRegion = {
   /** This rectangle's own opening sentence, when it differs from the row's.
    *  Written by the server so the browser never composes copy. */
   prefill: string | null;
+  /**
+   * MAY AN ASK BE NARROWED TO THESE PIXELS — the server's answer.
+   *
+   * This used to be read off the KEY here in the browser (`slot.includes("@")`),
+   * which was true of every key that existed when it was written and stops
+   * being true the moment the panel draws an uncatalogued kind: `open:wings@left`
+   * has the `@` and the scope door refuses it on purpose. Whether a scope is
+   * admitted is the server's rule, so it is the server that says so — see
+   * `PanelRegion.scopable`.
+   */
+  scopable: boolean;
 };
 
 export type FacePanelRow = {

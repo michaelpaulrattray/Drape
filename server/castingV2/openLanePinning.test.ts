@@ -216,7 +216,12 @@ describe("3. the branch is entered ONLY by the prefix", () => {
       remint: "whenEarned",
       display: null,
     });
-    expect(open!.panel.row, "a kind nobody has catalogued draws no row").toBe("none");
+    /* The CATALOGUE enumerates no row for it — which is what keeps the face
+       scan from buying a segmenter read for an uncatalogued word on every face
+       in the product. The panel does draw one, from this cast's own library
+       rows, exactly as it draws a delivered tattoo (facePanel's open section,
+       2026-08-22). */
+    expect(open!.panel.row, "the catalogue enumerates no row for an open kind").toBe("none");
     expect("pairNoun" in open!, "no instance means no pair noun").toBe(false);
   });
 

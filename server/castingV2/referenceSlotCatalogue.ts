@@ -1155,9 +1155,11 @@ function openSlotDefinition(slot: FeatureSlot): SlotDefinition | null {
     So the fields below carry the TOKEN, and every copy path is required to read
     the stored noun instead. `recipeAssembler` already does (`entry?.noun ??
     ask.noun`, and it refuses outright when neither answers); the scope-copy path
-    is unreachable because the scope door refuses an open key and an open kind
-    draws no panel row to point at. The one live consumer of the token is
-    `question` — see its own note.
+    is unreachable because the scope door refuses an open key — and the panel's
+    open rows, which arrived 2026-08-22, take their name from the LIBRARY ROW's
+    noun rather than from this one, with their rectangles marked
+    `scopable: false` for exactly the same reason the scope door refuses. The
+    one live consumer of the token is `question` — see its own note.
   */
   /*
     THE SIDE COMES OFF FIRST, THROUGH THE GRAMMAR'S OWN PARSER (fable-1001 §1).
@@ -1200,19 +1202,42 @@ function openSlotDefinition(slot: FeatureSlot): SlotDefinition | null {
     tier: "anatomy",
     /*
       STATED, NOT DERIVED — the least-wrong of four closed values. Nobody has
-      catalogued this thing, so no grouping is honest. It decides panel ordering
-      only, and an open kind draws no row, so this value is inert by
-      construction. Declared here so that the day it stops being inert, this
-      line is what gets read.
+      catalogued this thing, so no grouping is honest.
+
+      ⚠ **IT SAID "the day it stops being inert, this line is what gets read",
+      AND THAT DAY CAME AND THE ANSWER WAS NO** (2026-08-22, design opus-1041
+      §4, ruled fable-1397 §2). The panel now draws open rows, and it does NOT
+      read this: they go in a section of their own, headed *"Also on this
+      cast"*, after Accessories. Grouping by a region was measured wrong on the
+      only two specimens there are — the property store calls the orb's region
+      `wholeBody` while her own sentence puts it on her forehead, so grouped by
+      the store a forehead feature files under Body.
+
+      So the value stays inert, and it is now inert on purpose rather than by
+      accident. It is kept because `SlotDefinition` is a total record and every
+      branch has to answer all of it; if a reader ever needs a group for an open
+      kind, this line is still the wrong one to take.
     */
     group: "face",
-    /* The panel draws catalogued rows. A kind nobody has catalogued has no row
-       to draw, and inventing one would put an uncourted feature in the founder's
-       face chart. */
+    /*
+      THE CATALOGUE'S ENUMERATION draws no row for it, and that is still exactly
+      right — it is the same asymmetry the ink rows have, for the opposite
+      reason. `catalogueSlots()` is what the face SCAN walks, so a row in here
+      would have a segmenter hunting an uncatalogued word on every face in the
+      product, at $0.005 a question.
+
+      ⚠ **IT NO LONGER MEANS THE PANEL IS SILENT ABOUT HER** (2026-08-22): the
+      panel builds open rows from the branch's own library, beside the ink rows
+      and by the same argument — a fact about THIS cast that only this cast's
+      rows can answer. Nothing is invented: her word comes off the library row
+      and the rectangle comes off a minted crop, so the fable-414 rule that
+      every row has somewhere to point is satisfied rather than bent.
+    */
     panel: {
       row: "none",
-      why: `nobody has catalogued ${noun}, so there is no courted row to draw — it is askable in the `
-        + `box and carried in the stack, and it earns a row at promotion`,
+      why: `nobody has catalogued ${noun}, so the catalogue enumerates no row for it — the panel `
+        + `builds one from this cast's own library rows instead (facePanel's open section), and `
+        + `a COURTED row, with a scan question and a scopable rectangle, is what promotion buys`,
     },
     noun,
     /*

@@ -377,13 +377,24 @@ export function FaceRegions({
                 overwritten:
 
                   the rectangle IS an instance   a feature there is only one of
-                                                 (her lips) sends nothing. A
+                  the server can narrow to       (her lips) sends nothing. A
                                                  scope that names the whole face
                                                  does nothing, and "does
                                                  nothing" is the silent
                                                  whole-face render this defect
                                                  class starts with — the server
-                                                 refuses it rather than obeying
+                                                 refuses it rather than obeying.
+                                                 ⚠ AND IT IS THE SERVER'S
+                                                 ANSWER NOW, not the key's
+                                                 shape: `region.scopable`
+                                                 replaced `slot.includes("@")`
+                                                 the day the panel learned to
+                                                 draw an OPEN kind, whose
+                                                 `open:wings@left` carries the
+                                                 `@` and is refused by the
+                                                 scope door on purpose. A
+                                                 rectangle scoping into that
+                                                 wall is a tap that dead-ends
                   BOTH of the pair are drawn     or the row is already about one
                                                  of them. A pair read on ONE
                                                  side has one rectangle because
@@ -396,7 +407,7 @@ export function FaceRegions({
                                                  rule fable-378 (c) wrote and
                                                  nothing here supersedes
               */
-              const scoped = region.slot.includes("@")
+              const scoped = region.scopable
                 && (row.regions.length > 1 || row.slots.length === 1);
               selection.select({
                 slots: row.slots,
