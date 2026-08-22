@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "9015156b422946ff"
+    "sourceFingerprint": "1bbca5c7d33b64a6"
   },
   "domains": [
     {
@@ -11460,6 +11460,10 @@
     {
       "id": "test:server/session-reset.test.ts",
       "path": "server/session-reset.test.ts"
+    },
+    {
+      "id": "test:server/sessionIssuanceSites.test.ts",
+      "path": "server/sessionIssuanceSites.test.ts"
     },
     {
       "id": "test:server/sessionPersistence.test.ts",
