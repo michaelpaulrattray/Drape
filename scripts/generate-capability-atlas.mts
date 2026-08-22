@@ -103,13 +103,15 @@ async function drive(committed: CapabilityAtlas | null): Promise<DrivenAtlas> {
     the run so no other court inherits the census's pin. "reference-attached"
     stays not-driven until the attach door has its own harness.
   */
-  const { ensureInkBranchFixture, ensureAccessoryBranchFixture, restoreSelection } = await import("./lib/censusStateFixtures.mts");
+  const { ensureInkBranchFixture, ensureAccessoryBranchFixture, ensureDanglingCropFixture, restoreSelection } = await import("./lib/censusStateFixtures.mts");
   const inkBranch = await ensureInkBranchFixture({ userId: fixture.id }).catch((error) => { console.error(`[census] ink branch unavailable: ${error instanceof Error ? error.message : error}`); return null; });
   const accessoryBranch = await ensureAccessoryBranchFixture({ userId: fixture.id }).catch((error) => { console.error(`[census] accessory branch unavailable: ${error instanceof Error ? error.message : error}`); return null; });
+  const danglingBranch = await ensureDanglingCropFixture({ userId: fixture.id }).catch((error) => { console.error(`[census] dangling-crop branch unavailable: ${error instanceof Error ? error.message : error}`); return null; });
   const castFor = (state: string): string | null => {
     if (state === "master") return fixture.candidatePublicId;
     if (state === "branch-with-ink") return inkBranch?.candidatePublicId ?? null;
     if (state === "branch-with-accessory") return accessoryBranch?.candidatePublicId ?? null;
+    if (state === "branch-with-dangling-crop") return danglingBranch?.candidatePublicId ?? null;
     return null;
   };
 
@@ -129,6 +131,7 @@ async function drive(committed: CapabilityAtlas | null): Promise<DrivenAtlas> {
   const repin = async (state: string): Promise<void> => {
     if (state === "branch-with-ink" && inkBranch) await ensureInkBranchFixture({ userId: fixture.id });
     if (state === "branch-with-accessory" && accessoryBranch) await ensureAccessoryBranchFixture({ userId: fixture.id });
+    if (state === "branch-with-dangling-crop" && danglingBranch) await ensureDanglingCropFixture({ userId: fixture.id });
   };
   try {
   for (const row of CORPUS) {
@@ -168,6 +171,7 @@ async function drive(committed: CapabilityAtlas | null): Promise<DrivenAtlas> {
     /* No other court inherits the census's pin. */
     if (inkBranch) await restoreSelection(inkBranch).catch((error) => console.error("[census] ink-branch selection restore FAILED", error));
     if (accessoryBranch) await restoreSelection(accessoryBranch).catch((error) => console.error("[census] accessory selection restore FAILED", error));
+    if (danglingBranch) await restoreSelection(danglingBranch).catch((error) => console.error("[census] dangling-crop selection restore FAILED", error));
   }
   const after = await ledger();
   await connection.end();

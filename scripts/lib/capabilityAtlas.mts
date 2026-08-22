@@ -53,7 +53,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { CORPUS, type CorpusRow, type CorpusState } from "../capability-atlas-corpus.mts";
+import { CORPUS, UNREACHABLE_DOORS, type CorpusRow, type CorpusState } from "../capability-atlas-corpus.mts";
+import { ROADS, LAWS, type Road } from "../capability-atlas-roads.mts";
 import { CANNOT_SAY_COPY, cannotSaySentence, type CannotSayReason } from "../../server/castingV2/cannotSayCopy";
 import { FREE_SUBJECT_KEYS } from "../../server/castingV2/subjectCards";
 import { refusalTagOf } from "../../server/castingV2/refusalTag";
@@ -75,6 +76,12 @@ export type DeclaredId = {
   charge?: "free" | "refunded";
   /** Test files that name the id as a quoted literal. */
   pinnedBy: string[];
+  /**
+   * WHERE THE DOOR LIVES — file:line of every raise site, extracted from
+   * source at generate time (the founder's double-check-against-the-codebase
+   * order, fable-1357): a map entry that cannot cite its line is a story.
+   */
+  sites: string[];
 };
 
 export type StaticAtlas = {
@@ -82,6 +89,9 @@ export type StaticAtlas = {
   flags: string[];
   subjects: string[];
   corpus: Array<Pick<CorpusRow, "id" | "ask" | "scope" | "subject" | "verb" | "state" | "expect" | "why">>;
+  /** The roads map — hand-written prose, machine-validated citations. */
+  roads: readonly Road[];
+  laws: ReadonlyArray<{ law: string; where: string }>;
   findings: Finding[];
 };
 
@@ -89,13 +99,17 @@ export type Finding = {
   id: string;
   severity: "info" | "warn" | "error";
   kind:
-    | "unpinned-refusal"      // an id no test file names
-    | "unreached"             // an id no corpus row expects OR observed
-    | "belief-mismatch"       // observed ≠ expect
-    | "route-changed"         // observed ≠ the committed observation
-    | "drive-error"           // the service threw something that was not a refusal
-    | "not-driven"            // a corpus row whose state the fixture cannot supply
-    | "ledger-moved";         // the fixture's balance changed — the census spent
+    | "unpinned-refusal"          // an id no test file names
+    | "unreached"                 // an id no corpus row expects, and no reason on file
+    | "documented-unreachable"    // an id UNREACHABLE_DOORS carries a reason for
+    | "coverage-contradiction"    // an id both documented-unreachable AND expected by a row
+    | "stale-unreachable-doc"     // a drive PRODUCED an id documented as unreachable
+    | "road-cites-unknown-door"   // the roads map names a door the source does not declare
+    | "belief-mismatch"           // observed ≠ expect
+    | "route-changed"             // observed ≠ the committed observation
+    | "drive-error"               // the service threw something that was not a refusal
+    | "not-driven"                // a corpus row whose state the fixture cannot supply
+    | "ledger-moved";             // the fixture's balance changed — the census spent
   subject: string;
   message: string;
 };
@@ -127,7 +141,13 @@ export function declaredServiceRefusals(): string[] {
   return [...ids].sort();
 }
 
-/** Every `reason: "id"` the interpreter can hand back, plus the gate ids. */
+/**
+ * Every reason the interpreter can hand back: `reason: "id"` raise sites, the
+ * gate ids, AND the `RefineRefusal` union's own members — a member can be
+ * raised through a builder no literal-site grep sees (`wall_unfileable` was:
+ * typed, consumed, live, and invisible to the first cut of this function; the
+ * roads validator caught its own author citing it, 2026-08-22).
+ */
 export function declaredInterpreterRefusals(): string[] {
   const ids = new Set<string>();
   const interpreter = path.join(SOURCE_DIR, "refineInterpreter.ts");
@@ -136,6 +156,8 @@ export function declaredInterpreterRefusals(): string[] {
   for (const file of listFiles(SOURCE_DIR, (n) => n.endsWith(".ts") && !n.endsWith(".test.ts"))) {
     for (const match of fs.readFileSync(file, "utf8").matchAll(/"(gate_[a-z_]+)"/g)) ids.add(match[1]!);
   }
+  const delta = fs.readFileSync(path.join(SOURCE_DIR, "refineDelta.ts"), "utf8");
+  for (const match of delta.matchAll(/\|\s*\{\s*reason:\s*"([a-z][a-z0-9_]*)"/g)) ids.add(match[1]!);
   return [...ids].sort();
 }
 
@@ -173,16 +195,50 @@ export function pinningTests(ids: string[]): Map<string, string[]> {
   return out;
 }
 
+/**
+ * FILE:LINE of every raise site per id — the map's citations, mechanically
+ * extracted so every door can be double-checked against the codebase without
+ * trusting this file (founder order, fable-1357 / "double check your work
+ * against the codebase").
+ */
+export function raiseSites(): Map<string, string[]> {
+  const sites = new Map<string, string[]>();
+  const add = (id: string, site: string) => sites.set(id, [...(sites.get(id) ?? []), site]);
+  for (const file of listFiles(SOURCE_DIR, (n) => n.endsWith(".ts") && !n.endsWith(".test.ts"))) {
+    const lines = fs.readFileSync(file, "utf8").split("\n");
+    lines.forEach((line, at) => {
+      for (const match of line.matchAll(/\brefusal\(\s*"([a-z][a-z0-9_]*)"/g)) add(match[1]!, `${rel(file)}:${at + 1}`);
+      for (const match of line.matchAll(/\breason:\s*"([a-z][a-z0-9_]*)"/g)) add(match[1]!, `${rel(file)}:${at + 1}`);
+      for (const match of line.matchAll(/"(gate_[a-z_]+)"/g)) add(match[1]!, `${rel(file)}:${at + 1}`);
+    });
+  }
+  /* union members declared in the refusal type: the type line is the site. */
+  const deltaFile = path.join(SOURCE_DIR, "refineDelta.ts");
+  fs.readFileSync(deltaFile, "utf8").split("\n").forEach((line, at) => {
+    for (const match of line.matchAll(/\|\s*\{\s*reason:\s*"([a-z][a-z0-9_]*)"/g)) add(match[1]!, `${rel(deltaFile)}:${at + 1}`);
+  });
+  /* cannot-say members: the line their key opens on in the copy table. */
+  const copyFile = path.join(SOURCE_DIR, "cannotSayCopy.ts");
+  const copyLines = fs.readFileSync(copyFile, "utf8").split("\n");
+  for (const id of Object.keys(CANNOT_SAY_COPY)) {
+    copyLines.forEach((line, at) => {
+      if (new RegExp(`^\\s{2}${id}:\\s*\\{`).test(line)) add(id, `${rel(copyFile)}:${at + 1}`);
+    });
+  }
+  return sites;
+}
+
 export function buildStaticAtlas(corpus: readonly CorpusRow[] = CORPUS): StaticAtlas {
   const service = declaredServiceRefusals();
   const interpreter = declaredInterpreterRefusals().filter((id) => !service.includes(id));
   const cannot = Object.keys(CANNOT_SAY_COPY).sort() as CannotSayReason[];
   const pins = pinningTests([...service, ...interpreter, ...cannot]);
+  const sites = raiseSites();
   const declared: DeclaredId[] = [
-    ...service.map((id) => ({ id, kind: "service-refusal" as const, pinnedBy: pins.get(id) ?? [] })),
-    ...interpreter.map((id) => ({ id, kind: "interpreter-refusal" as const, pinnedBy: pins.get(id) ?? [] })),
+    ...service.map((id) => ({ id, kind: "service-refusal" as const, pinnedBy: pins.get(id) ?? [], sites: sites.get(id) ?? [] })),
+    ...interpreter.map((id) => ({ id, kind: "interpreter-refusal" as const, pinnedBy: pins.get(id) ?? [], sites: sites.get(id) ?? [] })),
     ...cannot.map((id) => ({
-      id, kind: "cannot-say" as const, charge: CANNOT_SAY_COPY[id].charge, pinnedBy: pins.get(id) ?? [],
+      id, kind: "cannot-say" as const, charge: CANNOT_SAY_COPY[id].charge, pinnedBy: pins.get(id) ?? [], sites: sites.get(id) ?? [],
     })),
   ].sort((a, b) => a.id.localeCompare(b.id));
 
@@ -195,20 +251,83 @@ export function buildStaticAtlas(corpus: readonly CorpusRow[] = CORPUS): StaticA
       });
     }
   }
+  /*
+    THE COVERAGE CONTRACT (founder order, fable-1357 §2b): every declared door
+    is REACHED by a row, DOCUMENTED unreachable with a reason, or an alarm.
+    The documentation itself cannot lie quietly: a door both documented and
+    expected is a contradiction; a documented door a drive produces is stale
+    documentation — both are error-severity, checked here and in drivenFindings.
+  */
+  const documented = new Map(UNREACHABLE_DOORS.map((d) => [d.id, d]));
   const expectedIds = new Set(corpus.map((row) => outcomeId(row.expect)).filter((x): x is string => x !== null));
-  for (const entry of declared) {
-    if (!expectedIds.has(entry.id)) {
+  /* Reaching the claim IS reaching `busy` — every would-render row ends at the
+     admit door; with the census's shut claim that is the door that answers. */
+  if (corpus.some((row) => row.expect === "would-render")) expectedIds.add("busy");
+  for (const [id, doc] of documented) {
+    if (expectedIds.has(id)) {
       findings.push({
-        id: `unreached:${entry.id}`, severity: "info", kind: "unreached", subject: entry.id,
-        message: `no corpus row expects "${entry.id}" — the census cannot say whether any ask reaches it`,
+        id: `contradiction:${id}`, severity: "error", kind: "coverage-contradiction", subject: id,
+        message: `"${id}" is documented UNREACHABLE and expected by a corpus row — one of the two is wrong`,
       });
     }
   }
+  for (const entry of declared) {
+    if (expectedIds.has(entry.id)) continue;
+    const doc = documented.get(entry.id);
+    if (doc) {
+      findings.push({
+        id: `documented:${entry.id}`, severity: "info", kind: "documented-unreachable", subject: entry.id,
+        message: `unreachable by design: ${doc.reason} — becomes reachable via: ${doc.becomesReachable}`,
+      });
+    } else {
+      findings.push({
+        id: `unreached:${entry.id}`, severity: "warn", kind: "unreached", subject: entry.id,
+        message: `no corpus row expects "${entry.id}" and no reason is on file — reach it or document why it cannot be`,
+      });
+    }
+  }
+  /*
+    THE ROADS MAP'S OWN VALIDATION (fable-1357 / "double check your work
+    against the codebase"): a road citing a door the source does not declare,
+    a flag that does not exist, or an entrance file that is not on disk is an
+    ERROR — the map is refused rather than allowed to tell a story.
+  */
+  const declaredIds = new Set(declared.map((d) => d.id));
+  const flagSet = new Set(declaredFlags());
+  for (const road of ROADS) {
+    for (const door of road.doors) {
+      if (!declaredIds.has(door)) {
+        findings.push({
+          id: `road-door:${road.id}:${door}`, severity: "error", kind: "road-cites-unknown-door", subject: door,
+          message: `road "${road.id}" cites door "${door}", which the source does not declare`,
+        });
+      }
+    }
+    for (const flag of road.flags) {
+      if (!flagSet.has(flag)) {
+        findings.push({
+          id: `road-flag:${road.id}:${flag}`, severity: "error", kind: "road-cites-unknown-door", subject: flag,
+          message: `road "${road.id}" cites flag "${flag}", which the source does not declare`,
+        });
+      }
+    }
+    for (const entrance of road.entrances) {
+      if (!fs.existsSync(path.join(repoRoot, entrance))) {
+        findings.push({
+          id: `road-entrance:${road.id}:${entrance}`, severity: "error", kind: "road-cites-unknown-door", subject: entrance,
+          message: `road "${road.id}" names entrance "${entrance}", which is not on disk`,
+        });
+      }
+    }
+  }
+
   return {
     declared,
     flags: declaredFlags(),
     subjects: [...FREE_SUBJECT_KEYS].sort(),
     corpus: corpus.map(({ id, ask, scope, subject, verb, state, expect, why }) => ({ id, ask, scope, subject, verb, state, expect, why })),
+    roads: ROADS,
+    laws: LAWS,
     findings: findings.sort((a, b) => a.id.localeCompare(b.id)),
   };
 }
@@ -295,19 +414,44 @@ export function reasonOfNote(note: string, context: { facet: string | null; scop
       }
     }
   }
-  /* Second pass: a shared opening clause long enough to be this table's voice. */
+  /*
+    Second pass: LONGEST COMMON RUN against each member rendered generically.
+    Members open with variable place-phrases ("That's his upper chest tattoo —
+    he has it, and …"), so a prefix test misses sentences that are unmistakably
+    the member's — measured on `inkNotKept` and the scoped `noInkToChange`,
+    drive-5 of the full-map pass. 45 shared characters of prose is this table's
+    voice; no two members share a run that long.
+  */
+  const longestCommonRun = (a: string, b: string): number => {
+    let best = 0;
+    const prev = new Array<number>(b.length + 1).fill(0);
+    for (let i = 1; i <= a.length; i += 1) {
+      let diagonal = 0;
+      for (let j = 1; j <= b.length; j += 1) {
+        const up = prev[j]!;
+        prev[j] = a[i - 1] === b[j - 1] ? diagonal + 1 : 0;
+        if (prev[j]! > best) best = prev[j]!;
+        diagonal = up;
+      }
+    }
+    return best;
+  };
+  let bestReason = "unmatched";
+  let bestRun = 44;
   for (const reason of Object.keys(CANNOT_SAY_COPY) as CannotSayReason[]) {
     for (const pronouns of PRONOUN_SETS) {
-      try {
-        const rendered = normalize(cannotSaySentence(reason, {
-          words: null, facet: context.facet, scopeNoun: context.scopeNoun, moneySafe: true, pronouns,
-        }));
-        const head = rendered.slice(0, 40);
-        if (head.length >= 30 && wanted.startsWith(head)) return reason;
-      } catch { /* a member that needs a noun it was not given */ }
+      for (const scopeNoun of [context.scopeNoun, null, "the upper chest", "an upper arm"]) {
+        try {
+          const rendered = normalize(cannotSaySentence(reason, {
+            words: null, facet: context.facet, scopeNoun, moneySafe: true, pronouns,
+          }));
+          const run = longestCommonRun(rendered, wanted);
+          if (run > bestRun) { bestRun = run; bestReason = reason; }
+        } catch { /* a member that needs a noun it was not given */ }
+      }
     }
   }
-  return "unmatched";
+  return bestReason;
 }
 
 type RefineModule = typeof import("../../server/castingV2/refineService");
@@ -420,6 +564,17 @@ export function drivenFindings(input: {
   for (const nd of input.driven.notDriven) {
     findings.push({ id: `not-driven:${nd.id}`, severity: "info", kind: "not-driven", subject: nd.id, message: `needs state "${nd.state}", which this fixture cannot supply` });
   }
+  /* Documentation that a drive falsifies is stale, loudly (fable-1357 §2b). */
+  const documented = new Set(UNREACHABLE_DOORS.map((d) => d.id));
+  for (const obs of input.driven.observations) {
+    const id = outcomeId(obs.observed);
+    if (id && documented.has(id)) {
+      findings.push({
+        id: `stale-doc:${obs.id}`, severity: "error", kind: "stale-unreachable-doc", subject: id,
+        message: `"${id}" is documented UNREACHABLE and the drive just produced it on "${obs.id}" — the documentation is stale`,
+      });
+    }
+  }
   if (input.driven.ledger.before !== input.driven.ledger.after) {
     findings.push({
       id: "ledger-moved", severity: "error", kind: "ledger-moved", subject: "fixture",
@@ -446,6 +601,38 @@ export function renderCapabilityPage(atlas: CapabilityAtlas): string {
     lines.push("_No drive recorded — static half only._");
     lines.push("");
   }
+  /* ── the roads: how the studio works, every citation derived ── */
+  lines.push("## How the studio works — the roads");
+  lines.push("");
+  lines.push("Prose is reviewed; every DOOR, FLAG and ENTRANCE below is validated against the source at generate time, and each door's sites/pins/reach are extracted, not written.");
+  lines.push("");
+  const byId = new Map(atlas.static.declared.map((d) => [d.id, d]));
+  const reachers = (door: string) => atlas.static.corpus.filter((row) => outcomeId(row.expect) === door).map((row) => row.id);
+  for (const road of atlas.static.roads) {
+    lines.push(`### ${road.title}`);
+    lines.push("");
+    lines.push(road.summary);
+    lines.push("");
+    lines.push(`_Entrances:_ ${road.entrances.map((e) => `\`${e}\``).join(" · ")}  ·  _Flags:_ ${road.flags.map((f) => `\`${f}\``).join(" · ") || "—"}`);
+    lines.push("");
+    if (road.doors.length > 0) {
+      lines.push("| door | kind | charge | where it lives | pinned | reached by |");
+      lines.push("|---|---|---|---|---|---|");
+      for (const door of road.doors) {
+        const d = byId.get(door);
+        const sites = (d?.sites ?? []).slice(0, 2).join("<br>") + ((d?.sites.length ?? 0) > 2 ? `<br>(+${(d!.sites.length) - 2})` : "");
+        lines.push(`| \`${door}\` | ${d?.kind ?? "?"} | ${d?.charge ?? ""} | ${sites || "—"} | ${d ? (d.pinnedBy.length > 0 ? `${d.pinnedBy.length} test(s)` : "**none**") : "?"} | ${reachers(door).join(", ") || "_documented-unreachable or gap — see findings_"} |`);
+      }
+      lines.push("");
+    }
+    if (road.doorsNote) { lines.push(`> ${road.doorsNote}`); lines.push(""); }
+    for (const note of road.notes) lines.push(`- ${note}`);
+    lines.push("");
+  }
+  lines.push("## The laws that hold on every road");
+  lines.push("");
+  for (const law of atlas.static.laws) lines.push(`- **${law.law}** _(${law.where})_`);
+  lines.push("");
   lines.push("## The asks");
   lines.push("");
   lines.push("| id | ask | state | believed | observed | what the customer reads |");

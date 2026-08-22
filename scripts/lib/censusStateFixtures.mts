@@ -281,3 +281,94 @@ async function cloneTaggedCast(
   const [made] = await conn.execute(`SELECT id, publicId FROM casting_candidates WHERE publicId = ?`, [candidatePublicId]);
   return (made as Array<{ id: number; publicId: string }>)[0]!;
 }
+
+export const DANGLING_FIXTURE_TAG = "capability-census fixture C — dangling delivered crop, never render";
+
+/**
+ * THE DANGLING-CROP BRANCH — a record that NAMES a delivered crop with no row.
+ *
+ * The C4a class made permanent as a state (fable-1340 §3): a mint that answers
+ * no-cut leaves the claim's delivered NAME standing, and every reader that
+ * believes names without rows mis-serves the customer. The product's fix is
+ * that readers consult the row (C4a) and the carry skips loudly; this fixture
+ * keeps the class visible to the census forever.
+ *
+ * The assertion is INVERTED relative to its siblings: the named crop id must
+ * NOT exist as a row. If somebody ever writes that row, the fixture stops
+ * being what the corpus declares and refuses to drive.
+ */
+export async function ensureDanglingCropFixture(input: { userId: number }): Promise<BranchFixture> {
+  refuseProduction();
+  const conn = await openDatabase(process.env.DATABASE_URL!);
+  try {
+    const [mine] = await conn.execute(
+      `SELECT c.id, c.publicId FROM casting_candidates c
+        WHERE c.userId = ? AND c.personaLine = ? AND c.status = 'ready' ORDER BY c.id ASC LIMIT 1`,
+      [input.userId, DANGLING_FIXTURE_TAG],
+    );
+    let cand = (mine as Array<{ id: number; publicId: string }>)[0] ?? null;
+    if (!cand) cand = await cloneTaggedCast(conn, input.userId, DANGLING_FIXTURE_TAG);
+
+    const [existing] = await conn.execute(
+      `SELECT id, publicId, deltas FROM casting_candidate_variants WHERE candidateId = ? ORDER BY id ASC LIMIT 1`,
+      [cand.id],
+    );
+    let variant = (existing as Array<{ id: number; publicId: string }>)[0] ?? null;
+    if (!variant) {
+      const [candRow] = await conn.execute(
+        `SELECT sessionId, imageKey, thumbKey, internalPrompt FROM casting_candidates WHERE id = ?`, [cand.id],
+      );
+      const row = (candRow as Array<{ sessionId: number; imageKey: string; thumbKey: string | null; internalPrompt: unknown }>)[0]!;
+      const operationId = randomUUID();
+      await conn.execute(
+        `INSERT INTO generation_operations (id, userId, clientRequestId, kind, payloadHash, status, plannedCredits, chargedCredits)
+         VALUES (?, ?, ?, 'casting.fixture', ?, 'succeeded', 0, 0)`,
+        [operationId, input.userId, randomUUID(), `census-dangling-${operationId}`],
+      );
+      const publicId = randomUUID();
+      /* The dangling name IS the fixture: a uuid no delivery-crop row carries. */
+      const deltas = {
+        free: { ink: ["a fine-line swallow chest piece"] },
+        inkDelivered: { "ink:upperChest": randomUUID() },
+      };
+      await conn.execute(
+        `INSERT INTO casting_candidate_variants
+           (publicId, candidateId, sessionId, userId, status, instructions, deltas, stepDeltas, internalPrompt,
+            imageKey, thumbKey, pointsCost, operationId, parentVariantId)
+         VALUES (?, ?, ?, ?, 'ready', ?, ?, ?, ?, ?, ?, 0, ?, NULL)`,
+        [
+          publicId, cand.id, row.sessionId, input.userId,
+          JSON.stringify(["give him a fine-line swallow chest piece"]),
+          JSON.stringify(deltas), JSON.stringify([deltas]),
+          typeof row.internalPrompt === "string" ? row.internalPrompt : JSON.stringify(row.internalPrompt),
+          row.imageKey, row.thumbKey, operationId,
+        ],
+      );
+      const [made] = await conn.execute(`SELECT id, publicId FROM casting_candidate_variants WHERE publicId = ?`, [publicId]);
+      variant = (made as Array<{ id: number; publicId: string }>)[0]!;
+      process.stderr.write(`[census-fixture] manufactured dangling-crop branch ${variant.publicId}\n`);
+    }
+
+    /* THE INVERTED ASSERTION — the named crop must have NO row, every run. */
+    const [deltasRow] = await conn.execute(
+      `SELECT deltas FROM casting_candidate_variants WHERE id = ?`, [variant.id],
+    );
+    const rawDeltas = (deltasRow as Array<{ deltas: unknown }>)[0]!.deltas;
+    const parsed = typeof rawDeltas === "string" ? JSON.parse(rawDeltas) : rawDeltas as { inkDelivered?: Record<string, string> };
+    const named = Object.values(parsed?.inkDelivered ?? {})[0];
+    if (!named) throw new ContaminatedFixtureError("the dangling fixture's variant carries no delivered name at all");
+    const [crop] = await conn.execute(
+      `SELECT COUNT(*) AS n FROM casting_ink_delivery_crops WHERE publicId = ?`, [named],
+    );
+    if (Number((crop as Array<{ n: number }>)[0]!.n) !== 0) {
+      throw new ContaminatedFixtureError(`the dangling fixture's crop ${named} now HAS a row — the state stopped being dangling`);
+    }
+
+    const [prior] = await conn.execute(`SELECT selectedVariantId FROM casting_candidates WHERE id = ?`, [cand.id]);
+    const priorSelection = (prior as Array<{ selectedVariantId: number | null }>)[0]!.selectedVariantId;
+    await conn.execute(`UPDATE casting_candidates SET selectedVariantId = ? WHERE id = ?`, [variant.id, cand.id]);
+    return { candidatePublicId: cand.publicId, selectedVariant: variant.publicId, candidateId: cand.id, priorSelection };
+  } finally {
+    await conn.end();
+  }
+}
