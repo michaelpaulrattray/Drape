@@ -1397,6 +1397,86 @@ describe("a removal of something already gone says nothing new", () => {
     expect(verdict.absorbed).toBe(false);
   });
 
+  /*
+    ⚠ THE SECOND SUBJECT WHOSE IDENTITY LIVES IN BYTES — hair (ruled fable-1430).
+
+    Written in the shape of the court that found it: **the picture is the only
+    variable.** Same branch, same sentence, and the real entrance answered
+
+        ask 1   "copy this hair" + picture A    RENDERED, 25 credits
+        ask 2   "copy this hair" + picture B    REFUSED FREE
+                "He already has the hair in the attached picture."
+
+    …because a crop take files the placeholder `hairCut: "the hair in the
+    attached picture"`, which is word-identical for every photograph ever
+    attached. These pin the contract; the service arms drive the derivation.
+  */
+  const HAIR_ECHO = {
+    delta: { free: { hairCut: ["the hair in the attached picture"] } },
+    prior: { hairCut: ["the hair in the attached picture"] },
+    identity: ORIGINAL,
+  };
+  const PICTURE_A = "a".repeat(64);
+  const PICTURE_B = "b".repeat(64);
+
+  it("⚠ a DIFFERENT picture is new, though the words are the same to the letter", () => {
+    /* The defect itself. Without the pointer this is `absorbed: true` and the
+       customer is told she already has a photograph she has never seen. */
+    expect(saysNothingNew({
+      ...HAIR_ECHO,
+      referencePointer: { askDigest: PICTURE_B, appliedDigests: [PICTURE_A] },
+    }).absorbed, "a photograph of somebody else read as a restatement").toBe(false);
+  });
+
+  it("the SAME picture re-sent still absorbs — the fix does not open the door", () => {
+    /* The half that keeps the door a door. Widening this to "any reference ask
+       is new" would charge her for genuinely re-sending what she already has. */
+    expect(saysNothingNew({
+      ...HAIR_ECHO,
+      referencePointer: { askDigest: PICTURE_A, appliedDigests: [PICTURE_A, PICTURE_B] },
+    }).absorbed).toBe(true);
+    /* And a caller with no pointer gets yesterday's behaviour exactly — the
+       `priorAbsent` precedent, and what every non-reference ask still sees. */
+    expect(saysNothingNew(HAIR_ECHO).absorbed, "an unpointed caller got new behaviour")
+      .toBe(true);
+    /* A null digest is an ask carrying no picture at all. */
+    expect(saysNothingNew({
+      ...HAIR_ECHO,
+      referencePointer: { askDigest: null, appliedDigests: [] },
+    }).absorbed).toBe(true);
+  });
+
+  it("stands aside when the chain records no picture at all", () => {
+    /* Nothing has ridden, so there is nothing this ask could be restating —
+       the same rule as ink's, and the arm that makes the empty list mean
+       "nothing to echo" rather than "nothing to check". */
+    expect(saysNothingNew({
+      ...HAIR_ECHO,
+      referencePointer: { askDigest: PICTURE_A, appliedDigests: [] },
+    }).absorbed).toBe(false);
+  });
+
+  it("the two pointers are independent — neither rescues the other's subject", () => {
+    /*
+      One test now serves both, so a shared implementation must not let an ink
+      pointer speak for hair or the reverse. *A digest may only speak for the
+      subject whose identity it is.*
+    */
+    expect(saysNothingNew({
+      ...HAIR_ECHO,
+      inkPointer: { askDigest: PICTURE_B, appliedDigests: [PICTURE_A] },
+    }).absorbed, "an INK pointer stood aside for a HAIR echo").toBe(false);
+    /* …which is the ink pointer doing its own job on a delta it was handed, and
+       is why the SERVICE gate — never build a pointer for a subject the ask is
+       not about — is the control that matters. Both together still absorb when
+       both say the picture is one she has. */
+    expect(saysNothingNew({
+      ...HAIR_ECHO,
+      inkPointer: { askDigest: PICTURE_A, appliedDigests: [PICTURE_A] },
+      referencePointer: { askDigest: PICTURE_A, appliedDigests: [PICTURE_A] },
+    }).absorbed).toBe(true);
+  });
+
   it("describes the delta by its POSITIVE half when it echoes both", () => {
     const verdict = saysNothingNew({
       delta: {

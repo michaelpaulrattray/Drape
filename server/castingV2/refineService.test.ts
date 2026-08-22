@@ -10755,6 +10755,107 @@ describe("the picture she attached becomes the carrier that rides", () => {
   });
 
   /*
+    ⚠ A SECOND PICTURE IS A SECOND ASK — the already-true door, driven at the
+    PRODUCER (defect found at the real entrance, ruled fable-1430).
+
+    # What was happening, measured before a line was written
+
+    One branch, one sentence, the picture as the only variable:
+
+        ask 1   "copy this hair" + picture A    RENDERED, 25 credits, 214s
+        ask 2   "copy this hair" + picture B    REFUSED FREE, 10s
+                "He already has the hair in the attached picture."
+
+    Picture B is a photograph of somebody else. A crop take files the
+    placeholder `hairCut: "the hair in the attached picture"`, that phrase
+    becomes the persisted state, and every photograph ever attached spells it to
+    the letter — so `saysNothingNew` matched string against identical string and
+    absorbed the second ask. The feature was one-shot per Cast.
+
+    # Why this arm is HERE and not only in `refineDelta.test.ts`
+
+    Those arms pin the contract and would pass with the service handing the door
+    nothing at all — the consumer reading identically whether the producer works
+    or not, which is doctrine 23's whole subject. **This drives the derivation**:
+    the ancestry walked, the handles resolved, the pointer handed over.
+
+    ⚠ AND THE SABOTAGE THAT PROVES IT IS `referencePointerFor` ITSELF, not
+    either hand-off. Deleting the hand-off at the FIRST reading reddened
+    NOTHING: the door re-asks the interpreter on an absorbed verdict and hands
+    the pointer over again on the retry, so one site rescues the other. Making
+    the builder return `undefined` reddens exactly this arm and nothing else —
+    which is the honest producer, and worth knowing before somebody "proves" a
+    two-sited hand-off by deleting half of it.
+
+    The two asks differ ONLY in which handle they carry, which is the court's
+    own shape made cheap.
+  */
+  const branchThatTookItsHairFromAPicture = (askReference: string) => {
+    variantRows = [{
+      id: 900,
+      publicId: "variant-from-picture",
+      candidateId: 1,
+      imageKey: "casting-v2/variants/from-picture.png",
+      /* The record of WHAT ACTUALLY RODE — the handle on the ancestor's own
+         prompt. `appliedDigests` is derived from this and never from the
+         placeholder below, which is the defect's own currency. */
+      internalPrompt: { ...(candidateRow.internalPrompt as Record<string, unknown>), askReference },
+      instructions: ["copy this hair"],
+      /* And the persisted state that made the echo invisible. */
+      deltas: { free: { hairCut: ["the hair in the attached picture"] } },
+      stepDeltas: null,
+      parentVariantId: null,
+      status: "ready",
+    }];
+    candidateRow.selectedVariantPublicId = "variant-from-picture";
+  };
+
+  /** The interpreter reading a crop take that points at the attached picture. */
+  const pointsAtThePicture = async () => ({
+    ok: true as const,
+    fromReference: true,
+    delta: { free: { hairCut: "the hair in the attached picture" } },
+  });
+
+  const PICTURE_A = { ...REFERENCE, digest: "a".repeat(64) };
+  const PICTURE_B = { ...REFERENCE, digest: "b".repeat(64) };
+
+  it("⚠ a DIFFERENT picture is a new ask, though the sentence is identical", async () => {
+    branchThatTookItsHairFromAPicture("ref-A");
+    /* Keyed on the handle, so the ancestry's picture and this ask's picture are
+       genuinely two different photographs rather than one fixture twice. */
+    resolveAskReferenceMock.mockImplementation(async (query: AskReferenceQuery) =>
+      (query.referencePublicId === "ref-A" ? PICTURE_A : PICTURE_B));
+
+    const result = await refineCandidate(
+      carrierRoad({ interpret: pointsAtThePicture, hairTake: async () => "fullLook" as const }),
+      { ...input, instruction: "copy this hair", referenceId: "ref-B" },
+    );
+
+    expect(result.note ?? "", "she was told she already has a photograph she has never seen")
+      .not.toMatch(/already has/);
+    expect(painted, "the second picture never reached the engine").toHaveLength(1);
+  });
+
+  it("the SAME picture re-sent still absorbs — the door is still a door", async () => {
+    /*
+      The half that makes the arm above mean something. A fix that simply let
+      every reference ask through would pass the first test and charge her 25
+      credits for re-sending the photograph she is already wearing.
+    */
+    branchThatTookItsHairFromAPicture("ref-A");
+    resolveAskReferenceMock.mockImplementation(async () => PICTURE_A);
+
+    await expect(refineCandidate(
+      carrierRoad({ interpret: pointsAtThePicture, hairTake: async () => "fullLook" as const }),
+      { ...input, instruction: "copy this hair", referenceId: "ref-A" },
+    )).rejects.toThrow(/already has/);
+
+    expect(painted, "a re-sent picture was painted again, at full price").toHaveLength(0);
+    expect(journal, "and charged for").not.toContain("deduct");
+  });
+
+  /*
     THE ORDERED ARM — a reference-documented tattoo ask is ANSWERED and NEVER
     DISPATCHED, pre-cutter (ruled fable-1116 §4, shaped fable-1120 §4).
 

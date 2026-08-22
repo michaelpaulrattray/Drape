@@ -2013,6 +2013,96 @@ async function refineCandidateCounted(
     })();
     return await inkPointerRead;
   };
+  /*
+    ⚠ AND THE SAME THING FOR THE PICTURE ITSELF — the second subject whose
+    identity lives in bytes (defect driven at the entrance, ruled fable-1430).
+
+    `inkPointer` above exists because an ink ask spells the same sentence for
+    every design. A HAIR ask does exactly that too: the interpreter files the
+    placeholder `hairCut: "the hair in the attached picture"`, that phrase
+    becomes the persisted state, and so the SECOND "copy this hair" on a branch
+    is a word-for-word match of the first however different the photograph is.
+    Measured, one branch, picture as the only variable: ask 1 rendered and
+    charged 25 credits, ask 2 with a photograph of a different person was
+    refused free as *"He already has the hair in the attached picture."*
+
+    # WHERE `appliedDigests` COMES FROM, and where it must NOT
+
+    From the ASK REFERENCES the chain records — `askReference` on each
+    ancestor's `internalPrompt`, resolved through the same owner-scoped door
+    that resolved this ask's own picture. **Never from the placeholder string**
+    (fable-1430 condition 2): that string is the defect's own currency, and a
+    fix that read it would be re-deciding identity on the thing that has none.
+
+    Over-inclusion is harmless BY CONSTRUCTION and that is why the walk does not
+    try to filter by subject: a digest that rode for makeup rather than hair
+    leaves the escape unfired, and an unfired escape is exactly today's
+    behaviour — the word test runs as it always did. Under-inclusion is the
+    direction that costs a customer, so the walk is generous.
+
+    The gate is the same shape as the ink one and for the same reason: nothing
+    happens unless she attached a picture AND the interpreter says this delta's
+    content CAME from it (`fromReference`). A picture riding along on an ask
+    about something else builds no pointer — *a digest may only speak for the
+    subject whose identity it is.*
+  */
+  let referencePointerRead: Promise<{ askDigest: string | null; appliedDigests: readonly string[] }> | null
+    = null;
+  const referencePointerFor = async (
+    delta: RefineDelta,
+    pointedAtIt: boolean,
+  ): Promise<{ askDigest: string | null; appliedDigests: readonly string[] } | undefined> => {
+    if (reference === null || !pointedAtIt) return undefined;
+    /*
+      ⚠ AND NOT AN INK ASK — `inkPointer` owns those, and its applied list is a
+      different list: the `sourceDigest` of every DESIGN the chain records, not
+      the attachments that have ridden.
+
+      Left out, this gate breaks the ink protection it was modelled on, and the
+      suite said so before a customer could: *"KEEPS THE PROTECTION — the same
+      picture at the same place, again, is still free"* went red, because a
+      re-sent design's digest is not in the ATTACHMENT list and the escape fired
+      for a subject it knows nothing about. That is `inkPointer`'s own sentence
+      arriving as a failing test — *a digest may only speak for the subject
+      whose identity it is* — and `namesInkFromReference` is imported rather
+      than re-spelled so the two cannot come to disagree about which asks are
+      whose.
+    */
+    if (namesInkFromReference(delta)) return undefined;
+    referencePointerRead ??= (async () => {
+      /* The ancestry, walked by `parentVariantId` from the frame she is looking
+         at. A branch she is not on cannot have put anything on her. */
+      const byId = new Map(existing.map((variant) => [variant.id, variant]));
+      const handles: string[] = [];
+      let walk = predecessorForParse;
+      const guard = new Set<number>();
+      while (walk && !guard.has(walk.id)) {
+        guard.add(walk.id);
+        const handle = readAskReference(walk.internalPrompt);
+        if (handle !== null) handles.push(handle);
+        walk = walk.parentVariantId === null ? null : byId.get(walk.parentVariantId) ?? null;
+      }
+      const digests: string[] = [];
+      const seen = new Set<string>();
+      for (const referencePublicId of handles.filter((handle) => {
+        if (seen.has(handle)) return false;
+        seen.add(handle);
+        return true;
+      })) {
+        /* Owner-scoped and re-anchored to this Cast by the door itself. A
+           handle whose row is gone resolves to null and simply is not in the
+           list — she cannot be repeating a picture the product no longer has. */
+        const rode = await resolveAskReference({
+          userId: input.userId,
+          referencePublicId,
+          candidateId: source.candidate.id,
+        });
+        if (rode) digests.push(rode.digest);
+      }
+      return { askDigest: reference.digest, appliedDigests: digests };
+    })();
+    return await referencePointerRead;
+  };
   const throughTheAlreadyTrueDoor = async (
     parse: Extract<Awaited<ReturnType<typeof readInstruction>>, { ok: true }>,
     mode?: "edit",
@@ -2029,6 +2119,14 @@ async function refineCandidateCounted(
     */
     if (confirmedRegenerate) return parse;
     const inkPointer = await inkPointerFor(parse.delta);
+    /* THE PICTURE THIS ASK POINTS AT — see `referencePointerFor`. The condition
+       is the interpreter's own `fromReference` on THIS parse, the same signal
+       the words lane and the crop lane both gate on, so the door cannot come to
+       disagree with the roads about what pointing at a picture means. */
+    const referencePointer = await referencePointerFor(
+      parse.delta,
+      "fromReference" in parse && parse.fromReference === true,
+    );
     /* WHAT THE FRAME SHE IS LOOKING AT NO LONGER HAS — read off the selected
        variant's own stored verification, which is already in hand. See
        `disputedFacetsOfFrame`: this is the door being right about the CHAIN
@@ -2038,6 +2136,7 @@ async function refineCandidateCounted(
       delta: parse.delta, prior: priorItems, priorAbsent, priorOpen, identity: currentIdentity,
       ...(disputedFacets.length > 0 ? { disputedFacets } : {}),
       ...(inkPointer ? { inkPointer } : {}),
+      ...(referencePointer ? { referencePointer } : {}),
     });
     if (!verdict.absorbed) return parse;
     log.warn(
@@ -2052,9 +2151,17 @@ async function refineCandidateCounted(
          this is an ink ask at all, and the memo means the re-derivation costs
          no second statement. */
       const againPointer = await inkPointerFor(again.delta);
+      /* Re-derived on the SECOND reading for the same reason: the reading is
+         what decides whether this ask points at the picture at all, and a
+         re-ask that stopped saying so must not keep the first one's escape. */
+      const againReferencePointer = await referencePointerFor(
+        again.delta,
+        "fromReference" in again && again.fromReference === true,
+      );
       const second = saysNothingNew({
         delta: again.delta, prior: priorItems, priorAbsent, priorOpen, identity: currentIdentity,
         ...(againPointer ? { inkPointer: againPointer } : {}),
+        ...(againReferencePointer ? { referencePointer: againReferencePointer } : {}),
       });
       if (!second.absorbed) {
         log.info(

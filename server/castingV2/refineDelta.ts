@@ -2341,6 +2341,42 @@ export function saysNothingNew(input: {
     appliedDigests: readonly string[];
   };
   /**
+   * ⚠ THE SECOND SUBJECT THAT GREW A BYTE IDENTITY — and `inkPointer`'s
+   * docblock above called it: *"If a second subject ever grows a byte identity,
+   * this docblock is its precedent rather than its accident."*
+   *
+   * It is hair, and the defect is the same one, driven at the real entrance
+   * with the picture as the only variable (ruled fable-1430):
+   *
+   *     ask 1   "copy this hair" + picture A    RENDERED, 25 credits
+   *     ask 2   "copy this hair" + picture B    REFUSED FREE
+   *             "He already has the hair in the attached picture."
+   *
+   * He does not have it. Picture B is a photograph of a different person.
+   *
+   * The mechanism is `inkPointer`'s word-for-word: a crop take files the
+   * placeholder `hairCut: "the hair in the attached picture"`, that phrase
+   * becomes the persisted state, and every picture spells it identically — so
+   * the second ask is an exact string match and the door absorbs it. The
+   * server's own log said so: `alreadyTrue: "the hair in the attached picture"`.
+   *
+   * `askDigest` is the sha256 of the attachment this ask carries.
+   * `appliedDigests` is the digest of every attachment this branch's ancestry
+   * records as having ridden — **read from the ask references on the chain, and
+   * never from the placeholder string**, which is the defect's own currency
+   * (fable-1430 condition 2).
+   *
+   * Over-inclusion is deliberately harmless: a digest that rode for some OTHER
+   * subject leaves this escape unfired, and an unfired escape is exactly
+   * today's behaviour — the word test runs as it always did.
+   *
+   * Optional, and absent means exactly today's behaviour.
+   */
+  referencePointer?: {
+    askDigest: string | null;
+    appliedDigests: readonly string[];
+  };
+  /**
    * ⚠ WHAT THE FRAME SHE IS LOOKING AT NO LONGER HAS (ordered fable-1244 §2b,
    * countersigned fable-1250 §1).
    *
@@ -2387,8 +2423,11 @@ export function saysNothingNew(input: {
     A null `askDigest` is an ask carrying no picture, and that is the words-only
     lane: unchanged, byte for byte, by construction.
   */
-  const pointer = input.inkPointer;
-  if (pointer && pointer.askDigest !== null) {
+  /* BOTH pointers through one test, rather than a second copy of it beside the
+     first — a shadowing branch drifts from its source and the drift is silent
+     (law 4). Ink was the first byte-identity subject; hair is the second. */
+  for (const pointer of [input.inkPointer, input.referencePointer]) {
+    if (!pointer || pointer.askDigest === null) continue;
     const askDigest = pointer.askDigest;
     if (!pointer.appliedDigests.some((applied) => same(applied, askDigest))) {
       return { absorbed: false };
