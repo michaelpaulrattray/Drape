@@ -407,7 +407,13 @@ vi.mock("./segmentPersistence", () => ({
  * list the mint was actually called with.
  */
 type MintAsk = {
-  slots: ReadonlyArray<{ slot: string; words: readonly string[]; frame: string; disputed?: boolean }>;
+  /* `tier` and `noun` are recorded because the wire arm builds the NEXT
+     render's library out of this list rather than authoring one, and a
+     hand-written tier is a second answer to a question the catalogue owns. */
+  slots: ReadonlyArray<{
+    slot: string; tier: string; noun: string;
+    words: readonly string[]; frame: string; disputed?: boolean;
+  }>;
   variantId: number | null;
   knownDigests: ReadonlyMap<string, string> | undefined;
   /** The compositor's own working. NULL on a repaint, where the whole frame was
@@ -434,7 +440,10 @@ type MintAsk = {
 const mintAsks: MintAsk[] = [];
 vi.mock("./referenceMint", () => ({
   mintReferencesForRender: vi.fn(async (ask: {
-    slots: ReadonlyArray<{ slot: string; words: readonly string[]; frame: string; disputed?: boolean }>;
+    slots: ReadonlyArray<{
+      slot: string; tier: string; noun: string;
+      words: readonly string[]; frame: string; disputed?: boolean;
+    }>;
     variantId: number | null;
     knownDigests?: ReadonlyMap<string, string>;
     applied?: unknown;
@@ -5741,6 +5750,108 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
       makes crops the carrier.
     */
     expect(mintAsks[0]!.readGround).toBeTypeOf("function");
+  });
+
+  it("⚠ AN UNCORROBORATED CAPTION FILES THE ASK'S WORDS RATHER THAN NOTHING", async () => {
+    /*
+      fable-1364/1365 — the founder's horns, and the only thing varied between
+      this arm and the one above is whether the caption reader corroborated.
+
+      `captionRealization` returns NULL when its own `matches` is not true, and
+      this harness's stub answers `captionsRead[facet] ?? null`, so an empty map
+      IS an uncorroborated read. Before the fix the mint filed NOTHING for the
+      facet, `recipeAssembler`'s standing loop iterates the library and nothing
+      else, and the next repaint painted a frame without the feature. Measured
+      on production (re-read at the artifact, opus-1021): ONE of sixteen repaint
+      renders has already dropped a paid feature this way, and THREE delivered
+      slots are sitting in the library-shaped hole that produces the next one.
+
+      The binding verifier above says `present: true` on the delivered frame, so
+      the fact IS there — what failed is one reader's ability to word it the
+      same way as another, which on novel anatomy is the ordinary case.
+    */
+    captionsRead = {};
+    await refineCandidate({ ...hairDown, ...mintingLibrary, harvest: compositing },
+      { ...input, instruction: "wear her hair down" });
+
+    expect(mintAsks).toHaveLength(1);
+    const filed = mintAsks[0]!.slots.find((slot) => slot.slot === "hair");
+    expect(filed, `nothing was filed for hair: ${JSON.stringify(mintAsks[0]!.slots)}`).toBeDefined();
+    expect(filed!.words.length).toBeGreaterThan(0);
+  });
+
+  it("⚠ THE WIRE: a fact this render delivered is NAMED by the NEXT render's recipe", async () => {
+    /*
+      fable-1365 §5 condition 2 — the arm that makes the next sibling loud.
+
+      Every arm above stops at one seam. This one drives BOTH, in the order
+      production drives them, because the defect lived between them: the mint
+      filed nothing, and `recipeAssembler`'s standing loop — which iterates the
+      library and NOTHING else — then had nothing to say. Neither half was
+      broken on its own, which is why sixteen production renders and a green
+      suite could hold a feature the founder had paid for and lost.
+
+      Step 1 renders with an uncorroborated caption (the horns' own condition)
+      and Step 2 reads its recipe out of the dispatch record, with the library
+      between them built FROM STEP 1'S OWN MINT rather than authored here — a
+      hand-written library would prove the assembler and not the seam.
+    */
+    captionsRead = {};
+    await refineCandidate({ ...hairDown, ...mintingLibrary, harvest: compositing },
+      { ...input, instruction: "wear her hair down" });
+
+    expect(mintAsks, "step 1 reached the mint").toHaveLength(1);
+    const filed = mintAsks[0]!.slots;
+    expect(filed.length, "step 1 filed something for the next render to read")
+      .toBeGreaterThan(0);
+
+    /* The library as step 1 leaves it. Words-only, which is exactly what a
+       delivered fact with no corroborated caption produces. */
+    lineageReferences = filed.map((slot, at) => carryRow({
+      id: at + 1,
+      publicId: `ref-${at + 1}`,
+      slot: slot.slot,
+      tier: slot.tier,
+      noun: slot.noun,
+      words: slot.words,
+      storageKey: null,
+    }));
+    dispatchRecords.length = 0;
+    painted.length = 0;
+
+    /* Step 2 edits something else entirely, so step 1's fact is CARRIED rather
+       than edited — which is the only state the standing loop speaks in. */
+    const lipsAsk = {
+      ...repainting,
+      interpret: async () => ({
+        ok: true as const, delta: { free: { lips: "a fuller cupid's bow" } },
+      }),
+    };
+    await refineCandidate({ ...lipsAsk, ...mintingLibrary, harvest: compositing },
+      { ...input, instruction: "give her a fuller cupid's bow" });
+
+    const record = dispatchRecords[0]!.repaint as {
+      prompt: string; standing: Array<{ slot: string }>; carried: unknown[];
+    };
+    expect(record.prompt).toBe(painted[0]!.prompt);
+    for (const row of lineageReferences) {
+      const slot = String(row.slot);
+      const named = record.standing.some((entry) => entry.slot === slot)
+        || (row.words as string[]).every((word) => record.prompt.includes(word));
+      expect(named, `the recipe never named ${slot}: ${record.prompt}`).toBe(true);
+    }
+  });
+
+  it("CONTROL — a corroborated caption still files the CAPTION, not the ask", async () => {
+    /* Without this the arm above is satisfied by a mint that always files the
+       ask and never reads a caption at all — which would quietly replace every
+       read-back in the product with the request that produced it. */
+    captionsRead = { hairWorn: "worn long and loose" };
+    await refineCandidate({ ...hairDown, ...mintingLibrary, harvest: compositing },
+      { ...input, instruction: "wear her hair down" });
+
+    const filed = mintAsks[0]!.slots.find((slot) => slot.slot === "hair");
+    expect(filed!.words).toContain("worn long and loose");
   });
 
   it("CONTROL — the same ask on the old road hands the mint the paste's own mask", async () => {

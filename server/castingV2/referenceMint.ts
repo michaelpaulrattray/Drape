@@ -330,6 +330,18 @@ export type MintedSlot =
      *  than an instrument. That list is the membership; this line does not
      *  count it. */
     keptForAdoption?: true;
+    /**
+     * THE WORDS ON THIS ROW ARE THE ASK, NOT A READING (fable-1365 §3 door (c)).
+     *
+     * The describer declined to say anything about this slot and the row filed
+     * the stack the slot arrived with instead of filing nothing. It is the same
+     * distinction `disputed` draws one variant down, and it is recorded for the
+     * same reason: a row whose words came from the request must never be read
+     * back as a confirmed description of the delivered frame.
+     *
+     * Absent is the ordinary case — the describer answered.
+     */
+    wordsAreTheAsk?: true;
   }
   /**
    * A slot whose delivery this render's reader disputed. Never `stored`, never
@@ -356,10 +368,17 @@ export type MintedSlot =
    * what happens when there is no view to read: an accessory slot with no cut
    * (`noCut`), or a read that failed soft (`readFailedSoft`).
    *
-   * **No row is written, and that is the point.** The slot's newest existing
-   * row keeps carrying, which is what a version history is for. A row with an
-   * empty stack and no crop would supersede a true sentence with silence — the
-   * mint would be forgetting what it knows because one call did not come back.
+   * **No row is written, and it is now reached only when there is nothing to
+   * write.** This docblock used to defend the silence with *"the slot's newest
+   * existing row keeps carrying, which is what a version history is for"* — and
+   * that sentence is true only where a newest row EXISTS. On the render that
+   * delivers a feature for the first time there is none, and the silence is not
+   * a pause in the history but the whole of it: production v212 lost the
+   * founder's orb exactly here (fable-1365 §3 door (c)). So a slot that arrived
+   * with words now files them (`wordsOrAsk`, marked `wordsAreTheAsk`), and this
+   * outcome is left for the slot that arrived with none — where a row with an
+   * empty stack and no crop really would supersede a true sentence with
+   * silence.
    *
    * An accessory slot is never read against the frame, however cheap that would
    * be: "her left earring" asked of a whole picture is exactly the read that
@@ -1527,6 +1546,67 @@ export async function mintReferencesForRender(input: MintInput): Promise<MintRes
       if (!slot.disputed) return wordsFor(slot);
       return slot.words.length > 0 ? slot.words : null;
     };
+    /**
+     * ⚠ WHAT A ROW FILES WHEN THE DESCRIBER DECLINES — the ask, never nothing
+     * (fable-1365 §3 door (c); the production specimen is v212's `open:orb`).
+     *
+     * Five loops below have the same two lines: ask the describer, and if it
+     * answers `null` write NO ROW at all. {@link MintedSlot}'s own docblock
+     * defends that with *"the slot's newest existing row keeps carrying, which
+     * is what a version history is for"* — and that sentence is true only for a
+     * slot the library already holds something for. **For a slot this render
+     * DELIVERED FIRST there is no newest row, and the silence is not a pause in
+     * the history: it is the whole of it.**
+     *
+     * Measured, on the founder's own cast, in a pair that differs in exactly one
+     * thing. Both renders asked the segmenter for an open kind, both got no
+     * region back, and both fell to the same frame-level describer:
+     *
+     * ```
+     * v203  cand 1648  open:tail   describer answered (59 tokens)  → words-only row
+     * v212  cand 1653  open:orb    describer declined              → NO ROW
+     * ```
+     *
+     * The orb was verified present on the delivered frame by this render's own
+     * reader. `recipeAssembler`'s standing loop iterates the library and nothing
+     * else, so with no row the next repaint never says the word "orb" — which is
+     * exactly how the horns on the same cast were lost one render earlier
+     * through the other door.
+     *
+     * **The words filed are `slot.words`, which is always THIS RENDER's own** —
+     * `mintedSlots.stackOf` composes them from this render's captions, and its
+     * earned-pass fallback from this render's ask. They are never a stale stack
+     * read back out of the library, so a row filed here cannot re-assert a
+     * feature the render has just changed.
+     *
+     * A slot that arrived with no words at all is `unread` exactly as before:
+     * there is nothing to file and nothing has been lost.
+     *
+     * ⚠ **AND AN ACCESSORY IS THE ONE EXCEPTION, because its arriving words
+     * are frame-wide by construction.** `statedAccessories` is ONE facet over
+     * every kind of thing a face can wear, so its caption is a sentence about
+     * the whole picture — *"gold hoops and dark tortoiseshell glasses"* — and
+     * filing it into `earring@left` is the very defect the frame-read refusal
+     * two functions up exists to prevent (it wrote her glasses into an earring
+     * row four times). The predicate is that same refusal's, `accessoryKindOfSlot`,
+     * imported rather than restated so the two cannot drift.
+     *
+     * So an accessory with no cut is `unread` exactly as it is today, and this
+     * door stays shut for it. **That is a named gap and not a closed one**: an
+     * accessory delivered on a render whose segmenter came back empty is still
+     * lost, and what closes it is an accessory-scoped read — a description of
+     * THIS earring rather than of the picture it is in — which is its own build
+     * and is filed rather than smuggled in here.
+     */
+    const wordsOrAsk = async (slot: SlotSpec): Promise<{
+      words: readonly string[]; wordsAreTheAsk?: true;
+    } | null> => {
+      const said = await wordsForRow(slot);
+      if (said !== null) return { words: said };
+      if (slot.words.length === 0) return null;
+      if (accessoryKindOfSlot(slot.slot) !== null) return null;
+      return { words: slot.words, wordsAreTheAsk: true };
+    };
     const readOneSlotsWords = async (slot: SlotSpec): Promise<readonly string[] | null> => {
       /* Not wired: the slot files the words it arrived with, byte for byte
          today's behaviour. */
@@ -1638,10 +1718,15 @@ export async function mintReferencesForRender(input: MintInput): Promise<MintRes
          withhold — see the class note at the `noQuestion` loop below. Its words
          are the whole carrier, and they are the ASK when the reading is
          disputed (fable-927 §3, swept to this member by fable-930 §2). */
-      const said = await wordsForRow(slot);
+      const said = await wordsOrAsk(slot);
       if (said === null) { unread(slot); continue; }
-      rows.push({ role: "carry", slot: slot.slot, tier: slot.tier, noun: slot.noun, words: said });
-      outcomes.push({ slot: slot.slot, outcome: "words-only", reason: "surface" });
+      rows.push({ role: "carry", slot: slot.slot, tier: slot.tier, noun: slot.noun, words: said.words });
+      outcomes.push({
+        slot: slot.slot,
+        outcome: "words-only",
+        reason: "surface",
+        ...(said.wordsAreTheAsk ? { wordsAreTheAsk: true as const } : {}),
+      });
     }
     /*
       A SLOT WITH NO QUESTION IS NOT A SLOT WITH NO WORDS. The catalogue hands
@@ -1693,13 +1778,14 @@ export async function mintReferencesForRender(input: MintInput): Promise<MintRes
         the outcome below is labelled `disputed` so the row never claims to be a
         confirmed reading.
       */
-      const said = await wordsForRow(slot);
+      const said = await wordsOrAsk(slot);
       if (said === null) { unread(slot); continue; }
-      rows.push({ role: "carry", slot: slot.slot, tier: slot.tier, noun: slot.noun, words: said });
+      rows.push({ role: "carry", slot: slot.slot, tier: slot.tier, noun: slot.noun, words: said.words });
       outcomes.push({
         slot: slot.slot,
         outcome: "words-only",
         reason: "noQuestion",
+        ...(said.wordsAreTheAsk ? { wordsAreTheAsk: true as const } : {}),
         detail: slot.disputed
           ? "no segmentation question names this slot, so there is nothing honest to cut — and the "
             + "reading was DISPUTED, so these are the words she asked for rather than a description "
@@ -1712,10 +1798,16 @@ export async function mintReferencesForRender(input: MintInput): Promise<MintRes
         disputedNothingKept(slot, "noSide", detail);
         continue;
       }
-      const said = await wordsFor(slot);
+      const said = await wordsOrAsk(slot);
       if (said === null) { unread(slot); continue; }
-      rows.push({ role: "carry", slot: slot.slot, tier: slot.tier, noun: slot.noun, words: said });
-      outcomes.push({ slot: slot.slot, outcome: "words-only", reason: "noSide", detail });
+      rows.push({ role: "carry", slot: slot.slot, tier: slot.tier, noun: slot.noun, words: said.words });
+      outcomes.push({
+        slot: slot.slot,
+        outcome: "words-only",
+        reason: "noSide",
+        detail,
+        ...(said.wordsAreTheAsk ? { wordsAreTheAsk: true as const } : {}),
+      });
     }
     /* The D1 gate's refusals, filed exactly as `noSide` is — words keep the
        feature on her, and the reason says the count rather than "no side". */
@@ -1724,10 +1816,16 @@ export async function mintReferencesForRender(input: MintInput): Promise<MintRes
         disputedNothingKept(slot, "notAPair", detail);
         continue;
       }
-      const said = await wordsFor(slot);
+      const said = await wordsOrAsk(slot);
       if (said === null) { unread(slot); continue; }
-      rows.push({ role: "carry", slot: slot.slot, tier: slot.tier, noun: slot.noun, words: said });
-      outcomes.push({ slot: slot.slot, outcome: "words-only", reason: "notAPair", detail });
+      rows.push({ role: "carry", slot: slot.slot, tier: slot.tier, noun: slot.noun, words: said.words });
+      outcomes.push({
+        slot: slot.slot,
+        outcome: "words-only",
+        reason: "notAPair",
+        detail,
+        ...(said.wordsAreTheAsk ? { wordsAreTheAsk: true as const } : {}),
+      });
     }
 
     /* Digests already spoken for, so a byte-identical crop is caught whether it
@@ -1749,13 +1847,14 @@ export async function mintReferencesForRender(input: MintInput): Promise<MintRes
            not a judgement about her picture at all. Withholding the words
            there would let one blank read delete a paid feature from every
            render after it (fable-930 §2). */
-        const said = await wordsForRow(slot);
+        const said = await wordsOrAsk(slot);
         if (said === null) { unread(slot); continue; }
-        rows.push({ role: "carry", slot: slot.slot, tier: slot.tier, noun: slot.noun, words: said });
+        rows.push({ role: "carry", slot: slot.slot, tier: slot.tier, noun: slot.noun, words: said.words });
         outcomes.push({
           slot: slot.slot,
           outcome: "words-only",
           reason: "noRegion",
+          ...(said.wordsAreTheAsk ? { wordsAreTheAsk: true as const } : {}),
           /* A composed region that could not be composed says WHY, because
              "the segmenter found nothing" and "the two models disagreed about
              the frame's resolution" are different failures and only one of them

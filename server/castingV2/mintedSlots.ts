@@ -61,11 +61,40 @@ import { INSTANCES, openSideSlotKey, openSlotKey } from "./referenceSlots";
 import { captionWording, type RealizationCaptions } from "./realizationCaption";
 import type { SlotSpec } from "./referenceMint";
 import type { Facet } from "./refineFacets";
+import { accessoryKindOfSlot } from "./slotWordShape";
 import { cropMayCarry, type KindLocality } from "../../shared/kindLocality";
 
 export type MintedSlotsInput = {
   /** The facets this render wrote, verified and did not carry. */
   earned: readonly Facet[];
+  /**
+   * WHAT THIS RENDER WAS TOLD TO PRODUCE, per facet — the EARNED pass's
+   * fallback when the caption reader could not corroborate its own delivery
+   * (fable-1364/1365, the horns).
+   *
+   * ⚠ **This is not D-183 being relaxed, and the distinction is the whole
+   * licence.** D-183 refuses to pin a caption as ALREADY TRUE when the edit did
+   * not take — a lie repeated in every later render. A facet reaching this
+   * fallback is one the BINDING verifier read on the delivered frame and
+   * confirmed: the fact is there. What failed is the second reader's ability to
+   * describe it in the same words as the first, which on novel anatomy is the
+   * common case rather than the exception — the founder's horns were read as
+   * *"pairs of curved bone-white horns"* and *"two clusters of three tapered
+   * points near each temple"*, two honest descriptions of one thing.
+   *
+   * **And the alternative is not "no words", it is DELETION.** With no row at
+   * all, `recipeAssembler`'s standing loop — which iterates the library and
+   * nothing else — never mentions the fact again, so the next repaint paints a
+   * frame without it. Measured on production: three of sixteen repaint renders
+   * dropped a paid feature this way.
+   *
+   * The words filed are the ones the PASTE road restates in full on every
+   * render, which is why that road does not have this bug. So this is parity
+   * with the road that keeps its features rather than an invention — and the
+   * row's CROP is cut from the delivered frame either way, so the pixels carry
+   * what actually landed while the words carry what was asked.
+   */
+  asked?: Readonly<Record<string, string>>;
   /**
    * The facets this render WROTE and its own reader then DISPUTED (fable-220 §3).
    *
@@ -354,6 +383,40 @@ export function mintedSlotsForRender(input: MintedSlotsInput): MintedSlotsResult
    * facets does this slot hold" would be free to disagree with this one, and
    * the disagreement would decide whether a ruler may speak.
    */
+  /**
+   * The ask's own words for a slot, for the earned-pass fallback above.
+   *
+   * Narrowed to the facets this render EARNED — a slot holds several facets
+   * (`hair` holds five), and the ask for a facet this render did not write says
+   * nothing about what this render delivered. Deduped, because two facets of
+   * one slot can carry the same sentence.
+   *
+   * ⚠ **AND AN ACCESSORY SLOT IS EXCLUDED, because its ask is frame-wide by
+   * construction.** `statedAccessories` is ONE facet over every kind of thing a
+   * face can wear, so the composed value behind it is the whole worn list —
+   * *"dark tortoiseshell glasses, dangly cross earrings"* — and pouring that
+   * into `earring@left` writes her glasses into an earring row. That is the
+   * same defect the mint's own frame-read refusal exists to prevent, arriving
+   * through the ASK rather than through a reader, and it is refused with the
+   * same predicate so the two cannot drift.
+   *
+   * The gap that leaves is named rather than closed: an accessory delivered on
+   * a render whose caption could not be corroborated still files nothing, and
+   * what closes it is a per-OBJECT ask value rather than a per-facet one. Filed,
+   * not smuggled.
+   */
+  const earnedSet = new Set<Facet>(input.earned);
+  const askedWordsFor = (definition: SlotDefinition): readonly string[] | null => {
+    if (!input.asked) return null;
+    if (accessoryKindOfSlot(definition.slot) !== null) return null;
+    const words = (facetsOfSlot(definition.slot) ?? [])
+      .filter((member) => earnedSet.has(member))
+      .map((member) => (input.asked?.[member] ?? "").trim())
+      .filter((value) => value !== "");
+    const unique = Array.from(new Set(words));
+    return unique.length === 0 ? null : unique;
+  };
+
   const disputedSet = new Set<Facet>(input.disputed ?? []);
   const disputedFacetsOf = (definition: SlotDefinition): readonly Facet[] =>
     (facetsOfSlot(definition.slot) ?? []).filter((facet) => disputedSet.has(facet));
@@ -404,11 +467,22 @@ export function mintedSlotsForRender(input: MintedSlotsInput): MintedSlotsResult
           words off its own CUT, which for `build` is a photograph of her torso
           rather than the whole frame the caption reader was defeated by.
         */
-        if (words === null && definition.remint !== "everyRender") {
+        /*
+          ⚠ THE FALLBACK, AND IT IS ONLY REACHED ON THE EARNED PASS.
+
+          A DISPUTED slot deliberately files no words-only row (fable-220 §3):
+          its own reader said the change is not there, so it is here for pixels
+          a human can look at and for nothing else. Handing it the ask's words
+          would file the thing the reader denied, which is the one shape D-183
+          really forbids. `disputed` is the flag that separates them and it is
+          checked here rather than argued about.
+        */
+        const fallback = disputed ? null : askedWordsFor(definition);
+        if (words === null && fallback === null && definition.remint !== "everyRender") {
           unfiled.push({ facet, reason: "noWords" });
           continue;
         }
-        file(definition, words ?? [], disputed);
+        file(definition, words ?? fallback ?? [], disputed);
       }
     }
   };

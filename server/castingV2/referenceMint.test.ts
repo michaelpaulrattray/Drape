@@ -1151,9 +1151,18 @@ describe("the words read", () => {
     /*
       No side map and no ground, so there is no cut. Reading the whole frame for
       "her left earring" is exactly the read that wrote her glasses into an
-      earring row four times, so it is not made — and the slot files nothing, so
-      its newest existing row keeps carrying rather than being superseded by
-      silence.
+      earring row four times, so it is not made — and the slot files nothing.
+
+      ⚠ AND THIS IS THE ONE SLOT THE ASK-FALLBACK DOES NOT REACH (fable-1365
+      §3 door (c), narrowed by this arm). Everywhere else a describer that
+      declines now files the words the slot ARRIVED with rather than deleting a
+      delivered fact. Here it may not: `statedAccessories` is one facet over
+      every kind of thing a face can wear, so the words this slot arrives with
+      are a sentence about the WHOLE PICTURE — the fixture's own
+      `words` below is that sentence — and filing them into `earring@left`
+      would be the glasses defect arriving through the repair rather than
+      through the read. The gap that leaves is named at `wordsOrAsk` and waits
+      for an accessory-scoped read.
     */
     const bench = harness();
     const reader = wordsReader(() => "gold hoops and dark tortoiseshell glasses");
@@ -1189,6 +1198,78 @@ describe("the words read", () => {
 
     expect(reader.calls).toMatchObject([{ noun: "jaw", view: "frame" }]);
     expect(bench.rows[0]!.words).toEqual(["a soft rounded jawline"]);
+  });
+
+  it("⚠ A DECLINING DESCRIBER FILES THE ASK RATHER THAN DELETING THE FEATURE", async () => {
+    /*
+      fable-1365 §3 door (c), and the production pair it is modelled on differs
+      in exactly one thing — whether the describer answered:
+
+        v203  cand 1648  open:tail   answered (59 tokens)  → words-only row
+        v212  cand 1653  open:orb    declined              → NO ROW AT ALL
+
+      Both renders asked the segmenter for an open kind, both got no region back,
+      and both fell to this frame-level read. The orb was verified PRESENT on the
+      delivered frame by that render's own reader, and `recipeAssembler`'s
+      standing loop iterates the library and nothing else — so with no row the
+      next repaint never says the word, which is how the founder lost it.
+
+      The arm below is the v212 half. Its control is the `jaw` test above, which
+      is the v203 half on the same code path with an answering reader.
+    */
+    const bench = harness();
+    const reader = wordsReader(() => null);
+    const result = await mintReferencesForRender({
+      userId: 1,
+      variantId: 11,
+      frame: { bytes: await texturedFrame() },
+      applied: null,
+      masterRegions: new Map(),
+      slots: [hairSlot({
+        slot: "open:orb",
+        noun: "orb",
+        words: ["a glowing red vertical slit orb embedded in the centre of her forehead"],
+        question: null,
+        guardKind: null,
+      })],
+      dependencies: { ...bench.dependencies, readWords: reader.readWords } as never,
+    });
+
+    expect(reader.calls, "the read WAS made; it declined").toHaveLength(1);
+    expect(result.slots[0]).toMatchObject({
+      slot: "open:orb",
+      outcome: "words-only",
+      wordsAreTheAsk: true,
+    });
+    expect(bench.rows).toHaveLength(1);
+    expect(bench.rows[0]!.words).toEqual([
+      "a glowing red vertical slit orb embedded in the centre of her forehead",
+    ]);
+  });
+
+  it("CONTROL — a slot that arrived with NO words still files nothing", async () => {
+    /*
+      The one case `unread` is still for, and without it the arm above is
+      satisfied by a mint that writes a row for every slot whatever it holds. A
+      row with an empty stack and NO crop would supersede a true sentence with
+      silence.
+    */
+    const bench = harness();
+    const reader = wordsReader(() => null);
+    const result = await mintReferencesForRender({
+      userId: 1,
+      variantId: 11,
+      frame: { bytes: await texturedFrame() },
+      applied: null,
+      masterRegions: new Map(),
+      slots: [hairSlot({
+        slot: "open:orb", noun: "orb", words: [], question: null, guardKind: null,
+      })],
+      dependencies: { ...bench.dependencies, readWords: reader.readWords } as never,
+    });
+
+    expect(result.slots[0]).toMatchObject({ slot: "open:orb", outcome: "unread" });
+    expect(bench.rows).toEqual([]);
   });
 
   it("keeps the crop with an EMPTY stack when the read comes back empty", async () => {

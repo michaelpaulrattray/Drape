@@ -258,6 +258,115 @@ describe("the slots a render files", () => {
     expect(unfiled).toEqual([{ facet: "lips", reason: "noWords" }]);
   });
 
+  it("⚠ FILES THE ASK'S WORDS when the caption reader could not corroborate", () => {
+    /*
+      fable-1364/1365, the founder's horns — and the fixture varies the ONE
+      property the class is about: whether a caption arrived.
+
+      v211 delivered horns, the BINDING verifier read them on the delivered
+      frame and confirmed, and `captionRealization` then returned null because
+      its own reader described them differently ("pairs of curved bone-white
+      horns" against "two clusters of three tapered points near each temple").
+      Two honest readings of one thing, cancelled into deletion: no caption, no
+      slot, no library row — and `recipeAssembler`'s standing loop iterates the
+      library and nothing else, so v212's prompt never said the word "horns" and
+      the frame came back bare.
+
+      This is not D-183 relaxed. D-183 refuses to PIN a caption as already true
+      when the edit did not take; a facet reaching this fallback is one the
+      binding verifier confirmed.
+    */
+    const { slots, unfiled } = mintedSlotsForRender({
+      earned: ["horns"],
+      captions: {},
+      asked: { horns: "two smooth bone-white horns rising from the top of her head" },
+    });
+
+    expect(unfiled).toEqual([]);
+    expect(slots.map((slot) => slot.slot)).toEqual(["horns@left", "horns@right"]);
+    expect(slots[0]!.words).toEqual([
+      "two smooth bone-white horns rising from the top of her head",
+    ]);
+  });
+
+  it("CONTROL — a corroborated caption still wins over the ask", () => {
+    /* Without this the arm above is satisfied by a mint that always files the
+       request, which would quietly replace every read-back in the product with
+       the words that produced it. */
+    const { slots } = mintedSlotsForRender({
+      earned: ["horns"],
+      captions: { horns: "pairs of curved bone-white horns rising from top of head" },
+      asked: { horns: "two smooth bone-white horns rising from the top of her head" },
+    });
+
+    expect(slots[0]!.words).toEqual([
+      "pairs of curved bone-white horns rising from top of head",
+    ]);
+  });
+
+  it("CONTROL — an ACCESSORY does not get the ask's words, and the reason is the glasses", () => {
+    /*
+      `statedAccessories` is ONE facet over every kind of thing a face can wear,
+      so the value behind it is the whole worn list. Filing it into `earring@left`
+      would write her glasses into an earring row — the identical defect the
+      mint's frame-read refusal exists to prevent, arriving through the ask
+      instead of through a reader. Same predicate, both layers.
+    */
+    const { slots, unfiled } = mintedSlotsForRender({
+      earned: ["statedAccessories"],
+      captions: {},
+      accessoryKind: "earring",
+      asked: { statedAccessories: "dark tortoiseshell glasses, dangly cross earrings" },
+    });
+
+    expect(slots).toEqual([]);
+    expect(unfiled).toEqual([
+      { facet: "statedAccessories", reason: "noWords" },
+      { facet: "statedAccessories", reason: "noWords" },
+    ]);
+  });
+
+  it("CONTROL — the ask for a facet this render did NOT earn is not filed", () => {
+    /*
+      A slot holds several facets, and what a face was told about its hair
+      COLOUR says nothing about a render that only wrote the CUT. Without the
+      narrowing, one uncorroborated facet would drag every other facet's
+      standing instruction into a row as though this render had delivered it.
+    */
+    const { slots, unfiled } = mintedSlotsForRender({
+      earned: ["lips"],
+      captions: {},
+      asked: { "hair.colour": "a deep copper" },
+    });
+
+    expect(slots).toEqual([]);
+    expect(unfiled).toEqual([{ facet: "lips", reason: "noWords" }]);
+  });
+
+  it("CONTROL — a DISPUTED slot files no words-only row from the ask", () => {
+    /*
+      fable-220 §3, kept: a disputed slot is in the list for its PIXELS. Its own
+      reader said the change is not in the delivered picture, so handing it the
+      ask's words would file exactly the thing the reader denied — which is the
+      one shape D-183 really forbids.
+    */
+    const { slots, unfiled } = mintedSlotsForRender({
+      earned: [],
+      disputed: ["horns"],
+      captions: {},
+      asked: { horns: "two smooth bone-white horns rising from the top of her head" },
+    });
+
+    /* Byte for byte what this input produced before the fallback existed: the
+       disputed pass is not offered the ask, so the slot has no words and falls
+       to the same `noWords` refusal it always did. */
+    expect(slots).toEqual([]);
+    expect(unfiled).toEqual([
+      { facet: "horns", reason: "noWords" },
+      { facet: "horns", reason: "noWords" },
+    ]);
+  });
+
   it("never files one slot twice, however many of its facets earned", () => {
     const { slots } = mintedSlotsForRender({
       earned: ["skinTone", "skinCharacter", "marks"],

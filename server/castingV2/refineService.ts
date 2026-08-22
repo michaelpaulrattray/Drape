@@ -8030,7 +8030,7 @@ async function refineCandidateCounted(
            checked against it rather than describing whatever turned up. */
         asked: view ? view.asked : asked,
       });
-      return { facet, caption, mine };
+      return { facet, caption, mine, asked };
     });
 
     const captionResults = await Promise.allSettled(captionWork);
@@ -8038,9 +8038,25 @@ async function refineCandidateCounted(
        have thrown — the siblings were all settled, so none is left unhandled. */
     const captionFailure = captionResults.find((result) => result.status === "rejected");
     if (captionFailure?.status === "rejected") throw captionFailure.reason;
+    /*
+      ⚠ WHAT THIS RENDER ASKED FOR, KEPT BESIDE WHAT IT SAW (fable-1365 §1).
+
+      The mint's earned pass falls back to these words when a facet's caption
+      could not be corroborated, and without them a delivered fact files NO ROW
+      — after which `recipeAssembler`'s standing loop, which iterates the
+      library and nothing else, never mentions it again and the next repaint
+      paints a frame without it. His horns were lost exactly here: the binding
+      verifier saw them, the caption reader described them differently, and the
+      two honest readings cancelled into deletion.
+
+      Collected from the same loop that computes them for the read-back, so
+      there is no second derivation of *what did this render ask for*.
+    */
+    const askedWords: Record<string, string> = {};
     for (const result of captionResults) {
       if (result.status !== "fulfilled") continue;
       if (result.value.caption) capturedCaptions[result.value.facet] = result.value.caption;
+      if (result.value.asked) askedWords[result.value.facet] = result.value.asked;
       uncorroborated.push(...result.value.mine);
     }
 
@@ -8665,6 +8681,10 @@ async function refineCandidateCounted(
           earned,
           disputed,
           captions: capturedCaptions,
+          /* The earned pass's fallback: a fact the binding verifier confirmed
+             files its ask's words rather than nothing, so a caption the two
+             readers worded differently cannot delete a paid feature. */
+          asked: askedWords,
           open: openAsks,
           /* What the instruction said the worn object IS — derived once above,
              beside the region override that has to name the same object. */

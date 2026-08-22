@@ -218,6 +218,7 @@
         "charge": "free",
         "pinnedBy": [
           "server/castingV2/cannotSayCopy.test.ts",
+          "server/castingV2/carrySurvival.test.ts",
           "server/castingV2/mintedSlots.test.ts",
           "server/castingV2/openKindPolicy.test.ts",
           "server/castingV2/openLaneKind.test.ts",

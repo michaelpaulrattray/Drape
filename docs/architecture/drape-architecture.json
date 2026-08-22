@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "7671afbdbab803b6"
+    "sourceFingerprint": "875e2b5d0949ca60"
   },
   "domains": [
     {
@@ -9910,6 +9910,10 @@
     {
       "id": "test:server/castingV2/carriedSegments.test.ts",
       "path": "server/castingV2/carriedSegments.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/carrySurvival.test.ts",
+      "path": "server/castingV2/carrySurvival.test.ts"
     },
     {
       "id": "test:server/castingV2/castProjection.test.ts",
@@ -21345,6 +21349,11 @@
     {
       "from": "module:server/castingV2/mintedSlots.ts",
       "to": "module:server/castingV2/refineFacets.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/mintedSlots.ts",
+      "to": "module:server/castingV2/slotWordShape.ts",
       "kind": "imports"
     },
     {

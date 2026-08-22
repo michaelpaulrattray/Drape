@@ -102,6 +102,38 @@ describe("gathering the words the anchor cannot show", () => {
     }]);
   });
 
+  it("⚠ carries a WORDS-ONLY row the mint filed from the ASK (fable-1365 §4)", async () => {
+    /*
+      The sign-side half of the carry repair, and the row below is exactly what
+      `referenceMint`'s `wordsAreTheAsk` fallback now produces: words, no crop,
+      no digest. Before that fallback such a feature filed NO ROW AT ALL, and a
+      Cast signed on that branch reached all six views with nothing said about
+      it — the library is the only word source on this lane too.
+
+      ⚠ The founder's HORNS were never the specimen for this half, and saying so
+      is the point of this comment: `horns` resolves to the `head` region, which
+      the anchor frame SHOWS, so its words decline as `shown` and its pixels ride
+      in the anchor. What is at risk here is a feature the anchor CANNOT show —
+      the tail below — and that is the case this arm holds.
+    */
+    const listLibrary = vi.fn(async () => [row({ words: [WORDS], storageKey: null })] as never);
+    const carried = await carriedFeatureWords(deps({ listLibrary }), input);
+    expect(carried).toEqual([{
+      slot: "open:tail", noun: "tail", words: [WORDS], region: "belowWaist",
+    }]);
+  });
+
+  it("CONTROL — a feature the anchor SHOWS rides its pixels and says nothing", async () => {
+    /* The negative half of the sentence above, driven rather than asserted in
+       prose: a head-region slot declines even holding words. Without it the arm
+       above would read as "every words-only row rides", which is not the rule
+       and would put a description of her eyes into six view prompts. */
+    const listLibrary = vi.fn(async () => [
+      row({ slot: "horns@left", noun: "left horn", words: ["two smooth bone-white horns"] }),
+    ] as never);
+    expect(await carriedFeatureWords(deps({ listLibrary }), input)).toEqual([]);
+  });
+
   it("carries NOTHING when the branch holds a CROP of the feature", async () => {
     /*
       The two-condition rule's second half, driven through the real
