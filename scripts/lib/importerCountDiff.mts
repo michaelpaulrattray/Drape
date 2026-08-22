@@ -234,3 +234,127 @@ export function unwiredBetween(before: Tree, after: Tree): Unwiring[] {
   }
   return found;
 }
+
+/* ------------------------------------------------------------- the timeline */
+
+/**
+ * THE SAME READING OVER MANY TREES — *was this symbol EVER wired?*
+ *
+ * `unwiredBetween` compares two trees, and its entrypoint's docblock states the
+ * gap that follows from that: a symbol born AND un-wired inside one window is
+ * invisible, because it is not in the `before` tree to have lost anything.
+ * Demonstrated on this instrument's own specimens — the February tile reported
+ * ZERO while both deaths that morning were inside it.
+ *
+ * ⚠ **AND THE MISS IS NOT A SILENCE. IT IS A CONFIDENT WRONG ROAD.** Measured
+ * 2026-08-23 on the real history: read at a coarse tile, `isSensitiveAction`
+ * classifies `dark-born` — *never had a production importer at any boundary*,
+ * which is the path-ONE shape — and at a fine tile it classifies `died`, which
+ * is path THREE and hands you `3cb0cdee` to read. CLAUDE.md spends a paragraph
+ * on why filing a path-three death as path-one is worse than filing nothing.
+ * The arm for that fact is `server/unwiringTimeline.test.ts`'s intermediate-
+ * boundary pair, so it is a mechanical property of this classifier rather than
+ * an anecdote about one symbol.
+ *
+ * Fed one tree at a time in HISTORICAL ORDER so a whole history need not be
+ * held in memory, and pure, so the arms need no `git worktree`.
+ */
+export type TimelineKind = "wired-at-head" | "revived" | "died" | "deleted" | "dark-born";
+
+export type Timeline = {
+  lastWiredIdx: Map<string, number>;
+  firstWiredIdx: Map<string, number>;
+  lastWiredImporters: Map<string, string[]>;
+  /**
+   * The last boundary that DECLARED a symbol with zero production importers,
+   * after it had already been wired once. Without it `revived` cannot exist:
+   * a symbol wired at both ends looks identical to one that was dark for four
+   * and a half months in between, which is exactly the login-attack detector.
+   */
+  darkAfterWiredIdx: Map<string, number>;
+  everDeclared: Set<string>;
+  observed: number;
+};
+
+export const newTimeline = (): Timeline => ({
+  lastWiredIdx: new Map(),
+  firstWiredIdx: new Map(),
+  lastWiredImporters: new Map(),
+  darkAfterWiredIdx: new Map(),
+  everDeclared: new Set(),
+  observed: 0,
+});
+
+export function observeTree(timeline: Timeline, index: number, tree: Tree): void {
+  for (const name of tree.decl.keys()) {
+    timeline.everDeclared.add(name);
+    const importers = tree.prodImporters.get(name);
+    if (importers && importers.length > 0) {
+      timeline.lastWiredIdx.set(name, index);
+      timeline.lastWiredImporters.set(name, importers);
+      if (!timeline.firstWiredIdx.has(name)) timeline.firstWiredIdx.set(name, index);
+    } else if (timeline.firstWiredIdx.has(name)) {
+      timeline.darkAfterWiredIdx.set(name, index);
+    }
+  }
+  timeline.observed += 1;
+}
+
+export type TimelineRow = {
+  name: string;
+  kind: TimelineKind;
+  /** null when the symbol is not declared at HEAD */
+  declaredAt: string | null;
+  lastWiredIndex: number | null;
+  firstWiredIndex: number | null;
+  darkAfterWiredIndex: number | null;
+  lostImporters: string[];
+  selfUsesAtHead: number;
+};
+
+/**
+ * Classify every symbol the timeline has ever seen against the HEAD tree.
+ *
+ *   died          wired at some boundary, still declared at HEAD, zero
+ *                 importers there — the hunt's target
+ *   revived       wired at HEAD, and dark at some boundary after its first
+ *                 wiring
+ *   deleted       wired at some boundary, no longer declared — a different
+ *                 question, and one a diff can already answer
+ *   dark-born     never had a production importer at any boundary observed
+ *   wired-at-head wired at HEAD with no dark boundary behind it
+ *
+ * ⚠ `dark-born` is the class to read carefully rather than act on: importers
+ * are counted under `server`/`client`/`shared`, so a symbol whose only consumer
+ * is a CEREMONY or AUDIT SCRIPT lands here. Measured 2026-08-23 on the
+ * control-shaped never-wired names: 13 of 19 had a `scripts/` consumer, and
+ * every one of the remaining six was accounted for. Right for the question
+ * *"is this on a request path"*, wrong for *"is this dead"*, and stated because
+ * the two look identical in the output.
+ */
+export function classifyTimeline(timeline: Timeline, head: Tree): TimelineRow[] {
+  const rows: TimelineRow[] = [];
+  for (const name of timeline.everDeclared) {
+    const wiredIdx = timeline.lastWiredIdx.get(name);
+    const declaredAtHead = head.decl.has(name);
+    const importersAtHead = declaredAtHead ? importerCount(head, name) : 0;
+
+    let kind: TimelineKind;
+    if (wiredIdx === undefined) kind = "dark-born";
+    else if (importersAtHead > 0) kind = timeline.darkAfterWiredIdx.has(name) ? "revived" : "wired-at-head";
+    else if (!declaredAtHead) kind = "deleted";
+    else kind = "died";
+
+    rows.push({
+      name,
+      kind,
+      declaredAt: declaredAtHead ? head.decl.get(name)! : null,
+      lastWiredIndex: wiredIdx ?? null,
+      firstWiredIndex: timeline.firstWiredIdx.get(name) ?? null,
+      darkAfterWiredIndex: timeline.darkAfterWiredIdx.get(name) ?? null,
+      lostImporters: timeline.lastWiredImporters.get(name) ?? [],
+      selfUsesAtHead: declaredAtHead ? (head.selfUses.get(name) ?? 0) : 0,
+    });
+  }
+  return rows;
+}
