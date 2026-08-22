@@ -53,7 +53,7 @@ _Entrances:_ `server/castingV2/refineInterpreter.ts` · `server/castingV2/refine
 | door | kind | charge | where it lives | pinned | reached by |
 |---|---|---|---|---|---|
 | `empty` | interpreter-refusal |  | server/castingV2/refineDelta.ts:505<br>server/castingV2/refineInterpreter.ts:862<br>(+1) | 6 test(s) | guard.empty |
-| `unreadable` | interpreter-refusal |  | server/castingV2/castingIntent.ts:939<br>server/castingV2/castingIntent.ts:956<br>(+14) | 16 test(s) | light.softer, guard.gibberish, guard.scope.ink.none |
+| `unreadable` | interpreter-refusal |  | server/castingV2/castingIntent.ts:1078<br>server/castingV2/castingIntent.ts:1095<br>(+14) | 16 test(s) | light.softer, guard.gibberish, guard.scope.ink.none |
 | `wall_likeness` | interpreter-refusal |  | server/castingV2/refineDelta.ts:417<br>server/castingV2/refineDelta.ts:1476<br>(+2) | 7 test(s) | guard.likeness |
 | `wall_content` | interpreter-refusal |  | server/castingV2/refineDelta.ts:457<br>server/castingV2/refineInterpreter.ts:1488<br>(+1) | 6 test(s) | guard.content |
 | `wall_stage` | interpreter-refusal |  | server/castingV2/refineDelta.ts:432<br>server/castingV2/refineDelta.ts:1486<br>(+2) | 8 test(s) | background.white |

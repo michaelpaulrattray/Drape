@@ -349,6 +349,19 @@ function fallbackIntent(briefText: string): CastingIntent {
     // The fallback compiles from the raw sentence, so nothing was interpreted
     // and there is nothing to say back.
     statedAccessories: [],
+    /*
+      No ink read, and `null` is the honest answer rather than a silent
+      fallback: the interpreter never ran, so nothing about this brief was read
+      at all. That is a different fact from *she named ink and no region
+      survived*, which is `readFailed` on a real reading — and the difference
+      matters, because an outage is already loud (the parse-failure alarm) while
+      a bad reader is not.
+
+      The cost is stated rather than hidden: a brief naming ink that arrives
+      here is born WITHOUT its row, and the raw sentence still reaches the image
+      model, so the picture is unaffected — only the record is.
+    */
+    statedInk: null,
     // No interpreter ran, so no category was read and nothing is implied.
     poolTendencies: NO_TENDENCIES,
     /*

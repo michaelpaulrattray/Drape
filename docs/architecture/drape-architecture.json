@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "c9974b770cd62fc5"
+    "sourceFingerprint": "e1fb0070522ae548"
   },
   "domains": [
     {
@@ -10650,6 +10650,10 @@
       "path": "server/castingV2/statedCovering.test.ts"
     },
     {
+      "id": "test:server/castingV2/statedInk.test.ts",
+      "path": "server/castingV2/statedInk.test.ts"
+    },
+    {
       "id": "test:server/castingV2/statedWardrobe.test.ts",
       "path": "server/castingV2/statedWardrobe.test.ts"
     },
@@ -19914,6 +19918,11 @@
     {
       "from": "module:server/castingV2/castingIntent.ts",
       "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/castingIntent.ts",
+      "to": "module:shared/bodyAnchorRegions.ts",
       "kind": "imports"
     },
     {

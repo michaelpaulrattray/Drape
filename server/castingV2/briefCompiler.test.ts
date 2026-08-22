@@ -37,6 +37,7 @@ const BASE_INTENT: CastingIntent = {
   role: "a dad in his 30s",
   statedHair: EMPTY_STATED_HAIR,
   statedAccessories: [],
+  statedInk: null,
   poolTendencies: NO_TENDENCIES,
   wardrobe: null,
   characterNotes: null,
@@ -105,6 +106,9 @@ describe("the precedence fix", () => {
       // D-79's re-ship: WHAT the brief said about each part of hair. The
       // interpreter never decides WHETHER — that is the code-owned gate.
       "statedHair",
+      // 7b(a): tattoos the brief itself named, and the regions they cover.
+      // NULL on every roll today — the interpreter is not yet asked for it.
+      "statedInk",
       "variationAxis",
       /*
         ⚠ `wardrobe` IS ON THIS LIST NOW, and it was the poison fixture's own

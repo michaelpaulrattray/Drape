@@ -105,6 +105,11 @@ import {
 export { FACIAL_HAIR_LEANS, LEAN_STRENGTHS, NO_TENDENCIES };
 export type { FacialHairLean, LeanStrength, PoolTendencies };
 import { mentionsGarments, scrubBrands } from "./brandScrub";
+import {
+  BODY_ANCHOR_REGIONS,
+  isBodyAnchorRegion,
+  type BodyAnchorRegion,
+} from "../../shared/bodyAnchorRegions";
 import { mentionsWornClothing } from "./statedWardrobe";
 import { wardrobePickDoor } from "./wardrobeDoor";
 import { createModuleLogger } from "../logging/logger";
@@ -421,6 +426,34 @@ export type CastingIntent = {
   /** Worn things the brief named, in the user's own words. Echo-only. */
   statedAccessories: string[];
   /**
+   * INK THE BRIEF ITSELF NAMED — the cast that is BORN with tattoos (7b(a),
+   * designed opus-1031/1040, countersigned fable-1381 and fable-1396 §1).
+   *
+   * `null` is the ordinary case and means the brief named none. It is not the
+   * same as an empty {@link StatedInk}, which cannot occur: a reading with no
+   * words is no reading.
+   *
+   * # WHY THIS IS A FIELD AND NOT A SECOND CALL
+   *
+   * It was designed as one narrow text read per inked brief. It does not need
+   * one: this is *a thing the brief said, in her own words*, which is exactly
+   * what `statedHair` and `statedAccessories` already are, filled by the
+   * interpreter call that already runs. The two-paths design made the same
+   * move for `wardrobe` and stated the same reason — no new engine call, no new
+   * spend, no new transport.
+   *
+   * ⚠ **DECLARED SCAFFOLDING, and the declaration is the point.** The parser and
+   * its arms are here; **the interpreter is NOT YET ASKED for the field**, so
+   * this is `null` on every roll and nothing in the product behaves
+   * differently. That is deliberate rather than unfinished: adding a section to
+   * a prompt is not free — a SUBSET of prompt context once raised the stage wall
+   * twice as often as its superset in this very program — so the ask lands with
+   * the consumer that needs it (the `bornInk:<region>` roll-time row,
+   * countersigned fable-1399 §2) and is measured there, rather than shipping
+   * ahead of it and moving other fields' answers for nothing.
+   */
+  statedInk: StatedInk | null;
+  /**
    * What the CATEGORY implies about axes the brief never stated.
    *
    * Soft: these re-weight the draw and never lock it, so they can never beat a
@@ -582,6 +615,7 @@ const wireSchema = z.object({
   composedDirection: z.unknown().nullable().optional(),
   statedHair: z.unknown().nullable().optional(),
   statedAccessories: z.unknown().nullable().optional(),
+  statedInk: z.unknown().nullable().optional(),
   poolTendencies: z.unknown().nullable().optional(),
   wardrobe: z.unknown().nullable().optional(),
   /*
@@ -833,6 +867,111 @@ const STATED_ACCESSORY_LIMIT = 3;
  * clothing the sheet genuinely does not render, and nothing else. The list was
  * right and the parser never got it. Now they share one. (opus-280, fable-337.)
  */
+/**
+ * WHAT THE BRIEF SAID ABOUT INK — her words, and where on her they go.
+ *
+ * # ⚠ ANATOMY RIDES; SURFACE MARKINGS DISCLOSE (ruled fable-1396 §2)
+ *
+ * This is a MARKING, and the distinction decides what the product does with it
+ * downstream — so it is written here, where the field is defined, rather than
+ * left in a mailbox:
+ *
+ *   a clawed FOOT inside a shoe        the body is always there and shapes what
+ *                                      the view draws, so its WORDS RIDE into
+ *                                      the package views (fable-1061 §3)
+ *   a TATTOO under fabric              zero visible consequence: carrying its
+ *                                      words either does nothing (inert tokens
+ *                                      on a paid prompt) or fights
+ *                                      `INK_VIEW_PLACEMENT_DISCIPLINE`, and
+ *                                      winning that fight is ink drawn onto a
+ *                                      sleeve. So the ROW records it, the
+ *                                      package DISCLOSES it, and the wardrobe
+ *                                      path decides when it becomes pixels
+ *
+ * That is law 8's ontology, not an optimisation: a body part is part of the
+ * person; a marking is on a surface, and a covered surface shows nothing.
+ *
+ * # THE REGIONS ARE A SET, and one region cannot hold a real brief
+ *
+ * Production's only inked brief names *"chest, shoulders, upper arms and lower
+ * neck"* in one sentence — `torso`, `arms` and `neck`. A single region would
+ * have to choose, and choosing wrongly is a fact about her body invented by us.
+ */
+export type StatedInk = {
+  /**
+   * Her own phrases, source-contained (D-172) exactly as `statedAccessories`
+   * is: a paraphrase is worse than nothing, because it is a sentence she never
+   * typed being read back to her as her own.
+   */
+  readonly words: readonly string[];
+  /** Where the brief puts it, from the closed vocabulary and nowhere else. */
+  readonly regions: readonly BodyAnchorRegion[];
+  /**
+   * ⚠ SHE NAMED INK AND NO REGION SURVIVED — over-inclusive rather than silent
+   * (ruling 2, fable-1381).
+   *
+   * `wholeBody` is never WRONG about where the ink is; it is merely wider than
+   * the truth. What is not tolerable is the same fallback with nothing saying
+   * it happened, because that is how a bad reader hides for six months. So the
+   * provenance travels on the row beside the answer it explains.
+   */
+  readonly readFailed: boolean;
+};
+
+/** A phrase about ink is longer than an accessory's — "extensive black-and-grey
+ *  ornamental tattoos" is 44 characters before it says where. */
+const STATED_INK_MAX = 120;
+/** Three phrases. A brief that says it four ways has said it. */
+const STATED_INK_LIMIT = 3;
+
+/**
+ * The brief's ink, or `null` for the ordinary brief that names none.
+ *
+ * ⚠ `mentionsWornClothing` is deliberately NOT applied here, unlike every
+ * neighbouring parser. Those fields are about a face and a clothing word means
+ * the model answered the wrong question; this field's own specimen opens
+ * *"Bare-chested, displaying extensive black-and-grey ornamental tattoos"*, and
+ * a clothing filter would drop the sentence that names the ink for saying where
+ * the skin is.
+ */
+export function parseStatedInk(raw: unknown, briefText: string): StatedInk | null {
+  if (!raw || typeof raw !== "object") return null;
+  const wire = raw as Record<string, unknown>;
+
+  const words: string[] = [];
+  if (Array.isArray(wire.words)) {
+    for (const entry of wire.words) {
+      const cleaned = scrubBrands(cleanFreeText(entry, STATED_INK_MAX));
+      if (!cleaned) continue;
+      if (/[0-9]/.test(cleaned)) continue;
+      if (!tokensComeFromBrief(cleaned, briefText)) continue;
+      if (words.some((held) => held.toLowerCase() === cleaned.toLowerCase())) continue;
+      words.push(cleaned);
+      if (words.length >= STATED_INK_LIMIT) break;
+    }
+  }
+  /* No words is no reading. A regions array on its own would be a claim about
+     her body with nothing she said under it. */
+  if (words.length === 0) return null;
+
+  const regions: BodyAnchorRegion[] = [];
+  if (Array.isArray(wire.regions)) {
+    for (const entry of wire.regions) {
+      if (typeof entry !== "string") continue;
+      const trimmed = entry.trim();
+      if (!isBodyAnchorRegion(trimmed)) continue;
+      if (regions.includes(trimmed)) continue;
+      regions.push(trimmed);
+    }
+  }
+  if (regions.length === 0) return { words, regions: ["wholeBody"], readFailed: true };
+  /* `wholeBody` beside a named region is a contradiction the reader is allowed
+     to produce and we are not allowed to store: the wider answer swallows the
+     narrower one, so a set holding both would make every consumer choose. */
+  if (regions.includes("wholeBody")) return { words, regions: ["wholeBody"], readFailed: false };
+  return { words, regions, readFailed: false };
+}
+
 export function parseStatedAccessories(raw: unknown, briefText: string): string[] {
   if (!Array.isArray(raw)) return [];
   const kept: string[] = [];
@@ -988,6 +1127,7 @@ export function parseCastingIntent(raw: unknown, briefText = ""): IntentParseRes
       composedDirection: parseComposedDirection(wire.composedDirection),
       statedHair: parseStatedHair(wire.statedHair, briefText),
       statedAccessories: parseStatedAccessories(wire.statedAccessories, briefText),
+      statedInk: parseStatedInk(wire.statedInk, briefText),
       poolTendencies: parsePoolTendencies(wire.poolTendencies),
       /*
         Not source-contained, by design and by declaration (§4.1). The door is
