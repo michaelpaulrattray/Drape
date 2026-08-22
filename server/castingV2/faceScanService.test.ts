@@ -275,13 +275,21 @@ describe("the panel fills a feature at a time", () => {
    * The deadline is generous rather than tuned: it is never reached on a
    * healthy run, so its only job is to stop a broken one hanging.
    */
-  async function waitForProgress(deadlineMs = 5_000) {
+  async function waitForProgress(nudge?: () => Promise<void>, deadlineMs = 10_000) {
     const started = performance.now();
     for (;;) {
       const progress = scanProgressOf(FACE);
       if (progress !== null && progress.scan.slots.size > 0) return progress;
       if (performance.now() - started > deadlineMs) return progress;
-      await new Promise((resolve) => setTimeout(resolve, 5));
+      /* `nudge` re-releases the gate each lap. A single release() frees only
+         the questions ALREADY parked, and under full-suite load the scan may
+         not have reached the gate when it fires — it opens nothing, the reads
+         park forever, and the old version died at its own deadline (the
+         5011 ms failure, three sightings in one shift). Releasing per lap
+         creates the state instead of racing for it; a scan that never lands
+         still fails here, on the same message, at the deadline. */
+      if (nudge) await nudge();
+      else await new Promise((resolve) => setTimeout(resolve, 5));
     }
   }
 
@@ -311,7 +319,7 @@ describe("the panel fills a feature at a time", () => {
       power — a partial that never lands still fails, on the same message, at
       the deadline — and removes only the dependence on how busy the machine is.
     */
-    const midway = await waitForProgress();
+    const midway = await waitForProgress(held.release);
     expect(midway, "some features have landed").not.toBeNull();
     expect(midway!.done, "and the reading is still running").toBe(false);
     expect(midway!.scan.slots.size).toBeGreaterThan(0);
