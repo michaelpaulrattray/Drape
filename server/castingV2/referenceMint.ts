@@ -1160,6 +1160,19 @@ export async function mintReferencesForRender(input: MintInput): Promise<MintRes
         specimen, because the open door records no coverage on a refusal and
         the readings it does record are ceiling readings no bar divided.
       */
+      /*
+        ⚠ AND ITS SPELLING IS READ BACK (guard-rail, fable-1406 §2).
+
+        `openKindRungOfRow` derives WHICH RUNG a stored row came off by
+        comparing this value against the row's own joined words. That makes the
+        exact string a CONTRACT rather than a label: change how it is composed
+        here and the derivation silently starts answering `site` for every
+        rung-1 row, with nothing going red.
+
+        The spelling-not-meaning class, named at the site that does the
+        spelling. Its tripwire is the five arms in this file's suite that assert
+        the value, and this sentence is what sends the next reader to them.
+      */
       const guardKind = slot.guardKind ?? question;
       if (slot.frame !== "ownSide") {
         if (!regionsToCut.has(question)) {

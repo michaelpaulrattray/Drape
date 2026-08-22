@@ -110,6 +110,21 @@ export function openKindWordsQuestion(words: readonly string[]): string | null {
  *
  * So this takes the site a reader proposed and RETURNS IT ONLY IF SHE SAID IT.
  * Nothing here asks the reader; that call belongs to the caller that has one.
+ *
+ * ⚠ **THIS HAS NO CALLER, AND IT CARRIES AN EXPIRY RATHER THAN A HOPE**
+ * (guard-rail, fable-1406 §3). A helper with no caller and no expiry is the
+ * inert-control pattern wearing scaffolding's clothes — the thing this
+ * codebase has found four times and written a law about. So the decision point
+ * is written here, where whoever next reads the function meets it:
+ *
+ *   BUILD the site-proposing read   when the rung record shows rung-1 failures
+ *                                   arriving — the bare-phrase kinds ("a halo",
+ *                                   "wings") that n=2 never tested
+ *   DELETE this function            if a quarter's rows say the phrase rung
+ *                                   suffices on its own
+ *
+ * `openKindRungOfRow` over the library's open rows is the reading that decides
+ * it. Neither outcome is *leave it here unexamined*.
  */
 export function openKindSiteQuestion(
   words: readonly string[],
