@@ -106,6 +106,7 @@ import {
 /** `z.enum` wants a non-empty tuple; these three are derived key arrays. */
 const tuple = <T extends string>(values: readonly T[]) => values as unknown as [T, ...T[]];
 import { createRoll, cancelRoll } from "../castingV2/rollService";
+import { CASTING_PATHS } from "../../shared/castingPaths";
 import { signCandidate } from "../castingV2/signService";
 import { REFINE_ANSWERING_MAX_LENGTH, REFINE_INSTRUCTION_MAX_LENGTH } from "../castingV2/refineLimits";
 import { readAskScope, readRegeneratedFrom, referencesOf, refineCandidate } from "../castingV2/refineService";
@@ -928,6 +929,19 @@ export const castingV2Router = router({
           briefText: z.string().min(1).max(2000),
           unlock: unlockList,
           overrides: overrideObject,
+          /*
+            THE TWO PATHS' TOGGLE (design §6). Optional, because every client
+            today sends nothing and an account outside the flag has no control
+            to send from — and absent is NOT `wardrobe`: the service turns an
+            unsent toggle into the default only INSIDE the flag, so a roll cast
+            without the feature stays honestly NULL.
+
+            A closed enum of his two words, so a third path is a migration and
+            a decision rather than a string that reaches the column and errors
+            at the insert. `follow` deliberately does not take one: a Follow
+            inherits the sheet's path (§3.1) and is not offered the switch.
+          */
+          path: z.enum(CASTING_PATHS).optional(),
         })
         .strict(),
     )
@@ -942,6 +956,7 @@ export const castingV2Router = router({
         briefText: input.briefText,
         unlock: input.unlock,
         overrides: input.overrides,
+        path: input.path,
       });
       return loadRollProjection(ctx.user.id, result.rollPublicId);
     }),

@@ -19,6 +19,8 @@
 import { randomUUID } from "node:crypto";
 import { and, asc, desc, eq, inArray, isNull, isNotNull, lt, or, sql } from "drizzle-orm";
 
+import type { CastingPath } from "../../shared/castingPaths";
+
 import {
   boardItems,
   boards,
@@ -222,6 +224,16 @@ export type CreateRollInput = {
   lockContract?: unknown;
   /** Follow lineage. Resolved through this user's candidates, never trusted. */
   parentCandidatePublicId?: string | null;
+  /**
+   * THE TWO PATHS (design §3.1). Both or neither — a path without a line is
+   * the `incoherent` resolution `wardrobeLine.ts` refuses to paint.
+   *
+   * ⚠ On a FOLLOW these are IGNORED and the parent roll's are inherited, in
+   * the same statement that re-anchors the parent candidate to this user. A
+   * Follow deliberately wants the SHEET's outfit rather than this person's.
+   */
+  path?: CastingPath | null;
+  wardrobeLine?: string | null;
   candidates: readonly CandidateSeed[];
   now?: Date;
 };
@@ -272,6 +284,8 @@ export async function createRollWithCandidates(input: CreateRollInput): Promise<
     let parentRollId: number | null = null;
     let parentCandidateId: number | null = null;
     let parentVariantId: number | null = null;
+    let inheritedPath: CastingPath | null = null;
+    let inheritedWardrobeLine: string | null = null;
     if (input.parentCandidatePublicId) {
       // Follow lineage (§G): the parent candidate is resolved through this
       // user's own rows. A client-supplied lineage id can therefore never
@@ -303,6 +317,36 @@ export async function createRollWithCandidates(input: CreateRollInput): Promise<
         written before M8.
       */
       parentVariantId = parent.selectedVariantId;
+
+      /*
+        THE PATH AND THE OUTFIT TRAVEL WITH THE LINEAGE (design §3.1), read
+        here rather than taken from the caller — the `parentVariantId`
+        precedent, and the same reason: lineage is cheap to write while the row
+        is being created and painful to backfill.
+
+        THE BORN LINE, NOT THE EDITED ONE, and that is decided rather than left
+        to absence. If the followed variant has had a wardrobe edit, that edit
+        does NOT travel: a Follow casts a fresh eight, and dressing eight
+        strangers in one person's mid-session outfit change is a momentary
+        choice made permanent for eight strangers. The edited look stays on the
+        person it was made for.
+
+        ⚠ THIS IS THE ONE PLACE IN THE PRODUCT THAT MAY READ THE BORN COLUMN BY
+        NAME. Everything else goes through `currentWardrobeLine(branch)` —
+        condition (v), fable-1334 §2 — because a branch that has been edited is
+        no longer wearing what it was born in, and six views judged against the
+        wrong line is refunded slices.
+
+        Owner-scoped in the statement that reads it (invariant 1), even though
+        `parentRollId` came from a row already anchored to this user.
+      */
+      const [parentRoll] = await tx
+        .select({ path: castingRolls.path, wardrobeLine: castingRolls.wardrobeLine })
+        .from(castingRolls)
+        .where(and(eq(castingRolls.id, parent.rollId), eq(castingRolls.userId, input.userId)))
+        .limit(1);
+      inheritedPath = parentRoll?.path ?? null;
+      inheritedWardrobeLine = parentRoll?.wardrobeLine ?? null;
     }
 
     const [highest] = await tx
@@ -327,6 +371,10 @@ export async function createRollWithCandidates(input: CreateRollInput): Promise<
       parentRollId,
       parentCandidateId,
       parentVariantId,
+      /* A follow wears the sheet it descends from; a fresh roll wears what the
+         service resolved for it. Both columns move together or neither does. */
+      path: parentCandidateId === null ? input.path ?? null : inheritedPath,
+      wardrobeLine: parentCandidateId === null ? input.wardrobeLine ?? null : inheritedWardrobeLine,
       status: "pending",
       priceCredits: CASTING_V2_COSTS.rollCandidate * input.candidates.length,
       operationId: input.operationId,

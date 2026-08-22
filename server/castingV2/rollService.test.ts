@@ -214,6 +214,8 @@ function baseDependencies(fails: (position: number) => boolean = () => false) {
   } as never;
 }
 
+import { HOUSE_WARDROBE_LINE } from "./wardrobeLine";
+
 const INPUT = {
   userId: 7,
   clientRequestId: "44444444-4444-4444-8444-444444444444",
@@ -617,5 +619,117 @@ describe("a delivered face gets a thumbnail", () => {
     const db = await import("../db/castingV2");
     const landings = (db.landCandidate as unknown as { mock: { calls: any[][] } }).mock.calls;
     for (const [landing] of landings) expect(landing.thumbKey).toBeNull();
+  });
+});
+
+/**
+ * THE TWO PATHS ARE STAMPED ON THE ROLL — asserted AT THE WIRE, on what
+ * actually reaches the insert (design §3.1, slice 3).
+ *
+ * Not on the resolver: `wardrobeLine.test.ts` already drives that exhaustively,
+ * and a green resolver beside an unwired caller is this campaign's own named
+ * failure — the segment store passed both benches while nothing read it. What
+ * these arms read is `createRollWithCandidates`'s argument object, which is the
+ * last thing before the row.
+ *
+ * The FLAG IS THE ONLY VARIABLE between the first two arms, because a flag
+ * asserted on one side only is a flag whose other side nobody has read.
+ */
+describe("the two paths, at the wire", () => {
+  const castingDbModule = () => import("../db/castingV2");
+
+  /*
+    ⚠ THE FIXTURE IS STATEFUL, and an arm that rolls twice inside one `it` is
+    the thing that found it: `rows.candidates` is consumed by a roll, so the
+    second call in a loop met a sheet that was already spent and came back
+    "that roll was cancelled". Re-seeded before EVERY roll rather than once per
+    test — a stateful fixture re-establishes its state in front of each row it
+    is asked about, which is the census corpus's own first law.
+  */
+  async function rollWith(enabled: boolean, path?: "wardrobe" | "basics") {
+    seedCandidates();
+    await createRoll(
+      { ...(baseDependencies() as object), twoPathsEnabled: () => enabled } as never,
+      path === undefined ? INPUT : { ...INPUT, path },
+    );
+    return lastInsert();
+  }
+
+  async function lastInsert() {
+    const castingDb = await castingDbModule();
+    const calls = (castingDb.createRollWithCandidates as any).mock.calls;
+    expect(calls.length, "nothing reached the insert").toBeGreaterThan(0);
+    return calls[calls.length - 1][0];
+  }
+
+  beforeEach(async () => {
+    const castingDb = await castingDbModule();
+    (castingDb.createRollWithCandidates as any).mockClear();
+  });
+
+  it("⚠ OFF writes NULL for both — the dark landing, and NULL is not `wardrobe`", async () => {
+    /*
+      This is the state of every deployment as this lands, and the arm that
+      says so. An account outside the flag must write NULL rather than the
+      default, because NULL means *cast before the paths existed* — and a
+      default applied here would make an account that never had the feature
+      indistinguishable from one that chose Wardrobe, permanently and with no
+      way back.
+    */
+    await createRoll({ ...(baseDependencies() as object), twoPathsEnabled: () => false } as never, INPUT);
+    const written = await lastInsert();
+    expect(written.path).toBeNull();
+    expect(written.wardrobeLine).toBeNull();
+  });
+
+  it("⚠ ON with no toggle writes `wardrobe` and the house line", async () => {
+    /*
+      The other side of the same sentence. Inside the flag an unsent toggle
+      becomes the default the control would have been showing (§6), and the
+      line is stamped in the same breath — so the `incoherent` resolution
+      cannot be produced from here.
+    */
+    await createRoll({ ...(baseDependencies() as object), twoPathsEnabled: () => true } as never, INPUT);
+    const written = await lastInsert();
+    expect(written.path).toBe("wardrobe");
+    expect(written.wardrobeLine).toBe(HOUSE_WARDROBE_LINE);
+  });
+
+  it("⚠ ON with `basics` writes the basics line and NOT the house one", async () => {
+    await createRoll(
+      { ...(baseDependencies() as object), twoPathsEnabled: () => true } as never,
+      { ...INPUT, path: "basics" as const },
+    );
+    const written = await lastInsert();
+    expect(written.path).toBe("basics");
+    expect(written.wardrobeLine).not.toBe(HOUSE_WARDROBE_LINE);
+    expect(written.wardrobeLine).toContain("black");
+  });
+
+  it("⚠ NEVER writes one column without the other", async () => {
+    /*
+      The `incoherent` case's structural guard, checked over every combination
+      this service can produce rather than argued in a comment. A path with no
+      line is a roll that claims a path and cannot say what it is wearing, and
+      on Basics the fallback would put a grey tee on a bare chest.
+    */
+    for (const enabled of [false, true]) {
+      for (const path of [undefined, "wardrobe" as const, "basics" as const]) {
+        const written = await rollWith(enabled, path);
+        expect(
+          (written.path === null) === (written.wardrobeLine === null),
+          `enabled=${enabled} path=${String(path)} → ${JSON.stringify({ path: written.path, line: written.wardrobeLine })}`,
+        ).toBe(true);
+      }
+    }
+  });
+
+  it("CONTROL — the toggle really moves the answer", async () => {
+    /* Without this, every arm above is satisfied by a service that ignores
+       both the flag and the toggle and writes one constant. */
+    const wardrobe = await rollWith(true, "wardrobe");
+    const basics = await rollWith(true, "basics");
+    expect(wardrobe.wardrobeLine).not.toBe(basics.wardrobeLine);
+    expect(wardrobe.path).not.toBe(basics.path);
   });
 });

@@ -38,6 +38,10 @@
 import { randomUUID } from "node:crypto";
 import { TRPCError } from "@trpc/server";
 
+import { DEFAULT_CASTING_PATH, type CastingPath } from "../../shared/castingPaths";
+import { captureCastingTwoPathsEnabled } from "./castingV2Scope";
+import { bornWardrobeLine, sheetBasicsSex } from "./wardrobeLine";
+
 import { CASTING_V2_COSTS } from "../casting/castingCreditCosts";
 import { censusOfAttempt, censusSoFar } from "./callCensus";
 import { recordRefund, refundTruth } from "../casting/atomicCredits";
@@ -178,6 +182,14 @@ function renderFaultMetadata(
 
 export type RollServiceDependencies = {
   compileBrief?: BriefCompiler;
+  /**
+   * Whether this account chooses the path its casts are born on.
+   *
+   * A seam rather than a direct `process.env` read at the call site, so the
+   * flag's two sides can be driven in one test with the flag as the only
+   * variable — the pair being the claim. Defaults to the real gate.
+   */
+  twoPathsEnabled?: (userId: number) => boolean;
   engine?: () => CreativeEngine;
   admit?: (candidateCount: number) => AdmissionDecision;
   begin?: typeof beginDirectOperation;
@@ -206,6 +218,18 @@ export type CreateRollInput = {
    * shown on.
    */
   unlock?: readonly UnlockableField[];
+  /**
+   * THE TWO PATHS — which one this sheet is cast on (design §6).
+   *
+   * Absent means the toggle was not sent, which is every client today and every
+   * account with the flag off. It is NOT the same as `wardrobe`: an account
+   * outside the flag writes NULL, and NULL means *cast before the paths
+   * existed*. The `?? DEFAULT_CASTING_PATH` below applies only inside the flag.
+   *
+   * A FOLLOW never carries one — it inherits (§3.1), and its own procedure
+   * deliberately does not offer the switch.
+   */
+  path?: CastingPath | null;
   /**
    * Facts the user set by hand from the brief echo.
    *
@@ -361,6 +385,18 @@ export async function createRoll(
     };
   }
 
+  /*
+    WHICH PATH THIS SHEET IS CAST ON — asked once, before the row exists.
+
+    `input.path` absent is not `wardrobe`: it is *the toggle was not sent*,
+    which is every client today. Only inside the flag does an unsent toggle
+    become the default the control would have been showing (§6).
+  */
+  const twoPathsEnabled = dependencies.twoPathsEnabled ?? captureCastingTwoPathsEnabled;
+  const bornPath: CastingPath | null = twoPathsEnabled(input.userId)
+    ? input.path ?? DEFAULT_CASTING_PATH
+    : null;
+
   // ---- the locked transaction. Nothing here spends money. ----
   let created;
   try {
@@ -381,6 +417,35 @@ export async function createRoll(
       styleKey: compiled.styleKey,
       styleProfile: compiled.styleProfile,
       parentCandidatePublicId: input.followCandidatePublicId ?? null,
+      /*
+        THE TWO PATHS, resolved once and stamped with the roll (design §3.1).
+
+        Outside the flag both are NULL, which is what NULL means on these
+        columns — *cast before the paths existed* — and is why the fallback to
+        `DEFAULT_CASTING_PATH` lives INSIDE the branch rather than at the read
+        sites. A default applied at a reader would make an account that never
+        had the feature indistinguishable from one that chose Wardrobe.
+
+        The line is stamped in the same breath as the path, so the `incoherent`
+        resolution `wardrobeLine.ts` names cannot be produced from here.
+
+        On a FOLLOW these are ignored: the db layer inherits the parent roll's
+        pair inside the same transaction that re-anchors the parent candidate.
+      */
+      path: bornPath,
+      wardrobeLine: bornPath === null
+        ? null
+        : bornWardrobeLine({
+          path: bornPath,
+          sex: sheetBasicsSex(compiled.candidates.map((spec) => spec.resolvedIdentity.sex)),
+          /*
+            Cases (a) — her words win — and (b) — the engine picks one per
+            sheet — are THE PICK, and they arrive with the brief stage. Until
+            then every Wardrobe roll is born in the house line, which is §4(c)
+            and is today's picture unchanged.
+          */
+          named: null,
+        }),
       candidates: compiled.candidates.map((spec) => ({
         publicId: randomUUID(),
         position: spec.position,

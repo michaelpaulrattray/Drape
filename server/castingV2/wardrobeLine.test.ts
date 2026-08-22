@@ -18,6 +18,7 @@ import {
   basicsWardrobeLine,
   bornWardrobeLine,
   currentWardrobeLine,
+  sheetBasicsSex,
   type WardrobeResolution,
 } from "./wardrobeLine";
 
@@ -284,5 +285,29 @@ describe("the born line — the write side of the same owner", () => {
        checks one path at a time. */
     expect(bornWardrobeLine({ path: "wardrobe" }))
       .not.toBe(bornWardrobeLine({ path: "basics", sex: "female" }));
+  });
+});
+
+describe("⚠ one sheet, one form — the covered-form rule one level up", () => {
+  it("takes the male form only when the WHOLE sheet is male", () => {
+    expect(sheetBasicsSex(["male", "male", "male"])).toBe("male");
+    expect(sheetBasicsSex(["male", "female", "male"])).toBeNull();
+    expect(sheetBasicsSex(["male", null, "male"])).toBeNull();
+    expect(sheetBasicsSex(["male", "nonbinary"])).toBeNull();
+  });
+
+  it("⚠ answers `null` for an empty sheet — `every` is vacuously TRUE", () => {
+    /*
+      The one way this could return the uncovered form by accident, and it is
+      not a hypothetical shape of bug: `[].every(...)` is `true`, so the
+      obvious one-liner puts an empty sheet in the shirtless form. A roll is
+      exactly eight so it cannot happen — which is precisely the reasoning that
+      leaves a corner untested.
+    */
+    expect(sheetBasicsSex([])).toBeNull();
+  });
+
+  it("CONTROL — it is reading the list, not returning a constant", () => {
+    expect(sheetBasicsSex(["male"])).not.toBe(sheetBasicsSex(["female"]));
   });
 });

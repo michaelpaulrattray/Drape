@@ -235,3 +235,28 @@ export function bornWardrobeLine(input: {
   }
   return stated(input.named) ?? HOUSE_WARDROBE_LINE;
 }
+
+/**
+ * THE ONE FORM A WHOLE SHEET WEARS — because the line is one per sheet.
+ *
+ * §B2's comparability law says a sheet compares people and not clothes, so
+ * eight candidates share one outfit. On the Basics path the spec's two forms
+ * are sex-dependent, and a sheet whose eight are not all the same sex has to
+ * resolve to ONE of them anyway.
+ *
+ * **The male form is used only when the entire sheet is male.** It is the
+ * covered-form rule of `basicsWardrobeLine` applied one level up, and it holds
+ * for the same reason: the covered form fits everybody and costs the chest
+ * nothing, so a mixed sheet takes it rather than putting one of the eight in a
+ * form nobody chose for them.
+ *
+ * An empty sheet cannot happen (a roll is exactly eight) and answers `null`
+ * rather than `"male"`, because `every` on an empty list is vacuously true and
+ * that is the one way this could return the uncovered form by accident.
+ */
+export function sheetBasicsSex(
+  sexes: readonly (string | null | undefined)[],
+): "male" | null {
+  if (sexes.length === 0) return null;
+  return sexes.every((sex) => sex === "male") ? "male" : null;
+}
