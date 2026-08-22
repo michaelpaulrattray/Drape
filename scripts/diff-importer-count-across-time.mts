@@ -58,8 +58,26 @@
  *
  * **(1) TOWARD SILENCE — an unreachable call site that still exists.** Sitting
  * after an early return, or behind a flag that is never on. `recordInkFormDemand`
- * is exactly that shape and CLAUDE.md records it. Namespace imports
- * (`import * as ns`) and computed dynamic specifiers are not resolved either.
+ * is exactly that shape and CLAUDE.md records it. Computed dynamic specifiers
+ * are not resolved either.
+ *
+ * ⚠ **NAMESPACE IMPORTS WERE ON THAT LIST UNTIL 2026-08-23, AND THAT LINE WAS
+ * COSTING THE INSTRUMENT ITS BEST SUBJECT.** `import * as db from "../db"` is
+ * the house style of this product's whole database layer, so the reading it
+ * excluded was not an edge case: measured against the real tree the hour it
+ * was fixed, **33 server exports were production-wired and counted zero** —
+ * `isAccountLocked`, `recordFailedLogin` and `resetFailedLogins`, which are
+ * the ACCOUNT LOCKOUT that both login routes call and that invariant 9's own
+ * sentence names, plus 28 board operations reached through one `ops.` alias.
+ * A symbol already counted at zero can never be seen to FALL to zero, so this
+ * differ would have reported silence on the day the lockout died. The hop is
+ * resolved now (`lib/importerCountDiff.mts`, seven arms in
+ * `server/unwiringDiffer.test.ts`) and it is deliberately narrow: a RELATIVE
+ * binding, and the member must be declared in that module or one it re-exports
+ * from, ONE hop. A barrel of barrels still reads as no importer — pinned by
+ * its own arm rather than left to be assumed, and it is the safe direction:
+ * this reader may produce a finding that turns out alive, never a silence
+ * about something that died.
  *
  * **(2) TOWARD SILENCE — born AND un-wired inside one window, invisible.** A
  * symbol absent from the `before` tree is skipped, because it cannot have lost

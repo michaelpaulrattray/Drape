@@ -10,7 +10,7 @@
  * trees in a test, without a `git worktree` — the arms that CAN run cheaply
  * should not need the ones that cannot.
  */
-import { readdirSync, readFileSync, statSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join, resolve } from "node:path";
 
 /** Windows path separator, by code point: see the entrypoint's §heredoc note. */
@@ -101,6 +101,81 @@ export function readTree(rootArgument: string): Tree {
         if (!name || !decl.has(name)) continue;
         /* A module importing from itself is not a consumer. */
         if (decl.get(name) === here) continue;
+        const list = prodImporters.get(name) ?? [];
+        if (!list.includes(here)) list.push(here);
+        prodImporters.set(name, list);
+      }
+    }
+  }
+
+  /*
+    ⚠ THE NAMESPACE HOP — WITHOUT IT THE ACCOUNT LOCKOUT IS INVISIBLE.
+
+    The reading above sees `import { isAccountLocked } from "../db"`. It does
+    NOT see the house style of this product's database layer:
+
+        import * as db from "../db";
+        const lockStatus = await db.isAccountLocked(user.openId);
+
+    Both login routes reach the lockout that way, and `server/lib/boardOps.ts`
+    exports its whole plan/execute layer to one `ops.` consumer. Measured
+    2026-08-23 before this existed: **33 server exports were production-wired
+    and counted zero** — `isAccountLocked`, `recordFailedLogin`,
+    `resetFailedLogins`, and 28 board operations among them.
+
+    That is the "toward silence" direction and it is the worse one. A symbol
+    the reader already counts at zero can never be seen to FALL to zero, so
+    delete the lockout's call site tomorrow and the differ reports nothing —
+    the instrument the retirement program uses to prove a control did not die
+    is structurally blind to the control dying.
+
+    The resolution is deliberately narrow, because a loose one would count
+    `foo.map` as an importer of any `map` the server happens to export: the
+    binding must be a RELATIVE import, and the member must be declared in that
+    exact module or in a module it re-exports from. One re-export hop, which is
+    what a barrel is (`server/db/index.ts` -> `./security`); a barrel of
+    barrels is not resolved and would read as no importer, which is the safe
+    direction for this reader to be wrong in.
+  */
+  const resolveSpec = (fromFile: string, spec: string): string | null => {
+    if (!spec.startsWith(".")) return null;
+    const base = join(fromFile, "..", spec);
+    for (const candidate of [`${base}.ts`, `${base}.tsx`, join(base, "index.ts"), join(base, "index.tsx")]) {
+      if (existsSync(candidate)) return show(candidate);
+    }
+    return null;
+  };
+
+  /** repo-relative module -> the modules it re-exports from */
+  const reexports = new Map<string, string[]>();
+  for (const [file, src] of sources) {
+    for (const match of src.matchAll(/export\s+(?:type\s+)?(?:\{[^}]*\}|\*)\s*from\s*["']([^"']+)["']/g)) {
+      const target = resolveSpec(file, match[1]!);
+      if (!target) continue;
+      const list = reexports.get(show(file)) ?? [];
+      list.push(target);
+      reexports.set(show(file), list);
+    }
+  }
+
+  for (const [file, src] of sources) {
+    if (isTestFile(file)) continue;
+    const here = show(file);
+    const bindings = new Map<string, string>();
+    for (const match of src.matchAll(
+      /import\s+(?:type\s+)?(?:\*\s+as\s+)?([A-Za-z_$][\w$]*)\s+from\s*["']([^"']+)["']/g,
+    )) {
+      const target = resolveSpec(file, match[2]!);
+      if (target) bindings.set(match[1]!, target);
+    }
+    for (const [alias, target] of bindings) {
+      const reachable = new Set<string>([target, ...(reexports.get(target) ?? [])]);
+      for (const match of src.matchAll(new RegExp(String.raw`\b` + alias + String.raw`\.([A-Za-z_$][\w$]*)`, "g"))) {
+        const name = match[1]!;
+        const declaredAt = decl.get(name);
+        if (!declaredAt || !reachable.has(declaredAt)) continue;
+        /* A module importing from itself is not a consumer. */
+        if (declaredAt === here) continue;
         const list = prodImporters.get(name) ?? [];
         if (!list.includes(here)) list.push(here);
         prodImporters.set(name, list);

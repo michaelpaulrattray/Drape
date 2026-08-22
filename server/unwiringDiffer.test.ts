@@ -176,3 +176,130 @@ describe("the un-wiring differ", () => {
     }
   });
 });
+
+/**
+ * ⚠ THE NAMESPACE HOP — THE READER'S THIRD CLEAN-NULL DEFECT, and the first
+ * one found by asking what the instrument could not see rather than by it
+ * misbehaving (2026-08-23).
+ *
+ * `import { isAccountLocked } from "../db"` was counted. This was not:
+ *
+ *     import * as db from "../db";
+ *     const lockStatus = await db.isAccountLocked(user.openId);
+ *
+ * Both login routes reach the account lockout exactly that way, and it is the
+ * house style of the whole database layer. Measured against the real tree
+ * before the fix: **33 server exports were production-wired and counted zero**
+ * — `isAccountLocked`, `recordFailedLogin`, `resetFailedLogins` and 28 board
+ * operations among them.
+ *
+ * The consequence is the "toward silence" one, which is the direction this
+ * reader must never fail in: **a symbol already counted at zero can never be
+ * seen to FALL to zero.** Delete the lockout's call site tomorrow and the
+ * differ reports nothing at all — the instrument the retirement program uses
+ * to prove a control did not die is blind to that control dying. The second
+ * arm below is that exact scenario, and it could not have been written before
+ * the fix, because the count was zero at both ends.
+ *
+ * Every arm varies ONE property against the same shape, and the negative ones
+ * are the point: a loose resolution would count `path.relative(…)` as a
+ * consumer of any `relative` the server happens to export.
+ */
+describe("the namespace hop", () => {
+  const LOCKOUT = `export async function isAccountLocked(id: string) {\n  return id === "x";\n}\n`;
+  const NS_CALL = `import * as db from "./db";\nexport const login = (id: string) => db.isAccountLocked(id);\n`;
+
+  it("counts a symbol reached through `import * as db` — the login lockout's own shape", () => {
+    const source = tree({ "server/db.ts": LOCKOUT, "server/emailAuth.ts": NS_CALL });
+    expect(importerCount(readTree(source), "isAccountLocked")).toBe(1);
+    expect(readTree(source).prodImporters.get("isAccountLocked")).toEqual(["server/emailAuth.ts"]);
+  });
+
+  it("⚠ and REPORTS it when that call site disappears — the arm the blindness made impossible", () => {
+    const before = tree({ "server/db.ts": LOCKOUT, "server/emailAuth.ts": NS_CALL });
+    const after = tree({
+      "server/db.ts": LOCKOUT,
+      "server/emailAuth.ts": `import * as db from "./db";\nexport const login = (id: string) => db.upsertUser(id);\n`,
+    });
+    expect(namesFound(before, after)).toEqual(["isAccountLocked"]);
+    /* the un-varied direction: it really was reachable before */
+    expect(importerCount(readTree(before), "isAccountLocked")).toBe(1);
+  });
+
+  it("follows ONE re-export hop, because that is what a barrel is", () => {
+    const source = tree({
+      "server/db/security.ts": LOCKOUT,
+      "server/db/index.ts": `export { isAccountLocked } from "./security";\n`,
+      "server/emailAuth.ts": NS_CALL,
+    });
+    const t = readTree(source);
+    expect(t.decl.get("isAccountLocked")).toBe("server/db/security.ts");
+    expect(importerCount(t, "isAccountLocked")).toBe(1);
+  });
+
+  it("does NOT follow a barrel of barrels — the stated limit, pinned rather than assumed", () => {
+    /*
+      A second hop would need a transitive closure and every extra hop widens
+      what an alias may claim. Unresolved reads as NO importer, which is the
+      safe direction for this reader: it can produce a finding that turns out
+      to be alive, never a silence about something that died.
+    */
+    const source = tree({
+      "server/db/inner/deep.ts": LOCKOUT,
+      "server/db/inner/index.ts": `export { isAccountLocked } from "./deep";\n`,
+      "server/db/index.ts": `export { isAccountLocked } from "./inner";\n`,
+      "server/emailAuth.ts": NS_CALL,
+    });
+    expect(importerCount(readTree(source), "isAccountLocked")).toBe(0);
+    /* the same shape with ONE hop instead of two, so this arm cannot pass by
+       the hop machinery being dead */
+    const oneHop = tree({
+      "server/db/inner/deep.ts": LOCKOUT,
+      "server/db/index.ts": `export { isAccountLocked } from "./inner/deep";\n`,
+      "server/emailAuth.ts": NS_CALL,
+    });
+    expect(importerCount(readTree(oneHop), "isAccountLocked")).toBe(1);
+  });
+
+  it("does NOT credit an alias that resolves to a module without the symbol", () => {
+    const wrong = tree({
+      "server/db.ts": LOCKOUT,
+      "server/audit.ts": `export const trail = 1;\n`,
+      "server/emailAuth.ts": `import * as audit from "./audit";\nexport const login = (id: string) => audit.isAccountLocked(id);\n`,
+    });
+    expect(importerCount(readTree(wrong), "isAccountLocked")).toBe(0);
+    /* the same fixture with the ONE property varied — the alias now points at
+       the declaring module, and the identical member access is counted */
+    const right = tree({ "server/db.ts": LOCKOUT, "server/emailAuth.ts": NS_CALL });
+    expect(importerCount(readTree(right), "isAccountLocked")).toBe(1);
+  });
+
+  it("does NOT credit a member access on a package import", () => {
+    /*
+      `path.relative(…)` against a server that exports `relative` is the loose
+      reading's failure, and it is not hypothetical — half the member accesses
+      in any file are on node builtins and npm packages.
+    */
+    const source = tree({
+      "server/paths.ts": `export function relative(a: string) {\n  return a;\n}\n`,
+      "server/routers.ts": `import path from "node:path";\nexport const p = () => path.relative("a", "b");\n`,
+    });
+    expect(importerCount(readTree(source), "relative")).toBe(0);
+    /* the same member access on a RELATIVE binding — counted, so this arm
+       cannot pass by the resolution being dead */
+    const relativeBinding = tree({
+      "server/paths.ts": `export function relative(a: string) {\n  return a;\n}\n`,
+      "server/routers.ts": `import * as paths from "./paths";\nexport const p = () => paths.relative("a");\n`,
+    });
+    expect(importerCount(readTree(relativeBinding), "relative")).toBe(1);
+  });
+
+  it("counts a TEST file's namespace use as no importer, exactly as it does a named one", () => {
+    const suite = `import * as db from "./db";\nit("x", () => db.isAccountLocked("x"));\n`;
+    const source = tree({ "server/db.ts": LOCKOUT, "server/db.test.ts": suite });
+    expect(importerCount(readTree(source), "isAccountLocked")).toBe(0);
+    /* byte-for-byte the same consumer, named as production — counted */
+    const production = tree({ "server/db.ts": LOCKOUT, "server/dbUse.ts": suite });
+    expect(importerCount(readTree(production), "isAccountLocked")).toBe(1);
+  });
+});
