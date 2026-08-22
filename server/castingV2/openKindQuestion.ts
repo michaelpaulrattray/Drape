@@ -130,10 +130,21 @@ export function openKindWordsQuestion(words: readonly string[]): string | null {
  * {@link openKindAsk}, because building this rung ALSO means reshaping the
  * ladder to fall through on an empty ANSWER rather than an empty STRING.
  *
- * The reading that decides it is `OPEN_KIND_READ_EMPTY` in `referenceMint`,
- * NOT `openKindRungOfRow`: a stored row answers `"none"` both when the read
- * came back empty and when no read happened, so the row cannot carry this
- * trigger. Neither outcome is *leave it here unexamined*.
+ * The fact that decides it is `OPEN_KIND_READ_EMPTY` in `referenceMint`, NOT
+ * `openKindRungOfRow`: a stored row answers `"none"` both when the read came
+ * back empty and when no read happened, so the row cannot carry this trigger.
+ * Neither outcome is *leave it here unexamined*.
+ *
+ * ⚠ **BUT THAT FACT IS NOT COUNTABLE FROM HERE, AND THE TRIGGER NO LONGER
+ * PRETENDS IT IS** (2026-08-23, applying fable-1431 §3's ruling to its twin —
+ * see the expiry note on {@link openKindAsk} for the whole argument). It is
+ * written in one `log.warn` and nowhere else, over rotating production logs, so
+ * no shift can run that grep and **a park whose condition nobody can read is a
+ * park that never closes.** The trigger is now the observable one: *re-open
+ * this when a thin-stack open kind's failed read is SEEN in a report.* Making
+ * it countable again is its own small build — a stored REASON on the row, which
+ * is the discriminator the sentence above says the row lacks — and that build
+ * is the thing to do first if this ever needs a number rather than a sighting.
  */
 export function openKindSiteQuestion(
   words: readonly string[],
@@ -231,10 +242,30 @@ export function askWordsForSlot(input: {
  * class.
  *
  * So the trigger is narrower than it looked and **n for it is still ZERO**:
- * BUILD when a kind whose WHOLE STACK is thin fails a read. The instrument
- * that will say so is `OPEN_KIND_READ_EMPTY` in `referenceMint` — one grep,
- * slot and variant on the line — because the stored row cannot tell an empty
- * answer from a read that never happened.
+ * BUILD when a kind whose WHOLE STACK is thin fails a read.
+ *
+ * ⚠ **AND THE 'ONE GREP' THAT WAS GOING TO SAY SO IS RETIRED — 2026-08-23.**
+ * This paragraph used to end: *"The instrument that will say so is
+ * `OPEN_KIND_READ_EMPTY` in `referenceMint` — one grep, slot and variant on the
+ * line."* That line is a `log.warn` and nothing else, over rotating production
+ * logs, so **nobody working from a repository can run it.** fable-1431 §3 made
+ * exactly this ruling about `reaskFailed` one module over — *a log-line trigger
+ * over rotating logs is a park nobody can close* — and this park is its twin,
+ * found by sweeping the class at opus-1071. Both halves of that sweep are now
+ * discharged.
+ *
+ * In this park's FAVOUR, because it should be said: it is the better-kept of
+ * the two. It named its instrument precisely, it named what each line carries,
+ * and it has already been re-read once and corrected DOWNWARD — n looked like 3
+ * and the specimen was removed from the count rather than kept to make the
+ * number look closer. Only the readability of the count was wrong.
+ *
+ * **The trigger is now: re-open when a thin-stack open kind's failed read is
+ * SEEN in a report.** A sighting, which a shift can actually act on, in place of
+ * a number nobody can obtain. If a NUMBER is ever wanted, the build that buys it
+ * is a stored REASON on the row — the row cannot today tell an empty answer from
+ * a read that never happened, which is the whole reason the log line existed —
+ * and that build comes before the rung, not with it.
  */
 export function openKindAsk(input: {
   readonly words: readonly string[];
