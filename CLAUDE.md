@@ -95,7 +95,7 @@ it be challenged before it ships, not after.
    "wardrobe edits exist today" (the census measured wall_stage), "your
    signed casts render without their tattoos" (the rows showed no signed
    cast had ink), and "our walls don't know fictional names" (his own
-   "inspired by goku" test met briefCompiler.ts:809's wall the same hour).
+   "inspired by goku" test met `briefCompiler.ts`'s `unsupported_cohort` wall the same hour).
    The capability atlas exists to make the citation cheap; a claim that
    cannot cite it and was not checked is not said.
 
