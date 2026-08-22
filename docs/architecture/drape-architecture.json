@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "58e7d28096b46948"
+    "sourceFingerprint": "e65f7781381fae5a"
   },
   "domains": [
     {
@@ -20653,6 +20653,11 @@
     },
     {
       "from": "module:server/castingV2/inkPlacement.ts",
+      "to": "module:server/castingV2/wardrobeLine.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/inkPlacement.ts",
       "to": "module:shared/inkPlacementVocabulary.ts",
       "kind": "imports"
     },
@@ -22153,6 +22158,11 @@
     },
     {
       "from": "module:server/castingV2/refineDelta.ts",
+      "to": "module:server/castingV2/wardrobeLine.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/refineDelta.ts",
       "to": "module:server/logging/logger.ts",
       "kind": "imports"
     },
@@ -22234,6 +22244,11 @@
     {
       "from": "module:server/castingV2/refineInterpreter.ts",
       "to": "module:server/castingV2/refineSubjects.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/refineInterpreter.ts",
+      "to": "module:server/castingV2/wardrobeLine.ts",
       "kind": "imports"
     },
     {

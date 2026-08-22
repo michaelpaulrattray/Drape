@@ -18,7 +18,6 @@ import {
   inkViewPlacementDisciplineClause,
   inkViewReferenceClause,
   placementRideCoverage,
-  placementRidesPackageViews,
   type CarriedInkCrop,
   type CarriedInkPlate,
 } from "./inkViewReferences";
@@ -241,7 +240,7 @@ describe("which surfaces can ride a package view at all", () => {
   it("says the upper chest cannot — THE HOUSE TEE covers it", () => {
     /* `null` is *no line recorded* — every Cast signed before the paths — and it
        answers the house table, which is what makes this landing dark. */
-    expect(placementRidesPackageViews("upperChest", null)).toBe(false);
+    expect((placementRideCoverage("upperChest", null) === "bare")).toBe(false);
   });
 
   it("⚠ AND A BASICS CAST'S CHEST DOES RIDE — the answer is the OUTFIT'S, not the placement's", () => {
@@ -250,8 +249,8 @@ describe("which surfaces can ride a package view at all", () => {
       the placement, so a cast born shirtless was refused a chest piece by a
       reading taken on sixteen masters in a crew-neck tee.
     */
-    expect(placementRidesPackageViews("upperChest", basicsWardrobeLine("male"))).toBe(true);
-    expect(placementRidesPackageViews("upperChest", basicsWardrobeLine(null))).toBe(true);
+    expect(placementRideCoverage("upperChest", basicsWardrobeLine("male"))).toBe("bare");
+    expect(placementRideCoverage("upperChest", basicsWardrobeLine(null))).toBe("bare");
   });
 
   it("⚠ AND AN OUTFIT NOBODY HAS READ RIDES NOTHING — including the neck", () => {
@@ -264,7 +263,7 @@ describe("which surfaces can ride a package view at all", () => {
     */
     const jumper = "a charcoal roll-neck jumper, dark jeans and boots";
     for (const placement of INK_PLACEMENTS) {
-      expect(placementRidesPackageViews(placement, jumper)).toBe(false);
+      expect((placementRideCoverage(placement, jumper) === "bare")).toBe(false);
       expect(placementRideCoverage(placement, jumper)).toBe("unknown");
     }
     expect(placementRideCoverage("upperChest", null)).toBe("covered");
@@ -282,8 +281,8 @@ describe("which surfaces can ride a package view at all", () => {
       a mislabel). Nothing appeared anywhere else in any of the three, which is
       the must-not this placement can honestly carry.
     */
-    expect(placementRidesPackageViews("upperArm", null)).toBe(true);
-    expect(placementRidesPackageViews("neck", null)).toBe(true);
+    expect((placementRideCoverage("upperArm", null) === "bare")).toBe(true);
+    expect((placementRideCoverage("neck", null) === "bare")).toBe(true);
   });
 
   it("is TOTAL over the vocabulary, so a fourth placement cannot compile silently", () => {
@@ -293,7 +292,7 @@ describe("which surfaces can ride a package view at all", () => {
       value was listed first, and nothing would say so.
     */
     for (const placement of INK_PLACEMENTS) {
-      expect(typeof placementRidesPackageViews(placement, null)).toBe("boolean");
+      expect(typeof (placementRideCoverage(placement, null) === "bare")).toBe("boolean");
     }
   });
 });

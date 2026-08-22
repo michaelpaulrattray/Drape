@@ -229,34 +229,23 @@ export function inkPlacementPhrase(input: {
  * *crew-neck* while naming the reference photograph as the authority — was
  * repaired by item 6's `castPackageWardrobeSpec(line)` and is not this
  * function's to carry.
- */
-export function placementRidesPackageViews(
-  placement: InkPlacement,
-  /**
-   * The Cast's snapshotted outfit. `null` is *no line recorded*, which is every
-   * Cast signed before the paths, and it answers the house table exactly — the
-   * compatibility contract, not a default.
-   */
-  wardrobeLine: string | null | undefined,
-): boolean {
-  /*
-    `unknown` DOES NOT RIDE, and the caller must not report it as a covering
-    (fable-1368 ruling 1). A design whose surface nobody has read the coverage
-    of would be a view painted on a guess about a customer's body; the honest
-    disposition is its own, and `signService` carries both names.
-  */
-  return coverageOfWardrobeLine(wardrobeLine, placement) === "bare";
-}
-
-/**
- * WHY a placement did not ride, for the caller that has to name it honestly.
  *
- * Split from the boolean above rather than folded into it, because a `false`
- * that cannot say whether it means *a garment is over this* or *nobody has read
- * this outfit* is exactly the refusal ruling 1 forbids.
+ * ⚠ **AND IT ANSWERS `bare | covered | unknown` RATHER THAN A BOOLEAN**, which
+ * is ruling 1 in the signature. A `false` that cannot say whether it means *a
+ * garment is over this* or *nobody has read this outfit* forces its caller to
+ * pick one name for two facts, and the name it would pick is the covering — a
+ * refusal that lies about why it closed. The boolean form was written first and
+ * deleted before it shipped: it had no production caller (`signService` needs
+ * the reason, both lanes), and an exported convenience nobody calls is a second
+ * door that drifts from the first.
  */
 export function placementRideCoverage(
   placement: InkPlacement,
+  /**
+   * The Cast's snapshotted outfit. `null` and absent are *no line recorded*,
+   * which is every Cast signed before the paths, and answer the house table
+   * exactly — the compatibility contract, not a default.
+   */
   wardrobeLine: string | null | undefined,
 ): SurfaceCoverage {
   return coverageOfWardrobeLine(wardrobeLine, placement);

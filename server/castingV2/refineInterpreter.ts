@@ -36,6 +36,7 @@ import {
   readDelta, stageWordIn,
   type FreeLaneCheck, type RefineDelta, type RefineParse,
 } from "./refineDelta";
+import type { WardrobeResolution } from "./wardrobeLine";
 import { freeSubjectGuidance } from "./refineSubjects";
 import { closedSubjectFor } from "./openLaneKind";
 import { acceptOpenKind } from "./openLaneAccept";
@@ -787,11 +788,12 @@ export type RefineInterpretInput = {
    */
   inkWordsRoadOpen?: boolean;
   /**
-   * WHAT THIS CAST IS WEARING — the roll's line, resolved by the service (item
-   * 7a). Absent is *no line recorded*, which is every roll cast before the
-   * paths and answers the house crew tee: today's product, byte for byte.
+   * WHAT THIS CAST IS WEARING — the branch's resolution, from the one owner,
+   * resolved by the service (item 7a). Absent is silence, which is `unpathed`:
+   * every roll cast before the paths, answering the house crew tee — today's
+   * product, byte for byte.
    */
-  wardrobeLine?: string | null;
+  wardrobe?: WardrobeResolution;
   /** The hybrid-likeness pass — the comparison is already settled (D-181). */
   hybrid?: boolean;
   /**
@@ -1641,9 +1643,9 @@ async function containReply(call: {
        present only when true, so absent and off are one state rather than two. */
     ...(input.inkWordsRoadOpen === true ? { inkWordsRoadOpen: true } : {}),
     /* AND WHAT SHE IS WEARING. Unlike its siblings this is not a flag bit, so
-       it rides whenever the service resolved one — and an absent line is the
-       same answer as no line at all, which is what keeps the paths dark. */
-    ...(input.wardrobeLine ? { wardrobeLine: input.wardrobeLine } : {}),
+       it rides whenever the service resolved one — and an absent resolution is
+       the same answer as `unpathed`, which is what keeps the paths dark. */
+    ...(input.wardrobe ? { wardrobe: input.wardrobe } : {}),
   };
   const delta = readDelta(reply, check);
   /* A WALL is an answer, not a hiccup — it must not be re-sampled. */

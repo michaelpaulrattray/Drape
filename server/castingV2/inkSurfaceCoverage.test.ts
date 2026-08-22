@@ -11,7 +11,7 @@ import { describe, expect, it } from "vitest";
 import { INK_PLACEMENTS } from "../../shared/inkPlacementVocabulary";
 
 import {
-  bareSurfacesOfLine,
+  bareSurfaces,
   coverageOfWardrobeLine,
   wardrobeCoversSurface,
 } from "./inkSurfaceCoverage";
@@ -105,8 +105,14 @@ describe("what this cast's wardrobe leaves showing", () => {
   });
 
   it("names the surfaces that work, for the sentences that must not be frozen", () => {
-    expect(bareSurfacesOfLine(null)).toEqual(["neck", "upperArm"]);
-    expect(bareSurfacesOfLine(basicsWardrobeLine("male"))).toEqual([...INK_PLACEMENTS]);
-    expect(bareSurfacesOfLine("a charcoal roll-neck jumper")).toEqual([]);
+    const worn = (line: string): { kind: "line"; line: string; source: "born"; path: "wardrobe" } =>
+      ({ kind: "line", line, source: "born", path: "wardrobe" });
+    /* Absent is silence, which is `unpathed`: the house crew tee. */
+    expect(bareSurfaces(undefined)).toEqual(["neck", "upperArm"]);
+    expect(bareSurfaces({ kind: "unpathed" })).toEqual(["neck", "upperArm"]);
+    expect(bareSurfaces(worn(basicsWardrobeLine("male")))).toEqual([...INK_PLACEMENTS]);
+    expect(bareSurfaces(worn("a charcoal roll-neck jumper"))).toEqual([]);
+    /* And an incoherent branch offers NOTHING rather than the crew tee's two. */
+    expect(bareSurfaces({ kind: "incoherent", path: "basics" })).toEqual([]);
   });
 });

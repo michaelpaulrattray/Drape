@@ -1742,19 +1742,21 @@ async function refineCandidateCounted(
         reads as the house crew tee — so every roll in production answers exactly
         what it answered before this landed.
 
+        The resolution rides WHOLE rather than flattened to a string, because
+        `incoherent` — a roll that claims a path and cannot say what it is
+        wearing — must not read as the house crew tee on a cast that might be
+        Basics, and a bare string cannot tell that from *cast before the paths*.
+
         The BRANCH'S edited line is not threaded yet and its absence is the
         honest state rather than an omission: the WARDROBE subject that writes it
         is the refine slice (item 8), and `currentWardrobeLine` already names
         `editedLine` as the seam it will land on. Until then a wardrobe edit
         cannot exist, so there is nothing for this to miss.
       */
-      wardrobeLine: (() => {
-        const resolved = currentWardrobeLine({
-          rollPath: source.rollPath as CastingPath | null,
-          rollLine: source.rollWardrobeLine,
-        });
-        return resolved.kind === "line" ? resolved.line : null;
-      })(),
+      wardrobe: currentWardrobeLine({
+        rollPath: source.rollPath as CastingPath | null,
+        rollLine: source.rollWardrobeLine,
+      }),
       /*
         ⚠ AND WHETHER THIS ASK IS ABOUT A TATTOO WE ALREADY PAINTED — the gate's
         THIRD document, and without it the transform road is unreachable.

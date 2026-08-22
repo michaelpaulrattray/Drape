@@ -45,6 +45,7 @@ import { scrubBrands } from "./brandScrub";
    and there is no runtime cycle. */
 import { readOpenKinds } from "./openLaneKind";
 import { classifyInkPlacement, namesDesign, placementClause } from "./inkPlacement";
+import type { WardrobeResolution } from "./wardrobeLine";
 import { namesUnknownProperNoun } from "./properNouns";
 import { tokensComeFromBrief } from "./castingIntent";
 import {
@@ -779,15 +780,17 @@ export type FreeLaneCheck = {
    */
   inkWordsRoadOpen?: boolean;
   /**
-   * WHAT THIS CAST IS WEARING — the roll's born line, or its edited one, resolved
-   * by the service (item 7a).
+   * WHAT THIS CAST IS WEARING — the branch's resolution, from the one owner
+   * (`currentWardrobeLine`), resolved by the service (item 7a).
    *
-   * Absent and `null` both mean *no line recorded*, which is every roll cast
-   * before the paths, and `inkSurfaceCoverage` reads that as the house crew tee.
-   * So an absent value is today's answer for all 206 of them rather than a
-   * refusal, which is what makes this landing dark.
+   * The RESOLUTION and not the line, because the three cases do not flatten:
+   * absent and `unpathed` are *cast before the paths* and answer the house crew
+   * tee — today's answer for all 206 production rolls, which is what makes this
+   * landing dark — while `incoherent` is *this roll claims a path and cannot say
+   * what it is wearing*, which must not read as a crew neck on a cast that might
+   * be Basics.
    */
-  wardrobeLine?: string | null;
+  wardrobe?: WardrobeResolution;
   /** Set when the value hit a wall, so the caller can name which one. */
   wall?: RefineRefusal;
   /**
@@ -1405,10 +1408,10 @@ export function readDelta(value: unknown, check?: FreeLaneCheck): RefineDelta | 
             scrubbed,
             subject === "ink" ? "ink" : "mark",
             check.inkWordsRoadOpen === true,
-            /* AND WHAT THIS CAST IS WEARING (item 7a). Absent is *no line
-               recorded*, which is every roll cast before the paths and answers
-               the house crew tee — today's product, byte for byte. */
-            check.wardrobeLine,
+            /* AND WHAT THIS CAST IS WEARING (item 7a). Absent is silence, which
+               is `unpathed`: every roll cast before the paths, answering the
+               house crew tee — today's product, byte for byte. */
+            check.wardrobe,
           );
           if (placement.kind === "not_carried") {
             check.wall = {

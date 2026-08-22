@@ -698,8 +698,14 @@ describe("ink renders only where the anchor is the document", () => {
     cast is wearing. That is the property under test.
   */
   describe("what she is wearing decides which wall she meets", () => {
-    const wearing = (instruction: string, wardrobeLine: string | null): FreeLaneCheck => ({
-      instruction, wardrobeLine,
+    /* The RESOLUTION, not a line: `unpathed` is *cast before the paths* and
+       `incoherent` is *claims a path, cannot say what it wears*, and only the
+       first may read as the house crew tee. */
+    const wearing = (instruction: string, line: string | null): FreeLaneCheck => ({
+      instruction,
+      wardrobe: line === null
+        ? { kind: "unpathed" }
+        : { kind: "line", line, source: "born", path: "wardrobe" },
     });
 
     it("⚠ a BASICS cast's bare chest gets `unkeepable`, not `your top covers it`", () => {

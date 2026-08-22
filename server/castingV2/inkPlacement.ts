@@ -72,7 +72,8 @@ import {
   type InkPlacement as InkPlacementKey,
 } from "../../shared/inkPlacementVocabulary";
 
-import { bareSurfacesOfLine, coverageOfWardrobeLine } from "./inkSurfaceCoverage";
+import { bareSurfaces, wardrobeCoversSurface } from "./inkSurfaceCoverage";
+import type { WardrobeResolution } from "./wardrobeLine";
 
 /**
  * WHICH MEASURED PLACEMENTS THE WORDS ROAD SERVES TODAY — the one line that
@@ -314,17 +315,20 @@ export function classifyInkPlacement(
    * WHAT THIS CAST IS WEARING — the second half of *can a tattoo go there*
    * (item 7a).
    *
-   * `null` and absent both mean *no line recorded*, which is every roll cast
-   * before the paths, and `inkSurfaceCoverage` reads that as the house crew tee
-   * — today's answers, byte for byte, for all 206 of them.
+   * ⚠ **THE RESOLUTION AND NOT THE LINE**, because the three cases do not
+   * flatten. `unpathed` is *cast before the paths* and answers the house crew
+   * tee — today's answers, byte for byte, for all 206 production rolls.
+   * `incoherent` is *this roll claims a path and cannot say what it is wearing*,
+   * and reading THAT as the house tee would put a crew neck's answers on a cast
+   * that might be Basics. A bare string cannot tell the two apart, which is
+   * `WardrobeResolution`'s own reason for existing.
    *
    * Optional where `lane` and `wordsRoadOpen` are required, and the asymmetry is
    * deliberate rather than lazy: those two are CAPABILITY facts a caller could
-   * get wrong in either direction, while this one has a correct absent value
-   * that the vocabulary's own rule already names (`WardrobeBranch.rollPath`:
-   * absent is not a claim, it is silence).
+   * get wrong in either direction, while absent here is silence and silence is
+   * `unpathed` (`WardrobeBranch.rollPath`'s own rule: absent is not a claim).
    */
-  wardrobeLine?: string | null,
+  wardrobe?: WardrobeResolution,
 ): InkPlacement {
   const lowered = text.toLowerCase();
   /*
@@ -355,9 +359,9 @@ export function classifyInkPlacement(
     */
     if (lane === "ink") {
       const key = placementKeyOfWord(place);
-      const coverage = key === null ? ("bare" as const) : coverageOfWardrobeLine(wardrobeLine, key);
+      const coverage = key === null ? ("bare" as const) : wardrobeCoversSurface(wardrobe, key);
       if (coverage !== "bare") {
-        const alternatives = servedAndBare(wordsRoadOpen, wardrobeLine);
+        const alternatives = servedAndBare(wordsRoadOpen, wardrobe);
         return coverage === "covered"
           ? { kind: "not_carried", place, alternatives }
           : { kind: "coverage_unread", place, alternatives };
@@ -390,8 +394,8 @@ export function classifyInkPlacement(
         because this road cannot carry a result here either way.
       */
       const key = placementKeyOfWord(place);
-      const covered = key !== null && coverageOfWardrobeLine(wardrobeLine, key) === "covered";
-      const alternatives = servedAndBare(wordsRoadOpen, wardrobeLine);
+      const covered = key !== null && wardrobeCoversSurface(wardrobe, key) === "covered";
+      const alternatives = servedAndBare(wordsRoadOpen, wardrobe);
       return covered
         ? { kind: "not_carried", place, alternatives }
         : { kind: "road_cannot_keep", place, alternatives };
@@ -418,9 +422,9 @@ export function classifyInkPlacement(
  */
 export function servedAndBare(
   wordsRoadOpen: boolean,
-  wardrobeLine?: string | null,
+  wardrobe?: WardrobeResolution,
 ): readonly string[] {
-  const bare = new Set(bareSurfacesOfLine(wardrobeLine));
+  const bare = new Set(bareSurfaces(wardrobe));
   return (wordsRoadOpen ? WORDS_ROAD_PLACEMENTS_OPEN : WORDS_ROAD_PLACEMENTS)
     .filter((key) => bare.has(key))
     .map((key) => inkPlacementEntry(key).noun.replace(/^(?:her|his|their)\s+/, ""));

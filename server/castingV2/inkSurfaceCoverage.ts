@@ -180,18 +180,25 @@ export function coverageOfWardrobeLine(
 }
 
 /**
- * The same question for a caller holding a {@link WardrobeResolution}.
+ * The same question for a caller holding a {@link WardrobeResolution} — the ink
+ * GATE, which reads the branch before any money moves.
  *
- * `unpathed` is the house table — the roll predates the paths and wears what
- * every roll has always worn. `incoherent` is `unknown` and never `covered`: a
- * roll that claims a path and cannot say what it is wearing has told us nothing
- * about its chest, and reporting that as a covering would be the lie ruling 1
- * forbids.
+ * `unpathed` (and absent, which is the same silence) is the house table: the
+ * roll predates the paths and wears what every roll has always worn.
+ *
+ * ⚠ **`incoherent` is `unknown`, and this is the whole reason the gate takes a
+ * RESOLUTION rather than a line.** A roll that claims a path and cannot say what
+ * it is wearing has told us nothing about its chest; flattened to a string it
+ * would arrive here as `null` and read as the crew tee, which would put a crew
+ * neck's answers on a cast that might be Basics. Reporting it as a COVERING
+ * would be the lie ruling 1 forbids; reading it as the house tee is the quieter
+ * version of the same lie.
  */
 export function wardrobeCoversSurface(
-  resolution: WardrobeResolution,
+  resolution: WardrobeResolution | undefined,
   placement: InkPlacement,
 ): SurfaceCoverage {
+  if (resolution === undefined) return HOUSE_COVERAGE[placement];
   if (resolution.kind === "unpathed") return HOUSE_COVERAGE[placement];
   if (resolution.kind === "incoherent") return "unknown";
   return coverageOfWardrobeLine(resolution.line, placement);
@@ -204,6 +211,8 @@ export function wardrobeCoversSurface(
  * rather than what worked for the crew tee — the drift census finding 4(c)
  * caught in `inkNeedsDocumentMessage` and did not catch one file over.
  */
-export function bareSurfacesOfLine(line: string | null | undefined): readonly InkPlacement[] {
-  return INK_PLACEMENTS.filter((key) => coverageOfWardrobeLine(line, key) === "bare");
+export function bareSurfaces(
+  resolution: WardrobeResolution | undefined,
+): readonly InkPlacement[] {
+  return INK_PLACEMENTS.filter((key) => wardrobeCoversSurface(resolution, key) === "bare");
 }
