@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "9ee1488543bdf31b"
+    "sourceFingerprint": "0a9cf1518b6b29f7"
   },
   "domains": [
     {
@@ -10716,6 +10716,10 @@
       "path": "server/castingV2/wallDOpenKind.test.ts"
     },
     {
+      "id": "test:server/castingV2/wardrobeConstant.test.ts",
+      "path": "server/castingV2/wardrobeConstant.test.ts"
+    },
+    {
       "id": "test:server/castingV2/wardrobeDoor.test.ts",
       "path": "server/castingV2/wardrobeDoor.test.ts"
     },
@@ -19671,12 +19675,22 @@
     },
     {
       "from": "module:server/castingV2/briefCompiler.ts",
+      "to": "module:server/castingV2/wardrobeLine.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/briefCompiler.ts",
       "to": "module:server/logging/logger.ts",
       "kind": "imports"
     },
     {
       "from": "module:server/castingV2/briefCompiler.ts",
       "to": "module:server/providers/types.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/briefCompiler.ts",
+      "to": "module:shared/castingPaths.ts",
       "kind": "imports"
     },
     {
@@ -23217,11 +23231,6 @@
     {
       "from": "module:server/castingV2/rollService.ts",
       "to": "module:server/castingV2/thumbnails.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/rollService.ts",
-      "to": "module:server/castingV2/wardrobeLine.ts",
       "kind": "imports"
     },
     {
@@ -30247,10 +30256,10 @@
       "message": "Names 4 of SegmentExclusion's 4 fields (server/castingV2/segmentAssembly.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/cohortPhotorealHuman.ts:783",
+      "id": "finding:redeclared-shape:server/castingV2/cohortPhotorealHuman.ts:893",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/cohortPhotorealHuman.ts:783",
+      "subject": "server/castingV2/cohortPhotorealHuman.ts:893",
       "message": "Names 6 of ResolvedIdentity's 11 fields (server/castingV2/castingIntent.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {

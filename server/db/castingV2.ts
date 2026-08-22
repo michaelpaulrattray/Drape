@@ -763,6 +763,65 @@ export async function getBriefForOwnedCandidate(
 }
 
 /**
+ * WHAT THE SHEET A FOLLOW DESCENDS FROM IS WEARING — the born pair, read
+ * BEFORE compilation (design §3.1, item 5 of §10's build).
+ *
+ * # Why this read exists at all, and it is a debt item 5 created
+ *
+ * `createRollWithCandidates` already inherits the parent roll's `path` and
+ * `wardrobeLine` inside its own transaction, and that statement stays the
+ * authority for what is WRITTEN. It cannot help the PROMPT: the eight prompts
+ * are composed before the transaction opens, so once the wardrobe line reaches
+ * the roll prompt, a follow would be PAINTED in a freshly resolved outfit and
+ * RECORDED in the parent's — eight pictures disagreeing with the row that
+ * describes them, and then six signed views judged against a line they were
+ * never painted in. That is the refunded-slices class condition (v) exists for,
+ * arriving through the one door condition (v) does not cover.
+ *
+ * # The BORN column, by name, and this is the one caller allowed it
+ *
+ * `wardrobeLine.ts`'s header names exactly one exception to
+ * `currentWardrobeLine`: the Follow, because a Follow deliberately wants the
+ * SHEET's outfit rather than this person's. An edited look stays on the person
+ * it was made for — *a momentary choice made permanent for eight strangers* is
+ * the sentence `refineSubjects.ts` already uses about `expression`.
+ *
+ * Joined THROUGH the owned candidate so the roll is re-proved to belong to this
+ * user in the same statement that finds it (invariant 1), exactly as
+ * `getBriefForOwnedCandidate` above — a caller holding a candidate id cannot
+ * reach a stranger's sheet through this.
+ */
+export type OwnedRollWardrobe = {
+  path: CastingPath | null;
+  wardrobeLine: string | null;
+};
+
+export async function getRollWardrobeForOwnedCandidate(
+  userId: number,
+  candidatePublicId: string,
+): Promise<OwnedRollWardrobe | null> {
+  assertPositiveId(userId, "userId");
+  const db = await requireDb();
+  const [row] = await db
+    .select({
+      path: castingRolls.path,
+      wardrobeLine: castingRolls.wardrobeLine,
+    })
+    .from(castingCandidates)
+    .innerJoin(castingRolls, and(
+      eq(castingRolls.id, castingCandidates.rollId),
+      eq(castingRolls.userId, userId),
+    ))
+    .where(and(
+      eq(castingCandidates.publicId, candidatePublicId),
+      eq(castingCandidates.userId, userId),
+    ))
+    .limit(1);
+  if (!row) return null;
+  return { path: row.path ?? null, wardrobeLine: row.wardrobeLine ?? null };
+}
+
+/**
  * The cross-roll tray: kept candidates of one session, oldest keep first.
  *
  * **`signed` is excluded, and that is the plan's own law** (§F Shortlist:

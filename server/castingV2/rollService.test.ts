@@ -66,6 +66,10 @@ vi.mock("../db/castingV2", () => ({
     candidate: { id: 1, publicId: "66666666-6666-4666-8666-666666666666", position: 3 },
     internalPrompt: null,
   })),
+  /* The parent SHEET's born pair. Its default is the honest one for a fixture
+     whose parent predates the paths: both NULL, which must keep the follow's
+     prompt unpathed. The follow arms override it. */
+  getRollWardrobeForOwnedCandidate: vi.fn(async () => ({ path: null, wardrobeLine: null })),
   getOwnedRoll: vi.fn(async () => ({
     id: 100,
     publicId: "roll-public",
@@ -757,7 +761,7 @@ describe("the two paths, at the wire", () => {
       const compileBrief = async (compilerInput: { pickWardrobe?: boolean }) => {
         asked.push(compilerInput.pickWardrobe);
         const compiled = await deterministicBriefCompiler(compilerInput as never);
-        return { ...compiled, wardrobePick: compilerInput.pickWardrobe === true ? PICKED : null };
+        return { ...compiled, wardrobeLine: compilerInput.pickWardrobe === true ? PICKED : compiled.wardrobeLine };
       };
       return { asked, compileBrief };
     }
@@ -806,6 +810,57 @@ describe("the two paths, at the wire", () => {
       /* CONTROL — the same service with no pick writes the house line, so the
          arm above is reading the pick and not a constant. */
       expect((await rollWith(true, "wardrobe")).wardrobeLine).toBe(HOUSE_WARDROBE_LINE);
+    });
+
+    /**
+     * ⚠ A FOLLOW WEARS THE SHEET IT DESCENDS FROM, IN THE PICTURE AS WELL AS
+     * IN THE ROW — the divergence item 5 created and has to close (§3.1).
+     *
+     * The db layer inherits the parent's pair inside the transaction, and that
+     * is the authority for what is STORED. It arrives too late for the eight
+     * PROMPTS. So the pair is read owner-scoped before the compile, and these
+     * arms assert on what the COMPILER was handed — the last thing before the
+     * pictures — rather than on the insert, which the db mock would answer for.
+     */
+    describe("a follow", () => {
+      const PARENT_LINE = "a red apron over a plain white tee, dark straight jeans, plain low shoes";
+
+      async function followWith(parent: { path: string | null; wardrobeLine: string | null }) {
+        const castingDb = await castingDbModule();
+        (castingDb.getRollWardrobeForOwnedCandidate as any).mockResolvedValueOnce(parent);
+        seedCandidates();
+        const seen: Record<string, unknown>[] = [];
+        await createRoll(
+          {
+            ...(baseDependencies() as object),
+            twoPathsEnabled: () => true,
+            compileBrief: async (compilerInput: Record<string, unknown>) => {
+              seen.push(compilerInput);
+              return deterministicBriefCompiler(compilerInput as never);
+            },
+          } as never,
+          { ...INPUT, followCandidatePublicId: FOLLOW_CANDIDATE_PUBLIC_ID },
+        );
+        return seen[0];
+      }
+
+      it("hands the compiler the PARENT's line, not a freshly resolved one", async () => {
+        const compilerInput = await followWith({ path: "wardrobe", wardrobeLine: PARENT_LINE });
+        expect(compilerInput.inheritedWardrobe).toEqual({ path: "wardrobe", line: PARENT_LINE });
+        /* And it did not ask for a pick, because the answer already exists. */
+        expect(compilerInput.pickWardrobe).toBe(false);
+      });
+
+      it("⚠ carries the parent's NULLS when the parent predates the paths", async () => {
+        /*
+          The same divergence with its sign flipped, and the one a conditional
+          read would have produced: this account IS inside the flag, so a
+          service that resolved a line here would paint eight people in the
+          house outfit while the transaction wrote the parent's NULL pair.
+        */
+        const compilerInput = await followWith({ path: null, wardrobeLine: null });
+        expect(compilerInput.inheritedWardrobe).toEqual({ path: null, line: null });
+      });
     });
   });
 });

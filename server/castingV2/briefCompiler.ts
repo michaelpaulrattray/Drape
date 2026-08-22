@@ -68,6 +68,8 @@ import { scrubBrands } from "./brandScrub";
 import { namesUnknownProperNoun } from "./properNouns";
 import { promoteStatedHeritage, promoteStatedRole } from "./heritagePromotion";
 import { interpretBrief } from "./interpreter";
+import { bornWardrobeLine, sheetBasicsSex } from "./wardrobeLine";
+import type { CastingPath } from "../../shared/castingPaths";
 import { breakSignatureClusters, type VarianceReport } from "./varianceBudget";
 import { HAIR_PARTS, type HairPart } from "../../shared/castingRealization";
 
@@ -193,20 +195,29 @@ export type CompiledRollBrief = {
   size: `${number}x${number}`;
   quality: "low" | "medium" | "high";
   /**
-   * THE PICK — the outfit this sheet wears, or `null`.
+   * THE OUTFIT THIS SHEET WEARS — resolved, complete, and the SAME STRING the
+   * eight prompts were composed from.
    *
-   * An explicit field rather than something the caller lifts out of
-   * `compiledBrief`: that column's own docblock says INTERNAL and never
-   * projected, and a durable fact read out of an internal blob is the shape
-   * §3.2 refuses by name. `rollService` hands it to `bornWardrobeLine` as
-   * `named`, where `null` resolves to §4(c).
+   * ⚠ **Resolved HERE rather than by the caller, and that is the whole point.**
+   * Item 4 returned the raw pick and let `rollService` call `bornWardrobeLine`
+   * on it, which was correct while the line only had to reach a column. The
+   * moment it also reaches the eight PROMPTS, two callers resolving the same
+   * sentence is the parallel-copy shape (working law 4) with a picture on one
+   * side and a database row on the other — a sheet painted in one outfit and
+   * recorded in another, which Sign then judges against the record.
    *
-   * Always `null` when `pickWardrobe` was not asked for, so a reader cannot
-   * tell "the picker declined" from "nobody asked" — deliberately, because the
-   * two have the same answer and inventing a distinction would be a second
-   * source of truth about the same silence.
+   * So `bornWardrobeLine` is called exactly once, in `resolveSheet`, before
+   * composition; this field is that call's answer; and the caller WRITES it
+   * rather than re-deriving it.
+   *
+   * An explicit field rather than something lifted out of `compiledBrief`:
+   * that column's docblock says INTERNAL and never projected, and a durable
+   * fact read out of an internal blob is the shape §3.2 refuses by name.
+   *
+   * `null` whenever `path` was null — the unpathed roll, which is every roll
+   * outside the flag.
    */
-  wardrobePick: string | null;
+  wardrobeLine: string | null;
 };
 
 export type BriefRefusalCode =
@@ -248,6 +259,30 @@ export type BriefCompilerInput = {
    * the whole guarantee.
    */
   overrides?: LockOverrides;
+  /**
+   * WHICH PATH this sheet is cast on, resolved by the caller before the
+   * compile because the born line reaches the eight PROMPTS (§3.3).
+   *
+   * `null` — absent, outside the flag, or a roll cast before the paths existed
+   * — composes the constant exactly as it always has, character for character.
+   */
+  path?: CastingPath | null;
+  /**
+   * On a FOLLOW: the parent sheet's pair, read owner-scoped before the compile
+   * and used VERBATIM — including its nulls.
+   *
+   * A follow inherits both columns (§3.1) and the db layer performs that
+   * inheritance in the statement that writes the row. It cannot help the
+   * PROMPT, which is composed first — so without this the eight would be
+   * PAINTED in a freshly resolved outfit and RECORDED in the parent's, and
+   * then six signed views judged against a line they were never painted in.
+   *
+   * ⚠ **Verbatim means the NULLS too.** Following a candidate from a sheet cast
+   * before the paths existed must produce an unpathed prompt, because the db is
+   * about to write that parent's NULL pair — resolving a line here "because the
+   * account is inside the flag" is the same divergence with its sign flipped.
+   */
+  inheritedWardrobe?: { path: CastingPath | null; line: string | null };
   /**
    * Ask the interpreter for a WARDROBE PICK as well — cases (a) and (b) of the
    * Wardrobe path (design §4).
@@ -593,7 +628,13 @@ function resolveSheet(input: {
   candidateCount: number;
   rollSeed: string;
   anchor?: FollowAnchor;
-}): { candidates: CandidateSpec[]; variance: VarianceReport } {
+  /** Whether the interpreter was asked for a pick — see the gate below. */
+  pickWardrobe?: boolean;
+  /** The two paths (§3.1). `null` composes exactly today's constant. */
+  path?: CastingPath | null;
+  /** A follow's inherited pair, used verbatim when present — nulls too (§3.1). */
+  inheritedWardrobe?: { path: CastingPath | null; line: string | null };
+}): { candidates: CandidateSpec[]; variance: VarianceReport; wardrobeLine: string | null } {
   const { intent, briefText, archetype, rollSeed, anchor } = input;
   /*
     Derived ONCE, before anything resolves, and handed to every reader — the
@@ -718,8 +759,46 @@ function resolveSheet(input: {
   });
   const sheet = freed;
 
+  /*
+    WHAT THIS SHEET IS WEARING — resolved ONCE, here, in the only window where
+    the sheet exists whole and nothing has been written to a prompt yet.
+
+    That window is the same one the taste pass and the signature cap use, and
+    for the same reason: on the Basics path the outfit's form depends on the
+    RESOLVED sexes of the eight (`sheetBasicsSex`), which do not exist until
+    resolution has finished — and it must exist before composition, because
+    every prompt carries it.
+
+    A FOLLOW takes the parent sheet's born line verbatim. Not out of caution:
+    the db layer will inherit that pair anyway when the row is written, so
+    re-resolving here would paint eight people in an outfit the row is about to
+    contradict.
+  */
+  const path = input.inheritedWardrobe ? input.inheritedWardrobe.path : input.path ?? null;
+  /*
+    ⚠ AN UNASKED WARDROBE IS DISCARDED, and it is discarded rather than trusted
+    not to arrive.
+
+    A language model may volunteer a field it was never offered — the M3 defect
+    this module exists for was exactly that, a plaid shirt and a captioned mug
+    nobody asked for, inherited by all eight. The PARSE cannot tell an answer
+    from an offer, because it does not know what was asked. This function does,
+    so the question and the answer are gated at the same place.
+  */
+  const pick = input.pickWardrobe === true ? intent.wardrobe : null;
+  const wardrobeLine = input.inheritedWardrobe
+    ? input.inheritedWardrobe.line
+    : path === null
+      ? null
+      : bornWardrobeLine({
+        path,
+        sex: sheetBasicsSex(sheet.map((identity) => identity.sex)),
+        named: pick,
+      });
+
   return {
     variance,
+    wardrobeLine,
     candidates: sheet.map((identity, position) => ({
       position,
       prompt: composeCandidatePrompt({
@@ -728,6 +807,7 @@ function resolveSheet(input: {
         resolved: identity,
         archetype,
         seed: position,
+        wardrobeLine,
         // Anchored styling renders at full fidelity: the user chose that cut.
         anchored: anchor != null,
       }),
@@ -864,6 +944,9 @@ export const castingBriefCompiler: BriefCompiler = async (input) => {
     candidateCount: input.candidateCount,
     rollSeed: input.rollSeed,
     anchor: effectiveAnchor ?? undefined,
+    path: input.path ?? null,
+    inheritedWardrobe: input.inheritedWardrobe,
+    pickWardrobe: input.pickWardrobe,
   });
   const candidates = sheet.candidates;
 
@@ -909,23 +992,10 @@ export const castingBriefCompiler: BriefCompiler = async (input) => {
     size: "1024x1536",
     quality: "medium",
     /*
-      THE PICK, taken off the finalized intent rather than off the raw reply.
-
-      That ordering is not incidental: `intent` above is what survives the
-      unlocks, the overrides and the brand scrub, and reading the pick from
-      anywhere earlier would be a second copy of the same field diverging from
-      the one the sheet was compiled with.
-
-      ⚠ **AN UNASKED WARDROBE IS DISCARDED HERE, and it is discarded rather
-      than trusted not to arrive.** A language model may volunteer a field it
-      was never offered — the M3 defect this whole module exists for was exactly
-      that, a plaid shirt and a captioned mug nobody asked for — and the parse
-      cannot tell an answer from an offer, because it does not know what was
-      asked. This function does. So the question and the answer are gated at the
-      same place, and no roll outside the Wardrobe path can be dressed by a
-      reply that volunteered an outfit.
+      The line the eight prompts above were composed from, returned so the
+      caller writes it rather than resolving it a second time.
     */
-    wardrobePick: input.pickWardrobe === true ? intent.wardrobe : null,
+    wardrobeLine: sheet.wardrobeLine,
   };
 };
 
@@ -945,12 +1015,15 @@ export const deterministicBriefCompiler: BriefCompiler = async (input) => {
   const archetype = resolveArchetype(intent, input.rollSeed);
   // The same helper the real compiler uses. Two hand-written loops is how the
   // fallback path drifts into producing sheets the main path would not.
-  const { candidates, variance } = resolveSheet({
+  const { candidates, variance, wardrobeLine } = resolveSheet({
     intent,
     briefText,
     archetype,
     candidateCount: input.candidateCount,
     rollSeed: input.rollSeed,
+    path: input.path ?? null,
+    inheritedWardrobe: input.inheritedWardrobe,
+    pickWardrobe: input.pickWardrobe,
   });
 
   return {
@@ -974,7 +1047,9 @@ export const deterministicBriefCompiler: BriefCompiler = async (input) => {
     variance,
     size: "1024x1536",
     quality: "medium",
-    /* No interpreter runs here at all, so there is nothing to pick with. §4(c). */
-    wardrobePick: null,
+    /* No interpreter runs here at all, so there is nothing to pick with; the
+       path still resolves, so a Basics roll compiled this way is still dressed
+       in basics. §4(c) is the Wardrobe fallback. */
+    wardrobeLine,
   };
 };

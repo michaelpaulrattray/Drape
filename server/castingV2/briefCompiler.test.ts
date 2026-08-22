@@ -10,9 +10,15 @@ import {
   validateLocks,
   type CastingIntent,
 } from "./castingIntent";
-import { COHORT_CONSTANT_MARKERS, composeCandidatePrompt, resolveCandidateIdentity } from "./cohortPhotorealHuman";
+import {
+  COHORT_CONSTANT_MARKERS,
+  cohortConstantBlocks,
+  composeCandidatePrompt,
+  resolveCandidateIdentity,
+} from "./cohortPhotorealHuman";
 import { interpretBrief } from "./interpreter";
 import type { TextEngine } from "../providers/types";
+import { HOUSE_WARDROBE_LINE } from "./wardrobeLine";
 
 /** A text engine that returns exactly what a test wants the interpreter to say. */
 function engineReturning(text: string): TextEngine {
@@ -124,22 +130,82 @@ describe("the precedence fix", () => {
       is worth nothing beside a fixture that could never have produced it.
     */
     const engine = engineReturning(POISONED);
+    /* Both rolls are on the WARDROBE path, so both resolve a real line and the
+       only variable is whether the question was asked. */
     const unasked = await castingBriefCompiler({
       briefText: "a handyman in his 30s",
       candidateCount: 8,
       rollSeed: "seed-unasked",
+      path: "wardrobe",
       engine,
     });
-    expect(unasked.wardrobePick).toBeNull();
+    expect(unasked.wardrobeLine).toBe(HOUSE_WARDROBE_LINE);
 
     const asked = await castingBriefCompiler({
       briefText: "a handyman in his 30s",
       candidateCount: 8,
       rollSeed: "seed-asked",
+      path: "wardrobe",
       pickWardrobe: true,
       engine,
     });
-    expect(asked.wardrobePick).toBe("plaid flannel");
+    expect(asked.wardrobeLine).toBe("plaid flannel");
+    /* And it reached the PICTURE, not only the column — the whole of item 5. */
+    for (const candidate of asked.candidates) {
+      expect(candidate.prompt).toContain("WARDROBE: plaid flannel.");
+    }
+    for (const candidate of unasked.candidates) {
+      /*
+        Asserted on the WARDROBE SENTENCE and not on the prompt as a whole, and
+        the difference is this fixture's own honest boundary: `characterNotes`
+        says *"wearing a red plaid flannel shirt"*, which is free text about a
+        person and reaches the SUBJECT block on every path. What must not happen
+        is that phrase becoming the code-owned outfit — the position guarantee
+        the neighbouring arm spells out.
+      */
+      expect(candidate.prompt).toContain(`WARDROBE: ${HOUSE_WARDROBE_LINE}.`);
+      expect(candidate.prompt).not.toContain("WARDROBE: plaid flannel");
+    }
+  });
+
+  it("⚠ a FOLLOW's inherited pair beats the pick, and its NULLS are honoured", async () => {
+    /*
+      The db layer inherits the parent roll's pair inside the transaction that
+      writes the row. The prompts are composed before that, so the compiler is
+      handed the same pair and must use it VERBATIM — otherwise eight faces are
+      painted in one outfit and recorded in another, and Sign then judges six
+      views against the record.
+    */
+    const engine = engineReturning(POISONED);
+    const inherited = await castingBriefCompiler({
+      briefText: "a handyman in his 30s",
+      candidateCount: 8,
+      rollSeed: "seed-follow",
+      path: "wardrobe",
+      pickWardrobe: true,
+      inheritedWardrobe: { path: "wardrobe", line: "a red apron over a plain white tee" },
+      engine,
+    });
+    expect(inherited.wardrobeLine).toBe("a red apron over a plain white tee");
+    for (const candidate of inherited.candidates) {
+      expect(candidate.prompt).toContain("WARDROBE: a red apron over a plain white tee.");
+    }
+
+    /* And the nulls: a parent cast before the paths existed leaves the follow
+       unpathed, even though this caller passed a path and asked for a pick. */
+    const unpathedParent = await castingBriefCompiler({
+      briefText: "a handyman in his 30s",
+      candidateCount: 8,
+      rollSeed: "seed-follow-null",
+      path: "wardrobe",
+      pickWardrobe: true,
+      inheritedWardrobe: { path: null, line: null },
+      engine,
+    });
+    expect(unpathedParent.wardrobeLine).toBeNull();
+    for (const candidate of unpathedParent.candidates) {
+      expect(candidate.prompt).toContain("neutral grey or off-white");
+    }
   });
 
   it("strips the quoted caption before it can be rendered as letters", async () => {
@@ -183,6 +249,44 @@ describe("the precedence fix", () => {
       */
       const leakAt = candidate.prompt.indexOf("garage");
       if (leakAt > -1) expect(leakAt).toBeLessThan(authorityAt);
+    }
+  });
+
+  it("⚠ THE SAME GUARD, RE-POINTED AT A PATHED PROMPT (§3.4)", async () => {
+    /*
+      The arm above reads `COHORT_CONSTANT_MARKERS`, which are the UNPATHED
+      blocks — and asking those markers about a pathed prompt is asking whether
+      it contains a wardrobe sentence it was deliberately built not to contain.
+
+      §3.4 called the re-pointing "a signature and not a diff": the wardrobe
+      sentence leaving a fixed constant for a composed line cannot be a silent
+      edit, so the guard FOLLOWS it to the same composer rather than being
+      relaxed. Every block still appears verbatim, the authority paragraph is
+      still last, and nothing appends past it.
+    */
+    const compiled = await castingBriefCompiler({
+      briefText: "a barista in a red apron",
+      candidateCount: 8,
+      rollSeed: "seed-pathed",
+      path: "wardrobe",
+      pickWardrobe: true,
+      engine: engineReturning(JSON.stringify({
+        cohort: "photoreal_human",
+        role: "a barista",
+        wardrobe: "a red apron over a plain white tee, dark straight jeans, plain low shoes",
+      })),
+    });
+    expect(compiled.wardrobeLine).toContain("red apron");
+
+    const markers = cohortConstantBlocks(compiled.wardrobeLine);
+    for (const candidate of compiled.candidates) {
+      for (const marker of markers) {
+        expect(candidate.prompt).toContain(marker);
+      }
+      expect(candidate.prompt.trim().endsWith("it always wins.")).toBe(true);
+      /* CONTROL — the unpathed framing block no longer fits this prompt, which
+         is what makes the re-point a real move rather than a wider net. */
+      expect(candidate.prompt).not.toContain(COHORT_CONSTANT_MARKERS[0]);
     }
   });
 

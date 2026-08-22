@@ -40,7 +40,6 @@ import { TRPCError } from "@trpc/server";
 
 import { DEFAULT_CASTING_PATH, type CastingPath } from "../../shared/castingPaths";
 import { captureCastingTwoPathsEnabled } from "./castingV2Scope";
-import { bornWardrobeLine, sheetBasicsSex } from "./wardrobeLine";
 
 import { CASTING_V2_COSTS } from "../casting/castingCreditCosts";
 import { censusOfAttempt, censusSoFar } from "./callCensus";
@@ -62,6 +61,7 @@ import {
   createRollWithCandidates,
   failCandidate,
   getOwnedCandidateWithSelectedFace,
+  getRollWardrobeForOwnedCandidate,
   getOwnedRoll,
   getRollByOperation,
   landCandidate,
@@ -302,6 +302,7 @@ export async function createRoll(
   */
   let followPersonaLine: string | null = null;
   let followIdentity: ResolvedIdentity | null = null;
+  let inheritedWardrobe: { path: CastingPath | null; wardrobeLine: string | null } | null = null;
   if (input.followCandidatePublicId) {
     /*
       Read through SELECTION — §11's second landmine (D-123).
@@ -328,6 +329,24 @@ export async function createRoll(
     */
     followPersonaLine = String(parent.candidate.position + 1).padStart(2, "0");
     followIdentity = readResolvedIdentity(parent.internalPrompt);
+    /*
+      WHAT THE SHEET THIS FOLLOW DESCENDS FROM IS WEARING (design §3.1).
+
+      A follow inherits both columns, and the db layer performs that inheritance
+      in the statement that writes the row — which is the authority for what is
+      STORED and arrives too late for the eight PROMPTS. Read here, owner-scoped
+      through the owned candidate, so the pictures and the row agree.
+
+      Read UNCONDITIONALLY, outside the flag as well, and that is deliberate: a
+      parent cast before the paths existed answers `{ null, null }`, which is
+      exactly what the prompt needs to stay unpathed. Making the read
+      conditional on this account's flag would resolve a fresh line for a follow
+      whose row is about to be written NULL.
+    */
+    inheritedWardrobe = (await getRollWardrobeForOwnedCandidate(
+      input.userId,
+      input.followCandidatePublicId,
+    )) ?? { path: null, wardrobeLine: null };
   }
 
   /*
@@ -379,6 +398,17 @@ export async function createRoll(
       rollSeed: input.clientRequestId,
       unlock: input.unlock ?? [],
       overrides: input.overrides,
+      /*
+        THE LINE REACHES THE EIGHT PROMPTS FROM HERE (§3.3, item 5).
+
+        The path is resolved before the compile because the constant carries the
+        outfit now; on a FOLLOW the pair is the parent's, verbatim and including
+        its nulls, because that is what the transaction is about to write.
+      */
+      path: bornPath,
+      inheritedWardrobe: inheritedWardrobe
+        ? { path: inheritedWardrobe.path, line: inheritedWardrobe.wardrobeLine }
+        : undefined,
       pickWardrobe,
       followPersonaLine,
       followIdentity,
@@ -460,23 +490,18 @@ export async function createRoll(
         pair inside the same transaction that re-anchors the parent candidate.
       */
       path: bornPath,
-      wardrobeLine: bornPath === null
-        ? null
-        : bornWardrobeLine({
-          path: bornPath,
-          sex: sheetBasicsSex(compiled.candidates.map((spec) => spec.resolvedIdentity.sex)),
-          /*
-            THE PICK — cases (a) *her words win* and (b) *the engine picks one
-            per sheet*, both resolved by the brief stage and both already
-            through §4.1's door by the time they arrive here.
+      /*
+        ⚠ WRITTEN, NOT RE-RESOLVED — and it used to be re-resolved here.
 
-            `null` is the ordinary answer and it is not a failure: it means the
-            picker was not asked, could not be reached, or answered with
-            something the door refused — and all three resolve to §4(c), the
-            house line, which is today's picture unchanged.
-          */
-          named: compiled.wardrobePick,
-        }),
+        Item 4 called `bornWardrobeLine` at this site, which was correct while
+        the line only had to reach a column. Item 5 puts the same sentence into
+        the eight PROMPTS, and two callers resolving one sentence is working law
+        4 with a picture on one side and a database row on the other: a sheet
+        painted in one outfit and recorded in another, then signed and judged
+        against the record. So the compiler resolves it once, before
+        composition, and this writes that answer.
+      */
+      wardrobeLine: compiled.wardrobeLine,
       candidates: compiled.candidates.map((spec) => ({
         publicId: randomUUID(),
         position: spec.position,

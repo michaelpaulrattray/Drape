@@ -117,7 +117,7 @@ import {
  * shoulders, per the wardrobe-baseline ruling — the minimal-clothing plate is
  * an internal VTO slot now, not what the customer looks at.
  */
-const FRAMING = [
+const FRAMING_FIXED = [
   /*
     CROP (founder gate, 2026-07-31): the first sheets cropped scalps and read
     as mugshots. A casting frame has air above the head — a tight crop reads as
@@ -187,9 +187,54 @@ const FRAMING = [
   */
   "BACKGROUND: Bright light-grey seamless paper, luminous rather than flat, filling the entire frame. No texture, no pattern, no corners, no floor line, no black borders.",
   "The flash falls off naturally across the paper — brighter immediately behind the subject, gently deeper toward the frame edges. Soft gradient, never a hard vignette.",
-  "WARDROBE: plain unbranded clothing in neutral grey or off-white — a simple crew-neck tee or plain shirt.",
-  "No jackets, no accessories, no jewellery, no hats, no props of any kind, nothing held in the hands.",
-].join(" ");
+] as const;
+
+/**
+ * THE ONE SENTENCE THAT SAYS WHAT THIS PERSON IS WEARING — design
+ * `CASTING_V2_TWO_PATHS_DESIGN.md` §3.3, item 5 of §10's build.
+ *
+ * ⚠ **`null` is the whole of today's product and must stay byte-identical.**
+ * A roll outside `CASTING_TWO_PATHS_SCOPE`, and every one of the 206
+ * production rolls cast before the paths existed, resolves to `unpathed` — and
+ * the honest answer there is *paint what you always painted*. So the two
+ * sentences below are the ones this file has always carried, character for
+ * character, and an arm asserts that rather than trusting the diff.
+ *
+ * With a line, two things change and both are forced by the same fact:
+ *
+ *  1. **The latitude goes.** The old sentence says *neutral grey OR
+ *     off-white*, and the signed-view spec deliberately names no colour
+ *     BECAUSE of that `or` — so a Cast signed in off-white had a package whose
+ *     contract it could not satisfy and **the customer paid for our
+ *     inconsistency** (`castViewPackage.ts`, first real Sign, 2026-08-02). An
+ *     exact stored line is what lets the generator and the judge agree.
+ *  2. **"No jackets" has to go with it, and this is not tidying.** That clause
+ *     sits four words from a WARDROBE line that may now say *dark canvas work
+ *     jacket* — a block contradicting itself in the same breath, which an
+ *     image model resolves by picking one, silently, per candidate. The rest
+ *     of the negative stays exactly as it is, and it CAN stay because
+ *     `wardrobeDoor.ts` refuses headwear and props in the line: the two can
+ *     never disagree about those, so only the garment clause was ever in
+ *     conflict.
+ */
+function wardrobeSentences(wardrobeLine: string | null): readonly string[] {
+  if (wardrobeLine === null) {
+    return [
+      "WARDROBE: plain unbranded clothing in neutral grey or off-white — a simple crew-neck tee or plain shirt.",
+      "No jackets, no accessories, no jewellery, no hats, no props of any kind, nothing held in the hands.",
+    ];
+  }
+  return [
+    /* One outfit for the whole sheet — §B2's comparability law, stated to the
+       engine rather than assumed of it: a sheet compares people, not clothes. */
+    `WARDROBE: ${wardrobeLine}. Exactly this and nothing else — no extra garments, no layers, and identical on every candidate.`,
+    "Nothing beyond the wardrobe described: no accessories, no jewellery, no hats, no props of any kind, nothing held in the hands.",
+  ];
+}
+
+function framingBlock(wardrobeLine: string | null): string {
+  return [...FRAMING_FIXED, ...wardrobeSentences(wardrobeLine)].join(" ");
+}
 
 /**
  * A2 + A3 + A4, kept close to the legacy wording because the wording is the
@@ -480,11 +525,39 @@ const NEGATIVES = [
  * it cannot outrank a rule that is stated after it and claims authority over
  * it.
  */
-const OVERRIDE = [
-  "AUTHORITY: The FRAMING, CAPTURE, REALISM and NEGATIVE rules above override the character description entirely.",
-  "If the description implies a location, an activity, a costume, a prop, or any text, ignore that implication and render this person in the plain studio frame described here.",
-  "The description says WHO to cast. This block says HOW to photograph them, and it always wins.",
-].join(" ");
+/**
+ * ⚠ AMENDED IN EXACTLY ONE PLACE WHEN A WARDROBE LINE EXISTS (§3.4).
+ *
+ * The middle sentence is what makes the Wardrobe path impossible today: it
+ * tells the engine to ignore any implied COSTUME and render the plain studio
+ * frame. Leave it standing beside a composed WARDROBE line and the engine has
+ * two instructions about one thing — and the one it is likelier to obey is
+ * the one claiming authority, so the outfit the customer chose would be
+ * discarded by the very paragraph that guarantees the photograph.
+ *
+ * So it is AMENDED rather than deleted, and as narrowly as the sentence allows:
+ *
+ *   - the frame, the capture, the realism and the negatives keep ABSOLUTE
+ *     authority — the first and third sentences do not move at all;
+ *   - LOCATION, ACTIVITY, PROPS and TEXT are still ignored, by name;
+ *   - only the word *costume* leaves the ignore-list, and a sentence naming the
+ *     WARDROBE line as the sole clothing instruction takes its place.
+ *
+ * The distinction that licenses it: it is no longer the DESCRIPTION setting the
+ * outfit. The line is a code-owned field the code composed, through
+ * `wardrobeDoor.ts`, and it arrives inside the constant rather than inside the
+ * free text — which is why a description implying a costume is still ignored
+ * on this path exactly as it is on the other.
+ */
+function overrideBlock(wardrobeLine: string | null): string {
+  return [
+    "AUTHORITY: The FRAMING, CAPTURE, REALISM and NEGATIVE rules above override the character description entirely.",
+    wardrobeLine === null
+      ? "If the description implies a location, an activity, a costume, a prop, or any text, ignore that implication and render this person in the plain studio frame described here."
+      : "If the description implies a location, an activity, a prop, or any text, ignore that implication and render this person in the plain studio frame described here. The WARDROBE line above is the only clothing instruction and it is absolute: render exactly that, whatever else the description suggests they might wear.",
+    "The description says WHO to cast. This block says HOW to photograph them, and it always wins.",
+  ].join(" ");
+}
 
 /**
  * Everything code owns, in order, as one block.
@@ -502,17 +575,46 @@ const OVERRIDE = [
  * it in place. A parallel list of the same thing will always drift; deriving
  * both from one array is what actually closes it.
  */
-const CONSTANT_BLOCKS = [
-  FRAMING,
-  CAPTURE,
-  SKIN_AND_FEATURES,
-  IDENTITY_INTEGRITY,
-  NEGATIVES,
-  PRIORITY,
-  OVERRIDE,
-] as const;
+export function cohortConstantBlocks(wardrobeLine: string | null): readonly string[] {
+  return [
+    framingBlock(wardrobeLine),
+    CAPTURE,
+    SKIN_AND_FEATURES,
+    IDENTITY_INTEGRITY,
+    NEGATIVES,
+    PRIORITY,
+    overrideBlock(wardrobeLine),
+  ];
+}
 
-export const PHOTOREAL_HUMAN_CONSTANT = CONSTANT_BLOCKS.join("\n");
+/**
+ * The code-owned constant for one roll.
+ *
+ * ⚠ **A FUNCTION NOW, AND THE GUARD READS THE SAME FUNCTION.** Two of these
+ * blocks depend on what this person is wearing, so a constant that could not
+ * take the line would have forced a second copy of the framing text somewhere
+ * — the parallel-list shape this file's own list docblock was written about,
+ * where `SKIN_AND_FEATURES` sat unguarded because a hand-kept second array had
+ * forgotten it.
+ */
+export function photorealHumanConstant(wardrobeLine: string | null): string {
+  return cohortConstantBlocks(wardrobeLine).join("\n");
+}
+
+/*
+  ⚠ `PHOTOREAL_HUMAN_CONSTANT` WAS HERE AND IS GONE, and the deletion door is
+  what asked the question.
+
+  It was `CONSTANT_BLOCKS.join()` — the one code-owned constant, read by
+  `composeCandidatePrompt`. Once composition takes a wardrobe line, that caller
+  reads `photorealHumanConstant(line)` instead, and the constant was left with
+  test callers only: the uncalled-export shape, in a file where a second name
+  for the same sentence is exactly how the framing text once drifted. The
+  sweep listed it as `unread` on the first `pnpm check` after the wiring, the
+  door refused, and the honest disposition was to delete rather than to write a
+  row keeping a name alive for its tests. Callers wanting today's constant ask
+  for it by its meaning: `photorealHumanConstant(null)`.
+*/
 
 /**
  * The blocks the SIGNED PACKAGE composes from — one authority, two frames.
@@ -534,7 +636,15 @@ export const PHOTOREAL_HUMAN_BLOCKS = {
   realism: SKIN_AND_FEATURES,
   identityIntegrity: IDENTITY_INTEGRITY,
   negatives: NEGATIVES,
-  authority: OVERRIDE,
+  /*
+    The signed package's authority paragraph, and it takes the UNPATHED form
+    deliberately for now: the package composes its own wardrobe spec
+    (`CAST_PACKAGE_WARDROBE_SPEC`), and moving it onto the line is item 6 of
+    this build, where the six views and the judge start reading one answer.
+    Handing it the amended sentence here — with no line beside it — would take
+    the costume guard off the package and give it nothing in exchange.
+  */
+  authority: overrideBlock(null),
 } as const;
 
 /* --------------------------------------------------------- determinism */
@@ -2135,6 +2245,19 @@ export function composeCandidatePrompt(input: {
   seed: number;
   /** True on a follow — anchored styling renders at full fidelity. */
   anchored?: boolean;
+  /**
+   * WHAT THIS SHEET IS WEARING — the roll's born line (design §3.3).
+   *
+   * `null` or absent is every roll the product has cast so far and every roll
+   * outside `CASTING_TWO_PATHS_SCOPE`: the constant composes exactly as it
+   * always has, character for character.
+   *
+   * It is the ROLL's line rather than a branch's, and that is not a shortcut —
+   * no branch exists when a sheet is cast, so `currentWardrobeLine`'s edited
+   * arm has nothing to read here. The refine recipe is where that function
+   * earns its name.
+   */
+  wardrobeLine?: string | null;
 }): string {
   const { intent, resolved, archetype } = input;
   /* The user's own words, in one string — every deference check reads this. */
@@ -2291,7 +2414,7 @@ export function composeCandidatePrompt(input: {
 
   // Category first: it decides who is eligible at all, before direction shapes
   // how they are cast and before the constant fixes how they are photographed.
-  return [category, subject, directionBlock, PHOTOREAL_HUMAN_CONSTANT]
+  return [category, subject, directionBlock, photorealHumanConstant(input.wardrobeLine ?? null)]
     .filter(Boolean)
     .join("\n");
 }
@@ -2324,7 +2447,15 @@ export function personaLineFor(resolved: ResolvedIdentity, read?: string | null)
 }
 
 /** Exported for the contract test: the constant must survive composition. */
-/** Derived, never re-listed. See CONSTANT_BLOCKS for why. */
-export const COHORT_CONSTANT_MARKERS = CONSTANT_BLOCKS;
+/**
+ * Derived, never re-listed. See `cohortConstantBlocks` for why.
+ *
+ * The UNPATHED markers, kept as a constant because that is what every caller
+ * asserting today's prompt wants. A guard checking a PATHED prompt calls
+ * `cohortConstantBlocks(line)` with the line the prompt was composed from —
+ * asking these markers about a pathed prompt is asking whether it contains a
+ * wardrobe sentence it was deliberately built not to contain.
+ */
+export const COHORT_CONSTANT_MARKERS = cohortConstantBlocks(null);
 
 export { AGE_BANDS, BUILDS };

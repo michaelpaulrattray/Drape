@@ -10,7 +10,7 @@ import {
   partlyOutOfFrameNote,
   withoutWhatIsOutOfFrame,
 } from "./castingFrame";
-import { PHOTOREAL_HUMAN_CONSTANT } from "./cohortPhotorealHuman";
+import { photorealHumanConstant } from "./cohortPhotorealHuman";
 import { FREE_SUBJECT_KEYS } from "./refineSubjects";
 
 /**
@@ -24,7 +24,7 @@ import { FREE_SUBJECT_KEYS } from "./refineSubjects";
  */
 describe("the frame the table is keyed to", () => {
   it("is still the framing every roll asks for", () => {
-    const prompt = PHOTOREAL_HUMAN_CONSTANT.toLowerCase();
+    const prompt = photorealHumanConstant(null).toLowerCase();
     expect(prompt).toContain(FRAMING_PREMISE);
     /* The same sentence in its other half — a prompt that said "waist-up" while
        framing full length would pass a one-string check. */
