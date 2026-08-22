@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "8cd4f66a7f677f5d"
+    "sourceFingerprint": "5951d0f9f3685771"
   },
   "domains": [
     {
@@ -5542,7 +5542,7 @@
       "name": "redeem",
       "type": "mutation",
       "auth": "onboarding",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": true,
       "file": "server/routes/access.ts"
     },
@@ -5552,7 +5552,7 @@
       "name": "status",
       "type": "query",
       "auth": "onboarding",
-      "strictInput": false,
+      "input": "none",
       "rateLimited": false,
       "file": "server/routes/access.ts"
     },
@@ -5562,7 +5562,7 @@
       "name": "validate",
       "type": "mutation",
       "auth": "public",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": true,
       "file": "server/routes/access.ts"
     },
@@ -5572,7 +5572,7 @@
       "name": "deleteAccount",
       "type": "mutation",
       "auth": "protected",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": true,
       "file": "server/routes/account.ts"
     },
@@ -5582,7 +5582,7 @@
       "name": "exportData",
       "type": "query",
       "auth": "protected",
-      "strictInput": false,
+      "input": "none",
       "rateLimited": true,
       "file": "server/routes/account.ts"
     },
@@ -5592,7 +5592,7 @@
       "name": "adjustCredits",
       "type": "mutation",
       "auth": "admin",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/admin/users.ts"
     },
@@ -5602,7 +5602,7 @@
       "name": "blockIP",
       "type": "mutation",
       "auth": "admin",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/admin/ipBlocking.ts"
     },
@@ -5612,7 +5612,7 @@
       "name": "changeUserRole",
       "type": "mutation",
       "auth": "admin",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/admin/roles.ts"
     },
@@ -5622,7 +5622,7 @@
       "name": "checkApprovalStatus",
       "type": "query",
       "auth": "admin",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/admin/slackApproval.ts"
     },
@@ -5632,7 +5632,7 @@
       "name": "checkChangeRequestSlackStatus",
       "type": "query",
       "auth": "admin",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/admin/changeRequests.ts"
     },
@@ -5642,7 +5642,7 @@
       "name": "createBanner",
       "type": "mutation",
       "auth": "admin",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/admin/announcements.ts"
     },
@@ -5652,7 +5652,7 @@
       "name": "createInviteCode",
       "type": "mutation",
       "auth": "admin",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/admin/inviteCodes.ts"
     },
@@ -5662,7 +5662,7 @@
       "name": "deactivateInviteCode",
       "type": "mutation",
       "auth": "admin",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/admin/inviteCodes.ts"
     },
@@ -5672,7 +5672,7 @@
       "name": "deleteBanner",
       "type": "mutation",
       "auth": "admin",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/admin/announcements.ts"
     },
@@ -5682,7 +5682,7 @@
       "name": "executeApproved",
       "type": "mutation",
       "auth": "admin",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/admin/slackApproval.ts"
     },
@@ -5692,7 +5692,7 @@
       "name": "executeChangeRequestAfterSlack",
       "type": "mutation",
       "auth": "admin",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/admin/changeRequests.ts"
     },
@@ -5702,7 +5702,7 @@
       "name": "exportAuditLogs",
       "type": "mutation",
       "auth": "admin",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/admin/auditLogs.ts"
     },
@@ -5712,7 +5712,7 @@
       "name": "freezeUser",
       "type": "mutation",
       "auth": "admin",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/admin/users.ts"
     },
@@ -5722,7 +5722,7 @@
       "name": "getAbuseAlerts",
       "type": "query",
       "auth": "admin",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/admin/auditLogs.ts"
     },
@@ -5732,7 +5732,7 @@
       "name": "getAuditLogById",
       "type": "query",
       "auth": "admin",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/admin/auditLogs.ts"
     },
@@ -5742,7 +5742,7 @@
       "name": "getAuditLogs",
       "type": "query",
       "auth": "admin",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/admin/auditLogs.ts"
     },
@@ -5752,7 +5752,7 @@
       "name": "getAuditStats",
       "type": "query",
       "auth": "admin",
-      "strictInput": false,
+      "input": "none",
       "rateLimited": false,
       "file": "server/routes/admin/auditLogs.ts"
     },
@@ -5762,7 +5762,7 @@
       "name": "getChangeRequest",
       "type": "query",
       "auth": "admin",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/admin/changeRequests.ts"
     },
@@ -5772,7 +5772,7 @@
       "name": "getOverview",
       "type": "query",
       "auth": "admin",
-      "strictInput": false,
+      "input": "none",
       "rateLimited": false,
       "file": "server/routes/admin/overview.ts"
     },
@@ -5782,7 +5782,7 @@
       "name": "getTimeSeries",
       "type": "query",
       "auth": "admin",
-      "strictInput": false,
+      "input": "none",
       "rateLimited": false,
       "file": "server/routes/admin/overview.ts"
     },
@@ -5792,7 +5792,7 @@
       "name": "getUserActivity",
       "type": "query",
       "auth": "admin",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/admin/users.ts"
     },
@@ -5802,7 +5802,7 @@
       "name": "getUserDetails",
       "type": "query",
       "auth": "admin",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/admin/users.ts"
     },
@@ -5812,7 +5812,7 @@
       "name": "getUserFullDetails",
       "type": "query",
       "auth": "admin",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/admin/users.ts"
     },
@@ -5822,7 +5822,7 @@
       "name": "getUserStats",
       "type": "query",
       "auth": "admin",
-      "strictInput": false,
+      "input": "none",
       "rateLimited": false,
       "file": "server/routes/admin/users.ts"
     },
@@ -5832,7 +5832,7 @@
       "name": "listBanners",
       "type": "query",
       "auth": "admin",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/admin/announcements.ts"
     },
@@ -5842,7 +5842,7 @@
       "name": "listBlockedIPs",
       "type": "query",
       "auth": "admin",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/admin/ipBlocking.ts"
     },
@@ -5852,7 +5852,7 @@
       "name": "listChangeRequests",
       "type": "query",
       "auth": "admin",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/admin/changeRequests.ts"
     },
@@ -5862,7 +5862,7 @@
       "name": "listInviteCodes",
       "type": "query",
       "auth": "admin",
-      "strictInput": false,
+      "input": "none",
       "rateLimited": false,
       "file": "server/routes/admin/inviteCodes.ts"
     },
@@ -5872,7 +5872,7 @@
       "name": "listUsers",
       "type": "query",
       "auth": "admin",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/admin/users.ts"
     },
@@ -5882,7 +5882,7 @@
       "name": "requestApproval",
       "type": "mutation",
       "auth": "admin",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/admin/slackApproval.ts"
     },
@@ -5892,7 +5892,7 @@
       "name": "reviewChangeRequest",
       "type": "mutation",
       "auth": "admin",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/admin/changeRequests.ts"
     },
@@ -5902,7 +5902,7 @@
       "name": "suspendUser",
       "type": "mutation",
       "auth": "admin",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/admin/users.ts"
     },
@@ -5912,7 +5912,7 @@
       "name": "toggleBanner",
       "type": "mutation",
       "auth": "admin",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/admin/announcements.ts"
     },
@@ -5922,7 +5922,7 @@
       "name": "unblockIP",
       "type": "mutation",
       "auth": "admin",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/admin/ipBlocking.ts"
     },
@@ -5932,7 +5932,7 @@
       "name": "unfreezeUser",
       "type": "mutation",
       "auth": "admin",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/admin/users.ts"
     },
@@ -5942,7 +5942,7 @@
       "name": "unsuspendUser",
       "type": "mutation",
       "auth": "admin",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/admin/users.ts"
     },
@@ -5952,7 +5952,7 @@
       "name": "updateBanner",
       "type": "mutation",
       "auth": "admin",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/admin/announcements.ts"
     },
@@ -5962,7 +5962,7 @@
       "name": "getActive",
       "type": "query",
       "auth": "public",
-      "strictInput": false,
+      "input": "none",
       "rateLimited": false,
       "file": "server/routes/announcements.ts"
     },
@@ -5972,7 +5972,7 @@
       "name": "deleteAccount",
       "type": "mutation",
       "auth": "protected",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": true,
       "file": "server/routes/auth.ts"
     },
@@ -5982,7 +5982,7 @@
       "name": "logout",
       "type": "mutation",
       "auth": "public",
-      "strictInput": false,
+      "input": "none",
       "rateLimited": false,
       "file": "server/routes/auth.ts"
     },
@@ -5992,7 +5992,7 @@
       "name": "me",
       "type": "query",
       "auth": "public",
-      "strictInput": false,
+      "input": "none",
       "rateLimited": false,
       "file": "server/routes/auth.ts"
     },
@@ -6002,7 +6002,7 @@
       "name": "cancelSubscription",
       "type": "mutation",
       "auth": "protected",
-      "strictInput": false,
+      "input": "none",
       "rateLimited": false,
       "file": "server/routes/billing.ts"
     },
@@ -6012,7 +6012,7 @@
       "name": "changePlan",
       "type": "mutation",
       "auth": "protected",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/billing.ts"
     },
@@ -6022,7 +6022,7 @@
       "name": "createPortalSession",
       "type": "mutation",
       "auth": "protected",
-      "strictInput": false,
+      "input": "none",
       "rateLimited": false,
       "file": "server/routes/billing.ts"
     },
@@ -6032,7 +6032,7 @@
       "name": "createSubscriptionCheckout",
       "type": "mutation",
       "auth": "protected",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/billing.ts"
     },
@@ -6042,7 +6042,7 @@
       "name": "getAllInvoices",
       "type": "query",
       "auth": "protected",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/billing.ts"
     },
@@ -6052,7 +6052,7 @@
       "name": "getInvoices",
       "type": "query",
       "auth": "protected",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/billing.ts"
     },
@@ -6062,7 +6062,7 @@
       "name": "getPlans",
       "type": "query",
       "auth": "public",
-      "strictInput": false,
+      "input": "none",
       "rateLimited": false,
       "file": "server/routes/billing.ts"
     },
@@ -6072,7 +6072,7 @@
       "name": "getStatus",
       "type": "query",
       "auth": "protected",
-      "strictInput": false,
+      "input": "none",
       "rateLimited": false,
       "file": "server/routes/billing.ts"
     },
@@ -6082,7 +6082,7 @@
       "name": "getSubscriptionDetails",
       "type": "query",
       "auth": "protected",
-      "strictInput": false,
+      "input": "none",
       "rateLimited": false,
       "file": "server/routes/billing.ts"
     },
@@ -6092,7 +6092,7 @@
       "name": "previewPlanChange",
       "type": "query",
       "auth": "protected",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/billing.ts"
     },
@@ -6102,7 +6102,7 @@
       "name": "reactivateSubscription",
       "type": "mutation",
       "auth": "protected",
-      "strictInput": false,
+      "input": "none",
       "rateLimited": false,
       "file": "server/routes/billing.ts"
     },
@@ -6112,17 +6112,27 @@
       "name": "addEdge",
       "type": "mutation",
       "auth": "protected",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/boardOps.ts"
     },
     {
-      "id": "route:boardOps.applyModelEdit",
+      "id": "route:boardOps.applyModelEdit.execute",
       "namespace": "boardOps",
-      "name": "applyModelEdit",
+      "name": "applyModelEdit.execute",
+      "type": "mutation",
+      "auth": "protected",
+      "input": "strict",
+      "rateLimited": false,
+      "file": "server/routes/boardOps.ts"
+    },
+    {
+      "id": "route:boardOps.applyModelEdit.plan",
+      "namespace": "boardOps",
+      "name": "applyModelEdit.plan",
       "type": "query",
       "auth": "protected",
-      "strictInput": true,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/boardOps.ts"
     },
@@ -6132,37 +6142,67 @@
       "name": "collapseView",
       "type": "mutation",
       "auth": "protected",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/boardOps.ts"
     },
     {
-      "id": "route:boardOps.createNode",
+      "id": "route:boardOps.createNode.execute",
       "namespace": "boardOps",
-      "name": "createNode",
-      "type": "query",
+      "name": "createNode.execute",
+      "type": "mutation",
       "auth": "protected",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/boardOps.ts"
     },
     {
-      "id": "route:boardOps.deleteNode",
+      "id": "route:boardOps.createNode.plan",
       "namespace": "boardOps",
-      "name": "deleteNode",
+      "name": "createNode.plan",
       "type": "query",
       "auth": "protected",
-      "strictInput": true,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/boardOps.ts"
     },
     {
-      "id": "route:boardOps.deleteNodes",
+      "id": "route:boardOps.deleteNode.execute",
       "namespace": "boardOps",
-      "name": "deleteNodes",
+      "name": "deleteNode.execute",
+      "type": "mutation",
+      "auth": "protected",
+      "input": "strict",
+      "rateLimited": false,
+      "file": "server/routes/boardOps.ts"
+    },
+    {
+      "id": "route:boardOps.deleteNode.plan",
+      "namespace": "boardOps",
+      "name": "deleteNode.plan",
       "type": "query",
       "auth": "protected",
-      "strictInput": true,
+      "input": "strict",
+      "rateLimited": false,
+      "file": "server/routes/boardOps.ts"
+    },
+    {
+      "id": "route:boardOps.deleteNodes.execute",
+      "namespace": "boardOps",
+      "name": "deleteNodes.execute",
+      "type": "mutation",
+      "auth": "protected",
+      "input": "strict",
+      "rateLimited": false,
+      "file": "server/routes/boardOps.ts"
+    },
+    {
+      "id": "route:boardOps.deleteNodes.plan",
+      "namespace": "boardOps",
+      "name": "deleteNodes.plan",
+      "type": "query",
+      "auth": "protected",
+      "input": "strict",
       "rateLimited": false,
       "file": "server/routes/boardOps.ts"
     },
@@ -6172,7 +6212,7 @@
       "name": "fillFromLibrary",
       "type": "mutation",
       "auth": "protected",
-      "strictInput": true,
+      "input": "strict",
       "rateLimited": false,
       "file": "server/routes/boardOps.ts"
     },
@@ -6182,7 +6222,7 @@
       "name": "getSnapshot",
       "type": "query",
       "auth": "protected",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/boardOps.ts"
     },
@@ -6192,7 +6232,7 @@
       "name": "listCastableModels",
       "type": "query",
       "auth": "protected",
-      "strictInput": true,
+      "input": "strict",
       "rateLimited": false,
       "file": "server/routes/boardOps.ts"
     },
@@ -6202,7 +6242,7 @@
       "name": "listEdges",
       "type": "query",
       "auth": "protected",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/boardOps.ts"
     },
@@ -6212,7 +6252,7 @@
       "name": "markNodeStatus",
       "type": "mutation",
       "auth": "protected",
-      "strictInput": true,
+      "input": "strict",
       "rateLimited": false,
       "file": "server/routes/boardOps.ts"
     },
@@ -6222,17 +6262,27 @@
       "name": "moveNodes",
       "type": "mutation",
       "auth": "protected",
-      "strictInput": true,
+      "input": "strict",
       "rateLimited": false,
       "file": "server/routes/boardOps.ts"
     },
     {
-      "id": "route:boardOps.popOutView",
+      "id": "route:boardOps.popOutView.execute",
       "namespace": "boardOps",
-      "name": "popOutView",
+      "name": "popOutView.execute",
+      "type": "mutation",
+      "auth": "protected",
+      "input": "strict",
+      "rateLimited": false,
+      "file": "server/routes/boardOps.ts"
+    },
+    {
+      "id": "route:boardOps.popOutView.plan",
+      "namespace": "boardOps",
+      "name": "popOutView.plan",
       "type": "query",
       "auth": "protected",
-      "strictInput": true,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/boardOps.ts"
     },
@@ -6242,27 +6292,47 @@
       "name": "removeEdge",
       "type": "mutation",
       "auth": "protected",
-      "strictInput": true,
+      "input": "strict",
       "rateLimited": false,
       "file": "server/routes/boardOps.ts"
     },
     {
-      "id": "route:boardOps.runGeneration",
+      "id": "route:boardOps.runGeneration.execute",
       "namespace": "boardOps",
-      "name": "runGeneration",
-      "type": "query",
+      "name": "runGeneration.execute",
+      "type": "mutation",
       "auth": "protected",
-      "strictInput": true,
+      "input": "strict",
       "rateLimited": false,
       "file": "server/routes/boardOps.ts"
     },
     {
-      "id": "route:boardOps.runVariations",
+      "id": "route:boardOps.runGeneration.plan",
       "namespace": "boardOps",
-      "name": "runVariations",
+      "name": "runGeneration.plan",
       "type": "query",
       "auth": "protected",
-      "strictInput": true,
+      "input": "open",
+      "rateLimited": false,
+      "file": "server/routes/boardOps.ts"
+    },
+    {
+      "id": "route:boardOps.runVariations.execute",
+      "namespace": "boardOps",
+      "name": "runVariations.execute",
+      "type": "mutation",
+      "auth": "protected",
+      "input": "strict",
+      "rateLimited": false,
+      "file": "server/routes/boardOps.ts"
+    },
+    {
+      "id": "route:boardOps.runVariations.plan",
+      "namespace": "boardOps",
+      "name": "runVariations.plan",
+      "type": "query",
+      "auth": "protected",
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/boardOps.ts"
     },
@@ -6272,7 +6342,7 @@
       "name": "setNodePinned",
       "type": "mutation",
       "auth": "protected",
-      "strictInput": true,
+      "input": "strict",
       "rateLimited": false,
       "file": "server/routes/boardOps.ts"
     },
@@ -6282,7 +6352,7 @@
       "name": "undoDelete",
       "type": "mutation",
       "auth": "protected",
-      "strictInput": true,
+      "input": "strict",
       "rateLimited": false,
       "file": "server/routes/boardOps.ts"
     },
@@ -6292,7 +6362,7 @@
       "name": "updateNodeMetadata",
       "type": "mutation",
       "auth": "protected",
-      "strictInput": true,
+      "input": "strict",
       "rateLimited": false,
       "file": "server/routes/boardOps.ts"
     },
@@ -6302,7 +6372,7 @@
       "name": "addItem",
       "type": "mutation",
       "auth": "protected",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/boards.ts"
     },
@@ -6312,7 +6382,7 @@
       "name": "addItems",
       "type": "mutation",
       "auth": "protected",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/boards.ts"
     },
@@ -6322,7 +6392,7 @@
       "name": "addItemVersion",
       "type": "mutation",
       "auth": "protected",
-      "strictInput": true,
+      "input": "strict",
       "rateLimited": false,
       "file": "server/routes/boards.ts"
     },
@@ -6332,7 +6402,7 @@
       "name": "archive",
       "type": "mutation",
       "auth": "protected",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/boards.ts"
     },
@@ -6342,7 +6412,7 @@
       "name": "batchUpdatePositions",
       "type": "mutation",
       "auth": "protected",
-      "strictInput": true,
+      "input": "strict",
       "rateLimited": false,
       "file": "server/routes/boards.ts"
     },
@@ -6352,7 +6422,7 @@
       "name": "create",
       "type": "mutation",
       "auth": "protected",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/boards.ts"
     },
@@ -6362,7 +6432,7 @@
       "name": "delete",
       "type": "mutation",
       "auth": "protected",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/boards.ts"
     },
@@ -6372,7 +6442,7 @@
       "name": "deleteItem",
       "type": "mutation",
       "auth": "protected",
-      "strictInput": true,
+      "input": "strict",
       "rateLimited": false,
       "file": "server/routes/boards.ts"
     },
@@ -6382,7 +6452,7 @@
       "name": "deleteItems",
       "type": "mutation",
       "auth": "protected",
-      "strictInput": true,
+      "input": "strict",
       "rateLimited": false,
       "file": "server/routes/boards.ts"
     },
@@ -6392,7 +6462,7 @@
       "name": "get",
       "type": "query",
       "auth": "protected",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/boards.ts"
     },
@@ -6402,7 +6472,7 @@
       "name": "getItemModelInfo",
       "type": "query",
       "auth": "protected",
-      "strictInput": true,
+      "input": "strict",
       "rateLimited": false,
       "file": "server/routes/boards.ts"
     },
@@ -6412,7 +6482,7 @@
       "name": "getItems",
       "type": "query",
       "auth": "protected",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/boards.ts"
     },
@@ -6422,7 +6492,7 @@
       "name": "getItemVersionCount",
       "type": "query",
       "auth": "protected",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/boards.ts"
     },
@@ -6432,7 +6502,7 @@
       "name": "getItemVersions",
       "type": "query",
       "auth": "protected",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/boards.ts"
     },
@@ -6442,7 +6512,7 @@
       "name": "list",
       "type": "query",
       "auth": "protected",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/boards.ts"
     },
@@ -6452,7 +6522,7 @@
       "name": "revertItemVersion",
       "type": "mutation",
       "auth": "protected",
-      "strictInput": true,
+      "input": "strict",
       "rateLimited": false,
       "file": "server/routes/boards.ts"
     },
@@ -6462,7 +6532,7 @@
       "name": "saveViewport",
       "type": "mutation",
       "auth": "protected",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/boards.ts"
     },
@@ -6472,7 +6542,7 @@
       "name": "update",
       "type": "mutation",
       "auth": "protected",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/boards.ts"
     },
@@ -6482,7 +6552,7 @@
       "name": "updateItem",
       "type": "mutation",
       "auth": "protected",
-      "strictInput": true,
+      "input": "strict",
       "rateLimited": false,
       "file": "server/routes/boards.ts"
     },
@@ -6492,7 +6562,7 @@
       "name": "submit",
       "type": "mutation",
       "auth": "protected",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": true,
       "file": "server/routes/bugReports.ts"
     },
@@ -6502,7 +6572,7 @@
       "name": "abandonSession",
       "type": "mutation",
       "auth": "protected",
-      "strictInput": true,
+      "input": "strict",
       "rateLimited": true,
       "file": "server/routes/castingV2.ts"
     },
@@ -6512,7 +6582,7 @@
       "name": "cancel",
       "type": "mutation",
       "auth": "protected",
-      "strictInput": true,
+      "input": "strict",
       "rateLimited": true,
       "file": "server/routes/castingV2.ts"
     },
@@ -6522,7 +6592,7 @@
       "name": "config",
       "type": "query",
       "auth": "protected",
-      "strictInput": true,
+      "input": "strict",
       "rateLimited": false,
       "file": "server/routes/castingV2.ts"
     },
@@ -6532,7 +6602,7 @@
       "name": "createRoll",
       "type": "mutation",
       "auth": "protected",
-      "strictInput": true,
+      "input": "strict",
       "rateLimited": true,
       "file": "server/routes/castingV2.ts"
     },
@@ -6542,7 +6612,7 @@
       "name": "createSession",
       "type": "mutation",
       "auth": "protected",
-      "strictInput": true,
+      "input": "strict",
       "rateLimited": true,
       "file": "server/routes/castingV2.ts"
     },
@@ -6552,7 +6622,7 @@
       "name": "deleteCast",
       "type": "mutation",
       "auth": "protected",
-      "strictInput": true,
+      "input": "strict",
       "rateLimited": true,
       "file": "server/routes/castingV2.ts"
     },
@@ -6562,7 +6632,7 @@
       "name": "discard",
       "type": "mutation",
       "auth": "protected",
-      "strictInput": true,
+      "input": "strict",
       "rateLimited": true,
       "file": "server/routes/castingV2.ts"
     },
@@ -6572,7 +6642,7 @@
       "name": "facePanel",
       "type": "query",
       "auth": "protected",
-      "strictInput": true,
+      "input": "strict",
       "rateLimited": true,
       "file": "server/routes/castingV2.ts"
     },
@@ -6582,7 +6652,7 @@
       "name": "faceScan",
       "type": "query",
       "auth": "protected",
-      "strictInput": true,
+      "input": "strict",
       "rateLimited": true,
       "file": "server/routes/castingV2.ts"
     },
@@ -6592,7 +6662,7 @@
       "name": "follow",
       "type": "mutation",
       "auth": "protected",
-      "strictInput": true,
+      "input": "strict",
       "rateLimited": true,
       "file": "server/routes/castingV2.ts"
     },
@@ -6602,7 +6672,7 @@
       "name": "getCast",
       "type": "query",
       "auth": "protected",
-      "strictInput": true,
+      "input": "strict",
       "rateLimited": true,
       "file": "server/routes/castingV2.ts"
     },
@@ -6612,7 +6682,7 @@
       "name": "getRoll",
       "type": "query",
       "auth": "protected",
-      "strictInput": true,
+      "input": "strict",
       "rateLimited": true,
       "file": "server/routes/castingV2.ts"
     },
@@ -6622,7 +6692,7 @@
       "name": "getSession",
       "type": "query",
       "auth": "protected",
-      "strictInput": true,
+      "input": "strict",
       "rateLimited": true,
       "file": "server/routes/castingV2.ts"
     },
@@ -6632,7 +6702,7 @@
       "name": "remove",
       "type": "mutation",
       "auth": "protected",
-      "strictInput": true,
+      "input": "strict",
       "rateLimited": true,
       "file": "server/routes/castingV2.ts"
     },
@@ -6642,7 +6712,7 @@
       "name": "upload",
       "type": "mutation",
       "auth": "protected",
-      "strictInput": true,
+      "input": "strict",
       "rateLimited": true,
       "file": "server/routes/castingV2.ts"
     },
@@ -6652,7 +6722,7 @@
       "name": "keep",
       "type": "mutation",
       "auth": "protected",
-      "strictInput": true,
+      "input": "strict",
       "rateLimited": true,
       "file": "server/routes/castingV2.ts"
     },
@@ -6662,7 +6732,7 @@
       "name": "openSessions",
       "type": "query",
       "auth": "protected",
-      "strictInput": true,
+      "input": "strict",
       "rateLimited": true,
       "file": "server/routes/castingV2.ts"
     },
@@ -6672,7 +6742,7 @@
       "name": "attach",
       "type": "mutation",
       "auth": "protected",
-      "strictInput": true,
+      "input": "strict",
       "rateLimited": true,
       "file": "server/routes/castingV2.ts"
     },
@@ -6682,7 +6752,7 @@
       "name": "refine",
       "type": "mutation",
       "auth": "protected",
-      "strictInput": true,
+      "input": "strict",
       "rateLimited": true,
       "file": "server/routes/castingV2.ts"
     },
@@ -6692,7 +6762,7 @@
       "name": "renameCast",
       "type": "mutation",
       "auth": "protected",
-      "strictInput": true,
+      "input": "strict",
       "rateLimited": true,
       "file": "server/routes/castingV2.ts"
     },
@@ -6702,7 +6772,7 @@
       "name": "roster",
       "type": "query",
       "auth": "protected",
-      "strictInput": true,
+      "input": "strict",
       "rateLimited": true,
       "file": "server/routes/castingV2.ts"
     },
@@ -6712,7 +6782,7 @@
       "name": "segmentsOnFace",
       "type": "query",
       "auth": "protected",
-      "strictInput": true,
+      "input": "strict",
       "rateLimited": true,
       "file": "server/routes/castingV2.ts"
     },
@@ -6722,7 +6792,7 @@
       "name": "selectVariant",
       "type": "mutation",
       "auth": "protected",
-      "strictInput": true,
+      "input": "strict",
       "rateLimited": true,
       "file": "server/routes/castingV2.ts"
     },
@@ -6732,7 +6802,7 @@
       "name": "sign",
       "type": "mutation",
       "auth": "protected",
-      "strictInput": true,
+      "input": "strict",
       "rateLimited": true,
       "file": "server/routes/castingV2.ts"
     },
@@ -6742,7 +6812,7 @@
       "name": "undo",
       "type": "mutation",
       "auth": "protected",
-      "strictInput": true,
+      "input": "strict",
       "rateLimited": true,
       "file": "server/routes/castingV2.ts"
     },
@@ -6752,7 +6822,7 @@
       "name": "variants",
       "type": "query",
       "auth": "protected",
-      "strictInput": true,
+      "input": "strict",
       "rateLimited": true,
       "file": "server/routes/castingV2.ts"
     },
@@ -6762,7 +6832,7 @@
       "name": "checkBalance",
       "type": "query",
       "auth": "protected",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/credits.ts"
     },
@@ -6772,7 +6842,7 @@
       "name": "getBalance",
       "type": "query",
       "auth": "protected",
-      "strictInput": false,
+      "input": "none",
       "rateLimited": false,
       "file": "server/routes/credits.ts"
     },
@@ -6782,7 +6852,7 @@
       "name": "getCosts",
       "type": "query",
       "auth": "public",
-      "strictInput": false,
+      "input": "none",
       "rateLimited": false,
       "file": "server/routes/credits.ts"
     },
@@ -6792,7 +6862,7 @@
       "name": "getTransactions",
       "type": "query",
       "auth": "protected",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/credits.ts"
     },
@@ -6802,7 +6872,7 @@
       "name": "acceptInkAddCandidate",
       "type": "mutation",
       "auth": "protected",
-      "strictInput": true,
+      "input": "strict",
       "rateLimited": false,
       "file": "server/routes/evidence.ts"
     },
@@ -6812,7 +6882,7 @@
       "name": "attachInkIntentReference",
       "type": "mutation",
       "auth": "protected",
-      "strictInput": true,
+      "input": "strict",
       "rateLimited": false,
       "file": "server/routes/evidence.ts"
     },
@@ -6822,7 +6892,7 @@
       "name": "beginInkAddIntent",
       "type": "mutation",
       "auth": "protected",
-      "strictInput": true,
+      "input": "strict",
       "rateLimited": false,
       "file": "server/routes/evidence.ts"
     },
@@ -6832,7 +6902,7 @@
       "name": "cancelInkAddIntent",
       "type": "mutation",
       "auth": "protected",
-      "strictInput": true,
+      "input": "strict",
       "rateLimited": false,
       "file": "server/routes/evidence.ts"
     },
@@ -6842,7 +6912,7 @@
       "name": "cancelInkProjectionCandidate",
       "type": "mutation",
       "auth": "protected",
-      "strictInput": true,
+      "input": "strict",
       "rateLimited": false,
       "file": "server/routes/evidence.ts"
     },
@@ -6852,7 +6922,7 @@
       "name": "capability",
       "type": "query",
       "auth": "protected",
-      "strictInput": false,
+      "input": "none",
       "rateLimited": false,
       "file": "server/routes/evidence.ts"
     },
@@ -6862,7 +6932,7 @@
       "name": "discardReferencePlate",
       "type": "mutation",
       "auth": "protected",
-      "strictInput": true,
+      "input": "strict",
       "rateLimited": false,
       "file": "server/routes/evidence.ts"
     },
@@ -6872,7 +6942,7 @@
       "name": "generateInkAddCandidate",
       "type": "mutation",
       "auth": "protected",
-      "strictInput": true,
+      "input": "strict",
       "rateLimited": false,
       "file": "server/routes/evidence.ts"
     },
@@ -6882,7 +6952,7 @@
       "name": "generateInkProjectionCandidate",
       "type": "mutation",
       "auth": "protected",
-      "strictInput": true,
+      "input": "strict",
       "rateLimited": false,
       "file": "server/routes/evidence.ts"
     },
@@ -6892,7 +6962,7 @@
       "name": "inkCapability",
       "type": "query",
       "auth": "protected",
-      "strictInput": true,
+      "input": "strict",
       "rateLimited": false,
       "file": "server/routes/evidence.ts"
     },
@@ -6902,7 +6972,7 @@
       "name": "inkProjectionCandidate",
       "type": "query",
       "auth": "protected",
-      "strictInput": true,
+      "input": "strict",
       "rateLimited": false,
       "file": "server/routes/evidence.ts"
     },
@@ -6912,7 +6982,7 @@
       "name": "retryInkAddCandidate",
       "type": "mutation",
       "auth": "protected",
-      "strictInput": true,
+      "input": "strict",
       "rateLimited": false,
       "file": "server/routes/evidence.ts"
     },
@@ -6922,7 +6992,7 @@
       "name": "retryInkProjectionCandidate",
       "type": "mutation",
       "auth": "protected",
-      "strictInput": true,
+      "input": "strict",
       "rateLimited": false,
       "file": "server/routes/evidence.ts"
     },
@@ -6932,7 +7002,7 @@
       "name": "stageReferencePlate",
       "type": "mutation",
       "auth": "protected",
-      "strictInput": true,
+      "input": "strict",
       "rateLimited": false,
       "file": "server/routes/evidence.ts"
     },
@@ -6942,7 +7012,7 @@
       "name": "acknowledgeOperation",
       "type": "mutation",
       "auth": "protected",
-      "strictInput": false,
+      "input": "strict",
       "rateLimited": false,
       "file": "server/routes/generation/generationOperations.ts"
     },
@@ -6952,7 +7022,7 @@
       "name": "activeOperations",
       "type": "query",
       "auth": "protected",
-      "strictInput": true,
+      "input": "strict",
       "rateLimited": false,
       "file": "server/routes/generation/generationOperations.ts"
     },
@@ -6962,7 +7032,7 @@
       "name": "analyzeReference",
       "type": "mutation",
       "auth": "protected",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": true,
       "file": "server/routes/generation/castingRefinement.ts"
     },
@@ -6972,7 +7042,7 @@
       "name": "castingImage",
       "type": "mutation",
       "auth": "protected",
-      "strictInput": true,
+      "input": "strict",
       "rateLimited": true,
       "file": "server/routes/generation/castingImaging.ts"
     },
@@ -6982,7 +7052,7 @@
       "name": "castStateHistory",
       "type": "query",
       "auth": "protected",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/generation/castingExport.ts"
     },
@@ -6992,7 +7062,7 @@
       "name": "clearSession",
       "type": "mutation",
       "auth": "protected",
-      "strictInput": false,
+      "input": "none",
       "rateLimited": false,
       "file": "server/routes/generation/castingRefinement.ts"
     },
@@ -7002,7 +7072,7 @@
       "name": "compactPrompt",
       "type": "mutation",
       "auth": "protected",
-      "strictInput": true,
+      "input": "strict",
       "rateLimited": true,
       "file": "server/routes/generation/castingRefinement.ts"
     },
@@ -7012,7 +7082,7 @@
       "name": "costs",
       "type": "query",
       "auth": "public",
-      "strictInput": false,
+      "input": "none",
       "rateLimited": false,
       "file": "server/routes/generation/castingExport.ts"
     },
@@ -7022,7 +7092,7 @@
       "name": "dismissOperationResult",
       "type": "mutation",
       "auth": "protected",
-      "strictInput": false,
+      "input": "strict",
       "rateLimited": false,
       "file": "server/routes/generation/generationOperations.ts"
     },
@@ -7032,7 +7102,7 @@
       "name": "enhance",
       "type": "mutation",
       "auth": "protected",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": true,
       "file": "server/routes/generation/castingRefinement.ts"
     },
@@ -7042,7 +7112,7 @@
       "name": "exportPlan",
       "type": "query",
       "auth": "protected",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/generation/castingExport.ts"
     },
@@ -7052,7 +7122,7 @@
       "name": "generatePdf",
       "type": "mutation",
       "auth": "protected",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/generation/castingExport.ts"
     },
@@ -7062,7 +7132,7 @@
       "name": "getStatus",
       "type": "query",
       "auth": "protected",
-      "strictInput": false,
+      "input": "none",
       "rateLimited": false,
       "file": "server/routes/generation/queueStatus.ts"
     },
@@ -7072,7 +7142,7 @@
       "name": "history",
       "type": "query",
       "auth": "protected",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/generation/castingExport.ts"
     },
@@ -7082,7 +7152,7 @@
       "name": "iterate",
       "type": "mutation",
       "auth": "protected",
-      "strictInput": false,
+      "input": "strict",
       "rateLimited": true,
       "file": "server/routes/generation/castingRefinement.ts"
     },
@@ -7092,7 +7162,7 @@
       "name": "landOperationResult",
       "type": "mutation",
       "auth": "protected",
-      "strictInput": true,
+      "input": "strict",
       "rateLimited": false,
       "file": "server/routes/generation/generationOperations.ts"
     },
@@ -7102,7 +7172,7 @@
       "name": "mintPackage",
       "type": "mutation",
       "auth": "protected",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": true,
       "file": "server/routes/generation/castingExport.ts"
     },
@@ -7112,7 +7182,7 @@
       "name": "mintPackagePlan",
       "type": "query",
       "auth": "protected",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/generation/castingExport.ts"
     },
@@ -7122,7 +7192,7 @@
       "name": "operationState",
       "type": "query",
       "auth": "protected",
-      "strictInput": false,
+      "input": "strict",
       "rateLimited": false,
       "file": "server/routes/generation/generationOperations.ts"
     },
@@ -7132,7 +7202,7 @@
       "name": "packageState",
       "type": "query",
       "auth": "protected",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/generation/castingExport.ts"
     },
@@ -7142,7 +7212,7 @@
       "name": "parsePrompt",
       "type": "mutation",
       "auth": "protected",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": true,
       "file": "server/routes/generation/castingParse.ts"
     },
@@ -7152,7 +7222,7 @@
       "name": "proxyImage",
       "type": "mutation",
       "auth": "protected",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/generation/castingRefinement.ts"
     },
@@ -7162,7 +7232,7 @@
       "name": "recentOperation",
       "type": "query",
       "auth": "protected",
-      "strictInput": true,
+      "input": "strict",
       "rateLimited": false,
       "file": "server/routes/generation/generationOperations.ts"
     },
@@ -7172,7 +7242,7 @@
       "name": "reconcile",
       "type": "mutation",
       "auth": "protected",
-      "strictInput": true,
+      "input": "strict",
       "rateLimited": false,
       "file": "server/routes/generation/castingRefinement.ts"
     },
@@ -7182,7 +7252,7 @@
       "name": "refreshSlots",
       "type": "mutation",
       "auth": "protected",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": true,
       "file": "server/routes/generation/castingExport.ts"
     },
@@ -7192,7 +7262,7 @@
       "name": "refreshSlotsPlan",
       "type": "query",
       "auth": "protected",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/generation/castingExport.ts"
     },
@@ -7202,7 +7272,7 @@
       "name": "restoreCastState",
       "type": "mutation",
       "auth": "protected",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/generation/castingExport.ts"
     },
@@ -7212,7 +7282,7 @@
       "name": "restoreSlotVersion",
       "type": "mutation",
       "auth": "protected",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/generation/castingExport.ts"
     },
@@ -7222,7 +7292,7 @@
       "name": "slotVersions",
       "type": "query",
       "auth": "protected",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/generation/castingExport.ts"
     },
@@ -7232,7 +7302,7 @@
       "name": "suggestions",
       "type": "mutation",
       "auth": "protected",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": true,
       "file": "server/routes/generation/castingRefinement.ts"
     },
@@ -7242,7 +7312,7 @@
       "name": "recentWork",
       "type": "query",
       "auth": "protected",
-      "strictInput": true,
+      "input": "strict",
       "rateLimited": false,
       "file": "server/routes/lobby.ts"
     },
@@ -7252,7 +7322,7 @@
       "name": "create",
       "type": "mutation",
       "auth": "protected",
-      "strictInput": false,
+      "input": "strict",
       "rateLimited": false,
       "file": "server/routes/models.ts"
     },
@@ -7262,7 +7332,7 @@
       "name": "delete",
       "type": "mutation",
       "auth": "protected",
-      "strictInput": true,
+      "input": "strict",
       "rateLimited": false,
       "file": "server/routes/models.ts"
     },
@@ -7272,7 +7342,7 @@
       "name": "deleteAvailability",
       "type": "query",
       "auth": "protected",
-      "strictInput": false,
+      "input": "none",
       "rateLimited": false,
       "file": "server/routes/models.ts"
     },
@@ -7282,7 +7352,7 @@
       "name": "deletePlan",
       "type": "query",
       "auth": "protected",
-      "strictInput": true,
+      "input": "strict",
       "rateLimited": false,
       "file": "server/routes/models.ts"
     },
@@ -7292,7 +7362,7 @@
       "name": "get",
       "type": "query",
       "auth": "protected",
-      "strictInput": true,
+      "input": "strict",
       "rateLimited": false,
       "file": "server/routes/models.ts"
     },
@@ -7302,7 +7372,7 @@
       "name": "list",
       "type": "query",
       "auth": "protected",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/models.ts"
     },
@@ -7312,7 +7382,7 @@
       "name": "update",
       "type": "mutation",
       "auth": "protected",
-      "strictInput": true,
+      "input": "strict",
       "rateLimited": false,
       "file": "server/routes/models.ts"
     },
@@ -7322,7 +7392,7 @@
       "name": "createChangeRequest",
       "type": "mutation",
       "auth": "moderator",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/moderator.ts"
     },
@@ -7332,7 +7402,7 @@
       "name": "getAbuseAlerts",
       "type": "query",
       "auth": "moderator",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/moderator.ts"
     },
@@ -7342,7 +7412,7 @@
       "name": "getAuditLogById",
       "type": "query",
       "auth": "moderator",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/moderator.ts"
     },
@@ -7352,7 +7422,7 @@
       "name": "getAuditLogs",
       "type": "query",
       "auth": "moderator",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/moderator.ts"
     },
@@ -7362,7 +7432,7 @@
       "name": "getAuditStats",
       "type": "query",
       "auth": "moderator",
-      "strictInput": false,
+      "input": "none",
       "rateLimited": false,
       "file": "server/routes/moderator.ts"
     },
@@ -7372,7 +7442,7 @@
       "name": "getFlaggedReferrals",
       "type": "query",
       "auth": "moderator",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/moderator.ts"
     },
@@ -7382,7 +7452,7 @@
       "name": "getMyChangeRequests",
       "type": "query",
       "auth": "moderator",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/moderator.ts"
     },
@@ -7392,7 +7462,7 @@
       "name": "getUserActivity",
       "type": "query",
       "auth": "moderator",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/moderator.ts"
     },
@@ -7402,7 +7472,7 @@
       "name": "getUserCreditHistory",
       "type": "query",
       "auth": "moderator",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/moderator.ts"
     },
@@ -7412,7 +7482,7 @@
       "name": "getUserDetails",
       "type": "query",
       "auth": "moderator",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/moderator.ts"
     },
@@ -7422,7 +7492,7 @@
       "name": "getUserFullDetails",
       "type": "query",
       "auth": "moderator",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/moderator.ts"
     },
@@ -7432,7 +7502,7 @@
       "name": "getUserGenerationHistory",
       "type": "query",
       "auth": "moderator",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/moderator.ts"
     },
@@ -7442,7 +7512,7 @@
       "name": "getUserStats",
       "type": "query",
       "auth": "moderator",
-      "strictInput": false,
+      "input": "none",
       "rateLimited": false,
       "file": "server/routes/moderator.ts"
     },
@@ -7452,7 +7522,7 @@
       "name": "listBlockedIPs",
       "type": "query",
       "auth": "moderator",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/moderator.ts"
     },
@@ -7462,7 +7532,7 @@
       "name": "listUsers",
       "type": "query",
       "auth": "moderator",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/moderator.ts"
     },
@@ -7472,7 +7542,7 @@
       "name": "getAttachments",
       "type": "query",
       "auth": "moderator",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/moderatorAttachments.ts"
     },
@@ -7482,7 +7552,7 @@
       "name": "linkAttachments",
       "type": "mutation",
       "auth": "moderator",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/moderatorAttachments.ts"
     },
@@ -7492,7 +7562,7 @@
       "name": "uploadAttachment",
       "type": "mutation",
       "auth": "moderator",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/moderatorAttachments.ts"
     },
@@ -7502,7 +7572,7 @@
       "name": "exportAuditLogsCsv",
       "type": "query",
       "auth": "moderator",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/moderatorExports.ts"
     },
@@ -7512,7 +7582,7 @@
       "name": "exportUserCreditHistoryCsv",
       "type": "query",
       "auth": "moderator",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/moderatorExports.ts"
     },
@@ -7522,7 +7592,7 @@
       "name": "exportUserGenerationHistoryCsv",
       "type": "query",
       "auth": "moderator",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/moderatorExports.ts"
     },
@@ -7532,7 +7602,7 @@
       "name": "freezeAccount",
       "type": "mutation",
       "auth": "moderator",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/moderatorReconciliation.ts"
     },
@@ -7542,7 +7612,7 @@
       "name": "getFlaggedUsers",
       "type": "query",
       "auth": "moderator",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/moderatorReconciliation.ts"
     },
@@ -7552,7 +7622,7 @@
       "name": "getUserReconciliation",
       "type": "query",
       "auth": "moderator",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/moderatorReconciliation.ts"
     },
@@ -7562,7 +7632,7 @@
       "name": "unfreezeAccount",
       "type": "mutation",
       "auth": "moderator",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/moderatorReconciliation.ts"
     },
@@ -7572,7 +7642,7 @@
       "name": "subscribe",
       "type": "mutation",
       "auth": "public",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": true,
       "file": "server/routes/newsletter.ts"
     },
@@ -7582,7 +7652,7 @@
       "name": "testConnection",
       "type": "query",
       "auth": "protected",
-      "strictInput": false,
+      "input": "none",
       "rateLimited": false,
       "file": "server/routes/newsletter.ts"
     },
@@ -7592,7 +7662,7 @@
       "name": "checkBalance",
       "type": "query",
       "auth": "protected",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/credits.ts"
     },
@@ -7602,7 +7672,7 @@
       "name": "getBalance",
       "type": "query",
       "auth": "protected",
-      "strictInput": false,
+      "input": "none",
       "rateLimited": false,
       "file": "server/routes/credits.ts"
     },
@@ -7612,7 +7682,7 @@
       "name": "getTransactions",
       "type": "query",
       "auth": "protected",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/credits.ts"
     },
@@ -7622,7 +7692,7 @@
       "name": "get",
       "type": "query",
       "auth": "protected",
-      "strictInput": false,
+      "input": "none",
       "rateLimited": false,
       "file": "server/routes/profile.ts"
     },
@@ -7632,7 +7702,7 @@
       "name": "markCanvasIntroSeen",
       "type": "mutation",
       "auth": "protected",
-      "strictInput": false,
+      "input": "none",
       "rateLimited": false,
       "file": "server/routes/profile.ts"
     },
@@ -7642,7 +7712,7 @@
       "name": "storageInfo",
       "type": "query",
       "auth": "protected",
-      "strictInput": false,
+      "input": "none",
       "rateLimited": false,
       "file": "server/routes/profile.ts"
     },
@@ -7652,7 +7722,7 @@
       "name": "update",
       "type": "mutation",
       "auth": "protected",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/profile.ts"
     },
@@ -7662,7 +7732,7 @@
       "name": "uploadAvatar",
       "type": "mutation",
       "auth": "protected",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/profile.ts"
     },
@@ -7672,7 +7742,7 @@
       "name": "uploadBanner",
       "type": "mutation",
       "auth": "protected",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/profile.ts"
     },
@@ -7682,7 +7752,7 @@
       "name": "claim",
       "type": "mutation",
       "auth": "protected",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/referral.ts"
     },
@@ -7692,7 +7762,7 @@
       "name": "getHistory",
       "type": "query",
       "auth": "protected",
-      "strictInput": false,
+      "input": "none",
       "rateLimited": false,
       "file": "server/routes/referral.ts"
     },
@@ -7702,7 +7772,7 @@
       "name": "getMyCode",
       "type": "query",
       "auth": "protected",
-      "strictInput": false,
+      "input": "none",
       "rateLimited": false,
       "file": "server/routes/referral.ts"
     },
@@ -7712,7 +7782,7 @@
       "name": "getStats",
       "type": "query",
       "auth": "protected",
-      "strictInput": false,
+      "input": "none",
       "rateLimited": false,
       "file": "server/routes/referral.ts"
     },
@@ -7722,7 +7792,7 @@
       "name": "redeem",
       "type": "mutation",
       "auth": "protected",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": true,
       "file": "server/routes/referral.ts"
     },
@@ -7732,7 +7802,7 @@
       "name": "sendInvite",
       "type": "mutation",
       "auth": "protected",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": true,
       "file": "server/routes/referral.ts"
     },
@@ -7742,7 +7812,7 @@
       "name": "validate",
       "type": "query",
       "auth": "public",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/referral.ts"
     },
@@ -7752,7 +7822,7 @@
       "name": "health",
       "type": "query",
       "auth": "public",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/_core/systemRouter.ts"
     },
@@ -7762,7 +7832,7 @@
       "name": "notifyOwner",
       "type": "mutation",
       "auth": "admin",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/_core/systemRouter.ts"
     },
@@ -7772,7 +7842,7 @@
       "name": "getDailyUsage",
       "type": "query",
       "auth": "protected",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/usage.ts"
     },
@@ -7782,7 +7852,7 @@
       "name": "getHistory",
       "type": "query",
       "auth": "protected",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/usage.ts"
     },
@@ -7792,7 +7862,7 @@
       "name": "getStats",
       "type": "query",
       "auth": "protected",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/usage.ts"
     },
@@ -7802,7 +7872,7 @@
       "name": "getStats",
       "type": "query",
       "auth": "public",
-      "strictInput": false,
+      "input": "none",
       "rateLimited": false,
       "file": "server/routes/waitlist.ts"
     },
@@ -7812,7 +7882,7 @@
       "name": "join",
       "type": "mutation",
       "auth": "public",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": true,
       "file": "server/routes/waitlist.ts"
     },
@@ -7822,7 +7892,7 @@
       "name": "analyze",
       "type": "mutation",
       "auth": "protected",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/wardrobe.ts"
     },
@@ -7832,7 +7902,7 @@
       "name": "import",
       "type": "mutation",
       "auth": "protected",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/wardrobe.ts"
     },
@@ -7842,7 +7912,7 @@
       "name": "delete",
       "type": "mutation",
       "auth": "protected",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/wardrobe.ts"
     },
@@ -7852,7 +7922,7 @@
       "name": "get",
       "type": "query",
       "auth": "protected",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/wardrobe.ts"
     },
@@ -7862,7 +7932,7 @@
       "name": "list",
       "type": "query",
       "auth": "protected",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/wardrobe.ts"
     },
@@ -7872,7 +7942,7 @@
       "name": "quickDetect",
       "type": "mutation",
       "auth": "protected",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/wardrobe.ts"
     },
@@ -7882,7 +7952,7 @@
       "name": "upload",
       "type": "mutation",
       "auth": "protected",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/wardrobe.ts"
     },
@@ -7892,7 +7962,7 @@
       "name": "delete",
       "type": "mutation",
       "auth": "protected",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/wardrobe.ts"
     },
@@ -7902,7 +7972,7 @@
       "name": "list",
       "type": "query",
       "auth": "protected",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/wardrobe.ts"
     },
@@ -7912,7 +7982,7 @@
       "name": "listAll",
       "type": "query",
       "auth": "protected",
-      "strictInput": false,
+      "input": "none",
       "rateLimited": false,
       "file": "server/routes/wardrobe.ts"
     },
@@ -7922,7 +7992,7 @@
       "name": "rename",
       "type": "mutation",
       "auth": "protected",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/wardrobe.ts"
     },
@@ -7932,7 +8002,7 @@
       "name": "save",
       "type": "mutation",
       "auth": "protected",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/wardrobe.ts"
     },
@@ -7942,7 +8012,7 @@
       "name": "analyzeTattoos",
       "type": "mutation",
       "auth": "protected",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/wardrobe.ts"
     },
@@ -7952,7 +8022,7 @@
       "name": "checkQuality",
       "type": "mutation",
       "auth": "protected",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/wardrobe.ts"
     },
@@ -7962,7 +8032,7 @@
       "name": "listDrafts",
       "type": "query",
       "auth": "protected",
-      "strictInput": true,
+      "input": "strict",
       "rateLimited": false,
       "file": "server/routes/wardrobe.ts"
     },
@@ -7972,7 +8042,7 @@
       "name": "listMinted",
       "type": "query",
       "auth": "protected",
-      "strictInput": true,
+      "input": "strict",
       "rateLimited": false,
       "file": "server/routes/wardrobe.ts"
     },
@@ -7982,7 +8052,7 @@
       "name": "upload",
       "type": "mutation",
       "auth": "protected",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/wardrobe.ts"
     },
@@ -7992,7 +8062,7 @@
       "name": "delete",
       "type": "mutation",
       "auth": "protected",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/wardrobe.ts"
     },
@@ -8002,7 +8072,7 @@
       "name": "list",
       "type": "query",
       "auth": "protected",
-      "strictInput": false,
+      "input": "none",
       "rateLimited": false,
       "file": "server/routes/wardrobe.ts"
     },
@@ -8012,7 +8082,7 @@
       "name": "save",
       "type": "mutation",
       "auth": "protected",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/wardrobe.ts"
     },
@@ -8022,7 +8092,7 @@
       "name": "clearChat",
       "type": "mutation",
       "auth": "protected",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/wardrobe.ts"
     },
@@ -8032,7 +8102,7 @@
       "name": "create",
       "type": "mutation",
       "auth": "protected",
-      "strictInput": true,
+      "input": "strict",
       "rateLimited": false,
       "file": "server/routes/wardrobe.ts"
     },
@@ -8042,7 +8112,7 @@
       "name": "delete",
       "type": "mutation",
       "auth": "protected",
-      "strictInput": true,
+      "input": "strict",
       "rateLimited": false,
       "file": "server/routes/wardrobe.ts"
     },
@@ -8052,7 +8122,7 @@
       "name": "get",
       "type": "query",
       "auth": "protected",
-      "strictInput": true,
+      "input": "strict",
       "rateLimited": false,
       "file": "server/routes/wardrobe.ts"
     },
@@ -8062,7 +8132,7 @@
       "name": "getLatest",
       "type": "query",
       "auth": "protected",
-      "strictInput": false,
+      "input": "none",
       "rateLimited": false,
       "file": "server/routes/wardrobe.ts"
     },
@@ -8072,7 +8142,7 @@
       "name": "getRecent",
       "type": "query",
       "auth": "protected",
-      "strictInput": false,
+      "input": "none",
       "rateLimited": false,
       "file": "server/routes/wardrobe.ts"
     },
@@ -8082,7 +8152,7 @@
       "name": "list",
       "type": "query",
       "auth": "protected",
-      "strictInput": false,
+      "input": "none",
       "rateLimited": false,
       "file": "server/routes/wardrobe.ts"
     },
@@ -8092,7 +8162,7 @@
       "name": "seedChat",
       "type": "mutation",
       "auth": "protected",
-      "strictInput": true,
+      "input": "strict",
       "rateLimited": false,
       "file": "server/routes/wardrobe.ts"
     },
@@ -8102,7 +8172,7 @@
       "name": "update",
       "type": "mutation",
       "auth": "protected",
-      "strictInput": true,
+      "input": "strict",
       "rateLimited": false,
       "file": "server/routes/wardrobe.ts"
     },
@@ -8112,7 +8182,7 @@
       "name": "checkIdentity",
       "type": "mutation",
       "auth": "protected",
-      "strictInput": true,
+      "input": "strict",
       "rateLimited": false,
       "file": "server/routes/wardrobe.ts"
     },
@@ -8122,7 +8192,7 @@
       "name": "classifyEdit",
       "type": "mutation",
       "auth": "protected",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/wardrobe.ts"
     },
@@ -8132,7 +8202,7 @@
       "name": "detectResultGarments",
       "type": "mutation",
       "auth": "protected",
-      "strictInput": false,
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/wardrobe.ts"
     },
@@ -8142,7 +8212,7 @@
       "name": "generate",
       "type": "mutation",
       "auth": "protected",
-      "strictInput": true,
+      "input": "strict",
       "rateLimited": false,
       "file": "server/routes/wardrobe.ts"
     },
@@ -8152,7 +8222,7 @@
       "name": "incremental",
       "type": "mutation",
       "auth": "protected",
-      "strictInput": true,
+      "input": "strict",
       "rateLimited": false,
       "file": "server/routes/wardrobe.ts"
     },
@@ -8162,7 +8232,7 @@
       "name": "refine",
       "type": "mutation",
       "auth": "protected",
-      "strictInput": true,
+      "input": "strict",
       "rateLimited": false,
       "file": "server/routes/wardrobe.ts"
     }
@@ -9404,6 +9474,10 @@
     {
       "id": "test:server/architectureExpressSurfaces.test.ts",
       "path": "server/architectureExpressSurfaces.test.ts"
+    },
+    {
+      "id": "test:server/architectureProcedureShapes.test.ts",
+      "path": "server/architectureProcedureShapes.test.ts"
     },
     {
       "id": "test:server/architecturePublicEndpoints.test.ts",
@@ -29245,24 +29319,10 @@
       "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
     },
     {
-      "id": "finding:non-strict-input:route:access.status",
-      "severity": "warn",
-      "kind": "non-strict-input",
-      "subject": "route:access.status",
-      "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
-    },
-    {
       "id": "finding:non-strict-input:route:account.deleteAccount",
       "severity": "warn",
       "kind": "non-strict-input",
       "subject": "route:account.deleteAccount",
-      "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
-    },
-    {
-      "id": "finding:non-strict-input:route:account.exportData",
-      "severity": "warn",
-      "kind": "non-strict-input",
-      "subject": "route:account.exportData",
       "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
     },
     {
@@ -29378,31 +29438,10 @@
       "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
     },
     {
-      "id": "finding:non-strict-input:route:admin.getAuditStats",
-      "severity": "warn",
-      "kind": "non-strict-input",
-      "subject": "route:admin.getAuditStats",
-      "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
-    },
-    {
       "id": "finding:non-strict-input:route:admin.getChangeRequest",
       "severity": "warn",
       "kind": "non-strict-input",
       "subject": "route:admin.getChangeRequest",
-      "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
-    },
-    {
-      "id": "finding:non-strict-input:route:admin.getOverview",
-      "severity": "warn",
-      "kind": "non-strict-input",
-      "subject": "route:admin.getOverview",
-      "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
-    },
-    {
-      "id": "finding:non-strict-input:route:admin.getTimeSeries",
-      "severity": "warn",
-      "kind": "non-strict-input",
-      "subject": "route:admin.getTimeSeries",
       "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
     },
     {
@@ -29427,13 +29466,6 @@
       "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
     },
     {
-      "id": "finding:non-strict-input:route:admin.getUserStats",
-      "severity": "warn",
-      "kind": "non-strict-input",
-      "subject": "route:admin.getUserStats",
-      "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
-    },
-    {
       "id": "finding:non-strict-input:route:admin.listBanners",
       "severity": "warn",
       "kind": "non-strict-input",
@@ -29452,13 +29484,6 @@
       "severity": "warn",
       "kind": "non-strict-input",
       "subject": "route:admin.listChangeRequests",
-      "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
-    },
-    {
-      "id": "finding:non-strict-input:route:admin.listInviteCodes",
-      "severity": "warn",
-      "kind": "non-strict-input",
-      "subject": "route:admin.listInviteCodes",
       "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
     },
     {
@@ -29532,24 +29557,10 @@
       "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
     },
     {
-      "id": "finding:non-strict-input:route:billing.cancelSubscription",
-      "severity": "warn",
-      "kind": "non-strict-input",
-      "subject": "route:billing.cancelSubscription",
-      "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
-    },
-    {
       "id": "finding:non-strict-input:route:billing.changePlan",
       "severity": "warn",
       "kind": "non-strict-input",
       "subject": "route:billing.changePlan",
-      "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
-    },
-    {
-      "id": "finding:non-strict-input:route:billing.createPortalSession",
-      "severity": "warn",
-      "kind": "non-strict-input",
-      "subject": "route:billing.createPortalSession",
       "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
     },
     {
@@ -29574,31 +29585,10 @@
       "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
     },
     {
-      "id": "finding:non-strict-input:route:billing.getStatus",
-      "severity": "warn",
-      "kind": "non-strict-input",
-      "subject": "route:billing.getStatus",
-      "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
-    },
-    {
-      "id": "finding:non-strict-input:route:billing.getSubscriptionDetails",
-      "severity": "warn",
-      "kind": "non-strict-input",
-      "subject": "route:billing.getSubscriptionDetails",
-      "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
-    },
-    {
       "id": "finding:non-strict-input:route:billing.previewPlanChange",
       "severity": "warn",
       "kind": "non-strict-input",
       "subject": "route:billing.previewPlanChange",
-      "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
-    },
-    {
-      "id": "finding:non-strict-input:route:billing.reactivateSubscription",
-      "severity": "warn",
-      "kind": "non-strict-input",
-      "subject": "route:billing.reactivateSubscription",
       "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
     },
     {
@@ -29609,6 +29599,13 @@
       "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
     },
     {
+      "id": "finding:non-strict-input:route:boardOps.applyModelEdit.plan",
+      "severity": "warn",
+      "kind": "non-strict-input",
+      "subject": "route:boardOps.applyModelEdit.plan",
+      "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
+    },
+    {
       "id": "finding:non-strict-input:route:boardOps.collapseView",
       "severity": "warn",
       "kind": "non-strict-input",
@@ -29616,10 +29613,17 @@
       "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
     },
     {
-      "id": "finding:non-strict-input:route:boardOps.createNode",
+      "id": "finding:non-strict-input:route:boardOps.createNode.execute",
       "severity": "warn",
       "kind": "non-strict-input",
-      "subject": "route:boardOps.createNode",
+      "subject": "route:boardOps.createNode.execute",
+      "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
+    },
+    {
+      "id": "finding:non-strict-input:route:boardOps.createNode.plan",
+      "severity": "warn",
+      "kind": "non-strict-input",
+      "subject": "route:boardOps.createNode.plan",
       "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
     },
     {
@@ -29634,6 +29638,27 @@
       "severity": "warn",
       "kind": "non-strict-input",
       "subject": "route:boardOps.listEdges",
+      "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
+    },
+    {
+      "id": "finding:non-strict-input:route:boardOps.popOutView.plan",
+      "severity": "warn",
+      "kind": "non-strict-input",
+      "subject": "route:boardOps.popOutView.plan",
+      "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
+    },
+    {
+      "id": "finding:non-strict-input:route:boardOps.runGeneration.plan",
+      "severity": "warn",
+      "kind": "non-strict-input",
+      "subject": "route:boardOps.runGeneration.plan",
+      "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
+    },
+    {
+      "id": "finding:non-strict-input:route:boardOps.runVariations.plan",
+      "severity": "warn",
+      "kind": "non-strict-input",
+      "subject": "route:boardOps.runVariations.plan",
       "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
     },
     {
@@ -29735,31 +29760,10 @@
       "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
     },
     {
-      "id": "finding:non-strict-input:route:credits.getBalance",
-      "severity": "warn",
-      "kind": "non-strict-input",
-      "subject": "route:credits.getBalance",
-      "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
-    },
-    {
       "id": "finding:non-strict-input:route:credits.getTransactions",
       "severity": "warn",
       "kind": "non-strict-input",
       "subject": "route:credits.getTransactions",
-      "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
-    },
-    {
-      "id": "finding:non-strict-input:route:evidence.capability",
-      "severity": "warn",
-      "kind": "non-strict-input",
-      "subject": "route:evidence.capability",
-      "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
-    },
-    {
-      "id": "finding:non-strict-input:route:generation.acknowledgeOperation",
-      "severity": "warn",
-      "kind": "non-strict-input",
-      "subject": "route:generation.acknowledgeOperation",
       "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
     },
     {
@@ -29774,20 +29778,6 @@
       "severity": "warn",
       "kind": "non-strict-input",
       "subject": "route:generation.castStateHistory",
-      "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
-    },
-    {
-      "id": "finding:non-strict-input:route:generation.clearSession",
-      "severity": "warn",
-      "kind": "non-strict-input",
-      "subject": "route:generation.clearSession",
-      "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
-    },
-    {
-      "id": "finding:non-strict-input:route:generation.dismissOperationResult",
-      "severity": "warn",
-      "kind": "non-strict-input",
-      "subject": "route:generation.dismissOperationResult",
       "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
     },
     {
@@ -29812,24 +29802,10 @@
       "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
     },
     {
-      "id": "finding:non-strict-input:route:generation.getStatus",
-      "severity": "warn",
-      "kind": "non-strict-input",
-      "subject": "route:generation.getStatus",
-      "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
-    },
-    {
       "id": "finding:non-strict-input:route:generation.history",
       "severity": "warn",
       "kind": "non-strict-input",
       "subject": "route:generation.history",
-      "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
-    },
-    {
-      "id": "finding:non-strict-input:route:generation.iterate",
-      "severity": "warn",
-      "kind": "non-strict-input",
-      "subject": "route:generation.iterate",
       "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
     },
     {
@@ -29844,13 +29820,6 @@
       "severity": "warn",
       "kind": "non-strict-input",
       "subject": "route:generation.mintPackagePlan",
-      "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
-    },
-    {
-      "id": "finding:non-strict-input:route:generation.operationState",
-      "severity": "warn",
-      "kind": "non-strict-input",
-      "subject": "route:generation.operationState",
       "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
     },
     {
@@ -29917,20 +29886,6 @@
       "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
     },
     {
-      "id": "finding:non-strict-input:route:models.create",
-      "severity": "warn",
-      "kind": "non-strict-input",
-      "subject": "route:models.create",
-      "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
-    },
-    {
-      "id": "finding:non-strict-input:route:models.deleteAvailability",
-      "severity": "warn",
-      "kind": "non-strict-input",
-      "subject": "route:models.deleteAvailability",
-      "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
-    },
-    {
       "id": "finding:non-strict-input:route:models.list",
       "severity": "warn",
       "kind": "non-strict-input",
@@ -29963,13 +29918,6 @@
       "severity": "warn",
       "kind": "non-strict-input",
       "subject": "route:moderator.getAuditLogs",
-      "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
-    },
-    {
-      "id": "finding:non-strict-input:route:moderator.getAuditStats",
-      "severity": "warn",
-      "kind": "non-strict-input",
-      "subject": "route:moderator.getAuditStats",
       "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
     },
     {
@@ -30019,13 +29967,6 @@
       "severity": "warn",
       "kind": "non-strict-input",
       "subject": "route:moderator.getUserGenerationHistory",
-      "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
-    },
-    {
-      "id": "finding:non-strict-input:route:moderator.getUserStats",
-      "severity": "warn",
-      "kind": "non-strict-input",
-      "subject": "route:moderator.getUserStats",
       "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
     },
     {
@@ -30113,13 +30054,6 @@
       "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
     },
     {
-      "id": "finding:non-strict-input:route:newsletter.testConnection",
-      "severity": "warn",
-      "kind": "non-strict-input",
-      "subject": "route:newsletter.testConnection",
-      "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
-    },
-    {
       "id": "finding:non-strict-input:route:points.checkBalance",
       "severity": "warn",
       "kind": "non-strict-input",
@@ -30127,38 +30061,10 @@
       "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
     },
     {
-      "id": "finding:non-strict-input:route:points.getBalance",
-      "severity": "warn",
-      "kind": "non-strict-input",
-      "subject": "route:points.getBalance",
-      "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
-    },
-    {
       "id": "finding:non-strict-input:route:points.getTransactions",
       "severity": "warn",
       "kind": "non-strict-input",
       "subject": "route:points.getTransactions",
-      "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
-    },
-    {
-      "id": "finding:non-strict-input:route:profile.get",
-      "severity": "warn",
-      "kind": "non-strict-input",
-      "subject": "route:profile.get",
-      "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
-    },
-    {
-      "id": "finding:non-strict-input:route:profile.markCanvasIntroSeen",
-      "severity": "warn",
-      "kind": "non-strict-input",
-      "subject": "route:profile.markCanvasIntroSeen",
-      "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
-    },
-    {
-      "id": "finding:non-strict-input:route:profile.storageInfo",
-      "severity": "warn",
-      "kind": "non-strict-input",
-      "subject": "route:profile.storageInfo",
       "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
     },
     {
@@ -30187,27 +30093,6 @@
       "severity": "warn",
       "kind": "non-strict-input",
       "subject": "route:referral.claim",
-      "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
-    },
-    {
-      "id": "finding:non-strict-input:route:referral.getHistory",
-      "severity": "warn",
-      "kind": "non-strict-input",
-      "subject": "route:referral.getHistory",
-      "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
-    },
-    {
-      "id": "finding:non-strict-input:route:referral.getMyCode",
-      "severity": "warn",
-      "kind": "non-strict-input",
-      "subject": "route:referral.getMyCode",
-      "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
-    },
-    {
-      "id": "finding:non-strict-input:route:referral.getStats",
-      "severity": "warn",
-      "kind": "non-strict-input",
-      "subject": "route:referral.getStats",
       "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
     },
     {
@@ -30316,13 +30201,6 @@
       "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
     },
     {
-      "id": "finding:non-strict-input:route:wardrobe.looks.listAll",
-      "severity": "warn",
-      "kind": "non-strict-input",
-      "subject": "route:wardrobe.looks.listAll",
-      "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
-    },
-    {
       "id": "finding:non-strict-input:route:wardrobe.looks.rename",
       "severity": "warn",
       "kind": "non-strict-input",
@@ -30365,13 +30243,6 @@
       "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
     },
     {
-      "id": "finding:non-strict-input:route:wardrobe.outfits.list",
-      "severity": "warn",
-      "kind": "non-strict-input",
-      "subject": "route:wardrobe.outfits.list",
-      "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
-    },
-    {
       "id": "finding:non-strict-input:route:wardrobe.outfits.save",
       "severity": "warn",
       "kind": "non-strict-input",
@@ -30383,27 +30254,6 @@
       "severity": "warn",
       "kind": "non-strict-input",
       "subject": "route:wardrobe.sessions.clearChat",
-      "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
-    },
-    {
-      "id": "finding:non-strict-input:route:wardrobe.sessions.getLatest",
-      "severity": "warn",
-      "kind": "non-strict-input",
-      "subject": "route:wardrobe.sessions.getLatest",
-      "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
-    },
-    {
-      "id": "finding:non-strict-input:route:wardrobe.sessions.getRecent",
-      "severity": "warn",
-      "kind": "non-strict-input",
-      "subject": "route:wardrobe.sessions.getRecent",
-      "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
-    },
-    {
-      "id": "finding:non-strict-input:route:wardrobe.sessions.list",
-      "severity": "warn",
-      "kind": "non-strict-input",
-      "subject": "route:wardrobe.sessions.list",
       "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
     },
     {

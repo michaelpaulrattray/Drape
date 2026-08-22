@@ -65,7 +65,7 @@
           "name",
           "type",
           "auth",
-          "strictInput",
+          "input",
           "rateLimited",
           "file"
         ],
@@ -85,6 +85,13 @@
               "query",
               "mutation",
               "subscription"
+            ]
+          },
+          "input": {
+            "enum": [
+              "strict",
+              "open",
+              "none"
             ]
           }
         }

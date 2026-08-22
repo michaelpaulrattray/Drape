@@ -190,13 +190,25 @@ const AUTH_BY_BUILDER: Record<string, string> = {
   moderatorProcedure: "moderator",
 };
 
-type Procedure = {
+export type Procedure = {
   id: string;
   namespace: string;
   name: string;
   type: "query" | "mutation" | "subscription";
   auth: string;
-  strictInput: boolean;
+  /**
+   * THREE STATES, because `strictInput: boolean` was two answers to a question
+   * with three (2026-08-23). `false` was carrying both *"this schema accepts
+   * unknown fields"* and *"there is no schema at all"*, and 32 of the 169
+   * `non-strict-input` findings were the second kind being told the first
+   * kind's sentence — tRPC never hands a handler an input it has no parser for,
+   * so nothing is dropped and there is nothing to close.
+   *
+   *   strict   the input's own top-level chain calls `.strict()`
+   *   open     an input schema that does not — unknown fields ARE dropped
+   *   none     no `.input()` at all
+   */
+  input: "strict" | "open" | "none";
   rateLimited: boolean;
   file: string;
 };
@@ -277,15 +289,189 @@ function resolveNamespaces(project: Project): Map<string, string> {
   return namespaceOf;
 }
 
+/** The object literal of an INLINE `router({...})`, or undefined. */
+function nestedRouterLiteral(node: Node): Node | undefined {
+  const call = node.asKind(SyntaxKind.CallExpression);
+  if (!call) return undefined;
+  const callee = call.getExpression().getText();
+  if (callee !== "router" && callee !== "t.router") return undefined;
+  return call.getArguments()[0]?.asKind(SyntaxKind.ObjectLiteralExpression);
+}
+
+/**
+ * The method names applied at the TOP LEVEL of an expression, outermost first —
+ * ignoring everything inside their arguments.
+ *
+ *   z.object({ a: z.object({}).strict() })    ->  ["object"]
+ *   z.object({}).strict().optional()          ->  ["object", "strict", "optional"]
+ *
+ * A substring test cannot tell those apart, and both directions of that mistake
+ * are on the record: `.strict()` on a NESTED field read as a closed input, and
+ * `.strict().optional()` read as an open one.
+ */
+function topLevelChain(node: Node): string[] {
+  const names: string[] = [];
+  let cursor: Node | undefined = node;
+  while (cursor) {
+    const current: Node = cursor;
+    const call = current.asKind(SyntaxKind.CallExpression);
+    if (call) {
+      cursor = call.getExpression();
+      continue;
+    }
+    const access = current.asKind(SyntaxKind.PropertyAccessExpression);
+    if (access) {
+      names.push(access.getName());
+      cursor = access.getExpression();
+      continue;
+    }
+    break;
+  }
+  return names.reverse();
+}
+
+/**
+ * Every `const x = z.…` in the server and shared trees, by name, so
+ * `.input(operationIdInput)` can be RESOLVED rather than read as "no `.strict()`
+ * here". Five procedures were flagged that way on 2026-08-23 while their schema
+ * was `.strict()` one file away.
+ *
+ * A name declared twice with disagreeing verdicts resolves to `open` — the safe
+ * direction for a security measurement is a false alarm, never a missed gap.
+ */
+function namedZodSchemas(project: Project): Map<string, boolean | "ambiguous"> {
+  const schemas = new Map<string, boolean | "ambiguous">();
+  for (const sourceFile of project.getSourceFiles()) {
+    const relative = path.relative(repoRoot, sourceFile.getFilePath()).replaceAll("\\", "/");
+    if (!relative.startsWith("server/") && !relative.startsWith("shared/")) continue;
+    for (const declaration of sourceFile.getVariableDeclarations()) {
+      const initializer = declaration.getInitializer();
+      if (!initializer || !initializer.getText().startsWith("z.")) continue;
+      const strict = topLevelChain(initializer).includes("strict");
+      const name = declaration.getName();
+      const seen = schemas.get(name);
+      schemas.set(name, seen === undefined || seen === strict ? strict : "ambiguous");
+    }
+  }
+  return schemas;
+}
+
+/**
+ * A procedure's input state, read at the AST.
+ *
+ * ⚠ A non-object schema (`z.string()`, `z.array(…)`) has no unknown keys to
+ * reject, so `.strict()` does not apply to it and it would read here as `open`.
+ * That population is EMPTY today (measured across all 270 procedures), so there
+ * is deliberately no branch for it — an untested corner is worse than a stated
+ * one. If one lands it reads as a false alarm, which is the safe direction.
+ */
+function inputState(chain: Node, schemas: Map<string, boolean | "ambiguous">): Procedure["input"] {
+  const args: Node[] = [];
+  let cursor: Node | undefined = chain;
+  while (cursor) {
+    const current: Node = cursor;
+    const call = current.asKind(SyntaxKind.CallExpression);
+    if (call) {
+      const access = call.getExpression().asKind(SyntaxKind.PropertyAccessExpression);
+      if (access?.getName() === "input") {
+        const argument = call.getArguments()[0];
+        if (argument) args.push(argument);
+      }
+      cursor = call.getExpression();
+      continue;
+    }
+    const access = current.asKind(SyntaxKind.PropertyAccessExpression);
+    if (access) {
+      cursor = access.getExpression();
+      continue;
+    }
+    break;
+  }
+  if (args.length === 0) return "none";
+  // `.input(A).input(B)` merges; one closed half closes the merged shape.
+  const strict = args.some((argument) => {
+    if (argument.getKind() === SyntaxKind.Identifier) {
+      return schemas.get(argument.getText()) === true;
+    }
+    return topLevelChain(argument).includes("strict");
+  });
+  return strict ? "strict" : "open";
+}
+
 /**
  * Procedures are read from their declaration site: the chain's leading
  * identifier names the auth class, and the trailing `.query`/`.mutation` names
  * the type. A procedure whose builder we cannot classify is a *finding*, never
  * a guess (§P.1).
+ *
+ * ⚠ AN INLINE NESTED ROUTER IS NOT A PROCEDURE. `applyModelEdit: router({ plan,
+ * execute })` is a property whose text contains `.mutation(`, and until
+ * 2026-08-23 it was collected as ONE procedure whose type, auth, input state and
+ * rate limiting were read off whichever child appeared FIRST in the source text.
+ * Seven of them live in `server/routes/boardOps.ts`, so the Atlas held fourteen
+ * real procedures as seven fakes — and recorded **every one of the boards'
+ * write operations as a `query`**, because `plan` is written above `execute`.
+ * The real ids were never hypothetical: the canvas calls
+ * `trpc.boardOps.runGeneration.execute.useMutation` today.
  */
+/**
+ * The procedures declared by ONE router source, read with the real extractor.
+ *
+ * Pure and exported for the same reason {@link expressSurfacesFrom} is: a
+ * checker driven only over the tree it already runs on cannot show its own
+ * blind spots, and this one had two — an inline nested router collapsing into a
+ * single fake procedure, and a `.strict()` anywhere in the chain counting as a
+ * closed input. Both are fixtures in `server/architectureProcedureShapes.test.ts`.
+ *
+ * The fixture is placed at a real repo-relative path inside an in-memory file
+ * system, because `collectProcedures` and {@link namedZodSchemas} both filter on
+ * `server/` — a fixture written anywhere else would silently read as empty,
+ * which is indistinguishable from a passing arm.
+ */
+export function proceduresFrom(source: string): Procedure[] {
+  const project = new Project({ useInMemoryFileSystem: true });
+  project.createSourceFile(
+    path.join(repoRoot, "server", "__atlas_fixture__.ts").replaceAll("\\", "/"),
+    source,
+  );
+  // `collectProcedures` appends to the module-level UNREACHABLE_ROUTERS, which
+  // becomes `unmounted-router` findings. A fixture must not leave a row in the
+  // real Atlas if both ever run in one process.
+  const mark = UNREACHABLE_ROUTERS.length;
+  try {
+    return collectProcedures(project, resolveNamespaces(project));
+  } finally {
+    UNREACHABLE_ROUTERS.length = mark;
+  }
+}
+
 function collectProcedures(project: Project, namespaceOf: Map<string, string>): Procedure[] {
   const procedures: Procedure[] = [];
   const unreachable: string[] = [];
+  const schemas = namedZodSchemas(project);
+
+  const read = (namespace: string, name: string, chain: Node, relative: string): void => {
+    const text = chain.getText();
+
+    // Derived from AUTH_BY_BUILDER so a new builder cannot be classified
+    // here without also being given an auth class there.
+    const builder = text.match(
+      new RegExp(`\\b(${Object.keys(AUTH_BY_BUILDER).join("|")})\\b`),
+    )?.[1];
+    const typeMatch = text.match(/\.(query|mutation|subscription)\s*\(/);
+    if (!typeMatch) return;
+
+    procedures.push({
+      id: `route:${namespace}.${name}`,
+      namespace,
+      name,
+      type: typeMatch[1] as Procedure["type"],
+      auth: builder ? AUTH_BY_BUILDER[builder] : "unclassified",
+      input: inputState(chain, schemas),
+      rateLimited: /rateLimit|RATE_LIMITS|checkRateLimit/.test(text),
+      file: relative,
+    });
+  };
 
   for (const sourceFile of project.getSourceFiles()) {
     const relative = path.relative(repoRoot, sourceFile.getFilePath()).replaceAll("\\", "/");
@@ -315,26 +501,24 @@ function collectProcedures(project: Project, namespaceOf: Map<string, string>): 
         const name = assignment.getName().replace(/['"]/g, "");
         const chain = assignment.getInitializer();
         if (!chain) continue;
-        const text = chain.getText();
 
-        // Derived from AUTH_BY_BUILDER so a new builder cannot be classified
-        // here without also being given an auth class there.
-        const builder = text.match(
-          new RegExp(`\\b(${Object.keys(AUTH_BY_BUILDER).join("|")})\\b`),
-        )?.[1];
-        const typeMatch = text.match(/\.(query|mutation|subscription)\s*\(/);
-        if (!typeMatch) continue;
+        const nested = nestedRouterLiteral(chain);
+        if (nested) {
+          for (const child of nested.asKindOrThrow(SyntaxKind.ObjectLiteralExpression).getProperties()) {
+            const childAssignment = child.asKind(SyntaxKind.PropertyAssignment);
+            const childChain = childAssignment?.getInitializer();
+            if (!childAssignment || !childChain) continue;
+            read(
+              namespace,
+              `${name}.${childAssignment.getName().replace(/['"]/g, "")}`,
+              childChain,
+              relative,
+            );
+          }
+          continue;
+        }
 
-        procedures.push({
-          id: `route:${namespace}.${name}`,
-          namespace,
-          name,
-          type: typeMatch[1] as Procedure["type"],
-          auth: builder ? AUTH_BY_BUILDER[builder] : "unclassified",
-          strictInput: /\.strict\(\s*\)/.test(text),
-          rateLimited: /rateLimit|RATE_LIMITS|checkRateLimit/.test(text),
-          file: relative,
-        });
+        read(namespace, name, chain, relative);
       }
     }
   }
@@ -609,7 +793,11 @@ function computeFindings(
           "Reachable by a signed-in but unapproved account. Like the public allowlist, this set is enumerated by decision — an unapproved account is meant to redeem a code and nothing else.",
       });
     }
-    if (!procedure.strictInput && procedure.auth !== "public") {
+    // `input: "none"` is deliberately NOT a finding. A procedure with no
+    // `.input()` has no schema to close and drops nothing — tRPC never hands a
+    // handler an input it has no parser for. Saying otherwise put 32 procedures
+    // under a sentence that was false of every one of them.
+    if (procedure.input === "open" && procedure.auth !== "public") {
       findings.push({
         id: `finding:non-strict-input:${procedure.id}`,
         severity: "warn",
@@ -972,7 +1160,7 @@ input{width:100%;box-sizing:border-box;padding:10px 16px;background:transparent;
 const ATLAS = ${payload};
 const views = [
   {title:'Findings', rows:()=>ATLAS.findings.map(f=>[f.severity,f.kind,f.subject,f.message]), head:['severity','kind','subject','message'], cls:r=>'sev-'+r[0]},
-  {title:'Routes & access control', rows:()=>ATLAS.routes.map(r=>[r.namespace+'.'+r.name,r.type,r.auth,r.strictInput?'strict':'—',r.rateLimited?'limited':'—',r.file]), head:['procedure','type','auth','input','rate limit','file']},
+  {title:'Routes & access control', rows:()=>ATLAS.routes.map(r=>[r.namespace+'.'+r.name,r.type,r.auth,r.input==='strict'?'strict':(r.input==='open'?'open':'—'),r.rateLimited?'limited':'—',r.file]), head:['procedure','type','auth','input','rate limit','file']},
   {title:'Express surfaces', rows:()=>ATLAS.surfaces.map(s=>[s.method,s.path,s.file]), head:['method','path','file']},
   {title:'Domains', rows:()=>ATLAS.domains.map(d=>[d.name,String(d.moduleCount)]), head:['domain','modules']},
   {title:'Legacy retirement', rows:()=>ATLAS.modules.filter(m=>m.lifecycle!=='active').map(m=>[m.lifecycle,m.domain,m.path]), head:['status','domain','module']},
@@ -1027,10 +1215,11 @@ export const SCHEMA = {
       type: "array",
       items: {
         type: "object",
-        required: ["id", "namespace", "name", "type", "auth", "strictInput", "rateLimited", "file"],
+        required: ["id", "namespace", "name", "type", "auth", "input", "rateLimited", "file"],
         properties: {
           auth: { enum: ["public", "onboarding", "protected", "admin", "moderator", "unclassified"] },
           type: { enum: ["query", "mutation", "subscription"] },
+          input: { enum: ["strict", "open", "none"] },
         },
       },
     },
