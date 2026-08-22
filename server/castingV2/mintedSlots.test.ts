@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { mintedSlotsForRender } from "./mintedSlots";
+import { assembleRecipe } from "./recipeAssembler";
 
 /**
  * WHAT A LANDED RENDER TELLS THE LIBRARY.
@@ -728,7 +729,7 @@ describe("the open kinds a render files", () => {
     const { slots, unfiledOpen } = mintedSlotsForRender({
       earned: [],
       captions: {},
-      open: [{ kind: "tail", words: "a long scaled tail", locality: "single" }],
+      open: [{ kind: "tail", noun: "tail", words: "a long scaled tail", locality: "single" }],
     });
 
     expect(unfiledOpen).toEqual([]);
@@ -769,7 +770,7 @@ describe("the open kinds a render files", () => {
     const { slots, unfiledOpen } = mintedSlotsForRender({
       earned: [],
       captions: {},
-      open: [{ kind: "wings", words: "enormous feathered wings", locality: "distributed" }],
+      open: [{ kind: "wings", noun: "wings", words: "enormous feathered wings", locality: "distributed" }],
     });
 
     expect(unfiledOpen).toEqual([]);
@@ -806,7 +807,7 @@ describe("the open kinds a render files", () => {
     const { slots, unfiledOpen } = mintedSlotsForRender({
       earned: [],
       captions: {},
-      open: [{ kind: "fangs", words: "long pointed fangs", locality: "coLocated" }],
+      open: [{ kind: "fangs", noun: "fangs", words: "long pointed fangs", locality: "coLocated" }],
     });
 
     expect(unfiledOpen).toEqual([]);
@@ -821,7 +822,7 @@ describe("the open kinds a render files", () => {
     const { slots, unfiledOpen } = mintedSlotsForRender({
       earned: [],
       captions: {},
-      open: [{ kind: "gills", words: "gills on her neck", locality: null }],
+      open: [{ kind: "gills", noun: "gills", words: "gills on her neck", locality: null }],
     });
 
     expect(slots).toEqual([]);
@@ -836,7 +837,7 @@ describe("the open kinds a render files", () => {
     const { slots, unfiledOpen } = mintedSlotsForRender({
       earned: [],
       captions: {},
-      open: [{ kind: "wings", words: "   ", locality: "distributed" }],
+      open: [{ kind: "wings", noun: "wings", words: "   ", locality: "distributed" }],
     });
 
     expect(slots).toEqual([]);
@@ -850,7 +851,7 @@ describe("the open kinds a render files", () => {
     const { slots, unfiledOpen } = mintedSlotsForRender({
       earned: [],
       captions: {},
-      open: [{ kind: "cat ears", words: "pointed cat ears", locality: "single" }],
+      open: [{ kind: "cat ears", noun: "cat ears", words: "pointed cat ears", locality: "single" }],
     });
 
     expect(slots).toEqual([]);
@@ -862,8 +863,8 @@ describe("the open kinds a render files", () => {
       earned: [],
       captions: {},
       open: [
-        { kind: "tail", words: "a long scaled tail", locality: "single" },
-        { kind: "tail", words: "a long scaled tail", locality: "single" },
+        { kind: "tail", noun: "tail", words: "a long scaled tail", locality: "single" },
+        { kind: "tail", noun: "tail", words: "a long scaled tail", locality: "single" },
       ],
     });
     expect(slots.map((slot) => slot.slot)).toEqual(["open:tail"]);
@@ -877,7 +878,7 @@ describe("the open kinds a render files", () => {
     const { slots, unfiledOpen } = mintedSlotsForRender({
       earned: ["hair.colour"],
       captions: { "hair.colour": "Copper, warm at the ends" },
-      open: [{ kind: "tail", words: "a long scaled tail", locality: "single" }],
+      open: [{ kind: "tail", noun: "tail", words: "a long scaled tail", locality: "single" }],
     });
 
     expect(slots.map((slot) => slot.slot)).toEqual(["hair", "open:tail"]);
@@ -892,7 +893,7 @@ describe("the open kinds a render files", () => {
       earned: [],
       captions: {},
       scope: "eye@left",
-      open: [{ kind: "tail", words: "a long scaled tail", locality: "single" }],
+      open: [{ kind: "tail", noun: "tail", words: "a long scaled tail", locality: "single" }],
     });
     expect(slots.map((slot) => slot.slot)).toEqual(["open:tail"]);
   });
@@ -906,5 +907,98 @@ describe("the open kinds a render files", () => {
     });
     expect(slots.map((slot) => slot.slot)).toEqual(["hair"]);
     expect(unfiledOpen).toEqual([]);
+  });
+
+  /*
+    ⚠ HER WORD, NOT THE KEY — the defect that reached a paid prompt (found by
+    driving a claim in a comment, opus-1048 §3; fixed by fable-1410).
+
+    `openSlotDefinition` sets `noun: token` and `slotSpecFor` copied it, so the
+    library row kept the IDENTIFIER where the stylist's word belongs. It was
+    invisible for the life of the lane because every kind anyone had asked for
+    was one word: `orb`, `tail`, `halo` — key and noun the same string. The
+    specimen that separates them is `cat ears`, which is the specimen the kebab
+    rule was written for in the first place.
+
+    Two arms, because the row alone would not have said where the harm was: the
+    row is what the panel reads, and the RECIPE SENTENCE is what she paid for.
+  */
+  it("files HER WORD on the row while the key stays kebabbed", () => {
+    const { slots, unfiledOpen } = mintedSlotsForRender({
+      earned: [],
+      captions: {},
+      open: [{ kind: "cat-ears", noun: "cat ears", words: "soft grey fur", locality: "single" }],
+    });
+
+    expect(unfiledOpen).toEqual([]);
+    const spec = slots.find((one) => one.slot === "open:cat-ears")!;
+    /* The KEY is an identifier and keeps its kebab — `parseSlot` refuses a space
+       and the library door would refuse the row after the render was paid for. */
+    expect(spec.slot).toBe("open:cat-ears");
+    /* The NOUN is copy and keeps her spaces. */
+    expect(spec.noun).toBe("cat ears");
+    /* And the segmenter's question is untouched: it is the one live consumer of
+       the token and has its own DECLARED note about being asked `cat-ears`. */
+    expect(spec.question).toBe("cat-ears");
+  });
+
+  it("CONTROL — a one-token kind is unchanged, which is why nobody saw this", () => {
+    const { slots } = mintedSlotsForRender({
+      earned: [],
+      captions: {},
+      open: [{ kind: "orb", noun: "orb", words: "a glowing red orb", locality: "single" }],
+    });
+    expect(slots.find((one) => one.slot === "open:orb")!.noun).toBe("orb");
+  });
+
+  it("puts her word on BOTH sides of a distributed kind", () => {
+    /* The sides are where the pixels are stored, never how the product speaks
+       (fable-1001 §5) — so both rows carry the one noun she used for the kind. */
+    const { slots } = mintedSlotsForRender({
+      earned: [],
+      captions: {},
+      open: [{ kind: "cat-ears", noun: "cat ears", words: "soft grey fur", locality: "distributed" }],
+    });
+    const sides = slots.filter((one) => one.slot.startsWith("open:cat-ears@"));
+    expect(sides.map((one) => one.slot)).toEqual(["open:cat-ears@left", "open:cat-ears@right"]);
+    expect(sides.map((one) => one.noun)).toEqual(["cat ears", "cat ears"]);
+  });
+
+  it("AND IT REACHES THE PROMPT IN HER WORD — the sentence she paid for", () => {
+    /*
+      The row is not where the harm was. `deriveLibrary` copies this field into
+      `LibraryEntry.noun` — whose docblock reads *"the stylist's wording, not the
+      engineer's key"* — and the assembler stamps it into every sentence about a
+      carried feature. Before the fix this read *"Reference 2 is the exact
+      cat-ears she has — the same cat-ears, unchanged."*
+
+      Driven through the real assembler rather than asserted on a constant near
+      it (working law 5): the entry is built exactly as `deriveLibrary` builds
+      one, from the spec the mint just produced.
+    */
+    const { slots } = mintedSlotsForRender({
+      earned: [],
+      captions: {},
+      open: [{ kind: "cat-ears", noun: "cat ears", words: "soft grey fur", locality: "single" }],
+    });
+    const spec = slots.find((one) => one.slot === "open:cat-ears")!;
+    const recipe = assembleRecipe({
+      master: { key: "master.png", sha: "d".repeat(64) },
+      pronouns: { subject: "she", object: "her", possessive: "her", plural: false },
+      library: [{
+        slot: spec.slot,
+        tier: spec.tier,
+        noun: spec.noun,
+        words: spec.words,
+        carry: { key: "mint/cat-ears.png", sha: "c".repeat(64) },
+      }],
+      asks: [{ slot: "lips", noun: "lips", words: "a soft nude lip gloss" }],
+    });
+
+    expect(recipe.ok).toBe(true);
+    if (!recipe.ok) return;
+    const said = recipe.sentences.find((one) => one.includes("ears"))!;
+    expect(said).toContain("cat ears");
+    expect(said, "the identifier never reaches a prompt she paid for").not.toContain("cat-ears");
   });
 });

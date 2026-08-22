@@ -1152,6 +1152,19 @@ function openSlotDefinition(slot: FeatureSlot): SlotDefinition | null {
     recovered from the key and must never be derived from it.** The real noun,
     spaces intact, is stored beside the ask and on the library row.
 
+    ⚠ **THAT SENTENCE WAS FALSE ABOUT THE LIBRARY ROW FOR THE LIFE OF THE LANE,
+    AND IS TRUE AGAIN AS OF 2026-08-22** (found by driving it, opus-1048 §3;
+    fixed by fable-1410). `noun` below is the TOKEN, `slotSpecFor` copied it into
+    the mint's spec, and the row kept the identifier — invisible because every
+    kind anyone had asked for was one word (`orb`, `tail`, `halo`), where the two
+    strings are the same. It reached a paid prompt through `LibraryEntry.noun`:
+    *"Reference 2 is the exact cat-ears she has."* The mint now writes her word
+    over this one (`mintedSlots`' open branch, `OpenKindToFile.noun`), which is
+    the only place that HAS it — this branch is handed a KEY and cannot know
+    what she typed. Kept here as a correction rather than a tidy edit, because
+    the sentence read as a citation for two shifts and the next reader is owed
+    the road.
+
     So the fields below carry the TOKEN, and every copy path is required to read
     the stored noun instead. `recipeAssembler` already does (`entry?.noun ??
     ask.noun`, and it refuses outright when neither answers); the scope-copy path
@@ -1253,6 +1266,12 @@ function openSlotDefinition(slot: FeatureSlot): SlotDefinition | null {
       Named here instead of left as a coincidence, because a question the reader
       answers slightly worse is exactly the kind of quiet ceiling the fidelity
       law is about.
+
+      **AND IT IS NOW THE ONLY CONSUMER OF THE TOKEN THAT SURVIVES THE MINT**
+      (2026-08-22): the row's stored `noun` is overwritten with her word on the
+      way through `mintedSlots`, deliberately leaving this question exactly where
+      it was. What changed is what is STORED, not what is asked — so the
+      measurement this paragraph calls for is still the measurement it was.
     */
     question: noun,
     /* And the one field where the closed invariant cannot hold. See

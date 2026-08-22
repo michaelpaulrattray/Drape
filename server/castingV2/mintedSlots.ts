@@ -214,6 +214,35 @@ export type MintedSlotsInput = {
 export type OpenKindToFile = {
   /** The normalizer's key — a single lowercase token (`fangs`, `cat-ears`). */
   kind: string;
+  /**
+   * HER WORD FOR IT, SPACES INTACT — and it is a second field for the reason
+   * `OpenKindAsk` has two (fable-775 §3): `cat ears` and `cat-ears` both key as
+   * `cat-ears`, so the key cannot say which she typed and **nothing a customer
+   * reads may be derived from it**.
+   *
+   * ⚠ **THE MINT USED TO WRITE THE KEY HERE, and the catalogue's own comment
+   * said otherwise** — *"the real noun, spaces intact, is stored beside the ask
+   * and on the library row"*. On the row it was not: `openSlotDefinition` sets
+   * `noun: token`, `slotSpecFor` copied it, and the row kept the identifier.
+   * Driven at this function before it was fixed (opus-1048 §3):
+   *
+   *     her word "orb"       → key open:orb        row noun "orb"       ✓
+   *     her word "cat ears"  → key open:cat-ears   row noun "cat-ears"  ✗
+   *
+   * It reached a PAID PROMPT, which is why it is fixed here rather than at the
+   * one surface that noticed: `deriveLibrary` copies this into
+   * `LibraryEntry.noun` — whose own docblock reads *"the stylist's wording, not
+   * the engineer's key"* — and the assembler stamps that into every sentence
+   * about a carried feature (*"Reference 2 is the exact cat-ears she has"*).
+   * One owner, and every consumer — panel, recipe, sign, view words — is honest
+   * at once. Teaching any of them to un-kebab would be the second speller of a
+   * grammar that has exactly one.
+   *
+   * `openSlotDefinition.noun` still carries the TOKEN, deliberately: its one
+   * live consumer is `question`, which has its own DECLARED note about asking a
+   * segmenter `cat-ears`. This changes what is STORED, not what is asked.
+   */
+  noun: string;
   /** The customer's own words for it. The only words an open kind ever has. */
   words: string;
   /**
@@ -615,11 +644,24 @@ export function mintedSlotsForRender(input: MintedSlotsInput): MintedSlotsResult
       continue;
     }
     const spec = slotSpecFor(slot, [words]);
-    if (spec === null) {
+    /*
+      AND HER WORD MUST BE THERE, checked here rather than assumed.
+
+      `readOpenKinds` refuses a blank noun on the way in, so this cannot happen
+      through the one live caller — which is exactly why it is checked: the
+      empty-words guard one line up is a second guard on a field that reader
+      also guarantees, and a corner declared unreachable and left untested is
+      one this campaign has already paid for. Filed under `openKind` because it
+      is the same finding that reason exists for — two grammars disagreeing —
+      and NEVER filled in from the key, because falling back to the identifier
+      is the defect this field was added to remove.
+    */
+    const noun = ask.noun.trim();
+    if (spec === null || noun === "") {
       /* Should be unreachable: `readOpenKinds` and `normalizeOpenKind` mint only
-         keys `openSlotDefinition` can define. Reported rather than skipped, for
-         the reason `uncataloguedFeature` is — it is a disagreement between two
-         grammars and it must arrive as a finding. */
+         keys `openSlotDefinition` can define, with a noun. Reported rather than
+         skipped, for the reason `uncataloguedFeature` is — it is a disagreement
+         between two grammars and it must arrive as a finding. */
       unfiledOpen.push({ kind: ask.kind, reason: "openKind" });
       continue;
     }
@@ -657,12 +699,20 @@ export function mintedSlotsForRender(input: MintedSlotsInput): MintedSlotsResult
           unfiledOpen.push({ kind: ask.kind, reason: "openKind" });
           continue;
         }
+        /* HER WORD ON BOTH SIDES — the sides are where the pixels are stored,
+           never how the product speaks (fable-1001 §5), so both rows carry the
+           one noun she used for the whole kind. */
+        sideSpec.noun = noun;
         seen.add(sideSlot);
         slots.push(sideSpec);
       }
       continue;
     }
     seen.add(slot);
+    /* HER WORD, not the key — see {@link OpenKindToFile.noun}. Written over the
+       catalogue's answer rather than plumbed through `slotSpecFor`, because the
+       catalogue is handed a KEY and cannot know what she typed. */
+    spec.noun = noun;
     slots.push(spec);
   }
 

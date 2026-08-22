@@ -8731,6 +8731,11 @@ async function refineCandidateCounted(
         const openAsks = await Promise.all(
           Object.entries(editDelta?.open ?? {}).map(async ([kind, ask]) => ({
             kind,
+            /* HER WORD, spaces intact — the key is `cat-ears` and she typed
+               `cat ears`, and the library row is read as copy by the panel, the
+               recipe, Sign and the view words. `OpenKindToFile.noun` carries the
+               whole argument. */
+            noun: ask.noun,
             words: ask.words,
             locality: (await readOpenKindProperties(kind))?.locality ?? null,
           })),
