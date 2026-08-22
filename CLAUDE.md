@@ -81,6 +81,24 @@ it be challenged before it ships, not after.
    product removal — and both were then described, in code comments and
    in this file, as controls whose call site was never added. Six months
    of confident documentation, from one ordinary morning's tidying.
+7b. **Never guess — test or confirm before stating.** (Founder, 2026-08-22,
+   verbatim: *"why do you always guess put it in stone that you should never
+   guess and always test or confirm."*) Law 1 binds reports; this binds
+   EVERY factual claim about the product, wherever it is said — a mailbox
+   report, a ruling, or an answer to the founder in chat. Before asserting
+   what the product does, refuses, or contains: cite a driven artifact (a
+   census row, a court, a read at the rows), or run the check in that same
+   turn (a grep is thirty seconds), or say plainly "unverified" and then
+   verify. An answer to the founder deserves the same evidence bar as a
+   report — the origin incident is three chat claims in one week, each
+   confidently wrong, each disproven by his own test or an instrument:
+   "wardrobe edits exist today" (the census measured wall_stage), "your
+   signed casts render without their tattoos" (the rows showed no signed
+   cast had ink), and "our walls don't know fictional names" (his own
+   "inspired by goku" test met briefCompiler.ts:809's wall the same hour).
+   The capability atlas exists to make the citation cheap; a claim that
+   cannot cite it and was not checked is not said.
+
 8. **This is a visual studio, not a maths class.** (Founder, 2026-08-06.)
    The user's ontology governs design: edits are scoped and named the
    way a stylist, photographer, or casting director thinks — a fringe
