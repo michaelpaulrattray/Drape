@@ -11,6 +11,7 @@
  * It never writes the committed files — regenerating is a developer action
  * whose diff gets reviewed like any other change (§P.7).
  */
+import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -77,10 +78,67 @@ const sameContent = (a: string, b: string): boolean => LF_ONLY(a) === LF_ONLY(b)
  */
 export type CheckReader = (absolutePath: string) => string;
 
+/**
+ * ⚠ EVERY PATH THE ATLAS NAMES IS A PATH THE REPOSITORY HAS — the check that
+ * was missing on 2026-08-22, and the reason a clean clone of `main` was RED.
+ *
+ * The Atlas is built by walking the WORKING TREE. Git pushes the INDEX. Those
+ * are different sets, and nothing compared them: `52f4d93b` regenerated the
+ * Atlas with `server/castingV2/carrySurvival.test.ts` in the tree, committed
+ * the Atlas, and never staged the file. 173 lines and 28 passing arms — the
+ * class arm for *"every delivered fact survives the next repaint"* — existed on
+ * one machine and nowhere else, while the committed Atlas said the repository
+ * had it.
+ *
+ * **Nothing went red on the machine that made the mistake**, which is the whole
+ * shape of it: the freshness check regenerates from that same working tree, so
+ * it agreed with itself. Every custody suite line for the next eleven hours
+ * counted 28 tests that were not at HEAD, and a fresh clone failed this very
+ * checker with a fingerprint mismatch it had no way to explain.
+ *
+ * The deploy rite could not catch it either: its dirty check filters `??` lines
+ * deliberately, because a tree full of disposable scripts must not block a
+ * push. So the gap was real and neither existing guard was wrong.
+ *
+ * Doctrine 23: the arm goes at the producer. This runs where the Atlas is
+ * MADE — every path it emits, checked against what git actually tracks.
+ */
+export type TrackedFiles = () => ReadonlySet<string>;
+
+const gitTrackedFiles: TrackedFiles = () => new Set(
+  execFileSync("git", ["ls-files"], { cwd: repoRoot, encoding: "utf8", maxBuffer: 256 * 1024 * 1024 })
+    .split("\n")
+    .filter(Boolean)
+    .map((line) => line.trim()),
+);
+
+/** Every `path:` the Atlas emits that looks like a source file in this repo. */
+export function atlasSourcePaths(atlas: unknown): string[] {
+  const found = new Set<string>();
+  const walk = (node: unknown): void => {
+    if (Array.isArray(node)) { node.forEach(walk); return; }
+    if (!node || typeof node !== "object") return;
+    for (const [key, value] of Object.entries(node as Record<string, unknown>)) {
+      /* A real repo-relative source path. The generator also emits
+         `"(defined by the router)"` for routes with no file of their own, and
+         route paths like `/api/health` — neither is a file and neither is
+         git's business. */
+      if (key === "path" && typeof value === "string" && /^[\w.@-]+(\/[\w.@-]+)*\.(ts|tsx|mts|cts|js|jsx)$/.test(value)) {
+        found.add(value);
+      } else {
+        walk(value);
+      }
+    }
+  };
+  walk(atlas);
+  return [...found].sort();
+}
+
 export function checkArchitecture(
-  dependencies: { readFile?: CheckReader } = {},
+  dependencies: { readFile?: CheckReader; trackedFiles?: TrackedFiles } = {},
 ): CheckResult {
   const readFile = dependencies.readFile ?? ((at: string) => fs.readFileSync(at, "utf8"));
+  const trackedFiles = dependencies.trackedFiles ?? gitTrackedFiles;
   const problems: string[] = [];
 
   const atlas = buildAtlas();
@@ -134,7 +192,34 @@ export function checkArchitecture(
     }
   }
 
-  // 5. No secret-shaped strings in anything we publish.
+  /*
+    5. Every path the Atlas names is one git tracks. See {@link TrackedFiles} —
+    the Atlas walks the working tree, git pushes the index, and until 2026-08-23
+    nothing compared them.
+
+    Reported one file per line rather than as a count: the action is `git add
+    <path>`, and a count does not tell you what to add.
+  */
+  {
+    const tracked = trackedFiles();
+    /* The population control. An empty `git ls-files` — no git, a wrong cwd, a
+       reader that threw and was swallowed — would make the loop below pass over
+       nothing while reporting the tree clean, which is the exact green this
+       check exists to stop being possible. */
+    if (tracked.size === 0) {
+      problems.push("the tracked-file reader returned nothing — this check cannot see the index");
+    } else {
+      for (const file of atlasSourcePaths(atlas)) {
+        if (!tracked.has(file)) {
+          problems.push(
+            `${file} is in the Atlas but is NOT TRACKED BY GIT — a clean clone would not have it: git add ${file}`,
+          );
+        }
+      }
+    }
+  }
+
+  // 6. No secret-shaped strings in anything we publish.
   for (const file of fs.existsSync(committedDir) ? fs.readdirSync(committedDir) : []) {
     const contents = readFile(path.join(committedDir, file));
     for (const [pattern, label] of SECRET_SHAPES) {

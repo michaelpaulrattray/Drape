@@ -3,7 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 
-import { checkArchitecture } from "../scripts/check-architecture.mts";
+import { atlasSourcePaths, checkArchitecture } from "../scripts/check-architecture.mts";
 import { sourceText } from "../scripts/generate-architecture.mts";
 
 const repoRoot = path.resolve(__dirname, "..");
@@ -36,6 +36,71 @@ describe("architecture atlas", () => {
     },
     60_000,
   );
+
+  it("⚠ AN ATLAS PATH GIT DOES NOT TRACK IS A CLONE THAT CANNOT BUILD", () => {
+    /*
+      The incident: `52f4d93b` committed an Atlas naming
+      `server/castingV2/carrySurvival.test.ts` and never staged the file. 173
+      lines, 28 passing arms, present on exactly one machine — and the freshness
+      check above could not see it, because it regenerates from that same
+      working tree and therefore agreed with itself. A clean clone of `main`
+      failed this file with a fingerprint mismatch and no explanation.
+
+      Driven on an INJECTED index rather than the real one, so the arm proves
+      the rule and not today's tree: a suite that passes only because the tree
+      happens to be clean tests nothing on the day it is not.
+    */
+    const realPaths = atlasSourcePaths(JSON.parse(
+      fs.readFileSync(path.join(repoRoot, "docs/architecture/drape-architecture.json"), "utf8"),
+    ));
+    /* Population first — an empty path list would make both arms below vacuous,
+       and an empty list is exactly what a renamed `path:` key produces. */
+    expect(realPaths.length, "source paths the Atlas names").toBeGreaterThan(500);
+    expect(realPaths).toContain("server/castingV2/carrySurvival.test.ts");
+
+    /* An index missing one real file — the defect, reported by name because the
+       action is `git add <path>` and a count does not tell you what to add. */
+    const missingOne = new Set(realPaths.filter((file) => file !== realPaths[0]));
+    const withHole = checkArchitecture({ trackedFiles: () => missingOne });
+    expect(withHole.problems.join("\n")).toContain(`${realPaths[0]} is in the Atlas but is NOT TRACKED BY GIT`);
+
+    /* And the reader's own blindness is a problem rather than a pass: an empty
+       `git ls-files` — no git, a wrong cwd, a swallowed throw — would otherwise
+       let this check report a clean tree while examining nothing. */
+    const blind = checkArchitecture({ trackedFiles: () => new Set<string>() });
+    expect(blind.problems.join("\n")).toContain("cannot see the index");
+    /* It must NOT then also blame every file individually — one honest problem,
+       not a thousand derived from it. */
+    expect(blind.problems.filter((p) => p.includes("NOT TRACKED BY GIT"))).toEqual([]);
+  }, 120_000);
+
+  it("CAN FAIL — the path reader driven on the shapes the generator emits", () => {
+    /*
+      `atlasSourcePaths` decides a POPULATION, and a population reader that
+      returns everything is as useless as one that returns nothing. The
+      generator emits three kinds of `path:` and only one is a file.
+    */
+    expect(atlasSourcePaths({
+      modules: [{ path: "server/db/storageCleanup.ts" }],
+      tests: [{ path: "server/castingV2/carrySurvival.test.ts" }],
+      client: [{ path: "client/src/App.tsx" }],
+      routes: [
+        /* Not a file — the generator's own placeholder for a router-defined route. */
+        { path: "(defined by the router)" },
+        /* Not a file — an HTTP path. */
+        { path: "/api/health" },
+      ],
+    })).toEqual([
+      "client/src/App.tsx",
+      "server/castingV2/carrySurvival.test.ts",
+      "server/db/storageCleanup.ts",
+    ]);
+    /* Nested arbitrarily deep, because the Atlas nests. */
+    expect(atlasSourcePaths({ a: { b: [{ c: { path: "scripts/deploy-rite.mts" } }] } }))
+      .toEqual(["scripts/deploy-rite.mts"]);
+    /* And nothing at all, from something that names no paths. */
+    expect(atlasSourcePaths({ meta: { sourceFingerprint: "abc" } })).toEqual([]);
+  });
 
   it("⚠ A CRLF-SMUDGED CHECKOUT IS NOT A STALE ATLAS (fable-1366 §3c)", () => {
     /*
