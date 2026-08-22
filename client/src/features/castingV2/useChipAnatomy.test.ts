@@ -44,7 +44,9 @@ const withoutProse = (source: string): string => source
   .replace(/(^|[^:])\/\/.*$/gm, "$1");
 
 describe("what the chip shows", () => {
+  const HANDLE = "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee";
   const recipe = (kinds: { key: string; kind: string; slot: string | null }[]) => ({
+    askReference: HANDLE,
     repaint: { references: kinds.map((one) => ({ ...one, digest: "d", sentGeometry: "1x1" })) },
   });
 
@@ -59,6 +61,9 @@ describe("what the chip shows", () => {
        box, and the horns do not. */
     expect(JSON.stringify(projected)).not.toContain("horns");
     expect(JSON.stringify(projected)).not.toContain("master");
+    /* And her picture's address is the authenticated route, never the public
+       bucket — a photograph of a person is never at a public address. */
+    expect(projected[0]!.url).toBe(`/api/reference/${HANDLE}`);
   });
 
   it("shows nothing at all on a render she attached nothing to", () => {

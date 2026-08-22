@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "a9927c97f7e4b562"
+    "sourceFingerprint": "413f557e8111c2bb"
   },
   "domains": [
     {
@@ -18,7 +18,7 @@
     {
       "id": "domain:api",
       "name": "api",
-      "moduleCount": 40
+      "moduleCount": 41
     },
     {
       "id": "domain:billing",
@@ -123,7 +123,7 @@
     {
       "id": "domain:shared",
       "name": "shared",
-      "moduleCount": 33
+      "moduleCount": 34
     },
     {
       "id": "domain:studio",
@@ -5073,6 +5073,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:server/routes/referenceDelivery.ts",
+      "path": "server/routes/referenceDelivery.ts",
+      "domain": "api",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:server/routes/referral.ts",
       "path": "server/routes/referral.ts",
       "domain": "api",
@@ -5489,6 +5495,12 @@
     {
       "id": "module:shared/modelRegistry.ts",
       "path": "shared/modelRegistry.ts",
+      "domain": "shared",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:shared/referenceDelivery.ts",
+      "path": "shared/referenceDelivery.ts",
       "domain": "shared",
       "lifecycle": "active"
     },
@@ -8189,6 +8201,13 @@
       "method": "USE",
       "path": "(defined by the router)",
       "handler": "createInkDesignDeliveryRouter()",
+      "file": "server/_core/index.ts"
+    },
+    {
+      "id": "express:USE (router-defined) createReferenceDeliveryRouter()",
+      "method": "USE",
+      "path": "(defined by the router)",
+      "handler": "createReferenceDeliveryRouter()",
       "file": "server/_core/index.ts"
     },
     {
@@ -11369,6 +11388,10 @@
     {
       "id": "test:server/routes/modelCreatePayload.test.ts",
       "path": "server/routes/modelCreatePayload.test.ts"
+    },
+    {
+      "id": "test:server/routes/referenceDelivery.test.ts",
+      "path": "server/routes/referenceDelivery.test.ts"
     },
     {
       "id": "test:server/scopeFlagTemplate.test.ts",
@@ -16590,6 +16613,11 @@
     {
       "from": "module:server/_core/index.ts",
       "to": "module:server/routes/inkDesignDelivery.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/_core/index.ts",
+      "to": "module:server/routes/referenceDelivery.ts",
       "kind": "imports"
     },
     {
@@ -23123,6 +23151,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/castingV2/refineService.ts",
+      "to": "module:shared/referenceDelivery.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/castingV2/refineSubjects.ts",
       "to": "module:server/castingV2/refineDelta.ts",
       "kind": "imports"
@@ -24365,6 +24398,11 @@
     {
       "from": "module:server/db/castingV2ReferenceAttachments.ts",
       "to": "module:server/db/connection.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/castingV2ReferenceAttachments.ts",
+      "to": "module:server/db/storageCleanup.ts",
       "kind": "imports"
     },
     {
@@ -27678,6 +27716,36 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/routes/referenceDelivery.ts",
+      "to": "module:server/_core/sdk.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/referenceDelivery.ts",
+      "to": "module:server/db/castingV2ReferenceAttachments.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/referenceDelivery.ts",
+      "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/referenceDelivery.ts",
+      "to": "module:server/security/rateLimit.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/referenceDelivery.ts",
+      "to": "module:server/storage.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/referenceDelivery.ts",
+      "to": "module:shared/referenceDelivery.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/routes/referral.ts",
       "to": "module:drizzle/schema.ts",
       "kind": "imports"
@@ -30522,17 +30590,17 @@
       "message": "Names 2 of HairColourSection's 3 fields (server/castingV2/hairColourFromReference.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/refineService.ts:698",
+      "id": "finding:redeclared-shape:server/castingV2/refineService.ts:699",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/refineService.ts:698",
+      "subject": "server/castingV2/refineService.ts:699",
       "message": "Names 3 of Thumbnail's 3 fields (server/castingV2/thumbnails.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/refineService.ts:857",
+      "id": "finding:redeclared-shape:server/castingV2/refineService.ts:858",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/refineService.ts:857",
+      "subject": "server/castingV2/refineService.ts:858",
       "message": "Names 3 of Thumbnail's 3 fields (server/castingV2/thumbnails.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {

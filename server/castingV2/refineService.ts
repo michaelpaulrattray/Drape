@@ -72,6 +72,7 @@ import {
   refusesAfterRender,
   type ProviderFailureClass,
 } from "../providers/types";
+import { referenceImagePath } from "../../shared/referenceDelivery";
 import { storagePublicUrl, storagePut, storageReadBytes } from "../storage";
 import { thumbnailOf } from "./thumbnails";
 import { withTransaction } from "../db/connection";
@@ -10000,6 +10001,19 @@ export function referencesOf(internalPrompt: unknown): ProjectedReference[] {
   const edited: string[] = Array.isArray(editedRaw)
     ? editedRaw.filter((one): one is string => typeof one === "string")
     : [];
+  /*
+    ⚠ HER PICTURE HAS AN ADDRESS ONLY SHE CAN USE (route countersigned
+    fable-1423 §2).
+
+    A `source` reference's own key is the CARRIER — the crop cut from her
+    photograph for this one ask — and two things are true of it: it is not
+    publicly served (measured 404 against the master's and the carries' 200),
+    and it is minted under a cleanup manifest and swept. So a public url built
+    from it was a broken thumbnail that would have gone broken with age anyway.
+    What the chip shows is her ATTACHMENT, through the authenticated route, and
+    the handle for it is on the row.
+  */
+  const handle = readAskReference(internalPrompt);
   const projected: ProjectedReference[] = [];
   for (const entry of list) {
     if (!entry || typeof entry !== "object") continue;
@@ -10020,6 +10034,20 @@ export function referencesOf(internalPrompt: unknown): ProjectedReference[] {
          `edited` is this render's own list, so a later re-ride fails here. */
       || (kind === INTRODUCED_REFERENCE_KIND && named !== null && edited.includes(named));
     if (!supplied) continue;
+    /*
+      THE ADDRESS DEPENDS ON WHOSE PICTURE IT IS. The master and the carries are
+      OURS and sit at their designed public addresses. A picture SHE attached
+      has no public address and must not acquire one, so it is served through
+      the route — and if this row predates the handle being written down, there
+      is nothing to point at and the entry is dropped rather than drawn broken.
+    */
+    if (kind === SUPPLIED_REFERENCE_KIND) {
+      if (handle === null) continue;
+      const address = referenceImagePath(handle);
+      if (projected.some((one) => one.url === address)) continue;
+      projected.push({ url: address, kind, slot: named });
+      continue;
+    }
     projected.push({
       url: storagePublicUrl(key),
       kind,

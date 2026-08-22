@@ -17,6 +17,7 @@ import imageProxyRouter from "../routes/imageProxy";
 import evidenceDeliveryRouter from "../routes/evidenceDelivery";
 import { createCharacterSheetRouter } from "../routes/characterSheet";
 import { createInkDesignDeliveryRouter } from "../routes/inkDesignDelivery";
+import { createReferenceDeliveryRouter } from "../routes/referenceDelivery";
 import { healthHandler } from "../health";
 import { validateEnv } from "./env";
 import { assertPrivateEvidenceCleanupSchema } from "../casting/evidence/privateEvidenceSchema";
@@ -256,6 +257,10 @@ async function startServer() {
     the row. It is what makes `CASTING_INK_CUT_SCOPE` a change she can see.
   */
   app.use(createInkDesignDeliveryRouter());
+  /* THE FIFTH authenticated image route — a picture she attached, shown to her
+     alone (fable-1423 §2). Same shape as the one above and on CLAUDE.md's
+     enumerated list in the same commit that created it. */
+  app.use(createReferenceDeliveryRouter());
 
   // tRPC API with centralized error logging
   app.use(

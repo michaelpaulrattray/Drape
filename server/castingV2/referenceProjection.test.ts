@@ -23,6 +23,10 @@ import { referencesOf } from "./refineService";
  * on the OBJECT and not on a caller's spread. A fourth field arriving here is a
  * deliberate edit that turns this red.
  */
+/** A handle in `randomUUID`'s own shape — the only thing `publicId` is written
+ *  from, and what the route's own pattern admits. */
+const HANDLE = "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee";
+
 describe("what a render's references tell the customer, and what they do not", () => {
   /* A recipe in the shape the repaint road actually stores — read off v508 on
      dev, 2026-08-22, rather than invented: master plus one carried ink crop. */
@@ -59,6 +63,10 @@ describe("what a render's references tell the customer, and what they do not", (
   */
   const withSupplied = {
     ...storedRecipe,
+    /* The handle her ask travelled with — written on the row beside `askScope`,
+       and what the chip's address is built from now that a picture she attached
+       has an authenticated route rather than a public url. */
+    askReference: HANDLE,
     repaint: {
       ...storedRecipe.repaint,
       references: [
@@ -86,7 +94,9 @@ describe("what a render's references tell the customer, and what they do not", (
     expect(projected).toHaveLength(1);
     expect(projected[0]!.kind).toBe("source");
     expect(projected[0]!.slot).toBe("hair");
-    expect(projected[0]!.url).toContain("aa11bb22");
+    /* Her ATTACHMENT's address, not the carrier's key: the carrier is swept and
+       was never publicly served anyway. */
+    expect(projected[0]!.url).toBe(`/api/reference/${HANDLE}`);
   });
 
   it("shows NOTHING for a render she attached nothing to", () => {
@@ -95,7 +105,14 @@ describe("what a render's references tell the customer, and what they do not", (
     expect(referencesOf(storedRecipe)).toEqual([]);
   });
 
-  it("gives back one entry per SUPPLIED reference, in the order they were sent", () => {
+  it("⚠ SAYS HER PICTURE ONCE — one ask carries one attachment", () => {
+    /*
+      This arm used to read *"one entry per SUPPLIED reference, in the order
+      they were sent"*, and that stopped being the contract the day the chip's
+      address became the ATTACHMENT's rather than each carrier's key. An ask
+      carries ONE picture; a road may cut more than one carrier from it, and two
+      identical thumbnails would be the product describing one picture as two.
+    */
     const two = {
       ...withSupplied,
       repaint: {
@@ -103,7 +120,7 @@ describe("what a render's references tell the customer, and what they do not", (
         references: [
           ...withSupplied.repaint.references,
           {
-            key: "casting-v2/reference-attachments/cc33dd44.png",
+            key: "casting-v2/reference-carrier/cc33dd44.png",
             kind: "source",
             slot: "ink:neck",
             digest: "22".repeat(32),
@@ -113,12 +130,13 @@ describe("what a render's references tell the customer, and what they do not", (
       },
     };
     const projected = referencesOf(two);
-    expect(projected).toHaveLength(2);
+    expect(projected).toHaveLength(1);
+    expect(projected[0]!.url).toBe(`/api/reference/${HANDLE}`);
+    /* The slot is the FIRST carrier's — what the picture was first used for.
+       Stated because it is a choice: the alternative is naming neither, and a
+       title saying what a picture was for is the only thing the chip can say
+       about it without a catalogue the client does not have. */
     expect(projected[0]!.slot).toBe("hair");
-    expect(projected[1]!.slot).toBe("ink:neck");
-    /* A url rather than a storage key: the client shows a picture, and a key
-       would make every caller build the address a fifth way. */
-    expect(projected[0]!.url).toContain("casting-v2/reference-attachments/aa11bb22.png");
   });
 
   it("⚠ CARRIES EXACTLY THREE FIELDS AND NO FOURTH", () => {
@@ -188,10 +206,45 @@ describe("what a render's references tell the customer, and what they do not", (
     expect(referencesOf(stored)).toEqual([]);
   });
 
+  it("⚠ DROPS her picture on a row that predates the handle rather than drawing it broken", () => {
+    /*
+      Every render before 2026-08-22 carried a picture without recording which
+      one. There is nothing to point at, and a thumbnail with no image is worse
+      than an absent one — the chip falls back to its sentence and its Use
+      button, which is what it does for a render she attached nothing to.
+    */
+    const noHandle = { ...withSupplied, askReference: undefined };
+    expect(referencesOf(noHandle)).toEqual([]);
+  });
+
+  it("says her picture ONCE, however many crops one ask cut from it", () => {
+    /* Every `source` reference on one ask comes from the one attachment, so
+       they all resolve to one address — and two identical thumbnails would be
+       the product describing one picture as two. */
+    const twoCarriers = {
+      ...withSupplied,
+      repaint: {
+        ...withSupplied.repaint,
+        references: [
+          ...withSupplied.repaint.references,
+          {
+            key: "casting-v2/reference-carrier/second.png",
+            kind: "source",
+            slot: "hair",
+            digest: "33".repeat(32),
+            sentGeometry: "512x512",
+          },
+        ],
+      },
+    };
+    expect(referencesOf(twoCarriers)).toHaveLength(1);
+  });
+
   it("skips a SUPPLIED reference with no key rather than showing a broken picture", () => {
     /* A thumbnail with no image is worse than an absent one: it reads as a
        feature that half works. */
     const projected = referencesOf({
+      askReference: HANDLE,
       repaint: {
         references: [
           { kind: "source", slot: "hair" },

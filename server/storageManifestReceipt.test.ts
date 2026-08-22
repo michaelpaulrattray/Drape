@@ -87,6 +87,42 @@ const SCOPE = (file: string) => file !== "server/db/storageCleanup.ts";
  */
 const dischargesItsOwnManifest = (source: string) =>
   /\.delete\(\s*storageCleanupBatches\s*\)/.test(source);
+
+/**
+ * ⚠ DOES THIS KEEPER ACTUALLY HAND THE RECEIPT ON — the arm that was a
+ * substring check, and the defect it missed.
+ *
+ * `referenceAttachService.ts` sat in {@link KEEPERS} and its bytes were being
+ * COLLECTED. It minted a batch id, handed it to the manifest, and never passed
+ * it to the row — so nothing ever discharged, the worker took every picture a
+ * customer had attached, and the ROWS SURVIVED POINTING AT NOTHING. Found by
+ * building the route that shows her the picture and getting `NoSuchKey` from a
+ * live row's own key.
+ *
+ * The old arm asked whether the file *mentions* `cleanupBatchId`. It did — in
+ * the declaration and in the manifest call, which are the two places every
+ * broken keeper would also mention it. Its own sibling, the collector arm,
+ * *"reads the ACT and not the word"* and has a CAN-FAIL arm behind it; the
+ * positive one did not, and that asymmetry is the whole bug.
+ *
+ * So this reads the ACT: the id must appear SOMEWHERE OTHER than its own
+ * declaration and the manifest call it was minted for — that is what "handing
+ * it on" looks like from outside. A keeper that discharges inline
+ * ({@link dischargesItsOwnManifest}) needs no hand-off and is answered by that
+ * reader instead.
+ *
+ * Driven both ways below, on the broken shape and the fixed one, because an
+ * absence test whose reader never returns false passes over anything at all.
+ */
+const handsTheReceiptOn = (source: string): boolean => {
+  /* Everything the manifest call itself consumes, removed — including the
+     declaration that feeds it. What is left is the hand-off, or nothing. */
+  const withoutMint = source
+    .replace(/const\s+cleanupBatchId\s*=[^;]*;/g, "")
+    .replace(/(?:dependencies\.)?manifest\s*\(\s*\{[\s\S]*?\}\s*\)/g, "")
+    .replace(/createStorageCleanupManifestIn\s*\([\s\S]*?\)\s*;/g, "");
+  return /cleanupBatchId/.test(withoutMint);
+};
 const ROOT = path.resolve(__dirname, "..");
 
 /** Every server source file, comments and all — the classification reads code. */
@@ -198,10 +234,40 @@ describe("the manifest receipt, swept across every caller", () => {
     expect([...classified].filter((file) => !callers.includes(file)).sort()).toEqual([]);
   });
 
-  it("every KEEPER carries its receipt to the row", () => {
-    const missing = Object.keys(KEEPERS).filter((file) =>
-      !readFileSync(path.resolve(ROOT, file), "utf8").includes("cleanupBatchId"));
-    expect(missing, "a keeper with no receipt is a promise the worker will keep").toEqual([]);
+  it("⚠ every KEEPER HANDS ITS RECEIPT ON, or discharges it itself", () => {
+    /*
+      This arm used to ask whether the file MENTIONED `cleanupBatchId`, and
+      `referenceAttachService.ts` mentioned it twice while handing it nowhere —
+      so every picture a customer attached was collected by the worker and its
+      row left pointing at nothing. See {@link handsTheReceiptOn}.
+    */
+    const broken = Object.keys(KEEPERS).filter((file) => {
+      const source = readFileSync(path.resolve(ROOT, file), "utf8");
+      return !dischargesItsOwnManifest(source) && !handsTheReceiptOn(source);
+    });
+    expect(broken, "a keeper with no receipt is a promise the worker will keep").toEqual([]);
+  });
+
+  it("CAN FAIL — the hand-off reader driven on the shape that shipped broken", () => {
+    /*
+      The exact text `referenceAttachService.ts` carried while its pictures were
+      being deleted: the id minted, the id given to the manifest, and nothing
+      else. An absence test whose reader never returns false passes over
+      anything at all, and this is the reader that did.
+    */
+    const wasBroken = `
+      const cleanupBatchId = randomUUID();
+      await dependencies.manifest({ id: cleanupBatchId, userId: u, storageKeys: [k] });
+      await dependencies.record({ userId: u, storageKey: k });
+    `;
+    expect(handsTheReceiptOn(wasBroken)).toBe(false);
+    /* And the fix — one more property on the call that writes the row. */
+    const isFixed = `
+      const cleanupBatchId = randomUUID();
+      await dependencies.manifest({ id: cleanupBatchId, userId: u, storageKeys: [k] });
+      await dependencies.record({ userId: u, storageKey: k, cleanupBatchId });
+    `;
+    expect(handsTheReceiptOn(isFixed)).toBe(true);
   });
 
   it("no COLLECTOR discharges anything — the negative control", () => {

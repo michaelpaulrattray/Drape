@@ -40,6 +40,7 @@ type Recorder = {
   stored: Array<{ key: string; bytes: Buffer; contentType: string }>;
   recorded: ReferenceAttachmentToRecord[];
   manifested: string[][];
+  manifestIds: string[];
   dependencies: ReferenceAttachDependencies;
 };
 
@@ -48,10 +49,14 @@ function recorder(overrides: Partial<ReferenceAttachDependencies> = {}): Recorde
   const stored: Recorder["stored"] = [];
   const recorded: ReferenceAttachmentToRecord[] = [];
   const manifested: string[][] = [];
+  const manifestIds: string[] = [];
   const dependencies: ReferenceAttachDependencies = {
     manifest: async (input) => {
       calls.push("manifest");
       manifested.push([...input.storageKeys]);
+      /* The RECEIPT's own id, kept so the arm below can compare it against the
+         one the row write is handed — see that arm for what it cost not to. */
+      manifestIds.push(input.id);
     },
     store: async (input) => {
       calls.push("store");
@@ -70,7 +75,7 @@ function recorder(overrides: Partial<ReferenceAttachDependencies> = {}): Recorde
     },
     ...overrides,
   };
-  return { calls, stored, recorded, manifested, dependencies };
+  return { calls, stored, recorded, manifested, manifestIds, dependencies };
 }
 
 const REQUEST = {
@@ -125,6 +130,33 @@ describe("attachReference — the order", () => {
     await attachReference({ ...REQUEST, bytes: await png() }, seam.dependencies);
     expect(seam.recorded[0]?.cap).toBe(REFERENCE_PICTURES_PER_CANDIDATE);
     expect(REFERENCE_PICTURES_PER_CANDIDATE).toBe(INK_DESIGNS_PER_CANDIDATE);
+  });
+
+  it("⚠ HANDS THE ROW THE RECEIPT — the same batch id the manifest was given", async () => {
+    /*
+      THE DEFECT THIS ARM EXISTS FOR, and it shipped: the id was minted, given
+      to the manifest, and **never passed to the row**. Nothing discharged, the
+      cleanup worker collected every picture a customer had attached exactly as
+      designed, and the ROW SURVIVED POINTING AT NOTHING. Found 2026-08-22 by
+      building the route that shows her the picture and getting `NoSuchKey` from
+      a live row's own storage key.
+
+      The file's own docblock had always specified it — *"4. the ROW, which
+      discharges the manifest in its own transaction"* — and the sweep that
+      polices this class asked only whether the file MENTIONED the id, which it
+      did, twice, while handing it nowhere.
+
+      Asserted as an EQUALITY between the two seams rather than as "a batch id
+      is present": a row handed some other id would discharge a manifest that
+      holds nothing and leave this one to collect the picture, which is the same
+      defect wearing a passing test.
+    */
+    const seam = recorder();
+    await attachReference({ ...REQUEST, bytes: await png() }, seam.dependencies);
+    expect(seam.manifestIds).toHaveLength(1);
+    expect(seam.recorded[0]?.cleanupBatchId).toBe(seam.manifestIds[0]);
+    /* And it is a real id rather than an empty string satisfying an equality. */
+    expect(seam.manifestIds[0]).toMatch(/^[0-9a-f-]{36}$/);
   });
 
   it("takes the owner from the request and never writes an intent", async () => {

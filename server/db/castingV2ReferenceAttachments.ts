@@ -28,8 +28,11 @@ import {
   castingCandidates,
   castingInkDesigns,
   castingReferenceAttachments,
+  storageCleanupBatches,
+  storageCleanupItems,
 } from "../../drizzle/schema";
 import { getDb, type TransactionHandle } from "./connection";
+import { undischargedStorageCleanupBatchWhere } from "./storageCleanup";
 
 /* Local, like every other store in this directory — the mysql2 header shape is
    the driver's, and a shared helper for three lines would be a module whose
@@ -73,6 +76,26 @@ export class ReferenceAttachmentOwnershipError extends Error {}
 export class ReferenceAttachmentCapError extends Error {}
 
 export type ReferenceAttachmentToRecord = {
+  /**
+   * ⚠ THE MANIFEST THIS WRITE DISCHARGES — required, and its absence is what
+   * made every attached picture's bytes disappear.
+   *
+   * `referenceAttachService`'s own docblock has always specified the order:
+   * *"2. the MANIFEST, naming the exact key about to be written · 3. the BYTES,
+   * to that key · 4. the ROW, **which discharges the manifest in its own
+   * transaction**"*. Step 4 wrote the row and discharged nothing — the batch id
+   * was minted, handed to the manifest, and then never passed here at all.
+   *
+   * So the keeper-receipt was never released: the cleanup worker collected the
+   * object exactly as designed, and the ROW SURVIVED POINTING AT NOTHING. Found
+   * on 2026-08-22 by building the route that shows her the picture and getting
+   * `NoSuchKey` from a live row's own key.
+   *
+   * REQUIRED rather than optional, deliberately. An optional field is one a
+   * caller can forget, and forgetting it is precisely the defect — the
+   * ink-delivery crop's own precedent is the same shape and the same throw.
+   */
+  cleanupBatchId: string;
   userId: number;
   candidatePublicId: string;
   provenance: InkProvenance;
@@ -167,6 +190,27 @@ export async function recordReferenceAttachment(
     }
 
     const publicId = randomUUID();
+    /*
+      THE RECEIPT IS RELEASED IN THE SAME TRANSACTION AS THE ROW, and never
+      before it — that is the whole of the keeper-receipt pattern. Until this
+      commits, a crash leaves an undischarged manifest and the worker collects
+      the bytes, which is correct: nothing references them.
+
+      The delete is scoped to the OWNER and to an UNDISCHARGED batch, and a
+      count of anything but one throws — the ink-delivery crop's own shape. A
+      discharge that silently affected zero rows would leave exactly the state
+      this fixes while reporting success.
+    */
+    await tx.delete(storageCleanupItems)
+      .where(eq(storageCleanupItems.batchId, input.cleanupBatchId));
+    const released = await tx.delete(storageCleanupBatches).where(and(
+      eq(storageCleanupBatches.id, input.cleanupBatchId),
+      eq(storageCleanupBatches.userId, input.userId),
+      undischargedStorageCleanupBatchWhere(),
+    ));
+    if (affectedRows(released) !== 1) {
+      throw new ReferenceAttachmentOwnershipError("no undischarged manifest for this write");
+    }
     await tx.insert(castingReferenceAttachments).values({
       publicId,
       userId: input.userId,

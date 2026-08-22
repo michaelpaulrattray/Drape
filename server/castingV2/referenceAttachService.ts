@@ -174,6 +174,11 @@ export async function attachReference(
     width: decoded.width ?? 0,
     height: decoded.height ?? 0,
     cap: REFERENCE_PICTURES_PER_CANDIDATE,
+    /* ⚠ STEP 4's OTHER HALF, and it was missing. The id was minted above,
+       handed to the manifest, and then never passed on — so nothing ever
+       released the receipt and the worker collected every attached picture
+       while its row lived on. See the field's own docblock. */
+    cleanupBatchId,
   });
 
   return { ok: true, attachment };
