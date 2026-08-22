@@ -1477,6 +1477,42 @@ describe("a removal of something already gone says nothing new", () => {
     }).absorbed).toBe(true);
   });
 
+  it("⚠ a fact taken from a PICTURE is not filed as identity", () => {
+    /*
+      The placeholder `hairCut: "the hair in the attached picture"` is what a
+      crop take files, and `statedDetails` is what a FOLLOW inherits — so
+      without this, eight new casts are told to reproduce a photograph that is
+      nowhere in their request. `expression` is excluded from this same function
+      for the identical reason, one class along.
+
+      Keyed on the delta's OWN record of what it took from the picture, never on
+      the phrase: that string is the defect's currency (fable-1432 condition 1).
+    */
+    expect(identityDetailsOf({
+      free: { hairCut: "the hair in the attached picture" },
+      fromPicture: ["hairCut"],
+    }), "a sentence naming a picture became permanent identity").toBeNull();
+  });
+
+  it("CONTROL — the same words file normally when they were TYPED", () => {
+    /*
+      The half that keeps the decline honest. Without it the rule could be
+      "never file hairCut" and this file would not notice — and a customer who
+      types a cut in her own words would silently lose it on every follow.
+    */
+    expect(identityDetailsOf({
+      free: { hairCut: "the hair in the attached picture" },
+    }), "a typed sentence was declined because of how it reads").toEqual({
+      hairCut: "the hair in the attached picture",
+    });
+    /* And a step that took ONE subject from the picture still files the others
+       it was given in words. */
+    expect(identityDetailsOf({
+      free: { hairCut: "the hair in the attached picture", brows: "thicker" },
+      fromPicture: ["hairCut"],
+    })).toEqual({ brows: "thicker" });
+  });
+
   it("describes the delta by its POSITIVE half when it echoes both", () => {
     const verdict = saysNothingNew({
       delta: {

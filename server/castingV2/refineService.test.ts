@@ -10820,6 +10820,60 @@ describe("the picture she attached becomes the carrier that rides", () => {
   const PICTURE_A = { ...REFERENCE, digest: "a".repeat(64) };
   const PICTURE_B = { ...REFERENCE, digest: "b".repeat(64) };
 
+  it("⚠ RECORDS what it took from the picture, so a follow cannot inherit a placeholder", async () => {
+    /*
+      The producer half of `RefineDelta.fromPicture` (design opus-1069 (c),
+      countersigned fable-1432). `identityDetailsOf`'s own arms prove the
+      DECLINE; this proves the service supplies the fact it declines on — the
+      consumer would read identically whether this line ran or not, which is
+      doctrine 23's subject.
+
+      Asserted on the STORED delta, because that is what a follow reads: the
+      landed row's own `deltas`, not a constant near it (invariant 5).
+    */
+    await refineCandidate(
+      carrierRoad({ hairTake: async () => "fullLook" as const }),
+      { ...input, instruction: "copy this hair", referenceId: "ref-public" },
+    );
+
+    expect(painted, "the take did not run, so this proves nothing").toHaveLength(1);
+    const { claimVariant } = await import("../db/castingV2Variants");
+    const stored = (vi.mocked(claimVariant).mock.calls[0]![0] as {
+      deltas: { fromPicture?: readonly string[]; free?: Record<string, unknown> };
+    }).deltas;
+    expect(stored.fromPicture, "nothing recorded that the cut came out of her picture")
+      .toContain("hairCut");
+    /* And the fact it is about really is in the delta — a record naming a
+       subject the step never filed would be a claim about nothing. */
+    expect(stored?.free?.hairCut).toBeTruthy();
+  });
+
+  it("CONTROL — a take that claims only the COLOUR does not claim the cut", async () => {
+    /*
+      The list is the take's own (`hairTakeClaims`), so a colour take must not
+      quietly decline the cut as well. Without this arm the record could be
+      "every hair subject" and nothing here would know.
+    */
+    await refineCandidate(
+      carrierRoad({ hairTake: async () => "style" as const }),
+      { ...input, instruction: "give her this haircut but keep her own colour", referenceId: "ref-public" },
+    );
+
+    const { claimVariant } = await import("../db/castingV2Variants");
+    const stored = (vi.mocked(claimVariant).mock.calls[0]![0] as {
+      deltas: { fromPicture?: readonly string[] };
+    }).deltas;
+    /* PRESENT first, then narrow. An absence-only assertion passes when NOTHING
+       was recorded, so it would go green on the very sabotage that proves the
+       arm above — measured: it did, by throwing on `undefined` rather than by
+       measuring anything. */
+    expect(stored.fromPicture, "nothing was recorded at all — this arm proves nothing")
+      .toBeDefined();
+    expect(stored.fromPicture, "a style take claimed the colour it disclaims")
+      .not.toContain("hairShade");
+    expect(stored.fromPicture, "and it did claim the thing it took").toContain("hairCut");
+  });
+
   it("⚠ a DIFFERENT picture is a new ask, though the sentence is identical", async () => {
     branchThatTookItsHairFromAPicture("ref-A");
     /* Keyed on the handle, so the ancestry's picture and this ask's picture are

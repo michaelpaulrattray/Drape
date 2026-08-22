@@ -330,6 +330,25 @@ export async function createRoll(
       under any of the eight.
     */
     followPersonaLine = String(parent.candidate.position + 1).padStart(2, "0");
+    /*
+      ⚠ A FACT TAKEN FROM A PICTURE IS NOT IN HERE, AND THAT GAP IS NAMED RATHER
+      THAN DISCOVERED (design opus-1069 (c), countersigned fable-1432).
+
+      `statedDetails` used to carry the crop take's placeholder — literally *"the
+      hair in the attached picture"* — and this line is where it entered a
+      follow: the anchor copies `realized` wholesale and `describeRealizedAxes`
+      emits every entry as a prompt line, so eight new casts were told to
+      reproduce a photograph that is nowhere in their request. The words lane now
+      DECLINES to file it (`RefineDelta.fromPicture`), on born ink's precedent —
+      a geometry-free sentence about a picture is worse than silence.
+
+      **So a follow of a version whose hair came from a photograph inherits
+      NOTHING about that hair and re-rolls the original.** That is the honest
+      state and it is not the finished answer: what a follow should do — inherit
+      nothing, carry the crop into the roll (a road that does not exist), or
+      refuse — is a product question with the founder, and this comment is here
+      so the next reader finds a known hole rather than a surprise.
+    */
     followIdentity = readResolvedIdentity(parent.internalPrompt);
     /*
       WHAT THE SHEET THIS FOLLOW DESCENDS FROM IS WEARING (design §3.1).

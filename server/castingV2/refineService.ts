@@ -141,7 +141,7 @@ import {
   wordsTakeIntentFor,
 } from "./referenceWordsLane";
 import { cutHairCarrier, mintHairCarrier, SECOND_VIEW_UNUSED_NOTE } from "./hairReferenceCutter";
-import { hairTakeEntry, hairTakeSentence, resolveHairTake } from "./hairReferenceTake";
+import { hairTakeClaims, hairTakeEntry, hairTakeSentence, resolveHairTake } from "./hairReferenceTake";
 import {
   inkAskAddressOf,
   inkAskIntents,
@@ -5334,6 +5334,21 @@ async function refineCandidateCounted(
 
   let hairSource: { key: string; sha: string; scope: string } | null = null;
   let attachedPictureUnused = false;
+  /*
+    ⚠ WHICH SUBJECTS THIS STEP TOOK FROM A PICTURE — recorded here, at the one
+    moment the answer is known, and read by `identityDetailsOf` so a placeholder
+    naming a photograph never becomes permanent identity.
+
+    See `RefineDelta.fromPicture` for the whole reason. In one line: a crop take
+    files `hairCut: "the hair in the attached picture"`, a FOLLOW inherits
+    `statedDetails` wholesale, and eight new casts are then told to reproduce a
+    picture that is nowhere in their request.
+
+    A list rather than a boolean because the take decides WHICH facets it
+    claims (`hairTakeClaims`), and a colour take claims different ones from a
+    whole-look take.
+  */
+  const pictureSourcedSubjects: FreeSubject[] = [];
   let secondViewNote: string | null = null;
   /*
     THE HAIR ROAD'S OWN GATE (ruled fable-1163 §2).
@@ -5476,6 +5491,9 @@ async function refineCandidateCounted(
       */
       const cropTake = take;
       if (cropTake === null) throw new Error("a carrier was cut for an unreadable take");
+      /* THE FACTS THIS TAKE TOOK FROM HER PICTURE — see `pictureSourcedSubjects`
+         above. From the take's own claim list, never from the words it filed. */
+      pictureSourcedSubjects.push(...hairTakeClaims(cropTake));
       /* The CAST's pronouns, read the same way every other sentence in this
          render reads them — the scope is spoken in front of her own face. */
       hairSource = {
@@ -5627,6 +5645,11 @@ async function refineCandidateCounted(
     let next = delta;
     if (appliedInk !== null) next = withAppliedInk(next, appliedInk.slot, appliedInk.designId);
     if (deliveredInk !== null) next = withDeliveredInk(next, deliveredInk.slot, deliveredInk.cropId);
+    /* AND WHAT CAME OUT OF HER PICTURE, on the same copy-never-mutate rule as
+       the two above. Only the subjects this delta actually carries, so a
+       composed delta that no longer holds a taken facet does not claim it. */
+    const taken = pictureSourcedSubjects.filter((subject) => next.free?.[subject] !== undefined);
+    if (taken.length > 0) next = { ...next, fromPicture: taken };
     return next;
   };
   const claimedDeltas = withInkPointers(composed);

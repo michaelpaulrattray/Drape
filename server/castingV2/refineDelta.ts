@@ -126,6 +126,45 @@ export type RefineDelta = {
    */
   free?: Partial<Record<FreeSubject, FreeValue>>;
   /**
+   * ⚠ WHICH SUBJECTS THIS STEP TOOK FROM A PICTURE RATHER THAN FROM WORDS
+   * (design opus-1069 (c), countersigned fable-1432; the 2026-08-07 ruling
+   * *"the interpreter owes a state phrase"* arriving at its consequence).
+   *
+   * # What goes wrong without it
+   *
+   * A crop take files the placeholder `hairCut: "the hair in the attached
+   * picture"` — the interpreter is instructed to produce exactly that — and
+   * `identityDetailsOf` then writes it into `realized.statedDetails` as
+   * permanent identity. Production v532 carries it today.
+   *
+   * `statedDetails` is what a FOLLOW inherits: `anchorFrom` copies `realized`
+   * wholesale and `describeRealizedAxes` emits every entry as a prompt line. So
+   * following that version tells **eight new casts** to reproduce *"the hair in
+   * the attached picture"* with no picture anywhere in the request. (The repaint
+   * refine road is innocent — `recipeAssembler` never reads `statedDetails`.)
+   *
+   * # Why it is recorded HERE and not detected later
+   *
+   * Because the alternative is a string match on the placeholder, and that
+   * string is the defect's own currency — the same phrase that made two
+   * different photographs look identical to the already-true door. The delta's
+   * own knowledge is the source: `fromReference` on the reading, and
+   * `hairTakeClaims` for which facets the take claims. Recorded once, at file
+   * time, by the thing that has it (condition 1, fable-1432).
+   *
+   * # The precedent, and there are two
+   *
+   * `isPresentationSubject` already excludes expression from
+   * {@link identityDetailsOf} for the identical reason, stated in its own
+   * docblock: *"filing a smile into the identity blob would have every follow
+   * inherit it, making a momentary choice permanent for eight strangers."* And
+   * born ink files a words-only row that `selectCarriedFeatureWords` DECLINES,
+   * because a geometry-free sentence about a picture is worse than silence.
+   *
+   * A copy, never a mutation — {@link withAppliedInk}'s rule, for its reason.
+   */
+  fromPicture?: readonly FreeSubject[];
+  /**
    * WHICH OF HER DESIGNS THIS STEP ACTUALLY PUT ON HER — keyed by ink slot,
    * holding the design row's public id (shape A, ruled fable-1167 §2).
    *
@@ -2745,8 +2784,15 @@ export function stemmedContainment(value: string, instruction: string): boolean 
 export function identityDetailsOf(delta: RefineDelta): Record<string, string> | null {
   if (!delta.free) return null;
   const details: Record<string, string> = {};
+  /* ⚠ AND WHAT THIS STEP TOOK FROM A PICTURE — see `RefineDelta.fromPicture`.
+     Its value is a placeholder naming a photograph, and a follow inherits
+     `statedDetails` wholesale, so filing it hands eight strangers a sentence
+     with no picture behind it. Declined for the same reason expression is,
+     one class along. */
+  const fromPicture = new Set<string>(delta.fromPicture ?? []);
   for (const [subject, value] of Object.entries(delta.free)) {
     if (isPresentationSubject(subject as FreeSubject)) continue;
+    if (fromPicture.has(subject)) continue;
     /*
       JOINED, not the array (D-171). `statedDetails` is read as prose by
       `currentValueOfFacet`, by D-167's confession and by the interpreter's
