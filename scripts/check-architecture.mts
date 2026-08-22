@@ -102,6 +102,14 @@ export type CheckReader = (absolutePath: string) => string;
  *
  * Doctrine 23: the arm goes at the producer. This runs where the Atlas is
  * MADE — every path it emits, checked against what git actually tracks.
+ *
+ * ⚠ ITS COVERAGE IS THE ATLAS'S COVERAGE, WHICH IS NOT THE REPOSITORY.
+ * Measured 2026-08-23: the Atlas names 1,494 source paths and **not one of them
+ * is under `scripts/`**. So an untracked driver, court or ceremony is invisible
+ * to this check, and the first thing it failed to catch was a new driver
+ * written in the same sitting as itself. That is a bound rather than a bug —
+ * the Atlas is a map of the application — but it is stated here so nobody reads
+ * a green as "nothing was dropped".
  */
 export type TrackedFiles = () => ReadonlySet<string>;
 

@@ -44,14 +44,62 @@ const check = (name: string, ok: boolean, saw = "") => {
 
 await mkdir(OUT, { recursive: true });
 
+/**
+ * ⚠ WHO THIS DRIVES IS PART OF WHAT IT MEASURES (2026-08-23).
+ *
+ * The `+` is drawn only where the page is handed the attach door, and the door
+ * is `CASTING_REFERENCE_ATTACH_SCOPE`. Hard-wired to `verify-bot-local` — user
+ * 823 — this driver reported **"the + is drawn: FAIL", both themes**, on a
+ * surface that was working perfectly: the flag is `users:1`, so the control was
+ * correctly absent and the driver had no way to say so.
+ *
+ * A red that cannot distinguish *"the control is broken"* from *"this user may
+ * not have it"* is the same defect as a green that proves nothing, with its
+ * sign flipped — and it is the more expensive one, because somebody goes
+ * looking for a bug that is not there.
+ *
+ * So the subject is overridable, and the driver REFUSES rather than reporting
+ * FAIL when the door is shut for whoever it is driving (see the door check
+ * below). `ATTACH_OPEN_ID=…` with a matching `ATTACH_SESSION=…`.
+ */
+const OPEN_ID = process.env.ATTACH_OPEN_ID ?? "verify-bot-local";
+
 const token = await new SignJWT({
-  openId: "verify-bot-local",
+  openId: OPEN_ID,
   appId: process.env.VITE_APP_ID,
-  name: "Verify Bot",
+  name: OPEN_ID === "verify-bot-local" ? "Verify Bot" : "attach eye",
 })
   .setProtectedHeader({ alg: "HS256" })
   .setExpirationTime("1h")
   .sign(new TextEncoder().encode(process.env.JWT_SECRET));
+
+/*
+  THE DOOR, ASKED BEFORE THE SURFACE IS JUDGED.
+
+  `attachReferenceEnabled` is the same field `CastingSheet.tsx` reads to decide
+  whether to hand the panel an attach function at all, so this is the product's
+  own answer rather than a second opinion about the flag. Shut, every assertion
+  below would fail on a surface that is working exactly as designed — which is
+  what happened on 2026-08-23 and is why this block exists.
+
+  It REFUSES rather than skipping: a driver whose subject is absent must fail
+  (the verify skill's own rule), and it must fail saying WHICH absence it is.
+*/
+{
+  const response = await fetch(`${BASE}/api/trpc/castingV2.config?input=${encodeURIComponent(JSON.stringify({ json: {} }))}`, {
+    headers: { cookie: `app_session_id=${token}` },
+  });
+  const body = await response.json().catch(() => null) as { result?: { data?: { json?: { attachReferenceEnabled?: boolean } } } } | null;
+  const open = body?.result?.data?.json?.attachReferenceEnabled;
+  if (open !== true) {
+    console.log(`REFUSED: the attach door is SHUT for ${OPEN_ID} (config says attachReferenceEnabled=${open}).`);
+    console.log("  This driver photographs a control the page only draws where the road serves the account,");
+    console.log("  so every assertion below would fail on a surface that is working. That is not a reading.");
+    console.log(`  Drive somebody inside CASTING_REFERENCE_ATTACH_SCOPE: ATTACH_OPEN_ID=… ATTACH_SESSION=…`);
+    process.exit(1);
+  }
+  console.log(`door: attachReferenceEnabled=true for ${OPEN_ID}`);
+}
 
 const { browser, page } = await openDrivenPage({ base: BASE, token, width: 1440, height: 960 });
 
