@@ -3,7 +3,7 @@
 Derived, never typed. Regenerate with `pnpm capability:generate --drive`; check with `pnpm capability:check`.
 A row's **observed** column is what the real refine entrance did with that sentence, claim door shut (nothing charged).
 
-Profile **fixture-as-founder** on fixture `outside-scope-bot-local / 34383040-622d-418e-a505-7ddf12d78930`; flags: `CASTING_FACE_SCAN_SCOPE=users:28601`, `CASTING_HAIR_REFERENCE_SCOPE=users:28601`, `CASTING_INK_CUT_SCOPE=users:28601`, `CASTING_INK_REFERENCE_SCOPE=users:28601`, `CASTING_INK_REGION_CROP_SCOPE=users:28601`, `CASTING_INK_STUDIO_SCOPE=users:28601`, `CASTING_INK_TRANSFORM_SCOPE=users:28601`, `CASTING_INK_WORDS_SCOPE=users:28601`, `CASTING_OPEN_LANE_SCOPE=users:28601`, `CASTING_REFERENCE_ATTACH_SCOPE=users:28601`, `CASTING_REFERENCE_LIBRARY_SCOPE=all`, `CASTING_REFINE_DISPATCH_SCOPE=off`, `CASTING_REPAINT_SCOPE=all`, `CASTING_SCAN_TABLE_SCOPE=off`, `CASTING_SEGMENTS_DELIVERED_SCOPE=off`, `CASTING_SEGMENTS_SCOPE=off`, `CASTING_SIDE_PHRASING_SCOPE=users:28601`, `CASTING_V2_SCOPE=all`.
+Profile **fixture-as-founder** on fixture `outside-scope-bot-local / 34383040-622d-418e-a505-7ddf12d78930`; flags: `CASTING_FACE_SCAN_SCOPE=users:28601`, `CASTING_HAIR_REFERENCE_SCOPE=users:28601`, `CASTING_INK_CUT_SCOPE=users:28601`, `CASTING_INK_REFERENCE_SCOPE=users:28601`, `CASTING_INK_REGION_CROP_SCOPE=users:28601`, `CASTING_INK_STUDIO_SCOPE=users:28601`, `CASTING_INK_TRANSFORM_SCOPE=users:28601`, `CASTING_INK_WORDS_SCOPE=users:28601`, `CASTING_OPEN_LANE_SCOPE=users:28601`, `CASTING_REFERENCE_ATTACH_SCOPE=users:28601`, `CASTING_REFERENCE_LIBRARY_SCOPE=all`, `CASTING_REFINE_DISPATCH_SCOPE=off`, `CASTING_REPAINT_SCOPE=all`, `CASTING_SCAN_TABLE_SCOPE=off`, `CASTING_SEGMENTS_DELIVERED_SCOPE=off`, `CASTING_SEGMENTS_SCOPE=off`, `CASTING_SIDE_PHRASING_SCOPE=users:28601`, `CASTING_TWO_PATHS_SCOPE=users:28601`, `CASTING_V2_SCOPE=all`.
 
 ## How the studio works — the roads
 
@@ -31,8 +31,8 @@ _Entrances:_ `server/castingV2/refineService.ts`  ·  _Flags:_ `CASTING_V2_SCOPE
 |---|---|---|---|---|---|
 | `candidate_missing` | service-refusal |  | server/castingV2/refineService.ts:1181 | 1 test(s) | _documented-unreachable or gap — see findings_ |
 | `already_signed` | service-refusal |  | server/castingV2/refineService.ts:1198 | 1 test(s) | _documented-unreachable or gap — see findings_ |
-| `busy` | service-refusal |  | server/castingV2/refineService.ts:4549<br>server/castingV2/rollEngine.ts:65<br>(+1) | 2 test(s) | _documented-unreachable or gap — see findings_ |
-| `refine_limit` | service-refusal |  | server/castingV2/refineService.ts:4008 | 1 test(s) | _documented-unreachable or gap — see findings_ |
+| `busy` | service-refusal |  | server/castingV2/refineService.ts:4569<br>server/castingV2/rollEngine.ts:65<br>(+1) | 2 test(s) | _documented-unreachable or gap — see findings_ |
+| `refine_limit` | service-refusal |  | server/castingV2/refineService.ts:4028 | 1 test(s) | _documented-unreachable or gap — see findings_ |
 | `master_missing` | service-refusal |  | server/castingV2/refineService.ts:1187 | 1 test(s) | _documented-unreachable or gap — see findings_ |
 | `version_missing` | service-refusal |  | server/castingV2/refineService.ts:2254 | 1 test(s) | _documented-unreachable or gap — see findings_ |
 | `history_unreadable` | service-refusal |  | server/castingV2/refineService.ts:3334 | 1 test(s) | _documented-unreachable or gap — see findings_ |
@@ -53,7 +53,7 @@ _Entrances:_ `server/castingV2/refineInterpreter.ts` · `server/castingV2/refine
 | door | kind | charge | where it lives | pinned | reached by |
 |---|---|---|---|---|---|
 | `empty` | interpreter-refusal |  | server/castingV2/refineDelta.ts:488<br>server/castingV2/refineInterpreter.ts:854<br>(+1) | 6 test(s) | guard.empty |
-| `unreadable` | interpreter-refusal |  | server/castingV2/castingIntent.ts:854<br>server/castingV2/castingIntent.ts:871<br>(+12) | 16 test(s) | light.softer, guard.gibberish, guard.scope.ink.none |
+| `unreadable` | interpreter-refusal |  | server/castingV2/castingIntent.ts:939<br>server/castingV2/castingIntent.ts:956<br>(+12) | 16 test(s) | light.softer, guard.gibberish, guard.scope.ink.none |
 | `wall_likeness` | interpreter-refusal |  | server/castingV2/refineDelta.ts:416<br>server/castingV2/refineDelta.ts:1403<br>(+2) | 7 test(s) | guard.likeness |
 | `wall_content` | interpreter-refusal |  | server/castingV2/refineDelta.ts:456<br>server/castingV2/refineInterpreter.ts:1480<br>(+1) | 6 test(s) | guard.content |
 | `wall_stage` | interpreter-refusal |  | server/castingV2/refineDelta.ts:431<br>server/castingV2/refineDelta.ts:1413<br>(+2) | 8 test(s) | background.white |
@@ -62,7 +62,7 @@ _Entrances:_ `server/castingV2/refineInterpreter.ts` · `server/castingV2/refine
 | `gate_ink_document` | interpreter-refusal |  | server/castingV2/refineDelta.ts:480<br>server/castingV2/refineDelta.ts:480<br>(+3) | 2 test(s) | ink.words.face, ink.words.noplace, ink.words.behind-ear, ink.transform.none |
 | `gate_ink_uncarried` | interpreter-refusal |  | server/castingV2/refineDelta.ts:486<br>server/castingV2/refineDelta.ts:486<br>(+3) | 3 test(s) | ink.words.chest |
 | `scope_unknown` | service-refusal |  | server/castingV2/refineService.ts:1268<br>server/castingV2/refineService.ts:1306 | 1 test(s) | guard.scope.unknown |
-| `scope_mismatch` | service-refusal |  | server/castingV2/refineService.ts:4528 | 1 test(s) | _documented-unreachable or gap — see findings_ |
+| `scope_mismatch` | service-refusal |  | server/castingV2/refineService.ts:4548 | 1 test(s) | _documented-unreachable or gap — see findings_ |
 
 - wall_stage = PROVABLY the shoot (the lexicon backed the claim); wall_unbacked = the model claimed out-of-scope and the lexicon could not confirm — one wall was two walls wearing one name until census card C1.
 - gate_ink_document asks 'is there a document for this design'; its answers are the anchor itself, a pointed-at photograph, the delivered crop, and (words road) the delivery about to be minted.
@@ -88,7 +88,7 @@ _Entrances:_ `server/castingV2/inkPriorAsk.ts` · `server/castingV2/inkDeliveryM
 | `removal_not_in_brief` | service-refusal |  | server/castingV2/refineService.ts:3083 | 1 test(s) | acc.glasses.remove.none, acc.remove.branch.other |
 | `removal_uncheckable` | service-refusal |  | server/castingV2/refineService.ts:2860<br>server/castingV2/refineService.ts:2877 | 1 test(s) | _documented-unreachable or gap — see findings_ |
 | `removal_reread_unmatched` | service-refusal |  | server/castingV2/refineService.ts:3178 | 1 test(s) | _documented-unreachable or gap — see findings_ |
-| `removal_unnameable` | service-refusal |  | server/castingV2/refineService.ts:3978 | 1 test(s) | _documented-unreachable or gap — see findings_ |
+| `removal_unnameable` | service-refusal |  | server/castingV2/refineService.ts:3998 | 1 test(s) | _documented-unreachable or gap — see findings_ |
 | `already_original` | service-refusal |  | server/castingV2/refineService.ts:2282 | 1 test(s) | guard.undo |
 
 - THE ID POINTS AND THE ROW DECIDES: a chain naming a crop with no row is skipped loudly by the carry (the rescue needs the name to stand) and answered free at the transform door (inkNotKept) — never scrubbed, because scrubbing deletes the pointer the minted-loss rescue lives on (C4b, closed not-to-be-built).
@@ -161,7 +161,7 @@ _Entrances:_ `server/castingV2/facePanel.ts` · `server/castingV2/faceScanServic
 | ink.transform.none | make his chest tattoo bigger | master | refused:gate_ink_document | refused:gate_ink_document | Tell me where it goes — a neck or an upper arm tattoo is what I can do from a description alone. Anywhere else needs a design to work from f |
 | ink.remove.none | take his tattoos off | master | refused:removal_absent | refused:removal_absent | I can't find any tattoos on this face — there's nothing to take off. Nothing was charged. |
 | ink.transform.has | his upper arm tattoo — make it bigger | branch-with-ink | would-render | would-render |  |
-| ink.transform.wrongslot | his upper chest tattoo — make it bigger | branch-with-ink | free:noInkToChange | **would-render** |  |
+| ink.transform.wrongslot | his upper chest tattoo — make it bigger | branch-with-ink | free:noInkToChange | free:noInkToChange | I can't find his upper chest on this version, so there's nothing there to change or take off. Ask me about one that's there, or say where to |
 | ink.transform.two | make his arm tattoo bigger and darker | branch-with-ink | free:inkOneChangeAtATime | free:inkOneChangeAtATime | I can change one thing about a tattoo at a time — bigger or smaller, higher or lower, darker or lighter. Say which one you'd like first and  |
 | ink.remove.has | take the tattoo off his arm | branch-with-ink | free:navigate | free:navigate | That takes it back to the original — nothing charged. |
 | mark.scar.forehead | give her a harry potter lightning bolt scar on her forehead | master | would-render | would-render |  |
@@ -198,7 +198,7 @@ _Entrances:_ `server/castingV2/facePanel.ts` · `server/castingV2/faceScanServic
 | acc.remove.branch.other | take her earrings off | branch-with-accessory | refused:removal_not_in_brief | refused:removal_not_in_brief | His brief didn't ask for earrings, and nothing since has added any, so there's nothing on record to take off. If he is wearing earrings in t |
 | age.older | make her ten years older | master | refused:wall_unbacked | refused:wall_unbacked | Refining can't do her age yet — it isn't one of the things this can name. Faces, hair, skin, build and anything worn do work here. Nothing w |
 | expression.smile | make him smile | master | would-render | would-render |  |
-| hair.remove.none | remove her fringe | master | would-render | **refused:removal_absent** | I can't find any fringe on this face — there's nothing to take off. Nothing was charged. |
+| hair.remove.none | remove her fringe | master | would-render | would-render |  |
 | acc.piercing | give him a silver nose ring | master | would-render | would-render |  |
 | eye.both.sides | make her left eye blue and her right eye green | master | would-render | would-render |  |
 | skin.freckles.remove.none | she never had freckles | master | refused:removal_absent | refused:removal_absent | I can't find any freckles on this face — there's nothing to take off. Nothing was charged. |
@@ -207,7 +207,7 @@ _Entrances:_ `server/castingV2/facePanel.ts` · `server/castingV2/faceScanServic
 | guard.undo | undo | master | refused:already_original | refused:already_original | You're already looking at the original. Nothing was charged. |
 | guard.multi | green eyes, copper hair, and freckles | master | would-render | would-render |  |
 | guard.compliment | he looks great | master | refused:wall_unbacked | refused:wall_unbacked | Refining can't do how attractive they look yet — it isn't one of the things this can name. Faces, hair, skin, build and anything worn do wor |
-| wardrobe.colour | make his tee black | master | refused:wall_unbacked | refused:wall_unbacked | Refining can't do tee yet — it isn't one of the things this can name. Faces, hair, skin, build and anything worn do work here. Nothing was c |
+| wardrobe.colour | make his tee black | master | refused:wall_unbacked | refused:wall_unbacked | Refining can't do his tee yet — it isn't one of the things this can name. Faces, hair, skin, build and anything worn do work here. Nothing w |
 | background.white | make the background pure white | master | refused:wall_stage | refused:wall_stage | Refining changes the person, not the shoot — the background is a garment, a prop or the set, which comes after Sign. Jewellery, glasses and  |
 | ink.transform.dangling | his upper chest tattoo — make it bigger | branch-with-dangling-crop | free:inkNotKept | free:inkNotKept | That's his upper chest tattoo — he has it, and I didn't keep a copy of the artwork, so I can't change it from here. Nothing was charged. |
 | ink.scoped.none.prefill | his upper arm tattoo — make it bigger _(scope ink:upperArm@left)_ | master | free:noInkToChange | free:noInkToChange | I can't find his left upper arm tattoo on this version, so there's nothing there to change or take off. Ask me about one that's there, or sa |
@@ -266,10 +266,8 @@ _Entrances:_ `server/castingV2/facePanel.ts` · `server/castingV2/faceScanServic
 
 `CASTING_FACE_SCAN_SCOPE` · `CASTING_HAIR_REFERENCE_SCOPE` · `CASTING_INK_CUT_SCOPE` · `CASTING_INK_REFERENCE_SCOPE` · `CASTING_INK_REGION_CROP_SCOPE` · `CASTING_INK_STUDIO_SCOPE` · `CASTING_INK_TRANSFORM_SCOPE` · `CASTING_INK_WORDS_SCOPE` · `CASTING_OPEN_LANE_SCOPE` · `CASTING_REFERENCE_ATTACH_SCOPE` · `CASTING_REFERENCE_LIBRARY_SCOPE` · `CASTING_REFINE_DISPATCH_SCOPE` · `CASTING_REPAINT_SCOPE` · `CASTING_SCAN_TABLE_SCOPE` · `CASTING_SEGMENTS_DELIVERED_SCOPE` · `CASTING_SEGMENTS_SCOPE` · `CASTING_SIDE_PHRASING_SCOPE` · `CASTING_TWO_PATHS_SCOPE` · `CASTING_V2_SCOPE`
 
-## Findings (33)
+## Findings (31)
 
-- **warn** `belief-mismatch` hair.remove.none — "remove her fringe" — believed would-render, observed refused:removal_absent
-- **warn** `belief-mismatch` ink.transform.wrongslot — "his upper chest tattoo — make it bigger" — believed free:noInkToChange, observed would-render
 - **info** `documented-unreachable` already_signed — unreachable by design: answers a refine sent at a SIGNED cast — request state, not sentence content — becomes reachable via: a signed-cast fixture, if sign-state rows are ever wanted; pinned by its C5 service arm
 - **info** `documented-unreachable` candidate_missing — unreachable by design: answers a request naming a cast the account does not own — request shape — becomes reachable via: deliberately never as a corpus row; pinned by its C5 service arm
 - **info** `documented-unreachable` history_predates_undo — unreachable by design: answers an undo against a chain older than typed removal — legacy-era state — becomes reachable via: pinned by its C5 service arm

@@ -53,7 +53,7 @@
           "server/castingV2/rollService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:4549",
+          "server/castingV2/refineService.ts:4569",
           "server/castingV2/rollEngine.ts:65",
           "server/castingV2/rollEngine.ts:77"
         ]
@@ -275,7 +275,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:4008"
+          "server/castingV2/refineService.ts:4028"
         ]
       },
       {
@@ -340,7 +340,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:3978"
+          "server/castingV2/refineService.ts:3998"
         ]
       },
       {
@@ -360,7 +360,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:4528"
+          "server/castingV2/refineService.ts:4548"
         ]
       },
       {
@@ -463,9 +463,9 @@
           "server/deployWatchDecision.test.ts"
         ],
         "sites": [
-          "server/castingV2/castingIntent.ts:854",
-          "server/castingV2/castingIntent.ts:871",
-          "server/castingV2/castingIntent.ts:876",
+          "server/castingV2/castingIntent.ts:939",
+          "server/castingV2/castingIntent.ts:956",
+          "server/castingV2/castingIntent.ts:961",
           "server/castingV2/openLaneAccept.ts:177",
           "server/castingV2/openLaneKind.ts:170",
           "server/castingV2/openLaneKind.ts:216",
@@ -733,7 +733,7 @@
         "verb": "change",
         "state": "branch-with-ink",
         "expect": "free:noInkToChange",
-        "why": "⚠ OPEN QUESTION (fable full-map pass): a CHEST-worded transform on a branch wearing only an ARM tattoo reached the claim in drive-5 — which tattoo would it change? The belief is the place-speaking free answer; the mismatch stands until the executor reads the route"
+        "why": "CLOSED (opus-1016, 51481a66): the census caught the money bug — the narrowing answered any sentence with the single tattoo, so a chest ask would have resized the ARM and charged. Fixed at the wording-before-count; re-driven post-fix and the route is the place-speaking free answer, as believed"
       },
       {
         "id": "ink.transform.two",
@@ -1069,7 +1069,7 @@
         "verb": "remove",
         "state": "master",
         "expect": "would-render",
-        "why": "MODEL-VARIANT: measured would-render twice and removal_absent once across three drives — the fringe reads as a cut change (law 8) or a removal by the model's coin; the mismatch, when it appears, is the variance and not a route change"
+        "why": "MODEL-VARIANT (would-render 3, removal_absent 1 across four drives): measured would-render twice and removal_absent once across three drives — the fringe reads as a cut change (law 8) or a removal by the model's coin; the mismatch, when it appears, is the variance and not a route change"
       },
       {
         "id": "acc.piercing",
@@ -1639,6 +1639,7 @@
         "CASTING_SEGMENTS_DELIVERED_SCOPE": "off",
         "CASTING_SEGMENTS_SCOPE": "off",
         "CASTING_SIDE_PHRASING_SCOPE": "users:28601",
+        "CASTING_TWO_PATHS_SCOPE": "users:28601",
         "CASTING_V2_SCOPE": "all"
       },
       "fixture": "outside-scope-bot-local / 34383040-622d-418e-a505-7ddf12d78930"
@@ -1655,7 +1656,7 @@
             "answer": "served {\"free\":{\"ink\":[\"small swallow tattoo on his neck\"]}}"
           }
         ],
-        "ms": 13087
+        "ms": 13137
       },
       {
         "id": "ink.words.arm",
@@ -1668,7 +1669,7 @@
             "answer": "served {\"free\":{\"ink\":[\"small swallow tattoo on his left upper arm\"]}}"
           }
         ],
-        "ms": 10831
+        "ms": 11575
       },
       {
         "id": "ink.words.chest",
@@ -1681,7 +1682,7 @@
             "answer": "refused:gate_ink_uncarried"
           }
         ],
-        "ms": 4328
+        "ms": 4889
       },
       {
         "id": "ink.words.face",
@@ -1694,7 +1695,7 @@
             "answer": "refused:gate_ink_document"
           }
         ],
-        "ms": 5886
+        "ms": 3922
       },
       {
         "id": "ink.words.noplace",
@@ -1707,7 +1708,7 @@
             "answer": "refused:gate_ink_document"
           }
         ],
-        "ms": 7742
+        "ms": 6539
       },
       {
         "id": "ink.words.behind-ear",
@@ -1720,7 +1721,7 @@
             "answer": "refused:gate_ink_document"
           }
         ],
-        "ms": 4647
+        "ms": 5007
       },
       {
         "id": "ink.transform.none",
@@ -1733,7 +1734,7 @@
             "answer": "refused:gate_ink_document"
           }
         ],
-        "ms": 6880
+        "ms": 6604
       },
       {
         "id": "ink.remove.none",
@@ -1746,23 +1747,10 @@
             "answer": "ok:remove"
           }
         ],
-        "ms": 7045
+        "ms": 7063
       },
       {
         "id": "ink.transform.has",
-        "observed": "would-render",
-        "facet": null,
-        "said": null,
-        "calls": [
-          {
-            "mode": "(default)",
-            "answer": "served {\"free\":{\"ink\":[\"bigger swallow tattoo on his left upper arm\"]}}"
-          }
-        ],
-        "ms": 39523
-      },
-      {
-        "id": "ink.transform.wrongslot",
         "observed": "would-render",
         "facet": null,
         "said": null,
@@ -1773,10 +1761,23 @@
           },
           {
             "mode": "edit",
-            "answer": "served {\"free\":{\"ink\":[\"small swallow tattoo on his left upper arm\",\"bigger upper chest tattoo\"]}}"
+            "answer": "served {\"free\":{\"ink\":[\"bigger swallow tattoo on his left upper arm\"]}}"
           }
         ],
-        "ms": 13145
+        "ms": 48887
+      },
+      {
+        "id": "ink.transform.wrongslot",
+        "observed": "free:noInkToChange",
+        "facet": null,
+        "said": "I can't find his upper chest on this version, so there's nothing there to change or take off. Ask me about one that's there, or say where to put a new one and I'll do it. Nothing was charged.",
+        "calls": [
+          {
+            "mode": "(default)",
+            "answer": "served {\"free\":{\"ink\":[\"small swallow tattoo on his left upper arm\",\"upper chest tattoo, bigger\"]}}"
+          }
+        ],
+        "ms": 4096
       },
       {
         "id": "ink.transform.two",
@@ -1786,10 +1787,10 @@
         "calls": [
           {
             "mode": "(default)",
-            "answer": "served {\"free\":{\"ink\":[\"small swallow tattoo on his left upper arm, bigger and darker\"]}}"
+            "answer": "served {\"free\":{\"ink\":[\"bigger, darker swallow tattoo on his left upper arm\"]}}"
           }
         ],
-        "ms": 12847
+        "ms": 18514
       },
       {
         "id": "ink.remove.has",
@@ -1802,7 +1803,7 @@
             "answer": "ok:remove"
           }
         ],
-        "ms": 9750
+        "ms": 11598
       },
       {
         "id": "mark.scar.forehead",
@@ -1815,7 +1816,7 @@
             "answer": "served {\"free\":{\"marks\":[\"a lightning bolt scar on her forehead\"]}}"
           }
         ],
-        "ms": 20643
+        "ms": 15826
       },
       {
         "id": "mark.freckles",
@@ -1828,7 +1829,7 @@
             "answer": "served {\"free\":{\"marks\":[\"freckles\"]}}"
           }
         ],
-        "ms": 10511
+        "ms": 9742
       },
       {
         "id": "acc.earrings.add",
@@ -1841,7 +1842,7 @@
             "answer": "served {\"free\":{\"statedAccessories\":[\"gold hoop earrings\"]}}"
           }
         ],
-        "ms": 11149
+        "ms": 9136
       },
       {
         "id": "acc.glasses.remove.none",
@@ -1854,7 +1855,7 @@
             "answer": "ok:remove"
           }
         ],
-        "ms": 7027
+        "ms": 7307
       },
       {
         "id": "acc.glasses.remove.has",
@@ -1867,7 +1868,7 @@
             "answer": "ok:remove"
           }
         ],
-        "ms": 11195
+        "ms": 9194
       },
       {
         "id": "hair.colour",
@@ -1877,10 +1878,10 @@
         "calls": [
           {
             "mode": "(default)",
-            "answer": "served {\"free\":{\"hairShade\":\"copper red\"}}"
+            "answer": "served {\"hairColour\":\"copper\"}"
           }
         ],
-        "ms": 21266
+        "ms": 12433
       },
       {
         "id": "hair.style",
@@ -1893,7 +1894,7 @@
             "answer": "served {\"hairStyle\":\"bob\"}"
           }
         ],
-        "ms": 7066
+        "ms": 9224
       },
       {
         "id": "hair.bald",
@@ -1903,10 +1904,10 @@
         "calls": [
           {
             "mode": "(default)",
-            "answer": "served {\"free\":{\"hairCut\":\"bald\"}}"
+            "answer": "served {\"hairStyle\":\"shaved head\"}"
           }
         ],
-        "ms": 14634
+        "ms": 16614
       },
       {
         "id": "eye.colour",
@@ -1919,7 +1920,7 @@
             "answer": "served {\"eyeColour\":\"green\"}"
           }
         ],
-        "ms": 13111
+        "ms": 14108
       },
       {
         "id": "eye.colour.side",
@@ -1932,7 +1933,7 @@
             "answer": "served {\"free\":{\"eyeColourFree\":\"right eye fiery red\"}}"
           }
         ],
-        "ms": 15026
+        "ms": 29365
       },
       {
         "id": "eye.shape.fox",
@@ -1945,7 +1946,7 @@
             "answer": "served {\"eyeShape\":\"fox eyes\"}"
           }
         ],
-        "ms": 10625
+        "ms": 10433
       },
       {
         "id": "eye.scoped.left",
@@ -1958,7 +1959,7 @@
             "answer": "served {\"eyeColour\":\"green\"}"
           }
         ],
-        "ms": 10193
+        "ms": 10001
       },
       {
         "id": "build.muscular",
@@ -1971,7 +1972,7 @@
             "answer": "served {\"free\":{\"build\":\"jacked muscular build\"}}"
           }
         ],
-        "ms": 10995
+        "ms": 11129
       },
       {
         "id": "skin.tan",
@@ -1984,7 +1985,7 @@
             "answer": "served {\"free\":{\"skinTone\":\"deep tan\"}}"
           }
         ],
-        "ms": 9362
+        "ms": 9155
       },
       {
         "id": "wardrobe.tee",
@@ -1997,7 +1998,7 @@
             "answer": "refused:wall_unbacked"
           }
         ],
-        "ms": 12863
+        "ms": 12668
       },
       {
         "id": "light.softer",
@@ -2010,7 +2011,7 @@
             "answer": "refused:unreadable"
           }
         ],
-        "ms": 10091
+        "ms": 9536
       },
       {
         "id": "open.wings",
@@ -2023,7 +2024,7 @@
             "answer": "served {\"open\":{\"wings\":{\"noun\":\"wings\",\"words\":\"wings\"}}}"
           }
         ],
-        "ms": 12610
+        "ms": 12333
       },
       {
         "id": "open.horns",
@@ -2036,7 +2037,7 @@
             "answer": "served {\"free\":{\"horns\":[\"small horns\"]}}"
           }
         ],
-        "ms": 9540
+        "ms": 10554
       },
       {
         "id": "makeup.lipstick",
@@ -2049,7 +2050,7 @@
             "answer": "served {\"makeup\":\"red lipstick\"}"
           }
         ],
-        "ms": 9383
+        "ms": 8870
       },
       {
         "id": "guard.likeness",
@@ -2062,7 +2063,7 @@
             "answer": "refused:wall_likeness"
           }
         ],
-        "ms": 6876
+        "ms": 6673
       },
       {
         "id": "guard.content",
@@ -2075,7 +2076,7 @@
             "answer": "refused:wall_content"
           }
         ],
-        "ms": 5031
+        "ms": 4131
       },
       {
         "id": "guard.stage",
@@ -2088,7 +2089,7 @@
             "answer": "refused:wall_unbacked"
           }
         ],
-        "ms": 12714
+        "ms": 12326
       },
       {
         "id": "guard.empty",
@@ -2101,7 +2102,7 @@
             "answer": "refused:empty"
           }
         ],
-        "ms": 1522
+        "ms": 1592
       },
       {
         "id": "guard.gibberish",
@@ -2114,7 +2115,7 @@
             "answer": "refused:unreadable"
           }
         ],
-        "ms": 9690
+        "ms": 8825
       },
       {
         "id": "guard.typo",
@@ -2124,10 +2125,10 @@
         "calls": [
           {
             "mode": "(default)",
-            "answer": "served {\"free\":{\"statedAccessories\":[\"a nose ring\"]}}"
+            "answer": "served {\"free\":{\"statedAccessories\":[\"nose ring\"]}}"
           }
         ],
-        "ms": 21943
+        "ms": 22580
       },
       {
         "id": "guard.scope.unknown",
@@ -2135,7 +2136,7 @@
         "facet": null,
         "said": "I don't know which part of him that is. Nothing was charged.",
         "calls": [],
-        "ms": 1183
+        "ms": 1236
       },
       {
         "id": "guard.scope.ink.none",
@@ -2148,7 +2149,7 @@
             "answer": "refused:unreadable"
           }
         ],
-        "ms": 8941
+        "ms": 9808
       },
       {
         "id": "ink.words.neck.branch",
@@ -2161,7 +2162,7 @@
             "answer": "served {\"free\":{\"ink\":[\"small swallow tattoo on his left upper arm\",\"small star tattoo on his neck\"]}}"
           }
         ],
-        "ms": 11947
+        "ms": 11477
       },
       {
         "id": "ink.remove.branch.whole",
@@ -2174,7 +2175,7 @@
             "answer": "ok:remove"
           }
         ],
-        "ms": 8945
+        "ms": 19015
       },
       {
         "id": "acc.remove.branch.other",
@@ -2187,7 +2188,7 @@
             "answer": "ok:remove"
           }
         ],
-        "ms": 7076
+        "ms": 6320
       },
       {
         "id": "age.older",
@@ -2200,7 +2201,7 @@
             "answer": "refused:wall_unbacked"
           }
         ],
-        "ms": 12987
+        "ms": 12151
       },
       {
         "id": "expression.smile",
@@ -2213,20 +2214,24 @@
             "answer": "served {\"free\":{\"expression\":\"smiling\"}}"
           }
         ],
-        "ms": 10075
+        "ms": 10813
       },
       {
         "id": "hair.remove.none",
-        "observed": "refused:removal_absent",
-        "facet": "hairCut",
-        "said": "I can't find any fringe on this face — there's nothing to take off. Nothing was charged.",
+        "observed": "would-render",
+        "facet": null,
+        "said": null,
         "calls": [
           {
             "mode": "(default)",
             "answer": "ok:remove"
+          },
+          {
+            "mode": "edit",
+            "answer": "served {\"free\":{\"hairCut\":\"no fringe\"}}"
           }
         ],
-        "ms": 4591
+        "ms": 12720
       },
       {
         "id": "acc.piercing",
@@ -2239,7 +2244,7 @@
             "answer": "served {\"free\":{\"statedAccessories\":[\"silver nose ring\"]}}"
           }
         ],
-        "ms": 10791
+        "ms": 9113
       },
       {
         "id": "eye.both.sides",
@@ -2249,10 +2254,10 @@
         "calls": [
           {
             "mode": "(default)",
-            "answer": "served {\"free\":{\"eyeColourFree\":\"left eye blue and right eye green\"}}"
+            "answer": "served {\"free\":{\"eyeColourFree\":\"left eye blue, right eye green\"}}"
           }
         ],
-        "ms": 17597
+        "ms": 9430
       },
       {
         "id": "skin.freckles.remove.none",
@@ -2269,7 +2274,7 @@
             "answer": "refused:unreadable"
           }
         ],
-        "ms": 15928
+        "ms": 17423
       },
       {
         "id": "brows.thicker",
@@ -2282,7 +2287,7 @@
             "answer": "served {\"free\":{\"brows\":\"thicker eyebrows\"}}"
           }
         ],
-        "ms": 9614
+        "ms": 10578
       },
       {
         "id": "beard.full",
@@ -2295,7 +2300,7 @@
             "answer": "served {\"free\":{\"facialHair\":\"full beard\"}}"
           }
         ],
-        "ms": 8751
+        "ms": 8960
       },
       {
         "id": "guard.undo",
@@ -2308,7 +2313,7 @@
             "answer": "ok:navigate"
           }
         ],
-        "ms": 3972
+        "ms": 3966
       },
       {
         "id": "guard.multi",
@@ -2321,7 +2326,7 @@
             "answer": "served {\"eyeColour\":\"green\",\"hairColour\":\"copper\",\"free\":{\"marks\":[\"freckles\"]}}"
           }
         ],
-        "ms": 9836
+        "ms": 11068
       },
       {
         "id": "guard.compliment",
@@ -2334,20 +2339,20 @@
             "answer": "refused:wall_unbacked"
           }
         ],
-        "ms": 12536
+        "ms": 11933
       },
       {
         "id": "wardrobe.colour",
         "observed": "refused:wall_unbacked",
-        "facet": "tee",
-        "said": "Refining can't do tee yet — it isn't one of the things this can name. Faces, hair, skin, build and anything worn do work here. Nothing was charged.",
+        "facet": "his tee",
+        "said": "Refining can't do his tee yet — it isn't one of the things this can name. Faces, hair, skin, build and anything worn do work here. Nothing was charged.",
         "calls": [
           {
             "mode": "(default)",
             "answer": "refused:wall_unbacked"
           }
         ],
-        "ms": 11944
+        "ms": 12636
       },
       {
         "id": "background.white",
@@ -2360,7 +2365,7 @@
             "answer": "refused:wall_stage"
           }
         ],
-        "ms": 4103
+        "ms": 5131
       },
       {
         "id": "ink.transform.dangling",
@@ -2374,10 +2379,10 @@
           },
           {
             "mode": "edit",
-            "answer": "served {\"free\":{\"ink\":[\"a bigger fine-line swallow chest piece\"]}}"
+            "answer": "served {\"free\":{\"ink\":[\"a bigger chest piece\"]}}"
           }
         ],
-        "ms": 18438
+        "ms": 18555
       },
       {
         "id": "ink.scoped.none.prefill",
@@ -2390,7 +2395,7 @@
             "answer": "served {\"free\":{\"ink\":[\"a bigger upper arm tattoo\"]}}"
           }
         ],
-        "ms": 9658
+        "ms": 8526
       }
     ],
     "notDriven": [
@@ -2409,20 +2414,6 @@
     }
   },
   "findings": [
-    {
-      "id": "belief:hair.remove.none",
-      "severity": "warn",
-      "kind": "belief-mismatch",
-      "subject": "hair.remove.none",
-      "message": "\"remove her fringe\" — believed would-render, observed refused:removal_absent"
-    },
-    {
-      "id": "belief:ink.transform.wrongslot",
-      "severity": "warn",
-      "kind": "belief-mismatch",
-      "subject": "ink.transform.wrongslot",
-      "message": "\"his upper chest tattoo — make it bigger\" — believed free:noInkToChange, observed would-render"
-    },
     {
       "id": "documented:already_signed",
       "severity": "info",
