@@ -54,6 +54,43 @@ export type InkStyle = {
    * nobody agrees which one a style takes.
    */
   readonly names: readonly string[];
+  /**
+   * WHICH OF THOSE NAMES ARE ALSO ORDINARY ENGLISH — each with its one-line
+   * reason, so the judgement lives beside the word it is about.
+   *
+   * ⚠ **The court that bought this** (ordered fable-1384, run opus-1036, ruled
+   * fable-1390 §1). `geometric` and `traditional` are style names AND ordinary
+   * adjectives, so an ask that was never about style drew a style clause. At
+   * the frames, on a controlled pair whose only difference was the adjective:
+   * *"a small geometric skeleton design"* came back a WIDE SYMMETRIC MANDALA
+   * across the whole throat with a skull at its centre, and the same ask
+   * without the word came back the small side-of-neck skeleton figure she
+   * asked for. **The clause did not tune the design; it replaced it.**
+   *
+   * A bare name only counts when the next word is a STYLE MARKER
+   * ({@link STYLE_MARKERS}) or when it is the last thing she said. Anything
+   * else and the occurrence is ignored — which is a return to exactly the
+   * prompt this product composed before the glossary existed, so the failure
+   * direction is *no clause* rather than *a wrong clause*.
+   *
+   * The other measured over-trigger, `traditional`, is here **on the mechanism
+   * and not on harm** — the founder judged the fired frame acceptable
+   * (*"traditional came out japanese traditional and its correct"*, fable-1392),
+   * overruling both my reading and the reviewer's. The routing is still wrong:
+   * an entry's paint string reached a prompt that did not name that entry.
+   *
+   * Absent where every name is coined. `inkStyleGlossary.test.ts` pins the
+   * classification of EVERY name in the glossary, so a style added later
+   * cannot skip the question — an unclassified name reddens the suite.
+   */
+  /*
+    `string | undefined` rather than `string`: `Object.freeze` on the seed array
+    below defeats contextual typing, so TypeScript infers a UNION of the entry
+    literals and gives every entry an optional `?: undefined` member for every
+    key any sibling declared. The values are never undefined in practice, and
+    the test asserts each marking carries a real reason.
+  */
+  readonly bare?: Readonly<Record<string, string | undefined>>;
   /** What the engine should PAINT — the tattooist's reading of the word. */
   readonly paint: string;
   /**
@@ -81,6 +118,7 @@ export const INK_STYLES: readonly InkStyle[] = Object.freeze([
   },
   {
     key: "tribal",
+    bare: { tribal: "an ordinary adjective — 'a tribal mask portrait' is a subject, not a style" },
     names: ["tribal", "polynesian", "maori", "neotribal", "neo tribal"],
     paint: "bold solid black shapes with sweeping curves and sharp points, built from thick "
       + "tapering bands that interlock, with the skin itself forming the pattern between them",
@@ -95,6 +133,7 @@ export const INK_STYLES: readonly InkStyle[] = Object.freeze([
   },
   {
     key: "ignorantStyle",
+    bare: { ignorant: "ordinary English on its own — the two-word `ignorant style` is longer and wins where she means the style" },
     names: ["ignorant style", "ignorant-style", "ignorant", "naive style"],
     paint: "deliberately crude single-weight outlines with childlike, unpolished proportions "
       + "and no shading — drawn quickly and confidently on purpose",
@@ -109,6 +148,10 @@ export const INK_STYLES: readonly InkStyle[] = Object.freeze([
   },
   {
     key: "americanTraditional",
+    bare: {
+      traditional: "the commonest ordinary adjective in the whole vocabulary — 'a traditional chinese dragon' means CLASSICAL and drew the sailor palette (measured, fable-1392: the frame was still acceptable to him)",
+      "old school": "ordinary English — 'an old school telephone' is a subject",
+    },
     names: ["american traditional", "old school", "old-school", "sailor jerry", "traditional"],
     paint: "heavy black outlines, a small flat palette of red, yellow and green, simple bold "
       + "iconography and minimal shading",
@@ -121,6 +164,7 @@ export const INK_STYLES: readonly InkStyle[] = Object.freeze([
   },
   {
     key: "irezumi",
+    bare: { japanese: "a nationality before it is a style — 'a japanese maple leaf' would draw koi, dragons and saturated colour onto a delicate leaf" },
     names: ["irezumi", "japanese", "japanese traditional", "tebori", "horimono"],
     paint: "classical Japanese imagery — koi, dragons, tigers, peonies, waves — with bold "
       + "outlines, deep saturated colour and stylised wind-and-water background flowing "
@@ -128,18 +172,25 @@ export const INK_STYLES: readonly InkStyle[] = Object.freeze([
   },
   {
     key: "blackwork",
+    bare: {
+      "black work": "two ordinary words beside each other; the closed-up `blackwork` is the coined one",
+      "black out": "ordinary English — a blackout is a thing that happens to a room",
+      blackout: "same word, closed up, and no more a style word for it",
+    },
     names: ["blackwork", "black work", "black out", "blackout"],
     paint: "solid black used as the material itself — large filled areas, strong graphic "
       + "shapes, and high contrast against bare skin",
   },
   {
     key: "dotwork",
+    bare: { "dot work": "two ordinary words beside each other; the closed-up `dotwork` is the coined one" },
     names: ["dotwork", "dot work", "stippling", "stipple"],
     paint: "form and shadow built entirely from dots of varying density, with no solid "
       + "shading and no continuous grey",
   },
   {
     key: "geometric",
+    bare: { geometric: "THE PROVEN-HARM SPECIMEN — 'a small geometric skeleton design' delivered a throat mandala instead (opus-1036 §3a, at the frames)" },
     names: ["geometric", "sacred geometry", "linework geometric"],
     paint: "precise repeating geometry — mandalas, tessellation, mirrored symmetry — drawn "
       + "with ruled, even lines",
@@ -176,18 +227,78 @@ function flatten(text: string): string {
  * instructions about how to draw one design, and the engine gets to choose —
  * the same reason a transform refuses two axes in one sentence. The first
  * match by name length wins, which is the most specific thing she said.
+ *
+ * # ⚠ AND A BARE NAME MUST BE FOLLOWED BY A MARKER (fable-1390 §1)
+ *
+ * See {@link InkStyle.bare}. A name that is also ordinary English only counts
+ * where the next word says she is talking about a STYLE, or where it is the
+ * last thing she said. Otherwise the occurrence is SKIPPED and the search goes
+ * on — so *"a small geometric skeleton design"* can still find a real style
+ * word later in the sentence, and finds nothing when there is none.
+ *
+ * The failure direction is deliberate: a bare name that goes unmatched composes
+ * exactly the prompt this product composed before the glossary existed. A bare
+ * name that matches wrongly REPLACES her design, which is what the frames
+ * showed.
  */
 export function inkStyleNamedIn(words: string | null | undefined): InkStyle | null {
   if (!words) return null;
   const said = ` ${flatten(words)} `;
   const candidates = INK_STYLES
-    .flatMap((style) => style.names.map((name) => ({ style, name: flatten(name) })))
+    .flatMap((style) => style.names.map((name) => ({
+      style,
+      name: flatten(name),
+      /*
+        ⚠ BARENESS IS A FACT ABOUT THE FLATTENED WORD, NOT ABOUT ONE SPELLING
+        OF IT — and the first draft got this wrong in a way the sweep caught.
+
+        `old school` was marked and `old-school` was not; they flatten to the
+        same string, the unmarked one sorted equal and matched first, and
+        *"an old school telephone"* went on drawing the sailor palette while the
+        entry beside it said the word was bare. So a name is bare if ANY authored
+        spelling that flattens to it is marked, which makes marking one spelling
+        enough and removes the whole class.
+      */
+      bare: style.bare !== undefined
+        && Object.keys(style.bare).some((marked) => flatten(marked) === flatten(name)),
+    })))
     .sort((a, b) => b.name.length - a.name.length);
-  for (const { style, name } of candidates) {
-    if (said.includes(` ${name} `)) return style;
+  for (const { style, name, bare } of candidates) {
+    const at = said.indexOf(` ${name} `);
+    if (at === -1) continue;
+    if (!bare) return style;
+    /* What she said next. The name sits between two spaces, so the remainder
+       starts one space past its end. */
+    const after = said.slice(at + name.length + 2).trim();
+    if (after === "") return style;
+    if (STYLE_MARKERS.has(after.split(" ")[0])) return style;
   }
   return null;
 }
+
+/**
+ * THE WORDS THAT SAY SHE IS NAMING A STYLE AND NOT DESCRIBING A SUBJECT.
+ *
+ * Short on purpose, and every entry is a word that can only follow a style
+ * name: *"a tribal tattoo"*, *"a geometric pattern"*, *"a traditional piece"*.
+ * The ones that hurt are the ones that could equally follow an adjective
+ * describing a THING — `skeleton`, `dragon`, `leaf`, `mask` — and none of those
+ * is here, which is the whole discrimination.
+ *
+ * ⚠ **Adding a word here widens what a bare name can claim.** `mandala` is the
+ * tempting one and it is deliberately absent: it is the geometric entry's own
+ * paint word, so admitting it would let `geometric` claim a design that named
+ * the shape rather than the style.
+ */
+const STYLE_MARKERS: ReadonlySet<string> = new Set([
+  "tattoo", "tattoos", "tattooing",
+  "style", "styles", "styled",
+  "piece", "pieces",
+  "work", "artwork",
+  "design", "designs",
+  "pattern", "patterns",
+  "lettering", "script", "flash", "sleeve", "band", "motif", "ink",
+]);
 
 /**
  * THE CLAUSE, or an empty string when she named no style.
