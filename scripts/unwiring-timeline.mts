@@ -75,7 +75,8 @@
  * Reading only: one detached worktree, no network, no database, no credits.
  */
 import { execFileSync } from "node:child_process";
-import { existsSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, writeFileSync } from "node:fs";
+import { dirname } from "node:path";
 
 import {
   classifyTimeline,
@@ -203,6 +204,9 @@ for (const row of died) {
   console.log(`              read it: git log -S ${row.name} --oneline -- ${row.lostImporters[0] ?? ""}`);
 }
 
+/* `output/` is untracked, so a fresh clone does not have it — a 60-second read
+   must not be thrown away on the last line. */
+mkdirSync(dirname(OUT), { recursive: true });
 writeFileSync(OUT, JSON.stringify({ stride: STRIDE, shas, dates, rows }, null, 2));
 console.log(`\nwrote ${OUT}`);
 process.exit(0);
