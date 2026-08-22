@@ -219,6 +219,22 @@ export const CORPUS: readonly CorpusRow[] = [
  * actually produced (stale documentation). So this list can lie in neither
  * direction quietly.
  */
+/**
+ * THE KNOWN DEBTS — the enumerated, SHRINK-ONLY list of doors the map does not
+ * yet reach or document (founder law, fable-1359: the atlas is kept current
+ * after every change). An unreached door NOT on this list is an ERROR and the
+ * rite refuses the push — so a new door cannot ship without its row or its
+ * documented reason in the same commit. A door on this list that becomes
+ * reached or documented is ALSO an error until its line is deleted, so the
+ * list can only shrink. Additions to this list are a founder-visible act, not
+ * a convenience.
+ */
+export const KNOWN_DEBTS: readonly string[] = [
+  "absorbed", "absorbed_departure", "departure", "nothingAsked", "noWords",
+  "perSideRemoval", "removal", "removal_unnameable", "removal_unnamed",
+  "sideNamedWithoutScope", "uncatalogued", "unnamedObject", "wall_unfileable",
+];
+
 export const UNREACHABLE_DOORS: ReadonlyArray<{ id: string; reason: string; becomesReachable: string }> = [
   { id: "unplacedInk",
     reason: "raised at the pre-claim ink door only for a DOCUMENTED ask with no placement; every master-state words ask dies earlier at the document gate (measured, drive-4), and the documented states (reference attached, delivered ink) resolve their placement before that door",

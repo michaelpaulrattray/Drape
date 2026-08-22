@@ -53,7 +53,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { CORPUS, UNREACHABLE_DOORS, type CorpusRow, type CorpusState } from "../capability-atlas-corpus.mts";
+import { CORPUS, UNREACHABLE_DOORS, KNOWN_DEBTS, type CorpusRow, type CorpusState } from "../capability-atlas-corpus.mts";
 import { ROADS, LAWS, type Road } from "../capability-atlas-roads.mts";
 import { CANNOT_SAY_COPY, cannotSaySentence, type CannotSayReason } from "../../server/castingV2/cannotSayCopy";
 import { FREE_SUBJECT_KEYS } from "../../server/castingV2/subjectCards";
@@ -271,18 +271,45 @@ export function buildStaticAtlas(corpus: readonly CorpusRow[] = CORPUS): StaticA
       });
     }
   }
+  const knownDebts = new Set(KNOWN_DEBTS);
   for (const entry of declared) {
-    if (expectedIds.has(entry.id)) continue;
+    if (expectedIds.has(entry.id)) {
+      /* A debt that got reached must leave the list — shrink-only, enforced. */
+      if (knownDebts.has(entry.id)) {
+        findings.push({
+          id: `stale-debt:${entry.id}`, severity: "error", kind: "coverage-contradiction", subject: entry.id,
+          message: `"${entry.id}" is on KNOWN_DEBTS and a corpus row now expects it — delete its debt line; the list only shrinks`,
+        });
+      }
+      continue;
+    }
     const doc = documented.get(entry.id);
     if (doc) {
+      if (knownDebts.has(entry.id)) {
+        findings.push({
+          id: `stale-debt:${entry.id}`, severity: "error", kind: "coverage-contradiction", subject: entry.id,
+          message: `"${entry.id}" is on KNOWN_DEBTS and is documented — delete its debt line; the list only shrinks`,
+        });
+      }
       findings.push({
         id: `documented:${entry.id}`, severity: "info", kind: "documented-unreachable", subject: entry.id,
         message: `unreachable by design: ${doc.reason} — becomes reachable via: ${doc.becomesReachable}`,
       });
-    } else {
+    } else if (knownDebts.has(entry.id)) {
       findings.push({
         id: `unreached:${entry.id}`, severity: "warn", kind: "unreached", subject: entry.id,
-        message: `no corpus row expects "${entry.id}" and no reason is on file — reach it or document why it cannot be`,
+        message: `KNOWN DEBT: no corpus row expects "${entry.id}" — the map's named remainder (founder law: this list only shrinks)`,
+      });
+    } else {
+      /*
+        THE FOUNDER LAW'S TEETH (fable-1359): a NEW door with no row, no
+        documentation and no debt line is an ERROR — the rite runs this check
+        on every push, so a casting change cannot ship without its map entry
+        in the same commit.
+      */
+      findings.push({
+        id: `unmapped:${entry.id}`, severity: "error", kind: "unreached", subject: entry.id,
+        message: `"${entry.id}" is a door the map does not know — add its corpus row, its UNREACHABLE_DOORS reason, or (founder-visible) its KNOWN_DEBTS line in this same commit`,
       });
     }
   }

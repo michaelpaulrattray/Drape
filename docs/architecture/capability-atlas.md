@@ -288,17 +288,17 @@ _Entrances:_ `server/castingV2/facePanel.ts` · `server/castingV2/faceScanServic
 - **info** `documented-unreachable` whichInkToChange — unreachable by design: needs a branch wearing TWO tattoos; no cast in either world has ever worn two at once (opus-966 §1) and the multi-tattoo fixture is §10 item 3b's build — becomes reachable via: item 3b's keying work, which needs two-tattoo state to test itself
 - **info** `not-driven` ref.hair.whole — needs state "reference-attached", which this fixture cannot supply
 - **info** `not-driven` ref.ink.sleeve — needs state "reference-attached", which this fixture cannot supply
-- **warn** `unreached` absorbed — no corpus row expects "absorbed" and no reason is on file — reach it or document why it cannot be
-- **warn** `unreached` absorbed_departure — no corpus row expects "absorbed_departure" and no reason is on file — reach it or document why it cannot be
-- **warn** `unreached` departure — no corpus row expects "departure" and no reason is on file — reach it or document why it cannot be
-- **warn** `unreached` nothingAsked — no corpus row expects "nothingAsked" and no reason is on file — reach it or document why it cannot be
-- **warn** `unreached` noWords — no corpus row expects "noWords" and no reason is on file — reach it or document why it cannot be
-- **warn** `unreached` perSideRemoval — no corpus row expects "perSideRemoval" and no reason is on file — reach it or document why it cannot be
-- **warn** `unreached` removal — no corpus row expects "removal" and no reason is on file — reach it or document why it cannot be
-- **warn** `unreached` removal_unnameable — no corpus row expects "removal_unnameable" and no reason is on file — reach it or document why it cannot be
-- **warn** `unreached` removal_unnamed — no corpus row expects "removal_unnamed" and no reason is on file — reach it or document why it cannot be
-- **warn** `unreached` sideNamedWithoutScope — no corpus row expects "sideNamedWithoutScope" and no reason is on file — reach it or document why it cannot be
-- **warn** `unreached` uncatalogued — no corpus row expects "uncatalogued" and no reason is on file — reach it or document why it cannot be
-- **warn** `unreached` unnamedObject — no corpus row expects "unnamedObject" and no reason is on file — reach it or document why it cannot be
-- **warn** `unreached` wall_unfileable — no corpus row expects "wall_unfileable" and no reason is on file — reach it or document why it cannot be
+- **warn** `unreached` absorbed — KNOWN DEBT: no corpus row expects "absorbed" — the map's named remainder (founder law: this list only shrinks)
+- **warn** `unreached` absorbed_departure — KNOWN DEBT: no corpus row expects "absorbed_departure" — the map's named remainder (founder law: this list only shrinks)
+- **warn** `unreached` departure — KNOWN DEBT: no corpus row expects "departure" — the map's named remainder (founder law: this list only shrinks)
+- **warn** `unreached` nothingAsked — KNOWN DEBT: no corpus row expects "nothingAsked" — the map's named remainder (founder law: this list only shrinks)
+- **warn** `unreached` noWords — KNOWN DEBT: no corpus row expects "noWords" — the map's named remainder (founder law: this list only shrinks)
+- **warn** `unreached` perSideRemoval — KNOWN DEBT: no corpus row expects "perSideRemoval" — the map's named remainder (founder law: this list only shrinks)
+- **warn** `unreached` removal — KNOWN DEBT: no corpus row expects "removal" — the map's named remainder (founder law: this list only shrinks)
+- **warn** `unreached` removal_unnameable — KNOWN DEBT: no corpus row expects "removal_unnameable" — the map's named remainder (founder law: this list only shrinks)
+- **warn** `unreached` removal_unnamed — KNOWN DEBT: no corpus row expects "removal_unnamed" — the map's named remainder (founder law: this list only shrinks)
+- **warn** `unreached` sideNamedWithoutScope — KNOWN DEBT: no corpus row expects "sideNamedWithoutScope" — the map's named remainder (founder law: this list only shrinks)
+- **warn** `unreached` uncatalogued — KNOWN DEBT: no corpus row expects "uncatalogued" — the map's named remainder (founder law: this list only shrinks)
+- **warn** `unreached` unnamedObject — KNOWN DEBT: no corpus row expects "unnamedObject" — the map's named remainder (founder law: this list only shrinks)
+- **warn** `unreached` wall_unfileable — KNOWN DEBT: no corpus row expects "wall_unfileable" — the map's named remainder (founder law: this list only shrinks)
 

@@ -142,6 +142,33 @@ After changing routes, schemas, database access, ownership rules, billing, worke
 
 The Atlas (`docs/architecture/drape-architecture.json`, with a filterable `index.html` derived from it) is mechanically extracted from source — it never runs app code, opens a database, reads an env *value*, or touches R2. It is the deletion authority for the legacy-retirement program: nothing is removed while its retirement view still shows live callers.
 
+## The Capability Atlas — kept current after every change (founder law, 2026-08-22)
+
+> *"as we develop the studio … this atlas must be kept up to date after every
+> change"* — verbatim, ratified fable-1359.
+
+`docs/architecture/capability-atlas.{json,md}` is the map an agent reads to
+understand how the casting studio works — the roads, the doors (every refusal,
+gate and free answer, each with its extracted `file:line`), the flags, the laws,
+and a driven corpus recording what the real refine entrance actually does with
+canonical asks. **A capability change ships with its map entry in the same
+commit**: a new door gets a corpus row, an `UNREACHABLE_DOORS` reason, or (a
+founder-visible act) a `KNOWN_DEBTS` line; moved copy, routing or flags get
+their rows re-driven or their beliefs corrected.
+
+**This is enforced, not remembered**: `pnpm capability:check` runs inside the
+deploy rite on every push and inside `pnpm test`, and an unmapped door is an
+ERROR — the push does not fire (proven able to fail by sabotage the day the law
+landed: one deleted debt line, exactly one refusing error). `KNOWN_DEBTS`
+(`scripts/capability-atlas-corpus.mts`) is the enumerated remainder and it only
+shrinks — a debt that becomes reached or documented errors until its line is
+deleted. The roads' prose is hand-written but its citations are validated
+against source at generate time; a road citing a door, flag or entrance the
+code does not have refuses to generate. Regenerate with
+`pnpm capability:generate` (static) or `--drive` (re-drives the corpus through
+the real entrance, cents of text calls, never a credit — the ledger arm refuses
+a run that spends).
+
 ## Architecture
 
 Single Express server serves both the tRPC API and the client (Vite middleware in dev, static `dist/public` in prod). Entry: `server/_core/index.ts`.

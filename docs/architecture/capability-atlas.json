@@ -1530,91 +1530,91 @@
         "severity": "warn",
         "kind": "unreached",
         "subject": "absorbed",
-        "message": "no corpus row expects \"absorbed\" and no reason is on file — reach it or document why it cannot be"
+        "message": "KNOWN DEBT: no corpus row expects \"absorbed\" — the map's named remainder (founder law: this list only shrinks)"
       },
       {
         "id": "unreached:absorbed_departure",
         "severity": "warn",
         "kind": "unreached",
         "subject": "absorbed_departure",
-        "message": "no corpus row expects \"absorbed_departure\" and no reason is on file — reach it or document why it cannot be"
+        "message": "KNOWN DEBT: no corpus row expects \"absorbed_departure\" — the map's named remainder (founder law: this list only shrinks)"
       },
       {
         "id": "unreached:departure",
         "severity": "warn",
         "kind": "unreached",
         "subject": "departure",
-        "message": "no corpus row expects \"departure\" and no reason is on file — reach it or document why it cannot be"
+        "message": "KNOWN DEBT: no corpus row expects \"departure\" — the map's named remainder (founder law: this list only shrinks)"
       },
       {
         "id": "unreached:nothingAsked",
         "severity": "warn",
         "kind": "unreached",
         "subject": "nothingAsked",
-        "message": "no corpus row expects \"nothingAsked\" and no reason is on file — reach it or document why it cannot be"
+        "message": "KNOWN DEBT: no corpus row expects \"nothingAsked\" — the map's named remainder (founder law: this list only shrinks)"
       },
       {
         "id": "unreached:noWords",
         "severity": "warn",
         "kind": "unreached",
         "subject": "noWords",
-        "message": "no corpus row expects \"noWords\" and no reason is on file — reach it or document why it cannot be"
+        "message": "KNOWN DEBT: no corpus row expects \"noWords\" — the map's named remainder (founder law: this list only shrinks)"
       },
       {
         "id": "unreached:perSideRemoval",
         "severity": "warn",
         "kind": "unreached",
         "subject": "perSideRemoval",
-        "message": "no corpus row expects \"perSideRemoval\" and no reason is on file — reach it or document why it cannot be"
+        "message": "KNOWN DEBT: no corpus row expects \"perSideRemoval\" — the map's named remainder (founder law: this list only shrinks)"
       },
       {
         "id": "unreached:removal",
         "severity": "warn",
         "kind": "unreached",
         "subject": "removal",
-        "message": "no corpus row expects \"removal\" and no reason is on file — reach it or document why it cannot be"
+        "message": "KNOWN DEBT: no corpus row expects \"removal\" — the map's named remainder (founder law: this list only shrinks)"
       },
       {
         "id": "unreached:removal_unnameable",
         "severity": "warn",
         "kind": "unreached",
         "subject": "removal_unnameable",
-        "message": "no corpus row expects \"removal_unnameable\" and no reason is on file — reach it or document why it cannot be"
+        "message": "KNOWN DEBT: no corpus row expects \"removal_unnameable\" — the map's named remainder (founder law: this list only shrinks)"
       },
       {
         "id": "unreached:removal_unnamed",
         "severity": "warn",
         "kind": "unreached",
         "subject": "removal_unnamed",
-        "message": "no corpus row expects \"removal_unnamed\" and no reason is on file — reach it or document why it cannot be"
+        "message": "KNOWN DEBT: no corpus row expects \"removal_unnamed\" — the map's named remainder (founder law: this list only shrinks)"
       },
       {
         "id": "unreached:sideNamedWithoutScope",
         "severity": "warn",
         "kind": "unreached",
         "subject": "sideNamedWithoutScope",
-        "message": "no corpus row expects \"sideNamedWithoutScope\" and no reason is on file — reach it or document why it cannot be"
+        "message": "KNOWN DEBT: no corpus row expects \"sideNamedWithoutScope\" — the map's named remainder (founder law: this list only shrinks)"
       },
       {
         "id": "unreached:uncatalogued",
         "severity": "warn",
         "kind": "unreached",
         "subject": "uncatalogued",
-        "message": "no corpus row expects \"uncatalogued\" and no reason is on file — reach it or document why it cannot be"
+        "message": "KNOWN DEBT: no corpus row expects \"uncatalogued\" — the map's named remainder (founder law: this list only shrinks)"
       },
       {
         "id": "unreached:unnamedObject",
         "severity": "warn",
         "kind": "unreached",
         "subject": "unnamedObject",
-        "message": "no corpus row expects \"unnamedObject\" and no reason is on file — reach it or document why it cannot be"
+        "message": "KNOWN DEBT: no corpus row expects \"unnamedObject\" — the map's named remainder (founder law: this list only shrinks)"
       },
       {
         "id": "unreached:wall_unfileable",
         "severity": "warn",
         "kind": "unreached",
         "subject": "wall_unfileable",
-        "message": "no corpus row expects \"wall_unfileable\" and no reason is on file — reach it or document why it cannot be"
+        "message": "KNOWN DEBT: no corpus row expects \"wall_unfileable\" — the map's named remainder (founder law: this list only shrinks)"
       }
     ]
   },
@@ -2554,91 +2554,91 @@
       "severity": "warn",
       "kind": "unreached",
       "subject": "absorbed",
-      "message": "no corpus row expects \"absorbed\" and no reason is on file — reach it or document why it cannot be"
+      "message": "KNOWN DEBT: no corpus row expects \"absorbed\" — the map's named remainder (founder law: this list only shrinks)"
     },
     {
       "id": "unreached:absorbed_departure",
       "severity": "warn",
       "kind": "unreached",
       "subject": "absorbed_departure",
-      "message": "no corpus row expects \"absorbed_departure\" and no reason is on file — reach it or document why it cannot be"
+      "message": "KNOWN DEBT: no corpus row expects \"absorbed_departure\" — the map's named remainder (founder law: this list only shrinks)"
     },
     {
       "id": "unreached:departure",
       "severity": "warn",
       "kind": "unreached",
       "subject": "departure",
-      "message": "no corpus row expects \"departure\" and no reason is on file — reach it or document why it cannot be"
+      "message": "KNOWN DEBT: no corpus row expects \"departure\" — the map's named remainder (founder law: this list only shrinks)"
     },
     {
       "id": "unreached:nothingAsked",
       "severity": "warn",
       "kind": "unreached",
       "subject": "nothingAsked",
-      "message": "no corpus row expects \"nothingAsked\" and no reason is on file — reach it or document why it cannot be"
+      "message": "KNOWN DEBT: no corpus row expects \"nothingAsked\" — the map's named remainder (founder law: this list only shrinks)"
     },
     {
       "id": "unreached:noWords",
       "severity": "warn",
       "kind": "unreached",
       "subject": "noWords",
-      "message": "no corpus row expects \"noWords\" and no reason is on file — reach it or document why it cannot be"
+      "message": "KNOWN DEBT: no corpus row expects \"noWords\" — the map's named remainder (founder law: this list only shrinks)"
     },
     {
       "id": "unreached:perSideRemoval",
       "severity": "warn",
       "kind": "unreached",
       "subject": "perSideRemoval",
-      "message": "no corpus row expects \"perSideRemoval\" and no reason is on file — reach it or document why it cannot be"
+      "message": "KNOWN DEBT: no corpus row expects \"perSideRemoval\" — the map's named remainder (founder law: this list only shrinks)"
     },
     {
       "id": "unreached:removal",
       "severity": "warn",
       "kind": "unreached",
       "subject": "removal",
-      "message": "no corpus row expects \"removal\" and no reason is on file — reach it or document why it cannot be"
+      "message": "KNOWN DEBT: no corpus row expects \"removal\" — the map's named remainder (founder law: this list only shrinks)"
     },
     {
       "id": "unreached:removal_unnameable",
       "severity": "warn",
       "kind": "unreached",
       "subject": "removal_unnameable",
-      "message": "no corpus row expects \"removal_unnameable\" and no reason is on file — reach it or document why it cannot be"
+      "message": "KNOWN DEBT: no corpus row expects \"removal_unnameable\" — the map's named remainder (founder law: this list only shrinks)"
     },
     {
       "id": "unreached:removal_unnamed",
       "severity": "warn",
       "kind": "unreached",
       "subject": "removal_unnamed",
-      "message": "no corpus row expects \"removal_unnamed\" and no reason is on file — reach it or document why it cannot be"
+      "message": "KNOWN DEBT: no corpus row expects \"removal_unnamed\" — the map's named remainder (founder law: this list only shrinks)"
     },
     {
       "id": "unreached:sideNamedWithoutScope",
       "severity": "warn",
       "kind": "unreached",
       "subject": "sideNamedWithoutScope",
-      "message": "no corpus row expects \"sideNamedWithoutScope\" and no reason is on file — reach it or document why it cannot be"
+      "message": "KNOWN DEBT: no corpus row expects \"sideNamedWithoutScope\" — the map's named remainder (founder law: this list only shrinks)"
     },
     {
       "id": "unreached:uncatalogued",
       "severity": "warn",
       "kind": "unreached",
       "subject": "uncatalogued",
-      "message": "no corpus row expects \"uncatalogued\" and no reason is on file — reach it or document why it cannot be"
+      "message": "KNOWN DEBT: no corpus row expects \"uncatalogued\" — the map's named remainder (founder law: this list only shrinks)"
     },
     {
       "id": "unreached:unnamedObject",
       "severity": "warn",
       "kind": "unreached",
       "subject": "unnamedObject",
-      "message": "no corpus row expects \"unnamedObject\" and no reason is on file — reach it or document why it cannot be"
+      "message": "KNOWN DEBT: no corpus row expects \"unnamedObject\" — the map's named remainder (founder law: this list only shrinks)"
     },
     {
       "id": "unreached:wall_unfileable",
       "severity": "warn",
       "kind": "unreached",
       "subject": "wall_unfileable",
-      "message": "no corpus row expects \"wall_unfileable\" and no reason is on file — reach it or document why it cannot be"
+      "message": "KNOWN DEBT: no corpus row expects \"wall_unfileable\" — the map's named remainder (founder law: this list only shrinks)"
     }
   ]
 }
