@@ -138,6 +138,7 @@ import {
   type ReferenceRowToRecord,
 } from "../db/castingV2ReferenceLibrary";
 import { storagePut } from "../storage";
+import { openKindAsk } from "./openKindQuestion";
 import { createModuleLogger } from "../logging/logger";
 import { captureCastingReferenceLibraryEnabled } from "./castingV2Scope";
 import {
@@ -1129,7 +1130,27 @@ export async function mintReferencesForRender(input: MintInput): Promise<MintRes
       const openKind = isOpenKindSlot(slot);
       if (slot.guardKind === null && !openKind) continue;
       if (isDerivedRegion(slot.question)) { derived.push(slot); continue; }
-      const question = slot.question;
+      /*
+        ⚠ AN OPEN KIND IS ASKED IN HER OWN WORDS, NOT BY ITS BARE NOUN
+        (courted opus-1044/1045, countersigned fable-1403).
+
+        `slot.question` for an open kind is the catalogue's single TOKEN —
+        `orb`, `tail` — and measured on the only two open kinds production has
+        ever held, that token returns ZERO PIXELS on the whole frame and zero
+        inside the region crop, while her own stored sentence returns a tight
+        box around the thing itself. The control that separates the two is in
+        `openKindQuestion.ts`'s header: on the same pixels, a word the reader
+        knows answers and the bare noun does not.
+
+        That is why no open kind has ever had a crop cut, why the founder's orb
+        has no bounding box, and why his row cannot legally appear on the panel
+        (fable-414: a row needs a rectangle).
+
+        `null` when she has said nothing about it, which falls through to the
+        token exactly as before — nothing regresses for a kind with no words.
+      */
+      const asked = openKind ? openKindAsk({ words: slot.words }) : null;
+      const question = asked?.question ?? slot.question;
       /*
         THE RECORD'S KIND, WHICH IS NOT A SPECIMEN FAMILY HERE. For a closed
         slot this is the family the crop is scored against. For an open one

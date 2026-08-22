@@ -2151,17 +2151,28 @@ describe("the open lane's absence control", () => {
       THE BAR ON THE ROW IS THE CEILING, and no row claims a family that does
       not exist: the crop holds every pixel of an independent second read of its
       own region, so 1.0 is measured against 1.0 — the comparison that actually
-      happened — and `fangs` names what was judged rather than a specimen family
-      anybody has calibrated.
+      happened — and the question names what was judged rather than a specimen
+      family anybody has calibrated.
+
+      ⚠ **THAT NAME IS NOW HER OWN WORDS AND NOT THE BARE NOUN**, because the
+      bare noun is a word the segmenter answers NOTHING to — measured on both
+      open kinds production has ever held (`openKindQuestion.ts`'s header). The
+      noun is not lost: it is the slot key, `open:fangs`, one field over.
+
+      And it is what makes the rung READABLE off the row without a second
+      column: a crop filed under her joined words came off rung one.
     */
     expect(bench.rows[0]!.image!.guard).toEqual({
-      kind: "fangs", coverage: 10_000, spill: 0, threshold: 10_000,
+      kind: "long slender fangs", coverage: 10_000, spill: 0, threshold: 10_000,
     });
 
-    /* Same reader, same question, both frames — one extra call and no more. */
+    /* Same reader, same question, both frames — one extra call and no more. And
+       the question that reached the reader is HERS, on both frames: a control
+       run under a different word from the crop's would be measuring two
+       different things. */
     expect(calls).toEqual([
-      { question: "fangs", onAnchor: false },
-      { question: "fangs", onAnchor: true },
+      { question: "long slender fangs", onAnchor: false },
+      { question: "long slender fangs", onAnchor: true },
     ]);
   });
 
@@ -2182,7 +2193,7 @@ describe("the open lane's absence control", () => {
        control turned it away, with NO coverage number, because nothing here
        measured this crop's completeness. */
     expect(bench.rows[0]!.words).toEqual(["long slender fangs"]);
-    expect(bench.rows[0]!.refusal).toEqual({ reason: "absenceUnproven", kind: "fangs" });
+    expect(bench.rows[0]!.refusal).toEqual({ reason: "absenceUnproven", kind: "long slender fangs" });
   });
 
   it("refuses when the control cannot be RUN — a no-read is not a pass", async () => {
@@ -2192,7 +2203,7 @@ describe("the open lane's absence control", () => {
 
     expect(result.slots[0]).toMatchObject({ outcome: "words-only", reason: "guardRefused" });
     expect(bench.stored).toEqual([]);
-    expect(bench.rows[0]!.refusal).toEqual({ reason: "absenceUnread", kind: "fangs" });
+    expect(bench.rows[0]!.refusal).toEqual({ reason: "absenceUnread", kind: "long slender fangs" });
   });
 
   it("CONTROL — BELOW the ceiling an open kind still refuses `noSpecimen`", async () => {
@@ -2232,7 +2243,7 @@ describe("the open lane's absence control", () => {
     expect(result.slots[0]).toMatchObject({
       slot: "open:fangs", outcome: "words-only", reason: "guardRefused",
     });
-    expect(bench.rows[0]!.refusal).toMatchObject({ reason: "noSpecimen", kind: "fangs" });
+    expect(bench.rows[0]!.refusal).toMatchObject({ reason: "noSpecimen", kind: "long slender fangs" });
     /* And its pixels ARE kept, because this is the refusal that exists to
        produce the specimen — the open lane inherits that unchanged. */
     expect(bench.stored).toHaveLength(2);
@@ -2482,8 +2493,8 @@ describe("the D1 count gate for a distributed open kind", () => {
     expect(ground.map((ask) => ({
       question: ask.question, side: ask.side, declaredTwoSided: ask.declaredTwoSided,
     }))).toEqual([
-      { question: "wings", side: "left", declaredTwoSided: true },
-      { question: "wings", side: "right", declaredTwoSided: true },
+      { question: "enormous black wings", side: "left", declaredTwoSided: true },
+      { question: "enormous black wings", side: "right", declaredTwoSided: true },
     ]);
     /* The guard's independent second read, scoped to the same side and told the
        same fact — one per crop, and no more. */

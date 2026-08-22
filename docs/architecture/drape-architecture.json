@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "e1fb0070522ae548"
+    "sourceFingerprint": "48a5720ab75e3b45"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 167
+      "moduleCount": 168
     },
     {
       "id": "domain:castingV2",
@@ -3821,6 +3821,12 @@
     {
       "id": "module:server/castingV2/openKindProperties.ts",
       "path": "server/castingV2/openKindProperties.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/openKindQuestion.ts",
+      "path": "server/castingV2/openKindQuestion.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -10316,6 +10322,10 @@
     {
       "id": "test:server/castingV2/openKindProperties.test.ts",
       "path": "server/castingV2/openKindProperties.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/openKindQuestion.test.ts",
+      "path": "server/castingV2/openKindQuestion.test.ts"
     },
     {
       "id": "test:server/castingV2/openLaneAccept.test.ts",
@@ -21461,6 +21471,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/castingV2/openKindQuestion.ts",
+      "to": "module:server/castingV2/referenceSlots.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/castingV2/openLaneAccept.ts",
       "to": "module:server/castingV2/brandScrub.ts",
       "kind": "imports"
@@ -21968,6 +21983,11 @@
     {
       "from": "module:server/castingV2/referenceMint.ts",
       "to": "module:server/castingV2/maskGeometry.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/referenceMint.ts",
+      "to": "module:server/castingV2/openKindQuestion.ts",
       "kind": "imports"
     },
     {
