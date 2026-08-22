@@ -68,7 +68,7 @@
  * two: it pins the seven live specimens by id, so deleting the recursion is
  * caught by the fixtures AND by the tree at once.
  */
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -233,24 +233,20 @@ export const appRouter = router({ fixture: fixtureRouter });
   });
 });
 
+const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+
+const atlas = JSON.parse(
+  readFileSync(path.join(repoRoot, "docs/architecture/drape-architecture.json"), "utf8"),
+) as {
+  routes: { id: string; auth: string; input: "strict" | "open" | "none" }[];
+  findings: { kind: string; subject: string }[];
+};
+
 describe("the finding rule, over the committed Atlas", () => {
   /* The field is three states; the FINDING is raised for exactly one of them.
      That rule lives in `computeFindings`, which the fixtures above cannot reach,
      so it is asserted where its output is readable — over the artifact, in both
      directions, with the population proven non-empty first. */
-  const atlas = JSON.parse(
-    readFileSync(
-      path.join(
-        path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."),
-        "docs/architecture/drape-architecture.json",
-      ),
-      "utf8",
-    ),
-  ) as {
-    routes: { id: string; auth: string; input: "strict" | "open" | "none" }[];
-    findings: { kind: string; subject: string }[];
-  };
-
   const flagged = new Set(
     atlas.findings.filter((f) => f.kind === "non-strict-input").map((f) => f.subject),
   );
@@ -282,13 +278,89 @@ describe("the finding rule, over the committed Atlas", () => {
   });
 });
 
+describe("two instruments, one population", () => {
+  /**
+   * THE ATLAS'S EXTRACTOR HAS ALWAYS BEEN THE ONLY THING COUNTING THIS
+   * PRODUCT'S tRPC SURFACE, WHICH IS WHY IT COULD BE WRONG BY FOURTEEN FOR AS
+   * LONG AS IT LIKED.
+   *
+   * `architecturePublicEndpoints.test.ts` has this property for the PUBLIC
+   * procedures — it re-derives `key: publicProcedure` straight from the router
+   * sources and compares the multiset with the Atlas's. That arm was green
+   * throughout the nested-router defect, correctly: all fourteen hidden
+   * children are `protectedProcedure`, so the public population really did
+   * agree. **The blind spot was one auth class away from being invisible to the
+   * only cross-check that existed.**
+   *
+   * So the same comparison is made over EVERY builder. Run against the Atlas as
+   * it stood before the fix — a real artifact, not a fixture — this reports
+   * exactly the defect:
+   *
+   *   source-declared procedure keys: 270
+   *   atlas routes                  : 263
+   *   in SOURCE but NOT in the Atlas: 14      execute x7, plan x7
+   *   in ATLAS but not in source    : 7       applyModelEdit, createNode, …
+   *
+   * ⚠ WHEN THIS ARM IS LIVE, AND WHEN ITS SIBLING IS. This one reads the
+   * COMMITTED Atlas, so a generator edit alone cannot redden it — that is
+   * `architectureAtlas.test.ts`'s job, which regenerates and diffs. The pair is
+   * what closes the loop: change the extractor and the freshness arm fails;
+   * change it and regenerate, and this one fails. Neither is sufficient and
+   * neither is redundant.
+   *
+   * A MULTISET, not a set: `validate` is declared twice, `plan` and `execute`
+   * seven times each, and a set would swallow all but one of them — which is
+   * the whole failure mode this file is about.
+   */
+  const BUILDERS = [
+    "publicProcedure",
+    "onboardingProcedure",
+    "protectedProcedure",
+    "adminProcedure",
+    "moderatorProcedure",
+  ];
+  const declaration = new RegExp(String.raw`(\w+):\s*(${BUILDERS.join("|")})\b`, "g");
+
+  function sourceProcedureKeys(): string[] {
+    const keys: string[] = [];
+    const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+    const walk = (dir: string): void => {
+      for (const entry of readdirSync(dir, { withFileTypes: true })) {
+        const full = path.join(dir, entry.name);
+        if (entry.isDirectory()) {
+          walk(full);
+          continue;
+        }
+        if (!entry.name.endsWith(".ts") || entry.name.endsWith(".test.ts")) continue;
+        for (const hit of readFileSync(full, "utf8").matchAll(declaration)) keys.push(hit[1]!);
+      }
+    };
+    walk(path.join(repoRoot, "server"));
+    return keys.sort();
+  }
+
+  it("the Atlas holds exactly the procedures the router sources declare", () => {
+    const fromSource = sourceProcedureKeys();
+    const fromAtlas = atlas.routes.map((r) => r.id.slice(r.id.lastIndexOf(".") + 1)).sort();
+
+    /* Population first: an empty read from either side would agree with an
+       empty read from the other, and that reads exactly like coverage. */
+    expect(fromSource.length).toBeGreaterThan(200);
+    expect(fromAtlas.length).toBeGreaterThan(200);
+
+    expect(
+      fromAtlas,
+      "the Atlas's routes and the procedure declarations under server/ describe different populations — one instrument is seeing a shape the other is not, which is how fourteen boards procedures stayed invisible",
+    ).toEqual(fromSource);
+  });
+});
+
 describe("the tree's own nested routers", () => {
   /* Deliberately the weaker arm — it pins the live specimens, so a regression is
      caught by the fixtures above AND here. Reading the Atlas rather than the
      source would make this a mirror of the generator's output (working law 4);
      it re-runs the extractor over `boardOps.ts` instead. */
   it("boardOps exposes fourteen procedures, seven of them mutations", () => {
-    const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
     const text = readFileSync(path.join(repoRoot, "server/routes/boardOps.ts"), "utf8");
     const nested = [...text.matchAll(/^ {2}(\w+): router\(\{/gm)].map((m) => m[1]!);
 
