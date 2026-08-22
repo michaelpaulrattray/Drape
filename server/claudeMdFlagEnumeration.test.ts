@@ -38,6 +38,21 @@
  * eight that is not a scope. A derivation that silently loses a member is worse
  * than the list it replaces, because it reads as coverage. The positive control
  * pins that specimen by name.
+ *
+ * # ⚠ WHAT THIS DOES NOT COVER — a clean run is a floor, not coverage
+ *
+ * The population is the `*_ENV` constant pattern and ONLY that. An environment
+ * variable named some other way is invisible here, and there is a real family
+ * of them in the tree: `FAL_ALLOWANCES` (`server/castingV2/falBudget.ts`)
+ * carries five — `ROLL_IMAGE_CONCURRENCY`, `SIGN_VIEW_CONCURRENCY`,
+ * `REFINE_EDIT_CONCURRENCY`, `FAL_CONCURRENCY`, `INK_PLATE_CONCURRENCY` — as
+ * `env:` fields on a table rather than as exported constants. All five ARE in
+ * `CLAUDE.md` today, verified by hand 2026-08-23 along with their arithmetic
+ * (8+3+3+5+1 = 20, the account ceiling, matching the sentence exactly), and
+ * that family has its own boot check (`assertFalBudget`) which refuses an
+ * undeclared caller. So it is guarded, differently — but a SIXTH declaration
+ * shape would be guarded by nothing, and this paragraph is here so the next
+ * reader knows the floor rather than inferring coverage from a green.
  */
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import path from "node:path";
