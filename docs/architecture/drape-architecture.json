@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "85991c5a3e397b2a"
+    "sourceFingerprint": "860f97cc04411f0e"
   },
   "domains": [
     {
@@ -8768,6 +8768,11 @@
       "contract": "server/casting/operationContract.ts"
     },
     {
+      "id": "operation:casting.add_views",
+      "kind": "casting.add_views",
+      "contract": "server/casting/operationContract.ts"
+    },
+    {
       "id": "operation:casting.compact",
       "kind": "casting.compact",
       "contract": "server/casting/operationContract.ts"
@@ -8803,6 +8808,81 @@
       "contract": "server/casting/operationContract.ts"
     },
     {
+      "id": "operation:casting.restore_state",
+      "kind": "casting.restore_state",
+      "contract": "server/casting/operationContract.ts"
+    },
+    {
+      "id": "operation:castingV2.refine",
+      "kind": "castingV2.refine",
+      "contract": "server/casting/operationContract.ts"
+    },
+    {
+      "id": "operation:castingV2.roll",
+      "kind": "castingV2.roll",
+      "contract": "server/casting/operationContract.ts"
+    },
+    {
+      "id": "operation:castingV2.sign",
+      "kind": "castingV2.sign",
+      "contract": "server/casting/operationContract.ts"
+    },
+    {
+      "id": "operation:evidence_candidate_accept",
+      "kind": "evidence_candidate_accept",
+      "contract": "server/casting/operationContract.ts"
+    },
+    {
+      "id": "operation:evidence_candidate_cancel",
+      "kind": "evidence_candidate_cancel",
+      "contract": "server/casting/operationContract.ts"
+    },
+    {
+      "id": "operation:evidence_candidate_generate",
+      "kind": "evidence_candidate_generate",
+      "contract": "server/casting/operationContract.ts"
+    },
+    {
+      "id": "operation:evidence_candidate_retry",
+      "kind": "evidence_candidate_retry",
+      "contract": "server/casting/operationContract.ts"
+    },
+    {
+      "id": "operation:evidence_fork_copy",
+      "kind": "evidence_fork_copy",
+      "contract": "server/casting/operationContract.ts"
+    },
+    {
+      "id": "operation:evidence_intent_begin",
+      "kind": "evidence_intent_begin",
+      "contract": "server/casting/operationContract.ts"
+    },
+    {
+      "id": "operation:evidence_intent_reference",
+      "kind": "evidence_intent_reference",
+      "contract": "server/casting/operationContract.ts"
+    },
+    {
+      "id": "operation:evidence_mint",
+      "kind": "evidence_mint",
+      "contract": "server/casting/operationContract.ts"
+    },
+    {
+      "id": "operation:evidence_package_sync",
+      "kind": "evidence_package_sync",
+      "contract": "server/casting/operationContract.ts"
+    },
+    {
+      "id": "operation:evidence_plate_discard",
+      "kind": "evidence_plate_discard",
+      "contract": "server/casting/operationContract.ts"
+    },
+    {
+      "id": "operation:evidence_plate_ingest",
+      "kind": "evidence_plate_ingest",
+      "contract": "server/casting/operationContract.ts"
+    },
+    {
       "id": "operation:model.create",
       "kind": "model.create",
       "contract": "server/casting/operationContract.ts"
@@ -8810,21 +8890,6 @@
     {
       "id": "operation:model.delete",
       "kind": "model.delete",
-      "contract": "server/casting/operationContract.ts"
-    },
-    {
-      "id": "operation:progress.completed",
-      "kind": "progress.completed",
-      "contract": "server/casting/operationContract.ts"
-    },
-    {
-      "id": "operation:progress.failed",
-      "kind": "progress.failed",
-      "contract": "server/casting/operationContract.ts"
-    },
-    {
-      "id": "operation:progress.total",
-      "kind": "progress.total",
       "contract": "server/casting/operationContract.ts"
     }
   ],
@@ -9474,6 +9539,10 @@
     {
       "id": "test:server/architectureExpressSurfaces.test.ts",
       "path": "server/architectureExpressSurfaces.test.ts"
+    },
+    {
+      "id": "test:server/architectureOperationKinds.test.ts",
+      "path": "server/architectureOperationKinds.test.ts"
     },
     {
       "id": "test:server/architectureProcedureShapes.test.ts",

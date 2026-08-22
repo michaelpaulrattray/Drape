@@ -668,15 +668,53 @@ function collectWorkers(): Entity[] {
   return [...unique.values()].sort((a, b) => String(a.id).localeCompare(String(b.id)));
 }
 
-function collectOperationKinds(): Entity[] {
+/**
+ * READ THE DECLARATION, NOT THE SHAPE OF ITS MEMBERS.
+ *
+ * This used to scrape every dotted string literal in the contract file and call
+ * the result the operation kinds. It was wrong in BOTH directions and had been
+ * since it was written (measured 2026-08-23): **16 of the 29 declared kinds were
+ * absent and 3 entries were not operation kinds at all.**
+ *
+ *   `[a-zA-Z]+` after the dot   dropped `casting.add_views`, `casting.restore_state`
+ *   `[a-zA-Z]+` before it       dropped ALL THREE `castingV2.*` kinds — roll,
+ *                               sign and refine, the whole Casting V2 program
+ *   a required dot              dropped all eleven `evidence_*` kinds, among them
+ *                               `evidence_fork_copy`, which `boardOps` charges for
+ *   any dotted string counted   invented `progress.completed`, `progress.failed`
+ *                               and `progress.total` — field names from a
+ *                               different object in the same file
+ *
+ * `GENERATION_OPERATION_KINDS` is an exported array two lines from where the
+ * regex was looking. A shape-guess where a definition exists is working law 4
+ * inverted, and the naming convention it guessed at was never a rule.
+ *
+ * A missing anchor FAILS rather than returning a short list: a partial
+ * enumeration reads exactly like a complete one.
+ */
+function collectOperationKinds(project: Project): Entity[] {
   const file = "server/casting/operationContract.ts";
   if (!sourceFiles.includes(file)) return [];
-  const source = read(file);
-  const kinds = new Set<string>();
-  for (const hit of source.matchAll(/["']([a-zA-Z]+(?:\.[a-zA-Z]+)+)["']/g)) {
-    if (/^[a-z][\w.]*$/.test(hit[1]) && hit[1].includes(".")) kinds.add(hit[1]);
+  const sourceFile = project.getSourceFile(path.join(repoRoot, file));
+  const declaration = sourceFile?.getVariableDeclaration("GENERATION_OPERATION_KINDS");
+  const literal = declaration
+    ?.getInitializer()
+    ?.asKind(SyntaxKind.AsExpression)
+    ?.getExpression()
+    .asKind(SyntaxKind.ArrayLiteralExpression);
+  if (!literal) {
+    throw new Error(
+      `${file} no longer declares GENERATION_OPERATION_KINDS as an \`[…] as const\` array — re-point this collector at the declaration rather than letting it return a short list`,
+    );
   }
-  return [...kinds].sort().map((kind) => ({ id: `operation:${kind}`, kind, contract: file }));
+  const kinds = literal
+    .getElements()
+    .map((element) => element.asKind(SyntaxKind.StringLiteral)?.getLiteralValue())
+    .filter((kind): kind is string => Boolean(kind));
+  if (kinds.length === 0) throw new Error(`${file} declares no operation kinds — that cannot be right`);
+  return [...new Set(kinds)]
+    .sort()
+    .map((kind) => ({ id: `operation:${kind}`, kind, contract: file }));
 }
 
 function collectCreditCosts(): Entity[] {
@@ -1118,7 +1156,7 @@ export function buildAtlas() {
     envVars: collectEnvVars(),
     flags: collectFlags(),
     workers: collectWorkers(),
-    operationKinds: collectOperationKinds(),
+    operationKinds: collectOperationKinds(project),
     creditCosts: collectCreditCosts(),
     vocabulary: collectVocabulary(),
     tests: testFiles.sort().map((file) => ({ id: `test:${file}`, path: file })),
