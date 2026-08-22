@@ -976,3 +976,10 @@
   why: "the two paths' capability gate, landed with its flag in the SCHEMA+FLAG slice and read by nothing yet. It is on this list for the ordinary reason a dark landing puts a symbol here — the door came before the road, which is the order the design requires (ceremony -> code lands dark -> court -> his eyes -> flip) and not an oversight. The boot guard beside it (validateCastingTwoPathsEnvironment) IS wired, at server/_core/env.ts, and was driven through validateEnv() itself both ways before this row was written; what has no caller is the per-user READ"
   argued: CASTING_V2_TWO_PATHS_DESIGN §3.2/§10
   blocker: "the WRITE PATH slice — roll creation asks this before it stamps a path. When that lands the row must be revisited rather than left, and the door will force it: a HELD row whose symbol has a production importer refuses as `rewired`. That is the ratchet working, not a false alarm — flip it to KEEP in the commit that wires it"
+
+- symbol: bornWardrobeLine
+  file: server/castingV2/wardrobeLine.ts
+  verdict: HELD
+  why: "the WRITE side of the two paths' one owner, landed with the resolver in the OWNER slice and called by nothing yet. Its read-side sibling currentWardrobeLine is in exactly the same position and is ABSENT from this list for a structural reason worth naming: the uncalled-export sweep excludes a symbol its own module mentions, and bornWardrobeLine's docblock names it. That is the isSensitiveAction shape — the one the un-wiring differ was built for — so this row is standing in for BOTH, deliberately, rather than the list being read as though one of them were wired"
+  argued: CASTING_V2_TWO_PATHS_DESIGN §3.3/§4/§5
+  blocker: "the WRITE PATH slice — roll creation calls it once, in the insert that stamps the path. Both symbols go live in that commit and the door's `rewired` refusal will force this row to be revisited rather than left; flip it to KEEP there"

@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "faac49b38c40a7e0"
+    "sourceFingerprint": "2e48bca302b51295"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 164
+      "moduleCount": 165
     },
     {
       "id": "domain:castingV2",
@@ -4277,6 +4277,12 @@
     {
       "id": "module:server/castingV2/viewFeatureWords.ts",
       "path": "server/castingV2/viewFeatureWords.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/wardrobeLine.ts",
+      "path": "server/castingV2/wardrobeLine.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -10702,6 +10708,10 @@
     {
       "id": "test:server/castingV2/wallDOpenKind.test.ts",
       "path": "server/castingV2/wallDOpenKind.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/wardrobeLine.test.ts",
+      "path": "server/castingV2/wardrobeLine.test.ts"
     },
     {
       "id": "test:server/castingV2/zoneScope.test.ts",
@@ -23713,6 +23723,11 @@
     {
       "from": "module:server/castingV2/viewFeatureWords.ts",
       "to": "module:shared/bodyAnchorRegions.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/wardrobeLine.ts",
+      "to": "module:shared/castingPaths.ts",
       "kind": "imports"
     },
     {
