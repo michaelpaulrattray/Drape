@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "ef9aecb9f39ea4c4"
+    "sourceFingerprint": "8227f8e566053403"
   },
   "domains": [
     {
@@ -11404,6 +11404,10 @@
     {
       "id": "test:server/scopeFlagTemplate.test.ts",
       "path": "server/scopeFlagTemplate.test.ts"
+    },
+    {
+      "id": "test:server/scopeParentChain.test.ts",
+      "path": "server/scopeParentChain.test.ts"
     },
     {
       "id": "test:server/scriptConnectionDiscipline.test.ts",
