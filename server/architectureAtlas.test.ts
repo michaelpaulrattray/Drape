@@ -190,6 +190,43 @@ describe("architecture atlas", () => {
    * by construction. This asserts it anyway — the construction is the fix, and
    * this is what notices if someone un-derives it.
    */
+  /**
+   * The vocabulary collector reads its two registries by TEXT — the declaration
+   * header, then card names by indentation. It is correct today (29 subjects,
+   * 30 facets, both matching), and it had two `continue`s that would have
+   * emitted an EMPTY vocabulary on a rename or a reformat, in exactly the tone
+   * the artifact uses to say twenty-nine. Those now throw.
+   *
+   * This is the other half: the registries are IMPORTED and compared, so the
+   * two readings are a text scan and a module evaluation rather than one
+   * instrument agreeing with itself.
+   */
+  it("names every subject and facet card the registries declare", async () => {
+    const { SUBJECT_CARDS } = await import("./castingV2/subjectCards");
+    const { FACET_CARDS } = await import("./castingV2/facetCards");
+
+    const atlas = JSON.parse(
+      fs.readFileSync(
+        path.join(repoRoot, "docs", "architecture", "drape-architecture.json"),
+        "utf8",
+      ),
+    ) as { vocabulary: Array<{ name: string; vocabulary: string }> };
+
+    for (const [kind, registry] of [
+      ["subject", SUBJECT_CARDS],
+      ["facet", FACET_CARDS],
+    ] as const) {
+      const declared = Object.keys(registry).sort();
+      const inAtlas = atlas.vocabulary
+        .filter((entry) => entry.vocabulary === kind)
+        .map((entry) => entry.name)
+        .sort();
+
+      expect(declared.length, `${kind} cards declared`).toBeGreaterThan(10);
+      expect(inAtlas, `the Atlas's ${kind} vocabulary is not the registry's`).toEqual(declared);
+    }
+  });
+
   it("every flag is also an env var — one reader, not two", () => {
     const atlas = JSON.parse(
       fs.readFileSync(

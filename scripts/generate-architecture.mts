@@ -765,9 +765,17 @@ function collectVocabulary(): Entity[] {
     if (!sourceFiles.includes(registry.file)) continue;
     const source = read(registry.file);
     const start = source.indexOf(`export const ${registry.declaration} = {`);
-    if (start === -1) continue;
-    const end = source.indexOf("\n} as const satisfies", start);
-    if (end === -1) continue;
+    const end = start === -1 ? -1 : source.indexOf("\n} as const satisfies", start);
+    /* LOUD, not silent (2026-08-23). Both of these were `continue`, so a rename
+       or a reformat of the declaration would have emptied the vocabulary and the
+       artifact would have said "no cards" in exactly the tone it says "29". The
+       sibling collectors lost this same silence in the same sitting — a partial
+       enumeration reads identically to a complete one. */
+    if (start === -1 || end === -1) {
+      throw new Error(
+        `${registry.file} no longer declares \`export const ${registry.declaration} = {\` closed by \`} as const satisfies\` — re-point this collector rather than letting it emit an empty vocabulary`,
+      );
+    }
     const body = source.slice(start, end);
     /* A card opens a block at exactly two spaces of indent; nothing nested
        does, so the shape cannot pick up a field by accident. */
