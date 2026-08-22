@@ -46,6 +46,21 @@ describe("R7-7E1 evidence-aware package foundation contract", () => {
       .toEqual([...CANONICAL_VIEW_ANGLES].sort());
   });
 
+  /*
+    ⚠ A LONGER CLOCK, because this one reads FILES (opus-1055, ordered
+    fable-1418).
+
+    It went red once and green twice on 2026-08-22 — `Test timed out in 5000ms`,
+    never an assertion — on the run that started seconds after both atlas
+    generators had finished hammering the disk. It reads every E1 runtime source
+    off the filesystem and greps each one, so it is I/O bound in a suite where
+    almost nothing else is, and vitest's default 5s is a clock sized for pure
+    functions.
+
+    Taken the day it was seen rather than after three sightings: a known-shape
+    flake left alone is how the faceScan one needed three before anybody sized
+    it, and by then nobody remembered the load conditions.
+  */
   it("keeps the E1 foundation pure while E2 runtime reachability stays exact", async () => {
     const serverRoot = new URL("./", import.meta.url);
     const sources = await Promise.all(E1_RUNTIME_FILES.map(async (relativePath) => ({
@@ -121,7 +136,10 @@ describe("R7-7E1 evidence-aware package foundation contract", () => {
     expect(route).toContain("captureEvidencePackageEnabled");
     expect(route).toContain("executeEvidencePackageSync");
     expect(route).toContain("resolveOperationKindForReplay");
-  });
+    /* 30s rather than the default 5 — it reads the whole runtime tree off disk
+       and greps it, and the default clock is sized for pure functions. See the
+       docblock above. */
+  }, 30_000);
 
   it("keeps recovery policy exhaustive for the declared operation kinds", async () => {
     const source = await readFile(
