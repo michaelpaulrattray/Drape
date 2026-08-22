@@ -349,6 +349,58 @@ Most of these followed the same path: helper or rule written, docs written, todo
 - `KLAVIYO_PRIVATE_KEY` — marketing email flows
 - `PORT` (default 3000), `LOG_LEVEL`, `DAILY_GENERATION_LIMIT`, `GEMINI_TEXT_CONCURRENCY`, `GEMINI_IMAGE_CONCURRENCY`, `GEMINI_MAX_QUEUE_DEPTH`
 
+### ⚠ The eight flags that were live and undocumented (added 2026-08-23)
+
+**This section reads as an enumeration and was not one.** Eight scope flags
+existed in the code and appeared nowhere above, **and six of them are SET ON THE
+PRODUCTION SERVICE** — read off `scripts/deploy-rite.mts`'s own flag block, which
+prints what the service holds rather than what anyone remembers. That is the same
+failure as the Express route list, on the flags list: *a flag that exists but is
+not on the list is how the list stops being the list.* It is now enforced —
+`server/claudeMdFlagEnumeration.test.ts` derives the env-var names from the code
+and reddens on the next one, so this cannot silently happen again.
+
+The entries below are deliberately **short and factual** rather than written in
+the ruled prose above: each states the grammar, the parent, and nothing this
+seat did not read off the code. A flag that deserves a full paragraph should get
+one from whoever owns its road.
+
+- `CASTING_TWO_PATHS_SCOPE` — `off`/absent, `all`, or `users:<ids>`; whether an
+  account **chooses the path its casts are born on** (Wardrobe / Basics; §10 item
+  5 (THE TWO PATHS), design `CASTING_V2_TWO_PATHS_DESIGN.md`). Parent is
+  `CASTING_V2_SCOPE`: a path is chosen when a roll is bought and a user outside
+  casting has no roll to buy. It cannot be `all` while the parent names specific
+  users. **The `casting_rolls.path` / `.wardrobeLine` columns are a prerequisite
+  of the CODE rather than of the flip** — migration `0051`, ceremony run on both
+  databases 2026-08-22 — so the boot guard does not check for them: by the time
+  it can run, the schema naming them has already shipped. Off on production; the
+  flip waits on a 320-credit dev court and then his eyes
+- `CASTING_DIAGNOSTIC_CAPTURE_SCOPE` — `off`/absent, `all`, or `users:<ids>`;
+  keeps the frame from a refused render for diagnosis, under
+  `casting-v2/diagnostics` and nowhere else, on the private evidence adapter.
+  **Every path returns rather than throws**: it runs at the moment a user is
+  already being refused and refunded, so a capture failure is logged and dropped
+  rather than turned into a different error. Needs the cleanup worker
+  (`ENABLE_STORAGE_CLEANUP_WORKER`) — the frames are reserved on the operation's
+  own purge path. Production: `users:1`
+- `R7_SNAPSHOT_READ_SCOPE` — `off`/absent, `all`, or `users:<ids>`; the R7-7B
+  snapshot READER rollout. **Server-owned: clients never send or influence it**,
+  and callers capture the mode once at request entry so one request cannot mix
+  authorities. Production: `all`
+- `R7_SNAPSHOT_RESTORE_SCOPE` — same grammar; the restore half, and it **must be
+  a subset of `R7_SNAPSHOT_READ_SCOPE`**. Production: `users:1`
+- `R7_EVIDENCE_COMPOSER_SCOPE` — same grammar; the evidence composer's runtime
+  door, **a subset of `R7_SNAPSHOT_READ_SCOPE`**, defaults off and is
+  server-owned. Production: `off`
+- `R7_EVIDENCE_COMPOSER_RECIPE` — `off` or a recipe key
+  (`ink.add.front_upper_torso.v1`); WHICH recipe the composer runs. Production
+  holds the ink-add key with the scope above `off`, so it is inert
+- `R7_EVIDENCE_PACKAGE_SCOPE` — same grammar; the evidence-aware package sync,
+  parented on the composer scope. Production: `off`, and
+  `evidenceAcceptedAssetMigrationCeremony` **refuses to run unless it is off**
+- `ENABLE_EVIDENCE_CANDIDATE_WORKER` — the composer's candidate worker, in the
+  shape of `ENABLE_STORAGE_CLEANUP_WORKER`. Not set on production
+
 ### Windows notes
 
 - The dev script uses `cross-env` so `NODE_ENV=development` works under cmd/PowerShell.

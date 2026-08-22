@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "48ba9ebd3b97048c"
+    "sourceFingerprint": "3331a8ec8e2b50be"
   },
   "domains": [
     {
@@ -10824,6 +10824,10 @@
     {
       "id": "test:server/changeRequests.test.ts",
       "path": "server/changeRequests.test.ts"
+    },
+    {
+      "id": "test:server/claudeMdFlagEnumeration.test.ts",
+      "path": "server/claudeMdFlagEnumeration.test.ts"
     },
     {
       "id": "test:server/court.test.ts",
