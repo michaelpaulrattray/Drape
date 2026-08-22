@@ -6,6 +6,7 @@ import {
   fingerprintDelta,
   matchSteps,
   readChain,
+  reReadNamesAThingToHave,
   readRemovalSubject,
   sameChain,
   stepLabel,
@@ -280,6 +281,68 @@ describe("deciding whether a chain already exists", () => {
     expect(sameChain(chain, { instructions: ["a", "c"], delta: { makeup: "a smokey eye" } }))
       .toBe(false);
     expect(sameChain(chain, { instructions: ["a"], delta: { makeup: "a smokey eye" } }))
+      .toBe(false);
+  });
+});
+
+/**
+ * THE AMBIGUOUS-WORD DECISION, AND THE LANE IT COULD NOT SEE.
+ *
+ * `removalEvidence` says whether her sentence stated subtraction plainly, said
+ * nothing, or leaned on a word that also describes a look ("clear rims", "drop
+ * earrings"). On that last kind the model proposes BOTH readings and
+ * `reReadNamesAThingToHave` picks between them — so what it answers decides
+ * whether a paid render adds a thing or takes one off.
+ *
+ * ⚠ It answered from two readers that walk `FREE_SUBJECT_KEYS` and the labelled
+ * axes and stop, so an open kind was invisible to it: FIFTH instance of the
+ * enumeration-point class (fable-1378 §2, swept fable-1379 §1).
+ *
+ * Driven at this door before the fix rather than reasoned about, because
+ * removal routing is where this product has refunded 300 credits twice for
+ * getting a side wrong — a one-line change here is not a small change.
+ */
+describe("what the re-read named, and the lane it could not see", () => {
+  const decide = (delta: unknown, subject: string | null) => reReadNamesAThingToHave({
+    delta: delta as never,
+    subject: subject as never,
+    match: "earrings",
+  });
+
+  it("⚠ AN OPEN KIND NAMES A THING TO HAVE, when the removal named no subject", () => {
+    /*
+      The defect, at the door: a re-read coming back as *"large feathered
+      wings"* is unmistakably a thing to HAVE, and this answered `false` — so
+      the removal stood and the open ask was dropped.
+    */
+    expect(decide({ open: { wings: { noun: "wings", words: "large feathered wings" } } }, null))
+      .toBe(true);
+  });
+
+  it("⚠ CONTROL — a NAMED subject is still asked about its own facet", () => {
+    /*
+      And this is the half that must NOT move. The rule is that the re-read
+      answers the facet the removal NAMED; an open kind has no facet and is
+      about something else, so the removal rightly stands. Widening this too
+      would cancel a real removal whenever the model volunteered anything at
+      all — which is the 300-credit shape with a new coat.
+    */
+    expect(decide({ open: { wings: { noun: "wings", words: "large feathered wings" } } },
+      "statedAccessories")).toBe(false);
+  });
+
+  it("CONTROL — an open kind that RESTATES the departure is not a thing to have", () => {
+    /* A positive lane can hold "no earrings", and so can this one. Reading that
+       as a thing to have would cancel a real removal on the one lane that had
+       no negation guard at all. */
+    expect(decide({ open: { earrings: { noun: "earrings", words: "no earrings" } } }, null))
+      .toBe(false);
+  });
+
+  it("CONTROL — a closed value still decides exactly as it did", () => {
+    expect(decide({ free: { statedAccessories: ["gold hoop earrings"] } }, "statedAccessories"))
+      .toBe(true);
+    expect(decide({ free: { statedAccessories: ["no earrings"] } }, "statedAccessories"))
       .toBe(false);
   });
 });

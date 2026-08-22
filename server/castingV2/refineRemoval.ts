@@ -458,6 +458,34 @@ export function composeChain(chain: readonly ChainStep[]): RefineDelta {
  *
  * Exported so the corpus bench decides with the SHIPPED rule rather than a
  * second copy of it — the class is measured, not asserted.
+ *
+ * # ⚠ AND IT WAS BLIND TO THE OPEN LANE (fifth instance of the
+ * # enumeration-point class, swept out by fable-1378's order, driven at this
+ * # door before the fix)
+ *
+ * `valuesFiledBy` and `facetsAnsweredBy` both walk `FREE_SUBJECT_KEYS` and the
+ * labelled axes and stop, so a re-read that came back as an OPEN KIND — *"large
+ * feathered wings"* — answered `false` here: named nothing, removal stands, the
+ * open ask dropped. Driven before touching it:
+ *
+ * ```
+ * open kind only, no subject named      false   ← the defect
+ * open kind, subject NAMED              false   ← correct, see below
+ * closed value, subject named           true
+ * the departure restated                false
+ * ```
+ *
+ * **Only the first line was wrong, and the second one matters as much.** The
+ * rule this function states is that the re-read must ANSWER THE FACET the
+ * removal named; an open kind has no facet and is about something else, so when
+ * she named a subject an open kind does not answer it and the removal rightly
+ * stands. The blindness bites exactly where the removal named NOTHING, and the
+ * question collapses to *did the re-read name anything to have at all* — where
+ * an open kind plainly does.
+ *
+ * The negation guard learns the lane too: an open kind whose words are the
+ * departure restated (*"no wings"*) is not a thing to have either, and reading
+ * it as one would cancel a real removal on the one lane that had no guard.
  */
 export function reReadNamesAThingToHave(input: {
   delta: RefineDelta;
@@ -466,8 +494,19 @@ export function reReadNamesAThingToHave(input: {
   /** The noun it claimed, for telling a restated departure from a look. */
   match: string;
 }): boolean {
-  const filed = valuesFiledBy(input.delta);
+  /* Both lanes' words, because both can restate a departure — see the header. */
+  const openAsks = Object.values(input.delta.open ?? {})
+    .map((ask) => (typeof ask?.words === "string" ? ask.words : ""))
+    .filter((words) => words.trim() !== "");
+  const filed = [...valuesFiledBy(input.delta), ...openAsks];
   if (filed.length > 0 && filed.every((value) => readsAsNegation(value, input.match))) return false;
   const answered = facetsAnsweredBy(input.delta);
-  return input.subject ? answered.has(facetOf(input.subject)) : answered.size > 0;
+  /*
+    A NAMED SUBJECT IS STILL ASKED ABOUT ITS OWN FACET, and an open kind cannot
+    answer one — that is not blindness, it is the rule. Only the unnamed case
+    collapses to *did it name anything to have*, and there an open kind counts.
+  */
+  return input.subject
+    ? answered.has(facetOf(input.subject))
+    : answered.size > 0 || openAsks.length > 0;
 }
