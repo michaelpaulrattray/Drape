@@ -33,12 +33,19 @@
  *
  * # WHAT IT COSTS, stated rather than discovered later
  *
- * **One segmenter call per delivered design** — `tattooed skin` on the frame
- * that just landed, the same word the upload cutter asks of a customer's
- * picture, riding the shared `FAL_CONCURRENCY` courtesy pool. House money and
- * never a customer's credits, like every other read on the delivery path. It
- * declares no allowance of its own, so `assertFalBudget`'s arithmetic is
- * untouched.
+ * **One segmenter call per delivered design** — the slot's own reader word on
+ * the frame that just landed, riding the shared `FAL_CONCURRENCY` courtesy
+ * pool. House money and never a customer's credits, like every other read on
+ * the delivery path. It declares no allowance of its own, so
+ * `assertFalBudget`'s arithmetic is untouched.
+ *
+ * ⚠ **TWO OR THREE for a SIDED slot, and the difference is not free.** A
+ * `perSide` placement is read through `regionSides`, which cuts the frame at her
+ * own midline and asks each half — two reads, plus a face read for the midline
+ * that is cached per candidate and usually already bought. `maskedRefine`'s
+ * *"regionSides costs nothing"* is true only for names already in the reader's
+ * closed bilateral list, where the whole-frame answer is derived from the
+ * split; `upper arm` is not one of those. Today that is `upperArm` alone.
  *
  * # THE ORDER IS MANIFEST → BYTES → ROW, and it is not negotiable here
  *
@@ -54,9 +61,16 @@ import { createHash, randomUUID } from "node:crypto";
 import sharp from "sharp";
 
 import { createFalRegionReader } from "./falRegionReader";
-import { countKeptPixels, cutDeliveredInk, deliveryRegionWord } from "./inkDeliveryCrop";
+import {
+  countKeptPixels,
+  cutDeliveredInk,
+  deliveryRegionAsk,
+  type InkDeliveryRegionAsk,
+} from "./inkDeliveryCrop";
 import { defaultManifest } from "./inkUploadService";
+import type { Mask } from "./maskedComposite";
 import { refusingRegionReader, type RegionReader } from "./maskedRefine";
+import type { Instance } from "./referenceSlots";
 import { createModuleLogger } from "../logging/logger";
 import { recordInkDeliveryCrop } from "../db/castingV2InkDeliveryCrops";
 import { storagePut } from "../storage";
@@ -79,7 +93,7 @@ export type InkDeliveryMintOutcome =
 
 export type InkDeliveryMintDependencies = {
   /** Who answers `tattooed skin`. Injected, so the suite never calls fal. */
-  reader?: Pick<RegionReader, "region">;
+  reader?: InkDeliveryReader;
   store?: (input: { key: string; bytes: Buffer; contentType: string }) => Promise<{ key: string }>;
   manifest?: typeof defaultManifest;
   record?: typeof recordInkDeliveryCrop;
@@ -119,9 +133,69 @@ export type InkDeliveryMintInput = {
  * `refusingRegionReader` with no key, so a keyless deployment reports `failed`
  * and keeps the artwork carry, rather than storing something nobody looked at.
  */
-function defaultReader(): Pick<RegionReader, "region"> {
+function defaultReader(): InkDeliveryReader {
   const apiKey = process.env.FAL_KEY;
   return apiKey ? createFalRegionReader({ apiKey }) : refusingRegionReader;
+}
+
+/**
+ * THE REASON A SIDED SLOT WAS NOT MINTED — one string, so the count is one grep.
+ *
+ * Condition 1 of fable-1391: a refusal that silently protects is the
+ * collected-never-asserted shape. If the sided read starts failing routinely,
+ * every `upperArm` tattoo quietly stops being documentable and nothing says so.
+ *
+ * **How it is read**: this constant is the `reason` on the `failed` outcome AND
+ * the marker in the log line below, so
+ *
+ *     grep sideUnread <the service log>
+ *
+ * counts it, and each line carries the slot, the candidate and the variant. No
+ * table: the outcome is already returned to a caller that logs it, and a row
+ * per non-event is a schema bought for a number.
+ */
+export const INK_DELIVERY_SIDE_UNREAD = "sideUnread";
+
+/** What this mint needs of a reader — `regionSides` is optional on the type it
+ *  comes from, so its absence is a real state rather than a type error. */
+type InkDeliveryReader = Pick<RegionReader, "region" | "regionSides">;
+
+/**
+ * ONE SIDE OF A TWO-SIDED SURFACE, or `null` — and `null` means REFUSE.
+ *
+ * ⚠ **The asymmetry is the whole justification** (opus-1037 §5, adopted verbatim
+ * fable-1391): a missing document costs a re-render, and a WRONG document rides
+ * a transform as the SOURCE. So a sided slot whose side cannot be read writes
+ * nothing rather than filing a whole-frame read under a sided key. Falling back
+ * to `reader.region` here would be the defect this function exists to close,
+ * reintroduced as a kindness.
+ */
+async function sidedMask(
+  reader: InkDeliveryReader,
+  input: InkDeliveryMintInput,
+  ask: InkDeliveryRegionAsk,
+  about: Record<string, unknown>,
+): Promise<Mask | null> {
+  if (!reader.regionSides) {
+    log.warn({ ...about, region: ask.word, side: ask.side, reason: INK_DELIVERY_SIDE_UNREAD, why: "noSidedReader" },
+      "[inkDeliveryMint] sideUnread — this reader cannot split a surface, so the crop is not filed");
+    return null;
+  }
+  const sides = await reader.regionSides({
+    image: input.frame,
+    name: ask.word,
+    absentIsAnswer: true,
+    /* One midline per face, as both existing sided callers pass — and this road
+       is one of the ones that pays for the axis read. */
+    axisKey: input.candidatePublicId,
+    ...(ask.declaredTwoSided ? { declaredTwoSided: true as const } : {}),
+  });
+  if (sides === null) {
+    log.warn({ ...about, region: ask.word, side: ask.side, reason: INK_DELIVERY_SIDE_UNREAD, why: "readerSaidNull" },
+      "[inkDeliveryMint] sideUnread — the reader has no two sides for this word, so the crop is not filed");
+    return null;
+  }
+  return sides[ask.side as Instance];
 }
 
 /**
@@ -187,8 +261,39 @@ export async function mintInkDeliveryCrop(
       Derived from the slot inside `deliveryRegionWord` so the word ASKED here
       and the word RECORDED on the row below are one read of one thing.
     */
-    const regionWord = deliveryRegionWord(slot);
-    const mask = await reader.region({ image: input.frame, name: regionWord, absentIsAnswer: true });
+    /*
+      ⚠ AND THE SIDE, WHICH THIS LINE COULD NOT ASK FOR UNTIL 2026-08-22.
+
+      The reader here was typed `Pick<RegionReader, "region">` — it did not have
+      the sided method at all — so `ink:upperArm@left` and `ink:upperArm@right`
+      asked the identical word of the identical whole frame and filed back
+      whichever arm the segmenter named. The founder's own cybersigilism render
+      caught it: the paint obeyed the anatomical convention and put the ink on
+      his left arm, and the crop came back from the far IMAGE-LEFT — his RIGHT
+      arm, the bare one. That crop is the tattoo's DOCUMENT, so a transform
+      would have carried a picture of blank skin as its source.
+
+      `regionSides` is the one owner of the flip (it relabels image halves to her
+      anatomy once, in its own body, and says so); this mint is simply the last
+      sided consumer to join it. `referenceMint`, the per-side eye crop and the
+      face scan were all already through it, which is why this defect has
+      exactly one site.
+
+      COST, stated rather than inherited: `maskedRefine`'s *"regionSides costs
+      nothing"* is true for names already in the reader's closed bilateral list,
+      where the whole-frame answer is DERIVED from the split. `upper arm` is not
+      one of those — this is two half reads plus a face read for the midline
+      against today's one whole-frame read, so +1 to +2 segmenter calls, only for
+      `perSide` placements, on the shared courtesy pool.
+    */
+    const ask = deliveryRegionAsk(slot);
+    const regionWord = ask.word;
+    const mask = ask.side === null
+      ? await reader.region({ image: input.frame, name: regionWord, absentIsAnswer: true })
+      : await sidedMask(reader, input, ask, about);
+    if (mask === null) {
+      return { outcome: "failed", slot, reason: INK_DELIVERY_SIDE_UNREAD };
+    }
     /*
       A MASK NOT IN THE FRAME'S SPACE IS OUR ERROR, never something to resample
       (`maskedRefine`'s house rule). It is `failed` rather than `no-cut`: nothing

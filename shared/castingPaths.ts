@@ -54,6 +54,24 @@ export function isCastingPath(value: unknown): value is CastingPath {
  * a stored `null` means nobody was asked, while this is the answer the control
  * shows when nobody has touched it yet. Conflating the two is how the absence
  * above quietly becomes a member.
+ *
+ * # WHY `wardrobe` — FOUNDER RULING, 2026-08-22, unprompted
+ *
+ * This value was a design judgement until he said it himself, in chat, without
+ * being asked (relayed fable-1389), verbatim:
+ *
+ * > *"i think wardrobe should be the default select when people cast someone
+ * > basics is more of a advanced selection because if someone truely wanted to
+ * > cast someone in basics they would say that in the prompt?"*
+ *
+ * So the constant does not move; its provenance does. The slice-9 toggle builds
+ * to it — wardrobe preselected, Basics the deliberate choice, with the ink
+ * trade stated at the point of choice (his standing condition).
+ *
+ * ⚠ **One nuance that is NOT what his sentence says, and was relayed back to
+ * him: prompt-stated "in basics" does not switch the path.** A grey tee asked
+ * for on the wardrobe path is an OUTFIT, and the wardrobe path's ink rules stay
+ * wardrobe's. The toggle is the only door.
  */
 export const DEFAULT_CASTING_PATH: CastingPath = "wardrobe";
 

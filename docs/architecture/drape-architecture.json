@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "9a179f1382c1ded5"
+    "sourceFingerprint": "cd5d76533b9ebf17"
   },
   "domains": [
     {
@@ -20603,7 +20603,17 @@
     },
     {
       "from": "module:server/castingV2/inkDeliveryMint.ts",
+      "to": "module:server/castingV2/maskedComposite.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/inkDeliveryMint.ts",
       "to": "module:server/castingV2/maskedRefine.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/inkDeliveryMint.ts",
+      "to": "module:server/castingV2/referenceSlots.ts",
       "kind": "imports"
     },
     {

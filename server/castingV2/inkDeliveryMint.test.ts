@@ -44,6 +44,14 @@ type Call = { what: string; detail?: unknown };
 
 function harness(over: {
   region?: () => Promise<Mask>;
+  /**
+   * The sided reader, ABSENT BY DEFAULT — because that absence is a real
+   * production state (a keyless deployment's `refusingRegionReader` has no
+   * `regionSides`) and because every test above this line asks about a
+   * `sides: "one"` surface, which must never take the sided road.
+   */
+  regionSides?: (ask: { name: string; declaredTwoSided?: true; axisKey?: string })
+    => Promise<{ left: Mask; right: Mask } | null>;
   store?: () => Promise<{ key: string }>;
   record?: (input: unknown) => Promise<{ outcome: "minted"; publicId: string } | { outcome: "already" }>;
 } = {}) {
@@ -58,6 +66,12 @@ function harness(over: {
         calls.push({ what: "region", detail: ask.name });
         return over.region ? over.region() : maskOf(INK);
       },
+      ...(over.regionSides === undefined ? {} : {
+        regionSides: async (ask: { name: string; declaredTwoSided?: true; axisKey?: string }) => {
+          calls.push({ what: "regionSides", detail: ask });
+          return over.regionSides!(ask);
+        },
+      }),
     },
     manifest: async (input: { id: string; userId: number; storageKeys: readonly string[] }) => {
       calls.push({ what: "manifest", detail: input.storageKeys });
@@ -81,13 +95,13 @@ function harness(over: {
 /** The name the chain minted at claim time, which the mint must honour. */
 const CROP_ID = "0f7ae3c1-2b44-4a6d-9c81-6a2f4b0d7e35";
 
-async function mint(bag: ReturnType<typeof harness>, frame: Buffer) {
+async function mint(bag: ReturnType<typeof harness>, frame: Buffer, slot = "ink:neck") {
   return mintInkDeliveryCrop({
     userId: 1,
     candidatePublicId: "cast-1",
     variantPublicId: "variant-9",
     frame,
-    delivered: { cropPublicId: CROP_ID, slot: "ink:neck", designPublicId: "design-7" },
+    delivered: { cropPublicId: CROP_ID, slot, designPublicId: "design-7" },
     operationId: "op-1",
     dependencies: bag.dependencies,
   });
@@ -249,5 +263,89 @@ describe("nothing here may take the picture back", () => {
     const outcome = await mint(bag, Buffer.from("not a picture"));
     expect(outcome).toMatchObject({ outcome: "failed" });
     expect(bag.calls).toHaveLength(0);
+  });
+});
+
+/*
+  ⚠ THE ASYMMETRIC ARM — the fixture family law, made into a test.
+
+  Every sided crop this product mints was invisible-when-wrong for one reason:
+  horns, eyes and earrings are SYMMETRIC, so a mirrored answer looks right. The
+  first asymmetric single-side delivery — a tattoo on ONE arm — is what showed
+  it, on the founder's own frame.
+
+  So this fixture is deliberately lopsided. `region` (the whole-frame road)
+  answers with the BARE arm; `regionSides` answers with a different mask per
+  side and the ink is on HER LEFT, which in a frame she faces the camera in is
+  the IMAGE's right half. A mint that takes the old road cuts a rectangle out of
+  the image-left half and the assertion goes red — which is exactly what the
+  shipped code did until 2026-08-22.
+*/
+const HER_LEFT_INK = { left: 560, top: 300, width: 180, height: 260 };
+const HER_RIGHT_BARE = { left: 60, top: 300, width: 180, height: 260 };
+
+describe("a tattoo on ONE arm is filed against THAT arm", () => {
+  const sidedReader = () => ({
+    /* The old road, kept live in the fixture so the arm has something to fail
+       into rather than merely not passing. */
+    region: async () => maskOf(HER_RIGHT_BARE),
+    regionSides: async () => ({ left: maskOf(HER_LEFT_INK), right: maskOf(HER_RIGHT_BARE) }),
+  });
+
+  it("cuts from HER left — the image's RIGHT half — not from whatever the whole frame answered", async () => {
+    const bag = harness(sidedReader());
+    const outcome = await mint(bag, await framePng(), "ink:upperArm@left");
+    expect(outcome.outcome).toBe("minted");
+    const row = bag.recorded[0];
+    /* The rectangle's own left edge (`bboxX`), padded outward — so the assertion is on
+       the FILED geometry rather than on which function was called. A crop of
+       the bare arm lands near x=0; hers lands past the midline. */
+    expect(row.bboxX).toBeGreaterThan(WIDTH / 2);
+    expect(row.slot).toBe("ink:upperArm@left");
+    /* And the word is still the SURFACE — laterality is not the question, it is
+       which frame the question is asked of. */
+    expect(row.region).toBe("upper arm");
+  });
+
+  it("asks the reader to split a word its own vocabulary does not know", async () => {
+    const bag = harness(sidedReader());
+    await mint(bag, await framePng(), "ink:upperArm@right");
+    const ask = bag.calls.find((one) => one.what === "regionSides")?.detail as any;
+    /* Without this the reader answers `null` for `upper arm` and the fix is
+       inert — its closed bilateral list is five FACE words. The flag is the
+       placement vocabulary's own `sides` field arriving, never this caller's
+       opinion. */
+    expect(ask.declaredTwoSided).toBe(true);
+    /* One midline per face, so two sides of one render cannot be cut at two
+       different centres. */
+    expect(ask.axisKey).toBe("cast-1");
+    expect(bag.recorded[0].bboxX).toBeLessThan(WIDTH / 2);
+  });
+
+  it("a surface there is ONE of never takes the sided road", async () => {
+    const bag = harness(sidedReader());
+    await mint(bag, await framePng(), "ink:neck");
+    expect(bag.calls.map((one) => one.what)).toContain("region");
+    expect(bag.calls.map((one) => one.what)).not.toContain("regionSides");
+  });
+
+  it("REFUSES rather than filing a whole-frame read under a sided key", async () => {
+    /* The load-bearing decision (opus-1037 §5, fable-1391): a missing document
+       costs a re-render; a WRONG document rides a transform as the SOURCE. Both
+       ways it can fail are driven — a reader without the method at all, and one
+       that has it and cannot split this word. */
+    const noMethod = harness();
+    const first = await mint(noMethod, await framePng(), "ink:upperArm@left");
+    expect(first).toMatchObject({ outcome: "failed", reason: "sideUnread" });
+    expect(noMethod.recorded).toHaveLength(0);
+    expect(noMethod.stored).toHaveLength(0);
+
+    const saysNull = harness({ regionSides: async () => null });
+    const second = await mint(saysNull, await framePng(), "ink:upperArm@left");
+    expect(second).toMatchObject({ outcome: "failed", reason: "sideUnread" });
+    expect(saysNull.recorded).toHaveLength(0);
+    /* ⚠ AND IT DID NOT QUIETLY FALL BACK. A `region` call here would be the
+       defect reintroduced as a kindness. */
+    expect(saysNull.calls.map((one) => one.what)).not.toContain("region");
   });
 });

@@ -140,7 +140,7 @@ import {
   inkPlacementEntry,
   isInkPlacement,
 } from "../../shared/inkPlacementVocabulary";
-import { INK_SLOT_PREFIX } from "./referenceSlots";
+import { INK_SLOT_PREFIX, inkPlacementOfSlot, type Instance } from "./referenceSlots";
 import type { Mask } from "./maskedComposite";
 
 /**
@@ -182,26 +182,75 @@ import type { Mask } from "./maskedComposite";
 export const INK_DELIVERY_REGION_PAD = 0.15;
 
 /**
- * The word the segmenter is asked for a delivered tattoo at this slot.
+ * WHAT TO ASK, AND WHICH SIDE TO ASK IT OF — one parse, three answers.
  *
- * The slot's own `readerWord` — *the word a segmenter is asked, measured to cut
- * this surface* — and `tattooed skin` only where the vocabulary has no entry,
- * which is the OPEN lane: a customer's own word for a surface nobody has
- * measured has no reader word to offer, so that lane keeps exactly the
- * behaviour it has today rather than being handed a word we invented for it.
+ * ⚠ **This used to be `deliveryRegionWord` alone, and its own comment named the
+ * defect it became** (found by the founder's eyes on his live cybersigilism
+ * render, measured fable-1386 §2, designed opus-1037, countersigned fable-1391).
+ * It said:
  *
- * Derived from the slot rather than passed in beside it, so the word that is
- * ASKED and the word that is RECORDED on the row cannot come apart.
+ * > *"`ink:upperArm@left` — the side is an instance of the surface and the
+ * > segmenter is asked about the surface. Laterality is not this question."*
+ *
+ * That sentence is TRUE OF THE QUESTION and was false of the ANSWER. Both sides
+ * of a pair asked the identical word of the identical whole frame, so the mint
+ * filed back whichever arm the segmenter felt like naming. On his frame that was
+ * the BARE one: the crop that is the tattoo's own document going forward was a
+ * picture of blank skin, and a transform would have carried it as the source.
+ * A matched pair — nobody has worn one yet — would have had one crop filed twice.
+ *
+ * So the word and the side now come out of ONE parse, for the same reason the
+ * word and the row already did: two derivations of one slot are two chances to
+ * describe different things.
+ *
+ * `declaredTwoSided` is **the vocabulary's own measured field and never this
+ * module's opinion** — `InkPlacementEntry.sides`. The reader's closed bilateral
+ * list is five face words (`ear · earring · eyebrows · eyes · horns`) and
+ * `upper arm` is not among them, so without this flag `regionSides` answers
+ * `null` and the fix would be inert. It is the same shape as the open lane's
+ * D1 wire: a classification that an instrument already made, arriving at the
+ * reader, rather than a caller's guess.
+ */
+export type InkDeliveryRegionAsk = {
+  /**
+   * The slot's own `readerWord` — *the word a segmenter is asked, measured to
+   * cut this surface* — and `tattooed skin` only where the vocabulary has no
+   * entry, which is the OPEN lane: a customer's own word for a surface nobody
+   * has measured has no reader word to offer, so that lane keeps exactly the
+   * behaviour it has today rather than being handed a word we invented for it.
+   */
+  readonly word: string;
+  /** Her own side, or `null` for a surface there is one of. */
+  readonly side: Instance | null;
+  /** Whether the reader must be TOLD this surface has two sides. */
+  readonly declaredTwoSided: boolean;
+};
+
+export function deliveryRegionAsk(slot: string): InkDeliveryRegionAsk {
+  /* `inkPlacementOfSlot` is the one owner of this key's shape — parsing the
+     `@` again here is the parallel copy that drifts (law 4). It answers `null`
+     for a key that is not an ink slot at all, and for one whose side is not an
+     instance; both fall to the open lane's behaviour, which is what a slot this
+     module cannot read has always got. */
+  const parsed = inkPlacementOfSlot(slot.startsWith(INK_SLOT_PREFIX) ? slot : `${INK_SLOT_PREFIX}${slot}`);
+  const placement = parsed?.placement ?? slot;
+  if (!isInkPlacement(placement)) return { word: INK_REGION, side: null, declaredTwoSided: false };
+  const entry = inkPlacementEntry(placement);
+  return {
+    word: entry.readerWord,
+    /* A side on a `sides: "one"` surface is a key nobody should have built; the
+       ask drops it rather than asking a one-of-it surface to be halved. */
+    side: entry.sides === "perSide" ? parsed?.side ?? null : null,
+    declaredTwoSided: entry.sides === "perSide",
+  };
+}
+
+/**
+ * The word alone — kept because most callers want only that, and because its
+ * name is what the row's `region` column has always been written from.
  */
 export function deliveryRegionWord(slot: string): string {
-  const withoutPrefix = slot.startsWith(INK_SLOT_PREFIX)
-    ? slot.slice(INK_SLOT_PREFIX.length)
-    : slot;
-  /* `ink:upperArm@left` — the side is an instance of the surface and the
-     segmenter is asked about the surface. Laterality is not this question. */
-  const at = withoutPrefix.indexOf("@");
-  const placement = at === -1 ? withoutPrefix : withoutPrefix.slice(0, at);
-  return isInkPlacement(placement) ? inkPlacementEntry(placement).readerWord : INK_REGION;
+  return deliveryRegionAsk(slot).word;
 }
 
 /**
