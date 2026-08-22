@@ -1769,7 +1769,7 @@ async function containReply(call: {
       });
       const filed: RefineDelta = delta ?? {};
       filed.open = { ...(filed.open ?? {}), [opened.kind]: opened.ask };
-      return { ok: true, delta: filed };
+      return withUnserved({ ok: true, delta: filed }, check, true);
     }
   }
   if (!delta) return null;
@@ -1803,11 +1803,43 @@ async function containReply(call: {
     delta, and the service reads each where it can act on it.
   */
   if (fromReference) {
-    return droppedReference
+    return withUnserved(droppedReference
       ? { ok: true, delta, droppedReference, fromReference }
-      : { ok: true, delta, fromReference };
+      : { ok: true, delta, fromReference }, check, false);
   }
-  return droppedReference ? { ok: true, delta, droppedReference } : { ok: true, delta };
+  return withUnserved(
+    droppedReference ? { ok: true, delta, droppedReference } : { ok: true, delta },
+    check,
+    false,
+  );
+}
+
+/**
+ * WHAT SHE NAMED THAT NOTHING FILED, onto the parse (ruled fable-1374 §2).
+ *
+ * `readDelta` records a subject it does not own and skips it. The open lane
+ * then serves ONE of them at most — `acceptOpenKind` reads `unowned[0]` and logs
+ * the rest — so everything else was named by the customer and reached no lane
+ * at all. If the rest of her ask survived, the render happens and is charged,
+ * and she is owed a sentence about the half that did not arrive.
+ *
+ * ⚠ **IT DOES NOT DEPEND ON `CASTING_OPEN_LANE_SCOPE`, and that is the point.**
+ * With the flag off the open lane never runs, every unowned subject is recorded
+ * and skipped, and the closed half renders exactly as before — which is the
+ * SAME harm, on every account rather than on one. A disclosure gated to the
+ * flag would be honest only for the founder.
+ *
+ * Keys only. The values are model-authored text and this list is read to write
+ * a sentence a customer sees.
+ */
+function withUnserved<T extends { ok: true; delta: RefineDelta }>(
+  parse: T,
+  check: FreeLaneCheck,
+  openLaneTookTheFirst: boolean,
+): T & { unserved?: readonly string[] } {
+  const named = (check.unowned ?? []).map((entry) => entry.subject);
+  const unserved = openLaneTookTheFirst ? named.slice(1) : named;
+  return unserved.length > 0 ? { ...parse, unserved } : parse;
 }
 
 /**

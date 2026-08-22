@@ -8,7 +8,7 @@
  */
 import { describe, expect, it, vi } from "vitest";
 
-import { acceptOpenKind } from "./openLaneAccept";
+import { acceptOpenKind, namedButNotServedNote } from "./openLaneAccept";
 import type { TextEngine } from "../providers/types";
 
 /** A transport that says exactly what it is told to. */
@@ -298,5 +298,87 @@ describe("the open lane's acceptance path", () => {
 
     expect(opened).toMatchObject({ ok: true, kind: "fangs" });
     expect(engine.complete).toHaveBeenCalledTimes(1);
+  });
+});
+
+/**
+ * THE HALF-SERVED SENTENCE (ruled fable-1374 §2, noun ruled fable-1376).
+ *
+ * She typed two things, paid once, and only one arrived. Five arms, and the
+ * fifth is the aim control for the discriminator itself — without it the
+ * feature is satisfied by a note that names whatever key it is handed.
+ */
+describe("what a paid take owes about the half it did not serve", () => {
+  const SENTENCE = "give her two smooth bone-white horns rising from the top of her head, "
+    + "and a glowing red vertical slit orb embedded in the centre of her forehead";
+
+  it("⚠ NAMES a non-colliding key the customer typed", () => {
+    const note = namedButNotServedNote({
+      unserved: ["orb"],
+      instruction: SENTENCE,
+      servedFacets: new Set(["horns"]),
+    });
+
+    expect(note).toBe("Everything else you asked for was done. "
+      + "The orb isn't something I can do yet, so it was left out of this take.");
+  });
+
+  it("⚠ AIM CONTROL — a COLLIDING key gets the vaguer sentence, never the wrong noun", () => {
+    /*
+      fable-1376's discriminator, and the reason it is mechanical: a key that
+      folds to a closed subject is exactly the key that must not be spoken as
+      the missing thing. *"The eye isn't something I can do yet"*, said to
+      somebody who asked for a THIRD eye and has two good ones, is worse than
+      vague — it names the wrong feature.
+    */
+    const note = namedButNotServedNote({
+      unserved: ["eye"],
+      instruction: "give her antlers and a third eye",
+      servedFacets: new Set(["horns"]),
+    });
+
+    expect(note).toBe("Everything else you asked for was done. "
+      + "There was one more thing in that sentence I couldn't do.");
+  });
+
+  it("a key she did NOT type is not spoken back to her", () => {
+    /* The same containment every free value faces, asked of one word. A word
+       the model invented is not hers to be told back — and the duty is still
+       discharged, because the floor is the vaguer sentence and never silence. */
+    const note = namedButNotServedNote({
+      unserved: ["aura"],
+      instruction: "give her two smooth bone-white horns",
+      servedFacets: new Set(["horns"]),
+    });
+
+    expect(note).toContain("one more thing");
+    expect(note).not.toContain("aura");
+  });
+
+  it("⚠ CONTROL — a colliding key whose subject WAS SERVED is not a missing thing", () => {
+    /*
+      The false apology this would otherwise be. A reply can key one fact twice
+      — `hairShade` filed and `hairColor` unowned — and the second folds to a
+      closed subject the delta served under its proper name. Nothing was left
+      out, so nothing is said.
+    */
+    const note = namedButNotServedNote({
+      unserved: ["hair colour"],
+      instruction: "make her hair copper",
+      servedFacets: new Set(["hair.colour"]),
+    });
+
+    expect(note).toBeNull();
+  });
+
+  it("CONTROL — an ordinary ask grows no note at all", () => {
+    /* The negative control for the note's AIM. A sentence that names one thing
+       and gets it must produce nothing: a guard whose population is everyone is
+       a class this campaign has paid for twice. */
+    expect(namedButNotServedNote({
+      unserved: [],
+      instruction: "give her green eyes",
+      servedFacets: new Set(["eye.colour"]),
+    })).toBeNull();
   });
 });

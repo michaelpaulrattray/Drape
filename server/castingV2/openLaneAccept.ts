@@ -46,7 +46,13 @@
  * so the conservative reading holds for every kind.
  */
 import { createModuleLogger } from "../logging/logger";
-import { normalizeOpenKind, openKindFromSubjectKey, type OpenKindReading } from "./openLaneKind";
+import {
+  closedSubjectFor,
+  normalizeOpenKind,
+  openKindFromSubjectKey,
+  type OpenKindReading,
+} from "./openLaneKind";
+import { facetOfSubject } from "./refineFacets";
 import { scrubBrands } from "./brandScrub";
 import { stageWordIn, stemmedContainment, type OpenKindAsk } from "./refineDelta";
 import type { TextEngine } from "../providers/types";
@@ -274,4 +280,79 @@ export async function acceptOpenKind(input: {
     ask: { noun: reading.noun, words: scrubbed },
     outcome: "words_only",
   };
+}
+
+/**
+ * SHE TYPED TWO THINGS, PAID ONCE, AND ONLY ONE ARRIVED — the sentence that
+ * says so (ruled fable-1374 §2, noun ruled fable-1376).
+ *
+ * # It belongs on a PAID outcome, and that is what decides its wording
+ *
+ * A refusal at this lane's door is FREE and keeps its own sentence, which says
+ * so. This one rides `owedAboutThisTake` — the service's list of things owed
+ * about a take that was rendered and CHARGED — beside `partlyOutOfFrameNote`,
+ * `likenessSetAsideNote` and their three siblings. It therefore says nothing
+ * about money, exactly as they do not: borrowing a refusal's most reassuring
+ * sentence for a paid outcome would be the reverse of the honesty it is here
+ * for.
+ *
+ * # THE NOUN, AND WHY THE RECORD ALREADY KNOWS WHICH ONE IS SAFE
+ *
+ * Two ways to write it and each is wrong in one place:
+ *
+ *   name the KEY       reads perfectly for `orb`, `wings`, `tail` — and names
+ *                      the WRONG FEATURE for a third eye the interpreter keyed
+ *                      as `eye`, said to somebody who has two good ones
+ *   name nothing       never wrong, never precise
+ *
+ * The discriminator is mechanical and it is the collision guard again: **a key
+ * that folds to a closed subject is exactly the key that must not be spoken as
+ * the missing thing**, because she already has that feature and the ask was for
+ * something else wearing its name. So a non-colliding key contained in her own
+ * sentence is NAMED, and everything else falls to the vaguer sentence — which
+ * is the floor and never silence, because silence loses the duty this note
+ * exists for.
+ *
+ * # ⚠ AND A COLLIDING KEY WHOSE SUBJECT WAS SERVED IS NOT A MISSING THING
+ *
+ * The one case the ruling's two branches do not cover, and it would have been a
+ * FALSE APOLOGY. A reply can key one fact twice — `hairShade` filed and
+ * `hairColor` unowned — and the second folds to a closed subject the delta
+ * SERVED under its proper name. Nothing was left out; saying otherwise would
+ * tell a customer her ask was half-done on a render that did all of it.
+ *
+ * It follows from the ruling's own reasoning rather than extending it: *she
+ * already has the closed feature; the ask was for something else wearing its
+ * name* is true of the third eye and false of a synonym. The test is whether
+ * this render WROTE that facet.
+ */
+export function namedButNotServedNote(input: {
+  /** Subject keys the parse recorded and the open lane did not serve. */
+  unserved: readonly string[];
+  /** Her own sentence — what the named form is checked for containment against. */
+  instruction: string;
+  /** The facets this render actually wrote, closed lane included. */
+  servedFacets: ReadonlySet<string>;
+}): string | null {
+  const missing = input.unserved.filter((key) => {
+    const closed = closedSubjectFor(key.trim().toLowerCase().replace(/[_-]+/g, " "));
+    return closed === null || !input.servedFacets.has(facetOfSubject(closed));
+  });
+  if (missing.length === 0) return null;
+
+  const lowered = input.instruction.toLowerCase();
+  const speakable = missing.find((key) => {
+    const plain = key.trim().toLowerCase().replace(/[_-]+/g, " ");
+    if (closedSubjectFor(plain) !== null) return false;
+    /* Her own words, on the one word this sentence quotes — the same test every
+       free value faces, asked of a key. A word she did not type is not hers to
+       be told back. */
+    return new RegExp(`\\b${plain.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`).test(lowered);
+  });
+
+  return "Everything else you asked for was done. "
+    + (speakable
+      ? `The ${speakable.trim().toLowerCase().replace(/[_-]+/g, " ")} isn't something I can do yet, `
+        + "so it was left out of this take."
+      : "There was one more thing in that sentence I couldn't do.");
 }

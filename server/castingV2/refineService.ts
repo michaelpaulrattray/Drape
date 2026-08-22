@@ -235,7 +235,7 @@ import { upscaleToFloor } from "./inkReferenceUpscale";
 import { removeInkDesign } from "../db/castingV2InkDesignRemoval";
 import { inkDesignImagePath } from "../../shared/inkDesignDelivery";
 import type { InkCutRoute } from "../../shared/inkCutRoute";
-import { openLaneOutcomeOf } from "./openLaneAccept";
+import { namedButNotServedNote, openLaneOutcomeOf } from "./openLaneAccept";
 import { openKindPresenceBindsToday } from "./openKindPolicy";
 import { readOpenKinds } from "./openLaneKind";
 import { recordOpenLaneDemand } from "../db/castingV2OpenLaneDemand";
@@ -2422,6 +2422,23 @@ async function refineCandidateCounted(
     all of them or it is deciding on the customer's behalf in silence.
   */
   let outOfFrameNote: string | null = null;
+  /*
+    AND THE THIRD MEMBER OF THAT CLASS: a subject she NAMED that reached no lane
+    at all (ruled fable-1374 §2, noun ruled fable-1376).
+
+    `readDelta` records what it cannot own and skips it; the open lane serves at
+    most one of them. What is left is a thing the customer typed which nothing
+    filed — and because the rest of her ask survived, this render happens and is
+    charged. She typed two things, paid once, and only one arrived.
+
+    Kept as the KEYS here and turned into a sentence at the outcome, where the
+    facets this render actually wrote are in hand: a key whose closed subject
+    WAS served is a reply naming one fact twice, not a missing thing, and
+    apologising for it would be a false apology on a render that did all of it.
+  */
+  const unservedSubjects: readonly string[] = "unserved" in parsed && Array.isArray(parsed.unserved)
+    ? parsed.unserved.filter((subject): subject is string => typeof subject === "string")
+    : [];
   let chain: ChainStep[] = predecessorChain ?? [];
   let removedFacets = new Set<Facet>();
   /**
@@ -9321,6 +9338,17 @@ async function refineCandidateCounted(
          dropped in silence (ruled fable-1093 §1). */
       secondViewNote,
       outOfFrameNote,
+      /* And the half she named that reached no lane at all — the same class as
+         the line above, and the same rule: a paid take says what it did not do,
+         and says nothing about money because money moved. */
+      namedButNotServedNote({
+        unserved: unservedSubjects,
+        instruction: input.instruction,
+        /* Everything this render wrote, closed lane included. Null cannot reach
+           here — a delta that composed to nothing refused long before the
+           landing — and the empty set is the honest reading of it either way. */
+        servedFacets: facetsWrittenBy(editDelta ?? {}),
+      }),
       invisibleSiteNote,
     ].filter((line): line is string => line !== null);
 

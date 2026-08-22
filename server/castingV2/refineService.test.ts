@@ -1122,6 +1122,65 @@ describe("refusals land before anything is claimed", () => {
     the delivered SENTENCE, the stored RECIPE (base-anchored, so a phantom there
     is permanent), the PROMPT the painter is sent, and the money.
   */
+  it("⚠ SAYS SO WHEN A SUBJECT SHE NAMED REACHED NO LANE AT ALL", async () => {
+    /*
+      fable-1374 §2's ruling at its own seat. The customer typed two things, the
+      closed lane filed one, and the other reached no lane — so the render
+      happened, was CHARGED, and she is owed the sentence.
+
+      The out-of-frame arm above is the same class one door over; this is the
+      member that had no sentence at all until now, and it is the one the
+      founder met on cast 1653.
+    */
+    const result = await refineCandidate(
+      {
+        harvest: unmasked,
+        interpret: async () => ({
+          ok: true as const,
+          delta: { free: { lips: "a soft nude lip gloss" } },
+          unserved: ["orb"],
+        }),
+      },
+      {
+        ...input,
+        instruction: "give her a soft nude lip gloss, and a glowing red orb on her forehead",
+      },
+    );
+
+    expect(result.note).toContain("The orb isn't something I can do yet");
+    expect(result.note).toContain("Everything else you asked for was done");
+    /* A DELIVERED take. The refusal's reassuring sentence would be a lie. */
+    expect(result.note?.toLowerCase()).not.toContain("nothing was charged");
+  });
+
+  it("CONTROL — the SERVED sentence says nothing, which is what the rescue bought", async () => {
+    /*
+      After `c39b8de5` his combined sentence serves BOTH halves, so the parse
+      carries no unserved subject and the take owes no note. Without this arm the
+      feature is satisfied by a product that apologises on every open-lane ask —
+      which would turn a fix into a permanent confession.
+    */
+    const result = await refineCandidate(
+      {
+        harvest: unmasked,
+        interpret: async () => ({
+          ok: true as const,
+          delta: {
+            free: { lips: "a soft nude lip gloss" },
+            open: { orb: { noun: "orb", words: "a glowing red orb on her forehead" } },
+          },
+        }),
+      },
+      {
+        ...input,
+        instruction: "give her a soft nude lip gloss, and a glowing red orb on her forehead",
+      },
+    );
+
+    expect(result.note ?? "").not.toContain("isn't something I can do yet");
+    expect(result.note ?? "").not.toContain("one more thing");
+  });
+
   it("says which half of a half-served ask was left out, and carries the waist nowhere", async () => {
     const { claimVariant } = await import("../db/castingV2Variants");
     const result = await refineCandidate(

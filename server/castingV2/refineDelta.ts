@@ -591,6 +591,22 @@ export type RefineParse =
      */
     droppedReference?: boolean;
     /**
+     * SUBJECTS SHE NAMED THAT NOTHING FILED — the half-served record
+     * (ruled fable-1374 §2, noun ruled fable-1376).
+     *
+     * `readDelta` records a subject it does not own and skips it; the open lane
+     * then serves it, rescues it, or refuses it. What is left is a thing the
+     * customer typed which reached no lane at all — and if the rest of the ask
+     * survived, the render HAPPENED and was CHARGED. She typed two things, paid
+     * once, and only one arrived.
+     *
+     * It is the KEYS and never the values: the value under an unowned subject is
+     * model-authored text, and this list is read to write a sentence she reads.
+     *
+     * Absent on every ordinary ask, which is what makes it free.
+     */
+    unserved?: readonly string[];
+    /**
      * THE VALUES IN THIS DELTA ARE TO COME FROM THE ATTACHED PICTURE
      * (`UNIVERSAL_REFERENCE_ROAD_DESIGN.md` §10; the entrance, ruled
      * fable-1104 §2).
