@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "f49cbaf11ee6920d"
+    "sourceFingerprint": "d1b581d5cadc8f29"
   },
   "domains": [
     {
@@ -9297,6 +9297,10 @@
     {
       "id": "test:client/src/features/castingV2/toastOwnership.test.ts",
       "path": "client/src/features/castingV2/toastOwnership.test.ts"
+    },
+    {
+      "id": "test:client/src/features/castingV2/useChipAnatomy.test.ts",
+      "path": "client/src/features/castingV2/useChipAnatomy.test.ts"
     },
     {
       "id": "test:client/src/features/castingV2/waitNotice.test.ts",

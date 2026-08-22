@@ -53,14 +53,72 @@ describe("what a render's references tell the customer, and what they do not", (
     },
   };
 
-  it("gives back one entry per reference, in the order the render was sent them", () => {
-    const projected = referencesOf(storedRecipe);
+  /*
+    ⚠ AND THE SAME RECIPE WITH A PICTURE SHE ATTACHED — the `source` role, which
+    is the only one the chip may show (founder ruling, fable-1419 §2).
+  */
+  const withSupplied = {
+    ...storedRecipe,
+    repaint: {
+      ...storedRecipe.repaint,
+      references: [
+        ...storedRecipe.repaint.references,
+        {
+          key: "casting-v2/reference-attachments/aa11bb22.png",
+          kind: "source",
+          slot: "hair",
+          digest: "11".repeat(32),
+          sentGeometry: "512x512",
+        },
+      ],
+    },
+  };
+
+  it("⚠ SHOWS ONLY THE PICTURES SHE SUPPLIED — not the master, not our carries", () => {
+    /*
+      His words: *"the only reference that go into that box are ones you use to
+      generate the previous image with … that would ride in this box not her
+      horns."* The master and a carried ink crop are MACHINERY — she did not
+      attach them, and a chip that lists them turns "replay my ask" into a list
+      of our internals.
+    */
+    const projected = referencesOf(withSupplied);
+    expect(projected).toHaveLength(1);
+    expect(projected[0]!.kind).toBe("source");
+    expect(projected[0]!.slot).toBe("hair");
+    expect(projected[0]!.url).toContain("aa11bb22");
+  });
+
+  it("shows NOTHING for a render she attached nothing to", () => {
+    /* Which is almost every render: the master and the carries rode, she gave
+       nothing, and the honest chip is a sentence with no thumbnails. */
+    expect(referencesOf(storedRecipe)).toEqual([]);
+  });
+
+  it("gives back one entry per SUPPLIED reference, in the order they were sent", () => {
+    const two = {
+      ...withSupplied,
+      repaint: {
+        ...withSupplied.repaint,
+        references: [
+          ...withSupplied.repaint.references,
+          {
+            key: "casting-v2/reference-attachments/cc33dd44.png",
+            kind: "source",
+            slot: "ink:neck",
+            digest: "22".repeat(32),
+            sentGeometry: "512x512",
+          },
+        ],
+      },
+    };
+    const projected = referencesOf(two);
     expect(projected).toHaveLength(2);
-    expect(projected[0]!.kind).toBe("master");
-    expect(projected[1]!.slot).toBe("ink:upperArm@left");
+    expect(projected[0]!.slot).toBe("hair");
+    expect(projected[1]!.slot).toBe("ink:neck");
     /* A url rather than a storage key: the client shows a picture, and a key
        would make every caller build the address a fifth way. */
-    expect(projected[0]!.url).toContain("casting-v2/candidates/9b846249.png");
+    expect(projected[0]!.url).toContain("casting-v2/reference-attachments/aa11bb22.png");
   });
 
   it("⚠ CARRIES EXACTLY THREE FIELDS AND NO FOURTH", () => {
@@ -70,7 +128,14 @@ describe("what a render's references tell the customer, and what they do not", (
       which is precisely how `passwordHash` reached `auth.me` and how image URLs
       reached the moderator surface (invariant 8).
     */
-    for (const entry of referencesOf(storedRecipe)) {
+    /* ⚠ OVER `withSupplied`, NOT `storedRecipe` — since the founder's chip
+       ruling, a recipe with no attached picture projects NOTHING, and a
+       for-loop over an empty list is a guard that cannot fail. The same trap
+       this file's own CONTROL arm exists to name, arriving through a product
+       change rather than through a fixture. */
+    const entries = referencesOf(withSupplied);
+    expect(entries.length, "the guard must have something to guard").toBeGreaterThan(0);
+    for (const entry of entries) {
       expect(Object.keys(entry).sort()).toEqual(["kind", "slot", "url"]);
     }
   });
@@ -83,7 +148,11 @@ describe("what a render's references tell the customer, and what they do not", (
       the stored recipe above, so this cannot pass by testing for something the
       fixture never contained.
     */
-    const wire = JSON.stringify(referencesOf(storedRecipe));
+    const projected = referencesOf(withSupplied);
+    expect(projected.length, "an absence proven over nothing is not a proof").toBeGreaterThan(0);
+    const wire = JSON.stringify(projected);
+    expect(wire).not.toContain("11111111111111");
+    expect(wire).not.toContain("512x512");
     expect(wire).not.toContain("daee11c1ae6d1448");
     expect(wire).not.toContain("62f8f92ebe522bd9");
     expect(wire).not.toContain("1024x1536");
@@ -99,8 +168,9 @@ describe("what a render's references tell the customer, and what they do not", (
       the absence of strings its input never held is the checker that cannot
       fail, and this project has bought that lesson more than once.
     */
-    const inside = JSON.stringify(storedRecipe);
+    const inside = JSON.stringify(withSupplied);
     for (const secret of [
+      "11111111111111", "512x512",
       "daee11c1ae6d1448", "62f8f92ebe522bd9", "1024x1536", "896x1392",
       "Reference 1 is the photograph", "Edit this photograph", "gpt-image-2",
     ]) {
@@ -118,13 +188,18 @@ describe("what a render's references tell the customer, and what they do not", (
     expect(referencesOf(stored)).toEqual([]);
   });
 
-  it("skips a reference with no key rather than showing a broken picture", () => {
+  it("skips a SUPPLIED reference with no key rather than showing a broken picture", () => {
     /* A thumbnail with no image is worse than an absent one: it reads as a
        feature that half works. */
     const projected = referencesOf({
-      repaint: { references: [{ kind: "carry", slot: "lips" }, { key: "a/b.png", kind: "master" }] },
+      repaint: {
+        references: [
+          { kind: "source", slot: "hair" },
+          { key: "a/b.png", kind: "source", slot: "ink:neck" },
+        ],
+      },
     });
     expect(projected).toHaveLength(1);
-    expect(projected[0]!.kind).toBe("master");
+    expect(projected[0]!.slot).toBe("ink:neck");
   });
 });

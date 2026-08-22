@@ -9850,6 +9850,34 @@ export function readAskScope(internalPrompt: unknown): string | null {
  * founder's ask says it in his own words: *derived from the dispatch record,
  * never a parallel note*.
  *
+ * # ⚠ ONLY THE PICTURES SHE SUPPLIED — founder ruling, verbatim (fable-1419 §2)
+ *
+ * > *"the only reference that go into that box are ones you use to generate the
+ * > previous image with e.g i upload a reference on the previous image and say
+ * > copy her hair that would ride in this box not her horns. that way when i
+ * > press use im essentially regenerating the exact same prompt + reference
+ * > image i used to generate this image so then i regenerate it again"*
+ *
+ * This used to project EVERY reference the render carried. That is the honest
+ * answer to *what was the product looking at*, and it is the wrong answer to
+ * the question the chip is actually asked, which is **what did I give it**. Her
+ * master, and the carry crop of the horns she asked for four renders ago, are
+ * MACHINERY: she did not attach them, they are not part of her ask, and a chip
+ * that shows them turns *Use* — *replay my ask* — into a list of our internals.
+ *
+ * So the filter is `source`, which is the recipe role for exactly one thing:
+ * *"a reference SHE attached, cut down to the feature she is pointing at, and
+ * it belongs to the one ask that carries it"*. Not the master, not a carry, not
+ * an anchor. The role already drew this line; this reader had not.
+ *
+ * ⚠ **AN UPLOADED TATTOO DESIGN RIDES AS `anchor`, NOT `source`, so it is NOT
+ * in the chip** — and that is the ruling as written rather than a decision I
+ * made. An anchor is *"an introduced item's FROZEN INTRODUCTION REFERENCE — a
+ * tattoo's flash sheet"*: hers, but re-ridden on every later render of that
+ * item rather than belonging to one ask. Whether her own design belongs in a
+ * box whose promise is *this is what I gave it for THIS picture* is a founder
+ * question with a real answer either way, and it is filed rather than guessed.
+ *
  * # THREE FIELDS, and the rest of the recipe stays inside
  *
  * `internalPrompt` is INTERNAL (§J) and this reader is why it can stay that
@@ -9871,10 +9899,21 @@ export function readAskScope(internalPrompt: unknown): string | null {
  * recipe was stored, which the client reads as *nothing to show* — the same
  * answer those rows give today.
  */
+/**
+ * THE ONE RECIPE ROLE THAT IS A PICTURE THE CUSTOMER SUPPLIED.
+ *
+ * Spelled once, beside the reader that filters on it, so the founder's sentence
+ * and the recipe's own vocabulary cannot drift apart at a string literal.
+ * `ReferenceRole`'s `source` docblock is the definition; this is the spelling.
+ */
+const SUPPLIED_REFERENCE_KIND = "source";
+
 export type ProjectedReference = {
   /** The public URL of the picture itself. */
   url: string;
-  /** `master` · `carry` · `source` — what this picture was FOR. */
+  /** Always `source` today — see the founder ruling above. Kept as the field
+   *  rather than dropped, because *what this picture was FOR* is the question
+   *  the thumbnail's title answers, and a widening is one line. */
   kind: string;
   /** The feature it belongs to, when it belongs to one. Null for the master. */
   slot: string | null;
@@ -9895,6 +9934,11 @@ export function referencesOf(internalPrompt: unknown): ProjectedReference[] {
        thumbnail with no image is worse than an absent one. */
     if (typeof key !== "string" || key.length === 0) continue;
     if (typeof kind !== "string" || kind.length === 0) continue;
+    /* HER PICTURES ONLY — see the ruling above. Filtered HERE rather than in
+       the browser so there is one owner of what the chip means; a client-side
+       filter is a second answer to the same question, and this one is a
+       founder's sentence rather than a rendering detail. */
+    if (kind !== SUPPLIED_REFERENCE_KIND) continue;
     const slot = (entry as { slot?: unknown }).slot;
     projected.push({
       url: storagePublicUrl(key),
