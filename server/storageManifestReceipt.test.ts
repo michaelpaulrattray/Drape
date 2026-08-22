@@ -143,6 +143,53 @@ function serverSources(): Array<{ file: string; source: string }> {
   return out;
 }
 
+const HELPER = "createStorageCleanupManifestIn(";
+
+/**
+ * ⚠ THE POPULATION IS THE ACT, NOT ONE SPELLING OF IT — the hole this sweep
+ * carried while claiming *"a new one cannot arrive unnoticed"*.
+ *
+ * The derivation below used to be `source.includes(HELPER)`, which reads ONE
+ * spelling of writing a manifest. There is a second: `inkUploadService.ts`
+ * EXPORTS its `defaultManifest` wrapper — deliberately, its own docblock says
+ * why, so *"a synthetic operation id, and BORN HELD"* are not re-decided by a
+ * second hand — and two modules import it. Neither
+ * `server/castingV2/inkDeliveryMint.ts` nor `server/castingV2/inkReferenceMint.ts`
+ * contains the helper's name anywhere, so for three days both wrote real
+ * manifests for real customer bytes from OUTSIDE this sweep, and the arm that
+ * exists to notice exactly that was green.
+ *
+ * Both turned out to be correct keepers when read, so nothing was lost. That is
+ * luck and not a control: the next writer to import the wrapper and forget the
+ * receipt ships `referenceAttachService`'s defect — every picture a customer
+ * attached collected by the worker, its row left pointing at nothing — under
+ * the same green.
+ *
+ * Doctrine 23: the arm goes at the PRODUCER. A caller is a module that OWNS A
+ * BATCH, and it owns one whether it names the helper or names a wrapper.
+ *
+ * # WHY THIS READS THE ID AND NOT THE IMPORT
+ *
+ * Two weaker readings were driven first and both are wrong, which is why they
+ * are named rather than merely avoided:
+ *
+ * - *"imports an exported function whose body calls the helper"* sweeps in
+ *   every ordinary caller's own entry point — `refineCandidate`, `signCandidate`,
+ *   `deleteUserAccount` — so a route that merely calls a refine becomes a
+ *   module this sweep demands a keep/collect answer from. It does not own the
+ *   batch and has no answer to give. Measured: 12 unrelated modules.
+ * - *"calls something named `manifest(`"* is narrower and still wrong: it takes
+ *   `geminiPrompts.ts` and `castingV2Scope.ts`, which use the word for
+ *   something else entirely.
+ *
+ * The act is HANDING AN ID TO A MANIFEST CALL. That is what registering a batch
+ * IS — the id is the receipt, and whoever mints it is who must decide to
+ * discharge it or not. Measured over the tree: the direct 24, plus exactly the
+ * two aliased mints, and nothing else.
+ */
+const registersABatch = (source: string): boolean =>
+  /manifest\s*\(\s*\{[\s\S]{0,120}?\bid\s*:/.test(source);
+
 /**
  * Modules that register bytes they mean to KEEP. Each must hand a
  * `cleanupBatchId` to the statement that files the referencing row.
@@ -151,6 +198,17 @@ const KEEPERS: Readonly<Record<string, string>> = {
   "server/castingV2/bornWornCatalogue.ts": "a born-worn mask and crop, referenced by the catalogue row",
   "server/castingV2/inkPlateMint.ts": "the plate an engine is shown on every later render",
   "server/castingV2/inkUploadService.ts": "the customer's own design photograph",
+  /*
+    THE TWO THAT WERE OUTSIDE THIS SWEEP ENTIRELY, added 2026-08-23. Neither
+    names the helper: both import `defaultManifest` from `inkUploadService`, and
+    the derivation read one spelling. Both were READ when they were found and
+    both are correct keepers — the delivery crop hands its receipt to
+    `castingV2InkDeliveryCrops`, the attach-pointed design to
+    `castingV2InkDesigns`, and each of those discharges the batch in the row's
+    own transaction. Nothing was lost; the control simply was not one.
+  */
+  "server/castingV2/inkDeliveryMint.ts": "the tattoo as it actually landed on her, kept for the next carry",
+  "server/castingV2/inkReferenceMint.ts": "the design cut from a picture she pointed at",
   "server/castingV2/keptFaceScan.ts": "the scan's stencils — THE ONE THAT WAS MISSING, fixed 2026-08-19",
   "server/castingV2/referenceAttachService.ts": "the picture a customer attached to her Cast",
   "server/castingV2/referenceMint.ts": "a library crop and its mask",
@@ -209,16 +267,72 @@ const COLLECTORS: Readonly<Record<string, string>> = {
 };
 
 describe("the manifest receipt, swept across every caller", () => {
-  const callers = serverSources()
-    .filter(({ file, source }) =>
-      SCOPE(file) && source.includes("createStorageCleanupManifestIn("))
-    .map(({ file }) => file)
-    .sort();
+  const inScope = serverSources().filter(({ file }) => SCOPE(file));
+  const direct = inScope
+    .filter(({ source }) => source.includes(HELPER))
+    .map(({ file }) => file);
+  /* The second spelling. Named separately so the arm below can prove it found
+     anything — a widening that silently matches nothing is the old sweep with
+     more code in it. */
+  const aliased = inScope
+    .filter(({ source }) => !source.includes(HELPER) && registersABatch(source))
+    .map(({ file }) => file);
+  const callers = [...direct, ...aliased].sort();
 
   it("finds callers at all — the control before any verdict below counts", () => {
     /* An empty scan would make every assertion here vacuously true, and an
        empty scan is exactly what a broken walker or a renamed helper produces. */
     expect(callers.length).toBeGreaterThan(15);
+  });
+
+  it("⚠ finds the ALIASED callers too — the widening proves its own population", () => {
+    /*
+      Doctrine 23's second half: a guard proving an absence first proves its
+      population non-empty. Without this the widening is unfalsifiable — a
+      reader that matched nothing would leave the classification arm below
+      passing over exactly the set the one-spelling derivation already had, and
+      that set was green while two live writers sat outside it.
+
+      If `defaultManifest` stops being exported, or these two start naming the
+      helper directly, this reddens and asks the question out loud rather than
+      quietly reverting.
+    */
+    expect(aliased.length, "modules that own a batch without naming the helper")
+      .toBeGreaterThan(0);
+    /* And the miss itself, pinned: both wrote real manifests over real customer
+       bytes from outside this sweep — the design cut from a picture she pointed
+       at, and the tattoo as it actually landed on her. */
+    expect([...aliased].sort()).toEqual([
+      "server/castingV2/inkDeliveryMint.ts",
+      "server/castingV2/inkReferenceMint.ts",
+    ]);
+  });
+
+  it("CAN FAIL — the population reader driven on both shapes", () => {
+    /*
+      This reader decides a POPULATION, and a population reader that never
+      returns false admits everything while one that never returns true admits
+      nothing. Driven here rather than trusted.
+    */
+    /* The aliased shape, exactly as `inkDeliveryMint` writes it. */
+    expect(registersABatch(
+      "const cleanupBatchId = randomUUID();\n"
+      + "await manifest({ id: cleanupBatchId, userId: input.userId, storageKeys: [key] });",
+    )).toBe(true);
+    /* And multi-line, exactly as `inkReferenceMint` writes it — the single-line
+       version of this regex found one of the two and would have shipped a
+       half-widening. */
+    expect(registersABatch(
+      "await dependencies.manifest({\n  id: cleanupBatchId,\n  userId: request.userId,\n"
+      + "  storageKeys: [storageKey],\n});",
+    )).toBe(true);
+    /* A module that merely CALLS a writer owns no batch and has no keep/collect
+       answer to give — the false positive that killed the import-graph reading. */
+    expect(registersABatch('const out = await refineCandidate({ userId, input });')).toBe(false);
+    /* The word used for something else entirely — `geminiPrompts.ts`. */
+    expect(registersABatch("const manifest = (parts: string[]) => parts.join('\\n');")).toBe(false);
+    /* A row RECEIVING a receipt is the discharge side, not the owning side. */
+    expect(registersABatch("await record({ storageKey, cleanupBatchId });")).toBe(false);
   });
 
   it("classifies EVERY caller — a new one cannot arrive unnoticed", () => {
