@@ -71,6 +71,69 @@ describe("the open lane's acceptance path", () => {
     expect(opened).toMatchObject({ ok: false, reason: "collides", outcome: "refused" });
   });
 
+  it("⚠ RESCUES THE ORB when the namer answers about the HORNS beside it", async () => {
+    /*
+      fable-1371 §A, mechanism bought at the raw reply (opus-1026 §2). The
+      founder asked for both features in one sentence and paid 25 credits for it:
+
+        interpreter  {"free": {"horns": "…", "orb": "…"}}    ← BOTH, correctly
+        normalizer   {"kind": "horns"}                       ← the CLOSED one
+        → collides → refused as a routing bug → the orb filed NOTHING
+
+      A sentence naming ONE uncatalogued thing is fully determined and the namer
+      answers correctly, 2/2. TWO — one closed, one open — is under-determined,
+      and it picks the first salient noun. The collision guard then did its job
+      on the wrong noun.
+
+      The engine here says what the real one said, so the arm is the incident.
+    */
+    const opened = await acceptOpenKind({
+      instruction: "give her two smooth bone-white horns rising from the top of her head, "
+        + "and a glowing red vertical slit orb embedded in the centre of her forehead",
+      unowned: unowned("orb", "a glowing red vertical slit orb embedded in the centre of her forehead"),
+      engine: engineSaying('{"kind":"horns"}'),
+    });
+
+    expect(opened).toEqual({
+      ok: true,
+      kind: "orb",
+      ask: {
+        noun: "orb",
+        words: "a glowing red vertical slit orb embedded in the centre of her forehead",
+      },
+      outcome: "words_only",
+    });
+  });
+
+  it("⚠ CONTROL — the routing guard is NOT weakened: a colliding SUBJECT still refuses", async () => {
+    /*
+      The load-bearing half. The rescue reads the parse's own unowned key through
+      the SAME `closedSubjectFor`, so §1's measured routing bug — a reply keying
+      a closed subject under a name the free lane does not hold — refuses exactly
+      as it did. Without this arm the fix is indistinguishable from switching the
+      collision guard off whenever anything is unowned.
+    */
+    const opened = await acceptOpenKind({
+      instruction: "give her rosy cheeks",
+      unowned: unowned("cheeks", "rosy"),
+      engine: engineSaying('{"kind":"cheekbones"}'),
+    });
+
+    expect(opened).toMatchObject({ ok: false, reason: "collides", outcome: "refused" });
+  });
+
+  it("CONTROL — a subject key that is not a plain noun is not rescued", async () => {
+    /* The rescue reads a KEY, and a key that could not be a kind is left alone:
+       the namer's refusal stands rather than being replaced by nonsense. */
+    const opened = await acceptOpenKind({
+      instruction: "give her antlers and a third eye",
+      unowned: unowned("a third eye on her forehead, glowing", "glowing"),
+      engine: engineSaying('{"kind":"antlers"}'),
+    });
+
+    expect(opened).toMatchObject({ ok: false, reason: "collides", outcome: "refused" });
+  });
+
   it("REFUSES words the customer's own sentence does not contain", async () => {
     /*
       Every guard the free lane runs, the open lane runs (§2 property 3) — and

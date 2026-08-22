@@ -46,7 +46,7 @@
  * so the conservative reading holds for every kind.
  */
 import { createModuleLogger } from "../logging/logger";
-import { normalizeOpenKind, type OpenKindReading } from "./openLaneKind";
+import { normalizeOpenKind, openKindFromSubjectKey, type OpenKindReading } from "./openLaneKind";
 import { scrubBrands } from "./brandScrub";
 import { stageWordIn, stemmedContainment, type OpenKindAsk } from "./refineDelta";
 import type { TextEngine } from "../providers/types";
@@ -152,10 +152,48 @@ export async function acceptOpenKind(input: {
     );
   }
 
-  const reading: OpenKindReading = await normalizeOpenKind(input.instruction, {
+  const named: OpenKindReading = await normalizeOpenKind(input.instruction, {
     ...(input.engine ? { engine: input.engine } : {}),
     ...(input.signal ? { signal: input.signal } : {}),
   });
+
+  /*
+    ⚠ WHEN THE NAMER ANSWERS ABOUT THE WRONG HALF OF THE SENTENCE
+    (fable-1371 §A; mechanism read at the raw reply, opus-1026 §2).
+
+    `normalizeOpenKind` is handed the whole instruction. One uncatalogued thing
+    in a sentence is fully determined and it answers correctly; TWO things — one
+    closed, one open — is under-determined, and it picks the first salient noun.
+    Measured 2/2 on the founder's own repair sentence:
+
+      interpreter  {"free": {"horns": "…", "orb": "…"}}    ← BOTH, correctly
+      normalizer   {"kind": "horns"}                       ← the CLOSED one
+      → collides → refused as a routing bug → the orb filed nothing at all
+
+    He paid 25 credits, received the horns, and got no sentence about the orb.
+    The collision guard was doing its job on the wrong noun.
+
+    So a collision now asks a second question before it refuses — of OUR OWN
+    RECORD, never of the model: *is the subject the parse could not file itself
+    a usable kind?* `orb` is; `cheeks` (§1's measured routing bug) is not,
+    because it collides in turn and the refusal below stands unchanged.
+
+    No new call, no credit, and deliberately NO CHANGE to the normalizer's
+    prompt: its bars were measured on the sentence as it stands, and a subset of
+    prompt context has already been measured moving routing in this very lane.
+  */
+  const rescued = named.ok || named.reason !== "collides"
+    ? null
+    : (() => {
+      const fromRecord = openKindFromSubjectKey(input.unowned[0]!.subject);
+      if (!fromRecord.ok) return null;
+      log.info(
+        { named: named.kind, rescued: fromRecord.kind },
+        "[openLaneAccept] the namer answered about a closed subject; the parse's own unowned key is the kind",
+      );
+      return fromRecord;
+    })();
+  const reading: OpenKindReading = rescued ?? named;
 
   if (!reading.ok) {
     if (reading.reason === "collides") {

@@ -276,6 +276,57 @@ export async function normalizeOpenKind(
 }
 
 /**
+ * ⚠ THE KEY THE PARSE ITSELF LEFT OVER, read as a kind — NO MODEL CALL
+ * (fable-1371 §A, mechanism at opus-1026 §2).
+ *
+ * # Why a second way in exists at all
+ *
+ * {@link normalizeOpenKind} is handed the customer's whole sentence. A sentence
+ * naming ONE uncatalogued thing is fully determined and it answers correctly —
+ * measured, 2/2 on *"a glowing red vertical slit orb …"* → `orb`. A sentence
+ * naming TWO, one closed and one open, is **under-determined**, and it picks the
+ * first salient noun:
+ *
+ * ```
+ * "… two smooth bone-white horns …, and a glowing red vertical slit orb …"
+ *   interpreter  {"free": {"horns": "…", "orb": "…"}}     ← BOTH, correctly
+ *   normalizer   {"kind": "horns"}                        ← the closed one
+ *   → collides → refused as a routing bug → the orb filed NOTHING
+ * ```
+ *
+ * The founder paid 25 credits, received the horns, and got no sentence about the
+ * orb. The collision guard was working perfectly, on the wrong noun.
+ *
+ * # It reads OUR OWN RECORD rather than asking again
+ *
+ * The subject key is what `readDelta` could not file — the interpreter's own
+ * word for the thing, already in `check.unowned`. So the fallback needs no
+ * engine, no credit, and above all **no change to the normalizer's prompt**,
+ * whose bars were measured on the sentence as it stands (`context-is-not-
+ * additive`: a subset of prompt context moved routing twice as often as its
+ * superset, measured, in this same lane).
+ *
+ * # THE ROUTING GUARD IS NOT WEAKENED, and that is the load-bearing property
+ *
+ * The candidate goes through the SAME grammar and the SAME `closedSubjectFor`.
+ * §1's measured `cheeks` case still refuses, because there the unowned subject
+ * IS the colliding noun — the fallback answers `collides` for it too, and the
+ * caller keeps the refusal it already had.
+ */
+export function openKindFromSubjectKey(subject: string): OpenKindReading {
+  /* The same shape a model reply must satisfy, asked of a key rather than of
+     JSON — `readKind`'s grammar, applied to a value that arrived as a key
+     already. A subject that is not a plain noun is not a kind. */
+  const plain = subject.trim().toLowerCase().replace(/[_-]+/g, " ").replace(/\s+/g, " ");
+  if (!plain || plain.length > 40 || plain.split(" ").length > 3) return { ok: false, reason: "unreadable" };
+  if (!/^[a-z][a-z '-]*$/.test(plain)) return { ok: false, reason: "unreadable" };
+  const kind = plain.replace(/ /g, "-");
+  const closed = closedSubjectFor(plain);
+  if (closed !== null) return { ok: false, reason: "collides", kind, noun: plain, subject: closed };
+  return { ok: true, kind, noun: plain };
+}
+
+/**
  * The longest an open kind's words may be — the free lane's own ceiling.
  *
  * Quoted rather than shared because the two are different questions asked of
