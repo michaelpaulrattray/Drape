@@ -109,7 +109,9 @@ import { createRoll, cancelRoll } from "../castingV2/rollService";
 import { CASTING_PATHS } from "../../shared/castingPaths";
 import { signCandidate } from "../castingV2/signService";
 import { REFINE_ANSWERING_MAX_LENGTH, REFINE_INSTRUCTION_MAX_LENGTH } from "../castingV2/refineLimits";
-import { readAskScope, readRegeneratedFrom, referencesOf, refineCandidate } from "../castingV2/refineService";
+import {
+  readAskReference, readAskScope, readRegeneratedFrom, referencesOf, refineCandidate,
+} from "../castingV2/refineService";
 import { pendingStage } from "../castingV2/pendingStage";
 import {
   listCandidateVariants,
@@ -1545,6 +1547,19 @@ export const castingV2Router = router({
             was stored, which reads as nothing to show.
           */
           references: referencesOf(variant.internalPrompt),
+          /*
+            AND THE HANDLE THAT BRINGS THE PICTURE BACK (fable-1421 §2).
+
+            The thumbnails above say what she gave this render; this is what
+            lets *Use* give it again. One per ask, because an ask carries one
+            attachment — and a HANDLE rather than a url, because the address of
+            a customer's photograph stays server-side and the id is the currency
+            `castingV2.refine` already takes.
+
+            Null on every ask with no picture, which the client reads as
+            *nothing to bring back*.
+          */
+          askReferenceId: readAskReference(variant.internalPrompt),
         })),
       };
     }),

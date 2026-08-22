@@ -77,6 +77,19 @@ export type RefineVariant = {
    * reads that as nothing to show.
    */
   references?: Array<{ url: string; kind: string; slot: string | null }>;
+  /**
+   * THE HANDLE THAT BRINGS HER PICTURE BACK (founder ruling fable-1419 §2,
+   * ordered fable-1421 §2).
+   *
+   * His sentence: *"when i press use im essentially regenerating the exact same
+   * prompt + reference image i used to generate this image."* The thumbnails
+   * above say what she gave this render; this is what lets *Use* give it again.
+   *
+   * Null on every ask with no picture, and on every row landed before the
+   * handle was written down — read as *nothing to bring back*, which is the
+   * behaviour those rows have today.
+   */
+  askReferenceId?: string | null;
 };
 
 /**
@@ -467,6 +480,10 @@ export function RefinePanel({
     frame.
   */
   const selectedReferences = selected?.references ?? [];
+  /* The handle for those pictures, read off the SAME selected version, so the
+     thumbnail Use puts back and the reference it sends can never come from two
+     different rows. */
+  const selectedAskReferenceId = selected?.askReferenceId ?? null;
   return (
     <div className="dpc-refine" onClick={(event) => event.stopPropagation()}>
       {/*
@@ -662,7 +679,40 @@ export function RefinePanel({
             type="button"
             className="dpc-refine__madeUse"
             disabled={busy}
-            onClick={() => setInstruction(selectedRequest)}
+            /*
+              THE SENTENCE AND THE PICTURE — his own words for what this button
+              is (fable-1419 §2): *"regenerating the exact same prompt +
+              reference image i used to generate this image."*
+
+              It used to carry the sentence alone, which made the thumbnails
+              beside it a promise the button did not keep. The handle is the
+              row's own (`askReferenceId`), so what comes back is the picture
+              THAT ask carried and never a picture from a neighbouring version.
+
+              PREFILL ONLY, STILL. Spending her credits stays a deliberate act:
+              this fills the box and re-attaches, and she presses Refine. The
+              duplicate warning fires for it exactly as it does for anything
+              typed by hand.
+
+              The thumbnail is the projected `source` url — the picture she gave
+              — and `imageBase64` is empty on purpose: the door has already
+              taken this one and `claimPicture` is the path for a picture it has
+              not. A non-null `referenceId` is what marks it claimed, so the
+              provenance question does not re-open for a picture she already
+              answered it for.
+
+              A handle purged with its Cast is refused FREE on send, in the
+              server's own sentence — *"That picture isn't attached to this Cast
+              any more"* — which is the honest half-replay refusal rather than a
+              silent sentence-only ask.
+            */
+            onClick={() => {
+              setInstruction(selectedRequest);
+              const supplied = selectedReferences[0];
+              if (!selectedAskReferenceId || !supplied) return;
+              if (picture) dropPicture();
+              setPicture({ url: supplied.url, imageBase64: "", referenceId: selectedAskReferenceId });
+            }}
           >
             Use
           </button>

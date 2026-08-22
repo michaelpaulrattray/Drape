@@ -19,12 +19,21 @@ import { referencesOf } from "../../../../server/castingV2/refineService";
  * MACHINERY. She did not attach them, they are not part of her ask, and listing
  * them turns *replay my ask* into a list of our internals.
  *
- * ⚠ **AND THE SECOND HALF OF HIS SENTENCE IS NOT BUILT.** *Use* fills the ask
- * box with the sentence and stops; it does not re-attach the picture. So
- * *"the exact same prompt + reference image"* is, today, the prompt. That is
- * filed rather than hidden — the arm below asserts what the button DOES, so the
- * gap is a red test away from anyone who assumes otherwise, and it is a founder
- * question whether Use should carry the attachment back with it.
+ * **BOTH HALVES OF HIS SENTENCE ARE BUILT** (ordered fable-1421 §2). *Use*
+ * carries the prompt AND the picture: the row records the attach HANDLE the ask
+ * travelled with — never a url, because the address of a customer photograph
+ * stays server-side — and pressing Use fills the box and re-attaches it, marked
+ * CLAIMED so she is not asked again where a picture she answered for two
+ * renders ago came from.
+ *
+ * ⚠ This docblock said *"the second half is not built"* for the length of one
+ * chunk, which is how long it was true. It is corrected here rather than left,
+ * because a test file describing a capability as absent is the inert-control
+ * failure with its sign flipped — it sends the next reader hunting a door that
+ * is already open.
+ *
+ * A handle purged with its Cast is refused FREE on send, in the server's own
+ * sentence, which is the honest answer to a replay that can no longer be whole.
  */
 const PANEL = new URL("./components/RefinePanel.tsx", import.meta.url);
 
@@ -62,41 +71,92 @@ describe("what the chip shows", () => {
 });
 
 describe("what pressing Use actually does", () => {
-  it("⚠ FILLS THE BOX WITH THE SENTENCE AND SENDS NOTHING — prefill, never spend", async () => {
+  it("⚠ CARRIES THE SENTENCE AND THE PICTURE — his own words for the button", async () => {
     /*
-      Spending her credits is a deliberate act and stays one. `Use` prefills and
-      stops, so the sentence is hers to edit and the duplicate warning fires for
-      it exactly as it does for anything typed by hand.
+      *"regenerating the exact same prompt + reference image i used to generate
+      this image"* (fable-1419 §2, ordered fable-1421 §2). It used to carry the
+      sentence alone, which made the thumbnails beside it a promise the button
+      did not keep.
+
+      The handle is the ROW's own, so what comes back is the picture THAT ask
+      carried and never a neighbouring version's.
     */
     const panel = withoutProse(await readFile(PANEL, "utf8"));
-    expect(panel).toContain("onClick={() => setInstruction(selectedRequest)}");
-    /* And it is not wired to the submit path — a Use that spent would be a
-       button that charges 25 credits for a click labelled with a verb. */
-    expect(panel).not.toContain("onClick={() => submit(selectedRequest)");
+    const use = panel.slice(panel.indexOf("dpc-refine__madeUse"), panel.indexOf("dpc-refine__madeUse") + 700);
+    expect(use).toContain("setInstruction(selectedRequest)");
+    expect(use).toContain("selectedAskReferenceId");
+    expect(use).toContain("setPicture(");
   });
 
-  it("⚠ DOES NOT RE-ATTACH THE PICTURE — the half of his sentence that is not built", async () => {
+  it("⚠ PREFILLS AND NEVER SPENDS — the money still moves on her press, not ours", async () => {
     /*
-      His words are *"the exact same prompt + reference image"*. Today Use
-      carries the prompt. The chip now shows exactly the pictures that rode, so
-      the two sit next to each other and the gap is visible rather than assumed
-      away.
-
-      This arm is deliberately an assertion of ABSENCE with its own control
-      below: if somebody builds the re-attach, this goes red and they read the
-      note rather than discovering the ruling afterwards.
+      Re-attaching is not sending. Spending her credits is a deliberate act and
+      stays one: Use fills the box and attaches, she presses Refine, and the
+      duplicate warning fires exactly as it does for anything typed by hand.
     */
     const panel = withoutProse(await readFile(PANEL, "utf8"));
-    const use = panel.slice(panel.indexOf("dpc-refine__madeUse"), panel.indexOf("dpc-refine__madeUse") + 320);
-    expect(use).toContain("setInstruction(selectedRequest)");
-    expect(use).not.toContain("setPicture");
-    expect(use).not.toContain("referenceId");
+    const use = panel.slice(panel.indexOf("dpc-refine__madeUse"), panel.indexOf("dpc-refine__madeUse") + 700);
+    expect(use).not.toContain("onRefine(");
+  });
+
+  it("marks the replayed picture CLAIMED, so it does not re-ask where it came from", async () => {
+    /*
+      `pictureUnclaimed` is `referenceId === null`, and it both blocks the send
+      and opens the provenance question. A replay carries a handle the door has
+      already taken, so neither may fire — being asked again where a picture
+      came from, about a picture she answered for two renders ago, is the
+      product forgetting in front of her.
+    */
+    const panel = withoutProse(await readFile(PANEL, "utf8"));
+    const use = panel.slice(panel.indexOf("dpc-refine__madeUse"), panel.indexOf("dpc-refine__madeUse") + 700);
+    expect(use).toContain("referenceId: selectedAskReferenceId");
+    /* And the empty base64 is deliberate: `claimPicture` is the path for a
+       picture the door has NOT taken, and this one it has. */
+    expect(use).toContain('imageBase64: ""');
+  });
+
+  it("brings nothing back for a version that carried no picture", async () => {
+    /* Almost every version. A Use that attached a neighbouring row's photograph
+       because this one had none would be worse than one that attaches nothing. */
+    const panel = withoutProse(await readFile(PANEL, "utf8"));
+    const use = panel.slice(panel.indexOf("dpc-refine__madeUse"), panel.indexOf("dpc-refine__madeUse") + 700);
+    expect(use).toContain("if (!selectedAskReferenceId || !supplied) return;");
   });
 
   it("CONTROL — the panel really does know how to attach a picture", async () => {
-    /* Without this, the absence above could pass on a file that had no attach
+    /* Without this, the assertions above could pass on a file with no attach
        machinery at all, which would prove nothing about Use. */
     const panel = withoutProse(await readFile(PANEL, "utf8"));
-    expect(panel).toContain("setPicture");
+    expect(panel).toContain("claimPicture");
+    expect(panel).toContain("pictureUnclaimed");
+  });
+});
+
+/*
+  AND THE PICTURE OF AN ITEM SHE INTRODUCED — shown on the ask that applied it,
+  and nowhere else (fable-1421 §1).
+*/
+describe("an introduced item's own picture", () => {
+  const withAnchor = (edited: string[]) => ({
+    repaint: {
+      edited,
+      references: [
+        { key: "casting-v2/candidates/master.png", kind: "master", slot: null, digest: "d" },
+        { key: "casting-v2/ink-designs/hers.png", kind: "anchor", slot: "ink:neck", digest: "d" },
+      ],
+    },
+  });
+
+  it("IS in the chip on the ask that introduced it", () => {
+    const projected = referencesOf(withAnchor(["ink:neck"]));
+    expect(projected.map((one) => one.slot)).toEqual(["ink:neck"]);
+    expect(projected[0]!.kind).toBe("anchor");
+  });
+
+  it("is NOT in the chip on a later render that merely re-rode it", () => {
+    /* She did not hand it over on that ask. The design is frozen and rides
+       every later render of the item — machinery, by then. */
+    expect(referencesOf(withAnchor(["hair"]))).toEqual([]);
+    expect(referencesOf(withAnchor([]))).toEqual([]);
   });
 });

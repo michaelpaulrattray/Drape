@@ -9177,6 +9177,35 @@ async function refineCandidateCounted(
         */
         ...(input.scope ? { askScope: input.scope } : {}),
         /*
+          AND THE PICTURE SHE ATTACHED TO IT, WRITTEN DOWN — the same argument
+          as `askScope` above, one field along (founder ruling fable-1419 §2,
+          ordered fable-1421 §2).
+
+          His sentence is the spec: *"when i press use im essentially
+          regenerating the exact same prompt + reference image i used to
+          generate this image."* An ask with a picture travels as a sentence
+          PLUS a scope PLUS a handle, and the handle was the one part nothing
+          recorded — the dispatch record stores the CROP that was cut from her
+          attachment and sent to the engine, which is a different object with a
+          different key and cannot be attached to a new ask.
+
+          So Use could replay her sentence and never her picture, and the chip
+          above it now shows exactly the picture it could not bring back. The
+          PUBLIC ID rather than a storage key, because that is the currency
+          `castingV2.refine` already takes and the address stays server-side
+          (`askReference`'s own rule).
+
+          Absent on every ask with no picture, which is almost all of them — so
+          its presence is itself the mark of one, exactly as `askScope`'s is.
+
+          A handle that has since been purged with its Cast is not a problem
+          this line has to solve: `resolveAskReference` refuses it FREE with its
+          own sentence — *"That picture isn't attached to this Cast any more"* —
+          nothing is charged, and replaying half is what that refusal exists to
+          prevent.
+        */
+        ...(input.referenceId ? { askReference: input.referenceId } : {}),
+        /*
           THE CAPTIONS, WRITTEN DOWN — and until now they never were.
 
           Recipe v3 shipped complete except for this key. `capturedCaptions` was
@@ -9833,6 +9862,28 @@ export function readAskScope(internalPrompt: unknown): string | null {
 }
 
 /**
+ * THE PICTURE THIS RENDER'S ASK CARRIED — its public handle, or null.
+ *
+ * The other half of replaying an ask (fable-1421 §2). `readAskScope` above
+ * brought back the rectangle she pointed at; this brings back the photograph
+ * she attached, and between them *Use* can resubmit what she actually sent
+ * rather than a re-interpretation of its sentence.
+ *
+ * A HANDLE and never a url: the address of a customer's photograph is the one
+ * thing between it and a stranger, so it stays server-side and what crosses is
+ * the id `castingV2.refine` already takes (`askReference`'s own rule).
+ *
+ * Null for every ask with no picture and every row landed before this was
+ * written, which the client reads as *nothing to bring back* — the same answer
+ * those rows give today.
+ */
+export function readAskReference(internalPrompt: unknown): string | null {
+  if (!internalPrompt || typeof internalPrompt !== "object") return null;
+  const value = (internalPrompt as { askReference?: unknown }).askReference;
+  return typeof value === "string" && value.length > 0 ? value : null;
+}
+
+/**
  * THE PICTURES A RENDER WAS GIVEN — url, kind and slot, and nothing else
  * (his own ask, 1264 §1; shape ruled fable-1332 §4).
  *
@@ -9870,13 +9921,20 @@ export function readAskScope(internalPrompt: unknown): string | null {
  * it belongs to the one ask that carries it"*. Not the master, not a carry, not
  * an anchor. The role already drew this line; this reader had not.
  *
- * ⚠ **AN UPLOADED TATTOO DESIGN RIDES AS `anchor`, NOT `source`, so it is NOT
- * in the chip** — and that is the ruling as written rather than a decision I
- * made. An anchor is *"an introduced item's FROZEN INTRODUCTION REFERENCE — a
- * tattoo's flash sheet"*: hers, but re-ridden on every later render of that
- * item rather than belonging to one ask. Whether her own design belongs in a
- * box whose promise is *this is what I gave it for THIS picture* is a founder
- * question with a real answer either way, and it is filed rather than guessed.
+ * ⚠ **AN UPLOADED DESIGN RIDES AS `anchor`, AND IT IS IN THE CHIP ON THE ASK
+ * THAT INTRODUCED IT AND NOWHERE ELSE** (ruled fable-1421 §1, from the same
+ * sentence).
+ *
+ * An anchor is *"an introduced item's FROZEN INTRODUCTION REFERENCE — a
+ * tattoo's flash sheet"*: hers, and re-ridden on every later render of that
+ * item. So the role alone cannot answer his question. *"Ones you use to
+ * generate the previous image with"* can: **a design attached and applied by
+ * THIS ask was this ask's reference; a later render re-riding it internally did
+ * not receive it from her.**
+ *
+ * The discriminator is already in the record — `repaint.edited` is the slots
+ * this ask changed — so an anchor is shown exactly when its own slot is one of
+ * them. Nothing new is stored and nothing is inferred from the picture.
  *
  * # THREE FIELDS, and the rest of the recipe stays inside
  *
@@ -9908,6 +9966,16 @@ export function readAskScope(internalPrompt: unknown): string | null {
  */
 const SUPPLIED_REFERENCE_KIND = "source";
 
+/**
+ * THE ROLE AN INTRODUCED ITEM'S OWN PICTURE RIDES UNDER — a tattoo's design,
+ * a makeup look's source image.
+ *
+ * Shown only on the ask that INTRODUCED the item (fable-1421 §1); on every
+ * later render it is machinery she did not hand over. Spelled here beside its
+ * sibling so the two halves of the founder's sentence live in one place.
+ */
+const INTRODUCED_REFERENCE_KIND = "anchor";
+
 export type ProjectedReference = {
   /** The public URL of the picture itself. */
   url: string;
@@ -9925,6 +9993,13 @@ export function referencesOf(internalPrompt: unknown): ProjectedReference[] {
   if (!repaint || typeof repaint !== "object") return [];
   const list = (repaint as { references?: unknown }).references;
   if (!Array.isArray(list)) return [];
+  /* WHAT THIS ASK CHANGED — the discriminator for an introduced item's own
+     picture. Defensive about shape because this crossed a database boundary and
+     a malformed list must cost a thumbnail, never a throw on the read path. */
+  const editedRaw = (repaint as { edited?: unknown }).edited;
+  const edited: string[] = Array.isArray(editedRaw)
+    ? editedRaw.filter((one): one is string => typeof one === "string")
+    : [];
   const projected: ProjectedReference[] = [];
   for (const entry of list) {
     if (!entry || typeof entry !== "object") continue;
@@ -9934,16 +10009,21 @@ export function referencesOf(internalPrompt: unknown): ProjectedReference[] {
        thumbnail with no image is worse than an absent one. */
     if (typeof key !== "string" || key.length === 0) continue;
     if (typeof kind !== "string" || kind.length === 0) continue;
+    const slot = (entry as { slot?: unknown }).slot;
+    const named = typeof slot === "string" && slot.length > 0 ? slot : null;
     /* HER PICTURES ONLY — see the ruling above. Filtered HERE rather than in
        the browser so there is one owner of what the chip means; a client-side
        filter is a second answer to the same question, and this one is a
        founder's sentence rather than a rendering detail. */
-    if (kind !== SUPPLIED_REFERENCE_KIND) continue;
-    const slot = (entry as { slot?: unknown }).slot;
+    const supplied = kind === SUPPLIED_REFERENCE_KIND
+      /* An anchor she attached, on the ask that applied it — see the ruling.
+         `edited` is this render's own list, so a later re-ride fails here. */
+      || (kind === INTRODUCED_REFERENCE_KIND && named !== null && edited.includes(named));
+    if (!supplied) continue;
     projected.push({
       url: storagePublicUrl(key),
       kind,
-      slot: typeof slot === "string" && slot.length > 0 ? slot : null,
+      slot: named,
     });
   }
   return projected;

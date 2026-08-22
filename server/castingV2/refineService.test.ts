@@ -540,7 +540,8 @@ vi.mock("./signEngine", () => ({
 }));
 
 const {
-  assertNotAnUncataloguedDeparture, asksToRemoveHerHair, readAskScope, refineCandidate,
+  assertNotAnUncataloguedDeparture, asksToRemoveHerHair, readAskReference,
+  readAskScope, refineCandidate,
 } = await import("./refineService");
 /* The door itself, so the pair-vacancy rows below are checked against the rule
    that used to refuse them rather than against a copy of it. */
@@ -10077,6 +10078,46 @@ describe("the picture she attached reaches the ask", () => {
       referenceId: "ref-public",
     }).then(() => {
       expect(resolveAskReferenceMock).toHaveBeenCalled();
+    });
+  });
+
+  /*
+    ⚠ AND THE HANDLE IS WRITTEN ONTO THE ROW, so *Use* can bring her picture
+    back (founder ruling fable-1419 §2, ordered fable-1421 §2).
+
+    His sentence is the spec: *"regenerating the exact same prompt + reference
+    image i used to generate this image."* The dispatch record stores the CROP
+    that was cut from her attachment and sent to the engine — a different object
+    with a different key, which cannot be attached to a new ask. So the handle
+    is written beside `askScope`, for the same reason and in the same place:
+    **an ask that cannot be replayed can only be re-interpreted, and
+    re-interpretation loses exactly the half the sentence cannot carry.**
+
+    This pair exists because deleting the write reddened NOTHING when it was
+    first built. Every arm above proves the handle is RESOLVED; none proved it
+    was KEPT, and the whole replay hangs off the keeping.
+  */
+  it("⚠ WRITES THE HANDLE ONTO THE ROW, so Use can bring her picture back", () => {
+    resolveAskReferenceMock.mockResolvedValue(REFERENCE);
+    return refineCandidate({ ...greenEyes, harvest: unmasked }, {
+      ...input,
+      instruction: "copy hair from reference",
+      referenceId: "ref-public",
+    }).then(() => {
+      expect(readAskReference(landedVariant?.internalPrompt)).toBe("ref-public");
+    });
+  });
+
+  it("CONTROL — an ask with no picture writes no handle", () => {
+    /* The discriminator for the arm above: make the write unconditional and
+       this goes red, rather than every typed ask quietly acquiring a handle to
+       a picture that was never attached to it. */
+    return refineCandidate({ ...greenEyes, harvest: unmasked }, {
+      ...input, instruction: "green eyes",
+    }).then(() => {
+      expect((landedVariant?.internalPrompt as { askReference?: unknown }).askReference)
+        .toBeUndefined();
+      expect(readAskReference(landedVariant?.internalPrompt)).toBeNull();
     });
   });
 
