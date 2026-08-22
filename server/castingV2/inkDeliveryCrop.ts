@@ -246,14 +246,6 @@ export function deliveryRegionAsk(slot: string): InkDeliveryRegionAsk {
 }
 
 /**
- * The word alone — kept because most callers want only that, and because its
- * name is what the row's `region` column has always been written from.
- */
-export function deliveryRegionWord(slot: string): string {
-  return deliveryRegionAsk(slot).word;
-}
-
-/**
  * The region's extent, opened up by {@link INK_DELIVERY_REGION_PAD} and clamped
  * to the frame it came from.
  *

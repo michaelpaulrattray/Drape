@@ -258,7 +258,7 @@ export async function mintInkDeliveryCrop(
       other six. The slot's own `readerWord` answered with the surface holding
       all seven, 16x the pixels, on the same frame in the same minute.
 
-      Derived from the slot inside `deliveryRegionWord` so the word ASKED here
+      Derived from the slot inside `deliveryRegionAsk` so the word ASKED here
       and the word RECORDED on the row below are one read of one thing.
     */
     /*

@@ -23,7 +23,7 @@ import { describe, expect, it } from "vitest";
 import {
   countKeptPixels,
   cutDeliveredInk,
-  deliveryRegionWord,
+  deliveryRegionAsk,
   padRegionBox,
 } from "./inkDeliveryCrop";
 import { INK_DESIGN_MIN_EDGE } from "./inkUploadDoor";
@@ -175,22 +175,43 @@ describe("⚠ WHICH WORD THE MINT ASKS — the whole finding, in one function", 
     own `readerWord` is what answers with the thing.
   */
   it("asks the SLOT'S OWN word for every placement the vocabulary has measured", () => {
-    expect(deliveryRegionWord("ink:upperChest")).toBe("upper chest");
-    expect(deliveryRegionWord("ink:neck")).toBe("neck");
-    expect(deliveryRegionWord("ink:upperArm")).toBe("upper arm");
+    expect(deliveryRegionAsk("ink:upperChest").word).toBe("upper chest");
+    expect(deliveryRegionAsk("ink:neck").word).toBe("neck");
+    expect(deliveryRegionAsk("ink:upperArm").word).toBe("upper arm");
     /* And never the convicted word for any of them — the arm that goes red if a
        future edit reinstates a default. */
     for (const slot of ["ink:upperChest", "ink:neck", "ink:upperArm"]) {
-      expect(deliveryRegionWord(slot)).not.toBe("tattooed skin");
+      expect(deliveryRegionAsk(slot).word).not.toBe("tattooed skin");
     }
   });
 
-  it("the SIDE is an instance of a surface, and the segmenter is asked the surface", () => {
-    /* Laterality is not this question: `sidesForInkPlacement` owns which side,
-       and a reader asked about "left upper arm" is the class of question this
-       codebase has already measured as unanswerable. */
-    expect(deliveryRegionWord("ink:upperArm@left")).toBe("upper arm");
-    expect(deliveryRegionWord("ink:upperArm@right")).toBe("upper arm");
+  it("the SIDE rides BESIDE the surface word — one parse, both answers", () => {
+    /*
+      ⚠ THIS ARM'S OWN COMMENT USED TO BE THE DEFECT'S EXPLANATION, and it
+      outlived the fix by a day. It read: *"Laterality is not this question …
+      a reader asked about 'left upper arm' is the class of question this
+      codebase has already measured as unanswerable."* True of the WORD and
+      false of the ANSWER — with the side dropped, both arms of a pair asked
+      the identical word of the identical whole frame and the mint filed back
+      whichever the segmenter named. On the founder's own cybersigilism render
+      that was the BARE arm (`156aa1b2`, cand 1643 v216).
+
+      So the word is still the surface — that half was always right — and the
+      SIDE now comes out of the same parse, which is the thing this arm has to
+      pin. Asserting the word alone is what let the defective sentence sit here
+      looking like a passing test.
+    */
+    expect(deliveryRegionAsk("ink:upperArm@left")).toEqual({
+      word: "upper arm", side: "left", declaredTwoSided: true,
+    });
+    expect(deliveryRegionAsk("ink:upperArm@right")).toEqual({
+      word: "upper arm", side: "right", declaredTwoSided: true,
+    });
+    /* A surface there is one of drops a side it should never have been handed,
+       rather than asking the reader to halve it. */
+    expect(deliveryRegionAsk("ink:neck@left")).toEqual({
+      word: "neck", side: null, declaredTwoSided: false,
+    });
   });
 
   it("⚠ the OPEN lane keeps today's word, because it has no measured surface", () => {
@@ -200,8 +221,11 @@ describe("⚠ WHICH WORD THE MINT ASKS — the whole finding, in one function", 
       today rather than being handed a word we invented for it. A narrowing
       nobody courted would be this fix's own mistake in the other direction.
     */
-    expect(deliveryRegionWord("ink:ribcage")).toBe("tattooed skin");
-    expect(deliveryRegionWord("ink:sleeve@left")).toBe("tattooed skin");
+    expect(deliveryRegionAsk("ink:ribcage").word).toBe("tattooed skin");
+    expect(deliveryRegionAsk("ink:sleeve@left").word).toBe("tattooed skin");
+    /* And it is never told a side either — an unmeasured surface has no
+       measured pair. */
+    expect(deliveryRegionAsk("ink:sleeve@left").declaredTwoSided).toBe(false);
   });
 });
 
