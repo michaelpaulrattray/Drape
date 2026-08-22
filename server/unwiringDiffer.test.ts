@@ -178,6 +178,132 @@ describe("the un-wiring differ", () => {
 });
 
 /**
+ * ⚠ A DEAD IMPORT IS NOT AN IMPORTER — the reader's one bias toward NOISE, and
+ * the only one that ever told a false story about a security control.
+ *
+ * The specimen is real. `server/routes/generation/castingRefinement.ts`
+ * imported `checkUserRateLimit` at `1b8a07f2` and never called it. `916c8cc4`
+ * removed the line in a dead-import cleanup — correctly, and its message says
+ * so. To a reader counting import STATEMENTS that looked like the per-user rate
+ * limiter losing its last call site, so the timeline told a four-month
+ * dark-window story about a control that had never been invoked at all. Driven
+ * at the code rather than inferred: `git log -S "checkUserRateLimit("` changes
+ * count at its declaration (2026-02-05) and then not again until 2026-07-25.
+ *
+ * Measured at HEAD when this landed: 45 dead imports across 40 symbols, and for
+ * SIX of them every counted importer was dead — read as wired, called by
+ * nothing, which is the retirement program's question answered wrong.
+ *
+ * The rule is a MENTION and not a call, because a re-export, a type position
+ * and an object shorthand are all real uses and none of them is a call.
+ */
+describe("a dead import", () => {
+  const GUARD = `export function checkUserRateLimit(id: number): boolean {\n  return id > 0;\n}\n`;
+  const DEAD = `import { checkUserRateLimit } from "./rateLimit";\nexport const route = (id: number) => id > 0;\n`;
+  const LIVE = `import { checkUserRateLimit } from "./rateLimit";\nexport const route = (id: number) => checkUserRateLimit(id);\n`;
+
+  it("⚠ is not counted — the specimen's own shape", () => {
+    const dead = tree({ "server/rateLimit.ts": GUARD, "server/refinement.ts": DEAD });
+    expect(importerCount(readTree(dead), "checkUserRateLimit")).toBe(0);
+    /* the same fixture varied in ONE property: the name is used in the body */
+    const live = tree({ "server/rateLimit.ts": GUARD, "server/refinement.ts": LIVE });
+    expect(importerCount(readTree(live), "checkUserRateLimit")).toBe(1);
+  });
+
+  it("⚠ and REMOVING one is not a death", () => {
+    /*
+      The whole point. `916c8cc4` deleted a line that governed nothing, and the
+      reader called it the loss of a control's last call site.
+    */
+    const before = tree({ "server/rateLimit.ts": GUARD, "server/refinement.ts": DEAD });
+    const after = tree({
+      "server/rateLimit.ts": GUARD,
+      "server/refinement.ts": `export const route = (id: number) => id > 0;\n`,
+    });
+    expect(namesFound(before, after)).toEqual([]);
+    /* and the un-varied direction — a REAL call site disappearing still is */
+    const wasLive = tree({ "server/rateLimit.ts": GUARD, "server/refinement.ts": LIVE });
+    expect(namesFound(wasLive, after)).toEqual(["checkUserRateLimit"]);
+  });
+
+  it("⚠ follows an ALIAS — the body says the new name, not the exported one", () => {
+    /*
+      `import { getApprovalStatus as getSlackApprovalStatus }` is the house
+      style wherever two modules export the same word, and the Slack-approval
+      trio is exactly that. Searching the body for the EXPORTED name finds
+      nothing and calls a live consumer dead — silence, the one direction this
+      reader must never fail in. Caught by checking a claim before writing it
+      into CLAUDE.md, which is the only reason it was caught at all.
+    */
+    const aliased = tree({
+      "server/rateLimit.ts": GUARD,
+      "server/refinement.ts":
+        `import { checkUserRateLimit as guard } from "./rateLimit";\n`
+        + `export const route = (id: number) => guard(id);\n`,
+    });
+    expect(importerCount(readTree(aliased), "checkUserRateLimit")).toBe(1);
+    /* and an alias that is imported and never used is still dead */
+    const aliasedDead = tree({
+      "server/rateLimit.ts": GUARD,
+      "server/refinement.ts":
+        `import { checkUserRateLimit as guard } from "./rateLimit";\n`
+        + `export const route = (id: number) => id > 0;\n`,
+    });
+    expect(importerCount(readTree(aliasedDead), "checkUserRateLimit")).toBe(0);
+  });
+
+  it("counts a MENTION that is not a call — a re-export and a type position", () => {
+    const reexport = tree({
+      "server/rateLimit.ts": GUARD,
+      "server/index.ts": `import { checkUserRateLimit } from "./rateLimit";\nexport const surface = { checkUserRateLimit };\n`,
+    });
+    expect(importerCount(readTree(reexport), "checkUserRateLimit")).toBe(1);
+    const typePosition = tree({
+      "server/rateLimit.ts": GUARD,
+      "server/index.ts": `import { checkUserRateLimit } from "./rateLimit";\nexport type Guard = typeof checkUserRateLimit;\n`,
+    });
+    expect(importerCount(readTree(typePosition), "checkUserRateLimit")).toBe(1);
+  });
+
+  it("⚠ a BARE side-effect import does not swallow the body", () => {
+    /*
+      The first version of this rule stripped from `^import` to the next
+      `from "…"`, and `import "dotenv/config";` has no `from` of its own — so
+      the strip ran past it and deleted every line up to the next `from "…"`
+      string anywhere below, use included. That reads as a dead import, which
+      is SILENCE, which is the one direction this reader must never fail in.
+      The body is spliced at the exact matches now, and this drives it.
+    */
+    const source = tree({
+      "server/rateLimit.ts": GUARD,
+      "server/refinement.ts":
+        `import "dotenv/config";\n`
+        + `import { checkUserRateLimit } from "./rateLimit";\n`
+        + `const sql = 'select 1 from "users"';\n`
+        + `export const route = (id: number) => checkUserRateLimit(id) && sql.length > 0;\n`,
+    });
+    expect(importerCount(readTree(source), "checkUserRateLimit")).toBe(1);
+  });
+
+  it("does not lose a use to an `import` word inside a comment or a string", () => {
+    /*
+      The strip is line-anchored for this reason. Over-stripping would delete
+      real body text and push the reader toward SILENCE, which is the direction
+      it must never fail in — so the failure mode is driven rather than trusted.
+    */
+    const source = tree({
+      "server/rateLimit.ts": GUARD,
+      "server/refinement.ts":
+        `import { checkUserRateLimit } from "./rateLimit";\n`
+        + `/* the docs say: import { x } from "./y"; and that is prose */\n`
+        + `const sample = 'import { z } from "./z"';\n`
+        + `export const route = (id: number) => checkUserRateLimit(id) && sample.length > 0;\n`,
+    });
+    expect(importerCount(readTree(source), "checkUserRateLimit")).toBe(1);
+  });
+});
+
+/**
  * ⚠ THE NAMESPACE HOP — THE READER'S THIRD CLEAN-NULL DEFECT, and the first
  * one found by asking what the instrument could not see rather than by it
  * misbehaving (2026-08-23).

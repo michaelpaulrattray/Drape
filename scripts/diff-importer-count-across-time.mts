@@ -34,12 +34,28 @@
  *   isSensitiveAction @ 1d193bf0   prodImporters=1 (server/routers.ts)  selfUses=2
  *   isSensitiveAction @ 9a96480a   prodImporters=0                      selfUses=2
  *
- * **The self-use count never moved. The symbol never became uncalled. Only the
- * call site that made it a gate did** — and something kept saying its name for
- * an unrelated reason, which is how a dead control keeps a live reputation.
- * So the reading here is the importer count, and `selfUses` becomes a LABEL on
- * the finding rather than a filter over it: `self-consulted` findings are
- * exactly the ones the parent sweep can never produce.
+ * ⚠ **THAT READING WAS RIGHT AND THE SENTENCE UNDER IT WAS WRONG — CORRECTED
+ * 2026-08-23, and it is this file's own bias (3) firing on its own flagship
+ * control.** The importer was never read. `server/routers.ts` mentioned
+ * `isSensitiveAction` EXACTLY ONCE, on its import line, from the commit that
+ * created it (`8d6531ba`, 2026-02-06) to the commit that dropped it — and
+ * `git log -S "isSensitiveAction("` changes count at the declaration and never
+ * again, so no file outside `adminSecurity.ts` ever called it. **It was a dead
+ * import, and `3cb0cdee` removing it was correct.** The sensitive-action gate
+ * is a control that was WRITTEN AND NEVER WIRED, which is the gentlest road,
+ * and the record calling it a refactor casualty was the wrong road told
+ * confidently — the exact failure that paragraph of CLAUDE.md exists to name.
+ * The other three deaths on that list were read the same way and all three
+ * hold: `getRecentTopupCredits` (`server/routes/billing.ts:170-172`),
+ * `recordGlobalFailedLogin` (`oauth.ts`, both failed-login exits) and
+ * `captureRefusedRender` (`await captureRefusedRender({`) were each genuinely
+ * invoked. **A dead import is not an importer, and the reader now says so** —
+ * see `lib/importerCountDiff.mts`.
+ *
+ * What survives unchanged is WHY this counts importers rather than reading the
+ * parent sweep: the self-use count never moves for a self-consulted symbol, so
+ * `selfUses` is a LABEL on the finding rather than a filter over it, and
+ * `self-consulted` findings are exactly the ones the parent can never produce.
  *
  * # THE BOUNDARY THE SABOTAGE MAPPED (opus-993 §7)
  *
@@ -86,6 +102,9 @@
  * window `3dad2280 → a08fb0cd` (2026-02-02 → 02-08) reported **ZERO** — and
  * BOTH February deaths happened on 2026-02-07, inside it. `isSensitiveAction`
  * and `getRecentTopupCredits` were simply absent from the bootstrap commit.
+ * (Only ONE of those two turned out to be a death — see the correction above.
+ * The gap this paragraph demonstrates is untouched by that: a symbol absent
+ * from the `before` tree is skipped whatever its road turns out to be.)
  * **Finer tiles shrink this gap and never close it, so every zero is only as
  * trustworthy as its window is narrow.**
  *
@@ -131,13 +150,22 @@
  *   git worktree add --detach C:/tmp/feb-before 1d193bf0   # 2026-02-06 09:10
  *   git worktree add --detach C:/tmp/feb-after  9a96480a   # 2026-02-07 20:59
  *
- *   PASS  positive  the sensitive-action gate      isSensitiveAction    -> 3cb0cdee, the routers.ts split
  *   PASS  positive  a credit-velocity cap          getRecentTopupCredits -> 41a765ea, the topup removal
- *                   (it SURVIVED the split, moving into server/routes/billing.ts, and died a morning later)
+ *                   (it SURVIVED the split, moving into server/routes/billing.ts, and died a morning
+ *                    later — and its call site was READ before it was believed: billing.ts:170-172)
  *   PASS  negative  a symbol that kept its importers    logAdminAction: 1 -> 4 importers
+ *   PASS  negative  ⚠ A DEAD IMPORT REMOVED IS NOT A DEATH — isSensitiveAction must NOT be reported
  *
  * A positive control made of REAL specimens with commits that can be read,
  * rather than a fixture that models what its author expected.
+ *
+ * ⚠ **The last line CHANGED SIDES on 2026-08-23.** `isSensitiveAction` was this
+ * file's first positive control, and it was never an un-wiring: `routers.ts`
+ * mentioned it once, on its import line, for its whole life. A reader that
+ * stays silent about it is the correct reader, so the specimen is worth more
+ * as the negative than it ever was as the positive. **A control that swaps
+ * sign on evidence is the record working; a control kept because it once
+ * passed is how a wrong road survives six months.**
  *
  * # ONE WRITING NOTE, because it cost two silent wrong answers
  *
@@ -186,9 +214,9 @@ check(
 );
 if (controlSet === "february") {
   check(
-    "positive  REAL: the sensitive-action gate (3cb0cdee)",
-    found("isSensitiveAction"),
-    "self-consulted at both ends — the uncalled-export sweep can never report it",
+    "negative  REAL: a dead import removed is NOT a death",
+    !found("isSensitiveAction"),
+    "routers.ts mentioned it once, on its import line, for its whole life (2026-08-23)",
   );
   check(
     "positive  REAL: a credit-velocity cap (41a765ea)",

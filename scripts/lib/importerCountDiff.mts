@@ -91,16 +91,70 @@ export function readTree(rootArgument: string): Tree {
     }
   }
 
+  /*
+    ⚠ A DEAD IMPORT IS NOT AN IMPORTER — and this was not a hypothetical bias.
+
+    The reader counted the import STATEMENT, so a file that imports a symbol on
+    one line and never mentions it again read as a live consumer. The specimen:
+    `server/routes/generation/castingRefinement.ts` imported `checkUserRateLimit`
+    at `1b8a07f2` and never called it; `916c8cc4` removed the line as part of a
+    dead-import cleanup, correctly. To this reader that looked like the per-user
+    RATE LIMITER losing its last call site — so the timeline told a four-month
+    dark-window story about a control that had never been invoked at all.
+
+    Measured at HEAD the hour it was fixed: **38 dead imports of a server symbol
+    across 36 symbols, and SIX symbols the reader called WIRED that nothing
+    calls at all** — `PAID_PLAN_ORDER`, `inkPlateAlreadyMintedRefusal`,
+    `HAIR_TAKES`, `hairTakeNamedIn`, `OPEN_SLOT_PREFIX` and
+    `stampBoardItemWithVersion`, whose sibling `stampBoardItemWithVersionIn` is
+    the one actually called. That is the retirement program's own question
+    answered wrong, in the direction that protects dead code.
+
+    The test is a MENTION outside the import statements, not a call: a re-export,
+    a type position and an object shorthand all count, because all three are
+    real uses and none of them is a call.
+
+    ⚠ AND THE BODY IS CUT AT THE EXACT MATCHES, never by a second regex. The
+    first version stripped `/^import\s[\s\S]*?from\s*["'][^"']+["']/gm`, which
+    runs from a BARE side-effect import (`import "dotenv/config";` — no `from`)
+    all the way to the next `from "…"` anywhere below it, deleting real body
+    text in between. That pushes this reader toward SILENCE, which is the one
+    direction it must never fail in. Splicing out the matched statements
+    themselves cannot over-reach by construction.
+  */
+  const NAMED_IMPORT = /import\s+(?:type\s+)?\{([^}]*)\}\s*from\s*["'][^"']+["']/g;
   const prodImporters = new Map<string, string[]>();
   for (const [file, src] of sources) {
     if (isTestFile(file)) continue;
     const here = show(file);
-    for (const match of src.matchAll(/import\s+(?:type\s+)?\{([^}]*)\}\s*from\s*["'][^"']+["']/g)) {
+    const matches = [...src.matchAll(NAMED_IMPORT)];
+    let body = "";
+    let cursor = 0;
+    for (const match of matches) {
+      body += src.slice(cursor, match.index);
+      cursor = match.index + match[0].length;
+    }
+    body += src.slice(cursor);
+    for (const match of matches) {
       for (const raw of match[1].split(",")) {
-        const name = raw.trim().replace(/^type\s+/, "").split(/\s+as\s+/)[0].trim();
+        const parts = raw.trim().replace(/^type\s+/, "").split(/\s+as\s+/);
+        const name = parts[0]!.trim();
+        /*
+          ⚠ THE BODY IS SEARCHED FOR THE LOCAL NAME, NOT THE EXPORTED ONE.
+          `import { getApprovalStatus as getSlackApprovalStatus }` is the house
+          style wherever two modules export the same word, and the body says
+          the ALIAS. Testing the exported name there finds nothing and calls a
+          live consumer dead — a false negative, which is the silence direction
+          this reader must never fail in. Caught 2026-08-23 by checking the
+          claim before writing it down: the Slack-approval trio read as dark
+          and their consumers were using them under new names.
+        */
+        const local = (parts[1] ?? parts[0])!.trim();
         if (!name || !decl.has(name)) continue;
         /* A module importing from itself is not a consumer. */
         if (decl.get(name) === here) continue;
+        /* Nor is a module that imports it and never mentions it again. */
+        if (!local || !new RegExp(String.raw`\b` + local + String.raw`\b`).test(body)) continue;
         const list = prodImporters.get(name) ?? [];
         if (!list.includes(here)) list.push(here);
         prodImporters.set(name, list);

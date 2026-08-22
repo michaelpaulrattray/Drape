@@ -37,12 +37,20 @@
  *
  * # CONTROLS — three REAL specimens, one per class, before any verdict prints
  *
- *   isSensitiveAction        died     3cb0cdee, 2026-02-07, the routers.ts split
+ *   addTopupCredits          died     41a765ea, 2026-02-07 — its call site was
+ *                                     READ before it was believed
+ *                                     (server/stripe/webhooks.ts:110)
  *   getRecentTopupCredits    deleted  live 02-06 to 02-07, symbol cut 2026-08-19
  *   recordGlobalFailedLogin  revived  killed 2026-04-03 by b1f5187d, re-wired
  *                                     2026-08-19 — mis-filed for four and a
  *                                     half months as a control never wired
  *   logAdminAction           NEGATIVE it kept its importers throughout
+ *   isSensitiveAction        NEGATIVE ⚠ dark-born. It was this instrument's
+ *                                     first `died` positive and it was never
+ *                                     wired at all — `routers.ts` mentioned it
+ *                                     once, on its import line, for its whole
+ *                                     life. A control that swaps sign on
+ *                                     evidence is the record working.
  *
  * Fixtures would only model what their author expected; these are the product's
  * own accidents, each with a commit that can be read. A control failing REFUSES
@@ -160,10 +168,15 @@ check(
   timeline.everDeclared.size > headTree.decl.size,
   `${timeline.everDeclared.size} names ever declared vs ${headTree.decl.size} at HEAD`,
 );
-check("positive  REAL: the sensitive-action gate", rowOf("isSensitiveAction")?.kind === "died", describe("isSensitiveAction"));
+check("positive  REAL: a topup credit grant", rowOf("addTopupCredits")?.kind === "died", describe("addTopupCredits"));
 check("positive  REAL: a credit-velocity cap", rowOf("getRecentTopupCredits")?.kind === "deleted", describe("getRecentTopupCredits"));
 check("positive  REAL: the login-attack detector", rowOf("recordGlobalFailedLogin")?.kind === "revived", describe("recordGlobalFailedLogin"));
 check("negative  a symbol that kept its importers", rowOf("logAdminAction")?.kind === "wired-at-head", describe("logAdminAction"));
+check(
+  "negative  ⚠ a DEAD IMPORT is not a wiring",
+  rowOf("isSensitiveAction")?.kind === "dark-born",
+  `${describe("isSensitiveAction")} — routers.ts named it once, on its import line, for its whole life`,
+);
 
 if (failures.length > 0) {
   console.log(`\nREFUSING TO REPORT — ${failures.length} control(s) failed.`);

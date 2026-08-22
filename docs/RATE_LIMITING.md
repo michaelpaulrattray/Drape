@@ -237,11 +237,31 @@ One existed and nothing read it — a second set of numbers on security code who
 only effect would have been a future reader tightening it and shipping nothing.
 
 Each route declares its own limit object next to the handler it governs, and
-passes it to `checkUserRateLimit`. The live examples are
-`IMAGE_PROXY_RATE_LIMIT` (`routes/imageProxy.ts`), `EVIDENCE_REFERENCE_LIMIT` /
-`INK_WORKFLOW_LIMIT` / `INK_RESOLUTION_LIMIT` (`routes/evidence.ts`) and
-`CHARACTER_SHEET_RATE_LIMIT` (`routes/characterSheet.ts`). The IP-keyed buckets
+passes it to `checkUserRateLimit`. **SIX modules call it today** (read off the
+code 2026-08-23, not remembered): `routes/imageProxy.ts`, `routes/evidence.ts`,
+`routes/evidenceDelivery.ts`, `routes/characterSheet.ts`,
+`routes/inkDesignDelivery.ts` and `routes/referenceDelivery.ts` — which is the
+five authenticated Express routes CLAUDE.md's invariant 5 enumerates, plus the
+evidence delivery route. The named limit objects include
+`IMAGE_PROXY_RATE_LIMIT`, `EVIDENCE_REFERENCE_LIMIT` / `INK_WORKFLOW_LIMIT` /
+`INK_RESOLUTION_LIMIT` and `CHARACTER_SHEET_RATE_LIMIT`. The IP-keyed buckets
 are the shared `RATE_LIMITS` table in `security/rateLimit.ts`.
+
+⚠ **This paragraph named three of the six until 2026-08-23** — written as "the
+live examples are", which is the escape hatch that lets a list stop being the
+list. It is derived from the code above rather than illustrative, and
+`server/architectureExpressSurfaces.test.ts` is what keeps the ROUTE half of it
+honest, since that arm derives its population on `checkUserRateLimit` itself.
+
+⚠ **And it was invoked by nothing at all for 171 days.** `checkUserRateLimit`
+shipped 2026-02-05 in the same commit as the account lockout and the global
+attack detector, and this document described it the next day. `git log -S
+"checkUserRateLimit("` changes count at its declaration and then not again
+until `6d230002` (2026-07-25) put the first call on the image proxy. The one
+appearance in between was a dead import in `castingRefinement.ts`, removed as
+dead in `916c8cc4` — correctly. The IP-keyed limiter was live throughout, so
+what was missing in that window was the distributed-attack half this section
+opens by arguing for.
 
 ### Combining IP and User Limits
 
