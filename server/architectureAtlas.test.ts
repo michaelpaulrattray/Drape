@@ -213,6 +213,119 @@ describe("architecture atlas", () => {
   });
 
   /**
+   * ⚠ THE EDGE GRAPH IS THE DELETION AUTHORITY, AND IT KNEW ONE OF THE THREE
+   * WAYS A MODULE REACHES ANOTHER.
+   *
+   * CLAUDE.md: *"nothing is removed while its retirement view still shows live
+   * callers."* That view is built from these edges alone, so ZERO callers is the
+   * reading that authorizes removal — and `collectImportEdges` walked
+   * `getImportDeclarations()`, which returns static `import … from "…"` and
+   * nothing else. Re-exports and dynamic imports produced no edge at all.
+   *
+   * Measured 2026-08-23 against the committed artifact: 134 barrel reaches and
+   * 43 dynamic ones were missing, and **65 modules showed ZERO inbound edges
+   * while being genuinely reached** — among them `server/routes/emailAuth.ts`
+   * and `server/routes/googleAuth.ts`, both login routes, reached only by
+   * `await import(…)` in `_core/index.ts` and holding four of invariant 9's
+   * five session mints between them; and all three background workers, which
+   * the Atlas's own `workers` list names.
+   *
+   * Six modules under a `retire` lifecycle read as removable and were not.
+   *
+   * # THIS ARM IS A GENUINELY DIFFERENT READING, NOT A COPY
+   *
+   * The generator resolves through the TypeScript compiler — `ts-morph` symbols
+   * and `getModuleSpecifierSourceFile()`. This walks the tree with a regex and
+   * resolves against the FILE SYSTEM. Neither can inherit the other's blind
+   * spot, which is the whole point (working law 4); a checker sharing its
+   * subject's resolver cannot show where that resolver stops.
+   *
+   * Relative specifiers only. Aliased ones (`@/…`) are a real reach this arm
+   * does not claim to cover — stated rather than left as a silent floor, so a
+   * green run here is a floor and not coverage.
+   */
+  it("holds the barrel and dynamic reaches, not only the static ones", () => {
+    const atlas = JSON.parse(
+      fs.readFileSync(
+        path.join(repoRoot, "docs", "architecture", "drape-architecture.json"),
+        "utf8",
+      ),
+    ) as { edges: Array<{ from: string; to: string; kind: string }>; modules: Array<{ path: string }> };
+
+    const known = new Set(atlas.edges.map((edge) => `${edge.from}|${edge.to}`));
+    const modules = new Set(atlas.modules.map((module) => module.path));
+
+    const reExport = /export\s+(?:\*|\{[^}]*\})\s*(?:as\s+\w+\s*)?from\s*["'](\.[^"']+)["']/g;
+    /* NOT preceded by `:` — `let x: import("./y").T` is TypeScript's import-TYPE
+       syntax, erased at compile time and not a runtime reach. The generator does
+       not count it either, and the two instances in this tree resolve to modules
+       carrying 12 and 4 other inbound edges, so no deletion verdict rests on the
+       question. Narrowed with its reason stated rather than quietly filtered. */
+    const dynamic = /(?:^|[^:\s])\s*\bimport\s*\(\s*["'](\.[^"']+)["']\s*\)/g;
+
+    const found = { barrel: [] as string[], dynamic: [] as string[] };
+    const missing: string[] = [];
+
+    const resolve = (fromFile: string, specifier: string): string | undefined => {
+      const base = path.resolve(path.dirname(path.join(repoRoot, fromFile)), specifier);
+      for (const candidate of [
+        `${base}.ts`,
+        `${base}.tsx`,
+        path.join(base, "index.ts"),
+        path.join(base, "index.tsx"),
+      ]) {
+        const rel = path.relative(repoRoot, candidate).replaceAll("\\", "/");
+        if (modules.has(rel)) return rel;
+      }
+      return undefined;
+    };
+
+    const walk = (dir: string): void => {
+      for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+        const full = path.join(dir, entry.name);
+        if (entry.isDirectory()) {
+          if (entry.name === "node_modules" || entry.name.startsWith(".")) continue;
+          walk(full);
+          continue;
+        }
+        if (!/\.tsx?$/.test(entry.name) || /\.(test|spec)\.tsx?$/.test(entry.name)) continue;
+        const from = path.relative(repoRoot, full).replaceAll("\\", "/");
+        if (!modules.has(from)) continue;
+        /* Block comments stripped first: a `{@link import("./x")}` in a docblock
+           is a documentation reference, not a reach, and counting it would make
+           this reader disagree with the generator about something neither of
+           them is wrong about. */
+        const text = fs.readFileSync(full, "utf8").replace(/\/\*[^]*?\*\//g, "");
+        for (const [pattern, bucket] of [
+          [reExport, found.barrel],
+          [dynamic, found.dynamic],
+        ] as const) {
+          pattern.lastIndex = 0;
+          for (const hit of text.matchAll(pattern)) {
+            const to = resolve(from, hit[1]!);
+            if (!to) continue;
+            bucket.push(`${from} -> ${to}`);
+            if (!known.has(`module:${from}|module:${to}`)) missing.push(`${from} -> ${to}`);
+          }
+        }
+      }
+    };
+    for (const root of ["server", "client/src", "shared", "drizzle"]) {
+      walk(path.join(repoRoot, root));
+    }
+
+    /* Population first, per shape — a reader that finds nothing agrees with any
+       graph at all, and that reads exactly like coverage. */
+    expect(found.barrel.length, "no re-exports found — the reader has stopped reading").toBeGreaterThan(50);
+    expect(found.dynamic.length, "no dynamic imports found — the reader has stopped reading").toBeGreaterThan(10);
+
+    expect(
+      [...new Set(missing)].sort(),
+      "reaches the Atlas's edge graph does not have — a module reached only this way reads as having no callers, which is what authorizes deleting it",
+    ).toEqual([]);
+  });
+
+  /**
    * THE FRESHNESS VERDICT ABOVE IS ONLY A READING IF ITS HASH IS OF THE SOURCE
    * (found opus-926 §5, ordered fable-1234 §2b).
    *

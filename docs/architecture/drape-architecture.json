@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "4ca738d97e27b00a"
+    "sourceFingerprint": "d974513ec5e71249"
   },
   "domains": [
     {
@@ -12064,6 +12064,31 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/components/design-system/index.ts",
+      "to": "module:client/src/components/design-system/Button.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/components/design-system/index.ts",
+      "to": "module:client/src/components/design-system/Card.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/components/design-system/index.ts",
+      "to": "module:client/src/components/design-system/Grid.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/components/design-system/index.ts",
+      "to": "module:client/src/components/design-system/Section.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/components/design-system/index.ts",
+      "to": "module:client/src/components/design-system/Typography.tsx",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/components/design-system/Section.tsx",
       "to": "module:client/src/lib/motion.ts",
       "kind": "imports"
@@ -12514,6 +12539,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/const.ts",
+      "to": "module:shared/const.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/contexts/ThemeContext.tsx",
       "to": "module:client/src/foundation/theme.ts",
       "kind": "imports"
@@ -12679,6 +12709,86 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/features/admin/index.ts",
+      "to": "module:client/src/features/admin/adminConstants.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/index.ts",
+      "to": "module:client/src/features/admin/AuditActionModals.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/index.ts",
+      "to": "module:client/src/features/admin/AuditLogDetailModal.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/index.ts",
+      "to": "module:client/src/features/admin/AuditLogsFilters.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/index.ts",
+      "to": "module:client/src/features/admin/AuditLogTable.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/index.ts",
+      "to": "module:client/src/features/admin/BlockedIPsTab.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/index.ts",
+      "to": "module:client/src/features/admin/ChangeRequestConstants.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/index.ts",
+      "to": "module:client/src/features/admin/ChangeRequestDetail.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/index.ts",
+      "to": "module:client/src/features/admin/ChangeRequestList.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/index.ts",
+      "to": "module:client/src/features/admin/ReviewModal.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/index.ts",
+      "to": "module:client/src/features/admin/UserActionModals.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/index.ts",
+      "to": "module:client/src/features/admin/UserBadges.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/index.ts",
+      "to": "module:client/src/features/admin/UserDetailModal.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/index.ts",
+      "to": "module:client/src/features/admin/UserFilters.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/index.ts",
+      "to": "module:client/src/features/admin/UserStatsCards.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/index.ts",
+      "to": "module:client/src/features/admin/UserTable.tsx",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/features/admin/overview/BannerManagement.tsx",
       "to": "module:client/src/components/ui/badge.tsx",
       "kind": "imports"
@@ -12691,6 +12801,41 @@
     {
       "from": "module:client/src/features/admin/overview/BannerManagement.tsx",
       "to": "module:client/src/lib/trpc.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/overview/index.ts",
+      "to": "module:client/src/features/admin/overview/AlertsFeed.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/overview/index.ts",
+      "to": "module:client/src/features/admin/overview/BannerManagement.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/overview/index.ts",
+      "to": "module:client/src/features/admin/overview/CreditEconomyCard.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/overview/index.ts",
+      "to": "module:client/src/features/admin/overview/GovernanceCard.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/overview/index.ts",
+      "to": "module:client/src/features/admin/overview/HealthMetrics.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/overview/index.ts",
+      "to": "module:client/src/features/admin/overview/SystemStatusCard.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/overview/index.ts",
+      "to": "module:client/src/features/admin/overview/UserGrowthCard.tsx",
       "kind": "imports"
     },
     {
@@ -12821,6 +12966,21 @@
     {
       "from": "module:client/src/features/billing/DowngradeConfirmModal.tsx",
       "to": "module:client/src/lib/trpc.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/billing/index.ts",
+      "to": "module:client/src/features/billing/BillingModal.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/billing/index.ts",
+      "to": "module:client/src/features/billing/CreditTopupModal.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/billing/index.ts",
+      "to": "module:client/src/features/billing/LowBalanceWarning.tsx",
       "kind": "imports"
     },
     {
@@ -13584,6 +13744,36 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/features/casting/components/ImageViewer/index.tsx",
+      "to": "module:client/src/features/casting/components/ImageViewer/CanvasHelpers.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/casting/components/ImageViewer/index.tsx",
+      "to": "module:client/src/features/casting/components/ImageViewer/LoadingOverlay.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/casting/components/ImageViewer/index.tsx",
+      "to": "module:client/src/features/casting/components/ImageViewer/RefinementClarification.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/casting/components/ImageViewer/index.tsx",
+      "to": "module:client/src/features/casting/components/ImageViewer/RefinePanel.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/casting/components/ImageViewer/index.tsx",
+      "to": "module:client/src/features/casting/components/ImageViewer/ViewTabs.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/casting/components/ImageViewer/index.tsx",
+      "to": "module:client/src/features/casting/components/ImageViewer/WarmEmptyState.tsx",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/features/casting/components/ImageViewer/LoadingOverlay.tsx",
       "to": "module:client/src/features/casting/components/QueueStatusBar.tsx",
       "kind": "imports"
@@ -14154,6 +14344,31 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/features/casting/index.ts",
+      "to": "module:client/src/features/casting/castingHelpers.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/casting/index.ts",
+      "to": "module:client/src/features/casting/ControlPanel.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/casting/index.ts",
+      "to": "module:client/src/features/casting/hooks/useCastingCanvas.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/casting/index.ts",
+      "to": "module:client/src/features/casting/hooks/useCastingGeneration.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/casting/index.ts",
+      "to": "module:client/src/features/casting/ImageViewerPanel.tsx",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/features/casting/MasterPromptPanel.tsx",
       "to": "module:client/src/features/casting/castingSessionToken.ts",
       "kind": "imports"
@@ -14394,6 +14609,16 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/features/export/index.ts",
+      "to": "module:client/src/features/export/ExportPackDialog.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/export/index.ts",
+      "to": "module:client/src/features/export/useExportPack.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/features/export/prepareExportViews.ts",
       "to": "module:client/src/features/casting/constants.ts",
       "kind": "imports"
@@ -14461,6 +14686,26 @@
     {
       "from": "module:client/src/features/home/HomeNavbar.tsx",
       "to": "module:shared/const.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/home/index.ts",
+      "to": "module:client/src/features/home/HeroContent.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/home/index.ts",
+      "to": "module:client/src/features/home/HomeNavbar.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/home/index.ts",
+      "to": "module:client/src/features/home/PartnersBar.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/home/index.ts",
+      "to": "module:client/src/features/home/WaitlistModal.tsx",
       "kind": "imports"
     },
     {
@@ -14814,6 +15059,66 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/features/moderator/index.ts",
+      "to": "module:client/src/features/moderator/AuditLogsTab.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/moderator/index.ts",
+      "to": "module:client/src/features/moderator/BlockedIPsTab.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/moderator/index.ts",
+      "to": "module:client/src/features/moderator/ChangeRequestModal.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/moderator/index.ts",
+      "to": "module:client/src/features/moderator/FlaggedDiscrepanciesCard.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/moderator/index.ts",
+      "to": "module:client/src/features/moderator/FlaggedReferralsTab.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/moderator/index.ts",
+      "to": "module:client/src/features/moderator/LogDetailModal.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/moderator/index.ts",
+      "to": "module:client/src/features/moderator/moderatorConstants.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/moderator/index.ts",
+      "to": "module:client/src/features/moderator/ModeratorHeader.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/moderator/index.ts",
+      "to": "module:client/src/features/moderator/MyRequestsTab.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/moderator/index.ts",
+      "to": "module:client/src/features/moderator/StatsCards.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/moderator/index.ts",
+      "to": "module:client/src/features/moderator/TabNavigation.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/moderator/index.ts",
+      "to": "module:client/src/features/moderator/UserInvestigationTab.tsx",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/features/moderator/LogDetailModal.tsx",
       "to": "module:client/src/components/ui/badge.tsx",
       "kind": "imports"
@@ -15021,6 +15326,31 @@
     {
       "from": "module:client/src/features/profile/BillingTab.tsx",
       "to": "module:client/src/lib/trpc.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/profile/index.ts",
+      "to": "module:client/src/features/profile/BillingTab.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/profile/index.ts",
+      "to": "module:client/src/features/profile/NotificationsTab.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/profile/index.ts",
+      "to": "module:client/src/features/profile/ProfileTab.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/profile/index.ts",
+      "to": "module:client/src/features/profile/SecurityTab.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/profile/index.ts",
+      "to": "module:client/src/features/profile/UsageTab.tsx",
       "kind": "imports"
     },
     {
@@ -15889,6 +16219,76 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/features/wardrobe/index.ts",
+      "to": "module:client/src/features/wardrobe/components/DecompositionDrawer.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/wardrobe/index.ts",
+      "to": "module:client/src/features/wardrobe/components/GarmentCard.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/wardrobe/index.ts",
+      "to": "module:client/src/features/wardrobe/components/GarmentOverlay.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/wardrobe/index.ts",
+      "to": "module:client/src/features/wardrobe/components/LayersPanel.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/wardrobe/index.ts",
+      "to": "module:client/src/features/wardrobe/components/QualityBadge.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/wardrobe/index.ts",
+      "to": "module:client/src/features/wardrobe/components/RackPanel.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/wardrobe/index.ts",
+      "to": "module:client/src/features/wardrobe/components/WardrobeCanvasOverlays.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/wardrobe/index.ts",
+      "to": "module:client/src/features/wardrobe/constants.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/wardrobe/index.ts",
+      "to": "module:client/src/features/wardrobe/hooks/useModelSetup.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/wardrobe/index.ts",
+      "to": "module:client/src/features/wardrobe/hooks/useWardrobeGeneration.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/wardrobe/index.ts",
+      "to": "module:client/src/features/wardrobe/hooks/useWardrobeInventory.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/wardrobe/index.ts",
+      "to": "module:client/src/features/wardrobe/stores/useWardrobeStore.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/wardrobe/index.ts",
+      "to": "module:client/src/features/wardrobe/types.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/wardrobe/index.ts",
+      "to": "module:client/src/features/wardrobe/WardrobeWorkspaceSection.tsx",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/features/wardrobe/stores/useWardrobeStore.ts",
       "to": "module:client/src/features/wardrobe/types.ts",
       "kind": "imports"
@@ -15935,6 +16335,41 @@
     },
     {
       "from": "module:client/src/foundation/AppShell.tsx",
+      "to": "module:client/src/foundation/Topbar.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/foundation/index.ts",
+      "to": "module:client/src/foundation/AppShell.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/foundation/index.ts",
+      "to": "module:client/src/foundation/brand.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/foundation/index.ts",
+      "to": "module:client/src/foundation/BrandOrb.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/foundation/index.ts",
+      "to": "module:client/src/foundation/primitives.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/foundation/index.ts",
+      "to": "module:client/src/foundation/Rail.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/foundation/index.ts",
+      "to": "module:client/src/foundation/theme.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/foundation/index.ts",
       "to": "module:client/src/foundation/Topbar.tsx",
       "kind": "imports"
     },
@@ -16875,6 +17310,31 @@
     },
     {
       "from": "module:server/_core/index.ts",
+      "to": "module:server/casting/operationRecovery.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/_core/index.ts",
+      "to": "module:server/casting/storageCleanupWorker.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/_core/index.ts",
+      "to": "module:server/castingV2/candidateRetention.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/_core/index.ts",
+      "to": "module:server/db/connection.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/_core/index.ts",
+      "to": "module:server/db/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/_core/index.ts",
       "to": "module:server/db/migrationLag.ts",
       "kind": "imports"
     },
@@ -16900,6 +17360,11 @@
     },
     {
       "from": "module:server/_core/index.ts",
+      "to": "module:server/monitoring/healthMonitor.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/_core/index.ts",
       "to": "module:server/routers.ts",
       "kind": "imports"
     },
@@ -16910,7 +17375,22 @@
     },
     {
       "from": "module:server/_core/index.ts",
+      "to": "module:server/routes/emailAuth.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/_core/index.ts",
+      "to": "module:server/routes/emailVerification.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/_core/index.ts",
       "to": "module:server/routes/evidenceDelivery.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/_core/index.ts",
+      "to": "module:server/routes/googleAuth.ts",
       "kind": "imports"
     },
     {
@@ -16941,6 +17421,16 @@
     {
       "from": "module:server/_core/index.ts",
       "to": "module:server/security/securityHeaders.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/_core/index.ts",
+      "to": "module:server/slack/slackCore.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/_core/index.ts",
+      "to": "module:server/slack/slackInteractions.ts",
       "kind": "imports"
     },
     {
@@ -17049,6 +17539,16 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/auditLog.ts",
+      "to": "module:server/slack/slackNotification.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/casting/aiService.ts",
+      "to": "module:server/casting/castingCreditCosts.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/casting/aiService.ts",
       "to": "module:server/casting/geminiService.ts",
       "kind": "imports"
@@ -17056,6 +17556,11 @@
     {
       "from": "module:server/casting/aiService.ts",
       "to": "module:server/casting/geminiViews.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/casting/aiService.ts",
+      "to": "module:server/casting/imageCompression.ts",
       "kind": "imports"
     },
     {
@@ -18595,6 +19100,11 @@
     },
     {
       "from": "module:server/casting/geminiClient.ts",
+      "to": "module:server/casting/geminiQueue.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/casting/geminiClient.ts",
       "to": "module:server/logging/logger.ts",
       "kind": "imports"
     },
@@ -18716,6 +19226,46 @@
     {
       "from": "module:server/casting/geminiSchemaUpdater.ts",
       "to": "module:shared/modelRegistry.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/casting/geminiService.ts",
+      "to": "module:server/casting/geminiClient.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/casting/geminiService.ts",
+      "to": "module:server/casting/geminiGeneration.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/casting/geminiService.ts",
+      "to": "module:server/casting/geminiPromptCompactor.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/casting/geminiService.ts",
+      "to": "module:server/casting/geminiPrompts.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/casting/geminiService.ts",
+      "to": "module:server/casting/geminiSchemaUpdater.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/casting/geminiService.ts",
+      "to": "module:server/casting/geminiSuggestions.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/casting/geminiService.ts",
+      "to": "module:server/casting/geminiTypes.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/casting/geminiService.ts",
+      "to": "module:server/casting/geminiViews.ts",
       "kind": "imports"
     },
     {
@@ -25110,12 +25660,112 @@
     },
     {
       "from": "module:server/db/generations.ts",
+      "to": "module:server/db/referrals.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/generations.ts",
       "to": "module:server/logging/logger.ts",
       "kind": "imports"
     },
     {
       "from": "module:server/db/generations.ts",
       "to": "module:shared/clientRequestId.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/index.ts",
+      "to": "module:server/db/admin.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/index.ts",
+      "to": "module:server/db/billing.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/index.ts",
+      "to": "module:server/db/boards.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/index.ts",
+      "to": "module:server/db/bugReports.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/index.ts",
+      "to": "module:server/db/changeRequests.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/index.ts",
+      "to": "module:server/db/connection.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/index.ts",
+      "to": "module:server/db/credits.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/index.ts",
+      "to": "module:server/db/gdprExport.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/index.ts",
+      "to": "module:server/db/generationOperations.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/index.ts",
+      "to": "module:server/db/generations.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/index.ts",
+      "to": "module:server/db/inviteCodes.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/index.ts",
+      "to": "module:server/db/ipBlocking.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/index.ts",
+      "to": "module:server/db/models.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/index.ts",
+      "to": "module:server/db/moderatorQueries.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/index.ts",
+      "to": "module:server/db/referrals.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/index.ts",
+      "to": "module:server/db/security.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/index.ts",
+      "to": "module:server/db/users.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/index.ts",
+      "to": "module:server/db/waitlist.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/index.ts",
+      "to": "module:server/db/wardrobe.ts",
       "kind": "imports"
     },
     {
@@ -25455,6 +26105,11 @@
     },
     {
       "from": "module:server/db/migrationLag.ts",
+      "to": "module:server/db/connection.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/migrationLag.ts",
       "to": "module:server/logging/logger.ts",
       "kind": "imports"
     },
@@ -25511,6 +26166,11 @@
     {
       "from": "module:server/db/moderatorQueries.ts",
       "to": "module:server/db/connection.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/moderatorQueries.ts",
+      "to": "module:server/db/discrepancyQueries.ts",
       "kind": "imports"
     },
     {
@@ -25600,6 +26260,11 @@
     },
     {
       "from": "module:server/db/users.ts",
+      "to": "module:server/db/credits.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/users.ts",
       "to": "module:server/logging/logger.ts",
       "kind": "imports"
     },
@@ -25675,6 +26340,11 @@
     },
     {
       "from": "module:server/lib/adminActions/changeRequestActions.ts",
+      "to": "module:server/db/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/lib/adminActions/changeRequestActions.ts",
       "to": "module:server/lib/adminActions/index.ts",
       "kind": "imports"
     },
@@ -25699,8 +26369,18 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/lib/adminActions/changeRequestActions.ts",
+      "to": "module:server/stripe/stripeService.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/lib/adminActions/directActions.ts",
       "to": "module:server/auditLog.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/lib/adminActions/directActions.ts",
+      "to": "module:server/db/index.ts",
       "kind": "imports"
     },
     {
@@ -25904,6 +26584,16 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/logging/index.ts",
+      "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/logging/index.ts",
+      "to": "module:server/logging/requestContextMiddleware.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/logging/requestContextMiddleware.ts",
       "to": "module:server/logging/logger.ts",
       "kind": "imports"
@@ -25911,6 +26601,16 @@
     {
       "from": "module:server/logging/requestContextMiddleware.ts",
       "to": "module:server/security/correlationId.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/monitoring/healthMonitor.ts",
+      "to": "module:server/db/adminOverviewQueries.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/monitoring/healthMonitor.ts",
+      "to": "module:server/db/connection.ts",
       "kind": "imports"
     },
     {
@@ -26274,13 +26974,38 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/routes/admin/auditLogs.ts",
+      "to": "module:server/auditLog.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/admin/changeRequests.ts",
+      "to": "module:drizzle/schema.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/routes/admin/changeRequests.ts",
       "to": "module:server/_core/trpc.ts",
       "kind": "imports"
     },
     {
       "from": "module:server/routes/admin/changeRequests.ts",
+      "to": "module:server/auditLog.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/admin/changeRequests.ts",
+      "to": "module:server/db/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/admin/changeRequests.ts",
       "to": "module:server/lib/adminActions/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/admin/changeRequests.ts",
+      "to": "module:server/security/adminSecurity.ts",
       "kind": "imports"
     },
     {
@@ -26291,6 +27016,11 @@
     {
       "from": "module:server/routes/admin/changeRequests.ts",
       "to": "module:server/slack/slackApproval.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/admin/changeRequests.ts",
+      "to": "module:server/slack/slackNotification.ts",
       "kind": "imports"
     },
     {
@@ -26350,6 +27080,11 @@
     },
     {
       "from": "module:server/routes/admin/inviteCodes.ts",
+      "to": "module:server/db/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/admin/inviteCodes.ts",
       "to": "module:server/security/adminSecurity.ts",
       "kind": "imports"
     },
@@ -26361,6 +27096,11 @@
     {
       "from": "module:server/routes/admin/ipBlocking.ts",
       "to": "module:server/auditLog.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/admin/ipBlocking.ts",
+      "to": "module:server/db/index.ts",
       "kind": "imports"
     },
     {
@@ -26405,6 +27145,11 @@
     },
     {
       "from": "module:server/routes/admin/roles.ts",
+      "to": "module:server/db/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/admin/roles.ts",
       "to": "module:server/security/adminSecurity.ts",
       "kind": "imports"
     },
@@ -26445,6 +27190,11 @@
     },
     {
       "from": "module:server/routes/admin/users.ts",
+      "to": "module:server/db/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/admin/users.ts",
       "to": "module:server/klaviyo.ts",
       "kind": "imports"
     },
@@ -26481,6 +27231,11 @@
     {
       "from": "module:server/routes/auth.ts",
       "to": "module:server/_core/trpc.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/auth.ts",
+      "to": "module:server/security/deleteUserData.ts",
       "kind": "imports"
     },
     {
@@ -27930,7 +28685,32 @@
     },
     {
       "from": "module:server/routes/moderator.ts",
+      "to": "module:drizzle/schema.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/moderator.ts",
       "to": "module:server/_core/trpc.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/moderator.ts",
+      "to": "module:server/auditLog.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/moderator.ts",
+      "to": "module:server/db/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/moderator.ts",
+      "to": "module:server/slack/slackNotification.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/moderatorAttachments.ts",
+      "to": "module:drizzle/schema.ts",
       "kind": "imports"
     },
     {
@@ -27939,8 +28719,33 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/routes/moderatorAttachments.ts",
+      "to": "module:server/db/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/moderatorAttachments.ts",
+      "to": "module:server/storage.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/moderatorExports.ts",
+      "to": "module:drizzle/schema.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/routes/moderatorExports.ts",
       "to": "module:server/_core/trpc.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/moderatorExports.ts",
+      "to": "module:server/auditLog.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/moderatorExports.ts",
+      "to": "module:server/db/index.ts",
       "kind": "imports"
     },
     {
@@ -28334,6 +29139,16 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/slack/slackDispatcher.ts",
+      "to": "module:server/slack/slackConvenienceHelpers.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/slack/slackDispatcher.ts",
+      "to": "module:server/slack/slackCore.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/slack/slackInteractions.ts",
       "to": "module:server/auditLog.ts",
       "kind": "imports"
@@ -28549,6 +29364,66 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/wardrobe/index.ts",
+      "to": "module:server/wardrobe/editClassifier.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/wardrobe/index.ts",
+      "to": "module:server/wardrobe/garmentAnalysis.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/wardrobe/index.ts",
+      "to": "module:server/wardrobe/garmentDetection.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/wardrobe/index.ts",
+      "to": "module:server/wardrobe/garmentDigitization.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/wardrobe/index.ts",
+      "to": "module:server/wardrobe/garmentRefinement.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/wardrobe/index.ts",
+      "to": "module:server/wardrobe/identityCheck.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/wardrobe/index.ts",
+      "to": "module:server/wardrobe/outfitDecomposition.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/wardrobe/index.ts",
+      "to": "module:server/wardrobe/qualityCheck.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/wardrobe/index.ts",
+      "to": "module:server/wardrobe/tattooAnalysis.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/wardrobe/index.ts",
+      "to": "module:server/wardrobe/utils.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/wardrobe/index.ts",
+      "to": "module:server/wardrobe/vtoGeneration.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/wardrobe/index.ts",
+      "to": "module:server/wardrobe/vtoSession.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/wardrobe/modelImageAuthority.ts",
       "to": "module:server/casting/deletionAudit.ts",
       "kind": "imports"
@@ -28717,6 +29592,16 @@
       "from": "module:shared/refreshPolicy.ts",
       "to": "module:shared/boardTypes.ts",
       "kind": "imports"
+    },
+    {
+      "from": "module:shared/types.ts",
+      "to": "module:drizzle/schema.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:shared/types.ts",
+      "to": "module:shared/_core/errors.ts",
+      "kind": "imports"
     }
   ],
   "findings": [
@@ -28732,7 +29617,7 @@
       "severity": "info",
       "kind": "retired-module-has-callers",
       "subject": "module:client/src/features/casting/castingHelpers.tsx",
-      "message": "Marked retire but still imported by 3 module(s). Not removable yet."
+      "message": "Marked retire but still imported by 4 module(s). Not removable yet."
     },
     {
       "id": "finding:live-caller:module:client/src/features/casting/castingSessionToken.ts",
@@ -28798,6 +29683,13 @@
       "message": "Marked retire but still imported by 1 module(s). Not removable yet."
     },
     {
+      "id": "finding:live-caller:module:client/src/features/casting/components/ImageViewer/CanvasHelpers.tsx",
+      "severity": "info",
+      "kind": "retired-module-has-callers",
+      "subject": "module:client/src/features/casting/components/ImageViewer/CanvasHelpers.tsx",
+      "message": "Marked retire but still imported by 1 module(s). Not removable yet."
+    },
+    {
       "id": "finding:live-caller:module:client/src/features/casting/components/ImageViewer/index.tsx",
       "severity": "info",
       "kind": "retired-module-has-callers",
@@ -28805,10 +29697,45 @@
       "message": "Marked retire but still imported by 2 module(s). Not removable yet."
     },
     {
+      "id": "finding:live-caller:module:client/src/features/casting/components/ImageViewer/LoadingOverlay.tsx",
+      "severity": "info",
+      "kind": "retired-module-has-callers",
+      "subject": "module:client/src/features/casting/components/ImageViewer/LoadingOverlay.tsx",
+      "message": "Marked retire but still imported by 1 module(s). Not removable yet."
+    },
+    {
       "id": "finding:live-caller:module:client/src/features/casting/components/ImageViewer/MaskCanvas.tsx",
       "severity": "info",
       "kind": "retired-module-has-callers",
       "subject": "module:client/src/features/casting/components/ImageViewer/MaskCanvas.tsx",
+      "message": "Marked retire but still imported by 1 module(s). Not removable yet."
+    },
+    {
+      "id": "finding:live-caller:module:client/src/features/casting/components/ImageViewer/RefinementClarification.tsx",
+      "severity": "info",
+      "kind": "retired-module-has-callers",
+      "subject": "module:client/src/features/casting/components/ImageViewer/RefinementClarification.tsx",
+      "message": "Marked retire but still imported by 1 module(s). Not removable yet."
+    },
+    {
+      "id": "finding:live-caller:module:client/src/features/casting/components/ImageViewer/RefinePanel.tsx",
+      "severity": "info",
+      "kind": "retired-module-has-callers",
+      "subject": "module:client/src/features/casting/components/ImageViewer/RefinePanel.tsx",
+      "message": "Marked retire but still imported by 1 module(s). Not removable yet."
+    },
+    {
+      "id": "finding:live-caller:module:client/src/features/casting/components/ImageViewer/ViewTabs.tsx",
+      "severity": "info",
+      "kind": "retired-module-has-callers",
+      "subject": "module:client/src/features/casting/components/ImageViewer/ViewTabs.tsx",
+      "message": "Marked retire but still imported by 1 module(s). Not removable yet."
+    },
+    {
+      "id": "finding:live-caller:module:client/src/features/casting/components/ImageViewer/WarmEmptyState.tsx",
+      "severity": "info",
+      "kind": "retired-module-has-callers",
+      "subject": "module:client/src/features/casting/components/ImageViewer/WarmEmptyState.tsx",
       "message": "Marked retire but still imported by 1 module(s). Not removable yet."
     },
     {
@@ -28865,7 +29792,7 @@
       "severity": "info",
       "kind": "retired-module-has-callers",
       "subject": "module:client/src/features/casting/ControlPanel.tsx",
-      "message": "Marked retire but still imported by 1 module(s). Not removable yet."
+      "message": "Marked retire but still imported by 2 module(s). Not removable yet."
     },
     {
       "id": "finding:live-caller:module:client/src/features/casting/creationPayload.ts",
@@ -28949,14 +29876,14 @@
       "severity": "info",
       "kind": "retired-module-has-callers",
       "subject": "module:client/src/features/casting/hooks/useCastingCanvas.ts",
-      "message": "Marked retire but still imported by 1 module(s). Not removable yet."
+      "message": "Marked retire but still imported by 2 module(s). Not removable yet."
     },
     {
       "id": "finding:live-caller:module:client/src/features/casting/hooks/useCastingGeneration.ts",
       "severity": "info",
       "kind": "retired-module-has-callers",
       "subject": "module:client/src/features/casting/hooks/useCastingGeneration.ts",
-      "message": "Marked retire but still imported by 1 module(s). Not removable yet."
+      "message": "Marked retire but still imported by 2 module(s). Not removable yet."
     },
     {
       "id": "finding:live-caller:module:client/src/features/casting/hooks/useCastingPackageRefresh.ts",
@@ -28970,7 +29897,7 @@
       "severity": "info",
       "kind": "retired-module-has-callers",
       "subject": "module:client/src/features/casting/ImageViewerPanel.tsx",
-      "message": "Marked retire but still imported by 1 module(s). Not removable yet."
+      "message": "Marked retire but still imported by 2 module(s). Not removable yet."
     },
     {
       "id": "finding:live-caller:module:client/src/features/casting/MasterPromptPanel.tsx",

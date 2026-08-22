@@ -786,17 +786,69 @@ function collectVocabulary(): Entity[] {
 
 /* ------------------------------------------------------------- import graph */
 
+/**
+ * THREE WAYS ONE MODULE REACHES ANOTHER, AND THIS GRAPH KNEW ONE OF THEM.
+ *
+ * `getImportDeclarations()` returns STATIC `import … from "…"` and nothing else.
+ * The other two are ordinary in this tree:
+ *
+ *   export … from "./x"     a re-export — the barrel shape, 134 of them
+ *   await import("./x")     a dynamic import, 43 of them
+ *
+ * ⚠ THE CONSEQUENCE IS NOT COSMETIC, BECAUSE THIS GRAPH IS THE DELETION
+ * AUTHORITY. CLAUDE.md: *"nothing is removed while its retirement view still
+ * shows live callers"* — so ZERO callers is the reading that authorizes removal,
+ * and `computeFindings` builds that reading out of these edges alone. Measured
+ * 2026-08-23: **65 modules showed zero inbound edges while being genuinely
+ * reached**, among them
+ *
+ *   server/routes/emailAuth.ts      both login routes, reached ONLY by
+ *   server/routes/googleAuth.ts     `await import(…)` in `_core/index.ts`, and
+ *                                   holding four of invariant 9's five session
+ *                                   mints between them
+ *   server/monitoring/healthMonitor.ts        all three background workers —
+ *   server/casting/storageCleanupWorker.ts    which the Atlas's own `workers`
+ *   server/castingV2/candidateRetention.ts    list names, so the artifact
+ *                                             contradicted itself again
+ *
+ * plus `server/db/ipBlocking.ts`, `server/db/billing.ts`, `server/db/security.ts`
+ * and most of the client's feature directories, which are reached through
+ * barrels.
+ *
+ * All three are emitted as `kind: "imports"`, deliberately: the retirement
+ * reading filters on that kind, and a module you cannot delete without breaking
+ * a barrel is a module with a live caller. This makes the deletion authority
+ * MORE conservative, which is the only safe direction for it to move.
+ */
 function collectImportEdges(project: Project): Edge[] {
   const edges: Edge[] = [];
+  const add = (from: string, target: SourceFile | undefined): void => {
+    if (!target) return;
+    const to = path.relative(repoRoot, target.getFilePath()).replaceAll("\\", "/");
+    if (!sourceFiles.includes(to)) return;
+    edges.push({ from: `module:${from}`, to: `module:${to}`, kind: "imports" });
+  };
+
   for (const sourceFile of project.getSourceFiles()) {
     const from = path.relative(repoRoot, sourceFile.getFilePath()).replaceAll("\\", "/");
     if (!sourceFiles.includes(from)) continue;
+
     for (const declaration of sourceFile.getImportDeclarations()) {
-      const target = declaration.getModuleSpecifierSourceFile();
-      if (!target) continue;
-      const to = path.relative(repoRoot, target.getFilePath()).replaceAll("\\", "/");
-      if (!sourceFiles.includes(to)) continue;
-      edges.push({ from: `module:${from}`, to: `module:${to}`, kind: "imports" });
+      add(from, declaration.getModuleSpecifierSourceFile());
+    }
+    for (const declaration of sourceFile.getExportDeclarations()) {
+      add(from, declaration.getModuleSpecifierSourceFile());
+    }
+    // Dynamic `import("…")`. Resolved through the compiler's own symbol rather
+    // than by rebuilding module resolution here — a hand-rolled `.ts`/`.tsx`/
+    // `/index.ts` guess is one more shape-match of exactly the kind this
+    // paragraph is about.
+    for (const literal of sourceFile.getImportStringLiterals()) {
+      const call = literal.getParent()?.asKind(SyntaxKind.CallExpression);
+      if (call?.getExpression().getKind() !== SyntaxKind.ImportKeyword) continue;
+      for (const declaration of literal.getSymbol()?.getDeclarations() ?? []) {
+        if (declaration.getKind() === SyntaxKind.SourceFile) add(from, declaration.getSourceFile());
+      }
     }
   }
   const unique = new Map(edges.map((edge) => [`${edge.from}|${edge.to}|${edge.kind}`, edge]));
