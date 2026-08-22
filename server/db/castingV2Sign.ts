@@ -32,6 +32,7 @@
  * that only shows up on the day a write is a no-op, which is the worst day to
  * discover it.
  */
+import type { CastingPath } from "../../shared/castingPaths";
 import { createHash, randomUUID } from "node:crypto";
 import { and, asc, desc, eq, inArray, isNotNull, isNull, like, ne, sql } from "drizzle-orm";
 
@@ -175,6 +176,20 @@ export type SignableCandidate = {
     styleKey: string | null;
     styleProfile: unknown;
     createdAt: Date;
+    /**
+     * THE TWO PATHS, arriving on a join this statement already makes (§3.1).
+     *
+     * The design promised Sign would gain both *"with no new read"*, and this
+     * is that promise kept: the roll is already inner-joined here to re-anchor
+     * the candidate through its owner's own parents, so the two columns cost
+     * two more names in a `select` and nothing else.
+     *
+     * NULL on both means the sheet was cast before the paths existed — which is
+     * every Cast signed to date, and the reason `currentWardrobeLine` answers
+     * `unpathed` rather than guessing.
+     */
+    path: CastingPath | null;
+    wardrobeLine: string | null;
   };
   session: { id: number; publicId: string };
 };
@@ -209,6 +224,8 @@ export async function getSignableCandidate(
       styleKey: castingRolls.styleKey,
       styleProfile: castingRolls.styleProfile,
       rollCreatedAt: castingRolls.createdAt,
+      rollPath: castingRolls.path,
+      rollWardrobeLine: castingRolls.wardrobeLine,
       sessionId: castingSessions.id,
       sessionPublicId: castingSessions.publicId,
     })
@@ -282,6 +299,8 @@ export async function getSignableCandidate(
       styleKey: row.styleKey,
       styleProfile: row.styleProfile,
       createdAt: row.rollCreatedAt,
+      path: row.rollPath ?? null,
+      wardrobeLine: row.rollWardrobeLine ?? null,
     },
     session: { id: row.sessionId, publicId: row.sessionPublicId },
   };

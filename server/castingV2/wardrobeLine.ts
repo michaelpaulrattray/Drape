@@ -90,8 +90,18 @@ export type WardrobeResolution =
  * that when it arrives there is one place it can land rather than six.
  */
 export type WardrobeBranch = {
-  /** `casting_rolls.path` of the roll this branch descends from. */
-  rollPath: CastingPath | null;
+  /**
+   * `casting_rolls.path` of the roll this branch descends from.
+   *
+   * ⚠ **ABSENT AND NULL MEAN THE SAME THING, and the type says so on purpose.**
+   * A caller assembling this from a partial row — a projection written before
+   * the columns existed, a test double, a JSON blob read back — hands
+   * `undefined`, and a strict `=== null` check would route that to
+   * `incoherent`: *this roll claims a path and cannot say what it is wearing*,
+   * which is refused free. An absent column is not a claim; it is silence, and
+   * silence is `unpathed`.
+   */
+  rollPath: CastingPath | null | undefined;
   /** `casting_rolls.wardrobeLine` — the BORN outfit of the sheet. */
   rollLine: string | null;
   /** This branch's own wardrobe edit, if one has been made. */
@@ -113,7 +123,7 @@ function stated(value: string | null | undefined): string | null {
  * documented at its own call site as well as in this file's header.
  */
 export function currentWardrobeLine(branch: WardrobeBranch): WardrobeResolution {
-  const path = branch.rollPath;
+  const path = branch.rollPath ?? null;
   const born = stated(branch.rollLine);
   const edited = stated(branch.editedLine);
 
@@ -134,6 +144,29 @@ export function currentWardrobeLine(branch: WardrobeBranch): WardrobeResolution 
   if (edited !== null) return { kind: "line", line: edited, source: "edited", path };
   if (born !== null) return { kind: "line", line: born, source: "born", path };
   return { kind: "incoherent", path };
+}
+
+/**
+ * WHAT A SIGNED CAST IS WEARING — read back off its own snapshot.
+ *
+ * Sign stores the RESOLVED answer in `technicalSchema.wardrobe` (§3.1), and the
+ * six views and their judge are composed from what this returns. It lives here
+ * rather than beside the package because there is one owner of this sentence
+ * and a second reader written elsewhere is the parallel-copy shape.
+ *
+ * ⚠ **It answers `null` for anything it does not recognise, and that is the
+ * safe direction.** `technicalSchema` is an unstructured JSON column written
+ * across several eras: every Cast signed before the paths existed has no
+ * `wardrobe` key at all, and `null` means *compose and judge exactly as the
+ * product always has*. The alternative — throwing, or inventing the house line
+ * — would either break a room that renders today or dress a Cast in an outfit
+ * nobody chose for it. Same reasoning, same column, as `castPronouns`.
+ */
+export function castWardrobeLine(technicalSchema: unknown): string | null {
+  if (!technicalSchema || typeof technicalSchema !== "object") return null;
+  const wardrobe = (technicalSchema as { wardrobe?: unknown }).wardrobe;
+  if (!wardrobe || typeof wardrobe !== "object") return null;
+  return stated((wardrobe as { line?: unknown }).line as string | null | undefined);
 }
 
 /**

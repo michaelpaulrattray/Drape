@@ -87,6 +87,19 @@ export type ViewConformanceInput = {
   anchor: ReferenceImage;
   /** The view that wants to land. */
   candidate: ReferenceImage;
+  /**
+   * WHAT THIS CAST IS WEARING — the snapshotted line (design §3.3, item 6).
+   *
+   * ⚠ **The judge must be handed the SAME answer the generator was composed
+   * from.** `packageViewExpectation` and `composePackageViewPrompt` both derive
+   * their sentence from this value through one function, because a judge told a
+   * different outfit than the prompt asked for fails a view for obeying its
+   * instructions — six views, the wardrobe axis, refunded slices.
+   *
+   * `null` or absent is every Cast signed to date and keeps today's sentence
+   * exactly, including its *anything below the frame cannot be compared* clause.
+   */
+  wardrobeLine?: string | null;
   signal?: AbortSignal;
 };
 
@@ -181,7 +194,7 @@ export function createViewConformanceJudge(config: ViewConformanceJudgeConfig): 
       };
     }
 
-    const expectation = packageViewExpectation(input.angle);
+    const expectation = packageViewExpectation(input.angle, input.wardrobeLine ?? null);
     let text: string;
     try {
       const reply = await config.engine.complete({

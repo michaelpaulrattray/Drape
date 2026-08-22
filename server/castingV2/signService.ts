@@ -38,6 +38,7 @@ import { spokenError } from "../_core/spokenError";
 import { randomUUID } from "node:crypto";
 
 import { recordRefund } from "../casting/atomicCredits";
+import { castWardrobeLine, currentWardrobeLine } from "./wardrobeLine";
 import { CASTING_V2_SIGN_COSTS } from "../casting/castingCreditCosts";
 import { withUniqueCastPublicId } from "../casting/castPublicId";
 import {
@@ -276,11 +277,53 @@ function identityDocumentsFor(source: SignableCandidate): {
   const resolved = internal?.resolved && typeof internal.resolved === "object"
     ? (internal.resolved as Record<string, unknown>)
     : {};
+  /*
+    WHAT THIS CAST IS WEARING, SNAPSHOTTED AT SIGN (design §3.1 and condition
+    (v), §3.1a).
+
+    ⚠ **The RESOLVED answer, not the column.** Condition (v) exists because
+    three sentences of the design implied a fourth nobody had written: the
+    roll's line is snapshotted here, a wardrobe edit rewrites the branch's line,
+    and a Follow inherits the born one — which together produce a Cast SIGNED
+    AFTER A WARDROBE EDIT whose six views would be judged against the outfit it
+    is no longer wearing. Six views, the wardrobe axis, refunded slices, which
+    is exactly how the crew-neck chest design already cost money. So this asks
+    the one owner and stores its answer.
+
+    `editedLine` is `undefined` here and will stay so until the refine WARDROBE
+    subject lands (item 8). Reading through the function anyway is the point:
+    the day that field exists, this site is already correct.
+
+    It rides `technicalSchema` — internal, never projected, the sensitive field
+    group — because it is part of the recipe for reproducing this Cast. The
+    SHEET's display of the same sentence comes from the roll column through an
+    explicit projection, never lifted out of this blob.
+
+    NOT in `identityText`. That string is the fingerprint of WHO this person is
+    and opens *"THIS PERSON MUST MATCH THE REFERENCE IMAGE EXACTLY"* — an
+    outfit is not a fact about a face, and folding one in would make two Casts
+    of the same person in different clothes read as two different people to
+    everything downstream that compares the fingerprint.
+  */
+  const wardrobe = currentWardrobeLine({
+    rollPath: source.roll.path,
+    rollLine: source.roll.wardrobeLine,
+  });
   const technicalSchema = {
     subject: resolved,
     cohortKey: source.roll.cohortKey,
     styleKey: source.roll.styleKey,
     styleProfile: source.roll.styleProfile ?? null,
+    /*
+      Both facts, kept as the resolution's own shape rather than flattened to a
+      string: a reader needs to tell "this Cast wears the house line" from
+      "this Cast predates the paths", and a bare string cannot say the second.
+    */
+    wardrobe: wardrobe.kind === "line"
+      ? { path: wardrobe.path, line: wardrobe.line, source: wardrobe.source }
+      : wardrobe.kind === "incoherent"
+        ? { path: wardrobe.path, line: null, source: null }
+        : { path: null, line: null, source: null },
   };
   const preferences = {
     briefText: source.roll.briefText,
@@ -528,6 +571,16 @@ export async function signCandidate(
     /* From the documents this Sign just sealed, so the Cast's views speak about
        the person the Cast's own record describes. */
     pronouns: castPronouns(documents.technicalSchema),
+    /*
+      WHAT THIS CAST IS WEARING, from the documents this Sign just sealed — not
+      re-resolved here (§3.3, condition (v)).
+
+      The six views are composed from it and the judge judges against it, so it
+      has to be the SAME sentence the Cast's own record carries. A second
+      resolution at this call site is how a Cast comes to be judged against an
+      outfit its record does not name.
+    */
+    wardrobeLine: castWardrobeLine(documents.technicalSchema),
     identityRevisionId: cast.identityRevisionId,
     identityText: documents.identityText,
     chargedCredits: price,
@@ -1056,6 +1109,8 @@ async function completeSignPackage(
     /** How the product refers to this Cast — derived from the identity
      *  documents this Sign just wrote, never guessed at a call site. */
     pronouns: CastPronouns;
+    /** The snapshotted outfit — `null` for every Cast signed before the paths. */
+    wardrobeLine: string | null;
     identityRevisionId: string;
     identityText: string;
     chargedCredits: number;
@@ -1101,6 +1156,7 @@ async function completeSignPackage(
       inkCrops: delivered.crops,
       pronouns: input.pronouns,
       featureWords,
+      wardrobeLine: input.wardrobeLine,
     });
 
     if (result.refundUnrecorded) {

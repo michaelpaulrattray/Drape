@@ -30,6 +30,7 @@ import type { CastingCandidate, CastingRoll, CastingSession } from "../../drizzl
 import { storagePublicUrl } from "../storage";
 import { UNLOCKABLE_FIELDS, type CastingChip, type UnlockableField } from "./briefCompiler";
 import { statesWardrobe } from "./statedWardrobe";
+import { HOUSE_WARDROBE_LINE, currentWardrobeLine } from "./wardrobeLine";
 import { tokensComeFromBrief } from "./castingIntent";
 import {
   AGE_BANDS,
@@ -105,6 +106,23 @@ export type RollProjection = {
    * for why this is a narrower question than the composed-direction guard asks.
    */
   statedWardrobe: boolean;
+  /**
+   * WHAT THIS SHEET IS WEARING — the two paths (design §3.3, item 6).
+   *
+   * ⚠ **An EXPLICIT projection off the roll's own columns, and it is explicit
+   * for the reason §3.2 refuses the cheaper design.** The same sentence lives
+   * in the Cast's `technicalSchema`, which is INTERNAL and never crosses a
+   * projection boundary, and in `compiledBrief`, whose docblock says the same.
+   * Lifting a display string out of either is how a sensitive blob starts being
+   * read for a caption — so the sheet reads the column, through the one owner.
+   *
+   * `null` is every roll cast before the paths existed and every roll outside
+   * the flag: the sheet says what it says today and nothing appears.
+   *
+   * `enginePicked` is DERIVED, never stored — see the projection site. It is
+   * §4.1's label obligation: *she is never told she asked for it*.
+   */
+  wardrobe: { line: string; enginePicked: boolean } | null;
   priceCredits: number;
   counts: { total: number; ready: number; casting: number; failed: number };
   createdAt: string;
@@ -441,6 +459,27 @@ function readFellBack(compiledBrief: unknown): boolean {
   return (compiledBrief as { interpreted?: unknown }).interpreted === false;
 }
 
+/**
+ * The sheet's wardrobe line and whether it was chosen for her.
+ *
+ * Beside the projection rather than inside it because it is three derivations
+ * and one of them — the engine-pick label — is a product promise rather than a
+ * field copy.
+ */
+function projectWardrobe(roll: CastingRoll): { line: string; enginePicked: boolean } | null {
+  const resolution = currentWardrobeLine({
+    rollPath: roll.path,
+    rollLine: roll.wardrobeLine,
+  });
+  if (resolution.kind !== "line") return null;
+  return {
+    line: resolution.line,
+    enginePicked: resolution.path === "wardrobe"
+      && resolution.line !== HOUSE_WARDROBE_LINE
+      && !statesWardrobe(roll.briefText),
+  };
+}
+
 export function projectRoll(input: {
   roll: CastingRoll;
   candidates: readonly ProjectableCandidate[];
@@ -486,6 +525,32 @@ export function projectRoll(input: {
       cannot drift from the sentence it describes.
     */
     statedWardrobe: statesWardrobe(input.roll.briefText),
+    /*
+      THE OUTFIT, THROUGH THE ONE OWNER (§3.3), and the label derived beside it.
+
+      `currentWardrobeLine` rather than the column, even though a roll has no
+      branch and its `edited` arm cannot fire here: reading the column directly
+      at one of the six readers is how the seventh reader gets written the same
+      way, and condition (v) exists because that seventh reader was Sign.
+
+      ⚠ **`enginePicked` is derived from facts the row already carries** — never
+      a stored flag, which would be a second copy of something derivable and
+      therefore a copy that can be wrong (the `expiredReason` ruling, and the
+      same argument `statedWardrobe` above is written on). Three conditions, and
+      each one excludes a case that is NOT an engine pick:
+
+        the WARDROBE path        Basics is the path's own outfit, not a choice
+                                 anybody made for her;
+        not the house line       §4(c) is the studio default this product has
+                                 always painted, not something picked;
+        her sentence named no
+        clothing                 if she said "in a red apron", the outfit is
+                                 hers — completed in the same register, but
+                                 hers. §4.1(1): she is never told she asked for
+                                 something she did not, and this is the other
+                                 half of that promise.
+    */
+    wardrobe: projectWardrobe(input.roll),
     facts: readBriefFacts(input.roll.lockContract, input.roll.compiledBrief, input.roll.briefText),
     lineage: {
       ...(input.parentCandidatePublicId ? { fromCandidateId: input.parentCandidatePublicId } : {}),

@@ -206,6 +206,15 @@ export type BuildPackageInput = {
    * this existed.
    */
   featureWords?: readonly CarriedFeatureWords[];
+  /**
+   * WHAT THIS CAST IS WEARING — snapshotted at Sign (design §3.3, item 6).
+   *
+   * Rides beside the anchor for the same reason the plates and the feature
+   * words do: it is a fact about this Cast that the composer cannot derive.
+   * `null` or absent composes and judges exactly today's sentence, which is
+   * every Cast signed to date.
+   */
+  wardrobeLine?: string | null;
 };
 
 async function defaultStoreImage(input: {
@@ -473,7 +482,12 @@ async function buildOneView(
       */
       const wordsClause = composeViewFeatureWordsClause(input.featureWords ?? []).clause;
       const image = await engine.generateView({
-        prompt: [composePackageViewPrompt(angle), inkClause, cropClause, wordsClause]
+        prompt: [
+          composePackageViewPrompt(angle, input.wardrobeLine ?? null),
+          inkClause,
+          cropClause,
+          wordsClause,
+        ]
           .filter((part) => part !== "")
           .join("\n"),
         references,
@@ -494,6 +508,9 @@ async function buildOneView(
         angle,
         anchor: input.anchor,
         candidate: { bytes: image.bytes, contentType: image.contentType },
+        /* The SAME value the prompt above was composed from — one field, read
+           twice, so the generator and the judge cannot be told two outfits. */
+        wardrobeLine: input.wardrobeLine ?? null,
       });
       verdicts.push(verdict);
 

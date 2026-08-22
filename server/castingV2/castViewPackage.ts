@@ -151,6 +151,42 @@ export const CAST_PACKAGE_WARDROBE_SPEC =
   + "prop, or any printed text or logo is a failure wherever it appears.";
 
 /**
+ * THE SAME SENTENCE, WRITTEN FROM A STORED LINE (design §3.3, item 6).
+ *
+ * The constant above is an honest answer to having nothing written down. Two of
+ * its clauses exist only because of that, and both go the moment an exact line
+ * exists:
+ *
+ *  1. **"anything below the frame of the reference CANNOT be compared."** That
+ *     is true when the only record of the outfit is a chest-up photograph — the
+ *     judge was left adjudicating our own adjective *"plain"* against its own
+ *     taste, and a customer paid 50 credits for the ambiguity. A stored line
+ *     names the bottoms and the footwear, so the three FULL-LENGTH views become
+ *     judgeable for the first time: §I's rule is that an axis told to fail when
+ *     unsure must never be pointed at something the reference cannot establish,
+ *     and now something else establishes it.
+ *  2. ⚠ **"a jacket … is a failure wherever it appears."** With a line that may
+ *     SAY *dark canvas work jacket*, that clause fails the customer's own
+ *     outfit — the same self-contradiction `FRAMING`'s "No jackets" had, in the
+ *     one place where the price of it is a refunded slice. The rest of the
+ *     addition list stays, and it CAN stay because `wardrobeDoor.ts` refuses
+ *     hats, props, logos and printed text in the line: the two cannot disagree.
+ *
+ * ⚠ **The judge and the generator read THIS function, one call each, so they
+ * cannot drift** — which is the whole reason the line has one owner. A Cast
+ * signed after a wardrobe edit is judged against what it is wearing.
+ */
+export function castPackageWardrobeSpec(wardrobeLine: string | null): string {
+  if (wardrobeLine === null) return CAST_PACKAGE_WARDROBE_SPEC;
+  return `exactly this outfit, unchanged across every view: ${wardrobeLine}. `
+    + "This description covers the whole figure — what is worn on the upper body, on the lower body "
+    + "and on the feet — so it applies below the frame of the reference photograph as well as inside "
+    + "it. Judge the clothing against this description. "
+    + "ADDITIONS are failures wherever they appear: jewellery, a hat, a bag, a prop, or any printed "
+    + "text or logo.";
+}
+
+/**
  * The close-up's own wardrobe sentence.
  *
  * On a tight face crop the garment is barely in frame, so "does the shirt
@@ -478,14 +514,29 @@ export function castPackageLabel(
  * alone and today has no opinion about a clause at all (invariant 7 —
  * fable-871 §3).
  */
-export function composePackageViewPrompt(angle: CastViewAngle): string {
+/**
+ * The wardrobe sentence this slot is composed from and judged against.
+ *
+ * ⚠ **The CLOSE-UP's sentence is deliberately not substituted.** It is written
+ * about the REFERENCE photograph rather than about a spec — *where the collar
+ * IS visible it matches the reference's neckline and colour* — so it is already
+ * correct on every path, including a Basics Cast with no collar at all. Only
+ * the shared sentence, the one that names an outfit, has anything to replace.
+ */
+function wardrobeSpecFor(angle: CastViewAngle, wardrobeLine: string | null): string {
+  const base = VIEWS[angle].spec.wardrobe;
+  if (wardrobeLine === null || base !== CAST_PACKAGE_WARDROBE_SPEC) return base;
+  return castPackageWardrobeSpec(wardrobeLine);
+}
+
+export function composePackageViewPrompt(angle: CastViewAngle, wardrobeLine: string | null = null): string {
   const view = VIEWS[angle];
   return [
     "Keep this exact person unchanged: the same face, bone structure, skin, hair, facial hair and build "
     + "as the reference photograph. This is the same individual in a different photograph, never a "
     + "similar-looking person.",
     view.directive,
-    `WARDROBE: ${view.spec.wardrobe}`,
+    `WARDROBE: ${wardrobeSpecFor(angle, wardrobeLine)}`,
     PHOTOREAL_HUMAN_BLOCKS.capture,
     PHOTOREAL_HUMAN_BLOCKS.realism,
     PHOTOREAL_HUMAN_BLOCKS.identityIntegrity,
@@ -502,7 +553,15 @@ export function composePackageViewPrompt(angle: CastViewAngle): string {
  * `directive` or a constant block, view conformance silently becomes prompt
  * compliance and the check stops being worth running.
  */
-export function packageViewExpectation(angle: CastViewAngle): CastPackageViewSpec {
+export function packageViewExpectation(
+  angle: CastViewAngle,
+  wardrobeLine: string | null = null,
+): CastPackageViewSpec {
   const { spec } = VIEWS[angle];
-  return { framing: spec.framing, wardrobe: spec.wardrobe };
+  /*
+    The SAME answer the generator was given, through the same function. Two
+    call sites composing the sentence separately is how a judge comes to fail a
+    view for wearing what the prompt asked for.
+  */
+  return { framing: spec.framing, wardrobe: wardrobeSpecFor(angle, wardrobeLine) };
 }

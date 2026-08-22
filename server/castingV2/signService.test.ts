@@ -26,6 +26,21 @@ const ledger = {
   charges: [] as Array<{ amount: number; reference: string }>,
   refunds: [] as Array<{ amount: number; reference: string }>,
 };
+/**
+ * THE SHEET THIS CANDIDATE WAS CAST ON WEARS — the two paths (design §3.1).
+ *
+ * Both NULL is every Cast signed to date: the sheet was cast before the paths
+ * existed. Mutable so the wardrobe arms can move it and everything else keeps
+ * exercising the unpathed product.
+ */
+/** Every `buildPackage` call's argument object, in order. */
+const packageInputs: Record<string, unknown>[] = [];
+
+let rollWardrobe: { path: "wardrobe" | "basics" | null; line: string | null } = {
+  path: null,
+  line: null,
+};
+
 let chargeSucceeds = true;
 let refundRecords = true;
 
@@ -113,6 +128,10 @@ vi.mock("../db/castingV2Sign", () => ({
         styleKey: null,
         styleProfile: null,
         createdAt: new Date("2026-08-02T10:00:00Z"),
+        /* The two paths. NULL on both is every Cast signed to date — the sheet
+           was cast before the paths existed. Overridden by the arms that care. */
+        path: rollWardrobe.path,
+        wardrobeLine: rollWardrobe.line,
       },
       session: { id: 10, publicId: "session-public" },
     };
@@ -280,8 +299,11 @@ function packageReturning(result: {
   refundedCredits?: number;
   refundUnrecorded?: boolean;
 }) {
-  return vi.fn(async (_dependencies: unknown, _input: PackageBuildInput) => {
+  return vi.fn(async (_dependencies: unknown, buildInput: PackageBuildInput) => {
     journal.push("package");
+    /* What the package was actually asked to build — the wire the wardrobe
+       line has to cross, and the one a snapshot arm cannot see. */
+    packageInputs.push(buildInput as unknown as Record<string, unknown>);
     return {
       committed: Array.from({ length: result.committed ?? 5 }, () => "frontFull" as const),
       failed: Array.from({ length: result.failed ?? 0 }, () => "backFull" as const),
@@ -307,6 +329,10 @@ beforeEach(() => {
   casts.length = 0;
   chargeSucceeds = true;
   refundRecords = true;
+  /* A stateful fixture re-establishes its state in front of every row it is
+     asked about — the census corpus's own first law, arriving in a unit suite. */
+  rollWardrobe = { path: null, line: null };
+  packageInputs.length = 0;
   copyThrows = false;
   manifestThrows = false;
   candidateRow.status = "ready";
@@ -541,6 +567,88 @@ describe("the package's money, after the boundary", () => {
     expect(casts).toHaveLength(1);
     expect(journal).not.toContain("seal:success");
     expect(ledger.refunds).toHaveLength(0);
+  });
+});
+
+/**
+ * WHAT A CAST IS WEARING, SNAPSHOTTED AT SIGN (design §3.1 and condition (v)).
+ *
+ * A Cast is immutable at Sign, so the outfit its six views are composed from
+ * and judged against has to be decided here, once. The arms below assert on
+ * `technicalSchema` — the sensitive blob that never crosses a projection
+ * boundary — because that is where the recipe for reproducing this Cast lives.
+ */
+describe("the Cast's wardrobe snapshot", () => {
+  it("⚠ UNPATHED is what every Cast signed to date carries, and it says so", async () => {
+    /*
+      NULL on both columns is not an error and never becomes one: it means the
+      sheet was cast before the paths existed. The snapshot has to be able to
+      SAY that rather than resolve to a house line, or a Cast that predates the
+      feature becomes indistinguishable from one that chose Wardrobe.
+    */
+    await signCandidate({ schedulePackage: awaitPackage, buildPackage: packageReturning({}) }, input);
+    const boundary = boundaryInputs.at(-1)!;
+    expect(boundary.technicalSchema).toMatchObject({
+      wardrobe: { path: null, line: null, source: null },
+    });
+  });
+
+  it("carries the roll's born line and where it came from", async () => {
+    rollWardrobe = { path: "wardrobe", line: "a red apron over a plain white tee" };
+    await signCandidate({ schedulePackage: awaitPackage, buildPackage: packageReturning({}) }, input);
+    expect(boundaryInputs.at(-1)!.technicalSchema).toMatchObject({
+      wardrobe: {
+        path: "wardrobe",
+        line: "a red apron over a plain white tee",
+        source: "born",
+      },
+    });
+  });
+
+  it("carries the BASICS path, which is a different promise", async () => {
+    rollWardrobe = { path: "basics", line: "shirtless, in plain black fitted shorts, barefoot" };
+    await signCandidate({ schedulePackage: awaitPackage, buildPackage: packageReturning({}) }, input);
+    expect(boundaryInputs.at(-1)!.technicalSchema).toMatchObject({
+      wardrobe: { path: "basics", source: "born" },
+    });
+  });
+
+  it("⚠ AT THE WIRE — the package is BUILT from the line the Cast records", async () => {
+    /*
+      The seam a snapshot arm cannot see, and it was genuinely untested until a
+      sabotage said so: replacing this hand-off with `null` left 81 arms green.
+      The six views are composed from this value and the judge judges against
+      it, so what matters is that the sentence crossing into the package is the
+      Cast's own — not re-resolved at the call site, where it could differ from
+      the record by the time anyone compares them.
+    */
+    rollWardrobe = { path: "wardrobe", line: "a red apron over a plain white tee" };
+    await signCandidate({ schedulePackage: awaitPackage, buildPackage: packageReturning({}) }, input);
+    expect(packageInputs).toHaveLength(1);
+    expect(packageInputs[0].wardrobeLine).toBe("a red apron over a plain white tee");
+  });
+
+  it("⚠ CONTROL — an unpathed Cast builds its package with no line at all", async () => {
+    await signCandidate({ schedulePackage: awaitPackage, buildPackage: packageReturning({}) }, input);
+    expect(packageInputs).toHaveLength(1);
+    expect(packageInputs[0].wardrobeLine).toBeNull();
+  });
+
+  it("⚠ the outfit is NOT folded into the identity fingerprint", async () => {
+    /*
+      `identityText` opens "THIS PERSON MUST MATCH THE REFERENCE IMAGE EXACTLY"
+      and is hashed onto the identity snapshot. An outfit is not a fact about a
+      face — folding one in would make two Casts of the same person in different
+      clothes read as two different people to everything that compares the
+      fingerprint.
+    */
+    rollWardrobe = { path: "wardrobe", line: "a red apron over a plain white tee" };
+    await signCandidate({ schedulePackage: awaitPackage, buildPackage: packageReturning({}) }, input);
+    const boundary = boundaryInputs.at(-1)!;
+    expect(boundary.identityText).not.toContain("apron");
+    /* CONTROL — the same string DOES carry the identity, so the arm above is
+       reading an exclusion and not an empty field. */
+    expect(boundary.identityText).toContain("IDENTITY");
   });
 });
 

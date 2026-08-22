@@ -140,6 +140,87 @@ beforeEach(() => {
   vi.clearAllMocks();
 });
 
+/**
+ * ⚠ THE CAST'S OUTFIT REACHES BOTH THE ENGINE AND THE JUDGE (design §3.3,
+ * item 6) — asserted on the outgoing request and on the judge's own argument,
+ * never on a constant near them (invariant 5).
+ *
+ * The failure this closes costs money rather than looks: a judge told a
+ * different outfit than the prompt asked for fails a view for obeying its
+ * instructions, and a failed slot is a refunded slice.
+ */
+describe("the Cast's wardrobe line, at the wire", () => {
+  const LINE = "dark canvas work jacket, straight jeans, plain boots";
+
+  /*
+    ⚠ FOUR OF THE FIVE, NOT ALL FIVE. The `closeUp` slot carries its own
+    wardrobe sentence — written about the REFERENCE rather than about a spec, so
+    it is correct on every path — and asserting the line on it would be
+    asserting a substitution the design deliberately does not make. Found by
+    driving it: the first version of these arms failed on the close-up's prompt.
+  */
+  function recording() {
+    const prompts: { angle: string; prompt: string }[] = [];
+    const judged: unknown[] = [];
+    return {
+      prompts,
+      judged,
+      identityEngine: () => ({
+        id: "test-identity",
+        editWithReferences: vi.fn(),
+        generateView: vi.fn(async (request: { prompt: string; viewAngle: string }) => {
+          prompts.push({ angle: request.viewAngle, prompt: request.prompt });
+          return {
+            bytes: Buffer.from("view"),
+            contentType: "image/png",
+            latencyMs: 1,
+            provenance: { provider: "fal" as const, model: "nbp", providerRef: "ref" },
+          };
+        }),
+      }),
+      judge: () => vi.fn(async (judgeInput: unknown) => {
+        judged.push(judgeInput);
+        return pass;
+      }),
+    };
+  }
+
+  it("carries the line into every view's prompt and every judge call", async () => {
+    const seen = recording();
+    await buildCastPackage(
+      deps({ identityEngine: seen.identityEngine, judge: seen.judge }),
+      { ...input, wardrobeLine: LINE },
+    );
+    expect(seen.prompts).toHaveLength(5);
+    expect(seen.judged).toHaveLength(5);
+    const shared = seen.prompts.filter((entry) => entry.angle !== "closeUp");
+    expect(shared.length).toBeGreaterThan(0);
+    for (const entry of shared) expect(entry.prompt, entry.angle).toContain(LINE);
+    /* The judge is handed the line on EVERY slot including the close-up — the
+       expectation function is what decides the close-up keeps its own
+       sentence, and it is the same function the prompt went through. */
+    for (const call of seen.judged) {
+      expect((call as { wardrobeLine?: unknown }).wardrobeLine).toBe(LINE);
+    }
+  });
+
+  it("⚠ CONTROL — with no line the wire is exactly what it was", async () => {
+    /* Every Cast signed to date. The two are compared rather than each being
+       inspected, so "unchanged" is a measurement and not an opinion. */
+    const seen = recording();
+    await buildCastPackage(deps({ identityEngine: seen.identityEngine, judge: seen.judge }), input);
+    for (const entry of seen.prompts) {
+      expect(entry.prompt, entry.angle).not.toContain(LINE);
+      if (entry.angle !== "closeUp") {
+        expect(entry.prompt, entry.angle).toContain("the SAME plain unbranded crew-neck top");
+      }
+    }
+    for (const call of seen.judged) {
+      expect((call as { wardrobeLine?: unknown }).wardrobeLine).toBeNull();
+    }
+  });
+});
+
 describe("a package where everything lands", () => {
   // Five, not six: a Cast has six views — the Master plus the package's five —
   // and the package commits the five. The title said "six" while the assertion

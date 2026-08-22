@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "0a9cf1518b6b29f7"
+    "sourceFingerprint": "7671afbdbab803b6"
   },
   "domains": [
     {
@@ -10730,6 +10730,10 @@
     {
       "id": "test:server/castingV2/wardrobePick.test.ts",
       "path": "server/castingV2/wardrobePick.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/wardrobeViews.test.ts",
+      "path": "server/castingV2/wardrobeViews.test.ts"
     },
     {
       "id": "test:server/castingV2/zoneScope.test.ts",
@@ -23130,6 +23134,11 @@
     },
     {
       "from": "module:server/castingV2/rollProjection.ts",
+      "to": "module:server/castingV2/wardrobeLine.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/rollProjection.ts",
       "to": "module:server/storage.ts",
       "kind": "imports"
     },
@@ -23576,6 +23585,11 @@
     {
       "from": "module:server/castingV2/signService.ts",
       "to": "module:server/castingV2/viewFeatureWords.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/signService.ts",
+      "to": "module:server/castingV2/wardrobeLine.ts",
       "kind": "imports"
     },
     {
@@ -24291,6 +24305,11 @@
     {
       "from": "module:server/db/castingV2Sign.ts",
       "to": "module:shared/boardTypes.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/castingV2Sign.ts",
+      "to": "module:shared/castingPaths.ts",
       "kind": "imports"
     },
     {
@@ -30347,10 +30366,10 @@
       "message": "Names 3 of Thumbnail's 3 fields (server/castingV2/thumbnails.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/rollProjection.ts:169",
+      "id": "finding:redeclared-shape:server/castingV2/rollProjection.ts:187",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/rollProjection.ts:169",
+      "subject": "server/castingV2/rollProjection.ts:187",
       "message": "Names 7 of LockFacts's 7 fields (server/castingV2/castingIntent.ts), 7 of ResolvedIdentity's 11 fields (server/castingV2/castingIntent.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
