@@ -4071,6 +4071,18 @@
   transition: opacity 120ms ease;
 }
 
+/*
+  A NAME NEAR THE PICTURE'S EDGE GROWS INWARD — the popover's own clamp, one
+  element down (found at the frame while verifying it, fable-1405's "sweep the
+  class"). The tag hangs from its box's left corner and never wraps, so a box in
+  the last quarter of the frame ran its label off the photograph; anchored right,
+  it grows back toward the middle, where there is room by construction.
+*/
+.dpc-regions__box[data-edge="right"] .dpc-regions__tag {
+  left: auto;
+  right: 0;
+}
+
 .dpc-regions__box[data-lit="true"] .dpc-regions__tag,
 .dpc-regions__box[data-active="true"] .dpc-regions__tag,
 .dpc-regions__box:hover .dpc-regions__tag {

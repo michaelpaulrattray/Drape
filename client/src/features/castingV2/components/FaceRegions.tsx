@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 import type { FacePanelRow } from "./FacePanel";
 import type { FaceSelectionModel } from "./faceSelection";
@@ -116,8 +116,70 @@ export function FaceRegions({
   /** Which of the open row's rectangles was clicked — a pair has two. */
   const [openAt, setOpenAt] = useState(0);
   const fieldRef = useRef<HTMLInputElement>(null);
+
   const open = selection.selected;
   const openRow = open ? rows.find((row) => row.slots.join(" ") === open.slots.join(" ")) : undefined;
+
+  /*
+    ⚠ THE POPOVER IS KEPT INSIDE THE PICTURE, ON ALL FOUR EDGES (founder, with
+    his own frame: the field ran off the right of the stage).
+
+    It hangs under the tapped rectangle and is centred on it — which is right in
+    the middle of the picture and wrong at its edges. His specimen was a LEFT
+    UPPER ARM tattoo, whose box sits flush against the image's right border,
+    because her left arm is the image's right side. So the first tap on the
+    feature he had just verified opened a field he could not fully see.
+
+    **Swept rather than patched at the instance he hit.** The same arithmetic
+    fails at every edge and each one has a real box waiting for it: a forehead
+    orb sits against the TOP the day its card lands, a neck tattoo against the
+    bottom of the crop, and her right arm against the left. So this clamps in
+    both axes rather than shifting left when the right edge is near.
+
+    A NUDGE rather than a re-anchor: the popover keeps pointing at its own
+    rectangle and slides just far enough to fit, so nothing about which box the
+    ask is about becomes ambiguous. Measured rather than computed from
+    percentages, because its width depends on the theme's font and its own
+    `max-width: min(420px, 92%)` — a number this file must not hold a second
+    copy of.
+  */
+  const askRef = useRef<HTMLFormElement | null>(null);
+  const [nudge, setNudge] = useState<{ x: number; y: number } | null>(null);
+  /*
+    Which rectangle it hangs under. A new tap starts from un-nudged, or the last
+    box's correction would be applied to this one's position.
+
+    ⚠ **DERIVED FROM THE SELECTION AND NOT FROM `anchor`, AND THAT IS A HOOK
+    RULE RATHER THAN A PREFERENCE.** `anchor` is computed below two early
+    returns (`busy`, and a face with no measured boxes), so a hook that reads it
+    would have to live below them too — and a hook after a conditional return
+    runs on some renders and not others. React's answer to that is to throw
+    *"Rendered more hooks than during the previous render"*, which is exactly
+    what the first draft of this fix did to the whole viewer. Caught in the
+    running app (law 6), not in a type or a test.
+  */
+  const anchorKey = open ? `${open.slots.join(" ")}:${openAt}` : null;
+  useLayoutEffect(() => { setNudge(null); }, [anchorKey]);
+  useLayoutEffect(() => {
+    const form = askRef.current;
+    const stage = form?.parentElement;
+    if (!form || !stage) return;
+    const inside = stage.getBoundingClientRect();
+    const it = form.getBoundingClientRect();
+    /* The same 8px it already hangs by, so the gap reads as one decision. */
+    const margin = 8;
+    let x = 0;
+    if (it.left < inside.left + margin) x = (inside.left + margin) - it.left;
+    else if (it.right > inside.right - margin) x = (inside.right - margin) - it.right;
+    let y = 0;
+    if (it.bottom > inside.bottom - margin) y = (inside.bottom - margin) - it.bottom;
+    else if (it.top < inside.top + margin) y = (inside.top + margin) - it.top;
+    /* Converges in one pass: the correction is applied, this runs again, and
+       the second reading finds nothing to move. Rounded so a sub-pixel
+       remainder cannot oscillate. */
+    if (Math.round(x) === 0 && Math.round(y) === 0) return;
+    setNudge((held) => ({ x: (held?.x ?? 0) + x, y: (held?.y ?? 0) + y }));
+  }, [anchorKey, nudge]);
 
   /*
     THE BOX OPENS EMPTY, AND THE FEATURE IT IS ABOUT IS CARRIED INVISIBLY
@@ -199,11 +261,15 @@ export function FaceRegions({
   if (drawn.length === 0) return null;
 
   const close = () => selection.select(null);
+
+
   /* Where the open box hangs: under the rectangle that was clicked. Without it,
      clicking her left eye would open the field under her right one. */
   const anchor = openRow
     ? (openRow.regions[Math.min(openAt, openRow.regions.length - 1)] ?? null)
     : null;
+
+
 
   return (
     <span className="dpc-regions" onClick={(event) => event.stopPropagation()}>
@@ -257,6 +323,25 @@ export function FaceRegions({
             style={style}
             data-active={active ? "true" : "false"}
             data-lit={lit ? "true" : "false"}
+            /*
+              ⚠ THE LABEL IS THE SAME CLASS AS THE POPOVER, ONE ELEMENT DOWN —
+              and it was found at the frame while verifying that fix, not
+              reasoned about (fable-1405 asked for the class, not the instance).
+              His own screenshot shows it: `Left upper arm tatto`, the last
+              letter cut off at the picture's edge.
+
+              The tag hangs from its box's LEFT corner and never wraps, so a box
+              in the last quarter of the frame runs its name off the picture.
+              Anchored to the box's RIGHT corner instead, the name grows inward,
+              which is always safe there — the box's right edge IS near the
+              picture's right edge, so there is room to the left by
+              construction.
+
+              Decided from the geometry this component already holds rather than
+              by measuring the rendered text: no ref, no layout pass, and
+              nothing that can disagree with where the box actually is.
+            */
+            data-edge={(box.x + box.width) / box.frame.width > 0.75 ? "right" : "left"}
             /*
               THE RECTANGLE NAMES WHAT IT COVERS (fable-378 (c)). On almost
               every box that is the row's own name. On a matched pair it is the
@@ -329,6 +414,7 @@ export function FaceRegions({
 
       {open && anchor ? (
         <form
+          ref={askRef}
           className="dpc-regions__ask"
           /* Escape belongs to this box while it is open, and the viewer's own
              capture-phase listener has no other way to know — see the handler
@@ -337,6 +423,10 @@ export function FaceRegions({
           style={{
             left: `${((anchor.box.x + anchor.box.width / 2) / anchor.box.frame.width) * 100}%`,
             top: `${((anchor.box.y + anchor.box.height) / anchor.box.frame.height) * 100}%`,
+            /* The clamp above, spoken in the transform the stylesheet already
+               owns — `translate(-50%, 8px)` stays the anchoring rule and these
+               are the pixels it had to give to stay inside the picture. */
+            transform: `translate(calc(-50% + ${Math.round(nudge?.x ?? 0)}px), calc(8px + ${Math.round(nudge?.y ?? 0)}px))`,
           }}
           onSubmit={(event) => {
             event.preventDefault();
