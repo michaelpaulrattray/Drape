@@ -780,6 +780,115 @@ function whereItIs(slot: FeatureSlot, placeSides: boolean): string {
   return imageHalfClause(definition.instance);
 }
 
+/**
+ * ⚠ A PAIR SPEAKS ONCE — THE SLOTS WHOSE EDIT CLAUSE MUST NOT BE SAID TWICE
+ * (founder escalation 2026-08-22: *"it generates 4 horns every time almost"*;
+ * mechanism found at v213's own prompt, fix shape countersigned fable-1372 §2).
+ *
+ * # What went out on the wire
+ *
+ * ```
+ * "Change only her left horn (on the right of the picture as you look at it):
+ *  two smooth bone-white horns rising from the top of her head;
+ *  her right horn (on the left of the picture as you look at it):
+ *  two smooth bone-white horns rising from the top of her head."
+ * ```
+ *
+ * `horns` is `perSide`, so it fans to `horns@left` and `horns@right` — and
+ * EACH side's clause carried the customer's whole PLURAL sentence. The engine
+ * was told two-per-side and painted four. **It is our instruction and not an
+ * engine whim**, which is also why he saw it *almost* every time: deterministic
+ * pressure, with the engine occasionally under-obeying us into a correct
+ * answer. v211 is the same shape one render earlier and both renders' readers
+ * over-counted ("pairs", "two clusters ... above each temple").
+ *
+ * # The rule, and where it already existed
+ *
+ * When both sides of a pair are being edited to the SAME words, the clause is
+ * said once with the pair's own noun. This assembler already has exactly this
+ * discipline in two other lanes — the wholly-vacant pair collapse (fable-332)
+ * and the distributed open kind's shared standing sentence (fable-1002 §3) —
+ * and the EDIT clause is the lane that never got it.
+ *
+ * **DIFFERING sides keep their two clauses**, unconditionally. Heterochromia is
+ * the road that works: one eye green, one eye brown is two facts and must stay
+ * two sentences, and the side phrasing that makes it land is measured
+ * (`V4_SIDE_INFERENCE_COURT`).
+ *
+ * # The class, swept (law 7)
+ *
+ * The shape is COUNTED-OR-PLURAL WORDS × PAIR FAN-OUT, so every bilateral slot
+ * whose stack can carry a count is a sibling. Swept by driving the catalogue
+ * rather than by reading it, and the sweep found one the closed list would have
+ * missed:
+ *
+ * ```
+ * eye@left        instance=left  pairNoun="eyes"
+ * brow@left       instance=left  pairNoun="brows"
+ * cheekbone@left  instance=left  pairNoun="cheekbones"
+ * ear@left        instance=left  pairNoun="ears"
+ * earring@left    instance=left  pairNoun="earrings"
+ * horns@left      instance=left  pairNoun="horns"        ← the specimen
+ * open:wings@left instance=left  pairNoun=NULL           ← ⚠ the sibling
+ * ```
+ *
+ * ⚠ **A DISTRIBUTED OPEN KIND FANS TOO AND HAS NO `pairNoun`** — fable-1372
+ * §3 said to check the open lane and not only the closed one, and it was right:
+ * *"give her two feathered wings"* fans to `open:wings@left/@right` and would
+ * duplicate the plural sentence exactly as the horns did. Its display noun is
+ * already the KIND'S on both sides (*"wings"*, never *"left wing"*), so the
+ * collapse keys on the catalogue's own bilateral field — `instance !== null` —
+ * and takes `pairNoun ?? noun` as the name. A closed-list version of this
+ * function would have shipped the horns fixed and the wings broken.
+ */
+function pairCollapse(
+  asks: readonly Ask[],
+  wordStacks: ReadonlyMap<FeatureSlot, readonly string[]>,
+): ReadonlyMap<FeatureSlot, { pairNoun: string; second: boolean }> {
+  const collapsed = new Map<FeatureSlot, { pairNoun: string; second: boolean }>();
+  const byFeature = new Map<string, Ask[]>();
+  for (const ask of asks) {
+    if (ask.restate || ask.vacate) continue;
+    const definition = slotDefinition(ask.slot);
+    /* `instance` is the catalogue's own answer to *is this one of a pair*, and
+       it is the only field that is true for the open lane as well as the closed
+       one. No name list, and a pair added tomorrow is covered. */
+    if (definition === null || definition.instance === null) continue;
+    const feature = ask.slot.slice(0, ask.slot.lastIndexOf("@"));
+    byFeature.set(feature, [...(byFeature.get(feature) ?? []), ask]);
+  }
+  for (const sides of Array.from(byFeature.values())) {
+    /*
+      BOTH sides, and the SAME words. One side alone is a per-side edit and says
+      its own side; two sides saying different things is heterochromia and says
+      both. Only the case where the two clauses are the same sentence twice is
+      the one that doubles a count.
+    */
+    if (sides.length !== 2) continue;
+    const [first, second] = sides as [Ask, Ask];
+    /*
+      TWO SLOTS, NEVER ONE SLOT TWICE. `slotTwiceReferenced` refuses that a
+      thousand lines earlier, so this cannot happen — and it is checked here
+      anyway, because the failure mode if the ordering ever moves is SILENT: the
+      second write would mark the only slot as the pair's second side and the
+      clause would vanish from a paid prompt with nothing to show for it. A
+      corner declared unreachable and left untested is one this campaign has
+      already paid for.
+    */
+    if (first.slot === second.slot) continue;
+    const words = (slot: FeatureSlot) => (wordStacks.get(slot) ?? []).join(", ");
+    if (words(first.slot) !== words(second.slot)) continue;
+    const definition = slotDefinition(first.slot);
+    /* The pair's own name where the catalogue has one, and the slot's otherwise
+       — an open kind's display noun is already the KIND'S on both sides. */
+    const pairNoun = definition?.pairNoun ?? definition?.noun;
+    if (pairNoun === undefined) continue;
+    collapsed.set(first.slot, { pairNoun, second: false });
+    collapsed.set(second.slot, { pairNoun, second: true });
+  }
+  return collapsed;
+}
+
 function askSentence(
   asks: readonly Ask[],
   bySlot: ReadonlyMap<FeatureSlot, LibraryEntry>,
@@ -789,6 +898,7 @@ function askSentence(
   placeSides: boolean,
 ): string | { unnamed: FeatureSlot } | { saysNothing: string } {
   const clauses: string[] = [];
+  const collapsed = pairCollapse(asks, wordStacks);
   for (const ask of asks) {
     /*
       A TAKEN-BACK SLOT CONTRIBUTES NO CLAUSE — see `Ask.restate`.
@@ -831,6 +941,19 @@ function askSentence(
     /* A worn item takes an article; a part of her takes the possessive
        (`segmentsOnFace`'s worn-vs-hers distinction, one layer up, and the same
        reason: a stylist speaks about a thing, and about her). */
+    /*
+      A PAIR SAYS ITS SENTENCE ONCE — see `pairCollapse`. The first side speaks
+      for both with the pair's own noun and NO side clause (there is no half of
+      the picture to name when the answer is both), and the second contributes
+      nothing rather than repeating the count.
+    */
+    const pair = collapsed.get(ask.slot);
+    if (pair !== undefined) {
+      if (pair.second) continue;
+      const named = entry?.tier === "item" ? `the ${pair.pairNoun}` : `${possessive} ${pair.pairNoun}`;
+      clauses.push(`${named}: ${(wordStacks.get(ask.slot) ?? []).join(", ")}`);
+      continue;
+    }
     const named = entry?.tier === "item" ? `the ${noun}` : `${possessive} ${noun}`;
     clauses.push(`${named}${whereItIs(ask.slot, placeSides)}: ${(wordStacks.get(ask.slot) ?? []).join(", ")}`);
   }

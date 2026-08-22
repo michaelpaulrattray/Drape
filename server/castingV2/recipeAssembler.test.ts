@@ -219,6 +219,55 @@ describe("D-244 line 5 — removal strikes the words", () => {
   });
 });
 
+/*
+  ⚠ A ROW WITH A CROP AND NO WORDS SAYS NOTHING EXTRA — and it is a production
+  shape, not a hypothetical (fable-1371 §C, read at the rows).
+
+  Cast 1653's `horns@left/@right` (library rows 70/71, v213) are exactly this:
+  the carry repair got the slot to the mint, the mint cut a good crop — guard
+  10000 and 9998 against a 9500 threshold — and the describer then declined to
+  word the cut, so the row files an EMPTY stack beside its pixels. That is the
+  mint's own documented rule ("an empty stack beside a crop is honest — the crop
+  is the carrier"), and it makes this loop's guard load-bearing.
+
+  Without the guard the standing loop composes `entry.words.join(", ")` into the
+  sentence `"."` and sends it in a paid prompt.
+*/
+describe("a crop with no words composes no sentence", () => {
+  it("says nothing about a slot whose stack is empty", () => {
+    const recipe = assembleRecipe({
+      master: MASTER, pronouns: SHE,
+      library: [{
+        slot: "horns@left", tier: "anatomy", noun: "left horn",
+        words: [], carry: { key: "library/horn-left.png" },
+      }],
+      asks: [{ slot: "lips", noun: "lips", words: "a soft nude lip gloss" }],
+    });
+
+    expect(recipe.ok).toBe(true);
+    if (!recipe.ok) return;
+    expect(recipe.standing.map((entry) => entry.slot)).not.toContain("horns@left");
+    expect(recipe.prompt, "an empty stack composed into a sentence").not.toContain(" .");
+    /* And the CROP still rides — the words were empty, not the row. */
+    expect(recipe.carried).toContain("horns@left");
+  });
+
+  it("CONTROL — the same row WITH words does say them", () => {
+    const recipe = assembleRecipe({
+      master: MASTER, pronouns: SHE,
+      library: [{
+        slot: "horns@left", tier: "anatomy", noun: "left horn",
+        words: ["a smooth ivory-white horn"], carry: { key: "library/horn-left.png" },
+      }],
+      asks: [{ slot: "lips", noun: "lips", words: "a soft nude lip gloss" }],
+    });
+
+    expect(recipe.ok).toBe(true);
+    if (!recipe.ok) return;
+    expect(recipe.standing.map((entry) => entry.slot)).toContain("horns@left");
+  });
+});
+
 describe("fable-174 — one slot, one reference, per render", () => {
   it("REFUSES two asks on the same anchored slot in one render", () => {
     const anchored: LibraryEntry = {
@@ -1020,6 +1069,129 @@ describe("two empty lobes are one sentence", () => {
     if (!recipe.ok) return;
     expect(recipe.prompt).toContain("that cuff bare");
     expect(recipe.prompt).toContain("that cuff bare too");
+  });
+
+  it("⚠ SAYS A PAIR EDIT ONCE — four horns, and the instruction was ours", () => {
+    /*
+      Founder escalation 2026-08-22: *"it generates 4 horns every time almost —
+      im not looking for a practical path im looking for this to be fixed."*
+      Found at production v213's own `repaint.prompt` (fable-1372 §1):
+
+        "Change only her left horn (…): two smooth bone-white horns rising from
+         the top of her head; her right horn (…): two smooth bone-white horns
+         rising from the top of her head."
+
+      `horns` is `perSide`, so the fan-out gave EACH side the customer's whole
+      PLURAL sentence and the engine was told two-per-side. Read off the
+      outgoing prompt, which is where the claim is about.
+    */
+    const words = "two smooth bone-white horns rising from the top of her head";
+    const recipe = assembleRecipe({
+      master: MASTER, pronouns: SHE, library: [],
+      asks: [
+        { slot: "horns@left", noun: "left horn", words },
+        { slot: "horns@right", noun: "right horn", words },
+      ],
+    });
+
+    expect(recipe.ok).toBe(true);
+    if (!recipe.ok) return;
+    expect(recipe.ask).toBe(`Change only her horns: ${words}.`);
+    /* The count said ONCE, on the string that was sent — a split on the
+       sentence yields two pieces when it appears once. */
+    expect(recipe.prompt.split(words)).toHaveLength(2);
+    /* And no side clause: there is no half of the picture to name when the
+       answer is both, and naming one would put the pair on one side. */
+    expect(recipe.ask).not.toContain("as you look at it");
+    /* Both slots are still EDITED — the sentence was collapsed, not the fact. */
+    expect(recipe.edited).toEqual(["horns@left", "horns@right"]);
+  });
+
+  it("⚠ AND THE OPEN PAIR TOO — the sibling a closed list would have missed", () => {
+    /*
+      fable-1372 §3 said to check the open lane and not only the closed one. A
+      distributed open kind fans to `open:kind@left/@right` exactly as `horns`
+      does, and it has NO `pairNoun` in the catalogue — so a collapse keyed on
+      that field would have shipped the horns fixed and the wings broken.
+
+      Its display noun is already the KIND'S on both sides (`wings`, never `left
+      wing`), which is why `pairNoun ?? noun` is the honest name here.
+    */
+    const words = "two large feathered wings";
+    const recipe = assembleRecipe({
+      master: MASTER, pronouns: SHE, library: [],
+      asks: [
+        { slot: "open:wings@left", noun: "wings", words },
+        { slot: "open:wings@right", noun: "wings", words },
+      ],
+    });
+
+    expect(recipe.ok).toBe(true);
+    if (!recipe.ok) return;
+    expect(recipe.ask).toBe(`Change only her wings: ${words}.`);
+    expect(recipe.prompt.split(words)).toHaveLength(2);
+  });
+
+  it("CONTROL — DIFFERING sides keep their two clauses (heterochromia)", () => {
+    /*
+      The road that works and must not move. One eye green and one eye brown is
+      two facts; collapsing them would be the same defect with the sign flipped,
+      and the per-side phrasing that makes them land is measured
+      (`V4_SIDE_INFERENCE_COURT`).
+    */
+    const recipe = assembleRecipe({
+      master: MASTER, pronouns: SHE, library: [],
+      asks: [
+        { slot: "eye@left", noun: "left eye", words: "a fiery red iris" },
+        { slot: "eye@right", noun: "right eye", words: "a pale grey iris" },
+      ],
+    });
+
+    expect(recipe.ok).toBe(true);
+    if (!recipe.ok) return;
+    expect(recipe.ask).toContain("her left eye");
+    expect(recipe.ask).toContain("her right eye");
+    expect(recipe.ask).not.toContain("her eyes:");
+  });
+
+  it("⚠ CONTROL — ONE SLOT LISTED TWICE NEVER SILENCES ITSELF", () => {
+    /*
+      Driven rather than declared unreachable — and the drive is what says the
+      corner is REAL. `slotTwiceReferenced` refuses two asks on one slot only
+      when the library ANCHORS it (fable-174's own arm says so in its title); an
+      UNANCHORED slot passes, so two asks on it reach the collapse.
+
+      Without the identity guard the pair map is written twice under one key and
+      the second write wins — marking the only slot as the pair's second side,
+      after which its clause is dropped and the ask vanishes from a paid prompt
+      with nothing anywhere saying so.
+    */
+    const recipe = assembleRecipe({
+      master: MASTER, pronouns: SHE, library: [],
+      asks: [
+        { slot: "eye@right", noun: "right eye", words: "a fiery red iris" },
+        { slot: "eye@right", noun: "right eye", words: "a fiery red iris" },
+      ],
+    });
+
+    expect(recipe.ok).toBe(true);
+    if (!recipe.ok) return;
+    expect(recipe.ask, "the ask went silent").toContain("right eye");
+    expect(recipe.ask).toContain("a fiery red iris");
+  });
+
+  it("CONTROL — ONE side alone still speaks as one side", () => {
+    /* A per-side edit is not a pair edit, and collapsing it would put a change
+       she asked for on one eye onto both. */
+    const recipe = assembleRecipe({
+      master: MASTER, pronouns: SHE, library: [],
+      asks: [{ slot: "eye@right", noun: "right eye", words: "a fiery red iris" }],
+    });
+
+    expect(recipe.ok).toBe(true);
+    if (!recipe.ok) return;
+    expect(recipe.ask).toContain("her right eye");
+    expect(recipe.ask).not.toContain("her eyes:");
   });
 
   it("says a vacate ONCE in the change clause, however many slots the kind vacates", () => {

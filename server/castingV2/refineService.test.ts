@@ -5705,6 +5705,37 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
       expect(record.prompt).toContain("vampire fangs");
     });
 
+    it("⚠ A PAIR IS ASKED FOR ONCE ON THE WIRE — the four-horns escalation", async () => {
+      /*
+        Founder, 2026-08-22: *"it generates 4 horns every time almost — im not
+        looking for a practical path im looking for this to be fixed."*
+
+        The mechanism was ours, found at production v213's own `repaint.prompt`:
+        `horns` is `perSide`, so the fan-out handed EACH side the customer's
+        whole PLURAL sentence and the engine was told two-per-side.
+
+        `recipeAssembler.test.ts` pins the collapse at the composer. This pins it
+        at the DISPATCH RECORD, on the string that was actually sent, because a
+        composer that is right and a service that composes something else is the
+        entrance-before-the-road class this campaign has paid for.
+      */
+      const words = "two smooth bone-white horns rising from the top of her head";
+      const horns = {
+        ...repainting,
+        interpret: async () => ({ ok: true as const, delta: { free: { horns: words } } }),
+      };
+      const result = await refineCandidate(horns,
+        { ...input, instruction: `give her ${words}` });
+
+      expect(result.imageUrl).toBeTruthy();
+      const record = dispatchRecords[0]!.repaint as { prompt: string };
+      expect(record.prompt).toBe(painted[0]!.prompt);
+      expect(record.prompt.split(words), "the plural ask was sent TWICE — four horns")
+        .toHaveLength(2);
+      expect(record.prompt).toContain("her horns:");
+      expect(record.prompt).not.toContain("her left horn");
+    });
+
     it("CONTROL — the words are not there when the ask is not", async () => {
       /*
         Without this the arm above passes on a prompt that happens to contain
@@ -7518,8 +7549,16 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
       her earrings off.
     */
     expect(request.prompt).toContain("dangly cross earrings");
-    expect(request.prompt).toContain("the left earring");
-    expect(request.prompt).toContain("the right earring");
+    /*
+      ⚠ SAID ONCE, AS A PAIR — this arm read "the left earring" and "the right
+      earring" until the four-horns fix (fable-1372). Both lobes carry the same
+      words here, and a matched pair whose two clauses are the same sentence
+      twice is exactly what was telling the engine two-per-side. What the arm is
+      FOR is unchanged and is asserted below: the earrings are still in the room,
+      so the master does not take them off.
+    */
+    expect(request.prompt).toContain("the earrings:");
+    expect(request.prompt).not.toContain("the left earring");
   });
 
   it("and the unrelated ask is still DELIVERED — one undeliverable thing cannot brick the chain", async () => {
