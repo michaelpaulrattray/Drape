@@ -396,6 +396,11 @@ export function RefinePanel({
      */
     referenceId: string | null;
   } | null>(null);
+  /* The chip's pictures that would not load — see the tile below. Kept per
+     panel rather than per version: a url that failed once fails again, and
+     re-drawing the glyph on every version change is the flicker this exists to
+     remove. */
+  const [unshowable, setUnshowable] = useState<readonly string[]>([]);
   const [attaching, setAttaching] = useState(false);
   const [attachRefusal, setAttachRefusal] = useState<string | null>(null);
   /*
@@ -665,13 +670,46 @@ export function RefinePanel({
             *what this picture was FOR* — which is the only thing we can say
             without a catalogue the client does not have.
           */}
-          {selectedReferences.map((reference) => (
+          {selectedReferences.filter((reference) => !unshowable.includes(reference.url)).map((reference) => (
             <span
               key={reference.url}
               className="dpc-refine__thumb dpc-refine__madeRef"
               title={reference.slot ?? reference.kind}
             >
-              <img src={reference.url} alt="" />
+              {/*
+                ⚠ A PICTURE WE CANNOT FETCH IS NOT DRAWN AT ALL (ruled
+                fable-1423 §1).
+
+                A customer's attached photograph is DELIBERATELY not at a public
+                address — `askReference`'s own rule, *"the address is the only
+                thing between a photograph of a person and a stranger, so the
+                server fetches the bytes itself"* — and the projection builds a
+                public bucket url for every reference kind. Measured on the
+                founder's own render: the master and three carries answer 200,
+                her attachment and the carrier cut from it answer 404.
+
+                So the chip drew a BROKEN-IMAGE GLYPH for the one picture the
+                founder asked it to show. A broken glyph is a worse promise than
+                none, so the tile removes itself and the chip is its sentence and
+                its Use button until the picture can actually be served.
+
+                **This is INTERIM and it self-heals**: the fifth authenticated
+                route (the `ink-design` shape, countersigned fable-1423 §2)
+                serves the attachment's bytes, and the day the projected url
+                points at it this handler simply stops firing. Nothing here has
+                to be undone.
+
+                Scoped to THIS chip on purpose. An `onError` hide over every
+                thumbnail in the product would quietly swallow a real breakage
+                somewhere it matters.
+              */}
+              <img
+                src={reference.url}
+                alt=""
+                onError={() => setUnshowable((held) => (
+                  held.includes(reference.url) ? held : [...held, reference.url]
+                ))}
+              />
             </span>
           ))}
           <span className="dpc-refine__madeText">{selectedRequest}</span>
@@ -730,9 +768,24 @@ export function RefinePanel({
       {picture ? (
         <div className="dpc-refine__attached">
           <div className="dpc-refine__attachedRow">
-            <span className="dpc-refine__thumb">
-              <img src={picture.url} alt={ATTACHED_PICTURE_LABEL} />
-            </span>
+            {/*
+              AND THE SAME FOR A REPLAYED ONE. A picture she has just CHOSEN is
+              a local object url and always draws; a picture *Use* brought back
+              is the projected one, which cannot be fetched until the route
+              exists — so the tile is dropped rather than drawn broken, and the
+              row still carries its remove button and its sentence.
+            */}
+            {unshowable.includes(picture.url) ? null : (
+              <span className="dpc-refine__thumb">
+                <img
+                  src={picture.url}
+                  alt={ATTACHED_PICTURE_LABEL}
+                  onError={() => setUnshowable((held) => (
+                    held.includes(picture.url) ? held : [...held, picture.url]
+                  ))}
+                />
+              </span>
+            )}
             <button
               type="button"
               className="dpc-refine__attachedOff"
