@@ -122,6 +122,36 @@ describe("the open lane's acceptance path", () => {
     expect(opened).toMatchObject({ ok: false, reason: "collides", outcome: "refused" });
   });
 
+  it("⚠ RESCUES A QUALIFIED NOUN THE CLOSED LANE DOES NOT OWN — `third eye`", async () => {
+    /*
+      Ruled fable-1375 §2. An uncatalogued anatomical feature, named in her own
+      words, keyed WHOLE, shadowing no closed subject's key: that is this lane's
+      population by definition, and refusing it would send the exact customer it
+      exists for to *"that didn't come through clearly"*.
+
+      ⚠ IT IS A FACT ABOUT THE KEY AND NOT ABOUT THE ASK, and the pair of arms
+      here is the whole of that distinction. `third eye` folds to nothing the
+      closed lane owns and rescues; the bare `eye` below folds to `eyeShapeFree`
+      and refuses. **Which one a real sentence produces is the interpreter's
+      keying choice**, and his own *"give her a vivid red third eye centered on
+      her forehead"* still refuses 2/2 post-fix (driven, fable-1375 §1) — so
+      nothing here says the third-eye ASK works. The qualified-noun answer is the
+      creature lane's, designed once rather than spelling by spelling.
+    */
+    const opened = await acceptOpenKind({
+      instruction: "give her antlers and a third eye on her forehead",
+      unowned: unowned("third eye", "a third eye on her forehead"),
+      engine: engineSaying('{"kind":"antlers"}'),
+    });
+
+    expect(opened).toEqual({
+      ok: true,
+      kind: "third-eye",
+      ask: { noun: "third eye", words: "a third eye on her forehead" },
+      outcome: "words_only",
+    });
+  });
+
   it("⚠ CONTROL — a QUALIFIED noun whose key is the bare closed one still refuses", async () => {
     /*
       fable-1374 §1's condition: one control per way the fallback must NOT
