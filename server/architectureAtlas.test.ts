@@ -37,6 +37,42 @@ describe("architecture atlas", () => {
     60_000,
   );
 
+  it("⚠ A CRLF-SMUDGED CHECKOUT IS NOT A STALE ATLAS (fable-1366 §3c)", () => {
+    /*
+      The generator writes LF; git on Windows hands the working copy back with
+      CRLF. A raw byte comparison then reported the Atlas STALE with IDENTICAL
+      fingerprints on both sides and an EMPTY `git diff` — a verdict whose own
+      instructions cannot reproduce it, on the gate the currency law just gave
+      teeth to.
+
+      Driven through `checkArchitecture` itself rather than through the
+      normalizer, because a normalizer that is correct and never consulted is
+      the failure this whole file exists to be the opposite of.
+    */
+    const CR = String.fromCharCode(13);
+    const smudged = (at: string) =>
+      fs.readFileSync(at, "utf8").split("\n").join(`${CR}\n`);
+    const { ok, problems } = checkArchitecture({ readFile: smudged });
+    expect(ok, `a CRLF checkout was read as stale: ${problems.join(" | ")}`).toBe(true);
+  }, 60_000);
+
+  it("CONTROL — a REAL content change is still stale", () => {
+    /*
+      Without this, the arm above is satisfied by a checker that compares
+      nothing at all. One character, inside the committed JSON, and the
+      freshness rule must still fire.
+    */
+    const tampered = (at: string) => {
+      const text = fs.readFileSync(at, "utf8");
+      return at.endsWith("drape-architecture.json")
+        ? text.replace(/"schemaVersion": "/, '"schemaVersion": "9')
+        : text;
+    };
+    const { ok, problems } = checkArchitecture({ readFile: tampered });
+    expect(ok).toBe(false);
+    expect(problems.join(" ")).toContain("drape-architecture.json is stale");
+  }, 60_000);
+
   it("lives outside the client tree so Vite never bundles it", () => {
     // §P.9: the explorer is an internal document, not a product surface. It
     // sits under docs/ precisely so it cannot be shipped to a browser by

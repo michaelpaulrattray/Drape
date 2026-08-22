@@ -40,7 +40,47 @@ const SECRET_SHAPES: Array<[RegExp, string]> = [
 
 export type CheckResult = { ok: boolean; problems: string[] };
 
-export function checkArchitecture(): CheckResult {
+/**
+ * ⚠ THE COMPARISON IS ON CONTENT, NOT ON THE BYTES GIT LEFT ON DISK
+ * (fable-1366 §3c, found on a fresh worktree checkout).
+ *
+ * The generator writes LF. Git, with `core.autocrlf` on Windows, hands the
+ * working copy back with CRLF — so a raw `!==` here reported the committed
+ * Atlas STALE while its own `sourceFingerprint` and the source's were
+ * IDENTICAL, and `git diff` was empty. A verdict of "stale" that the diff it
+ * tells you to review cannot show is a checker teaching people to ignore it,
+ * on the one gate the currency law just gave teeth.
+ *
+ * The 2026-08-21 EOL fix normalized the FINGERPRINT and left this second
+ * comparison alone — an exemption where a class fix was owed, which is the
+ * `exemption-is-not-a-class-fix` shape exactly. So the normalizer is a named
+ * function used at BOTH comparison sites rather than an inline `.replace()` at
+ * the one that bit, and the sweep for siblings is recorded: the capability
+ * census compares PARSED JSON (`JSON.stringify(committed.static)`), so it was
+ * never exposed, and it is the only other committed-artifact checker.
+ *
+ * A line ending is a fact about the checkout, never about what the generator
+ * produced. Nothing else is normalized: a real content change still fails.
+ */
+const LF_ONLY = (text: string): string => text.split("\r\n").join("\n");
+const sameContent = (a: string, b: string): boolean => LF_ONLY(a) === LF_ONLY(b);
+
+/**
+ * The three reads this function makes, injectable so the freshness rule above
+ * can be DRIVEN rather than reasoned about.
+ *
+ * Without it `sameContent` could be exported and unit-tested while sitting
+ * beside a comparison that never called it — a reader that reports correctly
+ * and is never consulted, which is the one failure this whole checker exists to
+ * be the opposite of. The default is the filesystem, so every real caller is
+ * byte-for-byte unchanged.
+ */
+export type CheckReader = (absolutePath: string) => string;
+
+export function checkArchitecture(
+  dependencies: { readFile?: CheckReader } = {},
+): CheckResult {
+  const readFile = dependencies.readFile ?? ((at: string) => fs.readFileSync(at, "utf8"));
   const problems: string[] = [];
 
   const atlas = buildAtlas();
@@ -67,9 +107,9 @@ export function checkArchitecture(): CheckResult {
   if (!fs.existsSync(committedPath)) {
     problems.push("docs/architecture/drape-architecture.json is missing — run pnpm architecture:generate");
   } else {
-    const committed = fs.readFileSync(committedPath, "utf8");
+    const committed = readFile(committedPath);
     const fresh = `${JSON.stringify(atlas, null, 2)}\n`;
-    if (committed !== fresh) {
+    if (!sameContent(committed, fresh)) {
       const committedAtlas = JSON.parse(committed);
       problems.push(
         "docs/architecture/drape-architecture.json is stale — run pnpm architecture:generate and review the diff " +
@@ -89,14 +129,14 @@ export function checkArchitecture(): CheckResult {
   // 4. The explorer must be derived from the JSON, never hand-edited.
   const explorerPath = path.join(committedDir, "index.html");
   if (fs.existsSync(explorerPath)) {
-    if (fs.readFileSync(explorerPath, "utf8") !== renderExplorer(atlas)) {
+    if (!sameContent(readFile(explorerPath), renderExplorer(atlas))) {
       problems.push("docs/architecture/index.html is stale or hand-edited — regenerate it");
     }
   }
 
   // 5. No secret-shaped strings in anything we publish.
   for (const file of fs.existsSync(committedDir) ? fs.readdirSync(committedDir) : []) {
-    const contents = fs.readFileSync(path.join(committedDir, file), "utf8");
+    const contents = readFile(path.join(committedDir, file));
     for (const [pattern, label] of SECRET_SHAPES) {
       if (pattern.test(contents)) problems.push(`${file}: contains something shaped like a ${label}`);
     }
