@@ -220,7 +220,7 @@ import {
 } from "./referenceSlots";
 import { inkDesignForAsk, slotPlacementOf, type InkAskAddress } from "./inkDesignForAsk";
 import { sidesForInkPlacement } from "../../shared/inkReleasedPlacements";
-import { INK_PLACEMENTS, isInkPlacement } from "../../shared/inkPlacementVocabulary";
+import { INK_PLACEMENTS, inkPlacementBareNoun, isInkPlacement } from "../../shared/inkPlacementVocabulary";
 /* Whether the words road can put a NEW tattoo at a placement — the derived tail
    of C4a's answer, off the same lists that decide the road (fable-1339 §2). */
 import { wordsRoadServes } from "./inkPlacement";
@@ -3498,7 +3498,27 @@ async function refineCandidateCounted(
         pointed at, where it is true either way.
       */
       if (onSlot.kind === "none") {
-        return answeredFree("noInkToChange", scopedInkSlot === null ? null : nameOfSlot(scopedInkSlot));
+        /*
+          ⚠ AND WHERE, WHEN SHE SAID IT IN WORDS RATHER THAN BY TAPPING
+          (the census's `ink.transform.wrongslot` row, fable-1358 §2).
+
+          The general sentence is *"he hasn't got one yet"*. Said to somebody
+          who asked about his upper chest while wearing the arm swallow we
+          delivered her, it is simply FALSE — and it is the same
+          record-versus-pixels absurdity the scoped branch above was written to
+          avoid, arriving through wording instead of through a gesture.
+
+          `askedAbout` is set by the narrowing exactly when the reason is *she
+          named a surface she has no ink on*, so the noun is hers rather than
+          inferred, and the sentence machinery is the one already here.
+        */
+        const wordedNoun = onSlot.askedAbout === undefined
+          ? null
+          : `${inkPronouns.possessive} ${inkPlacementBareNoun(onSlot.askedAbout)}`;
+        return answeredFree(
+          "noInkToChange",
+          scopedInkSlot === null ? wordedNoun : nameOfSlot(scopedInkSlot),
+        );
       }
       const names = (onSlot.kind === "one" ? [onSlot.slot] : onSlot.slots)
         .map(nameOfSlot)

@@ -50,7 +50,7 @@ import {
   INK_TRANSFORM_AXES, type InkTransform, type InkTransformAxis,
 } from "../../shared/inkTransforms";
 import {
-  INK_PLACEMENTS, inkPlacementBareNoun, isInkPlacement,
+  INK_PLACEMENTS, inkPlacementBareNoun, isInkPlacement, type InkPlacement,
 } from "../../shared/inkPlacementVocabulary";
 import { inkPlacementOfSlot, isInkSlot } from "./referenceSlots";
 import { removalEvidence } from "./removalWords";
@@ -290,9 +290,48 @@ function changeOnAxis(axis: InkTransformAxis, said: string): InkTransform | null
  * pointed at rather than claiming she has no ink at all.
  */
 export type InkSlotFromState =
-  | { kind: "none" }
+  /**
+   * Nothing here to change.
+   *
+   * `askedAbout` is set when the reason is that SHE NAMED A SURFACE SHE HAS NO
+   * DELIVERED INK ON — so the caller can say *"he hasn't got one on his upper
+   * chest"* instead of the general *"he hasn't got one yet"*, which would be a
+   * false sentence to somebody looking at the arm tattoo we delivered her.
+   */
+  | { kind: "none"; askedAbout?: InkPlacement }
   | { kind: "one"; slot: string }
   | { kind: "several"; slots: readonly string[] };
+
+/**
+ * The words that mean a surface, derived from the catalogue rather than listed.
+ *
+ * Two forms per placement: the bare noun (`upper chest`) and its HEAD WORD
+ * (`chest`), because a customer says *"make the chest tattoo bigger"* at least
+ * as often as she says the catalogue's full phrase. Deriving the second from
+ * the first keeps this from becoming a second vocabulary that drifts (law 4) —
+ * a fourth placement joins both forms the day its noun is written.
+ *
+ * Matched on word boundaries, so `arm` does not fire on *warm* or *charm*.
+ */
+function saysSurface(said: string, placement: InkPlacement): boolean {
+  /*
+    Compared as WORDS rather than by regex, and that is a decision rather than
+    a style: the first draft built a `\b…\b` pattern inside a template literal,
+    where `\b` is a BACKSPACE character and not a word boundary. It compiled, it
+    ran, and it matched nothing — the same class as this repo's heredoc-`\b`
+    incident, in a new costume. Splitting into words has no escaping to get
+    wrong, and `arm` cannot fire on *warm* or *charm* by construction.
+  */
+  const words = said.toLowerCase().split(/[^a-z]+/).filter(Boolean);
+  const phrase = inkPlacementBareNoun(placement).toLowerCase().split(/[^a-z]+/).filter(Boolean);
+  if (phrase.length === 0) return false;
+
+  for (let start = 0; start + phrase.length <= words.length; start += 1) {
+    if (phrase.every((word, offset) => words[start + offset] === word)) return true;
+  }
+  /* The head word alone — "the chest tattoo" for `upper chest`. */
+  return words.includes(phrase[phrase.length - 1]!);
+}
 
 export function inkSlotSheAsksAbout(
   instruction: string,
@@ -321,13 +360,49 @@ export function inkSlotSheAsksAbout(
     return slots.includes(scope) ? { kind: "one", slot: scope } : { kind: "none" };
   }
   if (slots.length === 0) return { kind: "none" };
-  if (slots.length === 1) return { kind: "one", slot: slots[0]! };
   const said = instruction.toLowerCase();
+  /*
+    ⚠ HER WORDS ARE READ BEFORE THE COUNT, AND THAT ORDER IS THE FIX
+    (found by the census's `ink.transform.wrongslot` row, fable-1358 §2;
+    reproduced at this function, 2026-08-22).
+
+    This used to answer `slots.length === 1` FIRST and only narrow by wording
+    when there were two or more. So on a branch wearing one tattoo, *"his upper
+    chest tattoo — make it bigger"* returned the ARM slot — and the transform
+    road went on to render a change to a tattoo she had not named, and charge
+    for it. The same shortcut answered *"make the neck tattoo bigger"* with the
+    arm too. **The word she used was never compared to what she actually has.**
+
+    This is the anatomical-side class the legacy ink road refunded 300 credits
+    for, twice, and CLAUDE.md already states the rule it broke — *the narrowing
+    never falls back to a tattoo she did not point at*. That sentence was true
+    of the tapped gesture above and false of the wording below it.
+  */
   const named = slots.filter((slot) => {
     const placement = inkPlacementOfSlot(slot)?.placement;
     if (placement === undefined || !isInkPlacement(placement)) return false;
-    return said.includes(inkPlacementBareNoun(placement).toLowerCase());
+    return saysSurface(said, placement);
   });
   if (named.length === 1) return { kind: "one", slot: named[0]! };
+  /*
+    Narrowed to the ones she could have meant, not all of them. Asking *"the
+    left or the right?"* about an arm pair is the question; offering her neck
+    tattoo alongside them is a question about something she did not mention.
+  */
+  if (named.length > 1) return { kind: "several", slots: named };
+
+  /*
+    Nothing delivered matches her wording. Two very different situations, and
+    telling them apart is what makes the answer honest:
+
+      she NAMED a surface   → she has no ink there. `none`, carrying the
+                              surface so the sentence can say WHERE.
+      she named none        → *"make it bigger"* about the only one she has,
+                              which is the ordinary case and the reason the
+                              single-slot shortcut existed at all.
+  */
+  const asked = INK_PLACEMENTS.find((placement) => saysSurface(said, placement));
+  if (asked !== undefined) return { kind: "none", askedAbout: asked };
+  if (slots.length === 1) return { kind: "one", slot: slots[0]! };
   return { kind: "several", slots };
 }

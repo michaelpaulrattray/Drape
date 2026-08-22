@@ -313,3 +313,88 @@ describe("a tapped rectangle answers `which one` outright", () => {
     expect(inkSlotSheAsksAbout("make it bigger", [], "eye@left")).toEqual({ kind: "none" });
   });
 });
+
+/**
+ * ⚠ THE WORD SHE USED IS COMPARED TO WHAT SHE ACTUALLY HAS — the census's
+ * `ink.transform.wrongslot` row, reproduced and closed (found fable-1358 §2,
+ * driven at this function 2026-08-22).
+ *
+ * The narrowing used to answer `slots.length === 1` FIRST and only read her
+ * wording when there were two or more. So on a branch wearing ONE tattoo, any
+ * sentence at all resolved to that tattoo — and the transform road went on to
+ * render a change to a tattoo she had not named, and charge for it.
+ *
+ * This is the anatomical-side class the legacy ink road refunded 300 credits
+ * for, twice. CLAUDE.md already states the rule that was broken — *the
+ * narrowing never falls back to a tattoo she did not point at* — and that
+ * sentence was true of the tapped gesture and false of the wording beneath it.
+ */
+describe("a surface she does not have ink on", () => {
+  const ARM_ONLY = ["ink:upperArm@left"];
+
+  it("⚠ THE REPORTED ROW — chest words on an arm-only branch are `none`, not the arm", () => {
+    expect(inkSlotSheAsksAbout("his upper chest tattoo — make it bigger", ARM_ONLY))
+      .toEqual({ kind: "none", askedAbout: "upperChest" });
+  });
+
+  it("⚠ and it was never only the chest — the neck did it too", () => {
+    /* The row named one sentence. The defect was the whole comparison, so the
+       arm that proves it fixed has to be wider than the report. */
+    expect(inkSlotSheAsksAbout("make the neck tattoo bigger", ARM_ONLY))
+      .toEqual({ kind: "none", askedAbout: "neck" });
+  });
+
+  it("hears the HEAD WORD as well as the catalogue's phrase", () => {
+    /* A customer says "the chest tattoo" at least as often as "upper chest",
+       and a fix that only caught the catalogue's own wording would leave the
+       commoner sentence broken. */
+    expect(inkSlotSheAsksAbout("make the chest tattoo bigger", ARM_ONLY).kind).toBe("none");
+  });
+
+  it("⚠ does NOT fire on a word that merely contains a surface word", () => {
+    /*
+      The negative control for the matcher. `arm` inside *warm* would turn an
+      ordinary sentence into a surface claim — and on a one-slot branch that
+      is the difference between working and refusing. Compared as WORDS, so
+      this holds by construction rather than by a regex nobody re-reads.
+    */
+    for (const said of ["make it warmer", "give it more charm", "warm the tone"]) {
+      expect(inkSlotSheAsksAbout(said, ARM_ONLY), said)
+        .toEqual({ kind: "one", slot: "ink:upperArm@left" });
+    }
+  });
+
+  it("⚠ CONTROL — the ordinary ask still works, which is what the shortcut was for", () => {
+    /*
+      The half that must NOT change. A bare "make it bigger" about the only
+      tattoo she has is the common case, and a fix that refused it would have
+      traded a wrong render for a wrong refusal.
+    */
+    expect(inkSlotSheAsksAbout("make it bigger", ARM_ONLY))
+      .toEqual({ kind: "one", slot: "ink:upperArm@left" });
+    expect(inkSlotSheAsksAbout("make the upper arm tattoo bigger", ARM_ONLY))
+      .toEqual({ kind: "one", slot: "ink:upperArm@left" });
+  });
+
+  it("⚠ asks WHICH only about the ones she could have meant", () => {
+    /*
+      Second symptom of the same root, and it needed no separate report: with
+      two arms and a neck, "make the arm one bigger" used to return ALL THREE
+      slots — a question offering her neck tattoo in reply to a sentence about
+      her arm.
+    */
+    const three = ["ink:upperArm@left", "ink:upperArm@right", "ink:neck"];
+    expect(inkSlotSheAsksAbout("make the upper arm tattoo bigger", three)).toEqual({
+      kind: "several",
+      slots: ["ink:upperArm@left", "ink:upperArm@right"],
+    });
+  });
+
+  it("⚠ and a surface she has none of is `none` even with several delivered", () => {
+    /* Before the fix this asked her to choose between two arms for a chest
+       tattoo she does not have. */
+    expect(inkSlotSheAsksAbout("make the upper chest tattoo bigger",
+      ["ink:upperArm@left", "ink:upperArm@right"]))
+      .toEqual({ kind: "none", askedAbout: "upperChest" });
+  });
+});
