@@ -154,7 +154,9 @@
         "type": "object",
         "required": [
           "id",
-          "name"
+          "name",
+          "constant",
+          "file"
         ]
       }
     },

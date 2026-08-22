@@ -731,15 +731,319 @@ function collectOperationKinds(project: Project): Entity[] {
     .map((kind) => ({ id: `operation:${kind}`, kind, contract: file }));
 }
 
-function collectCreditCosts(): Entity[] {
-  const file = "server/casting/castingCreditCosts.ts";
-  if (!sourceFiles.includes(file)) return [];
-  const source = read(file);
-  const costs: Entity[] = [];
-  for (const hit of source.matchAll(/(\w+)\s*:\s*(\d+)\s*,/g)) {
-    costs.push({ id: `cost:${hit[1]}`, name: hit[1], credits: Number(hit[2]), file });
+/* ------------------------------------------------------------ credit costs */
+
+/**
+ * A number is a price when the CONSTANT DECLARING IT says so.
+ *
+ * The old reader was `/(\w+)\s*:\s*(\d+)\s*,/g` over ONE file, and it held TEN
+ * rows against the THIRTY-TWO this now reads — 26 of them the server's own,
+ * across five modules rather than one. Measured at the committed Atlas on
+ * 2026-08-23, before this:
+ *
+ *   absent   `CASTING_V2_REFINE_PRICE_CREDITS = 25` — a top-level const rather
+ *            than an object property, and the most-charged operation there is
+ *   absent   `CASTING_V2_ROLL_PRICE_CREDITS` (160) and
+ *            `CASTING_V2_SIGN_PRICE_CREDITS` (450) — the two most-quoted
+ *            numbers in the whole program, because both are ARITHMETIC
+ *   absent   the entire eight-price wardrobe table, and `INK_ADD_PRICE_CREDITS`,
+ *            because the collector only ever opened one file
+ *   absent   `flashMultiplier: 0.5` — `\d+` then `,` does not match `0.5,`
+ *   present  `rollCandidateCount: 8`, carried as if 8 were a price. It is a
+ *            count of candidates.
+ *   present  `cost:view` and `cost:promotion` — bare member names with no
+ *            saying WHICH object they came from, so two tables declaring a
+ *            `view` price would have collided into one row silently.
+ *
+ * **The taxonomy question is dissolved rather than answered.** Deciding which
+ * of those numbers "is a price" is a judgement — `rollCandidateCount` is
+ * excluded by meaning, never by grammar — and a generator that never runs app
+ * code has no business inventing one. So every number is emitted KEYED BY ITS
+ * DECLARING CONSTANT (`cost:CASTING_V2_COSTS.rollCandidate`), with its file and,
+ * when it is computed, the expression it was computed from. The reader sees the
+ * provenance and judges. Nothing is dropped for failing a definition nobody
+ * wrote down.
+ *
+ * ⚠ **THE CLIENT IS IN SCOPE ON PURPOSE, and that is the half worth defending.**
+ * A price list that shows only the server's prices cannot show you the thing you
+ * most need to see about prices, which is a SECOND COPY of them — working law 4.
+ * `client/src/features/casting/constants.ts` declares its own `CREDIT_COSTS`,
+ * and the rows now sit next to the server's with the file naming each. They do
+ * not agree in shape: the client has no `allViews`, spells `iterate` as
+ * `iteration`, and adds a `masterPrompt: 0` the server never had.
+ *
+ * What "keyed by its declaring const" costs, stated rather than discovered:
+ * every id moved (`cost:view` is `cost:CASTING_V2_SIGN_COSTS.view` now). Nothing
+ * outside the Atlas consumes this view — checked across `server/`, `client/`,
+ * `scripts/` and `annotations.yaml` — so the rename is free today and will not
+ * be once something reads it.
+ *
+ * An empty population THROWS. A partial price list reads exactly like a
+ * complete one, which is the mistake this whole collector is a repair for.
+ */
+/**
+ * SCREAMING_SNAKE and saying money — both halves, and the second half was
+ * learned from this collector's own first output.
+ *
+ * `/(COST|PRICE|CREDIT)/i` alone matched `creditsRouter`, a tRPC router in
+ * `server/routes/credits.ts`, and emitted it as a price of `null` with the whole
+ * router body as its expression. The casing rule is the repo's own convention
+ * for a declared constant and it costs nothing real: every one of the eleven
+ * price constants is already written that way.
+ */
+const PRICE_CONSTANT_NAME = /^[A-Z][A-Z0-9_]*$/;
+const PRICE_CONSTANT_SAYS_MONEY = /(COST|PRICE|CREDIT)/;
+
+/** Where prices are looked for. `drizzle/` is schema and holds no prices. */
+const PRICE_ROOTS = ["server/", "shared/", "client/src/"] as const;
+
+/** `X as const`, `(X)`, `X satisfies T` — the wrappers, off. */
+function unwrapExpression(node: Node | undefined): Node | undefined {
+  let current = node;
+  for (let hops = 0; current && hops < 8; hops += 1) {
+    const inner =
+      current.asKind(SyntaxKind.AsExpression)?.getExpression() ??
+      current.asKind(SyntaxKind.SatisfiesExpression)?.getExpression() ??
+      current.asKind(SyntaxKind.ParenthesizedExpression)?.getExpression();
+    if (!inner) return current;
+    current = inner;
   }
-  return costs.sort((a, b) => String(a.id).localeCompare(String(b.id)));
+  return current;
+}
+
+/**
+ * Fold a compile-time number, or answer `null` and say so.
+ *
+ * Deliberately small and deliberately total: numeric literals, unary minus, a
+ * reference to another collected const, a member of an object literal, the
+ * `.length` of an array literal, and `* + -`. That is exactly what the four
+ * derived prices in this repo are built from — `CASTING_V2_SIGN_COSTS.promotion
+ * + CAST_PACKAGE_VIEW_PRICE * CAST_PACKAGE_VIEWS.length` is the widest of them.
+ *
+ * ⚠ The TYPE CHECKER is not used for this and the reason is measured: under `as
+ * const` a member access really does have the literal type `50`, but TypeScript
+ * widens `20 * 8` to `number`. It would have answered two of the four and gone
+ * quiet on the two that matter most.
+ *
+ * Anything it cannot fold comes back `null` and the row carries the expression
+ * TEXT instead, so an unfoldable price is visible as an unfolded price rather
+ * than as an absent one.
+ */
+function foldNumber(node: Node | undefined, depth = 0): number | null {
+  const current = unwrapExpression(node);
+  if (!current || depth > 8) return null;
+
+  const numeric = current.asKind(SyntaxKind.NumericLiteral);
+  if (numeric) return numeric.getLiteralValue();
+
+  const unary = current.asKind(SyntaxKind.PrefixUnaryExpression);
+  if (unary && unary.getOperatorToken() === SyntaxKind.MinusToken) {
+    const operand = foldNumber(unary.getOperand(), depth + 1);
+    return operand === null ? null : -operand;
+  }
+
+  const identifier = current.asKind(SyntaxKind.Identifier);
+  if (identifier) return foldNumber(initializerOf(identifier), depth + 1);
+
+  const access = current.asKind(SyntaxKind.PropertyAccessExpression);
+  if (access) {
+    const owner = unwrapExpression(initializerOf(access.getExpression()));
+    if (!owner) return null;
+    const property = access.getName();
+    const array = owner.asKind(SyntaxKind.ArrayLiteralExpression);
+    if (array) return property === "length" ? array.getElements().length : null;
+    return foldNumber(objectMembers(owner).get(property), depth + 1);
+  }
+
+  const binary = current.asKind(SyntaxKind.BinaryExpression);
+  if (binary) {
+    const left = foldNumber(binary.getLeft(), depth + 1);
+    const right = foldNumber(binary.getRight(), depth + 1);
+    if (left === null || right === null) return null;
+    switch (binary.getOperatorToken().getKind()) {
+      case SyntaxKind.AsteriskToken:
+        return left * right;
+      case SyntaxKind.PlusToken:
+        return left + right;
+      case SyntaxKind.MinusToken:
+        return left - right;
+      default:
+        return null;
+    }
+  }
+
+  return null;
+}
+
+/**
+ * What a name points at, resolved by the COMPILER rather than by a name table.
+ *
+ * A repo-wide `Map<name, declaration>` was the first shape here and it is a
+ * mirror with a collision in it: `CREDIT_COSTS` is declared TWICE in this
+ * product — once on the server and once in `client/src/features/casting`. A
+ * first-wins table silently answers one file's question with the other file's
+ * numbers, which is precisely the defect this collector exists to expose.
+ * Symbol resolution follows the import the reader would follow.
+ */
+function initializerOf(node: Node | undefined): Node | undefined {
+  const identifier = node?.asKind(SyntaxKind.Identifier);
+  if (!identifier) return undefined;
+  const symbol = identifier.getSymbol();
+  const declarations = (symbol?.getAliasedSymbol() ?? symbol)?.getDeclarations() ?? [];
+  for (const declaration of declarations) {
+    const initializer = declaration.asKind(SyntaxKind.VariableDeclaration)?.getInitializer();
+    if (initializer) return initializer;
+  }
+  return undefined;
+}
+
+/** The `name: value` pairs of an object literal, shorthand and spreads excluded. */
+function objectMembers(node: Node | undefined): Map<string, Node> {
+  const members = new Map<string, Node>();
+  const literal = unwrapExpression(node)?.asKind(SyntaxKind.ObjectLiteralExpression);
+  if (!literal) return members;
+  for (const property of literal.getProperties()) {
+    const assignment = property.asKind(SyntaxKind.PropertyAssignment);
+    const initializer = assignment?.getInitializer();
+    if (!assignment || !initializer) continue;
+    members.set(assignment.getName().replace(/^["']|["']$/g, ""), initializer);
+  }
+  return members;
+}
+
+/** One line, so a folded expression reads in a table cell. */
+function expressionText(node: Node): string {
+  return node.getText().replace(/\s+/g, " ").trim();
+}
+
+export function creditCostsFrom(project: Project, files: readonly string[]): Entity[] {
+  const inScope = files.filter(
+    (file) =>
+      PRICE_ROOTS.some((root) => file.startsWith(root)) && !/\.(test|spec)\.tsx?$/.test(file),
+  );
+  if (inScope.length === 0) {
+    throw new Error(
+      `no source files under ${PRICE_ROOTS.join(", ")} — the price collector would emit an empty list and read exactly like a complete one`,
+    );
+  }
+
+  const priced: Array<{ constant: string; file: string; initializer: Node }> = [];
+
+  for (const relative of inScope) {
+    const sourceFile = project.getSourceFile(
+      path.join(repoRoot, relative).replaceAll("\\", "/"),
+    );
+    if (!sourceFile) continue;
+    for (const statement of sourceFile.getVariableStatements()) {
+      if (!statement.isExported()) continue;
+      for (const declaration of statement.getDeclarations()) {
+        const initializer = declaration.getInitializer();
+        const name = declaration.getName();
+        if (!initializer) continue;
+        if (!PRICE_CONSTANT_NAME.test(name) || !PRICE_CONSTANT_SAYS_MONEY.test(name)) continue;
+        priced.push({ constant: name, file: relative, initializer });
+      }
+    }
+  }
+
+  const rows: Entity[] = [];
+  /* ⚠ A DUPLICATE ID IS A REFUSAL, NEVER A SKIP. The first shape of this
+     collector keyed on `cost:CONST.member` and dropped a row it had already
+     seen — so `CREDIT_COSTS.castingImage` came back attributed to the CLIENT
+     file, because `client/` sorts before `server/`, and the server's own price
+     was gone from the price list. A silent collision is the failure this
+     collector is a repair for; ids carry their declaring module and a
+     collision now stops the generator. */
+  const push = (row: Entity): void => {
+    const clash = rows.find((existing) => existing.id === row.id);
+    if (clash) {
+      throw new Error(
+        `two price rows claim the id ${row.id} (${String(clash.file)} and ${String(row.file)}) — a collision here silently attributes one module's prices to another`,
+      );
+    }
+    rows.push(row);
+  };
+
+  for (const { constant, file, initializer } of priced) {
+    const expression = unwrapExpression(initializer);
+    if (!expression) continue;
+
+    const members = objectMembers(expression);
+    if (members.size > 0) {
+      for (const [member, value] of members) {
+        const credits = foldNumber(value);
+        push({
+          id: `cost:${file}:${constant}.${member}`,
+          name: `${constant}.${member}`,
+          constant,
+          member,
+          credits,
+          ...(credits === null ? { expression: expressionText(value) } : {}),
+          ...(value.asKind(SyntaxKind.NumericLiteral) ? {} : { derivedFrom: expressionText(value) }),
+          file,
+        });
+      }
+      continue;
+    }
+
+    /* A const pointing at another const — `POINT_COSTS = CREDIT_COSTS`. Named
+       as an alias rather than copied out again, so the Atlas never shows one
+       price table twice under two names. */
+    const alias = expression.asKind(SyntaxKind.Identifier);
+    if (alias && objectMembers(initializerOf(alias)).size > 0) {
+      push({
+        id: `cost:${file}:${constant}`,
+        name: constant,
+        constant,
+        credits: null,
+        aliasOf: alias.getText(),
+        file,
+      });
+      continue;
+    }
+
+    const credits = foldNumber(expression);
+    push({
+      id: `cost:${file}:${constant}`,
+      name: constant,
+      constant,
+      credits,
+      ...(expression.asKind(SyntaxKind.NumericLiteral)
+        ? {}
+        : { derivedFrom: expressionText(expression) }),
+      file,
+    });
+  }
+
+  if (rows.length === 0) {
+    throw new Error(
+      `no exported SCREAMING_SNAKE constant under ${PRICE_ROOTS.join(", ")} names a cost, price or credit — re-point this collector at the declarations rather than letting it emit an empty price list`,
+    );
+  }
+
+  return rows.sort((a, b) => String(a.id).localeCompare(String(b.id)));
+}
+
+/**
+ * The prices declared by a set of sources, read with the real extractor.
+ *
+ * Exported for the same reason {@link proceduresFrom} is: a checker driven only
+ * over the tree it already runs on reports a complete list whether or not it is
+ * one. The fixtures are placed at real repo-relative paths inside an in-memory
+ * file system because {@link creditCostsFrom} filters on {@link PRICE_ROOTS} —
+ * a fixture written anywhere else reads as empty, which is indistinguishable
+ * from a passing arm.
+ */
+export function creditCostsFromSources(sources: Record<string, string>): Entity[] {
+  const project = new Project({ useInMemoryFileSystem: true });
+  for (const [relative, text] of Object.entries(sources)) {
+    project.createSourceFile(path.join(repoRoot, relative).replaceAll("\\", "/"), text);
+  }
+  return creditCostsFrom(project, Object.keys(sources));
+}
+
+function collectCreditCosts(project: Project): Entity[] {
+  return creditCostsFrom(project, sourceFiles);
 }
 
 function collectVocabulary(): Entity[] {
@@ -1231,7 +1535,7 @@ export function buildAtlas() {
     flags: collectFlags(),
     workers: collectWorkers(),
     operationKinds: collectOperationKinds(project),
-    creditCosts: collectCreditCosts(),
+    creditCosts: collectCreditCosts(project),
     vocabulary: collectVocabulary(),
     tests: testFiles.sort().map((file) => ({ id: `test:${file}`, path: file })),
     edges,
@@ -1279,6 +1583,12 @@ const views = [
   {title:'Env & flags', rows:()=>[...ATLAS.flags.map(f=>['flag',f.name]),...ATLAS.envVars.map(e=>['env',e.name])], head:['kind','name']},
   {title:'Workers', rows:()=>ATLAS.workers.map(w=>[w.name,w.startedFrom]), head:['worker','started from']},
   {title:'Operation kinds', rows:()=>ATLAS.operationKinds.map(o=>[o.kind,o.contract]), head:['kind','contract']},
+  // The price list had no view here at all — it was collected into the JSON and
+  // rendered nowhere, which is why ten rows standing in for thirty-two went
+  // six months without anyone noticing. The "derived from" column exists because the two
+  // headline prices (a 160-credit roll, a 450-credit Sign) are arithmetic, and a
+  // reader who cannot see that will go looking for a literal that does not exist.
+  {title:'Credit costs', rows:()=>ATLAS.creditCosts.map(c=>[c.name,c.credits===null?'—':String(c.credits),c.derivedFrom??c.expression??(c.aliasOf?('alias of '+c.aliasOf):''),c.file]), head:['constant','credits','derived from','file']},
 ];
 const app = document.getElementById('app');
 for (const view of views) {
@@ -1340,7 +1650,12 @@ export const SCHEMA = {
     flags: { type: "array", items: { type: "object", required: ["id", "name"] } },
     workers: { type: "array", items: { type: "object", required: ["id", "name"] } },
     operationKinds: { type: "array", items: { type: "object", required: ["id", "kind"] } },
-    creditCosts: { type: "array", items: { type: "object", required: ["id", "name"] } },
+    // `constant` and `file` are required because a bare member name is what the
+    // old reader emitted: `cost:view` said 50 and never said 50 of WHAT.
+    creditCosts: {
+      type: "array",
+      items: { type: "object", required: ["id", "name", "constant", "file"] },
+    },
     vocabulary: {
       type: "array",
       items: {

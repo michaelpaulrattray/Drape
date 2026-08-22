@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "6c0a2ca81889ec14"
+    "sourceFingerprint": "43f43a1b690f988f"
   },
   "domains": [
     {
@@ -9040,64 +9040,258 @@
   ],
   "creditCosts": [
     {
-      "id": "cost:allViews",
-      "name": "allViews",
-      "credits": 900,
-      "file": "server/casting/castingCreditCosts.ts"
-    },
-    {
-      "id": "cost:castingImage",
-      "name": "castingImage",
+      "id": "cost:client/src/features/casting/constants.ts:CREDIT_COSTS.castingImage",
+      "name": "CREDIT_COSTS.castingImage",
+      "constant": "CREDIT_COSTS",
+      "member": "castingImage",
       "credits": 350,
-      "file": "server/casting/castingCreditCosts.ts"
+      "file": "client/src/features/casting/constants.ts"
     },
     {
-      "id": "cost:eraser",
-      "name": "eraser",
+      "id": "cost:client/src/features/casting/constants.ts:CREDIT_COSTS.eraser",
+      "name": "CREDIT_COSTS.eraser",
+      "constant": "CREDIT_COSTS",
+      "member": "eraser",
       "credits": 350,
-      "file": "server/casting/castingCreditCosts.ts"
+      "file": "client/src/features/casting/constants.ts"
     },
     {
-      "id": "cost:fullBody",
-      "name": "fullBody",
+      "id": "cost:client/src/features/casting/constants.ts:CREDIT_COSTS.fullBody",
+      "name": "CREDIT_COSTS.fullBody",
+      "constant": "CREDIT_COSTS",
+      "member": "fullBody",
       "credits": 300,
-      "file": "server/casting/castingCreditCosts.ts"
+      "file": "client/src/features/casting/constants.ts"
     },
     {
-      "id": "cost:iterate",
-      "name": "iterate",
+      "id": "cost:client/src/features/casting/constants.ts:CREDIT_COSTS.iteration",
+      "name": "CREDIT_COSTS.iteration",
+      "constant": "CREDIT_COSTS",
+      "member": "iteration",
       "credits": 350,
-      "file": "server/casting/castingCreditCosts.ts"
+      "file": "client/src/features/casting/constants.ts"
     },
     {
-      "id": "cost:multiView",
-      "name": "multiView",
+      "id": "cost:client/src/features/casting/constants.ts:CREDIT_COSTS.masterPrompt",
+      "name": "CREDIT_COSTS.masterPrompt",
+      "constant": "CREDIT_COSTS",
+      "member": "masterPrompt",
+      "credits": 0,
+      "file": "client/src/features/casting/constants.ts"
+    },
+    {
+      "id": "cost:client/src/features/casting/constants.ts:CREDIT_COSTS.multiView",
+      "name": "CREDIT_COSTS.multiView",
+      "constant": "CREDIT_COSTS",
+      "member": "multiView",
       "credits": 300,
-      "file": "server/casting/castingCreditCosts.ts"
+      "file": "client/src/features/casting/constants.ts"
     },
     {
-      "id": "cost:promotion",
-      "name": "promotion",
-      "credits": 200,
-      "file": "server/casting/castingCreditCosts.ts"
-    },
-    {
-      "id": "cost:rollCandidate",
-      "name": "rollCandidate",
+      "id": "cost:server/casting/castingCreditCosts.ts:CASTING_V2_COSTS.rollCandidate",
+      "name": "CASTING_V2_COSTS.rollCandidate",
+      "constant": "CASTING_V2_COSTS",
+      "member": "rollCandidate",
       "credits": 20,
       "file": "server/casting/castingCreditCosts.ts"
     },
     {
-      "id": "cost:rollCandidateCount",
-      "name": "rollCandidateCount",
+      "id": "cost:server/casting/castingCreditCosts.ts:CASTING_V2_COSTS.rollCandidateCount",
+      "name": "CASTING_V2_COSTS.rollCandidateCount",
+      "constant": "CASTING_V2_COSTS",
+      "member": "rollCandidateCount",
       "credits": 8,
       "file": "server/casting/castingCreditCosts.ts"
     },
     {
-      "id": "cost:view",
-      "name": "view",
+      "id": "cost:server/casting/castingCreditCosts.ts:CASTING_V2_REFINE_PRICE_CREDITS",
+      "name": "CASTING_V2_REFINE_PRICE_CREDITS",
+      "constant": "CASTING_V2_REFINE_PRICE_CREDITS",
+      "credits": 25,
+      "file": "server/casting/castingCreditCosts.ts"
+    },
+    {
+      "id": "cost:server/casting/castingCreditCosts.ts:CASTING_V2_ROLL_PRICE_CREDITS",
+      "name": "CASTING_V2_ROLL_PRICE_CREDITS",
+      "constant": "CASTING_V2_ROLL_PRICE_CREDITS",
+      "credits": 160,
+      "derivedFrom": "CASTING_V2_COSTS.rollCandidate * CASTING_V2_COSTS.rollCandidateCount",
+      "file": "server/casting/castingCreditCosts.ts"
+    },
+    {
+      "id": "cost:server/casting/castingCreditCosts.ts:CASTING_V2_SIGN_COSTS.promotion",
+      "name": "CASTING_V2_SIGN_COSTS.promotion",
+      "constant": "CASTING_V2_SIGN_COSTS",
+      "member": "promotion",
+      "credits": 200,
+      "file": "server/casting/castingCreditCosts.ts"
+    },
+    {
+      "id": "cost:server/casting/castingCreditCosts.ts:CASTING_V2_SIGN_COSTS.view",
+      "name": "CASTING_V2_SIGN_COSTS.view",
+      "constant": "CASTING_V2_SIGN_COSTS",
+      "member": "view",
       "credits": 50,
       "file": "server/casting/castingCreditCosts.ts"
+    },
+    {
+      "id": "cost:server/casting/castingCreditCosts.ts:CREDIT_COSTS.allViews",
+      "name": "CREDIT_COSTS.allViews",
+      "constant": "CREDIT_COSTS",
+      "member": "allViews",
+      "credits": 900,
+      "file": "server/casting/castingCreditCosts.ts"
+    },
+    {
+      "id": "cost:server/casting/castingCreditCosts.ts:CREDIT_COSTS.castingImage",
+      "name": "CREDIT_COSTS.castingImage",
+      "constant": "CREDIT_COSTS",
+      "member": "castingImage",
+      "credits": 350,
+      "file": "server/casting/castingCreditCosts.ts"
+    },
+    {
+      "id": "cost:server/casting/castingCreditCosts.ts:CREDIT_COSTS.eraser",
+      "name": "CREDIT_COSTS.eraser",
+      "constant": "CREDIT_COSTS",
+      "member": "eraser",
+      "credits": 350,
+      "file": "server/casting/castingCreditCosts.ts"
+    },
+    {
+      "id": "cost:server/casting/castingCreditCosts.ts:CREDIT_COSTS.flashMultiplier",
+      "name": "CREDIT_COSTS.flashMultiplier",
+      "constant": "CREDIT_COSTS",
+      "member": "flashMultiplier",
+      "credits": 0.5,
+      "file": "server/casting/castingCreditCosts.ts"
+    },
+    {
+      "id": "cost:server/casting/castingCreditCosts.ts:CREDIT_COSTS.fullBody",
+      "name": "CREDIT_COSTS.fullBody",
+      "constant": "CREDIT_COSTS",
+      "member": "fullBody",
+      "credits": 300,
+      "file": "server/casting/castingCreditCosts.ts"
+    },
+    {
+      "id": "cost:server/casting/castingCreditCosts.ts:CREDIT_COSTS.iterate",
+      "name": "CREDIT_COSTS.iterate",
+      "constant": "CREDIT_COSTS",
+      "member": "iterate",
+      "credits": 350,
+      "file": "server/casting/castingCreditCosts.ts"
+    },
+    {
+      "id": "cost:server/casting/castingCreditCosts.ts:CREDIT_COSTS.multiView",
+      "name": "CREDIT_COSTS.multiView",
+      "constant": "CREDIT_COSTS",
+      "member": "multiView",
+      "credits": 300,
+      "file": "server/casting/castingCreditCosts.ts"
+    },
+    {
+      "id": "cost:server/casting/castingCreditCosts.ts:POINT_COSTS",
+      "name": "POINT_COSTS",
+      "constant": "POINT_COSTS",
+      "credits": null,
+      "aliasOf": "CREDIT_COSTS",
+      "file": "server/casting/castingCreditCosts.ts"
+    },
+    {
+      "id": "cost:server/casting/evidence/evidenceCandidateContract.ts:INK_ADD_PRICE_CREDITS",
+      "name": "INK_ADD_PRICE_CREDITS",
+      "constant": "INK_ADD_PRICE_CREDITS",
+      "credits": 350,
+      "file": "server/casting/evidence/evidenceCandidateContract.ts"
+    },
+    {
+      "id": "cost:server/castingV2/castViewPackage.ts:CAST_PACKAGE_VIEW_PRICE",
+      "name": "CAST_PACKAGE_VIEW_PRICE",
+      "constant": "CAST_PACKAGE_VIEW_PRICE",
+      "credits": 50,
+      "derivedFrom": "CASTING_V2_SIGN_COSTS.view",
+      "file": "server/castingV2/castViewPackage.ts"
+    },
+    {
+      "id": "cost:server/castingV2/castViewPackage.ts:CASTING_V2_SIGN_PRICE_CREDITS",
+      "name": "CASTING_V2_SIGN_PRICE_CREDITS",
+      "constant": "CASTING_V2_SIGN_PRICE_CREDITS",
+      "credits": 450,
+      "derivedFrom": "CASTING_V2_SIGN_COSTS.promotion + CAST_PACKAGE_VIEW_PRICE * CAST_PACKAGE_VIEWS.length",
+      "file": "server/castingV2/castViewPackage.ts"
+    },
+    {
+      "id": "cost:server/castingV2/castViewPackage.ts:CASTING_V2_SIGN_PROMOTION_PRICE",
+      "name": "CASTING_V2_SIGN_PROMOTION_PRICE",
+      "constant": "CASTING_V2_SIGN_PROMOTION_PRICE",
+      "credits": 200,
+      "derivedFrom": "CASTING_V2_SIGN_COSTS.promotion",
+      "file": "server/castingV2/castViewPackage.ts"
+    },
+    {
+      "id": "cost:server/wardrobe/creditCosts.ts:WARDROBE_CREDIT_COSTS.garmentAnalyze",
+      "name": "WARDROBE_CREDIT_COSTS.garmentAnalyze",
+      "constant": "WARDROBE_CREDIT_COSTS",
+      "member": "garmentAnalyze",
+      "credits": 50,
+      "file": "server/wardrobe/creditCosts.ts"
+    },
+    {
+      "id": "cost:server/wardrobe/creditCosts.ts:WARDROBE_CREDIT_COSTS.garmentDetect",
+      "name": "WARDROBE_CREDIT_COSTS.garmentDetect",
+      "constant": "WARDROBE_CREDIT_COSTS",
+      "member": "garmentDetect",
+      "credits": 50,
+      "file": "server/wardrobe/creditCosts.ts"
+    },
+    {
+      "id": "cost:server/wardrobe/creditCosts.ts:WARDROBE_CREDIT_COSTS.garmentDigitize",
+      "name": "WARDROBE_CREDIT_COSTS.garmentDigitize",
+      "constant": "WARDROBE_CREDIT_COSTS",
+      "member": "garmentDigitize",
+      "credits": 250,
+      "file": "server/wardrobe/creditCosts.ts"
+    },
+    {
+      "id": "cost:server/wardrobe/creditCosts.ts:WARDROBE_CREDIT_COSTS.garmentRefinement",
+      "name": "WARDROBE_CREDIT_COSTS.garmentRefinement",
+      "constant": "WARDROBE_CREDIT_COSTS",
+      "member": "garmentRefinement",
+      "credits": 350,
+      "file": "server/wardrobe/creditCosts.ts"
+    },
+    {
+      "id": "cost:server/wardrobe/creditCosts.ts:WARDROBE_CREDIT_COSTS.garmentUpload",
+      "name": "WARDROBE_CREDIT_COSTS.garmentUpload",
+      "constant": "WARDROBE_CREDIT_COSTS",
+      "member": "garmentUpload",
+      "credits": 350,
+      "file": "server/wardrobe/creditCosts.ts"
+    },
+    {
+      "id": "cost:server/wardrobe/creditCosts.ts:WARDROBE_CREDIT_COSTS.outfitDecomposition",
+      "name": "WARDROBE_CREDIT_COSTS.outfitDecomposition",
+      "constant": "WARDROBE_CREDIT_COSTS",
+      "member": "outfitDecomposition",
+      "credits": 100,
+      "file": "server/wardrobe/creditCosts.ts"
+    },
+    {
+      "id": "cost:server/wardrobe/creditCosts.ts:WARDROBE_CREDIT_COSTS.vtoGeneration",
+      "name": "WARDROBE_CREDIT_COSTS.vtoGeneration",
+      "constant": "WARDROBE_CREDIT_COSTS",
+      "member": "vtoGeneration",
+      "credits": 350,
+      "file": "server/wardrobe/creditCosts.ts"
+    },
+    {
+      "id": "cost:server/wardrobe/creditCosts.ts:WARDROBE_CREDIT_COSTS.vtoIncremental",
+      "name": "WARDROBE_CREDIT_COSTS.vtoIncremental",
+      "constant": "WARDROBE_CREDIT_COSTS",
+      "member": "vtoIncremental",
+      "credits": 300,
+      "file": "server/wardrobe/creditCosts.ts"
     }
   ],
   "vocabulary": [
@@ -9680,6 +9874,10 @@
     {
       "id": "test:server/architectureAtlas.test.ts",
       "path": "server/architectureAtlas.test.ts"
+    },
+    {
+      "id": "test:server/architectureCreditCosts.test.ts",
+      "path": "server/architectureCreditCosts.test.ts"
     },
     {
       "id": "test:server/architectureExpressSurfaces.test.ts",
