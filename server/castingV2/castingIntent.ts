@@ -565,10 +565,78 @@ export function stripQuotedSpans(value: string): string {
   );
 }
 
+/**
+ * ⚠ A CAP MAY NOT CUT A WORD IN HALF (ruled fable-1415 (a), found at the wire).
+ *
+ * This used to be `.slice(0, max)` and nothing else. What that put on a PAID
+ * production prompt, eight times, on rolls 128 and 129:
+ *
+ *     Character detail: … extremely light brows/lashes, closely shaved sides,
+ *     extensive b. LOOK: …
+ *
+ * `extensive b.` — half a word, with the template's own full stop welded onto
+ * it. The brief said *"extensive black-and-grey ornamental tattoos covering
+ * most of his chest…"* and the guillotine took every word of it, because the
+ * ink came last in the sentence. The masters came back without tattoos and
+ * nothing anywhere said why: the prompt's only mention of ink was a house line
+ * about rendering features plainly.
+ *
+ * So the cut lands on the last WORD BOUNDARY inside the budget. It is not the
+ * whole repair — a word-boundary cut still loses everything past the bound, and
+ * that is what the compression re-ask is for — it is the half that needs no
+ * product decision, because half a word is indefensible under any cap policy.
+ *
+ * **The hard slice survives as the fallback for one case**: a single token
+ * longer than the whole budget has no boundary to find, and returning nothing
+ * for it would drop a fact rather than shorten it.
+ */
+function cutAtWordBoundary(text: string, max: number): string {
+  if (text.length <= max) return text;
+  const clipped = text.slice(0, max);
+  const at = clipped.lastIndexOf(" ");
+  /* No space inside the budget: one enormous token, so there is no boundary and
+     the hard cut is the honest remainder. */
+  if (at <= 0) return clipped;
+  /* Trailing separators are not content — "sides," reads as a promise of the
+     next clause, and this is where the sentence now ends. */
+  return clipped.slice(0, at).replace(/[\s,;:\-–—]+$/, "");
+}
+
 function cleanFreeText(value: unknown, max: number): string | null {
   if (typeof value !== "string") return null;
-  const scrubbed = stripQuotedSpans(value).slice(0, max).trim();
+  const scrubbed = cutAtWordBoundary(stripQuotedSpans(value), max).trim();
   return scrubbed.length > 0 ? scrubbed : null;
+}
+
+/**
+ * WAS THIS FIELD SHORTENED, AND BY HOW MUCH — the countable half (fable-1415
+ * (b)).
+ *
+ * The cut was SILENT, and that is how it survived a founder-visible contact
+ * sheet and a whole sign court: five of eight masters came back inkless, the
+ * observation was filed as a delivery RATE, and the mechanism sat in one
+ * `.slice`. A control nobody can count is a control nobody notices breaking.
+ *
+ * Exported so the caller that owns the prompt can log it with the roll on the
+ * line; this file writes no logs, because it is a pure parser and a parser that
+ * logs is one that cannot be driven in a test without noise.
+ */
+/**
+ * The character detail, scrubbed and fitted — the ONE place that decision is
+ * made, so the compression re-ask's answer goes through exactly what the
+ * interpreter's first answer went through.
+ *
+ * A second call site applying its own cap is how the compressed line and the
+ * original would come to obey different rules.
+ */
+export function cleanCharacterNotes(value: unknown): string | null {
+  return cleanFreeText(value, NOTES_MAX);
+}
+
+export function freeTextOverflow(value: unknown, max: number): number {
+  if (typeof value !== "string") return 0;
+  const scrubbed = stripQuotedSpans(value).trim();
+  return scrubbed.length > max ? scrubbed.length - max : 0;
 }
 
 /* ---------------------------------------------------------------- parsing */
@@ -1074,7 +1142,26 @@ export function parsePoolTendencies(raw: unknown): PoolTendencies {
 }
 
 export type IntentParseResult =
-  | { ok: true; intent: CastingIntent }
+  | {
+    ok: true;
+    intent: CastingIntent;
+    /**
+     * THE CHARACTER DETAIL AS THE MODEL WROTE IT, AND WHAT THE CAP TOOK —
+     * `overflow: 0` on almost every roll (ruled fable-1415).
+     *
+     * Reported rather than merely applied, because the applying is what hid: a
+     * silent `.slice` removed the entire ink description from two production
+     * rolls' prompts and their masters came back without tattoos with nothing
+     * anywhere saying why.
+     *
+     * `raw` is the UNCUT string, and it is here rather than re-parsed by the
+     * caller for working law 4's reason: this function already holds the wire
+     * object, and a second reader of the same JSON is a second answer to the
+     * same question waiting to disagree. The caller owns the engine and the
+     * roll id, so it is the caller that decides what to do and logs it.
+     */
+    notes: { raw: string | null; overflow: number };
+  }
   | { ok: false; reason: "unreadable" | "unsupported_cohort" };
 
 /**
@@ -1110,6 +1197,10 @@ export function parseCastingIntent(raw: unknown, briefText = ""): IntentParseRes
 
   return {
     ok: true,
+    notes: {
+      raw: typeof wire.characterNotes === "string" ? wire.characterNotes : null,
+      overflow: freeTextOverflow(wire.characterNotes, NOTES_MAX),
+    },
     intent: {
       cohort: cohort as CohortKey,
       role: cleanFreeText(wire.role, ROLE_MAX),

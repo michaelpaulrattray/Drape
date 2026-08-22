@@ -27,7 +27,10 @@ import {
   BUILDS,
   ENERGY_KEYS,
   HERITAGES,
+  NOTES_MAX,
   SEXES,
+  cleanCharacterNotes,
+  freeTextOverflow,
   parseCastingIntent,
   type CastingIntent,
 } from "./castingIntent";
@@ -580,6 +583,125 @@ export function resetInterpreterForTests(): void {
  *     fail-open policy for checkers (catalog H30) — an interpreter outage must
  *     never block a paid run.
  */
+/**
+ * THE REASON A ROLL'S CHARACTER DETAIL WAS SHORTENED — one string, so the count
+ * is one grep (fable-1415 (b)).
+ *
+ *     grep notesOverflow <the service log>
+ *
+ * counts every roll whose interpreted detail did not fit, and each line carries
+ * how much overran, whether the compression re-ask ran, and whether it worked.
+ * The old behaviour was a silent `.slice` and it survived a founder-visible
+ * contact sheet and an entire sign court: two production rolls lost their whole
+ * ink description mid-word and the only symptom was masters with no tattoos.
+ *
+ * # ⚠ THE TWO THINGS THIS COUNTER IS FOR, so neither is taken in passing
+ *
+ * The measurement gate (fable-1415 (c), driven and reported opus-1054) found
+ * the compression **keeps the ink in 2 of 2 and gets under the bound in 1 of
+ * 2** — strictly better than the guillotine on every cell, and a partial
+ * rescue. What was deliberately NOT done on the strength of that court's own
+ * two numbers, because choosing a fix after seeing them is optional stopping:
+ *
+ *   THE SHARPENED INSTRUCTION — the model is told *"Limit: 180 characters"*
+ *   and answered 208. Parked behind a DATA TRIGGER, not a whim (fable-1416):
+ *   **when `outcome: "reaskFailed"` has accumulated FIVE real instances, a
+ *   fresh-sample court runs on THOSE** — never on the gate's original two. That
+ *   is the trigger; this is where it is written down so it is found.
+ *
+ *   RAISING `NOTES_MAX` — cheapest of all and parked UNMEASURED. A future
+ *   court has to answer the context-is-not-additive question FIRST: a longer
+ *   character detail reaches the image model on every roll that produces one,
+ *   and this program has measured a subset of prompt context moving the stage
+ *   wall twice as often as its superset. Nobody takes this one in passing.
+ */
+export const NOTES_OVERFLOW = "notesOverflow";
+
+/**
+ * ⚠ COMPRESS RATHER THAN GUILLOTINE — one re-ask, on about 2% of rolls
+ * (ruled fable-1415 (c)).
+ *
+ * `characterNotes` and `role` are the ONLY text that reaches the image model,
+ * and the cap on the first was enforced by cutting the string in half wherever
+ * 180 characters landed. Measured in production: 2 of 96 rolls with notes were
+ * cut, and they were rolls 128 and 129 — the only two that named tattoos. Both
+ * also lost hair content (*"cornrows into fa"*), so the harm was never
+ * ink-specific; ink was simply last in the sentence.
+ *
+ * A word-boundary cut (`cleanFreeText`) makes the remainder READABLE and still
+ * loses everything past the bound. So an overflowing reply is asked ONCE to say
+ * the same facts shorter, which is the echo-pass shape this product already
+ * runs, on the overflowing population only.
+ *
+ * # THREE THINGS IT MAY NOT DO
+ *
+ *   invent      it is handed the model's OWN sentence and asked to compress it,
+ *               never the brief — a re-read of the brief is a second
+ *               interpretation and would need the whole containment apparatus
+ *   be trusted  the answer is LENGTH-CHECKED. Still over, and the
+ *               word-boundary cut applies and the counter says `reaskFailed` —
+ *               a re-ask that quietly returns something longer would be the
+ *               original defect with an extra call billed for it
+ *   loop        one attempt. A stochastic failure repeated without bound is how
+ *               a bad day at the provider becomes an unbounded spend
+ */
+const NOTES_COMPRESSION_SYSTEM = `You shorten one sentence of casting notes so it fits a hard limit.
+
+You are given a CHARACTER DETAIL line written for an image model. It is too
+long. Rewrite it shorter.
+
+KEEP EVERY CONCRETE, VISIBLE FACT — every colour, every body part, every
+garment, every marking, every hairstyle, every accessory. If the line says
+tattoos on the chest and arms, the short version still says tattoos on the chest
+and arms.
+
+DROP ONLY FILLER — intensifiers ("extremely", "subtly", "exceptionally"),
+restatements, and any word that describes a mood rather than a thing you could
+photograph.
+
+Reply with the shortened line and NOTHING else. No quotes, no preamble, no
+JSON.`;
+
+/**
+ * The shortened line, or `null` when the re-ask cannot help.
+ *
+ * Null on every failure — no engine, a throw, an empty answer, or an answer
+ * that is not actually shorter — because every one of them means the caller
+ * should keep the word-boundary cut it already has.
+ */
+export async function compressCharacterNotes(input: {
+  notes: string;
+  max: number;
+  engine: TextEngine;
+  signal?: AbortSignal;
+}): Promise<string | null> {
+  try {
+    const result = await input.engine.complete({
+      about: "interpret",
+      system: NOTES_COMPRESSION_SYSTEM,
+      user: `Limit: ${input.max} characters.\n\nCHARACTER DETAIL:\n${input.notes}`,
+      /* Extraction, not authorship — the same temperature the interpretation
+         itself runs at, for the same reason. */
+      temperature: 0.2,
+      /* One short line. Generous against the bound rather than equal to it, so
+         a reply that overruns is REFUSED by the length check below rather than
+         cut off by the transport and refused as unreadable. */
+      maxOutputTokens: 400,
+      signal: input.signal,
+    });
+    const said = result.text.trim().replace(/^["'\u201c\u2018]|["'\u201d\u2019]$/g, "").trim();
+    if (said === "") return null;
+    /* Not trusted: an answer that is longer than what it was given has done the
+       opposite of the job, and adopting it would be worse than the cut. */
+    if (said.length >= input.notes.length) return null;
+    return said;
+  } catch {
+    /* A compression that fails is not a roll that fails. The caller has a
+       readable cut in hand and the customer has a sheet coming. */
+    return null;
+  }
+}
+
 export async function interpretBrief(input: {
   briefText: string;
   engine?: TextEngine;
@@ -749,6 +871,52 @@ export async function interpretBrief(input: {
       wanted.
     */
     let intent = parsed.intent;
+
+    /*
+      ⚠ THE DETAIL DID NOT FIT — compress it rather than let the cap eat it
+      (ruled fable-1415 (c); the finding is `NOTES_OVERFLOW`'s docblock).
+
+      About 2% of rolls with notes reach here, measured across production's 96.
+      What they lost was never noise: rolls 128 and 129 lost their entire ink
+      description and part of their hair, and the only symptom anyone saw was
+      eight masters with no tattoos.
+
+      The COUNT fires whatever happens, because it is the thing whose absence
+      let this hide — one line per overflowing roll, saying how much overran and
+      what became of it.
+
+      The re-ask is handed the model's OWN sentence, never the brief: re-reading
+      the brief would be a second interpretation and would need the containment
+      apparatus the first one has. Its answer is length-checked and adopted only
+      if it is genuinely shorter and still parses to something; on any failure
+      the word-boundary cut already in `intent` stands, which is today's
+      behaviour made readable.
+    */
+    if (parsed.notes.overflow > 0) {
+      const raw = parsed.notes.raw;
+      const compressed = raw === null
+        ? null
+        : await compressCharacterNotes({
+          notes: raw, max: NOTES_MAX, engine: textEngine, signal: input.signal,
+        });
+      const fitted = compressed === null ? null : cleanCharacterNotes(compressed);
+      const kept = fitted !== null && freeTextOverflow(compressed ?? "", NOTES_MAX) === 0;
+      if (kept) intent = { ...intent, characterNotes: fitted };
+      log.warn(
+        {
+          reason: NOTES_OVERFLOW,
+          over: parsed.notes.overflow,
+          limit: NOTES_MAX,
+          reaskRan: raw !== null,
+          outcome: kept ? "compressed" : "reaskFailed",
+          detail: intent.characterNotes,
+        },
+        kept
+          ? "[interpreter] notesOverflow — the character detail did not fit and was compressed to fit"
+          : "[interpreter] notesOverflow — the character detail did not fit and was CUT at a word boundary",
+      );
+    }
+
     if (needsAestheticRetry(input.briefText, intent)) {
       log.info({ stage: "interpreter" }, "[interpreter] aesthetic reference landed nowhere — re-sampling once");
       const retry = await runOnce();
