@@ -58,11 +58,38 @@ export type StoredScanSlot = {
 };
 
 /**
+ * ONE CARRIED FEATURE'S BOX, RE-READ ON THE FRAME THIS VERSION DELIVERED
+ * (fable-1443's option (iii), store settled fable-1445 §2).
+ *
+ * A library crop is minted once and then carried forever, so its geometry is
+ * about the frame it was cut from and about no other. Drawn over a later
+ * version — which is every version after the mint, measured 9 of 9 on
+ * production — it is a promise about the wrong pixels.
+ *
+ * So the render re-READS where each carried feature now is and files it here.
+ * **Geometry only**: the crop's PIXELS are still the right reference and
+ * re-cutting them would pay the expensive half to fix the cheap one. There is
+ * deliberately no `maskKey` — nothing here owns an object, so nothing here can
+ * orphan one.
+ */
+export type StoredCarriedSlot = {
+  slot: string;
+  /** The same box-and-its-frame rule {@link StoredScanSlot.box} states. */
+  box: { x: number; y: number; width: number; height: number; frame: { width: number; height: number } };
+};
+
+/**
  * What a row's `geometry` column holds.
  *
  * The shape is the panel's own reading minus the pictures: where each feature
  * is, the two rows that can only be described, and the counts that make a thin
  * scan legible rather than mysterious.
+ *
+ * # AND ONE HALF THAT IS NOT A SCAN AT ALL
+ *
+ * `carried` is written by the RENDER rather than by a look, and `scanned` is
+ * what tells the two apart. The table's meaning is its shape — *geometry of a
+ * version* — and the scan was only ever its first writer (fable-1445 §2).
  */
 export type StoredScanGeometry = {
   slots: readonly StoredScanSlot[];
@@ -71,6 +98,21 @@ export type StoredScanGeometry = {
   asked: number;
   found: number;
   empty: readonly string[];
+  /** Carried features' boxes on THIS version's own frame. Absent on every row
+   *  written before the re-mint landed, which is why it is optional. */
+  carried?: readonly StoredCarriedSlot[];
+  /**
+   * WHETHER A SCAN HAS EVER WRITTEN THIS ROW — `false` only on a row the render
+   * created for its carried geometry alone.
+   *
+   * ⚠ It is the trap this field exists to close. `serveKeptScan` returns a row
+   * as a finished reading, and a carried-only row has an EMPTY `slots` list —
+   * so without this a render would file a row that the panel then served as
+   * *"this face was scanned and has no features"*, and the face would never be
+   * scanned again. Absent means `true`: every row written before this field
+   * existed is a scan.
+   */
+  scanned?: boolean;
 };
 
 export type KeptFaceScan = {
@@ -199,7 +241,7 @@ export async function keepFaceScan(input: {
        taken before it would be a claim about a row another write may have
        moved. */
     const [previous] = await tx
-      .select({ geometry: castingFaceScans.geometry })
+      .select({ geometry: castingFaceScans.geometry, frameKey: castingFaceScans.frameKey })
       .from(castingFaceScans)
       .where(and(
         eq(castingFaceScans.userId, input.userId),
@@ -207,6 +249,27 @@ export async function keepFaceScan(input: {
         eq(castingFaceScans.versionKey, row.versionKey),
       ))
       .limit(1);
+
+    /*
+      THE RENDER'S CARRIED GEOMETRY SURVIVES A SCAN — but only while the frame
+      it was read on is still this version's frame.
+
+      A scan replaces this column wholesale, and the render wrote its half here
+      first (a version's row is born at its render, and is looked at later). So
+      the two halves are merged rather than one overwriting the other. The
+      frameKey condition is the whole of the care: carrying boxes of a
+      superseded frame onto a new one is the defect they were written to fix,
+      arriving by the back door.
+    */
+    const carried = previous && previous.frameKey === row.frameKey
+      ? (previous.geometry as StoredScanGeometry | null)?.carried
+      : undefined;
+    const geometry: StoredScanGeometry = {
+      ...input.geometry,
+      ...(carried && carried.length > 0 ? { carried } : {}),
+      scanned: true,
+    };
+    row.geometry = geometry;
 
     await tx.insert(castingFaceScans).values(row).onDuplicateKeyUpdate({
       set: {
@@ -255,6 +318,111 @@ export async function keepFaceScan(input: {
       });
     }
   });
+}
+
+/**
+ * FILE THIS RENDER'S CARRIED GEOMETRY — the render's half of the row.
+ *
+ * Called at the mint, before the landing, for the features this render did NOT
+ * write and therefore carried forward with a box measured on somebody else's
+ * frame.
+ *
+ * # Three things it refuses to do, and each is a defect it would otherwise be
+ *
+ * **It never touches the scan half.** A row that already holds a reading keeps
+ * every slot, word and stencil key it had; only `carried` is replaced. The
+ * alternative loses a paid fourteen-question reading to a free one.
+ *
+ * **It never writes onto a row about different bytes.** A row whose `frameKey`
+ * is not this frame's is a reading of a picture that is no longer there, and
+ * merging into it would attach this frame's boxes to that one. It stands down
+ * and says so — the caller counts it.
+ *
+ * **It owns no objects.** Geometry only, so there is no manifest, no born-held
+ * hold and no orphan: the three things that cost `keepScan` a whole table.
+ *
+ * Returns whether the row was written, so a caller can count a stand-down
+ * without having to tell it apart from a throw.
+ */
+export async function keepCarriedGeometry(input: {
+  publicId: string;
+  userId: number;
+  candidateId: number;
+  variantId: number | null;
+  frameKey: string;
+  carried: readonly StoredCarriedSlot[];
+}): Promise<{ written: boolean; reason?: "frame-moved" }> {
+  const versionKey = versionKeyOf(input.variantId);
+  return withTransaction(async (tx) => {
+    const [previous] = await tx
+      .select({ geometry: castingFaceScans.geometry, frameKey: castingFaceScans.frameKey })
+      .from(castingFaceScans)
+      .where(and(
+        eq(castingFaceScans.userId, input.userId),
+        eq(castingFaceScans.candidateId, input.candidateId),
+        eq(castingFaceScans.versionKey, versionKey),
+      ))
+      .limit(1);
+
+    if (previous && previous.frameKey !== input.frameKey) {
+      return { written: false, reason: "frame-moved" as const };
+    }
+
+    const held = (previous?.geometry as StoredScanGeometry | null) ?? null;
+    const geometry: StoredScanGeometry = held === null
+      ? {
+        /* A row nothing has scanned: empty on every scan field, and `scanned`
+           false so nothing serves it as a reading. */
+        slots: [], words: [], sides: "", asked: 0, found: 0, empty: [],
+        carried: input.carried,
+        scanned: false,
+      }
+      : { ...held, carried: input.carried };
+
+    await tx.insert(castingFaceScans).values({
+      publicId: input.publicId,
+      userId: input.userId,
+      candidateId: input.candidateId,
+      versionKey,
+      frameKey: input.frameKey,
+      geometry,
+      /* Only ever used by the INSERT arm, where there is no row and this write
+         owns no objects. The update arm deliberately does not touch it: a
+         scan's stencil bill is the scan's, and zeroing it here would erase the
+         growth reading the founder's yes was conditional on. */
+      stencilBytes: 0,
+    }).onDuplicateKeyUpdate({ set: { geometry } });
+    return { written: true };
+  });
+}
+
+/**
+ * WHERE THIS VERSION'S CARRIED FEATURES ACTUALLY ARE, or an empty map.
+ *
+ * `frameKey` is compared here rather than in the WHERE for {@link
+ * readKeptFaceScan}'s reason exactly: a row about different bytes and no row at
+ * all are different facts, and only one of them means *this render never wrote
+ * its geometry*.
+ */
+export async function readCarriedGeometry(input: {
+  userId: number;
+  candidateId: number;
+  variantId: number | null;
+  frameKey: string;
+}): Promise<ReadonlyMap<string, StoredCarriedSlot["box"]>> {
+  const db = await requireDb();
+  const [row] = await db
+    .select({ frameKey: castingFaceScans.frameKey, geometry: castingFaceScans.geometry })
+    .from(castingFaceScans)
+    .where(and(
+      eq(castingFaceScans.userId, input.userId),
+      eq(castingFaceScans.candidateId, input.candidateId),
+      eq(castingFaceScans.versionKey, versionKeyOf(input.variantId)),
+    ))
+    .limit(1);
+  if (!row || row.frameKey !== input.frameKey) return new Map();
+  const carried = (row.geometry as StoredScanGeometry | null)?.carried ?? [];
+  return new Map(carried.map((one) => [one.slot, one.box]));
 }
 
 /**

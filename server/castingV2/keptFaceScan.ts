@@ -222,6 +222,19 @@ export async function serveKeptScan(input: {
       );
       return null;
     }
+    /*
+      ⚠ A ROW IS NOT ALWAYS A SCAN — since the render started filing carried
+      geometry into this table (fable-1445 §2).
+
+      A carried-only row has an EMPTY `slots` list, and served as a reading it
+      would say *this face was scanned and has nothing on it*: no cutouts, no
+      described words, and — because the panel would then believe the scan had
+      landed — never scanned again. The one field that tells them apart is read
+      here, at the only door that turns a row into a reading.
+
+      Absent means true. Every row written before the field existed is a scan.
+    */
+    if (kept.geometry.scanned === false) return null;
 
     const slots = new Map<FeatureSlot, { box: PanelBox; maskUrl: string }>();
     for (const slot of kept.geometry.slots) {

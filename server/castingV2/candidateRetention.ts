@@ -138,9 +138,21 @@ function tolerateAbsentReferenceLibrary(error: unknown): never | [] {
  * The same tolerance, on the same terms, for the kept face scan (0032).
  *
  * Its table lands by ceremony too, and the window where this code knows about
- * `casting_face_scans` and the database does not is real and empty — the flag
- * that would write a row refuses to arm until after the ceremony. Armed, a
+ * `casting_face_scans` and the database does not is real and empty. Armed, a
  * missing table stops being an empty set and becomes a fault said out loud.
+ *
+ * ⚠ **THE REASON IT IS EMPTY CHANGED, AND THE CONCLUSION DID NOT** (2026-08-23,
+ * fable-1445 §2). This paragraph used to say *the flag that would write a row
+ * refuses to arm until after the ceremony*, and that stopped being the whole
+ * truth the day the render began filing CARRIED GEOMETRY here ungated — the
+ * scan was only ever this table's first writer, not its meaning.
+ *
+ * What keeps the tolerance honest is the other end: `reMintCarriedGeometry`
+ * catches an absent table, counts it and stands the picture up, so a world
+ * without migration 0032 still has nothing in this table to be left behind. And
+ * the loud signal for a missing table moved rather than disappeared — it is now
+ * that writer's own countable line, which fires on every render instead of once
+ * a sweep.
  */
 function tolerateAbsentFaceScanStore(error: unknown): never | [] {
   if (!isMissingTable(error) || castingScanTableArmed()) throw error;

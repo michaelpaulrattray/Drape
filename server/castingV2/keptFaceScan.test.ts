@@ -264,6 +264,49 @@ describe("what a kept scan serves", () => {
     expect(await serveKeptScan({ ...face, dependencies: it_.dependencies })).toBeNull();
   });
 
+  it("⚠ REFUSES a CARRIED-ONLY row — it is a render's geometry, not a reading", async () => {
+    /*
+      THE TRAP THE `scanned` FIELD EXISTS TO CLOSE (fable-1445 §2).
+
+      Since the render started filing carried geometry into this same table, a
+      row can exist for a version nothing has ever scanned. Its `slots` list is
+      EMPTY, so served as a reading it says *this face was scanned and has
+      nothing on it* — no cutouts, no described words — and, because the panel
+      would then believe the scan had landed, the face would never be scanned
+      again. One field, read at the only door that turns a row into a reading.
+    */
+    const it_ = bench();
+    it_.rows.push({
+      publicId: "carried-only",
+      frameKey: face.frameKey,
+      geometry: { slots: [], words: [], sides: "", asked: 0, found: 0, empty: [], scanned: false,
+        carried: [{ slot: "hair", box: box(5) }] },
+      stencilBytes: 0,
+    });
+
+    expect(await serveKeptScan({ ...face, dependencies: it_.dependencies })).toBeNull();
+  });
+
+  it("CONTROL — the same row with `scanned` absent DOES serve", async () => {
+    /*
+      The negative control, and it is the one that matters on this field: every
+      row written before `scanned` existed is a scan, so absent must mean true.
+      A guard reading `!geometry.scanned` would blank the whole production
+      table and re-buy every face at ten cents.
+    */
+    const it_ = bench();
+    it_.rows.push({
+      publicId: "written-before-the-field",
+      frameKey: face.frameKey,
+      geometry: { slots: [], words: [["skin", ["a warm even tan"]]], sides: "", asked: 12, found: 0, empty: [] },
+      stencilBytes: 0,
+    });
+
+    const served = await serveKeptScan({ ...face, dependencies: it_.dependencies });
+    expect(served).not.toBeNull();
+    expect(served?.asked).toBe(12);
+  });
+
   it("says SCAN THIS FACE when there is no row at all", async () => {
     const it_ = bench();
     expect(await serveKeptScan({ ...face, dependencies: it_.dependencies })).toBeNull();

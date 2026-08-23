@@ -69,7 +69,8 @@ import { spokenError } from "../_core/spokenError";
 import { UNLOCKABLE_FIELDS } from "../castingV2/briefCompiler";
 import { listLineageSegments, resolveOwnedCandidateId } from "../db/castingV2Segments";
 import { maskFetchUrl, segmentsOnFace } from "../castingV2/segmentsOnFace";
-import { facePanel, type PanelInkWorn, type PanelScan } from "../castingV2/facePanel";
+import { facePanel, type PanelBox, type PanelInkWorn, type PanelScan } from "../castingV2/facePanel";
+import { readCarriedGeometry } from "../db/castingV2FaceScans";
 import { listInkDeliveryPlacements } from "../db/castingV2InkDeliveryCrops";
 import { createModuleLogger } from "../logging/logger";
 import { readDeliveredInk } from "../castingV2/inkApplied";
@@ -337,9 +338,14 @@ function panelFor(
      function is a pure projection and both procedures already do their own
      reads. Empty is both "she wears none" and "there was nothing to read". */
   ink: readonly PanelInkWorn[] = [],
+  /* Where this version's CARRIED features actually are — read by the caller for
+     the same reason the ink is, and empty is both "nothing was re-read" and
+     "there was nothing to read". */
+  carriedGeometry: ReadonlyMap<string, PanelBox> = new Map(),
 ) {
   return facePanel({
     scanning,
+    carriedGeometry,
     rows: face.rows,
     pronouns: pronounsForSex(face.identitySex),
     contentUrl: storagePublicUrl,
@@ -350,6 +356,52 @@ function panelFor(
     scan,
     ink,
   });
+}
+
+/**
+ * WHERE THIS VERSION'S CARRIED FEATURES ACTUALLY ARE (fable-1443/1445).
+ *
+ * A library crop's rectangle was measured on the frame it was cut from, which
+ * on every version after the mint is not the frame on screen. The render that
+ * delivered this version re-read them and filed the answer per version; this
+ * fetches it.
+ *
+ * # Three refusals, and the third is the whole reason it costs nothing
+ *
+ * **No selected version, no read.** The pristine master is version `master`,
+ * and a render never files carried geometry against it — a render always
+ * produces a variant. There is nothing to fetch.
+ *
+ * **No image key, no read.** The frame is the staleness guard's other end: a
+ * row is served only if it was read on the bytes being looked at. Without a key
+ * there is nothing to compare, and a row served unchecked is the defect.
+ *
+ * **It never fails the panel.** A face chart that 500s because a geometry row
+ * would not load takes away every row on the surface to avoid one rectangle
+ * being four versions old. A refusal is an empty map and a warning — the same
+ * answer a version rendered before this landed gives, told apart by the log
+ * line rather than by the caller.
+ */
+async function carriedGeometryFor(
+  userId: number,
+  face: Awaited<ReturnType<typeof readOwnedFaceForPanel>>,
+): Promise<ReadonlyMap<string, PanelBox>> {
+  const frameKey = face.anchor?.imageKey ?? null;
+  if (face.anchor === null || frameKey === null) return new Map();
+  try {
+    return await readCarriedGeometry({
+      userId,
+      candidateId: face.candidateId,
+      variantId: face.anchor.id,
+      frameKey,
+    });
+  } catch (error) {
+    log.warn(
+      { err: String(error).slice(0, 200), candidateId: face.candidateId },
+      "[castingV2] this version's carried geometry could not be read — the panel stands and its boxes are the ones the library minted",
+    );
+    return new Map();
+  }
 }
 
 /**
@@ -1887,6 +1939,7 @@ export const castingV2Router = router({
           ready === null ? null : panelScanOf(ready),
           captureCastingFaceScanEnabled(ctx.user.id) && ready === null,
           await inkWornBy(ctx.user.id, input.candidateId, face.anchor),
+          await carriedGeometryFor(ctx.user.id, face),
         ),
       };
     }),
@@ -1982,7 +2035,13 @@ export const castingV2Router = router({
         enabled: true as const,
         scanning: true,
         done,
-        ...panelFor(face, scan, !done, await inkWornBy(ctx.user.id, input.candidateId, face.anchor)),
+        ...panelFor(
+          face,
+          scan,
+          !done,
+          await inkWornBy(ctx.user.id, input.candidateId, face.anchor),
+          await carriedGeometryFor(ctx.user.id, face),
+        ),
       };
     }),
 

@@ -202,6 +202,7 @@ import { assembleWithCarriedSegments, listCarriedRows } from "./carriedSegments"
 import { makeupRegionFor } from "./makeupPlacement";
 import { keepSegmentsFromRender } from "./segmentPersistence";
 import { mintReferencesForRender } from "./referenceMint";
+import { carriedSlotsForGeometry, reMintCarriedGeometry } from "./carriedGeometry";
 import type { DeliveryAdjudication } from "./deliveryCourt";
 import { mintedSlotsForRender } from "./mintedSlots";
 import {
@@ -8817,6 +8818,23 @@ async function refineCandidateCounted(
       correct: no crop was filed.
     */
     const openCropsStored = new Set<string>();
+    /*
+      WHAT THE CARRIED-GEOMETRY RE-MINT NEEDS, hoisted out of the mint's own
+      block rather than read a second time below.
+
+      Two answers, and both are already in hand here: the branch's library as it
+      stood when this render started, and the slots this render FILED. What is
+      carried is what the first holds and the second does not — a subtraction,
+      never a second walk that could disagree with the first (law 4).
+
+      Null when the mint did not run, which is the honest state: with no library
+      there are no carried crops and nothing has a box to be wrong about.
+    */
+    let libraryAtRender: {
+      rows: Awaited<ReturnType<typeof listLineageReferences>>;
+      priorWords: ReadonlyMap<string, readonly string[]>;
+      minted: Set<string>;
+    } | null = null;
     if (libraryEnabled(input.userId)) {
       try {
         /* The other half of the same derivation, and the reason it is a `Set`
@@ -8950,6 +8968,11 @@ async function refineCandidateCounted(
           */
           ...(input.scope ? { scope: input.scope } : {}),
         });
+        libraryAtRender = {
+          rows: lineage,
+          priorWords: priorWordsBySlot(live),
+          minted: new Set(slots.map((one) => one.slot)),
+        };
         if (unfiled.length > 0) {
           log.info(
             { operationId, variant: variant.publicId, unfiled },
@@ -9186,6 +9209,72 @@ async function refineCandidateCounted(
         log.warn(
           { err: error, operationId, variant: variant.publicId },
           "[refineService] this render's references were not minted — the picture stands",
+        );
+      }
+    }
+
+    /*
+      AND WHERE EVERY FEATURE SHE ALREADY HAD NOW SITS — the carried-geometry
+      re-mint (his 1436 §2, option (iii) ruled fable-1443, store and flag ruled
+      fable-1445 §2).
+
+      The mint above cut fresh crops with fresh geometry for what this render
+      WROTE. Everything else on her face keeps a rectangle measured on the frame
+      it was minted from — which is never this one, measured 9 boxes of 9 on
+      production — so a panel opened on this version draws them over the wrong
+      pixels. His own screenshot is a box labelled "Right horn" floating over
+      background after a regenerate moved the horns.
+
+      One region read per carried feature, geometry only, folded into a wait the
+      customer is already inside. `carriedGeometry.ts` carries the whole
+      argument and the cost note.
+
+      # It is UNGATED, and that is the ruling rather than an oversight
+
+      `casting_face_scans` is keyed (candidate, version) and holds geometry per
+      slot with a frame guard already written for exactly this staleness
+      question — the scan was only ever its FIRST writer, not its meaning. Its
+      flag gates PAID SEGMENTER READS on every version somebody looks at, and
+      widening that to heal a box would buy a different bill entirely. What
+      bounds this write instead is the render's own spend, which the customer
+      has already bought.
+
+      # Nothing here may cost the picture
+
+      `reMintCarriedGeometry` catches everything, including an absent table.
+      This wrapper exists for the one thing before it that can throw — building
+      the reader — for the same reason the mint's own block has one.
+    */
+    if (libraryAtRender !== null) {
+      try {
+        const toReRead = carriedSlotsForGeometry({
+          rows: libraryAtRender.rows,
+          minted: libraryAtRender.minted,
+          priorWords: libraryAtRender.priorWords,
+        });
+        if (toReRead.length > 0) {
+          const reMinted = await reMintCarriedGeometry({
+            userId: input.userId,
+            candidateId: variant.candidateId,
+            candidatePublicId: input.candidatePublicId,
+            variantId: variant.id,
+            /* The bytes this version will be served from — the staleness
+               guard's other end, and the same key the landing is about to
+               write onto the row. */
+            frameKey: stored.key,
+            frame: { bytes: image.bytes },
+            slots: toReRead,
+            reader: dependencies.regions ?? defaultRegionReader(),
+          });
+          log.info(
+            { operationId, variant: variant.publicId, ...reMinted },
+            "[refineService] the carried features were re-read on the frame this render delivered",
+          );
+        }
+      } catch (error) {
+        log.warn(
+          { err: String(error).slice(0, 200), operationId, variant: variant.publicId },
+          "[refineService] the carried geometry could not be re-read — the picture stands and the boxes are the ones they were",
         );
       }
     }

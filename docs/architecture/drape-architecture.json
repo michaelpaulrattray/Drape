@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "4d53963bbd2407a4"
+    "sourceFingerprint": "f9eaf329cb862b3a"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 169
+      "moduleCount": 170
     },
     {
       "id": "domain:castingV2",
@@ -3395,6 +3395,12 @@
     {
       "id": "module:server/castingV2/canthalTilt.ts",
       "path": "server/castingV2/canthalTilt.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/carriedGeometry.ts",
+      "path": "server/castingV2/carriedGeometry.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -9232,6 +9238,13 @@
       "file": "server/casting/evidence/evidenceCandidateContract.ts"
     },
     {
+      "id": "cost:server/castingV2/carriedGeometry.ts:CARRIED_GEOMETRY_COST_NOTE_ABOVE",
+      "name": "CARRIED_GEOMETRY_COST_NOTE_ABOVE",
+      "constant": "CARRIED_GEOMETRY_COST_NOTE_ABOVE",
+      "credits": 10,
+      "file": "server/castingV2/carriedGeometry.ts"
+    },
+    {
       "id": "cost:server/castingV2/castViewPackage.ts:CAST_PACKAGE_VIEW_PRICE",
       "name": "CAST_PACKAGE_VIEW_PRICE",
       "constant": "CAST_PACKAGE_VIEW_PRICE",
@@ -10484,6 +10497,10 @@
     {
       "id": "test:server/castingV2/canthalTilt.test.ts",
       "path": "server/castingV2/canthalTilt.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/carriedGeometry.test.ts",
+      "path": "server/castingV2/carriedGeometry.test.ts"
     },
     {
       "id": "test:server/castingV2/carriedSegments.test.ts",
@@ -21052,6 +21069,51 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/castingV2/carriedGeometry.ts",
+      "to": "module:server/castingV2/maskedRefine.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/carriedGeometry.ts",
+      "to": "module:server/castingV2/openKindQuestion.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/carriedGeometry.ts",
+      "to": "module:server/castingV2/recipeAssembler.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/carriedGeometry.ts",
+      "to": "module:server/castingV2/referenceLibrary.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/carriedGeometry.ts",
+      "to": "module:server/castingV2/referenceSlotCatalogue.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/carriedGeometry.ts",
+      "to": "module:server/castingV2/referenceSlots.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/carriedGeometry.ts",
+      "to": "module:server/castingV2/segmentCuts.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/carriedGeometry.ts",
+      "to": "module:server/db/castingV2FaceScans.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/carriedGeometry.ts",
+      "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/castingV2/carriedSegments.ts",
       "to": "module:server/castingV2/castingV2Scope.ts",
       "kind": "imports"
@@ -23779,6 +23841,11 @@
     {
       "from": "module:server/castingV2/refineService.ts",
       "to": "module:server/castingV2/canthalTilt.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/refineService.ts",
+      "to": "module:server/castingV2/carriedGeometry.ts",
       "kind": "imports"
     },
     {
@@ -27863,6 +27930,11 @@
     },
     {
       "from": "module:server/routes/castingV2.ts",
+      "to": "module:server/db/castingV2FaceScans.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/castingV2.ts",
       "to": "module:server/db/castingV2InkDeliveryCrops.ts",
       "kind": "imports"
     },
@@ -31881,17 +31953,17 @@
       "message": "Names 2 of HairColourSection's 3 fields (server/castingV2/hairColourFromReference.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/refineService.ts:699",
+      "id": "finding:redeclared-shape:server/castingV2/refineService.ts:700",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/refineService.ts:699",
+      "subject": "server/castingV2/refineService.ts:700",
       "message": "Names 3 of Thumbnail's 3 fields (server/castingV2/thumbnails.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/refineService.ts:858",
+      "id": "finding:redeclared-shape:server/castingV2/refineService.ts:859",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/refineService.ts:858",
+      "subject": "server/castingV2/refineService.ts:859",
       "message": "Names 3 of Thumbnail's 3 fields (server/castingV2/thumbnails.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {

@@ -250,6 +250,137 @@ describeWithDatabase("the kept face scan (disposable DB)", () => {
   });
 
   /**
+   * ⚠ THE RENDER'S OWN ROW — carried geometry, written UNGATED (fable-1445 §2).
+   *
+   * The scan table's flag gates PAID READS on a look; the render writes here
+   * without it, because the read it files was bought by a render the customer
+   * already paid for. So rows now exist for accounts outside
+   * `CASTING_SCAN_TABLE_SCOPE` — which is a fact about the PURGE PATH, and
+   * fable-1445 condition 1 refused to take *"I believe it holds"* for an
+   * answer. This is the deletion, driven, with the flag proved off first.
+   */
+  it("purges a CARRIED-ONLY row for an account outside the scan flags", async () => {
+    const scope = await import("./castingV2/castingV2Scope");
+    /* The condition's own premise, asserted rather than assumed: this account
+       could not write a scan row, and its row is here anyway. */
+    expect(scope.captureCastingScanTableEnabled(owner), "the scan flag must be OFF for this arm to mean anything").toBe(false);
+
+    const face = await newFace(owner);
+    const kept = await scans.keepCarriedGeometry({
+      publicId: randomUUID(),
+      userId: owner,
+      candidateId: face.candidateId,
+      variantId: face.variantId,
+      frameKey: "faces/v219.png",
+      carried: [{ slot: "open:horns@right", box: { x: 62, y: 24, width: 18, height: 21, frame: { width: 100, height: 100 } } }],
+    });
+    expect(kept.written).toBe(true);
+
+    /* It reads back on its own frame, and not on another's. */
+    const read = await scans.readCarriedGeometry({
+      userId: owner, candidateId: face.candidateId, variantId: face.variantId, frameKey: "faces/v219.png",
+    });
+    expect(read.get("open:horns@right")).toMatchObject({ x: 62, y: 24 });
+    expect((await scans.readCarriedGeometry({
+      userId: owner, candidateId: face.candidateId, variantId: face.variantId, frameKey: "faces/v220.png",
+    })).size, "a row about different bytes is not served").toBe(0);
+
+    await connection.execute(
+      "UPDATE casting_candidates SET status = 'expired', discardedAt = NOW(), expiresAt = DATE_SUB(NOW(), INTERVAL 1 DAY) WHERE id = ?",
+      [face.candidateId],
+    );
+    const result = await retention.runCandidateRetentionSweep();
+    expect(result.candidatesPurged).toBeGreaterThanOrEqual(1);
+
+    const [remaining] = await connection.query<RowDataPacket[]>(
+      "SELECT COUNT(*) AS n FROM casting_face_scans WHERE candidateId = ?",
+      [face.candidateId],
+    );
+    expect(remaining[0].n, "an ungated row dies with its cast exactly as a scan row does").toBe(0);
+  });
+
+  /**
+   * A SCAN LANDING ON TOP OF THE RENDER'S ROW KEEPS BOTH HALVES.
+   *
+   * A version's row is born at its render and looked at afterwards, so this is
+   * the ordinary order rather than an edge. A scan that replaced the column
+   * wholesale would drop every carried box the moment somebody opened the
+   * panel — the defect healing itself and then quietly coming back.
+   */
+  it("a scan preserves the render's carried geometry on the same frame, and drops it on a different one", async () => {
+    const face = await newFace(owner);
+    const carried = [{ slot: "hair", box: { x: 1, y: 2, width: 3, height: 4, frame: { width: 10, height: 10 } } }];
+    const write = async () => scans.keepCarriedGeometry({
+      publicId: randomUUID(), userId: owner, candidateId: face.candidateId,
+      variantId: face.variantId, frameKey: "faces/v219.png", carried,
+    });
+    await write();
+
+    await scans.keepFaceScan({
+      publicId: randomUUID(),
+      userId: owner,
+      candidateId: face.candidateId,
+      variantId: face.variantId,
+      frameKey: "faces/v219.png",
+      geometry: geometryWith([`scans/${randomUUID()}.png`]),
+      stencilBytes: 4180,
+    });
+
+    const kept = await scans.readKeptFaceScan({
+      userId: owner, candidateId: face.candidateId, variantId: face.variantId,
+    });
+    expect(kept?.geometry.slots, "the paid reading is untouched").toHaveLength(1);
+    expect(kept?.geometry.carried, "and the render's half survived it").toEqual(carried);
+    expect(kept?.geometry.scanned, "the row is a reading now").toBe(true);
+
+    /* And the other way: a scan of DIFFERENT bytes drops the carried boxes
+       rather than attaching this frame's rectangles to that one. */
+    await scans.keepFaceScan({
+      publicId: randomUUID(),
+      userId: owner,
+      candidateId: face.candidateId,
+      variantId: face.variantId,
+      frameKey: "faces/v220.png",
+      geometry: geometryWith([]),
+      stencilBytes: 0,
+    });
+    const moved = await scans.readKeptFaceScan({
+      userId: owner, candidateId: face.candidateId, variantId: face.variantId,
+    });
+    expect(moved?.geometry.carried).toBeUndefined();
+  });
+
+  /** The render standing down rather than writing onto a row about other bytes. */
+  it("refuses to file carried geometry onto a row whose frame has moved", async () => {
+    const face = await newFace(owner);
+    await scans.keepFaceScan({
+      publicId: randomUUID(),
+      userId: owner,
+      candidateId: face.candidateId,
+      variantId: face.variantId,
+      frameKey: "faces/v1.png",
+      geometry: geometryWith([]),
+      stencilBytes: 0,
+    });
+
+    const kept = await scans.keepCarriedGeometry({
+      publicId: randomUUID(),
+      userId: owner,
+      candidateId: face.candidateId,
+      variantId: face.variantId,
+      frameKey: "faces/v2.png",
+      carried: [{ slot: "hair", box: { x: 9, y: 9, width: 9, height: 9, frame: { width: 10, height: 10 } } }],
+    });
+    expect(kept).toEqual({ written: false, reason: "frame-moved" });
+
+    const untouched = await scans.readKeptFaceScan({
+      userId: owner, candidateId: face.candidateId, variantId: face.variantId,
+    });
+    expect(untouched?.frameKey, "the row it declined to touch is exactly as it was").toBe("faces/v1.png");
+    expect(untouched?.geometry.carried).toBeUndefined();
+  });
+
+  /**
    * THE SCAN THAT FOUND NOTHING still has a row, and the row still dies.
    *
    * A list filtered to rows-with-objects would come back empty here, the delete

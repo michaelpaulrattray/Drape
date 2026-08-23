@@ -625,6 +625,19 @@ export function facePanel(input: {
    * the comment there is where the source is argued.
    */
   ink?: readonly PanelInkWorn[];
+  /**
+   * WHERE A CARRIED FEATURE IS ON *THIS* VERSION'S FRAME (fable-1443/1445).
+   *
+   * A library crop's geometry describes the frame it was minted from and no
+   * other, so on every later version its rectangle sits over the wrong pixels —
+   * the founder's "Right horn" box floating over background after a regenerate
+   * moved the horns. The render re-reads those boxes as it delivers and files
+   * them per version; this is that reading, and it OVERRIDES the library's.
+   *
+   * Empty or absent is the ordinary case for every version rendered before this
+   * landed, and the panel is then exactly what it was.
+   */
+  carriedGeometry?: ReadonlyMap<string, PanelBox>;
 }): FacePanel {
   const live = liveReferences(input.rows);
   const bySlot = new Map<FeatureSlot, StoredReference[]>();
@@ -650,7 +663,33 @@ export function facePanel(input: {
    * other.
    */
   const scan = input.scan ?? null;
-  const stateOf = (slot: FeatureSlot): SlotState => {
+  /**
+   * THE ONE BOX THAT IS ABOUT THE FRAME ON SCREEN.
+   *
+   * A library row's geometry is a measurement of the frame its crop was cut
+   * from, and a carried row's crop was cut on an earlier version — measured 9
+   * of 9 on production, a median of four versions ago. This reading was taken
+   * by the render that delivered the version being looked at, so where it
+   * exists it is simply better, and it replaces rather than fills a gap.
+   *
+   * Applied here — to the state, before any row is composed — so it reaches
+   * every surface that draws a rectangle at once: a catalogued row, a child of
+   * a pair, an open kind's row and the photograph order those rows are sorted
+   * in. A merge written per row would be four merges to keep in step.
+   *
+   * ⚠ **A ROW WITH NO BOX STAYS WITHOUT ONE**, and that clause is load-bearing
+   * rather than defensive. `liveReferences` keys on (slot, ROLE), so a slot she
+   * has emptied can hold a live vacancy AND a live carry underneath it — the
+   * vacancy makes the row EMPTY here (*"do not display it"*, fable-401) while a
+   * geometry reader would still find the thing. Filling a box in would put a
+   * rectangle back on what she took off.
+   */
+  const fresher = (slot: FeatureSlot, state: SlotState): SlotState => {
+    const box = input.carriedGeometry?.get(slot);
+    return box === undefined || state.box === null ? state : { ...state, box };
+  };
+  const stateOf = (slot: FeatureSlot): SlotState => fresher(slot, stateOfRaw(slot));
+  const stateOfRaw = (slot: FeatureSlot): SlotState => {
     const held = stateOfSlot(
       bySlot.get(slot) ?? [],
       { contentUrl: input.contentUrl, maskUrl: input.maskUrl },
