@@ -198,6 +198,64 @@ carry the rulings, the courts and the histories.
                                           the evidence-pack contract, in its own
                                           sitting (order approved fable-1456).
                                           Then his eyes, then the flip
+3c ⚠ THE BRIEF HAS NO SKIN LANE, AND     ordered fable-1477 ASK 2, from the
+   COLOUR WORDS ARE THE PARAPHRASE'S    brief-fidelity corpus (opus-1128).
+   MAIN VICTIMS                          MEASURED at the wire, survival counted
+                                         as present in ALL EIGHT compiled
+                                         prompts:
+                                           "porcelain"  1 of 3   "olive" 1 of 4
+                                           "ruddy" 4/4  "freckled" 4/4
+                                           "gaunt" 4/4  "laugh lines" 4/4
+                                           "nose stud" 4/4  "glasses" 4/4
+                                         ⚠ THE SHAPE IS THE FINDING: a word with
+                                         a FILLED LANE reaches every prompt, 8
+                                         of 8, twice. Everything else is a
+                                         lottery run by a summariser — and what
+                                         it loses is COLOUR NAMES, while texture
+                                         and feature words come through every
+                                         time.
+                                         The interpreter's schema has
+                                         `statedHair`, `statedAccessories`,
+                                         `build`, `heritage`, `energy`,
+                                         `ageBand` — and NO SKIN LANE. A skin
+                                         fact typed into a brief has nowhere to
+                                         go but the paraphrase. (fable-1477 owns
+                                         the correction that refine's
+                                         `skinTone`/`skinCharacter` are NOT
+                                         brief fields.)
+                                         ⚠ NOT A FIX TO COPY BLINDLY: giving it
+                                         a lane means adding a field to a prompt
+                                         in a product whose own measurement is
+                                         that CONTEXT IS NOT ADDITIVE. Designed
+                                         AFTER the hair assert proves the
+                                         pattern — which it now has (bald 1/3 →
+                                         4/4, `c6839ed8`).
+                                         ⚠ ITS READING IS GATED ON THE READING
+                                         BUDGET, not on anyone's attention: it
+                                         is ~10–15 drives of an account the
+                                         custody blocks track
+3d ⚠ HIS CYBERNETIC BRIEF IS REFUSED     ordered fable-1477 §6, found by driving
+   AS A VIDEO-GAME CHARACTER,            (opus-1128 §6). His own brief tripped
+   ABOUT 1 TIME IN 7                     the cohort wall twice in fifteen
+                                         drives: "Casting makes photographic
+                                         people, and only ones who are nobody in
+                                         particular — not a named person, not a
+                                         character from a game or film, and not
+                                         anime or illustration yet."
+                                         It is FREE (he is not charged) and it
+                                         is WRONG — his brief describes nobody
+                                         in particular, photographically, with
+                                         surgical implants. Rolls 206 and 208
+                                         both got through, so he has not met it;
+                                         the next identical roll has roughly a
+                                         1-in-7 chance.
+                                         THE READING FIRST: ablate his brief
+                                         against the classifier to find which
+                                         phrase trips it — cheap, and gated on
+                                         the same budget as 3c. THEN the fix is
+                                         a cohort-instruction question and
+                                         therefore a court, not an edit.
+                                         Before the toggle ships to him
 3b KEYING + MULTI-TATTOO REMOVAL          after 5. No live customer yet (no branch
                                           has ever worn two); 1167 §2e is its own
                                           reason

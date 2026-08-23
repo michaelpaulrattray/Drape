@@ -667,6 +667,35 @@ const ANATOMY_SLOTS: readonly CatalogueEntry[] = [
       note: "no question names a build, so this region is composed rather than asked: the whole-subject matte below the bottom of the `face` box. Its completeness is arithmetic against the masks that built it, never a specimen nobody calibrated",
     },
     /*
+      ⚠ AND WHICH PATH THIS ROW'S NOTES WERE MEASURED ON — the Two Paths split
+      (§8.2, from fable-1312; ruled fable-1467 as (c), written here because this
+      is where the decision is).
+
+      **Every measurement below was taken on a DRESSED torso.** The house crew
+      tee is what all sixteen production masters wear and what the bench that
+      bought the below-head crop was run on, so *"a below-head crop is not only
+      her build — it is her CLOTHES"* is a fact about the Wardrobe-shaped world,
+      which is the only world that existed when it was written.
+
+      ```
+      WARDROBE   this row is CARRIED where visible: words, plus the dressed
+                 torso crop that already carries build — and it makes NO
+                 MEASUREMENT CLAIM about the body under the garment
+      BASICS     the body is actually in the frame, so the same crop is a body
+                 carrier rather than a garment carrier, and the row could
+                 honestly claim to have been measured
+      ```
+
+      ⚠ **AND NO CODE NOTICES THE DIFFERENCE.** That is the honest state, not an
+      omission: `remint: "everyRender"` below is path-blind and correct on both,
+      the crop is cut the same way either way, and nothing here reads the path at
+      all. What a Basics frame CHANGES is what this row could honestly say, and
+      that is a capability nobody has built rather than a bug anybody has.
+
+      It is an enumerated precondition of the Basics flag widening rather than a
+      note here — see `CASTING_TWO_PATHS_SCOPE`'s own paragraph.
+    */
+    /*
       AND IT IS RE-CUT EVERY RENDER, because a below-head crop is not only her
       build — it is her CLOTHES (opus-328 §4, ruled in fable-424 §4).
 
@@ -704,6 +733,30 @@ const ANATOMY_SLOTS: readonly CatalogueEntry[] = [
       relation: "narrower",
       note: "her skin is all of her visible skin — a tan does not stop at the jaw (working law 8) — so a face crop filed as her skin is a partial wearing the name of the whole, and it would read complete against the wrong boundary",
     },
+    /*
+      ⚠ AND THE UNDERSTATEMENT BELOW WAS MEASURED ON A DRESSED CAST (§8.2,
+      ruled fable-1467 (c)).
+
+      *"11.5–12.5% of what a tan touches, three production frames"* — three
+      frames of people in the house crew tee, where a face crop is most of the
+      skin there is to see. **On a Basics cast the same crop is a far smaller
+      share of a far larger subject**, so the label's honesty gets WORSE on the
+      path that shows more skin, not better.
+
+      ```
+      WARDROBE   carried where visible, no measurement claim — and `display:
+                 "face skin"` is close to the truth because little else shows
+      BASICS     the body is in the frame; the same row still shows a face crop
+                 and still calls it "face skin", which stays literally true and
+                 becomes a much larger understatement
+      ```
+
+      ⚠ **No code notices, and the row does not lie either way** — `display` says
+      exactly which skin it is showing. What changes is how much it is leaving
+      out. Enumerated as a precondition of the Basics flag widening rather than
+      fixed here, because the fix is a capability (measuring skin on a body) and
+      not a caption.
+    */
     /*
       AND THE SAME REGION THE NOTE ABOVE REFUSES AS A CROP IS THE ONE THE PANEL
       DRAWS HER SKIN FROM (founder's box rule, ruled in fable-428 §2).

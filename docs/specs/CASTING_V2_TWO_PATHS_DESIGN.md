@@ -502,6 +502,26 @@ on the cast, not only on the control that set it.
 disabled toggle is a question with no answer, which is D-180's dead end wearing a
 tap target.
 
+### ⚠ 6.1 THIS SITTING INHERITS A REQUIREMENT FROM §8.2 (ruled fable-1467)
+
+**The panel's body rows say "as dressed" on the Wardrobe path.** `build` and
+`skin` are carried without a measurement claim there — the crop is a dressed
+torso and the skin label is a face crop — and on Basics the body is genuinely in
+the frame. That difference is a thing a PERSON READS on a surface, so it belongs
+to the milestone where surfaces are judged with screenshots rather than to the
+catalogue where the split is decided.
+
+It is written here rather than left in a mailbox because §6 is a UI milestone
+under the evidence-pack contract, and a requirement that arrives as a memory is a
+requirement that arrives as an omission. **The copy audit for this sitting
+classifies the provenance label like every other string**, and the screenshots
+show both paths side by side.
+
+⚠ **And it is a LABEL, never a hedge.** *"as dressed"* is a true statement about
+what the picture shows; *"we think"* or *"approximately"* would be the product
+apologising for a reading it never claimed to make. The row is not less accurate
+on Wardrobe — it is accurate about something smaller.
+
 ---
 
 ## 7. Refine — the stage wall admits garments on one path and refuses on the other
@@ -704,6 +724,33 @@ CASTING_TWO_PATHS_SCOPE     off | all | users:<ids>      parent: CASTING_V2_SCOP
   fabric, and nothing goes red. **The Basics path argues the other way and needs
   no line** — it leaves the chest bare by design, which is the same finding
   generalised.
+
+- ⚠ **AND A FOURTH, added when §8.2 was read at the code** (opus-1123, ruled
+  fable-1467 as (c)): **a Basics frame changes what the `build` and `skin` rows
+  can honestly claim, and no code notices.**
+
+  §8.2 asks for body facts to be MEASURED on Basics and carried without a
+  measurement claim on Wardrobe. Read at the catalogue, the honesty problem it
+  names is **today's product** rather than something the paths create: `build`'s
+  crop is the below-head matte and every measurement behind it was taken on a
+  DRESSED torso, and `skin`'s *"11.5–12.5% of what a tan touches"* was measured
+  on three frames of people in the house crew tee. The Wardrobe path only makes
+  that visible; **Basics is the path that FIXES it**, because the body is
+  actually in the frame.
+
+  So this is not a defect to repair before the flip — nothing lies, `remint:
+  "everyRender"` is path-blind and correct on both, and `display: "face skin"`
+  stays literally true. It is a **capability the Basics path unlocks and nothing
+  claims**: on that path the same crop is a body carrier rather than a garment
+  carrier, and the skin label's understatement gets LARGER on the path that
+  shows more skin.
+
+  It is a precondition because the failure it guards against is the one this
+  document keeps catching: a row whose notes describe one world being read in
+  another, with nothing in the code to say which. **Answered before Basics
+  widens — either by building the measured claim or by his explicit acceptance
+  that Basics carries the same unmeasured rows Wardrobe does.** The split is
+  written at the catalogue beside each row, where the decision lives.
 
 
 ---
