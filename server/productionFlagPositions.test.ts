@@ -175,6 +175,30 @@ describe("the comparator, proven able to say no", () => {
     expect(verdict.mismatches[0]).toContain("CASTING_BORN_INK_SCOPE");
   });
 
+  it("reports a flag the record says is ON that the service does not hold at all", () => {
+    /*
+      ⚠ THE ARM THE SABOTAGE FOUND MISSING, and it is the direction that costs
+      most. Every other arm here varies a VALUE; this one varies PRESENCE. A
+      comparator that only ever compares the variables it can see is green while
+      `CASTING_V2_SCOPE` is deleted off the service — the record would say `all`,
+      the product would be dark for every account, and nothing would say a word.
+      Neutering `?? UNSET` reddened NOTHING before this existed.
+    */
+    const withoutTheProgramsDoor = agreeing.filter(
+      (reading) => reading.name !== "CASTING_V2_SCOPE",
+    );
+    const verdict = comparePositions(withoutTheProgramsDoor);
+
+    expect(verdict.mismatches).toHaveLength(1);
+    expect(verdict.mismatches[0]).toContain("CASTING_V2_SCOPE");
+    expect(verdict.mismatches[0], "an unset variable is reported as off, not skipped").toContain(
+      "`off`",
+    );
+    expect(verdict.block.join("\n"), "and it still appears in the receipt").toContain(
+      "CASTING_V2_SCOPE=<unset>",
+    );
+  });
+
   it("reports a governed variable the table has never heard of — by NAME only", () => {
     const verdict = comparePositions([
       ...agreeing,

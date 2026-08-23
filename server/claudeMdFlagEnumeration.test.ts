@@ -76,6 +76,35 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."
 */
 const DECLARED = declaredEnvNames(serverAndSharedSources(repoRoot));
 
+/**
+ * ⚠ AND THE POPULATION ABOVE HAD A NINTH FLAG OUTSIDE IT — found the same day
+ * this file was written, by the instrument built to compare the document to the
+ * service (`server/productionFlagPositions.test.ts`).
+ *
+ * `ENABLE_FINAL_MODEL_DELETE` gates PERMANENT CAST DELETION for every account,
+ * is `true` on production, and appeared NOWHERE in `CLAUDE.md`. This arm could
+ * not have caught it: it is read straight off `process.env` in
+ * `server/routes/models.ts`, never through an exported `*_ENV` constant, so it
+ * was never in this file's population at all.
+ *
+ * The header's floor paragraph named `FAL_ALLOWANCES` as the second declaration
+ * family and reasoned about it. **The direct `process.env.X` read is a THIRD,
+ * and it was not named** — which is the same mistake one level up: a stated
+ * floor that was itself incomplete reads like a surveyed boundary.
+ *
+ * So the population is the UNION with the Atlas's own flag inventory, which
+ * scans `process.env.X`, `process.env["X"]` AND the constant pattern. Two
+ * readers, neither inheriting the other's blind spot; the controls below pin
+ * the member each one alone would lose.
+ */
+const ATLAS_FLAGS: string[] = (
+  JSON.parse(
+    readFileSync(path.join(repoRoot, "docs/architecture/drape-architecture.json"), "utf8"),
+  ) as { flags: Array<{ name: string }> }
+).flags.map((flag) => flag.name);
+
+const DOCUMENTABLE = [...new Set([...DECLARED, ...ATLAS_FLAGS])].sort();
+
 describe("the flag list is the flag list", () => {
   it("⚠ CONTROL — the scanner found a real population, and the wrapped declaration is in it", () => {
     /*
@@ -102,9 +131,18 @@ describe("the flag list is the flag list", () => {
     expect(claude.includes("A_FLAG_NOBODY_HAS_WRITTEN_SCOPE")).toBe(false);
   });
 
+  it("⚠ CONTROL — the union carries the flag the constant scan alone cannot see", () => {
+    /* The whole reason for the union, pinned by its specimen. Without this the
+       widening could be silently undone and every arm would stay green. */
+    expect(DOCUMENTABLE, "read straight off process.env, never through a *_ENV constant")
+      .toContain("ENABLE_FINAL_MODEL_DELETE");
+    expect(DECLARED).not.toContain("ENABLE_FINAL_MODEL_DELETE");
+    expect(DOCUMENTABLE.length).toBeGreaterThan(DECLARED.length);
+  });
+
   it("names every declared environment variable somewhere in CLAUDE.md", () => {
     const claude = readFileSync(path.join(repoRoot, "CLAUDE.md"), "utf8");
-    const missing = DECLARED.filter((name) => !claude.includes(name));
+    const missing = DOCUMENTABLE.filter((name) => !claude.includes(name));
     expect(
       missing,
       "these environment variables exist in the code and are absent from CLAUDE.md — "

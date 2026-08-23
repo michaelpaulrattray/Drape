@@ -183,13 +183,28 @@ export const PRODUCTION_FLAG_POSITIONS: Readonly<Record<string, FlagPosition>> =
     position: "true",
     why: "required by every scope that keeps bytes under a purge path",
   },
+  /* ⚠ THESE TWO WERE THIS TABLE'S FIRST TWO ERRORS, AND THE INSTRUMENT CAUGHT
+     THEM ON ITS FIRST RUN AGAINST THE REAL SERVICE. Both rows said `off`,
+     because I wrote them from the rite's own flag block — and the rite's block
+     was the prefix filter this commit replaces, which cannot match either name.
+     `opus-204` (2026-08-11) had already read all three `ENABLE_` keys BY A
+     SECOND, SEPARATE SWEEP, noting in as many words that *the CASTING pattern
+     cannot see them*, and recorded both as `true` and deliberate. That
+     knowledge was lost, and `opus-1078` re-derived "not set" from the blind
+     block twelve days later — which is how CLAUDE.md came to say it. */
   ENABLE_EVIDENCE_CANDIDATE_WORKER: {
-    position: "off",
-    why: "the composer's candidate worker; the composer scope is off",
+    position: "true",
+    why:
+      "true since at least 2026-08-11 (opus-204's separate ENABLE_ sweep), and "
+      + "inert: R7_EVIDENCE_COMPOSER_SCOPE is off, so the worker has nothing to do",
   },
   ENABLE_FINAL_MODEL_DELETE: {
-    position: "off",
-    why: "never set on production",
+    position: "true",
+    why:
+      "permanent Cast deletion, LIVE for every account — it is a boolean with no "
+      + "per-user narrowing (assertFinalModelDeleteEnabled, server/routes/models.ts). "
+      + "True since at least 2026-08-11 (opus-204), deliberate, and absent from "
+      + "CLAUDE.md entirely until 2026-08-23",
   },
   R7_SNAPSHOT_READ_SCOPE: { position: "all", why: "the R7-7B snapshot reader rollout, complete" },
   R7_SNAPSHOT_RESTORE_SCOPE: {

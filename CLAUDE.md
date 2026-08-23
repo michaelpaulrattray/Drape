@@ -375,7 +375,7 @@ Most of these followed the same path: helper or rule written, docs written, todo
 - `KLAVIYO_PRIVATE_KEY` — marketing email flows
 - `PORT` (default 3000), `LOG_LEVEL`, `DAILY_GENERATION_LIMIT`, `GEMINI_TEXT_CONCURRENCY`, `GEMINI_IMAGE_CONCURRENCY`, `GEMINI_MAX_QUEUE_DEPTH`
 
-### ⚠ The eight flags that were live and undocumented (added 2026-08-23)
+### ⚠ The flags that were live and undocumented (added 2026-08-23)
 
 **This section reads as an enumeration and was not one.** Eight scope flags
 existed in the code and appeared nowhere above, **and six of them are SET ON THE
@@ -385,6 +385,27 @@ failure as the Express route list, on the flags list: *a flag that exists but is
 not on the list is how the list stops being the list.* It is now enforced —
 `server/claudeMdFlagEnumeration.test.ts` derives the env-var names from the code
 and reddens on the next one, so this cannot silently happen again.
+
+⚠ **IT WAS NINE, AND THE FLAG BLOCK THIS SECTION CITES AS ITS SOURCE WAS THE
+REASON — corrected the same day, hours later.** The rite's block filtered the
+service's variables by NAME PREFIX (`CASTING_`, `R7_`,
+`ENABLE_STORAGE_CLEANUP_WORKER`), so **it could not match
+`ENABLE_EVIDENCE_CANDIDATE_WORKER` or `ENABLE_FINAL_MODEL_DELETE` at all** — and
+absent-from-the-block was read as not-set-on-the-service. Both are `true` on
+production and have been since at least 2026-08-11, when a shift read all three
+`ENABLE_` keys **by a second, separate sweep**, saying in as many words that *the
+CASTING pattern cannot see them* (opus-204). That knowledge was lost and the
+blind block was believed instead. `ENABLE_FINAL_MODEL_DELETE` — permanent Cast
+deletion, open to every account — was absent from this file entirely; it has its
+own line below now. **And neither guard could have caught it:** this section's
+arm derives its population from the `*_ENV` constant pattern, and that flag is
+read straight off `process.env`. ⚠ **So the enforcement sentence above was true
+of one declaration shape and read as true of all of them.** Both halves are
+repaired: the arm's population is now the UNION of the Atlas's flag inventory
+(which scans `process.env.X` too) and the constant scan, and
+`scripts/lib/productionFlagPositions.mts` records where every governed variable
+is *meant* to stand while the deploy rite compares that record to the service on
+every push — a mismatch in either direction costs the rite its `OK`.
 
 The entries below are deliberately **short and factual** rather than written in
 the ruled prose above: each states the grammar, the parent, and nothing this
@@ -425,7 +446,18 @@ one from whoever owns its road.
   parented on the composer scope. Production: `off`, and
   `evidenceAcceptedAssetMigrationCeremony` **refuses to run unless it is off**
 - `ENABLE_EVIDENCE_CANDIDATE_WORKER` — the composer's candidate worker, in the
-  shape of `ENABLE_STORAGE_CLEANUP_WORKER`. Not set on production
+  shape of `ENABLE_STORAGE_CLEANUP_WORKER`. ⚠ **Production: `true`, and this
+  line said "not set" until 2026-08-23** — see the correction below. Inert
+  either way: `R7_EVIDENCE_COMPOSER_SCOPE` is `off`, so the worker has nothing
+  to do
+- `ENABLE_FINAL_MODEL_DELETE` — `true` or absent; **permanent Cast deletion**.
+  A boolean with no per-user narrowing: on, `assertFinalModelDeleteEnabled`
+  (`server/routes/models.ts`) stops refusing and the delete road is open to
+  **every account**; off, every one of its three call sites answers
+  `PRECONDITION_FAILED` — *"Permanent Cast deletion isn't available yet."*
+  **Production: `true`**, and it has been since at least 2026-08-11.
+  ⚠ **It appeared NOWHERE in this file until 2026-08-23** — the ninth flag, and
+  the one the section above was written to prevent
 
 ### Windows notes
 
