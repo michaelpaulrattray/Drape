@@ -1171,7 +1171,23 @@ export function facePanel(input: {
         crop: null,
       }],
       regions: [{
-        box: {
+        /*
+          WHERE IT IS ON *THIS* FRAME, and the crop's own columns only when
+          nothing better exists (ruled fable-1448 §4).
+
+          A delivery crop is minted ONCE from the frame that first delivered
+          it and never re-cut, so on every later version these six columns
+          describe a picture nobody is looking at — measured on production,
+          5 of 6 crops are drift-exposed and one adjacent pair puts the same
+          slot 834px apart. The render re-reads a worn tattoo's surface as it
+          delivers and files it beside the library's carried boxes, under the
+          ink SLOT'S own key, so this is the same lookup every other row does.
+
+          `upperChest` is deliberately never in that map — its surface is
+          under the roll prompt's crew tee on an ordinary frame — so its card
+          keeps the crop's own geometry and the reason is in the render's log.
+        */
+        box: input.carriedGeometry?.get(definition.slot) ?? {
           x: worn.bboxX,
           y: worn.bboxY,
           width: worn.bboxW,

@@ -130,6 +130,7 @@
         "id": "gate_ink_uncarried",
         "kind": "interpreter-refusal",
         "pinnedBy": [
+          "server/castingV2/carriedGeometry.test.ts",
           "server/castingV2/refineDelta.test.ts",
           "server/castingV2/refineRefusals.test.ts",
           "server/castingV2/refineService.test.ts"

@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "159a178f7ff61bc8"
+    "sourceFingerprint": "171c1cdda8df7c77"
   },
   "domains": [
     {
@@ -21111,6 +21111,11 @@
     {
       "from": "module:server/castingV2/carriedGeometry.ts",
       "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/carriedGeometry.ts",
+      "to": "module:shared/inkPlacementVocabulary.ts",
       "kind": "imports"
     },
     {

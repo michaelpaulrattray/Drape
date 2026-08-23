@@ -60,7 +60,7 @@ _Entrances:_ `server/castingV2/refineInterpreter.ts` · `server/castingV2/refine
 | `wall_unbacked` | interpreter-refusal |  | server/castingV2/refineDelta.ts:495<br>server/castingV2/refineInterpreter.ts:1559<br>(+1) | 3 test(s) | wardrobe.tee, guard.stage, age.older, guard.compliment, wardrobe.colour |
 | `wall_unfileable` | interpreter-refusal |  | server/castingV2/refineDelta.ts:507<br>server/castingV2/refineDelta.ts:1248<br>(+2) | 9 test(s) | _documented-unreachable or gap — see findings_ |
 | `gate_ink_document` | interpreter-refusal |  | server/castingV2/refineDelta.ts:520<br>server/castingV2/refineDelta.ts:520<br>(+3) | 2 test(s) | ink.words.face, ink.words.noplace, ink.words.behind-ear, ink.transform.none |
-| `gate_ink_uncarried` | interpreter-refusal |  | server/castingV2/refineDelta.ts:526<br>server/castingV2/refineDelta.ts:526<br>(+3) | 3 test(s) | ink.words.chest |
+| `gate_ink_uncarried` | interpreter-refusal |  | server/castingV2/refineDelta.ts:526<br>server/castingV2/refineDelta.ts:526<br>(+3) | 4 test(s) | ink.words.chest |
 | `gate_ink_unkeepable` | interpreter-refusal |  | server/castingV2/refineDelta.ts:535<br>server/castingV2/refineDelta.ts:535<br>(+3) | 2 test(s) | _documented-unreachable or gap — see findings_ |
 | `gate_ink_coverage_unread` | interpreter-refusal |  | server/castingV2/refineDelta.ts:542<br>server/castingV2/refineDelta.ts:542<br>(+3) | 2 test(s) | _documented-unreachable or gap — see findings_ |
 | `scope_unknown` | service-refusal |  | server/castingV2/refineService.ts:1272<br>server/castingV2/refineService.ts:1310 | 2 test(s) | guard.scope.unknown |
@@ -229,7 +229,7 @@ _Entrances:_ `server/castingV2/facePanel.ts` · `server/castingV2/faceScanServic
 | empty | interpreter-refusal |  | diagnosticCapture.test.ts, faceScan.test.ts, faceScanService.test.ts, referenceSlotCatalogue.test.ts, refineRefusals.test.ts, server/casting/geminiMigration.test.ts |
 | gate_ink_coverage_unread | interpreter-refusal |  | refineDelta.test.ts, refineRefusals.test.ts |
 | gate_ink_document | interpreter-refusal |  | inkReferenceGate.test.ts, refineDelta.test.ts |
-| gate_ink_uncarried | interpreter-refusal |  | refineDelta.test.ts, refineRefusals.test.ts, refineService.test.ts |
+| gate_ink_uncarried | interpreter-refusal |  | carriedGeometry.test.ts, refineDelta.test.ts, refineRefusals.test.ts, refineService.test.ts |
 | gate_ink_unkeepable | interpreter-refusal |  | refineDelta.test.ts, refineRefusals.test.ts |
 | history_predates_undo | service-refusal |  | refineService.test.ts |
 | history_unreadable | service-refusal |  | refineService.test.ts |

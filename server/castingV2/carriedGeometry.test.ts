@@ -19,6 +19,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import {
   CARRIED_GEOMETRY_COST_NOTE_ABOVE,
+  carriedInkSlotsForGeometry,
   carriedSlotsForGeometry,
   reMintCarriedGeometry,
 } from "./carriedGeometry";
@@ -281,6 +282,83 @@ describe("re-reading the carried features on the delivered frame", () => {
        prices it. A face carrying more than this resurfaces the per-render cost
        reading — $0.005 a read, so eleven features is $0.055 a render. */
     expect(CARRIED_GEOMETRY_COST_NOTE_ABOVE).toBe(10);
+  });
+});
+
+describe("the tattoo row's box, which drifts the same way (fable-1448 §4)", () => {
+  it("re-reads a worn tattoo the MEASURED word names, with its side", () => {
+    const { slots, refused } = carriedInkSlotsForGeometry({
+      delivered: { "ink:upperArm@left": "crop-1", "ink:neck": "crop-2" },
+    });
+    expect(refused).toEqual([]);
+    expect(slots.map((one) => [one.slot, one.question, one.side])).toEqual([
+      ["ink:upperArm@left", "upper arm", "left"],
+      ["ink:neck", "neck", null],
+    ]);
+  });
+
+  it("skips the tattoo THIS render delivered — its crop is cut from this frame", () => {
+    const { slots } = carriedInkSlotsForGeometry({
+      delivered: { "ink:neck": "crop-2" },
+      deliveredThisRender: "ink:neck",
+    });
+    expect(slots).toEqual([]);
+  });
+
+  it("⚠ REFUSES upperChest rather than filing — its surface is under her shirt", () => {
+    /*
+      The read the mint cannot make under the roll prompt's crew tee is not one
+      this can make either — `gate_ink_uncarried` exists because the words road
+      walls exactly this placement. Asking anyway risks worse than a stale box:
+      a segmenter asked for a covered surface may outline the GARMENT.
+    */
+    const { slots, refused } = carriedInkSlotsForGeometry({
+      delivered: { "ink:upperChest": "crop-3", "ink:neck": "crop-2" },
+    });
+    expect(refused).toEqual(["ink:upperChest"]);
+    expect(slots.map((one) => one.slot), "and the readable one still goes").toEqual(["ink:neck"]);
+  });
+
+  it("⚠ the panel draws the re-read box on the tattoo card, and the crop's own when there is none", () => {
+    /*
+      The end-to-end half, on the ink row. Cand 1643's real numbers: the same
+      `ink:upperArm@left` measured x=0 on v216 and x=834 on v217. Drawn on the
+      later frame from the crop's own columns, the rectangle is off the arm.
+    */
+    const ink = [
+      { slot: "ink:upperArm@left", storageKey: "crops/a.png", bboxX: 0, bboxY: 1145, bboxW: 60, bboxH: 90, frameWidth: 1024, frameHeight: 1536 },
+      { slot: "ink:upperChest", storageKey: "crops/b.png", bboxX: 270, bboxY: 879, bboxW: 80, bboxH: 70, frameWidth: 1024, frameHeight: 1536 },
+    ];
+    const panel = (carriedGeometry?: ReadonlyMap<string, { x: number; y: number; width: number; height: number; frame: { width: number; height: number } }>) => facePanel({
+      rows: [],
+      ink,
+      pronouns: { subject: "he", object: "him", possessive: "his", plural: false },
+      contentUrl: (key) => `https://cdn/${key}`,
+      maskUrl: (key) => `https://cdn/${key}`,
+      ...(carriedGeometry ? { carriedGeometry } : {}),
+    });
+    const boxOf = (built: ReturnType<typeof facePanel>, slot: string) => built.groups
+      .flatMap((group) => group.rows)
+      .flatMap((one) => one.regions)
+      .find((region) => region.slot === slot)?.box ?? null;
+
+    expect(boxOf(panel(), "ink:upperArm@left"), "the defect").toMatchObject({ x: 0 });
+
+    const fresh = new Map([["ink:upperArm@left", { x: 834, y: 1113, width: 66, height: 95, frame: { width: 1024, height: 1536 } }]]);
+    expect(boxOf(panel(fresh), "ink:upperArm@left")).toMatchObject({ x: 834, y: 1113 });
+    /* And the refused one keeps the crop's own geometry rather than losing its
+       rectangle — a row with no box is not on the panel at all. */
+    expect(boxOf(panel(fresh), "ink:upperChest")).toMatchObject({ x: 270, y: 879 });
+  });
+
+  it("skips a slot outside the measured placement vocabulary", () => {
+    /* These ids crossed a JSON boundary. A row is a promise that tapping it
+       edits that thing, and a made-up placement has no reader word at all. */
+    const { slots, refused } = carriedInkSlotsForGeometry({
+      delivered: { "ink:elbow": "crop-4", "hair": "not-an-ink-slot" },
+    });
+    expect(slots).toEqual([]);
+    expect(refused, "not refused either — it was never a candidate").toEqual([]);
   });
 });
 

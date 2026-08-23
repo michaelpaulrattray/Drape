@@ -202,7 +202,7 @@ import { assembleWithCarriedSegments, listCarriedRows } from "./carriedSegments"
 import { makeupRegionFor } from "./makeupPlacement";
 import { keepSegmentsFromRender } from "./segmentPersistence";
 import { mintReferencesForRender } from "./referenceMint";
-import { carriedSlotsForGeometry, reMintCarriedGeometry } from "./carriedGeometry";
+import { carriedInkSlotsForGeometry, carriedSlotsForGeometry, reMintCarriedGeometry } from "./carriedGeometry";
 import type { DeliveryAdjudication } from "./deliveryCourt";
 import { mintedSlotsForRender } from "./mintedSlots";
 import {
@@ -9245,13 +9245,41 @@ async function refineCandidateCounted(
       This wrapper exists for the one thing before it that can throw — building
       the reader — for the same reason the mint's own block has one.
     */
+    /*
+      AND THE TATTOO ROW, WHICH HAS THE SAME DEFECT BY ITS OWN DESIGN NOTE
+      (law 7's sweep, opus-1106 §4; ruled fable-1448 §4).
+
+      A delivery crop is minted ONCE from the frame that first delivered it and
+      never re-cut, and its geometry columns ARE the panel's rectangle — so
+      every later version wears the tattoo with a box measured somewhere else.
+      Measured on production: 5 of 6 crops are drift-exposed, and one pair of
+      adjacent versions puts the same slot 834px apart.
+
+      It goes through the SAME read and the SAME row, keyed by the ink slot, so
+      the panel needs no second merge and the store no second shape.
+
+      `upperChest` is refused rather than read — see `carriedInkSlotsForGeometry`.
+    */
+    const wornInk = libraryAtRender === null ? { slots: [], refused: [] } : carriedInkSlotsForGeometry({
+      delivered: readDeliveredInk(claimedDeltas) ?? {},
+      deliveredThisRender: deliveredInk?.slot ?? null,
+    });
+    if (wornInk.refused.length > 0) {
+      log.info(
+        { operationId, variant: variant.publicId, refused: wornInk.refused },
+        "[carriedGeometry] a worn tattoo's box was not re-read — its surface is under her clothes on an ordinary frame, and a reader asked for it may outline the garment",
+      );
+    }
     if (libraryAtRender !== null) {
       try {
-        const toReRead = carriedSlotsForGeometry({
-          rows: libraryAtRender.rows,
-          minted: libraryAtRender.minted,
-          priorWords: libraryAtRender.priorWords,
-        });
+        const toReRead = [
+          ...carriedSlotsForGeometry({
+            rows: libraryAtRender.rows,
+            minted: libraryAtRender.minted,
+            priorWords: libraryAtRender.priorWords,
+          }),
+          ...wornInk.slots,
+        ];
         if (toReRead.length > 0) {
           const reMinted = await reMintCarriedGeometry({
             userId: input.userId,

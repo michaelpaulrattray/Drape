@@ -56,7 +56,12 @@ import { randomUUID } from "node:crypto";
 import { askWordsForSlot, openKindAsk } from "./openKindQuestion";
 import { liveReferences, type StoredReference } from "./referenceLibrary";
 import { slotSpecFor } from "./referenceSlotCatalogue";
-import { openKindOfSlot, parseSlot, type Instance } from "./referenceSlots";
+import { inkPlacementOfSlot, openKindOfSlot, parseSlot, type Instance } from "./referenceSlots";
+import {
+  inkPlacementEntry,
+  isInkPlacement,
+  type InkPlacement,
+} from "../../shared/inkPlacementVocabulary";
 import { boundsOf } from "./segmentCuts";
 import type { RegionReader } from "./maskedRefine";
 import type { FeatureSlot } from "./recipeAssembler";
@@ -178,6 +183,81 @@ export function carriedSlotsForGeometry(input: {
   }
   return out;
 }
+
+/**
+ * THE SAME DEFECT ON THE TATTOO ROW — a delivery crop's box drifts too
+ * (law 7's sweep, opus-1106 §4; ruled fable-1448 §4).
+ *
+ * A delivery crop is **minted ONCE, from the frame that FIRST delivered it,
+ * never re-cut from a later carry** — its own design note's words — and its six
+ * geometry columns ARE the panel's rectangle. So the moment she edits anything
+ * else, the tattoo card's box is a measurement of a frame nobody is looking at.
+ *
+ * Measured on production before this was built:
+ *
+ *     casting_ink_delivery_crops                                    6
+ *     …with at least one ready version after the delivering one     5
+ *     cand 1643 · ink:upperArm@left · v216 box x=0 · v217 box x=834
+ *
+ * That last line is the finding in one row: the same slot on the same cast, two
+ * adjacent versions, 834px apart.
+ *
+ * # ⚠ `upperChest` REFUSES RATHER THAN FILING, and it is the one rule here
+ *
+ * The roll prompt dresses her in a crew-neck tee, so the ordinary master's
+ * chest is covered — and **a read the mint cannot make under that shirt is not
+ * one this re-read can make either.** `gate_ink_uncarried` exists because of
+ * exactly that: the words road walls `upperChest` because the mint writes
+ * nothing there. Asking anyway risks worse than a stale box, because a
+ * segmenter asked for a covered surface may outline the GARMENT.
+ *
+ * So the refusal is stated, free, and named — the wardrobe is the reason, and
+ * the countable line says so rather than leaving a silent empty read.
+ *
+ * ⚠ **AND THERE IS A THIRD OUTCOME ON THE RECORD THAT THIS DELIBERATELY DOES
+ * NOT SERVE.** Production cand 1641 v207 shows the engine SCOOPING the neckline
+ * and delivering onto bare skin — a chest that IS readable, whose box drifts
+ * like any other. Serving it would need a court first (does `upper chest` on a
+ * clothed frame answer nothing, or answer the shirt?), and until somebody buys
+ * that reading the safe answer and the ruled one are the same answer.
+ */
+export function carriedInkSlotsForGeometry(input: {
+  /** The version's worn tattoos — `slot → cropId`, off its own composed delta. */
+  delivered: Readonly<Record<string, string>>;
+  /** The slot this render delivered, whose crop is cut from THIS frame. */
+  deliveredThisRender?: string | null;
+}): { slots: CarriedSlotToReRead[]; refused: string[] } {
+  const slots: CarriedSlotToReRead[] = [];
+  const refused: string[] = [];
+  for (const slot of Object.keys(input.delivered)) {
+    if (slot === input.deliveredThisRender) continue;
+    const placement = inkPlacementOfSlot(slot);
+    if (placement === null || !isInkPlacement(placement.placement)) continue;
+    if (!INK_SURFACES_READABLE_ON_A_DRESSED_FRAME.includes(placement.placement)) {
+      refused.push(slot);
+      continue;
+    }
+    slots.push({
+      slot: slot as FeatureSlot,
+      /* The MEASURED segmenter word, never the copy noun beside it — they are
+         identical for all three placements today, which is exactly how that
+         conflation would survive review. */
+      question: inkPlacementEntry(placement.placement).readerWord,
+      side: placement.side,
+    });
+  }
+  return { slots, refused };
+}
+
+/**
+ * The placements a re-read may be asked of on an ordinary delivered frame.
+ *
+ * Derived from what the WORDS ROAD already proved end to end rather than
+ * re-decided here: `neck` and `upperArm` are the two the mint demonstrably
+ * writes a crop for, and `upperChest` is the one it does not, under the roll
+ * prompt's own crew tee. A second list would drift from that one.
+ */
+const INK_SURFACES_READABLE_ON_A_DRESSED_FRAME: readonly InkPlacement[] = ["neck", "upperArm"];
 
 export type CarriedGeometryResult = {
   /** How many features were asked about. */
