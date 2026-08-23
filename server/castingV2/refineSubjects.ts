@@ -265,8 +265,29 @@ void _guaranteedSubjectsAreExcluded;
  * decision the Two Paths ruling made.
  */
 export function subjectsServedOnPath(path: CastingPath | null | undefined): readonly FreeSubject[] {
-  if (path === "wardrobe") return FREE_SUBJECT_KEYS;
-  return FREE_SUBJECT_KEYS.filter((subject) => SUBJECT_CARDS[subject].bornPathsServing === "everyPath");
+  return FREE_SUBJECT_KEYS.filter((subject) => subjectServedOnPath(subject, path));
+}
+
+/**
+ * THE SAME RULE FOR ONE SUBJECT — the predicate the list above is built from.
+ *
+ * Extracted rather than copied when the panel needed to ask about exactly one
+ * card (item 8's §8.1, ruled fable-1459 ASK 3). A second reader spelling out
+ * `path === "wardrobe" || card.bornPathsServing === "everyPath"` beside this
+ * one is working law 4 on a rule that has already produced one real defect, and
+ * the drift would be a panel section drawn for a path the model is not shown
+ * the subject on.
+ *
+ * ⚠ **What it does NOT answer is which path REFUSES.** That is a different
+ * question with a different answer for `unpathed` — see
+ * `wardrobeCards.wardrobeSectionServed`, where all three values are checked
+ * against both questions out loud.
+ */
+export function subjectServedOnPath(
+  subject: FreeSubject,
+  path: CastingPath | null | undefined,
+): boolean {
+  return path === "wardrobe" || SUBJECT_CARDS[subject].bornPathsServing === "everyPath";
 }
 
 /**

@@ -78,6 +78,8 @@ import {
   type SlotDefinition,
   type SlotGroup,
 } from "./referenceSlotCatalogue";
+import { wardrobePanelPieces } from "./wardrobeCards";
+import type { WardrobeResolution } from "./wardrobeLine";
 import {
   INSTANCES,
   type Instance,
@@ -95,8 +97,14 @@ import {
  * this cast has that the catalogue has no word for. Widening `SlotGroup` to
  * hold it would put a value in the closed vocabulary that no catalogue entry
  * can ever carry, so the widening lives here, where the concept does.
+ *
+ * `wardrobe` is the second of those and it is the furthest from the catalogue
+ * of any of them: **it is not part of the person at all** (§8.1, from
+ * fable-1312 — *never mixed with body features*). Its rows come from the stored
+ * wardrobe LINE rather than from any slot, they mint nothing, and they exist
+ * only on a cast born on the Wardrobe path.
  */
-export type PanelSection = SlotGroup | "open";
+export type PanelSection = SlotGroup | "open" | "wardrobe";
 
 /**
  * The panel's sections, in the order they are read on a face.
@@ -120,6 +128,19 @@ export const PANEL_GROUPS: readonly { group: PanelSection; heading: string }[] =
   { group: "body", heading: "Body" },
   { group: "accessories", heading: "Accessories" },
   { group: "open", heading: "Also on this cast" },
+  /*
+    ⚠ LAST, AND NOT BECAUSE IT MATTERS LEAST — because it is not the person.
+
+    Every section above is something this cast IS; this one is something she is
+    WEARING, and fable-1312's condition is that garment pieces are never mixed
+    in with body features. Reading order is the cheapest way to say that, and
+    the heading says the rest: a customer scanning a face chart should reach the
+    end of the person before the clothes begin.
+
+    The heading is the plain noun and not "Her wardrobe": a section heading is a
+    LABEL, and the possessive lives on the row and the prefill (fable-450/451).
+  */
+  { group: "wardrobe", heading: "Wardrobe" },
 ];
 
 export type PanelBox = {
@@ -638,6 +659,20 @@ export function facePanel(input: {
    * landed, and the panel is then exactly what it was.
    */
   carriedGeometry?: ReadonlyMap<string, PanelBox>;
+  /**
+   * WHAT THIS BRANCH IS WEARING — the resolution, never a bare line (§8.1).
+   *
+   * Absent is the ordinary case and draws no wardrobe section at all: it is
+   * every roll cast before the paths existed and every account outside
+   * `CASTING_TWO_PATHS_SCOPE`, and for those the panel is exactly what it was.
+   *
+   * ⚠ **The RESOLUTION and not the line**, for `classifyInkPlacement`'s reason
+   * one surface over: `unpathed`, `incoherent` and a real line do not flatten,
+   * and a bare string cannot say which of the three this is. Only a `line` on
+   * the Wardrobe path draws anything, and that argument lives at
+   * `wardrobePanelPieces` rather than here.
+   */
+  wardrobe?: WardrobeResolution | null;
 }): FacePanel {
   const live = liveReferences(input.rows);
   const bySlot = new Map<FeatureSlot, StoredReference[]>();
@@ -1033,7 +1068,27 @@ export function facePanel(input: {
    * that an empty read there cannot mean "hidden". Everything else still leaves
    * the panel exactly as it did.
    */
-  const hasContent = (row: PanelRow): boolean => row.regions.length > 0 || row.absent !== null;
+  /*
+    ⚠ AND A WARDROBE ROW IS CONTENT BY CONSTRUCTION (§8.1).
+
+    The rule this predicate encodes is *no box, no row* — a row is a promise
+    that clicking those pixels edits that thing, so a row with no measured
+    rectangle is not drawn. **A wardrobe row makes no such promise.** It has no
+    rectangle, claims none, and its content is its own phrase, read off a line
+    this cast is stored as wearing rather than off any reading of the frame.
+
+    Left to the rule above it would be dropped for lacking a geometry it was
+    never going to have — and then `stateOfRow` would call it `pending`, which
+    is a placeholder for a read that is not running: fable-521's own warning
+    about a working state that outlives its work.
+
+    ⚠ **When 8B gives a piece a crop, this clause does NOT become dead.** A
+    garment the scan cannot find still has a phrase, and the phrase is still
+    worth drawing — losing the row would be the panel forgetting what she is
+    wearing because it could not photograph it.
+  */
+  const hasContent = (row: PanelRow): boolean => row.group === "wardrobe"
+    || row.regions.length > 0 || row.absent !== null;
 
   /*
     WHILE THE SCAN IS STILL RUNNING, A ROW WITH NOTHING IS A PLACE FOR SOMETHING
@@ -1368,6 +1423,90 @@ export function facePanel(input: {
         .map((side) => openRegion(side.slot, side.state.box!)),
       /* No children — see the block comment: the product has no word for one of
          her wings and will not compose one. */
+      instances: [],
+    });
+  }
+
+  /*
+    ---- WHAT SHE IS WEARING (design §8.1, from fable-1312; the split rule and
+    the path condition ruled fable-1459 ASK 1 and ASK 3) ----
+
+    ⚠ **THE THIRD SOURCE THE CATALOGUE DOES NOT ENUMERATE, and the only one
+    that is not part of the person.** The ink rows above are a fact about her
+    skin; these are a fact about a stored SENTENCE — one line, decomposed on the
+    separator its own composer joins with, and nothing else. There is no rule
+    here about what counts as a garment, because inventing one is a taxonomy and
+    the cases this path exists for defeat it (*"bare legs"*, *"surgical scrubs
+    and plain white clogs"*, a dress).
+
+    # It is DISPLAY, and the wire is where that is proven
+
+    No piece is stored, sent or judged. The LINE is the one owner: the roll
+    prompt, the refine recipe, the six signed views, the wardrobe judge and the
+    sheet all read it whole, and an edit to a card rewrites the whole line
+    (§7.1's rewrite rule, which is why the wardrobe subject is `plural: false`).
+    `wardrobeCardsAreDisplayOnly.test.ts` asserts that on the strings a render
+    is actually handed rather than on a comment.
+
+    # ⚠ NOTHING IS DRAWN ON `basics` OR ON `unpathed`
+
+    Decided by `wardrobePanelPieces`, off the subject card's own
+    `bornPathsServing` — and the three values are argued at that function
+    because two of them agree with the prompt question while one disagrees with
+    the refusal question. Every roll in both worlds is `unpathed` today, so this
+    section is dark by construction rather than by a flag read here.
+
+    # The row's identity is its POSITION, and that is deliberate
+
+    `wardrobe:0` names no library slot, no facet and no region. It exists so a
+    list of rows has stable keys and so hovering one lights one — and it is
+    spelled from the INDEX rather than from her phrase, because a key spelled
+    out of a customer's words would look exactly like a key that meant
+    something. Nothing sends it as a scope: a row click carries no scope (only a
+    rectangle or a paired child does), and there is no rectangle here.
+  */
+  for (const piece of wardrobePanelPieces(input.wardrobe)) {
+    /*
+      HER WORDS, WITH THE LIST'S OWN GRAMMAR TAKEN OFF THE FRONT.
+
+      The line enumerates — *"a rough hide wrap …, a plain hide loincloth, bare
+      feet"* — so the indefinite article belongs to the ENUMERATION and not to
+      the piece. Removing it is de-listing rather than re-wording, and it cannot
+      mis-classify anything the way a garment rule could: it looks at the first
+      word and at nothing else.
+
+      No possessive, and that is fable-1312's *never mixed with body features*
+      reaching the grammar. Every other row on this panel says *her* something,
+      because every other row IS her. This is what she has on.
+    */
+    const phrase = piece.phrase.replace(/^(?:an?)\s+/i, "");
+    const label = capitalize(phrase);
+    push({
+      state: "settled",
+      slots: [`wardrobe:${piece.index}` as FeatureSlot],
+      group: "wardrobe",
+      name: label,
+      spoken: phrase,
+      /*
+        NO WORDS, for the ink row's reason exactly. Every other row's words are
+        a DESCRIPTION something wrote for it; here the phrase IS the row, and
+        repeating it underneath the label would be the row's own name pretending
+        to be a second reading.
+      */
+      words: [],
+      /* A stated absence is authored per catalogued slot beside the argument
+         that an empty read there cannot mean "hidden". Nobody has catalogued a
+         garment, and nothing has read this frame for one. */
+      absent: null,
+      from: null,
+      /* The same shape as every other row — "Her eyes — " — so a wardrobe ask
+         opens the way every other ask on this panel opens. */
+      prefill: prefillFor(label),
+      /* ⚠ 8B is the crop, and it is not built: nothing has read this frame for
+         a garment, and drawing a picture here from anything else would be a
+         rectangle placed by proportion under a different name. */
+      cutouts: [],
+      regions: [],
       instances: [],
     });
   }

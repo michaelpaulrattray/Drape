@@ -677,6 +677,51 @@ export type OwnedCandidateFace = {
   rollWardrobeLine: string | null;
 };
 
+/**
+ * WHAT THE ROLL THIS CANDIDATE CAME FROM WAS CAST ON — for a caller that has a
+ * candidate and no face (item 8's §8.1, the panel's wardrobe section).
+ *
+ * `getOwnedCandidateWithSelectedFace` above already joins these two columns and
+ * is the reader every refine uses; the panel cannot use it, because it reads the
+ * version being LOOKED AT rather than the one currently selected, and taking a
+ * face's identity from one statement and its roll from another is the mixed
+ * record that function's own comment refuses.
+ *
+ * So this is the same join with the face left out. Reached THROUGH the owned
+ * candidate and scoped to the same owner in the SAME statement — enforcement
+ * invariant 1, on a join rather than on a check — so a caller holding a
+ * candidate public id can never widen it to somebody else's roll.
+ *
+ * `null` means the candidate is not this account's or is not ready. Both
+ * columns `null` on a row that IS found is the honest state of every roll cast
+ * before the paths existed, and `currentWardrobeLine` reads that pair as
+ * `unpathed`: paint what you always painted.
+ */
+export async function getOwnedCandidateRollWardrobe(
+  userId: number,
+  candidatePublicId: string,
+): Promise<{ rollPath: string | null; rollWardrobeLine: string | null } | null> {
+  assertPositiveId(userId, "userId");
+  const db = await requireDb();
+  const [row] = await db
+    .select({
+      rollPath: castingRolls.path,
+      rollWardrobeLine: castingRolls.wardrobeLine,
+    })
+    .from(castingCandidates)
+    .leftJoin(castingRolls, and(
+      eq(castingRolls.id, castingCandidates.rollId),
+      eq(castingRolls.userId, userId),
+    ))
+    .where(and(
+      eq(castingCandidates.publicId, candidatePublicId),
+      eq(castingCandidates.userId, userId),
+      eq(castingCandidates.status, "ready"),
+    ))
+    .limit(1);
+  return row ? { rollPath: row.rollPath, rollWardrobeLine: row.rollWardrobeLine } : null;
+}
+
 export async function getOwnedCandidateWithSelectedFace(
   userId: number,
   candidatePublicId: string,

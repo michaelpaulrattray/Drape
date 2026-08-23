@@ -29,6 +29,7 @@ import { resolveInkReferenceTake } from "./inkReferenceTake";
 import { inkDesignImagePath } from "../../shared/inkDesignDelivery";
 import { pictureHalfPhrase } from "./sidePhrasing";
 import { HOUSE_WARDROBE_LINE } from "./wardrobeLine";
+import { wardrobePieces } from "./wardrobeCards";
 import type { TextEngine } from "../providers/types";
 import { interpretRefinement } from "./refineInterpreter";
 
@@ -3587,6 +3588,107 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
 
   beforeEach(() => {
     painted.length = 0;
+  });
+
+  /**
+   * ⚠ THE PANEL'S DECOMPOSITION REACHES NO PROMPT — asserted at the WIRE, on
+   * the strings a render is actually handed (§8.1, condition of the landing,
+   * fable-1459 ASK 1).
+   *
+   * The panel takes a wardrobe LINE apart into cards a person can tap. That is
+   * a display decomposition and the line is the one owner: the roll prompt, the
+   * refine recipe, the six signed views, the judge and the sheet all read it
+   * WHOLE. A comment saying so is a claim; this is the fact.
+   *
+   * # The assertion is subtler than "the piece is not in the prompt"
+   *
+   * Every piece is a SUBSTRING of the line, so once the recipe states the line
+   * at all, every piece trivially appears. Testing for their absence would be a
+   * test that can only fail when the feature is switched off.
+   *
+   * So: the whole LINE is removed from each outgoing prompt first, and then no
+   * piece may survive in what is left. A recipe that had learnt to say the
+   * pieces separately — the exact failure this condition is about — leaves them
+   * in the remainder and reddens this. Proven both ways in the arm itself.
+   */
+  describe("what the panel takes apart, the engine is never handed in parts", () => {
+    /*
+      AN EDITED line, on the REPAINT road — and reading the prompt this
+      produces is how I found out which sentence actually carries it.
+
+      I expected §3.3's *"the refine recipe"* clause, which states a line the
+      master CONTRADICTS as already true. It is silent here, correctly: a
+      repaint anchors on the pristine master and restates every accumulated
+      change, so the wardrobe rides in the CHANGE list instead —
+
+        "Change only their hair: hair down; their wardrobe: a dark canvas work
+         jacket, straight jeans, plain boots."
+
+      — and restating it a second time as already-true would be the
+      two-instructions-about-one-feature fault the assembler refuses everywhere.
+
+      **Both routes carry the line WHOLE, which is the only thing this arm is
+      about**, and the difference is written down because a reader who expected
+      the other sentence would otherwise think this arm was testing something it
+      is not.
+    */
+    const LINE = "a dark canvas work jacket, straight jeans, plain boots";
+
+    const wardrobeBranch = () => {
+      rollPath = "wardrobe";
+      rollWardrobeLine = HOUSE_WARDROBE_LINE;
+      variantRows = [{
+        id: 801,
+        publicId: "variant-1",
+        imageKey: "casting-v2/variants/one.png",
+        instructions: ["put him in a dark canvas work jacket"],
+        stepDeltas: [{ free: { wardrobe: LINE } }],
+        deltas: { free: { wardrobe: LINE } },
+        internalPrompt: {},
+        status: "ready",
+      }];
+      candidateRow.selectedVariantPublicId = "variant-1";
+    };
+
+    it("⚠ says the LINE whole, and no piece of it anywhere else", async () => {
+      wardrobeBranch();
+      await refineCandidate(hairDown, { ...input, instruction: "wear her hair down" });
+
+      const prompts = painted.map((one) => one.prompt);
+      expect(prompts.length, "the render must actually have happened").toBeGreaterThan(0);
+      /* THE POSITIVE HALF — without it the negative below passes on a prompt
+         that never mentioned the wardrobe at all, which is the shape that
+         proves nothing. Driven: take the wardrobe out of the branch's delta
+         and this line goes red while everything else stays green. */
+      expect(prompts.some((prompt) => prompt.includes(LINE)), "the whole line is stated").toBe(true);
+
+      const pieces = wardrobePieces(LINE).map((one) => one.phrase);
+      expect(pieces, "the decomposition under test").toEqual([
+        "a dark canvas work jacket", "straight jeans", "plain boots",
+      ]);
+      for (const prompt of prompts) {
+        /* Every occurrence of the WHOLE line removed; a piece surviving that is
+           a piece the engine was handed on its own. */
+        const remainder = prompt.split(LINE).join(" ");
+        for (const piece of pieces) {
+          expect(remainder, `"${piece}" reached the wire outside the line`).not.toContain(piece);
+        }
+      }
+    });
+
+    it("⚠ CONTROL — the remainder reading CAN see a piece, so its silence means something", () => {
+      /*
+        The negative arm above is an absence, and an absence passes on nothing
+        at all: a reader that found no piece in any string would satisfy it just
+        as happily. So the same subtraction is run over a prompt that DOES say a
+        piece separately — the defect being guarded against, written out — and
+        it must be caught.
+      */
+      const pieces = wardrobePieces(LINE).map((one) => one.phrase);
+      const sabotaged = `Keep the outfit: ${LINE}. And the jeans: straight jeans.`;
+      const remainder = sabotaged.split(LINE).join(" ");
+      expect(pieces.some((piece) => remainder.includes(piece))).toBe(true);
+    });
   });
 
   /**

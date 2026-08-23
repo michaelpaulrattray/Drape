@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "f970ba46c94e3445"
+    "sourceFingerprint": "babf79d2dddf7589"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 170
+      "moduleCount": 171
     },
     {
       "id": "domain:castingV2",
@@ -4313,6 +4313,12 @@
     {
       "id": "module:server/castingV2/viewFeatureWords.ts",
       "path": "server/castingV2/viewFeatureWords.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/wardrobeCards.ts",
+      "path": "server/castingV2/wardrobeCards.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -11357,6 +11363,14 @@
     {
       "id": "test:server/castingV2/wallDOpenKind.test.ts",
       "path": "server/castingV2/wallDOpenKind.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/wardrobeCards.test.ts",
+      "path": "server/castingV2/wardrobeCards.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/wardrobeCardsAreDisplayOnly.test.ts",
+      "path": "server/castingV2/wardrobeCardsAreDisplayOnly.test.ts"
     },
     {
       "id": "test:server/castingV2/wardrobeConstant.test.ts",
@@ -21516,6 +21530,16 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/castingV2/facePanel.ts",
+      "to": "module:server/castingV2/wardrobeCards.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/facePanel.ts",
+      "to": "module:server/castingV2/wardrobeLine.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/castingV2/faceScan.ts",
       "to": "module:server/castingV2/bornWornDetector.ts",
       "kind": "imports"
@@ -25266,6 +25290,21 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/castingV2/wardrobeCards.ts",
+      "to": "module:server/castingV2/refineSubjects.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/wardrobeCards.ts",
+      "to": "module:server/castingV2/wardrobeLine.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/wardrobeCards.ts",
+      "to": "module:shared/castingPaths.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/castingV2/wardrobeDoor.ts",
       "to": "module:server/castingV2/brandScrub.ts",
       "kind": "imports"
@@ -27977,6 +28016,11 @@
     },
     {
       "from": "module:server/routes/castingV2.ts",
+      "to": "module:server/castingV2/refineLegacy.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/castingV2.ts",
       "to": "module:server/castingV2/refineLimits.ts",
       "kind": "imports"
     },
@@ -28008,6 +28052,11 @@
     {
       "from": "module:server/routes/castingV2.ts",
       "to": "module:server/castingV2/signService.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/castingV2.ts",
+      "to": "module:server/castingV2/wardrobeLine.ts",
       "kind": "imports"
     },
     {
