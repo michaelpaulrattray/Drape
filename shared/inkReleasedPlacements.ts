@@ -72,6 +72,11 @@ export interface InkTuple {
  * sides already decided.
  */
 export function sidesForInkPlacement(placement: InkPlacement): readonly InkSide[] {
+  // deliberate-vocabulary-copy: the two sided values are the perSide HALF of
+  // INK_SIDES, written out because this function IS the narrowing — the
+  // unpaired case is the other branch. (Real negative control for the
+  // near-miss reading in scripts/sweep-handwritten-vocabularies.mts; delete
+  // this marker and that arm reddens.)
   return inkPlacementEntry(placement).sides === "perSide"
     ? (["left", "right"] as const)
     : (["centre"] as const);

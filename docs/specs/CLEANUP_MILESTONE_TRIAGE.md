@@ -2723,3 +2723,235 @@ front of a live example. **A clean run is a floor, never a proof.**
 Reading after the two repairs: **66 hits, 17 in production** (from 93/26 — the
 fold removes one declaration and the two repairs remove their sites), and every
 remaining production row is dispositioned in §30d–§30e above.
+
+## 31. THE OTHER HALF OF THE SAME INSTRUMENT — the list that has ALREADY
+## drifted (2026-08-24, opus-1162, ruled fable-1513. A reading plus one
+## instrument change; no deletion is proposed here and none is authorised by it.)
+
+### 31a. Why this section exists
+
+§30 promoted `scripts/sweep-handwritten-vocabularies.mts` and, in the same
+breath, named its own blind spot — and named a LIVE example inside it:
+
+> a SUBSET or SUPERSET of a vocabulary — set equality is the match, so a list
+> that has already drifted in MEMBERSHIP falls silent here. That is not
+> hypothetical: `ControlPanel.tsx:455` offers a gender the shared
+> `GENDER_VALUES` does not contain, and this sweep does not report it.
+
+**Set equality can only ever find a copy that has NOT drifted yet.** The copy
+that has already drifted is the one that costs something, and it was invisible.
+§30f had to be found by a hand beside the instrument, which is why 7b made us
+file it as UNVERIFIED.
+
+Ruled fable-1513 §1: the sweep gains a SECOND reading — a literal exactly ONE
+member from a declared vocabulary, in either direction, reported with which
+member is EXTRA here or MISSING here. Printed as its own section, never pooled
+into the HITS count, and disjoint from it by construction (an exact match has a
+symmetric difference of zero and can never be a near miss).
+
+### 31b. The band is a stated scope, and the bands outside it are MEASURED
+
+`NEAR_MISS_MAX_DIFFERENCE` is 1. That is chosen, not natural, so the whole
+distribution was measured first and written into the docblock rather than left
+as a threshold nobody could argue with. Production counts in brackets:
+
+```
+symmetric difference == 1     69 [27]   ← READ
+symmetric difference <= 2    142 [67]   ← measured, NOT read
+jaccard >= 0.5               153 [53]   ← measured, NOT read
+any strict SUBSET            194 [61]   ← measured, NOT read
+any overlap at all           581        ← measured, NOT read
+```
+
+Widening the band is a one-constant change; the cost is a table nobody
+finishes. Written down so that widening it is a decision with a number attached
+rather than a discovery. (An `intersection >= 2` guard was tried and REMOVED: at
+this band it removes exactly zero rows — two lists with nothing in common are at
+least four members apart — and a filter that has never filtered is not shipped.)
+
+The reading on the tree at this commit:
+
+```
+DECLARED  37 string-literal `as const` vocabularies under shared (>= 2 members)
+SCANNED   1528 files under client/src, server, shared, drizzle
+HITS      66 literal arrays whose member SET equals a declared vocabulary
+          17 in production files, 14 of those never naming the constant
+NEAR      68 literal arrays exactly 1 member from a declared vocabulary
+          26 in production files, 24 of those never naming the constant
+```
+
+**26 and not the measured 27** because one row became the reading's real-tree
+NEGATIVE control and is now marked — see §31g.
+
+### 31c. ⚠ TEN OF THE TWENTY-SIX ARE ATTRIBUTED TO THE WRONG VOCABULARY, and
+### that is a named limit standing in front of live rows again
+
+`server/casting/evidence/inkAnatomyRegistry.ts` lines 141–186 each declare
+`sides: ["left", "right"]` and are reported as one member short of
+`shared/inkReleasedPlacements.ts`'s `INK_SIDES`. **They are not narrowings of
+`INK_SIDES` at all.** They are typed `readonly InkAnatomySide[]`, and
+`INK_ANATOMY_SIDES` is declared at `inkAnatomyRegistry.ts:81` — OUTSIDE
+`VOCAB_ROOTS`, which the docblock names as a thing the sweep cannot see. The
+compiler checks each of those ten against the composer road's own vocabulary.
+
+So the honest row is not the ten. **It is the declaration at line 81** — a
+second spelling of `INK_SIDES`, same three members, different order — and
+reading (1) already reports it. Its disposition is §30e's, unchanged: the
+composer road (`R7_EVIDENCE_COMPOSER_SCOPE` is `off`, `INK_ADD_RECIPE` and
+`authorizeInkAddDescription` HELD on a module-sized disposition) is pending
+retirement, and folding a vocabulary on a road being retired is work on a road
+being retired.
+
+**The class is worth more than the ten instances**: a near miss can be
+attributed to the WRONG vocabulary whenever a same-worded one is declared
+outside `VOCAB_ROOTS`, and the row then points at a fold that would be actively
+wrong to make. A near-miss row names a candidate, never a defect.
+
+### 31d. The gender family — §30f moves from a HAND's word to an INSTRUMENT's row
+
+Five production rows, and they are the reason this reading exists:
+
+```
+client/src/features/casting/ControlPanel.tsx:455     options={[…"Non-Binary"]}
+client/src/features/casting/hairStyleConfig.ts:20,25,26,30
+                                     gender: ['Female','Male','Non-Binary']
+  all five vs GENDER_VALUES (shared/castingOptions.ts:97) = ["Male","Female"]
+  EXTRA here: Non-Binary
+```
+
+**§30f's verdict does not change and its condition does not move** — what
+changes is who found it. The client's three-member gender vocabulary is declared
+as an inline TYPE UNION (`gender: ('Female' | 'Male' | 'Non-Binary')[]`,
+`hairStyleConfig.ts:16`) rather than as a shared const, which is why no reading
+of `shared/` could ever have seen the declaration; only the drift is visible.
+
+Verdict: **`no-consumer-found-by-any-reading`** for the shared contract.
+`FORM_OPTION_SETS.gender` → `GenderOption` has no consumer outside
+`identityTypes.ts` in the reading taken, so the likeliest account is a dormant
+contract rather than a live rejection — and *likeliest* is not a reading. Not
+carded (fable-1511 §3, unchanged). **What would make it real: a consumer of
+`FORM_OPTION_SETS.gender` appearing.**
+
+### 31e. The lifecycle family — defensive-by-design WITH A NAMED TENSION
+### (four rows; the verdict wording is fable-1513 §3's)
+
+```
+drizzle/schema.ts:239              status mysqlEnum, EXTRA: provisioning
+server/db/castingV2Sign.ts:1230    ["provisioning","active","locked"]
+server/casting/modelAvailability.ts:11  AVAILABLE_MODEL_STATUSES, twice —
+    MISSING archived (vs MODEL_LIFECYCLE_STATUSES), EXTRA draft (vs
+    MODEL_MINTED_STATUSES)
+```
+
+**`provisioning` is a real, live, written status that the shared closed
+vocabulary does not contain.** Written at `castingV2Sign.ts:409` and
+`server/casting/evidence/evidenceFork.ts:357`, queried in eleven places, and it
+reaches the customer as *building* at `server/routes/castingV2.ts:1773` and
+`server/castingV2/castProjection.ts:251`. So `isModelLifecycleStatus(
+"provisioning")` is **false** and every predicate in `shared/modelLifecycle.ts`
+reads a Cast mid-Sign as UNKNOWN.
+
+**No defect is claimed and nothing was changed.** Both docblocks say this is the
+design, in as many words — `modelAvailability.ts`: *"New lifecycle states such
+as `provisioning` stay invisible and non-authoritative until they are
+deliberately added here and reviewed across every consumer"*, and
+`shared/modelLifecycle.ts`: *"Unknown/unrecognized status fails
+CONSERVATIVELY"*. The customer sees *building* correctly today.
+
+⚠ **The named tension**: the shared module's read-state law says *"Status is the
+ONLY read-model discriminator"*, and its carve-out is for authoritative
+TRANSITION guards. The two surfaces above discriminate on `provisioning`
+directly, and a projection deciding whether the customer sees "building" is a
+read model by any honest reading. **The sitting that adds the NEXT lifecycle
+status inherits this by name** — that is the moment the direct discriminations
+either multiply or get folded into the shared module, and it should be decided
+then, on a real case rather than on this one.
+
+### 31f. The remaining seven, each with its reason
+
+- **`server/castingV2/inkReferenceTake.ts:90` `STATEABLE_SIDES`** —
+  `defensive-by-design`, and the docblock says so at the site: *"`centre` is not
+  among them and that is deliberate … Nobody types it about a tattoo."* A
+  narrowing of what a SENTENCE can state, not a copy of the vocabulary.
+- **`server/castingV2/referenceSlots.ts:43` `INSTANCES`** — not a vocabulary of
+  sides at all: the suffix set for a slot KEY. Coincidence of words. The sweep's
+  noise bias working exactly as its docblock promises.
+- **`server/castingV2/inkPlacement.ts:582` `SIDES`** and
+  **`server/castingV2/refineService.ts:8287` `SIDE_WORDS`** — both are
+  word-matching sets over a customer's prose (`.find(…RegExp…)` and a `Set` of
+  words STRIPPED from an ask). A list of words to look for in a sentence is not
+  a copy of a list of values. Same class, same disposal.
+- **`client/src/features/casting/hairStyleConfig.ts:43`** — `'Braids / Locs'`
+  offers four of the five `HAIR_LENGTHS`, MISSING `Very Short`, which is a real
+  per-style narrowing and correct. ⚠ **It is the weakest row here and worth its
+  sentence**: the field is typed `lengths?: string[]`, bare strings, so nothing
+  checks these against `HAIR_LENGTHS` at all — a typo would ship. Not fixed
+  here (it is a client config shape, not a drift), and named so the sitting that
+  types that interface knows what it is buying.
+- **`server/castingV2/hairStyles.ts:639` `ORDINARY_SLOTS`** — four of the five
+  `MODIFIER_SLOTS`, MISSING `lineup`, deliberate and documented (*"there is no
+  fringe on a buzz cut"*). Typed `readonly ModifierSlot[]`, so the compiler
+  checks each member is a real slot and **not** that the list is complete —
+  `AGE_ORDER`'s shape from §30e, one type annotation away from looking safe.
+- **`shared/boardTypes.ts:118` `MINT_TIER_SLOTS.production`** — five of the six
+  `CANONICAL_VIEW_ANGLES`, MISSING `frontClose`, which is what a tier IS. Typed
+  `Record<MintTier, readonly CanonicalViewAngle[]>`, names the constant, and
+  carries a comment per tier.
+
+**No TAKE rows.** Nothing here authorises a deletion or a fold, and none is
+proposed.
+
+### 31g. What the second reading owes, and what it cannot see
+
+```
+POSITIVE (synthetic)  a planted literal ONE MEMBER SHORT is found and named
+                      MISSING; one MEMBER LONG is found and named EXTRA
+                      — BOTH directions, each with its label asserted
+DISJOINT (synthetic)  an EXACT copy is NOT reported here
+BAND     (synthetic)  a literal TWO members apart is NOT reported
+MARKER   (synthetic)  one marker silences the near miss it governs and NOT the
+                      next literal down
+NEGATIVE (real tree)  shared/inkReleasedPlacements.ts's marked perSide
+                      narrowing of INK_SIDES is NOT reported — plus a second
+                      arm asserting it is quiet because it is MARKED
+```
+
+The positive controls are synthetic for §30g's reason, and it applies harder
+here: several rows above are candidates for repair, and a control anchored on a
+row that can be repaired is a control that quietly stops firing.
+
+**The real-tree negative is new production comment, and it is the honest way to
+buy one**: `sidesForInkPlacement` in `shared/inkReleasedPlacements.ts` IS the
+narrowing of `INK_SIDES` — the paired half in one branch, the unpaired in the
+other — so `deliberate-vocabulary-copy` is true of it. Delete that marker line
+and the arm reddens.
+
+**Proven able to fail, three sabotages:**
+
+```
+A  marker deleted at the real site   → the TWO near-miss negative arms, alone
+B  band set to 0 (matcher blinded)   → the two POSITIVE arms and the MARKER arm;
+                                       both NEGATIVE arms pass VACUOUSLY
+C  the two direction labels swapped  → the two POSITIVE arms, alone
+```
+
+B is the absence-only shape again and it is now stated in the file rather than
+in a report: **a negative arm passes for free when the finder is blind**, and it
+is survivable only because the run REFUSES on any failed arm. ⚠ That sentence
+was reported as landing in the docblock at `d11f7c27` and **it was not in the
+file** — opus-1161 §4 said it had been written there, fable-1512 ratified the
+report, and the artifact never held it. Law 1, on this program's own paperwork:
+a report is a claim. It is in the file now, driven rather than asserted.
+
+**One marker serves BOTH readings** (fable-1513 §2), and the consequence is
+stated in the docblock rather than left to be met: a site that is a deliberate
+narrowing of vocabulary A and an accidental exact copy of vocabulary B would go
+quiet about both on one note. No such row exists today. **If one ever does, the
+marker gains an optional qualifier THEN** — `deliberate-vocabulary-copy:
+GENDER_VALUES` — scoping the silence to the named vocabulary. Not built now: a
+qualifier grammar nobody has needed is a second vocabulary, which is what this
+instrument is about.
+
+Its limits, beyond §30g's, which all still hold: **the wrong-vocabulary
+attribution of §31c**, and every band in §31b that is measured and not read.
+A clean run is a floor in both readings, never a proof.
