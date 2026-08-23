@@ -71,7 +71,7 @@ all affected → atomic commit | full rollback."*
 | 12 | Tests: the R7-7E-style suite re-pointed (partial failure keeps the previous package; refund truth) | **[2nd] DELIVERED** | The first pass said the partial-failure half "has no subject". It has one, and it is one of the better-tested surfaces in the program: `packageOrchestrator.test.ts` (28 assertions — every-view-lands, one-regeneration-then-refunded, per-axis verdict persisted for a dispute, no orphaned object behind a failed view, judge-unavailable *delivers* rather than charges nothing, the fence, zero-of-N) plus `signRecovery.test.ts` (~25 on the crash path — paid once and counted once, never refunds more than was charged, escalates rather than sealing a lie). The clause's literal wording is what has no subject: there is no *previous* package to survive, because a package is minted once at Sign and never re-rendered. What it was protecting — money and coherence under partial failure — is covered. One cosmetic: `packageOrchestrator.test.ts:142` is still titled *"commits all six views"* while asserting five (the walk retired in v2); the assertion is right, the title is stale. |
 | 13 | Gate: the founder performs a real revision and a refused one | **REMAINING — a founder gate, unchanged** | Both halves are reachable today (a paid refine that lands; a refusal that refunds). It has not been performed *as this gate*. |
 | 14 | Rollback: revision flag off, the room simply lacks the Edit door | **DELIVERED** | `CASTING_REPAINT_SCOPE` off returns the road to paste-and-blend; `CASTING_V2_SCOPE` off removes the surface. |
-| 15 | **Reference-guided edits** — "add features from reference images like tattoos or hair styles or makeup or whatever we want" | **REMAINING — founder-ruled, and M12 does not close without it** (fable-711) | Not built. The machinery it lands on exists: the library carries features as crops with digests and frozen bytes, the repaint road paints from references, and the flash-sheet design specifies upload → converted. What is missing is the DISTILLATION step — an uploaded image becoming the product's own reference form — and the upload path itself. **[2026-08-18] The UPLOAD PATH IS BUILT** — `castingV2.ink.upload`, dark behind `CASTING_INK_STUDIO_SCOPE`, tattoos first: the placement vocabulary and released table (`ab06ddaf`), the design store (0034), the write itself (`243602e3`), and the intent declaration his own amendment ordered (0035, `f6e72c64`/`b449dcd0`). **The ingestion map for every OTHER feature class is now ruled too** — hair by segmented crop, makeup by words, eye colour by crop, the mannequin reserved for on-skin graphics — and it is filed with the plate rulings and the engine census in `V3B_INK_AND_MARKS_DESIGN_NOTE.md` §7 rather than copied here. **[2026-08-18, later] MAKEUP IS BUILT** — the first of the two forms that carry no plate at all: `castingV2.reference.readMakeup` reads the picture ONCE and keeps nothing (no object, no row, no digest, no purge path — ruled fable-941), and the sentence lands in `delta.makeup`, an axis that already existed end to end. Its demand record is migration 0036. Its own door, because a door that keeps bytes cannot honestly serve a feature that keeps none (`intentNotThisDoor`, derived from the ingestion form). **[2026-08-18] THE TEMPLATE GATE IS CLOSED** — all four verdicts in (fable-942/943): sheet approved, arm sheet approved, background NEAR-WHITE, preview NEUTRAL. What remains of this row: the plate (now unblocked — curation → mint → fence court → plate court), the distiller, makeup's customer-facing adoption chip with its provenance field, and the two crop forms (hair, eye colour). **[2026-08-19] THE CARRIER LAW IS FOUNDER-EXPLICIT** (fable-1047, filed `V3B_INK_AND_MARKS_DESIGN_NOTE.md` §7.11): properties that carry fine as words stay words, specific looks and features always ride as cropped references. Two rows move with it — **hair is a QUESTION before it is a form** (colour → words, style/full look → crop), so “hair by segmented crop” above is the answer to two of its three answers and not the whole row; and **tattoo EXTENDS** to uploads that merely CONTAIN a tattoo, cropped out of the photo, while a words-only tattoo ask mints no plate at all and rides as words into the signing/angle views. Three builds open and all three are design-reviewed first. |
+| 15 | **Reference-guided edits** — "add features from reference images like tattoos or hair styles or makeup or whatever we want" | **REMAINING — founder-ruled, and M12 does not close without it** (fable-711) ⚠ **[2026-08-24] SEE THE END OF THIS CELL — THE ROAD IS BUILT** | Not built. The machinery it lands on exists: the library carries features as crops with digests and frozen bytes, the repaint road paints from references, and the flash-sheet design specifies upload → converted. What is missing is the DISTILLATION step — an uploaded image becoming the product's own reference form — and the upload path itself. **[2026-08-18] The UPLOAD PATH IS BUILT** — `castingV2.ink.upload`, dark behind `CASTING_INK_STUDIO_SCOPE`, tattoos first: the placement vocabulary and released table (`ab06ddaf`), the design store (0034), the write itself (`243602e3`), and the intent declaration his own amendment ordered (0035, `f6e72c64`/`b449dcd0`). **The ingestion map for every OTHER feature class is now ruled too** — hair by segmented crop, makeup by words, eye colour by crop, the mannequin reserved for on-skin graphics — and it is filed with the plate rulings and the engine census in `V3B_INK_AND_MARKS_DESIGN_NOTE.md` §7 rather than copied here. **[2026-08-18, later] MAKEUP IS BUILT** — the first of the two forms that carry no plate at all: `castingV2.reference.readMakeup` reads the picture ONCE and keeps nothing (no object, no row, no digest, no purge path — ruled fable-941), and the sentence lands in `delta.makeup`, an axis that already existed end to end. Its demand record is migration 0036. Its own door, because a door that keeps bytes cannot honestly serve a feature that keeps none (`intentNotThisDoor`, derived from the ingestion form). **[2026-08-18] THE TEMPLATE GATE IS CLOSED** — all four verdicts in (fable-942/943): sheet approved, arm sheet approved, background NEAR-WHITE, preview NEUTRAL. What remains of this row: the plate (now unblocked — curation → mint → fence court → plate court), the distiller, makeup's customer-facing adoption chip with its provenance field, and the two crop forms (hair, eye colour). **[2026-08-19] THE CARRIER LAW IS FOUNDER-EXPLICIT** (fable-1047, filed `V3B_INK_AND_MARKS_DESIGN_NOTE.md` §7.11): properties that carry fine as words stay words, specific looks and features always ride as cropped references. Two rows move with it — **hair is a QUESTION before it is a form** (colour → words, style/full look → crop), so “hair by segmented crop” above is the answer to two of its three answers and not the whole row; and **tattoo EXTENDS** to uploads that merely CONTAIN a tattoo, cropped out of the photo, while a words-only tattoo ask mints no plate at all and rides as words into the signing/angle views. Three builds open and all three are design-reviewed first. **[2026-08-24] AND THE ROW IS BUILT — the status cell's REMAINING is kept as the record and is no longer the state** (opus-1171 M1, ruled fable-1522 §1). Reference-guided edits shipped as `CASTING_REFERENCE_ATTACH_SCOPE` with `CASTING_HAIR_REFERENCE_SCOPE` and `CASTING_INK_REFERENCE_SCOPE` under it — `hairReferenceTake.ts`, `inkReferenceTake.ts`, `makeupFromReference.ts`, all wired — and the attach door stores its OWN bytes rather than a pointer, quoted at its wire: `referenceAttachService.ts`'s `store` dependency, `storagePut(one.key, one.bytes, one.contentType)`. That is not incidental: `POST_SIGN_ROADMAP.md` section 7 carried a design condition worded as a thing row 15's builder *must meet* — attach by copy, never by pointer — and the builder met it. The condition is DISCHARGED there and this row is why it was written. |
 
 ## What the second pass overturned, and how it happened
 
@@ -114,6 +114,11 @@ Three groups, and they are not the same kind of work.
    are new to this list, and both are *look-closely* capabilities — see below.
    **[3rd] Row 3 is no longer in this group: it was built and deployed hours
    after this paragraph was written.** Two of the three are now one.
+   **[2026-08-24] And row 15 is no longer in it either — it was built, and it met
+   the design condition written against it** (opus-1171 M2, ruled fable-1522 §1;
+   the evidence is in row 15's own cell above). **One of the three is now none of
+   them but row 2.** This correction takes the shape of the row-3 one two lines
+   up, which is this document's own idiom and was the precedent for it.
 4. **Waiting on the one question, not on engineering.** Rows 4 and 5. Row 11 is
    gone.
 
@@ -315,6 +320,18 @@ new is two things:
    ruled form. This is where the design work is, and it is the only part that
    needs him.
 
+   **[2026-08-24] BOTH FORMS ARE RULED AND BOTH ARE BUILT, so the last sentence
+   is the stale one and it is the one that mattered** (opus-1171 M3, ruled
+   fable-1522 §1). **Makeup**: read once and kept never — no object, no row, no
+   digest, no purge path — the sentence landing in `delta.makeup`; shape ruled
+   fable-941, and `server/castingV2/makeupFromReference.ts` opens by calling
+   itself *"M12 row 15's first form that carries no plate at all"*. **Hair**: the
+   founder's own form — colour as WORDS, style and the whole look as a CROP —
+   built as `hairReferenceTake.ts` behind `CASTING_HAIR_REFERENCE_SCOPE`. So
+   *"the only part that needs him"* parked a founder question that had already
+   been answered twice, which is the costly half of a stale row: it is not the
+   wrong fact, it is the wrong ASK.
+
 ### The design conversation does NOT start at zero — his own sketch is on record
 
 *(fable-712 and fable-713, the same night as fable-711, both marked
@@ -391,3 +408,27 @@ design answers**:
   **Neither starts at zero** — his own sketch of the second one is above ("The
   design conversation does NOT start at zero"), unconfirmed and waiting to be
   brought back to him as cards rather than as a blank question.
+
+---
+
+### ⚠ THIS DOCUMENT WAS PHRASE-SWEPT FOR STALE NOT-YET ROWS ON 2026-08-24,
+### AND A PHRASE SWEEP IS A FLOOR RATHER THAN COVERAGE
+
+Run opus-1171, ruled fable-1522; the class and its price are recorded in
+`POST_SIGN_ROADMAP.md` section 10, which owns the method and is not restated
+here. The sweep matched fourteen not-yet shapes and read every live row it
+found at the artifact the row names.
+
+**What that does NOT retire**: a row can go false without using any of those
+fourteen words, and no grep reaches it — the same limit the un-wiring differ
+states about a call site sitting after an early return. **A clean phrase sweep
+is a floor and not coverage**, and the per-row read of this document is
+available to any sitting that wants it.
+
+**And the reading that came out of it, which is about documents rather than
+about this road**: the correction discipline is proportional to READERSHIP, and
+readership is not proportional to AUTHORITY. What held here were the blocks a
+builder stands in; what rotted was prose ABOUT roads — flip prose, limits
+lists, branch-state notes, summary paragraphs. A correction can also reach the
+COPY and never go home to the SOURCE, which is working law 4 with its arrow
+reversed.

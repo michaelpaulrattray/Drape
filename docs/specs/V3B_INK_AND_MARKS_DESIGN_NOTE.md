@@ -1608,6 +1608,43 @@ reason the storage exists rather than a follow-up to it. The shown cut
 no address, and the surface that puts it in front of her lands there — which is
 also why the flag should not be flipped for anyone until both halves are in.
 
+⚠ **BOTH HALVES ARE IN, THE FLAG IS FLIPPED, AND THIS SENTENCE HAD ALREADY BEEN
+CORRECTED IN THE COPY WHILE THE SOURCE STOOD** (opus-1171 V1, ruled fable-1522
+§1). The clause above is KEPT because it records what fable-1133 §3b ordered.
+What happened to it:
+
+- **the wire returns an address** — `result.design.imagePath`, spelled by
+  `shared/inkDesignDelivery.ts` and served by the `/api/ink-design` route;
+- **the surface exists** — `957b4dc5`, 2026-08-20, the shown cut drawn in
+  `RefinePanel` above the chips that answer for it, dying with the question;
+- **the flag is flipped** — `CASTING_INK_CUT_SCOPE=users:1`, and that is read
+  off the SERVICE by the deploy rite rather than off any document. Its road is
+  the founder's own: he closed the frames gate with his eyes and his words,
+  *"yes its acceptable"* (fable-1257 §1), and the flip was performed with
+  receipts (fable-1260).
+
+**The condition that survives is about WIDENING, not about existing at all**:
+`users:1` does not pass until the customer-facing preview ships. That is not a
+new ruling and it is not derived here — it is quoted from `CLAUDE.md`'s
+`CASTING_INK_CUT_SCOPE` paragraph, which owns it, so this file carries a
+pointer rather than a second copy of a rule that can drift:
+
+> *the condition that survives is about WIDENING, not about existing at all:
+> 3a.2(b) is still unbuilt, the preview eraser is filed against it rather than
+> outstanding as polish, and **this flag does not pass `users:1` until that
+> surface lands.***
+
+⚠ **AND THE ROAD OF THE ERROR IS THE POINT.** `CLAUDE.md` was corrected for
+this exact sentence on **2026-08-23** — its paragraph says in as many words
+that *"a flat prohibition on flipping this flag FOR ANYONE ... WAS SUPERSEDED BY
+THE FOUNDER AND THE DOCUMENT NEVER HEARD"* — and the document it is describing
+is THIS ONE, which is where that paragraph came from. **The correction reached
+the COPY and never went home to the SOURCE**: working law 4 with the arrow
+reversed, not a mirror drifting from its source but a source left standing
+wrong after its mirror was fixed. For one day this file told any seat opening
+the ink road's own design document that production was in violation of a rule
+the founder had personally retired.
+
 **AND THE PREVIEW ERASER BELONGS TO IT** (his own idea, 1254 §2b; filed here by
 fable-1330 §5). The consent screen gains a scrub tool so a customer can clean
 artifacts and fragments off the cut before it stores — user-owned cleanup for
@@ -1617,6 +1654,18 @@ matters: **it is not skipped polish, it is a feature of a surface that does not
 exist.** There is nowhere to put a scrub tool until the screen showing her the
 cut is built, and item 4 closes honestly without it rather than carrying it as
 outstanding work nobody could have done.
+
+⚠ **"A SURFACE THAT DOES NOT EXIST" IS TRUE OF ONE ROAD AND FALSE OF THE OTHER,
+AND THIS PARAGRAPH DISTINGUISHED NEITHER** (opus-1171 V2, ruled fable-1522 §1;
+the same repair landed on `POST_SIGN_ROADMAP.md` the night before as opus-1169
+S1, and the two surfaces are worded alike on purpose). **The screen showing her
+the cut EXISTS on the refine road** — `957b4dc5`, the shown cut, kept by the
+four arms of `client/src/features/castingV2/shownCutSurface.test.ts`. What is
+unbuilt is the **upload** road's: `castingV2.ink.upload` has no client caller
+at all. So *"there is nowhere to put a scrub tool"* holds for the upload road
+and not for the road customers travel today. **Whether that makes the eraser
+buildable now is a BUILD question for a build sitting**, and it is deliberately
+not answered here.
 
 And the division table above carries its clarifying clause (fable-1133 §3). It
 was withdrawn for part of a day on a partial reading and restored at fable-1135
@@ -1719,6 +1768,14 @@ picture, and closing it is what 3a.2(b) does.
   content is confirmed by HIM at the frames. Eyes are king. That is evidence at
   flip time, not a pre-build authorization.
 
+  ✅ **HIS EYES CAME AND THE GATE IS CLOSED, 2026-08-23** (opus-1171 V3, ruled
+  fable-1522 §1): *"yes its acceptable"* — his verdict on these frames, with
+  *"the frames gate results were amazing"* riding as the quality half
+  (fable-1257 §1). The flip followed with receipts (fable-1260). **Read the two
+  paragraphs below as the gate's RECORD, not as an open ask** — they were
+  written while it was open and they are kept because what they say about the
+  substituted artifact and the never-firing fence is still exactly true.
+
   **The frames were BOUGHT 2026-08-21 and are waiting on his eyes —
   `V3B_FRAMES_GATE_WALK.md` is the gate's own artifact.** Read it before
   reading this paragraph as still-unstarted. Two things in it change what the
@@ -1757,6 +1814,19 @@ population this feature exists for it is currently INERT: it narrows nothing and
 by design, refuses nothing. **The blocker is the INK question, not the region
 question**, and it is re-measured in the court ruled at fable-1178 §3 before any
 claim about selective takes is made anywhere.
+
+⚠ **"CURRENTLY INERT" IS PRESENT TENSE ABOUT A ROAD THAT IS NOW LIVE — the
+court named in the sentence above RAN and moved the licence** (opus-1171 V6,
+ruled STALE fable-1522 §1). The emptiness this paragraph measures is exactly
+what `CASTING_INK_REGION_CROP_SCOPE` was built to answer: the licence no longer
+rests on `ink ∩ region` at all, it is the IN-SURFACE read — `tattooed skin`
+asked inside the named surface's own crop (ruled fable-1205 §1, from a court on
+his own two photographs). `regionHeld` still exists and still decides `focus`;
+it stopped being what licenses the road. The flag stands at `users:1`, read off
+the service by the deploy rite. **A state claim is judged at the sentence, not
+at the reader's diligence** — the forward pointer rescues a careful reader and
+does nothing for one who stops here, which is why this correction sits at the
+sentence rather than being left to the pointer.
 
 ### 7.13 THE CARRY — a delivered tattoo survives the next edit
 ### (measured opus-862/863, wire read opus-864, shape ruled fable-1167 §2)
@@ -1859,6 +1929,15 @@ loop that sends the picture left the recipe still PROMISING to hold it).
    stays honest; what the product cannot yet do is wear two. **The day a Cast
    wears two, `free.ink`'s restatement is the line to fix first and
    `composeDeltas`' ink clause is the line to fix beside it.**
+
+   ✅ **THAT DAY CAME, AND THE TWO LINES THIS LIMIT NAMED ARE THE TWO THAT WERE
+   FIXED** (opus-1171 V4, ruled fable-1522 §1). Landed 2026-08-24, `3e0a4da6` —
+   *"her second tattoo stopped taking the first one off her, and the first one
+   was being redrawn, not removed"* — with its design in
+   `CASTING_V2_MULTI_TATTOO_DESIGN.md` and both halves of its court run
+   (rulings fable-1494/1495/1496). **A Cast can wear two.** The limit is kept
+   because a limit that predicted its own repair, named the exact lines, and
+   then did not notice the repair arriving is worth more standing than deleted.
 
 ### 7.14 CLAUSE (a) — THE CARRY RIDES THE TATTOO AS IT LANDED, NOT THE ARTWORK
 ### (court opus-885/886, measured opus-887 §2, ruled fable-1193 §3, countersigned
@@ -2062,8 +2141,16 @@ is the frame it is labelled as.
    next unrelated edit.
 
    ✅ **BUILT 2026-08-21, on the branch `words-only-carry`, and NOT YET ON
-   `main`** — the stack it belongs after is still waiting on the founder's
-   verdict, so this limit is live in production terms until the rite ships and
+   `main`** ⚠ **[IT IS ON `main` — corrected 2026-08-24, opus-1171 V5, ruled
+   fable-1522 §1: `git branch --merged main` lists the branch, migration `0050`
+   is in `drizzle/`, `inkDelivered` is in `server/castingV2/inkApplied.ts`, and
+   `d700021b` landed it 2026-08-21. So the limit below is NOT live in production
+   terms and has not been since that day. ⚠ The crueller half: this branch's own
+   last commit is *"docs(ink): limit 3 is built, and the document says WHERE it
+   is built"* — a shift went into this paragraph to make it current and the
+   not-yet-on-main clause survived the visit.]** — the stack it belongs after is
+   still waiting on the founder's verdict, so this limit is live in production
+   terms until the rite ships and
    the chunk lands behind it. Shape (c), ruled fable-1197 §1: **the DELIVERY is
    the key.** Migration `0050` re-keys `casting_ink_delivery_crops` onto
    (candidateId, variantId, slot) — which is what the row has always meant, and
@@ -2101,3 +2188,27 @@ is the frame it is labelled as.
 5. **No SIZE floor either, and that is a correction rather than a choice** —
    see the defect above. If one is ever wanted it needs its own measurement on
    THIS population: what a crop is too small to CARRY, which nobody has asked.
+
+---
+
+### ⚠ THIS DOCUMENT WAS PHRASE-SWEPT FOR STALE NOT-YET ROWS ON 2026-08-24,
+### AND A PHRASE SWEEP IS A FLOOR RATHER THAN COVERAGE
+
+Run opus-1171, ruled fable-1522; the class and its price are recorded in
+`POST_SIGN_ROADMAP.md` section 10, which owns the method and is not restated
+here. The sweep matched fourteen not-yet shapes and read every live row it
+found at the artifact the row names.
+
+**What that does NOT retire**: a row can go false without using any of those
+fourteen words, and no grep reaches it — the same limit the un-wiring differ
+states about a call site sitting after an early return. **A clean phrase sweep
+is a floor and not coverage**, and the per-row read of this document is
+available to any sitting that wants it.
+
+**And the reading that came out of it, which is about documents rather than
+about this road**: the correction discipline is proportional to READERSHIP, and
+readership is not proportional to AUTHORITY. What held here were the blocks a
+builder stands in; what rotted was prose ABOUT roads — flip prose, limits
+lists, branch-state notes, summary paragraphs. A correction can also reach the
+COPY and never go home to the SOURCE, which is working law 4 with its arrow
+reversed.

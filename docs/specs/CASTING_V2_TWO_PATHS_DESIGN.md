@@ -252,6 +252,23 @@ Slices 1–7a are built on the columns and live dark (`cf192abd` → `33f6e229`)
 what remains of the order above is **court → his eyes → flip**, with the
 320-credit dev court not yet run.
 
+⚠ **THE COURT RAN, AND THIS IS THE THIRD SURFACE THAT SAID OTHERWISE — the
+other two were both corrected and no rule pointed at this one** (opus-1171 T1,
+ruled fable-1522 §1). It ran staged on 2026-08-23, ordered fable-1452 ASK 2,
+and `8adb18dd`'s own commit body carries the result: *"the 320-credit court
+RAN, staged. Arm 1 passes all three reads at the frames; arm 2 passes on the
+garment and FAILS on the chest"*, with the 900-credit half HELD behind two
+findings that went to the founder (FQ-a, FQ-b). Arm 3 followed and discharged
+the covering-garment precondition the same day it was priced.
+
+**The road is the content.** `8adb18dd` is the commit that fixed
+`POST_SIGN_ROADMAP.md` for saying this; `d234f53c`'s subject is *"the fifth
+flip precondition, and CLAUDE.md still queued a court that ran"*. So the
+roadmap was corrected, then the constitution was corrected, and **the design
+document the flip actually belongs to was never asked** — the same shape as
+the item-5 warnings that bought this sweep, one document over. What remains of
+the order above is **his eyes → flip**.
+
 The cheaper-looking alternative — hiding both facts inside the existing
 `compiledBrief` JSON — is refused on purpose. Sign would then read an internal
 blob for a durable fact, and the sheet would lift a display string out of a
@@ -1052,3 +1069,27 @@ answers rather than deleted, because the reasoning is the record:**
 4. **The court's price** — 1,220 dev credits, staged 320 then 900. ✅ **THE 320
    IS GRANTED** with the countersign; the 900 is held until the sheet frames are
    read. **All of it waits behind the ceremony and the dark code** (§3.2).
+
+---
+
+### ⚠ THIS DOCUMENT WAS PHRASE-SWEPT FOR STALE NOT-YET ROWS ON 2026-08-24,
+### AND A PHRASE SWEEP IS A FLOOR RATHER THAN COVERAGE
+
+Run opus-1171, ruled fable-1522; the class and its price are recorded in
+`POST_SIGN_ROADMAP.md` section 10, which owns the method and is not restated
+here. The sweep matched fourteen not-yet shapes and read every live row it
+found at the artifact the row names.
+
+**What that does NOT retire**: a row can go false without using any of those
+fourteen words, and no grep reaches it — the same limit the un-wiring differ
+states about a call site sitting after an early return. **A clean phrase sweep
+is a floor and not coverage**, and the per-row read of this document is
+available to any sitting that wants it.
+
+**And the reading that came out of it, which is about documents rather than
+about this road**: the correction discipline is proportional to READERSHIP, and
+readership is not proportional to AUTHORITY. What held here were the blocks a
+builder stands in; what rotted was prose ABOUT roads — flip prose, limits
+lists, branch-state notes, summary paragraphs. A correction can also reach the
+COPY and never go home to the SOURCE, which is working law 4 with its arrow
+reversed.
