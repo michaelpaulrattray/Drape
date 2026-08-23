@@ -295,7 +295,33 @@ carry the rulings, the courts and the histories.
                                          whose own measurement is that context
                                          is not additive wants a design report
                                          and a countersign, never a shift's
-                                         judgement (fable-1499 §3)
+                                         judgement (fable-1499 §3).
+                                         ✅ **THE DESIGN REPORT IS WRITTEN**
+                                         (2026-08-24, GO fable-1500 §3, awaiting
+                                         countersign):
+                                         `docs/specs/CASTING_V2_STATED_SKIN_LANE_DESIGN.md`
+                                         — it decides no prompt shape, which was
+                                         the condition it was written under. It
+                                         carries the mechanism read at four
+                                         links (there is no `skinTone` on the
+                                         roll road AT ALL — the tone falls to
+                                         the heritage block the moment the
+                                         summary drops her word), a staged court
+                                         at ~$1.80 for its two text stages, and
+                                         ⚠ **A SECOND DEFECT FOUND WHILE WRITING
+                                         IT**: `AXIS_WORDS.skin`, the list that
+                                         decides whether the engine stands down,
+                                         holds not one colour word and has an
+                                         inflection hole — `olive-skinned` and
+                                         `a deep tan` both leave the engine
+                                         authoring, 6 of 12 ordinary skin
+                                         statements measured at the real
+                                         function. It is FILED rather than
+                                         fixed, because widening deference alone
+                                         makes the engine quieter about a fact
+                                         still not being said — `statedHair`'s
+                                         original defect, and strictly worse
+                                         than today
 3d ⚠ HIS CYBERNETIC BRIEF IS REFUSED     ordered fable-1477 §6, found by driving
    AS A VIDEO-GAME CHARACTER,            (opus-1128 §6). His own brief tripped
    ABOUT 1 TIME IN 7                     the cohort wall twice in fifteen
