@@ -209,7 +209,7 @@ carry the rulings, the courts and the histories.
                                           `build` and `skin` rows. Evidence pack
                                           + copy audit:
                                           `CASTING_V2_TWO_PATHS_TOGGLE_EVIDENCE.md`
-                                          — 16 frames, both themes, TWO negative
+                                          — both themes, TWO negative
                                           controls (an account outside the flag,
                                           and a roll cast before the paths
                                           existed) because "ships dark" is a
@@ -253,6 +253,43 @@ carry the rulings, the courts and the histories.
                                           subject is `admittedOn: "repaintOnly"`
                                           and that population is empty in both
                                           worlds. Filed, not built
+                                          ⚠ **THE TWO ⚠ BLOCKS ABOVE WENT STALE
+                                          WITHIN 65 MINUTES OF BEING WRITTEN AND
+                                          THIS FILE WAS EDITED FIVE TIMES SINCE
+                                          WITHOUT EITHER BEING ASKED**
+                                          (opus-1166/1167, 2026-08-24; the
+                                          originals are kept because a record
+                                          that deletes what it believed is not a
+                                          record). BOTH CLOSED, verified at the
+                                          artifact and at the code, not from a
+                                          report: (a) *"the switch has never been
+                                          photographed RESTING on a pathed
+                                          sheet… one 160 roll would close it and
+                                          WAS NOT SPENT"* — **the roll WAS
+                                          spent**, `484da735` arm 3, 160 dev
+                                          credits, and frames
+                                          `5-sheet-resting-{dark,light}.png` are
+                                          on disk. ⚠ Its SECOND half still
+                                          holds: §6.1's frame does rest on a
+                                          PLANTED library row, declared. (b)
+                                          *"Filed, not built"* — **BUILT**,
+                                          `40a3c160`: the two-branch note in
+                                          `RefinePanel` (search
+                                          `including what they&rsquo;re
+                                          wearing`), fired only where the cast
+                                          is on the Wardrobe path AND the account
+                                          has garment edits, guarded by
+                                          `wardrobeEditCopy.test.ts`, and counted
+                                          in the design §10 / CLAUDE.md
+                                          *"Discharged: four"*. ⚠ **(a) IS THE
+                                          one that had a PRICE**: a seat acting
+                                          from this page would have bought a
+                                          160-credit roll to close a precondition
+                                          already closed. The tally that moved on
+                                          three other surfaces the same hour —
+                                          his card, the design's §10, CLAUDE.md —
+                                          never reached this one, which is
+                                          fable-805 §2 at the bytes
 3c ⚠ THE BRIEF HAS NO SKIN LANE, AND     ordered fable-1477 ASK 2, from the
    COLOUR WORDS ARE THE PARAPHRASE'S    brief-fidelity corpus (opus-1128).
    MAIN VICTIMS                          MEASURED at the wire, survival counted

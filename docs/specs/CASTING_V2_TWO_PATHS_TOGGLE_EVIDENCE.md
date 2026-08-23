@@ -13,7 +13,14 @@ than a claim.
 ⚠ **THIS PACK'S OWN STANDING RULE, adopted fable-1490: a pack that stops matching
 its surface is worse than no pack.** A copy change on a surface photographed here
 re-shoots it in the same commit — the driver run is free — rather than leaving a
-document describing a sentence the product no longer says.
+document describing a sentence the product no longer says. ⚠ **AND THE RULE NOW
+COVERS THE COUNT AS WELL AS THE FRAMES (extended fable-1517 §2, from the
+opus-1166 reading): a surface ADDED to this pack updates the count under the
+table in the same commit.** That clause exists because the rule's first form was
+obeyed perfectly by the two commits that broke it — `484da735` and `40a3c160`
+each added a surface and re-shot it correctly, and each edited the count's
+mirrors *four lines away* without touching them. "Self-evident to whoever is
+editing the table" is precisely what those two commits disproved.
 
 ---
 
@@ -43,6 +50,16 @@ scripts/drive-two-paths-panel-label.mts     §6.1's "as dressed" label
 | 9 | `9-askbox-{wardrobe,basics}-{dark,light}.png` | the ask box on an account WITH the repaint road: *"Anything about them, including what they're wearing — not the room"* on Wardrobe, and today's sentence on Basics |
 
 Frames live in `output/two-paths-toggle/`.
+
+**24 frames — 12 surfaces × both themes.** ⚠ **THE ARITHMETIC IS THE POINT, not
+the total** (ruled fable-1517 §1): a bare *"24"* here is a new mirror one step
+closer to its source, while `12 surfaces × both themes` is checkable at a glance
+against the table directly above it by the one person who can — whoever is adding
+a row. **This is the only place the count is stated.** `CLAUDE.md`'s flag
+paragraph and `POST_SIGN_ROADMAP.md`'s item-5 block both used to restate it, and
+both had drifted — to 18 and to 16 — for a pack that held 24; they now name this
+document and carry no number, which is law 4 on a prose surface. Do not re-add a
+count to either.
 
 ### ⚠ Two things this pack is honest about
 

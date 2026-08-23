@@ -439,8 +439,11 @@ one from whoever owns its road.
   it can run, the schema naming them has already shipped. Off on production.
   ⚠ **THE ROAD IS COMPLETE AS OF 2026-08-24 — every slice of item 5 is built and
   live dark, §6 the toggle last** (evidence pack and copy audit:
-  `docs/specs/CASTING_V2_TWO_PATHS_TOGGLE_EVIDENCE.md`, 18 frames, both themes,
-  two negative controls). This line said *"the flip waits on a 320-credit dev
+  `docs/specs/CASTING_V2_TWO_PATHS_TOGGLE_EVIDENCE.md`, both themes, two negative
+  controls — **the frame COUNT lives in that pack beside the table it is counted
+  from and is deliberately not restated here**, because the number written here
+  said 18 for a pack that held 24, and the two commits that grew it edited this
+  very bullet four lines below it). This line said *"the flip waits on a 320-credit dev
   court and then his eyes"*; **the court RAN** (2026-08-23, both arms, two Signs)
   and its two findings went to him and came back answered, so what the flip waits
   on now is **his eyes on the pack** and the enumerated preconditions in the
