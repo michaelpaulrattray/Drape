@@ -38,7 +38,58 @@
  * the whole line (§7.1's rewrite rule, which is why the wardrobe card is
  * `plural: false`), so no piece is ever stored, sent or judged.
  *
- * That is not a promise, and it is asserted twice because the two claims are
+ * # ⚠ AND THERE IS NO CROP, WHICH IS A MEASUREMENT AND NOT A GAP
+ *
+ * §8.1 asks for *"a crop where the scan finds one"*. **Nothing can reliably
+ * find one**, and that was bought rather than assumed (the garment-crop court,
+ * ordered fable-1459 ASK 2, run on the round-2 frames of both paths; 28
+ * segmenter reads, house money):
+ *
+ * ```
+ * BASICS, an ordinary outfit — a black sports top and black fitted shorts
+ *   "top"       2/2 found, 9.4% and 12.0% of frame, and the mask is the
+ *               GARMENT exactly: straps, scoop and hem, none of her
+ *   "shorts"    1/2 — nothing on one frame, 14.2% on the other
+ *   "shirt"     0/2 — the SPECIFICITY control passes: it does not answer a
+ *               garment word for something she is not wearing
+ * CAVEMAN, an irregular picked outfit — a hide wrap and a hide loincloth
+ *   "hide"      0/2 — a customer's own noun cannot be asked. D-213 said so;
+ *               this is the measurement behind it
+ *   "top"       0/2 — a garment-TYPE word does not generalise to an
+ *               irregular garment
+ *   "clothing"  2/2 found — and ONE PIECE each, a DIFFERENT one each time:
+ *               the wrap on one frame (27.7%, a precise cut round the whole
+ *               diagonal), the loincloth on the other (3.8%, missing the wrap
+ *               entirely)
+ *   "trousers"  0/2   "shoes" 0/2 — negative controls pass
+ * ```
+ *
+ * **A segmenter cuts a garment beautifully when it finds one, and WHICH one it
+ * finds is not controllable.** That is the same shape as `tattooed skin`
+ * answering one patch of a thirty-piece body. A panel piece is a POSITION in a
+ * line — piece 0, piece 1, piece 2 — and there is no reliable mapping from a
+ * position to a mask: the piece's own noun answers nothing, a garment-type word
+ * answers nothing on anything unusual, and the generic word answers an
+ * arbitrary one of them.
+ *
+ * So a crop keyed to a card would put the loincloth's picture on the wrap's row
+ * about half the time — a rectangle over the wrong pixels, which is the exact
+ * promise `facePanel`'s own header refuses to make.
+ *
+ * ⚠ **It also refutes the crop's headline justification.** fable-1312 proposed
+ * these crops as *"the intended fix for irregular-garment drift across the six
+ * views — the caveman's hide"*. The caveman is the one case measured here that
+ * cannot be served: `hide` and `top` find nothing, and `clothing` finds a
+ * different piece on each frame. **The crop cannot serve the case it was
+ * proposed for**, and any later attempt needs a different reader rather than a
+ * different word.
+ *
+ * That is not a fatal finding for §8.1 — the cards work, and this file is what
+ * they are — it is a finding about the SECOND half, and it is recorded here
+ * because this is where somebody would come to add one.
+ *
+ * That the pieces are display-only is not a promise, and it is asserted twice
+ * because the two claims are
  * different. At the WIRE — `refineService.test.ts`, *"what the panel takes
  * apart, the engine is never handed in parts"* — a real repaint's outgoing
  * prompt has the whole LINE subtracted from it and no piece may survive in the

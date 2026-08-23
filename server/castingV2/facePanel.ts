@@ -1085,7 +1085,22 @@ export function facePanel(input: {
     ⚠ **When 8B gives a piece a crop, this clause does NOT become dead.** A
     garment the scan cannot find still has a phrase, and the phrase is still
     worth drawing — losing the row would be the panel forgetting what she is
-    wearing because it could not photograph it.
+    wearing because it could not photograph it. **And 8B may never come:** the
+    garment-crop court found that WHICH piece a segmenter returns is not
+    controllable, so there may be no crop for a card ever (the measurement is in
+    `wardrobeCards.ts`).
+
+    ⚠⚠ **THIS IS AN EXCEPTION TO A FOUNDER RULE AND IT IS WITH HIM** (fable-1464,
+    2026-08-23). fable-414 is his: *everything in the right panel should have a
+    bounding box*. The argument above — a row that makes no promise about pixels
+    may live without one — is an EXECUTOR'S argument about HIS rule, so it goes
+    to him rather than shipping quietly, and it is in front of him now with the
+    scoop answer. It ships dark either way (`CASTING_TWO_PATHS_SCOPE` is off in
+    both worlds, and an unpathed cast draws no wardrobe section at all), so
+    nobody meets it before he rules. **If he says every row carries a box, this
+    clause is what changes** — and the honest consequence is that a wardrobe row
+    could not be drawn at all until a crop exists, which the court above says may
+    be never.
   */
   const hasContent = (row: PanelRow): boolean => row.group === "wardrobe"
     || row.regions.length > 0 || row.absent !== null;

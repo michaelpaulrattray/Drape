@@ -551,7 +551,31 @@ because these rows now say how they are reached.
 
 1. **Garment pieces are WARDROBE CARDS on the Wardrobe path** — their own panel
    section, **derived from the stored line** (phrase per piece, crop where the
-   scan finds one), never mixed with body features. Editing a garment card
+   scan finds one), never mixed with body features.
+
+   ✅ **THE CARDS ARE BUILT (2026-08-23, 8A)** — `server/castingV2/wardrobeCards.ts`,
+   the split ruled fable-1459 ASK 1 (the inverse of the join, no garment
+   taxonomy) and the path condition ASK 3 (nothing on Basics, nothing on
+   unpathed).
+
+   ⚠ **AND THERE IS NO CROP, WHICH IS A MEASUREMENT RATHER THAN AN UNBUILT
+   HALF** (the garment-crop court, ordered fable-1459 ASK 2, 28 reads on the
+   round-2 frames of both paths). A segmenter cuts a garment beautifully when it
+   finds one — `top` on the Basics sports top is 2/2 and the mask is the garment
+   exactly — and **which piece it finds is not controllable**: the piece's own
+   noun answers nothing (`hide` 0/2), a garment-type word does not generalise to
+   an irregular garment (`top` on the caveman 0/2), and the generic word answers
+   an ARBITRARY one of the pieces (`clothing` 2/2 found, the wrap on one frame
+   and the loincloth on the other). A card is a POSITION in a line, and there is
+   no reliable mapping from a position to a mask — so a crop keyed to a card
+   would put one piece's picture on another's row about half the time.
+
+   ⚠ **That also refutes this bullet's own headline justification**: the crops
+   were proposed as the fix for irregular-garment drift across the six views —
+   the caveman's hide — and the caveman is precisely the case that cannot be
+   served. Any later attempt needs a different READER, not a different word. The
+   measurement is kept in `wardrobeCards.ts`, where somebody would come to add
+   one. Editing a garment card
    rewrites the line, which is §7.1's road and not a second one. Their crops may
    ride the signed views the way delivery crops do — the intended answer to
    irregular-garment drift (the caveman's hide across six angles).
