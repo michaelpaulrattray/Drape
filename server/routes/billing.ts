@@ -80,7 +80,7 @@ export const billingRouter = router({
     .input(z.object({
       plan: z.enum(["starter", "pro", "studio", "studio_plus", "business", "business_plus", "scale", "scale_plus", "enterprise", "enterprise_plus", "ultimate"]),
       interval: z.enum(["monthly", "annual"]).optional().default("monthly"),
-    }))
+    }).strict())
     .mutation(async ({ ctx, input }) => {
       // Check if account is frozen (blocks purchases)
       const user = await getUserById(ctx.user.id);
@@ -226,7 +226,7 @@ export const billingRouter = router({
   previewPlanChange: protectedProcedure
     .input(z.object({
       newPlan: z.enum(["starter", "pro", "studio", "studio_plus", "business", "business_plus", "scale", "scale_plus", "enterprise", "enterprise_plus", "ultimate"]),
-    }))
+    }).strict())
     .query(async ({ ctx, input }) => {
       const subscription = await getSubscriptionByUserId(ctx.user.id);
       
@@ -277,7 +277,13 @@ export const billingRouter = router({
   getInvoices: protectedProcedure
     .input(z.object({
       limit: z.number().min(1).max(50).optional().default(5),
-    }).optional())
+    /* `.strict()` INSIDE the `.optional()`, and the order is the whole care
+       (fable-1446 condition 1): the wrapper is what makes "send nothing"
+       legal, and the strictness belongs to the OBJECT. Read at the runtime
+       rather than assumed — `ZodOptional` has no `.strict` in zod 4, so the
+       other order is a type error AND a TypeError, never a schema that
+       silently stayed open. */
+    }).strict().optional())
     .query(async ({ ctx, input }) => {
       const subscription = await getSubscriptionByUserId(ctx.user.id);
       
@@ -300,7 +306,10 @@ export const billingRouter = router({
   getAllInvoices: protectedProcedure
     .input(z.object({
       cursor: z.string().optional(),
-    }).optional())
+    /* Strict on the OBJECT, optional on the whole — see `getInvoices`. Its
+       only caller sends no input at all, so the arm proving `undefined`
+       still parses is load-bearing rather than decoration. */
+    }).strict().optional())
     .query(async ({ ctx, input }) => {
       const subscription = await getSubscriptionByUserId(ctx.user.id);
       
@@ -350,8 +359,15 @@ export const billingRouter = router({
       newPlan: z.enum(["starter", "pro", "studio", "studio_plus", "business", "business_plus", "scale", "scale_plus", "enterprise", "enterprise_plus", "ultimate"]),
       // Additive for deploy skew: current clients send one id per deliberate
       // click; an older bundle may omit it until the new client is live.
+      //
+      // ⚠ AND THE COMMENT ABOVE IS ABOUT THE OTHER DIRECTION — it held
+      // the billing five open for months and does not argue for it
+      // (opus-1104, ruled fable-1446). `.strict()` rejects an UNKNOWN key;
+      // it says nothing about a MISSING optional one, which is exactly what
+      // this field is. What closing these schemas really changes is the
+      // REMOVAL contract — see invariant 4 in CLAUDE.md, where it now lives.
       clientRequestId: z.string().uuid().optional(),
-    }))
+    }).strict())
     .mutation(async ({ ctx, input }) => {
       // Check if account is frozen
       const frozenUser = await getUserById(ctx.user.id);

@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "f9eaf329cb862b3a"
+    "sourceFingerprint": "159a178f7ff61bc8"
   },
   "domains": [
     {
@@ -6030,7 +6030,7 @@
       "name": "changePlan",
       "type": "mutation",
       "auth": "protected",
-      "input": "open",
+      "input": "strict",
       "rateLimited": false,
       "file": "server/routes/billing.ts"
     },
@@ -6050,7 +6050,7 @@
       "name": "createSubscriptionCheckout",
       "type": "mutation",
       "auth": "protected",
-      "input": "open",
+      "input": "strict",
       "rateLimited": false,
       "file": "server/routes/billing.ts"
     },
@@ -6060,7 +6060,7 @@
       "name": "getAllInvoices",
       "type": "query",
       "auth": "protected",
-      "input": "open",
+      "input": "strict",
       "rateLimited": false,
       "file": "server/routes/billing.ts"
     },
@@ -6070,7 +6070,7 @@
       "name": "getInvoices",
       "type": "query",
       "auth": "protected",
-      "input": "open",
+      "input": "strict",
       "rateLimited": false,
       "file": "server/routes/billing.ts"
     },
@@ -6110,7 +6110,7 @@
       "name": "previewPlanChange",
       "type": "query",
       "auth": "protected",
-      "input": "open",
+      "input": "strict",
       "rateLimited": false,
       "file": "server/routes/billing.ts"
     },
@@ -31047,41 +31047,6 @@
       "severity": "warn",
       "kind": "non-strict-input",
       "subject": "route:auth.deleteAccount",
-      "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
-    },
-    {
-      "id": "finding:non-strict-input:route:billing.changePlan",
-      "severity": "warn",
-      "kind": "non-strict-input",
-      "subject": "route:billing.changePlan",
-      "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
-    },
-    {
-      "id": "finding:non-strict-input:route:billing.createSubscriptionCheckout",
-      "severity": "warn",
-      "kind": "non-strict-input",
-      "subject": "route:billing.createSubscriptionCheckout",
-      "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
-    },
-    {
-      "id": "finding:non-strict-input:route:billing.getAllInvoices",
-      "severity": "warn",
-      "kind": "non-strict-input",
-      "subject": "route:billing.getAllInvoices",
-      "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
-    },
-    {
-      "id": "finding:non-strict-input:route:billing.getInvoices",
-      "severity": "warn",
-      "kind": "non-strict-input",
-      "subject": "route:billing.getInvoices",
-      "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
-    },
-    {
-      "id": "finding:non-strict-input:route:billing.previewPlanChange",
-      "severity": "warn",
-      "kind": "non-strict-input",
-      "subject": "route:billing.previewPlanChange",
       "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
     },
     {

@@ -47,6 +47,7 @@ import { newsletterRouter } from "./routes/newsletter";
 import { referralRouter } from "./routes/referral";
 import { systemRouter } from "./_core/systemRouter";
 import { waitlistRouter } from "./routes/waitlist";
+import { billingRouter } from "./routes/billing";
 
 /** The five, with an input the schema DOES accept, so the extra key is the only variable. */
 const CLOSED_PUBLIC = [
@@ -79,6 +80,94 @@ function parserOf(router: unknown, name: string): { parse: (input: unknown) => u
   if (inputs.length !== 1) throw new Error(`${name} declares ${inputs.length} input parsers`);
   return inputs[0]!;
 }
+
+/**
+ * THE BILLING FIVE, closed on fable-1446.
+ *
+ * They were held open for months by `changePlan`'s own deploy-skew comment —
+ * *"an older bundle may omit it until the new client is live"* — which argues
+ * the OTHER way once read: `.strict()` rejects an UNKNOWN key and says nothing
+ * about a MISSING optional one. An in-flight bundle only breaks against a newly
+ * strict schema if a field was REMOVED, and this change removes nothing.
+ *
+ * Read at the call sites first, exactly as the public five were:
+ *
+ *   createSubscriptionCheckout  { plan, interval }           BillingModal, DowngradeConfirmModal
+ *   changePlan                  { newPlan, clientRequestId }  BillingModal, CreditTopupModal,
+ *                                                             DowngradeConfirmModal
+ *   previewPlanChange           { newPlan }                  CreditTopupModal
+ *   getInvoices                 { limit: 5 }                 BillingTab
+ *   getAllInvoices              no input at all              BillingTab
+ *
+ * `undefined` is in the population on purpose. Two of these take an OPTIONAL
+ * object, and `.strict()` belongs INSIDE that wrapper; a hand that hoisted it
+ * outward, or dropped the `.optional()` while adding it, would break the one
+ * caller that sends nothing — on a money surface, mid-deploy, in a way every
+ * rejection arm here would happily pass.
+ */
+const CLOSED_BILLING = [
+  {
+    id: "billing.createSubscriptionCheckout",
+    name: "createSubscriptionCheckout",
+    accepts: [{ plan: "pro", interval: "monthly" }, { plan: "pro" }],
+  },
+  {
+    id: "billing.changePlan",
+    name: "changePlan",
+    accepts: [
+      { newPlan: "pro", clientRequestId: "6f9619ff-8b86-4d01-b42d-00c04fc964ff" },
+      /* The older bundle's shape — the very thing the deploy-skew comment is
+         about — must still parse. */
+      { newPlan: "pro" },
+    ],
+  },
+  { id: "billing.previewPlanChange", name: "previewPlanChange", accepts: [{ newPlan: "studio" }] },
+  { id: "billing.getInvoices", name: "getInvoices", accepts: [{ limit: 5 }, {}, undefined] },
+  { id: "billing.getAllInvoices", name: "getAllInvoices", accepts: [{ cursor: "abc" }, {}, undefined] },
+] as const;
+
+describe("the billing five, closed on fable-1446", () => {
+  it("⚠ CONTROL — every one still ACCEPTS every shape a live bundle sends", () => {
+    /*
+      The control that matters on money. `.strict()` on the wrong object passes
+      a rejection arm by rejecting CUSTOMERS, and the failure would be a
+      BAD_REQUEST on a checkout during a deploy.
+    */
+    for (const endpoint of CLOSED_BILLING) {
+      for (const valid of endpoint.accepts) {
+        expect(
+          () => parserOf(billingRouter, endpoint.name).parse(valid),
+          `${endpoint.id} must still accept ${JSON.stringify(valid) ?? "undefined"}`,
+        ).not.toThrow();
+      }
+    }
+    expect(CLOSED_BILLING.length, "the population is the five CLAUDE.md named as still open").toBe(5);
+  });
+
+  it("rejects an undeclared field on every one of the five", () => {
+    for (const endpoint of CLOSED_BILLING) {
+      /* The first accepted shape is always an OBJECT, so the extra key is the
+         only variable. `undefined` cannot carry one and is not a case here. */
+      const valid = endpoint.accepts[0] as Record<string, unknown>;
+      expect(
+        () => parserOf(billingRouter, endpoint.name).parse({ ...valid, somethingNobodyDeclared: "x" }),
+        `${endpoint.id} silently dropped an undeclared field — invariant 4 is not enforced on it`,
+      ).toThrow();
+    }
+  });
+
+  it("⚠ the two OPTIONAL readers still take no input at all", () => {
+    /*
+      Said as its own arm rather than folded into the control above, because
+      this is the one a "tidy-up" breaks: `.strict()` cannot be applied to a
+      `ZodOptional` in zod 4, so the tempting repair is to drop the
+      `.optional()` — and `BillingTab` calls `getAllInvoices` with nothing.
+    */
+    for (const name of ["getInvoices", "getAllInvoices"] as const) {
+      expect(() => parserOf(billingRouter, name).parse(undefined), `${name} must still accept no input`).not.toThrow();
+    }
+  });
+});
 
 describe("the public endpoints closed on fable-1435 §2", () => {
   it("⚠ CONTROL — every one still ACCEPTS the input it is supposed to", () => {
