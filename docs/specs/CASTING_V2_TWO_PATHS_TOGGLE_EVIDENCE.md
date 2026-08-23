@@ -30,9 +30,10 @@ scripts/drive-two-paths-panel-label.mts     §6.1's "as dressed" label
 | 2 | `2-lobby-basics-{dark,light}.png` | Basics tapped: the choice moves and the line follows |
 | 3 | `3-lobby-unflagged-{dark,light}.png` | ⚠ **CONTROL** — an account outside the flag. Nothing |
 | 4 | `4-sheet-wardrobe-{dark,light}.png` | `WARDROBE · a rough animal-hide wrap … · engine's pick` — the RECORD, read back in history, with no switch beside it |
-| 5 | `5-sheet-switched-{dark,light}.png` | the PLAN, on the live sheet: pills, a note that never falls silent, and no record line |
+| 5a | `5-sheet-resting-{dark,light}.png` | the switch AT REST on a PATHED live sheet — the pills as a LABEL, silent, with the record line saying the same thing in words |
+| 5b | `5-sheet-switched-{dark,light}.png` | the same switch moved off the sheet's path: *"Roll again casts on Basics."* |
 | 6 | `6-sheet-basics-{dark,light}.png` | `BASICS · a plain black sports top scooped low at the chest …` |
-| 7 | `7-sheet-unpathed-{dark,light}.png` | ⚠ **CONTROL** — a roll cast before the paths existed. Nothing |
+| 7 | `7-sheet-unpathed-{dark,light}.png` | ⚠ **CONTROL** — a roll cast before the paths existed: no record line, and the switch drawn with a note that never falls silent |
 | 8 | `8-panel-{wardrobe,basics}-{dark,light}.png` | §6.1's label, present on one path and absent on the other |
 
 Frames live in `output/two-paths-toggle/`.
@@ -48,12 +49,20 @@ component and the stylesheet. The driver refuses to start if such a row already
 exists and deletes what it planted in a `finally`. Declared under the fidelity
 law rather than presented as a live reading.
 
-**Frame 5 photographs the switch on an UNPATHED live sheet, and that is the
-case rather than a compromise.** The court session's newest roll is the bald
-acceptance roll, cast before the flag — which is exactly the state every
-existing customer's sheets are in on the day the flag opens (fable-1483 ASK
-1(b)). What is still unphotographed is the switch resting on a sheet that HAS a
-path: no session in either world has a live pathed roll. See §4.
+**Every state of the control is now photographed**, including the one that was
+missing when this pack was first written: the switch RESTING on a sheet that has
+a path. It took a live pathed roll to exist, and none did in either world — the
+court session's newest was the bald acceptance roll, cast before the flag. Arm 3
+of the Two Paths court created one (2026-08-24, 160 dev credits), and the same
+roll bought §10's covering-garment reading. **One spend, two authorized items;
+they wanted the same artifact from opposite ends.**
+
+⚠ **And the fixture moving under it taught this pack its own repair.** Surface 5
+was pinned to *"the latest roll"*, so the moment a court bought a new one the
+driver asserted *"Nothing was chosen for these eight"* against a sheet that had
+just been given a path. **A surface pinned to whatever is newest is pinned to
+whatever the last court bought.** Surface 5 now names the pathed state and
+surface 7 owns the unpathed one, on a session that is unpathed by construction.
 
 **⚠ And frame 5 cost this pack a lesson at the pixels.** The first version of
 it photographed BOTH pills mid-transition — the chosen one part-way to black,
@@ -126,15 +135,16 @@ handed.
 
 ## 4. What is NOT proven, and why
 
-**The switch resting on a sheet that HAS a path is unphotographed.** No session
-in either world holds a live pathed roll — the dev court session's newest is the
-bald acceptance roll, cast with the flag off. The state it would show is the
-SILENT one (the pills as a label of the sheet's own path), and that silence is
-proven at the unit (`castingPathCopy.test.ts`'s *"a pathed sheet resting on its
-own path is still silent"*) and photographed in its neighbour: frame 4 shows the
-same sheet's record with no plan beside it. One 160-credit dev roll would close
-it and is authorized at the seat's judgement (fable-1483); it was not spent,
-because what it buys is a frame of a control in its quietest state.
+✅ **CLOSED 2026-08-24.** The switch resting on a pathed sheet is frame 5a, and
+the record line beside it reads `WARDROBE · a plain dark suit jacket over a
+white collared shirt, dark tailored trousers, black leather dress shoes ·
+engine's pick`. The 160 that bought it also bought §10's covering-garment
+reading.
+
+**What this pack still does not prove** is narrower and is stated rather than
+left to be discovered: every frame here is a DEV fixture on one account, so the
+pack evidences the control's behaviour and not its behaviour at scale; and the
+§6.1 label rests on a planted library row, as §1 says.
 
 **⚠ The rule that made that gap was itself the finding, and it changed.** The
 first build hid the switch on every unpathed sheet, on

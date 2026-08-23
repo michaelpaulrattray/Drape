@@ -446,15 +446,16 @@ one from whoever owns its road.
   on now is **his eyes on the pack** and the enumerated preconditions in the
   design's §10 — none of which is a defect to repair. ⚠ **Read the ticks there,
   not the ordinals: they record the order things were ADDED, and one has been
-  struck.** Open as of 2026-08-24: **FOUR** — 7a-bis or his acceptance of the
-  refuse-until-read ink state; the covering-garment `upper chest` read (priced at
-  160 dev credits and a cent, pre-authorized fable-1485 §2, needed before the
-  WIDER flip and not before `users:1`); the `build`/`skin` honesty claim before
-  BASICS widens; and `RefinePanel`'s *"not their clothes"* line, which is true
-  today and false on day one for a pathed customer. **Discharged: two** — the
-  columns, and the *does the reader outline a NEW garment as chest* read, struck
-  2026-08-24 at four overlays across two rounds (bare skin, stopping dead at the
-  fur, every one) after the frames had sat unopened in a log for a day
+  struck.** Open as of 2026-08-24: **THREE** — 7a-bis or his acceptance of the
+  refuse-until-read ink state; the `build`/`skin` honesty claim before BASICS
+  widens; and `RefinePanel`'s *"not their clothes"* line, which is true today and
+  false on day one for a pathed customer. **Discharged: three** — the columns;
+  the *does the reader outline a NEW garment as chest* read, struck at four
+  overlays across two rounds after the frames had sat unopened in a log for a
+  day; and the covering-garment read, run the same day it was priced (a picked
+  suit jacket over a collared shirt, `upper chest` **0 px on 3 of 3**, twelve of
+  twelve across four runs — the reader declines to name a chest it cannot see,
+  which is now a fact about the GARMENT rather than about the house tee)
 - `CASTING_DIAGNOSTIC_CAPTURE_SCOPE` — `off`/absent, `all`, or `users:<ids>`;
   keeps the frame from a refused render for diagnosis, under
   `casting-v2/diagnostics` and nowhere else, on the private evidence adapter.

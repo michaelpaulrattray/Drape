@@ -768,10 +768,10 @@ CASTING_TWO_PATHS_SCOPE     off | all | users:<ids>      parent: CASTING_V2_SCOP
 read the ticks, not the numbers.** One has been struck and one has been split
 out of it since, so *"a fourth"* and *"a fifth"* are the fourth and fifth things
 ever put on this list rather than a tally of what is open. **Open as of
-2026-08-24: FOUR** — 7a-bis or his acceptance; the covering-garment read (the
-struck third's residual, priced and pre-authorized); the `build`/`skin` honesty
-claim before BASICS widens; and `RefinePanel`'s *"not their clothes"* line.
-**Discharged: two** — the columns, and the bleeding-onto-fabric read.
+2026-08-24: THREE** — 7a-bis or his acceptance; the `build`/`skin` honesty claim
+before BASICS widens; and `RefinePanel`'s *"not their clothes"* line.
+**Discharged: three** — the columns, the bleeding-onto-fabric read, and the
+covering-garment read (run the same day it was priced).
 
 - ⚠ **AND A SECOND NAMED PREREQUISITE OF THE FLIP, added when item 7a landed**
   (ruling fable-1368 §2): **every ink placement refuses on a Wardrobe-path cast
@@ -846,6 +846,31 @@ claim before BASICS widens; and `RefinePanel`'s *"not their clothes"* line.
   dev credits and about a cent of house money, PRE-AUTHORIZED at that price
   (fable-1485 §2) so it never waits on a countersign.** Needed before the WIDER
   flip and **not** before `users:1`: the founder's own casts are his to look at.
+
+  ✅ **RUN AND DISCHARGED THE SAME DAY, 2026-08-24 — arm 3 of the Two Paths
+  court, 160 dev credits (675 → 515, read at the rows both ends).** The brief
+  named no clothes, so what was measured is case (b), the engine's PICK:
+
+  ```
+  the picked line   "a plain dark suit jacket over a white collared shirt,
+                     dark tailored trousers, black leather dress shoes"
+  the eight         ONE outfit, plain, type-matching, no props and no logos —
+                     and the upper chest covered by a collar and a lapel on
+                     every one of them
+  `upper chest`     0 px · 0 px · 0 px, on three candidates
+  ```
+
+  ⚠ **THE QUESTION IS INVERTED HERE AND THAT IS THE POINT.** On the Basics scoop
+  a read of ZERO was the failure; on a covered chest zero is the PASS. **The
+  reader declines to name a chest it cannot see** — the same answer it gives on
+  the house crew tee, now shown to be about the GARMENT rather than about that
+  one fixture. The overlays were opened (doctrine 24, on the entry that bought
+  it): no red anywhere, on the shirt or on the sliver of bare throat above the
+  open collar.
+
+  Re-run four times over the two instrument repairs it turned up, so the reading
+  is **12 of 12 zero**. Frames and overlays:
+  `output/two-paths-court-round5/`.
 
 - ⚠ **AND A FOURTH, added when §8.2 was read at the code** (opus-1123, ruled
   fable-1467 as (c)): **a Basics frame changes what the `build` and `skin` rows

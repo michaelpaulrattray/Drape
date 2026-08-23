@@ -17,11 +17,14 @@
  *   4  a Wardrobe sheet, read back   WARDROBE · the outfit — the RECORD, and
  *                                    no switch, because Roll again applies to
  *                                    the live sheet
- *   5  the LIVE sheet's switch       the PLAN: pills preselected to the
- *                                    default and a note that never falls
- *                                    silent, on a sheet with no path of its own
+ *   5  the switch AT REST + moved    on a PATHED live sheet: the pills as a
+ *                                    LABEL, silent, with the record line saying
+ *                                    the same thing — then moved off it, where
+ *                                    the label becomes a plan
  *   6  a Basics sheet                BASICS · the basics line
- *   7  an UNPATHED sheet             no RECORD, and the plan still offered
+ *   7  an UNPATHED sheet             no RECORD, and the plan still offered —
+ *                                    pinned to a session that is unpathed BY
+ *                                    CONSTRUCTION, not to whatever is newest
  *
  * ⚠ **THE NEGATIVE CONTROLS ARE THE POINT OF THIS DRIVER, not a courtesy.**
  * Everything here ships dark, and "ships dark" is a claim about what does NOT
@@ -350,13 +353,20 @@ for (const theme of ["dark", "light"] as const) {
   console.log(`  shot ${await shoot(page, `4-sheet-wardrobe-${theme}`)}`);
 
   /*
-    ───────────────── 5 · THE SWITCH, on the live sheet ─────────────────
+    ───────────── 5 · THE SWITCH AT REST, on a PATHED live sheet ────────────
 
-    Back to the latest roll. On this fixture the live roll is UNPATHED — the
-    bald acceptance roll — which is the very case fable-1483 ASK 1(b) opened:
-    the pills are drawn, preselected to the default, and their note NEVER falls
-    silent, because there is no path here for them to be a label OF. It is also
-    every existing customer's sheet on the day the flag opens.
+    Back to the latest roll, which on this fixture now carries a path (arm 3's
+    covering-outfit roll, bought 2026-08-24). **This is the one state §6 could
+    not photograph until a live pathed roll existed**, and it is the quiet one:
+    the pills are a LABEL of what this sheet is, so the note is SILENT and the
+    record line above the grid says the same thing in words.
+
+    ⚠ The other half — the pills as a PLAN on a sheet with no path — moved to
+    surface 7, where the session is unpathed by construction rather than by
+    whatever happens to be newest. **That is the repair this fixture taught: a
+    surface pinned to "the latest roll" is pinned to whatever the last court
+    bought**, and this driver asserted "Nothing was chosen" against a sheet that
+    had just been given a path.
   */
   await page.evaluate(() => {
     for (const back of Array.from(document.querySelectorAll<HTMLButtonElement>(".dpc-rollrail__back"))) {
@@ -373,16 +383,18 @@ for (const theme of ["dark", "light"] as const) {
   check(dock.present, `[${theme}] the LIVE sheet's re-roll box carries the switch`,
     dock.present ? dock.pills.map((p) => `${p.label}=${p.pressed}`).join(" ") : "no .dpc-paths in the dock");
   check(dock.pills[0]?.pressed === true,
-    `[${theme}] preselected to the default on a sheet that has no path of its own`,
+    `[${theme}] preselected to THIS SHEET's own path, not to the global default`,
     dock.pills.map((p) => `${p.label}=${p.pressed}`).join(" "));
-  check((dock.note ?? "").includes("Nothing was chosen"),
-    `[${theme}] ⚠ and it SPEAKS — the pills are a plan here, never a label`,
+  check(dock.note === null,
+    `[${theme}] ⚠ and it says NOTHING while it rests there — a label, not a plan`,
     JSON.stringify(dock.note));
   const liveRecord = await readRecordLine(page);
-  check(!liveRecord.present,
-    `[${theme}] ⚠ while the RECORD stays absent — nothing claims these eight have a path`,
-    liveRecord.present ? `drew "${liveRecord.tag}"` : "no .dpc-wardrobeline on the page");
+  check(liveRecord.present && liveRecord.tag === "WARDROBE",
+    `[${theme}] ⚠ while the RECORD says the same thing in words, above the faces`,
+    liveRecord.present ? `${liveRecord.tag} · ${liveRecord.line}` : "no .dpc-wardrobeline on the page");
+  console.log(`  shot ${await shoot(page, `5-sheet-resting-${theme}`)}`);
 
+  /* And then moved off it — the moment the label becomes a plan. */
   await tapPill(page, ".dp-dock-fade", "Basics");
   await page.waitForFunction(
     () => (document.querySelector(".dp-dock-fade .dpc-paths__note")?.textContent ?? "").includes("Basics"),
@@ -390,16 +402,16 @@ for (const theme of ["dark", "light"] as const) {
   ).catch(() => undefined);
   const switched = await readToggle(page, ".dp-dock-fade");
   check(
-    (switched.note ?? "").includes("Basics"),
-    `[${theme}] tapping the other path renames what the next roll will do`,
+    (switched.note ?? "") === "Roll again casts on Basics.",
+    `[${theme}] leaving the sheet's path makes it speak, and say only the plan`,
     JSON.stringify(switched.note),
   );
   /* And the sheet on screen has NOT changed — rolls are immutable, and the
      switch is a statement about the next one. */
   const afterSwitch = await readRecordLine(page);
-  check(!afterSwitch.present,
+  check(afterSwitch.tag === "WARDROBE",
     `[${theme}] ⚠ and the SHEET does not move — the switch is about the next roll`,
-    afterSwitch.present ? `record became ${afterSwitch.tag}` : "still no record line");
+    afterSwitch.present ? `record still ${afterSwitch.tag}` : "the record line vanished");
   console.log(`  shot ${await shoot(page, `5-sheet-switched-${theme}`)}`);
 
   /* Back to the Wardrobe roll for the rail walk below. */
