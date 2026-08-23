@@ -501,6 +501,77 @@ carry the rulings, the courts and the histories.
                                           every refusal the door already had.
                                           Triage §25
 8  OPEN-LANE REFERENCE ROAD               selector first; one item, cannot split
+                                          ✅ THE DESIGN REPORT IS WRITTEN AND
+                                          COUNTERSIGNED (2026-08-24, fable-1505,
+                                          all six questions RULED):
+                                          `docs/specs/OPEN_LANE_REFERENCE_SELECTOR_DESIGN.md`
+                                          — decides-nothing by contract, written
+                                          against the census rather than from
+                                          recollection. ⚠ THE FACT THAT DECIDES
+                                          THE ROAD: `fal-ai/sam-3/image`, the
+                                          segmenter this product ALREADY calls,
+                                          accepts `point_prompts` and
+                                          `box_prompts` — so a tap is a
+                                          first-class prompt on the model we
+                                          already pay for, at the endpoint we
+                                          already call, inside the courtesy pool
+                                          we already have (`assertFalBudget`
+                                          untouched). **Documented, NOT driven**
+                                          — the confirming probe is 6 fal calls
+                                          ≈ $0.03 at the head of the build
+                                          sitting, and its false-pass arm is
+                                          stated: a background point must return
+                                          NOTHING, never a plausible wrong
+                                          region.
+                                          RULED: tap SUPPLEMENTS the noun (WHERE
+                                          from the tap, WHAT from her sentence) ·
+                                          a tapped cut is a ROW, mint design to
+                                          return · the selector ships INSIDE the
+                                          four intents, the vocabulary widening
+                                          is its own later sitting · the FACE is
+                                          subtracted in the BYTES (`0,0,0,0`,
+                                          never alpha over a photograph) · the
+                                          honest refusal is built here, DERIVED
+                                          from `openReferenceIntents()` · ONE
+                                          reference image per ask, said in the
+                                          copy.
+                                          ⚠ THE ONE TENSION, CARRIED TO THE BUILD
+                                          DESIGN'S FIRST SECTION: the founder
+                                          ruled (2026-08-21) that a tap with no
+                                          typed application means *the entire
+                                          look of the tapped thing* — and a
+                                          no-words tap has no sentence to take
+                                          its noun from, so the endorsed shape
+                                          cannot serve it alone. A reader whose
+                                          answer ROUTES rather than refuses is
+                                          the precedented option (fable-1075);
+                                          law 9 bounds every option.
+                                          ⚠ THREE READINGS AT THE CODE THE
+                                          REPORT CONTRIBUTES: `casting_reference_
+                                          crops` (0040) has a reader, a deleter
+                                          and NO MINT anywhere in the repository
+                                          — consistent by construction, and the
+                                          durable carrier a selector needs is
+                                          therefore already half-paved; the live
+                                          hair carrier is stored under a cleanup
+                                          manifest with no row NAMING what the
+                                          cut depicts; and
+                                          `openReferenceIntents()` has exactly
+                                          one caller, its own test — the honest
+                                          refusal it was written to derive was
+                                          never built.
+                                          ⚠ AND THE REFERENCE-ATTACHED CENSUS
+                                          FIXTURE IS PART OF THIS BUILD, not a
+                                          tidy-up after it: `ref.hair.whole`,
+                                          `ref.ink.sleeve`, `unplacedInk` and
+                                          `inkBeyondToday` are four map entries
+                                          held open by its absence, each naming
+                                          it by name.
+                                          BUILD is parked behind his word and
+                                          behind 3c; the build design returns for
+                                          countersign carrying the Q1 tension's
+                                          answer, the mint's write order, and the
+                                          probe
 9  ANY-FEATURE DISCOVERY                  gated per §5c
 ```
 
