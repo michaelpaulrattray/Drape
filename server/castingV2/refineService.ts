@@ -6661,6 +6661,17 @@ async function refineCandidateCounted(
         */
         ...(asks.presentation ? { presentation: asks.presentation } : {}),
         /*
+          AND WHAT THIS BRANCH IS WEARING (item 8 §3.3's *"the refine recipe"*
+          row). The PREDECESSOR's resolution, which is what the branch is wearing
+          when this render starts — the assembler says it only when it is an
+          EDITED line, because the master already carries a born one.
+
+          `wardrobeNow` is the same value the ink gate read, from the one owner:
+          two `currentWardrobeLine` calls in one request are two answers waiting
+          to disagree.
+        */
+        wardrobe: wardrobeNow,
+        /*
           AND THE PICTURE SHE ATTACHED, cut down to her hair (fable-1096 §1).
 
           The slot is taken from the ASK LIST rather than derived a second time:

@@ -488,10 +488,39 @@ shut."*
 |---|---|---|---|
 | `wardrobe.tee.wardrobePath` | "put him in a plain black tee" | master, Wardrobe | would-render |
 | `wardrobe.tee.basicsPath` | "put him in a plain black tee" | master, Basics | `refused:wall_basics_wardrobe` |
-| `ink.words.chest.basics` | "give him a small swallow tattoo on his upper chest" | master, Basics | would-render |
+| ~~`ink.words.chest.basics`~~ | "give him a small swallow tattoo on his upper chest" | master, Basics | ~~would-render~~ → **`refused:gate_ink_coverage_unread`** |
 
 A capability that ships without its census row is a capability the next design
 report cannot look up, which is the instrument's whole purpose.
+
+⚠ **THE THIRD ROW'S EXPECTATION WAS OVERTURNED BEFORE THE ROW WAS EVER WRITTEN,
+and it is struck rather than quietly corrected** (2026-08-23, opus-1111, ruled
+fable-1453 ASK 2, landed `f7f45e31`). It rested on `BASICS_COVERAGE.upperChest =
+"bare"` — a value read off THIS DESIGN'S OWN §5 SENTENCE (*"cut low enough to
+show a chest piece"*) rather than off a photograph, which
+`inkSurfaceCoverage.ts` said in as many words: *"the one entry here that has not
+been through a frame … the day a Basics cast is rolled, the honest next step is
+to read one and confirm."*
+
+Arm 2 of the court rolled one. `upper chest` — the mint's own measured word, the
+one that decides whether a chest piece can be cropped and carried at all — read
+**0 px on 4 of 4 Basics candidates**, and `chest skin` and `chest` read 0 px too.
+The skin is plainly visible and the reader will not name it. So the coverage
+owner answers `unknown`, the gate fails closed, and the ask refuses.
+
+**What this does NOT retire is §5.1's argument** — *what Basics actually opens is
+`upperChest`* is still the path's best reason to exist, and founder card FQ-b
+asks him to lower the spec's scoop so it becomes true at the frames. If he does
+and a re-court reads the chest, this row and that constant flip together, with
+the court as their provenance rather than a sentence.
+
+⚠ **And all three rows are DECLARED but NOT DRIVABLE today**: each names a state
+(`wardrobe-path`, `basics-path`) that no fixture can supply while
+`CASTING_TWO_PATHS_SCOPE` is off, so the census lists them under `notDriven`
+rather than skipping them. That is deliberate — a row that does not exist is a
+capability nobody can look up, and a row that exists and says it has not been run
+is the honest middle. Two doors left `UNREACHABLE_DOORS` in the same commit
+because these rows now say how they are reached.
 
 ---
 

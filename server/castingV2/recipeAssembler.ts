@@ -77,6 +77,7 @@
  */
 
 import { vacantPhraseFor } from "./vacancyPhrases";
+import type { WardrobeResolution } from "./wardrobeLine";
 import { capitalize, type CastPronouns } from "./castPronouns";
 import { IMPERATIVE_OPENER } from "./declarativeState";
 import { accessoryKindOfSlot, type SlotWordsRefusal } from "./slotWordShape";
@@ -292,6 +293,24 @@ export type AssembleInput = {
    * honest cannot see it, which is the point rather than an omission.
    */
   presentation?: readonly PresentationClause[];
+  /**
+   * WHAT THIS BRANCH IS WEARING — the resolution from the one owner
+   * (`currentWardrobeLine`), item 8 §7.1 / §3.3's *"the refine recipe"* row.
+   *
+   * ⚠ **It is only ever SAID when the branch's line is an EDITED one**, and the
+   * reason is the anchor: every render is painted from the pristine master, and
+   * the master wears the outfit the cast was BORN in. A born line therefore
+   * needs no sentence — the photograph already carries it — while an edited one
+   * is a fact about this branch that the master contradicts, and the
+   * preservation tail's *"the same clothing"* would restore the outfit she took
+   * off.
+   *
+   * Absent, `unpathed` and `incoherent` all say nothing, which is every render
+   * in production and is what makes this landing dark. Stating a born line
+   * anyway would be free-looking and is not: prompt context is not additive in
+   * this product, measured.
+   */
+  wardrobe?: WardrobeResolution;
   /**
    * THE PICTURES SHE ATTACHED, one per slot at most (fable-1096 §2).
    *
@@ -1335,6 +1354,27 @@ export function assembleRecipe(input: AssembleInput): AssembleResult {
   const wordStacks = new Map<FeatureSlot, readonly string[]>();
   const claimed = new Set<FeatureSlot>();
   const sentences: string[] = [identity];
+  /*
+    THE OUTFIT THIS BRANCH IS WEARING, when it is not the one in the photograph.
+
+    §2's finding is the reason it exists: `identityClause` names FIVE nouns —
+    face, pose, lighting, framing, background — and clothing is not one of them,
+    so a removal re-render came back with a grey tee turned BLACK, unasked, on
+    the founder's own cast. A stored line is the clothing noun with an owner.
+
+    Said only for an EDITED line (see {@link AssembleInput.wardrobe}) and only
+    when this render is not itself writing the wardrobe — restating an outfit in
+    the same prompt that changes it is the two-instructions-about-one-feature
+    fault this assembler refuses everywhere else.
+  */
+  const wardrobeNow = input.wardrobe;
+  const editsWardrobe = (input.presentation ?? []).some((clause) => clause.noun.trim() === "wardrobe");
+  if (wardrobeNow?.kind === "line" && wardrobeNow.source === "edited" && !editsWardrobe) {
+    sentences.push(
+      `${pronouns.subject[0]!.toUpperCase()}${pronouns.subject.slice(1)} is wearing `
+      + `${wardrobeNow.line} — keep it exactly, whatever the photograph shows.`,
+    );
+  }
   /** Which reference each carried slot ended up at, so a standing sentence can
    *  point at it by the ordinal it actually occupies. */
   const ordinalOf = new Map<FeatureSlot, number>();

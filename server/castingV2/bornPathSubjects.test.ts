@@ -25,6 +25,9 @@ import { describe, expect, it } from "vitest";
 import { SUBJECT_CARDS, type SubjectCard } from "./subjectCards";
 import { FREE_SUBJECT_KEYS, pathRefusedNounIn, subjectsServedOnPath } from "./refineSubjects";
 import { refineParseSystemPrompt } from "./refineInterpreter";
+import { assembleRecipe } from "./recipeAssembler";
+import { pronounsForSex } from "./castPronouns";
+import type { WardrobeResolution } from "./wardrobeLine";
 
 /** The derived view Q1's condition asks for a can-fail control on. */
 function servedFrom(cards: Record<string, SubjectCard>, path: string | null): string[] {
@@ -115,6 +118,68 @@ describe("§7.2's door — the noun she used, refused by the path she chose", ()
     /* Single-word nouns are matched against the sentence's own words rather
        than as substrings, so `top` never matches `topaz`. */
     expect(pathRefusedNounIn("give her topaz eyes", "basics")).toBeNull();
+  });
+});
+
+describe("the recipe says the outfit only when the photograph disagrees with it", () => {
+  const MASTER = { key: "casting-v2/candidates/master.png" };
+  const SHE = pronounsForSex("female");
+  const recipeWith = (wardrobe: WardrobeResolution | undefined, editsIt = false) => assembleRecipe({
+    master: MASTER, pronouns: SHE, library: [],
+    asks: [{ slot: "lips" as never, noun: "lips", words: "a soft nude lip gloss" }],
+    ...(wardrobe ? { wardrobe } : {}),
+    ...(editsIt ? { presentation: [{ noun: "wardrobe", words: "a plain black tee" }] } : {}),
+  });
+  /* THE WHOLE PROMPT, not the reference sentences alone: the ask clause is a
+     separate field, and an arm reading half the prompt would pass by looking in
+     the wrong half. */
+  const said = (result: ReturnType<typeof assembleRecipe>) => (result.ok ? result.prompt : "");
+
+  it("⚠ says an EDITED line — the master wears what she took off", () => {
+    /*
+      §2's finding is why this exists: `identityClause` names five nouns and
+      clothing is not one, so a removal re-render turned a grey tee BLACK on the
+      founder's own cast. Every render is anchored on the pristine master, so a
+      branch that changed its outfit is a branch the photograph contradicts —
+      and the preservation tail's "the same clothing" points AT that photograph.
+    */
+    const line = "a plain black tee, dark jeans, plain boots";
+    expect(said(recipeWith({ kind: "line", line, source: "edited", path: "wardrobe" })))
+      .toContain(line);
+  });
+
+  it("⚠ says NOTHING for a BORN line — the photograph already carries it", () => {
+    /*
+      The arm that keeps this from being free-looking-and-not. Prompt context is
+      not additive in this product, measured, so a sentence restating what the
+      master already shows is a cost with no purchase.
+    */
+    const line = "a rough hide wrap draped across one shoulder, bare feet";
+    expect(said(recipeWith({ kind: "line", line, source: "born", path: "wardrobe" })))
+      .not.toContain(line);
+  });
+
+  it("⚠ says nothing for UNPATHED or INCOHERENT — which is every render in production", () => {
+    for (const wardrobe of [
+      undefined,
+      { kind: "unpathed" } as const,
+      { kind: "incoherent", path: "basics" } as const,
+    ]) {
+      const sentences = said(recipeWith(wardrobe));
+      expect(sentences, JSON.stringify(wardrobe)).not.toContain("is wearing");
+    }
+  });
+
+  it("⚠ says nothing when THIS render is the one changing it", () => {
+    /* Restating an outfit in the same prompt that changes it is the
+       two-instructions-about-one-feature fault the assembler refuses
+       everywhere else. */
+    const line = "a charcoal roll-neck jumper";
+    const sentences = said(recipeWith(
+      { kind: "line", line, source: "edited", path: "wardrobe" }, true,
+    ));
+    expect(sentences).not.toContain(line);
+    expect(sentences, "and the ask itself still rides").toContain("a plain black tee");
   });
 });
 

@@ -937,6 +937,33 @@
         "why": "wardrobe edits exist today; the Two Paths ruling (fable-1311) will path-gate them"
       },
       {
+        "id": "wardrobe.tee.wardrobePath",
+        "ask": "put him in a plain black tee",
+        "subject": "wardrobe",
+        "verb": "change",
+        "state": "wardrobe-path",
+        "expect": "would-render",
+        "why": "item 8 §7.1: on the Wardrobe path a garment has a subject to be filed under, so the wall stops being reached"
+      },
+      {
+        "id": "wardrobe.tee.basicsPath",
+        "ask": "put him in a plain black tee",
+        "subject": "wardrobe",
+        "verb": "change",
+        "state": "basics-path",
+        "expect": "refused:wall_basics_wardrobe",
+        "why": "item 8 §7.2: a Basics cast IS her basics, and the refusal says which path she bought rather than that the product cannot"
+      },
+      {
+        "id": "ink.words.chest.basics",
+        "ask": "give him a small swallow tattoo on his upper chest",
+        "subject": "ink",
+        "verb": "add",
+        "state": "basics-path",
+        "expect": "refused:gate_ink_coverage_unread",
+        "why": "item 8 §7.3 expected would-render; the court found `upper chest` reads 0 px on 4 of 4 Basics candidates, so the coverage owner answers unknown and the gate fails closed"
+      },
+      {
         "id": "light.softer",
         "ask": "softer light",
         "subject": "light",
@@ -1478,13 +1505,6 @@
         "message": "unreachable by design: answers a request naming a cast the account does not own — request shape — becomes reachable via: deliberately never as a corpus row; pinned by its C5 service arm"
       },
       {
-        "id": "documented:gate_ink_coverage_unread",
-        "severity": "info",
-        "kind": "documented-unreachable",
-        "subject": "gate_ink_coverage_unread",
-        "message": "unreachable by design: item 7a's third answer: the outfit is one nobody has read the coverage of. Only a PICKED or customer-named wardrobe line produces it, and both are written by the roll's brief stage behind CASTING_TWO_PATHS_SCOPE — with the flag absent every roll has a NULL line, which the coverage owner reads as the house tee rather than as unknown — becomes reachable via: the same fixture on the Wardrobe path with a named outfit, plus 7a-bis's reader deciding whether this door survives at all"
-      },
-      {
         "id": "documented:gate_ink_unkeepable",
         "severity": "info",
         "kind": "documented-unreachable",
@@ -1581,13 +1601,6 @@
         "kind": "documented-unreachable",
         "subject": "version_missing",
         "message": "unreachable by design: answers a replay marker naming a version that is not the predecessor — request shape — becomes reachable via: pinned by its C5 service arm"
-      },
-      {
-        "id": "documented:wall_basics_wardrobe",
-        "severity": "info",
-        "kind": "documented-unreachable",
-        "subject": "wall_basics_wardrobe",
-        "message": "unreachable by design: item 8 §7.2: the Basics path's own wardrobe refusal, raised only when a branch's roll says `path = basics` and the customer's sentence names one of the wardrobe card's nouns. An UNPATHED branch — every roll in either world while CASTING_TWO_PATHS_SCOPE is absent — never reaches it by construction, and that is a fence rather than an accident: a path nobody chose is not a path that refuses, so `put her in a long black coat` still lands on the stage wall it has always landed on — becomes reachable via: the same Basics-path fixture `gate_ink_unkeepable` is waiting for, asking for a garment instead of a tattoo — one roll, once CASTING_TWO_PATHS_SCOPE is armed for the corpus account"
       },
       {
         "id": "documented:whichInkToChange",
@@ -2507,13 +2520,6 @@
       "message": "unreachable by design: answers a request naming a cast the account does not own — request shape — becomes reachable via: deliberately never as a corpus row; pinned by its C5 service arm"
     },
     {
-      "id": "documented:gate_ink_coverage_unread",
-      "severity": "info",
-      "kind": "documented-unreachable",
-      "subject": "gate_ink_coverage_unread",
-      "message": "unreachable by design: item 7a's third answer: the outfit is one nobody has read the coverage of. Only a PICKED or customer-named wardrobe line produces it, and both are written by the roll's brief stage behind CASTING_TWO_PATHS_SCOPE — with the flag absent every roll has a NULL line, which the coverage owner reads as the house tee rather than as unknown — becomes reachable via: the same fixture on the Wardrobe path with a named outfit, plus 7a-bis's reader deciding whether this door survives at all"
-    },
-    {
       "id": "documented:gate_ink_unkeepable",
       "severity": "info",
       "kind": "documented-unreachable",
@@ -2612,13 +2618,6 @@
       "message": "unreachable by design: answers a replay marker naming a version that is not the predecessor — request shape — becomes reachable via: pinned by its C5 service arm"
     },
     {
-      "id": "documented:wall_basics_wardrobe",
-      "severity": "info",
-      "kind": "documented-unreachable",
-      "subject": "wall_basics_wardrobe",
-      "message": "unreachable by design: item 8 §7.2: the Basics path's own wardrobe refusal, raised only when a branch's roll says `path = basics` and the customer's sentence names one of the wardrobe card's nouns. An UNPATHED branch — every roll in either world while CASTING_TWO_PATHS_SCOPE is absent — never reaches it by construction, and that is a fence rather than an accident: a path nobody chose is not a path that refuses, so `put her in a long black coat` still lands on the stage wall it has always landed on — becomes reachable via: the same Basics-path fixture `gate_ink_unkeepable` is waiting for, asking for a garment instead of a tattoo — one roll, once CASTING_TWO_PATHS_SCOPE is armed for the corpus account"
-    },
-    {
       "id": "documented:whichInkToChange",
       "severity": "info",
       "kind": "documented-unreachable",
@@ -2645,6 +2644,20 @@
       "kind": "unpinned-refusal",
       "subject": "wall_basics_wardrobe",
       "message": "interpreter-refusal \"wall_basics_wardrobe\" is named by no test file — a door nobody has proven can shut"
+    },
+    {
+      "id": "unreached-driven:gate_ink_coverage_unread",
+      "severity": "warn",
+      "kind": "unreached",
+      "subject": "gate_ink_coverage_unread",
+      "message": "a corpus row expects \"gate_ink_coverage_unread\" and the drive never produced it — the door may be unreachable"
+    },
+    {
+      "id": "unreached-driven:wall_basics_wardrobe",
+      "severity": "warn",
+      "kind": "unreached",
+      "subject": "wall_basics_wardrobe",
+      "message": "a corpus row expects \"wall_basics_wardrobe\" and the drive never produced it — the door may be unreachable"
     },
     {
       "id": "unreached:absorbed",

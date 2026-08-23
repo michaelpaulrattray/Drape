@@ -46,7 +46,19 @@ export type CorpusState =
    */
   | "branch-with-dangling-crop"
   /** A reference picture attached to the ask. */
-  | "reference-attached";
+  | "reference-attached"
+  /**
+   * A branch whose roll was cast on the WARDROBE path — item 8 §7.3.
+   *
+   * ⚠ **No fixture can supply it while `CASTING_TWO_PATHS_SCOPE` is off**, so
+   * every row declaring it is listed as NOT DRIVEN rather than quietly absent.
+   * That is the point of declaring it: a capability whose census row does not
+   * exist is one the next design report cannot look up, and the two rows below
+   * are the ones that say what the paths DO.
+   */
+  | "wardrobe-path"
+  /** The same, cast on BASICS. Same unavailability, same reason. */
+  | "basics-path";
 
 export type CorpusRow = {
   /** Stable id — the row's name in the table and in findings. */
@@ -132,6 +144,26 @@ export const CORPUS: readonly CorpusRow[] = [
   /* ───────────────────────────── wardrobe / light ───────────────────────── */
   { id: "wardrobe.tee", ask: "put him in a plain black tee", subject: "wardrobe", verb: "change", state: "master",
     expect: "refused:wall_unbacked", why: "wardrobe edits exist today; the Two Paths ruling (fable-1311) will path-gate them" },
+  /* ──────── item 8's three rows (§7.3) — DECLARED, and not drivable yet ────
+     Each names a state no fixture can supply while `CASTING_TWO_PATHS_SCOPE` is
+     off, so the drive lists them under `notDriven` rather than skipping them.
+     They exist because §7.3 is right that a capability shipping without its
+     census row is a capability the next design cannot look up. */
+  { id: "wardrobe.tee.wardrobePath", ask: "put him in a plain black tee", subject: "wardrobe", verb: "change", state: "wardrobe-path",
+    expect: "would-render", why: "item 8 §7.1: on the Wardrobe path a garment has a subject to be filed under, so the wall stops being reached" },
+  { id: "wardrobe.tee.basicsPath", ask: "put him in a plain black tee", subject: "wardrobe", verb: "change", state: "basics-path",
+    expect: "refused:wall_basics_wardrobe", why: "item 8 §7.2: a Basics cast IS her basics, and the refusal says which path she bought rather than that the product cannot" },
+  /* ⚠ §7.3 WROTE THIS ROW AS `would-render` AND THE COURT OVERTURNED IT before
+     the row was ever written. The design's expectation rested on
+     `BASICS_COVERAGE.upperChest = "bare"`, which was read off the Basics SPEC's
+     own sentence rather than a photograph. Arm 2 of the Two Paths court rolled
+     eight Basics candidates and asked `upper chest`: 0 px on 4 of 4 (opus-1111,
+     ruled fable-1453 ASK 2, landed `f7f45e31`). The chest is `unknown`, fails
+     closed, and the ask refuses. Struck with its provenance rather than
+     silently corrected: a census that disagrees with its design is worse than
+     either alone. */
+  { id: "ink.words.chest.basics", ask: "give him a small swallow tattoo on his upper chest", subject: "ink", verb: "add", state: "basics-path",
+    expect: "refused:gate_ink_coverage_unread", why: "item 8 §7.3 expected would-render; the court found `upper chest` reads 0 px on 4 of 4 Basics candidates, so the coverage owner answers unknown and the gate fails closed" },
   { id: "light.softer", ask: "softer light", subject: "light", verb: "change", state: "master",
     expect: "refused:unreadable", why: "the refine box's own placeholder" },
   /* ───────────────────────────── open lane ──────────────────────────────── */
@@ -235,16 +267,28 @@ export const KNOWN_DEBTS: readonly string[] = [
   "sideNamedWithoutScope", "uncatalogued", "unnamedObject", "wall_unfileable",
 ];
 
+/*
+  ⚠ TWO ENTRIES LEFT THIS LIST ON 2026-08-23 (item 8 §7.3) AND NEITHER BECAME
+  REACHABLE — they became KNOWN, which is a different thing and is the discharge
+  this list is designed to take.
+
+  `wall_basics_wardrobe` and `gate_ink_coverage_unread` now have CORPUS ROWS
+  (`wardrobe.tee.basicsPath`, `ink.words.chest.basics`). The rows declare the
+  state that reaches each door — a roll cast on the Basics path — and the drive
+  lists them under `notDriven` because no fixture can supply that state while
+  `CASTING_TWO_PATHS_SCOPE` is off. So the map knows how each is reached and
+  says out loud that it has not yet been run, where before it said only that it
+  could not be.
+
+  `gate_ink_coverage_unread`'s entry had also gone stale on its own terms: it
+  said the door needs a WARDROBE-path named outfit, and `f7f45e31` made a BASICS
+  cast reach it too — the court found `upper chest` reads 0 px on 4 of 4 Basics
+  candidates, so that path's chest answers `unknown` rather than `bare`.
+*/
 export const UNREACHABLE_DOORS: ReadonlyArray<{ id: string; reason: string; becomesReachable: string }> = [
   { id: "gate_ink_unkeepable",
     reason: "item 7a's split of gate_ink_uncarried: the surface is BARE and the words road still cannot crop a result there. Both halves need a cast whose wardrobe leaves the chest showing, and the only line that does is the Basics one — which no roll can be cast on while CASTING_TWO_PATHS_SCOPE is absent, so every corpus roll answers the house crew tee and lands on gate_ink_uncarried instead",
     becomesReachable: "a Basics-path fixture asking for an upper-chest tattoo, once CASTING_TWO_PATHS_SCOPE is armed for the corpus account" },
-  { id: "wall_basics_wardrobe",
-    reason: "item 8 §7.2: the Basics path's own wardrobe refusal, raised only when a branch's roll says `path = basics` and the customer's sentence names one of the wardrobe card's nouns. An UNPATHED branch — every roll in either world while CASTING_TWO_PATHS_SCOPE is absent — never reaches it by construction, and that is a fence rather than an accident: a path nobody chose is not a path that refuses, so `put her in a long black coat` still lands on the stage wall it has always landed on",
-    becomesReachable: "the same Basics-path fixture `gate_ink_unkeepable` is waiting for, asking for a garment instead of a tattoo — one roll, once CASTING_TWO_PATHS_SCOPE is armed for the corpus account" },
-  { id: "gate_ink_coverage_unread",
-    reason: "item 7a's third answer: the outfit is one nobody has read the coverage of. Only a PICKED or customer-named wardrobe line produces it, and both are written by the roll's brief stage behind CASTING_TWO_PATHS_SCOPE — with the flag absent every roll has a NULL line, which the coverage owner reads as the house tee rather than as unknown",
-    becomesReachable: "the same fixture on the Wardrobe path with a named outfit, plus 7a-bis's reader deciding whether this door survives at all" },
   { id: "unplacedInk",
     reason: "raised at the pre-claim ink door only for a DOCUMENTED ask with no placement; every master-state words ask dies earlier at the document gate (measured, drive-4), and the documented states (reference attached, delivered ink) resolve their placement before that door",
     becomesReachable: "a reference-attached fixture whose take carries no placement" },

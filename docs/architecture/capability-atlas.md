@@ -62,7 +62,7 @@ _Entrances:_ `server/castingV2/refineInterpreter.ts` · `server/castingV2/refine
 | `gate_ink_document` | interpreter-refusal |  | server/castingV2/refineDelta.ts:529<br>server/castingV2/refineDelta.ts:529<br>(+3) | 2 test(s) | ink.words.face, ink.words.noplace, ink.words.behind-ear, ink.transform.none |
 | `gate_ink_uncarried` | interpreter-refusal |  | server/castingV2/refineDelta.ts:535<br>server/castingV2/refineDelta.ts:535<br>(+3) | 3 test(s) | ink.words.chest |
 | `gate_ink_unkeepable` | interpreter-refusal |  | server/castingV2/refineDelta.ts:544<br>server/castingV2/refineDelta.ts:544<br>(+3) | 2 test(s) | _documented-unreachable or gap — see findings_ |
-| `gate_ink_coverage_unread` | interpreter-refusal |  | server/castingV2/refineDelta.ts:551<br>server/castingV2/refineDelta.ts:551<br>(+3) | 2 test(s) | _documented-unreachable or gap — see findings_ |
+| `gate_ink_coverage_unread` | interpreter-refusal |  | server/castingV2/refineDelta.ts:551<br>server/castingV2/refineDelta.ts:551<br>(+3) | 2 test(s) | ink.words.chest.basics |
 | `scope_unknown` | service-refusal |  | server/castingV2/refineService.ts:1272<br>server/castingV2/refineService.ts:1310 | 2 test(s) | guard.scope.unknown |
 | `scope_mismatch` | service-refusal |  | server/castingV2/refineService.ts:4749 | 1 test(s) | _documented-unreachable or gap — see findings_ |
 
@@ -182,6 +182,9 @@ _Entrances:_ `server/castingV2/facePanel.ts` · `server/castingV2/faceScanServic
 | build.muscular | give him a jacked muscular build | master | would-render | would-render |  |
 | skin.tan | give her a deep tan | master | would-render | would-render |  |
 | wardrobe.tee | put him in a plain black tee | master | refused:wall_unbacked | refused:wall_unbacked | Refining can't do a plain black tee yet — it isn't one of the things this can name. Faces, hair, skin, build and anything worn do work here. |
+| wardrobe.tee.wardrobePath | put him in a plain black tee | wardrobe-path | would-render | _—_ |  |
+| wardrobe.tee.basicsPath | put him in a plain black tee | basics-path | refused:wall_basics_wardrobe | _—_ |  |
+| ink.words.chest.basics | give him a small swallow tattoo on his upper chest | basics-path | refused:gate_ink_coverage_unread | _—_ |  |
 | light.softer | softer light | master | refused:unreadable | refused:unreadable | That one didn't come through clearly. Try naming what you want changed about them. Nothing was charged. |
 | open.wings | give her wings | master | would-render | would-render |  |
 | open.horns | give her small horns | master | would-render | would-render |  |
@@ -276,7 +279,6 @@ _Entrances:_ `server/castingV2/facePanel.ts` · `server/castingV2/faceScanServic
 
 - **info** `documented-unreachable` already_signed — unreachable by design: answers a refine sent at a SIGNED cast — request state, not sentence content — becomes reachable via: a signed-cast fixture, if sign-state rows are ever wanted; pinned by its C5 service arm
 - **info** `documented-unreachable` candidate_missing — unreachable by design: answers a request naming a cast the account does not own — request shape — becomes reachable via: deliberately never as a corpus row; pinned by its C5 service arm
-- **info** `documented-unreachable` gate_ink_coverage_unread — unreachable by design: item 7a's third answer: the outfit is one nobody has read the coverage of. Only a PICKED or customer-named wardrobe line produces it, and both are written by the roll's brief stage behind CASTING_TWO_PATHS_SCOPE — with the flag absent every roll has a NULL line, which the coverage owner reads as the house tee rather than as unknown — becomes reachable via: the same fixture on the Wardrobe path with a named outfit, plus 7a-bis's reader deciding whether this door survives at all
 - **info** `documented-unreachable` gate_ink_unkeepable — unreachable by design: item 7a's split of gate_ink_uncarried: the surface is BARE and the words road still cannot crop a result there. Both halves need a cast whose wardrobe leaves the chest showing, and the only line that does is the Basics one — which no roll can be cast on while CASTING_TWO_PATHS_SCOPE is absent, so every corpus roll answers the house crew tee and lands on gate_ink_uncarried instead — becomes reachable via: a Basics-path fixture asking for an upper-chest tattoo, once CASTING_TWO_PATHS_SCOPE is armed for the corpus account
 - **info** `documented-unreachable` history_predates_undo — unreachable by design: answers an undo against a chain older than typed removal — legacy-era state — becomes reachable via: pinned by its C5 service arm
 - **info** `documented-unreachable` history_unreadable — unreachable by design: answers a chain whose stored steps fail to parse — corrupt-state, not sentence — becomes reachable via: pinned by its C5 service arm
@@ -291,11 +293,12 @@ _Entrances:_ `server/castingV2/facePanel.ts` · `server/castingV2/faceScanServic
 - **info** `documented-unreachable` step_moved — unreachable by design: answers a chip removal whose index went stale mid-click — a race no scripted sentence makes — becomes reachable via: pinned by its C5 service arm
 - **info** `documented-unreachable` unplacedInk — unreachable by design: raised at the pre-claim ink door only for a DOCUMENTED ask with no placement; every master-state words ask dies earlier at the document gate (measured, drive-4), and the documented states (reference attached, delivered ink) resolve their placement before that door — becomes reachable via: a reference-attached fixture whose take carries no placement
 - **info** `documented-unreachable` version_missing — unreachable by design: answers a replay marker naming a version that is not the predecessor — request shape — becomes reachable via: pinned by its C5 service arm
-- **info** `documented-unreachable` wall_basics_wardrobe — unreachable by design: item 8 §7.2: the Basics path's own wardrobe refusal, raised only when a branch's roll says `path = basics` and the customer's sentence names one of the wardrobe card's nouns. An UNPATHED branch — every roll in either world while CASTING_TWO_PATHS_SCOPE is absent — never reaches it by construction, and that is a fence rather than an accident: a path nobody chose is not a path that refuses, so `put her in a long black coat` still lands on the stage wall it has always landed on — becomes reachable via: the same Basics-path fixture `gate_ink_unkeepable` is waiting for, asking for a garment instead of a tattoo — one roll, once CASTING_TWO_PATHS_SCOPE is armed for the corpus account
 - **info** `documented-unreachable` whichInkToChange — unreachable by design: needs a branch wearing TWO tattoos; no cast in either world has ever worn two at once (opus-966 §1) and the multi-tattoo fixture is §10 item 3b's build — becomes reachable via: item 3b's keying work, which needs two-tattoo state to test itself
 - **info** `not-driven` ref.hair.whole — needs state "reference-attached", which this fixture cannot supply
 - **info** `not-driven` ref.ink.sleeve — needs state "reference-attached", which this fixture cannot supply
 - **warn** `unpinned-refusal` wall_basics_wardrobe — interpreter-refusal "wall_basics_wardrobe" is named by no test file — a door nobody has proven can shut
+- **warn** `unreached` gate_ink_coverage_unread — a corpus row expects "gate_ink_coverage_unread" and the drive never produced it — the door may be unreachable
+- **warn** `unreached` wall_basics_wardrobe — a corpus row expects "wall_basics_wardrobe" and the drive never produced it — the door may be unreachable
 - **warn** `unreached` absorbed — KNOWN DEBT: no corpus row expects "absorbed" — the map's named remainder (founder law: this list only shrinks)
 - **warn** `unreached` absorbed_departure — KNOWN DEBT: no corpus row expects "absorbed_departure" — the map's named remainder (founder law: this list only shrinks)
 - **warn** `unreached` departure — KNOWN DEBT: no corpus row expects "departure" — the map's named remainder (founder law: this list only shrinks)
