@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "062ad4a36cfccc50"
+    "sourceFingerprint": "d667263fec5905ac"
   },
   "domains": [
     {
@@ -10051,6 +10051,10 @@
     {
       "id": "test:server/boardDeletionChildren.test.ts",
       "path": "server/boardDeletionChildren.test.ts"
+    },
+    {
+      "id": "test:server/boardTypes.test.ts",
+      "path": "server/boardTypes.test.ts"
     },
     {
       "id": "test:server/boardVersions.test.ts",

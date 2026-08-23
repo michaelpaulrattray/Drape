@@ -56,9 +56,43 @@ export const CAST_VIEW_ANGLES = [
   ...CANONICAL_VIEW_ANGLES,
 ] as const satisfies readonly CastViewAngle[];
 
-/** The canonical identity package (D-39, ratified): face cluster locks
- *  facial identity, body cluster locks silhouette/build. */
-export const PACKAGE_SLOTS: readonly CanonicalViewAngle[] = CANONICAL_VIEW_ANGLES;
+/**
+ * The canonical identity package (D-39, ratified): face cluster locks facial
+ * identity, body cluster locks silhouette/build — **in that order, and the
+ * order is the content of this constant.**
+ *
+ * ⚠ IT WAS `= CANONICAL_VIEW_ANGLES` UNTIL 2026-08-24, AND THAT VALUE DID NOT
+ * HAVE THE CLUSTERS THIS DOCBLOCK CLAIMS (triage §29d, ruled fable-1509 §2).
+ * `CANONICAL_VIEW_ANGLES` interleaves them — `frontFull`, a BODY view, sits
+ * third, ahead of `sideClose`, which is a FACE view. So the sentence above was
+ * true of the intent and false of the value, and the one surface that draws
+ * this package had quietly been right on its own: `ViewTabs.tsx` hand-wrote the
+ * clustered order and drew from that instead.
+ *
+ * That hand-written list was a second spelling of a closed list — working law
+ * 4 — and the two had ALREADY drifted in exactly this way. Nothing was broken,
+ * because membership still agreed; what was broken was that no reader could
+ * tell which order was meant. Now one can: the clusters are written here, the
+ * strip derives from here, and `boardTypes.test.ts` pins this to
+ * `CANONICAL_VIEW_ANGLES` as a PERMUTATION — same six, deliberately different
+ * order — so a seventh slot cannot arrive in one list and not the other.
+ *
+ * Reordering was free and is why this direction was chosen rather than moving
+ * the strip: this constant had NO consumers at all (that is how the drift was
+ * found), while `CANONICAL_VIEW_ANGLES`'s order is load-bearing for export
+ * filenames, PDF cells and `z.enum` inputs. **The customer-visible tab order
+ * does not move.**
+ */
+export const PACKAGE_SLOTS = [
+  /* face cluster — locks facial identity */
+  "frontClose",
+  "threeQuarter",
+  "sideClose",
+  /* body cluster — locks silhouette and build */
+  "frontFull",
+  "sideFull",
+  "backFull",
+] as const satisfies readonly CanonicalViewAngle[];
 
 export const VIEW_ANGLE_LABELS: Record<CanonicalViewAngle, string> = {
   frontClose: "Headshot",

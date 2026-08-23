@@ -15,6 +15,7 @@ import {
 import { requestInkProjection } from '@/features/casting/evidence/inkProjectionEvents';
 import {
   MINT_TIER_SLOTS,
+  PACKAGE_SLOTS as SHARED_PACKAGE_SLOTS,
   type CanonicalViewAngle,
   type MintTier,
 } from '@shared/boardTypes';
@@ -238,15 +239,39 @@ function FailedSlot({
 
 // ============ Main Component ============
 
-// The canonical package order (D-39): face cluster, then body cluster
-const PACKAGE_SLOTS: Array<{ vt: ViewType; label: string }> = [
-  { vt: 'frontClose', label: 'Head' },
-  { vt: 'threeQuarter', label: '3/4' },
-  { vt: 'sideClose', label: 'Side' },
-  { vt: 'frontFull', label: 'Full' },
-  { vt: 'sideFull', label: 'Walk' },
-  { vt: 'backFull', label: 'Back' },
-];
+/**
+ * The strip's short labels — a SEPARATE vocabulary from `VIEW_ANGLE_LABELS`,
+ * and deliberately so: these render inside a tab a few characters wide, where
+ * "Three-quarter" and "Full front" do not fit.
+ *
+ * Typed as a total `Record` rather than a list, so the completeness is the
+ * compiler's job: a seventh slot added to `CanonicalViewAngle` cannot arrive
+ * here unlabelled.
+ */
+const SLOT_LABELS: Record<ViewType, string> = {
+  frontClose: 'Head',
+  threeQuarter: '3/4',
+  sideClose: 'Side',
+  frontFull: 'Full',
+  sideFull: 'Walk',
+  backFull: 'Back',
+};
+
+/**
+ * The canonical package order (D-39): face cluster, then body cluster.
+ *
+ * ⚠ DERIVED, because this was a hand-written copy of the closed list until
+ * 2026-08-24 and it had already drifted from it (triage §29d). The order lives
+ * in `shared/boardTypes.ts`'s `PACKAGE_SLOTS` — which was reordered to the
+ * clusters this comment has always claimed, so what the customer sees here is
+ * unchanged — and `boardTypes.test.ts` pins that against
+ * `CANONICAL_VIEW_ANGLES` in membership AND order.
+ *
+ * The family has a paid incident on its record: iterating the wrong six is how
+ * package v3's close-up was generated, charged, refunded and then never drawn.
+ */
+const PACKAGE_SLOTS: ReadonlyArray<{ vt: ViewType; label: string }> =
+  SHARED_PACKAGE_SLOTS.map((vt) => ({ vt, label: SLOT_LABELS[vt] }));
 
 /** Missing views use the existing tier ceremony. We do not invent a second
  * generation path just to make a tile appear independent. */
