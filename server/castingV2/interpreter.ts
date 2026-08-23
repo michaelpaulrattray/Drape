@@ -434,8 +434,10 @@ WHAT TO EXTRACT
   USE ONLY WORDS THAT APPEAR IN THE BRIEF. Anything you write here is checked
   against the user's sentence and dropped if it contains a word they did not
   type, so a paraphrase is worse than a null — it is silently discarded.
-  Do NOT fill this for "bald", "shaved" or "buzzed" briefs. Those leave no
-  remainder to describe and the engine handles them on its own.
+  A BRIEF THAT SAYS THE HAIR IS GONE STILL FILLS "cutLength", in their word:
+  "bald", "shaved", "shaved head", "buzzed", "hairless", "a buzzcut". That IS
+  the cut. Leaving it null does not make the engine cautious — it makes the fact
+  depend on a summary that may not carry it.
   THIS IS IN ADDITION TO, NEVER INSTEAD OF, "role" and "characterNotes". If the
   brief says "a redhead in her 30s", "redhead" belongs in the hair colour AND
   the sentence still gets whatever role and character detail it would otherwise

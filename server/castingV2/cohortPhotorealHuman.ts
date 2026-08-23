@@ -2023,6 +2023,22 @@ function describePartialHair(input: {
     Greying survives it, because it describes the hair rather than the cut.
   */
   if (spoken.has("cutLength") && length === null) {
+    /*
+      ⚠ AND THIS GUARD IS NOT THE BALD DEFECT, WHICH I HAD TO PROVE TO MYSELF
+      RATHER THAN ASSUME (2026-08-23).
+
+      I "fixed" it here too, on the reading that it held the same false premise
+      as the coverage guard. It does not, and the line four above says why:
+      `length` is `bareTerm(stated.cutLength)` whenever the cut is SPOKEN, so a
+      stated cut already reaches the prompt through the ordinary composition —
+      driven, a stated *"a shaggy mullet"* composes as `HAIR: a grey straight
+      shaggy mullet`. This branch is reached only when her stated cut is
+      unusable, and then there is no word to say.
+
+      So the edit I made here was a no-op wearing a fix's clothes, and it is
+      reverted. **The COVERAGE guard is the defect** — that one returns outright
+      and her word never reaches anything.
+    */
     return greying ? ` HAIR:${greying}` : "";
   }
 
@@ -2055,6 +2071,58 @@ function describePartialHair(input: {
     palette is already pulled dark and this says the rest out loud.
   */
   return ` HAIR: ${article}${description}${worn}${components}.${greying} Cut and worn as that style is genuinely worn, not a salon-neutral version of it.`;
+}
+
+/**
+ * ⚠ WHAT SHE SAID ABOUT THE CUT, SAID TO THE ENGINE — and it is new on
+ * 2026-08-23 because the premise it replaces was measured false.
+ *
+ * # The premise, quoted from the two places that held it
+ *
+ * This file said it twice, in as many words. At the coverage guard: *"the
+ * user's own words carry it through the role and character fields — the path
+ * that has always worked."* At the stated-cut guard: *"the honest degrade is
+ * whole-axis silence: the user's own words still reach the picture through the
+ * role and character fields, exactly as they did before this feature existed."*
+ *
+ * **Both sentences rest on `characterNotes` carrying her word, and it does not.**
+ * Driven through the real entrance, three briefs, survival counted as *present
+ * in all eight compiled prompts*:
+ *
+ * ```
+ * "bald"    1 of 3      "buzzed"  1 of 4      "shaved"  4 of 4
+ * ```
+ *
+ * `characterNotes` is written by a model asked to summarise a brief, so every
+ * specific word is at the mercy of a paraphrase. The founder's own roll came
+ * back **eight of eight with hair** on a brief whose first word is *Bald* —
+ * because the summary dropped it and nothing else in the prompt said it, while
+ * several lines presuppose hair (*"clear space between the topmost hair and the
+ * top edge"*).
+ *
+ * # What this does, and the line it does not cross
+ *
+ * `statedHair` was a SUPPRESSION SIGNAL: it stopped the engine authoring a cut
+ * and never said what the cut was. That is right about authoring and wrong
+ * about silence — **a lane that silences is not a lane that speaks.** So the
+ * suppressed axis now carries HER OWN WORD.
+ *
+ * ⚠ **The VALUE is hers and only the frame is ours** (D-172, source
+ * containment). `statedHair.cutLength` is filled from her sentence and checked
+ * against it by the interpreter, so what is emitted here is a word she typed —
+ * never a paraphrase of it, never a synonym, and never a word inferred from the
+ * brief by this file.
+ *
+ * ⚠ **And it is strictly additive.** With no stated cut it returns nothing and
+ * every caller behaves exactly as it did — which is every roll cast before
+ * today, because the interpreter was told not to fill this field for precisely
+ * the briefs that needed it most.
+ */
+function statedCutSentence(stated: StatedHair): string {
+  const word = typeof stated.cutLength === "string" ? stated.cutLength.trim() : "";
+  if (word.length === 0) return "";
+  return ` HAIR: ${word} — exactly as described, and nothing added to the scalp that `
+    + "this description does not describe.";
 }
 
 function describeHair(
@@ -2093,11 +2161,16 @@ function describeHair(
     COVERAGE IS TOTAL, and it is checked before anything else.
 
     There is no cut on a bald man. Authoring one is the founding bug of the
-    whole deference doctrine, so a coverage word silences the axis outright and
-    the user's own words carry it through the role and character fields — the
-    path that has always worked.
+    whole deference doctrine, so a coverage word silences the axis outright.
+
+    ⚠ **AND SILENCE IS NOT WHAT IT USED TO BE.** This comment used to end *"the
+    user's own words carry it through the role and character fields — the path
+    that has always worked"*, and that path was measured at 1 in 3 for "bald".
+    Nothing authored still survives suppression; what changes is that her own
+    word is now SAID rather than assumed to arrive by another road. See
+    `statedCutSentence`.
   */
-  if (deference.coverage) return "";
+  if (deference.coverage) return statedCutSentence(deference.stated);
 
   const spoken = deference.spoken;
 

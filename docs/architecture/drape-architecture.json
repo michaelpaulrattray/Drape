@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "cb72834e249b3ccc"
+    "sourceFingerprint": "b86c99b03e91647c"
   },
   "domains": [
     {
@@ -11279,6 +11279,10 @@
     {
       "id": "test:server/castingV2/statedCovering.test.ts",
       "path": "server/castingV2/statedCovering.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/statedHairSpeaks.test.ts",
+      "path": "server/castingV2/statedHairSpeaks.test.ts"
     },
     {
       "id": "test:server/castingV2/statedInk.test.ts",
