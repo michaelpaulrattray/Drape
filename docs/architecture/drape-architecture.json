@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "2532a34eb741ccb6"
+    "sourceFingerprint": "cf91dc55034d4bc9"
   },
   "domains": [
     {
@@ -10497,6 +10497,10 @@
     {
       "id": "test:server/castingV2/canthalTilt.test.ts",
       "path": "server/castingV2/canthalTilt.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/captionHybrid.test.ts",
+      "path": "server/castingV2/captionHybrid.test.ts"
     },
     {
       "id": "test:server/castingV2/carriedGeometry.test.ts",

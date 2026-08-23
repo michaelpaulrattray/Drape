@@ -2584,9 +2584,22 @@ export function saysNothingNew(input: {
  * roll time; a per-face edit is this user's deliberate choice about ONE of
  * them, and re-balancing would move faces they never touched.
  */
-export function applyDelta(original: ResolvedIdentity, delta: RefineDelta): ResolvedIdentity {
+export function applyDelta(
+  original: ResolvedIdentity,
+  delta: RefineDelta,
+  /**
+   * WHAT THE PICTURE ACTUALLY DELIVERED, IN WORDS — the caption hybrid
+   * (founder ruling, fable-1434: *"i like the caption hybrid approach cousins
+   * are not emant to be an exact replica on the one your editing."*).
+   *
+   * Keyed by free SUBJECT, and only a subject this delta marks `fromPicture`
+   * can be answered by it — see {@link identityDetailsOf}. Absent on every
+   * caller but the landing, which is the only one that has read the frame back.
+   */
+  captured?: Readonly<Record<string, string>>,
+): ResolvedIdentity {
   const style = delta.hairStyle != null ? hairStyleByName(delta.hairStyle) : null;
-  const identityDetails = identityDetailsOf(delta);
+  const identityDetails = identityDetailsOf(delta, captured);
   return {
     ...original,
     /*
@@ -2781,7 +2794,11 @@ export function stemmedContainment(value: string, instruction: string): boolean 
  * whole — so filing a smile into the identity blob would have every follow
  * inherit it, making a momentary choice permanent for eight strangers.
  */
-export function identityDetailsOf(delta: RefineDelta): Record<string, string> | null {
+export function identityDetailsOf(
+  delta: RefineDelta,
+  /** What the delivered frame was READ to hold, per picture-taken subject. */
+  captured?: Readonly<Record<string, string>>,
+): Record<string, string> | null {
   if (!delta.free) return null;
   const details: Record<string, string> = {};
   /* ⚠ AND WHAT THIS STEP TOOK FROM A PICTURE — see `RefineDelta.fromPicture`.
@@ -2792,7 +2809,25 @@ export function identityDetailsOf(delta: RefineDelta): Record<string, string> | 
   const fromPicture = new Set<string>(delta.fromPicture ?? []);
   for (const [subject, value] of Object.entries(delta.free)) {
     if (isPresentationSubject(subject as FreeSubject)) continue;
-    if (fromPicture.has(subject)) continue;
+    if (fromPicture.has(subject)) {
+      /*
+        ⚠ THE CAPTION HYBRID — the founder's own ruling (fable-1434), and his
+        sentence carries the PRINCIPLE rather than just the pick: *"cousins are
+        not emant to be an exact replica on the one your editing."*
+        Follow's fidelity contract is the SKETCH, not the fingerprint.
+
+        The placeholder still never persists — that half is unchanged and is
+        the `continue` below. What lands instead is what the delivered frame
+        was actually READ to hold, in words: a description the next cast can be
+        built from, rather than a sentence about a photograph nobody has.
+
+        The crop stays the ONLY carrier for a same-person edit. This is the
+        FOLLOW lane alone, which is why it is a caption and not a picture.
+      */
+      const said = captured?.[subject]?.trim();
+      if (said) details[subject] = said;
+      continue;
+    }
     /*
       JOINED, not the array (D-171). `statedDetails` is read as prose by
       `currentValueOfFacet`, by D-167's confession and by the interpreter's

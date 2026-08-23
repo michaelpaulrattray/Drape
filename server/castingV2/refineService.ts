@@ -5350,6 +5350,10 @@ async function refineCandidateCounted(
     whole-look take.
   */
   const pictureSourcedSubjects: FreeSubject[] = [];
+  /** What the delivered frame was READ to hold for each of those subjects —
+   *  the caption hybrid (fable-1434). Empty on every render that took nothing
+   *  from a picture, which is nearly all of them. */
+  const picturedCaptions: Record<string, string> = {};
   let secondViewNote: string | null = null;
   /*
     THE HAIR ROAD'S OWN GATE (ruled fable-1163 §2).
@@ -8202,10 +8206,37 @@ async function refineCandidateCounted(
       failure in facet order is re-thrown so the caller sees exactly the error
       the serial loop gave it.
     */
+    /*
+      ⚠ THE FACETS THIS RENDER TOOK FROM A PICTURE — and the ONE control this
+      commit stands down, said out loud rather than discovered later.
+
+      THE DECISION (founder ruling fable-1434, verbatim: *"i like the caption
+      hybrid approach cousins are not emant to be an exact replica on the one
+      your editing"*). A picture-taken facet is asked for its caption with
+      `asked: null` — `captionRealization`'s own documented path, *"absent means
+      there is nothing to corroborate, and the caption is taken as written"*.
+
+      **What that retires, for THIS facet only:** the corroboration check that
+      refuses to pin a caption the ask cannot be matched against. It is not a
+      loophole and it is not an oversight — nothing can corroborate *"the hair
+      in the attached picture"* against a frame, which is why the check refused
+      every one of them (production v532 carries the refusal on its own row).
+      A check that cannot pass is not protecting anything; it was simply
+      producing silence, and silence is what left a follow with no hair fact at
+      all.
+
+      **What is NOT retired**: the binding verifier, which is a separate
+      instrument on a separate question, and the corroboration check itself on
+      every other facet of every render. `picturedFacets` is derived from the
+      delta's own `fromPicture` record — never a string match on the
+      placeholder, which is the defect's own currency (fable-1432 condition 1).
+    */
+    const picturedFacets = new Set(pictureSourcedSubjects.map((subject) => facetOfSubject(subject)));
     const captionWork = Array.from(captionFacets).map(async (facet) => {
-      const asked = currentIdentity
-        ? currentValueOfFacet(applyDelta(currentIdentity, composed), facet)
-        : null;
+      const pictured = picturedFacets.has(facet);
+      const asked = pictured || !currentIdentity
+        ? null
+        : currentValueOfFacet(applyDelta(currentIdentity, composed), facet);
       /*
         A PER-SIDE FACET IS READ FROM ITS OWN CUT — never from the frame
         (fable-611 §2, courted).
@@ -8266,6 +8297,27 @@ async function refineCandidateCounted(
       if (result.value.caption) capturedCaptions[result.value.facet] = result.value.caption;
       if (result.value.asked) askedWords[result.value.facet] = result.value.asked;
       uncorroborated.push(...result.value.mine);
+    }
+    /*
+      ⚠ AND WHAT THE PICTURE ACTUALLY DELIVERED, IN WORDS — the caption hybrid's
+      other half (fable-1434).
+
+      Keyed by SUBJECT because that is the key `statedDetails` is written under,
+      and derived from `pictureSourcedSubjects` rather than from the captions,
+      so a facet that was not taken from a picture can never be filed here even
+      if it happened to be captioned.
+
+      This is the only thing in the product that writes a read-back into the
+      identity record. It reaches exactly one place — the landing's
+      `applyDelta` below — and one lane: a FOLLOW, which composes its cousins
+      from `statedDetails`. The crop remains the only carrier for a same-person
+      edit, unchanged.
+    */
+    for (const subject of pictureSourcedSubjects) {
+      /* The SENTENCE, whichever kind of caption it is — a pinned one carries
+         its vocabulary id beside the wording, and only the wording is prose. */
+      const said = captionWording(capturedCaptions[facetOfSubject(subject)]);
+      if (said) picturedCaptions[subject] = said;
     }
 
     /*
@@ -9402,7 +9454,10 @@ async function refineCandidateCounted(
       internalPrompt: {
         prompt,
         /* Same source as the prompt, for the same reason. */
-        resolved: baseIdentity ? applyDelta(baseIdentity, filed) : null,
+        /* The caption hybrid's landing (fable-1434): a picture-taken facet is
+           filed as what the frame was READ to hold, so a follow composes its
+           cousins from a description rather than inheriting nothing. */
+        resolved: baseIdentity ? applyDelta(baseIdentity, filed, picturedCaptions) : null,
         /*
           WHICH TAKE THIS ONE REPLACES (founder, 2026-08-15).
 
