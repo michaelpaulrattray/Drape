@@ -236,6 +236,17 @@ type CastPackageView = {
    * near-profile. Consulted and adopted per item, not inherited wholesale.
    */
   directive: string;
+  /**
+   * ⚠ DOES THIS VIEW SHOW BELOW THE WAIST — the two full-length angles, and the
+   * only ones a below-waist sentence has any business reaching.
+   *
+   * Declared per view rather than inferred from the angle's name, so a sixth
+   * view added tomorrow states its own answer instead of being caught by a
+   * regex on "Full". Absent means no, which is the safe direction: a close-up
+   * that quietly gained a bottoms instruction would be composing about pixels
+   * it does not contain.
+   */
+  belowWaist?: boolean;
 };
 
 const WARDROBE = CAST_PACKAGE_WARDROBE_SPEC;
@@ -356,11 +367,19 @@ const VIEWS: Record<CastViewAngle, CastPackageView> = {
     },
     directive:
       "FULL BODY FRONT VIEW. The subject stands square to camera, head to feet entirely inside the "
-      + "frame with margin above the hair and below the shoes. Arms relaxed at the sides, weight even, "
-      + "standing still rather than posing."
-      + "Below the waist, plain unbranded neutral trousers and plain unbranded shoes in a "
-      + "tone that sits with the top — no visible hardware, buttons, stitch detailing or "
-      + "logos.",
+      /* ⚠ "below the FEET", not "below the shoes" (2026-08-23). This is a FRAMING
+         clause and it presupposed footwear — harmless while every Cast wore the
+         house line's low shoes, and a small untruth said to a barefoot caveman in
+         the same prompt that tells the engine he is barefoot. The margin is about
+         where the body ends. */
+      + "frame with margin above the hair and below the feet. Arms relaxed at the sides, weight even, "
+      + "standing still rather than posing.",
+    /*
+      ⚠ THE BELOW-WAIST SENTENCE IS NOT HERE ANY MORE — it is composed, and only
+      for a Cast that has nothing else describing its bottoms. See
+      {@link belowWaistFor}.
+    */
+    belowWaist: true,
   },
   sideClose: {
     angle: "sideClose",
@@ -403,10 +422,15 @@ const VIEWS: Record<CastViewAngle, CastPackageView> = {
     directive:
       "STRICT RIGHT-FACING FULL BODY SIDE PROFILE, WALKING. The subject's nose and toes point toward "
       + "the RIGHT EDGE OF THE OUTPUT FRAME; the torso stays in true profile and the stride is mid-walk. "
-      + "Head to feet entirely inside the frame."
-      + "Below the waist, plain unbranded neutral trousers and plain unbranded shoes in a "
-      + "tone that sits with the top — no visible hardware, buttons, stitch detailing or "
-      + "logos.",
+      + "Head to feet entirely inside the frame.",
+    /*
+      ⚠ RETIRED FROM THE PROFILE AND TREATED THE SAME WAY ANYWAY. This view is
+      not in `CAST_PACKAGE_VIEWS`, so no new Sign generates it and the flag
+      below decides nothing today. It is set because the alternative is a
+      retired entry that behaves differently from its live siblings the day
+      somebody un-retires it — the historical record kept, and kept consistent.
+    */
+    belowWaist: true,
   },
   backFull: {
     angle: "backFull",
@@ -418,10 +442,8 @@ const VIEWS: Record<CastViewAngle, CastPackageView> = {
     },
     directive:
       "FULL BODY FROM BEHIND, walking away from camera. Head to feet entirely inside the frame. "
-      + "The face is not visible. Add nothing to the back or arms that the reference does not show."
-      + "Below the waist, plain unbranded neutral trousers and plain unbranded shoes in a "
-      + "tone that sits with the top — no visible hardware, buttons, stitch detailing or "
-      + "logos.",
+      + "The face is not visible. Add nothing to the back or arms that the reference does not show.",
+    belowWaist: true,
   },
 };
 
@@ -529,13 +551,65 @@ function wardrobeSpecFor(angle: CastViewAngle, wardrobeLine: string | null): str
   return castPackageWardrobeSpec(wardrobeLine);
 }
 
+/**
+ * ⚠ WHAT A FULL-LENGTH VIEW IS TOLD ABOUT THE BOTTOM HALF — and why it is
+ * composed rather than frozen (2026-08-23, countersigned fable-1478).
+ *
+ * # The defect, quoted from a prompt this function used to build
+ *
+ * The two full-length directives ENDED with this, hard-coded:
+ *
+ * > *"Below the waist, plain unbranded neutral trousers and plain unbranded
+ * > shoes in a tone that sits with the top…"*
+ *
+ * Four lines later, the same prompt said:
+ *
+ * > *"WARDROBE: exactly this outfit, unchanged across every view: a rough
+ * > animal-hide wrap draped over one shoulder, a plain hide loincloth, bare
+ * > feet."*
+ *
+ * **The prompt ordered trousers and shoes and then ordered a loincloth and bare
+ * feet.** The founder called them hallucinated trousers; the engine was obeying
+ * us. It is a block contradicting itself in the same breath, which an image
+ * model resolves by picking one, silently, per view — measured at **2 of 4
+ * full-length views across two Signs**, each one caught by the judge, refused
+ * and refunded at 50 credits.
+ *
+ * ⚠ **The design predicted it in writing and half of it landed.** §3.3's table
+ * has a row for *the six signed views* and a row for *the wardrobe judge*, both
+ * to derive from `currentWardrobeLine` so generator and judge cannot drift. The
+ * JUDGE half shipped — `castPackageWardrobeSpec` composes from the line, which
+ * is exactly why these failures were caught rather than delivered. The
+ * GENERATOR half is this. Until now the product paid a text model to referee a
+ * disagreement it had manufactured, and refunded the customer when our own two
+ * sentences lost.
+ *
+ * # `null` keeps the sentence, and that is not caution
+ *
+ * A Cast with no stored line has a chest-up reference and nothing else naming
+ * its bottoms, so a full-length view must invent them — and our own restrained
+ * default is the honest answer for it. That is every Cast signed to date and
+ * every unpathed roll, composing character for character as it always has.
+ *
+ * ⚠ **What this does NOT fix, named rather than implied**: that unpathed
+ * population still has a view inventing below the crop, and the real cure there
+ * is a bottom-half document (fable-1476's first-reveal locks, filed and
+ * unbuilt). This removes a contradiction; it does not give the engine something
+ * to copy.
+ */
+function belowWaistFor(angle: CastViewAngle, wardrobeLine: string | null): string {
+  if (!VIEWS[angle].belowWaist || wardrobeLine !== null) return "";
+  return " Below the waist, plain unbranded neutral trousers and plain unbranded shoes in a "
+    + "tone that sits with the top — no visible hardware, buttons, stitch detailing or logos.";
+}
+
 export function composePackageViewPrompt(angle: CastViewAngle, wardrobeLine: string | null = null): string {
   const view = VIEWS[angle];
   return [
     "Keep this exact person unchanged: the same face, bone structure, skin, hair, facial hair and build "
     + "as the reference photograph. This is the same individual in a different photograph, never a "
     + "similar-looking person.",
-    view.directive,
+    `${view.directive}${belowWaistFor(angle, wardrobeLine)}`,
     `WARDROBE: ${wardrobeSpecFor(angle, wardrobeLine)}`,
     PHOTOREAL_HUMAN_BLOCKS.capture,
     PHOTOREAL_HUMAN_BLOCKS.realism,

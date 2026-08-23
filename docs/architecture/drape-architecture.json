@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "b86c99b03e91647c"
+    "sourceFingerprint": "247fb4954eaffde5"
   },
   "domains": [
     {
@@ -10655,6 +10655,10 @@
     {
       "id": "test:server/castingV2/followDrift.test.ts",
       "path": "server/castingV2/followDrift.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/fullLengthBottoms.test.ts",
+      "path": "server/castingV2/fullLengthBottoms.test.ts"
     },
     {
       "id": "test:server/castingV2/hairArrangement.test.ts",

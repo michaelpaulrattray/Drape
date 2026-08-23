@@ -239,20 +239,33 @@ describe("the wardrobe axis only judges what the reference can establish", () =>
     expect(wardrobe).toMatch(/jacket|jewellery|logo/);
   });
 
-  it("still tells the GENERATOR what to put on her legs", () => {
+  it("still tells the GENERATOR what to put on her legs — when nothing else does", () => {
     /*
       The instruction moved rather than vanished. `spec.wardrobe` is read by the
       judge AND the generator (`composePackageViewPrompt`), so scoping it for
       the judge would have quietly stopped asking for trousers at all — the fix
       creating a worse defect than the one it closed.
+
+      ⚠ **AND IT MOVED AGAIN ON 2026-08-23, WHICH IS WHY THIS ARM NOW READS THE
+      COMPOSED PROMPT RATHER THAN THE CONSTANT.** The clause lived on
+      `directive`, so it went into every full-length prompt — including one that
+      four lines later said *"a plain hide loincloth, bare feet"*. The engine was
+      obeying us, and the judge (already deriving from the stored line) refused
+      the view and refunded it: 2 of 4 full-length views across two Sign courts.
+
+      So the clause is COMPOSED now, and only for a Cast with no line of its own.
+      This arm's claim is unchanged — the generator is still told — and the thing
+      it reads had to move with the instruction, because a constant is no longer
+      where the answer is. `fullLengthBottoms.test.ts` holds the other direction.
     */
     for (const angle of ["frontFull", "sideFull", "backFull"] as const) {
-      expect(castPackageView(angle).directive).toContain("Below the waist");
-      expect(castPackageView(angle).directive).toContain("trousers");
+      const prompt = composePackageViewPrompt(angle, null);
+      expect(prompt, angle).toContain("Below the waist");
+      expect(prompt, angle).toContain("trousers");
     }
     // And never on a view that does not reach the waist.
     for (const angle of ["closeUp", "threeQuarter", "sideClose"] as const) {
-      expect(castPackageView(angle).directive).not.toContain("Below the waist");
+      expect(composePackageViewPrompt(angle, null), angle).not.toContain("Below the waist");
     }
   });
 });
