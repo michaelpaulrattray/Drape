@@ -87,6 +87,7 @@ import {
 } from "../castingV2/referenceCompleteness";
 import { withTransaction, getDb, type TransactionHandle } from "./connection";
 import { undischargedStorageCleanupBatchWhere } from "./storageCleanup";
+import { storedGuardKind } from "../castingV2/openKindQuestion";
 
 export type { ReferenceGeometry, ReferenceGuardReading, ReferenceRefusal, StoredReference };
 
@@ -511,7 +512,14 @@ async function insertVersionedReferenceIn(
       bboxH: image?.geometry?.bbox.height ?? null,
       frameWidth: image?.geometry?.frame.width ?? null,
       frameHeight: image?.geometry?.frame.height ?? null,
-      guardKind: image?.guard?.kind ?? null,
+      /* ⚠ CAPPED AT THE COLUMN, and this insert is where the founder's orb died
+         twice (fable-1441): the rung-1 record carries the JOINED WORD STACK, a
+         97-character sentence went into `varchar(48)`, and the whole mint's
+         transaction was lost — crop and words row together. The stack is
+         unbounded (words accumulate per edit) so a wider column is the same bug
+         deferred; the full text is on this same row in `words`, and
+         `openKindRungOfRow` truncates both sides of its comparison to match. */
+      guardKind: storedGuardKind(image?.guard?.kind ?? null),
       guardCoverage: image?.guard?.coverage ?? null,
       guardSpill: image?.guard?.spill ?? null,
       guardThreshold: image?.guard?.threshold ?? null,

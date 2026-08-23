@@ -100,6 +100,52 @@ export function openKindWordsQuestion(words: readonly string[]): string | null {
 }
 
 /**
+ * How much of an asked question the library's `guardKind` column can hold.
+ *
+ * ⚠ **THE FOUNDER'S ORB MINTED NOTHING TWICE BECAUSE OF THIS NUMBER** (found at
+ * the live log, fable-1441; v219 and v220, production). The rung-1 record makes
+ * `guardKind` carry the JOINED WORD STACK, the read worked perfectly — the crop
+ * is the orb, tight box, guard passed at ceiling — and then the INSERT died:
+ *
+ *     DrizzleQueryError: Data too long for column 'guardKind' at row 1
+ *     guardKind: "a glowing red vertical slit orb embedded in the centre of her
+ *                 forehead, glowing slightly brighter"        ← 97 characters
+ *
+ * The transaction died, the mint's own catch logged and stood the picture up,
+ * and the whole render filed nothing at all — no crop row, no words row.
+ *
+ * # WHY A CAP AND NOT A WIDER COLUMN
+ *
+ * **The stack is UNBOUNDED**: words accumulate with every edit to that kind, so
+ * `varchar(N)` for any N is this same bug deferred to a longer sentence. A cap
+ * is total for every length there will ever be.
+ *
+ * # AND WHY NOTHING IS LOST
+ *
+ * The full stack lives in `words` ON THE SAME ROW — `guardKind` for a rung-1 row
+ * is literally {@link openKindWordsQuestion} of it. The column exists to answer
+ * ONE question ({@link openKindRungOfRow}: was this her words or the site she
+ * named), and truncating BOTH SIDES of that comparison identically leaves the
+ * answer exactly unchanged. So the stored form is a PREFIX, stated rather than
+ * discovered, and the derivation compares prefixes.
+ *
+ * ⚠ **IT IS APPLIED AT THE STORE AND NEVER AT THE ASK.** `guardKind` is also the
+ * string put to the segmenter; truncating before the read would change what was
+ * looked for, which is the one thing this must not touch.
+ *
+ * Matches `varchar("guardKind", { length: 48 })` on BOTH tables that carry it —
+ * `casting_reference_library` and `casting_reference_crops`. Move them together.
+ */
+export const GUARD_KIND_MAX = 48;
+
+/** The asked question as the column can hold it. See {@link GUARD_KIND_MAX}. */
+export function storedGuardKind(kind: string): string;
+export function storedGuardKind(kind: string | null): string | null;
+export function storedGuardKind(kind: string | null): string | null {
+  return kind === null ? null : kind.slice(0, GUARD_KIND_MAX);
+}
+
+/**
  * The SECOND rung: the place her own sentence names.
  *
  * ⚠ **SOURCE CONTAINMENT IS THE WHOLE OF THIS RUNG** (ruled fable-1402): the
@@ -293,7 +339,11 @@ export function openKindRungOfRow(row: {
 }): OpenKindRung {
   if (!row.hasCrop) return "none";
   const words = openKindWordsQuestion(row.words);
-  if (words !== null && row.guardKind === words) return "words";
+  /* BOTH SIDES TRUNCATED IDENTICALLY (fable-1441). The stored `guardKind` is a
+     prefix for any stack longer than the column, so comparing the whole joined
+     words against it would read every long rung-1 row as rung 2 — the derivation
+     silently mis-classifying exactly the rich phrases the ladder was built for. */
+  if (words !== null && row.guardKind === storedGuardKind(words)) return "words";
   return "site";
 }
 

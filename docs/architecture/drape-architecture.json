@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "c28bbcd89f02f647"
+    "sourceFingerprint": "5edb3149f3aee85b"
   },
   "domains": [
     {
@@ -25535,6 +25535,11 @@
     {
       "from": "module:server/db/castingV2ReferenceLibrary.ts",
       "to": "module:drizzle/schema.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/castingV2ReferenceLibrary.ts",
+      "to": "module:server/castingV2/openKindQuestion.ts",
       "kind": "imports"
     },
     {

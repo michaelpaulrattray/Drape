@@ -3,9 +3,11 @@ import { describe, expect, it } from "vitest";
 import {
   askWordsForSlot,
   openKindAsk,
+  GUARD_KIND_MAX,
   openKindRungOfRow,
   openKindSiteQuestion,
   openKindWordsQuestion,
+  storedGuardKind,
 } from "./openKindQuestion";
 import { priorWordsBySlot, type StoredReference } from "./referenceLibrary";
 
@@ -112,9 +114,15 @@ describe("which rung a row came off, read back off the row", () => {
   });
 
   it("a crop cut under her own joined words is rung ONE", () => {
+    /* ⚠ `storedGuardKind` rather than the bare joined words, and this arm went
+       RED when the cap landed — correctly. ORB is 70 characters and the column
+       is 48, so `guardKind: openKindWordsQuestion(ORB)` describes a row MySQL
+       has never been able to hold: the fixture was modelling an impossible row
+       and would have gone on passing while the real insert died (fable-1441).
+       The row is built the way the writer builds it now. */
     expect(openKindRungOfRow({
       words: ORB,
-      guardKind: openKindWordsQuestion(ORB),
+      guardKind: storedGuardKind(openKindWordsQuestion(ORB)),
       hasCrop: true,
     })).toBe("words");
   });
@@ -239,5 +247,64 @@ describe("the stack a branch holds per slot", () => {
   it("holds nothing for a slot whose rows say nothing", () => {
     expect(priorWordsBySlot([row({ slot: "open:orb", version: 1, words: [] })]).size).toBe(0);
     expect(priorWordsBySlot([]).size).toBe(0);
+  });
+});
+
+describe("⚠ the joined stack is capped at the column it is stored in", () => {
+  /*
+    THE FOUNDER'S ORB MINTED NOTHING TWICE BECAUSE OF THIS (fable-1441, found at
+    the live log). The rung-1 record makes `guardKind` carry the joined word
+    stack; the read worked perfectly and the INSERT died —
+
+      DrizzleQueryError: Data too long for column 'guardKind' at row 1
+
+    — taking the whole mint's transaction with it, so the render filed no crop
+    AND no words row. `varchar(48)`, a 97-character sentence.
+
+    ⚠ AND THE DEV DRIVE THAT PROVED THIS ROAD MISSED IT BY FIXTURE FAMILY: the
+    talons stack is 36 characters and fits, the orb's is 97 and does not. Every
+    specimen the road had ever been driven on shared the property that killed it
+    — `fixture-family-shares-a-property`, at a column width. These arms exist
+    because the always-on suite cannot see a column, so the LENGTH has to be the
+    thing under test rather than a happy accident of the phrase chosen.
+  */
+  const LONG = [
+    "a glowing red vertical slit orb embedded in the centre of her forehead",
+    "glowing slightly brighter",
+  ];
+
+  it("⚠ CONTROL — the real specimen really is longer than the column", () => {
+    /* Without this the arms below pass on a phrase that never overflowed, which
+       is the bug's own shape repeated inside its own test. */
+    const joined = openKindWordsQuestion(LONG)!;
+    expect(joined.length).toBeGreaterThan(GUARD_KIND_MAX);
+    expect(joined).toContain("glowing slightly brighter");
+  });
+
+  it("stores a prefix the column can hold, and never more", () => {
+    const joined = openKindWordsQuestion(LONG)!;
+    const stored = storedGuardKind(joined);
+    expect(stored.length).toBe(GUARD_KIND_MAX);
+    expect(joined.startsWith(stored)).toBe(true);
+  });
+
+  it("leaves anything that already fits completely alone", () => {
+    /* NEGATIVE CONTROL: the twelve rows in production are 18 characters at the
+       longest, and none of them may move. */
+    expect(storedGuardKind("forehead")).toBe("forehead");
+    expect(storedGuardKind(null)).toBeNull();
+  });
+
+  it("⚠ still reads a LONG rung-1 row as `words`, not as `site`", () => {
+    /* The half a careless cap gets wrong. `openKindRungOfRow` compares the
+       stored value against the joined words; truncate only the STORE and every
+       rich phrase — the exact population the ladder was built for — silently
+       reclassifies as rung 2. Both sides truncate. */
+    const stored = storedGuardKind(openKindWordsQuestion(LONG)!);
+    expect(openKindRungOfRow({ words: LONG, guardKind: stored, hasCrop: true })).toBe("words");
+  });
+
+  it("and a genuine site row is still `site` even when the stack is long", () => {
+    expect(openKindRungOfRow({ words: LONG, guardKind: "forehead", hasCrop: true })).toBe("site");
   });
 });
