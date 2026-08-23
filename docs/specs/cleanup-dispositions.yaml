@@ -964,6 +964,11 @@
   verdict: KEEP
   why: the delivered-crop fence's own instrument, and it is a TEST-ONLY symbol by design rather than by neglect — its whole job is to answer "did a model's reply TRY to name a crop of this customer's body", which is the question `readDeliveredInk` deliberately cannot answer (a malformed attempt reads as "nothing usable here", and an instrument reporting that as absence would certify the fence over a hole). Its sibling `deltaCarriesAppliedInk` is identical in every respect and is absent from this table only because the sweep counts a self-reference and that one happens to be named in its own module's header. Deleting it would leave the strict reader's blindness provable in one direction only
   argued: V3B §7.12 (migration 0050, ruled fable-1197 §1; the both-directions condition is fable-1167 §2a inherited)
+- symbol: deltaCarriesAskedInk
+  file: server/castingV2/inkApplied.ts
+  verdict: KEEP
+  why: the third half's fence instrument, and TEST-ONLY by design exactly as `deltaCarriesDeliveredInk` above is — its whole job is to answer "did a model's reply TRY to name the words of a slot it was not asked about", which `readAskedInk` deliberately cannot answer (a malformed attempt reads as "nothing usable here", and an instrument reporting that as absence would certify the fence over a hole). Deleting it would leave the strict reader's blindness to `inkAsked` provable in one direction only, on the field that keys which sentence painted which tattoo
+  argued: CASTING_V2_MULTI_TATTOO_DESIGN.md §6 arm 2 (shape A, ruled fable-1494; the both-directions condition is fable-1167 §2a inherited)
 - symbol: overlapPixels
   file: server/castingV2/inkReferenceCrop.ts
   verdict: KEEP

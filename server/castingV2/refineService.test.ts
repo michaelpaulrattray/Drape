@@ -12217,6 +12217,15 @@ describe("the picture she attached becomes the carrier that rides", () => {
         side: "centre",
         storageKey: "casting-v2/ink/d-neck.png",
         sourceDigest: "e".repeat(64),
+        /*
+          ⚠ ITS BYTES HAVE TO MATCH ITS ROW NOW, and that is 3b arriving rather
+          than a fixture tidy-up: since the ink halves compose PER SLOT, a
+          design she is wearing elsewhere is CARRIED onto this render — so it
+          goes through the assembler's digest fence, which this row was never
+          built to pass. The fence is right and the fixture was describing a
+          world where her other tattoo silently stopped riding.
+        */
+        digest: TINY_MASTER_SHA,
       });
       const inTheDrawer = inkDesignRow({
         publicId: "d-drawer",
@@ -13145,7 +13154,18 @@ describe("the picture she attached becomes the carrier that rides", () => {
 
     expect(result.kind).toBe("rendered");
     expect(painted).toHaveLength(1);
-    expect(painted[0]!.prompt).not.toContain("is the exact upper chest tattoo she already has");
+    /*
+      ⚠ THE FIRST HALF OF THIS ARM MOVED WITH 3b, and what it used to assert was
+      the defect rather than the flag. It read `not.toContain("is the exact
+      upper chest tattoo she already has")` — true before 3b because the
+      restatement REPLACED the pointer set, so her existing chest piece silently
+      stopped riding on any ask that mentioned ink. It rides now, as a CARRY.
+
+      The flag's own evidence is the second assertion and always was: a carry
+      says *put it back exactly as it is*, and a transform says *draw this same
+      tattoo noticeably larger*. Off, only the first sentence exists.
+    */
+    expect(painted[0]!.prompt).toContain("Put it back exactly as it is here");
     expect(painted[0]!.prompt).not.toContain("Draw this same tattoo noticeably larger");
   });
 
@@ -13400,6 +13420,111 @@ describe("the picture she attached becomes the carrier that rides", () => {
       /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/,
     );
     expect(claimed["ink:upperChest"]).not.toBe(CHEST_CROP);
+  });
+
+  /*
+    ---- THE SECOND TATTOO (§10 item 3b, ruled fable-1494/1495) ----
+
+    ⚠ **THIS IS THE ARM THAT MATTERS, and it is at the service because the
+    composer alone cannot see the defect.** 50 dev credits on 2026-08-24 bought
+    the specimen: a Cast given a neck swallow and then an arm compass rose lost
+    the neck POINTER inside the render that added the arm, and kept the neck
+    WORDS — so the second render's own dispatched prompt said *"INK: a small
+    swallow tattoo on his neck … a compass rose tattoo on his left upper arm"*
+    and the engine painted a SECOND swallow, on the other side of his neck.
+
+    Two halves, and neither is sufficient: the RECORD must keep both tattoos, so
+    the next render carries them; and the PROMPT must say only the new one, so
+    the carried one is not reinvented. D-137 in code rather than in prose.
+  */
+  const secondTattooRoad = (over: Record<string, unknown> = {}) => wordsRoad({
+    listInkDeliveryCrops: deliveredCropRows([NECK_CROP]),
+    /* The interpreter restating the WHOLE current set, which is what it does
+       for a plural subject and what the court's own second delta held. */
+    interpret: async () => ({
+      ok: true as const,
+      fromReference: false,
+      delta: { free: { ink: [
+        "a fine-line swallow chest piece",
+        "a compass rose tattoo on his left upper arm",
+      ] } },
+    }),
+    inkTake: async () => ({
+      placement: { kind: "measured" as const, placement: "upperArm" as const }, side: "left" as const,
+    }),
+    ...over,
+  });
+
+  it("⚠ KEEPS THE FIRST TATTOO IN THE RECORD when a second one is added", async () => {
+    inkedBranch({ "ink:upperChest": CHEST_CROP });
+    painted.length = 0;
+    const result = await refineCandidate(secondTattooRoad(), {
+      ...input, instruction: "give him a compass rose tattoo on his left upper arm",
+    });
+
+    expect(result.kind).toBe("rendered");
+    const claimed = lastClaim().deltas.inkDelivered ?? {};
+    /* The chest piece she already had — dropped here before 3b, inside the
+       render she paid for to get the arm one. */
+    expect(claimed["ink:upperChest"], "her first tattoo left the record").toBe(CHEST_CROP);
+    /* And the arm one names the crop THIS render mints. */
+    expect(claimed["ink:upperArm@left"]).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/,
+    );
+  });
+
+  it("⚠ AND THE CARRIED TATTOO'S WORDS ARE NOWHERE IN THE DISPATCHED PROMPT", async () => {
+    /*
+      The clause the court bought, asserted on the string that is SENT
+      (invariant 5) rather than on a constant near it. A carried tattoo rides as
+      a PICTURE; its sentence reaching the painter is an instruction to draw it
+      again, and the frames showed exactly that — a different swallow, on the
+      other side of his neck.
+    */
+    inkedBranch({ "ink:upperChest": CHEST_CROP });
+    painted.length = 0;
+    await refineCandidate(secondTattooRoad(), {
+      ...input, instruction: "give him a compass rose tattoo on his left upper arm",
+    });
+
+    expect(painted.length).toBeGreaterThan(0);
+    const prompt = painted[0]!.prompt;
+    expect(prompt, "the new tattoo is not on the wire").toContain("compass rose");
+    expect(prompt, "the carried chest piece was re-said to the painter — it will be repainted")
+      .not.toContain("fine-line swallow chest piece");
+  });
+
+  /*
+    ⚠ THE PASTE ROAD HAS NO ARM HERE, AND THAT IS STATED RATHER THAN QUIET.
+
+    Off the repaint road the strip is disarmed by construction (`inkAlreadyWorn`
+    is empty), because the ink CARRY lives inside `repaintOnce` and the paste
+    road has none — withholding a carried tattoo's words there would stop it
+    being drawn at all rather than stop it being redrawn. That cost 50 dev
+    credits to find: the court's after-half kept both crops in the record and
+    came back with the neck BARE, because that dev process was outside
+    `CASTING_REPAINT_SCOPE` while production is `all`.
+
+    An arm for it belongs at this service and is not here: the paste-road
+    fixtures (the compositing harvest) live in another block, and lifting them
+    for one negative control would be a second harness for a road that is being
+    retired. What proves it instead is the court's own frame, and the composer
+    arm `⚠ THE NEGATIVE CONTROL — with nothing worn, BOTH are said`
+    (`refineDelta.test.ts`), which is the same claim one layer down.
+  */
+
+  it("⚠ THE NEGATIVE CONTROL — a FIRST tattoo's words do reach the painter", async () => {
+    /*
+      Without this, a change that silenced every ink clause would pass the arm
+      above and take the words road down with it: nothing would ever be painted
+      and every arm about a carried tattoo would still be green.
+    */
+    painted.length = 0;
+    await refineCandidate(wordsRoad(), {
+      ...input, instruction: "give him a small geometric skeleton tattoo on his neck",
+    });
+    expect(painted.length).toBeGreaterThan(0);
+    expect(painted[0]!.prompt).toContain("skeleton");
   });
 
   it("⚠ AND IT IS NEVER READ AS A REPEAT OF THE STEP THAT PAINTED IT", async () => {

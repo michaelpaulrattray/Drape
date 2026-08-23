@@ -311,8 +311,9 @@ carry the rulings, the courts and the histories.
                                          a cohort-instruction question and
                                          therefore a court, not an edit.
                                          Before the toggle ships to him
-3b KEYING + MULTI-TATTOO REMOVAL          NEXT — ruled fable-1494. Design report
-                                          written and countersigned as shape A:
+3b ✅ KEYING + MULTI-TATTOO REMOVAL       BUILT AND LANDED 2026-08-24, both
+                                          halves of its court run. Ruled
+                                          fable-1494/1495/1496. Design report:
                                           `docs/specs/CASTING_V2_MULTI_TATTOO_DESIGN.md`
                                           ⚠ THIS LINE SAID "no live customer yet"
                                           AND THAT IS TRUE OF THE POPULATION AND
@@ -329,20 +330,57 @@ carry the rulings, the courts and the histories.
                                           every account can reach it; what stands
                                           between this and a paid feature
                                           vanishing is that nobody has tried.
+                                          ⚠ AND THE FRAMES OVERTURNED THAT
+                                          TWICE. It does not VANISH — it is
+                                          REPAINTED FROM WORDS: a different
+                                          swallow, on the other side of his
+                                          neck, because the pointer goes and the
+                                          words survive. D-137's forbidden
+                                          render. And the ink CARRY lives inside
+                                          `repaintOnce`, so the clause is armed
+                                          only where the repaint road runs
+                                          (production is `all`); off it, her
+                                          words are all that keeps the tattoo
+                                          drawn and they are still said.
                                           Shape A: `inkAsked` (slot -> the
                                           sentence that painted THAT one) joins
-                                          `inkApplied`/`inkDelivered` under the
-                                          existing INK_POINTER_FIELDS fence,
-                                          `free.ink` derived, per-slot
-                                          last-writer-wins falling out. The
+                                          `inkApplied`/`inkDelivered` under one
+                                          composition rule that MERGES per slot,
+                                          plus the clause — a slot with a
+                                          delivered crop carries by picture and
+                                          its words are not said to the painter.
+                                          `inkAsked` is an INDEX DERIVED from
+                                          her words (the report had it the other
+                                          way; deriving her sentence from a
+                                          field we compose would be a second
+                                          copy of it), and the strip reads
+                                          SOURCE CONTAINMENT rather than a slot
+                                          lookup, because "a fine-line swallow
+                                          chest piece" names no measured surface
+                                          — a customer's phrasing is not a
+                                          vocabulary. The
                                           transform road's two restatement lines
                                           (`refineService.ts:3948`) DIE IN THE
-                                          SAME COMMIT. 100 dev credits granted,
-                                          LOSS HALF FIRST — the defect earns its
-                                          specimen at the frames before the fix
-                                          exists — and the court's residue is the
-                                          census's first `branch-with-two-tattoos`
-                                          fixture, which outlives it.
+                                          SAME COMMIT, and they did.
+                                          ✅ THE COURT RAN BOTH HALVES —
+                                          175 dev credits (100 granted + 50 for
+                                          the re-run + a 25 overage stated at
+                                          its cause: the first after-half set
+                                          the ink flag and not its REPAINT
+                                          parent, so it measured a road no
+                                          customer is on, and a footprint guard
+                                          reading the wrong field stopped a
+                                          correct render). At the frames on the
+                                          repaint road: the swallow after ask 2
+                                          is the SAME swallow, same side, same
+                                          design, with the compass rose on his
+                                          left upper arm — against the
+                                          before-half, where it moved sides and
+                                          was redrawn. Evidence:
+                                          `output/two-tattoo-court{,-after,-repaint}/`
+                                          ⚠ THE CENSUS FIXTURE THE COURT WAS TO
+                                          MINT IS STILL OWED — `88676475` wears
+                                          two and no corpus state names it yet.
                                           ⚠ AND THE CENSUS CANNOT SEE THIS CLASS:
                                           `would-render` is a fact about a DOOR,
                                           and the corpus must never spend, so no

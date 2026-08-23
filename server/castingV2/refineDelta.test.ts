@@ -14,6 +14,7 @@ import {
   presentationOf,
   readDelta,
   saysNothingNew,
+  withoutCarriedInkWords,
   type FreeLaneCheck,
 } from "./refineDelta";
 import {
@@ -1600,5 +1601,126 @@ describe("an unfileable item names itself", () => {
     expect(check.wall && "asked" in check.wall && check.wall.asked).toBe("marks");
     expect(check.wall && "value" in check.wall && check.wall.value)
       .toBe("a scar she never mentioned");
+  });
+});
+
+
+describe("a tattoo she already wears is CARRIED, and its words are not said", () => {
+  /*
+    THE CLAUSE THE TWO-TATTOO COURT BOUGHT (§10 item 3b, ruled fable-1495).
+
+    50 dev credits, 2026-08-24. A Cast was given a neck swallow and then an arm
+    compass rose, and the second render's own dispatched prompt said:
+
+      INK: a small swallow tattoo on his neck. … a compass rose tattoo on his
+      left upper arm.
+
+    So the neck tattoo was painted a SECOND time from the sentence rather than
+    carried as a picture of the one she had — and the frames show a different
+    swallow, on the other side of his neck. D-137's forbidden render, on a lane
+    where `CASTING_INK_WORDS_SCOPE` is `all`.
+
+    ⚠ The discriminator is SOURCE CONTAINMENT, not a placement lookup, and that
+    is a repair rather than a preference: the first shape of this resolved each
+    item to a slot, and *"a fine-line swallow chest piece"* — a real branch's
+    real words — names no measured surface, because the catalogue's noun is
+    *"upper chest"*. A customer's phrasing is not a vocabulary.
+
+    Asserted on the PRODUCED PROMPT rather than on the object, because "the
+    words do not reach the painter" is a claim about the string that is sent
+    (invariant 5).
+  */
+  const PROSE = {
+    eyeColour: () => "", eyeShape: () => "", hairStyle: (v: string) => v,
+    hairColour: () => "", hairTexture: () => "",
+  } as unknown as Parameters<typeof composeEditPrompt>[1];
+
+  /** Her own sentence for the ADD — the discriminator the strip reads. */
+  const ARM_ASK = "give him a compass rose tattoo on his left upper arm";
+
+  const twoTattoos = {
+    free: { ink: ["a small swallow tattoo on his neck", "a compass rose tattoo on his left upper arm"] },
+    inkDelivered: { "ink:neck": "b9c1f4de-77a0-4a52-8f31-2d6e0c5ab914" },
+  };
+
+  it("keeps the NEW tattoo's words and drops the carried one's, at the prompt", () => {
+    const asked = withoutCarriedInkWords(twoTattoos, ["ink:neck"], ARM_ASK);
+    const prompt = composeEditPrompt(asked, PROSE);
+    expect(prompt).toContain("a compass rose tattoo on his left upper arm");
+    expect(prompt, "the carried swallow was re-said to the painter").not.toContain("swallow");
+  });
+
+  it("⚠ THE NEGATIVE CONTROL — with nothing worn, BOTH are said", () => {
+    /* Without this, a bug that dropped every ink clause would pass the arm
+       above and take the whole words road down with it. */
+    const prompt = composeEditPrompt(withoutCarriedInkWords(twoTattoos, [], ARM_ASK), PROSE);
+    expect(prompt).toContain("swallow");
+    expect(prompt).toContain("compass rose");
+  });
+
+  it("⚠ NEVER DROPS MORE WORDS THAN THERE ARE PICTURES", () => {
+    /*
+      The bound, and it is the arm that keeps this repair from becoming the
+      defect it fixes. Two restated items and ONE worn slot means one of them
+      is riding on nothing — withhold it and a tattoo she paid for stops being
+      painted at all. Everything is said, which is exactly today's behaviour.
+    */
+    const three = {
+      free: { ink: [
+        "a small swallow tattoo on his neck",
+        "a serpent on his upper chest",
+        "a compass rose tattoo on his left upper arm",
+      ] },
+    };
+    const prompt = composeEditPrompt(withoutCarriedInkWords(three, ["ink:neck"], ARM_ASK), PROSE);
+    expect(prompt).toContain("swallow");
+    expect(prompt).toContain("serpent");
+    expect(prompt).toContain("compass rose");
+  });
+
+  it("⚠ places a phrase the ink VOCABULARY cannot — the shape that failed first", () => {
+    /* `a fine-line swallow chest piece` resolves to no measured surface, and
+       the branch that carries it is the one the service arm uses. Containment
+       does not care. */
+    const branchWords = {
+      free: { ink: ["a fine-line swallow chest piece", "a compass rose tattoo on his left upper arm"] },
+    };
+    const prompt = composeEditPrompt(
+      withoutCarriedInkWords(branchWords, ["ink:upperChest"], ARM_ASK), PROSE,
+    );
+    expect(prompt).toContain("compass rose");
+    expect(prompt, "an item no vocabulary can place was re-said").not.toContain("chest piece");
+  });
+
+  it("leaves the POINTERS alone — withholding a word is not a removal", () => {
+    const asked = withoutCarriedInkWords(twoTattoos, ["ink:neck"], ARM_ASK);
+    expect(asked.inkDelivered).toEqual(twoTattoos.inkDelivered);
+  });
+
+  it("⚠ SAYS EVERYTHING when nothing in the ask is new — the TRANSFORM's shape", () => {
+    /*
+      A transform files her existing description and rides the change on the
+      source, so every item is restated and none is in her sentence. Withhold
+      them all and the ask has no words left — driven at the service, which
+      answered *"That didn't name anything to change"* to a paid transform.
+
+      It also means this function never empties the ink subject, and that
+      matters beyond the transform: `free: {ink: []}` is the sentence for SHE
+      HAD THEM TAKEN OFF, and composition clears all three halves on it. A
+      prompt-time subtraction must not be spelled like a removal.
+    */
+    const asked = withoutCarriedInkWords(
+      twoTattoos, ["ink:neck", "ink:upperArm@left"], "make the neck one bigger",
+    );
+    expect(asked.free?.ink).toHaveLength(2);
+    expect(composeDeltas([asked]).inkDelivered).toEqual(twoTattoos.inkDelivered);
+  });
+
+  it("says every item when her sentence contains them all — nothing is carried", () => {
+    /* An ask that genuinely re-states both because she typed both. */
+    const both = "give him a small swallow tattoo on his neck and a compass rose tattoo on his left upper arm";
+    const prompt = composeEditPrompt(withoutCarriedInkWords(twoTattoos, ["ink:neck"], both), PROSE);
+    expect(prompt).toContain("swallow");
+    expect(prompt).toContain("compass rose");
   });
 });

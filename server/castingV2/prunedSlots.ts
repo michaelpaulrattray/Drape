@@ -47,7 +47,7 @@ import {
   INK_PLACEMENTS, inkPlacementBareNoun, inkPlacementEntry, isInkPlacement,
 } from "../../shared/inkPlacementVocabulary";
 import { resolveInkPlacement } from "./inkPlacementResolve";
-import { INK_POINTER_FIELDS, type RefineDelta } from "./refineDelta";
+import { INK_SLOT_FIELDS, type RefineDelta } from "./refineDelta";
 import { inkSideSlotKey, inkSlotKey, openSlotKey } from "./referenceSlots";
 import { sideNamedIn } from "./repaintAsks";
 
@@ -59,14 +59,18 @@ function inkWordsOf(delta: RefineDelta): string {
 }
 
 /**
- * The ink slot keys the step's own POINTERS name — the recorded fact.
+ * The ink slot keys the step's own SLOT-KEYED FIELDS name — the recorded fact.
  *
- * Derived from `INK_POINTER_FIELDS` rather than from two hand-written reads, so
- * the day a third pointer is added it reaches here without a second edit.
+ * Derived from `INK_SLOT_FIELDS` rather than from hand-written reads, so the day
+ * a fourth field is added it reaches here without a second edit. Since 3b that
+ * list includes `inkAsked`, which is what a words-road step whose mint never
+ * fired now carries — so the words fallback below is the road for rows written
+ * before that key existed, and no longer the only answer for a tattoo that was
+ * asked for and never minted.
  */
 function pointerSlots(delta: RefineDelta): string[] {
   const keys: string[] = [];
-  for (const field of INK_POINTER_FIELDS) {
+  for (const field of INK_SLOT_FIELDS) {
     for (const key of Object.keys(delta[field] ?? {})) keys.push(key);
   }
   return keys;
@@ -80,7 +84,26 @@ function pointerSlots(delta: RefineDelta): string[] {
  * per-side surface with no side stated.
  */
 function slotFromWords(delta: RefineDelta): string | null {
-  const words = inkWordsOf(delta);
+  return inkSlotOfPhrase(inkWordsOf(delta));
+}
+
+/**
+ * THE INK SLOT ONE PHRASE NAMES, or null — the one owner of *which surface do
+ * these words mean*, and the reason this function exists rather than a second
+ * copy of the walk below.
+ *
+ * `slotFromWords` above asks it of a whole step's joined ink words; the service
+ * asks it of ONE free-lane item, because `inkAsked` is keyed per item (§10 item
+ * 3b). Two walks over the vocabulary is how the prune and the record come to
+ * disagree about which tattoo a sentence was about — and this reading decides,
+ * on one side, which crop a later render carries.
+ *
+ * Every refusal below is deliberate and each is a measured one: two surfaces in
+ * one phrase is a phrase this cannot name with one slot, and a per-side surface
+ * with no side stated returns NOTHING rather than picking (the 300-credit
+ * anatomical-side rule, fable-1115 §3).
+ */
+export function inkSlotOfPhrase(words: string): string | null {
   if (words.trim() === "") return null;
   const said = words.toLowerCase();
   /*

@@ -1,6 +1,8 @@
 # The second tattoo — §10 item 3b, design report for countersign
 
-**Status: DESIGN ONLY. Nothing here is built.** Written 2026-08-24 (opus-1143)
+**Status: BUILT AND LANDED 2026-08-24** — shape A, its clause, and both halves
+of the court. The sections below are kept as written, with the build's own
+corrections marked where the design was wrong. Written 2026-08-24 (opus-1143)
 against §10's own order — *3b: KEYING + MULTI-TATTOO REMOVAL, after 5* — and
 against the capability census rather than from recollection, per the rule that
 rides with the queue (fable-1315 §3).
@@ -114,15 +116,139 @@ road's repair was to read `priorDelta` instead. **The ADD road reads neither.**
 
 ### What the customer sees
 
-She pays 25 credits for an arm tattoo and gets a frame with an arm tattoo and no
-neck tattoo. The panel agrees with the frame — `inkWornBy` derives its rows from
-the same `inkDelivered` expression the carry reads, which is fable-1259 §2's
-ruling working correctly — so the neck card disappears too. **Nothing anywhere
-says a feature was removed.** The only trace is `free.ink` still holding her neck
-sentence, which no surface renders and no engine receives.
+⚠ **THIS SECTION PREDICTED THE WRONG HARM AND THE COURT CORRECTED IT — the
+paragraph below is what was written before the frames were opened, kept because
+the correction is the more useful half.** It said: she pays 25 credits for an arm
+tattoo and gets a frame with an arm tattoo and no neck tattoo; the panel agrees
+with the frame; nothing anywhere says a feature was removed; the only trace is
+`free.ink` still holding her neck sentence, *"which no surface renders and no
+engine receives."*
 
-It is the *build is lost under words* class, on ink, with the loss inside the
-paid render rather than one edit later.
+**The last clause is false. The engine receives it.** See §2b, driven.
+
+---
+
+## 2b. The court — 50 dev credits, run 2026-08-24, LOSS HALF FIRST
+
+Ordered fable-1494 (*the defect earns its specimen*). Two words-road refines on
+an ink-free dev Cast, `3ac2f08e`, user 28601, both landed.
+
+```
+ASK 1  "give him a small swallow tattoo on his neck"           rendered, -25
+  free.ink      ["a small swallow tattoo on his neck"]
+  inkDelivered  {"ink:neck": 2c7f51c7…}          crop 414x288
+
+ASK 2  "give him a compass rose tattoo on his left upper arm"  rendered, -25
+  free.ink      ["a small swallow tattoo on his neck",
+                 "a compass rose tattoo on his left upper arm"]     <- BOTH
+  inkDelivered  {"ink:upperArm@left": d913c299…}                    <- ONE
+  crop rows on the Cast: 2, and the neck one is pointed at by NOTHING
+```
+
+The record behaves exactly as §2 predicted. **The frames do not.** Read at the
+wire — render 2's own `internalPrompt.prompt`, quoted:
+
+> INK: a small swallow tattoo on his neck. It sits on the neck and nowhere else
+> — do not move it to a nearby part of the body, and do not mirror it to the
+> other side. Ink rendered somewhere other than the neck is a failed candidate.
+> a compass rose tattoo on his left upper arm.
+
+**Both tattoos were painted from WORDS.** The neck one had no pointer to carry,
+so the engine drew a NEW swallow from the sentence — and it is visibly a
+different tattoo: image-LEFT of his neck in render 1, image-RIGHT in render 2, at
+a different size and shape. Our own reader filed it as uncorroborated (*"Small
+black swallow inked on the right side of the neck"*) against render 1's own
+caption (*"positioned on the left side of the front of the neck"*); the frames
+say the same thing to an eye, which is the only reason those readings are quoted
+at all (law 9).
+
+**So the harm is not that her tattoo vanishes. It is that her tattoo is REDRAWN
+SOMEWHERE ELSE every time she edits anything** — D-137's forbidden render, ink
+repainted from words, on a lane where `CASTING_INK_WORDS_SCOPE` is `all`. It is
+the anatomical-side class the legacy ink road refunded 300 credits for twice,
+arriving by a different road.
+
+Three further facts from the same rows, each of which the fix has to answer:
+
+- **The render-1 crop row survives and is orphaned.** It describes a swallow that
+  is no longer the swallow on him — a stale box wearing a valid id.
+- **The panel and the frame now disagree**, which they never do today: the panel
+  derives from `inkDelivered` and draws ONE card on a man wearing two.
+- **The second render never re-minted the neck**, so nothing corrected the row.
+
+The specimen is kept: `output/two-tattoo-court/` — `00-master.png`,
+`01-after-ask-1.png`, `02-after-ask-2.png`, `court.log`, `court.json`.
+
+### ⚠ The clause the court added to the fix
+
+Per-slot words are not sufficient on their own. With `inkAsked` keyed by slot,
+the neck slot carries BOTH a delivered crop and its own words — and if the
+assembler says those words to the painter, the reinvention above continues
+unchanged.
+
+> **A slot that has a delivered crop CARRIES BY PICTURE, and its words are not
+> said to the painter. Words paint a slot only where there is no picture of it
+> yet — the first render of that tattoo and no other.**
+
+This is not a new idea in the product: it is `INK_IS_NOT_THIS_SLOT`'s own
+sentence (*"describing one in words here would ask a later render to paint a
+second one"*) and `markingDiscloses`'s rule, applied at the one place that never
+had it. It is what makes §3's rule 4 true in code rather than in prose.
+
+---
+
+## 2c. The court's AFTER half — closed at the frames, 2026-08-24
+
+Granted fable-1496 with three conditions, all met. **75 credits rather than 50**,
+and the overage is stated: the first after-half ran on a dev process inside
+`CASTING_INK_WORDS_SCOPE` and outside `CASTING_REPAINT_SCOPE`, so it measured
+the PASTE road while production is `all`. It kept both crops in the record and
+came back with the neck BARE — which bought the second finding of this build
+(§2d) and cost 50; the re-run on the right road cost 25 more, because a
+footprint guard that read the wrong field stopped a correct render and the
+re-run RESUMED rather than re-buying it.
+
+```
+ASK 1  "give him a small swallow tattoo on his neck"          rendered, -25
+ASK 2  "give him a compass rose tattoo on his left upper arm" rendered, -25
+  ROAD (read at the persisted record, not at the flags): repaint
+  free.ink      ["a small swallow tattoo on his neck",
+                 "a compass rose tattoo on his left upper arm"]
+  inkAsked      {"ink:neck": "a small swallow tattoo on his neck",
+                 "ink:upperArm@left": "a compass rose tattoo on his left upper arm"}
+  inkDelivered  {"ink:neck": 4df6e43f…, "ink:upperArm@left": e22b54e8…}
+  the neck's crop id: UNCHANGED — carried, not re-minted
+  ask 2's prompt re-said the swallow's words: FALSE
+```
+
+**And at the frames** (`output/two-tattoo-court-repaint/`): the swallow after ask
+2 is the same swallow — same side of his neck, same size, same design — and the
+compass rose is on his left upper arm. Against the before-half's pair, where the
+same two asks on the same brief moved the swallow to the other side of his neck
+and redrew it.
+
+### ⚠ 2d. The second finding: the paste road has no ink carry at all
+
+The clause is *a slot with a delivered crop carries by picture and its words are
+not said* — and **the carry that makes the first half true lives inside
+`repaintOnce`**. On the paste road a customer's other tattoo survives ONLY
+because its words are re-said, badly. So withholding those words there does not
+stop a tattoo being redrawn; it stops it being drawn at all.
+
+`inkAlreadyWorn` is therefore empty off the repaint road, and the paste road
+keeps exactly today's behaviour — worse, and not a regression. Production is
+`CASTING_REPAINT_SCOPE=all`, so the fix serves the whole population.
+
+### The known edge, named rather than carded (fable-1496 §3)
+
+The strip's discriminator is SOURCE CONTAINMENT — is this item in her sentence?
+An ask whose sentence happens to restate the carried tattoo (*"keep the swallow,
+add a compass rose"*) will say the swallow's words and can reinvent it, because
+containment cannot tell that restatement from a first ask. That is the
+conservative direction (today's behaviour, never worse), the two bounds cap the
+damage, and the alternative — resolving each item to a slot — died on its first
+real branch: *"a fine-line swallow chest piece"* names no measured surface,
+because the catalogue's noun is *"upper chest"*.
 
 ---
 

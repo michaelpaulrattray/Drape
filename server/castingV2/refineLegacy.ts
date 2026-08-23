@@ -43,7 +43,7 @@
  */
 import { REFINABLE_CUT_NAMES } from "./hairStyles";
 import { EYE_SHAPES } from "../../shared/castingRealization";
-import { readAppliedInk, readDeliveredInk } from "./inkApplied";
+import { readAppliedInk, readAskedInk, readDeliveredInk } from "./inkApplied";
 import { closedSubjectFor, readOpenKinds } from "./openLaneKind";
 import { readDelta, type FreeValue, type OpenKindAsk, type RefineDelta } from "./refineDelta";
 import type { FreeSubject } from "./refineSubjects";
@@ -199,6 +199,19 @@ export function readStoredDelta(value: unknown): RefineDelta | null {
     unrelated edit.
   */
   const inkDelivered = readDeliveredInk(migrated);
+  /*
+    AND WHICH SENTENCE PAINTED WHICH ONE — the third half, blind to the strict
+    reader for its siblings' reason one degree softer (§10 item 3b, shape A).
+
+    A reply free to name the words of a slot it was not asked about would be a
+    model editing the record of a tattoo the customer never mentioned. It is
+    written by the service that resolved the placement and it re-enters here,
+    where a key we wrote is a fact already paid for.
+
+    Absent on every row written before 3b, which is the whole population at the
+    moment this landed: those rows keep composing exactly as they did.
+  */
+  const inkAsked = readAskedInk(migrated);
   const delta = readDelta(migrated);
   if (delta !== null) {
     return {
@@ -206,6 +219,7 @@ export function readStoredDelta(value: unknown): RefineDelta | null {
       ...(open === null ? {} : { open }),
       ...(inkApplied === null ? {} : { inkApplied }),
       ...(inkDelivered === null ? {} : { inkDelivered }),
+      ...(inkAsked === null ? {} : { inkAsked }),
     };
   }
   /*
@@ -241,6 +255,11 @@ export function readStoredDelta(value: unknown): RefineDelta | null {
     should not exist. It is handled rather than declared unreachable, because a
     comment calling a branch synthetic is a branch with no test, and this
     codebase has paid a walk for that once already.
+
+    `inkAsked` sits on the RIGHT for a stronger version of the same reason: it
+    is DERIVED from `free.ink`, so a row carrying it necessarily carries the
+    words the strict reader can read, and a row with the key and no words is a
+    corrupted row rather than a step we wrote.
   */
   const others = Object.keys(migrated as Record<string, unknown>)
     .filter((key) => !CODE_WRITTEN_FIELDS.has(key));
@@ -249,6 +268,7 @@ export function readStoredDelta(value: unknown): RefineDelta | null {
     ...(open === null ? {} : { open }),
     ...(inkApplied === null ? {} : { inkApplied }),
     ...(inkDelivered === null ? {} : { inkDelivered }),
+    ...(inkAsked === null ? {} : { inkAsked }),
   };
 }
 
@@ -268,7 +288,7 @@ export function readStoredDelta(value: unknown): RefineDelta | null {
  * newest member and the first that can legitimately stand ALONE: D-137's words
  * road delivers a real tattoo whose only pointer is the crop of it.
  */
-const CODE_WRITTEN_FIELDS = new Set(["open", "inkApplied", "inkDelivered"]);
+const CODE_WRITTEN_FIELDS = new Set(["open", "inkApplied", "inkDelivered", "inkAsked"]);
 
 /**
  * A STORED OPEN KIND WHOSE NOUN THE CLOSED LANE NOW OWNS — moved into it.

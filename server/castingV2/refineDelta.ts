@@ -279,6 +279,47 @@ export type RefineDelta = {
    */
   inkDelivered?: Readonly<Record<string, string>>;
   /**
+   * AND WHICH SENTENCE PAINTED WHICH ONE — the third half, keyed like the other
+   * two (§10 item 3b, shape A, ruled fable-1494; reader `readAskedInk`).
+   *
+   * # It exists because `free.ink` is ONE value for every tattoo she has
+   *
+   * The two fields above are keyed by SLOT and her words were not, so nothing
+   * in the record could say which sentence belonged to which tattoo. Driven at
+   * the frames with 50 dev credits — a neck swallow, then an arm compass rose:
+   *
+   *   the neck's pointer was DROPPED inside the render that added the arm, and
+   *   its WORDS survived, so the engine painted the neck tattoo a second time
+   *   from the sentence. A different swallow, on the other side of his neck.
+   *
+   * That is D-137's forbidden render — ink repainted from words — on a lane
+   * where `CASTING_INK_WORDS_SCOPE` is `all`.
+   *
+   * # What the key buys, and it is two things from one rule
+   *
+   * **Composition.** All three fields now compose PER SLOT under one loop, so a
+   * second placement accumulates, a replacement at the same placement
+   * overwrites, and an emptied restatement clears all three together.
+   *
+   * **The painter.** A slot that already has a delivered crop carries BY
+   * PICTURE and its words are NOT said — words paint a slot at its first render
+   * and never again. That is `INK_IS_NOT_THIS_SLOT`'s own sentence (*"describing
+   * one in words here would ask a later render to paint a second one"*) applied
+   * at the one place that never had it.
+   *
+   * # Code-written, and the strict reader is blind to it
+   *
+   * Its siblings' fence for a reason one degree softer: a reply free to name the
+   * words of a slot it was not asked about would be a model editing the record
+   * of a tattoo the customer never mentioned. It enters from the service that
+   * resolved the placement and returns through `readStoredDelta`.
+   *
+   * Absent on every delta written before this existed. Those rows keep composing
+   * exactly as they did — the merge below is keyed, and a delta with no key
+   * simply adds none.
+   */
+  inkAsked?: Readonly<Record<string, string>>;
+  /**
    * WHAT HAS LEFT HER — the one negative fact the recipe can hold (D-238).
    *
    * Every other field above is a positive assertion, and that omission is why no
@@ -1900,6 +1941,110 @@ export function withoutFacets(delta: RefineDelta, facets: ReadonlySet<Facet>): R
 }
 
 /**
+ * THE SAME DELTA WITH THE WORDS OF A TATTOO SHE ALREADY WEARS TAKEN OUT — the
+ * clause the two-tattoo court bought (§10 item 3b, ruled fable-1495).
+ *
+ * # A SLOT WITH A DELIVERED CROP CARRIES BY PICTURE, AND ITS WORDS ARE NOT SAID
+ *
+ * `withoutFacets` above does this at FACET granularity and cannot serve here:
+ * ink is one facet holding every tattoo she has, and a second-tattoo ask is
+ * asking on that facet and carrying on it in the same render.
+ *
+ * # What it is worth, measured
+ *
+ * 50 dev credits, 2026-08-24. A Cast given a neck swallow and then an arm
+ * compass rose: the second render's own dispatched prompt said *"INK: a small
+ * swallow tattoo on his neck … a compass rose tattoo on his left upper arm"*,
+ * so the neck tattoo was painted a SECOND time from the sentence rather than
+ * carried as the picture of the one she already had — and the frames show a
+ * different swallow, on the other side of his neck. That is D-137's forbidden
+ * render, and it is `INK_IS_NOT_THIS_SLOT`'s own sentence arriving at the one
+ * place that never had it: *"describing one in words here would ask a later
+ * render to paint a second one."*
+ *
+ * # It reads SOURCE CONTAINMENT, and it does NOT read `inkAsked`
+ *
+ * ⚠ **This heading said "it reads the INDEX, never the words" until the build
+ * corrected it** (fable-1496 condition (a)). That was the first shape: resolve
+ * each item to a slot through the prune's own resolver and compare it to the
+ * worn set. It died on the first real branch it met — *"a fine-line swallow
+ * chest piece"* names no measured surface, because the catalogue's noun is
+ * *"upper chest"* — so the carried item read as unplaceable and was said to the
+ * painter anyway. **A customer's phrasing is not a placement vocabulary.**
+ *
+ * What decides here is whether her own sentence CONTAINS the item, which needs
+ * no vocabulary at all: an item she did not type is the state being restated,
+ * and an item she did type is what this ask is adding. `inkAsked` is not read
+ * by this function at all — it is the durable index, and the prune walk and the
+ * record are its consumers.
+ *
+ * An item her sentence does not contain is still SAID when either bound below
+ * fires — the conservative direction: a tattoo painted twice is the defect
+ * above, and a tattoo not painted at all on its first render is worse.
+ *
+ * The pointers are untouched. Carrying is their job, and stripping a word here
+ * must never look like a removal there.
+ */
+export function withoutCarriedInkWords(
+  delta: RefineDelta,
+  /** The ink slots the branch was ALREADY wearing before this sentence. */
+  wornSlots: readonly string[],
+  /** Her own sentence for THIS ask — the discriminator. */
+  instruction: string,
+): RefineDelta {
+  if (wornSlots.length === 0) return delta;
+  const items = itemsOf(delta.free?.ink);
+  if (items.length === 0) return delta;
+  const strip = (text: string) => text.replace(/['’]/g, "");
+  /*
+    A RESTATED ITEM IS ONE HER SENTENCE DOES NOT CONTAIN — source containment's
+    own two halves, read here for a third question (they already answer
+    *"which item did the gate classify"* forty lines up, and
+    *"did the model invent this"* at the wall).
+
+    The first shape of this resolved each item to a SLOT and compared it to the
+    worn set. It failed on the first real branch it met: *"a fine-line swallow
+    chest piece"* names no measured surface in the vocabulary's own words — the
+    catalogue's noun is *"upper chest"* — so the carried item read as
+    unplaceable and was said to the painter anyway. **A customer's phrasing is
+    not a placement vocabulary, and a rule that needs it to be will keep finding
+    that out.** Containment needs no vocabulary at all.
+  */
+  const restated = items.filter((item) => !stemmedContainment(strip(item), strip(instruction)));
+  if (restated.length === 0) return delta;
+  /*
+    AND NEVER DROP MORE WORDS THAN THERE ARE PICTURES.
+
+    The clause is *a slot with a delivered crop carries by picture*, so a
+    restated item is only safe to withhold when the branch really is carrying
+    one for it. Counting is the bound: with two restated items and one worn
+    slot, one of them would ride on nothing and a tattoo she paid for would
+    simply stop being painted — the defect this whole item is about, arriving
+    from the other side. In that case everything is said, which is exactly
+    today's behaviour.
+  */
+  if (restated.length > wornSlots.length) return delta;
+  const dropped = new Set(restated);
+  const kept = items.filter((item) => !dropped.has(item));
+  /*
+    ⚠ AND AN ASK WITH NOTHING NEW IN IT IS NOT AN ADD — say everything.
+
+    A TRANSFORM's whole content is a restatement: *"make the upper chest one
+    bigger"* files her existing description with the change riding on the
+    source, so every item is restated by construction and none of them is in
+    her sentence. Withhold them all and the ask has no words left — driven, and
+    the service answered *"That didn't name anything to change"* to a paid
+    transform.
+
+    So the strip is for the shape it was built for: an ask that ADDS something,
+    where the new tattoo is in her sentence and the rest is the carried state.
+  */
+  if (kept.length === 0) return delta;
+  const free = { ...(delta.free ?? {}), ink: kept };
+  return { ...delta, free };
+}
+
+/**
  * Do these two descriptions name THE SAME THING? (D-238.)
  *
  * The kind table first, because it is knowledge rather than string overlap:
@@ -2091,6 +2236,20 @@ function collapseWithinDelta(delta: RefineDelta): RefineDelta {
  */
 export const INK_POINTER_FIELDS = ["inkApplied", "inkDelivered"] as const;
 
+/**
+ * ALL THREE HALVES, KEYED BY SLOT — the two pointers above and her own words
+ * (§10 item 3b, shape A).
+ *
+ * DERIVED from the pointer list rather than written out again, so a fourth
+ * pointer arrives here by existing. The distinction the two constants draw is
+ * real and is the reason there are two: `INK_POINTER_FIELDS` is *the fields
+ * whose values are ids this product minted*, which is what `readInkPointers`
+ * validates; this is *the fields keyed by an ink slot*, which is what
+ * composition and the prune walk care about. A single list would have to lie
+ * about one of the two.
+ */
+export const INK_SLOT_FIELDS = [...INK_POINTER_FIELDS, "inkAsked"] as const;
+
 export function composeDeltas(deltas: readonly RefineDelta[]): RefineDelta {
   const composed: RefineDelta = {};
   for (const raw of deltas) {
@@ -2190,32 +2349,49 @@ export function composeDeltas(deltas: readonly RefineDelta[]): RefineDelta {
       design, nothing carries it, and the master — which never had it — does the
       removing. The carry and the un-carry in one line.
 
-      ⚠ THE ONE LIMIT, SHARED WITH THE WORDS AND FILED (fable-1167 §2e): a
-      second design at a second placement does not accumulate, because the
-      interpreter restates `free.ink` with the newest ask alone rather than the
-      whole set. Both halves lose the first design together, so they stay in
-      step and the record stays honest — but the day a Cast wears two, THIS is
-      the line to fix and `free.ink`'s restatement is the line to fix first.
+      ⚠ THE ONE LIMIT THIS BLOCK USED TO DECLARE — *"a second design at a second
+      placement does not accumulate"* (fable-1167 §2e) — IS THE DEFECT THIS
+      RULE NOW FIXES, and it cost a customer more than the note said it would.
+      Driven at the frames on 2026-08-24, 50 dev credits: the restatement
+      REPLACED the pointer set, so a neck swallow's crop was dropped inside the
+      render that added an arm piece — and its WORDS survived, so the engine
+      painted the neck tattoo a second time from the sentence, on the other side
+      of his neck. The note said both halves lose the design TOGETHER and stay
+      in step; they did not. The words outlived the picture, and a tattoo
+      repainted from words is D-137's forbidden render.
+
+      So the restatement is now keyed rather than wholesale: it MERGES per slot.
+      A second placement accumulates, a replacement at the same placement
+      overwrites, and an EMPTY restatement — *she had it taken off* — still
+      clears everything, which is the one case where wholesale was right.
     */
     /*
-      BOTH POINTER FIELDS, IN ONE LOOP — never two copies of the rule.
+      ALL THREE HALVES, IN ONE LOOP — never three copies of the rule.
 
-      `inkDelivered` (slot -> the delivered crop) obeys the paragraphs above
-      identically, and the reason it shares this loop rather than getting its
-      own is the reason the loop is worth reading twice: the three halves of one
-      fact are her WORDS (`free.ink`), WHICH DESIGN (`inkApplied`) and WHICH
-      PICTURE (`inkDelivered`), and the only thing that must never happen is
-      that they disagree about whether she still has a tattoo. Two copies of a
-      restatement rule drift, and the drift's cheapest shape is a paid removal
-      where the words go empty and a pointer stays — which is this product's
-      most expensive frame. `derive-never-mirror`, at the line that pays for it.
+      The reason the loop is worth reading twice: the three halves of one fact
+      are her WORDS (`inkAsked`, keyed by slot since 3b), WHICH DESIGN
+      (`inkApplied`) and WHICH PICTURE (`inkDelivered`), and the only thing that
+      must never happen is that they disagree about whether she still has a
+      tattoo. Three copies of a restatement rule drift, and the drift's cheapest
+      shape is a paid removal where the words go empty and a pointer stays —
+      this product's most expensive frame. `derive-never-mirror`, at the line
+      that pays for it.
     */
     const inkRestated = delta.free !== undefined && "ink" in delta.free;
-    for (const field of INK_POINTER_FIELDS) {
-      if (!inkRestated && !delta[field]) continue;
-      const next = inkRestated
-        ? { ...(delta[field] ?? {}) }
-        : { ...(composed[field] ?? {}), ...delta[field] };
+    /*
+      AND *"SHE HAD THEM ALL TAKEN OFF"* IS THE ONE WHOLESALE CASE LEFT.
+
+      An emptied plural subject answers no facet, so nothing above clears these
+      fields — and a merge would leave every pointer standing while the words
+      went empty, which is the paid-removal-that-does-not-remove shape. Read
+      through `itemsOf`, the free lane's own owner, because the stored shape may
+      be a string or a list and `[] === ""` is not a comparison this code makes.
+    */
+    const inkEmptied = inkRestated && itemsOf(delta.free?.ink).length === 0;
+    for (const field of INK_SLOT_FIELDS) {
+      if (inkEmptied) { delete composed[field]; continue; }
+      if (!delta[field]) continue;
+      const next = { ...(composed[field] ?? {}), ...delta[field] };
       if (Object.keys(next).length === 0) delete composed[field];
       else composed[field] = next;
     }

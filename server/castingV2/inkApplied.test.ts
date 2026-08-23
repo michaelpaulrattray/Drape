@@ -15,10 +15,13 @@ import { describe, expect, it } from "vitest";
 
 import {
   deltaCarriesAppliedInk,
+  deltaCarriesAskedInk,
   deltaCarriesDeliveredInk,
   readAppliedInk,
+  readAskedInk,
   readDeliveredInk,
   withAppliedInk,
+  withAskedInk,
   withDeliveredInk,
 } from "./inkApplied";
 import { composeDeltas, readDelta, type RefineDelta } from "./refineDelta";
@@ -248,12 +251,44 @@ describe("the delivered crops compose exactly as the designs do", () => {
     expect(composed.inkDelivered).toEqual({ "ink:upperChest": CROP });
   });
 
-  it("is REPLACED, never accumulated, when she asks for a different tattoo", () => {
+  it("⚠ ACCUMULATES at a second placement — the arm this file had backwards", () => {
+    /*
+      THIS ARM USED TO ASSERT THE OPPOSITE AND IT WAS PINNING A DEFECT (§10
+      item 3b, ruled fable-1494). It read *"is REPLACED, never accumulated,
+      when she asks for a different tattoo"* and expected the neck crop alone,
+      which is fable-1167 §2e's declared limit made mechanical — correct as a
+      description of the code and wrong about what a customer wants.
+
+      Driven at the frames with 50 dev credits on 2026-08-24: a Cast given a
+      neck swallow and then an arm compass rose lost the neck crop inside the
+      render that added the arm, and the second render then painted the neck
+      tattoo AGAIN from her words — a different swallow, on the other side of
+      his neck. A REPLACEMENT is a second ask at the SAME placement, which the
+      arm below still pins.
+    */
     const composed = composeDeltas([
       inkStep(),
-      { free: { ink: ["a swallow on her neck"] }, inkDelivered: { "ink:neck": OTHER_CROP } },
+      {
+        free: { ink: ["the tattoo design in the attached picture on her upper chest",
+          "a swallow on her neck"] },
+        inkDelivered: { "ink:neck": OTHER_CROP },
+      },
     ]);
-    expect(composed.inkDelivered).toEqual({ "ink:neck": OTHER_CROP });
+    expect(composed.inkDelivered).toEqual({
+      "ink:upperChest": CROP,
+      "ink:neck": OTHER_CROP,
+    });
+  });
+
+  it("still REPLACES at the same placement — a different tattoo where the old one was", () => {
+    const composed = composeDeltas([
+      inkStep(),
+      {
+        free: { ink: ["a swallow on her upper chest"] },
+        inkDelivered: { "ink:upperChest": OTHER_CROP },
+      },
+    ]);
+    expect(composed.inkDelivered).toEqual({ "ink:upperChest": OTHER_CROP });
   });
 
   it("goes when the ink facet is answered with nothing — a removal removes", () => {
@@ -356,24 +391,28 @@ describe("the applied designs compose the way her other asks do", () => {
 
   it("never disagrees with the words about what she is wearing", () => {
     /*
-      THE ONE RULE, AND ITS DECLARED LIMIT (fable-1167 §2e).
+      THE ONE RULE — and its declared limit is now the fix (§10 item 3b).
 
-      A second ink ask RESTATES the subject: the interpreter files the newest
-      ask alone rather than the whole set, so `free.ink` holds one design and
-      the pointers must hold exactly the same one. This arm exists to make that
-      agreement mechanical — the failure it would catch is a pointer set that
-      accumulated while the words replaced, which is a design riding a render
-      that says nothing about it, at a placement nobody mentioned.
+      This arm read the interpreter as filing *the newest ask alone*, so the
+      pointers were expected to replace with the words. Measured at the wire,
+      the interpreter restates the WHOLE current set for a plural subject
+      (`refineDelta.ts:1373`, and the court's own second delta holds both
+      sentences) — so the agreement this arm is about is between two items and
+      two pointers, not between one and one.
 
-      The day a Cast wears two, `free.ink`'s restatement is the line to fix
-      first and the composer's is the line to fix beside it.
+      The failure it still catches is the one that matters: a pointer set that
+      disagrees with the words about how many tattoos she has.
     */
     const composed = composeDeltas([
       inkStep(),
-      { free: { ink: ["a swallow on her neck"] }, inkApplied: { "ink:neck": OTHER } },
+      {
+        free: { ink: ["the tattoo design in the attached picture on her upper chest",
+          "a swallow on her neck"] },
+        inkApplied: { "ink:neck": OTHER },
+      },
     ]);
-    expect(composed.free?.ink).toEqual(["a swallow on her neck"]);
-    expect(composed.inkApplied).toEqual({ "ink:neck": OTHER });
+    expect(composed.free?.ink).toHaveLength(2);
+    expect(composed.inkApplied).toEqual({ "ink:upperChest": DESIGN, "ink:neck": OTHER });
   });
 
   it("lets a later step at the SAME slot replace the design", () => {
@@ -456,5 +495,126 @@ describe("recording a design against its slot", () => {
   it("adds to what is already recorded rather than replacing it", () => {
     const recorded = withAppliedInk(withAppliedInk({}, "ink:neck", OTHER), "ink:upperChest", DESIGN);
     expect(recorded.inkApplied).toEqual({ "ink:neck": OTHER, "ink:upperChest": DESIGN });
+  });
+});
+
+describe("which sentence painted which tattoo — `inkAsked` (§10 item 3b)", () => {
+  /*
+    THE THIRD HALF, and the reason it exists is a court rather than a
+    principle: 50 dev credits on 2026-08-24 bought a Cast a neck swallow and
+    then an arm compass rose, and the second render dropped the neck POINTER
+    while keeping the neck WORDS — so the engine painted a second swallow, on
+    the other side of his neck, from the sentence.
+
+    Every arm below is driven at the reader and the composer directly, never
+    through a model that usually behaves (working law 3).
+  */
+  const asked = (): RefineDelta => ({
+    free: { ink: ["a swallow on her neck"] },
+    inkAsked: { "ink:neck": "a swallow on her neck" },
+    inkDelivered: { "ink:neck": CROP },
+  });
+
+  it("REFUSES to produce the field from a model reply that carries it", () => {
+    /* Its two siblings' fence, one degree softer and the same in kind: a reply
+       free to name the words of a slot it was not asked about is a model
+       editing the record of a tattoo the customer never mentioned. */
+    const read = readDelta(
+      {
+        free: { ink: ["a swallow on her neck"] },
+        inkAsked: { "ink:upperChest": "a serpent on her chest" },
+      },
+      { instruction: "a swallow on her neck" },
+    );
+    expect(read).not.toBeNull();
+    expect(deltaCarriesAskedInk(read)).toBe(false);
+    /* The negative control — an arm that made `readDelta` return null for
+       everything would pass the line above and take the product down. */
+    expect(read?.free?.ink).toEqual(["a swallow on her neck"]);
+  });
+
+  it("carries it back out of OUR OWN record, unchanged", () => {
+    const stored = readStoredDelta(asked());
+    expect(stored?.inkAsked).toEqual({ "ink:neck": "a swallow on her neck" });
+    expect(deltaCarriesAskedInk(stored)).toBe(true);
+  });
+
+  it("drops a key that is not an ink slot, and says the attempt was made", () => {
+    /* Dropping is safe HERE and would not be safe at the painter: what is lost
+       by a drop is one clause withheld; what would be lost by trusting a
+       malformed key is a render that paints a tattoo twice. */
+    const malformed = { inkAsked: { "hair": "copper", "ink:neck": "a swallow on her neck" } };
+    expect(readAskedInk(malformed)).toEqual({ "ink:neck": "a swallow on her neck" });
+    expect(deltaCarriesAskedInk(malformed)).toBe(true);
+  });
+
+  it("drops a blank sentence and an absurd one, and keeps the attempt visible", () => {
+    const blank = { inkAsked: { "ink:neck": "   " } };
+    expect(readAskedInk(blank)).toBeNull();
+    expect(deltaCarriesAskedInk(blank)).toBe(true);
+    const huge = { inkAsked: { "ink:neck": "a".repeat(401) } };
+    expect(readAskedInk(huge)).toBeNull();
+  });
+
+  it("composes per slot: a second placement ACCUMULATES", () => {
+    const composed = composeDeltas([
+      asked(),
+      {
+        free: { ink: ["a swallow on her neck", "a compass rose on her left upper arm"] },
+        inkAsked: { "ink:upperArm@left": "a compass rose on her left upper arm" },
+        inkDelivered: { "ink:upperArm@left": OTHER_CROP },
+      },
+    ]);
+    expect(composed.inkAsked).toEqual({
+      "ink:neck": "a swallow on her neck",
+      "ink:upperArm@left": "a compass rose on her left upper arm",
+    });
+    expect(composed.inkDelivered).toEqual({ "ink:neck": CROP, "ink:upperArm@left": OTHER_CROP });
+  });
+
+  it("composes per slot: the SAME placement overwrites", () => {
+    const composed = composeDeltas([
+      asked(),
+      {
+        free: { ink: ["a serpent on her neck"] },
+        inkAsked: { "ink:neck": "a serpent on her neck" },
+        inkDelivered: { "ink:neck": OTHER_CROP },
+      },
+    ]);
+    expect(composed.inkAsked).toEqual({ "ink:neck": "a serpent on her neck" });
+    expect(composed.inkDelivered).toEqual({ "ink:neck": OTHER_CROP });
+  });
+
+  it("goes with the others when she has them taken off", () => {
+    /* The one wholesale case the keyed rule keeps: an emptied plural subject
+       answers no facet, so a merge would leave every pointer standing while
+       the words went empty — a paid removal that does not remove. */
+    const composed = composeDeltas([asked(), { free: { ink: [] } }]);
+    expect(composed.inkAsked).toBeUndefined();
+    expect(composed.inkDelivered).toBeUndefined();
+    expect(composed.free?.ink).toEqual([]);
+  });
+
+  it("⚠ a row written BEFORE this key existed composes exactly as it did", () => {
+    /*
+      The compatibility arm, and it is the whole live population on the day
+      this landed: every branch in either world carries `free.ink` and no
+      `inkAsked`. A merge keyed on a key that is not there adds nothing.
+    */
+    const composed = composeDeltas([
+      { free: { ink: ["the tattoo design in the attached picture on her upper chest"] },
+        inkApplied: { "ink:upperChest": DESIGN }, inkDelivered: { "ink:upperChest": CROP } },
+      { eyeColour: "green" },
+    ]);
+    expect(composed.inkAsked).toBeUndefined();
+    expect(composed.inkDelivered).toEqual({ "ink:upperChest": CROP });
+    expect(composed.inkApplied).toEqual({ "ink:upperChest": DESIGN });
+  });
+
+  it("copies rather than mutating what the caller is holding", () => {
+    const original: RefineDelta = { free: { ink: ["a swallow on her neck"] } };
+    const recorded = withAskedInk(original, "ink:neck", "a swallow on her neck");
+    expect(recorded.inkAsked).toEqual({ "ink:neck": "a swallow on her neck" });
+    expect(original.inkAsked).toBeUndefined();
   });
 });

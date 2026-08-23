@@ -188,3 +188,97 @@ export function withDeliveredInk(
 ): RefineDelta {
   return { ...delta, inkDelivered: { ...(delta.inkDelivered ?? {}), [slot]: cropId } };
 }
+
+/**
+ * WHICH SENTENCE PAINTED WHICH TATTOO — the reader for `RefineDelta`'s
+ * `inkAsked`, the THIRD slot-keyed half of one fact (§10 item 3b, shape A,
+ * ruled fable-1494).
+ *
+ * # The hole it fills, measured at the frames
+ *
+ * `free.ink` is ONE value holding every tattoo she has, and the two pointer
+ * fields beside it are keyed by SLOT. So nothing in the record could say which
+ * of her sentences belonged to which tattoo — and the two consequences were
+ * driven on 2026-08-24 with 50 dev credits, on a Cast given a neck swallow and
+ * then an arm compass rose:
+ *
+ *   the pointers   a step that says anything about ink REPLACED the whole
+ *                  pointer set with its own, so the neck crop was dropped
+ *                  INSIDE the render that added the arm piece
+ *   the words      survived, so the second render painted the neck tattoo
+ *                  AGAIN, from the sentence — a different swallow, on the other
+ *                  side of his neck. D-137's forbidden render, reached by the
+ *                  one road that never had this key
+ *
+ * With the words keyed by slot, both fall out of one rule: per-slot
+ * last-writer-wins, so a second placement accumulates and a replacement at the
+ * same placement overwrites; and a slot that already has a delivered crop
+ * CARRIES BY PICTURE with its words withheld from the painter, which is
+ * `INK_IS_NOT_THIS_SLOT`'s own sentence applied at its one gap.
+ *
+ * # It is CODE-WRITTEN and the strict reader is blind to it
+ *
+ * Its two siblings' fence, one degree softer and the same in kind: a reply free
+ * to name the words of a slot it was not asked about would be a model editing
+ * the record of a tattoo the customer never mentioned. It enters the record
+ * only from the service that resolved the placement, and comes back out through
+ * `readStoredDelta`, which guards our own past.
+ *
+ * # Strict about the key, generous about nothing, and DROPPING rather than
+ * # refusing
+ *
+ * A key that is not an ink slot is dropped, an empty or blank sentence is
+ * dropped, and a sentence longer than any this product files is dropped — the
+ * reason is `readInkPointers`' exactly: what is lost by a drop is a carry, and
+ * what would be lost by trusting a malformed entry is a refused render the
+ * customer paid for.
+ */
+export function readAskedInk(value: unknown): Record<string, string> | null {
+  if (!value || typeof value !== "object") return null;
+  const raw = (value as Record<string, unknown>).inkAsked;
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
+
+  const read: Record<string, string> = {};
+  for (const [slot, words] of Object.entries(raw as Record<string, unknown>)) {
+    if (!isInkSlot(slot)) continue;
+    if (typeof words !== "string") continue;
+    const tidy = words.trim();
+    if (tidy === "" || tidy.length > ASKED_INK_MAX) continue;
+    read[slot] = tidy;
+  }
+  return Object.keys(read).length === 0 ? null : read;
+}
+
+/**
+ * The longest sentence this field will carry.
+ *
+ * A free-lane item is one customer sentence about one tattoo, and the whole
+ * interpreted character detail is capped at 180 characters upstream
+ * (`NOTES_MAX`). This is deliberately looser than that and still bounded: the
+ * field is written by us, so the cap is a fence against a corrupted row rather
+ * than against a customer, and a fence that also truncates honest asks would be
+ * the announced-cap defect wearing a guard's name.
+ */
+const ASKED_INK_MAX = 400;
+
+/**
+ * DOES THIS OBJECT CARRY `inkAsked` AT ALL — the third of the fence's
+ * instruments, and the same false-pass guard in miniature: a malformed attempt
+ * to name a slot's words is still the thing the fence forbids.
+ */
+export function deltaCarriesAskedInk(value: unknown): boolean {
+  return deltaCarriesField(value, "inkAsked");
+}
+
+/**
+ * THE SAME DELTA WITH ONE SLOT'S OWN SENTENCE RECORDED AGAINST IT.
+ *
+ * A copy, never a mutation — its two siblings' reason exactly.
+ */
+export function withAskedInk(
+  delta: RefineDelta,
+  slot: string,
+  words: string,
+): RefineDelta {
+  return { ...delta, inkAsked: { ...(delta.inkAsked ?? {}), [slot]: words } };
+}

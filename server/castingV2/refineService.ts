@@ -112,6 +112,7 @@ import {
   itemsOf,
   missingFromPrompt,
   presenceItemsOfFacet,
+  withoutCarriedInkWords,
   withoutFacets,
   presentationOf,
   presentationWordsOfFacet,
@@ -211,7 +212,9 @@ import {
 } from "./referenceLibrary";
 import { listLineageReferences, recordReferenceRows, retireReferenceSlot } from "../db/castingV2ReferenceLibrary";
 import type { RegionReader as MintRegionReader } from "./referenceCompleteness";
-import { readAppliedInk, readDeliveredInk, withAppliedInk, withDeliveredInk } from "./inkApplied";
+import {
+  readAppliedInk, readDeliveredInk, withAppliedInk, withAskedInk, withDeliveredInk,
+} from "./inkApplied";
 import type { InkCutFocus } from "./inkReferenceCutter";
 import { assembleRecipe, type CarriedInkDesign, type FeatureSlot } from "./recipeAssembler";
 import {
@@ -247,7 +250,7 @@ import { repaint, type ReferenceFitter, type RepaintEngine, type SentRequest } f
 import {
   RepaintCannotSayError, repaintAsksFor, repaintCannotRemove, scopedAskIsUnsayable,
 } from "./repaintAsks";
-import { slotsOfPrunedStep } from "./prunedSlots";
+import { inkSlotOfPhrase, slotsOfPrunedStep } from "./prunedSlots";
 import {
   attachedPictureUnusedNote, cannotSaySentence, likenessSetAsideNote,
   type CannotSayReason,
@@ -3930,24 +3933,24 @@ async function refineCandidateCounted(
                 : (nameOfSlot(onSlot.slot) ?? "the tattoo already there"),
             },
             /*
-              AND HER OTHER TATTOOS SURVIVE THIS SENTENCE — restated by the code
-              that knows them, because the composition rule above cuts both ways.
+              ⚠ TWO LINES STOOD HERE AND THEY ARE GONE (§10 item 3b, ruled
+              fable-1494; the condition was written into the design report
+              before the build and honoured in the same commit as the fix).
 
-              Re-saying `free.ink` replaces the whole pointer set, which is right
-              for a NEW design and wrong for a change to one of two: without
-              these two lines, a customer with a neck piece and a chest piece who
-              says *"make the chest one bigger"* would have the NECK one quietly
-              stop carrying — a tattoo somebody paid for vanishing on an ask that
-              was not about it. Restated rather than merged, so the set filed is
-              always the complete current answer, which is the plural subject's
-              own rule.
+              They restated `priorDelta.inkApplied` and `priorDelta.inkDelivered`
+              onto this delta, because re-saying `free.ink` REPLACED the whole
+              pointer set — so without them a customer with a neck piece and a
+              chest piece who said *"make the chest one bigger"* would have the
+              neck one quietly stop carrying.
 
-              The transformed slot's own pointer is overwritten a few hundred
-              lines below by the crop this render mints, which is what makes the
-              transformed tattoo the next carry's baseline.
+              Composition merges per slot now, so the other tattoos survive by
+              the rule rather than by this call site remembering to save them.
+              **A workaround left standing beside the fix it stood in for is the
+              second-list class**, and the reason it must go rather than merely
+              stop mattering is sharper here than usual: these lines would keep
+              a pointer alive across a step that legitimately dropped it, so the
+              day a removal composes differently they are a resurrection.
             */
-            ...(priorDelta.inkApplied ? { inkApplied: priorDelta.inkApplied } : {}),
-            ...(priorDelta.inkDelivered ? { inkDelivered: priorDelta.inkDelivered } : {}),
           };
           log.info(
             {
@@ -4484,7 +4487,45 @@ async function refineCandidateCounted(
     writing: Array.from(writtenFacets),
   });
   const facetsToCarry = new Set<Facet>(carriedRows.map((row) => row.facet as Facet));
-  const asked = withoutFacets(composed, facetsToCarry);
+  /*
+    THE TATTOOS SHE ALREADY WORE BEFORE THIS SENTENCE — derived once, two
+    consumers, and read off `priorDelta` rather than off `composed` for the
+    reason opus-949 measured at this very field: this ask says something about
+    ink by definition, so by the time `composed` exists it holds this render's
+    own slot too, and stripping THAT would leave the new tattoo unpainted.
+
+    Both pointer fields, because a picture-road tattoo and a words-road tattoo
+    are recorded in different ones and both are things she is wearing.
+  */
+  const inkAlreadyWorn = repaintServesThisUser
+    ? Array.from(new Set([
+      ...Object.keys(priorDelta.inkDelivered ?? {}),
+      ...Object.keys(priorDelta.inkApplied ?? {}),
+    ]))
+    /*
+      ⚠ EMPTY ON THE PASTE ROAD, AND THAT IS THE WHOLE OF WHY THIS IS A
+      CONDITION RATHER THAN A LIST (driven at the frames, 2026-08-24).
+
+      The clause is *a slot with a delivered crop CARRIES BY PICTURE and its
+      words are not said* — and the carry that makes the first half true lives
+      inside `repaintOnce`. The paste road has no ink carry at all: her other
+      tattoo survives there only because its WORDS are re-said, badly, which is
+      the reinvention this item is about.
+
+      So withholding those words off the repaint road does not stop a tattoo
+      being redrawn — it stops it being drawn AT ALL. Measured, on the second
+      half of the court: the record kept both crops and the frame came back
+      with the neck bare, because the dev process was not inside
+      `CASTING_REPAINT_SCOPE` while production is `all`.
+
+      The paste road therefore keeps exactly today's behaviour, which is worse
+      and is not a regression, and the fix serves the road every real customer
+      is on.
+    */
+    : [];
+  const asked = withoutCarriedInkWords(
+    withoutFacets(composed, facetsToCarry), inkAlreadyWorn, instruction,
+  );
 
   const preview = composeRenderPrompt(asked, EDIT_PROSE, carriedCaptions);
   /*
@@ -5743,6 +5784,34 @@ async function refineCandidateCounted(
     let next = delta;
     if (appliedInk !== null) next = withAppliedInk(next, appliedInk.slot, appliedInk.designId);
     if (deliveredInk !== null) next = withDeliveredInk(next, deliveredInk.slot, deliveredInk.cropId);
+    /*
+      AND WHICH SENTENCE PAINTED WHICH ONE — the third half, keyed like the two
+      above (§10 item 3b, shape A, ruled fable-1494).
+
+      **It is DERIVED from her own words, never authored beside them**, and that
+      direction is deliberate and is the opposite of the design report's first
+      sketch. `free.ink` is the record source containment checks against her
+      sentence; a second field holding words WE composed would be a mirror of it
+      — working law 4 broken at the one place a drift means painting a tattoo
+      she never asked for. So this is an INDEX into her words: every item the
+      free lane holds, resolved to the surface it names by
+      `inkSlotOfPhrase` — the prune's own reader, one owner, because the walk
+      that decides which crop a later render carries must not be a second copy
+      of the walk that decides which step a prune strikes.
+
+      Every item, not only this ask's: a plural subject restates the whole
+      current set (measured, `refineDelta.ts:1373`), so an ADD step's words name
+      the carried tattoo too — and keying THAT is what lets the carried one be
+      recognised as carried and its words withheld from the painter.
+
+      An item naming no measured surface, two surfaces, or a per-side surface
+      with no side simply gets no key. It stays in `free.ink` and behaves
+      exactly as it did before this field existed.
+    */
+    for (const item of itemsOf(next.free?.ink)) {
+      const slot = inkSlotOfPhrase(item);
+      if (slot !== null) next = withAskedInk(next, slot, item);
+    }
     /* AND WHAT CAME OUT OF HER PICTURE, on the same copy-never-mutate rule as
        the two above. Only the subjects this delta actually carries, so a
        composed delta that no longer holds a taken facet does not claim it. */
@@ -6009,7 +6078,12 @@ async function refineCandidateCounted(
       ancestry — `withoutFacets` returns the recipe unchanged and every line
       below behaves exactly as it did before segments existed.
     */
-    const askedFiled = withoutFacets(filed, facetsToCarry);
+    /* The same subtraction the pre-claim preview made, from the same list —
+       one derivation, so the check and the render cannot disagree about which
+       tattoo this render is painting and which it is carrying (D-166). */
+    const askedFiled = withoutCarriedInkWords(
+      withoutFacets(filed, facetsToCarry), inkAlreadyWorn, instruction,
+    );
     /*
       WHERE THIS ASK LIVES ON HER FACE (law 8, fable-103's table ruling).
 
@@ -6263,7 +6337,23 @@ async function refineCandidateCounted(
       );
       const asks = editDelta
         ? repaintAsksFor({
-          delta: editDelta,
+          /*
+            HER WORDS FOR THIS ASK, WITHOUT THE TATTOO SHE ALREADY WEARS (§10
+            item 3b, ruled fable-1495).
+
+            `statePhrase` joins every item of a plural subject into ONE ask
+            value, so on a second-tattoo ask the carried piece's sentence was
+            being addressed to the NEW slot — *"Change only her left upper arm
+            tattoo: a fine-line swallow chest piece, a compass rose…"*, which
+            is not merely a repaint of the carried one but an instruction to
+            paint it in the wrong place. Found by driving this arm, after the
+            paste road's own version of the defect was bought at the frames.
+
+            The carried slot rides as a CROP a few hundred lines below, which is
+            the whole clause: a slot with a delivered crop carries by picture
+            and its words are not said.
+          */
+          delta: withoutCarriedInkWords(editDelta, inkAlreadyWorn, instruction),
           /* The prose the prompt above is composed with, handed over rather
              than copied: one definition of what "copper" looks like. */
           prose: EDIT_PROSE,
