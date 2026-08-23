@@ -407,6 +407,22 @@ repaired: the arm's population is now the UNION of the Atlas's flag inventory
 is *meant* to stand while the deploy rite compares that record to the service on
 every push — a mismatch in either direction costs the rite its `OK`.
 
+⚠ **AND A FLAG POSITION IS HALF A PROMISE — THE OTHER HALF IS THE TABLE UNDER
+IT.** Six paragraphs above say a table *"must exist before this is flipped on —
+production takes it by the ceremony script"*, and every one of those is a promise
+about a HAND-RUN act that nothing had ever checked; the boot guards deliberately
+do not, which the ink-studio paragraph states outright (*"a named prerequisite of
+the FLIP rather than a boot guard"*). The rite now reads `information_schema`
+beside the flags and compares it to what `drizzle/schema.ts` DECLARES —
+`scripts/lib/schemaConformance.mts`, guarded by
+`server/schemaConformance.test.ts`. **First reading, both worlds: 60 tables
+declared, 59 present, and the ceremony discipline has held** — the single absence
+is `casting_cast_segments`, migration `0027`, never applied in dev or production
+and read or written by nothing at all (its own header says it *"may land ahead of
+its code"*, and the Sign promotion never came). It is enumerated in
+`DECLARED_BUT_UNMIGRATED` with its reason, and that list **only shrinks**: a
+table that becomes present is an ERROR until its line is deleted.
+
 The entries below are deliberately **short and factual** rather than written in
 the ruled prose above: each states the grammar, the parent, and nothing this
 seat did not read off the code. A flag that deserves a full paragraph should get

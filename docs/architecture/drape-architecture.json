@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "e4842c6893d3b509"
+    "sourceFingerprint": "c5d383749810d491"
   },
   "domains": [
     {
@@ -11890,6 +11890,10 @@
     {
       "id": "test:server/routes/referenceDelivery.test.ts",
       "path": "server/routes/referenceDelivery.test.ts"
+    },
+    {
+      "id": "test:server/schemaConformance.test.ts",
+      "path": "server/schemaConformance.test.ts"
     },
     {
       "id": "test:server/scopeFlagTemplate.test.ts",

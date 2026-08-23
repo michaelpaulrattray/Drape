@@ -72,11 +72,17 @@
 */
 import "dotenv/config";
 import { execFileSync, spawnSync } from "node:child_process";
-import { appendFileSync, mkdirSync, writeFileSync } from "node:fs";
+import { appendFileSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 
 import { openDatabase } from "./lib/dbConnection.mts";
 import { decideWatch, newestRow } from "./lib/deployWatch.mts";
 import { comparePositions, parseVariableLines } from "./lib/productionFlagPositions.mts";
+import {
+  DECLARED_BUT_UNMIGRATED,
+  conformanceVerdict,
+  declaredSchemaFrom,
+  liveSchemaFrom,
+} from "./lib/schemaConformance.mts";
 import { uptimeAnchor } from "./lib/uptimeAnchor.mts";
 import {
   balanceLine,
@@ -537,6 +543,50 @@ if (readings.length === 0) die("no variables could be read from the service — 
 const positions = comparePositions(readings);
 if (positions.block.length === 0) die("the flag position table is empty — the receipt would show a clean block over nothing");
 
+/* ── 5b. the SCHEMA, off the same service ───────────────────────────────── */
+
+/*
+  A FLAG POSITION IS HALF A PROMISE; THE OTHER HALF IS THE TABLE UNDER IT.
+
+  Six paragraphs in CLAUDE.md say a table "must exist before this is flipped on
+  — production takes it by the ceremony script", and every one of those is a
+  promise about a HAND-RUN act that nothing has ever checked. The boot guards
+  deliberately do not: the ink-studio paragraph calls its table "a named
+  prerequisite of the FLIP rather than a boot guard" and gives the reason — the
+  writer catches its own failure, so a missing table costs a TALLY and never a
+  customer's answer. Quiet, and only in the record, which is the shape of the
+  mistake nobody finds.
+
+  One `information_schema` query, on a connection this script already opens.
+*/
+const schema = await (async (): Promise<{ line: string; problems: string[] }> => {
+  const url = productionUrl();
+  if (!url) return { line: "(unread — MYSQL_PUBLIC_URL not readable)", problems: [] };
+  try {
+    const connection = await openDatabase(url);
+    const [rows] = await connection.query<any[]>(
+      `SELECT TABLE_NAME AS t, COLUMN_NAME AS c FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE()`,
+    );
+    await connection.end();
+    /* Relative, like the receipt path above: the rite runs from the repo root. */
+    const declared = declaredSchemaFrom(readFileSync("drizzle/schema.ts", "utf8"));
+    const verdict = conformanceVerdict(declared, liveSchemaFrom(rows as Array<{ t: string; c: string }>));
+    const enumerated = Object.keys(DECLARED_BUT_UNMIGRATED).length;
+    return {
+      line:
+        `${verdict.declaredTables} tables declared · ${verdict.liveTables} on the service · `
+        + `${enumerated} enumerated as unmigrated`,
+      problems: verdict.problems,
+    };
+  } catch (error) {
+    /* NO ERROR TEXT — same rule as every other database read here: this line
+       goes into a mailbox and a driver's error can carry the DSN it was handed.
+       An unread schema is stated as unread, never as conforming. */
+    void error;
+    return { line: "(unread — the production schema could not be reached)", problems: [] };
+  }
+})();
+
 /* ── 6. the receipt ─────────────────────────────────────────────────────── */
 
 say("");
@@ -629,6 +679,15 @@ if (positions.mismatches.length === 0) {
   say("  Fix the row in scripts/lib/productionFlagPositions.mts — and ask what");
   say("  CLAUDE.md's paragraph for that flag now says about a decision that moved.");
 }
+say("");
+say(`SCHEMA, read off the service: ${schema.line}`);
+if (schema.problems.length === 0) {
+  say("  ✓ every table and column the code declares is there");
+} else {
+  say(`  *** SCHEMA MISMATCH — ${schema.problems.length} ***`);
+  for (const problem of schema.problems) say(`  ! ${problem}`);
+  say("  A ceremony this code depends on has not been run in this world.");
+}
 say("─".repeat(72));
 /*
   THE VERDICT RIDES IN THE EXIT STATUS, NOT IN AN EARLY REFUSAL.
@@ -637,4 +696,4 @@ say("─".repeat(72));
   mismatch takes away is the one thing that gets quoted — a custody block's
   `RITE EXIT STATUS: OK`.
 */
-process.exit(positions.mismatches.length === 0 ? 0 : 1);
+process.exit(positions.mismatches.length + schema.problems.length === 0 ? 0 : 1);
