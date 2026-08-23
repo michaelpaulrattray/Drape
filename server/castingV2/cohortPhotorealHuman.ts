@@ -229,6 +229,56 @@ function wardrobeSentences(wardrobeLine: string | null): readonly string[] {
        engine rather than assumed of it: a sheet compares people, not clothes. */
     `WARDROBE: ${wardrobeLine}. Exactly this and nothing else — no extra garments, no layers, and identical on every candidate.`,
     "Nothing beyond the wardrobe described: no accessories, no jewellery, no hats, no props of any kind, nothing held in the hands.",
+    /*
+      ⚠ THE SENTENCE THAT STOPS A COMPLETE LINE FROM WIDENING THE FRAME — the
+      founder's FQ-a answer, 2026-08-23 (relayed fable-1460, shape ruled
+      fable-1462).
+
+      # What was measured, and it is not a suspicion
+
+      The Two Paths court rolled both paths and both came back **markedly wider
+      than an unpathed cast** — and the FRAMING instruction was byte-identical
+      on all three, read off the rows. So nothing above this changed and the
+      engine widened anyway. The only new variable is four lines up: a complete
+      wardrobe line naming trousers and shoes, where an unpathed roll's sentence
+      names a tee and stops.
+
+      He was 50/50 at the strip and pulled it back in, on grounds worth keeping
+      here: the master is the identity anchor and DETAIL is its job — every
+      downstream instrument reads it — the signed package's full-length views
+      already show the whole outfit, and the lighting drifted between the two
+      wider shots, which is scene drift an identity product cannot afford.
+
+      # Why it SAYS the whole outfit instead of naming less of it
+
+      Because the alternative needs a rule for which pieces are below the crop,
+      and that is a garment taxonomy. It is easy on the two lines we author and
+      wrong on the ones this path exists for: is *"bare legs"* a garment, which
+      half of *"surgical scrubs and clogs"* is below the waist, where does a
+      dress sit. A taxonomy that has to answer those is the counts-as-a-garment
+      rule this program refused to invent one slice earlier, and a wrong answer
+      silently drops a real garment from the prompt.
+
+      So the conflict is RESOLVED rather than removed: the line stays whole —
+      §4's "written complete" rule is what lets the sheet, the hero and the
+      three full-length signed views agree — and the frame is told, in the block
+      that already carries override authority, that the part below the crop is
+      not an instruction to widen.
+
+      # Its stated risk, and what settles it
+
+      This is a longer FRAMING block against an engine where **prompt context is
+      not additive** in this product's own measurement, and it asks the model to
+      hold two things at once. It is bought rather than assumed: one wardrobe
+      roll is read AT THE PIXELS after this lands. If the frame is still wide,
+      the pre-agreed fallback (fable-1462) is a decomposition scoped to the two
+      lines WE author — where no taxonomy is needed because we wrote them — with
+      a customer-named line left whole under this sentence.
+    */
+    "The frame stays waist-up whatever this WARDROBE line describes below it. The outfit is "
+    + "stated in full so the record is complete; trousers, shorts, footwear and anything else "
+    + "below the crop are simply out of shot. Never widen the frame, zoom out, or change the "
+    + "crop to show them.",
   ];
 }
 

@@ -47,6 +47,22 @@ describe("the constant with and without a wardrobe line", () => {
       expect(PHOTOREAL_HUMAN_BLOCKS.authority).toContain("a costume, a prop");
     });
 
+    it("⚠ carries NO no-widen sentence — it has no line that could widen anything", () => {
+      /*
+        FQ-a's sentence is composed only where a complete outfit is stated, and
+        this is the arm that says so. An unpathed roll's wardrobe sentence names
+        a tee and stops, so there is nothing below the crop for the engine to
+        chase, and adding the override here would be prompt context spent on a
+        problem this branch does not have — in a product whose own measurement
+        is that context is NOT additive.
+      */
+      expect(photorealHumanConstant(null)).not.toContain("The frame stays waist-up");
+      /* CONTROL — the reader can find that sentence when it IS there, so the
+         absence above is a fact about the constant rather than about a typo in
+         this line. */
+      expect(photorealHumanConstant(HOUSE_WARDROBE_LINE)).toContain("The frame stays waist-up");
+    });
+
     it("the markers are the unpathed blocks, and they are all in it", () => {
       expect(COHORT_CONSTANT_MARKERS).toEqual(cohortConstantBlocks(null));
       for (const marker of COHORT_CONSTANT_MARKERS) {
@@ -121,6 +137,45 @@ describe("the constant with and without a wardrobe line", () => {
       /* The Basics promise, in the prompt: a bare chest cannot survive a
          sentence that also asks for a plain crew-neck tee. */
       expect(photorealHumanConstant(basics)).not.toContain("crew-neck tee or plain shirt");
+    });
+
+    it("⚠ TELLS THE FRAME NOT TO WIDEN — FQ-a, on every line and both paths", () => {
+      /*
+        THE MEASURED DEFECT (the Two Paths court, 2026-08-23): both paths came
+        back markedly WIDER than an unpathed cast, with the FRAMING instruction
+        byte-identical on all three — read off the rows. Nothing above the
+        wardrobe sentence had changed, so the widening came from the one new
+        variable: a COMPLETE line naming trousers and shoes.
+
+        The founder pulled the frame back in (FQ-a, relayed fable-1460), and the
+        shape is his sentence rather than a subtraction (ruled fable-1462): the
+        line stays whole — §4's "written complete" rule is what lets the sheet
+        and the three full-length signed views agree — and the frame is told, in
+        the block that already carries override authority, that the part below
+        the crop is not an instruction to widen.
+
+        ⚠ **It is asserted on EVERY line this product can compose**, not on one
+        example. The failure this catches is a future branch that builds the
+        wardrobe sentences a second way — for a picked outfit, say — and gets
+        the override only on the path somebody remembered.
+      */
+      for (const line of [
+        HOUSE_WARDROBE_LINE,
+        basicsWardrobeLine("male"),
+        basicsWardrobeLine(null),
+        /* And a customer-named one, which is the case a decomposition could
+           never have handled and this sentence handles for free. */
+        "a one-shoulder animal hide, bare legs, bare feet",
+      ]) {
+        const constant = photorealHumanConstant(line);
+        expect(constant, line).toContain(
+          "The frame stays waist-up whatever this WARDROBE line describes below it.",
+        );
+        expect(constant, line).toContain("Never widen the frame, zoom out, or change the crop");
+        /* The line itself is STILL stated in full beside it — the whole point
+           is that both sentences are present and the frame wins. */
+        expect(constant, line).toContain(line);
+      }
     });
 
     it("CONTROL — a different line really produces a different constant", () => {

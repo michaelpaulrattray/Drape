@@ -367,6 +367,29 @@ both paths. The wardrobe gets its own field; nothing about those two guards move
 sports top with black fitted shorts, cut low enough to show a chest piece. Adults
 only is already the product's rule.
 
+⚠ **AND *"CUT LOW ENOUGH"* WAS NOT LOW ENOUGH — the spec is amended by the
+founder, 2026-08-23** (FQ-b, relayed fable-1460; verbatim: *"if it can be less
+without hitting any safety restrictions do it."*). The Two Paths court rolled
+eight of these and read the chest with the mint's own word: **`upper chest`
+returned 0 px on 4 of 4**, and so did `chest skin` and `chest`. The skin is
+plainly visible in the frames and the reader will not name it — which is the
+state that decides whether a chest piece can be cropped and CARRIED, so a tattoo
+there would be delivered and lost on her next edit.
+
+The amended sentence is written where the code composes it
+(`basicsWardrobeLine`), and its shape is the point: it says WHERE the neckline
+sits and WHAT is bare — *cut well below the collarbones so the whole upper chest
+and sternum are bare* — rather than saying *low* and leaving the engine to decide
+how low. **A comparative with no referent is latitude, and an image model
+resolves latitude toward the ordinary**, which is `HOUSE_WARDROBE_LINE`'s own
+lesson one garment over.
+
+It is still a sports top and still a body record. **And the reading is not done
+until the re-court reports**: `BASICS_COVERAGE.upperChest` stays `unknown` until
+one Basics roll is read at the frames, and flips to `bare` with THAT court as its
+provenance. It is not flipped on the strength of a sentence, because that is
+exactly how it was wrong the first time.
+
 ### ⚠ 5.1 "Tattoos anywhere" is not a promise this frame can keep
 
 The ruling's copy line reads *"Basics — born and signed in plain black basics;

@@ -58,6 +58,22 @@
  * `waist` entry refuses an edit the photograph could serve — the safe direction,
  * and a named prerequisite of the flip rather than a note here (founder card
  * FQ-a, 2026-08-23).
+ *
+ * ✅ **HE ANSWERED FQ-a: PULL IT BACK IN, and the prerequisite is now a
+ * MEASUREMENT rather than a decision** (relayed fable-1460; build ruled
+ * fable-1462). The wardrobe sentence keeps naming the whole outfit — a complete
+ * line is what lets the sheet and the three full-length signed views agree — and
+ * the FRAMING block now carries an explicit override saying the frame does not
+ * widen for what the line describes below the crop.
+ *
+ * ⚠ **AND THAT CHANGES NOTHING ABOUT THIS FILE'S BLINDNESS.** The fix is another
+ * INSTRUCTION, and this module's guard reads instructions; if the engine ignores
+ * the new sentence exactly as it ignored the old ones, the test above stays green
+ * and this table stays wrong on a pathed cast. **So the answer is not what makes
+ * the premise true — the re-court at the pixels is** (one wardrobe roll, 160 dev
+ * credits, authorised fable-1460), and if that frame comes back wide the
+ * pre-agreed fallback is a decomposition scoped to the two lines we author. The
+ * `waist` entry does not move on the strength of a sentence.
  */
 import { REFINABLE_AXES, type RefineDelta } from "./refineDelta";
 import { facetOfAxis, facetOfSubject, type Facet } from "./refineFacets";

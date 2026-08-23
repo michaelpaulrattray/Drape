@@ -1719,7 +1719,12 @@ the roll rather than discovered after it (the brief discipline):
 - **Basics** — born and signed in plain black basics; full body record, tattoos
   anywhere, a clean base for try-on. Men shirtless with plain black fitted
   shorts; women a plain black sports top and black fitted shorts cut low enough
-  to show a chest piece.
+  to show a chest piece. ⚠ **"Cut low enough" was amended by the founder
+  2026-08-23** after a court read the chest at 0 px on 4 of 4 — the top is now
+  specified as *cut well below the collarbones so the whole upper chest and
+  sternum are bare*, because a comparative with no referent is latitude and the
+  engine resolves latitude toward the ordinary. The design's §5 carries the
+  measurement and the re-court that has to confirm it.
 
 **Wardrobe resolution, in order:** an outfit named in her words wins; else the
 brief stage writes ONE engine-chosen outfit per sheet matching the cast type

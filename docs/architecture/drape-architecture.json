@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "27f22e6337bfbfe4"
+    "sourceFingerprint": "f970ba46c94e3445"
   },
   "domains": [
     {
@@ -31928,10 +31928,10 @@
       "message": "Names 4 of SegmentExclusion's 4 fields (server/castingV2/segmentAssembly.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/cohortPhotorealHuman.ts:893",
+      "id": "finding:redeclared-shape:server/castingV2/cohortPhotorealHuman.ts:943",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/cohortPhotorealHuman.ts:893",
+      "subject": "server/castingV2/cohortPhotorealHuman.ts:943",
       "message": "Names 6 of ResolvedIdentity's 11 fields (server/castingV2/castingIntent.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {

@@ -21,6 +21,7 @@ import {
   sheetBasicsSex,
   type WardrobeResolution,
 } from "./wardrobeLine";
+import { coverageOfWardrobeLine } from "./inkSurfaceCoverage";
 
 /** The only two facts a pre-paths roll has, which is every production roll today. */
 const UNPATHED = { rollPath: null, rollLine: null } as const;
@@ -223,9 +224,64 @@ describe("⚠ the Basics spec has two forms and `SEXES` has three members", () =
       default ever stopped showing the upper chest, Basics would still be
       offered, still be charged, and no longer deliver the one placement it
       exists to unlock — which is worse than not offering it.
+
+      ⚠ **IT USED TO PIN THE PHRASE `/scooped low|low at the chest/` AND THAT
+      PHRASE IS GONE** (FQ-b, 2026-08-23). It went red on the founder's own
+      amendment, which is correct and is what it is for — a sentence a court
+      proved insufficient should not be able to leave quietly. What replaces it
+      is not a second phrase: it is the two properties the phrase was standing
+      in for, so the next rewording is judged on what it PROMISES rather than on
+      whether it reuses somebody's words.
     */
     expect(basicsWardrobeLine("male")).toContain("shirtless");
-    expect(basicsWardrobeLine("female")).toMatch(/scooped low|low at the chest/);
+    /* One: the sentence names the chest and says it is BARE. Anything that
+       merely mentions a neckline leaves the engine to decide how much. */
+    expect(basicsWardrobeLine("female")).toMatch(/upper chest/);
+    expect(basicsWardrobeLine("female")).toMatch(/\bbare\b/);
+  });
+
+  it("⚠ NAMES A LANDMARK, not a degree — the latitude the first version lost the chest to", () => {
+    /*
+      THE REPAIR ITSELF, as an assertion. The first spec said *"scooped low at
+      the chest"*, and a court read the delivered chest at **0 px on 4 of 4**
+      with the mint's own word. `low` is a comparative with no referent — low
+      compared to what — and an image model resolves latitude toward the
+      ordinary, which is `HOUSE_WARDROBE_LINE`'s own lesson one garment over
+      (*"neutral grey OR off-white"*, and the customer paid for our
+      inconsistency).
+
+      So the covered form must anchor the neckline to a place on a body. The
+      alternatives are enumerated rather than one spelling pinned, because the
+      requirement is that SOME landmark is named and not that this landmark is.
+    */
+    expect(basicsWardrobeLine("female")).toMatch(/collarbone|sternum|breastbone/);
+  });
+
+  it("⚠ CONTROL — the coverage owner does not read the amended line as COVERED", () => {
+    /*
+      The half a string assertion cannot reach. The arms above are about the
+      SENTENCE; this is about what the product concludes from it — and the
+      failure that matters is a Basics top the ink gate treats as a covering,
+      which would refuse the one placement the path exists to unlock while the
+      copy still promised it.
+
+      ⚠ It is deliberately `not.toBe("covered")` and NOT `toBe("bare")`. The
+      table says `unknown` today and stays there until the re-court reads a
+      frame: flipping it on the strength of a sentence is exactly how it was
+      wrong the first time, and an arm demanding `bare` here would make that
+      flip mandatory rather than earned.
+
+      The house line is the positive control beside it — the same reader, the
+      same placement, answering `covered` — so this cannot be passing because
+      the reader answers `unknown` to everything.
+    */
+    for (const sex of ["male", "female", "nonbinary", null]) {
+      expect(
+        coverageOfWardrobeLine(basicsWardrobeLine(sex as string | null), "upperChest"),
+        String(sex),
+      ).not.toBe("covered");
+    }
+    expect(coverageOfWardrobeLine(HOUSE_WARDROBE_LINE, "upperChest")).toBe("covered");
   });
 
   it("is black on every form, and carries no props", () => {

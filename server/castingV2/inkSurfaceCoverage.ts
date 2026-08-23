@@ -120,9 +120,20 @@ const HOUSE_COVERAGE: Readonly<Record<InkPlacement, SurfaceCoverage>> = Object.f
  *
  * Both forms of `basicsWardrobeLine` leave all three surfaces showing, and
  * neither does it by accident: the male form is *shirtless*, and the covered
- * form is *"a plain black sports top scooped low at the chest"*, whose scoop
- * exists in the spec precisely so a chest piece shows. Shorts are below the
- * frame either way, so no surface in this vocabulary is under them.
+ * form is a scoop-neck sports top whose neckline exists in the spec precisely
+ * so a chest piece shows. Shorts are below the frame either way, so no surface
+ * in this vocabulary is under them.
+ *
+ * ⚠ **THE COVERED FORM'S SENTENCE WAS AMENDED ON 2026-08-23 AND THIS TABLE DID
+ * NOT MOVE — that is deliberate and it is the whole discipline of this entry.**
+ * It read *"a plain black sports top scooped low at the chest"*; the founder
+ * lowered it (FQ-b, relayed fable-1460) to name the collarbones and the sternum
+ * rather than a degree, because *low* is a comparative with no referent. A
+ * sentence is a PRESCRIPTION and this table records what a frame was READ to
+ * contain, so the amendment changes what we ask for and nothing about what has
+ * been seen. `upperChest` stays `unknown` until the re-court reads one at the
+ * frames — flipping a coverage value on the strength of a sentence is precisely
+ * how this entry was wrong the first time.
  *
  * ⚠ **This is a claim about a SENTENCE we wrote, not about a photograph**, and
  * it is the one entry here that has not been through a frame. It is admissible
@@ -177,6 +188,20 @@ const BASICS_COVERAGE: Readonly<Record<InkPlacement, SurfaceCoverage>> = Object.
     does not serve chest ink, the honest end state is a fourth state — visible
     and unreadable, carrying its own copy — and that gets carded then. One word
     today, honest both ways tomorrow.
+
+    ✅ **HE ANSWERED, AND HE TOOK THE FIRST BRANCH** — *"if it can be less
+    without hitting any safety restrictions do it"* (relayed fable-1460). The
+    spec's scoop went lower the same day and the sentence now names the
+    collarbones and the sternum instead of a degree.
+
+    ⚠ **AND THIS VALUE DID NOT MOVE WITH IT, WHICH IS THE HALF THAT MATTERS.**
+    The condition above is not *he lowers the scoop*, it is *he lowers the scoop
+    AND A RE-COURT READS THE CHEST* — two clauses, and only one of them has
+    happened. The re-court is authorised (160 dev credits, fable-1460) and until
+    it reports at the frames this stays `unknown`. Flipping it now would be the
+    identical mistake to the one that put `bare` here in the first place, taken
+    with more confidence because a founder had been consulted about something
+    else.
   */
   upperChest: "unknown",
 });

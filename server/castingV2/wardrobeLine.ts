@@ -265,7 +265,43 @@ export function basicsWardrobeLine(sex: string | null | undefined): string {
   if (sex === "male") {
     return "shirtless, in plain black fitted shorts, barefoot";
   }
-  return "a plain black sports top scooped low at the chest, plain black fitted shorts, barefoot";
+  /*
+    ⚠ THE SCOOP WENT LOWER ON 2026-08-23, AND IT WAS THE FOUNDER'S CALL ON A
+    MEASUREMENT RATHER THAN A TASTE PREFERENCE (FQ-b, relayed fable-1460).
+
+    The old sentence was *"a plain black sports top scooped low at the chest"*,
+    and it was written from this design's own §5 rather than from a photograph.
+    The Two Paths court then rolled eight of them and read the chest with the
+    mint's own word: **`upper chest` returned 0 px on 4 of 4**, and so did
+    `chest skin` and `chest`. The skin is plainly visible in the frames — his
+    eyes, and mine — and the reader will not name it, which is the state that
+    decides whether a chest piece can be cropped and CARRIED. A tattoo painted
+    there would be delivered and then lost on her next edit, which is the one
+    thing this product promises never to sell.
+
+    So the card went to him with the alternative stated: lower the top, or say
+    Basics does not serve chest ink and lose most of the reason for the path.
+    His answer, verbatim: *"if it can be less without hitting any safety
+    restrictions do it."*
+
+    **It is still a sports top and it is still a body record.** What changed is
+    that the sentence now says WHERE the neckline sits and WHAT is bare, instead
+    of saying "low" and leaving the engine to decide how low — the same
+    latitude-removal `HOUSE_WARDROBE_LINE` above exists for, one garment over. A
+    word like "low" is a comparative with no referent, and an image model
+    resolves those toward the ordinary.
+
+    ⚠ **THE READING IS NOT DONE UNTIL THE RE-COURT REPORTS.** This sentence is a
+    prescription, not a measurement, and `BASICS_COVERAGE.upperChest` stays
+    `unknown` until one Basics roll is read at the frames with the mint's own
+    word (160 dev credits, authorised fable-1460). If it answers, that value
+    flips to `bare` **with the court as its provenance** — which is
+    `inkSurfaceCoverage.ts`'s own written flip condition. It is not flipped on
+    the strength of this sentence, because that is exactly how it was wrong the
+    first time.
+  */
+  return "a plain black scoop-neck sports top cut well below the collarbones so the whole "
+    + "upper chest and sternum are bare, plain black fitted shorts, barefoot";
 }
 
 /**
