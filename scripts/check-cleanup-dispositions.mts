@@ -128,8 +128,39 @@ const TABLE = resolve(REPO, "docs/specs/cleanup-dispositions.yaml");
   the nine cuts each had to come back and flip their own row to TAKEN, because
   a deleted symbol whose row still said TAKE reads as STALE and refuses.
 */
-const VERDICTS = ["KEEP", "TAKE", "TAKEN", "HELD", "FILED"] as const;
+/*
+  AND A SIXTH — `UNREVIEWED` — RULED fable-1435 §3, and it is the opposite kind
+  of addition to the fifth.
+
+  The question it answers: the un-wiring timeline classified 27 symbols as
+  `died`, and TWENTY of them had no row here at all. This table is the deletion
+  authority's ledger, so its population has to be everything the instruments
+  call dead — a dead symbol with no row is an unmapped door. But writing twenty
+  verdicts nobody has argued would launder un-made decisions as made, which is
+  worse than the gap.
+
+  So `UNREVIEWED` says exactly what is true: THIS SYMBOL IS ON THE LEDGER AND
+  NOBODY HAS READ IT YET. It is deliberately NOT the empty verdict — an empty
+  verdict means the row itself is unfinished and `--strict` refuses it, which
+  would turn `pnpm check` red the moment the table became complete. And it is
+  deliberately NOT in {@link AWAITING_DELETION}: it makes no claim about the
+  request path, so it must never license a deletion.
+
+  ⚠ **IT ONLY SHRINKS**, the KNOWN_DEBTS shape. {@link UNREVIEWED_CEILING} is
+  compared for EQUALITY rather than as a maximum: reviewing a row reddens this
+  checker until the number beside it comes down in the same commit. A ceiling
+  that may merely be undershot is a debt with no reason ever to be paid.
+*/
+const VERDICTS = ["KEEP", "TAKE", "TAKEN", "HELD", "FILED", "UNREVIEWED"] as const;
 type Verdict = (typeof VERDICTS)[number];
+
+/**
+ * How many rows are allowed to say `UNREVIEWED`. Twenty on 2026-08-23, the
+ * `died` symbols the timeline named that this table had never carried.
+ *
+ * **Lower it in the commit that reviews a row.** Equality, not a maximum.
+ */
+const UNREVIEWED_CEILING = 20;
 
 export type Row = {
   symbol: string;
@@ -178,6 +209,8 @@ export type Verdicts = {
   unknown: string[];
   rewired: string[];
   unreadable: string[];
+  /** UNREVIEWED rows against the ceiling — equality, so it can only shrink. */
+  overdebt: string[];
 };
 
 /** The two verdicts that claim the symbol is NOT on the request path. */
@@ -194,6 +227,8 @@ export function auditTable(input: {
    * and `unreadable` below.
    */
   importers: (symbol: string) => number | null;
+  /** Overridden by the controls so the ceiling can be driven both ways. */
+  ceiling?: number;
 }): Verdicts {
   const byName = new Map(input.rows.map((row) => [row.symbol, row]));
   /*
@@ -243,6 +278,16 @@ export function auditTable(input: {
       .filter((row) => AWAITING_DELETION.has(row.verdict))
       .filter((row) => input.importers(row.symbol) === null)
       .map((row) => row.symbol),
+    /*
+      THE SHRINK-ONLY DOOR. Compared for EQUALITY, so reviewing a row reddens
+      here until UNREVIEWED_CEILING comes down beside it in the same commit.
+      A ceiling that may merely be undershot is a debt with no reason ever to
+      be paid, and this table has watched exactly that happen elsewhere.
+    */
+    overdebt: ((count: number) => count === (input.ceiling ?? UNREVIEWED_CEILING)
+      ? []
+      : [`${count} UNREVIEWED rows against a ceiling of ${input.ceiling ?? UNREVIEWED_CEILING}`]
+    )(input.rows.filter((row) => row.verdict === "UNREVIEWED").length),
   };
 }
 
@@ -271,7 +316,7 @@ function controls(log: (line: string) => void): boolean {
     { symbol: "liveHeld", file: "live.ts" },
     { symbol: "liveFiled", file: "live.ts" },
   ];
-  const cases: Array<{ name: string; rows: Row[]; listed: typeof listed; expect: keyof Verdicts | null }> = [
+  const cases: Array<{ name: string; rows: Row[]; listed: typeof listed; ceiling?: number; expect: keyof Verdicts | null }> = [
     { name: "a complete table passes", rows: clean, listed, expect: null },
     {
       name: "a listed symbol with no row is UNREAD",
@@ -346,6 +391,34 @@ function controls(log: (line: string) => void): boolean {
       expect: null,
     },
     {
+      /* THE SHRINK-ONLY DOOR, BOTH WAYS. A ceiling compared as a MAXIMUM
+         would pass this case and leave a debt with no reason ever to be
+         paid — so reviewing a row must redden until the number comes down
+         beside it. */
+      name: "an UNREVIEWED count BELOW its ceiling is OVERDEBT — the ceiling must come down with it",
+      rows: [...clean, { symbol: "liveUnread", file: "live.ts", verdict: "UNREVIEWED", why: "w", argued: "unreviewed", line: 13 }],
+      listed,
+      ceiling: 2,
+      expect: "overdebt",
+    },
+    {
+      name: "an UNREVIEWED row at its ceiling is clean, and licenses no deletion",
+      rows: [...clean, { symbol: "liveUnread", file: "live.ts", verdict: "UNREVIEWED", why: "w", argued: "unreviewed", line: 14 }],
+      listed,
+      ceiling: 1,
+      expect: null,
+    },
+    {
+      /* UNREVIEWED is NOT in AWAITING_DELETION: it makes no claim about the
+         request path, so a live importer is not a contradiction. A verdict
+         added to that set by accident would refuse here. */
+      name: "an UNREVIEWED row whose symbol has importers is NOT rewired",
+      rows: [...clean, { symbol: "liveWired", file: "live.ts", verdict: "UNREVIEWED", why: "w", argued: "unreviewed", line: 15 }],
+      listed,
+      ceiling: 1,
+      expect: null,
+    },
+    {
       name: "a HELD row the importer reader cannot see at all is UNREADABLE, not clean",
       rows: [...clean, { symbol: "liveInvisible", file: "live.ts", verdict: "HELD", why: "w", argued: "§17", blocker: "a database", line: 12 }],
       listed,
@@ -355,7 +428,17 @@ function controls(log: (line: string) => void): boolean {
 
   let ok = true;
   for (const testCase of cases) {
-    const result = auditTable({ rows: testCase.rows, listed: testCase.listed, declares, importers });
+    const result = auditTable({
+      rows: testCase.rows,
+      listed: testCase.listed,
+      declares,
+      importers,
+      /* The fixtures carry no UNREVIEWED rows, so their ceiling is ZERO unless
+         the case is about the ceiling. Without this every control tripped
+         `overdebt` against the real table's twenty and the checker refused
+         its own controls — which is the arm working, on its first run. */
+      ceiling: testCase.ceiling ?? 0,
+    });
     const tripped = (Object.keys(result) as Array<keyof Verdicts>).filter((key) => result[key].length > 0);
     const passed = testCase.expect === null
       ? tripped.length === 0
@@ -370,7 +453,7 @@ function controls(log: (line: string) => void): boolean {
     gone. Without this arm the table would refuse the moment it recorded a
     successful deletion, which is the one thing it exists to record.
   */
-  const takenExempt = auditTable({ rows: clean, listed, declares, importers }).stale.length === 0;
+  const takenExempt = auditTable({ rows: clean, listed, declares, importers, ceiling: 0 }).stale.length === 0;
   log(`  ${takenExempt ? "PASS" : "FAIL"}  a TAKEN row is not stale — the symbol is SUPPOSED to be gone`);
   return ok && takenExempt;
 }
@@ -432,7 +515,7 @@ if (process.argv[1] && import.meta.url.endsWith(process.argv[1].replaceAll("\\",
 
   console.log("");
   console.log(`THE TABLE — ${rows.length} rows against a reading list of ${listed.length}`);
-  for (const verdict of VERDICTS) console.log(`  ${verdict.padEnd(8)} ${counted[verdict] ?? 0}`);
+  for (const verdict of VERDICTS) console.log(`  ${verdict.padEnd(11)} ${counted[verdict] ?? 0}`);
   console.log("");
   for (const [kind, entries] of Object.entries(audit)) {
     console.log(`  ${kind.padEnd(12)} ${entries.length}${entries.length > 0 ? `  ${entries.slice(0, 8).join(", ")}${entries.length > 8 ? " …" : ""}` : ""}`);
@@ -441,6 +524,7 @@ if (process.argv[1] && import.meta.url.endsWith(process.argv[1].replaceAll("\\",
   const strict = process.argv.includes("--strict");
   const fatal = audit.stale.length + audit.blockerless.length + audit.ownerless.length
     + audit.unknown.length + audit.rewired.length + audit.unreadable.length
+    + audit.overdebt.length
     + (strict ? audit.unread.length : 0);
   console.log("");
   if (fatal > 0) {

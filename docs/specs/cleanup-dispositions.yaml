@@ -983,3 +983,131 @@
   why: "the WRITE side of the two paths' one owner, landed with the resolver in the OWNER slice and called by nothing yet. Its read-side sibling currentWardrobeLine is in exactly the same position and is ABSENT from this list for a structural reason worth naming: the uncalled-export sweep excludes a symbol its own module mentions, and bornWardrobeLine's docblock names it. That is the isSensitiveAction shape — the one the un-wiring differ was built for — so this row is standing in for BOTH, deliberately, rather than the list being read as though one of them were wired"
   argued: CASTING_V2_TWO_PATHS_DESIGN §3.3/§4/§5
   wired: "WIRED in the WRITE PATH slice — `rollService.createRoll` calls it once, in the same breath that resolves the path, so a path and a line are stamped together and the `incoherent` resolution cannot be produced from there. Its read-side sibling `currentWardrobeLine` is wired in the same commit and remains invisible to the sweep for the structural reason above"
+
+# ── UNREVIEWED (fable-1435 §3, 2026-08-23) ────────────────────────────────
+# The un-wiring timeline classifies these as `died` — production imported each
+# one and then stopped. This table is the deletion authority s ledger, so a dead
+# symbol with no row here is an unmapped door; but writing a verdict nobody has
+# argued would launder an un-made decision as made. UNREVIEWED says the true
+# thing: on the ledger, not yet read. It licenses no deletion, and the count is
+# compared for EQUALITY against UNREVIEWED_CEILING, so it can only shrink.
+
+- symbol: getUserPoints
+  file: server/db/credits.ts
+  verdict: UNREVIEWED
+  why: classified `died` by scripts/unwiring-timeline.mts — production imported it and stopped; nobody has read it since
+  argued: unreviewed
+
+- symbol: getPointTransactions
+  file: server/db/credits.ts
+  verdict: UNREVIEWED
+  why: classified `died` by scripts/unwiring-timeline.mts — production imported it and stopped; nobody has read it since
+  argued: unreviewed
+
+- symbol: addPoints
+  file: server/db/credits.ts
+  verdict: UNREVIEWED
+  why: classified `died` by scripts/unwiring-timeline.mts — production imported it and stopped; nobody has read it since
+  argued: unreviewed
+
+- symbol: addTopupCredits
+  file: server/db/billing.ts
+  verdict: UNREVIEWED
+  why: classified `died` by scripts/unwiring-timeline.mts — production imported it and stopped; nobody has read it since
+  argued: unreviewed
+
+- symbol: isIpBlocked
+  file: server/db/ipBlocking.ts
+  verdict: UNREVIEWED
+  why: classified `died` by scripts/unwiring-timeline.mts — production imported it and stopped; nobody has read it since
+  argued: unreviewed
+
+- symbol: hasBodyArt
+  file: server/casting/geminiPrompts.ts
+  verdict: UNREVIEWED
+  why: classified `died` by scripts/unwiring-timeline.mts — production imported it and stopped; nobody has read it since
+  argued: unreviewed
+
+- symbol: updateSchemaForIteration
+  file: server/casting/geminiSchemaUpdater.ts
+  verdict: UNREVIEWED
+  why: classified `died` by scripts/unwiring-timeline.mts — production imported it and stopped; nobody has read it since
+  argued: unreviewed
+
+- symbol: reconcileSchemaWithImage
+  file: server/casting/geminiSchemaUpdater.ts
+  verdict: UNREVIEWED
+  why: classified `died` by scripts/unwiring-timeline.mts — production imported it and stopped; nobody has read it since
+  argued: unreviewed
+
+- symbol: markModelAssetsStale
+  file: server/db/models.ts
+  verdict: UNREVIEWED
+  why: classified `died` by scripts/unwiring-timeline.mts — production imported it and stopped; nobody has read it since
+  argued: unreviewed
+
+- symbol: stampBoardItemWithVersion
+  file: server/db/boards.ts
+  verdict: UNREVIEWED
+  why: classified `died` by scripts/unwiring-timeline.mts — production imported it and stopped; nobody has read it since
+  argued: unreviewed
+
+- symbol: mintModelAtomically
+  file: server/db/models.ts
+  verdict: UNREVIEWED
+  why: classified `died` by scripts/unwiring-timeline.mts — production imported it and stopped; nobody has read it since
+  argued: unreviewed
+
+- symbol: buildInkProjectionProbeRequest
+  file: server/casting/evidence/inkProjectionComposition.ts
+  verdict: UNREVIEWED
+  why: classified `died` by scripts/unwiring-timeline.mts — production imported it and stopped; nobody has read it since
+  argued: unreviewed
+
+- symbol: parseInkProjectionProbeResponse
+  file: server/casting/evidence/inkProjectionComposition.ts
+  verdict: UNREVIEWED
+  why: classified `died` by scripts/unwiring-timeline.mts — production imported it and stopped; nobody has read it since
+  argued: unreviewed
+
+- symbol: assessInkProjectionProbe
+  file: server/casting/evidence/inkProjectionComposition.ts
+  verdict: UNREVIEWED
+  why: classified `died` by scripts/unwiring-timeline.mts — production imported it and stopped; nobody has read it since
+  argued: unreviewed
+
+- symbol: composeEditPrompt
+  file: server/castingV2/refineDelta.ts
+  verdict: UNREVIEWED
+  why: classified `died` by scripts/unwiring-timeline.mts — production imported it and stopped; nobody has read it since
+  argued: unreviewed
+
+- symbol: readStepDeltas
+  file: server/castingV2/refineService.ts
+  verdict: UNREVIEWED
+  why: classified `died` by scripts/unwiring-timeline.mts — production imported it and stopped; nobody has read it since
+  argued: unreviewed
+
+- symbol: COVERAGE_BANDS
+  file: server/castingV2/maskGeometry.ts
+  verdict: UNREVIEWED
+  why: classified `died` by scripts/unwiring-timeline.mts — production imported it and stopped; nobody has read it since
+  argued: unreviewed
+
+- symbol: cornersFromEyeMasks
+  file: server/castingV2/canthalTilt.ts
+  verdict: UNREVIEWED
+  why: classified `died` by scripts/unwiring-timeline.mts — production imported it and stopped; nobody has read it since
+  argued: unreviewed
+
+- symbol: liveTakes
+  file: server/castingV2/railTakes.ts
+  verdict: UNREVIEWED
+  why: classified `died` by scripts/unwiring-timeline.mts — production imported it and stopped; nobody has read it since
+  argued: unreviewed
+
+- symbol: OPEN_SLOT_PREFIX
+  file: server/castingV2/referenceSlots.ts
+  verdict: UNREVIEWED
+  why: classified `died` by scripts/unwiring-timeline.mts — production imported it and stopped; nobody has read it since
+  argued: unreviewed
