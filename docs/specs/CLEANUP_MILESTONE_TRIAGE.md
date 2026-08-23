@@ -2955,3 +2955,317 @@ instrument is about.
 Its limits, beyond §30g's, which all still hold: **the wrong-vocabulary
 attribution of §31c**, and every band in §31b that is measured and not read.
 A clean run is a floor in both readings, never a proof.
+
+## 32. THE VOCABULARY SPELLED TWICE WHERE NEITHER SPELLING IS IN `shared/` —
+## reading (3), and the FOUR the database has under them (2026-08-24,
+## opus-1164, ruled fable-1515. A reading plus two instrument changes; no
+## deletion is proposed here and none is authorised by it.)
+
+### 32a. Why this section exists
+
+§31c closed on a sentence that had already been true twice:
+
+> a near miss can be attributed to the WRONG vocabulary whenever a same-worded
+> one is declared outside `VOCAB_ROOTS` … **That is the second time in two
+> sittings a docblock's named limit has been found standing in front of live
+> rows.**
+
+The limit is one line — `VOCAB_ROOTS = ["shared"]`. Readings (1) and (2) match
+literals against vocabularies declared in `shared/` and nowhere else, so **a
+closed list spelled twice OUTSIDE `shared/` was invisible to every reading this
+repository had.** That population was measured before any repair was proposed
+(`scripts/_vocab-root-widening-measure-disposable.mts`, reads only).
+
+### 32b. ⚠ BOTH OBVIOUS REPAIRS ARE WRONG, and each carries the number that
+### killed it
+
+**Widening `VOCAB_ROOTS` to `SCAN_ROOTS`** — declare from everywhere, change
+nothing else. Measured, raw populations, both columns read the same way:
+
+```
+                        shared/ only    all production
+  HITS  (production)         18                96
+  NEAR  (production)         27                98
+```
+
+That is fable-1508 §2b's trap in different clothes: a floor turned into an
+inventor, and §31b's own sentence — *the cost is a table nobody finishes*.
+Nearly every extra row is a literal matched against some module's private list,
+which is a narrowing the compiler already checks.
+
+**Suppressing a near miss when the literal's own file declares something
+closer** — the natural fix for §31c. Measured: that rule fires on **15 of the 27
+production near-miss rows**, and three of those fifteen are rows worth keeping:
+
+```
+shared/boardTypes.ts:118            MINT_TIER_SLOTS.production — §31f says this
+                                    row is CORRECT; a narrowing is what a tier IS
+server/casting/modelAvailability.ts:11  the literal IS the local declaration
+shared/inkReleasedPlacements.ts:81  ⚠ THE INSTRUMENT'S OWN REAL-TREE NEGATIVE
+                                    CONTROL — suppression would have made it pass
+                                    for a second reason and stop testing the marker
+```
+
+**A suppression rule would have quietly killed one of this sweep's own
+controls.** That is the argument for the shape that landed: a row is a
+CANDIDATE, never a verdict, and the repair belongs on what a row SAYS rather
+than on whether it is printed.
+
+### 32c. What landed instead — a third reading and a pointer (fable-1515 §1)
+
+- **Reading (3), DECLARATION PAIRS**: two exported `as const` vocabularies, in
+  two modules, whose member sets are EQUAL or one member apart. Its own section,
+  never pooled, disjoint from (1) and (2) by construction — a pair of
+  declarations is not a literal. **Seventeen production rows, against the 194 a
+  widened `VOCAB_ROOTS` would print.**
+- **The LOCAL-DECLARATION POINTER**: a row in reading (1) or (2) prints, beside
+  its attribution, any vocabulary declared in the literal's OWN FILE that is at
+  least as close. Sixteen pointers on this tree — §31c's ten near-miss rows and
+  six hits. Nothing is suppressed.
+- The band for reading (3) is 1, ruled rather than assumed (fable-1515 §1) on a
+  real asymmetry: a literal is often a legitimate NARROWING, while two DECLARED
+  closed lists two members apart are usually two different lists.
+
+Readings (1) and (2) are **unchanged in every count** — 66 hits / 17 production
+/ 14 never-naming, 68 near / 26 production / 24 never-naming, identical to
+opus-1163's figures on the same tree. The refactor that gave all three readings
+one walk and one collector moved nothing.
+
+```
+PAIRS     16 pairs of DECLARED vocabularies within 1 member of each other
+          drawn from 137 production declarations under client/src, server, shared, drizzle
+          10 with EQUAL member sets, 6 one member apart, 10 with NEITHER side in
+          shared — invisible to readings (1) and (2)
+```
+
+**16 reported and 17 dispositioned below**, because one became the reading's
+real-tree NEGATIVE control and is now marked — §32j, and the same accounting
+§31b made for its 27-versus-26.
+
+### 32d. ⚠ THE HEADLINE — FOUR vocabularies declared twice, three of them under
+### the SAME NAME, with a database column on one side and a runtime assertion
+### on the other
+
+```
+EVIDENCE_INTENT_STATUSES              server/casting/evidence/evidenceCandidateContract.ts:5
+IDENTITY_FEATURE_INTENT_STATUSES      drizzle/schema.ts:808     3 members, same order
+EVIDENCE_CANDIDATE_STATUSES           evidenceCandidateContract.ts:12
+EVIDENCE_CANDIDATE_STATUSES           drizzle/schema.ts:814     7 members, SAME NAME
+EVIDENCE_CANDIDATE_ATTEMPT_STATUSES   evidenceCandidateContract.ts:24
+EVIDENCE_CANDIDATE_ATTEMPT_STATUSES   drizzle/schema.ts:824     9 members, SAME NAME
+EVIDENCE_PROBE_OUTCOMES               evidenceCandidateContract.ts:45
+EVIDENCE_PROBE_OUTCOMES               drizzle/schema.ts:836     3 members, SAME NAME
+```
+
+Read at both files. **The two sides are not two copies of one job — they are the
+two halves of one contract, and neither knows the other exists:**
+
+- the schema side is what the COLUMN accepts (`mysqlEnum(...)` at `:864`,
+  `:939`, `:1049`, and `EVIDENCE_PROBE_OUTCOMES` on **eight** outcome columns
+  from `:1065` to `:1072`)
+- the contract side is what the APPLICATION accepts
+  (`assertClosedValue(value, …)` at `:95`, `:103`, `:113`, `:121`)
+
+Neither is imported by the other, and — read by grep across `server`, `client`,
+`shared` and `drizzle` — **neither is imported by anything else at all.** They
+agree today, member for member and in order.
+
+**The failure mode is the reason this is the headline rather than a tidiness
+row.** Add a status to the contract and not the column and the application
+accepts a value the insert rejects; add it to the column and not the contract
+and `assertClosedValue` throws on a row the database is holding. Neither side
+would fail to compile, and no test would redden.
+
+**And the house's own counter-example is six lines above the schema copies**:
+`drizzle/schema.ts` imports `INK_SIDES`, `INK_PROVENANCES`, `INK_CUT_ROUTES`,
+`INK_FORM_DEMAND_KINDS`, `INK_TEMPLATE_KINDS` and `KIND_LOCALITIES` from
+`shared/` at lines 17–24 and feeds them straight into `mysqlEnum`. The pattern
+that would fix this is already in the file.
+
+**Verdict: HELD, on §30d tier 3's condition exactly** (directed fable-1515 §2).
+A fold moves the vocabulary to `shared/` and imports it on both sides; because
+it touches `drizzle/schema.ts` it takes **its own commit, with the
+drizzle-generates-no-diff check shown**. Values and orders are identical today
+so no migration is implied — *that is the thing to prove, not to assume.*
+
+**What lowers the temperature, and it is a condition rather than a comfort**:
+the road these tables serve is off. `R7_EVIDENCE_COMPOSER_SCOPE` is `off` on
+production, and `ENABLE_EVIDENCE_CANDIDATE_WORKER=true` is inert behind it. **A
+drift costs nothing while nothing writes these rows** — which is the same
+sentence §31e's tension carries and the same one fable-1508 §3 wrote about the
+composer cap: *a dead control keeps a live reputation exactly while its road is
+off.* The sitting that turns that scope ON inherits this by name.
+
+### 32e. `REQUIRED_CAST_FIELDS` / `ENGINE_CHOICE_FIELDS` — §16's class, and a
+### drift here is a SILENT DROP rather than an error
+
+```
+REQUIRED_CAST_FIELDS  client/src/features/casting/engineChoicePersistence.ts:3
+ENGINE_CHOICE_FIELDS  server/casting/engineChoiceMetadata.ts:3
+  castingBrand · gender · age · ethnicity · skinTone · eyeColor · hairColor · hairStyle
+  8 members, same order, different names, NEITHER in shared/
+```
+
+This is §16's shape — a thing stated on the server and written again on the
+client — and §16's ruling governs: **one promise, two homes; filed, not
+changed.** Both copies are live and each derives its own type
+(`RequiredCastField`, `EngineChoiceField`).
+
+⚠ **What §16's sentence does not cover, and belongs on this row**: the server's
+list is the VALIDATOR for what the client persists. `sanitizeEngineChoice`
+(`engineChoiceMetadata.ts:21`) filters the incoming object by
+`ENGINE_CHOICE_FIELDS`, so a ninth field added on the client is **dropped in
+silence** — no error, no log, no failing test. §16's ten live-statement pairs
+drift into two different sentences; this pair drifts into data that vanishes.
+Not carded and not changed: no ninth field is proposed and no customer impact is
+established. **What would make it real: a ninth engine-choice field.** The
+sitting that adds one inherits this by name.
+
+### 32f. The ink `left/centre/right` family — SIX pairs, one already-dispositioned
+### road
+
+```
+INK_ADD_SIDES      server/casting/evidence/composer/inkAddRecipe.ts:18
+INK_ANATOMY_SIDES  server/casting/evidence/inkAnatomyRegistry.ts:81
+INSTANCES          server/castingV2/referenceSlots.ts:43
+INK_SIDES          shared/inkReleasedPlacements.ts:59
+```
+
+Six pairs among those four: `INK_ADD_SIDES`≡`INK_ANATOMY_SIDES`, each of those
+two ≡ `INK_SIDES` with **ORDER DIFFERING**, and each of the three three-member
+lists one member from `INSTANCES`.
+
+**No verdict moves.** `INK_ADD_SIDES` and `INK_ANATOMY_SIDES` keep §30e's
+disposition — the composer road, `R7_EVIDENCE_COMPOSER_SCOPE` `off`,
+`INK_ADD_RECIPE` and `authorizeInkAddDescription` HELD on the composer road's
+module-sized disposition; folding a vocabulary on a road pending retirement is
+work on a road pending retirement. `INSTANCES` keeps §31f's: it is the suffix
+set for a slot KEY and not a vocabulary of sides at all — coincidence of words,
+the sweep's noise bias working as its docblock promises.
+
+**What reading (3) adds is the third leg**: §31c saw ten literals pointing at
+the wrong vocabulary and named `INK_ANATOMY_SIDES` as the honest row.
+`INK_ADD_SIDES` is a THIRD spelling of the same three words, and the pair
+between the two server copies was invisible to every reading before this one.
+
+### 32g. `TASTE_WRITABLE_AXES` / `HAIR_AXES` — two QUESTIONS that coincide today
+
+```
+TASTE_WRITABLE_AXES  server/castingV2/axisRegistry.ts:233
+  hairStyle · hairTexture · hairModifiers · wornState · facialHair · hairColour
+HAIR_AXES            server/castingV2/hairResolver.ts:53
+  hairColour · hairStyle · hairTexture · hairModifiers · wornState · facialHair
+  EQUAL member sets · ORDER DIFFERS · neither in shared/
+```
+
+**No defect claimed and nothing changed.** They answer different questions —
+*which axes hair has* against *which axes the sheet taste pass may write* — and
+the second has a stated law and a type-level proof of it at the site:
+`TASTE_WRITABLE_AXES`'s docblock calls itself *"the law's single source"*, and
+`OnlyRealizedIsTasteWritable` makes adding `sex` a compile error. The coincidence
+is a fact about today's scope, not a mirror.
+
+⚠ **The named tension**: nothing checks the two against each other, and nothing
+should — but the day a seventh hair axis is added, whether it is taste-writable
+is a real decision, and these two lists differing is exactly the record of it.
+**The sitting that adds the next hair axis inherits this by name.**
+
+### 32h. Rows whose verdicts are already written, restated with their citation
+
+- **`AVAILABLE_MODEL_STATUSES` vs `MODEL_LIFECYCLE_STATUSES` and
+  `MODEL_MINTED_STATUSES`** (2 pairs, `server/casting/modelAvailability.ts:11`)
+  — §31e's lifecycle family. **Defensive-by-design with a named tension**, both
+  docblocks cited there, verdict and inheritance condition unchanged: the
+  sitting that adds the NEXT lifecycle status inherits it.
+- **`INSTANCES` vs `INK_SIDES`** — §31f, coincidence of words, disposed of as
+  noise with its reason.
+- **`INK_CALIBRATION_SOURCE_KINDS` vs `INK_PROVENANCES`**
+  (`server/casting/evidence/composer/inkCalibration.ts:12`) — §30e already filed
+  the LITERAL one line below this declaration. Composer road, scope `off`. The
+  pointer now prints on that hit row too, naming the local declaration.
+
+### 32i. `CASTING_EVIDENCE_INGESTION_PURPOSES` / `CASTING_EVIDENCE_ENTITY_KINDS`
+
+```
+drizzle/schema.ts:639   reference_plate · evidence_crop · fork_copy
+drizzle/schema.ts:657   reference_plate · evidence_crop
+  MISSING from the second: fork_copy
+```
+
+**Defensive-by-design, read at the site.** A PURPOSE (why bytes were ingested)
+and an ENTITY KIND (what the thing is) are two questions, and `fork_copy` is an
+answer to the first that is not an answer to the second. Two vocabularies that
+overlap, not one written twice. **Not marked**: a marker is a claim, and one
+honest real-tree negative control is enough — a second would be buying silence
+rather than evidence.
+
+### 32j. The real-tree NEGATIVE control, and why the marker is TRUE of it
+
+```
+STORAGE_CLEANUP_BATCH_STATUSES  drizzle/schema.ts:552
+  pending · processing · succeeded · partial · failed
+STORAGE_CLEANUP_ITEM_STATUSES   drizzle/schema.ts:561
+  pending · processing · succeeded · failed
+```
+
+`partial` is what a BATCH is when some of its items succeeded and others failed.
+It is meaningless for one item, which either went or did not. **Two lifecycles,
+not one list written twice** — so `deliberate-vocabulary-copy` is true of the
+site rather than convenient there, which is the standard §31g set. The file is
+one nobody is retiring. Delete the marker line and the two pair-negative arms
+redden; that is sabotage D below.
+
+### 32k. What reading (3) owes, and what it cannot see
+
+```
+POSITIVE (synthetic)  two declarations with EQUAL member sets are reported as a
+                      PAIR, with the ORDER verdict asserted
+POSITIVE (synthetic)  two declarations ONE member apart are reported, and the
+                      missing member named on the right side
+DISJOINT (synthetic)  a declaration is never paired with ITSELF — one
+                      declaration, and the same declaration twice, both silent
+BAND     (synthetic)  two declarations TWO members apart are NOT reported
+MARKER   (synthetic)  a marker at a declaration silences every pair that
+                      declaration is in, and NOT the pair between the two below it
+NEGATIVE (real tree)  §32j's marked pair is NOT reported — plus a second arm
+                      asserting it is quiet because that declaration is MARKED
+POINTER  (synthetic)  a near miss whose own file declares an EQUALLY CLOSE
+                      vocabulary names it, and the row is still REPORTED
+POINTER  (synthetic)  a local declaration FARTHER than the attributed vocabulary
+                      is NOT a pointer
+```
+
+Twenty-three arms in all. **Proven able to fail, four sabotages:**
+
+```
+A  the pair matcher blinded          → the two pair POSITIVES and the pair MARKER
+                                       arm; the pair NEGATIVE passes VACUOUSLY
+B  the pair band set to 0            → the one-member-apart POSITIVE, alone
+C  the pointer's "at least as close"
+   flipped to "strictly closer"      → the POINTER positive, alone — and this is
+                                       the one that matters, because §31c's ten
+                                       rows are EXACTLY as close to their own
+                                       file's vocabulary as to the shared one
+D  the real-tree marker deleted      → the TWO pair NEGATIVE arms, alone
+```
+
+All four restored, each restore re-verified by the instrument before anything
+was believed, and no restore shared a `;` chain with a cleanup. **A restore is a
+file copy, never a `git checkout`** — that would take the uncommitted work in
+the file with it.
+
+⚠ **Sabotage A is the vacuous-pass shape a third time**, and it is stated in the
+docblock rather than in a report: a negative arm passes for free when the finder
+is blind, and it is survivable only because the run REFUSES on any failed arm.
+Never read a NEGATIVE arm's PASS without the POSITIVE arms beside it.
+
+**What reading (3) cannot see, beyond §30g's and §31g's limits, which all hold:**
+a declaration in a `*.test.ts` file (the pair population is production
+declarations, so a fixture vocabulary equal to a real one is not a pair); a
+vocabulary that is not `export`ed; and a pair two or more members apart, which is
+measured and not read. **And the pointer covers only the MIS-ATTRIBUTION that
+§31c named — a LITERAL copying a vocabulary declared outside `shared/` is still
+unread by any reading here.** A clean run is a floor in all three, never a proof.
+
+**No TAKE rows.** Nothing in this section authorises a deletion or a fold, and
+none is proposed.

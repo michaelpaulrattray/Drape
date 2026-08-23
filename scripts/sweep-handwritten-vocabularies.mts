@@ -19,7 +19,7 @@
  * disposable: **the finding window for this class is the moment of repair**,
  * and a sweep that lives on one shift's disk cannot be there for the next one.
  *
- * # What it does — TWO readings, reported separately and never pooled
+ * # What it does — THREE readings, reported separately and never pooled
  *
  * Reads every exported string-literal `as const` array in `shared/` (>= 2
  * members), then every literal array in `client/src`, `server/`, `shared/` and
@@ -31,13 +31,52 @@
  *   2. **NEAR MISSES** — a literal exactly ONE member away from a declared
  *      vocabulary, in either direction, with which member is EXTRA here or
  *      MISSING here. A copy that has drifted ALREADY.
+ *   3. **DECLARATION PAIRS** — two exported `as const` vocabularies, in two
+ *      different modules, whose member sets are EQUAL or one member apart.
+ *      Not a literal against a declaration: two SPELLINGS of one closed list.
  *
- * The second reading is the more consequential one and it is the reason this
- * file grew: reading (1) can only ever catch a copy before it costs anything,
- * while reading (2) is looking at a list that no longer agrees with the
- * vocabulary it was taken from. The two counts are printed apart, and a row is
- * in exactly one of them by construction — an exact match has a symmetric
- * difference of zero and can never be a near miss.
+ * The second reading is the more consequential one of the first two and it is
+ * why this file grew once: reading (1) can only ever catch a copy before it
+ * costs anything, while reading (2) is looking at a list that no longer agrees
+ * with the vocabulary it was taken from. The counts are printed apart, and a
+ * row is in exactly one reading by construction — an exact match has a
+ * symmetric difference of zero and can never be a near miss, and a pair of
+ * DECLARATIONS is not a literal.
+ *
+ * # Why reading (3) exists, and why it is not just a wider (1)
+ *
+ * Readings (1) and (2) declare their vocabularies from `VOCAB_ROOTS` — which is
+ * `shared/` — so a vocabulary spelled twice OUTSIDE `shared/` was invisible to
+ * every reading this repository had. Measured on the tree at `d8ace581`
+ * (triage §32): **ten production declaration pairs with equal member sets, and
+ * SEVEN of them had neither side in `shared/`.** Four of the seven are one file
+ * pair — `evidenceCandidateContract.ts` against `drizzle/schema.ts`, three of
+ * them under the SAME NAME — in a file that IMPORTS six shared vocabularies by
+ * name six lines above. That is the `ViewTabs` shape, which this program has
+ * already paid for twice.
+ *
+ * A declaration pair is a stronger row than a literal match and the population
+ * is smaller: 17 production rows against the 194 that widening `VOCAB_ROOTS`
+ * for readings (1) and (2) would print (see the band table below).
+ *
+ * # The LOCAL-DECLARATION POINTER — a row is a candidate, never a verdict
+ *
+ * A near miss can be attributed to the WRONG vocabulary whenever a same-worded
+ * one is declared outside `VOCAB_ROOTS`, and the row then points at a fold that
+ * would be actively wrong to make (triage §31c: ten literals reported as one
+ * short of `shared/`'s `INK_SIDES` that are really narrowings of
+ * `INK_ANATOMY_SIDES`, declared in their own file and checked there by the
+ * compiler).
+ *
+ * So a row in reading (1) or (2) prints, beside its attribution, any vocabulary
+ * declared in the literal's OWN FILE that is AT LEAST AS CLOSE to it. It does
+ * not SUPPRESS the row, and the refusal to suppress is measured rather than
+ * cautious: a suppression rule fires on 15 of the 27 production near-miss rows,
+ * and three of those fifteen are rows worth keeping — `MINT_TIER_SLOTS`, whose
+ * narrowing is what a tier IS; `modelAvailability.ts:11`, where the literal IS
+ * the local declaration; and **this instrument's own real-tree NEGATIVE
+ * CONTROL**, which suppression would have made pass for a second reason and so
+ * stop testing the marker.
  *
  * # Its bias, stated as a condition rather than asserted
  *
@@ -68,13 +107,43 @@
  * finishes reading. The bands are written down so that widening it is a
  * decision with a number attached rather than a discovery.
  *
+ * The same band governs reading (3), and it is the same 1 for a REASON rather
+ * than for symmetry (ruled fable-1515 §1): a literal is often a legitimate
+ * NARROWING of a vocabulary, while two DECLARED closed lists two members apart
+ * are usually just two different lists. Measured on the same tree: 10 production
+ * declaration pairs at difference 0, 7 more at difference 1 — READ — and every
+ * looser band is deliberately not read here either.
+ *
+ * # WIDENING `VOCAB_ROOTS` IS THE OBVIOUS REPAIR AND IT IS THE WRONG ONE
+ *
+ * Declaring vocabularies from every scan root — rather than adding reading (3)
+ * — was measured before it was refused, raw populations both sides, read the
+ * same way (triage §32):
+ *
+ *                        shared/ only    all production
+ *     HITS  (production)         18                96
+ *     NEAR  (production)         27                98
+ *
+ * That is a floor turned into an inventor: nearly every extra row is a literal
+ * matched against some module's private list, which is a narrowing the compiler
+ * is already checking. Reading (3) buys the finding that widening was wanted for
+ * — a vocabulary spelled twice outside `shared/` — for 17 rows instead of 194.
+ *
  * # What it CANNOT see, named
  *
  *   - a copy assembled rather than written (`[...A, "x"]`, `Object.keys(M)`)
  *   - a copy whose members are not all string literals on one bracket pair
  *   - a list two or more members away from its vocabulary — see the band above
- *   - a drift in a vocabulary declared outside `VOCAB_ROOTS`, or a copy living
- *     outside `SCAN_ROOTS`
+ *   - a copy living outside `SCAN_ROOTS`
+ *   - in readings (1) and (2) ONLY, a drift in a vocabulary declared outside
+ *     `VOCAB_ROOTS`. Reading (3) covers the declaration-to-declaration case of
+ *     this, and the pointer above covers the mis-attribution it causes; a
+ *     LITERAL copying a vocabulary declared outside `shared/` is still unread.
+ *   - a vocabulary that is not `export`ed, in any reading
+ *   - in reading (3) ONLY, a declaration in a `*.test.ts` file: the pair
+ *     population is production declarations, so a fixture vocabulary equal to a
+ *     real one is not a pair. Readings (1) and (2) still SEE test files and
+ *     label their rows `test`.
  *
  * A clean run is a floor, never a proof.
  *
@@ -86,12 +155,14 @@
  * beside it. The exemption lives AT THE SITE and never in a list here — a list
  * of exempt call sites in this file would be the very thing being swept for.
  *
- * **ONE marker serves BOTH readings, and the consequence is stated rather than
- * left to be discovered** (ruled fable-1513 §2): a marker silences its literal
- * as a HIT and as a NEAR MISS. So a site that is a deliberate NARROWING of
- * vocabulary A and an accidental exact copy of vocabulary B would go quiet
- * about both on one note. No such row exists on the tree today. **If one ever
- * does, the marker gains an optional qualifier THEN** —
+ * **ONE marker serves ALL THREE readings, and the consequence is stated rather
+ * than left to be discovered** (ruled fable-1513 §2, extended fable-1515 §2): a
+ * marker silences its literal as a HIT and as a NEAR MISS, and a marker at a
+ * DECLARATION silences every pair that declaration is in. So a site that is a
+ * deliberate NARROWING of vocabulary A and an accidental exact copy of
+ * vocabulary B would go quiet about both on one note. No such row exists on the
+ * tree today. **If one ever does, the marker gains an optional qualifier THEN**
+ * —
  * `deliberate-vocabulary-copy: GENDER_VALUES` — scoping the silence to the
  * named vocabulary. It is not built now on purpose: a qualifier grammar nobody
  * has needed is a second vocabulary, which is the thing this file is about.
@@ -131,6 +202,20 @@ type Vocabulary = {
   members: readonly string[];
 };
 
+/**
+ * A vocabulary as DECLARED, carrying whether its own site is marked deliberate.
+ * Readings (1) and (2) ask the marker question at the COPY site; reading (3)
+ * has no copy site to ask at, so a declaration carries the answer.
+ */
+type Declaration = Vocabulary & { deliberate: boolean };
+
+/**
+ * A vocabulary declared in the same FILE as a row's literal and at least as
+ * close to it as the vocabulary the row is attributed to — the thing the reader
+ * needs in order to judge whether the attribution is the honest one.
+ */
+type LocalPointer = { name: string; line: number; difference: number };
+
 type Copy = {
   file: string;
   line: number;
@@ -138,6 +223,7 @@ type Copy = {
   found: readonly string[];
   namesIt: boolean;
   sameOrder: boolean;
+  localPointers: readonly LocalPointer[];
 };
 
 /** A literal one member away from a vocabulary — a list that HAS drifted. */
@@ -151,9 +237,30 @@ type NearMiss = {
   missingHere: readonly string[];
   /** Written here and absent from the vocabulary. */
   extraHere: readonly string[];
+  localPointers: readonly LocalPointer[];
+};
+
+/** Two DECLARED vocabularies that are two spellings of one closed list. */
+type DeclarationPair = {
+  a: Declaration;
+  b: Declaration;
+  /** Declared by `a` and absent from `b`. */
+  missingInB: readonly string[];
+  /** Declared by `b` and absent from `a`. */
+  extraInB: readonly string[];
+  sameOrder: boolean;
 };
 
 const setKey = (members: readonly string[]): string => [...members].sort().join("|#|");
+
+/** How many members two lists disagree on, counted in both directions. */
+const difference = (left: readonly string[], right: readonly string[]): number => {
+  const leftSet = new Set(left);
+  const rightSet = new Set(right);
+  return (
+    left.filter((x) => !rightSet.has(x)).length + right.filter((x) => !leftSet.has(x)).length
+  );
+};
 
 /** Members of a `["a", "b"]` literal body, or null if it is not all string literals. */
 const literalMembers = (body: string): string[] | null => {
@@ -230,11 +337,55 @@ function isDeclaredDeliberate(source: string, line: number, literalLines: Set<nu
   return false;
 }
 
+/**
+ * Every exported vocabulary declared in one file's source, each carrying
+ * whether a `deliberate-vocabulary-copy` note governs its own site.
+ */
+function declarations(source: string, file: string): Declaration[] {
+  const literalLines = literalArrayLines(source);
+  return declaredVocabularies(source, file).map((v) => ({
+    ...v,
+    deliberate: isDeclaredDeliberate(source, v.line, literalLines),
+  }));
+}
+
+/**
+ * Vocabularies declared in the literal's OWN FILE that are at least as close to
+ * it as the vocabulary the row is attributed to.
+ *
+ * "At least as close", not "strictly closer", and that is the whole point:
+ * §31c's ten rows are EXACTLY as close to their file's own `INK_ANATOMY_SIDES`
+ * as they are to `shared/`'s `INK_SIDES`, so a strictly-closer test prints
+ * nothing on the specimen this exists for.
+ *
+ * The attributed vocabulary itself is never a pointer, and neither is a
+ * declaration sitting on the literal's own line — there the literal IS the
+ * declaration, and pointing a row at itself is noise.
+ */
+function localDeclarationPointers(
+  localDeclarations: readonly Declaration[],
+  attributed: Vocabulary,
+  found: readonly string[],
+  line: number,
+): LocalPointer[] {
+  const attributedDifference = difference(found, attributed.members);
+  const out: LocalPointer[] = [];
+  for (const local of localDeclarations) {
+    if (local.line === line) continue;
+    if (local.file === attributed.file && local.line === attributed.line) continue;
+    const d = difference(found, local.members);
+    if (d > attributedDifference) continue;
+    out.push({ name: local.name, line: local.line, difference: d });
+  }
+  return out;
+}
+
 /** Every literal array in `source` whose member SET equals a declared vocabulary. */
 function findCopies(
   source: string,
   file: string,
   byMemberSet: ReadonlyMap<string, readonly Vocabulary[]>,
+  localDeclarations: readonly Declaration[],
 ): Copy[] {
   const out: Copy[] = [];
   const literals = literalArrays(source);
@@ -253,6 +404,7 @@ function findCopies(
         found,
         namesIt: new RegExp(`\\b${vocabulary.name}\\b`).test(source),
         sameOrder: found.join("|") === vocabulary.members.join("|"),
+        localPointers: localDeclarationPointers(localDeclarations, vocabulary, found, line),
       });
     }
   }
@@ -272,6 +424,7 @@ function findNearMisses(
   source: string,
   file: string,
   vocabs: readonly Vocabulary[],
+  localDeclarations: readonly Declaration[],
 ): NearMiss[] {
   const out: NearMiss[] = [];
   const literals = literalArrays(source);
@@ -288,9 +441,9 @@ function findNearMisses(
       if (vocabulary.file === file && vocabulary.line === line) continue;
       const missingHere = vocabulary.members.filter((x) => !here.has(x));
       const extraHere = found.filter((x) => !declared.has(x));
-      const difference = missingHere.length + extraHere.length;
-      if (difference === 0) continue; // an exact HIT, reported by the other reading
-      if (difference > NEAR_MISS_MAX_DIFFERENCE) continue;
+      const apart = missingHere.length + extraHere.length;
+      if (apart === 0) continue; // an exact HIT, reported by the other reading
+      if (apart > NEAR_MISS_MAX_DIFFERENCE) continue;
       // no "must share N members" guard: at this band it could never fire. Two
       // lists with nothing in common are at least four members apart, since a
       // literal needs two members to be collected and a vocabulary needs two to
@@ -305,6 +458,39 @@ function findNearMisses(
         namesIt: new RegExp(`\\b${vocabulary.name}\\b`).test(source),
         missingHere,
         extraHere,
+        localPointers: localDeclarationPointers(localDeclarations, vocabulary, found, line),
+      });
+    }
+  }
+  return out;
+}
+
+/**
+ * Reading (3) — every pair of DECLARED vocabularies within the band.
+ *
+ * Ordered and de-duplicated by construction: each unordered pair is considered
+ * once, so a pair is never printed twice with its sides swapped. A declaration
+ * is never paired with itself, and a `deliberate-vocabulary-copy` note on
+ * EITHER side silences the pair — the marker's claim is about the copy, and in
+ * a pair either side may be the one carrying the note.
+ */
+function findDeclarationPairs(decls: readonly Declaration[]): DeclarationPair[] {
+  const out: DeclarationPair[] = [];
+  for (let i = 0; i < decls.length; i += 1) {
+    for (let j = i + 1; j < decls.length; j += 1) {
+      const a = decls[i];
+      const b = decls[j];
+      if (a.file === b.file && a.line === b.line) continue;
+      if (difference(a.members, b.members) > NEAR_MISS_MAX_DIFFERENCE) continue;
+      if (a.deliberate || b.deliberate) continue;
+      const aSet = new Set(a.members);
+      const bSet = new Set(b.members);
+      out.push({
+        a,
+        b,
+        missingInB: a.members.filter((x) => !bSet.has(x)),
+        extraInB: b.members.filter((x) => !aSet.has(x)),
+        sameOrder: a.members.join("|") === b.members.join("|"),
       });
     }
   }
@@ -336,37 +522,68 @@ const isTest = (file: string): boolean => /\.test\.(ts|tsx|mts)$/.test(file);
 
 type Reading = {
   vocabs: Vocabulary[];
+  declaredEverywhere: Declaration[];
   scanned: number;
   copies: Copy[];
   nearMisses: NearMiss[];
+  pairs: DeclarationPair[];
 };
 
+/**
+ * `VOCAB_ROOTS` is a SUBSET of `SCAN_ROOTS`, so the declarations readings (1)
+ * and (2) match against are a FILTER of the ones reading (3) pairs — one walk,
+ * one collector, one population. Two walks with two collectors is the shape
+ * this whole instrument exists to find.
+ */
+const inVocabRoots = (file: string): boolean =>
+  VOCAB_ROOTS.some((root) => file.startsWith(`${root}/`));
+
 function readTree(): Reading {
-  const vocabs: Vocabulary[] = [];
-  for (const root of VOCAB_ROOTS) {
-    for (const file of walk(path.join(ROOT, root))) {
-      vocabs.push(...declaredVocabularies(readFileSync(file, "utf8"), rel(file)));
-    }
+  const files: string[] = [];
+  for (const root of SCAN_ROOTS) files.push(...walk(path.join(ROOT, root)));
+
+  const sources = new Map<string, string>();
+  const declaredEverywhere: Declaration[] = [];
+  const byFile = new Map<string, Declaration[]>();
+  for (const file of files) {
+    const name = rel(file);
+    const source = readFileSync(file, "utf8");
+    sources.set(name, source);
+    const here = declarations(source, name);
+    byFile.set(name, here);
+    declaredEverywhere.push(...here);
   }
+
+  const vocabs = declaredEverywhere.filter((v) => inVocabRoots(v.file));
   if (vocabs.length === 0) {
     throw new Error(
       `REFUSED: no vocabularies found under ${VOCAB_ROOTS.join(", ")}. An empty ` +
         `population reports a clean sweep and means nothing — see working law 2.`,
     );
   }
+  if (declaredEverywhere.length === 0) {
+    throw new Error(
+      `REFUSED: no vocabularies found under ${SCAN_ROOTS.join(", ")}. Reading (3) ` +
+        `would report a clean sweep off an empty population — see working law 2.`,
+    );
+  }
   const byMemberSet = indexByMemberSet(vocabs);
-
-  const files: string[] = [];
-  for (const root of SCAN_ROOTS) files.push(...walk(path.join(ROOT, root)));
 
   const copies: Copy[] = [];
   const nearMisses: NearMiss[] = [];
-  for (const file of files) {
-    const source = readFileSync(file, "utf8");
-    copies.push(...findCopies(source, rel(file), byMemberSet));
-    nearMisses.push(...findNearMisses(source, rel(file), vocabs));
+  for (const [name, source] of sources) {
+    const localDeclarations = byFile.get(name) ?? [];
+    copies.push(...findCopies(source, name, byMemberSet, localDeclarations));
+    nearMisses.push(...findNearMisses(source, name, vocabs, localDeclarations));
   }
-  return { vocabs, scanned: files.length, copies, nearMisses };
+  return {
+    vocabs,
+    declaredEverywhere,
+    scanned: files.length,
+    copies,
+    nearMisses,
+    pairs: findDeclarationPairs(declaredEverywhere.filter((d) => !isTest(d.file))),
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -417,7 +634,7 @@ export const FIXTURE_SLOTS = ["alpha", "beta", "gamma"] as const;
   const PLANTED = `
 const copied = ["alpha", "beta", "gamma"];
 `;
-  const found = findCopies(PLANTED, "client/src/_fixture.tsx", index);
+  const found = findCopies(PLANTED, "client/src/_fixture.tsx", index, []);
   results.push([
     found.length === 1 && !found[0].namesIt && found[0].sameOrder,
     "POSITIVE — a planted copy of a vocabulary is FOUND",
@@ -426,7 +643,7 @@ const copied = ["alpha", "beta", "gamma"];
   const REORDERED = `
 const copied = ["gamma", "alpha", "beta"];
 `;
-  const reordered = findCopies(REORDERED, "client/src/_fixture.tsx", index);
+  const reordered = findCopies(REORDERED, "client/src/_fixture.tsx", index, []);
   results.push([
     reordered.length === 1 && !reordered[0].sameOrder,
     "POSITIVE — a copy whose ORDER differs is found AND reported as differing",
@@ -437,7 +654,7 @@ const copied = ["gamma", "alpha", "beta"];
 const copied = ["alpha", "beta", "gamma"];
 const alsoCopied = ["alpha", "beta", "gamma"];
 `;
-  const marked = findCopies(MARKED, "client/src/_fixture.tsx", index);
+  const marked = findCopies(MARKED, "client/src/_fixture.tsx", index, []);
   results.push([
     marked.length === 1,
     "the marker silences the literal it governs and NOT the next one down",
@@ -447,7 +664,7 @@ const alsoCopied = ["alpha", "beta", "gamma"];
 const copied = ["alpha", "beta"];
 `;
   results.push([
-    findCopies(SUBSET, "client/src/_fixture.tsx", index).length === 0,
+    findCopies(SUBSET, "client/src/_fixture.tsx", index, []).length === 0,
     "a SUBSET is not a HIT — set equality is what reading (1) matches on",
   ]);
 
@@ -457,7 +674,7 @@ const copied = ["alpha", "beta"];
   // repaired, and a control anchored on a row that can be fixed is a control
   // that quietly stops firing.
 
-  const shortByOne = findNearMisses(SUBSET, "client/src/_fixture.tsx", vocabs);
+  const shortByOne = findNearMisses(SUBSET, "client/src/_fixture.tsx", vocabs, []);
   results.push([
     shortByOne.length === 1 &&
       shortByOne[0].missingHere.join() === "gamma" &&
@@ -468,7 +685,7 @@ const copied = ["alpha", "beta"];
   const LONG_BY_ONE = `
 const copied = ["alpha", "beta", "gamma", "delta"];
 `;
-  const longByOne = findNearMisses(LONG_BY_ONE, "client/src/_fixture.tsx", vocabs);
+  const longByOne = findNearMisses(LONG_BY_ONE, "client/src/_fixture.tsx", vocabs, []);
   results.push([
     longByOne.length === 1 &&
       longByOne[0].extraHere.join() === "delta" &&
@@ -477,7 +694,7 @@ const copied = ["alpha", "beta", "gamma", "delta"];
   ]);
 
   results.push([
-    findNearMisses(PLANTED, "client/src/_fixture.tsx", vocabs).length === 0,
+    findNearMisses(PLANTED, "client/src/_fixture.tsx", vocabs, []).length === 0,
     "an EXACT copy is NOT a near miss — the two readings are disjoint, not filtered",
   ]);
 
@@ -485,7 +702,7 @@ const copied = ["alpha", "beta", "gamma", "delta"];
 const copied = ["alpha", "delta", "epsilon"];
 `;
   results.push([
-    findNearMisses(TWO_APART, "client/src/_fixture.tsx", vocabs).length === 0,
+    findNearMisses(TWO_APART, "client/src/_fixture.tsx", vocabs, []).length === 0,
     `TWO members apart is NOT reported — the band is ${NEAR_MISS_MAX_DIFFERENCE}, ` +
       `and the unread bands are in the docblock`,
   ]);
@@ -495,7 +712,7 @@ const copied = ["alpha", "delta", "epsilon"];
 const copied = ["alpha", "beta"];
 const alsoCopied = ["alpha", "beta"];
 `;
-  const markedNearMiss = findNearMisses(MARKED_NEAR_MISS, "client/src/_fixture.tsx", vocabs);
+  const markedNearMiss = findNearMisses(MARKED_NEAR_MISS, "client/src/_fixture.tsx", vocabs, []);
   results.push([
     markedNearMiss.length === 1,
     "ONE marker serves BOTH readings — it silences the near miss it governs, and " +
@@ -527,6 +744,128 @@ const alsoCopied = ["alpha", "beta"];
     `NEGATIVE — and IT is quiet because it is MARKED, not because it is absent`,
   ]);
 
+  // --- reading (3), the declaration pairs ------------------------------------
+
+  const PAIR_FIXTURE = `
+export const FIRST_SPELLING = ["alpha", "beta", "gamma"] as const;
+export const SECOND_SPELLING = ["gamma", "alpha", "beta"] as const;
+`;
+  const pairDecls = declarations(PAIR_FIXTURE, "server/_fixture.ts");
+  const pairs = findDeclarationPairs(pairDecls);
+  results.push([
+    pairs.length === 1 &&
+      pairs[0].a.name === "FIRST_SPELLING" &&
+      pairs[0].b.name === "SECOND_SPELLING" &&
+      !pairs[0].sameOrder &&
+      pairs[0].missingInB.length === 0 &&
+      pairs[0].extraInB.length === 0,
+    "POSITIVE — two DECLARATIONS with equal member sets are reported as a PAIR, " +
+      "with the ORDER verdict asserted",
+  ]);
+
+  const PAIR_NEAR_FIXTURE = `
+export const LONGER_SPELLING = ["alpha", "beta", "gamma"] as const;
+export const SHORTER_SPELLING = ["alpha", "beta"] as const;
+`;
+  const nearPairs = findDeclarationPairs(declarations(PAIR_NEAR_FIXTURE, "server/_fixture.ts"));
+  results.push([
+    nearPairs.length === 1 &&
+      nearPairs[0].missingInB.join() === "gamma" &&
+      nearPairs[0].extraInB.length === 0,
+    "POSITIVE — two DECLARATIONS one member apart are reported, and the missing " +
+      "member is named on the right side",
+  ]);
+
+  results.push([
+    findDeclarationPairs([pairDecls[0]]).length === 0 &&
+      findDeclarationPairs([pairDecls[0], pairDecls[0]]).length === 0,
+    "a declaration is never paired with ITSELF — one declaration, and the same " +
+      "declaration twice, both report nothing",
+  ]);
+
+  const PAIR_TWO_APART = `
+export const ONE_LIST = ["alpha", "beta", "gamma"] as const;
+export const OTHER_LIST = ["alpha", "delta", "epsilon"] as const;
+`;
+  results.push([
+    findDeclarationPairs(declarations(PAIR_TWO_APART, "server/_fixture.ts")).length === 0,
+    `TWO members apart is NOT a declaration pair — the band is ` +
+      `${NEAR_MISS_MAX_DIFFERENCE} in reading (3) too`,
+  ]);
+
+  const PAIR_MARKED = `
+// ${MARKER}: the fixture's own reason
+export const MARKED_SPELLING = ["alpha", "beta", "gamma"] as const;
+export const PLAIN_SPELLING = ["alpha", "beta", "gamma"] as const;
+export const THIRD_SPELLING = ["alpha", "beta", "gamma"] as const;
+`;
+  const markedPairs = findDeclarationPairs(declarations(PAIR_MARKED, "server/_fixture.ts"));
+  results.push([
+    markedPairs.length === 1 &&
+      markedPairs[0].a.name === "PLAIN_SPELLING" &&
+      markedPairs[0].b.name === "THIRD_SPELLING",
+    "a marker at a DECLARATION silences every pair that declaration is in, and " +
+      "NOT the pair between the two below it",
+  ]);
+
+  // NEGATIVE, against the real tree, for reading (3) — and the marker is TRUE of
+  // the site rather than convenient: `partial` is what a BATCH is when some of
+  // its items succeeded and others failed, and it is meaningless for ONE item.
+  const PAIR_NEGATIVE_FILE = "drizzle/schema.ts";
+  results.push([
+    reading.pairs.filter(
+      (p) =>
+        [p.a.name, p.b.name].includes("STORAGE_CLEANUP_BATCH_STATUSES") &&
+        [p.a.name, p.b.name].includes("STORAGE_CLEANUP_ITEM_STATUSES"),
+    ).length === 0,
+    `NEGATIVE — ${PAIR_NEGATIVE_FILE}'s marked batch/item status pair is NOT ` +
+      `reported as a declaration pair`,
+  ]);
+  results.push([
+    declarations(readFileSync(path.join(ROOT, PAIR_NEGATIVE_FILE), "utf8"), PAIR_NEGATIVE_FILE).some(
+      (d) => d.name === "STORAGE_CLEANUP_ITEM_STATUSES" && d.deliberate,
+    ),
+    `NEGATIVE — and IT is quiet because that declaration is MARKED, not because ` +
+      `the pair is absent`,
+  ]);
+
+  // --- the local-declaration pointer ----------------------------------------
+
+  const POINTER_POSITIVE = `
+export const LOCAL_SPELLING = ["alpha", "beta", "gamma"] as const;
+const narrowed = ["alpha", "beta"];
+`;
+  const pointed = findNearMisses(
+    POINTER_POSITIVE,
+    "server/_fixture.ts",
+    vocabs,
+    declarations(POINTER_POSITIVE, "server/_fixture.ts"),
+  );
+  results.push([
+    pointed.length === 1 &&
+      pointed[0].localPointers.length === 1 &&
+      pointed[0].localPointers[0].name === "LOCAL_SPELLING" &&
+      pointed[0].localPointers[0].difference === 1,
+    "POINTER — a near miss whose OWN FILE declares an equally close vocabulary " +
+      "names it (§31c's ten rows), and the row is still REPORTED",
+  ]);
+
+  const POINTER_NEGATIVE = `
+export const UNRELATED_SPELLING = ["delta", "epsilon", "zeta"] as const;
+const narrowed = ["alpha", "beta"];
+`;
+  const unpointed = findNearMisses(
+    POINTER_NEGATIVE,
+    "server/_fixture.ts",
+    vocabs,
+    declarations(POINTER_NEGATIVE, "server/_fixture.ts"),
+  );
+  results.push([
+    unpointed.length === 1 && unpointed[0].localPointers.length === 0,
+    "POINTER — a local declaration FARTHER from the literal than the attributed " +
+      "vocabulary is not a pointer",
+  ]);
+
   let ok = true;
   for (const [passed, label] of results) {
     console.log(`  ${passed ? "PASS" : "FAIL"}  ${label}`);
@@ -544,7 +883,7 @@ if (process.argv.includes("--controls")) {
   process.exit(ok ? 0 : 1);
 }
 
-const { vocabs, scanned, copies, nearMisses } = readTree();
+const { vocabs, declaredEverywhere, scanned, copies, nearMisses, pairs } = readTree();
 
 console.log(
   `DECLARED  ${vocabs.length} string-literal \`as const\` vocabularies under ` +
@@ -562,8 +901,38 @@ console.log(
 );
 console.log(
   `          ${nearMisses.filter((n) => !isTest(n.file)).length} in production files, ` +
-    `${nearMisses.filter((n) => !isTest(n.file) && !n.namesIt).length} of those never naming the constant\n`,
+    `${nearMisses.filter((n) => !isTest(n.file) && !n.namesIt).length} of those never naming the constant`,
 );
+const equalPairs = pairs.filter((p) => p.missingInB.length + p.extraInB.length === 0);
+console.log(
+  `PAIRS     ${pairs.length} pairs of DECLARED vocabularies within ` +
+    `${NEAR_MISS_MAX_DIFFERENCE} member of each other`,
+);
+console.log(
+  `          drawn from ${declaredEverywhere.filter((d) => !isTest(d.file)).length} production ` +
+    `declarations under ${SCAN_ROOTS.join(", ")}`,
+);
+console.log(
+  `          ${equalPairs.length} with EQUAL member sets, ` +
+    `${pairs.length - equalPairs.length} one member apart, ` +
+    `${pairs.filter((p) => !inVocabRoots(p.a.file) && !inVocabRoots(p.b.file)).length} with ` +
+    `NEITHER side in ${VOCAB_ROOTS.join(", ")} — invisible to readings (1) and (2)\n`,
+);
+
+/**
+ * The one thing a reader needs in order not to fold a row at the wrong
+ * vocabulary. Printed under the row rather than instead of it: the sweep names
+ * a candidate and a person decides.
+ */
+const printLocalPointers = (pointers: readonly LocalPointer[]): void => {
+  for (const p of pointers) {
+    console.log(
+      `      ⚠ this FILE also declares ${p.name} at :${p.line}, ` +
+        `${p.difference === 0 ? "an exact match" : `${p.difference} member away`} — ` +
+        `check which vocabulary this literal is really typed against`,
+    );
+  }
+};
 
 console.log("─".repeat(78));
 console.log("(1) HITS — a copy that has NOT drifted yet\n");
@@ -585,6 +954,7 @@ for (const c of [...copies].sort(
     console.log(`      declared: ${c.vocabulary.members.join(" · ")}`);
     console.log(`      here    : ${c.found.join(" · ")}`);
   }
+  printLocalPointers(c.localPointers);
 }
 
 console.log(`\n${"─".repeat(78)}`);
@@ -605,13 +975,45 @@ for (const n of [...nearMisses].sort(
   console.log(`      here    : ${n.found.join(" · ")}`);
   if (n.missingHere.length > 0) console.log(`      MISSING here: ${n.missingHere.join(" · ")}`);
   if (n.extraHere.length > 0) console.log(`      EXTRA here  : ${n.extraHere.join(" · ")}`);
+  printLocalPointers(n.localPointers);
+}
+
+console.log(`\n${"─".repeat(78)}`);
+console.log("(3) DECLARATION PAIRS — one closed list spelled twice\n");
+
+const pairRank = (p: DeclarationPair): number =>
+  (inVocabRoots(p.a.file) || inVocabRoots(p.b.file) ? 2 : 0) +
+  (p.missingInB.length + p.extraInB.length === 0 ? 0 : 1);
+
+for (const p of [...pairs].sort(
+  (x, y) => pairRank(x) - pairRank(y) || x.a.file.localeCompare(y.a.file) || x.a.line - y.a.line,
+)) {
+  const apart = p.missingInB.length + p.extraInB.length;
+  const flags = [
+    apart === 0 ? "EQUAL member sets" : `${apart} member apart`,
+    apart === 0 ? (p.sameOrder ? "same order" : "ORDER DIFFERS") : null,
+    inVocabRoots(p.a.file) || inVocabRoots(p.b.file)
+      ? `one side is in ${VOCAB_ROOTS.join(", ")}`
+      : `NEITHER side is in ${VOCAB_ROOTS.join(", ")} — invisible to readings (1) and (2)`,
+  ]
+    .filter((f): f is string => f !== null)
+    .join(" · ");
+  console.log(`${p.a.name} (${p.a.file}:${p.a.line})`);
+  console.log(`${p.b.name} (${p.b.file}:${p.b.line})  [${flags}]`);
+  if (p.a.name === p.b.name) console.log(`      ⚠ SAME NAME in two modules`);
+  console.log(`      a: ${p.a.members.join(" · ")}`);
+  console.log(`      b: ${p.b.members.join(" · ")}`);
+  if (p.missingInB.length > 0) console.log(`      MISSING from b: ${p.missingInB.join(" · ")}`);
+  if (p.extraInB.length > 0) console.log(`      EXTRA in b    : ${p.extraInB.join(" · ")}`);
 }
 
 console.log(
-  `\nA clean run is a FLOOR, in both readings. Reading (1) matches on set ` +
-    `equality and reading (2)\non a difference of exactly ` +
-    `${NEAR_MISS_MAX_DIFFERENCE} member — a list two or more members from its ` +
-    `vocabulary is\nMEASURED and NOT READ here. See the docblock's band table ` +
+  `\nA clean run is a FLOOR, in all three readings. Reading (1) matches on set ` +
+    `equality,\nreading (2) and reading (3) on a difference of exactly ` +
+    `${NEAR_MISS_MAX_DIFFERENCE} member — a list two or\nmore members from its ` +
+    `vocabulary is MEASURED and NOT READ here. Reading (3) sees\nonly production ` +
+    `declarations, and a LITERAL copying a vocabulary declared outside\n` +
+    `${VOCAB_ROOTS.join(", ")} is still unread. See the docblock's band table ` +
     `and named limits before\nbelieving a silence.`,
 );
 

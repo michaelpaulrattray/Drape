@@ -558,6 +558,12 @@ export const STORAGE_CLEANUP_BATCH_STATUSES = [
 ] as const;
 export type StorageCleanupBatchStatus = typeof STORAGE_CLEANUP_BATCH_STATUSES[number];
 
+/*
+  deliberate-vocabulary-copy: one member apart from the BATCH statuses above,
+  and deliberately so. `partial` is what a batch is when some of its items
+  succeeded and others failed; it is meaningless for a single item, which either
+  went or did not. Two lifecycles, not one list written twice.
+*/
 export const STORAGE_CLEANUP_ITEM_STATUSES = [
   "pending",
   "processing",
