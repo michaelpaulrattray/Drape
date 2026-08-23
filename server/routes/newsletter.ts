@@ -7,10 +7,13 @@ import { newsletterSignup, testConnection as testKlaviyoConnection } from "../kl
 export const newsletterRouter = router({
   // Subscribe to newsletter (public - no auth required)
   subscribe: publicProcedure
+    // .strict() — invariant 4 on a public surface (ruled fable-1435 §2). Safe at
+    // the wire, checked rather than assumed: this endpoint has no client caller
+    // at all, so no shipped bundle can be sending a field it does not declare.
     .input(z.object({
       email: z.string().email("Please enter a valid email address"),
       source: z.string().optional().default("website_footer"),
-    }))
+    }).strict())
     .mutation(async ({ input, ctx }) => {
       // Rate limit by IP to prevent spam
       const clientIp = getClientIp(ctx.req);

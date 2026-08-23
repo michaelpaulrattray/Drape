@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "21411f6dca856c9e"
+    "sourceFingerprint": "36e39ac5e5d1cece"
   },
   "domains": [
     {
@@ -5562,7 +5562,7 @@
       "name": "validate",
       "type": "mutation",
       "auth": "public",
-      "input": "open",
+      "input": "strict",
       "rateLimited": true,
       "file": "server/routes/access.ts"
     },
@@ -7642,7 +7642,7 @@
       "name": "subscribe",
       "type": "mutation",
       "auth": "public",
-      "input": "open",
+      "input": "strict",
       "rateLimited": true,
       "file": "server/routes/newsletter.ts"
     },
@@ -7812,7 +7812,7 @@
       "name": "validate",
       "type": "query",
       "auth": "public",
-      "input": "open",
+      "input": "strict",
       "rateLimited": false,
       "file": "server/routes/referral.ts"
     },
@@ -7822,7 +7822,7 @@
       "name": "health",
       "type": "query",
       "auth": "public",
-      "input": "open",
+      "input": "strict",
       "rateLimited": false,
       "file": "server/_core/systemRouter.ts"
     },
@@ -7882,7 +7882,7 @@
       "name": "join",
       "type": "mutation",
       "auth": "public",
-      "input": "open",
+      "input": "strict",
       "rateLimited": true,
       "file": "server/routes/waitlist.ts"
     },
@@ -11530,6 +11530,10 @@
     {
       "id": "test:server/providers/providerFailureContract.test.ts",
       "path": "server/providers/providerFailureContract.test.ts"
+    },
+    {
+      "id": "test:server/publicInputStrictness.test.ts",
+      "path": "server/publicInputStrictness.test.ts"
     },
     {
       "id": "test:server/queueOrdinalDiscipline.test.ts",

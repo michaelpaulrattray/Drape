@@ -20,10 +20,13 @@ export const accessRouter = router({
    * Rate limited: 10 attempts per 5 minutes per IP.
    */
   validate: publicProcedure
+    // .strict() — invariant 4 on a public surface (ruled fable-1435 §2). Safe at
+    // the wire, checked rather than assumed: `client/src/pages/Login.tsx` is the
+    // only caller and it sends `{ code }` alone.
     .input(
       z.object({
         code: z.string().min(1, "Access code is required").max(64),
-      })
+      }).strict()
     )
     .mutation(async ({ ctx, input }) => {
       const clientIp = getClientIp(ctx.req);

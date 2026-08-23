@@ -188,7 +188,10 @@ export const referralRouter = router({
    * Validate a referral code (public — used on landing page before signup).
    */
   validate: publicProcedure
-    .input(z.object({ code: z.string().min(1).max(20) }))
+    // .strict() — invariant 4 on a public surface (ruled fable-1435 §2). Safe at
+    // the wire, checked rather than assumed: this endpoint has no client caller
+    // at all, so no shipped bundle can be sending a field it does not declare.
+    .input(z.object({ code: z.string().min(1).max(20) }).strict())
     .query(async ({ input }) => {
       const user = await getUserByReferralCode(input.code);
       return {

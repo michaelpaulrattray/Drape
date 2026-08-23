@@ -11,6 +11,10 @@ const log = createModuleLogger("waitlist");
 export const waitlistRouter = router({
   // Join the waitlist
   join: publicProcedure
+    // .strict() — invariant 4 on a public surface (ruled fable-1435 §2). Safe at
+    // the wire, checked rather than assumed: all four client call sites were
+    // read (HeroContent, WaitlistModal x2, Login) and every one sends a subset
+    // of the fields below — nothing undeclared.
     .input(z.object({
       email: z.string().email("Please enter a valid email address"),
       name: z.string().min(1).optional(),
@@ -18,7 +22,7 @@ export const waitlistRouter = router({
       role: z.string().optional(),
       source: z.string().optional(),
       referralCode: z.string().optional(),
-    }))
+    }).strict())
     .mutation(async ({ input, ctx }) => {
       // Rate limit by IP to prevent spam
       const clientIp = getClientIp(ctx.req);
