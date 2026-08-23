@@ -84,7 +84,7 @@ describe("every refusal answers all three questions", () => {
 
     it("a covering says her top covers it — and offers the surfaces that work", () => {
       const sentence = saidOf(
-        { reason: "gate_ink_uncarried", place: "upper chest", alternatives } as RefineRefusal,
+        { reason: "gate_ink_uncarried", place: "upper chest", surface: "upperChest", alternatives } as RefineRefusal,
         "female",
       );
       expect(sentence).toContain("top covers her upper chest");
@@ -112,7 +112,7 @@ describe("every refusal answers all three questions", () => {
          a fail-closed gate that lies about why it closed is how somebody learns
          to distrust every refusal this product writes. */
       const sentence = saidOf(
-        { reason: "gate_ink_coverage_unread", place: "neck", alternatives: [] } as RefineRefusal,
+        { reason: "gate_ink_coverage_unread", place: "neck", surface: "neck", alternatives: [] } as RefineRefusal,
         "female",
       );
       expect(sentence).toContain("can't tell yet");
@@ -131,7 +131,7 @@ describe("every refusal answers all three questions", () => {
         a jumper. Hand it a different list and the sentence must move.
       */
       const sentence = saidOf(
-        { reason: "gate_ink_uncarried", place: "upper chest", alternatives: ["upper arm"] } as RefineRefusal,
+        { reason: "gate_ink_uncarried", place: "upper chest", surface: "upperChest", alternatives: ["upper arm"] } as RefineRefusal,
         "female",
       );
       expect(sentence).toContain("her upper arm");

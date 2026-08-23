@@ -193,8 +193,28 @@ export type InkPlacement =
    * garment is over it — so the tattoo would be delivered and then lost. The
    * sentence names the two places that work and the wardrobe change that opens
    * this one, and every answer to it acts.
+   *
+   * # ⚠ `place` AND `surface` ARE TWO DIFFERENT FACTS AND BOTH ARE KEPT
+   *
+   * `place` is the word SHE would recognise — whichever of the surface's two
+   * spellings her sentence matched — and it is what the refusal says back to
+   * her. `surface` is the vocabulary KEY that word folded to, and it is what
+   * the demand tally counts (§9, migration 0052).
+   *
+   * They are kept apart rather than one derived at each reader, because a count
+   * keyed on a SPELLING is not a count of anything: `upper chest` and
+   * `their upper chest` are one surface and would be two rows, and the day a
+   * placement grows a third synonym the history splits again with nothing in
+   * the table saying so. It is also what keeps
+   * `casting_ink_form_demand.placement`'s `$type<InkPlacement>()` a TRUE
+   * description of the column's contents rather than an aspiration —
+   * `inkPlacementCoupling.test.ts` is the arm that would otherwise go red.
+   *
+   * The classifier has the key in hand at the moment it refuses (it just asked
+   * the coverage owner about it), so carrying it costs a field and saves every
+   * consumer a second fold that could disagree with the first.
    */
-  | { kind: "not_carried"; place: string; alternatives: readonly string[] }
+  | { kind: "not_carried"; place: string; surface: InkPlacementKey; alternatives: readonly string[] }
   /**
    * ⚠ THE SURFACE IS BARE AND THIS ROAD STILL CANNOT KEEP A RESULT THERE
    * (item 7a).
@@ -223,7 +243,7 @@ export type InkPlacement =
    * `unpathed` and answers the house table — and reachable the day it widens,
    * which is why 7a-bis is an enumerated precondition of that flip.
    */
-  | { kind: "coverage_unread"; place: string; alternatives: readonly string[] }
+  | { kind: "coverage_unread"; place: string; surface: InkPlacementKey; alternatives: readonly string[] }
   /** Needs a design document. Gated until the body-art studio ships (D-137). */
   | { kind: "needs_document" };
 
@@ -360,11 +380,16 @@ export function classifyInkPlacement(
     if (lane === "ink") {
       const key = placementKeyOfWord(place);
       const coverage = key === null ? ("bare" as const) : wardrobeCoversSurface(wardrobe, key);
-      if (coverage !== "bare") {
+      /* `key !== null` CHANGES NOTHING AT RUNTIME and is here so the refusal
+         can carry the key: a null key set `coverage` to `bare` two lines up, so
+         this branch was already unreachable with one. Written as a condition
+         rather than a `!` so that if that line ever changes, this reads as the
+         bare surface it always meant rather than crashing on an assertion. */
+      if (coverage !== "bare" && key !== null) {
         const alternatives = servedAndBare(wordsRoadOpen, wardrobe);
         return coverage === "covered"
-          ? { kind: "not_carried", place, alternatives }
-          : { kind: "coverage_unread", place, alternatives };
+          ? { kind: "not_carried", place, surface: key, alternatives }
+          : { kind: "coverage_unread", place, surface: key, alternatives };
       }
     }
     return { kind: "in_frame", place };
@@ -396,8 +421,12 @@ export function classifyInkPlacement(
       const key = placementKeyOfWord(place);
       const covered = key !== null && wardrobeCoversSurface(wardrobe, key) === "covered";
       const alternatives = servedAndBare(wordsRoadOpen, wardrobe);
-      return covered
-        ? { kind: "not_carried", place, alternatives }
+      /* `covered` is only ever true with a key, so the narrowing is the same
+         no-op it is above — and `road_cannot_keep` carries no surface because
+         nothing counts it: it is a fact about OUR road rather than about her
+         outfit, and it is the same refusal on every path. */
+      return covered && key !== null
+        ? { kind: "not_carried", place, surface: key, alternatives }
         : { kind: "road_cannot_keep", place, alternatives };
     }
   }

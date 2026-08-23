@@ -29,8 +29,60 @@
  *
  * Neither is a placement and neither is an account. The arm is one bare limb
  * and serves every cast, so it can never appear here.
+ *
+ * # ⚠ TWO MORE, APPENDED — and APPENDED is the load-bearing word
+ *
+ * The Two Paths ruling gives this table a second population (design
+ * `CASTING_V2_TWO_PATHS_DESIGN.md` §9, countersigned fable-1334 question 2,
+ * migration 0052): a cast born on the Wardrobe path is refused a tattoo because
+ * *its own outfit covers the surface she named*, and that refusal is the same
+ * question this table already answers — **what did we have to refuse, and how
+ * many people wanted it.** A second table would be a second thing to read,
+ * which in practice is a second thing nobody reads.
+ *
+ * **MySQL stores an enum as an INDEX and not as the word.** So the order of
+ * this list IS the meaning of every row already written: append and nothing
+ * moves; reorder or rename and every stored `torsoUnstated` silently becomes
+ * something else, with no error anywhere. The two new members go on the END,
+ * and `inkFormDemandMigration.test.ts` holds them there against the DDL.
+ *
+ * And they SPLIT for this table's own precedent — the same reason
+ * `torsoNonbinary` and `torsoUnstated` are two values for one refusal:
+ *
+ *   `surfaceCovered`        her outfit genuinely covers the surface. The demand
+ *                           is for a WARDROBE EDIT or a Basics recast — a
+ *                           product road, and the number says how many wanted it
+ *   `surfaceCoverageUnread` nobody has read this outfit's coverage, so the gate
+ *                           failed closed on a surface that might be perfectly
+ *                           bare. The demand is for 7a-bis, the reader that
+ *                           answers an arbitrary line — a DIFFERENT road, and
+ *                           counting it as the first would inflate the case for
+ *                           the wrong build
+ *
+ * # ⚠ AND A CORRECTION TO MIGRATION 0052'S OWN PROSE, WHICH IS WHY IT IS HERE
+ *
+ * That migration says *"BOTH VALUES ARE REACHABLE"* of `pathAtRefusal`, and
+ * `basics` is NOT — measured by driving the classifier rather than read off the
+ * tables (`inkCoverageDemandReach.test.ts`, which carries the whole reading and
+ * the argument). The coverage branch is only entered for a placement the words
+ * road SERVES; `upperChest` is served at no setting, so a chest ask never asks
+ * about her outfit at all, and a Basics line leaves the neck and the upper arm
+ * bare so those render. No Basics cast can produce a coverage refusal today.
+ *
+ * The narrower sentence that is true, and it names a live road: **`basics`
+ * becomes reachable the day `upperChest` joins the served set** — the court in
+ * fable-1296 §3 that `WORDS_ROAD_PLACEMENTS_OPEN` is waiting on.
+ *
+ * The migration file is deliberately NOT edited: it has been applied in both
+ * worlds and the file is the record of what was run. The correction lives where
+ * somebody changing this vocabulary is standing, which is here.
  */
-export const INK_FORM_DEMAND_KINDS = ["torsoNonbinary", "torsoUnstated"] as const;
+export const INK_FORM_DEMAND_KINDS = [
+  "torsoNonbinary",
+  "torsoUnstated",
+  "surfaceCovered",
+  "surfaceCoverageUnread",
+] as const;
 export type InkFormDemandKind = (typeof INK_FORM_DEMAND_KINDS)[number];
 
 /**

@@ -58,34 +58,32 @@ function enumMembers(column: string): string[] {
 }
 
 describe("the missing-form demand table matches the vocabularies it came from", () => {
-  it("⚠ kind's MIGRATED members are the code's two PLUS 0052's staged pair", () => {
+  it("⚠ kind's migrated members ARE the code's four, in the code's order", () => {
     /*
-      THE DAY THIS READER'S OWN DOCBLOCK WAS WRITTEN FOR — 2026-08-23.
+      ✅ **THE STAGING IS OVER (2026-08-23) AND THIS ARM IS THE OTHER HALF OF
+      THE SWITCH.** It read *"the code's two PLUS 0052's staged pair"* while the
+      ceremony was outstanding in production, because a value the database has
+      and the code cannot spell is harmless while a value the code has and the
+      database lacks is a write that errors. Production took 0052 on his word
+      (fable-1458), and both worlds were read back at `information_schema`
+      before this line moved — dev and production, `pathAtRefusal` present and
+      `kind` holding four, `rows: 0` in each, so the enum widening rewrote
+      nothing.
 
-      It says, above: pointing at the SEQUENCE rather than at 0041 alone
-      *"changes what happens the day one of them IS altered, which is the only
-      day the difference could ever matter."* Migration 0052 alters `kind`, and
-      the reader answers four where the code declares two.
-
-      That gap is the STAGING and not a drift. `pathAtRefusal` is a new column on
-      a table the code reads, so the schema half of item 8 §9 cannot land until
-      the ceremony has run in BOTH worlds (0051's rule, one table over) — and
-      the two enum members travel with it, because a value the database has and
-      the code cannot spell is harmless while a value the code has and the
-      database lacks is a write that errors.
-
-      `inkFormDemandMigration.test.ts` pins the absence from the other side and
-      carries the instruction: replace it with the three-way arm in the sitting
-      that lands the column. **Both arms go together or neither does** — this one
-      alone would let the code's constant drift, and that one alone would let the
+      **The two arms had to move together and did**: `inkFormDemandMigration.
+      test.ts` pinned the absence from the other side, and this one alone would
+      let the code's constant drift while that one alone would let the
       migration.
+
+      The equality is the whole assertion now — `toEqual` on a list, so a
+      REORDER fails it as loudly as an addition. An enum is an index in MySQL,
+      so their position is what every stored row means.
     */
-    const STAGED_BY_0052 = ["surfaceCovered", "surfaceCoverageUnread"];
-    expect(enumMembers("kind")).toEqual([...INK_FORM_DEMAND_KINDS, ...STAGED_BY_0052]);
-    /* And the code's own two are FIRST and unmoved: an enum is an index in
-       MySQL, so their position is what every stored row means. */
-    expect(enumMembers("kind").slice(0, INK_FORM_DEMAND_KINDS.length))
-      .toEqual([...INK_FORM_DEMAND_KINDS]);
+    expect(enumMembers("kind")).toEqual([...INK_FORM_DEMAND_KINDS]);
+    /* And the original two are still FIRST, said separately rather than left to
+       be inferred from the line above: if the constant itself were ever
+       reordered, the equality would follow it happily and this would not. */
+    expect(enumMembers("kind").slice(0, 2)).toEqual(["torsoNonbinary", "torsoUnstated"]);
   });
 
   it("placement is OPEN, because this counter's whole job is to record the ask", () => {
@@ -135,6 +133,48 @@ describe("the column list, which is the privacy boundary", () => {
     for (const forbidden of ["userId", "candidateId", "designId", "storageKey", "instruction", "sex"]) {
       expect(DDL, `\`${forbidden}\` must not be a column here`)
         .not.toMatch(new RegExp(`\`${forbidden}\``));
+    }
+  });
+
+  it("⚠ the FIFTH column is on this list on purpose, and it names nobody", () => {
+    /*
+      `pathAtRefusal` (migration 0052) is the first column added to this table
+      since it was created, and the argument for the table is the shortness of
+      its column list — so its arrival is asserted HERE, beside the absences,
+      rather than only where it is used.
+
+      It carries one of two words a customer chose BEFORE the roll, shared by
+      every cast on that path. It names no roll, no cast and no account, and
+      nothing in the row or beside it narrows a person. That is why it is
+      allowed to exist; the arm above is what stops the next column being added
+      without the same sentence being written.
+
+      Read from the SEQUENCE and not from 0041's text, because 0041 has never
+      heard of it — which is exactly the reading `enumMembers`' own docblock
+      says is the only one that can be right on the day a column is altered.
+    */
+    expect(effectiveColumn("casting_ink_form_demand", "pathAtRefusal"))
+      .toBe("enum('wardrobe','basics') NULL");
+    /* Nullable AND undefaulted, from the DDL rather than from the drizzle
+       object: a DEFAULT would stamp every row written before the paths existed
+       with a claim about a path that did not exist, and MySQL does that
+       silently to every existing row. */
+    expect(effectiveColumn("casting_ink_form_demand", "pathAtRefusal"))
+      .not.toMatch(/DEFAULT/i);
+    /* And the forbidden five are STILL forbidden after 0052 — read at the
+       sequence, so a later migration adding one cannot hide behind 0041's
+       text.
+
+       ⚠ These are ABSENCE assertions, which pass on nothing at all: a reader
+       that answered `null` for every name in the world would satisfy every one
+       of them. The two lines ABOVE are their control and are deliberately in
+       the same arm — the same reader, the same table, made to produce an exact
+       DDL string first. */
+    for (const forbidden of ["userId", "candidateId", "designId", "storageKey", "sex"]) {
+      expect(
+        effectiveColumn("casting_ink_form_demand", forbidden),
+        `\`${forbidden}\` must not be a column here`,
+      ).toBeNull();
     }
   });
 

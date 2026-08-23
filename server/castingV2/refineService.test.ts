@@ -28,6 +28,9 @@ import type { StoredInkDesign } from "../db/castingV2InkDesigns";
 import { resolveInkReferenceTake } from "./inkReferenceTake";
 import { inkDesignImagePath } from "../../shared/inkDesignDelivery";
 import { pictureHalfPhrase } from "./sidePhrasing";
+import { HOUSE_WARDROBE_LINE } from "./wardrobeLine";
+import type { TextEngine } from "../providers/types";
+import { interpretRefinement } from "./refineInterpreter";
 
 /**
  * Refine's MONEY and its ORDER (M8 §10, §12).
@@ -51,6 +54,21 @@ const ledger = {
 
 let chargeSucceeds = true;
 let candidateRow: Record<string, unknown>;
+/**
+ * WHAT THE ROLL THIS FACE CAME FROM WAS CAST ON, and what it was born wearing.
+ *
+ * Both `null` in every arm but the coverage-demand ones at the foot of this
+ * file, which is the honest default: every roll in both worlds is `unpathed`,
+ * and `currentWardrobeLine` reads a null path as *cast before the paths* — the
+ * house crew tee, today's answers byte for byte.
+ *
+ * They are on the FIXTURE rather than passed per call because that is where the
+ * real reader gets them: `getOwnedCandidateWithSelectedFace` joins them through
+ * the owned candidate, so a suite that supplied them any other way would be
+ * proving something about its own harness.
+ */
+let rollPath: string | null = null;
+let rollWardrobeLine: string | null = null;
 let variantRows: Array<Record<string, unknown>>;
 let landedVariant: Record<string, unknown> | null = null;
 /**
@@ -125,6 +143,10 @@ vi.mock("../db/castingV2", () => ({
       imageKey: selected ? selected.imageKey : candidateRow.imageKey,
       thumbKey: null,
       internalPrompt: selected ? selected.internalPrompt : candidateRow.internalPrompt,
+      /* The roll's two fields belong to the CANDIDATE and not to whichever face
+         is selected, exactly as the real read has them. */
+      rollPath,
+      rollWardrobeLine,
     };
   }),
 }));
@@ -592,6 +614,8 @@ beforeEach(() => {
       },
     },
   };
+  rollPath = null;
+  rollWardrobeLine = null;
   vi.clearAllMocks();
 });
 
@@ -13795,5 +13819,248 @@ describe("the doors nobody had proven can shut", () => {
     expect(shut.reason).toBe("version_missing");
     expect(shut.message).toMatch(/isn't available any more/);
     nothingMoved();
+  });
+});
+
+/**
+ * ---- THE COVERAGE DEMAND, COUNTED — driven through the REAL refusal ----
+ *
+ * Design `CASTING_V2_TWO_PATHS_DESIGN.md` §9, migration 0052. **A refusal
+ * nobody counts is a demand signal thrown away**, and §9's landing condition is
+ * explicit about how that is proven, because this table has been burned by
+ * exactly the opposite: `casting_ink_form_demand` has counted NOTHING since its
+ * only call site went behind `MANNEQUIN_ROAD_DEFERRED`, and nobody noticed,
+ * **because a tally that writes nothing looks exactly like a demand of zero.**
+ *
+ * So the condition is *"an arm that proves the write happens on the refusal path
+ * itself — driven through the refusal, not through the writer."* Every arm below
+ * calls `refineCandidate` with a real instruction and asserts the row as a
+ * consequence of the customer being refused. None of them calls the counter.
+ *
+ * The seam is `countInkCoverageDemand` and it exists so the row is OBSERVABLE
+ * without a database, not so the write can be simulated: the real default is
+ * `recordInkFormDemand`, which swallows everything, so a suite watching it
+ * through a `getDb` that returns null could not tell a write from a no-op.
+ */
+describe("a coverage refusal is counted, and an unpathed one is not", () => {
+  /**
+   * ONE ROW AS THE REFUSAL PATH ASKED FOR IT.
+   *
+   * Deliberately WIDER than the writer's own input type — every field a plain
+   * `string` — so the assertions below compare VALUES rather than inheriting
+   * the vocabulary they are meant to be checking. A counter typed to the union
+   * would make `kind: "surfaceCovered"` unfalsifiable at the type level, which
+   * is half of what these arms exist to catch.
+   */
+  type DemandRow = {
+    kind: string;
+    placement: string;
+    outcome: string;
+    pathAtRefusal?: string | null;
+  };
+  /** Every row the refusal path asked to be counted, in order. */
+  let counted: DemandRow[] = [];
+  const withCounter = () => {
+    counted = [];
+    return {
+      harvest: unmasked,
+      countInkCoverageDemand: async (row: DemandRow) => {
+        counted.push(row);
+        return true;
+      },
+    };
+  };
+  /**
+   * ⚠ THE REAL INTERPRETER, WITH A SCRIPTED TRANSPORT — never a hand-made parse.
+   *
+   * This is the difference between driving the refusal and simulating it. The
+   * ink gate does not live in the service: it lives inside `interpretRefinement`
+   * → `readDelta`, so injecting `interpret` to return a finished refusal would
+   * hand this suite the very fields it is trying to prove — `surface` most of
+   * all — and every arm below would pass with the gate deleted.
+   *
+   * So `interpret` is the REAL function with a scripted engine underneath it
+   * (`stageWallBackstop.test.ts`'s shape, working law 3: a backstop tested only
+   * through an LLM that usually behaves is untested). The service's own
+   * `wardrobe` resolution rides through untouched, which is the whole subject
+   * here — what the model says is fixed, and the only variable is what the cast
+   * is wearing.
+   */
+  const scripted = (reply: string): TextEngine => ({
+    id: "scripted",
+    async complete() {
+      return {
+        text: reply,
+        provenance: { provider: "openrouter" as const, model: "scripted" },
+        latencyMs: 0,
+      };
+    },
+  } as TextEngine);
+  /** What the model replies: her sentence, filed under `ink`, as an edit. */
+  const asksFor = (value: string) => (
+    (args: Parameters<typeof interpretRefinement>[0]) => interpretRefinement({
+      ...args,
+      engine: scripted(JSON.stringify({ intent: "edit", ink: value })),
+    })
+  ) as never;
+
+  it("⚠ HER TOP COVERS IT on the Wardrobe path — one `surfaceCovered` row", async () => {
+    /*
+      §4 case (c): a Wardrobe-path brief that names no outfit falls back to the
+      default grey tee, which is the line every cast in the product wears today.
+      Its upper chest is covered — measured, `inkSurfaceCoverage`'s own table —
+      so the ask is refused free and the demand is real: this person wanted a
+      chest piece and our own outfit is what stopped them.
+    */
+    rollPath = "wardrobe";
+    rollWardrobeLine = HOUSE_WARDROBE_LINE;
+    const shut = await doorShut(refineCandidate(
+      { ...withCounter(), interpret: asksFor("a small swallow tattoo on her upper chest") },
+      { ...input, instruction: "give her a small swallow tattoo on her upper chest" },
+    ));
+
+    expect(shut.reason).toBe("gate_ink_uncarried");
+    expect(counted).toEqual([{
+      kind: "surfaceCovered",
+      /*
+        THE VOCABULARY KEY, never the spelling she used — a count keyed on a
+        spelling is not a count of anything, and it is what keeps the column's
+        own `$type<InkPlacement>()` a true description of its contents.
+
+        ⚠ **THIS ARM IS THE ONLY ONE THAT CAN SEE THAT**, and it is worth
+        saying: `upperChest` and the words she typed are different strings,
+        while the next arm's surface is `neck` in both the vocabulary and her
+        sentence. Writing `place` instead of `surface` reddens here and passes
+        there, measured by sabotage. Any later tidy that folds these two arms
+        into one loses the distinction and keeps the green.
+      */
+      placement: "upperChest",
+      outcome: "refused",
+      pathAtRefusal: "wardrobe",
+    }]);
+    /* Free, and nothing claimed — the row is telemetry beside a refusal, never
+       a transaction of its own. */
+    expect(ledger.charges).toHaveLength(0);
+    expect(journal).not.toContain("claim");
+  });
+
+  it("⚠ NOBODY HAS READ THIS OUTFIT — one `surfaceCoverageUnread` row, not the other kind", async () => {
+    /*
+      The split that makes the kind worth having twice. A line we did not write
+      is `unknown` (there is deliberately no prose matching — a guess about what
+      a customer's outfit covers is a guess about her body), and the demand it
+      records is for 7a-bis, the reader that answers an arbitrary line. Counting
+      it as `surfaceCovered` would inflate the case for a wardrobe edit, which
+      is a DIFFERENT build.
+    */
+    rollPath = "wardrobe";
+    rollWardrobeLine = "a roll-neck wool jumper, plain straight trousers, plain boots";
+    const shut = await doorShut(refineCandidate(
+      { ...withCounter(), interpret: asksFor("a small swallow tattoo on her neck") },
+      { ...input, instruction: "give her a small swallow tattoo on her neck" },
+    ));
+
+    expect(shut.reason).toBe("gate_ink_coverage_unread");
+    expect(counted).toEqual([{
+      kind: "surfaceCoverageUnread",
+      placement: "neck",
+      outcome: "refused",
+      pathAtRefusal: "wardrobe",
+    }]);
+  });
+
+  it("⚠ THE CONTROL THAT MATTERS — an UNPATHED cast is refused and counted NOWHERE", async () => {
+    /*
+      Every roll in both worlds is `unpathed` as this lands, and an unpathed
+      cast's upper-chest refusal is the product's ORDINARY behaviour under the
+      house crew tee — not this feature's demand signal. Counting those would
+      flood the table on the day this shipped with a fact nobody is deciding
+      anything from, and in the rows it would be indistinguishable from the
+      thing the table is for.
+
+      Note what this arm proves and the first one does not: the refusal is
+      IDENTICAL — same reason, same sentence, same surface — and only the row
+      differs. A write keyed on the refusal REASON alone passes the first arm
+      and fails here.
+    */
+    rollPath = null;
+    rollWardrobeLine = null;
+    const shut = await doorShut(refineCandidate(
+      { ...withCounter(), interpret: asksFor("a small swallow tattoo on her upper chest") },
+      { ...input, instruction: "give her a small swallow tattoo on her upper chest" },
+    ));
+
+    expect(shut.reason).toBe("gate_ink_uncarried");
+    expect(counted, "an unpathed refusal is the product's ordinary behaviour").toEqual([]);
+  });
+
+  it("⚠ A ROLL THAT CLAIMS A PATH AND CANNOT SAY WHAT IT WEARS is not counted either", async () => {
+    /*
+      `incoherent` — a path with no line. It refuses (the gate reads it as
+      `unknown` and fails closed, correctly), and it writes NO row: the surface
+      it refused was decided by a cast that cannot say what it is wearing, so a
+      demand row from it is a count of our own broken state wearing a customer's
+      name.
+
+      It cannot be produced by the write path — a path and a line are stamped in
+      one insert — and it is driven anyway, because a corner declared
+      unreachable and then quietly defaulted is a corner with no test.
+    */
+    rollPath = "wardrobe";
+    rollWardrobeLine = null;
+    const shut = await doorShut(refineCandidate(
+      { ...withCounter(), interpret: asksFor("a small swallow tattoo on her neck") },
+      { ...input, instruction: "give her a small swallow tattoo on her neck" },
+    ));
+
+    expect(shut.reason).toBe("gate_ink_coverage_unread");
+    expect(counted).toEqual([]);
+  });
+
+  it("⚠ A REFUSAL THAT IS NOT ABOUT HER CLOTHES writes nothing — the road, not the outfit", async () => {
+    /*
+      The third sibling, and the one a reason-keyed write would get wrong in the
+      other direction. On a Wardrobe cast in an outfit nobody has read, an
+      upper-chest ask is refused because THIS ROAD cannot crop a result there —
+      a fact about us, identical on every path and every outfit — so it is not a
+      wardrobe demand and does not belong in a wardrobe tally.
+    */
+    rollPath = "wardrobe";
+    rollWardrobeLine = "a one-shoulder animal hide, bare legs, bare feet";
+    const shut = await doorShut(refineCandidate(
+      { ...withCounter(), interpret: asksFor("a small swallow tattoo on her upper chest") },
+      { ...input, instruction: "give her a small swallow tattoo on her upper chest" },
+    ));
+
+    expect(shut.reason).toBe("gate_ink_unkeepable");
+    expect(counted).toEqual([]);
+  });
+
+  it("⚠ THE COUNTER CANNOT TAKE THE ANSWER AWAY — it throws and she is still refused", async () => {
+    /*
+      This is telemetry riding a customer's request and **it may never block the
+      answer.** The writer swallows its own failures, but a refusal whose safety
+      depends on whatever is injected as its counter is a refusal that is safe
+      by somebody remembering — so the catch is at the call site too, and this
+      drives it there by handing in a counter that rejects.
+
+      Not a hypothetical: the table lands in a world by a founder ceremony, and
+      every call before that ceremony threw.
+    */
+    rollPath = "wardrobe";
+    rollWardrobeLine = HOUSE_WARDROBE_LINE;
+    const shut = await doorShut(refineCandidate(
+      {
+        harvest: unmasked,
+        countInkCoverageDemand: async () => {
+          throw new Error("the table is not there yet");
+        },
+        interpret: asksFor("a small swallow tattoo on her upper chest"),
+      },
+      { ...input, instruction: "give her a small swallow tattoo on her upper chest" },
+    ));
+
+    expect(shut.reason).toBe("gate_ink_uncarried");
+    expect(shut.message).toMatch(/top covers her upper chest/);
   });
 });

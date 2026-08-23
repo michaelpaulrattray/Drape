@@ -11,10 +11,34 @@
  * demand signal out of.
  *
  * So: **ceremony → the schema and the writer land dark → the flip**, and this
- * commit's schema half is deliberately absent. The three-way arm (drizzle
+ * commit's schema half was deliberately absent. The three-way arm (drizzle
  * object, migration text, database) lands in the sitting that adds the column,
  * after production has taken the ceremony. **A gap stated is a gap; a gap
  * skipped is a trap** (fable-1343 §3).
+ *
+ * ✅ **THAT SITTING IS THIS ONE (2026-08-23).** Production took the ceremony on
+ * his word (relayed fable-1458), and it was read back at `information_schema`
+ * in BOTH worlds before a line of the schema half moved — not taken from the
+ * ceremony's own report, because a report is a claim and the columns are the
+ * fact:
+ *
+ * ```
+ * PRODUCTION  hayabusa.proxy.rlwy.net:23768/railway
+ *   kind          enum('torsoNonbinary','torsoUnstated','surfaceCovered','surfaceCoverageUnread') NOT NULL
+ *   pathAtRefusal enum('wardrobe','basics') NULL          rows: 0
+ * DEV         hayabusa.proxy.rlwy.net:52008/railway
+ *   kind          enum('torsoNonbinary','torsoUnstated','surfaceCovered','surfaceCoverageUnread') NOT NULL
+ *   pathAtRefusal enum('wardrobe','basics') NULL          rows: 0
+ * ```
+ *
+ * `rows: 0` in both is what says the enum widening rewrote nothing, which is a
+ * claim the migration makes about itself and is checked here from outside it.
+ *
+ * Everything above stays exactly as it was written, because it is the argument
+ * for the STAGING and the staging happened — what changed is the tense. The one
+ * arm that had to go is the absence pin, and it went where its own comment sent
+ * it rather than into a deletion: *"replace this arm with the three-way arm — DO
+ * NOT simply remove it."*
  *
  * # What is left is the migration TEXT, and it is where the quiet failures live
  *
@@ -37,6 +61,7 @@ import { readFileSync } from "node:fs";
 import { INK_FORM_DEMAND_KINDS, INK_FORM_DEMAND_OUTCOMES } from "../../shared/inkFormDemand";
 import { castingInkFormDemand } from "../../drizzle/schema";
 import { CASTING_PATHS } from "../../shared/castingPaths";
+import { effectiveColumn } from "../testing/migrationColumns";
 
 const MIGRATION_PATH = "drizzle/0052_ink_form_demand_paths.sql";
 const MIGRATION = readFileSync(new URL(`../../${MIGRATION_PATH}`, import.meta.url), "utf8");
@@ -90,22 +115,110 @@ describe("the tally's widening, before the ceremony", () => {
     expect(SQL).not.toMatch(/\bDELETE\b/i);
   });
 
-  it("⚠ the SCHEMA HALF IS DELIBERATELY ABSENT until production has taken the ceremony", () => {
+  it("the migration text, the code's constant and the DDL spell ONE list", () => {
     /*
-      0051's rule, one table over. Replace this arm with the three-way arm
-      (drizzle object vs migration text vs database) in the sitting that adds the
-      column — DO NOT simply remove it.
+      THE ARM THE ABSENCE PIN BECAME. It asserted that `INK_FORM_DEMAND_KINDS`
+      did NOT carry the two new members and that the drizzle object had no
+      `pathAtRefusal`; both are now true the other way round, and deleting it
+      would have left the widening as the one part of this feature with no pin
+      at all, at the exact moment it became writable.
+
+      Compared PAIRWISE rather than all against the constant: a rename that moved
+      only two of the three is exactly what this catches. And a coordinated
+      rename of all three would satisfy every derived comparison, which is why
+      the four words are written out as literals as well.
     */
-    expect(Object.keys(castingInkFormDemand)).not.toContain("pathAtRefusal");
-    for (const appended of APPENDED) {
-      expect(
-        [...INK_FORM_DEMAND_KINDS],
-        `${appended} must not reach the code until the ceremony has run in both worlds`,
-      ).not.toContain(appended);
-    }
-    /* And the existing vocabulary is untouched by the staging — a pin that
-       passed because the whole constant had been emptied would be no pin. */
-    expect([...INK_FORM_DEMAND_KINDS]).toEqual([...EXISTING]);
+    expect([...INK_FORM_DEMAND_KINDS]).toEqual([...EXISTING, ...APPENDED]);
+    const enumClause = /MODIFY COLUMN `kind` enum\(([^)]*)\)/.exec(SQL);
+    const members = enumClause![1]!.split(",").map((one) => one.trim().replace(/^'|'$/g, ""));
+    expect(members).toEqual([...INK_FORM_DEMAND_KINDS]);
+    expect([...INK_FORM_DEMAND_KINDS])
+      .toEqual(["torsoNonbinary", "torsoUnstated", "surfaceCovered", "surfaceCoverageUnread"]);
+    /* And the OUTCOMES are untouched by any of this — said out loud, because a
+       widening that quietly moved a neighbouring enum on the same table is the
+       whole class this file exists for. */
     expect([...INK_FORM_DEMAND_OUTCOMES]).toEqual(["refused", "delivered"]);
   });
 });
+
+/**
+ * THE COLUMN ITSELF, CHECKED THREE WAYS RATHER THAN TRUSTED ONCE — 0051's own
+ * shape, one table over (`twoPathsMigration.test.ts`).
+ *
+ * ```
+ * the drizzle object    read at runtime off `castingInkFormDemand` — the thing
+ *                       every INSERT the product makes is actually built from
+ * the migration text    read through `effectiveColumn`, which replays the whole
+ *                       SEQUENCE rather than the file that created the column
+ * the database          the read-back quoted in this file's header
+ * ```
+ *
+ * **The third leg is a quoted fact and not a live read, and that is stated
+ * rather than papered over.** `vitest.setup.ts` strips `DATABASE_URL` on
+ * purpose, so a suite here cannot ask the real database anything; an arm gated
+ * on `TEST_DATABASE_URL` would skip on every machine that runs this suite,
+ * which is a control that cannot fire wearing a control's name.
+ *
+ * **`createdAt` appears below as the NEGATIVE CONTROL and it is not
+ * decoration.** Every assertion here is of the form *this column has no NOT NULL
+ * and no DEFAULT* — a shape that passes for free if the property being read is
+ * undefined, misspelled, or a field drizzle stopped populating. `createdAt` sits
+ * in the same table with both of those true, so the reader is made to say so out
+ * loud in the same arm. An absent reading is not a neutral omission; it reads as
+ * a green one.
+ */
+describe("`pathAtRefusal`, checked three ways rather than trusted once", () => {
+  const column = castingInkFormDemand.pathAtRefusal;
+
+  it("reads column metadata at all — `createdAt` proves the instrument can say NO", () => {
+    expect(castingInkFormDemand.createdAt.notNull).toBe(true);
+    expect(castingInkFormDemand.createdAt.hasDefault).toBe(true);
+    /* And an enum's members are readable off this object at all, so the
+       spelling arm below cannot be passing on a shape it never found. */
+    expect(castingInkFormDemand.kind.enumValues).toEqual([...INK_FORM_DEMAND_KINDS]);
+  });
+
+  it("the drizzle object leaves it nullable and undefaulted", () => {
+    /*
+      The half the migration-text arms above cannot see. The DDL and the drizzle
+      object are two independent claims about one column, and it is the drizzle
+      object that decides what the product WRITES: `.notNull()` here over a
+      nullable column is a runtime insert failure on a TELEMETRY path — which
+      lands in a `catch` and counts nothing, silently, which is this table's own
+      worst failure mode — and `.default()` here is a path claim invented by the
+      ORM for a refusal nobody made.
+    */
+    expect(column.notNull).toBe(false);
+    expect(column.hasDefault).toBe(false);
+  });
+
+  it("spells the same two words in the object, the constant and the DDL", () => {
+    /* Three spellings compared pairwise, and the literals kept, for
+       `twoPathsMigration.test.ts`'s reason: a coordinated rename of all three
+       would pass every derived comparison while silently replacing his two
+       words. */
+    expect(column.enumValues).toEqual([...CASTING_PATHS]);
+    expect(enumMembersOfEffective("pathAtRefusal")).toEqual([...CASTING_PATHS]);
+    expect([...CASTING_PATHS]).toEqual(["wardrobe", "basics"]);
+  });
+
+  it("agrees with the DDL read through the whole SEQUENCE, nullability and all", () => {
+    /*
+      `effectiveColumn` rather than this migration's own text, deliberately: a
+      later `MODIFY` is part of what the column IS, and a reader that stops at
+      the statement which created it is reading history and reporting the
+      present. That is the exact failure `server/testing/migrationColumns.ts`
+      was written after.
+    */
+    expect(effectiveColumn("casting_ink_form_demand", "pathAtRefusal"))
+      .toBe(`enum(${CASTING_PATHS.map((value) => `'${value}'`).join(",")}) NULL`);
+  });
+});
+
+/** The enum members of a column's EFFECTIVE DDL, after every migration. */
+function enumMembersOfEffective(column: string): string[] {
+  const ddl = effectiveColumn("casting_ink_form_demand", column);
+  const match = /enum\(([^)]*)\)/.exec(ddl ?? "");
+  expect(match, `\`${column}\` is not an enum in the effective DDL`).not.toBeNull();
+  return match![1]!.split(",").map((value) => value.trim().replace(/^'|'$/g, ""));
+}

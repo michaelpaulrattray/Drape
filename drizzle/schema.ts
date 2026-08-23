@@ -2989,6 +2989,31 @@ export const castingInkFormDemand = mysqlTable("casting_ink_form_demand", {
    */
   placement: varchar("placement", { length: 64 }).$type<InkPlacement>().notNull(),
   outcome: mysqlEnum("outcome", INK_FORM_DEMAND_OUTCOMES).notNull(),
+  /**
+   * WHICH PATH THE CAST WAS BORN ON WHEN IT WAS REFUSED (migration 0052).
+   *
+   * ⚠ **NULLABLE, WITH NO DEFAULT, AND THAT IS THE WHOLE OF IT.** Every row
+   * this table already holds is a torso-form refusal from before the paths
+   * existed; MySQL fills every existing row with a column's DEFAULT when one is
+   * given, so a default here would stamp all of them with a claim about a path
+   * that did not exist when they were written — and there is no repair
+   * afterwards, because the distinction it destroys is the only evidence of
+   * which rows predate the feature.
+   *
+   * **It will never be NULL in practice and it is nullable anyway.** The writer
+   * does not fire for `unpathed` — an unpathed cast's upper-chest refusal is
+   * the product's ordinary behaviour under the house crew tee rather than this
+   * feature's demand signal, and counting those would flood the table with a
+   * fact nobody is deciding anything from. So NULL here means *somebody wrote a
+   * row without saying which path*, which is a fault to be READ rather than a
+   * write to be rejected: this is telemetry riding a customer's request and a
+   * tally that can refuse a write is a tally that can cost a customer a
+   * sentence.
+   *
+   * `CASTING_PATHS` and not a third spelling — the column, the constant and the
+   * DDL are compared pairwise in `inkFormDemandMigration.test.ts`.
+   */
+  pathAtRefusal: mysqlEnum("pathAtRefusal", CASTING_PATHS),
   createdAt: timestamp("createdAt").notNull().defaultNow(),
 }, (table) => ([
   index("idx_casting_ink_form_demand_kind").on(table.kind, table.outcome),

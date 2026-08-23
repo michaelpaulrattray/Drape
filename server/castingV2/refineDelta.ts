@@ -45,6 +45,7 @@ import { scrubBrands } from "./brandScrub";
    and there is no runtime cycle. */
 import { readOpenKinds } from "./openLaneKind";
 import { classifyInkPlacement, namesDesign, placementClause } from "./inkPlacement";
+import type { InkPlacement as InkPlacementKey } from "../../shared/inkPlacementVocabulary";
 import type { WardrobeResolution } from "./wardrobeLine";
 import { namesUnknownProperNoun } from "./properNouns";
 import { tokensComeFromBrief } from "./castingIntent";
@@ -532,7 +533,18 @@ export type RefineRefusal =
    * (opus-960, ratified fable-1301 §1). `place` is the surface in her own kind
    * of words, so the sentence can name it rather than apologise generically.
    */
-  | { reason: "gate_ink_uncarried"; place: string; alternatives: readonly string[] }
+  | {
+    reason: "gate_ink_uncarried";
+    place: string;
+    /**
+     * THE VOCABULARY KEY BEHIND {@link place} — what the demand tally counts
+     * (§9, migration 0052). See `InkPlacement`'s own docblock for why the word
+     * she recognises and the surface it folds to are two fields rather than one
+     * derived at each reader.
+     */
+    surface: InkPlacementKey;
+    alternatives: readonly string[];
+  }
   /**
    * THE SURFACE IS BARE AND THIS ROAD STILL CANNOT KEEP A RESULT THERE
    * (item 7a). `gate_ink_uncarried`'s twin, split from it because the two
@@ -548,7 +560,13 @@ export type RefineRefusal =
    * its own words — a fail-closed gate that lies about WHY it closed is how a
    * customer learns to distrust every refusal this product writes.
    */
-  | { reason: "gate_ink_coverage_unread"; place: string; alternatives: readonly string[] }
+  | {
+    reason: "gate_ink_coverage_unread";
+    place: string;
+    /** As {@link RefineRefusal} `gate_ink_uncarried`'s — the counted surface. */
+    surface: InkPlacementKey;
+    alternatives: readonly string[];
+  }
   | { reason: "unreadable" }
   | { reason: "empty" }
   /**
@@ -1481,6 +1499,9 @@ export function readDelta(value: unknown, check?: FreeLaneCheck): RefineDelta | 
             check.wall = {
               reason: "gate_ink_uncarried",
               place: placement.place,
+              /* The counted surface rides with the sentence, from the one place
+                 that resolved it — see `InkPlacement`'s docblock. */
+              surface: placement.surface,
               alternatives: placement.alternatives,
             };
             return null;
@@ -1501,6 +1522,7 @@ export function readDelta(value: unknown, check?: FreeLaneCheck): RefineDelta | 
             check.wall = {
               reason: "gate_ink_coverage_unread",
               place: placement.place,
+              surface: placement.surface,
               alternatives: placement.alternatives,
             };
             return null;

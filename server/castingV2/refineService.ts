@@ -241,6 +241,7 @@ import { namedButNotServedNote, openLaneOutcomeOf } from "./openLaneAccept";
 import { openKindPresenceBindsToday } from "./openKindPolicy";
 import { readOpenKinds } from "./openLaneKind";
 import { recordOpenLaneDemand } from "../db/castingV2OpenLaneDemand";
+import { recordInkFormDemand } from "../db/castingV2InkFormDemand";
 import { readOpenKindProperties } from "../db/castingV2OpenKindProperties";
 import { repaint, type ReferenceFitter, type RepaintEngine, type SentRequest } from "./repaintRender";
 import {
@@ -670,6 +671,18 @@ export type RefineServiceDependencies = {
   /** The reader that checks the picture against the record (D-185). */
   verifier?: Parameters<typeof verifyRender>[0]["engine"];
   admit?: () => boolean;
+  /**
+   * THE DEMAND TALLY, for the two coverage refusals (design §9, migration
+   * 0052).
+   *
+   * A seam rather than a direct call for the reason every other writer here is
+   * one: the suite that drives the REFUSAL must be able to see the row without
+   * a database, and §9's landing condition is that the write is proven **on the
+   * refusal path itself** rather than by calling the writer. Its own default
+   * swallows everything, so this seam changes nothing about safety — it changes
+   * what a test can observe.
+   */
+  countInkCoverageDemand?: typeof recordInkFormDemand;
   /** The brief that knows what she was drawn wearing (D-206). */
   readBaseWorn?: typeof getBriefForOwnedCandidate;
   readBytes?: typeof storageReadBytes;
@@ -2345,6 +2358,70 @@ async function refineCandidateCounted(
       rescued-vs-upheld ratio stays readable. Never her sentence: staff read
       audit rows.
     */
+    /*
+      ---- AND A COVERAGE REFUSAL IS COUNTED (design §9, migration 0052) ----
+
+      **A refusal nobody counts is a demand signal thrown away**, and this table
+      already answers exactly this question one refusal over: *what did we have
+      to refuse, and how many people wanted it.*
+
+      # It fires HERE, at the one exit, and not where the wall is raised
+
+      The wall is set in `refineDelta`, inside a parse that this request may run
+      up to THREE times — the first reading, the removal re-read and the
+      restatement pass. A write there would count one customer's one sentence
+      as two or three, which is worse than not counting it: a demand figure
+      that silently multiplies by a retry is an argument for building the wrong
+      thing. This is the single place a refusal becomes the answer she gets.
+
+      # ⚠ NEVER FOR `unpathed`, and that is the whole reason `wardrobeNow` is
+      # read here rather than the reason being read off the wall
+
+      Every roll in both worlds is `unpathed` today, and an unpathed cast's
+      upper-chest refusal is the product's ORDINARY behaviour under the house
+      crew tee — not this feature's demand signal. Counting those would flood
+      the table with a fact nobody is deciding anything from, and it would do it
+      immediately and for everybody. So the row is written only when the branch
+      resolves to a real path, from the same `wardrobeNow` the gate itself was
+      asked with: two resolutions in one request are two answers waiting to
+      disagree, and here they would disagree about whether a row exists.
+
+      `incoherent` is not counted either, and that is deliberate rather than an
+      oversight: it carries a path and no line, so the surface it refused was
+      decided by a cast that cannot say what it is wearing. A demand row from
+      that is a count of our own broken state wearing a customer's name.
+
+      # The two kinds are not one, for this table's own precedent
+
+      `surfaceCovered` is *her outfit covers it* — the demand is for a wardrobe
+      edit or a Basics recast, a product road. `surfaceCoverageUnread` is *we
+      have not read this outfit* — the demand is for 7a-bis, a different build.
+      One value for both would inflate the case for the wrong one.
+
+      Awaited and caught, exactly as the plate mint's counter is: the writer
+      swallows its own failures, and a refusal whose safety depends on whatever
+      is injected as its counter is a refusal that is safe by somebody
+      remembering. It is awaited so a test can SEE the write, and caught so
+      nothing it does can reach the customer.
+    */
+    if (
+      (parsed.refusal.reason === "gate_ink_uncarried"
+        || parsed.refusal.reason === "gate_ink_coverage_unread")
+      && wardrobeNow.kind === "line"
+    ) {
+      await (dependencies.countInkCoverageDemand ?? recordInkFormDemand)({
+        kind: parsed.refusal.reason === "gate_ink_uncarried"
+          ? "surfaceCovered"
+          : "surfaceCoverageUnread",
+        /* The vocabulary KEY she folded to, never the spelling she used — see
+           `InkPlacement`'s docblock, and `casting_ink_form_demand.placement`'s
+           `$type<InkPlacement>()`, which this is what keeps true. */
+        placement: parsed.refusal.surface,
+        outcome: "refused",
+        pathAtRefusal: wardrobeNow.path,
+      }).catch(() => undefined);
+    }
+
     // An honest boundary, not a fault — and free, which is the point of §10.
     throw refusal(parsed.refusal.reason, {
       code: "BAD_REQUEST",
