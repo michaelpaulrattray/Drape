@@ -3269,3 +3269,62 @@ unread by any reading here.** A clean run is a floor in all three, never a proof
 
 **No TAKE rows.** Nothing in this section authorises a deletion or a fold, and
 none is proposed.
+
+---
+
+## 33. STATE CLAIMS THAT WENT STALE IN `server/` AND `shared/` DOCBLOCK PROSE —
+## THREE SPECIMENS, NOT A POPULATION (2026-08-24, opus-1175, ruled fable-1526
+## §3. A named row so that "follow-up" has an address; no deletion is proposed
+## here and none is authorised by it.)
+
+### 33a. Why this row exists, and what it deliberately is not
+
+The six-document stale-row sweep of 2026-08-24 was scoped to `docs/specs/`. Three
+specimens of the SAME class were hit incidentally, in `server/` and `shared/`,
+each while verifying a document row against the code. **No sweep of code prose has
+ever been run**, so these are three specimens and this row does not claim a
+population — saying otherwise would be the noise-bias failure the sweep family
+has already paid for twice.
+
+The class is the one the document sweep is about: **a present-tense claim about
+what the product IS, sitting in prose that nobody re-opens when the thing it
+describes moves.** In a docblock it is worse in one specific way than in a design
+note — the next person to read it is holding the file open to change the code
+beside it.
+
+### 33b. The three, each with the artifact that overtook it
+
+| specimen | the claim | what overtook it |
+|---|---|---|
+| **`server/castingV2/refineService.ts`** | *"In production that is `CASTING_REPAINT_SCOPE=users:1` — his own account — on every tattoo ask"* | Production is `all`. **Line ~4519 of the same file says so** — *"while production is `all`"* — so the file contradicts itself about production state roughly 800 lines apart. The stale one narrates a past incident in the present tense, which is what makes it hard to see: it is *correct about the moment it describes* and wrong as a sentence. |
+| **`shared/referenceIntents.ts` (a)** | *"the whole road is behind `CASTING_INK_STUDIO_SCOPE`, which is off"* | It is `users:1`, read at `scripts/lib/productionFlagPositions.mts` — the declared table the deploy rite compares to the SERVICE on every push. |
+| **`shared/referenceIntents.ts` (b)** | the hair clarifying question described as *"an unbuilt road whose design is reviewed before it is built"* | **The founder DELETED the clarifying question** (fable-1087, relayed into `CLAUDE.md`'s `CASTING_HAIR_REFERENCE_SCOPE` paragraph: *"if they are vague and say copy this hair it just means the whole lot unless they specify"*). The road it calls unbuilt is built and live at `users:1` (`hairReferenceTake.ts`, `hairReferenceCutter.ts`, `referenceWordsLane.ts`). |
+
+**A fourth was found and REPAIRED in the same commit rather than filed here**,
+because it was one line and it sits on a founder-gated flip: `CASTING_TWO_PATHS_SCOPE`'s
+`why` in `scripts/lib/productionFlagPositions.mts` said the flip waits on a court
+that ran on 2026-08-23 — the FOURTH surface of a sentence three commits had
+already chased off three others, on the one file whose whole job is not to go
+stale about flags. Its correction carries the lesson in place: **a `why` is
+prose, and prose in an instrument rots exactly like prose in a document.**
+
+### 33c. Disposition, and what would settle it
+
+**`no-consumer-found-by-any-reading` does not apply here** — these are not dead
+symbols, they are live comments on live code, so the 1508 §2 vocabulary does not
+fit and inventing a verdict for them would be worse than saying so. The honest
+disposition is **HELD, pending a sweep that has never been run**: a hand reading
+of `server/` and `shared/` docblock prose for present-tense state claims,
+weighted by distance from where work happens, queued as its own sitting beside
+the design-docs remainder (fable-1526 §3).
+
+⚠ **The pricing lesson is already banked and applies to that sitting**: do NOT
+price it with a phrase-anchor grep. Measured on the one population where truth
+was known (V3B's six stale rows, found by hand), a mechanical not-yet-phrase ERE
+matched **three of the six** while producing nearly three times the noise, and one
+of the three misses carried no stale-claim word at any point. Two of the three
+specimens above would have been invisible to it: neither says *not yet*, and one
+of them is wrong only in its TENSE.
+
+**No TAKE rows.** Nothing in this section authorises a deletion, a fold or an
+edit, and none is proposed.

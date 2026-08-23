@@ -21,6 +21,16 @@ asks a describer four named cosmetic surfaces, composes a sentence and
 behind `config.makeupFromReferenceEnabled` as the text link he called stupid
 (`MAKEUP_READ_ACTION = "Take the makeup from a photo"`, `RefinePanel.tsx:256`).
 
+⚠ **THE LINK AND ITS GATE ARE BOTH GONE — this road removed them, which is the
+right ending and leaves §1 describing a door that no longer exists** (fable-1103
+§2, 2026-08-20). `MAKEUP_READ_ACTION` and `makeupFromReferenceEnabled` appear
+nowhere in `client/`, `server/` or `shared/` except the comment in
+`server/routes/castingV2.ts` that records the removal: *"THE TWO READ GATES ARE
+GONE WITH THEIR DOORS … There are no per-feature read controls any more — the
+reading happens inside the refine road and arrives on its answer — so a gate for
+one would be a flag about a control nobody draws."* The paragraph is kept because
+the link he called stupid is why this whole document exists.
+
 **(b) The ink upload.** `castingV2.ink.upload` stores OUR copy of the design
 under the candidate's purge path, capped at 8 per Cast, against a closed
 placement vocabulary and a declared intent.
@@ -36,6 +46,12 @@ side-channels rather than as parts of one road.
 `tattoo: mannequinPlate` (now deferred, fable-1053 §2), `hair: crop`,
 `makeup: words`, `eyeColour: crop` — and an `open` flag saying whether that form
 is built. Today exactly one form is built (`makeup: words`) plus the ink upload.
+
+⚠ **TWO FORMS ARE BUILT NOW, AND THE SECOND ONE IS THIS DOCUMENT'S OWN §9.** The
+hair CROP form shipped — `hairReferenceTake.ts`, `hairReferenceCutter.ts` and
+`referenceWordsLane.ts` are all in the tree — and `CASTING_HAIR_REFERENCE_SCOPE`
+stands at `users:1` on production. The count sentence is kept as the starting
+line it was; §9.11, §9.14 and §9.15 are where it stopped being true.
 
 ## 2. THE SHAPE — one attach, one sentence, the interpreter routes
 
@@ -312,6 +328,16 @@ a filename and not from a reader.*
   owner in the statement and re-anchored to this Cast.
 
 Not built: the reads, the crop, and the class door ruled in fable-1075.
+
+⚠ **ALL THREE ARE BUILT, AND THIS DOCUMENT SAYS SO SIX HUNDRED LINES BELOW ITS
+OWN HEADING** — §9.11 (*THE CUTTER — the orchestration, built
+(`hairReferenceCutter.ts`)*), §9.14 (*THE CLASS DOOR, BUILT AND COURTED
+(`referenceMediumDoor.ts`)*) and §9.15 (*THE ENTRANCE — the stone nobody had
+laid (built, courted 8/8)*). **And the heading's own parenthetical is a day
+behind too**: `CASTING_HAIR_REFERENCE_SCOPE` is not `off`, it is `users:1` on
+production (`scripts/lib/productionFlagPositions.mts`, the declared table the
+deploy rite compares to the service on every push). The section is kept as the
+record of what landed in `2358ca59`; what it says about TODAY is what moved.
 
 ### 9.2 HIS COLOUR SPECIMEN IS NOT A MULTI-PANEL, AND ITS DIFFICULTY IS SPATIAL
 
@@ -1189,6 +1215,17 @@ already waiting, and the class door's deferred count value (§9.14) as one more
 line on the same ceremony. One sitting, one announcement, a feature he can
 actually touch.
 
+⚠ **THE SURFACE LANDED AND THE FLAGS FLIPPED WITH IT, EXACTLY AS THIS SECTION
+ORDERED — so the first sentence above is now a false statement about production
+and is the one line in this document a seat could act wrongly on.** Both stand at
+`users:1`: `CASTING_REFERENCE_ATTACH_SCOPE` (*"the door that takes her picture at
+all; parent of the two reference lanes"*) and `CASTING_HAIR_REFERENCE_SCOPE`
+(*"taking hair from an attached picture; his account"*). Read at
+`scripts/lib/productionFlagPositions.mts` — the declared table the deploy rite
+compares to the SERVICE on every push — not from prose. **The plan is kept
+because it was followed**; what survives of it is the bound rather than the
+absence: his account only, and a widening is its own decision.
+
 ### 10.6 And the YES bar's centrepiece is HIS EYE on the first real crop
 
 Build two's YES declaration carries the surface's evidence pack **and the
@@ -1334,3 +1371,28 @@ Until all three are answered, the capability sentence stands. It is not
 fable-1078's document wall rebuilt: that ruling removed the wall that refused a
 design she had SUPPLIED, and this is a capability said honestly, with the three
 surfaces she can use in her next message named in the same breath.
+
+---
+
+## 12. The stale-row reading this document was swept by (2026-08-24, opus-1175)
+
+Nine candidate state claims read, **four stale**, all four repaired above in the
+additive form — the clause kept, the correction beside it with its artifact.
+They were §1(a) (a door removed by this road's own build), §1(d) (the
+one-form-built count), §9.1 (its `off` parenthetical and its *not built* tail,
+both contradicted by §9.11/§9.14/§9.15 of this file), and §10.5 (both flags
+described as absent from production while both stand at `users:1`). §10.5 is the
+one that mattered: a live design document making a false present-tense claim
+about production state.
+
+**The pattern is worth more than the four**: every one is a section that was
+TRUE when written and was overtaken by work this same document commissioned. The
+build's own later sections are correct; the framing prose in front of them is
+what rotted.
+
+⚠ **The sweep that found them is PHRASE-ANCHORED and is a FLOOR, not coverage.**
+Measured on the one population where truth was already known (V3B's six stale
+rows, found by hand): a mechanical not-yet-phrase grep matched **three of the
+six** while producing nearly three times the noise, and one of the three misses
+carried no stale-claim word at all. The per-row read of this document's 1,300
+lines is not retired by this and is not claimed to be.

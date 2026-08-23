@@ -313,3 +313,39 @@ the day the number says so.
   law 9's own sentence, correctly placed.
 - It does not make coverage a property a customer can see or set. It is a fact
   about a photograph.
+
+---
+
+## 9. The stale-row reading this document was swept by (2026-08-24, opus-1175)
+
+Five candidate state claims read, **zero stale** — the only clean document of the
+six-document sitting, and it was read first because §10 of
+`CASTING_V2_TWO_PATHS_DESIGN.md` names 7a-bis as one of the two items open on the
+flip's own path, so its next reader is the post-look sitting. The three most
+likely to have rotted were driven rather than skimmed:
+
+- *Nothing here is built* — `CASTING_COVERAGE_READ_SCOPE` appears in exactly one
+  place in the repository, this file; `casting_wardrobe_coverage` appears in no
+  migration and no server module.
+- *Today `unknown` is unreachable; every production roll is `unpathed`* —
+  `CASTING_TWO_PATHS_SCOPE` is `off`, read at
+  `scripts/lib/productionFlagPositions.mts`, the declared table the deploy rite
+  compares to the SERVICE on every push, rather than at prose.
+- §1.1's *Five, at eight call sites* — all eight cited `file:line` pairs land
+  exactly where cited. ⚠ One precision note, not a stale row: five of the eight
+  are direct calls to this module's exports (`inkPlacement` x3,
+  `carriedGeometry`, `inkViewReferences`); the other three (`signService` x2,
+  `refineService`) consume the ANSWER and the refusal REASON rather than calling
+  the module. The column is *what it decides*, so the table is not false — but
+  *call sites* is the wrong noun for three rows, and the load-bearing claim (**all
+  synchronous**, which §3's purity argument stands on) holds.
+
+**That this document is the clean one is the sitting's own finding confirmed**:
+a row goes stale in proportion to its distance from where work actually happens,
+and this is the document a seat is about to stand in.
+
+⚠ **The sweep is PHRASE-ANCHORED and is a FLOOR, not coverage.** Measured on the
+one population where truth was already known (V3B's six stale rows, found by
+hand): a mechanical not-yet-phrase grep matched **three of the six** while
+producing nearly three times the noise, and one of the three it missed carried no
+stale-claim word at any point. Zero stale here is a floor, not a certificate.

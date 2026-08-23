@@ -28,6 +28,14 @@ customer can put a tattoo on a neck, then ask for one on an upper arm. What has
 not happened yet is anybody DOING it — no branch in either world has ever worn
 two. That is a population fact, not a door.
 
+⚠ **THE POPULATION FACT IS NO LONGER TRUE OF DEV, AND THIS DOCUMENT IS WHERE IT
+STOPPED BEING TRUE.** §2c's court put two tattoos on one dev branch on
+2026-08-24 — the same day this paragraph was written — and closed it at the
+frames. It is still true of PRODUCTION as far as any reading here goes, and the
+sentence is kept because *reachable by every account, done by nobody* is the
+thing §0 exists to say. See §7's second warning for what that court did and did
+not settle.
+
 ---
 
 ## 1. What the census says, and the one thing it does not
@@ -415,6 +423,30 @@ function that composes correctly proves nothing about what the render dispatches
   census's missing `branch-with-two-tattoos` state fixture, which is worth more
   than the court itself — it is a permanent instrument. Costed here, not run, not
   authorized.
+
+  ⚠ **THAT COURT RAN, AND IT RAN THE SAME DAY THIS BULLET WAS WRITTEN — the
+  clause above is kept because the price it quotes is what makes it worth
+  reading.** §2b and §2c of this document report it: both halves, closed at the
+  frames 2026-08-24, **75 dev credits actual** against the 100 costed here (the
+  overage stated at §2c — the first after-half measured the PASTE road and bought
+  §2d's second finding). `inkDelivered` holds two slots
+  (`ink:neck` and `ink:upperArm@left`), the neck's crop id is unchanged, and the
+  frames are on disk at `output/two-tattoo-court-repaint/`
+  (`01-after-ask-1.png`, `02-after-ask-2.png`, `court.json`, `court.log`,
+  `court-run2.log`). **A seat reading this bullet to find out what 3b still owes
+  was being told to buy, or to seek authorization for, a court sitting 200 lines
+  above it with its receipts** — which is the shape a stale row takes when it
+  carries a PRICE (fable-1518's 2b(a); second instance, and the first one to
+  live inside a single file).
+
+  ⚠ **What the court did NOT do is the half this bullet was right about, and it
+  is still owed**: the census's missing `branch-with-two-tattoos` state fixture
+  was not minted and structurally could not have been. The court ran on the dev
+  fixture account (user 28601) and every census state fixture is owner-scoped to
+  the OUTSIDER (opus-1146 §4, confirmed at the code by opus-1152 §2). The honest
+  50-credit mint on the outsider is **pre-authorized and bundled** with the next
+  sitting that spends on that account (fable-1497 §3) — so this is an owed item
+  with an address, not an open cost.
 - **It does not touch the sign views.** A signed Cast wearing two is a further
   450-credit Sign and is not part of this item.
 - **It does not widen any placement.** `upperChest` still walls with
@@ -443,3 +475,21 @@ narrow: B fixes the carry and leaves the item's own name — *keying* —
 unaddressed, so the second tattoo's removal and transform roads would each need
 their own answer to *which sentence belongs to which tattoo*, which is three
 answers to one question.
+
+---
+
+## 9. The stale-row reading this document was swept by (2026-08-24, opus-1175)
+
+Six candidate state claims read, **two stale** (§0's population fact and §7's
+un-run court), both repaired above in the additive form — the clause kept, the
+correction beside it. §8 was read and is **NOT** stale: its question is answered
+by name on line 3 of this file, under a status line that declares the sections
+below to be kept as written, so the answer reaches the reader before §8 does.
+
+⚠ **The sweep that found them is PHRASE-ANCHORED and is a FLOOR, not coverage.**
+Measured on the one population where truth was already known (V3B's six stale
+rows, found by hand): a mechanical not-yet-phrase grep matched **three of the
+six** and produced nearly three times the noise, and one of the three it missed
+carried no stale-claim word at any point. A row that goes false without saying
+so is invisible to any vocabulary, and the per-row read of this document is not
+retired by this and is not claimed to be.

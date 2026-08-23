@@ -171,7 +171,23 @@ export const PRODUCTION_FLAG_POSITIONS: Readonly<Record<string, FlagPosition>> =
   },
   CASTING_TWO_PATHS_SCOPE: {
     position: "off",
-    why: "the flip waits on a 320-credit dev court and then his eyes",
+    /* ⚠ THE FOURTH COPY OF ONE STALE SENTENCE, AND THIS FILE IS THE LAST PLACE
+       IT SHOULD HAVE SURVIVED (repaired 2026-08-24, opus-1175).
+
+       This `why` read *"the flip waits on a 320-credit dev court and then his
+       eyes"* until now. The court RAN on 2026-08-23 — both arms, two Signs —
+       and three commits have already chased that same sentence off three other
+       surfaces: `8adb18dd` off `POST_SIGN_ROADMAP.md`, `d234f53c` off
+       `CLAUDE.md`, and the design's own §10 the night after. **Nobody asked
+       this file**, because no rule pointed at it: it is the flags' table, and
+       the thing that goes stale on a flags' table is assumed to be a POSITION.
+       The position was correct throughout; the prose beside it was a day
+       behind, on a file that PRINTS ON EVERY PUSH beside the flip a seat acts
+       on the moment he answers.
+
+       The lesson belongs here rather than in a report: a `why` is prose, and
+       prose in an instrument rots exactly like prose in a document. */
+    why: "the court RAN (2026-08-23, both arms); the flip waits on his eyes alone",
   },
   CASTING_BORN_INK_SCOPE: {
     position: "off",

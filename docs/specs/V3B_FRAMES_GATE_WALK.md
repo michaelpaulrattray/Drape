@@ -8,6 +8,19 @@ The gate is **not closed by this file**. Law 9: a reader's output is a pointer
 to look, never a fact to file, and no executor may close a gate whose subject is
 what a picture shows. Everything below is evidence put in front of eyes.
 
+✅ **AND HIS EYES CLOSED IT — 2026-08-21, verbatim: *"yes its acceptable."***
+(fable-1257 §1, with *"the frames gate results were amazing"* riding as the
+quality verdict.) The sentence above is kept untouched because it is TRUE and it
+is the reason this file could not close its own gate — but the gate's own
+artifact carried no record that anything had, so a seat asking *is the frames
+gate closed* opened this document and found a file that reads as pending. What
+he ruled: the storage question of §5(a) — a faceless crop of a stranger's chest,
+kept and sent — is ACCEPTABLE as built, with the road **his account only until
+the customer-facing preview ships**. Both flags went to `users:1` on that word
+(fable-1257 §2b, receipts fable-1260) and stand there today
+(`scripts/lib/productionFlagPositions.mts`). §5(b)'s finding is untouched by his
+yes and is corrected on its own terms below.
+
 ---
 
 ## 1. ⚠ THE AMENDMENT — the artifact is substituted, and that is a ruling
@@ -170,6 +183,23 @@ photograph would engage it. It is an argument that **five code sites describe a
 measurement the reader no longer reproduces**, and that the control the gate
 turns on has still never fired on a real photograph.
 
+✅ **ALL FIVE WERE REPAIRED THE SAME DAY, AND EVERY ONE OF THEM CITES THIS
+SECTION — which is the whole reason the correction never came home.** Read at
+the code 2026-08-24: `inkReferenceCutter.ts` (*"this comment said 'the S2
+specimen's box reaches y=80' until 2026-08-21, and that surface's top edge reads
+y=210"*), `inkReferenceCrop.test.ts` (*"This comment cited '…climbs to y=80'
+until 2026-08-21"*), `inkReferenceCutter.test.ts` at both sites (*"⚠ Named 'the
+S2 torso case' until 2026-08-21. It is not"*), and
+`court-region-crop-real-disposable.mts`. So the finding's five TARGETS were all
+told and the document that FOUND it was not — `correction-reaches-copy-not-source`
+with the arrow reversed: not a copy fixed while its source rots, but every
+consumer fixed while the finding still describes an open defect.
+
+⚠ **The sentence's SECOND half is untouched by that and still stands**: the
+control the gate turns on has still never fired on a real photograph. Nothing
+since 2026-08-21 has put a closer-cropped specimen through it, and the five
+repairs corrected the DESCRIPTION rather than the measurement.
+
 ## 6. The overage, declared
 
 fable-1243 §2b's bound was ~6 segmenter reads. The walk spent 6 (five in the cut,
@@ -199,3 +229,22 @@ C:\Users\Admin\Drape\output\frames-gate\5-control-S2-cut-flattened.png
 Scripts: `gate-frames-face-bearing-disposable.mts` (the walk, spends),
 `gate-frames-readback-disposable.mts` (the counts, free of credits),
 `gate-frames-fence-control-disposable.mts` (§5(b)'s control).
+
+---
+
+## 8. The stale-row reading this document was swept by (2026-08-24, opus-1175)
+
+Six candidate state claims read, **two stale**, both repaired above: the header
+(his eyes closed the gate and the gate's own artifact did not say so) and
+§5(b)'s five-code-sites clause (all five repaired, all five citing this section).
+The rest holds and was checked at the artifacts rather than at the prose — all
+six frames plus `0-master-before.png`, `counts.log`, `walk.log`, `control.log`
+and `6-control-S2-neck.log` are in `output/frames-gate/`, and all three named
+scripts are in `scripts/`.
+
+⚠ **This sweep is PHRASE-ANCHORED and is a FLOOR, not coverage.** Measured on
+the one population where truth was already known (V3B's six stale rows, found by
+hand): a mechanical not-yet-phrase grep matched **three of the six** while
+producing nearly three times the noise, and one of the three it missed used no
+stale-claim word at any point. The per-row read of this document is not retired
+by this and is not claimed to be.

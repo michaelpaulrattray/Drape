@@ -100,7 +100,16 @@ the 1.7% we are fixing.**
 **Three landings, in this order, each safe on its own.** The whole risk of this
 item is doing them in any other order.
 
-### Landing A — the settled list (no paid-path change at all)
+### Landing A — the settled list (no paid-path change at all) — ✅ **BUILT AND LIVE**
+
+✅ **The marker above was added 2026-08-24 and its absence was the finding.**
+Landing B's heading carries a strike and Landing C's carries a tick, so a reader
+scanning the three landings read A as the one that had not happened. It had:
+`server/db/castingV2Variants.ts` holds the projection
+(`inArray(castingCandidateVariants.status, ["failed", "expired"])`) and
+`client/src/features/operations/surfaceOwnership.ts` says it in as many words —
+*"Landing A gave the sheet a third list — recently settled terminal failures."*
+It is unconditional, on either side of `CASTING_REFINE_DISPATCH_SCOPE`.
 
 The sheet gains a **third list**: recently settled terminal outcomes, unread.
 Server-side projection over `status IN ('failed','expired')` within a recency
@@ -407,6 +416,13 @@ until Landing A is live and proven. Retiring it earlier reintroduces the exact
 1.7% by hand. Retiring it *later* costs only a duplicate sentence, which is why
 the safe order is A → B → C → retire.
 
+⚠ **THAT CONDITION IS MET — Landing A is live (see its heading), so the `until`
+above no longer holds anything back.** The clause is kept because the ORDER it
+names is still the order, and the *live and proven* half is worth reading as two
+halves: A is live, and whether it has been PROVEN against a real lost socket is a
+different question this document does not answer. B is deleted, C is built and
+flag-dark at `users:1`, so what remains of the sequence is the retirement itself.
+
 The free half keeps `outcomeShown` unchanged and still needs it: a free refusal
 still answers on the request and can still, in principle, lose its socket.
 
@@ -432,6 +448,17 @@ priced an architecture change as a one-liner.
 
 ## 8. Open questions for the countersign
 
+⚠ **TWO OF THE THREE ARE ANSWERED, AND BOTH ANSWERS ARE INSIDE THIS FILE
+(2026-08-24).** The section keeps its questions and its recommendations because
+the reasoning is the record of how the answers were reached — but a heading that
+says *open* about settled questions is the shape that parks a decision somebody
+has already made. (1) **Landing B's column** is moot: B is struck DELETED above,
+along with its migration and its founder ceremony, because the sentence already
+survives on `generation_operations.publicMessage`. (2) **Landing A alone first**
+was the executor's recommendation and it is what happened — A is live and
+unconditional, B never existed, C is built and flag-dark. (3) **`createRoll`** is
+the one still genuinely open, and its answer is still *not yet, and here is why*.
+
 1. **Landing B's column, or the derived sentence?** The recommendation is the
    column and it costs a founder ceremony. If Fable prefers (a), the fix ships
    sooner and the sentence is worse, and that trade should be made out loud.
@@ -442,3 +469,26 @@ priced an architecture change as a one-liner.
 3. **Does `createRoll` follow?** A roll takes a bit over a minute and does not
    cross the wall, so it is not owed. Named here so the answer is "not yet, and
    here is why" rather than an omission.
+
+---
+
+## 9. The stale-row reading this document was swept by (2026-08-24, opus-1175)
+
+Six candidate state claims read, **two stale**, both repaired above: Landing A's
+missing status marker (with §6's `until` clause that depended on it) and §8's
+heading over two answered questions.
+
+⚠ **The best row in this document is a HOLDS and it earned the sweep's
+respect**: *C's AMENDMENT — a `lockKey` on the candidate, and it is NOT built …
+`grep -rn "lockKey" server/castingV2/*.ts` returns nothing.* That grep was run
+again on 2026-08-24 and **still returns nothing**. A claim that ships with its
+own reproducible check, and reproduces two weeks later, is the shape every row
+in every document here should aspire to — it cannot go quietly stale, because
+checking it is one command that the document itself supplies.
+
+⚠ **This sweep is PHRASE-ANCHORED and is a FLOOR, not coverage.** Measured on
+the one population where truth was already known (V3B's six stale rows, found by
+hand): a mechanical not-yet-phrase grep matched **three of the six** while
+producing nearly three times the noise, and one of the three it missed carried no
+stale-claim word at any point. The per-row read of this document is not retired
+by this and is not claimed to be.
