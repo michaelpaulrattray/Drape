@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "3fe5405468890c91"
+    "sourceFingerprint": "21411f6dca856c9e"
   },
   "domains": [
     {
@@ -11990,6 +11990,10 @@
     {
       "id": "test:server/staffImageBoundary.test.ts",
       "path": "server/staffImageBoundary.test.ts"
+    },
+    {
+      "id": "test:server/staticAssetReferences.test.ts",
+      "path": "server/staticAssetReferences.test.ts"
     },
     {
       "id": "test:server/storage-key-generation.test.ts",

@@ -84,6 +84,7 @@ import {
   declaredSchemaFrom,
   liveSchemaFrom,
 } from "./lib/schemaConformance.mts";
+import { assetReferencesIn, assetVerdict } from "./lib/staticAssetReferences.mts";
 import { uptimeAnchor } from "./lib/uptimeAnchor.mts";
 import {
   balanceLine,
@@ -600,6 +601,51 @@ const schema = await (async (): Promise<{ line: string; problems: string[] }> =>
   }
 })();
 
+/* ── 5c. the STATIC ASSETS, off the bucket the service actually names ────── */
+
+/*
+  A reference added without the upload is a BROKEN IMAGE — visible to a
+  customer, invisible to the type checker, and invisible to the whole suite,
+  because the bytes live in a bucket rather than in the repository.
+
+  The BASE is read off the service and never assumed: `shared/const.ts` carries
+  a dev-bucket fallback, and a production that failed to set
+  `VITE_ASSETS_BASE_URL` would quietly serve a developer's bucket to customers.
+  An unreachable bucket is UNREAD and does not cost the run its verdict — same
+  rule as the balance lines. A 404 from a bucket that ANSWERED does.
+*/
+const assets = await (async (): Promise<{ line: string; problems: string[] }> => {
+  const base = readings.find((reading) => reading.name === "VITE_ASSETS_BASE_URL")?.value;
+  if (!base) {
+    return {
+      line: "(unread — the service names no VITE_ASSETS_BASE_URL)",
+      problems: [
+        "VITE_ASSETS_BASE_URL is not set on the service, so the client falls back to the DEV bucket baked into shared/const.ts — customers would be served a developer's assets",
+      ],
+    };
+  }
+  const sources = spawnSync("git", ["ls-files", "client/src", "shared", "server"], {
+    encoding: "utf8",
+    shell: false,
+  }).stdout.split(NL).filter((file) => /\.(ts|tsx)$/.test(file) && !/\.test\.tsx?$/.test(file));
+  const { references, dynamic } = assetReferencesIn(
+    sources.map((file) => ({ path: file, text: readFileSync(file, "utf8") })),
+  );
+  const statuses = new Map<string, number | null>();
+  await Promise.all(
+    references.map(async (reference) => {
+      try {
+        const response = await fetch(`${base}/${reference.path}`, { method: "HEAD" });
+        statuses.set(reference.path, response.status);
+      } catch {
+        statuses.set(reference.path, null);
+      }
+    }),
+  );
+  const verdict = assetVerdict(references, dynamic, statuses);
+  return { line: `${verdict.line} · ${base}`, problems: verdict.problems };
+})();
+
 /* ── 6. the receipt ─────────────────────────────────────────────────────── */
 
 say("");
@@ -701,6 +747,14 @@ if (schema.problems.length === 0) {
   for (const problem of schema.problems) say(`  ! ${problem}`);
   say("  A ceremony this code depends on has not been run in this world.");
 }
+say("");
+say(`STATIC ASSETS, off the bucket the service names: ${assets.line}`);
+if (assets.problems.length === 0) {
+  say("  ✓ every asset the client names is in the bucket");
+} else {
+  say(`  *** STATIC ASSET PROBLEM — ${assets.problems.length} ***`);
+  for (const problem of assets.problems) say(`  ! ${problem}`);
+}
 say("─".repeat(72));
 /*
   THE VERDICT RIDES IN THE EXIT STATUS, NOT IN AN EARLY REFUSAL.
@@ -709,4 +763,4 @@ say("─".repeat(72));
   mismatch takes away is the one thing that gets quoted — a custody block's
   `RITE EXIT STATUS: OK`.
 */
-process.exit(positions.mismatches.length + schema.problems.length === 0 ? 0 : 1);
+process.exit(positions.mismatches.length + schema.problems.length + assets.problems.length === 0 ? 0 : 1);
