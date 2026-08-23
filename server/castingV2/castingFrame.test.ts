@@ -11,6 +11,7 @@ import {
   withoutWhatIsOutOfFrame,
 } from "./castingFrame";
 import { photorealHumanConstant } from "./cohortPhotorealHuman";
+import { HOUSE_WARDROBE_LINE, basicsWardrobeLine } from "./wardrobeLine";
 import { FREE_SUBJECT_KEYS } from "./refineSubjects";
 
 /**
@@ -29,6 +30,36 @@ describe("the frame the table is keyed to", () => {
     /* The same sentence in its other half — a prompt that said "waist-up" while
        framing full length would pass a one-string check. */
     expect(prompt).toContain("mid-torso up");
+  });
+
+  it("⚠ AND IT PINS THE INSTRUCTION, NOT THE PICTURE — proven, so nobody reads its green as coverage", () => {
+    /*
+      THE LIMIT, MADE EXECUTABLE (opus-1112 §2c, from the Two Paths court).
+
+      The guard above is the tripwire `castingFrame.ts` declares its shortcut on:
+      *"the day someone ships a full-length frame, this test fails."* It cannot.
+      It reads a PROMPT CONSTANT, and on 2026-08-23 a wider frame shipped on two
+      paths **without that constant moving one byte**: the delivered masters of
+      the Two Paths court's Wardrobe and Basics sheets are cropped at the hips
+      with the hands in shot, against an unpathed dev roll from the same day
+      cropped at the chest (`output/two-paths-court/FRAMING-STRIP.jpg`).
+
+      What moved was the WARDROBE sentence inside the same block, which now names
+      legs and feet, and what the engine did with it.
+
+      So this arm asserts the blindness rather than describing it: the premise
+      passes for the very wardrobe lines whose delivered frames disobey it. A
+      seat that wants a guard against a wider frame has to READ A DELIVERED
+      PHOTOGRAPH — that instrument does not exist and this is not it.
+    */
+    for (const line of [basicsWardrobeLine(null), basicsWardrobeLine("male"), HOUSE_WARDROBE_LINE]) {
+      const prompt = photorealHumanConstant(line).toLowerCase();
+      expect(prompt, line).toContain(FRAMING_PREMISE);
+      expect(prompt, line).toContain("mid-torso up");
+    }
+    /* And the thing that DID move is in the same block, so the two are not even
+       far apart — which is why the guard looks like it is watching. */
+    expect(photorealHumanConstant(basicsWardrobeLine(null))).toContain("plain black fitted shorts");
   });
 });
 

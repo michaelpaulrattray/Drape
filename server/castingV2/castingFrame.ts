@@ -36,6 +36,28 @@
  * asserts the premise against the prompt constant itself — the day a full-length
  * or three-quarter frame ships, that test fails and this table must become a
  * measurement rather than quietly declining a waist that is now in the picture.
+ *
+ * ⚠ **THAT LAST SENTENCE IS WRONG AND THE COUNTER-EXAMPLE IS ON THE RECORD —
+ * THE TEST CANNOT FAIL THAT WAY** (opus-1112 §2c, from the Two Paths court,
+ * 2026-08-23). It reads a PROMPT CONSTANT, and a wider frame shipped on two
+ * paths **without that constant moving one byte**: the Wardrobe and Basics
+ * sheets came back cropped at the hips with the hands in shot, against an
+ * unpathed roll of the same day cropped at the chest
+ * (`output/two-paths-court/FRAMING-STRIP.jpg`). The FRAMING sentences were
+ * byte-identical across all three; what moved was the WARDROBE sentence beside
+ * them, which on a pathed roll names legs and feet.
+ *
+ * **A test that pins what we SAY cannot see the picture disobeying it.** The
+ * guard is kept — an instruction that changes still matters — and it now has a
+ * second arm asserting its own blindness, so its green is not read as coverage.
+ * The honest instrument is the per-frame read this header already calls the
+ * honest one, and it is still not built.
+ *
+ * While the paths are flag-dark (`CASTING_TWO_PATHS_SCOPE` off everywhere) the
+ * table is exactly right for every roll in production. On a pathed cast its
+ * `waist` entry refuses an edit the photograph could serve — the safe direction,
+ * and a named prerequisite of the flip rather than a note here (founder card
+ * FQ-a, 2026-08-23).
  */
 import { REFINABLE_AXES, type RefineDelta } from "./refineDelta";
 import { facetOfAxis, facetOfSubject, type Facet } from "./refineFacets";
