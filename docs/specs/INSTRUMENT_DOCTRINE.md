@@ -446,6 +446,30 @@ proven by neither hand-off alone.
 fable-1427 (this entry) and fable-1431 (the recursion), findings at opus-1058 §4,
 opus-1060, opus-1061 §4 and opus-1068 §3.
 
+**24. A COURT THAT DRAWS AN OVERLAY NAMES, IN ITS OWN REPORT, WHO OPENED IT AND
+WHAT THEY SAW.**
+D-235's `saw` applied to the ARTIFACT rather than to the checker. A court that
+prints a number and draws a picture has produced two artifacts, and a report
+that quotes only the number has read half of what it bought — on the one class
+of evidence this project has ruled is final (law 9: the founder's eyes are king,
+and a reader's output is a pointer to look, not a fact to file).
+*Incident:* §10's third flip precondition asked for two segmenter reads on the
+Wardrobe path's first non-house garment, and named the failure it feared — *a
+reader that outlines a NEW garment files a confident rectangle over fabric, and
+nothing goes red*. The reads were taken, printed **101,468 and 133,099 px**, and
+went into a log. Read as numbers alone those are exactly what the precondition
+is afraid of. **The overlays sat unopened for a day while the document said
+nobody trusts a chest read until it is re-taken and the re-take was on disk.**
+Opened: the mask is bare skin and stops dead at the fur, on the larger read too.
+*The sharper half, and it is the reusable one:* **a SECOND court on a settled
+question gets read as a repeat.** Round one's overlays WERE opened and their
+verdict written into `inkSurfaceCoverage.ts`; round two asked the same word of
+new frames, printed bigger numbers, and inherited round one's verdict without
+being looked at. The first run of a court earns its attention; the re-run is
+where the skipping is cheapest and least noticed.
+*Banked:* fable-1485 §3, corrected at opus-1135; findings at opus-1134 and the
+four overlays in `output/two-paths-court{,-round2}/READ-WARDROBE-chest*.jpg`.
+
 ---
 
 ## Adding to this file
@@ -453,4 +477,4 @@ opus-1060, opus-1061 §4 and opus-1068 §3.
 Follow the admission rule at the top: numbered Fable ruling, real incident, one
 line each, citation. Keep it to a page or two — **terse over complete.** A
 doctrine file long enough to skim past is an instrument nobody reads, which is
-the failure mode all twenty-three of these describe.
+the failure mode all twenty-four of these describe.

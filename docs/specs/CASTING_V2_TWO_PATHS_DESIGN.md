@@ -764,6 +764,15 @@ CASTING_TWO_PATHS_SCOPE     off | all | users:<ids>      parent: CASTING_V2_SCOP
 - **Named prerequisite of the FLIP**: the `path` / `wardrobeLine` columns must
   exist (§3.2) — and that one is a prerequisite of the CODE, which is stricter.
 
+⚠ **THE ORDINALS BELOW RECORD THE ORDER THESE WERE ADDED, NOT A LIVE COUNT —
+read the ticks, not the numbers.** One has been struck and one has been split
+out of it since, so *"a fourth"* and *"a fifth"* are the fourth and fifth things
+ever put on this list rather than a tally of what is open. **Open as of
+2026-08-24: FOUR** — 7a-bis or his acceptance; the covering-garment read (the
+struck third's residual, priced and pre-authorized); the `build`/`skin` honesty
+claim before BASICS widens; and `RefinePanel`'s *"not their clothes"* line.
+**Discharged: two** — the columns, and the bleeding-onto-fabric read.
+
 - ⚠ **AND A SECOND NAMED PREREQUISITE OF THE FLIP, added when item 7a landed**
   (ruling fable-1368 §2): **every ink placement refuses on a Wardrobe-path cast
   with a picked or customer-named outfit until the coverage reader exists.** 7a
@@ -796,6 +805,47 @@ CASTING_TWO_PATHS_SCOPE     off | all | users:<ids>      parent: CASTING_V2_SCOP
   fabric, and nothing goes red. **The Basics path argues the other way and needs
   no line** — it leaves the chest bare by design, which is the same finding
   generalised.
+
+  ✅ **STRUCK 2026-08-24 — DISCHARGED ON ITS OWN TERMS, AT THE FRAMES, FOR FREE**
+  (ruled fable-1485 §1 on opus-1134, evidence widened at opus-1135). The reads it
+  asks for had already been bought — twice — and the second pair had gone into a
+  log without anyone opening its pictures:
+
+  ```
+  round 1   READ-WARDROBE-chest.jpg         66,046 px    mask on skin, stops at the fur
+            READ-WARDROBE-chest-pos5.jpg    64,942 px    the drape falls the OTHER way, same
+  round 2   READ-WARDROBE-chest.jpg        101,468 px    mask on skin, stops at the fur
+            READ-WARDROBE-chest-pos5.jpg   133,099 px    the largest read, and the cleanest edge
+  ```
+
+  **Four frames, two independently generated sheets, and not one patch of hide
+  inside a mask.** Read as numbers alone those figures are precisely what this
+  bullet feared; opened, they are the reader doing the right thing on a garment
+  the product had never made. Two of the four were judged when they were taken
+  and their verdict is in `inkSurfaceCoverage.ts`; two were bought and left
+  unread, which bought doctrine entry 24 (*a court that draws an overlay names
+  who opened it and what they saw*) and its sharper half: **a second court on a
+  settled question gets read as a repeat.**
+
+- ⚠ **AND THE RESIDUAL OF THE ONE ABOVE IS ITS OWN LINE, PRICED** (split out by
+  fable-1485 §2 rather than left inside a bullet that now reads as answered):
+  **a picked outfit that COVERS the chest is unmeasured — does the reader invent
+  a chest under unfamiliar cloth?**
+
+  The four frames above all wear a one-shoulder hide and all leave the upper
+  chest largely BARE, so what they refute is *bleeding onto adjacent fabric*. The
+  other shape is a shirt, a jacket or a high-necked wrap, where the question is
+  whether `upper chest` outlines cloth and calls it skin. **The only covering
+  garment ever measured is the house crew tee** — three clothed frames, *nothing
+  at all* — and the tee is exactly the fixture this precondition exists to
+  distrust. The caveman is the only picked outfit ever rolled and it is
+  open-chested, so **that cell has no population rather than a bad result.**
+
+  **Priced: one Wardrobe-path dev roll on a brief whose picked outfit covers the
+  chest (a *"bank teller in his forties"* shape) plus the same two reads — 160
+  dev credits and about a cent of house money, PRE-AUTHORIZED at that price
+  (fable-1485 §2) so it never waits on a countersign.** Needed before the WIDER
+  flip and **not** before `users:1`: the founder's own casts are his to look at.
 
 - ⚠ **AND A FOURTH, added when §8.2 was read at the code** (opus-1123, ruled
   fable-1467 as (c)): **a Basics frame changes what the `build` and `skin` rows

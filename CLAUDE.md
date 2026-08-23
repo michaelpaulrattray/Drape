@@ -443,12 +443,18 @@ one from whoever owns its road.
   two negative controls). This line said *"the flip waits on a 320-credit dev
   court and then his eyes"*; **the court RAN** (2026-08-23, both arms, two Signs)
   and its two findings went to him and came back answered, so what the flip waits
-  on now is **his eyes on the pack** and the **FIVE enumerated preconditions in
-  the design's §10** — none of which is a defect to repair: 7a-bis or his
-  acceptance of the refuse-until-read ink state; the `upper chest` re-read on the
-  first non-house garments; the `build`/`skin` honesty claim before BASICS
-  widens; and `RefinePanel`'s *"not their clothes"* line, which is true today and
-  false on day one for a pathed customer
+  on now is **his eyes on the pack** and the enumerated preconditions in the
+  design's §10 — none of which is a defect to repair. ⚠ **Read the ticks there,
+  not the ordinals: they record the order things were ADDED, and one has been
+  struck.** Open as of 2026-08-24: **FOUR** — 7a-bis or his acceptance of the
+  refuse-until-read ink state; the covering-garment `upper chest` read (priced at
+  160 dev credits and a cent, pre-authorized fable-1485 §2, needed before the
+  WIDER flip and not before `users:1`); the `build`/`skin` honesty claim before
+  BASICS widens; and `RefinePanel`'s *"not their clothes"* line, which is true
+  today and false on day one for a pathed customer. **Discharged: two** — the
+  columns, and the *does the reader outline a NEW garment as chest* read, struck
+  2026-08-24 at four overlays across two rounds (bare skin, stopping dead at the
+  fur, every one) after the frames had sat unopened in a log for a day
 - `CASTING_DIAGNOSTIC_CAPTURE_SCOPE` — `off`/absent, `all`, or `users:<ids>`;
   keeps the frame from a refused render for diagnosis, under
   `casting-v2/diagnostics` and nowhere else, on the private evidence adapter.
