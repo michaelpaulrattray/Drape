@@ -95,23 +95,14 @@ export const OPEN_KIND_SYSTEM = [
   "    reach for a general word like \"feature\" or \"detail\" to cover both",
 ].join("\n");
 
-/**
- * One spelling of a noun, for comparison only.
- *
- * Lowercased, whitespace-collapsed, and a trailing `s` dropped on anything long
- * enough for that to be a plural rather than the word. Applied to BOTH sides,
- * so it never matters whether the table happens to list the singular: `cheeks`
- * and `cheek` fold together, and `gills` folds the same way on either side.
- *
- * Deliberately not a stemmer. A rule broad enough to catch the synonyms this
- * table misses would also swallow legitimate new kinds — the same bug pointed
- * the other way — and an open lane that quietly refuses novel asks fails
- * silently, which is the one failure mode this design cannot afford.
- */
-export function foldNoun(word: string): string {
-  const plain = word.trim().toLowerCase().replace(/\s+/g, " ");
-  return plain.length > 3 && plain.endsWith("s") ? plain.slice(0, -1) : plain;
-}
+/* `foldNoun` MOVED to `subjectCards.ts` (item 8, 2026-08-23) and is re-exported
+   here so every importer keeps its address. It had to move: `refineSubjects`
+   grew a second caller of it, and `openLaneKind` builds `CLOSED_NOUNS` from
+   `refineSubjects` AT MODULE LOAD — so importing it back created a cycle whose
+   partially-initialised half threw *"FREE_SUBJECT_KEYS is not iterable"* on
+   every suite in the tree. A pure string function belongs at the leaf. */
+export { foldNoun } from "./subjectCards";
+import { foldNoun } from "./subjectCards";
 
 /** Every folded spelling the closed lane already owns, with its subject. */
 const CLOSED_NOUNS: ReadonlyMap<string, FreeSubject> = (() => {

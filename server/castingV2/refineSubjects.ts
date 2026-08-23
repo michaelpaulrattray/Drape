@@ -28,6 +28,7 @@
 import type { CastingPath } from "../../shared/castingPaths";
 import type { RefinableAxis } from "./refineDelta";
 import {
+  foldNoun,
   FREE_SUBJECT_KEYS,
   REPAINT_ONLY_SUBJECTS,
   SUBJECT_CARDS,
@@ -266,6 +267,72 @@ void _guaranteedSubjectsAreExcluded;
 export function subjectsServedOnPath(path: CastingPath | null | undefined): readonly FreeSubject[] {
   if (path === "wardrobe") return FREE_SUBJECT_KEYS;
   return FREE_SUBJECT_KEYS.filter((subject) => SUBJECT_CARDS[subject].bornPathsServing === "everyPath");
+}
+
+/**
+ * THE SUBJECT THIS PATH REFUSES, NAMED BY THE WORD SHE USED — §7.2's door,
+ * derived from the cards rather than written as a second lexicon (item 8).
+ *
+ * # Why the ask is read here rather than the parse
+ *
+ * The withheld subject is not in front of the model on this path
+ * ({@link subjectsServedOnPath}), so the interpreter cannot file it and there is
+ * no delta to refuse. Without this door her tee ask falls to the generic wall
+ * and reads *"it isn't one of the things this can name"* — which stopped being
+ * true the day the wardrobe card landed, and is the false-refusal class
+ * `wall_unbacked`'s own docblock refuses to be.
+ *
+ * # It is the SAME lexicon, asked a second way, and never a second one
+ *
+ * `SUBJECT_NOUNS` is *what people call this subject* and `foldNoun` is how this
+ * product already compares such a word (the open lane's collision check). A
+ * separate garment word list here would be working law 4's mirror on the very
+ * table this design's §1 says was never the wall.
+ *
+ * ⚠ **Its limit, declared: an unlisted synonym reads as nothing.** *"Put him in
+ * something smarter"* names no noun, so it falls to the generic wall exactly as
+ * it does today. That is the honest failure — we genuinely cannot tell what she
+ * meant — and it is the same limit `SUBJECT_NOUNS` states about itself.
+ */
+export function pathRefusedNounIn(
+  instruction: string,
+  path: CastingPath | null | undefined,
+): { subject: FreeSubject; noun: string } | null {
+  /*
+    ⚠ AN UNPATHED BRANCH GETS TODAY'S ANSWER AND THIS DOOR NEVER OPENS FOR IT.
+
+    `subjectsServedOnPath` withholds the wardrobe subject from `unpathed` too —
+    correctly, because that keeps the prompt byte-identical for every roll in
+    production. Reusing that WITHHOLDING as this door's condition would have
+    turned *"put her in a long black coat"* into a Basics refusal for the whole
+    customer base, which is a live behaviour change wearing a dark feature's
+    clothes. `stageWallBackstop.test.ts`'s positive control caught it.
+
+    A path nobody chose is not a path that refuses. The refusal belongs to a
+    DECISION she made before the roll, so it needs a decision to point at.
+  */
+  if (path === null || path === undefined) return null;
+  const withheld = FREE_SUBJECT_KEYS.filter(
+    (subject) => !subjectsServedOnPath(path).includes(subject),
+  );
+  if (withheld.length === 0) return null;
+  /* Word by word, folded on both sides, exactly as the collision check folds —
+     so `tees` and `tee` are one word here and one word there. */
+  const words = instruction.toLowerCase().split(/[^a-z-]+/).filter(Boolean).map(foldNoun);
+  const said = new Set(words);
+  for (const subject of withheld) {
+    for (const noun of SUBJECT_NOUNS[subject]) {
+      const folded = foldNoun(noun);
+      /* A multi-word noun is matched as a phrase against the folded sentence;
+         a single word against the word set, so `top` never matches `topaz`. */
+      if (folded.includes(" ")) {
+        if (words.join(" ").includes(folded)) return { subject, noun };
+        continue;
+      }
+      if (said.has(folded)) return { subject, noun };
+    }
+  }
+  return null;
 }
 
 /**

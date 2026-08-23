@@ -38,7 +38,8 @@ import {
 } from "./refineDelta";
 import type { WardrobeResolution } from "./wardrobeLine";
 import {
-  FREE_SUBJECT_KEYS, freeSubjectGuidance, subjectsServedOnPath, type FreeSubject,
+  FREE_SUBJECT_KEYS, freeSubjectGuidance, pathRefusedNounIn, subjectsServedOnPath,
+  type FreeSubject,
 } from "./refineSubjects";
 import type { CastingPath } from "../../shared/castingPaths";
 import { closedSubjectFor } from "./openLaneKind";
@@ -1362,7 +1363,14 @@ async function runOnce(
   try {
     const reply = await engine.complete({
       about: purpose,
-      system: refineParseSystemPrompt(input.mode, { openLane: input.openLane === true })
+      system: refineParseSystemPrompt(input.mode, {
+        openLane: input.openLane === true,
+        /* THE BORN PATH, from the resolution the service already resolved (item
+           8). Absent and `unpathed` are the same silence and both compose the
+           prompt that shipped; only a WARDROBE-path branch is shown the
+           wardrobe subject. */
+        bornPath: bornPathOf(input.wardrobe),
+      })
         + (input.referenceAttached ? REFERENCE_CONSTRAINT : "")
         + (input.echoed ? ECHO_CONSTRAINT : "")
         + (input.hybrid ? HYBRID_CONSTRAINT : "")
@@ -1581,11 +1589,44 @@ async function runOnce(
       riding as a bit on one of them (census card C1, ruled fable-1335 §1). The
       sentences are unchanged; the NAME the record files them under is not.
     */
+    /*
+      ⚠ §7.2'S DOOR, AND IT SITS HERE BECAUSE THIS IS WHERE THE ASK ARRIVES.
+
+      A Basics branch is not shown the wardrobe subject at all, so a tee ask
+      cannot be FILED and there is no delta to refuse — it comes through the
+      model's own out-of-scope claim and lands on one of the two walls below.
+      Both would lie to her: `wall_stage` says a garment "comes after Sign",
+      which is true of the shoot and wrong about a path that dresses other
+      casts, and `wall_unbacked` says it "isn't one of the things this can
+      name", which stopped being true the day the wardrobe card landed.
+
+      Asked of her own sentence through the SAME lexicon the collision check
+      uses, so there is no second garment word list to drift (item 8).
+    */
+    const refusedByPath = pathRefusedNounIn(instruction, bornPathOf(input.wardrobe));
+    if (refusedByPath !== null) {
+      return {
+        ok: false,
+        refusal: { reason: "wall_basics_wardrobe", asked: refusedByPath.noun },
+      };
+    }
     return backing !== null
       ? { ok: false, refusal: { reason: "wall_stage", asked: asked || "that", backed: true } }
       : { ok: false, refusal: { reason: "wall_unbacked", asked: asked || "that" } };
   }
   return containReply({ engine, input, instruction, reply });
+}
+
+/**
+ * THE PATH A RESOLUTION WAS BORN ON, or null for silence.
+ *
+ * `unpathed` is *cast before the paths existed* and answers null, which is what
+ * every roll in production is. One reader, so the prompt and the door below
+ * cannot disagree about which branch they are talking about.
+ */
+function bornPathOf(wardrobe: WardrobeResolution | undefined): CastingPath | null {
+  if (wardrobe === undefined || wardrobe.kind === "unpathed") return null;
+  return wardrobe.path;
 }
 
 /**

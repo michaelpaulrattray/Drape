@@ -148,6 +148,29 @@ export const REFINE_REFUSALS = {
     charge: "free",
     report: "wall",
   },
+  wall_basics_wardrobe: {
+    /*
+      THE BASICS PATH'S OWN REFUSAL — item 8 §7.2, and its whole job is to be a
+      sentence about the product rather than about a limitation.
+
+      A Basics cast IS the plain black basics: that is the thing she bought, and
+      it is why her chest is bare and her body record is clean. So an outfit ask
+      here is not *we cannot* — it is *not on this cast, and here is where it
+      does happen*. The other two walls would both have lied to her: `wall_stage`
+      says a garment "comes after Sign" (true of the shoot, wrong about a path
+      that renders garments for other casts) and `wall_unbacked` says it "isn't
+      one of the things this can name", which stopped being true the day the
+      wardrobe subject landed.
+
+      The sentence names her cast's path back to her, because the honest answer
+      to *why not* is a decision she made before the roll.
+    */
+    say: (refusal) => `This one was cast on Basics, so the record stays in plain black basics — `
+      + `${askedIn(refusal)} comes in a take or a campaign rather than here. Cast on Wardrobe `
+      + "to change what someone is wearing. Nothing was charged.",
+    charge: "free",
+    report: "wall",
+  },
   wall_content: {
     say: () => "That one can't be rendered. Nothing was charged.",
     charge: "free",

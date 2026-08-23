@@ -493,6 +493,15 @@ export type RefineRefusal =
    * unconfirmed*. It is named for the `backed?` field it derives from.
    */
   | { reason: "wall_unbacked"; asked: string }
+  /**
+   * A WARDROBE ASK ON A BASICS CAST — item 8 §7.2, and it is a WALL rather than
+   * a gap: she is not being told the product cannot do outfits, she is being
+   * told what the path she bought IS.
+   *
+   * `asked` carries the noun her sentence used, so the sentence can name it
+   * back rather than guessing what she meant.
+   */
+  | { reason: "wall_basics_wardrobe"; asked: string }
   | { reason: "wall_content" }
   /**
    * `value` is WHAT THE MODEL ACTUALLY SAID, carried so the refusal can be

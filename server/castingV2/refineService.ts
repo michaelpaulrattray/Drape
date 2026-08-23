@@ -226,7 +226,7 @@ import { INK_PLACEMENTS, inkPlacementBareNoun, isInkPlacement } from "../../shar
 /* Whether the words road can put a NEW tattoo at a placement — the derived tail
    of C4a's answer, off the same lists that decide the road (fable-1339 §2). */
 import { wordsRoadServes } from "./inkPlacement";
-import { currentWardrobeLine } from "./wardrobeLine";
+import { currentWardrobeLine, editedWardrobeLine } from "./wardrobeLine";
 import type { CastingPath } from "../../shared/castingPaths";
 import { mintInkDesignFromReference } from "./inkReferenceMint";
 import { listInkDesigns } from "../db/castingV2InkDesigns";
@@ -1736,6 +1736,10 @@ async function refineCandidateCounted(
   const wardrobeNow = currentWardrobeLine({
     rollPath: source.rollPath as CastingPath | null,
     rollLine: source.rollWardrobeLine,
+    /* THE BRANCH'S OWN EDIT, off its composed delta (item 8, fable-1455 Q2).
+       `undefined` on every branch that has never had a wardrobe edit, which is
+       every branch in production. */
+    editedLine: editedWardrobeLine(readStoredDelta(predecessorForParse?.deltas)),
   });
 
   /*
@@ -9333,9 +9337,26 @@ async function refineCandidateCounted(
     const wornInk = libraryAtRender === null ? [] : carriedInkSlotsForGeometry({
       delivered: readDeliveredInk(claimedDeltas) ?? {},
       deliveredThisRender: deliveredInk?.slot ?? null,
-      /* The same resolution the gate reads, from the one owner — never a second
-         `currentWardrobeLine` call that could answer differently. */
-      wardrobe: wardrobeNow,
+      /*
+        ⚠ THE LINE THIS FRAME DELIVERS, WHICH IS NOT ALWAYS THE ONE THE GATE
+        READ — and the two are named apart rather than shared (item 8).
+
+        `wardrobeNow` is *what she was wearing when she asked*, which is the
+        question the ink gate has to answer before any money moves. This is
+        *what she is wearing in the photograph that just landed*, which is the
+        question a coverage reading about THIS frame has to answer. They differ
+        by exactly one thing: a render that edited the wardrobe.
+
+        Sharing one value would be the cheaper-looking choice and it would be
+        wrong in the direction that costs a box — a chest read against the
+        outfit she took off. Both go through the one owner, so the derivation
+        cannot drift; only the branch state they are asked about differs.
+      */
+      wardrobe: currentWardrobeLine({
+        rollPath: source.rollPath as CastingPath | null,
+        rollLine: source.rollWardrobeLine,
+        editedLine: editedWardrobeLine(claimedDeltas),
+      }),
     });
     if (libraryAtRender !== null) {
       try {

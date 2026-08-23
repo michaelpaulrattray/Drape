@@ -38,7 +38,8 @@ import { spokenError } from "../_core/spokenError";
 import { randomUUID } from "node:crypto";
 
 import { recordRefund } from "../casting/atomicCredits";
-import { castWardrobeLine, currentWardrobeLine } from "./wardrobeLine";
+import { castWardrobeLine, currentWardrobeLine, editedWardrobeLine } from "./wardrobeLine";
+import { readStoredDelta } from "./refineLegacy";
 import { CASTING_V2_SIGN_COSTS } from "../casting/castingCreditCosts";
 import { withUniqueCastPublicId } from "../casting/castPublicId";
 import {
@@ -300,9 +301,13 @@ function identityDocumentsFor(source: SignableCandidate): {
     is exactly how the crew-neck chest design already cost money. So this asks
     the one owner and stores its answer.
 
-    `editedLine` is `undefined` here and will stay so until the refine WARDROBE
-    subject lands (item 8). Reading through the function anyway is the point:
-    the day that field exists, this site is already correct.
+    ⚠ **`editedLine` ARRIVED (item 8, 2026-08-23) and this site was already
+    correct**, which is what the comment that stood here predicted: it read
+    through the function rather than the column, so the day the field existed
+    the only change was handing it over. It is the SELECTED FACE'S own composed
+    delta — the branch being signed — because condition (v) is precisely that a
+    Cast signed after a wardrobe edit must be judged against what it is wearing
+    and not against what its roll was born in.
 
     It rides `technicalSchema` — internal, never projected, the sensitive field
     group — because it is part of the recipe for reproducing this Cast. The
@@ -318,6 +323,7 @@ function identityDocumentsFor(source: SignableCandidate): {
   const wardrobe = currentWardrobeLine({
     rollPath: source.roll.path,
     rollLine: source.roll.wardrobeLine,
+    editedLine: editedWardrobeLine(readStoredDelta(source.face.deltas)),
   });
   const technicalSchema = {
     subject: resolved,

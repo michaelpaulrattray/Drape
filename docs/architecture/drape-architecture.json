@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "11eab5740f834f65"
+    "sourceFingerprint": "a34d03eb368eecc1"
   },
   "domains": [
     {
@@ -22829,6 +22829,11 @@
     },
     {
       "from": "module:server/castingV2/openLaneKind.ts",
+      "to": "module:server/castingV2/subjectCards.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/openLaneKind.ts",
       "to": "module:server/logging/logger.ts",
       "kind": "imports"
     },
@@ -25020,6 +25025,11 @@
     {
       "from": "module:server/castingV2/signService.ts",
       "to": "module:server/castingV2/referenceSlots.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/signService.ts",
+      "to": "module:server/castingV2/refineLegacy.ts",
       "kind": "imports"
     },
     {

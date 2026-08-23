@@ -826,6 +826,24 @@ export const SUBJECT_CARDS = {
   },
 } as const satisfies Record<string, SubjectCard>;
 
+/**
+ * One spelling of a noun, for comparison only.
+ *
+ * Lowercased, whitespace-collapsed, and a trailing `s` dropped on anything long
+ * enough for that to be a plural rather than the word. Applied to BOTH sides,
+ * so it never matters whether the table happens to list the singular: `cheeks`
+ * and `cheek` fold together, and `gills` folds the same way on either side.
+ *
+ * Deliberately not a stemmer. A rule broad enough to catch the synonyms this
+ * table misses would also swallow legitimate new kinds — the same bug pointed
+ * the other way — and an open lane that quietly refuses novel asks fails
+ * silently, which is the one failure mode this design cannot afford.
+ */
+export function foldNoun(word: string): string {
+  const plain = word.trim().toLowerCase().replace(/\s+/g, " ");
+  return plain.length > 3 && plain.endsWith("s") ? plain.slice(0, -1) : plain;
+}
+
 export type FreeSubject = keyof typeof SUBJECT_CARDS;
 
 export const FREE_SUBJECT_KEYS = Object.keys(SUBJECT_CARDS) as FreeSubject[];

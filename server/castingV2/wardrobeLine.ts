@@ -147,6 +147,38 @@ export function currentWardrobeLine(branch: WardrobeBranch): WardrobeResolution 
 }
 
 /**
+ * THE BRANCH'S OWN WARDROBE EDIT, READ OFF ITS COMPOSED DELTA — the seam
+ * {@link WardrobeBranch.editedLine} was named for (item 8, ruled fable-1455 Q2).
+ *
+ * # Why the delta and not a column
+ *
+ * The composed delta is already the per-branch, per-fork, removal-arithmetic
+ * owner of every free subject, and the wardrobe card is `plural: false` — which
+ * IS §7.1's rule (*an edit REWRITES the stored line rather than appending to
+ * it*) rather than a coincidence that happens to match it. A column would be a
+ * second copy of a fact the delta holds, on a written table, needing a
+ * migration to say what is already said.
+ *
+ * # It takes the COMPOSED delta, and the difference is the whole of D-163
+ *
+ * Hand it one step's own delta and it answers about that step rather than about
+ * the branch, which is how a stack quietly loses its earlier edits. Callers
+ * pass what `readStoredDelta` gives them.
+ *
+ * `joinItems` rather than a cast: a free value is a string OR a list of them
+ * across the eras this column spans, and one owner reads that shape everywhere.
+ */
+export function editedWardrobeLine(delta: { free?: Partial<Record<string, unknown>> } | null | undefined): string | null {
+  const value = delta?.free?.wardrobe;
+  if (value === undefined || value === null) return null;
+  const items = Array.isArray(value)
+    ? value.filter((item): item is string => typeof item === "string" && item.trim().length > 0)
+    : typeof value === "string" ? [value] : [];
+  const joined = items.join(", ").trim();
+  return joined.length > 0 ? joined : null;
+}
+
+/**
  * WHAT A SIGNED CAST IS WEARING — read back off its own snapshot.
  *
  * Sign stores the RESOLVED answer in `technicalSchema.wardrobe` (§3.1), and the

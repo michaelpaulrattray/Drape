@@ -23,7 +23,7 @@
 import { describe, expect, it } from "vitest";
 
 import { SUBJECT_CARDS, type SubjectCard } from "./subjectCards";
-import { FREE_SUBJECT_KEYS, subjectsServedOnPath } from "./refineSubjects";
+import { FREE_SUBJECT_KEYS, pathRefusedNounIn, subjectsServedOnPath } from "./refineSubjects";
 import { refineParseSystemPrompt } from "./refineInterpreter";
 
 /** The derived view Q1's condition asks for a can-fail control on. */
@@ -74,6 +74,47 @@ describe("the born path narrows the free lane", () => {
     const armAsWardrobeOnly = { ...SUBJECT_CARDS, arms: { ...SUBJECT_CARDS.arms, bornPathsServing: "wardrobeOnly" } } as unknown as Record<string, SubjectCard>;
     expect(servedFrom(armAsWardrobeOnly, "basics")).not.toContain("arms");
     expect(subjectsServedOnPath("basics")).toContain("arms");
+  });
+});
+
+describe("§7.2's door — the noun she used, refused by the path she chose", () => {
+  it("names the wardrobe noun in a Basics ask", () => {
+    expect(pathRefusedNounIn("put him in a plain black tee", "basics"))
+      .toEqual({ subject: "wardrobe", noun: "tee" });
+    expect(pathRefusedNounIn("give her a long black coat", "basics")?.subject).toBe("wardrobe");
+  });
+
+  it("⚠ NEVER fires on an UNPATHED branch — which is every roll in production", () => {
+    /*
+      THE ARM THAT COST A RED SUITE TO LEARN, kept because the mistake is the
+      natural one. `subjectsServedOnPath` withholds the wardrobe subject from
+      `unpathed` as well as from `basics` — correctly, so the prompt stays
+      byte-identical — and reusing that withholding as this door's condition
+      turned *"put her in a long black coat"* into a Basics refusal for the
+      entire customer base. `stageWallBackstop.test.ts`'s positive control was
+      what went red.
+
+      A path nobody chose is not a path that refuses.
+    */
+    for (const path of [null, undefined]) {
+      expect(pathRefusedNounIn("put her in a long black coat", path), String(path)).toBeNull();
+    }
+  });
+
+  it("never fires on the WARDROBE path — the subject is served there", () => {
+    expect(pathRefusedNounIn("put him in a plain black tee", "wardrobe")).toBeNull();
+  });
+
+  it("says nothing about an ask that names no noun — the declared limit", () => {
+    /* *"something smarter"* is a real ask and we genuinely cannot tell what it
+       is, so it falls to the generic wall exactly as it does today. */
+    expect(pathRefusedNounIn("put him in something smarter", "basics")).toBeNull();
+  });
+
+  it("does not fire on a word that merely CONTAINS a noun", () => {
+    /* Single-word nouns are matched against the sentence's own words rather
+       than as substrings, so `top` never matches `topaz`. */
+    expect(pathRefusedNounIn("give her topaz eyes", "basics")).toBeNull();
   });
 });
 
