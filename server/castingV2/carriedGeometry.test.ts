@@ -24,6 +24,7 @@ import {
   reMintCarriedGeometry,
 } from "./carriedGeometry";
 import { facePanel } from "./facePanel";
+import { HOUSE_WARDROBE_LINE, basicsWardrobeLine } from "./wardrobeLine";
 import type { StoredReference } from "./referenceLibrary";
 import type { Mask } from "./maskedComposite";
 import type { RegionReader } from "./maskedRefine";
@@ -38,6 +39,12 @@ function maskWith(box: { x: number; y: number; width: number; height: number }):
     for (let x = box.x; x < box.x + box.width; x += 1) data[y * FRAME.width + x] = 255;
   }
   return { data, width: FRAME.width, height: FRAME.height } as Mask;
+}
+
+/** A mask with nothing lit — what the reader hands back when it finds none of
+ *  the named thing and the caller has said absence is an answer. */
+function emptyMask(): Mask {
+  return { data: Buffer.alloc(FRAME.width * FRAME.height, 0), width: FRAME.width, height: FRAME.height } as Mask;
 }
 
 let version = 0;
@@ -277,6 +284,81 @@ describe("re-reading the carried features on the delivered frame", () => {
     expect(result).toMatchObject({ filed: 1, written: false });
   });
 
+  it("⚠ an EMPTY read her wardrobe explains is `covered`, not a regression", async () => {
+    /*
+      fable-1452 ASK 1's whole condition. `unread` means *something we expected
+      to work has stopped working*; a chest under a crew tee answers nothing on
+      every render, correctly, and folding the two together is how a counter
+      that fires routinely stops being read.
+    */
+    const write = vi.fn();
+    const result = await reMintCarriedGeometry({
+      ...base,
+      slots: [{
+        slot: "ink:upperChest" as FeatureSlot, question: "upper chest", side: null,
+        coveredWhenEmpty: true,
+      }],
+      reader: readerReturning(new Map([["upper chest", emptyMask()]])),
+      dependencies: { write },
+    });
+    expect(result.covered).toEqual(["ink:upperChest"]);
+    expect(result.unread, "and it is NOT counted as a regression").toEqual([]);
+    expect(write).not.toHaveBeenCalled();
+  });
+
+  it("⚠ the same EMPTY read on a surface nothing covers stays countable", async () => {
+    /* The negative control for the arm above: identical call, identical empty
+       answer, one field different. A neck that reads nothing IS a regression. */
+    const result = await reMintCarriedGeometry({
+      ...base,
+      slots: [{ slot: "ink:neck" as FeatureSlot, question: "neck", side: null, coveredWhenEmpty: false }],
+      reader: readerReturning(new Map([["neck", emptyMask()]])),
+      dependencies: { write: vi.fn() },
+    });
+    expect(result.unread).toEqual(["ink:neck"]);
+    expect(result.covered).toEqual([]);
+  });
+
+  it("⚠ a reader that FALLS OVER is never `covered`, whatever the wardrobe says", async () => {
+    /*
+      The arm that stops `covered` from becoming a place failures go to die. A
+      throw and an empty answer used to arrive as one value; they are told apart
+      at the read, where the difference is actually known. Sabotage: route a
+      `failed` into `covered` and this alone reddens.
+    */
+    const result = await reMintCarriedGeometry({
+      ...base,
+      slots: [{
+        slot: "ink:upperChest" as FeatureSlot, question: "upper chest", side: null,
+        coveredWhenEmpty: true,
+      }],
+      /* The fake throws for a name it has no mask for — a reader that will not
+         answer, which is a different fact from one that answers "none". */
+      reader: readerReturning(new Map()),
+      dependencies: { write: vi.fn() },
+    });
+    expect(result.unread).toEqual(["ink:upperChest"]);
+    expect(result.covered).toEqual([]);
+  });
+
+  it("⚠ an ABSENT TABLE counts everything unread and nothing covered", async () => {
+    /* The outer catch is reached by the store, not by the picture: whatever her
+       outfit is, it is not the reason a row did not write. */
+    const result = await reMintCarriedGeometry({
+      ...base,
+      slots: [{
+        slot: "ink:upperChest" as FeatureSlot, question: "upper chest", side: null,
+        coveredWhenEmpty: true,
+      }],
+      reader: readerReturning(new Map([["upper chest", maskWith({ x: 2, y: 2, width: 4, height: 4 })]])),
+      dependencies: {
+        write: async () => { throw new Error("Table 'x.casting_face_scans' doesn't exist"); },
+      },
+    });
+    expect(result.unread).toEqual(["ink:upperChest"]);
+    expect(result.covered).toEqual([]);
+  });
+
   it("the cost note's threshold is a stated number, not a hidden one", () => {
     /* fable-1443 condition 4: the tripwire lives beside the constant that
        prices it. A face carrying more than this resurfaces the per-render cost
@@ -287,10 +369,9 @@ describe("re-reading the carried features on the delivered frame", () => {
 
 describe("the tattoo row's box, which drifts the same way (fable-1448 §4)", () => {
   it("re-reads a worn tattoo the MEASURED word names, with its side", () => {
-    const { slots, refused } = carriedInkSlotsForGeometry({
+    const slots = carriedInkSlotsForGeometry({
       delivered: { "ink:upperArm@left": "crop-1", "ink:neck": "crop-2" },
     });
-    expect(refused).toEqual([]);
     expect(slots.map((one) => [one.slot, one.question, one.side])).toEqual([
       ["ink:upperArm@left", "upper arm", "left"],
       ["ink:neck", "neck", null],
@@ -298,25 +379,83 @@ describe("the tattoo row's box, which drifts the same way (fable-1448 §4)", () 
   });
 
   it("skips the tattoo THIS render delivered — its crop is cut from this frame", () => {
-    const { slots } = carriedInkSlotsForGeometry({
+    const slots = carriedInkSlotsForGeometry({
       delivered: { "ink:neck": "crop-2" },
       deliveredThisRender: "ink:neck",
     });
     expect(slots).toEqual([]);
   });
 
-  it("⚠ REFUSES upperChest rather than filing — its surface is under her shirt", () => {
+  it("⚠ ASKS upperChest — the court ran and a clothed chest answers NOTHING, not the shirt", () => {
     /*
-      The read the mint cannot make under the roll prompt's crew tee is not one
-      this can make either — `gate_ink_uncarried` exists because the words road
-      walls exactly this placement. Asking anyway risks worse than a stale box:
-      a segmenter asked for a covered surface may outline the GARMENT.
+      A constant used to drop every chest slot before a read was spent, on the
+      HYPOTHESIS that *a segmenter asked for a covered surface may outline the
+      GARMENT*. The court that settles it ran (opus-1110, ruled fable-1452):
+      three clothed production frames across two casts answered 0 px, and the
+      scooped delivery answered 111,608 px of bare skin stopping at the fabric
+      edge. So the chest is asked like every other surface.
     */
-    const { slots, refused } = carriedInkSlotsForGeometry({
+    const slots = carriedInkSlotsForGeometry({
       delivered: { "ink:upperChest": "crop-3", "ink:neck": "crop-2" },
     });
-    expect(refused).toEqual(["ink:upperChest"]);
-    expect(slots.map((one) => one.slot), "and the readable one still goes").toEqual(["ink:neck"]);
+    expect(slots.map((one) => one.slot)).toEqual(["ink:upperChest", "ink:neck"]);
+    expect(slots.map((one) => one.question)).toEqual(["upper chest", "neck"]);
+  });
+
+  it("⚠ marks a COVERED surface's empty answer as explained, and a bare one's as not", () => {
+    /*
+      The flag says only *if this comes back empty, her outfit is why*. It never
+      decides whether to ask — arm A of the court is a frame whose stored line
+      says covered and whose chest is bare.
+    */
+    const slots = carriedInkSlotsForGeometry({
+      delivered: { "ink:upperChest": "c3", "ink:neck": "c2", "ink:upperArm@left": "c1" },
+    });
+    expect(Object.fromEntries(slots.map((one) => [one.slot, one.coveredWhenEmpty]))).toEqual({
+      "ink:upperChest": true,
+      "ink:neck": false,
+      "ink:upperArm@left": false,
+    });
+  });
+
+  it("⚠ reads coverage from the ONE OWNER — a BASICS cast's chest is not covered", () => {
+    /*
+      THE ARM THAT SEPARATES A DERIVATION FROM A LIST. Hardcoding
+      `upperChest -> covered` passes every other arm here and fails this one: on
+      the Basics path the chest is bare by spec, so an empty read there is a
+      real regression and has to stay countable.
+
+      `INK_PLACEMENTS.skin` — the frozen `dependsOnGarment` field this would
+      once have read — was deleted at item 7a for exactly this reason: a fact
+      about one outfit wearing the shape of a fact about a placement.
+    */
+    const basics = carriedInkSlotsForGeometry({
+      delivered: { "ink:upperChest": "c3" },
+      wardrobe: { kind: "line", line: basicsWardrobeLine("male"), source: "born", path: "basics" },
+    });
+    expect(basics[0]!.coveredWhenEmpty).toBe(false);
+
+    /* And the same cast on the house tee, so the difference is the LINE and not
+       the shape of the call. */
+    const house = carriedInkSlotsForGeometry({
+      delivered: { "ink:upperChest": "c3" },
+      wardrobe: { kind: "line", line: HOUSE_WARDROBE_LINE, source: "born", path: "wardrobe" },
+    });
+    expect(house[0]!.coveredWhenEmpty).toBe(true);
+  });
+
+  it("⚠ an outfit nobody has read the coverage of does NOT explain an empty answer", () => {
+    /*
+      `unknown` fails closed for a GATE and must not fail quiet for a COUNTER:
+      a line we have never measured gives no reason for a missing box, so it
+      stays in the regression count where somebody will look at it. This is the
+      state every Wardrobe-path cast with a picked outfit lands in until 7a-bis.
+    */
+    const slots = carriedInkSlotsForGeometry({
+      delivered: { "ink:upperChest": "c3" },
+      wardrobe: { kind: "line", line: "a heavy roll-neck jumper", source: "born", path: "wardrobe" },
+    });
+    expect(slots[0]!.coveredWhenEmpty).toBe(false);
   });
 
   it("⚠ the panel draws the re-read box on the tattoo card, and the crop's own when there is none", () => {
@@ -346,19 +485,19 @@ describe("the tattoo row's box, which drifts the same way (fable-1448 §4)", () 
 
     const fresh = new Map([["ink:upperArm@left", { x: 834, y: 1113, width: 66, height: 95, frame: { width: 1024, height: 1536 } }]]);
     expect(boxOf(panel(fresh), "ink:upperArm@left")).toMatchObject({ x: 834, y: 1113 });
-    /* And the refused one keeps the crop's own geometry rather than losing its
-       rectangle — a row with no box is not on the panel at all. */
+    /* And a slot with no fresh reading — a chest whose read came back empty
+       under her shirt — keeps the crop's own geometry rather than losing its
+       rectangle. A row with no box is not on the panel at all. */
     expect(boxOf(panel(fresh), "ink:upperChest")).toMatchObject({ x: 270, y: 879 });
   });
 
   it("skips a slot outside the measured placement vocabulary", () => {
     /* These ids crossed a JSON boundary. A row is a promise that tapping it
        edits that thing, and a made-up placement has no reader word at all. */
-    const { slots, refused } = carriedInkSlotsForGeometry({
+    const slots = carriedInkSlotsForGeometry({
       delivered: { "ink:elbow": "crop-4", "hair": "not-an-ink-slot" },
     });
     expect(slots).toEqual([]);
-    expect(refused, "not refused either — it was never a candidate").toEqual([]);
   });
 });
 

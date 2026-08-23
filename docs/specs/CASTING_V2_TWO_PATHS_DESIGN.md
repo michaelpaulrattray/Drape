@@ -579,6 +579,25 @@ CASTING_TWO_PATHS_SCOPE     off | all | users:<ids>      parent: CASTING_V2_SCOP
   refuse-until-read state — which is a real option, since he may want the paths
   before the tattoos.
 
+- ⚠ **AND A THIRD, added when the scoop court ran** (opus-1110, ruled fable-1452
+  ASK 1, condition 2): **the Wardrobe path's first non-house garments RE-OPEN
+  the `upper chest` reading, and nobody trusts a chest read on them until it is
+  re-taken.** The court that lifted `upperChest`'s refusal in
+  `server/castingV2/carriedGeometry.ts` measured one word on four production
+  frames — the scooped delivery answered 111,608 px of bare skin stopping at the
+  fabric edge, and three clothed frames across two casts answered **nothing at
+  all**, which is what makes asking the chest safe. But **every one of those
+  clothed frames wears the roll prompt's grey crew tee**, because that is the
+  only garment this product has ever made. So the verdict is a fact about ONE
+  OUTFIT wearing the shape of a fact about a reader — the fixture lesson exactly
+  — and a picked one-shoulder hide or a customer-named apron is outside it.
+  Re-taking it is cheap (two segmenter reads, about a cent) and it is a
+  precondition rather than a note because the failure it guards against is
+  silent: a reader that outlines a NEW garment files a confident rectangle over
+  fabric, and nothing goes red. **The Basics path argues the other way and needs
+  no line** — it leaves the chest bare by design, which is the same finding
+  generalised.
+
 
 ---
 

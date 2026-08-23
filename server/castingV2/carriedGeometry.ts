@@ -60,8 +60,9 @@ import { inkPlacementOfSlot, openKindOfSlot, parseSlot, type Instance } from "./
 import {
   inkPlacementEntry,
   isInkPlacement,
-  type InkPlacement,
 } from "../../shared/inkPlacementVocabulary";
+import { wardrobeCoversSurface } from "./inkSurfaceCoverage";
+import type { WardrobeResolution } from "./wardrobeLine";
 import { boundsOf } from "./segmentCuts";
 import type { RegionReader } from "./maskedRefine";
 import type { FeatureSlot } from "./recipeAssembler";
@@ -97,6 +98,21 @@ export type CarriedSlotToReRead = {
   question: string;
   /** Her side, when the slot is one of a pair. Null for a whole-frame slot. */
   side: Instance | null;
+  /**
+   * WHETHER AN EMPTY ANSWER HERE IS EXPLAINED RATHER THAN BROKEN.
+   *
+   * `unread` is the countable line that means *a re-mint has quietly started
+   * failing* (fable-1443 condition 2). A surface this cast's own outfit covers
+   * answers nothing every single time, correctly — and counting that as a
+   * regression is how a working counter stops meaning anything within a week.
+   *
+   * Set by the caller, from the ONE OWNER of *does this cast's wardrobe cover
+   * this surface* (`inkSurfaceCoverage`), never from a list of placements kept
+   * here. It says nothing about whether to ASK: the scoop court's arm A is a
+   * frame whose stored line says `covered` and whose chest is bare, so a
+   * coverage answer may explain an absence and must never suppress a read.
+   */
+  coveredWhenEmpty?: boolean;
 };
 
 /**
@@ -202,41 +218,88 @@ export function carriedSlotsForGeometry(input: {
  * That last line is the finding in one row: the same slot on the same cast, two
  * adjacent versions, 834px apart.
  *
- * # ⚠ `upperChest` REFUSES RATHER THAN FILING, and it is the one rule here
+ * # ⚠ `upperChest` USED TO BE REFUSED HERE. THE COURT RAN AND IT IS NOT
  *
- * The roll prompt dresses her in a crew-neck tee, so the ordinary master's
- * chest is covered — and **a read the mint cannot make under that shirt is not
- * one this re-read can make either.** `gate_ink_uncarried` exists because of
- * exactly that: the words road walls `upperChest` because the mint writes
- * nothing there. Asking anyway risks worse than a stale box, because a
- * segmenter asked for a covered surface may outline the GARMENT.
+ * A constant — `INK_SURFACES_READABLE_ON_A_DRESSED_FRAME = ["neck",
+ * "upperArm"]` — stood here and dropped every chest slot before a read was
+ * spent. Its stated reason was a HYPOTHESIS: *a segmenter asked for a covered
+ * surface may outline the GARMENT.* The commit that wrote it filed the court
+ * that would settle it, and that court ran (opus-1110, ruled fable-1452 ASK 1).
  *
- * So the refusal is stated, free, and named — the wardrobe is the reason, and
- * the countable line says so rather than leaving a silent empty read.
+ * **`upper chest` on a clothed frame answers NOTHING. It does not answer the
+ * shirt.** Ten frames across three casts and two garments, one word, one
+ * instrument, every overlay opened and looked at:
  *
- * ⚠ **AND THERE IS A THIRD OUTCOME ON THE RECORD THAT THIS DELIBERATELY DOES
- * NOT SERVE.** Production cand 1641 v207 shows the engine SCOOPING the neckline
- * and delivering onto bare skin — a chest that IS readable, whose box drifts
- * like any other. Serving it would need a court first (does `upper chest` on a
- * clothed frame answer nothing, or answer the shirt?), and until somebody buys
- * that reading the safe answer and the ruled one are the same answer.
+ * ```
+ *   cand 1641 v207  the SCOOPED delivery, chest bare    111,608 px   the bare skin,
+ *                                                                    stopping at the
+ *                                                                    fabric edge
+ *   cand 1641 v206  the same man, crew tee                     0 px  NOTHING
+ *   cand 1641       his pristine master, crew tee              0 px  NOTHING
+ *   cand 1643 v217  a different cast, crew tee                 0 px  NOTHING
+ *   the caveman sheet, a PICKED hide wrap × 2       66,046 / 64,942  the bare chest
+ *                                                                    beside the hide
+ *   the basics sheet, a sports top × 4                        0 px  NOTHING
+ * ```
+ *
+ * ⚠ **AND THE HYPOTHESIS IS NOT FALSE IN GENERAL — IT IS FALSE OF THIS WORD,
+ * AND TRUE ONE SYNONYM AWAY.** On the same Basics frame where `upper chest`,
+ * `chest skin` and `chest` all read ZERO, **`decolletage` returned 88,032 px —
+ * and the overlay is the SPORTS BRA, outlined precisely, with no skin in it**
+ * (`output/two-paths-court/READ-BASICS-word-decolletage.jpg`). That is the
+ * garment-outlining failure the refusal feared, photographed, reached by
+ * changing nothing but the noun.
+ *
+ * So what makes asking the chest safe is not the reader's good judgement; it is
+ * that {@link inkPlacementEntry}'s `readerWord` is a MEASURED word and this
+ * code asks that and nothing else. D-213 was already the rule. It now has a
+ * specimen: swapping in a more natural-sounding synonym would draw a rectangle
+ * over a woman's sports bra and label it the surface her tattoo sits on.
+ *
+ * So the chest is asked like every other surface. On a covered frame the read
+ * comes back empty, `boundsOf` answers null, **no rectangle is drawn**, and the
+ * outcome is `covered` rather than `unread` — see {@link CarriedSlotToReRead}'s
+ * own field, which is what keeps the regression counter meaning something.
+ *
+ * ⚠ **AND THE ANSWER WAS ALREADY IN THIS REPOSITORY WHEN THE REFUSAL WAS
+ * WRITTEN**, which is the more useful half of the story.
+ * `docs/specs/V3B_PLACEMENT_VOCABULARY_READING.md` §4 measured the same word on
+ * a bare-scoop frame and a covered-crew frame as its own negative control —
+ * *"upper chest FOUND 2.69% · nothing"* — and called it *"the occlusion-aware,
+ * per-frame honesty a placement vocabulary needs"*. `inkPlacementVocabulary.ts`
+ * carries that sentence on the `upperChest` entry to this day, one import away
+ * from the constant that refused on the opposite assumption. **The hypothesis
+ * was not merely untested; it disagreed with a driven reading nobody re-read.**
+ *
+ * ⚠ **THE VERDICT IS SCOPED TO THE GREY CREW TEE BY CONSTRUCTION, and that is
+ * this reading's real limit** (fable-1452 ASK 1, condition 2). Every production
+ * master wears the roll prompt's own line, so the clothed population is three
+ * frames of ONE GARMENT — the fixture lesson exactly: *a fixture family shares
+ * the property that kills you.* **The Wardrobe path's first non-house garments
+ * — a picked one-shoulder hide, a customer-named apron — RE-OPEN this court**,
+ * and the same sentence is written into the Two Paths flip preconditions so
+ * that whoever widens the flag meets it there too. The Basics path argues the
+ * other way and needs no line: it leaves the chest bare by design.
  */
 export function carriedInkSlotsForGeometry(input: {
   /** The version's worn tattoos — `slot → cropId`, off its own composed delta. */
   delivered: Readonly<Record<string, string>>;
   /** The slot this render delivered, whose crop is cut from THIS frame. */
   deliveredThisRender?: string | null;
-}): { slots: CarriedSlotToReRead[]; refused: string[] } {
+  /**
+   * WHAT THIS CAST IS WEARING — the resolution, whole, never flattened.
+   *
+   * Only ever used to EXPLAIN an empty answer, never to decide whether to ask.
+   * Absent is the house crew tee, which is what `wardrobeCoversSurface` does
+   * with silence and is every roll in production today.
+   */
+  wardrobe?: WardrobeResolution;
+}): CarriedSlotToReRead[] {
   const slots: CarriedSlotToReRead[] = [];
-  const refused: string[] = [];
   for (const slot of Object.keys(input.delivered)) {
     if (slot === input.deliveredThisRender) continue;
     const placement = inkPlacementOfSlot(slot);
     if (placement === null || !isInkPlacement(placement.placement)) continue;
-    if (!INK_SURFACES_READABLE_ON_A_DRESSED_FRAME.includes(placement.placement)) {
-      refused.push(slot);
-      continue;
-    }
     slots.push({
       slot: slot as FeatureSlot,
       /* The MEASURED segmenter word, never the copy noun beside it — they are
@@ -244,20 +307,35 @@ export function carriedInkSlotsForGeometry(input: {
          conflation would survive review. */
       question: inkPlacementEntry(placement.placement).readerWord,
       side: placement.side,
+      /*
+        THE ONE OWNER ANSWERS THIS, and a placement list here would be the
+        second copy of it (working law 4).
+
+        `INK_PLACEMENTS.skin` — the frozen `dependsOnGarment` field this would
+        once have read — was DELETED at item 7a (fable-1368 ruling 3), for the
+        reason that applies here word for word: it was a fact about ONE OUTFIT
+        wearing the shape of a fact about a placement. `inkSurfaceCoverage` is
+        its named successor and it answers from the cast's own stored line, so
+        a Basics cast's bare chest is not called covered by a table.
+
+        `unknown` is deliberately NOT `covered`: a line nobody has read the
+        coverage of gives no reason for an empty answer, so it stays countable.
+      */
+      coveredWhenEmpty:
+        wardrobeCoversSurface(input.wardrobe, placement.placement) === "covered",
     });
   }
-  return { slots, refused };
+  return slots;
 }
 
 /**
- * The placements a re-read may be asked of on an ordinary delivered frame.
- *
- * Derived from what the WORDS ROAD already proved end to end rather than
- * re-decided here: `neck` and `upperArm` are the two the mint demonstrably
- * writes a crop for, and `upperChest` is the one it does not, under the roll
- * prompt's own crew tee. A second list would drift from that one.
+ * What one re-read came back as. `empty` and `failed` are deliberately not one
+ * value — see the note at the read itself.
  */
-const INK_SURFACES_READABLE_ON_A_DRESSED_FRAME: readonly InkPlacement[] = ["neck", "upperArm"];
+type ReadOutcome =
+  | { kind: "box"; box: StoredCarriedSlot }
+  | { kind: "empty" }
+  | { kind: "failed" };
 
 export type CarriedGeometryResult = {
   /** How many features were asked about. */
@@ -266,6 +344,17 @@ export type CarriedGeometryResult = {
   filed: number;
   /** The slots whose read did not settle, so a quiet regression is countable. */
   unread: readonly string[];
+  /**
+   * The slots that came back EMPTY for a reason this cast's own outfit gives.
+   *
+   * Kept apart from {@link unread} because they are opposite facts wearing one
+   * shape: `unread` means *something we expected to work did not*, and this
+   * means *the surface is under her clothes, exactly as her wardrobe line
+   * says.* Folding the second into the first fires the regression counter on
+   * every ordinary render that carries a chest piece, and a counter that fires
+   * routinely is a counter nobody reads (fable-1452 ASK 1).
+   */
+  covered: readonly string[];
   /** Whether the row was written. False on every failure and on a stand-down. */
   written: boolean;
 };
@@ -296,7 +385,7 @@ export async function reMintCarriedGeometry(input: {
     write?: typeof keepCarriedGeometry;
   };
 }): Promise<CarriedGeometryResult> {
-  const empty: CarriedGeometryResult = { asked: 0, filed: 0, unread: [], written: false };
+  const empty: CarriedGeometryResult = { asked: 0, filed: 0, unread: [], covered: [], written: false };
   if (input.slots.length === 0) return empty;
 
   if (input.slots.length > CARRIED_GEOMETRY_COST_NOTE_ABOVE) {
@@ -308,7 +397,16 @@ export async function reMintCarriedGeometry(input: {
 
   const write = input.dependencies?.write ?? keepCarriedGeometry;
   try {
-    const read = async (one: CarriedSlotToReRead): Promise<StoredCarriedSlot | null> => {
+    /*
+      THREE OUTCOMES, NOT TWO, and the third is the whole of ASK 1's condition.
+
+      A THROW and an EMPTY ANSWER both used to arrive as `null`, which is fine
+      while every empty answer is a failure. It stops being fine the moment a
+      surface is legitimately covered: `covered` must never absorb a reader that
+      fell over, so the two are told apart HERE — where the difference is
+      actually known — rather than guessed at from the outside.
+    */
+    const read = async (one: CarriedSlotToReRead): Promise<ReadOutcome> => {
       const ask = {
         image: input.frame.bytes,
         name: one.question,
@@ -330,14 +428,17 @@ export async function reMintCarriedGeometry(input: {
            whole-frame answer to a bilateral question is BOTH of them, and a box
            drawn from it would span her two horns and be labelled as one. */
         : await input.reader.regionSides?.(ask).then((sides) => sides?.[one.side!] ?? null) ?? null;
-      if (!mask) return null;
+      if (!mask) return { kind: "empty" };
       const bounds = boundsOf(mask);
-      if (bounds === null) return null;
+      if (bounds === null) return { kind: "empty" };
       /* The frame travels WITH the box and is taken from the same object it was
          measured in — `PanelBox`'s own rule, kept across the write. Two
          readings of the frame's size could disagree; a mask and its own
          dimensions cannot. */
-      return { slot: one.slot, box: { ...bounds, frame: { width: mask.width, height: mask.height } } };
+      return {
+        kind: "box",
+        box: { slot: one.slot, box: { ...bounds, frame: { width: mask.width, height: mask.height } } },
+      };
     };
 
     const settled = await Promise.all(input.slots.map(async (one) => {
@@ -348,12 +449,28 @@ export async function reMintCarriedGeometry(input: {
           { err: String(error).slice(0, 200), slot: one.slot, candidateId: input.candidateId },
           "[carriedGeometry] a carried feature's geometry was not re-read",
         );
-        return { one, found: null };
+        return { one, found: { kind: "failed" } as ReadOutcome };
       }
     }));
 
-    const carried = settled.map((entry) => entry.found).filter((one): one is StoredCarriedSlot => one !== null);
-    const unread = settled.filter((entry) => entry.found === null).map((entry) => entry.one.slot);
+    const carried = settled.flatMap((entry) => (entry.found.kind === "box" ? [entry.found.box] : []));
+    /* An empty answer the cast's own outfit explains — and ONLY an empty one.
+       A `failed` is never covered, whatever the wardrobe says. */
+    const covered = settled
+      .filter((entry) => entry.found.kind === "empty" && entry.one.coveredWhenEmpty === true)
+      .map((entry) => entry.one.slot);
+    const unread = settled
+      .filter((entry) => entry.found.kind === "failed"
+        || (entry.found.kind === "empty" && entry.one.coveredWhenEmpty !== true))
+      .map((entry) => entry.one.slot);
+    if (covered.length > 0) {
+      /* Its own line, at its own level: this is the product working, and it
+         reads as such in a log somebody greps for the line below. */
+      log.debug(
+        { candidateId: input.candidateId, variantId: input.variantId, covered },
+        "[carriedGeometry] a carried feature answered nothing and its wardrobe says why — the surface is under her clothes",
+      );
+    }
     if (unread.length > 0) {
       /*
         THE COUNTABLE LINE (fable-1443 condition 2), and its reason is the whole
@@ -366,7 +483,7 @@ export async function reMintCarriedGeometry(input: {
         "[carriedGeometry] a carried feature's geometry was not re-read — its box is still the frame it was minted on",
       );
     }
-    if (carried.length === 0) return { asked: input.slots.length, filed: 0, unread, written: false };
+    if (carried.length === 0) return { asked: input.slots.length, filed: 0, unread, covered, written: false };
 
     const kept = await write({
       publicId: randomUUID(),
@@ -382,7 +499,7 @@ export async function reMintCarriedGeometry(input: {
         "[carriedGeometry] this version's row is about different bytes — the carried geometry stood down",
       );
     }
-    return { asked: input.slots.length, filed: carried.length, unread, written: kept.written };
+    return { asked: input.slots.length, filed: carried.length, unread, covered, written: kept.written };
   } catch (error) {
     /*
       THE ABSENT TABLE ARRIVES HERE (fable-1445 condition 3), along with every
@@ -395,6 +512,15 @@ export async function reMintCarriedGeometry(input: {
       { err: String(error).slice(0, 200), candidateId: input.candidateId, variantId: input.variantId },
       "[carriedGeometry] this render's carried geometry was not filed — the picture stands and the boxes are the ones they were",
     );
-    return { asked: input.slots.length, filed: 0, unread: input.slots.map((one) => one.slot), written: false };
+    /* Everything is UNREAD here and nothing is `covered`: this arm is reached
+       by the table being absent, the write throwing, or the frame not existing
+       — none of which is a fact about her clothes. */
+    return {
+      asked: input.slots.length,
+      filed: 0,
+      unread: input.slots.map((one) => one.slot),
+      covered: [],
+      written: false,
+    };
   }
 }

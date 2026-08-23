@@ -129,6 +129,33 @@ const HOUSE_COVERAGE: Readonly<Record<InkPlacement, SurfaceCoverage>> = Object.f
  * because the sentence is ours and it is prescriptive — we ask the engine for
  * it — where a customer's line is descriptive and could say anything. The day
  * a Basics cast is rolled, the honest next step is to read one and confirm.
+ *
+ * ⚠⚠ **A BASICS CAST HAS NOW BEEN ROLLED AND THE READING DOES NOT CONFIRM THE
+ * CHEST** (the Two Paths court, arm 2 — opus-1111, dev, eight candidates).
+ * `upper chest` — the mint's own measured word, the one that decides whether a
+ * chest piece can be cropped and carried — returned **0 px on 4 of 4 Basics
+ * candidates**, and `chest skin` and `chest` returned 0 px too. The overlays
+ * are `output/two-paths-court/READ-BASICS-chest*.jpg`.
+ *
+ * **The skin is visibly there and the reader will not name it**, which is a
+ * third thing this file's three words do not cover: not `bare` as it means it
+ * here (*"so ink there can be rendered, cropped and carried into a view"*), and
+ * not `covered` either, because telling a woman in a scooped sports top that
+ * her chest is covered is the lie ruling 1 forbids.
+ *
+ * **`upperChest: "bare"` is therefore live and OVER-PROMISING on this path**,
+ * which is the direction this file's own header calls the dangerous one: the
+ * ask renders, the mint writes nothing, and the tattoo is gone on her next
+ * edit. It is not changed here because the honest value is not one of the three
+ * this type has, and inventing a fourth is a ruling rather than a repair. The
+ * path is flag-dark (`CASTING_TWO_PATHS_SCOPE` is off everywhere), so nothing
+ * is reaching a customer while it is decided.
+ *
+ * ⚠ And the WARDROBE path's first picked garment reads the other way: on a
+ * hide wrap that leaves one side of the chest bare, `upper chest` answered
+ * **66,046 and 64,942 px** on two candidates — clean masks on his skin. So
+ * `unknown` fails closed on a surface that reads perfectly, which is the same
+ * table being wrong in the opposite direction on the other path.
  */
 const BASICS_COVERAGE: Readonly<Record<InkPlacement, SurfaceCoverage>> = Object.freeze({
   neck: "bare",

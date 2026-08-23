@@ -32,7 +32,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:2450"
+          "server/castingV2/refineService.ts:2462"
         ]
       },
       {
@@ -53,7 +53,7 @@
           "server/castingV2/rollService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:4754",
+          "server/castingV2/refineService.ts:4766",
           "server/castingV2/rollEngine.ts:65",
           "server/castingV2/rollEngine.ts:77"
         ]
@@ -130,7 +130,6 @@
         "id": "gate_ink_uncarried",
         "kind": "interpreter-refusal",
         "pinnedBy": [
-          "server/castingV2/carriedGeometry.test.ts",
           "server/castingV2/refineDelta.test.ts",
           "server/castingV2/refineRefusals.test.ts",
           "server/castingV2/refineService.test.ts"
@@ -165,7 +164,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:2816"
+          "server/castingV2/refineService.ts:2828"
         ]
       },
       {
@@ -175,7 +174,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:3519"
+          "server/castingV2/refineService.ts:3531"
         ]
       },
       {
@@ -219,7 +218,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:2550"
+          "server/castingV2/refineService.ts:2562"
         ]
       },
       {
@@ -307,7 +306,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:4213"
+          "server/castingV2/refineService.ts:4225"
         ]
       },
       {
@@ -330,7 +329,7 @@
           "server/castingV2/refusalTag.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:3287",
+          "server/castingV2/refineService.ts:3299",
           "server/castingV2/refusalTag.ts:22"
         ]
       },
@@ -341,7 +340,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:3268"
+          "server/castingV2/refineService.ts:3280"
         ]
       },
       {
@@ -351,7 +350,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:3363"
+          "server/castingV2/refineService.ts:3375"
         ]
       },
       {
@@ -361,8 +360,8 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:3045",
-          "server/castingV2/refineService.ts:3062"
+          "server/castingV2/refineService.ts:3057",
+          "server/castingV2/refineService.ts:3074"
         ]
       },
       {
@@ -372,7 +371,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:4183"
+          "server/castingV2/refineService.ts:4195"
         ]
       },
       {
@@ -382,7 +381,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:2859"
+          "server/castingV2/refineService.ts:2871"
         ]
       },
       {
@@ -392,7 +391,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:4733"
+          "server/castingV2/refineService.ts:4745"
         ]
       },
       {
@@ -426,7 +425,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:2496"
+          "server/castingV2/refineService.ts:2508"
         ]
       },
       {
@@ -521,7 +520,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:2422"
+          "server/castingV2/refineService.ts:2434"
         ]
       },
       {

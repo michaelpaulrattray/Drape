@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "bf48363791bc3a07"
+    "sourceFingerprint": "95f6cf1ec28939aa"
   },
   "domains": [
     {
@@ -21078,6 +21078,11 @@
     },
     {
       "from": "module:server/castingV2/carriedGeometry.ts",
+      "to": "module:server/castingV2/inkSurfaceCoverage.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/carriedGeometry.ts",
       "to": "module:server/castingV2/maskedRefine.ts",
       "kind": "imports"
     },
@@ -21109,6 +21114,11 @@
     {
       "from": "module:server/castingV2/carriedGeometry.ts",
       "to": "module:server/castingV2/segmentCuts.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/carriedGeometry.ts",
+      "to": "module:server/castingV2/wardrobeLine.ts",
       "kind": "imports"
     },
     {

@@ -1724,6 +1724,21 @@ async function refineCandidateCounted(
   }
 
   /*
+    WHAT THIS CAST IS WEARING, RESOLVED ONCE FOR THE WHOLE REQUEST (item 7a).
+
+    Two readers need it now — the ink gate below, and the carried-geometry
+    re-read at the far end of the render, which uses it to tell *the surface is
+    under her clothes* apart from *the re-mint has started failing*. Resolved
+    HERE rather than at each, because two `currentWardrobeLine` calls are two
+    answers waiting to disagree, and the one this request acts on has to be one
+    thing (condition (v), §3.1a).
+  */
+  const wardrobeNow = currentWardrobeLine({
+    rollPath: source.rollPath as CastingPath | null,
+    rollLine: source.rollWardrobeLine,
+  });
+
+  /*
     ONE READING, ASKED THREE WAYS — the same face, the same sentence, the same
     prior. Named here because there are three call sites (the first reading, the
     removal re-read, and the restatement pass) and a fourth copy of this block
@@ -1787,10 +1802,7 @@ async function refineCandidateCounted(
         `editedLine` as the seam it will land on. Until then a wardrobe edit
         cannot exist, so there is nothing for this to miss.
       */
-      wardrobe: currentWardrobeLine({
-        rollPath: source.rollPath as CastingPath | null,
-        rollLine: source.rollWardrobeLine,
-      }),
+      wardrobe: wardrobeNow,
       /*
         ⚠ AND WHETHER THIS ASK IS ABOUT A TATTOO WE ALREADY PAINTED — the gate's
         THIRD document, and without it the transform road is unreachable.
@@ -9310,18 +9322,21 @@ async function refineCandidateCounted(
       It goes through the SAME read and the SAME row, keyed by the ink slot, so
       the panel needs no second merge and the store no second shape.
 
-      `upperChest` is refused rather than read — see `carriedInkSlotsForGeometry`.
+      ⚠ `upperChest` USED TO BE DROPPED HERE AND IS NOT ANY MORE — the court
+      that commit filed has run (opus-1110, ruled fable-1452 ASK 1): on three
+      clothed production frames across two casts, `upper chest` answers NOTHING
+      rather than outlining the shirt, and on the scooped delivery it answers
+      the bare skin exactly. So all three placements are asked, and an empty
+      answer a cast's own wardrobe explains is counted `covered` rather than
+      `unread` — see `carriedInkSlotsForGeometry`.
     */
-    const wornInk = libraryAtRender === null ? { slots: [], refused: [] } : carriedInkSlotsForGeometry({
+    const wornInk = libraryAtRender === null ? [] : carriedInkSlotsForGeometry({
       delivered: readDeliveredInk(claimedDeltas) ?? {},
       deliveredThisRender: deliveredInk?.slot ?? null,
+      /* The same resolution the gate reads, from the one owner — never a second
+         `currentWardrobeLine` call that could answer differently. */
+      wardrobe: wardrobeNow,
     });
-    if (wornInk.refused.length > 0) {
-      log.info(
-        { operationId, variant: variant.publicId, refused: wornInk.refused },
-        "[carriedGeometry] a worn tattoo's box was not re-read — its surface is under her clothes on an ordinary frame, and a reader asked for it may outline the garment",
-      );
-    }
     if (libraryAtRender !== null) {
       try {
         const toReRead = [
@@ -9330,7 +9345,7 @@ async function refineCandidateCounted(
             minted: libraryAtRender.minted,
             priorWords: libraryAtRender.priorWords,
           }),
-          ...wornInk.slots,
+          ...wornInk,
         ];
         if (toReRead.length > 0) {
           const reMinted = await reMintCarriedGeometry({
