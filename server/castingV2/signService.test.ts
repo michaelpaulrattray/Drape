@@ -1128,11 +1128,21 @@ describe("a covered surface says so on the same disposition surface", () => {
     }]);
   });
 
-  it("⚠ AND ON A BASICS CAST THE SAME DESIGN RIDES — the outfit decides, not the placement", async () => {
+  it("⚠ ON A BASICS CAST THE SAME DESIGN IS REFUSED — but NOT as a covering", async () => {
     /*
       Item 7a (countersigned fable-1368). The arm above passes `undefined` for
       the line, which is *no line recorded* and answers the house crew tee — so
       the two arms differ in exactly one thing, which is the whole claim.
+
+      ⚠ THIS ARM ASSERTED `rode: true` UNTIL 2026-08-23, on the Basics spec's own
+      sentence (*"scooped low at the chest"*) rather than on a photograph. The
+      Two Paths court rolled eight Basics candidates and asked `upper chest` —
+      **0 px on 4 of 4** (opus-1111, ruled fable-1453 ASK 2), so the coverage
+      owner answers `unknown` and the design does not ride.
+
+      What the outfit still decides is the REASON: `surfaceCoverageUnread`, never
+      `surfaceCovered`. Her chest is plainly visible in the picture, and a
+      refusal that calls it covered is the lie fable-1368 ruling 1 forbids.
     */
     const { plates, dispositions } = await carriedInkPlates({
       mannequinDeferred: false,
@@ -1143,8 +1153,33 @@ describe("a covered surface says so on the same disposition surface", () => {
       wardrobeLine: basicsWardrobeLine("male"),
     });
 
+    expect(plates).toEqual([]);
+    expect(dispositions).toEqual([{
+      designPublicId: "chest-1", rode: false, reason: "surfaceCoverageUnread",
+    }]);
+  });
+
+  it("⚠ AND ITS ARM STILL RIDES — the outfit decides, not the placement", async () => {
+    /*
+      The claim item 7a actually bought, kept alive on the placement whose
+      coverage the court did NOT overturn: a Basics cast wears no sleeve, so an
+      upper-arm design rides where a crew-tee cast's would too. Without this arm
+      the change above reads as *Basics rides nothing*, which is false.
+    */
+    const { plates, dispositions } = await carriedInkPlates({
+      mannequinDeferred: false,
+      listInkPlates: async () => [{
+        ...chestRow, designPublicId: "arm-1", placement: "upperArm", side: "left",
+        storageKey: "casting-v2/candidates/arm-plate.png",
+      }] as never,
+      readBytes: async () => ({ bytes: Buffer.from("plate"), contentType: "image/png" }),
+    } as never, {
+      userId: 1, candidateId: 9, operationId: "op-1",
+      wardrobeLine: basicsWardrobeLine("male"),
+    });
+
     expect(plates).toHaveLength(1);
-    expect(dispositions).toEqual([{ designPublicId: "chest-1", rode: true }]);
+    expect(dispositions).toEqual([{ designPublicId: "arm-1", rode: true }]);
   });
 
   it("⚠ AN OUTFIT NOBODY HAS READ SAYS SO — it does not borrow the covering's name", async () => {

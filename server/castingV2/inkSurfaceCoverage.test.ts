@@ -48,11 +48,41 @@ describe("what this cast's wardrobe leaves showing", () => {
     expect(coverageOfWardrobeLine(`  ${HOUSE_WARDROBE_LINE}  `, "upperChest")).toBe("covered");
   });
 
-  it("⚠ BASICS leaves the chest bare — which is the whole point of the path", () => {
+  it("BASICS leaves the neck and the upper arm bare", () => {
     for (const line of [basicsWardrobeLine("male"), basicsWardrobeLine(null)]) {
-      for (const placement of INK_PLACEMENTS) {
+      for (const placement of ["neck", "upperArm"] as const) {
         expect(coverageOfWardrobeLine(line, placement), `${line} / ${placement}`).toBe("bare");
       }
+    }
+  });
+
+  it("⚠ BASICS's CHEST is `unknown` — a court read it and the reader found nothing", () => {
+    /*
+      This entry said `bare` from the day it was written, off the spec's own
+      sentence (*"scooped low at the chest"*), and the file said so honestly:
+      *the one entry here that has not been through a frame.* It has now.
+
+      The Two Paths court rolled eight Basics candidates (opus-1111) and asked
+      `upper chest` — the mint's own measured word, the one that decides whether
+      a chest piece can be cropped and carried at all. **0 px on 4 of 4.**
+      `chest skin` and `chest` also 0 px. Her skin is plainly visible and the
+      reader will not name it.
+
+      `bare` would SELL a chest piece the mint cannot crop — it renders, nothing
+      is recorded, and it is gone on her next edit. `covered` would be the lie
+      ruling 1 forbids. So `unknown`, which fails closed and says in each
+      consumer's own words that nobody can answer for this outfit.
+
+      ⚠ It flips with founder card FQ-b, and the arm below the assertion says
+      which way each answer sends it.
+    */
+    for (const line of [basicsWardrobeLine("male"), basicsWardrobeLine(null)]) {
+      expect(coverageOfWardrobeLine(line, "upperChest"), line).toBe("unknown");
+    }
+    /* And it must not have become `covered` on the way — the two failure
+       directions are opposite and only one of them is a lie about her body. */
+    for (const line of [basicsWardrobeLine("male"), basicsWardrobeLine(null)]) {
+      expect(coverageOfWardrobeLine(line, "upperChest")).not.toBe("covered");
     }
   });
 
@@ -96,8 +126,14 @@ describe("what this cast's wardrobe leaves showing", () => {
     const basics = basicsWardrobeLine("male");
     expect(wardrobeCoversSurface(
       { kind: "line", line: basics, source: "born", path: "basics" },
-      "upperChest",
+      "upperArm",
     )).toBe("bare");
+    /* The chest goes through the same door and comes back with the court's
+       answer rather than the spec's. */
+    expect(wardrobeCoversSurface(
+      { kind: "line", line: basics, source: "born", path: "basics" },
+      "upperChest",
+    )).toBe("unknown");
     expect(wardrobeCoversSurface(
       { kind: "line", line: HOUSE_WARDROBE_LINE, source: "born", path: "wardrobe" },
       "upperChest",
@@ -110,7 +146,9 @@ describe("what this cast's wardrobe leaves showing", () => {
     /* Absent is silence, which is `unpathed`: the house crew tee. */
     expect(bareSurfaces(undefined)).toEqual(["neck", "upperArm"]);
     expect(bareSurfaces({ kind: "unpathed" })).toEqual(["neck", "upperArm"]);
-    expect(bareSurfaces(worn(basicsWardrobeLine("male")))).toEqual([...INK_PLACEMENTS]);
+    /* ⚠ NOT all three any more: the court found the Basics chest unreadable, so
+       the sentence that tells a Basics customer what works names two. */
+    expect(bareSurfaces(worn(basicsWardrobeLine("male")))).toEqual(["neck", "upperArm"]);
     expect(bareSurfaces(worn("a charcoal roll-neck jumper"))).toEqual([]);
     /* And an incoherent branch offers NOTHING rather than the crew tee's two. */
     expect(bareSurfaces({ kind: "incoherent", path: "basics" })).toEqual([]);

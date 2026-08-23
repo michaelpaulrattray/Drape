@@ -243,14 +243,34 @@ describe("which surfaces can ride a package view at all", () => {
     expect((placementRideCoverage("upperChest", null) === "bare")).toBe(false);
   });
 
-  it("⚠ AND A BASICS CAST'S CHEST DOES RIDE — the answer is the OUTFIT'S, not the placement's", () => {
+  it("⚠ A BASICS CAST'S ARM RIDES — the answer is the OUTFIT'S, not the placement's", () => {
     /*
       Item 7a, the whole point of it. This used to be a frozen `false` keyed on
-      the placement, so a cast born shirtless was refused a chest piece by a
-      reading taken on sixteen masters in a crew-neck tee.
+      the placement, so a cast born shirtless was refused by a reading taken on
+      sixteen masters in a crew-neck tee. The OUTFIT answers now.
     */
-    expect(placementRideCoverage("upperChest", basicsWardrobeLine("male"))).toBe("bare");
-    expect(placementRideCoverage("upperChest", basicsWardrobeLine(null))).toBe("bare");
+    expect(placementRideCoverage("upperArm", basicsWardrobeLine("male"))).toBe("bare");
+    expect(placementRideCoverage("upperArm", basicsWardrobeLine(null))).toBe("bare");
+  });
+
+  it("⚠ AND ITS CHEST DOES NOT — a court read that outfit and found nothing", () => {
+    /*
+      This arm asserted `bare` until 2026-08-23, on the Basics SPEC's own
+      sentence rather than on a photograph, and the coverage owner said so in as
+      many words. The Two Paths court then rolled eight Basics candidates and
+      asked `upper chest`: **0 px on 4 of 4** (opus-1111, ruled fable-1453).
+
+      So a chest design does not ride a Basics package view — which is the
+      fail-closed direction and the correct one, because riding it would put a
+      tattoo into six paid views that the mint cannot crop or carry.
+
+      It is NOT `covered`: her chest is plainly visible, and the disposition a
+      customer reads must not say a garment is over it.
+    */
+    for (const line of [basicsWardrobeLine("male"), basicsWardrobeLine(null)]) {
+      expect(placementRideCoverage("upperChest", line)).toBe("unknown");
+      expect(placementRideCoverage("upperChest", line)).not.toBe("covered");
+    }
   });
 
   it("⚠ AND AN OUTFIT NOBODY HAS READ RIDES NOTHING — including the neck", () => {

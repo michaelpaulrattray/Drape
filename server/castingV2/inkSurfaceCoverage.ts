@@ -143,13 +143,14 @@ const HOUSE_COVERAGE: Readonly<Record<InkPlacement, SurfaceCoverage>> = Object.f
  * not `covered` either, because telling a woman in a scooped sports top that
  * her chest is covered is the lie ruling 1 forbids.
  *
- * **`upperChest: "bare"` is therefore live and OVER-PROMISING on this path**,
- * which is the direction this file's own header calls the dangerous one: the
- * ask renders, the mint writes nothing, and the tattoo is gone on her next
- * edit. It is not changed here because the honest value is not one of the three
- * this type has, and inventing a fourth is a ruling rather than a repair. The
- * path is flag-dark (`CASTING_TWO_PATHS_SCOPE` is off everywhere), so nothing
- * is reaching a customer while it is decided.
+ * **`upperChest: "bare"` was therefore OVER-PROMISING on this path** — the
+ * direction this file's own header calls the dangerous one: the ask renders,
+ * the mint writes nothing, and the tattoo is gone on her next edit. **It is
+ * `unknown` as of 2026-08-23** (ruled fable-1453 ASK 2), and the ruling's reason
+ * is worth keeping over the value: *a table entry a court has proven false is a
+ * lie in a load-bearing file even while the path is dark* — which is the
+ * documented-believed-working pattern CLAUDE.md's whole middle section exists to
+ * prevent. The entry itself carries what flips it, either way.
  *
  * ⚠ And the WARDROBE path's first picked garment reads the other way: on a
  * hide wrap that leaves one side of the chest bare, `upper chest` answered
@@ -160,7 +161,24 @@ const HOUSE_COVERAGE: Readonly<Record<InkPlacement, SurfaceCoverage>> = Object.f
 const BASICS_COVERAGE: Readonly<Record<InkPlacement, SurfaceCoverage>> = Object.freeze({
   neck: "bare",
   upperArm: "bare",
-  upperChest: "bare",
+  /*
+    ⚠ `bare` UNTIL A COURT READ IT AND FOUND NOTHING — ruled fable-1453 ASK 2.
+
+    Not `covered`, which would be the lie ruling 1 forbids (her chest is plainly
+    visible), and not `bare`, which SELLS a chest piece the mint cannot crop.
+    `unknown` is the state this type has that fails closed and says, in each
+    consumer's own words, that nobody can answer for this outfit yet — which is
+    true in the only sense that decides whether her tattoo survives.
+
+    ⚠ **IT IS COUPLED TO A FOUNDER CARD AND FLIPS EITHER WAY WITH HIS ANSWER**
+    (founder-queue FQ-b, 2026-08-23). If he lowers the spec's scoop and a
+    re-court reads the chest, this becomes `bare` **with that court as its
+    provenance** rather than with the spec's sentence. If he accepts that Basics
+    does not serve chest ink, the honest end state is a fourth state — visible
+    and unreadable, carrying its own copy — and that gets carded then. One word
+    today, honest both ways tomorrow.
+  */
+  upperChest: "unknown",
 });
 
 /**
