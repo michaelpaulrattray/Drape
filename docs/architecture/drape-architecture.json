@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "b2a263449d223915"
+    "sourceFingerprint": "c28bbcd89f02f647"
   },
   "domains": [
     {
@@ -33,7 +33,7 @@
     {
       "id": "domain:casting",
       "name": "casting",
-      "moduleCount": 122
+      "moduleCount": 123
     },
     {
       "id": "domain:casting-v2",
@@ -1103,6 +1103,12 @@
     {
       "id": "module:client/src/features/casting/castingHelpers.tsx",
       "path": "client/src/features/casting/castingHelpers.tsx",
+      "domain": "casting",
+      "lifecycle": "retire"
+    },
+    {
+      "id": "module:client/src/features/casting/castingPrices.ts",
+      "path": "client/src/features/casting/castingPrices.ts",
       "domain": "casting",
       "lifecycle": "retire"
     },
@@ -9658,6 +9664,10 @@
   ],
   "tests": [
     {
+      "id": "test:client/src/features/casting/castingPrices.test.ts",
+      "path": "client/src/features/casting/castingPrices.test.ts"
+    },
+    {
       "id": "test:client/src/features/castingV2/briefDraft.test.ts",
       "path": "client/src/features/castingV2/briefDraft.test.ts"
     },
@@ -14214,6 +14224,11 @@
     },
     {
       "from": "module:client/src/features/casting/ControlPanel.tsx",
+      "to": "module:client/src/features/casting/castingPrices.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/casting/ControlPanel.tsx",
       "to": "module:client/src/features/casting/components/BrandSelector.tsx",
       "kind": "imports"
     },
@@ -14280,6 +14295,11 @@
     {
       "from": "module:client/src/features/casting/ControlPanel.tsx",
       "to": "module:client/src/features/casting/stores/useCastingUIStore.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/casting/ControlPanel.tsx",
+      "to": "module:client/src/lib/trpc.ts",
       "kind": "imports"
     },
     {
@@ -14400,6 +14420,11 @@
     {
       "from": "module:client/src/features/casting/hooks/useCastingGeneration.ts",
       "to": "module:client/src/features/billing/LowBalanceWarning.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/casting/hooks/useCastingGeneration.ts",
+      "to": "module:client/src/features/casting/castingPrices.ts",
       "kind": "imports"
     },
     {
@@ -29847,6 +29872,13 @@
       "kind": "retired-module-has-callers",
       "subject": "module:client/src/features/casting/castingHelpers.tsx",
       "message": "Marked retire but still imported by 4 module(s). Not removable yet."
+    },
+    {
+      "id": "finding:live-caller:module:client/src/features/casting/castingPrices.ts",
+      "severity": "info",
+      "kind": "retired-module-has-callers",
+      "subject": "module:client/src/features/casting/castingPrices.ts",
+      "message": "Marked retire but still imported by 2 module(s). Not removable yet."
     },
     {
       "id": "finding:live-caller:module:client/src/features/casting/castingSessionToken.ts",

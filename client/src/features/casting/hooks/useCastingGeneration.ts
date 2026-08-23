@@ -9,6 +9,7 @@ import {
   type EditTool,
   type Amendment,
 } from "@/features/casting/constants";
+import { servedCost } from "@/features/casting/castingPrices";
 import { buildCreationPreferences } from "@/features/casting/creationPayload";
 import { captureCastingSession } from '@/features/casting/castingSessionToken';
 import { beginCastingOperation } from '@/features/casting/pendingCastRegistry';
@@ -86,6 +87,8 @@ export function useCastingGeneration({
   } = bindings;
 
   // Credits query
+  /* The prices this gate spends against, served (D-15, fable-1435 §1). */
+  const costsQuery = trpc.credits.getCosts.useQuery(undefined, { staleTime: Infinity });
   const { data: creditsData, refetch: refetchCredits } = trpc.credits.getBalance.useQuery(undefined, {
     enabled: isAuthenticated,
   });
@@ -203,7 +206,22 @@ export function useCastingGeneration({
       return;
     }
 
-    const totalCost = CREDIT_COSTS.masterPrompt + CREDIT_COSTS.castingImage;
+    /*
+      THE AFFORDABILITY GATE READS THE SERVER'S PRICE (D-15, ruled fable-1435 §1).
+
+      It was two client literals. If the server's price rises this gate waves
+      someone through into a server refusal; if it falls, it blocks a purchase
+      they can afford. Same fallback pattern as the armed button and
+      `ImageViewerPanel` — today's literal when the query has not answered — so
+      it cannot regress.
+
+      `masterPrompt` has no server counterpart: it is a client-only key worth
+      ZERO, so it always takes the fallback. That is why `servedCost` tests
+      `typeof === "number"` rather than using `||`, which would replace a
+      genuine zero.
+    */
+    const totalCost = servedCost(costsQuery.data, "masterPrompt", CREDIT_COSTS.masterPrompt)
+      + servedCost(costsQuery.data, "castingImage", CREDIT_COSTS.castingImage);
     if (!creditsData || creditsData.balance < totalCost) {
       toast.error(`Insufficient credits. Need ${totalCost} credits.`);
       setIsTopupOpen(true);
@@ -325,7 +343,7 @@ export function useCastingGeneration({
       setFailedAction({ type: 'NEW' });
       toast.error(message);
     }
-  }, [isFormValid, creditsData, prefs, modelName, engineChoice, getSessionToken]);
+  }, [isFormValid, creditsData, costsQuery.data, prefs, modelName, engineChoice, getSessionToken]);
 
   // Handle iteration/refinement
   const performIteration = useCallback(async (prompt: string, maskBase64?: string): Promise<IterationOutcome> => {

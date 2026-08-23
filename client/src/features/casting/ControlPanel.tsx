@@ -6,6 +6,8 @@ import HairColorWheel from "./components/HairColorWheel";
 import { useCastingFormStore } from "@/features/casting/stores/useCastingFormStore";
 import { useCastingGenerationStore } from '@/features/casting/stores/useCastingGenerationStore';
 import { useCastingUIStore } from "@/features/casting/stores/useCastingUIStore";
+import { servedCost } from "@/features/casting/castingPrices";
+import { trpc } from "@/lib/trpc";
 import { resolvedEngineChoices } from '@/features/casting/engineChoicePersistence';
 import { generateRandomPreferences } from "./castingHelpers";
 import { type GenerationState, type GeneratedAsset, type ModelPreferences, SKIN_TEXTURES, SKIN_FINISHES, CHAR_OPTIONS, CREDIT_COSTS, HAIR_FLYAWAYS } from "@/features/casting/constants";
@@ -144,6 +146,18 @@ export function ControlPanel({
   initialParseResult, onInitialParseConsumed, identityChangeMode, onCloseIdentityChange,
 }: ControlPanelProps) {
   const displayModelName = honestModelName(modelName);
+  /*
+    THE PRICE ON THE ARMED BUTTON, SERVED (D-15, ruled fable-1435 §1).
+
+    It was `CREDIT_COSTS.castingImage` — a CLIENT literal, on the one surface
+    D-15 is about, with the comment beside it citing D-15. `ImageViewerPanel`
+    two files over has read the server with a literal fallback all along; this
+    is that pattern, and it cannot regress because the fallback is exactly
+    today's behaviour. `staleTime: Infinity` matches that neighbour: prices do
+    not move inside a session.
+  */
+  const costsQuery = trpc.credits.getCosts.useQuery(undefined, { staleTime: Infinity });
+  const castingImageCost = servedCost(costsQuery.data, "castingImage", CREDIT_COSTS.castingImage);
   // Use store's functional updaters — no stale closure risk
   const prefs = useCastingFormStore((s) => s.prefs);
   const updatePref = useCastingFormStore((s) => s.updatePref);
@@ -695,7 +709,7 @@ export function ControlPanel({
                     // Cost visible on the armed button (D-15/D-41): the
                     // confirm-glance before the second keystroke
                     <span className="text-canvas-sm font-medium ml-0.5 opacity-60">
-                      · ~{CREDIT_COSTS.castingImage} credits
+                      · ~{castingImageCost} credits
                     </span>
                   )}
                 </>
