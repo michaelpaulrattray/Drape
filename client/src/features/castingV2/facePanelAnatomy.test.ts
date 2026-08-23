@@ -456,7 +456,19 @@ describe("the panel's copy, classified", () => {
       would notice it changing back by accident.
     */
     const rendered = panel.match(/>\{row\.[a-zA-Z.]+\}/g) ?? [];
-    expect(new Set(rendered)).toEqual(new Set([">{row.name}", ">{row.from}"]));
+    /*
+      ⚠ **BACK TO THREE, 2026-08-24, BY THE TWO PATHS' §6.1** — the "as dressed"
+      provenance label, ruled fable-1467 as §8.2's part (b). It joins this set
+      on the same terms every member is here on: it is a FIELD OF THE ROW,
+      composed by the server from the catalogue's own `pathProvenance` and the
+      one wardrobe owner's resolution, and never a sentence this component
+      builds. `referenceSlotCatalogue.test.ts` pins which two rows may carry it
+      and that it may never be a hedge; `facePanel.test.ts` pins that it
+      appears on the Wardrobe path alone and on no unpathed cast. Nothing about
+      it is decided here — which is what this line exists to keep true.
+    */
+    expect(new Set(rendered))
+      .toEqual(new Set([">{row.name}", ">{row.from}", ">{row.provenance}"]));
   });
 
   it("shows NOTHING where there is no crop — his words were 'never as empty squares'", async () => {

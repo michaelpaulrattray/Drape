@@ -502,6 +502,59 @@ on the cast, not only on the control that set it.
 disabled toggle is a question with no answer, which is D-180's dead end wearing a
 tap target.
 
+✅ **BUILT AND LIVE DARK 2026-08-24**, with the evidence pack and copy audit at
+`CASTING_V2_TWO_PATHS_TOGGLE_EVIDENCE.md`. Three things the build settled that
+this section did not say, each written where it was decided:
+
+1. **The gate is `castingV2.config.twoPathsEnabled`**, the fifth on
+   `stepBackEnabled`'s pattern, and it decides whether a CONTROL IS DRAWN and
+   nothing else — `rollService` IGNORES a path sent by an account outside the
+   flag rather than refusing it, so the client is not enforcing anything.
+2. **The path rides INSIDE `RollProjection.wardrobe`** rather than beside it, so
+   every §6 surface keys on one non-null meaning *this roll was cast on a path*.
+   A top-level field would be a second thing a client could key on, and a
+   client-derived fallback beside it is how a dark feature leaks onto the 206
+   production rolls that have none.
+3. ⚠ **THE STATED-OUTFIT NOTICE WAS A LIVE COPY DEFECT AND §6 HAD TO FIX IT.**
+   `sheetNotice`'s *"Casting sheets keep the studio tee"* fires on
+   `statedWardrobe`, which the projection computes unconditionally from the brief
+   — so a Wardrobe-path sheet that named an apron was told it kept the tee
+   **while rendering the apron**. Three cells now: unpathed keeps today's
+   sentence, Basics gets its own (*"roll again on Wardrobe to have the outfit you
+   described"* — a road that ACTS), and Wardrobe is SILENT, because §4(a) means
+   the confession would be about something that did not happen. The one cell that
+   suppression covers in silence — a stated outfit REJECTED by `wardrobeDoor`
+   and fallen back to the house line — is written at the site rather than closed
+   quietly, with the server-side fact that would answer it named.
+
+⚠ **AND THE RE-ROLL SWITCH IS DRAWN ON AN UNPATHED SHEET TOO — THE RECORD AND
+THE PLAN ARE DIFFERENT THINGS** (ruled fable-1483 ASK 1(b), after a first build
+that hid it there).
+
+`shared/castingPaths.ts` argues at length that *the absence is not a member and
+must never become one*, and the first build read that as forbidding a control
+preselected to Wardrobe over eight faces nobody chose a path for. **That
+argument protects the ROLL'S RECORD; this control is a statement about the NEXT
+roll.** So the two halves part company:
+
+| | on an unpathed sheet |
+|---|---|
+| the record line (§3.3) | **absent**, exactly as before — nothing claims these eight were cast on a path |
+| the re-roll switch | **drawn**, preselected to the default, with a note that NEVER falls silent: *"Nothing was chosen for these eight — Roll again casts on Wardrobe."* |
+
+The note is what keeps the pills from reading as a label. And the case is day
+one rather than hypothetical: **every existing customer's sheets are unpathed on
+the day the flag opens**, and without this the lobby would be their only door.
+
+Two things stay as built: the switch is still hidden while reading history (the
+FOLLOWING chip's rule — it says what *Roll again* will do, and Roll again applies
+to the live sheet), and a Follow is still not offered it. ⚠ **A consequence of
+the first, written where it was decided:** while reading history the next roll
+sends NO path unless she touched the pills, because the live roll's path is not
+on the page then (`roll.data` is the SHOWN roll) — and defaulting to Wardrobe on
+a sheet whose live roll may be Basics would be a silent wrong answer on a paid
+action. An unsent toggle is not a claim; a wrong one is.
+
 ### ⚠ 6.1 THIS SITTING INHERITS A REQUIREMENT FROM §8.2 (ruled fable-1467)
 
 **The panel's body rows say "as dressed" on the Wardrobe path.** `build` and
@@ -521,6 +574,25 @@ show both paths side by side.
 what the picture shows; *"we think"* or *"approximately"* would be the product
 apologising for a reading it never claimed to make. The row is not less accurate
 on Wardrobe — it is accurate about something smaller.
+
+✅ **BUILT 2026-08-24.** It is declared at the CATALOGUE (`pathProvenance` on
+`build` and `skin`, beside the measurements that make it true) rather than as a
+list in the panel, which would be a second list shadowing a decision this file
+already records at length. It is its OWN `PanelRow` field and not `from`: a
+wardrobe-path `build` that has been edited must say both at once — *"from an
+edit"* AND *"as dressed"* — so one field would make one of them unsayable.
+`referenceSlotCatalogue.test.ts` pins the population at exactly those two rows
+and refuses the words *approx · roughly · we think · may be · might · unverified
+· estimate* on the label.
+
+⚠ **`basics` and `unpathed` both answer nothing, and they are two DIFFERENT
+silences** — worth having in one place, because a future reader will be tempted
+to collapse them. On Basics the row is still not measured; that capability is
+unbuilt and is the fourth precondition of the flag widening, so a label appearing
+on Wardrobe alone would be read as *"and on Basics it IS measured"*. On an
+unpathed cast the label would be **true** — every production master wears the
+house crew tee — and is still refused, because drawing it would be this dark
+feature changing a live surface for accounts that have never met it.
 
 ---
 

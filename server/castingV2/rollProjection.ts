@@ -30,6 +30,7 @@ import type { CastingCandidate, CastingRoll, CastingSession } from "../../drizzl
 import { storagePublicUrl } from "../storage";
 import { UNLOCKABLE_FIELDS, type CastingChip, type UnlockableField } from "./briefCompiler";
 import { statesWardrobe } from "./statedWardrobe";
+import type { CastingPath } from "../../shared/castingPaths";
 import { HOUSE_WARDROBE_LINE, currentWardrobeLine } from "./wardrobeLine";
 import { tokensComeFromBrief } from "./castingIntent";
 import {
@@ -121,8 +122,17 @@ export type RollProjection = {
    *
    * `enginePicked` is DERIVED, never stored — see the projection site. It is
    * §4.1's label obligation: *she is never told she asked for it*.
+   *
+   * ⚠ **`path` rides INSIDE this object rather than beside it as its own
+   * field, and that is the dark-ship discipline rather than tidiness** (§6).
+   * Every surface the toggle sitting adds — the sheet's wardrobe line, the
+   * re-roll switch's preselect, the notice's path arm — draws only when this
+   * object is non-null, which is exactly *this roll was cast on a path*. A
+   * top-level `path` would be a second thing a client could key on, and a
+   * client-derived fallback beside it is how a dark feature leaks onto the 206
+   * production rolls that have no path at all.
    */
-  wardrobe: { line: string; enginePicked: boolean } | null;
+  wardrobe: { path: CastingPath; line: string; enginePicked: boolean } | null;
   priceCredits: number;
   counts: { total: number; ready: number; casting: number; failed: number };
   createdAt: string;
@@ -466,13 +476,25 @@ function readFellBack(compiledBrief: unknown): boolean {
  * and one of them — the engine-pick label — is a product promise rather than a
  * field copy.
  */
-function projectWardrobe(roll: CastingRoll): { line: string; enginePicked: boolean } | null {
+function projectWardrobe(
+  roll: CastingRoll,
+): { path: CastingPath; line: string; enginePicked: boolean } | null {
   const resolution = currentWardrobeLine({
     rollPath: roll.path,
     rollLine: roll.wardrobeLine,
   });
   if (resolution.kind !== "line") return null;
   return {
+    /*
+      The path the ONE OWNER resolved, never `roll.path` read again here.
+
+      They cannot disagree today — `currentWardrobeLine` returns the column it
+      was handed — and reading the column a second time three lines below the
+      call that already answered is the parallel-copy shape (working law 4) in
+      miniature. It is also the field a client keys every new §6 surface on, so
+      it should come from the same answer the line does.
+    */
+    path: resolution.path,
     line: resolution.line,
     enginePicked: resolution.path === "wardrobe"
       && resolution.line !== HOUSE_WARDROBE_LINE

@@ -35,6 +35,7 @@ import {
   captureCastingInkStudioEnabled,
   captureCastingReferenceAttachEnabled,
   captureCastingRepaintEnabled,
+  captureCastingTwoPathsEnabled,
   captureCastingV2Enabled,
 } from "../castingV2/castingV2Scope";
 import { INK_PLACEMENTS } from "../../shared/inkPlacementVocabulary";
@@ -883,6 +884,27 @@ export const castingV2Router = router({
       business knowing which environment variable governs it.
     */
     attachReferenceEnabled: captureCastingReferenceAttachEnabled(ctx.user.id),
+    /*
+      AND WHETHER THIS ACCOUNT CHOOSES THE PATH ITS CASTS ARE BORN ON — the
+      two paths' toggle (design §6, item 5's last slice).
+
+      A FIFTH gate, on the pattern the four above are written on, and §6 is
+      unusually explicit about what it decides: *"it does not appear when
+      `CASTING_TWO_PATHS_SCOPE` is off. No disabled control, no coming-soon — a
+      disabled toggle is a question with no answer, which is D-180's dead end
+      wearing a tap target."*
+
+      ⚠ **It decides whether a control is DRAWN and nothing else.** The server
+      is already safe without it: `rollService` resolves `bornPath` as
+      `twoPathsEnabled(userId) ? input.path ?? DEFAULT_CASTING_PATH : null`, so
+      a `path` sent by an account outside the flag is IGNORED rather than
+      refused — read at that site, not assumed. Which is exactly the shape
+      `stepBackEnabled` has: the client asks so it does not offer a control
+      that would do nothing.
+
+      Named for the capability rather than for the flag, like the four above.
+    */
+    twoPathsEnabled: captureCastingTwoPathsEnabled(ctx.user.id),
   })),
 
   createSession: protectedProcedure

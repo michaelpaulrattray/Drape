@@ -853,3 +853,74 @@ describe("a tattoo at a place", () => {
     expect(facetsOfSlot("open:horns")).toBeNull();
   });
 });
+
+/**
+ * §6.1 — WHICH ROWS SAY WHICH WORLD THEIR PICTURE CAME FROM ("as dressed").
+ *
+ * The two paths' provenance label. §8.2 asked for build · skin · scars · ink to
+ * split by path; read at this catalogue, `scars` is not a slot at all (marks
+ * fold into `skin` by its own note) and `ink` already splits by path — that is
+ * 7a, shipped. What is left is the two rows whose MEASUREMENTS were taken on a
+ * dressed torso, and that is what this case pins.
+ */
+describe("which rows say what their picture actually shows", () => {
+  const labelled = catalogueSlots().filter((definition) => definition.pathProvenance !== undefined);
+
+  it("is build and skin, and nothing else", () => {
+    /* The enumeration is the point, exactly as it is for `whenAbsent` above: a
+       third member arriving by pattern is what this case makes visible. */
+    expect(labelled.map((definition) => [definition.slot, definition.pathProvenance!.onWardrobe]))
+      .toEqual([["build", "as dressed"], ["skin", "as dressed"]]);
+  });
+
+  it("carries the reason it is true, on the slot", () => {
+    /* The label is a claim about a MEASUREMENT this catalogue records — the
+       below-head crop cut from a dressed torso, the 11.5–12.5% read on frames
+       of people in the house crew tee. A member with no argument beside it is a
+       member somebody added by pattern. */
+    for (const definition of labelled) {
+      expect(definition.pathProvenance!.why.length).toBeGreaterThan(60);
+      expect(definition.pathProvenance!.onWardrobe.length).toBeGreaterThan(0);
+    }
+  });
+
+  /*
+    ⚠ THE ONE THING IT MAY NEVER BE: A HEDGE (§6.1, ruled).
+
+    "as dressed" is a true statement about what the picture shows. "we think",
+    "approximately", "roughly", "may be" would be the product apologising for a
+    reading it never claimed to make — the row is not LESS accurate on the
+    Wardrobe path, it is accurate about something SMALLER. Pinned here because
+    the tempting edit is to soften the word, not to delete it.
+  */
+  it("states what the picture is, and never hedges what the reading was", () => {
+    const hedges = ["approx", "roughly", "we think", "may be", "might", "unverified", "estimate"];
+    for (const definition of labelled) {
+      const says = definition.pathProvenance!.onWardrobe.toLowerCase();
+      for (const hedge of hedges) expect(says).not.toContain(hedge);
+    }
+  });
+
+  it("is never a per-side slot, because the panel would never draw it", () => {
+    /*
+      THE NEGATIVE CONTROL, and it is the same silent gap `whenAbsent` has: the
+      panel composes this label only on the single-instance branch, so one on a
+      bilateral slot would do NOTHING and say nothing about doing nothing.
+    */
+    for (const definition of labelled) expect(definition.instance).toBeNull();
+    /* And the fixture that proves this case can fail — bilateral slots exist. */
+    expect(catalogueSlots().some((definition) => definition.instance !== null)).toBe(true);
+  });
+
+  it("is on a row the panel actually draws, or it is a label nobody can read", () => {
+    /* An inert admission reads as a decision until somebody looks — the same
+       argument the stated-absence case makes one describe up. */
+    for (const definition of labelled) expect(definition.panel.row).toBe("own");
+  });
+
+  /* And the split is a BODY-fact split (§8.2): a face row read off a head is
+     not measured through anything anyone is wearing. */
+  it("labels body rows and no face rows", () => {
+    for (const definition of labelled) expect(definition.group).toBe("body");
+  });
+});

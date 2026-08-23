@@ -198,6 +198,61 @@ carry the rulings, the courts and the histories.
                                           the evidence-pack contract, in its own
                                           sitting (order approved fable-1456).
                                           Then his eyes, then the flip
+                                          ✅ §6 THE TOGGLE IS BUILT AND LIVE
+                                          DARK (2026-08-24) — the LAST slice of
+                                          this item. Both surfaces (the lobby
+                                          hero under the brief field, the
+                                          re-roll box), the sheet's own record
+                                          line `WARDROBE · <outfit> · engine's
+                                          pick`, and §6.1's "as dressed"
+                                          provenance label on the panel's
+                                          `build` and `skin` rows. Evidence pack
+                                          + copy audit:
+                                          `CASTING_V2_TWO_PATHS_TOGGLE_EVIDENCE.md`
+                                          — 16 frames, both themes, TWO negative
+                                          controls (an account outside the flag,
+                                          and a roll cast before the paths
+                                          existed) because "ships dark" is a
+                                          claim about what does NOT render.
+                                          ⚠ IT CAUGHT A LIVE COPY DEFECT NOBODY
+                                          HAD LISTED: `sheetNotice`'s "casting
+                                          sheets keep the studio tee" fires on
+                                          `statedWardrobe`, which is computed
+                                          unconditionally from the brief — so a
+                                          Wardrobe-path sheet that named an
+                                          apron was told it kept the tee WHILE
+                                          RENDERING THE APRON. Three cells now,
+                                          and the Wardrobe one is silence
+                                          ⚠ AND THE PACK MOVED A RULE: the first
+                                          build hid the re-roll switch on every
+                                          UNPATHED sheet. Ruled otherwise
+                                          (fable-1483 ASK 1(b)) on the line that
+                                          decides it — THE RECORD AND THE PLAN
+                                          ARE DIFFERENT THINGS. The record line
+                                          stays absent there; the switch is
+                                          drawn with a note that never falls
+                                          silent. Day one, not hypothetical:
+                                          every existing customer's sheets are
+                                          unpathed when the flag opens
+                                          ⚠ TWO THINGS THE PACK COULD NOT PROVE
+                                          AND SAYS SO: the switch has never been
+                                          photographed RESTING on a sheet that
+                                          HAS a path (no session in either world
+                                          holds a live pathed roll — the dev
+                                          court's newest is the unpathed bald
+                                          acceptance roll; one 160 roll would
+                                          close it and was not spent), and
+                                          §6.1's frame rests on a PLANTED
+                                          library row, declared, because no
+                                          pathed cast has ever been refined.
+                                          ⚠ AND A FLIP PRECONDITION IT FOUND:
+                                          `RefinePanel`'s "not their clothes or
+                                          the room" is TRUE today and false the
+                                          day a REPAINT account meets a
+                                          Wardrobe-path cast — the wardrobe
+                                          subject is `admittedOn: "repaintOnly"`
+                                          and that population is empty in both
+                                          worlds. Filed, not built
 3c ⚠ THE BRIEF HAS NO SKIN LANE, AND     ordered fable-1477 ASK 2, from the
    COLOUR WORDS ARE THE PARAPHRASE'S    brief-fidelity corpus (opus-1128).
    MAIN VICTIMS                          MEASURED at the wire, survival counted

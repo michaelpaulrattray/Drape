@@ -183,6 +183,16 @@ describe("2. the closed grammar is unchanged for every non-open key", () => {
       carry the new field, an ordinary slot does not carry the key at all, and
       the open branch is not in this list to move: `openSlotDefinition`
       synthesizes its record outside `catalogueSlots()` and admits no absence.
+
+      MOVED AGAIN 2026-08-24, `5a5d1dca79131a23` → `ff09fb9ade91215d`, by the
+      two paths' §6.1: `pathProvenance` was authored on `build` and `skin`,
+      the two rows whose measurements were taken on a dressed torso. Read at
+      the artifact before re-pinning, exactly as the entry above asks —
+      **still 25 slots**, exactly those two carry the new field
+      (`referenceSlotCatalogue.test.ts` pins that enumeration separately), an
+      ordinary slot does not carry the key at all (`lips` resolves to the same
+      twelve keys it always had), and the open branch is once again not in this
+      list to move.
     */
     const digest = crypto
       .createHash("sha256")
@@ -190,7 +200,7 @@ describe("2. the closed grammar is unchanged for every non-open key", () => {
       .digest("hex")
       .slice(0, 16);
     expect(catalogueSlots()).toHaveLength(25);
-    expect(digest).toBe("5a5d1dca79131a23");
+    expect(digest).toBe("ff09fb9ade91215d");
   });
 });
 

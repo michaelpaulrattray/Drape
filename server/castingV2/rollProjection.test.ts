@@ -340,7 +340,7 @@ describe("the sheet's wardrobe line", () => {
       roll: rollRow({ briefText: "a caveman", path: "wardrobe", wardrobeLine: PICKED }),
       candidates: [candidateRow()],
     });
-    expect(projected.wardrobe).toEqual({ line: PICKED, enginePicked: true });
+    expect(projected.wardrobe).toEqual({ path: "wardrobe", line: PICKED, enginePicked: true });
   });
 
   it("⚠ NEVER labels an outfit SHE named as the engine's pick", () => {
@@ -364,7 +364,8 @@ describe("the sheet's wardrobe line", () => {
       roll: rollRow({ briefText: "a woman in her 30s", path: "wardrobe", wardrobeLine: HOUSE_WARDROBE_LINE }),
       candidates: [candidateRow()],
     });
-    expect(projected.wardrobe).toEqual({ line: HOUSE_WARDROBE_LINE, enginePicked: false });
+    expect(projected.wardrobe)
+      .toEqual({ path: "wardrobe", line: HOUSE_WARDROBE_LINE, enginePicked: false });
   });
 
   it("⚠ BASICS is the path's own outfit, never an engine pick", () => {
@@ -378,6 +379,29 @@ describe("the sheet's wardrobe line", () => {
     });
     expect(projected.wardrobe?.enginePicked).toBe(false);
     expect(projected.wardrobe?.line).toContain("black");
+  });
+
+  /*
+    ⚠ THE PATH RIDES INSIDE THIS OBJECT, and the client keys every §6 surface
+    on it (the sheet's record line, the re-roll switch's preselect, the
+    notice's path arm). It comes from the ONE OWNER's resolution rather than
+    from a second read of the column.
+  */
+  it("⚠ says which path, beside the line, so the sheet needs no second field", () => {
+    const basics = projectRoll({
+      roll: rollRow({
+        briefText: "a swimmer in her 20s",
+        path: "basics",
+        wardrobeLine: "shirtless, in plain black fitted shorts, barefoot",
+      }),
+      candidates: [candidateRow()],
+    });
+    expect(basics.wardrobe?.path).toBe("basics");
+    const dressed = projectRoll({
+      roll: rollRow({ briefText: "a caveman", path: "wardrobe", wardrobeLine: PICKED }),
+      candidates: [candidateRow()],
+    });
+    expect(dressed.wardrobe?.path).toBe("wardrobe");
   });
 
   it("⚠ a path with NO line says nothing rather than guessing", () => {

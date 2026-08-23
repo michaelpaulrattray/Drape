@@ -1229,3 +1229,98 @@ describe("an open kind — a thing the catalogue has no word for", () => {
     });
   });
 });
+
+/**
+ * §6.1 — WHAT THE PICTURE THIS ROW WAS READ FROM SHOWS ("as dressed").
+ *
+ * The two paths' provenance label, assigned to §6 by fable-1467 as §8.2's part
+ * (b). Three things have to hold and each one is a different way of getting it
+ * wrong: the label appears on the rows the CATALOGUE authored it for, only on
+ * the WARDROBE path, and never on a cast that predates the paths.
+ */
+describe("the body rows say which world their picture came from", () => {
+  const dressed = { kind: "line", line: "a plain grey crew-neck t-shirt, dark straight jeans, plain white sneakers", source: "born", path: "wardrobe" } as const;
+  const basics = { kind: "line", line: "a plain black scoop-neck sports top, plain black fitted shorts, barefoot", source: "born", path: "basics" } as const;
+
+  const rowsOn = (wardrobe: unknown) =>
+    facePanel({
+      rows: [
+        row({ slot: "build", noun: "build", words: ["narrower shoulders"] }),
+        row({ slot: "skin", noun: "skin", words: ["freckled"] }),
+        row({ slot: "hair", noun: "hair", words: ["auburn"] }),
+      ],
+      pronouns: SHE,
+      contentUrl: (key) => `https://bucket.example/${key}`,
+      maskUrl: (key) => `/api/image-proxy?url=${encodeURIComponent(`https://bucket.example/${key}`)}`,
+      wardrobe: wardrobe as never,
+    }).groups.flatMap((group) => group.rows);
+
+  const labelOn = (wardrobe: unknown, name: string) =>
+    rowsOn(wardrobe).find((entry) => entry.name === name)?.provenance ?? null;
+
+  it("labels the two rows measured through a garment, on the Wardrobe path", () => {
+    expect(labelOn(dressed, "Build")).toBe("as dressed");
+    expect(labelOn(dressed, "Skin")).toBe("as dressed");
+  });
+
+  /*
+    The negative half, and it is the one that matters: a label on every row
+    would be decoration rather than a statement, and `hair` is read off the
+    head whatever anyone is wearing.
+  */
+  it("labels nothing else, even on the Wardrobe path", () => {
+    const labelled = rowsOn(dressed).filter((entry) => entry.provenance !== null);
+    expect(labelled.map((entry) => entry.name).sort()).toEqual(["Build", "Skin"]);
+  });
+
+  /*
+    ⚠ SILENT ON BASICS, AND NOT BECAUSE THE ROW IS MEASURED THERE — it is not.
+    A label appearing on Wardrobe alone would be read as "and on Basics it IS
+    measured", which is why that is an enumerated precondition of the flag
+    widening rather than a second sentence here.
+  */
+  it("says nothing on the Basics path", () => {
+    expect(labelOn(basics, "Build")).toBeNull();
+    expect(labelOn(basics, "Skin")).toBeNull();
+  });
+
+  /*
+    ⚠ AND NOTHING AT ALL ON A CAST THAT PREDATES THE PATHS — which is every
+    cast in production. The label would be TRUE of them (they all wear the
+    house crew tee) and is still refused, because drawing it would be this dark
+    feature changing a live surface for accounts that have never met it.
+  */
+  it("is absent on an unpathed cast, which is every cast in production", () => {
+    for (const wardrobe of [{ kind: "unpathed" }, null, undefined]) {
+      expect(labelOn(wardrobe, "Build")).toBeNull();
+      expect(labelOn(wardrobe, "Skin")).toBeNull();
+    }
+  });
+
+  /*
+    A cast on a path but carrying no line resolves `incoherent` — refused free
+    everywhere else in the product — and must not be read as Wardrobe here.
+  */
+  it("says nothing on an incoherent resolution", () => {
+    expect(labelOn({ kind: "incoherent", path: "wardrobe" }, "Build")).toBeNull();
+  });
+
+  /*
+    AND IT IS NOT `from` WEARING A NEW COAT. The reason the label is its own
+    field is that a wardrobe-path build which has been EDITED needs both at
+    once; if either could crowd the other out, the field would not have earned
+    its place.
+  */
+  it("says where the row came from AND what the picture shows, at the same time", () => {
+    const built = facePanel({
+      rows: [row({ slot: "build", noun: "build", words: ["narrower shoulders"], variantId: 11 })],
+      pronouns: SHE,
+      contentUrl: (key) => `https://bucket.example/${key}`,
+      maskUrl: (key) => `/api/image-proxy?url=${encodeURIComponent(`https://bucket.example/${key}`)}`,
+      wardrobe: dressed as never,
+    }).groups.flatMap((group) => group.rows);
+    const build = built.find((entry) => entry.name === "Build")!;
+    expect(build.provenance).toBe("as dressed");
+    expect(build.from).toBe("from an edit");
+  });
+});

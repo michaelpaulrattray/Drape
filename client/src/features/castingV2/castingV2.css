@@ -3994,6 +3994,24 @@
   text-overflow: ellipsis;
 }
 
+/*
+  WHAT THE PICTURE THIS ROW WAS READ FROM SHOWS — "as dressed" (§6.1).
+
+  Deliberately the SAME weight as `.dpc-face__from`, not dimmer. It is a label
+  and never a hedge: the row is not less accurate on the Wardrobe path, it is
+  accurate about something smaller, and dimming a true statement is how it
+  starts reading as "we could not read this" — the argument
+  `.dpc-face__words--absent` already makes one row up.
+
+  One or two words, so it never wraps; the class exists so a browser drive can
+  assert the state rather than someone judging it by eye.
+*/
+.dpc-face__provenance {
+  font-size: 11.5px;
+  color: color-mix(in srgb, var(--onScrim) 58%, transparent);
+  white-space: nowrap;
+}
+
 /* ---- the regions, laid over the picture itself ---- */
 
 .dpc-regions {
@@ -4240,3 +4258,69 @@
 
 /* `.dpc-regions__price` was here and is GONE with the chip (fable-1270 §2) —
    the price is stated once per SURFACE, by the panel under the picture. */
+
+/* ============================================================
+   THE TWO PATHS' TOGGLE (design §6) — one control, two surfaces
+   ============================================================ */
+
+/*
+  The lobby hero and the sheet's re-roll box draw the same control, so it has
+  one block rather than two near-identical ones. Vertical rhythm only: the
+  pills, the chrome tag and the note are all house primitives and bring their
+  own type.
+*/
+.dpc-paths {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.dpc-paths__row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+
+/*
+  The tradeoff, told before the roll (his condition). One line, in the quiet
+  register the variance note and the FOLLOWING note already use — it is a
+  statement about what you have chosen, never a warning, so it must not
+  compete with the brief field above it.
+*/
+.dpc-paths__note {
+  margin: 0;
+  /*
+    ONE MEASURE FOR BOTH SURFACES, and it is set by the LONGER of the two jobs
+    this line does. 46ch was the hero's own comfortable measure and it broke the
+    re-roll box's plan sentence — "…Roll again casts on / Basics." — across two
+    lines with a two-word orphan. 66ch fits that sentence whole and still keeps
+    the hero's paragraph off a full-width line.
+  */
+  max-width: 66ch;
+  font-size: 12px;
+  line-height: 1.45;
+  opacity: 0.6;
+}
+
+/*
+  WHAT THIS SHEET IS WEARING — the record, not the control (§3.3/§6: "a fact
+  that decides what a cast can and cannot do later must be visible on the cast,
+  not only on the control that set it").
+
+  It sits with the sheet's other quiet lines and deliberately does NOT use the
+  notice slot: the notice is news, and this is a standing fact about the eight
+  faces below it.
+*/
+.dpc-wardrobeline {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 8px 0 0;
+  font-size: 13px;
+  opacity: 0.62;
+}
+
+/* The path name is a machine fact; the outfit beside it is a sentence. The
+   mono law draws the line exactly there. */
+.dpc-wardrobeline__line { min-width: 0; }

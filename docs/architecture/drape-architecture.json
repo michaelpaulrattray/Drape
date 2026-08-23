@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "b223d1bb3bd27ddd"
+    "sourceFingerprint": "e910873b7712eb91"
   },
   "domains": [
     {
@@ -43,7 +43,7 @@
     {
       "id": "domain:castingV2",
       "name": "castingV2",
-      "moduleCount": 40
+      "moduleCount": 42
     },
     {
       "id": "domain:client-shared",
@@ -1407,6 +1407,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:client/src/features/castingV2/castingPathCopy.ts",
+      "path": "client/src/features/castingV2/castingPathCopy.ts",
+      "domain": "castingV2",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:client/src/features/castingV2/castingV2.css",
       "path": "client/src/features/castingV2/castingV2.css",
       "domain": "castingV2",
@@ -1487,6 +1493,12 @@
     {
       "id": "module:client/src/features/castingV2/components/KeptTray.tsx",
       "path": "client/src/features/castingV2/components/KeptTray.tsx",
+      "domain": "castingV2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/castingV2/components/PathToggle.tsx",
+      "path": "client/src/features/castingV2/components/PathToggle.tsx",
       "domain": "castingV2",
       "lifecycle": "active"
     },
@@ -9725,6 +9737,10 @@
       "path": "client/src/features/castingV2/cardMenuAnatomy.test.ts"
     },
     {
+      "id": "test:client/src/features/castingV2/castingPathCopy.test.ts",
+      "path": "client/src/features/castingV2/castingPathCopy.test.ts"
+    },
+    {
       "id": "test:client/src/features/castingV2/chosenFrame.test.ts",
       "path": "client/src/features/castingV2/chosenFrame.test.ts"
     },
@@ -14788,6 +14804,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/features/castingV2/castingPathCopy.ts",
+      "to": "module:shared/castingPaths.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/features/castingV2/components/BriefEcho.tsx",
       "to": "module:client/src/features/castingV2/briefEcho.ts",
       "kind": "imports"
@@ -14850,6 +14871,21 @@
     {
       "from": "module:client/src/features/castingV2/components/KeptTray.tsx",
       "to": "module:client/src/features/castingV2/signTarget.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/castingV2/components/PathToggle.tsx",
+      "to": "module:client/src/features/castingV2/castingPathCopy.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/castingV2/components/PathToggle.tsx",
+      "to": "module:client/src/foundation/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/castingV2/components/PathToggle.tsx",
+      "to": "module:shared/castingPaths.ts",
       "kind": "imports"
     },
     {
@@ -17089,6 +17125,11 @@
     },
     {
       "from": "module:client/src/pages/CastingSheet.tsx",
+      "to": "module:client/src/features/castingV2/castingPathCopy.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/CastingSheet.tsx",
       "to": "module:client/src/features/castingV2/chosenFrame.ts",
       "kind": "imports"
     },
@@ -17130,6 +17171,11 @@
     {
       "from": "module:client/src/pages/CastingSheet.tsx",
       "to": "module:client/src/features/castingV2/components/KeptTray.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/CastingSheet.tsx",
+      "to": "module:client/src/features/castingV2/components/PathToggle.tsx",
       "kind": "imports"
     },
     {
@@ -17239,7 +17285,17 @@
     },
     {
       "from": "module:client/src/pages/CastingSheet.tsx",
+      "to": "module:shared/castingPaths.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/CastingSheet.tsx",
       "to": "module:shared/clientRequestId.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/CastingV2.tsx",
+      "to": "module:client/src/features/castingV2/castingPathCopy.ts",
       "kind": "imports"
     },
     {
@@ -17260,6 +17316,11 @@
     {
       "from": "module:client/src/pages/CastingV2.tsx",
       "to": "module:client/src/features/castingV2/components/HeroMotion.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/CastingV2.tsx",
+      "to": "module:client/src/features/castingV2/components/PathToggle.tsx",
       "kind": "imports"
     },
     {
@@ -17295,6 +17356,11 @@
     {
       "from": "module:client/src/pages/CastingV2.tsx",
       "to": "module:client/src/lib/trpc.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/CastingV2.tsx",
+      "to": "module:shared/castingPaths.ts",
       "kind": "imports"
     },
     {
@@ -24640,6 +24706,11 @@
     {
       "from": "module:server/castingV2/rollProjection.ts",
       "to": "module:server/storage.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/rollProjection.ts",
+      "to": "module:shared/castingPaths.ts",
       "kind": "imports"
     },
     {
@@ -32076,10 +32147,10 @@
       "message": "Names 3 of Thumbnail's 3 fields (server/castingV2/thumbnails.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/rollProjection.ts:187",
+      "id": "finding:redeclared-shape:server/castingV2/rollProjection.ts:197",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/rollProjection.ts:187",
+      "subject": "server/castingV2/rollProjection.ts:197",
       "message": "Names 7 of LockFacts's 7 fields (server/castingV2/castingIntent.ts), 7 of ResolvedIdentity's 11 fields (server/castingV2/castingIntent.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {

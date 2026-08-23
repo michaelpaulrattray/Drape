@@ -44,6 +44,13 @@ import { inFlightCandidate, refineBusy, refineGhosts, refineWait } from "@/featu
 import { bridgeWithinCandidate } from "@/features/castingV2/panelBridge";
 import { sheetExpiryNotice } from "@/features/castingV2/retentionCopy";
 import { sheetNotice } from "@/features/castingV2/sheetNotice";
+import {
+  CASTING_PATH_NAMES,
+  pathSwitchNote,
+  wardrobeLineText,
+} from "@/features/castingV2/castingPathCopy";
+import { PathToggle } from "@/features/castingV2/components/PathToggle";
+import { DEFAULT_CASTING_PATH, type CastingPath } from "@shared/castingPaths";
 import { viewerCompareFor } from "@/features/castingV2/viewerCompare";
 import {
   CandidateViewer,
@@ -345,6 +352,20 @@ export default function CastingSheet() {
   const [viewedRollId, setViewedRollId] = useState<string | null>(null);
   const shownRollId = viewedRollId ?? activeRollId;
   const viewingHistory = Boolean(shownRollId && activeRollId && shownRollId !== activeRollId);
+
+  /*
+    WHICH PATH THE NEXT ROLL USES — the re-roll box's half of the toggle
+    (design §6: *"a re-roll may switch it"*).
+
+    ⚠ **`null` means "whatever this sheet is", and that is what stops this
+    being a mirror.** The sheet's own path is server truth arriving on a query
+    that re-resolves as the rail is walked and as the poll lands; copying it
+    into state with an effect would be working law 4 with a race attached —
+    the pill would show a stale path for a frame every time the sheet changed
+    under it. So the control is DERIVED (`pathChoice ?? sheetPath`) and this
+    holds only the user's own departure from it.
+  */
+  const [pathChoice, setPathChoice] = useState<CastingPath | null>(null);
 
   /** Closes synchronously on click; see `dispatchRoll` and `singleFlight.ts`. */
   const latchRef = useRef<DispatchLatch | null>(null);
@@ -772,6 +793,23 @@ export default function CastingSheet() {
           briefText: brief,
           unlock: unlocked.length > 0 ? unlocked : undefined,
           overrides: Object.keys(sendOverrides).length > 0 ? sendOverrides : undefined,
+          /*
+            THE PATH, ONLY WHERE ONE WAS EVER SHOWN (design §6).
+
+            `nextRollPath` is null on three sheets, and each one must send
+            nothing rather than a default: an account outside the flag, a sheet
+            cast before the paths existed, and a sheet being read from history.
+            The optional field is what keeps *the toggle was not sent* distinct
+            from *the toggle said Wardrobe* all the way to the column, which is
+            the distinction `shared/castingPaths.ts` refuses to let MySQL
+            destroy with a DEFAULT.
+
+            The `follow` branch above deliberately has no equivalent: a Follow
+            INHERITS the sheet's path (§3.1) and is not offered the switch —
+            dressing eight strangers in a path chosen mid-lineage is the same
+            argument `refineSubjects.ts` makes about expression.
+          */
+          ...(nextRollPath ? { path: nextRollPath } : {}),
         },
         options,
       );
@@ -840,6 +878,61 @@ export default function CastingSheet() {
   const price = config.data?.rollPriceCredits ?? 0;
   const signPrice = config.data?.signPriceCredits ?? 0;
   const refinePrice = config.data?.refinePriceCredits ?? 0;
+
+  /*
+    ─────────────────────────────────────────────────────────────────────────
+    THE TWO PATHS ON THE SHEET (design §6) — a record, and a switch.
+    ─────────────────────────────────────────────────────────────────────────
+
+    `wardrobe` is non-null exactly when this roll was cast on a path, so every
+    surface below keys on that one server fact and nothing is client-derived.
+    On the 206 production rolls that predate the feature it is null, and none
+    of this draws at all.
+  */
+  const sheetWardrobe = roll.data?.wardrobe ?? null;
+  const twoPathsEnabled = config.data?.twoPathsEnabled === true;
+
+  /*
+    ⚠ **AN UNPATHED SHEET IS OFFERED THE SWITCH TOO, AND THE LINE THAT DECIDES
+    IT IS THE RECORD/PLAN LINE** (ruled fable-1483 ASK 1(b)).
+
+    `shared/castingPaths.ts` argues at length that *the absence is not a member
+    and must never become one*, and a first build here read that as forbidding a
+    control preselected to Wardrobe over eight faces nobody chose a path for.
+    **That argument protects the ROLL'S RECORD — and this control is a statement
+    about the NEXT roll.** So the two halves part company:
+
+      the record line   ABSENT on an unpathed sheet, exactly as before. Nothing
+                        claims these eight were cast on a path
+      this switch       DRAWN, preselected to the default, and its note NEVER
+                        falls silent there (`pathSwitchNote`) — so the pills
+                        cannot be read as a label of a sheet that has none
+
+    The case is day one rather than hypothetical: **every existing customer's
+    sheets are unpathed on the day the flag opens**, and without this the lobby
+    would be their only door to a path.
+
+    Hidden while reading history for the reason the FOLLOWING chip is: this says
+    what Roll again will do, and Roll again always applies to the live sheet.
+  */
+  const dockPathVisible = twoPathsEnabled && !viewingHistory && !standingFollowId;
+  /** The LIVE sheet's own path, or `null` when it predates the paths. */
+  const sheetPath = dockPathVisible ? (sheetWardrobe?.path ?? null) : null;
+  /*
+    WHAT THE NEXT ROLL SENDS, and it is `null` exactly where no control was
+    shown — outside the flag, while reading history, and during a standing
+    follow.
+
+    ⚠ **The history case therefore rolls UNPATHED unless she touched the pills**,
+    and that is deliberate rather than overlooked: the live roll's path is not
+    on this page while a historical one is being read (`roll.data` is the SHOWN
+    roll), so the alternative would be defaulting to Wardrobe on a sheet whose
+    live roll may be Basics — a silent wrong answer on a paid action. An unsent
+    toggle is not a claim; a wrong one is.
+  */
+  const nextRollPath = dockPathVisible
+    ? (pathChoice ?? sheetPath ?? DEFAULT_CASTING_PATH)
+    : null;
 
   /*
     WHO THE DOCK'S SIGN IS ABOUT.
@@ -1950,6 +2043,16 @@ export default function CastingSheet() {
   const notice = sheetNotice({
     fellBack: roll.data?.fellBack === true,
     statedWardrobe: roll.data?.statedWardrobe === true,
+    /*
+      THE PATH THE VIEWED ROLL WAS CAST ON — and it is the VIEWED one, like
+      every other fact in this slot, so walking the rail changes what the sheet
+      confesses. `sheetWardrobe` is this roll's own resolution or null.
+
+      It changes the stated-outfit rung in three ways and the module owns which
+      (§6/§3.3): unpathed keeps today's sentence, Basics gets its own, and
+      Wardrobe is silent because her outfit is what she is looking at.
+    */
+    wardrobePath: sheetWardrobe?.path ?? null,
     expiryNotice,
   });
 
@@ -2108,6 +2211,35 @@ export default function CastingSheet() {
           rather than as three conditionals here that drift apart.
         */}
         {notice ? <p className="dpc-expiry-note">{notice}</p> : null}
+
+        {/*
+          WHAT THIS SHEET IS WEARING — §3.3's row for the sheet, and §6's
+          *"the path is shown after the roll too."*
+
+          Its own line rather than the notice slot, and that is a distinction
+          the notice's own docblock draws: the slot above is NEWS, one thing at
+          a time, and this is a standing fact about the eight faces below. §6:
+          *"a fact that decides what a cast can and cannot do later must be
+          visible on the cast, not only on the control that set it."*
+
+          The path name is set in the chrome register and the outfit beside it
+          in the sentence register, because one is a machine fact and the other
+          is a description of a picture — the mono law's line falls exactly
+          between them.
+
+          Drawn off `wardrobe` being non-null, which is the server saying THIS
+          ROLL WAS CAST ON A PATH. Every roll in production answers null and
+          this whole element is absent, gate or no gate — the record is a
+          property of the roll, not of the account reading it, so it is
+          deliberately NOT behind `twoPathsEnabled`: a sheet that has a path
+          should say so even if the flag were later narrowed under it.
+        */}
+        {sheetWardrobe ? (
+          <p className="dpc-wardrobeline">
+            <span className="dp-chrome">{CASTING_PATH_NAMES[sheetWardrobe.path].toUpperCase()}</span>
+            <span className="dpc-wardrobeline__line">{wardrobeLineText(sheetWardrobe)}</span>
+          </p>
+        ) : null}
 
         {/*
           THE SHEET SAYS WHEN IT COULD NOT VARY.
@@ -2397,6 +2529,39 @@ export default function CastingSheet() {
 
       <div className="dp-dock-fade">
         <Dock>
+          {/*
+            THE RE-ROLL BOX'S HALF OF THE TOGGLE (design §6).
+
+            §6 puts a control on BOTH places a roll is bought, *"because a
+            toggle on only one of them is a path a customer can change by
+            accident"* — and here it does two jobs at once: it SHOWS the path
+            this sheet was cast on, and a re-roll may switch it.
+
+            Above the brief row rather than beside the button, because it is a
+            statement about the next roll in the same register as FOLLOWING,
+            and because the row below is already the sentence and the priced
+            action.
+
+            ⚠ **NOT DRAWN DURING A STANDING FOLLOW.** A Follow inherits the
+            sheet's path (§3.1) and `follow` takes no path at all, so a switch
+            there would be a control that silently does nothing — D-107's dead
+            control. The path is still readable: the record line above the grid
+            says it, on every pathed sheet, follow or not.
+
+            The note appears once the selection leaves the sheet's own path —
+            when the pills stop being a label and become a plan — and on an
+            UNPATHED sheet it never falls silent at all, because there the pills
+            were never a label of anything (fable-1483 ASK 1(b)).
+          */}
+          {dockPathVisible && nextRollPath ? (
+            <PathToggle
+              idPrefix="dpc-dock-path"
+              label="How the next roll is cast"
+              value={nextRollPath}
+              onChange={setPathChoice}
+              note={pathSwitchNote({ sheetPath, selected: nextRollPath })}
+            />
+          ) : null}
           <div className="dp-row" style={{ gap: 10, flexWrap: "nowrap" }}>
             <Field className="dp-split__main dpc-briefrow">
               <Sparkles size={13} strokeWidth={1.9} aria-hidden="true" />

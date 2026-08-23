@@ -139,6 +139,23 @@ export type FacePanelRow = {
    * so "bald" is an invitation to say what she wants instead.
    */
   absent?: string | null;
+  /**
+   * WHAT THE PICTURE THIS ROW WAS READ FROM SHOWS — "as dressed" (the two
+   * paths, design §6.1; ruled fable-1467 as §8.2's part (b)).
+   *
+   * The server decides it and only two rows may hold one — `build`, whose crop
+   * is a dressed torso, and `skin`, whose understatement was measured on frames
+   * of people in the house crew tee. It appears on the WARDROBE path alone: on
+   * Basics the row is still not measured (an unbuilt capability, and a
+   * precondition of that flag widening), and on a cast that predates the paths
+   * it is not drawn at all.
+   *
+   * ⚠ **A LABEL, NEVER A HEDGE.** The row is not less accurate for carrying it;
+   * it is accurate about something smaller. Kept apart from `from` because a
+   * row can need both at once — "from an edit" AND "as dressed" — and one field
+   * would make one of them unsayable.
+   */
+  provenance?: string | null;
   from: string | null;
   prefill: string;
   /**
@@ -518,6 +535,31 @@ export function FacePanel({
                       */}
                       {row.state === "pending" || carried
                         ? <span className="dpc-face__words" aria-hidden="true">&nbsp;</span>
+                        : null}
+                      {/*
+                        WHAT THE PICTURE THIS ROW WAS READ FROM SHOWS — "as
+                        dressed" (the two paths, §6.1).
+
+                        Its own line rather than folded into `from`, because a
+                        wardrobe-path `build` that has been edited has to say
+                        BOTH — "from an edit" and "as dressed" — and one field
+                        can only carry one of them.
+
+                        ⚠ **It is a LABEL and never a hedge** (§6.1, ruled): the
+                        row is not less accurate on the Wardrobe path, it is
+                        accurate about something smaller. So it is set in the
+                        same weight as `from` and is NOT dimmed further — the
+                        argument `.dpc-face__words--absent` already makes one
+                        row up, that greying a true statement turns it into
+                        "we could not read this."
+
+                        Suppressed on a carried row for the same reason the
+                        words are: a carried row is another version's reading
+                        and a claim about the picture in front of you is
+                        exactly what it must not make.
+                      */}
+                      {row.provenance && !carried
+                        ? <span className="dpc-face__provenance">{row.provenance}</span>
                         : null}
                       {row.from && !carried ? <span className="dpc-face__from">{row.from}</span> : null}
                     </span>
