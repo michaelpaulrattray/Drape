@@ -58,8 +58,34 @@ function enumMembers(column: string): string[] {
 }
 
 describe("the missing-form demand table matches the vocabularies it came from", () => {
-  it("kind is exactly the two reasons a torso form can be absent", () => {
-    expect(enumMembers("kind")).toEqual([...INK_FORM_DEMAND_KINDS]);
+  it("⚠ kind's MIGRATED members are the code's two PLUS 0052's staged pair", () => {
+    /*
+      THE DAY THIS READER'S OWN DOCBLOCK WAS WRITTEN FOR — 2026-08-23.
+
+      It says, above: pointing at the SEQUENCE rather than at 0041 alone
+      *"changes what happens the day one of them IS altered, which is the only
+      day the difference could ever matter."* Migration 0052 alters `kind`, and
+      the reader answers four where the code declares two.
+
+      That gap is the STAGING and not a drift. `pathAtRefusal` is a new column on
+      a table the code reads, so the schema half of item 8 §9 cannot land until
+      the ceremony has run in BOTH worlds (0051's rule, one table over) — and
+      the two enum members travel with it, because a value the database has and
+      the code cannot spell is harmless while a value the code has and the
+      database lacks is a write that errors.
+
+      `inkFormDemandMigration.test.ts` pins the absence from the other side and
+      carries the instruction: replace it with the three-way arm in the sitting
+      that lands the column. **Both arms go together or neither does** — this one
+      alone would let the code's constant drift, and that one alone would let the
+      migration.
+    */
+    const STAGED_BY_0052 = ["surfaceCovered", "surfaceCoverageUnread"];
+    expect(enumMembers("kind")).toEqual([...INK_FORM_DEMAND_KINDS, ...STAGED_BY_0052]);
+    /* And the code's own two are FIRST and unmoved: an enum is an index in
+       MySQL, so their position is what every stored row means. */
+    expect(enumMembers("kind").slice(0, INK_FORM_DEMAND_KINDS.length))
+      .toEqual([...INK_FORM_DEMAND_KINDS]);
   });
 
   it("placement is OPEN, because this counter's whole job is to record the ask", () => {

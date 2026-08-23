@@ -1,0 +1,86 @@
+-- THE TALLY, WIDENED — a wardrobe-path cast refused a tattoo because its own
+-- outfit covers the surface, counted (design
+-- `docs/specs/CASTING_V2_TWO_PATHS_DESIGN.md` §9, countersigned fable-1334
+-- question 2: *WIDEN, with §9's driven-through-the-refusal arm as a condition of
+-- the landing*).
+--
+-- ============================================================================
+-- WHY THIS TABLE AND NOT A SECOND ONE
+-- ============================================================================
+--
+-- It is the same question this table already answers — *what did we have to
+-- refuse, and how many people wanted it* — and a second table is a second thing
+-- to read, which in practice means a second thing nobody reads. The privacy
+-- shape is already right and is not being touched: no account, no cast, no
+-- design, absent from the ROW rather than omitted from a projection.
+--
+-- ============================================================================
+-- TWO NEW `kind` MEMBERS, NOT ONE, AND THE SPLIT IS THIS FILE'S OWN PRECEDENT
+-- ============================================================================
+--
+-- `INK_FORM_DEMAND_KINDS` already carries two values for one refusal because
+-- they mean different things: `torsoNonbinary` is *draw a third form* and
+-- `torsoUnstated` is *this record is missing a field*, and one value for both
+-- would put a data gap into the count that decides whether to commission
+-- artwork. The coverage refusals split the same way:
+--
+--   surfaceCovered         her outfit genuinely covers the surface she named.
+--                          The demand is for a WARDROBE EDIT or a Basics recast
+--                          — a product road, and the number says how many people
+--                          wanted it
+--   surfaceCoverageUnread  nobody has read this outfit's coverage, so the gate
+--                          failed closed on a surface that might be perfectly
+--                          bare. The demand is for 7a-bis, the reader that
+--                          answers an arbitrary line — a DIFFERENT road, and
+--                          counting it as the first would inflate the case for
+--                          the wrong build
+--
+-- ============================================================================
+-- `pathAtRefusal` IS NULLABLE AND WILL NEVER BE NULL IN PRACTICE
+-- ============================================================================
+--
+-- Only a cast born on a path can meet these refusals: an UNPATHED cast — every
+-- roll in either world today — answers the house crew tee, and its upper-chest
+-- refusal is the product's ordinary behaviour rather than this feature's demand
+-- signal. Counting those would flood the table with a fact nobody is deciding
+-- anything from.
+--
+-- So the writer never fires for `unpathed`, and the column is nullable anyway
+-- for the reason every column on this table is written the way it is: a tally
+-- that can refuse a write is a tally that can cost a customer a sentence. NULL
+-- here would mean *somebody wrote a row without saying which path*, which is a
+-- fault to be READ rather than a write to be rejected.
+--
+-- BOTH VALUES ARE REACHABLE, which is what makes the column worth having rather
+-- than a constant wearing a column's clothes. `wardrobe` is the covered-chest
+-- case; `basics` is reachable too, because the Two Paths court found that a
+-- Basics cast's chest reads 0 px on 4 of 4 candidates, so that path answers
+-- `unknown` and fails closed (opus-1111, ruled fable-1453, landed `f7f45e31`).
+--
+-- ============================================================================
+-- AN ENUM WIDENING IS NOT AN ENUM CHANGE
+-- ============================================================================
+--
+-- `MODIFY COLUMN` on an enum that only GAINS members rewrites no row: every
+-- existing value keeps its position in the list, so `torsoNonbinary` and
+-- `torsoUnstated` still mean what they meant. Members are appended and none is
+-- renamed or removed, which is the one shape of enum edit that is safe to run
+-- against a live table.
+--
+-- ============================================================================
+-- IT LANDS DARK, AND THE ORDER IS 0051'S ORDER
+-- ============================================================================
+--
+-- `pathAtRefusal` is a new column on a table the code reads, so the moment
+-- `drizzle/schema.ts` names it, every read of `casting_ink_form_demand` asks
+-- for it — flag or no flag. So: **this command -> the schema and the writer land
+-- dark -> the flip**, and until it has run in a world, the schema half must not
+-- reach it. At the commit that carries this file, `drizzle/schema.ts` does NOT
+-- name `pathAtRefusal` and `INK_FORM_DEMAND_KINDS` does NOT carry the two new
+-- members, and `server/castingV2/inkFormDemandMigration.test.ts` pins that.
+--
+-- PURELY ADDITIVE. No column is removed, no column changes meaning, no index
+-- moves, no row is rewritten.
+ALTER TABLE `casting_ink_form_demand` MODIFY COLUMN `kind` enum('torsoNonbinary','torsoUnstated','surfaceCovered','surfaceCoverageUnread') NOT NULL;
+--> statement-breakpoint
+ALTER TABLE `casting_ink_form_demand` ADD COLUMN `pathAtRefusal` enum('wardrobe','basics') NULL;

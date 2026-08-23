@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "4b1fae364772226b"
+    "sourceFingerprint": "cbe7345131b5665e"
   },
   "domains": [
     {
@@ -10729,6 +10729,10 @@
     {
       "id": "test:server/castingV2/inkDesignSchema.test.ts",
       "path": "server/castingV2/inkDesignSchema.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/inkFormDemandMigration.test.ts",
+      "path": "server/castingV2/inkFormDemandMigration.test.ts"
     },
     {
       "id": "test:server/castingV2/inkFormDemandSchema.test.ts",
