@@ -16,7 +16,7 @@
  */
 import "dotenv/config";
 
-import { openDatabase, utc } from "./lib/dbConnection.mts";
+import { openDatabase, utc, worldOf } from "./lib/dbConnection.mts";
 import { assertOneWorld } from "./lib/worldGuard.mts";
 
 const databaseKey = process.env.MYSQL_PUBLIC_URL ? "MYSQL_PUBLIC_URL" : "DATABASE_URL";
@@ -53,6 +53,26 @@ for (const row of rows) {
 /* No ceiling: the founder removed it outright on 2026-08-23 — verbatim "no
    cieling remove it" (relayed fable-1439). This stays a READING and governs
    nothing; the discipline that was always the real control is untouched. */
+/*
+  ⚠ THE WORLD IS ON THE SUMMARY LINE, not only on the `[db]` banner above.
+
+  This block is what park reports quote, and PROTOCOL.md tells every agent to
+  quote it as a fact. On 2026-08-23 it was quoted as *"production, user 1"*
+  off a run that had read DEV. The two worlds are the same host and the same
+  database NAME differing only by port, and their gross figures were within 25
+  credits of each other — so nothing in the copied line could contradict the
+  label. The real production figures that day were `refunded 1060 · rows 183`
+  against dev's `refunded 325 · rows 154`: a 735-credit difference in the one
+  column a campaign cares about, invisible.
+
+  The banner was already honest and sat ten lines from the numbers, which is
+  the same distance as not being there. `MYSQL_PUBLIC_URL` is present exactly
+  when somebody deliberately wrapped this in the production service, so the
+  NAME is derived from that mechanism rather than from a port to remember.
+*/
+const world = databaseKey === "MYSQL_PUBLIC_URL" ? "PRODUCTION" : "DEV";
+console.log(`
+${world}  ${worldOf(databaseUrl)}  (via ${databaseKey})`);
 console.log(`\ngross ${gross}   refunded ${refunded}   net ${gross - refunded}   rows ${rows.length}`);
 
 /* Run-13's window, from its own walk.json: started 13:59:23Z, last step done a
