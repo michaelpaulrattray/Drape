@@ -159,13 +159,45 @@ carry the rulings, the courts and the histories.
                                           `b1520cb2` + `33f6e229` (7a — the
                                           wardrobe decides where a tattoo can
                                           go).
-                                          ⚠ WHAT ACTUALLY REMAINS is the FLIP,
-                                          and it is held on the reviewer's word
-                                          rather than the founder's:
-                                          **the 320-credit dev court has not
-                                          run**, and his eyes come after it
-                                          (fable-1429). Nothing here is waiting
-                                          on a command from him
+                                          ✅ THE 320-CREDIT COURT HAS RUN
+                                          (2026-08-23, ordered fable-1452 ASK 2,
+                                          staged as required). Arm 1 — the
+                                          caveman on the WARDROBE path — passes
+                                          all three reads at the frames: eight
+                                          candidates in ONE picked outfit, plain
+                                          and type-matching, and the stored line
+                                          describes the picture. Arm 2 — an
+                                          ordinary brief on BASICS — passes on
+                                          the garment and FAILS on the chest.
+                                          Two findings went to his desk rather
+                                          than into this table: FQ-a, both paths
+                                          make a markedly WIDER master than an
+                                          unpathed cast (the FRAMING instruction
+                                          is byte-identical on all three, read
+                                          off the rows — the engine widened), and
+                                          FQ-b, the Basics top is scooped and not
+                                          scooped ENOUGH for the reader that
+                                          decides whether a chest piece survives
+                                          (0 px on 4 of 4). The 900-credit half
+                                          (the two Signs) is HELD until both are
+                                          answered — fable-1453 ASK 4
+                                          ✅ SLICES 8 AND 9a ARE BUILT AND LIVE
+                                          DARK (2026-08-23): item 8 complete in
+                                          three commits — `77ad5fbe` (the
+                                          wardrobe becomes a subject, path-gated
+                                          so no unpathed prompt moves),
+                                          `839d9166` (the Basics refusal and the
+                                          stored edit), `84cf2d20` (the recipe
+                                          and the census) — and `94c29d9d` is
+                                          §9's migration 0052 plus its ceremony,
+                                          DEV-APPLIED with production carded as
+                                          FQ-c. Shapes ruled fable-1455 Q1/Q2/Q3
+                                          ⚠ WHAT REMAINS: §9's writer (after his
+                                          one command), §8 garment cards, and §6
+                                          THE TOGGLE LAST — a UI milestone under
+                                          the evidence-pack contract, in its own
+                                          sitting (order approved fable-1456).
+                                          Then his eyes, then the flip
 3b KEYING + MULTI-TATTOO REMOVAL          after 5. No live customer yet (no branch
                                           has ever worn two); 1167 §2e is its own
                                           reason
