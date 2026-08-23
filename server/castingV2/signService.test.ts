@@ -1128,21 +1128,36 @@ describe("a covered surface says so on the same disposition surface", () => {
     }]);
   });
 
-  it("⚠ ON A BASICS CAST THE SAME DESIGN IS REFUSED — but NOT as a covering", async () => {
+  it("⚠ ON A BASICS CAST THE SAME DESIGN RIDES — the outfit decides, and it is the point", async () => {
     /*
       Item 7a (countersigned fable-1368). The arm above passes `undefined` for
       the line, which is *no line recorded* and answers the house crew tee — so
       the two arms differ in exactly one thing, which is the whole claim.
 
-      ⚠ THIS ARM ASSERTED `rode: true` UNTIL 2026-08-23, on the Basics spec's own
-      sentence (*"scooped low at the chest"*) rather than on a photograph. The
-      Two Paths court rolled eight Basics candidates and asked `upper chest` —
-      **0 px on 4 of 4** (opus-1111, ruled fable-1453 ASK 2), so the coverage
-      owner answers `unknown` and the design does not ride.
+      ⚠ THIS ARM HAS BEEN WRITTEN THREE TIMES AND THE HISTORY IS THE LESSON:
 
-      What the outfit still decides is the REASON: `surfaceCoverageUnread`, never
-      `surfaceCovered`. Her chest is plainly visible in the picture, and a
-      refusal that calls it covered is the lie fable-1368 ruling 1 forbids.
+        `rode: true`   off the Basics SPEC's own sentence — *"scooped low at
+                       the chest"* — rather than off a photograph
+        `rode: false`  `surfaceCoverageUnread`, after the Two Paths court asked
+                       `upper chest` of eight Basics candidates and got **0 px
+                       on 4 of 4** (opus-1111, ruled fable-1453 ASK 2). NOT
+                       `surfaceCovered`: her chest is plainly visible, and a
+                       refusal that calls it covered is the lie fable-1368
+                       ruling 1 forbids
+        `rode: true`   EARNED, 2026-08-23. The founder lowered the spec's
+                       neckline to name the collarbones and the sternum, and the
+                       re-court read the amended frames **12 of 12 across three
+                       sheets and two wordings** with the masks opened and
+                       looked at. He then closed the trade knowing the lowered
+                       neckline costs about one slice in four at the vendor's
+                       content checker
+
+      **The first and the third assert the same thing and they are not the same
+      assertion.** One was a claim about a sentence we wrote; this one is a
+      reading of photographs, and `inkSurfaceCoverage.ts` carries the rounds.
+
+      This is the moment the Basics path delivers what it exists for: a chest
+      piece reaching the six signed views a customer paid for.
     */
     const { plates, dispositions } = await carriedInkPlates({
       mannequinDeferred: false,
@@ -1153,10 +1168,8 @@ describe("a covered surface says so on the same disposition surface", () => {
       wardrobeLine: basicsWardrobeLine("male"),
     });
 
-    expect(plates).toEqual([]);
-    expect(dispositions).toEqual([{
-      designPublicId: "chest-1", rode: false, reason: "surfaceCoverageUnread",
-    }]);
+    expect(plates).toHaveLength(1);
+    expect(dispositions).toEqual([{ designPublicId: "chest-1", rode: true }]);
   });
 
   it("⚠ AND ITS ARM STILL RIDES — the outfit decides, not the placement", async () => {

@@ -56,7 +56,7 @@ describe("what this cast's wardrobe leaves showing", () => {
     }
   });
 
-  it("⚠ BASICS's CHEST is `unknown` — a court read it and the reader found nothing", () => {
+  it("⚠ BASICS's CHEST is `bare` — EARNED by three courts and a founder answer", () => {
     /*
       This entry said `bare` from the day it was written, off the spec's own
       sentence (*"scooped low at the chest"*), and the file said so honestly:
@@ -73,17 +73,44 @@ describe("what this cast's wardrobe leaves showing", () => {
       ruling 1 forbids. So `unknown`, which fails closed and says in each
       consumer's own words that nobody can answer for this outfit.
 
-      ⚠ It flips with founder card FQ-b, and the arm below the assertion says
-      which way each answer sends it.
+      ✅ **AND IT FLIPPED, 2026-08-23, ON THE OTHER HALF OF ITS OWN CONDITION.**
+      The founder lowered the spec's scoop to name the collarbones and the
+      sternum rather than a degree (FQ-b), and the re-court read the amended
+      frames with the SAME word:
+
+      ```
+      round 1  "scooped low at the chest"    0 px on 4 of 4
+      round 2  the amended spec              4 of 4, 3.9–6.0% of frame
+      round 3  the same spec, second sheet   4 of 4, 5.0–7.6%
+      round 4  a deliberately milder wording 4 of 4, 4.6–6.4%
+      ```
+
+      **Twelve of twelve on three independent sheets and two wordings**, with
+      the masks opened and looked at — collarbone to sternum, clean-edged, none
+      of the garment.
+
+      ⚠ **THE ORDER OF THE TWO CLAUSES IS THE POINT AND IS ASSERTED BELOW.** The
+      condition was never *a court reads the chest*; it was *he lowers it AND a
+      court reads it*, and for the hours between the court and his answer only
+      one had happened. The value did not move then. It moved in the commit that
+      carried *"framing is fine and so is everything else"* (relayed
+      fable-1465), which also carries the ~1-in-4 vendor refusal rate the
+      lowered neckline costs — recorded beside the spec sentence so a reader
+      meets that trade as decided rather than discovering it.
     */
     for (const line of [basicsWardrobeLine("male"), basicsWardrobeLine(null)]) {
-      expect(coverageOfWardrobeLine(line, "upperChest"), line).toBe("unknown");
+      expect(coverageOfWardrobeLine(line, "upperChest"), line).toBe("bare");
     }
-    /* And it must not have become `covered` on the way — the two failure
-       directions are opposite and only one of them is a lie about her body. */
-    for (const line of [basicsWardrobeLine("male"), basicsWardrobeLine(null)]) {
-      expect(coverageOfWardrobeLine(line, "upperChest")).not.toBe("covered");
-    }
+    /* ⚠ AND THE SENTENCE IT WAS EARNED ON IS PINNED WITH IT. `bare` here is a
+       claim about a SPECIFIC garment that a court read; if the spec's neckline
+       is ever raised again this value is a lie the moment the string changes,
+       and nothing else in the file would notice. Both landmarks, because they
+       are what the court measured. */
+    expect(basicsWardrobeLine(null)).toMatch(/collarbone/);
+    expect(basicsWardrobeLine(null)).toMatch(/sternum/);
+    /* The male form needs no landmark — it is `shirtless`, and the chest is
+       bare by the absence of a garment rather than by the cut of one. */
+    expect(basicsWardrobeLine("male")).toContain("shirtless");
   });
 
   it("⚠ AN OUTFIT NOBODY HAS READ IS `unknown` — never `bare`, and never `covered`", () => {
@@ -129,11 +156,12 @@ describe("what this cast's wardrobe leaves showing", () => {
       "upperArm",
     )).toBe("bare");
     /* The chest goes through the same door and comes back with the court's
-       answer rather than the spec's. */
+       answer rather than the spec's — `bare` since the re-court read it 12 of
+       12 and the founder closed the trade. */
     expect(wardrobeCoversSurface(
       { kind: "line", line: basics, source: "born", path: "basics" },
       "upperChest",
-    )).toBe("unknown");
+    )).toBe("bare");
     expect(wardrobeCoversSurface(
       { kind: "line", line: HOUSE_WARDROBE_LINE, source: "born", path: "wardrobe" },
       "upperChest",
@@ -146,9 +174,19 @@ describe("what this cast's wardrobe leaves showing", () => {
     /* Absent is silence, which is `unpathed`: the house crew tee. */
     expect(bareSurfaces(undefined)).toEqual(["neck", "upperArm"]);
     expect(bareSurfaces({ kind: "unpathed" })).toEqual(["neck", "upperArm"]);
-    /* ⚠ NOT all three any more: the court found the Basics chest unreadable, so
-       the sentence that tells a Basics customer what works names two. */
-    expect(bareSurfaces(worn(basicsWardrobeLine("male")))).toEqual(["neck", "upperArm"]);
+    /* ⚠ ALL THREE ON BASICS, and this line has now said two different things
+       in one day — which is exactly what it is for. It named two while the
+       court had read the chest at 0 px; the lowered scoop was read at 12 of 12
+       and the founder closed it, so the sentence a Basics customer is told now
+       names the chest as well. **That is the one placement the path exists to
+       unlock**, and this is the assertion that says the promise reaches her. */
+    expect(bareSurfaces(worn(basicsWardrobeLine("male"))))
+      .toEqual(["neck", "upperArm", "upperChest"]);
+    expect(bareSurfaces(worn(basicsWardrobeLine(null))))
+      .toEqual(["neck", "upperArm", "upperChest"]);
+    /* CONTROL — the house tee still names two, so the three above are a fact
+       about the Basics line and not about the reader having stopped filtering. */
+    expect(bareSurfaces(worn(HOUSE_WARDROBE_LINE))).toEqual(["neck", "upperArm"]);
     expect(bareSurfaces(worn("a charcoal roll-neck jumper"))).toEqual([]);
     /* And an incoherent branch offers NOTHING rather than the crew tee's two. */
     expect(bareSurfaces({ kind: "incoherent", path: "basics" })).toEqual([]);

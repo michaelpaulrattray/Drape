@@ -291,14 +291,32 @@ export function basicsWardrobeLine(sex: string | null | undefined): string {
     word like "low" is a comparative with no referent, and an image model
     resolves those toward the ordinary.
 
-    ⚠ **THE READING IS NOT DONE UNTIL THE RE-COURT REPORTS.** This sentence is a
-    prescription, not a measurement, and `BASICS_COVERAGE.upperChest` stays
-    `unknown` until one Basics roll is read at the frames with the mint's own
-    word (160 dev credits, authorised fable-1460). If it answers, that value
-    flips to `bare` **with the court as its provenance** — which is
-    `inkSurfaceCoverage.ts`'s own written flip condition. It is not flipped on
-    the strength of this sentence, because that is exactly how it was wrong the
-    first time.
+    ✅ **THE RE-COURT REPORTED AND THE CHEST READS** — 12 of 12 across three
+    sheets and two wordings, against 0 of 4 before. `BASICS_COVERAGE.upperChest`
+    is `bare` with those courts as its provenance, and that value moved in the
+    commit that carried his answer rather than in the one that carried the
+    court.
+
+    ⚠ **AND THIS SENTENCE COSTS ABOUT ONE SLICE IN FOUR, WHICH IS THE PART A
+    READER MUST NOT DISCOVER.** The lowered neckline trips the image provider's
+    PROMPT content checker: 6 refused of 24 slices across the three sheets,
+    every one `content_policy` with the provider naming `body.prompt`, against 0
+    of 8 on the original wording. On that n the true rate could honestly be one
+    in ten or one in two.
+
+    **It is not a wording problem and that was measured, not assumed.** A
+    deliberately milder sentence — no *bare*, no *sternum*, no *upper chest* —
+    refused MORE often (3 of 8 against 3 of 16). Two phrasings as different as
+    could be written while keeping the neckline produced the same outcome, so
+    there is no third sentence to try with a story behind it.
+
+    **The founder was shown that number and kept the lower top** (*"framing is
+    fine and so is everything else"*, relayed fable-1465). The trade he took: a
+    missing face on a sheet is visible, recoverable and honestly refunded — she
+    is charged for what she receives — while a tattoo that renders and then
+    vanishes on the next edit is the one thing this product promises never to
+    sell. **Do not "fix" this by raising the neckline; that is the decision
+    being reversed, not a defect being repaired.**
   */
   return "a plain black scoop-neck sports top cut well below the collarbones so the whole "
     + "upper chest and sternum are bare, plain black fitted shorts, barefoot";

@@ -1723,8 +1723,12 @@ the roll rather than discovered after it (the brief discipline):
   2026-08-23** after a court read the chest at 0 px on 4 of 4 — the top is now
   specified as *cut well below the collarbones so the whole upper chest and
   sternum are bare*, because a comparative with no referent is latitude and the
-  engine resolves latitude toward the ordinary. The design's §5 carries the
-  measurement and the re-court that has to confirm it.
+  engine resolves latitude toward the ordinary. ✅ **The re-court confirmed it —
+  12 of 12 across three sheets and two wordings — and `BASICS_COVERAGE.upperChest`
+  is `bare`, so a Basics chest piece rides the six signed views.** It costs about
+  one slice in four to the image provider's prompt content checker (6 of 24, and
+  re-wording made it worse, not better); he was shown that number and kept the
+  lower top. The design's §5 carries all four rounds.
 
 **Wardrobe resolution, in order:** an outfit named in her words wins; else the
 brief stage writes ONE engine-chosen outfit per sheet matching the cast type

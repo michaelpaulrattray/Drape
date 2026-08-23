@@ -384,11 +384,42 @@ how low. **A comparative with no referent is latitude, and an image model
 resolves latitude toward the ordinary**, which is `HOUSE_WARDROBE_LINE`'s own
 lesson one garment over.
 
-It is still a sports top and still a body record. **And the reading is not done
-until the re-court reports**: `BASICS_COVERAGE.upperChest` stays `unknown` until
-one Basics roll is read at the frames, and flips to `bare` with THAT court as its
-provenance. It is not flipped on the strength of a sentence, because that is
-exactly how it was wrong the first time.
+It is still a sports top and still a body record.
+
+✅ **THE RE-COURT REPORTED AND THE CHEST READS — `BASICS_COVERAGE.upperChest` IS
+`bare`, EARNED** (2026-08-23; he closed it with *"framing is fine and so is
+everything else"*, relayed fable-1465).
+
+```
+round 1  "scooped low at the chest"        upper chest   0 px on 4 of 4
+round 2  the amended spec                  upper chest   4 of 4, 3.9–6.0%
+round 3  the same spec, a second sheet     upper chest   4 of 4, 5.0–7.6%
+round 4  a deliberately milder wording     upper chest   4 of 4, 4.6–6.4%
+```
+
+Twelve of twelve on three independent sheets and two wordings, masks opened and
+looked at — collarbone to sternum, clean-edged, none of the garment. **The value
+did not move when the court passed**; it moved in the commit that carried his
+answer, because the condition was always two clauses and only one had happened.
+
+⚠ **AND IT COSTS ABOUT ONE SLICE IN FOUR, WHICH IS PART OF THE DECISION RATHER
+THAN A DEFECT.** The lowered neckline trips the image provider's PROMPT content
+checker: **6 refused of 24 slices** across the three sheets, every one
+`content_policy` with the provider naming `body.prompt`, against 0 of 8 on the
+original wording. On that n the true rate could honestly be one in ten or one in
+two.
+
+**It is not a wording problem, and that was measured rather than assumed.** A
+deliberately milder sentence — no *bare*, no *sternum*, no *upper chest* —
+refused MORE often (3 of 8 against 3 of 16). Two phrasings as different as could
+be written while keeping the neckline gave the same outcome, so there is no third
+sentence to try with a story behind it.
+
+He was shown that number and kept the lower top. The trade: a missing face on a
+sheet is visible, recoverable and honestly refunded — she is charged for what she
+receives — while a tattoo that renders and then vanishes on the next edit is the
+one thing this product promises never to sell. **Do not "fix" this by raising the
+neckline; that is the decision being reversed, not a defect being repaired.**
 
 ### ⚠ 5.1 "Tattoos anywhere" is not a promise this frame can keep
 

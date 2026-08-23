@@ -22,7 +22,7 @@ import {
   type CarriedInkPlate,
 } from "./inkViewReferences";
 import { INK_PLACEMENTS } from "../../shared/inkPlacementVocabulary";
-import { basicsWardrobeLine } from "./wardrobeLine";
+import { HOUSE_WARDROBE_LINE, basicsWardrobeLine } from "./wardrobeLine";
 import { inkDeliveredCarrySentence } from "./inkRealism";
 import { pronounsForSex } from "./castPronouns";
 
@@ -253,24 +253,39 @@ describe("which surfaces can ride a package view at all", () => {
     expect(placementRideCoverage("upperArm", basicsWardrobeLine(null))).toBe("bare");
   });
 
-  it("⚠ AND ITS CHEST DOES NOT — a court read that outfit and found nothing", () => {
+  it("⚠ AND ITS CHEST DOES TOO — the one placement this whole path exists for", () => {
     /*
-      This arm asserted `bare` until 2026-08-23, on the Basics SPEC's own
-      sentence rather than on a photograph, and the coverage owner said so in as
-      many words. The Two Paths court then rolled eight Basics candidates and
-      asked `upper chest`: **0 px on 4 of 4** (opus-1111, ruled fable-1453).
+      THIS ARM HAS SAID THREE DIFFERENT THINGS AND EACH ONE WAS RIGHT AT THE
+      TIME, which is the clearest thing this file has to teach:
 
-      So a chest design does not ride a Basics package view — which is the
-      fail-closed direction and the correct one, because riding it would put a
-      tattoo into six paid views that the mint cannot crop or carry.
+        `bare`      off the Basics SPEC's own sentence, and the coverage owner
+                    said in as many words that it had never been through a frame
+        `unknown`   the Two Paths court rolled eight and asked `upper chest`:
+                    **0 px on 4 of 4** (opus-1111, ruled fable-1453). Not
+                    `covered` — her chest is plainly visible — and not `bare`,
+                    because that would put a tattoo into six paid views the mint
+                    cannot crop
+        `bare`      EARNED, 2026-08-23. The founder lowered the spec's neckline
+                    to name the collarbones and the sternum, and the re-court
+                    read the amended frames **12 of 12 across three sheets and
+                    two wordings**, 3.9–7.6% of frame, masks opened and looked
+                    at. The founder then closed the trade knowing what the
+                    lowered neckline costs at the vendor's content checker
 
-      It is NOT `covered`: her chest is plainly visible, and the disposition a
-      customer reads must not say a garment is over it.
+      **The value returned to where it started and it is not the same value.**
+      The first was a claim about a sentence we wrote; this one is a reading of
+      photographs, and `inkSurfaceCoverage.ts` carries the four rounds.
+
+      So a Basics chest design RIDES the package views — which is the headline
+      capability of the path, reaching a customer for the first time.
     */
     for (const line of [basicsWardrobeLine("male"), basicsWardrobeLine(null)]) {
-      expect(placementRideCoverage("upperChest", line)).toBe("unknown");
-      expect(placementRideCoverage("upperChest", line)).not.toBe("covered");
+      expect(placementRideCoverage("upperChest", line)).toBe("bare");
     }
+    /* CONTROL — the house tee's chest still does NOT ride, so the two above are
+       a fact about the Basics line rather than about the reader having stopped
+       distinguishing outfits. */
+    expect(placementRideCoverage("upperChest", HOUSE_WARDROBE_LINE)).toBe("covered");
   });
 
   it("⚠ AND AN OUTFIT NOBODY HAS READ RIDES NOTHING — including the neck", () => {

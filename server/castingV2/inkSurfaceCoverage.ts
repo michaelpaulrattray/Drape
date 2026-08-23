@@ -125,21 +125,32 @@ const HOUSE_COVERAGE: Readonly<Record<InkPlacement, SurfaceCoverage>> = Object.f
  * in this vocabulary is under them.
  *
  * ⚠ **THE COVERED FORM'S SENTENCE WAS AMENDED ON 2026-08-23 AND THIS TABLE DID
- * NOT MOVE — that is deliberate and it is the whole discipline of this entry.**
- * It read *"a plain black sports top scooped low at the chest"*; the founder
+ * NOT MOVE WITH IT — that ordering is the whole discipline of this entry.** It
+ * read *"a plain black sports top scooped low at the chest"*; the founder
  * lowered it (FQ-b, relayed fable-1460) to name the collarbones and the sternum
  * rather than a degree, because *low* is a comparative with no referent. A
  * sentence is a PRESCRIPTION and this table records what a frame was READ to
- * contain, so the amendment changes what we ask for and nothing about what has
- * been seen. `upperChest` stays `unknown` until the re-court reads one at the
- * frames — flipping a coverage value on the strength of a sentence is precisely
- * how this entry was wrong the first time.
+ * contain, so an amendment changes what we ask for and nothing about what has
+ * been seen.
  *
- * ⚠ **This is a claim about a SENTENCE we wrote, not about a photograph**, and
- * it is the one entry here that has not been through a frame. It is admissible
- * because the sentence is ours and it is prescriptive — we ask the engine for
- * it — where a customer's line is descriptive and could say anything. The day
- * a Basics cast is rolled, the honest next step is to read one and confirm.
+ * ✅ **THEN THE RE-COURT READ IT AND THE VALUE MOVED — twelve of twelve across
+ * three sheets and two wordings, and `upperChest` is `bare`.** The entry itself
+ * carries the four rounds, what the lowered neckline costs at the vendor's
+ * content checker, and his answer. **The two facts stayed separate all the way
+ * through**, which is the thing to copy: a sentence we wrote never moved this
+ * table, and a court did.
+ *
+ * ⚠ **It WAS a claim about a SENTENCE we wrote rather than about a
+ * photograph** — the one entry here that had not been through a frame, kept
+ * because the sentence is ours and prescriptive where a customer's line is
+ * descriptive, and carrying its own instruction: *the day a Basics cast is
+ * rolled, the honest next step is to read one and confirm.* **Four Basics
+ * sheets have now been rolled and every value here has been confirmed at the
+ * frames.** The clause stays because it is the reason the entry survived long
+ * enough to be measured, and because the neck and the upper arm are still
+ * spec-read rather than court-read: nobody has asked those two words of a
+ * Basics frame, and if either is ever doubted this paragraph is the honest
+ * starting point.
  *
  * ⚠⚠ **A BASICS CAST HAS NOW BEEN ROLLED AND THE READING DOES NOT CONFIRM THE
  * CHEST** (the Two Paths court, arm 2 — opus-1111, dev, eight candidates).
@@ -173,7 +184,42 @@ const BASICS_COVERAGE: Readonly<Record<InkPlacement, SurfaceCoverage>> = Object.
   neck: "bare",
   upperArm: "bare",
   /*
-    ⚠ `bare` UNTIL A COURT READ IT AND FOUND NOTHING — ruled fable-1453 ASK 2.
+    ✅ `bare` — EARNED, 2026-08-23, and the provenance is three courts and a
+    founder answer rather than a sentence we wrote.
+
+    ```
+    round 1  "scooped low at the chest"          upper chest  0 px on 4 of 4
+    round 2  the amended spec                    upper chest  4 of 4, 3.9–6.0%
+    round 3  the same spec, a second sheet       upper chest  4 of 4, 5.0–7.6%
+    round 4  a deliberately milder wording       upper chest  4 of 4, 4.6–6.4%
+    ```
+
+    **Twelve of twelve on three independent sheets and two different wordings**,
+    against zero of four before, with the masks opened and looked at: they sit
+    on the bare skin inside the scoop, collarbone to sternum, clean-edged and
+    with none of the garment. That is a difference and not a reading.
+
+    ⚠ **AND IT DID NOT FLIP WHEN THE COURT PASSED.** The condition written below
+    was two clauses — he lowers the scoop AND a court reads the chest — and for
+    the hours between the court and his answer only one of them had happened.
+    Flipping then would have been the identical mistake to the one that put
+    `bare` here the first time, taken with more confidence because a founder had
+    been consulted about something else. It flips in the commit that carries his
+    answer, which is this one.
+
+    ⚠ **WHAT IT COSTS, RECORDED WHERE THE VALUE IS AND NOT ONLY IN THE SPEC.**
+    The lowered neckline trips the image provider's PROMPT content checker on
+    roughly one slice in four — 6 of 24 across the three sheets, and it could
+    honestly be as low as one in ten or as high as one in two on that n. Re-
+    wording does not fix it: the milder sentence refused MORE often (3 of 8
+    against 3 of 16). The founder was shown that number and kept the lower top,
+    because a missing face on a sheet is visible, recoverable and honestly
+    refunded, while a tattoo that renders and then vanishes is the one thing
+    this product promises never to sell. **A reader arriving here should meet
+    that trade as DECIDED rather than discover it.**
+
+    ⚠ THE HISTORY, kept because the value moved twice and both moves matter —
+    `bare` UNTIL A COURT READ IT AND FOUND NOTHING, ruled fable-1453 ASK 2.
 
     Not `covered`, which would be the lie ruling 1 forbids (her chest is plainly
     visible), and not `bare`, which SELLS a chest piece the mint cannot crop.
@@ -194,16 +240,12 @@ const BASICS_COVERAGE: Readonly<Record<InkPlacement, SurfaceCoverage>> = Object.
     spec's scoop went lower the same day and the sentence now names the
     collarbones and the sternum instead of a degree.
 
-    ⚠ **AND THIS VALUE DID NOT MOVE WITH IT, WHICH IS THE HALF THAT MATTERS.**
-    The condition above is not *he lowers the scoop*, it is *he lowers the scoop
-    AND A RE-COURT READS THE CHEST* — two clauses, and only one of them has
-    happened. The re-court is authorised (160 dev credits, fable-1460) and until
-    it reports at the frames this stays `unknown`. Flipping it now would be the
-    identical mistake to the one that put `bare` here in the first place, taken
-    with more confidence because a founder had been consulted about something
-    else.
+    ✅ **AND THEN HE CLOSED THE TRADE** — *"framing is fine and so is everything
+    else"* (relayed fable-1465), shown the chest strips and the refusal number.
+    Both clauses of the condition are met and the value is `bare`. The courts
+    are quoted at the top of this block.
   */
-  upperChest: "unknown",
+  upperChest: "bare",
 });
 
 /**

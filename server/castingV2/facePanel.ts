@@ -1090,17 +1090,18 @@ export function facePanel(input: {
     controllable, so there may be no crop for a card ever (the measurement is in
     `wardrobeCards.ts`).
 
-    ⚠⚠ **THIS IS AN EXCEPTION TO A FOUNDER RULE AND IT IS WITH HIM** (fable-1464,
-    2026-08-23). fable-414 is his: *everything in the right panel should have a
-    bounding box*. The argument above — a row that makes no promise about pixels
-    may live without one — is an EXECUTOR'S argument about HIS rule, so it goes
-    to him rather than shipping quietly, and it is in front of him now with the
-    scoop answer. It ships dark either way (`CASTING_TWO_PATHS_SCOPE` is off in
-    both worlds, and an unpathed cast draws no wardrobe section at all), so
-    nobody meets it before he rules. **If he says every row carries a box, this
-    clause is what changes** — and the honest consequence is that a wardrobe row
-    could not be drawn at all until a crop exists, which the court above says may
-    be never.
+    ✅ **IT IS AN EXCEPTION TO A FOUNDER RULE AND HE RATIFIED IT** (2026-08-23,
+    relayed fable-1465 §3, from *"framing is fine and so is everything else"*
+    shown against this question by name). fable-414 is his — *everything in the
+    right panel should have a bounding box* — and *a row that makes no promise
+    about pixels needs no rectangle* was an EXECUTOR'S argument about HIS rule,
+    so it went to him rather than shipping quietly.
+
+    **Outfit rows live boxless, by his word.** What he was shown alongside the
+    question is the cost of the other answer, and it is why this is worth having
+    in one place: had he kept the rule whole, a wardrobe row could not have been
+    drawn at all until a crop existed — and the garment-crop court says that may
+    be never, because WHICH piece a segmenter returns cannot be controlled.
   */
   const hasContent = (row: PanelRow): boolean => row.group === "wardrobe"
     || row.regions.length > 0 || row.absent !== null;
