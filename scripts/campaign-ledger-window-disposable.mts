@@ -1,7 +1,10 @@
 /**
  * THE CEILING INSTRUMENT'S WINDOW, NOT WHAT IS INSIDE IT (shift 46).
  *
- * `campaign-ledger-rows-disposable.mts` is the authority on the 5,000-credit
+ * ⚠ THE 5,000-CREDIT CEILING WAS REMOVED BY THE FOUNDER 2026-08-23 ("no cieling
+ * remove it", fable-1439). This docblock describes the window as it was when the
+ * ceiling governed; the WINDOW question it settles is still live, the ceiling is
+ * not. `campaign-ledger-rows-disposable.mts` is the authority on the (retired)
  * gross ceiling, and every park since has driven the number it prints. Shift 45
  * gave that headline a second reader by summing the 102 rows it printed — which
  * proves the accumulator has not drifted from its own rows, and proves nothing

@@ -50,7 +50,10 @@ for (const row of rows) {
   );
 }
 
-console.log(`\ngross ${gross} of 5,000   refunded ${refunded}   net ${gross - refunded}   rows ${rows.length}`);
+/* No ceiling: the founder removed it outright on 2026-08-23 — verbatim "no
+   cieling remove it" (relayed fable-1439). This stays a READING and governs
+   nothing; the discipline that was always the real control is untouched. */
+console.log(`\ngross ${gross}   refunded ${refunded}   net ${gross - refunded}   rows ${rows.length}`);
 
 /* Run-13's window, from its own walk.json: started 13:59:23Z, last step done a
    few minutes later. Stated as ROWS so the walk's cost is read, not counted. */

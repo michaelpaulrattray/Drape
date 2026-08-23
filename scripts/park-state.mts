@@ -56,7 +56,14 @@ const BASE = process.env.PROD_BASE_URL ?? "https://drape-production-0232.up.rail
    third copy that can drift from both. */
 const CAMPAIGN_FROM = "2026-08-07 00:00:00";
 const CAMPAIGN_USER = 1;
-const CEILING = 5_000;
+/* ⚠ THE CEILING IS GONE — the founder removed it outright on 2026-08-23,
+   verbatim *"no cieling remove it"* (relayed fable-1439). Not re-pointed and
+   not raised: the 5,000 figure governs nothing. The LEDGER READING stays as an
+   instrument — reports still quote it as a fact — it simply commands no stop.
+   What remains is the discipline that was always the real control: a paid court
+   is costed and countersigned BEFORE it runs, and every spend lands in a
+   receipt with the ledger read at both ends. He removed the backstop, not the
+   doors. */
 
 const say = (line = "") => console.log(line);
 /*
@@ -100,7 +107,7 @@ async function readLedger(url: string): Promise<{ where: string; line: string } 
     }
     return {
       where,
-      line: `gross ${gross} of ${CEILING} · refunded ${refunded} · net ${gross - refunded} · rows ${rows.length}`,
+      line: `gross ${gross} · refunded ${refunded} · net ${gross - refunded} · rows ${rows.length}`,
     };
   } catch {
     /* NO ERROR TEXT, for the same reason the URL is never printed: a driver's

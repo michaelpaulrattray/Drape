@@ -31,7 +31,8 @@ await connection.end();
 
 const gross = Number(totals[0]?.gross ?? 0);
 const refunded = Number(totals[0]?.refunded ?? 0);
-console.log(`campaign gross charges since 2026-08-07: ${gross} of 5,000`);
+/* No ceiling — removed by the founder 2026-08-23 (fable-1439). A reading. */
+console.log(`campaign gross charges since 2026-08-07: ${gross}`);
 console.log(`  refunded back: ${refunded}    net: ${gross - refunded}    rows: ${totals[0]?.rows_}`);
 console.log(`\nmost recent:`);
 for (const row of recent) {
