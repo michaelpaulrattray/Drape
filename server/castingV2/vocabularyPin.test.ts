@@ -58,11 +58,18 @@ import {
  * nobody declared reddens; a pinned value that drifts still reddens; and the
  * golden is never rewritten to agree with the code.
  *
- *   horns   promoted 2026-08-14 off four measurement courts (fable-525 §3,
- *           `docs/specs/V2_HORNS_VERDICT.md`) — one subject, one facet.
+ *   horns     promoted 2026-08-14 off four measurement courts (fable-525 §3,
+ *             `docs/specs/V2_HORNS_VERDICT.md`) — one subject, one facet.
+ *   wardrobe  item 8, 2026-08-23 — the Two Paths ruling's refine half
+ *             (`CASTING_V2_TWO_PATHS_DESIGN.md` §7.1, countersigned
+ *             fable-1334). It is the first subject a PATH can refuse, and the
+ *             wall it opens was never this vocabulary's: the census measured
+ *             *"put him in a plain black tee"* landing on `wall_unbacked`
+ *             because `tee` is in no lexicon at all. A missing slot was the
+ *             wall; a slot is what opens it.
  */
-const ADDED_SUBJECTS = ["horns"];
-const ADDED_FACETS = ["horns"];
+const ADDED_SUBJECTS = ["horns", "wardrobe"];
+const ADDED_FACETS = ["horns", "wardrobe"];
 
 /**
  * WHAT HAS CHANGED VALUE SINCE THE PIN — the third thing, declared the same way.
@@ -115,6 +122,12 @@ function changedPart(
   changed: Record<string, unknown>,
 ): Record<string, unknown> {
   return Object.fromEntries(Object.entries(table).filter(([key]) => key in changed));
+}
+
+/** A list with the declared additions removed, IN ITS OWN ORDER — for the one
+ *  pinned list whose order is load-bearing. */
+function withoutAddedInOrder(list: readonly string[]): string[] {
+  return list.filter((subject) => !ADDED_SUBJECTS.includes(subject));
 }
 
 /** The keys a table has gained since the pin, sorted. */
@@ -186,7 +199,20 @@ describe("the four that decide by absence", () => {
       `PRESENTATION_SUBJECTS` keeps its exact order, because it is derived from
       an object whose key order decides which noun a lookup finds first.
     */
-    expect([...PRESENTATION_SUBJECTS]).toEqual(pin.PRESENTATION_SUBJECTS);
+    /*
+      ⚠ PRESENTATION_SUBJECTS gained one and the order rule still holds — the
+      pin is compared as a PREFIX rather than softened to a sort, because the
+      reason it keeps its order has not changed: a lookup walks it and takes the
+      first noun that matches.
+
+      `wardrobe` is registered LAST (item 8, 2026-08-23), so every pinned
+      position is where it was and the new member cannot displace one. A card
+      inserted ahead of another would still redden this, which is the property
+      worth keeping.
+    */
+    expect(PRESENTATION_SUBJECTS.slice(0, pin.PRESENTATION_SUBJECTS.length))
+      .toEqual(pin.PRESENTATION_SUBJECTS);
+    expect(withoutAddedInOrder(PRESENTATION_SUBJECTS)).toEqual(pin.PRESENTATION_SUBJECTS);
     const withoutAdded = (list: readonly string[]) =>
       list.filter((subject) => !ADDED_SUBJECTS.includes(subject)).sort();
     expect(withoutAdded(PLURAL_SUBJECTS)).toEqual([...pin.PLURAL_SUBJECTS].sort());

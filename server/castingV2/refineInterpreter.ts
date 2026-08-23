@@ -37,7 +37,10 @@ import {
   type FreeLaneCheck, type RefineDelta, type RefineParse,
 } from "./refineDelta";
 import type { WardrobeResolution } from "./wardrobeLine";
-import { freeSubjectGuidance } from "./refineSubjects";
+import {
+  FREE_SUBJECT_KEYS, freeSubjectGuidance, subjectsServedOnPath, type FreeSubject,
+} from "./refineSubjects";
+import type { CastingPath } from "../../shared/castingPaths";
 import { closedSubjectFor } from "./openLaneKind";
 import { acceptOpenKind } from "./openLaneAccept";
 import { ensureKindProperties } from "./openKindProperties";
@@ -114,7 +117,7 @@ function firstObject(text: string): string {
  * check sits ABOVE the acceptance door — so without the swap the addition is
  * inert for the whole population the lane exists for.
  */
-const basePromptLines = (openLane: boolean) => [
+const basePromptLines = (openLane: boolean, served: readonly FreeSubject[] = FREE_SUBJECT_KEYS) => [
   "You read ONE short instruction from someone adjusting a face they are casting, and you",
   "translate it into a structured edit. You never write prose and you never explain.",
   "",
@@ -130,7 +133,7 @@ const basePromptLines = (openLane: boolean) => [
   "  makeup      — free text, in the user's own terms",
   "",
   "THE FREE LANE — anything else about the person, keyed by subject:",
-  `  free: { "<subject>": "<their words>" }, subject one of: ${freeSubjectGuidance()}`,
+  `  free: { "<subject>": "<their words>" }, subject one of: ${freeSubjectGuidance(served)}`,
   "",
   "Reply with JSON and nothing else.",
   "",
@@ -376,9 +379,13 @@ const basePromptLines = (openLane: boolean) => [
   'If the instruction is empty or you genuinely cannot tell what is wanted, reply {"unclear": true}.',
 ];
 
-const BASE_PROMPT = basePromptLines(false).join("\n");
+/* The one separator every prompt in this file is joined on, named so the four
+   precomputed constants and the composed one cannot differ by a character. */
+const NEWLINE = "\n";
+
+const BASE_PROMPT = basePromptLines(false, subjectsServedOnPath(null)).join(NEWLINE);
 /** The same prompt with the open lane's last resort in it — `CASTING_OPEN_LANE_SCOPE`. */
-const BASE_PROMPT_OPEN = basePromptLines(true).join("\n");
+const BASE_PROMPT_OPEN = basePromptLines(true, subjectsServedOnPath(null)).join(NEWLINE);
 
 /*
   THE REMOVAL SECTION, WITHHELD ON THE FALL-THROUGH PASS (D-163 rule 3).
@@ -455,8 +462,28 @@ export const REFINE_PARSE_MAX_TOKENS = 4000;
  *  cannot reproduce the failure cannot measure the fix. */
 export function refineParseSystemPrompt(
   mode?: "classify" | "edit",
-  options?: { openLane?: boolean },
+  options?: { openLane?: boolean; bornPath?: CastingPath | null },
 ): string {
+  /*
+    ⚠ THE PATH NARROWS THE SUBJECT LIST, AND ONLY WHEN IT HAS TO (item 8).
+
+    Every branch except a BASICS one is served the whole vocabulary, so the four
+    precomputed prompts above are still the prompts that ship — byte for byte,
+    for every account and every roll cast before the paths. A Basics branch gets
+    one composed on the spot, with the subjects its own path cannot serve left
+    out, because a subject the model is SHOWN is a subject it will use and
+    `wall_basics_wardrobe` should be answering a real ask rather than mopping up
+    one we invited.
+
+    Composed rather than precomputed because it is a string join against an LLM
+    call, and precomputing every combination is how a two-flag prompt becomes an
+    eight-constant table nobody can read.
+  */
+  const served = subjectsServedOnPath(options?.bornPath);
+  if (served.length === FREE_SUBJECT_KEYS.length) {
+    const base = basePromptLines(options?.openLane === true, served).join(NEWLINE);
+    return mode === "edit" ? base : base + REMOVAL_PROMPT;
+  }
   if (options?.openLane) return mode === "edit" ? BASE_PROMPT_OPEN : SYSTEM_PROMPT_OPEN;
   return mode === "edit" ? BASE_PROMPT : SYSTEM_PROMPT;
 }

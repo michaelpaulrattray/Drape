@@ -46,6 +46,7 @@ const SCAFFOLD: SubjectCard = {
   plural: false,
   departable: false,
   presentationNoun: null,
+  bornPathsServing: "everyPath",
 };
 
 const SCAFFOLD_FACET: FacetCard = {

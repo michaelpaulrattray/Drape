@@ -71,12 +71,20 @@ describe("the V4 map reads the shipped vocabulary", () => {
         ink          OWED — its question comes from a placement, and the slots
                      arrive with the tattoo studio (D-138)
         expression   presentation rather than identity, and no zone contains it
+        wardrobe     item 8, 2026-08-23 — a garment IS visible and IS
+                     segmentable, and this list is about a MEASURED question
+                     rather than a possible one. No word for *her outfit* has
+                     been measured, and `decolletage` outlining a sports bra on
+                     the day this landed is why one is not invented here. Its
+                     detection story is the stored LINE and the wardrobe judge
+                     the six signed views already run, which is a different
+                     instrument from this map
 
       Adding a kind the product can say without a story for seeing it lengthens
       this list and turns this line red. That is the point of it.
     */
     expect(detectionGaps()).toEqual([
-      "cheekbones", "chin", "expression", "ink", "jaw", "lashes", "makeup",
+      "cheekbones", "chin", "expression", "ink", "jaw", "lashes", "makeup", "wardrobe",
     ]);
   });
 

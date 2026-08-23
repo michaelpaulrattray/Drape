@@ -71,14 +71,33 @@ export const CATEGORIES: Category[] = Object.entries(PRESERVATION_CATEGORIES)
  * The shoot, and the person. Refine's whole boundary is that it changes the
  * PERSON and not the stage, so these can be stated flatly without ever
  * contradicting an instruction.
+ *
+ * ⚠ **ONE OF THEM STOPPED BEING FLAT ON 2026-08-23 and it is the clothing**
+ * (item 8, `CASTING_V2_TWO_PATHS_DESIGN.md` §7.1). The Wardrobe path makes a
+ * garment editable, so *"the same clothing"* said during a wardrobe edit is a
+ * prompt arguing with itself in one breath — the shape §3.3 already names:
+ * *stated as already true, dropped the moment this edit writes the slot.*
+ *
+ * It is expressed as a GUARD rather than by moving the phrase into a real
+ * category, and the reason is byte-identity: the categories are spoken after
+ * this list, so promoting it would move the sentence's position in a live
+ * prompt for every render in production, on a feature whose flag exists to keep
+ * it dark. With the guard, a render that edits no wardrobe composes exactly the
+ * clause it composed yesterday, character for character.
  */
-const ALWAYS = [
-  "the same person",
-  "the same clothing",
-  "the same lighting",
-  "the same framing",
-  "the same background",
+const ALWAYS: readonly { phrase: string; unless: Facet | null }[] = [
+  { phrase: "the same person", unless: null },
+  { phrase: "the same clothing", unless: "wardrobe" },
+  { phrase: "the same lighting", unless: null },
+  { phrase: "the same framing", unless: null },
+  { phrase: "the same background", unless: null },
 ];
+
+/** The facets ALWAYS protects — so the totality check sees them (`wardrobe` is
+ *  covered here rather than by a category, see the note above). */
+export const ALWAYS_PROTECTED: readonly Facet[] = ALWAYS
+  .map((entry) => entry.unless)
+  .filter((facet): facet is Facet => facet !== null);
 
 export type Preservation = {
   /** The clause, ready to append. */
@@ -95,8 +114,12 @@ export type Preservation = {
  * against the original and slowly undo the stack.
  */
 export function composePreservation(edited: ReadonlySet<Facet>): Preservation {
-  const parts: string[] = [...ALWAYS];
-  const protectedFacets: Facet[] = [];
+  const parts: string[] = ALWAYS
+    .filter((entry) => entry.unless === null || !edited.has(entry.unless))
+    .map((entry) => entry.phrase);
+  const protectedFacets: Facet[] = ALWAYS
+    .filter((entry) => entry.unless !== null && !edited.has(entry.unless))
+    .map((entry) => entry.unless as Facet);
 
   for (const category of CATEGORIES) {
     const members = Object.keys(category.siblings) as Facet[];
@@ -127,7 +150,10 @@ export function composePreservation(edited: ReadonlySet<Facet>): Preservation {
 
 /** Every facet the table knows how to protect — for the totality test. */
 export function protectableFacets(): Facet[] {
-  return CATEGORIES.flatMap((category) => Object.keys(category.siblings) as Facet[]);
+  return [
+    ...CATEGORIES.flatMap((category) => Object.keys(category.siblings) as Facet[]),
+    ...ALWAYS_PROTECTED,
+  ];
 }
 
 /** Facets the table has forgotten — must always be empty. */

@@ -212,6 +212,30 @@ export async function acceptOpenKind(input: {
         `SUBJECT_NOUNS` or a real gap in the closed interpreter's routing, which
         is why the subject travels on the log line.
       */
+      /*
+        ⚠ A STAGE WORD THAT COLLIDES IS THE WALL, NOT A ROUTING BUG (item 8,
+        2026-08-23). The wardrobe subject's nouns include `coat`, `jacket`,
+        `shirt`, `dress` and `suit` — every one of them also a `STAGE_WORDS`
+        member — so *"put her in a red coat"* began arriving here as a collision
+        the day that card landed, where it had always been `unfileable`.
+
+        The outcome was identical (`refused` either way) and the REASON was not,
+        and neither was the log: a `warn` saying *routing bug* would have fired
+        on the most ordinary refusal this lane makes, for every account, on a
+        path whose flag is off everywhere. So the stage keeps its own answer and
+        its own sentence, and the collision guard keeps everything else.
+
+        Asked of the noun and of the words, exactly as wall (b) is asked below —
+        one question, two call sites, deliberately the same shape.
+      */
+      const stage = stageWordIn(reading.noun) ?? stageWordIn(reading.kind);
+      if (stage !== null) {
+        log.info(
+          { kind: reading.kind, word: stage, subject: reading.subject },
+          "[openLaneAccept] an out-of-vocabulary ask names the stage — wall (b) holds, nothing filed",
+        );
+        return { ok: false, reason: "unfileable", kind: reading.kind, outcome: "refused" };
+      }
       log.warn(
         { kind: reading.kind, subject: reading.subject },
         "[openLaneAccept] the open key names a closed subject — refused as a routing bug, not filed",

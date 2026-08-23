@@ -118,7 +118,13 @@ describe("presence binds, degree advises — and the table says which is which",
        that comes back without them is an ABSENCE and refunds, exactly as a
        missing beard does. The delivery court's 6/6 on two faces is what makes
        that binding honest rather than optimistic. */
-    expect([...bound].sort()).toEqual(["facialHair", "hairWorn", "horns", "ink", "statedAccessories"]);
+    /* `wardrobe` joined 2026-08-23 (item 8) and binds for the same reason: she
+       is wearing the outfit she asked for or she is not, and a render that
+       comes back in the old clothes is an ABSENCE that refunds rather than a
+       matter of shade nobody has defined. */
+    expect([...bound].sort()).toEqual([
+      "facialHair", "hairWorn", "horns", "ink", "statedAccessories", "wardrobe",
+    ]);
   });
 });
 

@@ -80,6 +80,13 @@ describe("every class says how big its own change is", () => {
       declared here in the open, which is what this bar is for: it forbids a
       class arriving unmeasured and UNNOTICED, not a class arriving unmeasured.
     */
-    expect(reasoned.length, "more classes are guessed than this table admits").toBeLessThanOrEqual(25);
+    /*
+      26 since `wardrobe` landed (item 8, 2026-08-23). Its amplitude is REASONED
+      for the replacement band's own sentence — an outfit puts different fabric
+      where the old fabric was, over a wide area — and there is nothing to
+      measure yet, because the path that serves it is dark on every account. The
+      rise is declared here in the open, which is exactly what this bar is for.
+    */
+    expect(reasoned.length, "more classes are guessed than this table admits").toBeLessThanOrEqual(26);
   });
 });

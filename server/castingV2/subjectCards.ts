@@ -106,6 +106,32 @@ export type SubjectCard = {
    * null. Non-null means a Follow must never inherit it (D-136).
   */
   readonly presentationNoun: string | null;
+  /**
+   * WHICH BORN PATH MAY SERVE THIS SUBJECT — {@link admittedOn}'s argument on a
+   * second axis (item 8, `CASTING_V2_TWO_PATHS_DESIGN.md` §7.1; shape ruled
+   * fable-1455 Q1).
+   *
+   * `admittedOn` asks *which ROAD has measured this* — the paste road or the
+   * repaint road. This asks *which PATH a cast can be born on and still be
+   * asked this*, and the two are genuinely different questions: a road is how
+   * we paint, a path is what she is wearing.
+   *
+   * `everyPath` is what all twenty-nine shipped subjects say. Her eyes, her
+   * hair and her freckles are hers whichever way she was cast.
+   *
+   * `wardrobeOnly` is the Two Paths ruling's own consequence: a Basics cast IS
+   * the plain black basics — that is the product she bought — so an outfit ask
+   * on that path is refused honestly rather than served
+   * (`wall_basics_wardrobe`, §7.2). The refusal is DERIVED from this field
+   * wherever a branch's path is known, never hand-placed at a call site: a wall
+   * that exists as one condition in one function is `STAGE_WORDS`'s own shape,
+   * and this design's §1 convicts it.
+   *
+   * Required rather than optional, for {@link admittedOn}'s reason word for
+   * word: an absent field decides by absence, and the compiler asks the path
+   * question of every future card the way it already asks the road question.
+   */
+  readonly bornPathsServing: "everyPath" | "wardrobeOnly";
 };
 
 export const SUBJECT_CARDS = {
@@ -140,6 +166,7 @@ export const SUBJECT_CARDS = {
     plural: false,
     departable: false,
     presentationNoun: null,
+    bornPathsServing: "everyPath",
   },
   hairShade: {
     heading: "HAIR COLOUR",
@@ -156,6 +183,7 @@ export const SUBJECT_CARDS = {
     plural: false,
     departable: false,
     presentationNoun: null,
+    bornPathsServing: "everyPath",
   },
   hairPattern: {
     heading: "HAIR TEXTURE",
@@ -171,6 +199,7 @@ export const SUBJECT_CARDS = {
     plural: false,
     departable: false,
     presentationNoun: null,
+    bornPathsServing: "everyPath",
   },
   hairFinish: {
     heading: "HAIR FINISH",
@@ -185,6 +214,7 @@ export const SUBJECT_CARDS = {
     plural: false,
     departable: false,
     presentationNoun: null,
+    bornPathsServing: "everyPath",
   },
   /*
       HOW it is worn, which is not WHAT it is cut into. "Hair worn down" has
@@ -208,6 +238,7 @@ export const SUBJECT_CARDS = {
     plural: false,
     departable: false,
     presentationNoun: null,
+    bornPathsServing: "everyPath",
   },
   /*
       Eyes were ALREADY split, and that is why they worked: "seafoam" and
@@ -230,6 +261,7 @@ export const SUBJECT_CARDS = {
     plural: false,
     departable: false,
     presentationNoun: null,
+    bornPathsServing: "everyPath",
   },
   eyeShapeFree: {
     heading: "EYE SHAPE",
@@ -246,6 +278,7 @@ export const SUBJECT_CARDS = {
     plural: false,
     departable: false,
     presentationNoun: null,
+    bornPathsServing: "everyPath",
   },
   brows: {
     heading: "BROWS",
@@ -262,6 +295,7 @@ export const SUBJECT_CARDS = {
     plural: false,
     departable: false,
     presentationNoun: null,
+    bornPathsServing: "everyPath",
   },
   lashes: {
     heading: "LASHES",
@@ -276,6 +310,7 @@ export const SUBJECT_CARDS = {
     plural: false,
     departable: false,
     presentationNoun: null,
+    bornPathsServing: "everyPath",
   },
   nose: {
     heading: "NOSE",
@@ -290,6 +325,7 @@ export const SUBJECT_CARDS = {
     plural: false,
     departable: false,
     presentationNoun: null,
+    bornPathsServing: "everyPath",
   },
   lips: {
     heading: "LIPS",
@@ -305,6 +341,7 @@ export const SUBJECT_CARDS = {
     plural: false,
     departable: false,
     presentationNoun: null,
+    bornPathsServing: "everyPath",
   },
   teeth: {
     heading: "TEETH",
@@ -320,6 +357,7 @@ export const SUBJECT_CARDS = {
     plural: false,
     departable: false,
     presentationNoun: null,
+    bornPathsServing: "everyPath",
   },
   /* THE MEASURED ONE. `cheeks` is what the normalizer returned; without it in
        this list the guard cannot see the collision it was written for. */
@@ -336,6 +374,7 @@ export const SUBJECT_CARDS = {
     plural: false,
     departable: false,
     presentationNoun: null,
+    bornPathsServing: "everyPath",
   },
   jaw: {
     heading: "JAW",
@@ -350,6 +389,7 @@ export const SUBJECT_CARDS = {
     plural: false,
     departable: false,
     presentationNoun: null,
+    bornPathsServing: "everyPath",
   },
   chin: {
     heading: "CHIN",
@@ -361,6 +401,7 @@ export const SUBJECT_CARDS = {
     plural: false,
     departable: false,
     presentationNoun: null,
+    bornPathsServing: "everyPath",
   },
   ears: {
     heading: "EARS",
@@ -375,6 +416,7 @@ export const SUBJECT_CARDS = {
     plural: false,
     departable: false,
     presentationNoun: null,
+    bornPathsServing: "everyPath",
   },
   skinTone: {
     heading: "SKIN TONE",
@@ -390,6 +432,7 @@ export const SUBJECT_CARDS = {
     plural: false,
     departable: false,
     presentationNoun: null,
+    bornPathsServing: "everyPath",
   },
   /*
       A CONDITION OF THE SKIN, WHICH IS NOT A MARK ON IT (fable-363 ruling 2,
@@ -419,6 +462,7 @@ export const SUBJECT_CARDS = {
     plural: false,
     departable: false,
     presentationNoun: null,
+    bornPathsServing: "everyPath",
   },
   /** One sited thing on the skin: a mole, a scar, a birthmark, freckles across
     her nose. NOT ink, and NOT a diffuse condition — see `skinCharacter`. */
@@ -443,6 +487,7 @@ export const SUBJECT_CARDS = {
     plural: true,
     departable: true,
     presentationNoun: null,
+    bornPathsServing: "everyPath",
   },
   /*
       ADORNMENT IS THE PERSON, NOT THE STAGE (D-160).
@@ -479,6 +524,7 @@ export const SUBJECT_CARDS = {
     plural: true,
     departable: true,
     presentationNoun: null,
+    bornPathsServing: "everyPath",
   },
   /*
       HER BUILD — ONE ROW, FIVE FACETS, AND THE SPLIT IS PLUMBING (fable-381 §A.3,
@@ -527,6 +573,7 @@ export const SUBJECT_CARDS = {
     plural: false,
     departable: false,
     presentationNoun: null,
+    bornPathsServing: "everyPath",
   },
   waist: {
     heading: "WAIST",
@@ -541,6 +588,7 @@ export const SUBJECT_CARDS = {
     plural: false,
     departable: false,
     presentationNoun: null,
+    bornPathsServing: "everyPath",
   },
   shoulders: {
     heading: "SHOULDERS",
@@ -555,6 +603,7 @@ export const SUBJECT_CARDS = {
     plural: false,
     departable: false,
     presentationNoun: null,
+    bornPathsServing: "everyPath",
   },
   arms: {
     heading: "ARMS",
@@ -570,6 +619,7 @@ export const SUBJECT_CARDS = {
     plural: false,
     departable: false,
     presentationNoun: null,
+    bornPathsServing: "everyPath",
   },
   build: {
     heading: "BUILD",
@@ -588,6 +638,7 @@ export const SUBJECT_CARDS = {
     plural: false,
     departable: false,
     presentationNoun: null,
+    bornPathsServing: "everyPath",
   },
   /** Ink is its own subject because D-133 gives it its own law. */
   /** D-133 gives ink its own law, and its own law is about WHERE a design sits.
@@ -607,6 +658,7 @@ export const SUBJECT_CARDS = {
     plural: true,
     departable: true,
     presentationNoun: null,
+    bornPathsServing: "everyPath",
   },
   /** A beard asked for and not grown is an absence. "Stubble rather than the
     full beard she asked for" is a quibble and the absence gate declines it. */
@@ -627,6 +679,7 @@ export const SUBJECT_CARDS = {
     plural: false,
     departable: true,
     presentationNoun: null,
+    bornPathsServing: "everyPath",
   },
   /**
    * Presentation state, and the ONLY subject that does not file as identity
@@ -648,6 +701,7 @@ export const SUBJECT_CARDS = {
     plural: false,
     departable: false,
     presentationNoun: "expression",
+    bornPathsServing: "everyPath",
   },
   /**
    * HORNS — the first kind promoted off a measurement court rather than off a
@@ -701,6 +755,74 @@ export const SUBJECT_CARDS = {
     plural: true,
     departable: true,
     presentationNoun: null,
+    bornPathsServing: "everyPath",
+  },
+  /**
+   * WHAT SHE IS WEARING — the first subject with a path condition (item 8,
+   * `CASTING_V2_TWO_PATHS_DESIGN.md` §7.1, countersigned fable-1334).
+   *
+   * # Why the wall it replaces was never the lexicon's
+   *
+   * *"Put him in a plain black tee"* refuses today, and the census measured WHY:
+   * it comes back `wall_unbacked`, the model's *out of scope* with nothing in
+   * `STAGE_WORDS` to name — because `tee` was never in that list. **The wall
+   * between a customer and a wardrobe edit has always been the MISSING SLOT**
+   * (`refineSubjects.ts`: *"This list IS wall (b)"*), so a slot is what opens it,
+   * and `STAGE_WORDS` keeps every garment noun it has. The backdrop, the set,
+   * the props and the scene are untouched: **this opens the wardrobe and not the
+   * shoot.**
+   *
+   * # `plural: false` IS the rewrite rule
+   *
+   * §7.1: *an edit REWRITES the stored line rather than appending to it.* One
+   * slot holding a whole outfit, restated absolutely — which is what
+   * `plural: false` already means everywhere else in this table, and it is why
+   * the branch's own `deltas.free.wardrobe` can BE the edited line with no
+   * column and no migration (fable-1455 Q2).
+   *
+   * # `presentationNoun` is non-null, so a Follow never inherits it
+   *
+   * D-136. A Follow narrows an existing FACE; carrying a jacket into a new
+   * person's sheet would be inheriting a costume as though it were an identity.
+   *
+   * # ⚠ `admittedOn: "repaintOnly"` — and here the field is doing real work
+   *
+   * A garment is a large, low-frequency region and nobody has measured what the
+   * paste road does with one. Admitting it there would charge somebody for a
+   * kind that road has never been measured on, which is exactly the sentence
+   * that field exists to make somebody write down.
+   */
+  wardrobe: {
+    heading: "WARDROBE",
+    admittedOn: "repaintOnly",
+    /* Presence: she is wearing this outfit or she is not. The reader answers it
+       from the photograph, and there is nothing here about degree. */
+    kind: "presence",
+    /* The words people actually use, and deliberately WIDER than `STAGE_WORDS`,
+       which never held `tee`, `top`, `jeans` or `hoodie` — the census's own
+       finding about why a tee met an unbacked wall rather than a named one. */
+    nouns: [
+      "wardrobe", "outfit", "clothes", "clothing",
+      "tee", "t-shirt", "shirt", "top", "jumper", "sweater", "hoodie",
+      "jacket", "coat", "blazer", "dress", "suit",
+      "jeans", "trousers", "pants", "shorts", "skirt",
+    ],
+    qualifier: { describe: ", as clothing this person is wearing in the same studio frame — the "
+      + "same person, the same pose, the same light, with nothing about the set, the backdrop or "
+      + "the props changed" },
+    amplitude: {
+      levels: REPLACEMENT,
+      basis: { reasoned: "an outfit puts different fabric where the old fabric was, over a wide area" },
+    },
+    plural: false,
+    /* A garment CAN leave — but taking it off is not what this subject is for,
+       and the honest reason is that the product has no undressed state to leave
+       her in. A removal here is an outfit ask like any other. */
+    departable: false,
+    presentationNoun: "wardrobe",
+    /* ⚠ THE FIRST ONE. A Basics cast IS her basics; §7.2's refusal is derived
+       from this value rather than written at a call site. */
+    bornPathsServing: "wardrobeOnly",
   },
 } as const satisfies Record<string, SubjectCard>;
 

@@ -410,6 +410,39 @@ export const FACET_CARDS = {
     naming: null,
     preservation: { category: "build", phrase: "the same build" },
   },
+  /**
+   * WHAT SHE IS WEARING — item 8, the Two Paths ruling's refine half
+   * (`CASTING_V2_TWO_PATHS_DESIGN.md` §7.1, countersigned fable-1334).
+   *
+   * ⚠ `notASlot`, and the reason is not "we could not think of one" — **this
+   * facet already has a carrier and it is better than a crop.** A wardrobe edit
+   * rewrites the branch's stored LINE (`wardrobeLine.ts`, the one owner), and a
+   * sentence travels into the roll prompt, the refine recipe, the six signed
+   * views and the wardrobe judge — which is more than any crop of a sleeve
+   * could do, because those views are rendered fresh at other angles where a
+   * crop of this frame's fabric would be the wrong picture.
+   *
+   * `region: null` for D-213's reason applied honestly: a garment IS
+   * segmentable — `decolletage` outlined a sports bra precisely on 2026-08-23 —
+   * but no MEASURED word for "her outfit" exists in this product's vocabulary,
+   * and a question invented here is the class that court photographed.
+   */
+  wardrobe: {
+    /* The garment is not local and is not one object on her: it is the whole
+       clothed area of the frame, and it can change silhouette. */
+    zone: "fullFrame",
+    slot: {
+      notASlot:
+        "presentation, not identity (D-136) — a follow must never inherit a costume — and it is carried by the STORED LINE rather than by a crop: a sentence travels into the six signed views, where a crop of this frame's fabric would be a picture of the wrong angle",
+    },
+    region: null,
+    movesItsEdge: {
+      moves: true,
+      why: "a different garment puts its own outline where the old one was, against the backdrop",
+    },
+    naming: { shape: "worn" },
+    preservation: { category: "wardrobe", phrase: "the same clothes" },
+  },
 } as const satisfies Record<string, FacetCard>;
 
 export const FACET_KEYS = Object.keys(FACET_CARDS) as Facet[];

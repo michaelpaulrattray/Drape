@@ -92,7 +92,7 @@
         ],
         "sites": [
           "server/castingV2/refineDelta.ts:544",
-          "server/castingV2/refineInterpreter.ts:862",
+          "server/castingV2/refineInterpreter.ts:889",
           "server/castingV2/refineDelta.ts:544"
         ]
       },
@@ -498,7 +498,7 @@
           "server/castingV2/castingIntent.ts:1165",
           "server/castingV2/castingIntent.ts:1182",
           "server/castingV2/castingIntent.ts:1187",
-          "server/castingV2/openLaneAccept.ts:221",
+          "server/castingV2/openLaneAccept.ts:245",
           "server/castingV2/openLaneKind.ts:170",
           "server/castingV2/openLaneKind.ts:216",
           "server/castingV2/openLaneKind.ts:222",
@@ -508,8 +508,8 @@
           "server/castingV2/openLaneKind.ts:321",
           "server/castingV2/openLaneKind.ts:322",
           "server/castingV2/refineDelta.ts:543",
-          "server/castingV2/refineInterpreter.ts:868",
-          "server/castingV2/refineInterpreter.ts:929",
+          "server/castingV2/refineInterpreter.ts:895",
+          "server/castingV2/refineInterpreter.ts:956",
           "server/castingV2/refineDelta.ts:543"
         ]
       },
@@ -536,7 +536,7 @@
         ],
         "sites": [
           "server/castingV2/refineDelta.ts:496",
-          "server/castingV2/refineInterpreter.ts:1488",
+          "server/castingV2/refineInterpreter.ts:1515",
           "server/castingV2/refineDelta.ts:496"
         ]
       },
@@ -555,7 +555,7 @@
         "sites": [
           "server/castingV2/refineDelta.ts:456",
           "server/castingV2/refineDelta.ts:1515",
-          "server/castingV2/refineInterpreter.ts:1486",
+          "server/castingV2/refineInterpreter.ts:1513",
           "server/castingV2/refineDelta.ts:456"
         ]
       },
@@ -575,7 +575,7 @@
         "sites": [
           "server/castingV2/refineDelta.ts:471",
           "server/castingV2/refineDelta.ts:1525",
-          "server/castingV2/refineInterpreter.ts:1558",
+          "server/castingV2/refineInterpreter.ts:1585",
           "server/castingV2/refineDelta.ts:471"
         ]
       },
@@ -585,11 +585,12 @@
         "pinnedBy": [
           "server/castingV2/priorContextDoor.test.ts",
           "server/castingV2/refineRefusals.test.ts",
-          "server/castingV2/stageWallBackstop.test.ts"
+          "server/castingV2/stageWallBackstop.test.ts",
+          "server/castingV2/vocabularyPin.test.ts"
         ],
         "sites": [
           "server/castingV2/refineDelta.ts:495",
-          "server/castingV2/refineInterpreter.ts:1559",
+          "server/castingV2/refineInterpreter.ts:1586",
           "server/castingV2/refineDelta.ts:495"
         ]
       },
@@ -677,7 +678,8 @@
       "skinTone",
       "statedAccessories",
       "teeth",
-      "waist"
+      "waist",
+      "wardrobe"
     ],
     "corpus": [
       {

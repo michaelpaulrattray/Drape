@@ -25,10 +25,12 @@
  * is what stops "green eyes" quietly losing its iris prose and its
  * failed-candidate teeth by taking the free lane instead.
  */
+import type { CastingPath } from "../../shared/castingPaths";
 import type { RefinableAxis } from "./refineDelta";
 import {
   FREE_SUBJECT_KEYS,
   REPAINT_ONLY_SUBJECTS,
+  SUBJECT_CARDS,
   SUBJECT_CARD_ENTRIES,
   subjectsWhere,
   tableOf,
@@ -245,12 +247,44 @@ const _guaranteedSubjectsAreExcluded: GuaranteedSubjectsAreExcluded = true;
 void _guaranteedSubjectsAreExcluded;
 
 /**
+ * The subjects this BRANCH may be asked about — the path condition, derived
+ * from `bornPathsServing` (item 8, shape ruled fable-1455 Q1).
+ *
+ * ⚠ **A `wardrobeOnly` subject is served ONLY on an explicit `wardrobe` path,
+ * and `unpathed` is NOT that.** It would be easy to read *"a Basics cast cannot
+ * be asked this"* as *"everybody else can"*, and it is wrong in the one
+ * direction that matters: every roll in production today is `unpathed` (both
+ * columns NULL, cast before the paths existed), so serving them would put the
+ * wardrobe subject in front of every customer the moment this landed, on a
+ * feature whose whole flag exists to keep it dark.
+ *
+ * It costs an unpathed customer nothing she has today: a wardrobe ask has
+ * always refused for her, and after this it refuses in exactly the same words.
+ * What opens it is buying a cast on the Wardrobe path, which is the product
+ * decision the Two Paths ruling made.
+ */
+export function subjectsServedOnPath(path: CastingPath | null | undefined): readonly FreeSubject[] {
+  if (path === "wardrobe") return FREE_SUBJECT_KEYS;
+  return FREE_SUBJECT_KEYS.filter((subject) => SUBJECT_CARDS[subject].bornPathsServing === "everyPath");
+}
+
+/**
  * The instruction the interpreter is given about where each free ask belongs.
  *
  * Built from the same constant the parser validates against, so the prompt and
  * the checker cannot drift — the failure that would otherwise show up as a
  * model dutifully using a subject the code has never heard of.
+ *
+ * ⚠ **THE ARGUMENT IS NOT A CONVENIENCE — it is what keeps item 8 dark.**
+ * A subject added to this string is added to EVERY interpreter call, and this
+ * program's own measurement is that prompt context is not additive: a SUBSET of
+ * context raised the stage wall twice as often as its superset. So the wardrobe
+ * subject reaches the prompt only where a branch may be served it, and the
+ * flag-off prompt stays byte-identical to the one that shipped
+ * (`refineOpenLaneClause.test.ts` pins that, and it caught this addition).
  */
-export function freeSubjectGuidance(): string {
-  return FREE_SUBJECT_KEYS.join(", ");
+export function freeSubjectGuidance(
+  served: readonly FreeSubject[] = FREE_SUBJECT_KEYS,
+): string {
+  return served.join(", ");
 }

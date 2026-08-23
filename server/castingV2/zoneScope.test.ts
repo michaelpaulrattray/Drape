@@ -101,8 +101,19 @@ describe("the three the audit sent back, now ruled", () => {
       of that which is not two masters"). If open-vocabulary regions ever make a
       torso cut honest, this list shortens and the change is deliberate.
     */
+    /*
+      `wardrobe` joins them 2026-08-23 (item 8) for a THIRD reason worth keeping
+      apart from the other two: a garment IS segmentable — `decolletage`
+      outlined a sports bra precisely on the day this landed — but no MEASURED
+      word for *her outfit* exists in this product's vocabulary, and a word
+      invented here is exactly the class that court photographed. It carries the
+      stored LINE instead, which travels into the six signed views where a crop
+      of this frame's fabric would be a picture of the wrong angle.
+    */
     const regionless = allFacets().filter((facet) => !hasRegion(facet));
-    expect(regionless).toEqual(["bust", "waist", "shoulders", "arms", "build", "expression"]);
+    expect(regionless).toEqual([
+      "bust", "waist", "shoulders", "arms", "build", "expression", "wardrobe",
+    ]);
   });
 
   it("jaw is one local contour, not a bilateral pair", () => {

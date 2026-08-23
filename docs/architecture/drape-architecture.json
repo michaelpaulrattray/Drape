@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "8345a9257dfb4b7b"
+    "sourceFingerprint": "11eab5740f834f65"
   },
   "domains": [
     {
@@ -9515,6 +9515,12 @@
       "file": "server/castingV2/facetCards.ts"
     },
     {
+      "id": "vocabulary:facet:wardrobe",
+      "name": "wardrobe",
+      "vocabulary": "facet",
+      "file": "server/castingV2/facetCards.ts"
+    },
+    {
       "id": "vocabulary:subject:arms",
       "name": "arms",
       "vocabulary": "subject",
@@ -9685,6 +9691,12 @@
     {
       "id": "vocabulary:subject:waist",
       "name": "waist",
+      "vocabulary": "subject",
+      "file": "server/castingV2/subjectCards.ts"
+    },
+    {
+      "id": "vocabulary:subject:wardrobe",
+      "name": "wardrobe",
       "vocabulary": "subject",
       "file": "server/castingV2/subjectCards.ts"
     }
@@ -10457,6 +10469,10 @@
     {
       "id": "test:server/castingV2/bornInkScope.test.ts",
       "path": "server/castingV2/bornInkScope.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/bornPathSubjects.test.ts",
+      "path": "server/castingV2/bornPathSubjects.test.ts"
     },
     {
       "id": "test:server/castingV2/bornWornCatalogue.test.ts",
@@ -23608,6 +23624,11 @@
     },
     {
       "from": "module:server/castingV2/refineInterpreter.ts",
+      "to": "module:shared/castingPaths.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/refineInterpreter.ts",
       "to": "module:shared/castingRealization.ts",
       "kind": "imports"
     },
@@ -24379,6 +24400,11 @@
     {
       "from": "module:server/castingV2/refineSubjects.ts",
       "to": "module:server/castingV2/subjectCards.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/refineSubjects.ts",
+      "to": "module:shared/castingPaths.ts",
       "kind": "imports"
     },
     {

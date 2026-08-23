@@ -135,6 +135,21 @@ export const OPEN_KIND_POLICY: Record<string, OpenKindAnswer> = {
     },
     standing: "policy",
   },
+  /* ── the preservation tail's flat sentences (`refinePreservation.ts`) ── */
+  ALWAYS_PROTECTED: {
+    file: "refinePreservation.ts",
+    asks: "which facets the preservation tail protects with a FLAT sentence rather than "
+      + "through a category — the shoot's own constants, plus `wardrobe`, whose phrase "
+      + "*\"the same clothing\"* has to be dropped when a wardrobe edit contradicts it",
+    answer: "no entry, ever — an open kind is never in it",
+    basis: {
+      derived: "this list is DERIVED from the ALWAYS table's own `unless` fields, and those "
+        + "name CLOSED facets by type. An open kind has no facet at all, so it cannot appear "
+        + "here by construction rather than by anybody remembering. What an open kind gets "
+        + "from this tail is what every unedited thing gets: the flat sentences, unqualified",
+    },
+    standing: "policy",
+  },
   /* ── the hair reference take (`hairReferenceTake.ts`) ────────────────── */
   HAIR_FACETS: {
     file: "hairReferenceTake.ts",
