@@ -309,6 +309,33 @@ export async function claimVariant(input: ClaimVariantInput): Promise<ClaimedVar
  * this same key, built from the same object — so a delivered row is unchanged by
  * this existing. On failure it is the only thing left, and it is the truth.
  *
+ * # ⚠ IT SETS ONE KEY. IT USED TO REPLACE THE WHOLE OBJECT, AND THAT WAS THE
+ * # FOUNDER'S GHOST CARD (his sighting fable-1436 §3, surface named at
+ * # fable-1449, found by driving it twice)
+ *
+ * The claim seeds `internalPrompt.regeneratedFrom` so the version rail can draw
+ * a regenerate's wait ON the chip being redrawn rather than promising a new one
+ * (fable-703). A `.set({ internalPrompt: { repaint } })` **wiped that key at the
+ * moment of dispatch** — so for the whole render, which is the ~150 seconds
+ * somebody is actually watching, the pending row no longer said what it was
+ * redrawing and the rail drew an extra chip. The landing wrote the key back and
+ * the extra chip vanished. His words, exactly: *"creates an extra thumbnail card
+ * version then collapses into the version i regenerated once finished."*
+ *
+ * Measured rather than reasoned: driven twice in the browser on a dev cast, the
+ * left strip goes 8 chips → 9 at dispatch → 8 at landing, both times.
+ *
+ * **The paragraph above is why it survived review.** It reasons about the
+ * LANDED row — which is genuinely unchanged — and never about the row's own
+ * claim-time keys. Law 7's second half once more: a live control (fable-703's
+ * seed) orphaned by a correct change aimed at something else, leaving no
+ * failing test and no error.
+ *
+ * So the write is a `JSON_SET` of the one key this function owns. A
+ * read-then-write would be two statements about a row a landing may be moving
+ * underneath them, and `JSON_MERGE_PATCH` would let a null anywhere inside the
+ * recipe DELETE a key rather than record it.
+ *
  * SCOPED TO A ROW THAT HAS NOT LANDED. A `ready` variant's `internalPrompt` is
  * its whole record — the prompt, the resolved identity, the captions, the
  * verification — and a stray write here must not be able to reduce one to a
@@ -324,7 +351,11 @@ export async function recordVariantDispatch(input: {
   const db = await requireDb();
   const result = await db
     .update(castingCandidateVariants)
-    .set({ internalPrompt: { repaint: input.repaint } })
+    /* One key, one statement — see the header. `COALESCE` because a row claimed
+       by an ordinary edit carries no object at all to set into. */
+    .set({
+      internalPrompt: sql`JSON_SET(COALESCE(${castingCandidateVariants.internalPrompt}, JSON_OBJECT()), '$.repaint', CAST(${JSON.stringify(input.repaint ?? null)} AS JSON))`,
+    })
     .where(and(
       eq(castingCandidateVariants.id, input.variantId),
       eq(castingCandidateVariants.userId, input.userId),

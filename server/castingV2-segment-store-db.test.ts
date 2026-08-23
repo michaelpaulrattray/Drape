@@ -770,4 +770,90 @@ describeWithDatabase("the segment store (disposable DB)", () => {
     );
     expect(queued).toHaveLength(2);
   });
+
+  /**
+   * ⚠ THE DISPATCH RECORD MUST NOT WIPE WHAT THE CLAIM SAID — the founder's
+   * ghost card (his sighting fable-1436 §3, surface named fable-1449, found by
+   * driving it twice in the browser).
+   *
+   * `recordVariantDispatch` used to `.set({ internalPrompt: { repaint } })`,
+   * replacing the object the CLAIM had just seeded with `regeneratedFrom`. So
+   * from dispatch until landing — the ~150 seconds somebody is actually
+   * watching a render — the pending row stopped saying which version it was
+   * redrawing, and the version rail drew an extra chip that collapsed when the
+   * picture arrived.
+   *
+   * It is driven at a real MySQL rather than mocked because the fix is a
+   * `JSON_SET` expression: a double would model the intention and prove nothing
+   * about what MySQL does with it.
+   */
+  it("a dispatch record KEEPS the claim's regenerate marker and adds its own key", async () => {
+    const face = await newFace(owner);
+    const redrawn = await variants.claimVariant({
+      userId: owner,
+      candidatePublicId: face.candidatePublicId,
+      operationId: randomUUID(),
+      pointsCost: 25,
+      instructions: ["give her copper hair"],
+      deltas: null,
+      stepDeltas: null,
+      parentVariantPublicId: null,
+    });
+    const take = await variants.claimVariant({
+      userId: owner,
+      candidatePublicId: face.candidatePublicId,
+      operationId: randomUUID(),
+      pointsCost: 25,
+      instructions: ["give her copper hair"],
+      deltas: null,
+      stepDeltas: null,
+      parentVariantPublicId: null,
+      regeneratesVariantPublicId: redrawn.publicId,
+    });
+
+    const claimed = await variants.listPendingVariants(owner, face.candidatePublicId);
+    expect(
+      (claimed.find((one) => one.publicId === take.publicId)?.internalPrompt as any)?.regeneratedFrom,
+      "the claim seeds it — the control, before the write under test",
+    ).toBe(redrawn.publicId);
+
+    const wrote = await variants.recordVariantDispatch({
+      userId: owner,
+      variantId: take.id,
+      repaint: { references: ["hair"], vacated: [] },
+    });
+    expect(wrote, "the write reached the row").toBe(true);
+
+    const after = await variants.listPendingVariants(owner, face.candidatePublicId);
+    const held = after.find((one) => one.publicId === take.publicId)?.internalPrompt as any;
+    expect(held?.regeneratedFrom, "⚠ and the rail can still say which version is being redrawn").toBe(redrawn.publicId);
+    expect(held?.repaint, "while the dispatch record is there too").toEqual({ references: ["hair"], vacated: [] });
+  });
+
+  /**
+   * The same write on a row that was NOT a regenerate — the negative control
+   * for the `COALESCE`, since an ordinary claim carries no object at all.
+   */
+  it("records a dispatch on an ordinary claim, which has no object to set into", async () => {
+    const face = await newFace(owner);
+    const ordinary = await variants.claimVariant({
+      userId: owner,
+      candidatePublicId: face.candidatePublicId,
+      operationId: randomUUID(),
+      pointsCost: 25,
+      instructions: ["give her freckles"],
+      deltas: null,
+      stepDeltas: null,
+      parentVariantPublicId: null,
+    });
+    expect(await variants.recordVariantDispatch({
+      userId: ordinary.id ? owner : owner,
+      variantId: ordinary.id,
+      repaint: { references: [] },
+    })).toBe(true);
+    const after = await variants.listPendingVariants(owner, face.candidatePublicId);
+    const held = after.find((one) => one.publicId === ordinary.publicId)?.internalPrompt as any;
+    expect(held?.repaint).toEqual({ references: [] });
+    expect(held?.regeneratedFrom, "nothing to keep, and nothing invented").toBeUndefined();
+  });
 });
