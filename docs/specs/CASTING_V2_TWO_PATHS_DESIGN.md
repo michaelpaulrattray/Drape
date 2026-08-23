@@ -824,6 +824,31 @@ CASTING_TWO_PATHS_SCOPE     off | all | users:<ids>      parent: CASTING_V2_SCOP
   that Basics carries the same unmeasured rows Wardrobe does.** The split is
   written at the catalogue beside each row, where the decision lives.
 
+- ⚠ **AND A FIFTH, found by PHOTOGRAPHING the panel for §6's evidence pack**
+  (opus-1132 §5, ruled fable-1483 ASK 2): **`RefinePanel`'s meta line tells a
+  pathed customer she may not edit her clothes, four lines under a WARDROBE
+  section inviting her to tap one.**
+
+  The sentence is *"Anything about them — **not their clothes** or the room · 25
+  credits each"* (`client/src/features/castingV2/components/RefinePanel.tsx`),
+  and it is **not false today** — checked at the code before it was believed
+  (law 7b). The wardrobe subject is `admittedOn: "repaintOnly"`, so a garment ask
+  is admitted only for an account on the REPAINT road AND a cast on the Wardrobe
+  path, which is a population that is empty in both worlds: dev holds the repaint
+  scope at `users:1` and the flagged dev account is not user 1, and production
+  has the road at `all` and zero pathed rolls. **The flip is what creates the
+  population**, on day one, for the first customer who opens a pathed cast — so
+  it is a precondition rather than a bug, and it is filed here rather than
+  patched blind.
+
+  **The fix is not a one-line conditional and the next builder should know
+  why**: the condition has TWO terms, and the client's only handle on the second
+  is `config.stepBackEnabled` — a gate whose name is about a different
+  affordance (the version chip's *take this step back*). Reusing it here would
+  be one gate answering two questions under one of their names, which is how the
+  two later drift. **It needs a real handle**, named for what it decides, on the
+  same pattern as the four gates beside it.
+
 
 ---
 

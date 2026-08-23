@@ -436,8 +436,19 @@ one from whoever owns its road.
   users. **The `casting_rolls.path` / `.wardrobeLine` columns are a prerequisite
   of the CODE rather than of the flip** — migration `0051`, ceremony run on both
   databases 2026-08-22 — so the boot guard does not check for them: by the time
-  it can run, the schema naming them has already shipped. Off on production; the
-  flip waits on a 320-credit dev court and then his eyes
+  it can run, the schema naming them has already shipped. Off on production.
+  ⚠ **THE ROAD IS COMPLETE AS OF 2026-08-24 — every slice of item 5 is built and
+  live dark, §6 the toggle last** (evidence pack and copy audit:
+  `docs/specs/CASTING_V2_TWO_PATHS_TOGGLE_EVIDENCE.md`, 18 frames, both themes,
+  two negative controls). This line said *"the flip waits on a 320-credit dev
+  court and then his eyes"*; **the court RAN** (2026-08-23, both arms, two Signs)
+  and its two findings went to him and came back answered, so what the flip waits
+  on now is **his eyes on the pack** and the **FIVE enumerated preconditions in
+  the design's §10** — none of which is a defect to repair: 7a-bis or his
+  acceptance of the refuse-until-read ink state; the `upper chest` re-read on the
+  first non-house garments; the `build`/`skin` honesty claim before BASICS
+  widens; and `RefinePanel`'s *"not their clothes"* line, which is true today and
+  false on day one for a pathed customer
 - `CASTING_DIAGNOSTIC_CAPTURE_SCOPE` — `off`/absent, `all`, or `users:<ids>`;
   keeps the frame from a refused render for diagnosis, under
   `casting-v2/diagnostics` and nowhere else, on the private evidence adapter.
