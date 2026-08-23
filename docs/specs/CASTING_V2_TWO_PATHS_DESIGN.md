@@ -787,6 +787,26 @@ priced), and `RefinePanel`'s *"not their clothes"* line.
   refuse-until-read state — which is a real option, since he may want the paths
   before the tattoos.
 
+  ✅ **7a-bis IS DESIGNED AND COUNTERSIGNED, AND ITS RULING IS THAT THE BUILD
+  WAITS ON A NUMBER** — `CASTING_V2_7A_BIS_COVERAGE_READER_DESIGN.md`,
+  countersigned fable-1491 on a per-FRAME reading of the picture. A text reading
+  of the LINE is refused outright, and the receipt is this document's own
+  history: `BASICS_COVERAGE.upperChest` was `bare` read off our spec sentence
+  and the frames answered 0 px on 4 of 4. **A sentence is a prescription;
+  coverage is a fact about a delivery.**
+
+  ⚠ **So this bullet's two answers are now a SEQUENCE rather than a fork, and
+  that is the part to carry:** flip → count `surfaceCoverageUnread` for a
+  window → build against what it says. `refineService.ts` already writes a
+  demand row on every coverage refusal and separates `surfaceCovered` (a
+  wardrobe edit or a Basics recast — a PRODUCT road) from
+  `surfaceCoverageUnread` (7a-bis — a different build), precisely so that
+  *"one value for both would inflate the case for the wrong one"*. **The last
+  technical precondition therefore converts into his ONE-SENTENCE interim
+  acceptance**, put to him in the sitting that follows his look at §6 — *not "we
+  skipped a build", but "the product is counting whether this build is needed,
+  and here is the interim honesty."*
+
 - ⚠ **AND A THIRD, added when the scoop court ran** (opus-1110, ruled fable-1452
   ASK 1, condition 2): **the Wardrobe path's first non-house garments RE-OPEN
   the `upper chest` reading, and nobody trusts a chest read on them until it is
