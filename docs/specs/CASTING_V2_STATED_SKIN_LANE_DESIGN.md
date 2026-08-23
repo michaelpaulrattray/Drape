@@ -13,19 +13,46 @@ rather than from recollection.
 ## 1. The complaint, in one sentence
 
 **A customer types a skin colour into a brief and it reaches the picture about
-one time in three, while everything else she typed reaches it every time.**
+one time in ten, while everything else she typed reaches it every time.**
 
 The brief-fidelity corpus (opus-1128, ordered fable-1473) drove eight briefs
 through the real entrance and counted survival as *present in ALL EIGHT compiled
 prompts* — because "reaches the image model" is a claim about the string that is
 sent, never about a field near it (invariant 5):
 
+⚠ **THE FIGURES BELOW ARE POOLED, AND THE FIRST DRAFT OF THIS REPORT QUOTED ONE
+RUN.** It said *porcelain 1 of 3, olive 1 of 4*, which is the `before-wire` run
+and is true of it; the countersign came back citing *porcelain 0/5*, which is
+not a figure any run printed. **Both were repaired by opening the logs rather
+than by preferring one memory to another** — there are FOUR runs at the wire and
+this is all of them, with each run's own line quoted (`output/brief-fidelity-
+corpus/{before-wire,after-wire,after-assert,after-court}.log`; `before.log` is
+excluded because it is the earlier instrument that counted in `characterNotes`
+rather than at the wire, and `probe.log` is not a corpus run):
+
 ```
-porcelain    1 of 3      olive        1 of 4          ← colour names
-ruddy        4 of 4      freckled     4 of 4
-gaunt        4 of 4      laugh lines  4 of 4
-nose stud    4 of 4      glasses      4 of 4          ← a FILLED LANE, 8/8 twice
+                    before-wire  after-wire  after-assert  after-court   POOLED
+porcelain               1/3         0/4          0/1          0/3        1/11   9%
+olive                   1/4         2/4          1/1          0/3        4/12  33%
+────────────────────────────────────────────────────────────────────────────────
+ruddy                   4/4         4/4          1/1          3/3       12/12 100%
+freckled                4/4         4/4          1/1          3/3       12/12 100%
+laugh lines             4/4         4/4          1/1          3/3       12/12 100%
+gaunt                   3/3         3/4          1/1          3/3       10/11  91%
+amber-red               2/3         3/4          1/1          2/3        8/11  73%
+────────────────────────────────────────────────────────────────────────────────
+nose stud  (LANE)       4/4         4/4          1/1          3/3       12/12 100%
+glasses    (LANE)       4/4         4/4          1/1          3/3       12/12 100%
 ```
+
+⚠ **The two right-hand runs are a DIFFERENT TREE and are labelled here rather
+than folded away.** `after-assert` and `after-court` were taken with the hair
+assert in the working tree (`bald` reads 1/1 and 3/3 there against 1/3 and 2/4 on
+the left) — the labels `before`/`after` name the OUTPUT FILE and nothing else,
+which the corpus script says in its own header. Pooling across trees is the
+subtract-from-the-same-reading error, so the pooled column is a floor and the
+per-run columns are what an argument should quote. **On the current tree —
+the two right-hand runs — porcelain is 0 of 4 and olive is 1 of 4.**
 
 **The shape is the finding.** A word with a lane the interpreter fills reaches
 every prompt. Everything else is a lottery run by a summariser — and what the
@@ -66,7 +93,8 @@ summary dropped it and nothing else in the prompt said it. The premise that had
 been written down twice in that file — *"the user's own words carry it through
 the role and character fields — the path that has always worked"* — rested on a
 channel measured at 33%. **The same premise is load-bearing for skin today, and
-it has now been measured at 25–33% on the two colour words we have driven.**
+it has now been measured at 9% and 33% on the two colour words we have driven,
+pooled — and at 0 of 4 and 1 of 4 on the tree the product is standing on.**
 
 ---
 
