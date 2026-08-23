@@ -29,7 +29,32 @@
  *     conservative (it can HIDE a finding, never invent one).
  *   - dynamic `await import("…")` with a computed specifier.
  *   - a symbol reached only through a re-export barrel it does not name.
- * Every one of those biases toward SILENCE, so the list it prints is a floor.
+ *   - a symbol imported ONLY by one of the six root-level `.ts` files —
+ *     `seed.ts`, `drizzle.config.ts`, `vite.config.ts`, `vitest.config.ts`,
+ *     `vitest.integration.config.ts`, `vitest.setup.ts`. They are files, not a
+ *     directory, so no consumer ROOT covers them. Measured once (2026-08-24):
+ *     zero of the eighteen `shared/` findings had a consumer among them.
+ *   - a symbol referenced inside its own declaring module by something that is
+ *     ITSELF test-only. The self-reference discriminator below excludes any
+ *     symbol its own module uses again, which is right for its origin case and
+ *     means a whole inert vocabulary can show only its leaf. `INK_CUT_ROUTES`
+ *     is the worked example: excluded because `isInkCutRoute` — a finding —
+ *     names it.
+ *
+ * ⚠ THE SENTENCE THAT STOOD HERE ASSERTED THE BIAS INSTEAD OF STATING ITS
+ * CONDITION, AND THE CONDITION HAD NEVER BEEN TRUE (opus-1157 §2b, corrected
+ * 2026-08-24). It read: *"Every one of those biases toward SILENCE, so the list
+ * it prints is a floor."* That holds ONLY while every root holding production
+ * code is in `consumerRoots` — and `drizzle/` was in neither spelling of that
+ * list. The moment `shared/` entered the scan, the promise broke in the one
+ * direction a reading list must never break: `WARDROBE_LINE_MAX_LENGTH` was
+ * printed as consumed by nothing but a test while living at
+ * `drizzle/schema.ts:2076`. **A false finding here becomes a documented
+ * inert-control claim, and this repository writes those into a file it acts
+ * from.** So, conditionally and not as an article of faith: given
+ * `CONSUMER_ROOTS` covers every root holding production code, each limit above
+ * biases toward SILENCE and the list is a floor. The negative control below
+ * is what keeps the condition true rather than merely stated.
  *
  * CONTROLS, per working law 2 — printed before any verdict, and the run REFUSES
  * if either fails:
@@ -45,14 +70,44 @@
  */
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative, resolve } from "node:path";
-import { buildClassifier, REPO_ROOT, runMentionControls } from "./lib/productionMention.mts";
+import {
+  buildClassifier,
+  CONSUMER_ROOTS,
+  REPO_ROOT,
+  runMentionControls,
+} from "./lib/productionMention.mts";
 
 const repoRoot = resolve(import.meta.dirname, "..");
 
-/** Where exports are LOOKED FOR. */
-const scanRoots = ["server"];
-/** Where importers are looked for — wider than the scan, on purpose. */
-const consumerRoots = ["server", "client", "shared", "scripts"];
+/**
+ * Where exports are LOOKED FOR.
+ *
+ * ⚠ `shared/` WAS ABSENT HERE UNTIL 2026-08-24 AND IS THE HALF OF THE REPO THIS
+ * SCAN WAS MOST NEEDED IN (opus-1157 §2, ruled fable-1508 §1). `shared/` was a
+ * CONSUMER root from the start and never a SCAN root, so a symbol DECLARED
+ * there could not appear in any reading this instrument ever produced — and
+ * `shared/` is precisely where a closed vocabulary lives when two sides that
+ * cannot import each other both need it, which is this product's house style
+ * for exactly the derivations most worth checking. The specimen is not
+ * hypothetical: `openReferenceIntents` (`shared/referenceIntents.ts:162`) was
+ * carried as a shift's hand-found lesson — *a derivation with no consumer looks
+ * exactly like a derivation* — while the instrument built for that class was
+ * looking at a different directory. Adding it: 479 → 513 files, 3,554 → 3,792
+ * exports, 18 findings that no reading had ever carried.
+ *
+ * `client/` is DELIBERATELY ABSENT and that is a scope, not an oversight
+ * (endorsed by name, fable-1508 §1). A test-only export in `client/` is a
+ * weaker claim — there is no request path for it to be off — and the volume
+ * would bury the readable list. It is worth its own reading; this is not it.
+ */
+const scanRoots = ["server", "shared"];
+/**
+ * Where importers are looked for — wider than the scan, on purpose.
+ *
+ * One list, owned by `productionMention.mts`, because it was spelled here AND
+ * there and both spellings were missing `drizzle`. See `CONSUMER_ROOTS`.
+ */
+const consumerRoots = [...CONSUMER_ROOTS];
 
 function walk(dir: string): string[] {
   const out: string[] = [];
@@ -208,6 +263,23 @@ const negativeImported = flagged("maskedEditingEnabledFor");
 const negativeSelfRead = flagged("MASKED_EDITING_SCOPE");
 /* Third way of being consulted: destructured off a dynamic import at boot. */
 const negativeDynamic = flagged("startStorageCleanupWorker");
+/*
+  FOURTH way of being consulted, and this one is the specimen that found its own
+  gap (opus-1157 §2b, ruled fable-1508 §1): consumed from `drizzle/schema.ts`
+  and nowhere else in production.
+
+    WARDROBE_LINE_MAX_LENGTH   shared/castingPaths.ts:83
+                             → drizzle/schema.ts:2076, the varchar length of
+                               the column that stores a wardrobe line
+
+  It is the arm that keeps `drizzle` in `CONSUMER_ROOTS`. Drop that root and
+  this run REFUSES rather than printing a live constant as consumed by nothing
+  but a test — which is what the first widened run did, one spot-check before
+  it would have been published. A specimen kept as the control that keeps it
+  found: nothing else in the repository has this shape, so nothing else would
+  have gone red.
+*/
+const negativeSchemaOnly = flagged("WARDROBE_LINE_MAX_LENGTH");
 /* Second POSITIVE, and an independent one: the roadmap says this has no
    callers (§0, filed by fable-121) and the scan was not told. */
 const positiveIndependent = flagged("catalogueBornWorn");
@@ -228,7 +300,17 @@ console.log(
 console.log(
   `  negative  startStorageCleanupWorker ${negativeDynamic ? "FLAGGED  FAIL" : "not flagged      PASS"}`,
 );
-if (!positive || !positiveIndependent || negativeImported || negativeSelfRead || negativeDynamic) {
+console.log(
+  `  negative  WARDROBE_LINE_MAX_LENGTH  ${negativeSchemaOnly ? "FLAGGED  FAIL" : "not flagged      PASS"}`,
+);
+if (
+  !positive
+  || !positiveIndependent
+  || negativeImported
+  || negativeSelfRead
+  || negativeDynamic
+  || negativeSchemaOnly
+) {
   console.log("\nREFUSED — the instrument failed its own controls; no verdict printed.");
   process.exit(1);
 }

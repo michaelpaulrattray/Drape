@@ -36,6 +36,31 @@ import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, resolve } from "node:path";
 
 /**
+ * WHERE PRODUCTION CODE THAT CONSUMES A SYMBOL MAY LIVE — one list, because it
+ * was spelled twice and the two spellings were the finding (opus-1157 §2b,
+ * repair ruled fable-1508 §1).
+ *
+ * `drizzle` is here and it is the reason this constant exists. It was in
+ * NEITHER spelling, and `drizzle/schema.ts` is the one file in it — the schema
+ * that imports its column vocabularies straight out of `shared/`, because it
+ * cannot import from `server/`. So every closed vocabulary whose only
+ * production consumer is the column that stores it read as *consumed by
+ * nothing but a test*. Measured at the repair: widening the SCAN to `shared/`
+ * without this root flagged `WARDROBE_LINE_MAX_LENGTH`, which is live at
+ * `drizzle/schema.ts:2076`. An instrument whose docblock promises it can only
+ * miss a finding, never invent one, had begun inventing them.
+ *
+ * ⚠ NOT A DIRECTORY, AND THEREFORE NOT COVERED: the six root-level `.ts`
+ * files — `seed.ts`, `drizzle.config.ts`, `vite.config.ts`, `vitest.config.ts`,
+ * `vitest.integration.config.ts`, `vitest.setup.ts`. A symbol imported ONLY by
+ * one of those still reads as unconsumed. Named rather than skipped silently,
+ * which is this finding's own lesson; measured once at the repair (zero of the
+ * eighteen `shared/` findings had a consumer among them) so the exclusion is a
+ * stated scope and not an assumption.
+ */
+export const CONSUMER_ROOTS = ["server", "client", "shared", "scripts", "drizzle"] as const;
+
+/**
  * The source with its comments blanked, line count preserved.
  *
  * A MENTION IN A COMMENT IS PROSE, NOT A CALLER — and the recon already knew
@@ -159,7 +184,7 @@ export function buildClassifier(repoRoot: string): (symbol: string) => Mention {
       else if (/\.(ts|tsx|mts)$/.test(entry)) files.push(full);
     }
   };
-  for (const root of ["server", "client", "shared", "scripts"]) walk(join(repoRoot, root));
+  for (const root of CONSUMER_ROOTS) walk(join(repoRoot, root));
 
   const source = new Map<string, string>();
   for (const file of files) source.set(file, withoutComments(readFileSync(file, "utf8")));

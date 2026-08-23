@@ -2393,3 +2393,131 @@ have replaced it, the island and its suite go together as a module.
 Both `blocker:` lines now say that, and both rows stay `HELD` — the door's own
 header forbids flipping a row to quiet it, and this is the opposite move: the
 row keeps its verdict and gains a blocker that is true.
+
+## 29. THE SIXTEEN THE SWEEP HAD NEVER LOOKED FOR — `shared/` was a CONSUMER
+## root and never a SCAN root (2026-08-24, opus-1157/1159, ruled fable-1508 §1.
+## A reading, not a ruling: no deletion is proposed here and none is authorised
+## by it.)
+
+### 29a. Why there are suddenly sixteen more
+
+`sweep-uncalled-exports-disposable.mts` had `scanRoots = ["server"]` from the
+day it was written. `shared/` was in `consumerRoots` — it could always be
+*asked* whether it consumed something — and was never in `scanRoots`, so a
+symbol **declared** there could not appear in any reading this instrument ever
+produced.
+
+That is the half of the repository this scan was most needed in. `shared/` is
+where a closed vocabulary goes when two sides that cannot import each other both
+need it — `drizzle/schema.ts` cannot import from `server/` — so it holds
+precisely the derivations most worth checking for consumers.
+
+The specimen is not hypothetical. `openReferenceIntents`
+(`shared/referenceIntents.ts:162`) was carried forward as a shift's hand-found
+lesson — *a derivation with no consumer looks exactly like a derivation* — while
+the instrument built for that exact class was looking at another directory.
+
+Adding the root: 479 → 513 production files, 3,554 → 3,792 named exports, and
+**eighteen findings no reading had ever carried** (sixteen of them on the
+reading list; `PACKAGE_SLOTS` and `MODELS` classify as `other` — see §29d).
+
+`client/` is deliberately still absent, and that is a scope rather than an
+oversight (endorsed by name, fable-1508 §1): a test-only export in `client/` is
+a weaker claim, since there is no request path for it to be off.
+
+### 29b. ⚠ And the repair had a trap that a false-positive would have written
+### into this very table
+
+Widening `scanRoots` **alone** makes the instrument invent findings, which its
+docblock explicitly promised it could not do (*"Every one of those biases toward
+SILENCE, so the list it prints is a floor"*).
+
+The first widened run flagged `WARDROBE_LINE_MAX_LENGTH` as consumed by nothing
+but a test. It is live at `drizzle/schema.ts:2076` — the varchar length of the
+column that stores a wardrobe line. **`drizzle/` was in neither spelling of the
+consumer-root list**, and there were two spellings (the sweep's own, and
+`productionMention.mts`'s), which is working law 4 inside the instrument.
+
+Caught by spot-checking the highest-signal row before publishing it. Had it not
+been, a live constant would have entered this table as an inert-control claim —
+and this repository acts from this table.
+
+The repair: one owned `CONSUMER_ROOTS` including `drizzle`, the docblock's
+silence-bias sentence rewritten to state its **condition** instead of asserting
+itself, and `WARDROBE_LINE_MAX_LENGTH` kept as a **negative control** so the
+root cannot be dropped again without the run refusing. Proven able to fail:
+dropping `drizzle` reddens that arm alone, exit 1, `REFUSED`.
+
+### 29c. The class — five of the sixteen are ONE mistake-shape, not five
+
+A closed `as const` vocabulary in `shared/`, plus an `isX()` narrower that no
+production code calls — because membership is already enforced **structurally**
+by the same array, as a `mysqlEnum` column and/or a `z.enum` at the wire:
+
+```
+isCastingPath       CASTING_PATHS        mysqlEnum schema.ts:2075 · z.enum castingV2.ts:1101
+isInkCutRoute       INK_CUT_ROUTES       mysqlEnum schema.ts:3234
+isInkProvenance     INK_PROVENANCES      mysqlEnum schema.ts:3196,3464 · z.enum castingV2.ts:568,744
+isInkTemplateKind   INK_TEMPLATE_KINDS   mysqlEnum schema.ts:3304
+isCanonicalViewAngle CANONICAL_VIEW_ANGLES  z.enum boardOps.ts:683,694
+```
+
+Every one is `KEEP`, and the reason is the same sentence five times: the guard is
+redundant *because* the vocabulary is derived rather than copied. The list being
+the enum is law 4 working — the guard is what law 4 made unnecessary.
+
+`isInkCutRoute` was read first and separately, because it is the only row of the
+sixteen sitting on a road that is LIVE in production
+(`CASTING_INK_CUT_SCOPE=users:1`). It is a fence the tests hold shut, not
+invariant 7 with a customer behind it: the containment rule that actually governs
+that road is its sibling `inkDesignWasExamined`, with three production call sites
+(`inkDesignForAsk.ts:378`, `recipeAssembler.ts:1338`, `recipeAssembler.ts:1739`).
+
+### 29d. Two that are NOT on the reading list, and one of them is a finding
+
+`PACKAGE_SLOTS` and `MODELS` classify as `other` — the classifier found a
+production mention of each name and quoted it — so neither gets a row here. Both
+mentions are **a different declaration of the same name**, which is the `other`
+bucket working as designed (a hand read decides).
+
+`MODELS` is benign: `geminiGeneration.ts:218` and `:551` each declare a local
+`const MODELS = [...TEXT_HEAVY_FALLBACK]` from the properly-imported member. The
+`shared/modelRegistry.ts` aggregate is simply unused.
+
+⚠ **`PACKAGE_SLOTS` is a working-law-4 instance and it is LIVE client code.**
+`shared/boardTypes.ts:61` declares the derived view
+(`PACKAGE_SLOTS = CANONICAL_VIEW_ANGLES`) and nobody imports it, while
+`client/src/features/casting/components/ImageViewer/ViewTabs.tsx:242` declares a
+**hand-written literal array of the same six under the same name**, and drives
+both the tab strip and `hasMissingView` from it.
+
+They have **already drifted**: `frontFull` and `sideClose` are in opposite
+positions in the two lists. Membership still agrees, so nothing is broken today.
+
+That is exactly the incident `shared/boardTypes.ts` records one constant above,
+about this same family:
+
+> `CANONICAL_VIEW_ANGLES` is the comp-card six and iterating IT is how package
+> v3's close-up came to be generated, charged, refunded and then silently
+> dropped from the room — the slot did all its work and never reached the
+> screen, because the loop that draws the strip had never heard of it.
+
+No test pins the client's list to the shared one. It is filed here rather than
+fixed here: it is live client code and a rendering change, not a cleanup-table
+row, and it is not this sitting's grant.
+
+### 29e. What every verdict below rests on, stated as a floor
+
+Per fable-1508 §2, no row here is dispositioned *inert* on a grep. A clean hand
+grep inherits every limit the sweep declares — namespace imports, dynamic
+specifiers, barrels, the six root-level `.ts` files, and the self-reference
+discriminator. So the honest verdicts are:
+
+- **live-via-a-shape-the-instrument-cannot-see**, with the shape named;
+- **defensive-by-design**, with the docblock, test or structural enforcement
+  cited;
+- **no-consumer-found-by-any-reading** — a floor, never a proof.
+
+None of the sixteen is ruled for removal. There is no `TAKE` row in this
+section, and that is deliberate: fable-1508 granted a triage, and a removal
+ruling is a different act.

@@ -1116,3 +1116,107 @@
   verdict: UNREVIEWED
   why: classified `died` by scripts/unwiring-timeline.mts — production imported it and stopped; nobody has read it since
   argued: unreviewed
+
+# ── §29: the sixteen `shared/` symbols the sweep had never looked for.
+# `shared/` was a CONSUMER root and never a SCAN root until 2026-08-24. No row
+# below is ruled for removal — fable-1508 §1 granted a repair and a triage, and
+# a removal ruling is a different act. Every verdict names what it rests on.
+
+- symbol: isCastingPath
+  file: shared/castingPaths.ts
+  verdict: KEEP
+  why: "defensive-by-design, and structurally redundant: membership is already enforced by the same array as mysqlEnum(\"path\", CASTING_PATHS) at drizzle/schema.ts:2075 and z.enum(CASTING_PATHS) at server/routes/castingV2.ts:1101. The guard is what derive-never-mirror made unnecessary — the wire is closed without it"
+  argued: 29c
+
+- symbol: isInkCutRoute
+  file: shared/inkCutRoute.ts
+  verdict: KEEP
+  why: "read FIRST and separately (fable-1508 §2) because it is the only row of the sixteen on a road LIVE in production (CASTING_INK_CUT_SCOPE=users:1). A fence the tests hold shut, not invariant 7 with a customer behind it: the containment rule governing that road is its sibling inkDesignWasExamined, live at inkDesignForAsk.ts:378 and recipeAssembler.ts:1338,1739, and column membership is mysqlEnum(\"cutRoute\", INK_CUT_ROUTES) at drizzle/schema.ts:3234"
+  argued: 29c
+
+- symbol: isInkProvenance
+  file: shared/inkProvenance.ts
+  verdict: KEEP
+  why: "same class as isCastingPath: mysqlEnum(\"provenance\", INK_PROVENANCES) at drizzle/schema.ts:3196 and :3464, plus z.enum(INK_PROVENANCES) at server/routes/castingV2.ts:568 and :744"
+  argued: 29c
+
+- symbol: isInkTemplateKind
+  file: shared/inkTemplateKinds.ts
+  verdict: KEEP
+  why: "same class: mysqlEnum(\"templateKind\", INK_TEMPLATE_KINDS) at drizzle/schema.ts:3304 enforces membership from the same array"
+  argued: 29c
+
+- symbol: isCanonicalViewAngle
+  file: shared/boardTypes.ts
+  verdict: KEEP
+  why: "same class, enforced at the wire rather than the column: z.enum(CANONICAL_VIEW_ANGLES) at server/routes/boardOps.ts:683 and :694. Its own docblock states the job — narrow a stored viewType back to the comp-card six — and six other places assert that six is six"
+  argued: 29c
+
+- symbol: isModelArchivedStatus
+  file: shared/modelLifecycle.ts
+  verdict: KEEP
+  why: "defensive-by-design and NAMED BY A GUARD: server/modelLifecycleGuard.test.ts:83 refuses any hand-rolled archived comparison and points at this symbol by name. Production consistently reaches for its sibling isModelAvailableStatus (11 call sites across server and client), which is NOT its negation — modelLifecycle.test.ts:81 records that deriving available as !isModelArchivedStatus would fail open. A sanctioned vocabulary member the current call sites happen not to need"
+  argued: 29c
+
+- symbol: STATED_ONLY_EYE_SHAPES
+  file: shared/castingRealization.ts
+  verdict: KEEP
+  why: "NOT an inert control — checked, because an exception list consulted by nobody is the shape that usually is one. It pins a real property against the real dealer: realizedAxes.test.ts:347 drives realizeEight across 24 heritage/age/sex combinations and asserts no drawn candidate ever receives a stated-only value. The roll enforces the rule by never drawing eyeShape at all (EYE_SHAPES has refine-path consumers only), and this constant plus that test are what would notice if it started"
+  argued: 29e
+
+- symbol: everyInkTuple
+  file: shared/inkReleasedPlacements.ts
+  verdict: KEEP
+  why: "a deliberate test-facing enumerator over the placement x side vocabulary, used by inkReleasedPlacements.test.ts and inkUploadDoor.test.ts:32 to drive the door's whole population rather than a sample. Its module's docblock (:99) explicitly fences the SIBLING isInkTupleReleased from use outside the module; this one is the enumerator that fence leaves available"
+  argued: 29e
+
+- symbol: BadRequestError
+  file: shared/_core/errors.ts
+  verdict: KEEP
+  why: "one of four convenience constructors over HttpError, declared as a set by a docblock that states their job (\"Throw this from route handlers to send specific HTTP errors\"). ForbiddenError is live at server/_core/sdk.ts:2; this product routes through tRPC, so the other three are an unused remainder of a complete vocabulary rather than three independent dead symbols. Also reachable through the barrel shared/types.ts:7 (export * from ./_core/errors)"
+  argued: 29e
+
+- symbol: UnauthorizedError
+  file: shared/_core/errors.ts
+  verdict: KEEP
+  why: "see BadRequestError — same four-member set, same docblock, same barrel at shared/types.ts:7"
+  argued: 29e
+
+- symbol: NotFoundError
+  file: shared/_core/errors.ts
+  verdict: KEEP
+  why: "see BadRequestError — same four-member set, same docblock, same barrel at shared/types.ts:7"
+  argued: 29e
+
+- symbol: FALLBACK
+  file: shared/modelRegistry.ts
+  verdict: KEEP
+  why: "a convenience aggregate whose members production imports individually and by name — IMAGE_FALLBACK, TEXT_HEAVY_FALLBACK and TEXT_LIGHT_FALLBACK are all live in server/casting/geminiGeneration.ts. It restates nothing (the object references the same consts), so it cannot drift from them; it is simply the door nobody walks through"
+  argued: 29e
+
+- symbol: framingsWithout
+  file: shared/bodyAnchorRegions.ts
+  verdict: KEEP
+  why: "no-consumer-found-by-any-reading, and that is a floor rather than a proof. Its live sibling anchorPresentsIn is wired at server/castingV2/viewFeatureWords.ts:256, and this is the inverse view of the same table, written (per its docblock) so customer copy can NAME the framings an ask will not show in instead of hedging. The copy it exists for has not been written. Kept because removal has not been argued, not because it is called — this is the softest row in §29"
+  argued: 29e
+
+- symbol: openReferenceIntents
+  file: shared/referenceIntents.ts
+  verdict: FILED
+  why: "the derivation-with-no-consumer carried forward as a lesson by opus-1156 §3, and the reason this whole gap was found. It was specified as the source of the open lane's honest refusal and has one caller — its own test. fable-1505 Q5 ruled the reference-selector build is its consumer, DERIVED and never typed"
+  argued: 29a/29e
+  owner: "item 8, the open-lane reference selector — build design returns for countersign (docs/specs/OPEN_LANE_REFERENCE_SELECTOR_DESIGN.md, tracked at 6241f92d)"
+
+- symbol: referenceIntentEntry
+  file: shared/referenceIntents.ts
+  verdict: FILED
+  why: "the per-intent accessor beside openReferenceIntents, same module and same unbuilt consumer: the selector reads an intent's form (crop / words / mannequinPlate) to decide what a tap may take"
+  argued: 29a/29e
+  owner: "item 8, the open-lane reference selector — as openReferenceIntents above"
+
+- symbol: MAX_RENDERABLE_EVIDENCE_IMAGES
+  file: shared/evidenceDelivery.ts
+  verdict: FILED
+  why: "a CAP that enforces nothing. Its only consumer anywhere is server/r7-evidence-image-retry.test.ts:31, which asserts a TIMEOUT is >= 4x it — so the number is asserted about and applied to no request path (invariant 7's own sentence). No card and no founder item, ruled fable-1508 §3: R7_EVIDENCE_COMPOSER_SCOPE is off in production, so no customer stands behind it. The condition is the row: a dead control keeps a live reputation exactly while its road is off"
+  argued: 29e
+  owner: "the sitting that turns R7_EVIDENCE_COMPOSER_SCOPE on — it inherits this question by name, and must decide whether the cap is enforced or deleted before that scope serves anybody"
