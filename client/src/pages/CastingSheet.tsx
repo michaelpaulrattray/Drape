@@ -2976,6 +2976,20 @@ export default function CastingSheet() {
                 carries a half-typed instruction from one candidate to the next,
                 and the box then spends 25 credits on whoever you landed on.
               */
+              /*
+                THE TWO HALVES OF *MAY SHE EDIT WHAT THEY ARE WEARING* (design
+                §10's fifth flip precondition, ruled fable-1490).
+
+                The account's half is the server's own gate, named for what it
+                decides; the cast's half is the roll's path. The panel joins
+                them and decides nothing — it is handed both facts, exactly like
+                `attachPicture` above.
+
+                `sheetWardrobe` is the SHOWN roll's resolution, and the viewer is
+                opened from the shown roll's tiles, so it is this face's path.
+              */
+              wardrobeEdits={config.data?.wardrobeEditsEnabled === true}
+              wardrobePath={sheetWardrobe?.path ?? null}
               key={viewerCandidateId}
               variants={variants.data?.variants ?? []}
               pending={variants.data?.pending ?? []}

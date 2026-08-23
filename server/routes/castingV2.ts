@@ -905,6 +905,35 @@ export const castingV2Router = router({
       Named for the capability rather than for the flag, like the four above.
     */
     twoPathsEnabled: captureCastingTwoPathsEnabled(ctx.user.id),
+    /*
+      AND WHETHER A GARMENT ASK IS ADMITTED FOR THIS ACCOUNT — the sixth gate,
+      and the reason it exists is a sentence that becomes false on day one
+      (design §10's FIFTH flip precondition; ruled fable-1490).
+
+      `RefinePanel`'s meta line says *"Anything about them — not their clothes or
+      the room"*, and it sits four lines under the panel's WARDROBE section
+      inviting a tap on a garment. It is TRUE today — read at the code before it
+      was believed (law 7b): the wardrobe subject is `admittedOn: "repaintOnly"`
+      (`subjectCards.ts`), so a garment ask needs an account on the repaint road
+      AND a cast on the Wardrobe path, and that population is empty in both
+      worlds. **The flip is what creates it**, for the first customer who opens
+      a pathed cast.
+
+      ⚠ **IT IS A SEPARATE FIELD FROM `stepBackEnabled` THOUGH BOTH READ THE
+      SAME CAPTURE TODAY, and that is the whole point of adding it** (fable-1483
+      ASK 2, ruled fable-1490). `stepBackEnabled`'s name is about the version
+      chip's *take this step back*; reusing it here would be one gate answering
+      two questions under one of their names, which is how the two drift the day
+      the wardrobe subject is promoted off `repaintOnly`. Named for what it
+      decides, exactly like the five above it.
+
+      ⚠ **AND IT IS ONLY HALF THE CONDITION.** A garment ask also needs the CAST
+      to be on the Wardrobe path, which is a property of the roll rather than of
+      the account — the client already holds it as `RollProjection.wardrobe.path`
+      and reads both. A gate that answered alone would tell a Basics customer she
+      may edit an outfit her path refuses in its own words (`wall_basics_wardrobe`).
+    */
+    wardrobeEditsEnabled: captureCastingRepaintEnabled(ctx.user.id),
   })),
 
   createSession: protectedProcedure

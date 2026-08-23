@@ -446,10 +446,12 @@ one from whoever owns its road.
   on now is **his eyes on the pack** and the enumerated preconditions in the
   design's §10 — none of which is a defect to repair. ⚠ **Read the ticks there,
   not the ordinals: they record the order things were ADDED, and one has been
-  struck.** Open as of 2026-08-24: **THREE** — 7a-bis or his acceptance of the
-  refuse-until-read ink state; the `build`/`skin` honesty claim before BASICS
-  widens; and `RefinePanel`'s *"not their clothes"* line, which is true today and
-  false on day one for a pathed customer. **Discharged: three** — the columns;
+  struck.** Open as of 2026-08-24: **TWO** — 7a-bis or his acceptance of the
+  refuse-until-read ink state, and the `build`/`skin` honesty claim before BASICS
+  widens. **Discharged: four** — `RefinePanel`'s *"not their clothes"* line,
+  which was true today and false on day one for a pathed customer, now a sixth
+  config gate named for garment-ask admission joined with the roll's own path;
+  the columns;
   the *does the reader outline a NEW garment as chest* read, struck at four
   overlays across two rounds after the frames had sat unopened in a log for a
   day; and the covering-garment read, run the same day it was priced (a picked

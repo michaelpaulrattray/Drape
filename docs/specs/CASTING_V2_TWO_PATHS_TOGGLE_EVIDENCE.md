@@ -10,6 +10,11 @@ Everything here ships **dark** behind `CASTING_TWO_PATHS_SCOPE`, which is `off`
 on production. The pack's negative controls are what make that a reading rather
 than a claim.
 
+⚠ **THIS PACK'S OWN STANDING RULE, adopted fable-1490: a pack that stops matching
+its surface is worse than no pack.** A copy change on a surface photographed here
+re-shoots it in the same commit — the driver run is free — rather than leaving a
+document describing a sentence the product no longer says.
+
 ---
 
 ## 1. The surfaces, and how they were photographed
@@ -34,7 +39,8 @@ scripts/drive-two-paths-panel-label.mts     §6.1's "as dressed" label
 | 5b | `5-sheet-switched-{dark,light}.png` | the same switch moved off the sheet's path: *"Roll again casts on Basics."* |
 | 6 | `6-sheet-basics-{dark,light}.png` | `BASICS · a plain black sports top scooped low at the chest …` |
 | 7 | `7-sheet-unpathed-{dark,light}.png` | ⚠ **CONTROL** — a roll cast before the paths existed: no record line, and the switch drawn with a note that never falls silent |
-| 8 | `8-panel-{wardrobe,basics}-{dark,light}.png` | §6.1's label, present on one path and absent on the other |
+| 8 | `8-panel-{wardrobe,basics}-{dark,light}.png` | §6.1's label, present on one path and absent on the other — and, on an account OFF the repaint road, the ask box's sentence unchanged |
+| 9 | `9-askbox-{wardrobe,basics}-{dark,light}.png` | the ask box on an account WITH the repaint road: *"Anything about them, including what they're wearing — not the room"* on Wardrobe, and today's sentence on Basics |
 
 Frames live in `output/two-paths-toggle/`.
 
@@ -63,6 +69,16 @@ driver asserted *"Nothing was chosen for these eight"* against a sheet that had
 just been given a path. **A surface pinned to whatever is newest is pinned to
 whatever the last court bought.** Surface 5 now names the pathed state and
 surface 7 owns the unpathed one, on a session that is unpathed by construction.
+
+**Surface 9 is the same walk run twice, against two different accounts**, and
+that is what makes it a reading rather than a demonstration. The ask box's line
+is a JOIN of two facts — the account's garment gate and the cast's path — so
+three of its four cells must show today's sentence and exactly one must show the
+new one. Frame 8 is the walk with the gate SHUT (both paths keep the old
+sentence, which is correct for that account); frame 9 is the same walk with the
+fixture inside the repaint scope, where Wardrobe says the capability and Basics
+still does not. The driver ASSERTS which it expects rather than reporting what it
+found: a run that asks for the new sentence and meets the old one fails.
 
 **⚠ And frame 5 cost this pack a lesson at the pixels.** The first version of
 it photographed BOTH pills mid-transition — the chosen one part-way to black,
@@ -96,6 +112,7 @@ design*, and "invented" means *written in this sitting and owned by it*.
 | "Roll again casts on Basics." / "… on Wardrobe." | the re-roll box, once the switch leaves the sheet's path | **invented** | modelled on the FOLLOWING chip's *"Roll again keeps this family"*, which is the same job: saying what the next paid action will do while it can still be changed |
 | "Nothing was chosen for these eight — Roll again casts on Wardrobe." | the re-roll box on an UNPATHED sheet, always | **invented** | ruled fable-1483 ASK 1(b). It names the ABSENCE first and the plan second, and that order is the whole sentence: the pills over a pathless sheet are a label of nothing, so the line has to say so before it says what comes next |
 | "Basics sheets are cast in plain black basics — roll again on Wardrobe to have the outfit you described." | the sheet's notice slot, Basics path, when the brief named clothes | **invented** | replaces a sentence that is FALSE on this path. It names a road that ACTS — the re-roll box's own switch — rather than a road that merely exists (D-180) |
+| "Anything about them, including what they're wearing — not the room" | the ask box, on a Wardrobe cast whose owner is on the repaint road | **invented** | ruled fable-1490. It replaces a sentence that becomes FALSE on day one, and it SAYS the capability rather than merely dropping the denial: the line's job is disclosure before typing, and a panel showing garment rows beside a sentence that ignores them is the contradiction being removed. Every other cell keeps today's sentence byte for byte |
 | "as dressed" | the panel's `build` and `skin` rows, Wardrobe path | **design-verified, verbatim** | §6.1. ⚠ A LABEL AND NEVER A HEDGE: the row is not less accurate on Wardrobe, it is accurate about something smaller. `referenceSlotCatalogue.test.ts` refuses the words *approx · roughly · we think · may be · might · unverified · estimate* on it |
 | "How this cast is born" / "How the next roll is cast" | the two groups' accessible names | **invented** | not read by eye; they are what makes a pair of pills one question for a screen reader |
 
@@ -157,15 +174,19 @@ never falls silent. The case is day one rather than hypothetical: every existing
 customer's sheets are unpathed when the flag opens, and the lobby would otherwise
 be their only door.
 
-**`RefinePanel`'s meta line becomes false at the flip, and it is not false
-today.** *"Anything about them — not their clothes or the room"* sits four lines
-under the panel's new WARDROBE section. Checked at the code before believing it:
-the wardrobe subject is `admittedOn: "repaintOnly"`, so a garment ask is admitted
-only for an account on the REPAINT road AND a cast on the Wardrobe path — a
-population that is empty in both worlds today. It is a **flip precondition**
-rather than a bug, and the fix is not one line: the condition has two terms and
-the client's only handle on the second is `config.stepBackEnabled`, a gate whose
-name is about a different affordance.
+✅ **`RefinePanel`'s meta line — FIXED 2026-08-24** (ruled fable-1490), and it
+is surface 9. It said *"Anything about them — not their clothes or the room"*
+four lines under the panel's new WARDROBE section. Checked at the code before it
+was believed: the wardrobe subject is `admittedOn: "repaintOnly"`, so a garment
+ask needs an account on the REPAINT road AND a cast on the Wardrobe path — a
+population empty in both worlds today, which the flip creates on day one.
+
+The client's only handle on the second term was `config.stepBackEnabled`, a gate
+named for the version chip's *take this step back*. It got a real one instead —
+a sixth config gate named for what it decides — because **one gate answering two
+questions under one of their names is how the two drift** the day the wardrobe
+subject is promoted off `repaintOnly`. The panel joins the two facts and decides
+neither, and its props default to claiming nothing.
 
 ---
 

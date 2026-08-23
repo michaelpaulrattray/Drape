@@ -198,6 +198,8 @@ export function RefinePanel({
   offer = null,
   onAdopt,
   attachPicture = null,
+  wardrobeEdits = false,
+  wardrobePath = null,
 }: {
   variants: readonly RefineVariant[];
   /** Refinements still running, from server truth — survives remount (D-161). */
@@ -208,6 +210,24 @@ export function RefinePanel({
   /** The master's small copy — the rail draws it where a version has one. */
   originalThumbUrl?: string | null;
   priceCredits: number;
+  /**
+   * WHETHER A GARMENT ASK IS ADMITTED FOR THIS ACCOUNT — the server's own gate
+   * (`castingV2.config.wardrobeEditsEnabled`), asked and never decided here.
+   *
+   * Defaults FALSE, so a caller that does not pass it — or an older bundle
+   * against a server without the field — gets today's sentence. The honest
+   * default for a capability claim is that we do not make it.
+   */
+  wardrobeEdits?: boolean;
+  /**
+   * WHICH PATH THIS CAST WAS BORN ON, or `null` for one that predates them.
+   *
+   * The other half of the condition above, and it is a property of the ROLL
+   * rather than of the account: a Basics cast refuses an outfit in its own
+   * words, so telling its owner the box reaches her clothes would be a second
+   * contradiction one path over.
+   */
+  wardrobePath?: "wardrobe" | "basics" | null;
   /** A refine is in flight — for this face or any other on the sheet. */
   busy: boolean;
   /**
@@ -1015,8 +1035,37 @@ export function RefinePanel({
         back belongs here, because Remove has no other home (D-163). Undoing is
         free and the line says so, or nobody types it.
       */}
+      {/*
+        ⚠ AND ON A WARDROBE-PATH CAST IT SAYS THE OPPOSITE ABOUT CLOTHES, because
+        there the old sentence becomes FALSE (the two paths, design §10's fifth
+        flip precondition; ruled fable-1490).
+
+        Found by PHOTOGRAPHING this surface for §6's evidence pack rather than by
+        reading it: the line sits four lines under the panel's new WARDROBE
+        section, which invites a tap on *"Rough animal-hide wrap drape…"*.
+
+        **It is true today and it was still worth fixing before it was wrong.**
+        A garment ask needs BOTH halves — an account on the repaint road
+        (`wardrobeEdits`, the server's own gate, named for what it decides) and a
+        cast on the WARDROBE path (`wardrobePath`, a property of the roll). That
+        population is empty in both worlds right now; the flip creates it, on day
+        one, for the first customer who opens a pathed cast.
+
+        The second sentence SAYS THE CAPABILITY rather than merely dropping the
+        denial: this line's job is telling somebody what the box can do before
+        they type something it cannot, and a panel showing garment rows beside a
+        sentence that ignores them is the contradiction being removed.
+
+        Every other cell keeps today's sentence byte for byte — Basics refuses an
+        outfit in its own words (`wall_basics_wardrobe`), an unpathed cast has no
+        wardrobe to edit, and an account off the repaint road meets the subject
+        card's own `repaintOnly`.
+      */}
       <p className="dpc-refine__note">
-        Anything about them — not their clothes or the room · {priceCredits} credits each
+        {wardrobeEdits && wardrobePath === "wardrobe"
+          ? <>Anything about them, including what they&rsquo;re wearing — not the room</>
+          : <>Anything about them — not their clothes or the room</>}
+          {" · "}{priceCredits} credits each
       </p>
       <p className="dpc-refine__note">
         Or take something back — "undo", "remove the earrings" · free when you already have it

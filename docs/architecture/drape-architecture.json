@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "e910873b7712eb91"
+    "sourceFingerprint": "cde0550b837a88e9"
   },
   "domains": [
     {
@@ -9879,6 +9879,10 @@
     {
       "id": "test:client/src/features/castingV2/waitNotice.test.ts",
       "path": "client/src/features/castingV2/waitNotice.test.ts"
+    },
+    {
+      "id": "test:client/src/features/castingV2/wardrobeEditCopy.test.ts",
+      "path": "client/src/features/castingV2/wardrobeEditCopy.test.ts"
     },
     {
       "id": "test:client/src/features/operations/bridgeOwnership.test.ts",

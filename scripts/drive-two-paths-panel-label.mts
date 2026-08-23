@@ -51,6 +51,24 @@ const BASICS_CANDIDATE = process.env.PATHS_BASICS_CANDIDATE ?? "e027130b-151c-46
 /** The one thing held equal across the two paths. */
 const SEEDED_WORDS = ["narrower shoulders"];
 
+/**
+ * WHETHER THIS RUN IS THE POSITIVE SIDE OF SURFACE 9, and it exists because a
+ * copy change that ships unphotographed on the side that CHANGED is the thing
+ * this pack is for.
+ *
+ * The account that has the paths is not on the repaint road in dev
+ * (`CASTING_REPAINT_SCOPE` is `users:1` and this is 28601), so an ordinary run
+ * photographs the CONTROL — today's sentence, correct for this account. Start
+ * the server with that account inside the repaint scope as well and set this,
+ * and the same walk photographs the sentence a pathed customer on the repaint
+ * road will actually read.
+ *
+ * It is an ASSERTION about what should be on screen rather than a mode switch:
+ * a run that sets it and finds the old sentence FAILS, which is what stops it
+ * being a way of making the driver agree with whatever it found.
+ */
+const EXPECT_WARDROBE_EDITS = process.env.PATHS_EXPECT_WARDROBE_EDITS === "1";
+
 const { check, records, failures, print } = createChecks();
 
 await mkdir(OUT, { recursive: true });
@@ -187,7 +205,46 @@ try {
           : `[${theme}] the WARDROBE cast's Build row says what its picture actually shows`,
         `provenance=${JSON.stringify(row.provenance)}`);
 
-      const path = `${OUT}/8-panel-${subject.name}-${theme}.png`;
+      /*
+        ───────── 9 · THE ASK BOX'S CAPABILITY LINE, on the same screen ────────
+
+        §10's FIFTH flip precondition, landed 2026-08-24 (ruled fable-1490). The
+        panel's WARDROBE section sits four lines above this sentence, so the two
+        belong in one frame — which is how the contradiction was found in the
+        first place: by photographing the panel for §6's pack rather than by
+        reading the string.
+
+        ⚠ **THE DEV FIXTURE CAN ONLY SHOW ONE SIDE OF IT, AND THAT IS STATED
+        RATHER THAN GLOSSED.** The account with the paths is not on the repaint
+        road (`CASTING_REPAINT_SCOPE` is `users:1` in dev and this is 28601), so
+        `wardrobeEditsEnabled` is FALSE here and the old sentence is what a
+        person sees on both paths. That is the CONTROL — the sentence is correct
+        for this account — and it is worth a frame precisely because the change
+        must be invisible until both halves are true.
+      */
+      const meta = await page.evaluate(() => {
+        const lines: string[] = [];
+        for (const node of Array.from(document.querySelectorAll(".dpc-refine__note"))) {
+          lines.push((node.textContent ?? "").trim());
+        }
+        return lines;
+      });
+      const says = meta.join(" | ");
+      /* BOTH HALVES: the account's gate AND the cast's path. On Basics the old
+         sentence is right even for a repaint account, because that path refuses
+         an outfit in its own words. */
+      const shouldSay = EXPECT_WARDROBE_EDITS && subject.name === "wardrobe";
+      check(
+        shouldSay
+          ? says.includes("including what they") && !says.includes("not their clothes")
+          : says.includes("not their clothes or the room") && !says.includes("including what they"),
+        shouldSay
+          ? `[${theme}] the ${subject.name} cast is told the box reaches what they are wearing`
+          : `[${theme}] ⚠ CONTROL — the ${subject.name} cast keeps today's sentence, and claims no capability it lacks`,
+        JSON.stringify(says.slice(0, 130)),
+      );
+
+      const path = `${OUT}/${EXPECT_WARDROBE_EDITS ? "9-askbox" : "8-panel"}-${subject.name}-${theme}.png`;
       await page.screenshot({ path: path as `${string}.png` });
       console.log(`  shot ${path}`);
     }

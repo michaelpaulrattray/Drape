@@ -768,10 +768,10 @@ CASTING_TWO_PATHS_SCOPE     off | all | users:<ids>      parent: CASTING_V2_SCOP
 read the ticks, not the numbers.** One has been struck and one has been split
 out of it since, so *"a fourth"* and *"a fifth"* are the fourth and fifth things
 ever put on this list rather than a tally of what is open. **Open as of
-2026-08-24: THREE** — 7a-bis or his acceptance; the `build`/`skin` honesty claim
-before BASICS widens; and `RefinePanel`'s *"not their clothes"* line.
-**Discharged: three** — the columns, the bleeding-onto-fabric read, and the
-covering-garment read (run the same day it was priced).
+2026-08-24: TWO** — 7a-bis or his acceptance, and the `build`/`skin` honesty
+claim before BASICS widens. **Discharged: four** — the columns, the
+bleeding-onto-fabric read, the covering-garment read (run the same day it was
+priced), and `RefinePanel`'s *"not their clothes"* line.
 
 - ⚠ **AND A SECOND NAMED PREREQUISITE OF THE FLIP, added when item 7a landed**
   (ruling fable-1368 §2): **every ink placement refuses on a Wardrobe-path cast
@@ -923,6 +923,29 @@ covering-garment read (run the same day it was priced).
   be one gate answering two questions under one of their names, which is how the
   two later drift. **It needs a real handle**, named for what it decides, on the
   same pattern as the four gates beside it.
+
+  ✅ **BUILT AND DISCHARGED 2026-08-24** (granted fable-1490; the 1483 deferral
+  was the §6 sitting's, not the item's). It got the real handle:
+  `castingV2.config.wardrobeEditsEnabled`, a sixth gate named for garment-ask
+  admission, whose value is `captureCastingRepaintEnabled` today and is free to
+  diverge the day the subject is promoted. The panel is HANDED both facts —
+  the gate and `RollProjection.wardrobe.path` — and decides neither; both props
+  default to claiming nothing, so a caller that passes neither, or an older
+  bundle against a server without the field, gets today's sentence.
+
+  **The second sentence SAYS the capability rather than merely dropping the
+  denial**: *"Anything about them, including what they're wearing — not the
+  room."* The line's job is disclosure before typing, and a panel showing
+  garment rows beside a sentence that ignores them is the contradiction being
+  removed. **Three of the four cells keep today's sentence byte for byte** —
+  Basics refuses an outfit in its own words, an unpathed cast has no wardrobe to
+  edit, and an account off the repaint road meets `repaintOnly`.
+
+  Photographed as the evidence pack's ninth surface, both themes, **as the same
+  walk run against two different accounts** so that three cells show the old
+  sentence and exactly one shows the new. Pinned at the source by
+  `client/src/features/castingV2/wardrobeEditCopy.test.ts`, including that the
+  join is an AND and that the step-back gate is not reused under its own name.
 
 
 ---
