@@ -533,7 +533,42 @@ const UNREACHABLE_ROUTERS: string[] = [];
 /* -------------------------------------------------------- express surfaces */
 
 function collectExpressRoutes(): Entity[] {
-  return expressSurfacesFrom(read("server/_core/index.ts"));
+  const bootstrap = read("server/_core/index.ts");
+  /*
+    ONE HOP, RESOLVED THROUGH THE BOOTSTRAP'S OWN IMPORTS (ordered fable-1435 §4
+    from opus-1075 §3). A router mounted with no path prefix declares its paths
+    inside its own module, and until this the Atlas recorded only that the
+    router existed — so a NEW route added inside one was invisible to the map
+    that access-control invariant 5 is verified against. That is the difference
+    between *the list was correct when someone last looked* and *the list cannot
+    silently stop being the list.*
+  */
+  /* Every `shared/` module, because a path prefix is shared BY DESIGN — the
+     client and the route read one constant so they cannot disagree about the
+     address. Scanned rather than named, so a new prefix module joins by being
+     written. */
+  const prefixSources = sourceFiles
+    .filter((file) => file.startsWith("shared/") && file.endsWith(".ts"))
+    .map((file) => read(file));
+  return expressSurfacesFrom(bootstrap, (symbol) => {
+    const specifier = importSpecifierOf(bootstrap, symbol);
+    if (specifier === null) return null;
+    /* Relative to `server/_core/`, and only ever inside the repo. */
+    const relative = path
+      .normalize(path.join("server", "_core", `${specifier}.ts`))
+      .replaceAll("\\", "/");
+    if (!sourceFiles.includes(relative)) return null;
+    return { file: relative, text: read(relative) };
+  }, prefixSources);
+}
+
+/** Where a bootstrap symbol was imported from — default or named, one hop. */
+export function importSpecifierOf(source: string, symbol: string): string | null {
+  const escaped = symbol.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const named = new RegExp(
+    `import\\s+(?:\\{[^}]*\\b${escaped}\\b[^}]*\\}|${escaped})\\s+from\\s+["']([^"']+)["']`,
+  );
+  return named.exec(source)?.[1] ?? null;
 }
 
 /**
@@ -544,7 +579,15 @@ function collectExpressRoutes(): Entity[] {
  * on the tree it will run over is a checker whose blind spots are invisible
  * exactly where they matter (`architectureExpressSurfaces.test.ts`).
  */
-export function expressSurfacesFrom(source: string): Entity[] {
+/** One hop: the module a mounted router symbol was declared in. */
+export type RouterResolver = (symbol: string) => { file: string; text: string } | null;
+
+export function expressSurfacesFrom(
+  source: string,
+  resolve?: RouterResolver,
+  /** Modules that may export a path-prefix constant. Read, never guessed. */
+  prefixSources?: readonly string[],
+): Entity[] {
   const routes: Entity[] = [];
   // Capture the handler too: three routers mount on /api/auth, and collapsing
   // them to one row would hide two of the app's session-minting surfaces.
@@ -581,24 +624,95 @@ export function expressSurfacesFrom(source: string): Entity[] {
     (access-control invariant 5), arriving through the mechanism that was
     supposed to prevent it: a checker blind to a shape reports a complete list.
     `architectureExpressSurfaces.test.ts` drives both shapes directly.
+
+    ⚠ **AND UNTIL 2026-08-23 THE ROW SAID ONLY THAT THE ROUTER EXISTED** — path
+    `(defined by the router)` — so a NEW route added inside one of these six was
+    invisible to the Atlas, which is the artifact access-control invariant 5 is
+    verified against. FOUR of invariant 5's five authenticated routes are
+    mounted this way (`/api/image-proxy`, `/api/evidence/:kind/:entityId`,
+    `/api/cast/:castId/sheet`, `/api/ink-design/:designId`,
+    `/api/reference/:referenceId`). Ordered fable-1435 §4: resolve ONE HOP into
+    the router's own module and read the paths it declares, so the list cannot
+    silently stop being the list.
+
+    A router the resolver cannot open still emits its old unresolved row rather
+    than vanishing — an unfollowable hop must UNDERSTATE nothing and say so.
   */
+  /** A path-prefix constant's value, read from the module that exports it. */
+  const prefixValue = (name: string): string | null => {
+    const declaration = new RegExp(
+      `export\\s+const\\s+${name}\\s*=\\s*["']([^"']+)["']`,
+    );
+    for (const candidate of prefixSources ?? []) {
+      const hit = declaration.exec(candidate);
+      if (hit) return hit[1]!;
+    }
+    return null;
+  };
+
+  const mountPathless = (symbol: string, handler: string): void => {
+    const module = resolve?.(symbol) ?? null;
+    /*
+      TWO SHAPES AGAIN, and the second is the newer house style: a path built
+      from a SHARED CONSTANT plus its parameter — `REFERENCE_IMAGE_PATH_PREFIX +
+      "/:referenceId"` — so that the client and the route cannot disagree about
+      the address. A literal-only reader saw nothing at all for
+      `/api/reference/:referenceId` and `/api/ink-design/:designId`, which are
+      two of invariant 5's five authenticated routes.
+
+      The constant is RESOLVED, never guessed: its value is read out of the
+      module that exports it, and a prefix that cannot be resolved leaves the
+      row honestly unreadable rather than inventing an address.
+    */
+    const declared = module === null ? [] : [...module.text.matchAll(
+      /\brouter\.(get|post|put|delete|patch|all)\(\s*(?:("([^"]+)"|'([^']+)')|([A-Z][A-Z0-9_]*)\s*\+\s*("([^"]+)"|'([^']+)'))/g,
+    )];
+    if (declared.length === 0) {
+      routes.push({
+        id: `express:USE (router-defined) ${handler}`,
+        method: "USE",
+        path: module === null ? "(defined by the router)" : "(declares no path this reader can see)",
+        handler,
+        file: "server/_core/index.ts",
+        ...(module === null ? {} : { mountedFrom: module.file }),
+      });
+      return;
+    }
+    for (const declaration of declared) {
+      const literal = declaration[3] ?? declaration[4];
+      const routePath = literal ?? (() => {
+        const prefix = prefixValue(declaration[5]!);
+        const tail = declaration[7] ?? declaration[8]!;
+        return prefix === null ? null : `${prefix}${tail}`;
+      })();
+      if (routePath === null) {
+        routes.push({
+          id: `express:USE (unresolved prefix ${declaration[5]}) ${handler}`,
+          method: "USE",
+          path: `(${declaration[5]} + "${declaration[7] ?? declaration[8]}" — prefix unresolved)`,
+          handler,
+          file: module!.file,
+          mountedBy: "server/_core/index.ts",
+        });
+        continue;
+      }
+      routes.push({
+        id: `express:${declaration[1]!.toUpperCase()} ${routePath} (${handler})`,
+        method: declaration[1]!.toUpperCase(),
+        path: routePath,
+        handler,
+        /* The file that DECLARES the path, not the bootstrap that mounts it —
+           a reader chasing a surface wants the module the handler lives in. */
+        file: module!.file,
+        mountedBy: "server/_core/index.ts",
+      });
+    }
+  };
   for (const hit of source.matchAll(/app\.use\(\s*(\w+Router)\s*\)/g)) {
-    routes.push({
-      id: `express:USE (router-defined) ${hit[1]}`,
-      method: "USE",
-      path: "(defined by the router)",
-      handler: hit[1],
-      file: "server/_core/index.ts",
-    });
+    mountPathless(hit[1]!, hit[1]!);
   }
   for (const hit of source.matchAll(/app\.use\(\s*(\w*Router)\(\s*\)\s*\)/g)) {
-    routes.push({
-      id: `express:USE (router-defined) ${hit[1]}()`,
-      method: "USE",
-      path: "(defined by the router)",
-      handler: `${hit[1]}()`,
-      file: "server/_core/index.ts",
-    });
+    mountPathless(hit[1]!, `${hit[1]}()`);
   }
 
   const unique = new Map(routes.map((route) => [route.id, route]));

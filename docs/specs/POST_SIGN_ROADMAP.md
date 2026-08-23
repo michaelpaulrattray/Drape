@@ -227,6 +227,45 @@ than a memory — and this week is why it exists: the removal road, the inert si
 carry, §5c already on the roadmap while it was being "sized", and a wall
 recorded CLOSED that no customer could reach.
 
+### §10b THE ATLAS'S EXPRESS HOP — ✅ **DONE 2026-08-23**, ordered fable-1435 §4
+
+**Ordered from opus-1075 §3, which measured it and did not take it** ("a
+downgrade is not a ruling — here is the ruling: build it"). Written here because
+a road named in a ruling is written down or it does not exist.
+
+**What it was.** A router mounted with no path prefix — `app.use(imageProxyRouter)`,
+`app.use(createReferenceDeliveryRouter())` — produced ONE Atlas row saying only
+that the router existed: `path: "(defined by the router)"`. **Four of
+access-control invariant 5's five authenticated routes are mounted that way**, so
+a NEW route added inside any of them was invisible to the very artifact invariant
+5 is verified against. Six routers, six unresolved rows.
+
+**What it is now.** The generator resolves ONE HOP through the bootstrap's own
+import, opens the router's module and reads the paths it declares. Two shapes,
+because this repo uses both: a string literal, and a SHARED CONSTANT plus its
+parameter (`REFERENCE_IMAGE_PATH_PREFIX + "/:referenceId"`) — the newer house
+style, so the client and the route cannot disagree about the address. **The
+constant is resolved out of the module that exports it, never guessed**, and a
+prefix that cannot be resolved leaves the row honestly unreadable rather than
+inventing an address nothing serves.
+
+```
+before   13 surfaces · 6 of them "(defined by the router)"
+after    14 surfaces · ZERO unresolved, and all five of invariant 5's
+         authenticated routes are real paths:
+           /api/image-proxy · /api/evidence/:kind/:entityId
+           /api/cast/:castId/sheet · /api/ink-design/:designId
+           /api/reference/:referenceId
+         plus /api/hero/:asset and /api/hero/video, which nothing had listed
+```
+
+**The arms** are driven over fixture sources with an injected resolver, so they
+do not inherit the repository's current bootstrap; the repository arm is the
+weaker one and pins the five by name. Three producer sabotages: not following
+the hop reddens 4, guessing an unresolvable prefix reddens 2, and dropping the
+unfollowable-hop row reddens 7 — because an unfollowable hop must UNDERSTATE
+nothing, and losing the row shrinks the surface list silently, which is worse
+than the vagueness it replaced.
 ### §10c CENSUS CARDS — findings the instrument produced, each awaiting a slot
 
 **Filed 2026-08-22 (opus-979), ordered fable-1329 §4 and fable-1331 §5.** These

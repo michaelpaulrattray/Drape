@@ -437,3 +437,97 @@ describe("the whole Express surface against invariant 5", () => {
     expect(readFileSync(path.join(repoRoot, "CLAUDE.md"), "utf8").includes("/api/telemetry")).toBe(false);
   });
 });
+
+describe("⚠ ONE HOP: a router mounted with no prefix declares its own paths", () => {
+  /*
+    ORDERED fable-1435 §4 (from opus-1075 §3). Until 2026-08-23 a path-less
+    router produced ONE row saying only that the router existed —
+    `path: "(defined by the router)"`. **FOUR of access-control invariant 5's
+    five authenticated routes are mounted that way**, so a NEW route added
+    inside any of them was invisible to the very artifact invariant 5 is
+    verified against. That is the difference between *the list was correct when
+    someone last looked* and *the list cannot silently stop being the list.*
+
+    Driven over fixture sources with an injected resolver, so these arms do not
+    inherit the repository's current bootstrap — the sibling arms below read the
+    real tree and would both go green on a reader that had stopped resolving.
+  */
+  const resolver = (text: string) => () => ({ file: "server/routes/thing.ts", text });
+
+  it("reads the paths out of the router's own module", () => {
+    const surfaces = expressSurfacesFrom(
+      'app.use(thingRouter);',
+      resolver('const router = Router(); router.get("/api/thing", h); router.post("/api/thing/:id", h);'),
+    );
+    expect(surfaces.map((s) => `${s.method} ${s.path}`)).toEqual([
+      "GET /api/thing",
+      "POST /api/thing/:id",
+    ]);
+    expect(surfaces[0]!.file, "the module that DECLARES it, not the bootstrap")
+      .toBe("server/routes/thing.ts");
+    expect(surfaces[0]!.mountedBy).toBe("server/_core/index.ts");
+  });
+
+  it("resolves a FACTORY-mounted router the same way", () => {
+    const surfaces = expressSurfacesFrom(
+      'app.use(createThingRouter());',
+      resolver('router.get("/api/thing", h);'),
+    );
+    expect(surfaces.map((s) => `${s.method} ${s.path}`)).toEqual(["GET /api/thing"]);
+    expect(surfaces[0]!.handler).toBe("createThingRouter()");
+  });
+
+  it("⚠ resolves a path built from a SHARED CONSTANT, never guessing its value", () => {
+    /* The newer house style: the client and the route read ONE constant so they
+       cannot disagree about the address. A literal-only reader saw nothing at
+       all for `/api/reference/:referenceId` and `/api/ink-design/:designId`. */
+    const surfaces = expressSurfacesFrom(
+      'app.use(createThingRouter());',
+      resolver('router.get(THING_PATH_PREFIX + "/:thingId", h);'),
+      ['export const THING_PATH_PREFIX = "/api/thing";'],
+    );
+    expect(surfaces.map((s) => `${s.method} ${s.path}`)).toEqual(["GET /api/thing/:thingId"]);
+  });
+
+  it("⚠ REFUSES to invent an address when the prefix cannot be resolved", () => {
+    /* The direction that must never be wrong: a reader guessing a prefix would
+       put a route on the enumerated list under an address nothing serves. */
+    const surfaces = expressSurfacesFrom(
+      'app.use(createThingRouter());',
+      resolver('router.get(THING_PATH_PREFIX + "/:thingId", h);'),
+      [],
+    );
+    expect(surfaces).toHaveLength(1);
+    expect(String(surfaces[0]!.path)).toContain("prefix unresolved");
+    expect(String(surfaces[0]!.path)).not.toContain("/api/thing/");
+  });
+
+  it("⚠ still emits the router when the hop cannot be followed at all", () => {
+    /* An unfollowable hop must UNDERSTATE nothing: the row survives, saying
+       exactly what it is. Losing it would shrink the surface list silently,
+       which is worse than the vagueness it replaced. */
+    const surfaces = expressSurfacesFrom("app.use(mysteryRouter);", () => null);
+    expect(surfaces).toHaveLength(1);
+    expect(surfaces[0]!.path).toBe("(defined by the router)");
+    expect(surfaces[0]!.handler).toBe("mysteryRouter");
+  });
+
+  it("⚠ CONTROL — and against the REAL tree, all five of invariant 5's routes are paths now", () => {
+    /* The weaker repository arm, and the one that says the hop is actually
+       wired: before this, every one of these read "(defined by the router)". */
+    const atlas = JSON.parse(
+      readFileSync(path.join(repoRoot, "docs/architecture/drape-architecture.json"), "utf8"),
+    ) as { surfaces: Array<{ path: string }> };
+    const paths = atlas.surfaces.map((s) => s.path);
+    for (const route of [
+      "/api/image-proxy",
+      "/api/evidence/:kind/:entityId",
+      "/api/cast/:castId/sheet",
+      "/api/ink-design/:designId",
+      "/api/reference/:referenceId",
+    ]) {
+      expect(paths, `${route} must be a PATH in the Atlas, not a router name`).toContain(route);
+    }
+    expect(paths, "no surface may still be unresolved").not.toContain("(defined by the router)");
+  });
+});

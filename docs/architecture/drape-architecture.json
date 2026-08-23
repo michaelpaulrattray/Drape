@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "5edb3149f3aee85b"
+    "sourceFingerprint": "4d53963bbd2407a4"
   },
   "domains": [
     {
@@ -8251,11 +8251,67 @@
   ],
   "surfaces": [
     {
+      "id": "express:GET /api/cast/:castId/sheet (createCharacterSheetRouter())",
+      "method": "GET",
+      "path": "/api/cast/:castId/sheet",
+      "handler": "createCharacterSheetRouter()",
+      "file": "server/routes/characterSheet.ts",
+      "mountedBy": "server/_core/index.ts"
+    },
+    {
+      "id": "express:GET /api/evidence/:kind/:entityId (evidenceDeliveryRouter)",
+      "method": "GET",
+      "path": "/api/evidence/:kind/:entityId",
+      "handler": "evidenceDeliveryRouter",
+      "file": "server/routes/evidenceDelivery.ts",
+      "mountedBy": "server/_core/index.ts"
+    },
+    {
       "id": "express:GET /api/health (healthHandler)",
       "method": "GET",
       "path": "/api/health",
       "handler": "healthHandler",
       "file": "server/_core/index.ts"
+    },
+    {
+      "id": "express:GET /api/hero/:asset (heroProxyRouter)",
+      "method": "GET",
+      "path": "/api/hero/:asset",
+      "handler": "heroProxyRouter",
+      "file": "server/heroProxy.ts",
+      "mountedBy": "server/_core/index.ts"
+    },
+    {
+      "id": "express:GET /api/hero/video (heroProxyRouter)",
+      "method": "GET",
+      "path": "/api/hero/video",
+      "handler": "heroProxyRouter",
+      "file": "server/heroProxy.ts",
+      "mountedBy": "server/_core/index.ts"
+    },
+    {
+      "id": "express:GET /api/image-proxy (imageProxyRouter)",
+      "method": "GET",
+      "path": "/api/image-proxy",
+      "handler": "imageProxyRouter",
+      "file": "server/routes/imageProxy.ts",
+      "mountedBy": "server/_core/index.ts"
+    },
+    {
+      "id": "express:GET /api/ink-design/:designId (createInkDesignDeliveryRouter())",
+      "method": "GET",
+      "path": "/api/ink-design/:designId",
+      "handler": "createInkDesignDeliveryRouter()",
+      "file": "server/routes/inkDesignDelivery.ts",
+      "mountedBy": "server/_core/index.ts"
+    },
+    {
+      "id": "express:GET /api/reference/:referenceId (createReferenceDeliveryRouter())",
+      "method": "GET",
+      "path": "/api/reference/:referenceId",
+      "handler": "createReferenceDeliveryRouter()",
+      "file": "server/routes/referenceDelivery.ts",
+      "mountedBy": "server/_core/index.ts"
     },
     {
       "id": "express:POST /api/slack/interactions (express.urlencoded)",
@@ -8269,48 +8325,6 @@
       "method": "POST",
       "path": "/api/webhooks/stripe",
       "handler": "express.raw",
-      "file": "server/_core/index.ts"
-    },
-    {
-      "id": "express:USE (router-defined) createCharacterSheetRouter()",
-      "method": "USE",
-      "path": "(defined by the router)",
-      "handler": "createCharacterSheetRouter()",
-      "file": "server/_core/index.ts"
-    },
-    {
-      "id": "express:USE (router-defined) createInkDesignDeliveryRouter()",
-      "method": "USE",
-      "path": "(defined by the router)",
-      "handler": "createInkDesignDeliveryRouter()",
-      "file": "server/_core/index.ts"
-    },
-    {
-      "id": "express:USE (router-defined) createReferenceDeliveryRouter()",
-      "method": "USE",
-      "path": "(defined by the router)",
-      "handler": "createReferenceDeliveryRouter()",
-      "file": "server/_core/index.ts"
-    },
-    {
-      "id": "express:USE (router-defined) evidenceDeliveryRouter",
-      "method": "USE",
-      "path": "(defined by the router)",
-      "handler": "evidenceDeliveryRouter",
-      "file": "server/_core/index.ts"
-    },
-    {
-      "id": "express:USE (router-defined) heroProxyRouter",
-      "method": "USE",
-      "path": "(defined by the router)",
-      "handler": "heroProxyRouter",
-      "file": "server/_core/index.ts"
-    },
-    {
-      "id": "express:USE (router-defined) imageProxyRouter",
-      "method": "USE",
-      "path": "(defined by the router)",
-      "handler": "imageProxyRouter",
       "file": "server/_core/index.ts"
     },
     {
