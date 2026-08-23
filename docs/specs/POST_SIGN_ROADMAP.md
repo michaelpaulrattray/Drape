@@ -75,6 +75,37 @@ carry the rulings, the courts and the histories.
                                           surface is 3a.2(b), unbuilt. Filed
                                           there, ruled fable-1330 §5. 4(b) is a
                                           Two Paths card — see item 5
+                                          ⚠ **"UNBUILT" IS TRUE OF ONE ROAD AND
+                                          FALSE OF THE OTHER, AND THIS ROW
+                                          DISTINGUISHED NEITHER** (opus-1169 S1,
+                                          ruled fable-1520 §1; the row was written
+                                          `c30ee3d1` 2026-08-22). **The surface that
+                                          shows a customer her cut EXISTS on the
+                                          refine road and had for two days**:
+                                          `957b4dc5`, 2026-08-20, *"she looks at the
+                                          cut before it rides"* — drawn at
+                                          `RefinePanel.tsx`'s `dpc-refine__shownCut`
+                                          above the chips that answer for it, dying
+                                          with the question, its decline destroying
+                                          the design, and kept by the four arms of
+                                          `shownCutSurface.test.ts`. What is unbuilt
+                                          is the **upload**
+                                          road's: `castingV2.ink.upload` has NO
+                                          client caller at all (grepped 2026-08-24).
+                                          So the eraser's *"there is nowhere to put
+                                          a scrub tool"* argument holds for the
+                                          upload road and not for the road customers
+                                          travel today. Whether that makes the
+                                          eraser buildable now is a BUILD question
+                                          for a build sitting, not a documentation
+                                          one.
+                                          ⚠ `CLAUDE.md`'s `CASTING_INK_CUT_SCOPE`
+                                          paragraph INHERITS the same ambiguity and
+                                          is deliberately NOT edited here — its
+                                          repair wants its own sitting, or the
+                                          eraser build's, and a sweep reaching into
+                                          the constitution is how a scope stops
+                                          being one
 4b ✅ THE STUDIO CAPABILITY CENSUS        615fe6eb — 41 declared doors, 56 corpus
                                           rows, 54 driven, state fixtures for a
                                           cast that already WEARS something. Its
@@ -380,6 +411,33 @@ carry the rulings, the courts and the histories.
                                          a cohort-instruction question and
                                          therefore a court, not an edit.
                                          Before the toggle ships to him.
+                                         ⚠ **AND THAT PRECONDITION WAS
+                                         OVERTAKEN SIXTEEN LINES BELOW IT AND
+                                         NEVER ASKED — corrected 2026-08-24
+                                         (opus-1169 S2, ruled fable-1520 §1).**
+                                         The clause is KEPT because it records
+                                         what fable-1477 §6 ordered. What
+                                         overtook it is this row's OWN pricing
+                                         correction below: 3d parks on a NUMBER
+                                         (opus-1148, endorsed fable-1499 §3 —
+                                         *"if 3d is ever funded"*), so it is not
+                                         scheduled at all. **THE FLIP DOES NOT
+                                         WAIT ON 3d**: fable-1507's board
+                                         sequences his word on the §6 pack
+                                         straight to the flip and names no 3d
+                                         anywhere. A seat opening this page to
+                                         check whether the flip was clear would
+                                         have met a written precondition that no
+                                         board, no ruling and no card carries —
+                                         and either blocked a clear flip or
+                                         shipped believing it broke a condition.
+                                         **A correction that does not ask what
+                                         the lines ABOVE it now say is half a
+                                         correction**, which is the item-5 blocks'
+                                         lesson one row further in: there a stale
+                                         warning survived five edits of this file;
+                                         here the staleness and its cure were
+                                         written into ONE ROW in one sitting
                                          ⚠ **IT WAS ORDERED AS "CHEAP" AND IT IS
                                          NOT — PRICED 2026-08-24 (opus-1148,
                                          endorsed fable-1499 §3), and the price
@@ -1376,6 +1434,20 @@ witness is reading its own output back.
 Windows CRLF footgun in `7b99e466`'s commit message describes, it is not
 `index.html`. Whether it holds for the JSON has not been re-derived and is not
 claimed either way.)*
+
+✅ **IT HAS BEEN DERIVED TWICE SINCE, AND THE ANSWER IS THAT IT DID HOLD FOR
+THE JSON — IT COST A FIX** (opus-1169 S4, ruled fable-1520 §1; the
+parenthesis above was written 2026-08-17). The 2026-08-21 EOL fix normalized
+the FINGERPRINT, and `0b44821b` (2026-08-22) normalized the CONTENT comparison
+at both sites: `scripts/check-architecture.mts`'s `sameContent`/`LF_ONLY`
+docblock — *"The generator writes
+LF. Git, with `core.autocrlf` on Windows, hands the working copy back with
+CRLF — so a raw `!==` here reported the committed Atlas STALE while its own
+`sourceFingerprint` and the source's were IDENTICAL"* — with `LF_ONLY` and
+`sameContent` as named functions used at BOTH comparison sites, because the
+EOL fix's single-site exemption was `exemption-is-not-a-class-fix` and was
+swept as one. *"Not claimed either way"* is the cheapest kind of stale — it
+blocks nobody — and it is still a member of the class.
 
 **One named candidate arrives from the L7 read** (opus-612 §4, fable-823 §2):
 `client/src/components/ui/sidebar.tsx` is a shadcn primitive **nothing in
@@ -2519,6 +2591,24 @@ make and the road closes on a reading.
 **Rulings: fable-1210 §2 (the graduation), fable-1211 §1 (the correction),
 fable-1211 §3 (the required cell).**
 
+**STATUS — UNPARKED, and until 2026-08-24 this document carried no status at
+all** (ruled fable-1520 §2, written here on that ruling). §5f.2 fresh-lane
+clothing court — **UNPARKED by fable-1439** (the ceiling's removal took the
+park's premise with it); it re-enters the queue on its own merits, costed and
+countersigned before it runs like every court since the ceiling fell. **Not
+scheduled**: it queues on the board behind the founder-gated sequence, and no
+flip or sitting waits on it.
+
+⚠ **Why this line exists is worth more than the line** (opus-1169 3(ii)).
+The park (*"unaffordable at 95"*) and its removal both lived in the mailbox and
+nowhere else — grepping this file for `unaffordable`, `5f.2` and `ceiling`
+found neither. This section was honest **by accident**: it never claimed to be
+parked, so it never went stale. That is the MIRROR of the stale-row class —
+not a document asserting a NOT-YET that has closed, but a ruling that MOVED
+with no document carrying it, which is fable-805 §2 exactly: *a ruling is not
+landed when it is relayed; it is landed when it is written where the next
+person will act on it.*
+
 The failure: a brand-new tattoo ask can put the design a long way down the
 subject's tee instead of stopping at the collar. It is separate from the CARRY
 fix that the rite ships — the carry is what keeps an existing tattoo the size it
@@ -2926,7 +3016,11 @@ superseded it — fable-071/080).
   spend — `server/stripe/webhooks.ts`'s `creditReferrerOnPaidAction(userId)`
   call → `server/db/referrals.ts` `addCredits(referral.referrerUserId,
   REFERRAL_REWARD_CREDITS)` = **12,500 credits**, two and a half times the
-  whole overnight campaign ceiling, paid to the named user's **REFERRER**
+  whole overnight campaign ceiling *(⚠ **the yardstick is DEAD**: the founder
+  removed the campaign credit ceiling entirely 2026-08-23 — *"no cieling remove
+  it"*, relayed fable-1439 — not re-pointed and not raised. The 12,500 figure is
+  unhurt; only the thing it was measured against is gone. Named opus-1169 3(i),
+  ruled fable-1520 §2)*, paid to the named user's **REFERRER**
   rather than to the named user. The old sentence was wrong in the target and
   orders low in the amount.
 
@@ -3186,6 +3280,22 @@ superseded it — fable-071/080).
   copy-into-the-candidate's-purge-path; this is the sentence its builder must
   meet. *(Bound stated honestly: the mint's own write was read, not every
   path that could ever attach an image to an edit.)*
+
+  ✅ **AND THE BUILDER MET IT — THE CONDITION IS DISCHARGED, NOT OPEN**
+  (opus-1169 S3, ruled fable-1520 §1). The reference-guided edit shipped:
+  `CASTING_REFERENCE_ATTACH_SCOPE` with `CASTING_HAIR_REFERENCE_SCOPE` and
+  `CASTING_INK_REFERENCE_SCOPE` under it, `hairReferenceTake.ts`,
+  `inkReferenceTake.ts` and `makeupFromReference.ts` all wired — and it
+  attaches **by copy**, quoted at its wire rather than believed:
+  `server/castingV2/referenceAttachService.ts`'s own `store` dependency,
+  `store: (one) => storagePut(one.key, one.bytes, one.contentType)` — its own
+  bytes under its own key. `CLAUDE.md` says why in as many words: *"a COPY
+  rather than a pointer is what makes the picture ours to purge with her
+  Cast."* **So nothing here revives**, and the paragraph above stops reading
+  as a debt a builder still owes. *(The M12 row this cites,
+  `M12_RECONCILIATION.md`, still lists row 15 as REMAINING — named, left
+  untouched, and queued BY NAME for the live-design-docs sweep, fable-1520
+  §3.)*
 - Shared R2 credential split (founder re-prioritized here);
   real-inbox Resend test; fal retention answer (founder confirms
   answered, 2026-08-09); the five inert
@@ -3486,3 +3596,78 @@ strain. Pre-existing and NOT this class; **no evidence of harm was
 gathered**, so it is filed rather than fixed. Trigger: any read on that
 path returning a mask nobody can account for, or the vocabulary work in
 item 5 (open-vocabulary regions), which meets the same question head-on.
+
+## 10. THE STALE-ROW SWEEP — a live row asserting a NOT-YET state that has
+## since closed (class found opus-1167 2b by accident, queued fable-1518,
+## re-priced and run opus-1168/1169, ruled fable-1520)
+
+**What bought it.** Two warnings in item 5's block went stale within 65
+minutes and this file was edited five times without either being asked. One of
+them told the next seat that *"one 160 roll would close it and was not spent"*
+when the roll had been spent — **a document that orders the reader to spend
+money twice**. That is the price the class carries, and it is why the sweep was
+run rather than filed.
+
+**The re-price is part of the record.** It was first estimated at *"a per-row
+read of a 3,300-line document ... its own sitting"* and queued behind the
+founder gate on that basis. Measured instead of estimated: **30 lines match**
+fourteen not-yet shapes, of which **13 are live rows**. An hour, not a sitting —
+and re-ruled on the measurement (fable-1519), which is `bar-corrected-against-
+prior-artifact` run in the cheap direction.
+
+```
+population   13 live rows      HOLDS 9   STALE 4   needs-a-paid-artifact 0
+
+STALE, all four repaired in place, additively, at their own rows:
+  S2  the 3d row      "Before the toggle ships to him" — a precondition on
+                      the flip, overtaken by its OWN pricing correction
+                      sixteen lines below it, never asked. The reader was
+                      acting TONIGHT.
+  S1  item 4          "that surface is 3a.2(b), unbuilt" — TRUE of the upload
+                      road, FALSE of the refine road since 957b4dc5, two days
+                      before the row was written. It distinguished neither.
+  S3  section 7       "a design condition on work not yet built" — built, and
+                      it MET the condition, quoted at its wire.
+  S4  the Atlas note  "has not been re-derived" — derived twice since, and
+                      the answer cost a fix (0b44821b).
+
+HOLDS, each read at its artifact rather than at a report, and cited by the
+row's own words because this commit moves every line number it could quote:
+  "still waits on the OpenRouter episode"  inside the kept (C3, as filed)
+                                          card, under its own CLOSED heading
+  "bornWornCatalogue has NO CALLERS"       re-read at the code: still none
+  "has not been re-read against it"        a declared bound, not a state claim
+  "the lever is still open"                already carries its own correction
+  "has never been measured" (make it       no intensity court exists anywhere
+   darker against a crop)
+  "what has not been demonstrated"         the 5f.2 court has not run
+  "waits on the discovery scan"            5c item 9, gated and unstarted
+  "applies to what is still open"          its own CLOSED heading, four lines
+                                          further down
+  "the founder has NOT ordered built"      the blank lobby, his to pick up
+```
+
+**Two of the nine hold BECAUSE of the additive-correction form** — the
+OpenRouter row and the marks-routing row:
+each is preserved prose sitting under its own later CLOSED heading, so a reader
+meets the closure before the sentence it closed. That is the form paying for
+itself inside the very sweep that looks for its failures.
+
+### The floor sentence — what this sweep does NOT retire
+
+**This sweep is PHRASE-ANCHORED, and a phrase-anchored sweep is a FLOOR, not
+coverage.** It finds a row that goes stale while SAYING one of fourteen not-yet
+shapes. **A row can go false without using any of them** — *"the offer shows her
+the crop before anything rides"* is the shape, and no grep reaches it. So the
+per-row read of the remaining ~3,480 lines is **not retired by this and is not
+claimed to be**; it stays available to a sitting that wants it. This is the
+un-wiring differ's own limit wearing a different hat: *a clean run is a floor
+and not coverage*, stated where the next reader meets it rather than in the
+message that ran it.
+
+**Two things were found that are NOT this class and are named rather than
+swept**: the dead campaign-ceiling yardstick (section 7, repaired in the same
+commit) and section 5f.2's missing status line — **the MIRROR of this class**, a
+ruling that MOVED with no document carrying it, written there on fable-1520 §2.
+`M12_RECONCILIATION.md` row 15 is queued BY NAME for the live-design-docs sweep
+rather than reached into from here.
