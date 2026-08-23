@@ -113,7 +113,7 @@ const WORDS_ROAD_PLACEMENTS: readonly InkPlacementKey[] = ["neck"];
  * about measurement, and "which of them can this road carry" is a fact about
  * courts. Deriving the second from the first is what put `upperChest` here.
  */
-const WORDS_ROAD_PLACEMENTS_OPEN: readonly InkPlacementKey[] = ["neck", "upperArm"];
+const WORDS_ROAD_PLACEMENTS_OPEN: readonly InkPlacementKey[] = ["neck", "upperArm", "upperChest"];
 
 /**
  * Words that put INK where the words road can actually put it.
@@ -461,11 +461,42 @@ export function servedAndBare(
 
 /**
  * The measured surfaces the words road can SEE and cannot KEEP — the whole
- * vocabulary minus what it serves at its most open.
+ * vocabulary minus what it serves **at its most open**.
  *
- * Derived from the two lists above rather than named a third time: the day the
- * chest earns its place in `WORDS_ROAD_PLACEMENTS_OPEN`, it leaves this one in
- * the same edit and cannot be left behind speaking a refusal it has outgrown.
+ * Derived from the lists above rather than named a third time: the day the chest
+ * earns its place in `WORDS_ROAD_PLACEMENTS_OPEN`, it leaves this one in the
+ * same edit and cannot be left behind speaking a refusal it has outgrown.
+ *
+ * ✅ **THAT DAY CAME (2026-08-23, the Basics chest court) AND THIS SET IS NOW
+ * EMPTY.** All three measured placements are served at the road's most open, so
+ * there is no longer a surface this road can see and cannot keep. The loop that
+ * reads it survives with no population, which is honest rather than dead: the
+ * vocabulary gains a member the day a fourth surface is measured, and it will
+ * land here first, exactly as the chest did.
+ *
+ * ⚠ **AND `gate_ink_unkeepable` GOES WITH IT — a door with no population.** It
+ * is not deleted: the refusal is correct and its sentence is the only true thing
+ * to say about a placement the road can see and cannot crop, which is a state
+ * the next measured surface will be in on the day it is added. It is declared
+ * unreachable rather than left to be discovered.
+ *
+ * ⚠ **AND ONE THING I CHANGED HERE AND CHANGED BACK, because the reasoning is
+ * worth more than the diff.** The suite went red on the CLOSED side of
+ * `CASTING_INK_WORDS_SCOPE`: with this set empty, an account outside the flag
+ * asking for a chest tattoo falls through both loops to `needs_document`. That
+ * looked like the *"neither true nor actionable"* refusal this file's header
+ * warns about, so I made this function take `wordsRoadOpen` — served, and
+ * seen-but-unkept, as two halves of one per-account partition.
+ *
+ * **It was an over-correction and the sentence a customer reads is what settled
+ * it.** `inkNeedsDocumentMessage` is DERIVED from that same account's served
+ * list (census finding 4(c)), so a closed-flag account naming an upper arm is
+ * told *"a neck tattoo is the one I can do"* — true, actionable and naming what
+ * works, which is D-180 satisfied. And the concept itself argues the same way:
+ * *what this road can see and cannot keep* is a fact about the ROAD'S
+ * CAPABILITY, while the flag is an ADMISSION gate. Conflating them would have
+ * had a closed account told *"it would render and then be lost"* about a
+ * placement the road demonstrably keeps.
  */
 function uncarriedInkPlaces(): readonly string[] {
   const served = new Set<string>(WORDS_ROAD_PLACEMENTS_OPEN);

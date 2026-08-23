@@ -13966,6 +13966,21 @@ describe("a coverage refusal is counted, and an unpathed one is not", () => {
     counted = [];
     return {
       harvest: unmasked,
+      /*
+        ⚠ THE WORDS ROAD IS OPEN HERE, and it has to be said rather than
+        inherited (2026-08-23, the Basics chest court).
+
+        `upperChest` joined `WORDS_ROAD_PLACEMENTS_OPEN`, so a chest ask only
+        reaches the COVERAGE branch — the one this whole describe block is about
+        — on an account whose road serves the chest. With the flag closed it
+        falls to the derived document message instead, and every arm below would
+        be measuring a different refusal.
+
+        `true` is production: `CASTING_INK_WORDS_SCOPE` is `all`. The suite's env
+        has no such variable, so without this seam these arms would silently test
+        a state no customer is in.
+      */
+      inkWordsEnabled: () => true,
       countInkCoverageDemand: async (row: DemandRow) => {
         counted.push(row);
         return true;
@@ -14119,13 +14134,23 @@ describe("a coverage refusal is counted, and an unpathed one is not", () => {
     expect(counted).toEqual([]);
   });
 
-  it("⚠ A REFUSAL THAT IS NOT ABOUT HER CLOTHES writes nothing — the road, not the outfit", async () => {
+  it("⚠ AN UNREAD OUTFIT IS COUNTED AS OUR GAP, never as her clothes", async () => {
     /*
-      The third sibling, and the one a reason-keyed write would get wrong in the
-      other direction. On a Wardrobe cast in an outfit nobody has read, an
-      upper-chest ask is refused because THIS ROAD cannot crop a result there —
-      a fact about us, identical on every path and every outfit — so it is not a
-      wardrobe demand and does not belong in a wardrobe tally.
+      ⚠ THIS ARM ASSERTED `gate_ink_unkeepable` UNTIL THE CHEST JOINED THE ROAD
+      (2026-08-23), and the door it named now has no population at all.
+
+      It was the third sibling: on a Wardrobe cast in an outfit nobody has read,
+      an upper-chest ask used to be refused because THIS ROAD could not crop a
+      result there — a fact about us, identical on every path and every outfit,
+      and correctly not a wardrobe demand. The Basics chest court retired that
+      fact: the road CAN crop a chest, so the ask now reaches the coverage
+      branch, finds an outfit nobody has read, and fails closed as
+      `surfaceCoverageUnread`.
+
+      **So the row it writes is the one that argues for 7a-bis** — the reader
+      that answers coverage for an arbitrary line — rather than nothing at all,
+      and that is a better outcome than the arm it replaces: a demand this
+      product could not previously record is now recorded.
     */
     rollPath = "wardrobe";
     rollWardrobeLine = "a one-shoulder animal hide, bare legs, bare feet";
@@ -14134,8 +14159,13 @@ describe("a coverage refusal is counted, and an unpathed one is not", () => {
       { ...input, instruction: "give her a small swallow tattoo on her upper chest" },
     ));
 
-    expect(shut.reason).toBe("gate_ink_unkeepable");
-    expect(counted).toEqual([]);
+    expect(shut.reason).toBe("gate_ink_coverage_unread");
+    expect(counted).toEqual([{
+      kind: "surfaceCoverageUnread",
+      placement: "upperChest",
+      outcome: "refused",
+      pathAtRefusal: "wardrobe",
+    }]);
   });
 
   it("⚠ THE COUNTER CANNOT TAKE THE ANSWER AWAY — it throws and she is still refused", async () => {
@@ -14154,6 +14184,8 @@ describe("a coverage refusal is counted, and an unpathed one is not", () => {
     const shut = await doorShut(refineCandidate(
       {
         harvest: unmasked,
+        /* Open, for `withCounter`'s reason — see its comment. */
+        inkWordsEnabled: () => true,
         countInkCoverageDemand: async () => {
           throw new Error("the table is not there yet");
         },

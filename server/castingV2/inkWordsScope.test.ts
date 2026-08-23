@@ -89,30 +89,68 @@ describe("the gate, both sides of the flag", () => {
   const closed = (said: string) => classifyInkPlacement(said, "ink", false);
   const open = (said: string) => classifyInkPlacement(said, "ink", true);
 
-  it("⚠ OFF is today's product — her neck alone", () => {
+  it("⚠ OFF is her neck alone — and it is nobody's product any more", () => {
+    /*
+      ⚠ THE HEADING USED TO SAY "TODAY'S PRODUCT" AND IT STOPPED BEING TRUE
+      BEFORE THIS ARM MOVED. `CASTING_INK_WORDS_SCOPE` went to `all` (fable-1400,
+      the first Casting V2 capability to leave `users:1`), so no live account has
+      been on this side of the flag for some time. It is asserted anyway — a flag
+      asserted on one side only is a flag whose other side nobody has read — but
+      it describes a state, not a customer.
+    */
     expect(closed("a small rose tattoo on her neck").kind).toBe("in_frame");
     expect(closed("a band tattoo on her left upper arm").kind).toBe("needs_document");
-    /* The chest is a place we can SEE and cannot KEEP, on either side of the
-       flag — see the court arm below. That is a different refusal from "the
-       road does not reach here yet", and it says so. */
-    expect(closed("a swallow tattoo on her upper chest").kind).toBe("not_carried");
+    /*
+      ⚠ AND THE CHEST MOVED HERE ON 2026-08-23, from `not_carried` to
+      `needs_document`, when it joined the road at its most open.
+
+      The old comment said the chest is a place we can SEE and cannot KEEP *on
+      either side of the flag* — and the second half was the part the widening
+      falsified. `uncarriedInkPlaces` is the whole vocabulary minus what the road
+      serves AT ITS MOST OPEN, so the moment the chest was served that set went
+      empty and a closed account's chest ask stopped meeting the coverage owner.
+
+      **It is not the frozen apology this refusal's own file warns about.**
+      `inkNeedsDocumentMessage` is composed from THIS account's served list, so a
+      closed account is told *"a neck tattoo is the one I can do"* — true,
+      actionable, naming what works. And the alternative was worse: making the
+      uncarried set per-account would tell a closed account *"it would render and
+      then be lost"* about a placement the road demonstrably keeps, which is a
+      capability claim standing in for an admission gate.
+    */
+    expect(closed("a swallow tattoo on her upper chest").kind).toBe("needs_document");
   });
 
-  it("⚠ ON opens the ARM and NOT the chest — the court's own split", () => {
+  it("⚠ ON opens all three — and the chest is opened by HER OUTFIT, not by the flag", () => {
     /*
-      ⚠ THIS ARM ASSERTED THE WHOLE VOCABULARY for one commit, and the court
-      narrowed it (opus-960, ratified fable-1301 §1): `upperArm` rendered on the
-      correct anatomical side and minted a clean crop; `upperChest` rendered a
-      defensible frame and minted NOTHING, because the reader is asked about a
-      chest under a t-shirt and D-226 says you cannot segment what is hidden.
+      ⚠ THIS ARM HAS SAID THREE THINGS AND THE MIDDLE ONE WAS RIGHT FOR A YEAR'S
+      WORTH OF REASONING ON A WRONG PREMISE.
 
-      A tattoo delivered and not carried is the one-frame loss the founder's own
-      condition forbids — *"as long as the engine can find and crop them"* — so
-      the chest stays shut with the flag wide open, which is what this pair
-      proves.
+        the whole vocabulary   for one commit, on the reading that the founder's
+                               condition names every placement the mint can crop
+        the arm and NOT the    the court narrowed it (opus-960, ratified
+        chest                  fable-1301 §1): `upperChest` rendered a defensible
+                               frame and minted NOTHING, because the reader is
+                               asked about a chest under a t-shirt and D-226 says
+                               you cannot segment what is hidden
+        all three              2026-08-23. **That court measured a GARMENT and
+                               was read as measuring a PLACEMENT.** Remove the
+                               tee and the same word reads 12 of 12; then the
+                               last cell was bought at the service, and a words
+                               chest ask on a Basics cast rendered AND the
+                               delivery mint wrote a crop
+
+      **The flag does not open the chest — her outfit does.** With the flag ON
+      and no line recorded (every cast in both worlds), a chest ask still meets
+      `not_carried`: the house crew tee covers it, and the coverage owner is what
+      says so. That is why this widening is dark in production and why the arm
+      below asserts it.
     */
     expect(open("a small rose tattoo on her neck").kind).toBe("in_frame");
     expect(open("a band tattoo on her left upper arm").kind).toBe("in_frame");
+    /* THE UNPATHED CAST — every roll in both worlds. Refused, and by the
+       wardrobe, which is byte-identical to what this arm asserted before the
+       widening. */
     expect(open("a swallow tattoo on her upper chest").kind).toBe("not_carried");
     /*
       AND NOT A PLACEMENT THE VOCABULARY HAS NEVER MEASURED. The founder's

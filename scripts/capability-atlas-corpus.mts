@@ -284,11 +284,32 @@ export const KNOWN_DEBTS: readonly string[] = [
   said the door needs a WARDROBE-path named outfit, and `f7f45e31` made a BASICS
   cast reach it too — the court found `upper chest` reads 0 px on 4 of 4 Basics
   candidates, so that path's chest answers `unknown` rather than `bare`.
+
+  ⚠ AND THAT LAST SENTENCE WENT STALE THE SAME DAY, WHICH IS WHY IT IS LEFT
+  STANDING RATHER THAN EDITED. The founder lowered the Basics neckline, a
+  re-court read the chest 12 of 12, and `BASICS_COVERAGE.upperChest` is `bare` —
+  so a Basics chest ask does not fail closed any more, it RENDERS. Three
+  sentences about this one enum member were written in one afternoon and each
+  was true when written.
+
+  The lesson, and it is why this comment keeps its own history: **a reachability
+  claim is a claim about a PATH THROUGH CODE, and a path through code is the
+  least stable thing to hang a prediction on.** An entry here should say what
+  STATE reaches a door, never which loop a string falls into.
 */
 export const UNREACHABLE_DOORS: ReadonlyArray<{ id: string; reason: string; becomesReachable: string }> = [
+  /*
+    ⚠ THIS ENTRY'S REASON WAS REPLACED WHOLESALE ON 2026-08-23, and the old one
+    is worth a line because it predicted its own reachability wrongly: it said
+    the door needed "a Basics-path fixture asking for an upper-chest tattoo",
+    and a Basics chest ask now RENDERS.
+
+    The door is unreachable for a stronger reason than before — not "no fixture
+    can reach it yet" but "no surface is in the state it describes".
+  */
   { id: "gate_ink_unkeepable",
-    reason: "item 7a's split of gate_ink_uncarried: the surface is BARE and the words road still cannot crop a result there. Both halves need a cast whose wardrobe leaves the chest showing, and the only line that does is the Basics one — which no roll can be cast on while CASTING_TWO_PATHS_SCOPE is absent, so every corpus roll answers the house crew tee and lands on gate_ink_uncarried instead",
-    becomesReachable: "a Basics-path fixture asking for an upper-chest tattoo, once CASTING_TWO_PATHS_SCOPE is armed for the corpus account" },
+    reason: "item 7a's split of gate_ink_uncarried: the surface is BARE and the words road cannot crop a result there. Its population was `upperChest`, the one measured placement the words road did not serve — and the Basics chest court (2026-08-23) put the chest on the road, so `uncarriedInkPlaces` is EMPTY and no measured surface is seen-but-unkept. The refusal is kept because it is the only true thing to say about a placement in that state, which the next measured surface will be in on the day it is added",
+    becomesReachable: "the day INK_PLACEMENTS gains a fourth surface — it lands unserved by the words road, which is exactly this door's state, before any court opens it" },
   { id: "unplacedInk",
     reason: "raised at the pre-claim ink door only for a DOCUMENTED ask with no placement; every master-state words ask dies earlier at the document gate (measured, drive-4), and the documented states (reference attached, delivered ink) resolve their placement before that door",
     becomesReachable: "a reference-attached fixture whose take carries no placement" },

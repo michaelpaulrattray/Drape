@@ -674,19 +674,38 @@ describe("ink renders only where the anchor is the document", () => {
     expect(c.wall?.reason).toBe("gate_ink_document");
   });
 
-  it("⚠ AND WALLS THE CHEST ITS OWN WAY — seen, and not keepable", () => {
+  it("⚠ AND WALLS THE CHEST — by her OUTFIT once the road serves it", () => {
     /*
-      The court's third answer at the wire (opus-960, ratified fable-1301 §1).
-      She named a place the vocabulary holds; what the product cannot do is CROP
-      the result, because a garment is over it. Telling her she needs a design
-      document would be untrue and unactionable, so it is a different wall with
-      a sentence that names the two places that work.
+      ⚠ THIS ARM MOVED WHEN THE CHEST JOINED THE WORDS ROAD (2026-08-23, the
+      Basics chest court). It used to assert `gate_ink_uncarried` on a CLOSED
+      account, because the chest was then a surface the road could see at its
+      most open and not keep, and the uncarried loop answered it with the
+      coverage owner's verdict.
+
+      The chest is now served at the road's most open, so that loop has no
+      population and a closed account's chest ask falls to the derived document
+      message. **That is not the frozen apology this file's header warns about**:
+      `inkNeedsDocumentMessage` is composed from THIS account's own served list,
+      so a closed account is told *"a neck tattoo is the one I can do"* — true,
+      actionable, and naming what works.
+
+      The interesting arm is the OPEN one below it, which is every production
+      account (`CASTING_INK_WORDS_SCOPE=all`): the chest reaches the coverage
+      gate, and her OUTFIT decides.
     */
     const ask = "a swallow tattoo on her upper chest";
-    const c = check(ask);
-    expect(readDelta({ free: { ink: ask } }, c)).toBeNull();
-    expect(c.wall?.reason).toBe("gate_ink_uncarried");
-    expect(c.wall && "place" in c.wall ? c.wall.place : null).toContain("upper chest");
+    const closedAccount = check(ask);
+    expect(readDelta({ free: { ink: ask } }, closedAccount)).toBeNull();
+    expect(closedAccount.wall?.reason).toBe("gate_ink_document");
+
+    /* OPEN — and UNPATHED, which is every cast in both worlds. The house crew
+       tee covers the chest, so the wall is the wardrobe's and the sentence names
+       her top. **Byte-identical to what this arm asserted before the widening**,
+       which is what makes that change a dark landing in production. */
+    const open: FreeLaneCheck = { instruction: ask, inkWordsRoadOpen: true };
+    expect(readDelta({ free: { ink: ask } }, open)).toBeNull();
+    expect(open.wall?.reason).toBe("gate_ink_uncarried");
+    expect(open.wall && "place" in open.wall ? open.wall.place : null).toContain("upper chest");
   });
 
   /*
@@ -708,18 +727,42 @@ describe("ink renders only where the anchor is the document", () => {
         : { kind: "line", line, source: "born", path: "wardrobe" },
     });
 
-    it("⚠ a BASICS cast's bare chest gets `unkeepable`, not `your top covers it`", () => {
+    it("⚠ A BASICS CAST'S BARE CHEST NOW RENDERS — the path's whole reason", () => {
       /*
-        The road still cannot keep a chest piece — the court on whether the mint
-        fires there has not reported — so the ask is still refused, free, before
-        the claim. What changes is the SENTENCE: telling somebody looking at a
-        shirtless render that her top covers her chest is a refusal that is
-        plainly false about the picture in front of her.
+        ⚠ THIS ARM ASSERTED A REFUSAL UNTIL 2026-08-23 and it is the best
+        specimen in this file of a wall that was a MEASUREMENT rather than a law.
+
+        It said `gate_ink_unkeepable`: the road could not keep a chest piece,
+        because a court had watched one render and mint nothing. **That court
+        was run on a chest under a crew tee** — D-226, you cannot segment a thing
+        that is hidden — so it measured the GARMENT and was read as measuring the
+        placement.
+
+        The Basics re-court removed the garment. `upper chest` reads 12 of 12 on
+        the lowered scoop, and then the last cell was bought at the service: a
+        words chest ask on a Basics cast RENDERED and the delivery mint wrote a
+        crop (`ink:upperChest`, 725x344 on an 848x1264 frame, the swallow plainly
+        on her). So the road keeps it, `upperChest` joined
+        `WORDS_ROAD_PLACEMENTS_OPEN` with that court as provenance, and the ask
+        this arm was written to refuse is the capability the Basics path exists
+        to sell.
+
+        Driven on the OPEN flag, because that is every account in production.
       */
       const ask = "a swallow tattoo on her upper chest";
-      const c = wearing(ask, basicsWardrobeLine("male"));
-      expect(readDelta({ free: { ink: ask } }, c)).toBeNull();
-      expect(c.wall?.reason).toBe("gate_ink_unkeepable");
+      const c: FreeLaneCheck = {
+        instruction: ask,
+        inkWordsRoadOpen: true,
+        wardrobe: { kind: "line", line: basicsWardrobeLine("male"), source: "born", path: "basics" },
+      };
+      expect(readDelta({ free: { ink: ask } }, c)?.free?.ink).toBeTruthy();
+      expect(c.wall, "her chest is bare and the road can keep it").toBeUndefined();
+
+      /* CONTROL — the SAME ask, the same flag, on the house crew tee: refused,
+         and by the wardrobe. The variable is the outfit and nothing else. */
+      const tee: FreeLaneCheck = { instruction: ask, inkWordsRoadOpen: true, wardrobe: { kind: "unpathed" } };
+      expect(readDelta({ free: { ink: ask } }, tee)).toBeNull();
+      expect(tee.wall?.reason).toBe("gate_ink_uncarried");
     });
 
     it("⚠ an outfit nobody has read walls the NECK — which renders today", () => {
@@ -789,7 +832,13 @@ describe("ink renders only where the anchor is the document", () => {
         this arm the fix is indistinguishable from switching the gate off on any
         branch that already carries ink.
       */
-      const c = withPrior("give him another swallow on his upper chest", ["a fine-line swallow on his upper chest"]);
+      /* ⚠ ON THE OPEN FLAG, which is every production account, and it is the
+         setting this arm's CLAIM needs: the chest joined the words road on
+         2026-08-23, so on a closed account it now meets the derived document
+         message instead of the wardrobe's wall. The property under test is that
+         HER OWN item is gated at all — not which wall — and the wardrobe's wall
+         is the one that says something true about a cast in a crew tee. */
+      const c = { ...withPrior("give him another swallow on his upper chest", ["a fine-line swallow on his upper chest"]), inkWordsRoadOpen: true };
       expect(readDelta({ free: { ink: ["another swallow on his upper chest"] } }, c)).toBeNull();
       expect(c.wall?.reason).toBe("gate_ink_uncarried");
     });
@@ -807,7 +856,12 @@ describe("ink renders only where the anchor is the document", () => {
         stands — which is what makes "already stated" a fact rather than a
         loophole.
       */
-      const c = check("give him a small swallow tattoo on his neck");
+      /* Open, for the arm above's reason — the two are a pair and the only
+         thing that may differ between them is the PRIOR. */
+      const c: FreeLaneCheck = {
+        instruction: "give him a small swallow tattoo on his neck",
+        inkWordsRoadOpen: true,
+      };
       expect(readDelta(
         { free: { ink: ["a small swallow tattoo on his neck", "a fine-line swallow on his upper chest"] } },
         c,
