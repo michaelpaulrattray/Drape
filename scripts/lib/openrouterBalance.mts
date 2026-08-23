@@ -11,10 +11,26 @@
  * "Unmeasured is not free" was literally this money, and he felt it before we
  * priced it.
  *
- * The account was at **$9.76 remaining of $210.00** when that was read. When
- * an OpenRouter balance reaches zero the interpreter and the treatment stage
- * fail, so **every paid roll and refine dies at dispatch** — a production
- * outage with a fuse measured in days of ordinary use.
+ * The account was at **$9.76 remaining of $210.00** when that was read.
+ *
+ * ⚠ **AND THE SENTENCE THAT STOOD HERE WAS TRUE OF ONE ROAD AND SAID OF BOTH**
+ * (corrected 2026-08-24, opus-1142, read at the two call sites). It said *"every
+ * paid roll and refine dies at dispatch"*. Read at the code, a zero balance does
+ * two different things, and the difference is what a shift needs before it
+ * decides whether to spend the last of it on a diagnostic:
+ *
+ *   refine   **dies, free.** `interpretRefinement` has no engine and returns
+ *            `unreadable` — *"Fail CLOSED — refusing costs nobody anything"*
+ *            (`refineInterpreter.ts`). Nobody is charged and nobody can edit.
+ *   roll     **RUNS, degraded.** `castingBriefCompiler` falls back to
+ *            `fallbackIntent(briefText)` on `unavailable` — the house fail-open
+ *            policy for checkers, so an interpreter outage never blocks a paid
+ *            run. The one exception is a STYLED brief, refused free rather than
+ *            cast photoreal (`briefCompiler.ts`, the `styledBrief` arm).
+ *
+ * So the outage is total on the edit surface and invisible-but-worse on the
+ * casting one: rolls keep charging and keep landing, cast from a sentence
+ * nothing interpreted. A fuse measured in days of ordinary use either way.
  *
  * # Why it is a generated line and not a note in a report
  *

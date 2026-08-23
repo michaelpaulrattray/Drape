@@ -311,9 +311,46 @@ carry the rulings, the courts and the histories.
                                          a cohort-instruction question and
                                          therefore a court, not an edit.
                                          Before the toggle ships to him
-3b KEYING + MULTI-TATTOO REMOVAL          after 5. No live customer yet (no branch
-                                          has ever worn two); 1167 §2e is its own
-                                          reason
+3b KEYING + MULTI-TATTOO REMOVAL          NEXT — ruled fable-1494. Design report
+                                          written and countersigned as shape A:
+                                          `docs/specs/CASTING_V2_MULTI_TATTOO_DESIGN.md`
+                                          ⚠ THIS LINE SAID "no live customer yet"
+                                          AND THAT IS TRUE OF THE POPULATION AND
+                                          FALSE OF THE DOOR. Driven at
+                                          `composeDeltas` (opus-1143): a second
+                                          tattoo at a second placement drops the
+                                          FIRST one's pointers **inside the paid
+                                          render that adds it** — words say two,
+                                          pointers say one, the carry reads the
+                                          pointers alone, and nothing anywhere
+                                          says a feature was removed.
+                                          `CASTING_INK_WORDS_SCOPE` is `all` and
+                                          the road serves neck + upperArm, so
+                                          every account can reach it; what stands
+                                          between this and a paid feature
+                                          vanishing is that nobody has tried.
+                                          Shape A: `inkAsked` (slot -> the
+                                          sentence that painted THAT one) joins
+                                          `inkApplied`/`inkDelivered` under the
+                                          existing INK_POINTER_FIELDS fence,
+                                          `free.ink` derived, per-slot
+                                          last-writer-wins falling out. The
+                                          transform road's two restatement lines
+                                          (`refineService.ts:3948`) DIE IN THE
+                                          SAME COMMIT. 100 dev credits granted,
+                                          LOSS HALF FIRST — the defect earns its
+                                          specimen at the frames before the fix
+                                          exists — and the court's residue is the
+                                          census's first `branch-with-two-tattoos`
+                                          fixture, which outlives it.
+                                          ⚠ AND THE CENSUS CANNOT SEE THIS CLASS:
+                                          `would-render` is a fact about a DOOR,
+                                          and the corpus must never spend, so no
+                                          row can watch a render drop a feature
+                                          on the other side of it. The ink
+                                          fixture asserts one delivered slot by
+                                          name, so no row has ever been driven
+                                          against a Cast wearing two
 6  CAST-BORN INK DISCOVERY                after 5 — the Basics path is its
                                           population
 7  RETIREMENT + CLEANUP                   §0b's bar is the finish line.
