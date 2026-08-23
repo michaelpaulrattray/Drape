@@ -76,6 +76,7 @@ import { appendFileSync, mkdirSync, writeFileSync } from "node:fs";
 
 import { openDatabase } from "./lib/dbConnection.mts";
 import { decideWatch, newestRow } from "./lib/deployWatch.mts";
+import { comparePositions, parseVariableLines } from "./lib/productionFlagPositions.mts";
 import { uptimeAnchor } from "./lib/uptimeAnchor.mts";
 import {
   balanceLine,
@@ -515,10 +516,26 @@ const anchor = uptimeAnchor(healths[0]!);
 
 /* ── 5. the flags, OFF THE SERVICE ──────────────────────────────────────── */
 
-const variables = railway("variables", "--service", SERVICE, "--kv").split("\n")
-  .map((line) => line.trim())
-  .filter((line) => /^(CASTING_|R7_|ENABLE_STORAGE_CLEANUP_WORKER)/.test(line));
-if (variables.length === 0) die("no scope flags could be read from the service — a park block may not quote them from memory");
+/*
+  ⚠ THE BLOCK USED TO BE A PREFIX FILTER, AND IT HAD ALREADY DRIFTED.
+  `/^(CASTING_|R7_|ENABLE_STORAGE_CLEANUP_WORKER)/` is a rule about what to
+  INCLUDE rather than a list of what is safe to SHOW — and a set
+  `ENABLE_EVIDENCE_CANDIDATE_WORKER` would not have matched it, so the one flag
+  of the eight late-documented ones that is not a scope could have stood on the
+  service and never appeared in a receipt. An allowlist of known-harmless names
+  is the only safe shape for anything printing a production variable's value
+  (`never-filter-a-secret-listing`: a redaction rule fails OPEN).
+
+  AND THE BLOCK NOW CARRIES A VERDICT. Printing what the service holds fixed
+  "flags from memory"; it never fixed the other half, which is that nobody
+  compares those values to the RECORD. Two `CLAUDE.md` paragraphs had gone stale
+  in the direction that reads as a prohibition on something the founder had
+  already authorised — see `scripts/lib/productionFlagPositions.mts`.
+*/
+const readings = parseVariableLines(railway("variables", "--service", SERVICE, "--kv"));
+if (readings.length === 0) die("no variables could be read from the service — a park block may not quote flags from memory");
+const positions = comparePositions(readings);
+if (positions.block.length === 0) die("the flag position table is empty — the receipt would show a clean block over nothing");
 
 /* ── 6. the receipt ─────────────────────────────────────────────────────── */
 
@@ -600,7 +617,24 @@ say(await (async () => {
   }
 })());
 say("");
-say("FLAGS, read off the service:");
-for (const variable of variables) say(`  ${variable}`);
+say("FLAGS, read off the service — and compared to the record:");
+for (const line of positions.block) say(line);
+if (positions.mismatches.length === 0) {
+  say(`  ✓ all ${positions.block.length} stand where scripts/lib/productionFlagPositions.mts says they do`);
+} else {
+  say("");
+  say(`  *** FLAG POSITION MISMATCH — ${positions.mismatches.length} ***`);
+  for (const mismatch of positions.mismatches) say(`  ! ${mismatch}`);
+  say("  Either production moved without the record, or the record went stale.");
+  say("  Fix the row in scripts/lib/productionFlagPositions.mts — and ask what");
+  say("  CLAUDE.md's paragraph for that flag now says about a decision that moved.");
+}
 say("─".repeat(72));
-process.exit(0);
+/*
+  THE VERDICT RIDES IN THE EXIT STATUS, NOT IN AN EARLY REFUSAL.
+  The deploy has already landed by the time a flag can be read, so dying at
+  step 5 would destroy the receipt and change nothing about production. What a
+  mismatch takes away is the one thing that gets quoted — a custody block's
+  `RITE EXIT STATUS: OK`.
+*/
+process.exit(positions.mismatches.length === 0 ? 0 : 1);

@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "43f43a1b690f988f"
+    "sourceFingerprint": "00e841075d941209"
   },
   "domains": [
     {
@@ -11502,6 +11502,10 @@
     {
       "id": "test:server/privateEvidencePurge.test.ts",
       "path": "server/privateEvidencePurge.test.ts"
+    },
+    {
+      "id": "test:server/productionFlagPositions.test.ts",
+      "path": "server/productionFlagPositions.test.ts"
     },
     {
       "id": "test:server/profile.test.ts",

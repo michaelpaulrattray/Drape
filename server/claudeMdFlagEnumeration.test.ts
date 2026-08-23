@@ -54,55 +54,27 @@
  * shape would be guarded by nothing, and this paragraph is here so the next
  * reader knows the floor rather than inferring coverage from a green.
  */
-import { readFileSync, readdirSync, statSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
+import { declaredEnvNames, serverAndSharedSources } from "../scripts/lib/declaredEnvNames.mts";
 import { FAL_ALLOWANCES, falAccountCeiling } from "./castingV2/falBudget";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
-/** Every non-test TypeScript file under the server and shared trees. */
-function sourceFiles(from: string): string[] {
-  const found: string[] = [];
-  const walk = (dir: string) => {
-    for (const entry of readdirSync(dir)) {
-      const at = path.join(dir, entry);
-      if (statSync(at).isDirectory()) {
-        walk(at);
-        continue;
-      }
-      if (!at.endsWith(".ts")) continue;
-      if (at.endsWith(".test.ts")) continue;
-      found.push(at);
-    }
-  };
-  walk(from);
-  return found;
-}
+/*
+  THE DERIVATION MOVED, THE ARM DID NOT (2026-08-23).
 
-/**
- * The declared environment-variable names, read out of the code.
- *
- * `[\s\S]*?` rather than a same-line match: see the multiline note in the
- * header — one real declaration wraps, and dropping it would be the exact
- * defect this file exists to catch, committed by the file itself.
- */
-export function declaredEnvNames(sources: readonly string[]): string[] {
-  const names = new Set<string>();
-  const declaration = /export\s+const\s+[A-Z0-9_]*ENV[A-Z0-9_]*\s*=[\s\S]{0,40}?"([A-Z][A-Z0-9_]{3,})"/g;
-  for (const file of sources) {
-    const text = readFileSync(file, "utf8");
-    for (const hit of text.matchAll(declaration)) names.add(hit[1]!);
-  }
-  return [...names].sort();
-}
-
-const DECLARED = declaredEnvNames([
-  ...sourceFiles(path.join(repoRoot, "server")),
-  ...sourceFiles(path.join(repoRoot, "shared")),
-]);
+  `declaredEnvNames` and its file walk now live in
+  `scripts/lib/declaredEnvNames.mts`, because a SECOND arm needed the same
+  population (`server/productionFlagPositions.test.ts`) and a derivation used by
+  two readers must not live inside one of them — the copy is what drifts, which
+  is working law 4 and is the failure this whole file exists for. The multiline
+  note and the stated floor moved with it; nothing about the reading changed.
+*/
+const DECLARED = declaredEnvNames(serverAndSharedSources(repoRoot));
 
 describe("the flag list is the flag list", () => {
   it("⚠ CONTROL — the scanner found a real population, and the wrapped declaration is in it", () => {
