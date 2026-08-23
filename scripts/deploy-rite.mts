@@ -80,6 +80,7 @@ import { comparePositions, parseVariableLines } from "./lib/productionFlagPositi
 import {
   DECLARED_BUT_UNMIGRATED,
   conformanceVerdict,
+  declaredIndexesFrom,
   declaredSchemaFrom,
   liveSchemaFrom,
 } from "./lib/schemaConformance.mts";
@@ -567,15 +568,27 @@ const schema = await (async (): Promise<{ line: string; problems: string[] }> =>
     const [rows] = await connection.query<any[]>(
       `SELECT TABLE_NAME AS t, COLUMN_NAME AS c FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE()`,
     );
+    const [indexRows] = await connection.query<any[]>(
+      `SELECT DISTINCT INDEX_NAME AS n FROM information_schema.STATISTICS WHERE TABLE_SCHEMA = DATABASE()`,
+    );
     await connection.end();
     /* Relative, like the receipt path above: the rite runs from the repo root. */
-    const declared = declaredSchemaFrom(readFileSync("drizzle/schema.ts", "utf8"));
-    const verdict = conformanceVerdict(declared, liveSchemaFrom(rows as Array<{ t: string; c: string }>));
+    const schemaSource = readFileSync("drizzle/schema.ts", "utf8");
+    const declared = declaredSchemaFrom(schemaSource);
+    const declaredIndexes = declaredIndexesFrom(schemaSource);
+    const verdict = conformanceVerdict(
+      declared,
+      liveSchemaFrom(rows as Array<{ t: string; c: string }>),
+      {
+        declared: declaredIndexes,
+        live: new Set((indexRows as Array<{ n: string }>).map((row) => row.n)),
+      },
+    );
     const enumerated = Object.keys(DECLARED_BUT_UNMIGRATED).length;
     return {
       line:
         `${verdict.declaredTables} tables declared · ${verdict.liveTables} on the service · `
-        + `${enumerated} enumerated as unmigrated`,
+        + `${declaredIndexes.size} named indexes · ${enumerated} enumerated as unmigrated`,
       problems: verdict.problems,
     };
   } catch (error) {
@@ -682,7 +695,7 @@ if (positions.mismatches.length === 0) {
 say("");
 say(`SCHEMA, read off the service: ${schema.line}`);
 if (schema.problems.length === 0) {
-  say("  ✓ every table and column the code declares is there");
+  say("  ✓ every table, column and named index the code declares is there");
 } else {
   say(`  *** SCHEMA MISMATCH — ${schema.problems.length} ***`);
   for (const problem of schema.problems) say(`  ! ${problem}`);

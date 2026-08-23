@@ -54,6 +54,7 @@ import { describe, expect, it } from "vitest";
 import {
   DECLARED_BUT_UNMIGRATED,
   conformanceVerdict,
+  declaredIndexesFrom,
   declaredSchemaFrom,
   liveSchemaFrom,
 } from "../scripts/lib/schemaConformance.mts";
@@ -109,6 +110,86 @@ describe("the declared-schema reader", () => {
     expect(() => declaredSchemaFrom(`export const t = mysqlTable("thing", { a: varchar("a",`)).toThrow(
       /unbalanced/,
     );
+  });
+});
+
+describe("the named-index reader — the hole a column check alone leaves", () => {
+  /*
+    Two migrations in this repo change nothing a COLUMNS query can see:
+    `0006_sticky_eternals` and `0050_ink_delivery_keyed_on_delivery`, which swaps
+    a unique index and widens a column to NULL. `0050` is one of the twenty-six
+    applied by hand-run CEREMONY rather than by drizzle-kit — the journal stops
+    at 0026 — so it is exactly the act with no ledger anywhere, and a
+    table-and-column check would call a database conforming with the WRONG
+    uniqueness on it. Measured at both databases before this was written: 0050
+    HAD run in both. This closes the hole rather than reporting one.
+  */
+  const INDEXES = declaredIndexesFrom(
+    readFileSync(path.join(repoRoot, "drizzle", "schema.ts"), "utf8"),
+  );
+
+  it("⚠ CONTROL — it read a real index population, including 0050's own", () => {
+    expect(INDEXES.size).toBeGreaterThan(100);
+    expect(
+      INDEXES.get("uq_casting_ink_delivery_crops_delivery"),
+      "the index migration 0050 creates, and the table it belongs to",
+    ).toBe("casting_ink_delivery_crops");
+    expect(
+      [...INDEXES.keys()],
+      "and the one it DROPS must not be declared — the schema is the after state",
+    ).not.toContain("uq_casting_ink_delivery_crops_design");
+  });
+
+  it("reads indexes out of the THIRD argument, not the column shape", () => {
+    const indexes = declaredIndexesFrom(
+      `export const t = mysqlTable("thing", {
+         one: varchar("one", { length: 1 }),
+       }, (table) => ([
+         uniqueIndex("uq_thing_one").on(table.one),
+         index("ix_thing_one").on(table.one),
+       ]));`,
+    );
+    expect([...indexes]).toEqual([
+      ["uq_thing_one", "thing"],
+      ["ix_thing_one", "thing"],
+    ]);
+  });
+
+  it("reports a declared index the database does not hold", () => {
+    const declared = declaredSchemaFrom(`export const t = mysqlTable("thing", { one: varchar("one", { length: 1 }) });`);
+    const verdict = conformanceVerdict(declared, liveSchemaFrom([{ t: "thing", c: "one" }]), {
+      declared: new Map([["uq_thing_one", "thing"]]),
+      live: new Set<string>(),
+    });
+    expect(verdict.missingIndexes).toEqual(["thing.uq_thing_one"]);
+    expect(verdict.problems[0]).toContain("looking perfectly conforming");
+  });
+
+  it("does not report an index on a table already enumerated as unmigrated", () => {
+    /* Otherwise the three indexes on `casting_cast_segments` would turn ONE
+       known absence into FOUR findings, and a receipt full of noise is a
+       receipt nobody reads. The TABLE is the thing that is missing. */
+    const declared = declaredSchemaFrom(
+      `export const t = mysqlTable("casting_cast_segments", { one: varchar("one", { length: 1 }) });`,
+    );
+    const verdict = conformanceVerdict(declared, liveSchemaFrom([]), {
+      declared: new Map([["uq_casting_cast_segments_public", "casting_cast_segments"]]),
+      live: new Set<string>(),
+    });
+    expect(verdict.missingIndexes).toEqual([]);
+    expect(verdict.problems).toEqual([]);
+  });
+
+  it("says nothing about an index the database has that the code does not declare", () => {
+    /* NEGATIVE CONTROL: MySQL names every primary key `PRIMARY`, and there are
+       153 live index names against 145 declared. A verdict that reported the
+       difference would cry wolf on every run. */
+    const declared = declaredSchemaFrom(`export const t = mysqlTable("thing", { one: varchar("one", { length: 1 }) });`);
+    const verdict = conformanceVerdict(declared, liveSchemaFrom([{ t: "thing", c: "one" }]), {
+      declared: new Map(),
+      live: new Set(["PRIMARY", "some_index_nobody_declared"]),
+    });
+    expect(verdict.problems).toEqual([]);
   });
 });
 

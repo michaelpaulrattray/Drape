@@ -60,15 +60,30 @@ export type ConformanceVerdict = {
   readonly missingTables: string[];
   /** Declared on a table that exists, absent from it. */
   readonly missingColumns: string[];
+  /** A named index the schema declares and the database does not hold. */
+  readonly missingIndexes: string[];
   /** Enumerated as unmigrated and now PRESENT — the list must shrink. */
   readonly staleExceptions: string[];
   readonly problems: string[];
 };
 
-export function conformanceVerdict(declared: DeclaredSchema, live: LiveSchema): ConformanceVerdict {
+export function conformanceVerdict(
+  declared: DeclaredSchema,
+  live: LiveSchema,
+  indexes?: { declared: ReadonlyMap<string, string>; live: ReadonlySet<string> },
+): ConformanceVerdict {
   const missingTables: string[] = [];
   const missingColumns: string[] = [];
+  const missingIndexes: string[] = [];
   const staleExceptions: string[] = [];
+
+  /* An index on a table that is enumerated as unmigrated is not a second
+     finding — the three on `casting_cast_segments` would otherwise triple one
+     known absence into four. The TABLE is the thing that is missing. */
+  for (const [name, table] of indexes?.declared ?? []) {
+    if (table in DECLARED_BUT_UNMIGRATED) continue;
+    if (!indexes!.live.has(name)) missingIndexes.push(`${table}.${name}`);
+  }
 
   for (const [table, columns] of [...declared].sort(([a], [b]) => a.localeCompare(b))) {
     const present = live.get(table);
@@ -91,6 +106,10 @@ export function conformanceVerdict(declared: DeclaredSchema, live: LiveSchema): 
       (column) =>
         `${column}: the table exists and this column does not — a column on a written table is in every INSERT`,
     ),
+    ...missingIndexes.map(
+      (index) =>
+        `${index}: a named index the schema declares and this database does not hold — an index-only ceremony that never ran leaves the table looking perfectly conforming`,
+    ),
     ...staleExceptions.map(
       (table) =>
         `${table}: listed in DECLARED_BUT_UNMIGRATED and the database HAS it now — delete that line, the list only shrinks`,
@@ -102,6 +121,7 @@ export function conformanceVerdict(declared: DeclaredSchema, live: LiveSchema): 
     liveTables: live.size,
     missingTables,
     missingColumns,
+    missingIndexes,
     staleExceptions,
     problems,
   };
@@ -163,8 +183,37 @@ function columnsOf(body: string): Set<string> {
   return columns;
 }
 
+/**
+ * The named indexes each table declares — index name to its table.
+ *
+ * ⚠ **THE COLUMN READER ALONE HAS A HOLE AND THIS IS IT.** Two migrations in
+ * this repo change nothing a `COLUMNS` query can see: `0006_sticky_eternals` and
+ * `0050_ink_delivery_keyed_on_delivery`, which swaps a unique index and widens a
+ * column to NULL. `0050` is one of the twenty-six applied by hand-run CEREMONY
+ * rather than by `drizzle-kit` — the journal stops at `0026` — so it is exactly
+ * the kind of act with no ledger anywhere, and a table-and-column check would
+ * have called a database conforming with the wrong uniqueness on it. Measured at
+ * both databases 2026-08-23 before this was written: `0050` HAD run in both, so
+ * this closes the hole rather than reporting one.
+ *
+ * NULLABILITY is still outside the reading and is stated rather than left to be
+ * discovered: `0050`'s third statement widens `designId` to NULL, and nothing
+ * here would notice if that half alone were missed.
+ */
+export function declaredIndexesFrom(source: string): ReadonlyMap<string, string> {
+  return parseSchema(source).indexes;
+}
+
 export function declaredSchemaFrom(source: string): DeclaredSchema {
+  return parseSchema(source).tables;
+}
+
+function parseSchema(source: string): {
+  tables: Map<string, Set<string>>;
+  indexes: Map<string, string>;
+} {
   const declared = new Map<string, Set<string>>();
+  const indexes = new Map<string, string>();
   /* Each `mysqlTable("name", { … })` and the object literal that follows it.
      Brace-counted rather than lazily matched: a nested object in a column's
      options (drizzle takes them) ends a lazy match early and silently drops
@@ -188,6 +237,22 @@ export function declaredSchemaFrom(source: string): DeclaredSchema {
     }
     const body = source.slice(start, index - 1);
     declared.set(table, columnsOf(body));
+
+    /* The THIRD argument, where drizzle declares named indexes:
+       `(table) => ([ uniqueIndex("uq_…").on(…), index("ix_…").on(…) ])`.
+       Scanned to the end of the `mysqlTable(` call by PAREN depth, because the
+       shape object above was consumed by brace depth and stops short of it. */
+    let parens = 1;
+    let tail = index;
+    while (tail < source.length && parens > 0) {
+      const character = source[tail];
+      if (character === "(") parens += 1;
+      else if (character === ")") parens -= 1;
+      tail += 1;
+    }
+    for (const hit of source.slice(index, tail).matchAll(/\b(?:uniqueIndex|index)\(\s*"([^"]+)"/g)) {
+      indexes.set(hit[1]!, table);
+    }
   }
 
   if (declared.size === 0) {
@@ -195,5 +260,5 @@ export function declaredSchemaFrom(source: string): DeclaredSchema {
       "no mysqlTable declaration found — re-point this reader rather than letting it report a conforming schema over nothing",
     );
   }
-  return declared;
+  return { tables: declared, indexes };
 }
