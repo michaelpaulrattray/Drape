@@ -2521,3 +2521,205 @@ discriminator. So the honest verdicts are:
 None of the sixteen is ruled for removal. There is no `TAKE` row in this
 section, and that is deliberate: fable-1508 granted a triage, and a removal
 ruling is a different act.
+
+## 30. LAW 7 ASKED OF LAW 7's OWN FIX — and §29d's repair had created a THIRD
+## copy of the six it was repairing (2026-08-24, opus-1160, ruled fable-1511.
+## A reading plus two repairs; the held rows authorise no deletion.)
+
+### 30a. Why this section exists
+
+`f0fe2f6e` fixed §29d: `ViewTabs.tsx` had hand-written the comp-card six and
+drawn the customer's tab strip from its own copy, and the two lists had already
+drifted in ORDER. The fix pinned `shared/boardTypes.ts`'s `PACKAGE_SLOTS` to
+D-39's clusters and derived the strip from it.
+
+**It shipped without its sweep.** Law 7 says the sweep is part of the fix — name
+the class, look for siblings — and that fix named no class and looked for none.
+The 1509 grant that specified it did not ask either. So the class was asked
+mechanically afterwards, by
+`scripts/sweep-handwritten-vocabularies.mts` (promoted from disposable in this
+commit, fable-1511 §2): every exported string-literal `as const` array in
+`shared/`, against every literal array in `client/src`, `server/`, `shared/` and
+`drizzle/`, matched on member SET.
+
+```
+DECLARED  38 vocabularies in shared/ (>= 2 members)      [before this commit]
+SCANNED   1528 files
+HITS      93 literal arrays whose member SET equals a declared vocabulary
+          26 in production files, 22 of those never naming the constant
+```
+
+### 30b. ⚠ THE HEADLINE — the repair landed a second constant identical to one
+### that already existed, and the two orders were pinned APART
+
+```
+shared/boardTypes.ts:86   PACKAGE_SLOTS
+  frontClose · threeQuarter · sideClose · frontFull · sideFull · backFull
+shared/exportViews.ts:18  COMP_CARD_VIEW_ORDER
+  frontClose · threeQuarter · sideClose · frontFull · sideFull · backFull
+```
+
+Identical, member for member and position for position. Two shared constants,
+two docblocks, each claiming to be *the* comp-card presentation order, and
+nothing tying them.
+
+What each one drives is why it matters:
+
+```
+PACKAGE_SLOTS         → the tab strip the customer sees (ViewTabs.tsx:274)
+COMP_CARD_VIEW_ORDER  → compCardViewOrder(), the export sort key, and the order
+                        the ZIP filenames 01_…–06_… are numbered along
+                        (server/exportViews.test.ts:29); live consumers
+                        client/src/features/export/prepareExportViews.ts:50
+                        and useExportPack.ts:94
+```
+
+They are one promise stated twice — **tab 4 is file 04**. And each was pinned to
+its OWN literal by its own test (`boardTypes.test.ts:54`,
+`exportViews.test.ts:69`), which is the worst available arrangement: reorder the
+strip deliberately, one test reddens, update its literal, ship — and the tabs
+number differently from the customer's download, with a green suite and no
+reader anywhere able to see it.
+
+`COMP_CARD_VIEW_ORDER`'s docblock was also stale by twenty hours: it cited *"the
+order ViewTabs renders (ViewTabs.tsx VIEWS)"*, and `f0fe2f6e` had deleted
+`VIEWS`.
+
+**Repaired here** (fable-1511 §1): `COMP_CARD_VIEW_ORDER = PACKAGE_SLOTS`, an
+exported alias whose docblock says it is one. The direction is forced by the
+import graph — `boardTypes.ts` imports nothing at all, so the declaration cannot
+live in `exportViews.ts`. The name is kept because every export consumer reads
+it and a test's own description names it. `exportViews.test.ts` now asserts the
+IDENTITY instead of a second literal, and that assertion is this commit's real
+content: the *tab 4 is file 04* promise finally has a test that can see it.
+
+**No value moved, and that is proven rather than asserted** —
+`scripts/_vocab-fold-evidence-disposable.mts` reads BEFORE out of git at
+`f0fe2f6e` and AFTER by IMPORTING the modules, prints both, and refuses if
+either constant changed. Law 6 does not bind a change proven value-identical
+(fable-1511 §1 Q2), and the identity assertion is stronger evidence than a
+screenshot of the same pixels. ⚠ **Its first reading said a value HAD moved, and
+the instrument was the thing that was wrong**: the reader kept `PACKAGE_SLOTS`'s
+interleaved cluster comments inside the members. Suspect the instrument first.
+
+### 30c. The second live client copy, in the one file that had already paid
+
+```
+client/src/features/casting/utils/buildHistoryFromAssets.ts:37
+  const PACKAGE_VIEW_TYPES = ['frontClose','threeQuarter','sideClose',
+                              'frontFull','sideFull','backFull'];
+  a MEMBERSHIP filter (.includes) — order is not load-bearing here
+```
+
+Its own comment, three lines above: *"the old frontClose/frontFull/sideClose
+whitelist made a Production mint look three slots short on re-edit (VC-R3b bug
+1)"*. **A wrong membership list in this exact file has already cost a customer a
+wrong screen once.**
+
+**Repaired here**: `isCanonicalViewAngle(asset.viewType)` — the narrower
+`shared/boardTypes.ts` already exports for precisely this, unused here.
+
+### 30d. HELD — the three `mysqlEnum` literals (fable-1511 §3)
+
+`drizzle/schema.ts:924` (`targetViewAngle`), `:1136` (`sourceViewAngle`),
+`:1190` (`targetViewAngle`) each hand-write the canonical six, in
+`CANONICAL_VIEW_ANGLES` order, never naming it. The house style already exists
+in the same file — `CASTING_PATHS`, `INK_CUT_ROUTES`, `INK_PROVENANCES`,
+`INK_TEMPLATE_KINDS` and `INK_SIDES` are all imported from `shared/` into
+`mysqlEnum` — and these three predate it.
+
+**Held, not taken.** It is the schema file and the value of the change is
+entirely latent. IF ever taken: its own commit, with the drizzle-generates-no-
+diff check shown. Value and order are identical today, so no migration is
+implied — but that is the thing to prove, not to assume.
+
+### 30e. FILED — read, and correctly left alone, with the reason each
+
+- **`INK_SIDES` × 8 production sites** — `inkAnatomyRegistry.ts` (×6) and
+  `inkAddRecipe.ts:18` declare `["left","centre","right"]` against the shared
+  `["left","right","centre"]`. All on the composer road:
+  `R7_EVIDENCE_COMPOSER_SCOPE` is `off`, and `INK_ADD_RECIPE` /
+  `authorizeInkAddDescription` are already `HELD` in
+  `cleanup-dispositions.yaml` on *the composer road's module-sized
+  disposition*. Folding these would be work on a road pending retirement.
+- **`server/castingV2/axisRegistry.ts:613` `AGE_PHASE_ORDER`** and
+  **`server/castingV2/poolTendencies.ts:177` `AGE_ORDER`** — literal copies of
+  `AGE_PHASES` / `AGE_BANDS`, same order, on a LIVE road
+  (`CASTING_V2_SCOPE=all`). Worth its own sentence: `AGE_ORDER` is typed
+  `readonly AgeBand[]`, so **the compiler checks that each member is a valid
+  band and NOT that all seven are present or in the declared order** — the
+  drift shape exactly, one type annotation away from looking safe.
+- **`server/db/inkAddCandidates.ts:561` `fallbackOrder`** — a deliberate THIRD
+  ordering of the same six (widest, most identity-bearing source view first).
+  Not a mirror at all: deriving it from either other order would be a lie about
+  what it means. **It carries the sweep's `deliberate-vocabulary-copy` marker
+  and is the instrument's NEGATIVE control.** Its exposure is membership only —
+  a seventh canonical view would still have to be added by hand.
+- `client/src/features/casting/ControlPanel.tsx:494` — the studio's body-type
+  picker hand-writes the six `BODY_TYPE_VALUES` that the server's identity
+  option set derives from (`identityTypes.ts:160`). Live client/server
+  coupling, nothing pinning it.
+- `server/casting/evidence/composer/inkCalibration.ts:13` (`INK_PROVENANCES`),
+  `server/castingV2/inkPlacement.ts:116` and `shared/castingOptions.ts:142` and
+  `shared/inkProvenance.ts:13` — the last three name their constant in the same
+  file, which is the weakest class of hit and the sweep's noise bias working.
+
+### 30f. ⚠ UNVERIFIED, and stated in 7b's own wording — the gender lists differ
+
+Found by hand BESIDE the sweep, and it is the shape set-equality can never
+report:
+
+```
+client/.../ControlPanel.tsx:455  options={["Female", "Male", "Non-Binary"]}
+shared/castingOptions.ts:97      GENDER_VALUES = ["Male", "Female"]
+```
+
+`Non-Binary` is first-class client vocabulary — `hairStyleConfig.ts` keys 15+
+hairstyle rows on it. `GENDER_VALUES` feeds `FORM_OPTION_SETS.gender` →
+`GenderOption`, whose docblock says an off-list structured value *"cannot
+compile"*.
+
+**No defect is claimed and none is established.** `FORM_OPTION_SETS` and
+`GenderOption` have no consumer outside `identityTypes.ts` in the reading taken,
+so the likeliest account is a dormant contract rather than a live rejection —
+and *likeliest* is not a reading. It is also product ontology, which is the
+founder's. Not carded (fable-1511 §3): no customer impact is established and a
+card about a dormant contract spends his attention on a maybe.
+
+**What would make it real: a consumer of `FORM_OPTION_SETS.gender` appearing.**
+The sitting that adds one inherits this question by name.
+
+### 30g. What the instrument owes, and what it cannot see
+
+Promoted with the dues a tracked instrument owes here (working law 2):
+
+```
+POSITIVE (synthetic)  a planted copy of a fixture vocabulary must be FOUND, and
+                      a reordered one reported as ORDER DIFFERS
+NEGATIVE (real tree)  inkAddCandidates.ts's marked fallbackOrder must NOT be
+                      reported — and a second arm asserts it is quiet because it
+                      is MARKED rather than because it is absent
+```
+
+The positive control is synthetic on purpose: the real specimen that bought this
+instrument is repaired by the same commit that promotes it, so a control anchored
+on it would have been born unable to fire.
+
+**Both proven able to fail, by two sabotages:** deleting the marker at the real
+site reddens the two negative arms ALONE; blinding the matcher reddens the
+positive arms and leaves the negative arms passing vacuously — which is the
+absence-only shape, survivable only because the run REFUSES on any failed arm.
+
+⚠ **And its own controls caught a defect in it before it was believed.** The
+marker was first *"any marker within eight lines above"*, which silenced every
+literal beneath one note — an exemption that grows on its own. A marker now
+governs the NEXT literal and no other.
+
+Its named limits: a copy assembled rather than written (`[...A, "x"]`,
+`Object.keys(M)`), a copy whose members are not all string literals on one
+bracket pair, and any SUBSET or SUPERSET — §30f is that last limit standing in
+front of a live example. **A clean run is a floor, never a proof.**
+
+Reading after the two repairs: **66 hits, 17 in production** (from 93/26 — the
+fold removes one declaration and the two repairs remove their sites), and every
+remaining production row is dispositioned in §30d–§30e above.

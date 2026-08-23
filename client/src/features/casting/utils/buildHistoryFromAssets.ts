@@ -17,6 +17,8 @@
  *   currentAssets = History[1], historyIndex = 1
  */
 
+import { isCanonicalViewAngle } from '@shared/boardTypes';
+
 import type { GeneratedAsset } from '../constants';
 
 interface AssetWithMeta {
@@ -34,10 +36,17 @@ export function buildHistoryFromAssets(
   // Group by viewType — DB returns newest first. All six package slots
   // (D-39) hydrate; the old frontClose/frontFull/sideClose whitelist made a
   // Production mint look three slots short on re-edit (VC-R3b bug 1).
-  const PACKAGE_VIEW_TYPES = ['frontClose', 'threeQuarter', 'sideClose', 'frontFull', 'sideFull', 'backFull'];
+  //
+  // DERIVED, and that history is why: this membership test was a hand-written
+  // array of the six until 2026-08-24 (triage §30) — a second spelling of a
+  // closed list, in the one file whose own comment records what a wrong
+  // membership list already cost a customer here. `isCanonicalViewAngle` is
+  // the narrower `shared/boardTypes.ts` exports for exactly this, so a seventh
+  // slot arrives in both places or neither. Order is not load-bearing here;
+  // membership is the whole content of the check.
   const byViewType = new Map<string, AssetWithMeta[]>();
   for (const asset of allAssets) {
-    if (!PACKAGE_VIEW_TYPES.includes(asset.viewType)) continue;
+    if (!isCanonicalViewAngle(asset.viewType)) continue;
     // Skip failed-slot markers (storageUrl-less status rows, D-40) — they'd
     // otherwise inject a blank frame into the viewer history
     if (!asset.storageUrl) continue;
@@ -80,7 +89,7 @@ export function buildHistoryFromAssets(
   }
 
   const selected = (selectedAssets ?? [])
-    .filter((asset) => PACKAGE_VIEW_TYPES.includes(asset.viewType) && !!asset.storageUrl)
+    .filter((asset) => isCanonicalViewAngle(asset.viewType) && !!asset.storageUrl)
     .map((asset) => ({
       id: asset.id,
       viewType: asset.viewType,

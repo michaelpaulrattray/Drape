@@ -10,6 +10,14 @@
  * exactly the shape that rots. So it is pinned as a PERMUTATION: same members,
  * deliberately different order.
  *
+ * TWO, and not three: `shared/exportViews.ts`'s `COMP_CARD_VIEW_ORDER` is an
+ * ALIAS of `PACKAGE_SLOTS` as of 2026-08-24 and no longer a third literal
+ * (fable-1511 §1). **The literal spelling of the presentation order lives here
+ * and nowhere else** — that is what makes this file's order arm worth having,
+ * and `server/exportViews.test.ts` asserts the identity rather than repeating
+ * the six. If a second literal of these six ever reappears anywhere,
+ * `scripts/sweep-handwritten-vocabularies.mts` is what finds it.
+ *
  * # Why this file exists (triage §29d, ruled fable-1509 §2)
  *
  * Until 2026-08-24 `PACKAGE_SLOTS` was `= CANONICAL_VIEW_ANGLES` and nothing

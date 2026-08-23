@@ -558,6 +558,13 @@ function projectionSource(
     }
     return exact;
   }
+  // deliberate-vocabulary-copy: a THIRD ordering of the canonical six, and the
+  // order is the whole content — the widest, most identity-bearing source view
+  // first, down to the two close crops. It is not the tab strip's order
+  // (`PACKAGE_SLOTS`) and not the tuple order (`CANONICAL_VIEW_ANGLES`), so
+  // deriving it from either would be a lie about what it means. The membership
+  // is compiler-checked by the annotation; a SEVENTH canonical view would still
+  // have to be added here by hand (triage §30).
   const fallbackOrder: readonly CanonicalViewAngle[] = [
     "frontFull",
     "threeQuarter",

@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "d667263fec5905ac"
+    "sourceFingerprint": "ac54170513fb674f"
   },
   "domains": [
     {
@@ -14809,6 +14809,11 @@
     {
       "from": "module:client/src/features/casting/utils/buildHistoryFromAssets.ts",
       "to": "module:client/src/features/casting/constants.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/casting/utils/buildHistoryFromAssets.ts",
+      "to": "module:shared/boardTypes.ts",
       "kind": "imports"
     },
     {

@@ -15,7 +15,7 @@ import {
   compCardViewOrder,
   COMP_CARD_VIEW_ORDER,
 } from "../shared/exportViews";
-import { CANONICAL_VIEW_ANGLES, VIEW_ANGLE_LABELS } from "../shared/boardTypes";
+import { CANONICAL_VIEW_ANGLES, PACKAGE_SLOTS, VIEW_ANGLE_LABELS } from "../shared/boardTypes";
 
 describe("EXPORT_VIEW_FILENAMES — all six slots, unique, in card order", () => {
   it("covers exactly the canonical six", () => {
@@ -62,20 +62,28 @@ describe("VIEW_TO_PDF_KEY — all six slots onto the generatePdf contract", () =
 });
 
 describe("COMP_CARD_VIEW_ORDER / isCanonicalViewType / compCardViewOrder", () => {
-  it("the comp-card order is EXACTLY the ViewTabs/export sequence — all six, in full", () => {
-    // Face cluster then body — sideClose BEFORE frontFull. This is the
-    // ViewTabs.tsx VIEWS order and the ZIP numbering order, and it is
-    // deliberately NOT the CANONICAL_VIEW_ANGLES tuple order.
-    expect([...COMP_CARD_VIEW_ORDER]).toEqual([
-      "frontClose",
-      "threeQuarter",
-      "sideClose",
-      "frontFull",
-      "sideFull",
-      "backFull",
-    ]);
+  /**
+   * TAB 4 IS FILE 04, AND THIS IS THE ONLY PLACE THAT SAYS SO.
+   *
+   * `COMP_CARD_VIEW_ORDER` is what the export surfaces sort by and what the ZIP
+   * filenames are numbered along; `PACKAGE_SLOTS` is what draws the customer's
+   * tab strip. They are ONE order, and since 2026-08-24 they are one constant
+   * (`shared/exportViews.ts` aliases the declaration in `shared/boardTypes.ts`,
+   * ruled fable-1511 §1).
+   *
+   * Until then they were two literals with identical values, each pinned to its
+   * OWN literal by its own test — so a deliberate reorder of the strip reddened
+   * exactly one of them, got its literal updated, and shipped a download whose
+   * numbering no longer matched the tabs, green all the way.
+   *
+   * So this asserts the IDENTITY and not a literal. The literal that spells the
+   * six out lives once, in `server/boardTypes.test.ts`, on the declaration.
+   */
+  it("IS the package-slot order — one order, not two lists that happen to agree", () => {
+    expect([...COMP_CARD_VIEW_ORDER]).toEqual([...PACKAGE_SLOTS]);
     // Same six slots as the canonical list — only the ordering differs
     expect([...COMP_CARD_VIEW_ORDER].sort()).toEqual([...CANONICAL_VIEW_ANGLES].sort());
+    expect([...COMP_CARD_VIEW_ORDER]).not.toEqual([...CANONICAL_VIEW_ANGLES]);
   });
 
   it("accepts the six, refuses junk AND the retired wire names (V21)", () => {
