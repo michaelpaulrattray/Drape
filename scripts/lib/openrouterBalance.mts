@@ -48,6 +48,37 @@
  * back at you.
  */
 
+/**
+ * ⚠ **IT CANNOT PRICE A SHORT RUN, AND IT FAILS TOWARD *FREE*** — measured
+ * 2026-08-24 (opus-1148), because a court was about to be costed with it.
+ *
+ * `/api/v1/credits`' `total_usage` SETTLES LATE. One interpreter drive was put
+ * through the real entrance with this reader called at both ends, the way every
+ * court here reads a balance:
+ *
+ *     before   $4.7629
+ *     after    $4.7629      delta $0.0000
+ *     +30s     $4.7629
+ *     +~1min   $4.7629
+ *     +~5min   $4.6829      delta $0.0800
+ *
+ * The drive had spent eight cents the whole time. So a before/after read around
+ * minutes of work prints **FREE**, which is the dangerous direction of wrong:
+ * a shift reading it would report a spend that happened as a spend that did
+ * not, and would size the next court off it.
+ *
+ * **The instrument that works at that resolution is the CALL CENSUS times the
+ * published price**, and the two reconcile to the cent: the census recorded
+ * 15,262 prompt and 4,949 completion tokens against `anthropic/claude-sonnet-5`,
+ * whose `/api/v1/models` figures are $0.000002 and $0.00001 a token —
+ * $0.0305 + $0.0495 = **$0.0800**, which is exactly the delta that appeared
+ * five minutes later.
+ *
+ * So: this reader is the RUNWAY line — will the product stop working — and it
+ * is honest at that grain. It is not a receipt, and a court that prices itself
+ * with it is quoting a number that had not happened yet.
+ */
+
 /** Below this, the line shouts. Days of ordinary use, not weeks. */
 export const LOW_BALANCE_USD = 20;
 

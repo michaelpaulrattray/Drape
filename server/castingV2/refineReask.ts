@@ -498,6 +498,35 @@ const KNOWN_WORDS: readonly string[] = [
   ...FREE_SUBJECT_KEYS.flatMap((subject) => FREE_SUBJECTS[subject].toLowerCase().split(" ")),
   "hair", "eyes", "lips", "brows", "lashes", "skin", "nails", "makeup",
   "cheeks", "beard", "freckles", "hairline",
+  /*
+    THE WORN THINGS — census row `guard.typo`, and the reason it took three
+    sittings to close is worth more than the words.
+    *"give her a nose **rign**"* RENDERED, and so did `riing`, which is a pure
+    single insertion — the exact shape of `piink` → `pink`, which works. So the
+    distance metric was never the problem and neither was the narrowing that
+    followed the `shave` → `shape` incident. **The accessory vocabulary lived
+    ONLY in `VALID_IN_CONTEXT` — the *do not accuse this word* list — and in no
+    target list at all**, so no slip of `ring` could ever be offered, however
+    the gate was tuned. A word can be on both lists and must be, and these are
+    the first that are: the exclusion says *never accuse `ring`*, and this says
+    *`rign` may be offered `ring`*. They are different questions.
+    ⚠ **EVERY ONE OF THESE IS PAIRED**, and that pairing is the law of the
+    commit rather than a courtesy (ruled fable-1499 §1a): a noun joins this list
+    only with its exposed neighbourhood joining `VALID_IN_CONTEXT` below, in the
+    same commit. The direction is safe by construction — the exclusion list only
+    ever protects and can never create a target — and the neighbourhood is
+    WALKED rather than guessed, because the two worst cases here are `ring` one
+    slip from **`wing`** (*"give her wings"* is winged eyeliner, a real customer
+    sentence this product quotes) and `band` one slip from **`bangs`**, which is
+    a hairstyle. Asking a customer taking her bangs shorter whether she meant
+    *bands* is the `shave` → `shape` incident wearing a new noun.
+    ⚠ **AND `lens`/`lenses` ARE DELIBERATELY ABSENT.** Four letters with a
+    neighbourhood of ordinary English six words deep (`leans` `legs` `lets`
+    `tens` `leases` `senses`) buys the least and exposes the most; nobody has
+    ever reported a slip of it. It joins the day someone does, with its walk.
+  */
+  "ring", "rings", "stud", "studs", "chain", "chains", "hoop", "hoops",
+  "glasses", "frame", "frames", "band", "bands", "earring", "earrings",
 ];
 
 /**
@@ -608,6 +637,68 @@ const VALID_IN_CONTEXT: readonly string[] = [
     receive.
   */
   "pose", "poses", "posed",
+  /*
+    THE NEIGHBOURHOOD THE WORN THINGS EXPOSE — the other half of census row
+    `guard.typo`, and it lands in the same commit as the nouns above because
+    that is the recipe (fable-1499 §1a). Each of these is one slip from a word
+    that is now a TARGET, so without this block the gate would start asking a
+    customer who typed one of them whether she meant a piece of jewellery.
+    Two are the whole reason the recipe is written the way it is:
+      `wing`  `wings`   *"give her wings"* is winged eyeliner. It is the open
+                        lane's own worked example, and it is one slip from
+                        `ring`.
+      `bang`  `bangs`   a hairstyle, one slip from `band`. The `shave` → `shape`
+                        incident is this exact sentence with different nouns.
+    The rest are ordinary English found in the neighbourhood walk, plus
+    `iframe`, which is not a refine word at all — it is in this repository's
+    prose, and a word nobody types costs nothing to protect while an accusation
+    costs a customer her edit.
+  */
+  "wing", "wings", "king", "rung", "stub", "stubs", "hook", "loop", "hops",
+  "gloss", "class", "classes", "iframe", "bang", "bangs", "bank", "brand",
+  "land", "sand", "glasses", "grand", "gland", "blank", "bland", "stand",
+  /*
+    THE SECOND PASS, and it is the reason the walk is an instrument rather than
+    a formality: the first pass shipped the list above, ran, and the gate came
+    back accusing **`bends`** — in `cohortPhotorealHuman.ts`, the product's own
+    prompt — and **`noop`**, in `refineService.ts`. Two words the table
+    inherited from the card did not name, found in one run over prose already
+    on disk. `hood` and `flame` are the same shape caught by reading rather than
+    by the corpus (`hooded lids`, `flame red`), and they are the ones that would
+    have reached a customer: neither word appears in any prose this walk reads,
+    so no corpus here could have found them and only the neighbourhood could.
+  */
+  "bend", "bond", "wand", "hood", "flame", "noop", "cand", "rink", "rind",
+  "earning", "earnings", "erring", "warring",
+  /*
+    AND THE SWEEP THAT CAME WITH IT — working law 7, and it found live ones.
+    The guard test walks the SERVER's own prose, which is clean because it has
+    been swept twice. Walked over `docs/specs/*.md` instead — 13,090 distinct
+    tokens, the vocabulary this program writes about faces in — the gate at
+    HEAD accused **39 words, none of them a typo**, and these are the ones a
+    customer could plausibly type into a refine box:
+      `punk`  → *pink*   the interpreter's own prompt says *"do not turn 'punk
+                         drummer' into 'musician'"*. Its own example word.
+      `lids`  → *lips*   a beauty word — hooded lids, heavy lids.
+      `tips`  → *lips*   *"make the tips lighter"* is a hair sentence.
+      `wrist` → *waist*  where a customer puts a bracelet.
+      `stone` → *tone*   a colour word people actually say.
+      `chic`  → *chin*   `sliver` → *silver*, `greek` → *green* (a heritage),
+                         `heir`, `teach`, `steal`, `meal`, `seal`, `dose`,
+                         `tore`, `burst`, `lack`, `aims`, `parks`, `eats`,
+                         `zips`, `tails`, `rails`, `spin`, `board`, `browse`,
+                         `redo`, `eras`, `sails`, `flashes`, `hashes`,
+                         `slashes`, `finnish` — ordinary English, every one.
+    None of these is caused by the nouns above; they are the state of the gate
+    TODAY and the founder has met this class once already in person. The docs
+    corpus is a POINTER and not a verdict — it catalogues its own typo
+    specimens, which is why `rign`, `riing`, `hiar` and `piink` are absent from
+    this list on purpose and must go on firing.
+  */
+  "punk", "lids", "tips", "wrist", "stone", "chic", "sliver", "greek", "heir",
+  "teach", "steal", "meal", "seal", "dose", "tore", "burst", "lack", "aims",
+  "parks", "eats", "zips", "tails", "rails", "spin", "board", "browse", "redo",
+  "eras", "sails", "flashes", "hashes", "slashes", "finnish",
 ];
 
 /**

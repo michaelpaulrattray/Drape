@@ -192,7 +192,7 @@ export const CORPUS: readonly CorpusRow[] = [
   { id: "guard.gibberish", ask: "asdf qwer zxcv", subject: "guard", verb: "guard", state: "master",
     expect: "refused:unreadable", why: "unreadable is a refusal, never a guess" },
   { id: "guard.typo", ask: "give her a nose rign", subject: "guard", verb: "question", state: "master",
-    expect: "would-render", why: "a slip from a word the product knows becomes a question, free (D-180)" },
+    expect: "asked:did-you-mean", why: "a slip from a word the product knows becomes a question, free (D-180). ⚠ This row read `would-render` for as long as it existed and the belief was RIGHT while the product was wrong: the accessory vocabulary sat only on the do-not-accuse list, so no slip of `ring` could ever be offered. Closed C3 2026-08-24 and driven at the real entrance — `asked:did-you-mean`, \"Did you mean ring?\", zero provider calls, because this door is in front of the parse" },
   { id: "guard.scope.unknown", ask: "make it green", scope: "elbow@left", subject: "guard", verb: "guard", state: "master",
     expect: "refused:scope_unknown", why: "a part of her the product cannot name" },
   { id: "guard.scope.ink.none", ask: "make it bigger", scope: "ink:upperArm@left", subject: "ink", verb: "change", state: "master",

@@ -285,10 +285,17 @@ carry the rulings, the courts and the histories.
                                          AFTER the hair assert proves the
                                          pattern — which it now has (bald 1/3 →
                                          4/4, `c6839ed8`).
-                                         ⚠ ITS READING IS GATED ON THE READING
-                                         BUDGET, not on anyone's attention: it
-                                         is ~10–15 drives of an account the
-                                         custody blocks track
+                                         ⚠ ITS READING IS PRICED, not adjectival
+                                         (2026-08-24, opus-1148): ~10–15 drives
+                                         at a MEASURED $0.080 each is
+                                         **$0.80–$1.20**, and it is the one
+                                         reading on this board the balance can
+                                         afford. Its BUILD is what waits — a
+                                         lane joining the prompt in a product
+                                         whose own measurement is that context
+                                         is not additive wants a design report
+                                         and a countersign, never a shift's
+                                         judgement (fable-1499 §3)
 3d ⚠ HIS CYBERNETIC BRIEF IS REFUSED     ordered fable-1477 §6, found by driving
    AS A VIDEO-GAME CHARACTER,            (opus-1128 §6). His own brief tripped
    ABOUT 1 TIME IN 7                     the cohort wall twice in fifteen
@@ -306,11 +313,42 @@ carry the rulings, the courts and the histories.
                                          1-in-7 chance.
                                          THE READING FIRST: ablate his brief
                                          against the classifier to find which
-                                         phrase trips it — cheap, and gated on
-                                         the same budget as 3c. THEN the fix is
+                                         phrase trips it. THEN the fix is
                                          a cohort-instruction question and
                                          therefore a court, not an edit.
-                                         Before the toggle ships to him
+                                         Before the toggle ships to him.
+                                         ⚠ **IT WAS ORDERED AS "CHEAP" AND IT IS
+                                         NOT — PRICED 2026-08-24 (opus-1148,
+                                         endorsed fable-1499 §3), and the price
+                                         answers the question by itself.** One
+                                         drive of his brief through the real
+                                         entrance is 2 openrouter calls, 15,262
+                                         in / 4,949 out, **$0.0800** measured off
+                                         the census against the model's own
+                                         published price. The effect is ~1 in 7,
+                                         so a cell needs N≈15 to be told from a
+                                         clean zero:
+                                           full ablation, 9 clauses + 2 controls
+                                             x15  ~165 drives   **~$13.2**
+                                           grouped cells, 3 + 2 controls x12
+                                                   ~60 drives   **~$4.8**
+                                           skip the localisation — write the
+                                             amendment, drive FULL before/after
+                                             x15 + 3 must-still-refuse x6
+                                                   ~48 drives   **~$3.8**
+                                         against a balance of **$4.68**. It is
+                                         not our account alone: at zero, refine
+                                         dies free and **roll keeps charging and
+                                         keeps landing, cast from a sentence
+                                         nothing interpreted**. A design shrunk
+                                         to fit returns zeros everywhere and buys
+                                         nothing — paying $2 to learn nothing is
+                                         worse than not paying. **So this parks
+                                         on a NUMBER rather than on attention,
+                                         and the harness is written**:
+                                         `scripts/_court-cohort-ablation-
+                                         disposable.mts`, kept untracked, cells
+                                         and both controls in place
 3b ✅ KEYING + MULTI-TATTOO REMOVAL       BUILT AND LANDED 2026-08-24, both
                                           halves of its court run. Ruled
                                           fable-1494/1495/1496. Design report:
@@ -541,7 +579,58 @@ the pinning arm.
   separate at all: on *"make it green"* the model files the eyes with no tap
   whatsoever, 3/3.
 
-- **(C3) THE TYPO GATE DOES NOT FIRE ON A REAL TYPO.** Row `guard.typo` — *"give
+- **(C3) ✅ CLOSED 2026-08-24 — THE TYPO GATE DOES NOT FIRE ON A REAL TYPO, and
+  it does now, proven at the real entrance rather than at the function.** Row
+  `guard.typo` observed `asked:did-you-mean` — *"Did you mean ring?"* — with the
+  service's own census line reading `"calls":0`, because this door sits in front
+  of the parse. **So the paid half authorized for it (fable-1499 §1c, $0.16) was
+  never needed on the typo rows**; what the money actually bought was the
+  NEGATIVE CONTROL, *"give her a nose ring"* correctly spelled, which came back
+  `would-render` with 2 calls — the arm that proves the accessory road was not
+  broken by making it correctable.
+
+  The fix is the card's own ruled recipe and nothing more: **a noun joins
+  `KNOWN_WORDS` only with its exposed neighbourhood joining `VALID_IN_CONTEXT`
+  in the same commit.** `ring stud chain hoop glasses frame band earring` and
+  their plurals became targets; `wing wings bang bangs` and the rest of the walk
+  became protections. `lens`/`lenses` were deliberately LEFT OUT and the reason
+  is in the code: four letters with six ordinary English words in the
+  neighbourhood buys the least and exposes the most.
+
+  ⚠ **THE WALK IS AN INSTRUMENT AND IT EARNED ITS KEEP TWICE.** The first pass
+  shipped the card's own table and the gate came back accusing **`bends`** — in
+  `cohortPhotorealHuman.ts`, the product's own prompt — and `noop`, in
+  `refineService.ts`. Neither was on the table. And `hood` and `flame` (*hooded
+  lids*, *flame red*) appear in NO prose this walk reads, so no corpus could
+  have found them and only the neighbourhood could: **a corpus walk is a floor,
+  never coverage.**
+
+  ⚠ **AND THE SWEEP FOUND LIVE ONES THE CARD NEVER ASKED ABOUT** — working law
+  7. The guard test walks the SERVER's prose, which is clean because it has been
+  swept twice; walked over `docs/specs/*.md` instead (13,090 distinct tokens)
+  the gate at HEAD accused **39 words, not one of them a typo**, including
+  `punk` → *pink* (the interpreter's own example word), `lids` → *lips*,
+  `tips` → *lips*, `wrist` → *waist* and `stone` → *tone*. Those are ordinary
+  refine sentences and the founder has met this class in person once already.
+  All 39 are protected in the same commit; the six that remain are repository
+  tokens — `grep`, `slack`, `pino`, `vars`, `mars`, and `toBe`, which is a
+  vitest matcher this file quotes — and they are left because a word nobody
+  types into a refine box is not a customer. (`toBe` was written down as *"one
+  genuine typo in this file"* until it was opened and read, which is the whole
+  of law 7b in one clause.)
+
+  **The arm is DERIVED, not written**: every canonical sentence the capability
+  census drives is walked through the gate, `guard.typo` excepted by name and
+  asserted to still fire. So the day a road gains a door whose sentence this
+  gate would accuse, it reddens in that commit rather than in a session.
+  Sabotage-proven both ways — dropping `ring` from the targets kills the firing
+  arm, dropping `wing` from the protections kills *"give her wings"*, which is
+  the census's own `open.wings` row.
+
+  What follows is the card as it stood, kept because the two dead ends in it are
+  the reason the recipe is written the way it is.
+
+- **(C3, as filed) THE TYPO GATE DOES NOT FIRE ON A REAL TYPO.** Row `guard.typo` — *"give
   her a nose rign"* — RENDERS rather than asking *did you mean*. Read beside its
   own history: the gate once owned a real word (*"shave"* → *"shape"* blocked his
   bald ask), so it was narrowed — and this row is the other edge of that same

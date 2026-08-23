@@ -60,6 +60,11 @@ const DELIBERATE_TYPO_FIXTURES = new Set([
   "hiar",   // refineReask's own example of a transposition
   "piink",  // refineService's example of a slip inside a re-ask
   "shair",  // a genuine typo in axisRegistry's prose, found by this sweep
+  /* Census row `guard.typo`'s own two specimens, written into refineReask's
+     docblock by the commit that closed C3. They are the sentences that used to
+     RENDER, so they must go on firing — and the arm below asserts exactly that,
+     which is what stops this exception from quietly retiring the row. */
+  "rign", "riing",
 ]);
 
 function spokenWords(source: string): string[] {
@@ -138,5 +143,91 @@ describe("the phrasings that started this", () => {
       "give her grey hair",
       "give her blonde hair",
     ]) expect(nearMiss(sentence), sentence).toBeNull();
+  });
+});
+
+/**
+ * THE WORN THINGS — census row `guard.typo`, closed 2026-08-24 (C3).
+ *
+ * `ring` lived on the do-not-accuse list and on no target list, so *"give her a
+ * nose rign"* rendered and charged instead of asking. The fix adds the accessory
+ * nouns as TARGETS, and the recipe is the law of that commit: **a noun joins
+ * `KNOWN_WORDS` only with its exposed neighbourhood joining `VALID_IN_CONTEXT`
+ * in the same commit.**
+ *
+ * These arms are both directions of that recipe, because only one of them is
+ * about the customer who typed a typo. The other is about the far larger number
+ * of customers who typed a real word one slip away from a piece of jewellery.
+ */
+describe("the worn things, and the neighbourhood they expose", () => {
+  it("offers the correction the census row was filed for", () => {
+    expect(nearMiss("give her a nose rign")).toEqual({ typed: "rign", meant: "ring" });
+    /* The pure insertion — `piink` → `pink`'s own shape — which also rendered.
+       Both are in the guard corpus's DELIBERATE_TYPO_FIXTURES above, and they
+       are here because that set only says "do not count this as a false
+       positive"; nothing there says the gate must still FIRE on them. */
+    expect(nearMiss("give her a nose riing")).toEqual({ typed: "riing", meant: "ring" });
+    expect(nearMiss("gold hoop earings")).not.toBeNull();
+  });
+
+  it.each([
+    /* ⚠ THE TWO WORST CASES, and they are the reason the recipe exists.
+       `ring` is one slip from `wing` — and "give her wings" is winged eyeliner,
+       the open lane's own worked example. `band` is one slip from `bangs`,
+       which is a hairstyle: asking a customer taking her bangs shorter whether
+       she meant *bands* is the shave→shape incident with new nouns. */
+    "give her wings",
+    "give her winged eyeliner",
+    "make her bangs shorter",
+    "cut her a blunt fringe with bangs",
+    /* The rest of the walked neighbourhood, in sentences rather than as tokens:
+       a word list can be satisfied by a list and this cannot. */
+    "give her hooded lids",
+    "make the tips of her hair lighter",
+    "a thin bracelet on her wrist",
+    "give her a punk look",
+    "flame red hair",
+    "stone grey eyes",
+    "soften the bend in her nose",
+    "take the hook out of her nose",
+    "loop her braid around",
+    "a gold hoop in each ear",
+    "wire frame glasses",
+    "a fine chain at her throat",
+    "a small stud below each ear",
+    "give her a nose ring",
+  ])("does not stop %s with a question", (sentence) => {
+    expect(nearMiss(sentence), sentence).toBeNull();
+  });
+
+  /**
+   * THE POPULATION IS DERIVED, not typed out here — every canonical sentence
+   * the capability census puts to the real refine entrance.
+   *
+   * A hand-written list of "sentences customers say" is a second list shadowing
+   * a source of truth, and it drifts (working law 4). The corpus is that source:
+   * it is the one place the census's asks live, and it grows whenever a road
+   * gains a door. So the gate is walked against it, and the day somebody adds a
+   * row whose sentence this gate would accuse, this arm goes red in their own
+   * commit rather than in a customer's session.
+   */
+  it("never accuses a sentence the census itself drives", async () => {
+    const { CORPUS } = await import("../../scripts/capability-atlas-corpus.mts");
+    /* A guard that walked an empty corpus would pass forever. */
+    expect(CORPUS.length).toBeGreaterThan(40);
+    const accused = CORPUS
+      /* `guard.typo` is the one row whose sentence is SUPPOSED to be caught —
+         it is the row this card closed. Named, not filtered by a pattern. */
+      .filter((row) => row.id !== "guard.typo")
+      .map((row) => ({ row, miss: nearMiss(row.ask) }))
+      .filter((entry) => entry.miss !== null);
+    expect(
+      accused.map((entry) => `${entry.row.id}: "${entry.row.ask}" → did you mean "${entry.miss!.meant}"?`),
+      "the typo gate would stop one of the census's own canonical customer sentences with a question about a word "
+      + "that is spelled correctly. Add the word to VALID_IN_CONTEXT — the founder's rule on this gate is absolute.",
+    ).toEqual([]);
+    /* And the row that IS supposed to fire still does, in the same arm, so a
+       fix that silenced the gate could not pass this one by emptying it. */
+    expect(nearMiss(CORPUS.find((row) => row.id === "guard.typo")!.ask)).toEqual({ typed: "rign", meant: "ring" });
   });
 });
