@@ -19,6 +19,7 @@ import { describe, expect, it } from "vitest";
 const CSS = new URL("./castingV2.css", import.meta.url);
 const VIEWER = new URL("./components/CandidateViewer.tsx", import.meta.url);
 const SHEET = new URL("../../pages/CastingSheet.tsx", import.meta.url);
+const COMPARE = new URL("./viewerCompare.ts", import.meta.url);
 const LEGACY = new URL("../studio/components/StudioCanvas.tsx", import.meta.url);
 
 async function rule(selector: string): Promise<string> {
@@ -101,8 +102,12 @@ describe("the gesture is the legacy road's, not a second invention", () => {
       looking at, and this component's whole law is that it does not learn what
       a version is.
     */
-    const sheet = await readFile(SHEET, "utf8");
-    expect(sheet).toContain('label: position === 0 ? "Original" : "Previous"');
+    /* The derivation moved out of the sheet on 2026-08-23 (fable-1437); the
+       rule it carries did not. Both labels are still chosen where the frame is
+       chosen, and the viewer still renders whatever it is handed. */
+    const derivation = await readFile(COMPARE, "utf8");
+    expect(derivation).toContain('label: "Original"');
+    expect(derivation).toContain('label: "Before this edit"');
     const viewer = await readFile(VIEWER, "utf8");
     expect(viewer).toContain("{compare.label}");
   });
@@ -159,36 +164,51 @@ describe("the press promises nothing the surface does not keep", () => {
 });
 
 describe("what counts as the frame before this one", () => {
-  it("holds the first version against the Original, and every later one against its neighbour", async () => {
+  it("⚠ holds this version against the one the EDIT WAS APPLIED TO, never its rail neighbour", async () => {
     /*
-      The chain is a tree — forking from an earlier version is the whole
-      interaction — but the rail draws it as a linear strip, which is the
-      founder's own description: "you just click between accumulated edits".
-      So "previous" is the step visually before it in that strip, because that
-      is the one the person is comparing against in their head.
+      ⚠ THIS ARM PINNED THE OPPOSITE RULE UNTIL 2026-08-23, AND IT HAD AN
+      ARGUMENT. Retired loudly rather than deleted, because a stood-down control
+      that leaves no trace is how the next reader re-derives the defect:
+
+        > "The chain is a tree — forking from an earlier version is the whole
+        > interaction — but the rail draws it as a linear strip, which is the
+        > founder's own description: 'you just click between accumulated edits'.
+        > So 'previous' is the step visually before it in that strip, because
+        > that is the one the person is comparing against in their head."
+
+      It was a real argument and the FOUNDER ANSWERED IT, in his own words
+      (fable-1437): the compare *"only shows the previous thumbnail version
+      before it not necesarily the version you edited from which could have been
+      2 versions ago which you forked from."* The gesture's whole meaning is
+      before/after of ONE edit, so its before is that edit's own parent — a fact
+      the record has held on `parentVariantId` all along, while the rail's
+      strip-order was a display accident.
+
+      The behaviour itself is driven in `viewerCompare.test.ts` against the real
+      derivation, including the forked case. This arm keeps the WIRING honest:
+      the sheet reads the shown row's parent and nothing else.
     */
-    /* Asserted as two single-line facts rather than one span across a newline:
-       this file is checked out CRLF on Windows, so a `\n` in the needle matches
-       nothing and the test would fail for a reason that has no bearing on the
-       rule it is about. */
+    const derivation = await readFile(COMPARE, "utf8");
+    expect(derivation).toContain("const parent = shown.parentVariantId ?? null;");
+    expect(derivation).toContain("const from = rail.find((row) => row.variantId === parent);");
+    /* And the defect must not creep back under any spelling. */
+    expect(derivation).not.toContain("position - 1");
     const sheet = await readFile(SHEET, "utf8");
-    expect(sheet).toContain("? variants.data.originalImageUrl");
-    expect(sheet).toContain("rail[position - 1]?.imageUrl ?? null");
-    /* And the two arms belong to the same branch on `position`. */
-    expect(sheet).toContain("const url = position === 0");
+    expect(sheet).not.toContain("rail[position - 1]");
+    expect(sheet).toContain("viewerCompareFor({");
   });
 
-  it("offers no comparison on the original, or on a version this payload does not know", async () => {
+  it("offers no comparison on a version this payload does not know, or on a parent it cannot show", async () => {
     /*
-      Both are the same refusal: there is no honest previous frame, so there is
-      no gesture. A version missing from the list is one that landed since this
-      payload or was pruned — falling back to the head of a list it is not in
-      would hold her face against a stranger's.
+      The same refusal as before, now with a THIRD case the old shape could not
+      have: a parent that is named and not on the rail. Falling back to the
+      neighbour is the retired defect; falling back to the MASTER is a different
+      lie, since it would say the edit was made from the original when it was
+      not. Both are refused, and both are driven in `viewerCompare.test.ts`.
     */
-    const sheet = await readFile(SHEET, "utf8");
-    expect(sheet).toContain("if (!variants.data || shownVariantId === null) return null;");
-    expect(sheet).toContain("if (position < 0) return null;");
-    /* And a previous version whose picture never arrived is not a comparison. */
-    expect(sheet).toContain("if (!url) return null;");
+    const derivation = await readFile(COMPARE, "utf8");
+    expect(derivation).toContain("if (shownVariantId === null) return null;");
+    expect(derivation).toContain("if (!shown) return null;");
+    expect(derivation).toContain("if (!from?.imageUrl) return null;");
   });
 });

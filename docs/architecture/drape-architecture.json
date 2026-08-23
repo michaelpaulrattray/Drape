@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "36e39ac5e5d1cece"
+    "sourceFingerprint": "b2a263449d223915"
   },
   "domains": [
     {
@@ -43,7 +43,7 @@
     {
       "id": "domain:castingV2",
       "name": "castingV2",
-      "moduleCount": 39
+      "moduleCount": 40
     },
     {
       "id": "domain:client-shared",
@@ -1607,6 +1607,12 @@
     {
       "id": "module:client/src/features/castingV2/singleFlight.ts",
       "path": "client/src/features/castingV2/singleFlight.ts",
+      "domain": "castingV2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/castingV2/viewerCompare.ts",
+      "path": "client/src/features/castingV2/viewerCompare.ts",
       "domain": "castingV2",
       "lifecycle": "active"
     },
@@ -9796,6 +9802,10 @@
       "path": "client/src/features/castingV2/useChipAnatomy.test.ts"
     },
     {
+      "id": "test:client/src/features/castingV2/viewerCompare.test.ts",
+      "path": "client/src/features/castingV2/viewerCompare.test.ts"
+    },
+    {
       "id": "test:client/src/features/castingV2/waitNotice.test.ts",
       "path": "client/src/features/castingV2/waitNotice.test.ts"
     },
@@ -17080,6 +17090,11 @@
     {
       "from": "module:client/src/pages/CastingSheet.tsx",
       "to": "module:client/src/features/castingV2/singleFlight.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/CastingSheet.tsx",
+      "to": "module:client/src/features/castingV2/viewerCompare.ts",
       "kind": "imports"
     },
     {

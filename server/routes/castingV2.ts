@@ -1361,6 +1361,21 @@ export const castingV2Router = router({
         regeneratedFrom: readRegeneratedFrom(variant.internalPrompt),
         variant,
       })));
+      /*
+        WHICH VERSION EACH EDIT WAS ACTUALLY APPLIED TO, by its public id.
+
+        `parentVariantId` is an internal numeric id and the wire speaks public
+        ids, so it is resolved through the WHOLE variant list rather than
+        through `live` — a parent that has since been superseded is still the
+        frame this edit was made from, and the caller needs to be able to tell
+        "superseded" from "never had one".
+
+        It exists because the hold-to-compare was reading RAIL ADJACENCY, and
+        rail adjacency is a display accident: fork from two versions back and
+        the compare showed a frame that was never this edit's before, silently
+        mis-answering *what did this edit change* (his own words, fable-1437).
+      */
+      const publicIdOfVariant = new Map(variants.map((variant) => [variant.id, variant.publicId]));
       return {
         selectedVariantId: takeShownFor(face.variantPublicId, supersededBy),
         originalImageUrl: face.candidate.imageKey ? storagePublicUrl(face.candidate.imageKey) : null,
@@ -1480,6 +1495,16 @@ export const castingV2Router = router({
         })),
         variants: live.map(({ variant }) => ({
           variantId: variant.publicId,
+          /*
+            THE VERSION THIS EDIT WAS APPLIED TO — the compare's whole meaning
+            (fable-1437). Null means the master, which is the honest before for
+            a first edit; a public id that is not on the rail means the frame
+            exists and is not shown, and the caller must not substitute a
+            neighbour for it.
+          */
+          parentVariantId: variant.parentVariantId === null
+            ? null
+            : publicIdOfVariant.get(variant.parentVariantId) ?? null,
           imageUrl: variant.imageKey ? storagePublicUrl(variant.imageKey) : null,
           /* The rail draws this and the viewer shows it while the full frame
              decodes; null on every version delivered before fable-503. */

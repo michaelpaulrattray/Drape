@@ -44,6 +44,7 @@ import { inFlightCandidate, refineBusy, refineGhosts, refineWait } from "@/featu
 import { bridgeWithinCandidate } from "@/features/castingV2/panelBridge";
 import { sheetExpiryNotice } from "@/features/castingV2/retentionCopy";
 import { sheetNotice } from "@/features/castingV2/sheetNotice";
+import { viewerCompareFor } from "@/features/castingV2/viewerCompare";
 import {
   CandidateViewer,
   type ViewerCompare,
@@ -1019,20 +1020,22 @@ export default function CastingSheet() {
     are all passed in). It is also why this cannot lag the photograph: both read
     one fact.
   */
-  const viewerCompare: ViewerCompare | null = (() => {
-    if (!variants.data || shownVariantId === null) return null;
-    const rail = variants.data.variants;
-    const position = rail.findIndex((row) => row.variantId === shownVariantId);
-    /* Not in the list at all: a version that landed since this payload, or one
-       already pruned. No previous is the honest answer, not the head of a list
-       it is not in. */
-    if (position < 0) return null;
-    const url = position === 0
-      ? variants.data.originalImageUrl
-      : rail[position - 1]?.imageUrl ?? null;
-    if (!url) return null;
-    return { url, label: position === 0 ? "Original" : "Previous" };
-  })();
+  /*
+    ⚠ THIS USED TO READ RAIL ADJACENCY — the strip position one to the left —
+    and the founder found what that costs (fable-1437): fork from two versions
+    back and the
+    compare holds up a frame that was never this edit's before. The derivation
+    now lives in `viewerCompareFor`, pure and driven, and reads the row's own
+    `parentVariantId`; the three answers and the reason a missing parent shows
+    NOTHING are argued there.
+  */
+  const viewerCompare: ViewerCompare | null = variants.data
+    ? viewerCompareFor({
+      rail: variants.data.variants,
+      shownVariantId,
+      originalImageUrl: variants.data.originalImageUrl,
+    })
+    : null;
 
   /*
     WHAT THIS VERSION IS KEEPING (fable-113).
