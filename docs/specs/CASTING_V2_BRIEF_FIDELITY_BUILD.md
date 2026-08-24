@@ -211,6 +211,72 @@ authorised here.** 160 credits. It is the gate, not a verification step, and law
 
 ---
 
+## 4b. ✅ THE COURT RAN AND PASSED — and it answered an objection nobody had
+## managed to answer with data (2026-08-24, $0.7540, 24 calls, dispatched
+## fable-1602 ruling 1)
+
+`output/brief-fidelity-court/court.{log,json}`, tree `d83793cc`. Both sides in
+one run, one tree, one hour — every row stamps which side of the flag it drove.
+
+```
+                    facts at the NOTES   at the WIRE   "porcelain" in ALL EIGHT
+  his brief · OFF        8 of 14           9 of 14            1 of 3
+  his brief · ON        13 of 14          14 of 14            3 of 3
+  the plain brief        unmoved: 9 of 14 at the wire on BOTH sides
+  a named character      WALLED 3 of 3 on BOTH sides
+```
+
+**14 of 14, three drives of three.** Every fact he typed reaches every one of
+the eight prompts.
+
+### ⚠ AND THE FINDING THAT WAS NOT ON THE ASK: THE LANE EARNED ITS PLACE IN THE
+### SAME RUN THAT PROVED THE BUDGET
+
+§3c had to argue in prose for why the lane still ships when the budget is being
+fixed in the same commit — *a budget with room means the tone usually survives,
+and* usually *is what this item is trying to stop being the answer.* The court
+answered it with data instead, and the answer is sharper than the argument:
+
+```
+  drive 1 · ON   notes "Bald. Heavily weathered skin. Severe bone structure…"
+  drive 2 · ON   notes "Heavily weathered skin, severe bone structure…"
+  drive 3 · ON   notes "Bald. Heavily weathered pale porcelain skin…"
+```
+
+**With the cap released and 2000 characters of room, the summariser STILL
+dropped `porcelain` on two drives of three.** The word reached the picture all
+three times because the LANE said it:
+
+```
+  LANE   SKIN: pale porcelain, heavily weathered — exactly as described.
+```
+
+That is the whole gap between the notes column (13 of 14) and the wire column
+(14 of 14), and it is one word: his. **Neither half would have carried it
+alone** — the budget alone leaves a 1-in-3 lottery on the one word he complained
+about, and the lane alone would have spoken it into a sheet that had lost
+everything else.
+
+### The controls
+
+```
+NEGATIVE   the 190-character plain brief: 9 of 14 at the wire on BOTH sides,
+           unmoved. ⚠ n=1 per side and stated as thin — it is a control, not a
+           reading, and the budget court already drove it 2 per side unmoved
+THE DOOR   a named character walled 3 of 3 under BOTH sides. A prompt change
+           that opened a wall would be a worse outcome than the defect
+THE WALL   his brief was walled 1 of 4 attempts on the ON side and 0 of 3 on
+           the OFF side — counted rather than quietly re-driven, because a
+           court that hides its refusals reports a population it did not
+           measure. It is the cohort wall's own defect, unrelated to this flag
+           and measured at ~30% pooled elsewhere
+```
+
+⚠ **What it still does not decide is unchanged and is §4's last block: the
+PICTURE.** Every number here is text.
+
+---
+
 ## 5. The order it lands in
 
 ```
