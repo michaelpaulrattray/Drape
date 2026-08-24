@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "0f2e2299296ffda9"
+    "sourceFingerprint": "5501dd7a77aa5251"
   },
   "domains": [
     {
@@ -18,7 +18,7 @@
     {
       "id": "domain:api",
       "name": "api",
-      "moduleCount": 41
+      "moduleCount": 42
     },
     {
       "id": "domain:billing",
@@ -5147,6 +5147,12 @@
     {
       "id": "module:server/routes/wardrobe.ts",
       "path": "server/routes/wardrobe.ts",
+      "domain": "api",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/routes/wardrobeInput.ts",
+      "path": "server/routes/wardrobeInput.ts",
       "domain": "api",
       "lifecycle": "active"
     },
@@ -29767,6 +29773,11 @@
     },
     {
       "from": "module:server/routes/wardrobe.ts",
+      "to": "module:server/routes/wardrobeInput.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/wardrobe.ts",
       "to": "module:server/security/rateLimit.ts",
       "kind": "imports"
     },
@@ -29847,6 +29858,11 @@
     },
     {
       "from": "module:server/routes/wardrobe.ts",
+      "to": "module:shared/inputLimits.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/wardrobeInput.ts",
       "to": "module:shared/inputLimits.ts",
       "kind": "imports"
     },

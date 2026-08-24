@@ -9,6 +9,15 @@
  */
 import { describe, it, expect } from "vitest";
 import { WARDROBE_CREDIT_COSTS } from "./wardrobe/creditCosts";
+import {
+  wardrobeClassifyEditInput,
+  wardrobeImportInput,
+  wardrobeOutfitSaveInput,
+  wardrobeRefineInput,
+  wardrobeSessionCreateInput,
+  wardrobeUploadInput,
+  wardrobeVtoGenerateInput,
+} from "./routes/wardrobeInput";
 
 // ── Credit Cost Tests ──────────────────────────────────────────────────────
 
@@ -147,15 +156,33 @@ describe("GarmentForVTO interface", () => {
 
 // ── Zod Input Validation Tests ─────────────────────────────────────────────
 
-describe("Wardrobe Router Input Validation", () => {
-  const { z } = require("zod");
+/*
+  ⚠ THESE ARMS USED TO VALIDATE AGAINST THEIR OWN TRANSCRIPTION OF THE SCHEMAS.
 
-  // Garment upload schema
-  const uploadSchema = z.object({
-    imageBase64: z.string().max(10_000_000),
-    slotType: z.enum(["full_look", "tops", "bottoms", "shoes", "accessories"]),
-    fileName: z.string().max(256).optional(),
-  });
+  Seven of them were declared inline here — `const uploadSchema = z.object({…})`
+  — and every assertion below was made against that copy. **A test that
+  re-declares its subject is not testing the subject.** It agrees with whoever
+  typed it, and it stays green for exactly as long as the real schema drifts.
+
+  It had drifted, on FOUR of the seven, and all four in the direction that
+  matters:
+
+    refine, generate, sessions.create   the real schemas are `.strict()` and the
+                                        copies were not — so these arms would
+                                        have ACCEPTED an unknown field the
+                                        product refuses (invariant 4), which is
+                                        the opposite verdict from the one they
+                                        claim to give
+    garments.import                     `cropUrl` was absent from the copy
+                                        entirely, so three arms said nothing
+                                        about the field carrying the cut
+
+  The schemas now live in `server/routes/wardrobeInput.ts` and the router uses
+  those same objects, so there is one of each. Found by §10 row 3f's sweep,
+  countersigned fable-1619.
+*/
+describe("Wardrobe Router Input Validation", () => {
+  const uploadSchema = wardrobeUploadInput;
 
   it("should validate garment upload input", () => {
     const valid = uploadSchema.safeParse({
@@ -181,19 +208,7 @@ describe("Wardrobe Router Input Validation", () => {
     expect(invalid.success).toBe(false);
   });
 
-  // VTO generate schema
-  const vtoSchema = z.object({
-    modelImageUrl: z.string().url(),
-    garmentIds: z.array(z.number()).min(1).max(5),
-    styleNotes: z.record(z.string(), z.string()).optional(),
-    tattooMap: z.object({
-      hasTattoos: z.boolean(),
-      tattooAreas: z.array(z.string()),
-      cleanAreas: z.array(z.string()),
-      promptFragment: z.string(),
-    }).optional(),
-    sessionId: z.number().optional(),
-  });
+  const vtoSchema = wardrobeVtoGenerateInput;
 
   it("should validate VTO generate input", () => {
     const valid = vtoSchema.safeParse({
@@ -233,21 +248,7 @@ describe("Wardrobe Router Input Validation", () => {
     expect(valid.success).toBe(true);
   });
 
-  // Refinement schema (updated with outfit context + tattoo support)
-  const refineSchema = z.object({
-    currentResultUrl: z.string().url(),
-    modelImageUrl: z.string().url(),
-    garmentId: z.number(),
-    instruction: z.string().max(500),
-    allGarmentIds: z.array(z.number()).optional(),
-    tattooMap: z.object({
-      hasTattoos: z.boolean(),
-      tattooAreas: z.array(z.string()),
-      cleanAreas: z.array(z.string()),
-      promptFragment: z.string(),
-    }).optional(),
-    sessionId: z.number().optional(),
-  });
+  const refineSchema = wardrobeRefineInput;
 
   it("should validate refinement input (basic)", () => {
     const valid = refineSchema.safeParse({
@@ -328,13 +329,7 @@ describe("Wardrobe Router Input Validation", () => {
     expect(tattooPromptFragment).toBe("Preserve visible tattoos on left arm.");
   });
 
-  // Outfit save schema
-  const outfitSchema = z.object({
-    name: z.string().min(1).max(128),
-    garmentIds: z.array(z.number()).min(1),
-    styleNotes: z.record(z.string(), z.string()).optional(),
-    resultThumbUrl: z.string().url().optional(),
-  });
+  const outfitSchema = wardrobeOutfitSaveInput;
 
   it("should validate outfit save input", () => {
     const valid = outfitSchema.safeParse({
@@ -360,11 +355,7 @@ describe("Wardrobe Router Input Validation", () => {
     expect(invalid.success).toBe(false);
   });
 
-  // Session create schema
-  const sessionSchema = z.object({
-    modelId: z.number().optional(),
-    modelImageUrl: z.string().url(),
-  });
+  const sessionSchema = wardrobeSessionCreateInput;
 
   it("should validate session create input", () => {
     const valid = sessionSchema.safeParse({
@@ -388,12 +379,7 @@ describe("Wardrobe Router Input Validation", () => {
     expect(invalid.success).toBe(false);
   });
 
-  // Decomposition import schema
-  const importSchema = z.object({
-    sourceImageUrl: z.string().url(),
-    label: z.string(),
-    slotType: z.enum(["full_look", "tops", "bottoms", "shoes", "accessories"]),
-  });
+  const importSchema = wardrobeImportInput;
 
   it("should validate decomposition import input", () => {
     const valid = importSchema.safeParse({
@@ -402,6 +388,68 @@ describe("Wardrobe Router Input Validation", () => {
       slotType: "tops",
     });
     expect(valid.success).toBe(true);
+  });
+
+  /*
+    ⚠ THE FOUR PROPERTIES THE COPY MADE UNTESTABLE.
+
+    Reconnecting the arms above to the real schemas was necessary and is not
+    sufficient: every one of them passed before the reconnection and after it,
+    because none of them ever asserted the things that had actually drifted. A
+    silent difference stays silent until something asks about it.
+
+    So these are the assertions the transcription was hiding — written from the
+    diff between the copy and the source rather than from imagination.
+  */
+  it("⚠ THE DRIFT ITSELF: three of these schemas are .strict() and the copy was not", () => {
+    /*
+      Invariant 4 on the wardrobe's paid surfaces: an unknown field is REJECTED,
+      never silently dropped. The old copies had no `.strict()`, so an arm
+      asserting this would have failed against the transcription while passing
+      against the product — which is to say nobody could have written it.
+    */
+    expect(refineSchema.safeParse({
+      currentResultUrl: "https://example.com/a.png",
+      modelImageUrl: "https://example.com/b.png",
+      garmentId: 1,
+      instruction: "roll the sleeves",
+      unknownField: "should be refused",
+    }).success).toBe(false);
+
+    expect(vtoSchema.safeParse({
+      modelImageUrl: "https://example.com/model.png",
+      garmentIds: [1],
+      unknownField: "should be refused",
+    }).success).toBe(false);
+
+    expect(sessionSchema.safeParse({
+      modelImageUrl: "https://example.com/model.png",
+      unknownField: "should be refused",
+    }).success).toBe(false);
+  });
+
+  it("⚠ THE DRIFT ITSELF: import carries cropUrl, which the copy did not have at all", () => {
+    /*
+      The field that carries the cut. Three arms validated this schema and none
+      of them could say a word about it, because the copy they validated
+      against did not contain it — the quietest way for a test to be wrong.
+    */
+    const withCrop = importSchema.safeParse({
+      sourceImageUrl: "https://example.com/source.png",
+      cropUrl: "https://example.com/crop.png",
+      label: "Black Bomber Jacket",
+      slotType: "tops",
+    });
+    expect(withCrop.success).toBe(true);
+    expect(withCrop.success && withCrop.data.cropUrl).toBe("https://example.com/crop.png");
+
+    /* Optional, and a URL when present — not merely "any string". */
+    expect(importSchema.safeParse({
+      sourceImageUrl: "https://example.com/source.png",
+      cropUrl: "not-a-url",
+      label: "Black Bomber Jacket",
+      slotType: "tops",
+    }).success).toBe(false);
   });
 });
 
@@ -1291,8 +1339,8 @@ describe("Edit Classifier", () => {
   });
 
   it("validates classifyEdit input schema", () => {
-    const { z } = require("zod");
-    const schema = z.object({ instruction: z.string().min(1).max(500) });
+    /* The real schema, not a transcription of it — see the block above. */
+    const schema = wardrobeClassifyEditInput;
 
     expect(schema.safeParse({ instruction: "roll sleeves" }).success).toBe(true);
     expect(schema.safeParse({ instruction: "" }).success).toBe(false);

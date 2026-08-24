@@ -47,6 +47,16 @@ import { seedSession, clearSession } from "../wardrobe/vtoSession";
 import { getImageAspectBucket, type GarmentForVTO } from "../wardrobe/utils";
 import { OUTFIT_NAME_MAX_LENGTH } from "../../shared/inputLimits";
 import {
+  wardrobeClassifyEditInput,
+  wardrobeImportInput,
+  wardrobeOutfitSaveInput,
+  wardrobeQuickDetectInput,
+  wardrobeRefineInput,
+  wardrobeSessionCreateInput,
+  wardrobeUploadInput,
+  wardrobeVtoGenerateInput,
+} from "./wardrobeInput";
+import {
   resolveWardrobeSessionCreateImage,
   resolveWardrobeSessionUseImage,
 } from "../wardrobe/modelImageAuthority";
@@ -109,11 +119,7 @@ const garmentRouter = router({
     }),
 
   upload: protectedProcedure
-    .input(z.object({
-      imageBase64: z.string().max(10_000_000),
-      slotType: z.enum(["full_look", "tops", "bottoms", "shoes", "accessories"]),
-      fileName: z.string().max(256).optional(),
-    }))
+    .input(wardrobeUploadInput)
     .mutation(async ({ ctx, input }) => {
       throwIfRateLimited(ctx.user.id);
       await enforceDailyQuota(ctx.user.id);
@@ -208,10 +214,7 @@ const garmentRouter = router({
 
   /** Lightweight scan: upload to S3 + detect garments without digitize/analyze pipeline */
   quickDetect: protectedProcedure
-    .input(z.object({
-      imageBase64: z.string().max(10_000_000),
-      targetSlot: z.enum(["tops", "bottoms", "shoes", "accessories"]),
-    }))
+    .input(wardrobeQuickDetectInput)
     .mutation(async ({ ctx, input }) => {
       throwIfRateLimited(ctx.user.id);
 
@@ -254,18 +257,7 @@ const garmentRouter = router({
 
 const vtoRouter = router({
   generate: protectedProcedure
-    .input(z.object({
-      modelImageUrl: z.string().url(),
-      garmentIds: z.array(z.number()).min(1).max(5),
-      styleNotes: z.record(z.string(), z.string()).optional(),
-      tattooMap: z.object({
-        hasTattoos: z.boolean(),
-        tattooAreas: z.array(z.string()),
-        cleanAreas: z.array(z.string()),
-        promptFragment: z.string(),
-      }).optional(),
-      sessionId: z.number().optional(),
-    }).strict())
+    .input(wardrobeVtoGenerateInput)
     .mutation(async ({ ctx, input }) => {
       const readMode = captureSnapshotReadMode(ctx.user.id);
       throwIfRateLimited(ctx.user.id);
@@ -438,20 +430,7 @@ const vtoRouter = router({
     }),
 
   refine: protectedProcedure
-    .input(z.object({
-      currentResultUrl: z.string().url(),
-      modelImageUrl: z.string().url(),
-      garmentId: z.number(),
-      instruction: z.string().max(500),
-      allGarmentIds: z.array(z.number()).optional(),
-      tattooMap: z.object({
-        hasTattoos: z.boolean(),
-        tattooAreas: z.array(z.string()),
-        cleanAreas: z.array(z.string()),
-        promptFragment: z.string(),
-      }).optional(),
-      sessionId: z.number().optional(),
-    }).strict())
+    .input(wardrobeRefineInput)
     .mutation(async ({ ctx, input }) => {
       const readMode = captureSnapshotReadMode(ctx.user.id);
       throwIfRateLimited(ctx.user.id);
@@ -557,7 +536,7 @@ const vtoRouter = router({
 
   /** Classify a refinement instruction as small (localized) or large (structural). */
   classifyEdit: protectedProcedure
-    .input(z.object({ instruction: z.string().min(1).max(500) }))
+    .input(wardrobeClassifyEditInput)
     .mutation(async ({ ctx, input }) => {
       throwIfRateLimited(ctx.user.id);
       const editSize = await classifyEditSize(input.instruction);
@@ -619,12 +598,7 @@ const decomposeRouter = router({
     }),
 
   import: protectedProcedure
-    .input(z.object({
-      sourceImageUrl: z.string().url(),
-      cropUrl: z.string().url().optional(),
-      label: z.string(),
-      slotType: z.enum(["full_look", "tops", "bottoms", "shoes", "accessories"]),
-    }))
+    .input(wardrobeImportInput)
     .mutation(async ({ ctx, input }) => {
       throwIfRateLimited(ctx.user.id);
       await enforceDailyQuota(ctx.user.id);
@@ -686,10 +660,7 @@ const decomposeRouter = router({
 
 const sessionRouter = router({
   create: protectedProcedure
-    .input(z.object({
-      modelId: z.number().optional(),
-      modelImageUrl: z.string().url(),
-    }).strict())
+    .input(wardrobeSessionCreateInput)
     .mutation(async ({ ctx, input }) => {
       const readMode = captureSnapshotReadMode(ctx.user.id);
       const modelImageUrl = await resolveWardrobeSessionCreateImage({
@@ -810,12 +781,7 @@ const outfitRouter = router({
     }),
 
   save: protectedProcedure
-    .input(z.object({
-      name: z.string().min(1).max(OUTFIT_NAME_MAX_LENGTH),
-      garmentIds: z.array(z.number()).min(1),
-      styleNotes: z.record(z.string(), z.string()).optional(),
-      resultThumbUrl: z.string().url().optional(),
-    }))
+    .input(wardrobeOutfitSaveInput)
     .mutation(async ({ ctx, input }) => {
       for (const id of input.garmentIds) {
         const g = await getGarmentById(id);
